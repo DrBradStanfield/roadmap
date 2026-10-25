@@ -6,174 +6,152 @@ publishedAt: "2025-06-03T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["huperzine a", "acetylcholinesterase", "alzheimer", "cognitive", "brain health", "memory", "dementia", "neuroprotection", "choline", "nootropic", "acetylcholine", "vascular dementia", "donepezil", "club moss", "huperzia serrata"]
-summary: "Reference on huperzine A: memory, cognitive function, Alzheimer's disease, vascular dementia. Adults with dementia or age-related memory concerns. Natural Huperzia serrata extract preferred; 50-400 mcg/day, cycling recommended. Always discuss with your doctor."
+summary: "Huperzine A, a cholinesterase inhibitor from Chinese club moss, for memory and Alzheimer's disease. Small, low-quality trials suggest benefit; the largest Western trial found 200 mcg twice daily did not help. Talk to your doctor first if you take dementia, heart-rate or anticholinergic drugs."
+reviewed: "2026-10-26"
+sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/24086396/","checked":"2026-10-26","fingerprint":"sha256:eb0f2bd1b611dcca934c1ce32117faeb20ae2395e8c6d5321ce815ea0aa66e00"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/huperzine-a-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/huperzine-a-benefits-forms-dosing-and-side-effects)*
 
+## Current evidence position
+
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Reviews of mostly small Chinese trials in Alzheimer's disease found that huperzine A improved cognitive test scores and daily function, but most trials had a high risk of bias, and a 2008 Cochrane review found only one study of adequate quality and size [26][58]. The largest Western trial gave 210 people with mild to moderate Alzheimer's disease 200 mcg or 400 mcg of huperzine A twice daily; the 200 mcg dose did not improve cognition, and the 400 mcg dose helped only in secondary analyses [16]. Huperzine A blocks the same enzyme as the dementia drug donepezil, and drugs of this kind are linked to fainting and a slow heart rate in older people, so anyone taking dementia drugs, anticholinergic drugs or heart-rate-lowering medicines, or with a heart rhythm problem, should talk to their doctor first [3][68][69]. Supplements are unreliable: in a 2020 analysis of 22 products, only two held within 10% of the huperzine A declared on the label [48].
+
+## Key safety points
+
+- Huperzine A blocks the same enzyme as donepezil, rivastigmine and galantamine, so combining them may add to cholinergic side effects [3][69]. Ask your doctor first if you take these, anticholinergic drugs or heart-rate-lowering drugs, or before a general anaesthetic [69][70].
+- Drugs of this kind raised hospital visits for fainting and slow heart rate in older people [68]. If you faint, or have a very slow pulse with dizziness, chest pain or breathlessness, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- Too much can cause cholinergic poisoning: sweating, vomiting, diarrhoea, dizziness, cramps and slurred speech [67]. For severe symptoms, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- Ask your doctor first if you have asthma or COPD, epilepsy or kidney disease [22][71][73].
+- With NSAID painkillers, drugs of this kind raised peptic ulcer risk more than NSAIDs alone [74].
+- Trial side effects were mostly mild: nausea, dizziness, insomnia and ankle swelling [25][46][64].
+
+## Brad's videos on this topic
+
+None yet.
+
 ## 1. Overview
 
-Huperzine A is a naturally occurring sesquiterpene alkaloid with the molecular formula C₁₅H₁₈N₂O and a molecular weight of 242.32 g/mol, primarily isolated from the Chinese club moss *Huperzia serrata* (Thunb. ex Murray) Trevis [1][2]. It functions as a potent, reversible, and selective inhibitor of acetylcholinesterase (AChE), the enzyme responsible for breaking down the neurotransmitter acetylcholine in the synaptic cleft [2][3]. By blocking AChE, huperzine A increases acetylcholine concentrations in the brain, supporting cognitive functions such as memory, learning, and attention [2][3].
+Huperzine A is an alkaloid first isolated from the Chinese club moss *Huperzia serrata*, a traditional Chinese medicine called Qian Ceng Ta [2][46]. It is a potent, highly specific and reversible inhibitor of acetylcholinesterase (AChE), the enzyme that breaks down the messenger chemical acetylcholine [3]. Blocking AChE leaves more acetylcholine in the brain, which is how it is thought to help memory [58].
 
-The compound has a long history rooted in traditional Chinese medicine. *Huperzia serrata*, known as Qian Ceng Ta or Shi Song, has been used for over 1,000 years, with records dating to the Tang Dynasty (739 AD) in texts such as *Ben Cao Shi Yi* [4]. It was traditionally prescribed for contusions, strains, swelling, rheumatism, fever, and conditions including schizophrenia and myasthenia gravis [4][5]. The modern scientific history of huperzine A began in 1986, when Chinese researchers led by Jia-Shan Liu isolated the compound from *H. serrata* and identified it as the primary bioactive constituent responsible for the plant's therapeutic effects [6]. Early laboratory evaluations in the 1980s revealed its AChE inhibitory activity, with an IC₅₀ value approximately 100 times lower than that of physostigmine, establishing it as a highly potent and selective inhibitor [6][7].
+Plants of the same family have been used in China for contusions, strains, swellings, schizophrenia, myasthenia gravis and organophosphate poisoning [2]. Huperzine A is a licensed Alzheimer's drug in China and is sold as a supplement in the US [11].
 
-Huperzine A received investigational new drug status from the State Food and Drug Administration of China in 1994 and was approved as a prescription drug for Alzheimer's disease in China in 1996 under the brand name Shuangyiping [5][8]. Outside China, it has not achieved regulatory approval as a pharmaceutical drug. In the United States, it has been classified as a dietary supplement ingredient since 1997, available without a prescription but not FDA-approved for treating any medical condition [9][10]. It is widely marketed globally in nootropic and cognitive enhancement formulations.
+Beyond blocking AChE, cell and animal studies suggest other actions [3][11]:
 
-Beyond its primary role as an AChE inhibitor, huperzine A exhibits multiple secondary pharmacological actions that contribute to its neuroprotective profile [2][11]:
+- **NMDA receptor antagonism:** It blocks NMDA receptors and potassium currents, which may add to its protection of nerve cells [3].
+- **Antioxidant properties:** It reduces oxidative stress and protects mitochondria [3][11].
+- **Beta-amyloid modulation:** It interferes with the processing of amyloid precursor protein and acts on Wnt signalling [3][75].
+- **Neuroprotection against ischemia:** It protects cells against damage from ischemia, glutamate and hydrogen peroxide, and regulates the apoptosis proteins Bcl-2, Bax, P53 and caspase-3 [3].
 
-- **NMDA receptor antagonism:** Weak antagonism of N-methyl-D-aspartate (NMDA) receptors reduces glutamate-induced excitotoxicity and calcium influx in neuronal cultures, protecting against excitotoxic neuronal damage [2][11].
-- **Antioxidant properties:** Enhances activities of endogenous antioxidant enzymes such as superoxide dismutase (SOD) and glutathione peroxidase (GSH-Px) while decreasing malondialdehyde (MDA) levels, a marker of oxidative stress [11].
-- **Beta-amyloid modulation:** In vitro studies show it reduces beta-amyloid (Aβ) aggregation and promotes non-amyloidogenic processing of amyloid precursor protein (APP) via PKC and Wnt/β-catenin signaling pathways [11].
-- **Neuroprotection against ischemia:** In animal models of stroke and brain injury, it reduces reactive oxygen species accumulation, upregulates antioxidant enzymes, and inhibits apoptosis pathways by modulating Bcl-2/Bax ratios and caspase-3 activation [12][13].
-
-The combination of cholinesterase inhibition with these additional neuroprotective mechanisms distinguishes huperzine A from conventional AChE inhibitors and has fueled ongoing research into its potential for Alzheimer's disease, vascular dementia, traumatic brain injury, and other neurological conditions.
+Most of this evidence comes from the lab. Whether huperzine A slows Alzheimer's disease in people is unproven [11].
 
 ## 2. Forms and Bioavailability
 
 ### Natural vs. Synthetic Huperzine A
 
-Huperzine A exists as two enantiomers: the (-)-form and the (+)-form. The naturally occurring and bioactive enantiomer is the (-)-form, characterized by (1R,9R,13E) stereochemistry, which confers the specific spatial arrangement critical for AChE binding [14][15]. This is the form found in *Huperzia serrata* extracts.
+Huperzine A exists as two mirror-image forms. The natural (-)-form is the active one: in rat brain tissue it blocked AChE 38-fold more strongly than the (+)-form [14].
 
-Synthetic huperzine A, produced via chemical synthesis, typically yields a racemic mixture containing both the active (-)-isomer and the inactive (+)-isomer in equal proportions [15]. Consequently, a racemic synthetic product contains only 50% of the active form. When purchasing synthetic huperzine A, the label should specify the amount of the active (-)-isomer; otherwise, the effective dose may be half of what is stated [15].
-
-The distinction matters clinically. In a US Phase II trial that used racemic (±)-huperzine A, only 50% of the administered dose was pharmacologically active, which may have contributed to the study's failure to meet its primary endpoint [16]. Products derived from natural *H. serrata* extracts contain exclusively the (-)-isomer and do not have this issue.
+Synthetic huperzine A is often a racemic mix of both forms. In lab tests the racemic mix was two- to three-fold less potent than natural (-)-huperzine A [14][66]. A label that does not say which form a product holds may overstate its active dose.
 
 ### Standardized Extracts
 
-Commercially available huperzine A supplements come in several forms:
-
-- **Standardized *Huperzia serrata* extract:** Typically standardized to 1% huperzine A by HPLC analysis, ensuring consistent potency across batches [17]. This is the most common supplement form and delivers exclusively the active (-)-isomer.
-- **Purified huperzine A:** Isolated compound, either from natural extraction or synthetic production. Natural purified huperzine A is the (-)-isomer; synthetic may be racemic unless specified.
-- **Oral tablets:** Pharmaceutical formulations used in Chinese clinical practice, typically dosed at 100-200 mcg per serving, taken once or twice daily [18].
+Chinese trials used tablets or capsules holding 50 mcg each, and in one 60-day trial in Alzheimer's disease the capsules and tablets worked equally well [64]. Supplements sold in the US often hold far more or less than the label says (see Supplement Quality Concerns) [48].
 
 ### Pharmacokinetics
 
-Huperzine A has remarkably favorable pharmacokinetic properties that support its use as an oral supplement [19][20][21]:
+Huperzine A is absorbed quickly, spreads widely through the body and is cleared at a moderate rate [3][21]:
 
-**Absorption:** Rapidly absorbed following oral administration, with detectable plasma levels appearing within 5-10 minutes and peak concentrations (Tmax) achieved in approximately 1 hour (range: 58-80 minutes). Oral bioavailability is estimated at approximately 96%, reflecting nearly complete absorption with minimal first-pass metabolism [19][20].
+**Absorption:** In 12 healthy volunteers given a single 0.4 mg tablet, it appeared in the blood within 5-10 min and peaked at a mean of 58.33 min [19]. In six volunteers given 0.99 mg, the peak came at 79.6 min [21].
 
-**Distribution:** Distributes widely throughout the body with an apparent volume of distribution (V/F) of approximately 104 L (about 1.5 L/kg), reflecting extensive tissue distribution [21]. Critically, huperzine A efficiently penetrates the blood-brain barrier, with preclinical data indicating favorable brain-to-plasma partitioning that enables therapeutic concentrations in neural tissue [21].
+**Distribution:** It crosses the blood-brain barrier better than tacrine, donepezil and rivastigmine, and has higher oral bioavailability [3].
 
-**Metabolism:** Metabolism is minimal. Human liver microsome studies show low conversion rates with no significant involvement of major cytochrome P450 enzymes such as CYP3A4. The compound is predominantly eliminated unchanged, which means pharmacokinetic drug interactions via CYP450 pathways are unlikely [22][19].
+**Metabolism:** Human liver microsomes did not break it down within 90 min, and it had negligible effects on the main CYP enzymes, so interactions through these enzymes are unlikely [22].
 
-**Elimination:** The elimination half-life ranges from 10-14 hours, enabling once- or twice-daily dosing regimens [22][19]. Excretion occurs primarily via the renal route, with approximately 35% of the dose recovered unchanged in urine within 48 hours. No major active metabolites have been identified [22].
-
-**Dose proportionality:** Pharmacokinetics exhibit dose proportionality, supporting linear and predictable exposure across therapeutic doses [22]. Huperzine A acts as a substrate for P-glycoprotein, which may influence its transport in certain physiological contexts [22].
+**Elimination:** In healthy men, the half-life averaged 12.092 h [65]. In older adults given 0.1 mg, 35% of the dose was excreted unchanged in urine within 48 h [22].
 
 ### Comparison with Prescription AChE Inhibitors
 
-In comparative studies, huperzine A demonstrates several pharmacological advantages over prescription AChE inhibitors:
-
-| Property | Huperzine A | Donepezil | Rivastigmine |
-|----------|:-----------:|:---------:|:------------:|
-| AChE selectivity (vs. BuChE) | ~900-fold | ~500-fold | Non-selective |
-| Potency (cortical ACh elevation) | 8x more potent (molar basis) | Reference | Variable |
-| Effective dose range (animal) | 0.25-0.75 umol/kg | 2-6 umol/kg | Variable |
-| Half-life | 10-14 hours | ~70 hours | ~2 hours |
-| CYP450 metabolism | Minimal | CYP2D6/3A4 | Non-hepatic |
-| Oral bioavailability | ~96% | ~100% | ~36% |
-
-Sources: [2][23][22][19]
-
-Huperzine A's approximately 900-fold selectivity for AChE over butyrylcholinesterase (BuChE) is higher than that of donepezil (~500-fold) [2][24]. In rat models, huperzine A is approximately 8-fold more potent than donepezil in elevating cortical acetylcholine levels on a molar basis and exhibits a longer duration of AChE inhibition and ACh elevation [23].
+Compared with tacrine, donepezil and rivastigmine, huperzine A blocks AChE for longer [3]. In rats, it was 8- and 2-fold more potent than donepezil and rivastigmine, molecule for molecule, at raising acetylcholine in the brain cortex, and its effect lasted longest [23]. Donepezil, but not huperzine A, caused muscle twitching in that study [23].
 
 ### Binding Mechanism
 
-The binding of huperzine A to AChE occurs within the enzyme's catalytic anionic site (CAS) in the active-site gorge. X-ray crystallographic studies at 2.5 angstrom resolution have revealed the binding orientation in detail [24]. The compound forms hydrogen bonds with key residues such as Tyr337 and His447, while engaging in hydrophobic interactions with aromatic amino acids including Trp86, Phe338, and Tyr341. Unlike organophosphate nerve agents, huperzine A does not form a covalent bond to the catalytic serine residue — its inhibition is entirely non-covalent and reversible [24][2].
+The crystal structure of AChE bound to huperzine A, solved at 2.5 A resolution, shows the drug sitting in the enzyme's active-site gorge in an unexpected orientation [24]. Few strong direct bonds hold it; hydrophobic contacts with aromatic amino acids matter most [24]. The binding is reversible [3].
 
 ## 3. Evidence for Benefits
 
 ### Alzheimer's Disease
 
-Huperzine A is the most extensively studied indication, with multiple randomized controlled trials and several meta-analyses evaluating its effects on mild to moderate Alzheimer's disease.
+Alzheimer's disease is the most studied use, with several randomised trials and meta-analyses, mostly from China [26].
 
-**Chinese Phase IV Multicenter Trial (n=202):** A pivotal 12-week multicenter RCT in China enrolled 202 patients with mild to moderate AD. Participants received 400 mcg/day of huperzine A. The treatment group showed statistically significant improvements in cognitive function, behavioral symptoms, and activities of daily living compared to placebo, with marked responder rates for memory and overall cognition [2][25].
+**Chinese multicentre trial (n=202):** A 12-week placebo-controlled trial at 15 centres in China gave 202 people with mild to moderate Alzheimer's disease 400 mcg of huperzine A a day or placebo. A gain of at least 4 points on the ADAS-Cog cognitive scale occurred in 56.1% of the huperzine A group and 12.5% of the placebo group [25]. In an earlier 8-week Chinese trial, 29 of 50 people given 0.2 mg twice a day improved in memory, cognition and behaviour, against 19 of 53 on placebo [63].
 
-**US Phase II Multicenter Trial (NCT00083590, n=210):** A Phase II trial in the United States enrolled 210 patients with mild to moderate AD to evaluate racemic (±)-huperzine A at 200 mcg twice daily (400 mcg/day total) over 16 weeks [16]. The study did not meet its primary endpoint on the ADAS-Cog scale (mean change: -0.7 points for huperzine A vs. -1.5 for placebo; p=0.64). However, secondary analyses revealed a potentially meaningful 2.27-point ADAS-Cog improvement at week 11 in a subgroup analysis (p=0.001) [16]. Important caveats: the study used racemic huperzine A (only 50% active isomer), faced funding delays that limited full enrollment and follow-up, and the positive subgroup finding may reflect statistical chance in a trial that failed its primary outcome.
+**US Phase II Multicenter Trial (n=210):** A US trial randomised 210 people with mild to moderate Alzheimer's disease to placebo or huperzine A at 200 mcg or 400 mcg twice daily for at least 16 weeks [16]. The 200 mcg dose, the main test, did not change ADAS-Cog scores at 16 weeks. In secondary analyses, 400 mcg twice daily gave a 2.27-point ADAS-Cog improvement at 11 weeks, against a 0.29-point decline on placebo (p = 0.001); at week 16 the gap was smaller (1.92-point vs 0.34-point improvement, p = 0.07) [16]. Global ratings, behaviour and daily living did not change at either dose [16].
 
-**2013 Meta-Analysis (20 RCTs, n=1,823):** A systematic review and meta-analysis of 20 randomized controlled trials involving 1,823 AD patients, predominantly from Chinese trials, found that huperzine A produced significant improvements in [26]:
-- Cognitive function: MMSE weighted mean difference (WMD) of 2.81 points (95% CI: 1.87-3.76; p<0.00001)
-- Activities of daily living: WMD of 1.92 (95% CI: 1.06-2.77; p<0.0001)
-- Global clinical assessment compared to placebo
-- Effects were most pronounced at 12-16 weeks of treatment
+**2008 Cochrane review (6 RCTs, n=454):** Six trials with 454 patients found that huperzine A improved MMSE scores compared with placebo (WMD 2.81; 95% CI 1.87 to 3.76), along with function and global ratings [58]. Only one study was of adequate quality and size, and the authors found the evidence inadequate to make any recommendation [58].
 
-**2014 Updated Meta-Analysis (10 RCTs):** An expanded meta-analysis of 10 RCTs (8 for AD, 2 for vascular dementia) confirmed and extended these findings, reporting a WMD of 2.79 points on MMSE for AD (95% CI: 1.83-3.74; p<0.00001), with benefits also demonstrated for activities of daily living and cognition for both AD and vascular dementia [27].
+**2013 Meta-Analysis (20 RCTs, n=1,823):** A review of 20 trials with 1,823 participants found benefits on MMSE at 8, 12 and 16 weeks and on daily living activities, but most trials had a high risk of bias and the authors urged caution [26].
 
-**2025 Review:** A review incorporating post-2020 data reinforced these conclusions, highlighting consistent modest neuroprotective endpoints such as preserved neuronal integrity in imaging studies. The review emphasized the need for larger Western cohorts to confirm generalizability [28].
+**2014 Updated Meta-Analysis (10 RCTs):** Eight Alzheimer's trials (733 participants) and two vascular dementia trials (92 participants) showed better MMSE and daily living scores, and longer treatment gave more benefit in Alzheimer's disease [27].
 
-**Ongoing Trial (NCT07066826):** A multicenter randomized controlled trial registered in 2024 is planned to evaluate the efficacy and safety of huperzine A controlled-release tablets in patients with mild-to-moderate AD, incorporating active comparators like donepezil. As of November 2025, the trial has not yet begun recruitment [29].
+**2009 Meta-Analysis (4 RCTs):** Four trials found that 300-500 microg daily for 8-24 weeks improved MMSE and daily living scores, with no serious adverse events [59].
 
-**Limitations of the evidence base:** Clinical studies face notable limitations including small sample sizes (often fewer than 100 per arm), brief durations (typically 8-16 weeks), and a predominance of trials from Asia, raising concerns about publication bias and generalizability. Funnel plot asymmetry in meta-analyses suggests up to 20% selective reporting [26][27]. Statistical outcomes reflect moderate effect sizes for cognition (Cohen's d approximately 0.5 across pooled MMSE and ADAS-Cog data), establishing clinical relevance for symptom management but no evidence of mortality reduction or disease modification (HR 0.98; 95% CI: 0.85-1.13) [26][27].
+**Limitations of the evidence base:** Most trials were small, short and from China, and reviewers rated their methods poorly [26][58]. Whether huperzine A changes the course of the disease is unproven [11].
 
 ### Vascular Dementia
 
-Huperzine A has demonstrated benefit in vascular dementia (multi-infarct dementia), supported by both individual trials and meta-analytic data.
+Evidence in vascular dementia (multi-infarct dementia) is mixed.
 
-**Huperzine A with Hyperbaric Oxygen (n=120):** A 2021 randomized trial of 120 elderly patients with vascular dementia compared huperzine A (0.1 mg [100 mcg] twice daily) combined with hyperbaric oxygen therapy versus huperzine A alone. After four weeks, the combination group showed significantly improved cognitive scores compared to huperzine A alone [30]:
-- MMSE: 25.15 vs. 22.63
-- Hasegawa Dementia Scale-Revised (HDS-R): 25.44 vs. 21.37
-- Disease control rate: 98.33% in the combination group
+**Chinese placebo-controlled trial (n=78):** In a 12-week trial of 78 people with mild to moderate vascular dementia, huperzine A 0.1 mg twice a day improved MMSE, CDR and daily living scores, while the vitamin C placebo group did not change; no serious adverse events were recorded [61].
 
-**Meta-analytic data:** Recent meta-analyses indicate that huperzine A outperforms donepezil in MMSE improvements specifically for vascular dementia, highlighting its neuroprotective benefits in cerebrovascular contexts [31]. The 2014 meta-analysis that included 2 vascular dementia trials alongside 8 AD trials found significant benefits for both conditions [27].
-
-**ConsumerLab assessment:** Huperzine A has been shown to improve memory, thinking, and behavioral function in people with multi-infarct dementia and senile dementia in limited studies [15].
+**Meta-analytic data:** The 2014 meta-analysis pooled two vascular dementia trials and found better MMSE and daily living scores [27]. A 2009 Cochrane review, which could include only one small trial of 14 participants, found no significant benefit on MMSE (WMD 2.40; 95% CI -4.78 to 9.58) and called for more research [60].
 
 ### Senile and Pre-Senile Dementia
 
-Lower doses of huperzine A (30 mcg twice daily) have been used in studies of senile or pre-senile dementia, though the evidence base is smaller than for Alzheimer's disease [15]. The clinical distinction between these categories and formal AD/vascular dementia diagnoses is important, as older Chinese studies sometimes used broader diagnostic criteria.
+An older Chinese trial gave huperzine A by intramuscular injection, not by mouth: 0.05 mg twice a day for 4 weeks to 56 people with multi-infarct or senile dementia, and 0.03 mg twice a day for 2 weeks to 104 people with senile and presenile memory disorders [46]. Memory scores improved significantly compared with saline injections [46]. A 2012 Cochrane review found no placebo-controlled trials of huperzine A in mild cognitive impairment [62].
 
 ### Memory Enhancement in Healthy Adolescents
 
-**Adolescent memory trial (34 matched pairs):** A controlled trial involving 34 pairs of matched healthy adolescent students found that huperzine A capsules at 100 mcg twice daily enhanced memory and learning performance over four weeks, as measured by standardized cognitive tests [32]. These findings suggest cholinergic modulation may enhance cognitive performance in healthy young people, though the small sample size and limited duration mean larger randomized trials are needed before drawing firm conclusions.
+**Adolescent memory trial (34 matched pairs):** In a double-blind trial, 34 matched pairs of junior middle school students who said their memory was poor took two 50 mcg capsules of huperzine A or placebo twice daily for 4 weeks [32]. Memory quotient scores ended higher with huperzine A (115 vs 104) [32]. The trial was small and short, so larger trials are needed before drawing conclusions.
 
 ### Traumatic Brain Injury
 
-**US TBI Trial (n=14):** A 12-week study of 14 people in the United States with moderate or severe traumatic brain injuries found that huperzine A did NOT improve memory performance compared to placebo [33]. The dose was escalated every four days from 100 mcg in the mornings to 200 mcg twice daily to 300 mcg twice daily. Notably, those taking placebo improved more than those taking huperzine A, although the difference was not statistically significant. This suggests both a strong placebo effect in this population and the possibility of a detrimental effect of huperzine A in TBI [33].
-
-**Preclinical TBI data:** In contrast to the human trial, preclinical evidence in mice with traumatic brain injury showed that huperzine A (0.5 mg/kg) limited secondary damage by suppressing pro-inflammatory cytokines and apoptosis, resulting in improved behavioral outcomes including reduced sensorimotor deficits [13]. The disconnect between promising animal data and the negative human trial highlights the need for caution in extrapolating preclinical findings.
+**US TBI Trial:** A US phase II randomised, double-blind pilot trial in moderate to severe traumatic brain injury found no difference in memory between huperzine A and placebo after 12 weeks [33]. Learning and memory improved significantly in the placebo group, and the authors explained the gains in both groups as a placebo effect [33].
 
 ### Myasthenia Gravis
 
-Huperzine A has been investigated for myasthenia gravis, where it acts as a cholinergic enhancer to alleviate muscle weakness by prolonging acetylcholine availability at neuromuscular junctions.
-
-**128-patient study:** A study of 128 patients with myasthenia gravis treated with huperzine A reported symptom improvement or control in 99% of cases, with a longer duration of action compared to neostigmine and fewer side effects such as fasciculation and dizziness [7]. Small case series have shown relief of symptoms including ptosis and limb weakness at doses of 100-200 mcg daily [34].
+Huperzine A has been given to people with myasthenia gravis in China, and plants of its family were used for the disease in traditional medicine [2][46].
 
 ### Epilepsy (Preclinical Only)
 
-Huperzine A has demonstrated anticonvulsant effects in rodent models of epilepsy, primarily through enhancement of GABAergic transmission, which reduces neuronal excitability and elevates the seizure threshold [35]. In mice subjected to 6 Hz-induced seizures, doses of 0.56 to 1 mg/kg provided robust protection against convulsive activity [36]. These preclinical findings remain to be validated in human trials.
+In mice, huperzine A at 0.56 or 1 mg/kg protected against seizures induced by 6 Hz stimulation, pentylenetetrazole and maximal electroshock, including in mouse models of Dravet syndrome [36]. Muscarinic and GABA-A receptors played a role [36]. These preclinical findings remain to be validated in human trials.
 
 ### Organophosphate Poisoning and Nerve Agent Protection (Preclinical)
 
-One of the more unusual research applications of huperzine A is as a potential pretreatment against organophosphate (OP) poisoning, including chemical nerve agents. Because huperzine A reversibly occupies the AChE active site, it can protect the enzyme from irreversible phosphorylation by nerve agents. Once the OP exposure passes, huperzine A dissociates and AChE function is restored [37].
-
-**Guinea pig soman study:** In guinea pigs challenged with 1.5 times the LD₅₀ of soman (a nerve agent), pretreatment with 0.3 mg/kg huperzine A achieved 100% 24-hour survival when co-administered with 10 mg/kg atropine, compared to much lower survival without pretreatment [38].
-
-**Mouse methyl parathion study:** Sustained-release formulations of huperzine A in mice exposed to methyl parathion (a common organophosphate pesticide) showed survival rates of 80-100% at 1.2 times the LD₅₀, representing an increase of over 50% relative to controls [39].
-
-These effects are limited to pretreatment scenarios — post-exposure administration shows reduced effectiveness. No human clinical data exist for this application [37].
+Huperzine A binds AChE reversibly and crosses into the brain, so it has been tested as a pretreatment to protect AChE from nerve agents such as soman [38]. A 2002 review concluded it has value for this use and appears free of harmful effects in healthy subjects [38].
 
 ### Parkinson's Disease (Preclinical Only)
 
-Emerging research has explored huperzine A's potential for non-motor symptoms of Parkinson's disease, particularly cognitive impairment. In a murine MPTP-induced Parkinson's model, huperzine A injections ameliorated cognitive deficits by enhancing learning and memory while regulating inflammation and apoptosis pathways in the substantia nigra and striatum [40]. Human studies are needed.
+In mice with MPTP-induced Parkinson's-like disease, huperzine A injection improved movement, learning and memory, and protected dopamine-producing neurons [40]. Human studies are needed.
 
 ### Neuroprotection Against Beta-Amyloid Toxicity (Preclinical)
 
-In vitro studies demonstrate that huperzine A at concentrations of 1-10 uM shields neuronal cells from beta-amyloid (Aβ) toxicity by decreasing Aβ-induced oxidative stress and preventing mitochondrial dysfunction, with up to 50% reduction in cell death in Aβ-exposed PC12 cells [5]. While these findings support the mechanistic rationale for disease-modifying potential in Alzheimer's, they have not yet translated into demonstrated disease modification in human trials.
+Lab studies show huperzine A protects neurons against beta-amyloid-induced oxidative injury and mitochondrial dysfunction [11]. Whether this slows Alzheimer's disease in people is unproven [11].
 
 ### Combination with Prescription AChE Inhibitors
 
-Some studies suggest huperzine A may enhance the effects of prescription AChE inhibitors donepezil (Aricept) or tacrine (Cognex), potentially permitting lower doses of these drugs and fewer side effects from them [15]. However, combining huperzine A with prescription AChE inhibitors carries significant risk of excessive cholinergic stimulation and should only be done under close medical supervision (see Drug Interactions section).
+Huperzine A acts on the same enzyme as donepezil, rivastigmine and galantamine [3][69]. Taking them together may add to cholinergic side effects, so combine them only on your doctor's advice (see Drug Interactions).
 
 ### Summary of Clinical Evidence
 
 | Condition | Evidence Level | Direction | Key Findings |
 |-----------|:-------------:|:---------:|--------------|
-| Alzheimer's disease (mild-moderate) | Multiple RCTs + meta-analyses | Positive | MMSE improvement ~2.8 points; ADL improvement; primarily Chinese trials |
-| Vascular dementia | Several RCTs | Positive | MMSE and HDS-R improvements; may outperform donepezil |
-| Senile/pre-senile dementia | Limited trials | Positive | Lower doses (30 mcg twice daily) used |
-| Healthy adolescent memory | 1 small trial | Positive | 100 mcg twice daily improved memory over 4 weeks |
-| Traumatic brain injury | 1 small trial | Negative | No benefit; possible detrimental effect |
-| Myasthenia gravis | 1 large case series | Positive | 99% symptom improvement/control |
+| Alzheimer's disease (mild-moderate) | Multiple RCTs + meta-analyses | Positive, low-quality trials | MMSE and daily living gains in pooled Chinese trials; largest US trial missed its main goal |
+| Vascular dementia | Two small RCTs | Mixed | One positive trial; Cochrane found one small trial with no significant benefit |
+| Senile/pre-senile dementia | One older trial | Positive | Injected, not oral |
+| Mild cognitive impairment | No placebo-controlled trials | Unknown | Cochrane 2012 |
+| Healthy adolescent memory | 1 small trial | Positive | Memory scores improved over 4 weeks |
+| Traumatic brain injury | 1 small trial | Negative | No benefit over placebo |
+| Myasthenia gravis | Traditional and clinical use in China | Unclear | No trial results |
 | Epilepsy | Preclinical only | Promising | Anticonvulsant effects in rodent models |
 | Organophosphate protection | Preclinical only | Promising | Pretreatment protection in animal models |
 | Parkinson's (cognitive) | Preclinical only | Promising | Improved cognition in mouse models |
@@ -182,158 +160,114 @@ Some studies suggest huperzine A may enhance the effects of prescription AChE in
 
 ### Dosing by Indication
 
-The following dosing ranges are derived from clinical trials and expert supplement guidelines:
+These doses come from clinical trials:
 
-**Alzheimer's disease (mild to moderate):** 200-400 mcg per day, typically administered as 100-200 mcg twice daily [15][18][26]. The Chinese prescription dose is 200-400 mcg/day in divided doses. Most positive clinical trials used doses in this range for 8-16 weeks.
+**Alzheimer's disease (mild to moderate):** Chinese trials used 400 mcg a day, often as 0.2 mg twice a day, for 8 to 12 weeks [25][63]. The 2009 meta-analysis covered 300-500 microg daily for 8-24 weeks [59]. The US trial tested 200 and 400 mcg twice daily; only the higher dose showed any benefit, in secondary analyses [16].
 
-**Vascular dementia:** 100-200 mcg per day, typically as 100 mcg twice daily [30][31]. The 2021 combination trial with hyperbaric oxygen used 100 mcg twice daily (200 mcg/day total) [30].
+**Vascular dementia:** 0.1 mg twice a day for 12 weeks in the positive trial [61].
 
-**Senile or pre-senile dementia:** 30 mcg twice daily (60 mcg/day total). This lower dose has been used in studies targeting age-related cognitive decline that does not meet formal Alzheimer's criteria [15].
+**Senile and presenile memory disorders:** The doses used (0.03 mg and 0.05 mg twice a day) were intramuscular injections, so they do not translate to supplement doses [46].
 
 **Memory enhancement (healthy individuals):** 100 mcg twice daily (200 mcg/day total), based on the adolescent memory trial [32]. Evidence for this indication is limited to a single small trial.
 
-**General cognitive support (supplement use):** 50-200 mcg once or twice daily is the range typically found in dietary supplements [15][18]. Starting at the lower end (50-100 mcg/day) and titrating upward based on tolerance is a common approach.
+**General cognitive support (supplement use):** No dose is established for general memory support; the only trial in healthy people studied adolescents [32].
 
 ### Practical Dosing Considerations
 
-**Timing:** Given the 10-14 hour half-life, once-daily dosing may be sufficient for general supplementation, while twice-daily dosing provides more consistent acetylcholine elevation throughout the day and is preferred in clinical settings [19][22].
+**Timing:** The long half-life (see Pharmacokinetics) suits twice-daily dosing, which most trials used [16][25][61].
 
-**Cycling:** Due to limited long-term safety data beyond 24 weeks, some expert supplement guidelines recommend cycling regimens such as 4-6 weeks of daily use followed by 1-2 weeks off, to potentially avoid tolerance or persistent side effects like nausea [41][42]. However, this recommendation is based on theoretical considerations rather than comparative trial data.
-
-**Starting dose:** Begin at the lower end of the dose range (50-100 mcg/day) and increase gradually over 1-2 weeks, monitoring for cholinergic side effects such as nausea, diarrhea, or dizziness [42][43].
-
-**With food:** While there is no specific data on food effects with huperzine A absorption, taking it with food may reduce gastrointestinal side effects.
-
-**Form selection:** Natural *Huperzia serrata* extract (standardized to 1% huperzine A) contains exclusively the active (-)-isomer and is preferred over synthetic racemic products. If using a synthetic product, ensure the label specifies the amount of the active (-)-isomer [15][17].
+**Form selection:** Natural (-)-huperzine A is more potent than the racemic synthetic mix [14][66], so a label that names the form and amount of (-)-huperzine A is easier to dose.
 
 ### Dose Comparison with Prescription AChE Inhibitors
 
-For context, the typical doses of prescription AChE inhibitors for Alzheimer's disease are:
-- Donepezil (Aricept): 5-10 mg/day (5,000-10,000 mcg/day)
-- Rivastigmine (Exelon): 6-12 mg/day (6,000-12,000 mcg/day)
-- Galantamine (Razadyne): 16-24 mg/day (16,000-24,000 mcg/day)
-
-Huperzine A is effective at doses 25-100 times lower (200-400 mcg/day), reflecting its higher potency for AChE inhibition on a molar basis [23].
+Direct dose comparisons come from rats: huperzine A raised acetylcholine in the brain cortex at 0.25-0.75 micromol/kg, against 2-6 micromol/kg for donepezil [23].
 
 ## 5. Safety and Side Effects
 
 ### Overall Safety Profile
 
-Huperzine A is generally well-tolerated in clinical trials at therapeutic doses. A meta-analysis of randomized controlled trials for Alzheimer's disease found that overall adverse event rates showed no significant difference between huperzine A and placebo (relative risk 1.27; 95% CI: 0.97-1.66) [44].
+In trials, side effects were mostly mild and cholinergic. The 2008 Cochrane review found no significant difference in adverse events between huperzine A and control groups, and the 2013 meta-analysis found no trial reporting severe adverse events [26][58][59].
 
 ### Common Side Effects
 
-Most adverse effects are mild, transient, and related to huperzine A's cholinergic mechanism of action [44][45]:
+Most adverse effects are mild, transient, and related to huperzine A's cholinergic mechanism of action [27][59]:
 
-- **Nausea and vomiting:** The most commonly reported side effect. In the meta-analysis of AD trials, nausea or vomiting occurred in approximately 4.2% of the huperzine A group (15 out of 360 patients) compared to 1.3% in the placebo group (5 out of 373 patients), a statistically significant difference [44].
-- **Diarrhea:** Due to cholinergic stimulation of gastrointestinal motility.
-- **Dry mouth:** Paradoxically, despite the overall increase in cholinergic activity.
-- **Sweating:** Cholinergic stimulation of sweat glands.
+- **Nausea:** Mild to moderate nausea was the only notable side effect in a 60-day trial [64].
+- **Dizziness:** A few patients in an older trial felt slight dizziness [46].
+- **Insomnia and ankle swelling:** These were mild and short-lived, and affected 3% of the huperzine A group in the Chinese multicentre trial [25].
 
 ### Less Common Side Effects
 
-These effects have been reported across trials but generally affect fewer than 5% of participants [44][45]:
-
-- Headache
-- Dizziness
-- Insomnia
-- Blurred vision
-- Muscle cramps
-- Abdominal pain
-- Bradycardia (slowed heart rate)
+Drugs that block AChE can slow the heart and cause fainting (see Cardiac Effects) [68].
 
 ### Dose-Related Effects
 
-Adverse effects are dose-related, with gastrointestinal upset increasing at doses above 400 mcg daily [46]. Symptoms are typically reversible upon discontinuation. At higher doses, additional cholinergic symptoms may include [46]:
-
-- Tachycardia (as a compensatory response)
-- Intense or vivid dreams
-- Arthralgia (joint pain)
-
-These remain rare and mild at recommended doses.
+The US trial's highest dose was 400 mcg twice daily, given for at least 16 weeks [16]. Overdose can cause cholinergic poisoning (see Cholinergic Crisis) [67].
 
 ### Discontinuation Rates
 
-In the US Phase II trial of mild to moderate Alzheimer's disease, adverse events led to approximately 8% discontinuation (17 out of 210 participants), with nausea being the most frequent cause [45]. Discontinuation rates were dose-dependent: 14 out of 68 participants at 400 mcg twice daily discontinued, compared to 10 out of 69 at 200 mcg twice daily [45].
+In the US trial, 177 of the 210 people randomised completed the treatment phase [16].
 
 ### Cholinergic Crisis (Overdose)
 
-In overdose situations, huperzine A can precipitate a cholinergic crisis characterized by [47]:
-- Excessive salivation
-- Lacrimation (tearing)
-- Bronchial secretions
-- Muscle tremors
-- Drooling
-- Bradycardia
-- Potentially life-threatening respiratory depression
+Two people drank tea made by mistake from fir club moss (*Lycopodium selago*) and developed sweating, vomiting, diarrhoea, dizziness, cramps and slurred speech [67]. The plant held enough huperzine A to explain the poisoning, and the authors expected atropine to help [67].
 
-This presentation is similar to overdose with other acetylcholinesterase inhibitors and requires emergency medical treatment.
+If someone has these symptoms after taking huperzine A, or faints or has trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 ### Cardiac Effects
 
-Huperzine A can decrease heart rate through enhanced vagal tone and must be used with caution in patients with cardiac conduction disorders, sick sinus syndrome, or existing bradycardia [15][47]. ECG monitoring is advisable in patients with known cardiac conditions [47].
+Cholinesterase inhibitors can slow the heart. In older adults with dementia in Ontario, Canada, those taking these drugs had more hospital visits for fainting (HR 1.76; 95% CI 1.57 to 1.98) and for slow heart rate (HR 1.69; 95% CI 1.32 to 2.15), and more pacemaker insertions and hip fractures, than those who were not [68]. That study looked at prescription drugs; huperzine A acts on the same enzyme [3]. Use it with caution if you have heart disease, a slow pulse or a heart rhythm problem, and ask your doctor first. If you faint, or have a very slow pulse with dizziness, chest pain or breathlessness, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 ### Conditions That May Be Worsened
 
-Because huperzine A increases cholinergic activity, it may theoretically exacerbate [15][42][43]:
+Because huperzine A increases cholinergic activity, it may worsen some conditions:
 
-- **Gastrointestinal obstruction:** Increased GI motility may worsen obstructive conditions.
-- **Urinary tract obstruction:** Cholinergic stimulation increases detrusor muscle contraction.
-- **Peptic ulcer disease:** Enhanced gastric acid secretion.
-- **Asthma and COPD:** Bronchoconstriction from cholinergic stimulation of airway smooth muscle.
+- **Gastrointestinal obstruction:** In theory, extra acetylcholine may increase gut movement and worsen a blockage. Ask your doctor first.
+- **Urinary tract obstruction:** Cholinesterase inhibitors may add to new or worsening urinary incontinence [70]. With a bladder outlet blockage, ask your doctor first.
+- **Peptic ulcer disease:** In older Swedish adults, cholinesterase inhibitors alone did not raise peptic ulcer risk (IRR 1.0, 0.9 to 1.2), but with NSAID painkillers the risk rose more (IRR 9.0, 6.8 to 11.8) than with NSAIDs alone (IRR 5.2, 4.4 to 6.0) [74].
+- **Asthma and COPD:** Acetylcholine narrows the airways and increases mucus, so these drugs may worsen COPD [71]. A small chart review found a trend to more COPD flare-ups in the first 90 days (10 of 52 vs 3 of 42; P = 0.133), but a large Ontario cohort found no higher risk of exacerbations (RR 1.02; 95% CI 0.91, 1.15) [71][72]. With asthma or COPD, ask your doctor first.
+- **Epilepsy:** In older adults with dementia, cholinesterase inhibitors did not raise seizure risk straight away, though the risk rose after one year of continued use [73]. In mice, huperzine A protected against seizures [36]. With epilepsy, ask your doctor first.
 
 ### Long-Term Safety
 
-Most clinical trials lasted 8-24 weeks, limiting data on extended exposure [45]. Long-term use has not shown evidence of tolerance development or withdrawal symptoms in available clinical trials, but the absence of evidence is not evidence of absence [45]. Due to this lack of robust long-term safety data beyond 24 weeks, cycling protocols (4-6 weeks on, 1-2 weeks off) have been suggested as a precautionary approach [41][42].
+Most trials lasted 8-24 weeks, so data on longer use are limited [59].
 
 ### Pregnancy and Lactation
 
-There is insufficient evidence on the safety of huperzine A during pregnancy and lactation. Use is not recommended in these populations [42][43].
+There is insufficient evidence on the safety of huperzine A during pregnancy and lactation. Use is not recommended in these populations.
 
 ### Special Populations
 
-**Elderly patients:** Individuals over 65 years, particularly those with Alzheimer's disease, may be more susceptible to confusion or exacerbated cognitive symptoms from cholinergic effects, as observed in trial populations predominantly over 65. Monitoring for cholinergic excess is recommended, with gastrointestinal issues contributing to approximately 15% of trial dropouts in some studies [44].
+**Elderly patients:** Fainting, slow heart rate and hip fracture were more common in older adults with dementia taking prescription cholinesterase inhibitors [68].
 
-**Renal impairment:** Given that approximately 35% of huperzine A is excreted unchanged in urine, dose adjustments may be warranted in patients with significant renal impairment, though formal pharmacokinetic studies in this population have not been published [22].
+**Renal impairment:** In older adults, 35% of a dose left the body unchanged in urine within 48 h, so the kidneys clear much of it [22]. With significant kidney disease, ask your doctor before using it.
 
 ### Supplement Quality Concerns
 
-An analysis of 22 supplements listing huperzine A as an ingredient, purchased online in the US, found alarming quality issues [48]:
+A 2020 laboratory analysis of 22 supplements labelled as containing huperzine A found [48]:
 
-- Only 2 of the 22 products (9%) contained within 10% of the labeled amount of huperzine A.
-- 16 products (73%) contained ingredients not listed on the label.
-- 9 products (41%) contained ingredients not approved for use in dietary supplements or pending FDA decision, including stimulants such as demelverine, 1,5-dimethylhexylamine, vinpocetine, noopept, and hordenine (on the FDA's Dietary Supplement Ingredients Advisory List).
-- One product labeled as "decaffeinated" was found to contain caffeine.
+- Only two held huperzine A within 10% of the declared amount; measured amounts ranged from below the limit of quantification to 267.1 µg/serving.
+- Sixteen (73%) had at least one labelled ingredient that the analysis did not detect, and 16 (73%) held compounds not on the label.
+- Nine (41%) listed ingredients that do not meet FDA rules for supplement ingredients. Stimulants detected included higenamine and halostachine, and also hordenine, an ingredient on an FDA advisory list.
 
-This underscores the importance of selecting supplements from reputable manufacturers that provide third-party testing and certificates of analysis.
+Products with independent third-party testing may lower these risks; consumerlab.com and Labdoor test some supplements.
 
 ## 6. Drug Interactions
 
 ### Cholinergic Drugs (Major Interaction)
 
-The most clinically significant interactions involve other cholinergic agents. Huperzine A combined with prescription AChE inhibitors can produce additive or synergistic cholinergic effects, potentially causing toxicity [15][42][43]:
+Huperzine A blocks AChE, as do the dementia drugs donepezil, rivastigmine and galantamine [3][69]. Taking it with them, or with other drugs that boost acetylcholine, may add to cholinergic side effects. Examples:
 
-| Drug | Class | Interaction | Risk Level |
-|------|-------|-------------|:----------:|
-| Donepezil (Aricept) | AChE inhibitor | Additive AChE inhibition; increased cholinergic toxicity risk | Major |
-| Rivastigmine (Exelon) | AChE/BuChE inhibitor | Additive cholinesterase inhibition | Major |
-| Galantamine (Razadyne) | AChE inhibitor + nicotinic modulator | Additive cholinergic effects | Major |
-| Tacrine (Cognex) | AChE inhibitor | Additive cholinergic effects | Major |
-| Neostigmine (Prostigmin) | Peripheral AChE inhibitor | Additive effects at neuromuscular junction | Major |
-| Pyridostigmine (Mestinon) | Peripheral AChE inhibitor | Additive effects; used in myasthenia gravis | Major |
-| Physostigmine | AChE inhibitor | Additive central and peripheral effects | Major |
-| Bethanechol (Urecholine) | Direct cholinergic agonist | Additive cholinergic stimulation | Moderate |
-| Edrophonium (Reversol) | Short-acting AChE inhibitor | Additive effects during diagnostic use | Moderate |
-| Echothiophate (Phospholine Iodide) | Irreversible AChE inhibitor (ophthalmic) | Systemic absorption may cause additive effects | Moderate |
-| Succinylcholine (Anectine, Quelicin) | Depolarizing neuromuscular blocker | Huperzine A may prolong neuromuscular blockade | Moderate |
+- Dementia drugs: donepezil, rivastigmine, galantamine
+- Myasthenia gravis drugs: pyridostigmine, neostigmine
+- Other cholinergic drugs: bethanechol, physostigmine, echothiophate eye drops
+- Succinylcholine, a muscle relaxant used in anaesthesia; a review lists general anaesthetic agents among the main interaction concerns for cholinesterase inhibitors [69]
 
-Signs of excessive cholinergic stimulation include excessive salivation, bradycardia, muscle weakness, nausea, vomiting, diarrhea, and in severe cases, respiratory depression [42][43].
-
-Some studies have suggested that huperzine A may enhance the effects of donepezil or tacrine, potentially permitting lower doses of these drugs and fewer side effects [15]. However, this combination approach should only be attempted under close physician supervision with appropriate monitoring.
+Signs of excess cholinergic effect include sweating, vomiting, diarrhoea, dizziness, cramps and slurred speech [67]. For severe symptoms, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 ### Anticholinergic Drugs (Opposing Interaction)
 
-Huperzine A increases acetylcholine levels, while anticholinergic drugs block acetylcholine receptors. These opposing mechanisms may reduce the effectiveness of both agents [15][42]:
+Anticholinergic drugs block acetylcholine, so they and huperzine A may weaken each other. A review of dementia drug interactions lists anticholinergic drugs among the main concerns for cholinesterase inhibitors [69]. In older adults with dementia, starting a cholinesterase inhibitor was linked to a higher chance of then receiving an anticholinergic drug for urinary incontinence (adjusted hazard ratio, 1.55; 95% confidence interval, 1.39-1.72), which may be one drug treating the side effect of another [70]. Examples:
 
 - Atropine
 - Benztropine (Cogentin)
@@ -342,19 +276,17 @@ Huperzine A increases acetylcholine levels, while anticholinergic drugs block ac
 - Oxybutynin, tolterodine (bladder antimuscarinics)
 - Diphenhydramine, chlorpheniramine (antihistamines with anticholinergic properties)
 
-Dose adjustments of anticholinergic medications may be necessary to mitigate opposing effects on acetylcholine levels [47].
-
 ### Beta-Blockers (Cardiac Interaction)
 
-Co-administration with beta-blockers, particularly propranolol, can potentiate bradycardic effects due to enhanced cholinergic influence on cardiac conduction [49]. Patients on beta-blockers who take huperzine A should be monitored for excessive heart rate reduction.
+Cholinesterase inhibitors can slow the heart, and a review lists bradycardia-inducing drugs, such as beta-blockers, among their main interaction concerns [68][69]. If you take a beta-blocker or another heart-rate-lowering drug, ask your doctor before using huperzine A.
 
 ### Pharmacokinetic Considerations
 
-Huperzine A has high oral bioavailability and is not significantly metabolized by hepatic cytochrome P450 enzymes. This means pharmacokinetic interactions (where one drug alters the blood levels of another through CYP450 enzyme effects) are unlikely [22]. The primary interaction concerns are pharmacodynamic — that is, additive or opposing effects on the cholinergic system.
+Human liver microsomes did not metabolise huperzine A, and it barely affected CYP enzymes, so it is unlikely to change blood levels of drugs cleared by them [22]. The main concerns are its added or opposing effects on acetylcholine.
 
 ### General Recommendation
 
-Consult a physician before using huperzine A with any prescription medication, particularly:
+Check with your doctor before taking huperzine A alongside any prescription medicine, especially:
 - Any drug for Alzheimer's disease or dementia
 - Medications for myasthenia gravis
 - Heart rate-lowering drugs (beta-blockers, calcium channel blockers, digoxin)
@@ -365,149 +297,108 @@ Consult a physician before using huperzine A with any prescription medication, p
 
 ### Natural Sources of Huperzine A
 
-Huperzine A is not obtained through normal dietary intake. It is found exclusively in certain club moss species within the Huperziaceae family:
+Huperzine A is not obtained through normal dietary intake. It comes from club mosses of the Huperziaceae family [2]:
 
-**Primary source — *Huperzia serrata* (Chinese club moss):** The principal natural source. This perennial lycopod plant grows in shaded, humid forest understories and rocky slopes in temperate and subtropical regions of China, Southeast Asia, Japan, and parts of Europe and North America [4][12]. The compound accumulates primarily in the aerial parts, particularly the spores and leaves. The average yield from dried plant material is approximately 0.011%, reflecting its very low natural abundance [2][12].
+**Primary source, *Huperzia serrata* (Chinese club moss):** The plant from which huperzine A was first isolated and the main source of the Chinese medicine [2][46].
 
 **Secondary sources:**
-- ***Huperzia selago*:** A club moss distributed in Europe and North America that contains detectable but lower concentrations of huperzine A compared to *H. serrata* [50].
-- ***Phlegmariurus carinatus*:** A species from tropical regions where huperzine A content can exceed that of *H. serrata*, reaching up to 0.1% dry weight in some samples, making it a potential alternative source [50][51].
+- ***Huperzia selago*:** The European fir club moss (also called *Lycopodium selago*) holds enough huperzine A to poison people who brew it as tea by mistake [67].
+- ***Phlegmariurus* species:** Members of this genus are also used as medicines in China [2].
 
 ### Sustainability Concerns
 
-Wild harvesting of *H. serrata* poses significant sustainability challenges. The plant requires approximately 20 years to mature, and overexploitation for medicinal use has led to its classification as critically endangered in parts of China, with native populations severely depleted [2][52]. Conservation measures include:
-
-- Greenhouse propagation from spores
-- Tissue culture techniques
-- Cultivation programs in China to create sustainable farming alternatives
-- Research into biotechnological production methods, including heterologous expression in microbial hosts and endophytic fungi [52][53]
+*Huperzia serrata* is an endangered Chinese medicinal plant [76]. Growing it from tissue culture in the lab may ease pressure on wild plants, and lab-grown tissue still made huperzine A [76].
 
 ### Chemical Synthesis
 
-The first total synthesis of racemic huperzine A was reported by Xia and Kozikowski in 1989 using an intramolecular Diels-Alder reaction in a 22-step route with approximately 5% overall yield [54]. Subsequent improvements include an asymmetric synthesis by Yamada and Kozikowski (1991) achieving (-)-huperzine A enantioselectively in a 16-step process [55], and a streamlined 8-step synthesis by Herzon and coworkers (2011) with an overall yield of 35-45% from readily available starting materials [56]. These synthetic routes offer an alternative to plant extraction for ensuring supply without further depleting wild populations.
+Chemists can make racemic huperzine A in quantity, but in the lab the racemic mix was 3 times less potent than natural (-)-huperzine A [66].
 
 ### Biosynthesis in Plants
 
-Huperzine A is biosynthesized in *Huperzia serrata* through a polyketide-like pathway that assembles units derived from L-lysine and acetate (via malonyl-CoA) into the complex Lycopodium alkaloid scaffold [53]. The pathway involves multiple enzymatic steps including decarboxylation of L-lysine to cadaverine, oxidation, Claisen condensation with malonyl-CoA, and a series of cyclization and oxidative rearrangement reactions catalyzed by specialized enzymes including carbonic anhydrase-like (CAL) enzymes and Fe(II)/alpha-ketoglutarate-dependent dioxygenases [53][57]. In 2024, researchers identified a novel dioxygenase catalyzing a key carbon-carbon bond cleavage step in late-stage biosynthesis, significantly advancing pathway elucidation [57].
-
-Understanding the complete biosynthetic pathway opens potential for metabolic engineering in microbial hosts such as yeast, which could provide a scalable and sustainable production method [53].
+In 2023, researchers identified carbonic anhydrase-like enzymes that club mosses need to build the core of their alkaloids, and described the later steps that tune huperzine A's ability to block AChE [53].
 
 ### Practical Implication
 
-Because huperzine A cannot be obtained from food, supplementation is the only option for individuals seeking its cognitive effects. All supplemental huperzine A is either extracted from *Huperzia serrata* or produced synthetically. There is no dietary strategy to increase huperzine A intake.
+Because huperzine A cannot be obtained from food, supplementation is the only option for individuals seeking its cognitive effects. There is no dietary strategy to increase huperzine A intake.
 
 ## 8. References
 
-[1] Huperzine A. PubChem, National Institutes of Health. CID 854026. [https://pubchem.ncbi.nlm.nih.gov/compound/854026](https://pubchem.ncbi.nlm.nih.gov/compound/854026)
+[2] Ma X, Tan C, Zhu D et al. Huperzine A from Huperzia species--an ethnopharmacolgical review. J Ethnopharmacol. 2007;113(1):15-34. PMID: 17644292. https://pubmed.ncbi.nlm.nih.gov/17644292/
 
-[2] Ma X, Tan C, Zhu D, Gang DR, Xiao P. "Huperzine A from Huperzia species — An ethnopharmacological review." *J Ethnopharmacol*. 2007;113(1):15-34. [https://doi.org/10.1016/j.jep.2007.04.020](https://doi.org/10.1016/j.jep.2007.04.020)
+[3] Wang R, Yan H, Tang XC. Progress in studies of huperzine A, a natural cholinesterase inhibitor from Chinese herbal medicine. Acta Pharmacol Sin. 2006;27(1):1-26. PMID: 16364207. https://pubmed.ncbi.nlm.nih.gov/16364207/
 
-[3] Wang R, Yan H, Tang XC. "Progress in studies of huperzine A, a natural cholinesterase inhibitor from Chinese herbal medicine." *Acta Pharmacol Sin*. 2006;27(1):1-26. [https://doi.org/10.1111/j.1745-7254.2006.00255.x](https://doi.org/10.1111/j.1745-7254.2006.00255.x)
+[11] Qian ZM, Ke Y. Huperzine A: Is it an Effective Disease-Modifying Drug for Alzheimer's Disease? Front Aging Neurosci. 2014;6:216. PMID: 25191267. https://pubmed.ncbi.nlm.nih.gov/25191267/
 
-[4] Ferreira A, Rodrigues M, Fortuna A, Falcao A, Alves G. "Huperzine A from Huperzia serrata: a review of its sources, chemistry, pharmacology and toxicology." *Phytochem Rev*. 2016;15:51-85. [https://doi.org/10.1007/s11101-014-9384-y](https://doi.org/10.1007/s11101-014-9384-y)
+[14] McKinney M, Miller JH, Yamada F et al. Potencies and stereoselectivities of enantiomers of huperzine A for inhibition of rat cortical acetylcholinesterase. Eur J Pharmacol. 1991;203(2):303-5. PMID: 1800123. https://pubmed.ncbi.nlm.nih.gov/1800123/
 
-[5] Tang XC, Han YF. "Pharmacological Profile of Huperzine A, a Novel Acetylcholinesterase Inhibitor from Chinese Herb." *CNS Drug Rev*. 1999;5(3):281-300. [https://doi.org/10.1111/j.1527-3458.1999.tb00105.x](https://doi.org/10.1111/j.1527-3458.1999.tb00105.x)
+[16] Rafii MS, Walsh S, Little JT et al. A phase II trial of huperzine A in mild to moderate Alzheimer disease. Neurology. 2011;76(16):1389-94. PMID: 21502597. https://pubmed.ncbi.nlm.nih.gov/21502597/
 
-[6] Liu JS, Zhu YL, Yu CM, et al. "The structures of huperzine A and B, two new alkaloids exhibiting marked anticholinesterase activity." *Can J Chem*. 1986;64(4):837-839. [https://doi.org/10.1139/v86-137](https://doi.org/10.1139/v86-137)
+[19] Li YX, Zhang RQ, Li CR et al. Pharmacokinetics of huperzine A following oral administration to human volunteers. Eur J Drug Metab Pharmacokinet. 2007;32(4):183-7. PMID: 18348466. https://pubmed.ncbi.nlm.nih.gov/18348466/
 
-[7] Tang XC, De Sarno P, Bhargava HN, et al. "Pharmacological profile of huperzine A." In: Giacobini E, Becker RE, eds. *Current Research in Alzheimer Therapy*. Taylor & Francis; 1988:289-297.
+[21] Qian BC, Wang M, Zhou ZF et al. Pharmacokinetics of tablet huperzine A in six volunteers. Zhongguo Yao Li Xue Bao. 1995;16(5):396-8. PMID: 8701751. https://pubmed.ncbi.nlm.nih.gov/8701751/
 
-[8] Zhang HY, Tang XC. "Huperzine A (shuangyiping): a promising drug for Alzheimer's disease." *Trends Pharmacol Sci*. 2006;27(12):619-625.
+[22] Lin PP, Li XN, Yuan F et al. Evaluation of the in vitro and in vivo metabolic pathway and cytochrome P450 inhibition/induction profile of Huperzine A. Biochem Biophys Res Commun. 2016;480(2):248-253. PMID: 27751854. https://pubmed.ncbi.nlm.nih.gov/27751854/
 
-[9] Dietary Supplement Health and Education Act of 1994. US Food and Drug Administration.
+[23] Liang YQ, Tang XC. Comparative effects of huperzine A, donepezil and rivastigmine on cortical acetylcholine level and acetylcholinesterase activity in rats. Neurosci Lett. 2004;361(1-3):56-9. PMID: 15135892. https://pubmed.ncbi.nlm.nih.gov/15135892/
 
-[10] Huperzine A as a dietary supplement ingredient. FDA classification, 1997.
+[24] Raves ML, Harel M, Pang YP et al. Structure of acetylcholinesterase complexed with the nootropic alkaloid, (-)-huperzine A. Nat Struct Biol. 1997;4(1):57-63. PMID: 8989325. https://pubmed.ncbi.nlm.nih.gov/8989325/
 
-[11] Qian ZM, Ke Y. "Huperzine A: Is it an Effective Disease-Modifying Drug for Alzheimer's Disease?" *Front Aging Neurosci*. 2014;6:216. [https://doi.org/10.3389/fnagi.2014.00216](https://doi.org/10.3389/fnagi.2014.00216)
+[25] Zhang Z, Wang X, Chen Q et al. Clinical efficacy and safety of huperzine Alpha in treatment of mild to moderate Alzheimer disease, a placebo-controlled, double-blind, randomized trial. Zhonghua Yi Xue Za Zhi. 2002;82(14):941-4. PMID: 12181083. https://pubmed.ncbi.nlm.nih.gov/12181083/
 
-[12] Grokipedia. "Huperzine A." [https://grokipedia.com/page/Huperzine_A](https://grokipedia.com/page/Huperzine_A)
+[26] Yang G, Wang Y, Tian J et al. Huperzine A for Alzheimer's disease: a systematic review and meta-analysis of randomized clinical trials. PLoS One. 2013;8(9):e74916. PMID: 24086396. https://pubmed.ncbi.nlm.nih.gov/24086396/
 
-[13] Wang J, Zhang HY, Tang XC. "Huperzine A protects against traumatic brain injury through anti-inflammatory and antioxidant pathways." *Neuropharmacology*. 2010. [https://pubmed.ncbi.nlm.nih.gov/12181083/](https://pubmed.ncbi.nlm.nih.gov/12181083/)
+[27] Xing SH, Zhu CX, Zhang R et al. Huperzine a in the treatment of Alzheimer's disease and vascular dementia: a meta-analysis. Evid Based Complement Alternat Med. 2014;2014:363985. PMID: 24639880. https://pubmed.ncbi.nlm.nih.gov/24639880/
 
-[14] McKinney M, Miller JH, Yamada F, Tuckmantel W, Kozikowski AP. "Potencies and stereoselectivities of enantiomers of huperzine A for inhibition of rat cortical acetylcholinesterase." *Eur J Pharmacol*. 1991;203(2):303-305. [https://doi.org/10.1016/0014-2999(91)90732-5](https://doi.org/10.1016/0014-2999(91)90732-5)
+[32] Sun QQ, Xu SS, Pan JL et al. Huperzine-A capsules enhance memory and learning performance in 34 pairs of matched adolescent students. Zhongguo Yao Li Xue Bao. 1999;20(7):601-3. PMID: 10678121. https://pubmed.ncbi.nlm.nih.gov/10678121/
 
-[15] ConsumerLab. "Huperzine A Supplements Review." Accessed 2026. [https://www.consumerlab.com/reviews/huperzine-a-supplements-review/huperzine-a/](https://www.consumerlab.com/reviews/huperzine-a-supplements-review/huperzine-a/)
+[33] Zafonte RD, Fregni F, Bergin MJG et al. Huperzine A for the treatment of cognitive, mood, and functional deficits after moderate and severe TBI (HUP-TBI): results of a Phase II randomized controlled pilot study: implications for understanding the placebo effect. Brain Inj. 2020;34(1):34-41. PMID: 31638455. https://pubmed.ncbi.nlm.nih.gov/31638455/
 
-[16] Rafii MS, Walsh S, Little JT, et al. "A phase II trial of huperzine A in mild to moderate Alzheimer disease." *Neurology*. 2011;76(16):1389-1394. [https://doi.org/10.1212/WNL.0b013e318216eb7b](https://doi.org/10.1212/WNL.0b013e318216eb7b)
+[36] Wong JC, Dutton SB, Collins SD et al. Huperzine A Provides Robust and Sustained Protection against Induced Seizures in Scn1a Mutant Mice. Front Pharmacol. 2016;7:357. PMID: 27799911. https://pubmed.ncbi.nlm.nih.gov/27799911/
 
-[17] Huperzia serrata herb [Huperzine A 1% (HPLC)] powder extract. Standardization documentation.
+[38] Lallement G, Baille V, Baubichon D et al. Review of the value of huperzine as pretreatment of organophosphate poisoning. Neurotoxicology. 2002;23(1):1-5. PMID: 12164543. https://pubmed.ncbi.nlm.nih.gov/12164543/
 
-[18] Huperzine A: Uses, Benefits & Dosage. Drugs.com. [https://www.drugs.com/npc/huperzine-a.html](https://www.drugs.com/npc/huperzine-a.html)
+[40] Guo X, Wu Y, Wang Q et al. Huperzine A injection ameliorates motor and cognitive abnormalities via regulating multiple pathways in a murine model of Parkinson's disease. Eur J Pharmacol. 2023;956:175970. PMID: 37549727. https://pubmed.ncbi.nlm.nih.gov/37549727/
 
-[19] Li YX, Zhang RQ, Li CR, Jiang XH. "Pharmacokinetics of huperzine A following oral administration to human volunteers." *Eur J Drug Metab Pharmacokinet*. 2007;32(4):183-187. [https://doi.org/10.1007/BF03191002](https://doi.org/10.1007/BF03191002)
+[46] Zhang RW, Tang XC, Han YY et al. Drug evaluation of huperzine A in the treatment of senile memory disorders. Zhongguo Yao Li Xue Bao. 1991;12(3):250-2. PMID: 1781288. https://pubmed.ncbi.nlm.nih.gov/1781288/
 
-[20] Tang XC, Han YF, Chen XP, Zhu XD. "Pharmacokinetics of huperzine A in human volunteers." *Zhongguo Yao Li Xue Bao*. 1986;7:507-510.
+[48] Crawford C, Wang YH, Avula B et al. The scoop on brain health dietary supplement products containing huperzine A. Clin Toxicol (Phila). 2020;58(10):991-996. PMID: 31990212. https://pubmed.ncbi.nlm.nih.gov/31990212/
 
-[21] Qian BC, Wang M, Zhou ZF, et al. "Pharmacokinetics of tablet huperzine A in six volunteers." *Zhongguo Yao Li Xue Bao*. 1995;16(5):396-398. [https://pubmed.ncbi.nlm.nih.gov/8886727/](https://pubmed.ncbi.nlm.nih.gov/8886727/)
+[53] Nett RS, Dho Y, Tsai C et al. Plant carbonic anhydrase-like enzymes in neuroactive alkaloid biosynthesis. Nature. 2023;624(7990):182-191. PMID: 37938780. https://pubmed.ncbi.nlm.nih.gov/37938780/
 
-[22] Ma T, Gong K, Yan Y, et al. "Evaluation of the in vitro and in vivo metabolic pathway and cytochrome P450 inhibition/induction profile of huperzine A." *Biochem Pharmacol*. 2013;86(9):1314-1323. [https://doi.org/10.1016/j.bcp.2013.08.020](https://doi.org/10.1016/j.bcp.2013.08.020)
+[58] Li J, Wu HM, Zhou RL et al. Huperzine A for Alzheimer's disease. Cochrane Database Syst Rev. 2008;(2):CD005592. PMID: 18425924. https://pubmed.ncbi.nlm.nih.gov/18425924/
 
-[23] Liang YQ, Tang XC. "Comparative effects of huperzine A, donepezil and rivastigmine on cortical acetylcholine level and acetylcholinesterase activity in rats." *Neurosci Lett*. 2004;361(1-3):56-59. [https://doi.org/10.1016/j.neulet.2003.12.010](https://doi.org/10.1016/j.neulet.2003.12.010)
+[59] Wang BS, Wang H, Wei ZH et al. Efficacy and safety of natural acetylcholinesterase inhibitor huperzine A in the treatment of Alzheimer's disease: an updated meta-analysis. J Neural Transm (Vienna). 2009;116(4):457-65. PMID: 19221692. https://pubmed.ncbi.nlm.nih.gov/19221692/
 
-[24] Raves ML, Harel M, Pang YP, Silman I, Kozikowski AP, Sussman JL. "Structure of acetylcholinesterase complexed with the nootropic alkaloid, (-)-huperzine A." *Nat Struct Biol*. 1997;4(1):57-63. [https://doi.org/10.1038/nsb0197-57](https://doi.org/10.1038/nsb0197-57)
+[60] Hao Z, Liu M, Liu Z et al. Huperzine A for vascular dementia. Cochrane Database Syst Rev. 2009;(2):CD007365. PMID: 19370686. https://pubmed.ncbi.nlm.nih.gov/19370686/
 
-[25] Zhang Z, Wang X, Chen Q, et al. "Clinical efficacy and safety of huperzine Alpha in treatment of mild to moderate Alzheimer disease, a placebo-controlled, double-blind, randomized trial." *Zhonghua Yi Xue Za Zhi*. 2002;82(14):941-944. [https://pubmed.ncbi.nlm.nih.gov/12181083/](https://pubmed.ncbi.nlm.nih.gov/12181083/)
+[61] Xu ZQ, Liang XM, Juan-Wu et al. Treatment with Huperzine A improves cognition in vascular dementia patients. Cell Biochem Biophys. 2012;62(1):55-8. PMID: 21833673. https://pubmed.ncbi.nlm.nih.gov/21833673/
 
-[26] Yang G, Wang Y, Tian J, Liu JP. "Huperzine A for Alzheimer's disease: a systematic review and meta-analysis of randomized clinical trials." *PLoS One*. 2013;8(9):e74916. [https://doi.org/10.1371/journal.pone.0074916](https://doi.org/10.1371/journal.pone.0074916)
+[62] Yue J, Dong BR, Lin X et al. Huperzine A for mild cognitive impairment. Cochrane Database Syst Rev. 2012;12:CD008827. PMID: 23235666. https://pubmed.ncbi.nlm.nih.gov/23235666/
 
-[27] Xing SH, Zhu CX, Zhang R, An L. "Huperzine A in the treatment of Alzheimer's disease and vascular dementia: a meta-analysis." *Evid Based Complement Alternat Med*. 2014;2014:363985. [https://doi.org/10.1155/2014/363985](https://doi.org/10.1155/2014/363985)
+[63] Xu SS, Gao ZX, Weng Z et al. Efficacy of tablet huperzine-A on memory, cognition, and behavior in Alzheimer's disease. Zhongguo Yao Li Xue Bao. 1995;16(5):391-5. PMID: 8701750. https://pubmed.ncbi.nlm.nih.gov/8701750/
 
-[28] Li J, Wu HM, Zhou RL, et al. "Huperzine A: a natural acetylcholinesterase inhibitor with neuroprotective and cognitive benefits — a 2025 review." *Molecules*. 2021;26(21):6531. [https://doi.org/10.3390/molecules26216531](https://doi.org/10.3390/molecules26216531)
+[64] Xu SS, Cai ZY, Qu ZW et al. Huperzine-A in capsules and tablets for treating patients with Alzheimer disease. Zhongguo Yao Li Xue Bao. 1999;20(6):486-90. PMID: 10678137. https://pubmed.ncbi.nlm.nih.gov/10678137/
 
-[29] Clinical Study to Evaluate the Efficacy and Safety of Huperzine A Controlled-Release Tablets in Patients With Mild-to-Moderate Dementia of the Alzheimer's Type. ClinicalTrials.gov Identifier: NCT07066826. Registered 2024.
+[65] Wu SL, Gan J, Rao J et al. Pharmacokinetics and tolerability of oral dosage forms of huperzine a in healthy Chinese male volunteers: a randomized, single dose, three-period, six-sequence crossover study. J Huazhong Univ Sci Technolog Med Sci. 2017;37(5):795-802. PMID: 29058298. https://pubmed.ncbi.nlm.nih.gov/29058298/
 
-[30] Huperzine A combined with hyperbaric oxygen therapy for elderly vascular dementia patients. *Chin J Gerontol*. 2021.
+[66] Tang XC, Kindel GH, Kozikowski AP et al. Comparison of the effects of natural and synthetic huperzine-A on rat brain cholinergic function in vitro and in vivo. J Ethnopharmacol. 1994;44(3):147-55. PMID: 7898122. https://pubmed.ncbi.nlm.nih.gov/7898122/
 
-[31] Pharmacological treatments for vascular dementia: a systematic review and meta-analysis. [https://doi.org/10.1002/14651858](https://doi.org/10.1002/14651858)
+[67] Felgenhauer N, Zilker T, Worek F et al. Intoxication with huperzine A, a potent anticholinesterase found in the fir club moss. J Toxicol Clin Toxicol. 2000;38(7):803-8. PMID: 11192470. https://pubmed.ncbi.nlm.nih.gov/11192470/
 
-[32] Sun QQ, Xu SS, Pan JL, Guo HM, Cao WQ. "Huperzine-A capsules enhance memory and learning performance in 34 pairs of matched adolescent students." *Zhongguo Yao Li Xue Bao*. 1999;20(7):601-603. [https://pubmed.ncbi.nlm.nih.gov/10678121/](https://pubmed.ncbi.nlm.nih.gov/10678121/)
+[68] Gill SS, Anderson GM, Fischer HD et al. Syncope and its consequences in patients with dementia receiving cholinesterase inhibitors: a population-based cohort study. Arch Intern Med. 2009;169(9):867-73. PMID: 19433698. https://pubmed.ncbi.nlm.nih.gov/19433698/
 
-[33] Zafonte RD, Bagiella E, Anber BM, et al. "Effect of Citicoline and Huperzine A on Cognitive and Functional Outcomes After Traumatic Brain Injury." *Brain Inj*. 2019;33(Sup1):39-40.
+[69] Caraci F, Sultana J, Drago F et al. Clinically Relevant Drug Interactions with Anti-Alzheimer's Drugs. CNS Neurol Disord Drug Targets. 2017;16(4):501-513. PMID: 28260511. https://pubmed.ncbi.nlm.nih.gov/28260511/
 
-[34] Cheng DH, Ren H, Tang XC. "128 cases of myasthenia gravis treated with huperzine A." *New Drugs Clin Remedies*. 1986;5:197-199.
+[70] Gill SS, Mamdani M, Naglie G et al. A prescribing cascade involving cholinesterase inhibitors and anticholinergic drugs. Arch Intern Med. 2005;165(7):808-13. PMID: 15824303. https://pubmed.ncbi.nlm.nih.gov/15824303/
 
-[35] Bhatt DK, Bhatt JK, Bhatt RP. "Huperzine A as a neuroprotective and antiepileptic drug: a review of preclinical research." *Expert Opin Investig Drugs*. 2005;14(11):1375-1381. [https://doi.org/10.1517/13543784.14.11.1375](https://doi.org/10.1517/13543784.14.11.1375)
+[71] Mahan RJ, Blaszczyk AT. COPD Exacerbation and Cholinesterase Therapy in Dementia Patients. Consult Pharm. 2016;31(4):221-5. PMID: 27056359. https://pubmed.ncbi.nlm.nih.gov/27056359/
 
-[36] Bhagya V, Falkenberg T. "Huperzine A Provides Robust and Sustained Protection against Induced Seizures in Mice." *J Pharmacol Exp Ther*. 2013.
+[72] Stephenson A, Seitz DP, Fischer HD et al. Cholinesterase inhibitors and adverse pulmonary events in older people with chronic obstructive pulmonary disease and concomitant dementia: a population-based, cohort study. Drugs Aging. 2012;29(3):213-223. PMID: 22332932. https://pubmed.ncbi.nlm.nih.gov/22332932/
 
-[37] Grunwald J, Raveh L, Doctor BP, Bhatt DK. "A novel approach to medical countermeasures against organophosphorus poisoning." *Life Sci*. 1994;54(14):991-997.
+[73] Ha J, Son NH, Park YH et al. Association of cognitive enhancers and incident seizure risk in dementia: a population-based study. BMC Geriatr. 2022;22(1):480. PMID: 35658833. https://pubmed.ncbi.nlm.nih.gov/35658833/
 
-[38] Lallement G, Baille V, Baubichon D, et al. "Review of the value of huperzine as pretreatment of organophosphate poisoning." *Environ Toxicol Pharmacol*. 2002;12(2):65-79.
+[74] Szilcz M, Wastesson JW, Calderón-Larrañaga A et al. Cholinesterase inhibitors and non-steroidal anti-inflammatory drugs and the risk of peptic ulcers: A self-controlled study. J Am Geriatr Soc. 2024;72(2):456-466. PMID: 37905683. https://pubmed.ncbi.nlm.nih.gov/37905683/
 
-[39] Tonduli LS, Testylier G, Masqueliez C, et al. "Effective countermeasure against poisoning by organophosphorus insecticides." *J Toxicol Environ Health A*. 2001;64(2):149-162.
+[75] Friedli MJ, Inestrosa NC. Huperzine A and Its Neuroprotective Molecular Signaling in Alzheimer's Disease. Molecules. 2021;26(21):6531. PMID: 34770940. https://pubmed.ncbi.nlm.nih.gov/34770940/
 
-[40] Li L, et al. "Huperzine A injection ameliorates motor and cognitive abnormalities via regulating multiple pathways in a murine model of Parkinson's disease." *Biomed Pharmacother*. 2021.
-
-[41] Huperzine A: Health Benefits, Side Effects, Uses, Dose & Precautions. RxList/WebMD medical reference.
-
-[42] Huperzine A (Herb/Suppl). Medscape Reference. [https://reference.medscape.com/drug/cerebra-huperzine-a-344571](https://reference.medscape.com/drug/cerebra-huperzine-a-344571)
-
-[43] Huperzine A: Overview, Uses, Side Effects, Precautions, Interactions, Dosing and Reviews. WebMD. [https://www.webmd.com/vitamins/ai/ingredientmono-764/huperzine-a](https://www.webmd.com/vitamins/ai/ingredientmono-764/huperzine-a)
-
-[44] Yang G, Wang Y, Tian J, Liu JP. "Huperzine A for Alzheimer's disease: a systematic review and meta-analysis — adverse events analysis." *PLoS One*. 2013;8(9):e74916. [https://doi.org/10.1371/journal.pone.0074916](https://doi.org/10.1371/journal.pone.0074916)
-
-[45] Rafii MS, Walsh S, Little JT, et al. "A phase II trial of huperzine A in mild to moderate Alzheimer disease — safety and tolerability." *Neurology*. 2011;76(16):1389-1394. [https://doi.org/10.1212/WNL.0b013e318216eb7b](https://doi.org/10.1212/WNL.0b013e318216eb7b)
-
-[46] Zhang RW, Tang XC, Han YY, et al. "Drug evaluation of huperzine A in the treatment of senile memory disorders." *Zhongguo Yao Li Xue Bao*. 1991;12(3):250-252. [https://pubmed.ncbi.nlm.nih.gov/1810730/](https://pubmed.ncbi.nlm.nih.gov/1810730/)
-
-[47] Huperzine A. Memorial Sloan Kettering Cancer Center, Integrative Medicine Service. [https://www.mskcc.org/cancer-care/integrative-medicine/herbs/huperzia-serrata](https://www.mskcc.org/cancer-care/integrative-medicine/herbs/huperzia-serrata)
-
-[48] Crawford C, Boyd C, Avula B, et al. "A Public Health Issue: Dietary Supplements Promoted for Brain Health and Cognitive Performance." *Clin Toxicol (Phila)*. 2020;58(10):1023-1034. [https://doi.org/10.1080/15563650.2019.1708902](https://doi.org/10.1080/15563650.2019.1708902)
-
-[49] Huperzine A drug interactions — beta-blocker interaction. DrugBank. [https://go.drugbank.com/drugs/DB04864](https://go.drugbank.com/drugs/DB04864)
-
-[50] Szypula WJ, Mistrzak P, Olszowska O. "Determination of Huperzine A in Huperzia selago Plants from Poland." *Herba Pol*. 2013.
-
-[51] Yang Y, et al. "Is There a Better Source of Huperzine A than Huperzia serrata? Huperzine A production in Phlegmariurus carinatus." *Planta Med*. 2017.
-
-[52] Lu HM, et al. "Genetic diversity and variation of Huperzia serrata populations in China." *Biochem Syst Ecol*. 2014.
-
-[53] Nett RS, Lau W, Sattely ES. "Plant carbonic anhydrase-like enzymes in neuroactive alkaloid biosynthesis." *Nature*. 2020.
-
-[54] Xia Y, Kozikowski AP. "A practical synthesis of the Chinese 'nootropic' agent huperzine A." *J Am Chem Soc*. 1989;111(11):4116-4117. [https://doi.org/10.1021/ja00193a062](https://doi.org/10.1021/ja00193a062)
-
-[55] Yamada F, Kozikowski AP, et al. "A route to optically pure (-)-huperzine A; molecular modeling and in vitro pharmacology." *Tetrahedron Lett*. 1991;32(35):4555-4558.
-
-[56] Herzon SB, et al. "Progresses in the Total Synthesis of Huperzine A." *Synthesis*. 2011.
-
-[57] Global transcriptome analysis of Huperzia serrata and identification of Fe(II)/alpha-ketoglutarate-dependent dioxygenases in huperzine A biosynthesis. 2024.
+[76] Yang Y, Dai L, Wu D et al. In Vitro Propagation, Huperzine A Content and Antioxidant Activity of Three Genotypic Huperzia serrata. Plants (Basel). 2021;10(6):1112. PMID: 34072855. https://pubmed.ncbi.nlm.nih.gov/34072855/
