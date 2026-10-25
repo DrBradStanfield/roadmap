@@ -15,7 +15,7 @@ sources: [{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/do-
 
 ## Current view (reviewed 25 October 2026)
 
-Brad does not see apple cider vinegar as a dependable solution for weight loss or blood sugar control: there might be a small effect in certain short-term trials, but the research is limited and sometimes flawed ([Brad, 12 Feb 2025](https://drstanfield.com/blogs/articles/do-not-use-apple-cider-vinegar-to-lose-weight-use-this-instead)). A meta-analysis reported that it seemed to reduce fasting glucose by about 10%, but many of its trials were not properly blinded, so he rates the effect on fasting blood sugar as uncertain ([Brad, 12 Feb 2025](https://drstanfield.com/blogs/articles/do-not-use-apple-cider-vinegar-to-lose-weight-use-this-instead)). In a blinded Japanese trial of diluted apple cider vinegar taken twice a day, the low-dose group lost an average of 2.6 pounds and the high-dose group about 4.4 pounds after three months ([Brad, 12 Feb 2025](https://drstanfield.com/blogs/articles/do-not-use-apple-cider-vinegar-to-lose-weight-use-this-instead)). He does not take it himself and does not think the results are worth seeking out; enjoy it on a salad as part of a healthy diet ([Brad, 6 Sep 2024](https://drstanfield.com/blogs/articles/benefits-apple-cider-vinegar)). If you have a stomach ulcer, esophageal damage or other digestive problems, the acid can make them worse, which is why studies use a very diluted drink, typically a tablespoon at most in an 8 oz glass of water ([Brad, 6 Sep 2024](https://drstanfield.com/blogs/articles/benefits-apple-cider-vinegar)). Used in moderation it won't hurt you, though it can damage tooth enamel, and relying on it as your primary strategy will likely leave you disappointed ([Brad, 12 Feb 2025](https://drstanfield.com/blogs/articles/do-not-use-apple-cider-vinegar-to-lose-weight-use-this-instead)).
+Brad does not see apple cider vinegar as a dependable solution for weight loss or blood sugar control: there might be a small effect in certain short-term trials, but the research is limited and sometimes flawed ([Brad, 12 Feb 2025](https://drstanfield.com/blogs/articles/do-not-use-apple-cider-vinegar-to-lose-weight-use-this-instead)). A meta-analysis reported a small drop in fasting glucose, but many of its trials were not properly blinded, so he rates the effect on fasting blood sugar as uncertain ([Brad, 12 Feb 2025](https://drstanfield.com/blogs/articles/do-not-use-apple-cider-vinegar-to-lose-weight-use-this-instead)). In a blinded Japanese trial of diluted apple cider vinegar taken twice a day, the low-dose group lost an average of 2.6 pounds and the high-dose group about 4.4 pounds after three months ([Brad, 12 Feb 2025](https://drstanfield.com/blogs/articles/do-not-use-apple-cider-vinegar-to-lose-weight-use-this-instead)). He does not take it himself and does not think the results are worth seeking out; enjoy it on a salad as part of a healthy diet ([Brad, 6 Sep 2024](https://drstanfield.com/blogs/articles/benefits-apple-cider-vinegar)). If you have a stomach ulcer, esophageal damage or other digestive problems, the acid can make them worse, which is why studies use a very diluted drink, typically a tablespoon at most in an 8 oz glass of water ([Brad, 6 Sep 2024](https://drstanfield.com/blogs/articles/benefits-apple-cider-vinegar)). Used in moderation it won't hurt you, though it can damage tooth enamel, and relying on it as your primary strategy will likely leave you disappointed ([Brad, 12 Feb 2025](https://drstanfield.com/blogs/articles/do-not-use-apple-cider-vinegar-to-lose-weight-use-this-instead)).
 
 ## Key safety points
 
@@ -25,7 +25,7 @@ Brad does not see apple cider vinegar as a dependable solution for weight loss o
 - Apple cider vinegar tablets have injured the esophagus, and tested tablet brands varied widely in acid content and label claims [15].
 - Regular drinking can erode tooth enamel [57][68]. Dilute it and rinse your mouth with water afterwards [67].
 - On the skin it can cause chemical burns [63][69], and dilute soaks irritated the skin of most people in a small trial [50].
-- It can cause indigestion or an upset stomach, and some people find it worsens heartburn [67].
+- It can cause indigestion or an upset stomach [67].
 
 ## Brad's videos on this topic
 
@@ -37,8 +37,6 @@ Brad does not see apple cider vinegar as a dependable solution for weight loss o
 Apple cider vinegar (ACV) is made in two fermentation steps: yeast turn the sugars in apple juice or cider into alcohol, then bacteria turn the alcohol into acetic acid [67]. Most products are between 4 and 7% acetic acid [67].
 
 ACV is mostly water and acetic acid, with trace minerals and flavor compounds carried over from the apples [67].
-
-Some products keep "the mother," a cloudy, stringy mass of yeast, bacteria, apple cellulose and trace minerals like calcium, magnesium, potassium and iron. Processed vinegar usually has it filtered out [67].
 
 Vinegar has a long medicinal history. Hippocrates (c. 420 BC) used it to manage wounds, and before modern diabetes drugs, people with diabetes drank vinegar "teas" [21].
 
@@ -62,17 +60,15 @@ ACV is also sold as tablets, capsules and gummies.
 
 **Acetic acid variability:** When researchers tested eight ACV tablet products, tablet size, pH, acid content and label claims varied widely between brands, and they doubted that some even contained ACV [15].
 
-**Limited clinical evidence:** Brad describes a small study in which ACV helped only as a liquid; capsule supplements did not give the same benefit [67].
-
-**Safety concerns:** Vinegar with an acetic acid content of 20% or more is considered poisonous [67]. The same tablet study began after a reported case of esophageal injury from an ACV tablet [15]. Acute pancreatitis followed 30 days of a weight-loss gummy whose main ingredient was 1,000 mg of ACV, in a woman aged 84 [16].
+**Safety concerns:** The same tablet study began after a reported case of esophageal injury from an ACV tablet [15]. Acute pancreatitis followed 30 days of a weight-loss gummy whose main ingredient was 1,000 mg of ACV, in a woman aged 84 [16].
 
 ### Comparison Table
 
 | Form | Acetic Acid Content | Clinical Evidence | Key Advantages | Key Disadvantages |
 |------|:---:|:---:|------|------|
 | Liquid (filtered) | 4 to 7% for most products | Used in the trials here | Form used in trials | Taste, tooth enamel erosion, stomach and esophageal irritation |
-| Liquid (unfiltered, with mother) | 4 to 7% for most products | No trials comparing it with filtered | None shown | Taste, tooth enamel erosion |
-| Pills/Tablets | Varies widely between brands | Did not match liquid in a small study | No taste | Unreliable acid content, esophageal injury reported |
+| Liquid (unfiltered, with mother) | 4 to 7% for most products | Not tested | None shown | Taste, tooth enamel erosion |
+| Pills/Tablets | Varies widely between brands | Not tested in the trials here | No taste | Unreliable acid content, esophageal injury reported |
 | Gummies | Unknown | No trials | Palatable | One pancreatitis case report |
 
 ### Comparison to Other Vinegars
@@ -95,7 +91,7 @@ A 2006 review of vinegar's medicinal uses focused on trials of its effect on blo
 
 - **Ostman et al. (2005), n=12 healthy adults:** Vinegar with white bread lowered blood sugar and insulin responses and increased fullness, with larger effects at higher acetic acid doses [20].
 
-- **Brad's summary:** It's possible that for people without diabetes, vinegar might reduce blood sugar spikes after eating, and one small study found that capsules did not give the benefit seen with liquid [67].
+- **Brad's summary:** It's possible that for people without diabetes, vinegar might reduce blood sugar spikes after eating [67].
 
 **In people with insulin resistance:**
 
@@ -109,25 +105,25 @@ A 2006 review of vinegar's medicinal uses focused on trials of its effect on blo
 
 **Meta-analyses and systematic reviews:**
 
-A 2021 meta-analysis of nine studies (10 study arms) found that ACV lowered fasting plasma glucose by 7.97 mg/dL and HbA1c by 0.50, with no significant effect on fasting insulin or insulin resistance. The fall in fasting glucose was significant in studies lasting more than 8 weeks [17]. Brad notes that of the nine studies, one was not randomized and only three were blinded, so the data may not be reliable [67].
+A 2021 meta-analysis of nine studies (10 study arms) found that ACV lowered fasting plasma glucose by 7.97 mg/dL and HbA1c by 0.50, with no significant effect on fasting insulin or insulin resistance. The fall in fasting glucose was significant in studies lasting more than 8 weeks, and ACV appeared to raise fasting glucose in apparently healthy participants [17]. Brad notes that of the nine studies, one was not randomized and only three were blinded, so the data may not be reliable [67].
 
-**Synthesis:** Vinegar taken with a carbohydrate meal lowers the blood sugar rise in small studies of healthy people [20][22]. Effects on fasting blood sugar and HbA1c in diabetes are small and come from trials of uneven quality [17][67]. Brad cites a small study in which tablets did not match the liquid [67].
+**Synthesis:** Vinegar taken with a carbohydrate meal lowers the blood sugar rise in small studies of healthy people [20][22]. Effects on fasting blood sugar and HbA1c in diabetes are small and come from trials of uneven quality [17][67].
 
 ### Weight Loss
 
-Small trials suggest ACV may produce modest weight loss over a few months, but the evidence is weaker than it first looked because one trial was retracted.
+Evidence for weight loss comes from a few small trials, and one of them was later retracted [30][32].
 
 **Meta-analysis of RCTs:**
 
-- **Castagna et al. (2025), meta-analysis of 10 RCTs, n=789:** Daily ACV lowered body weight (SMD -0.39; 95% CI -0.63 to -0.15), BMI (SMD -0.65; 95% CI -1.05 to -0.26) and waist circumference (SMD -0.34; 95% CI -0.67 to -0.02), with effects seen at up to 12 weeks, at 30 mL/day, and in adults with overweight, obesity or type 2 diabetes. Other body composition measures did not change [12]. Its 10 trials included the Lebanese trial by Abou-Khalil and colleagues, which was later retracted [12][32].
+- **Castagna et al. (2025):** This meta-analysis included the later-retracted Lebanese trial, so its pooled results cannot be relied on [12][32].
 
 **Individual RCTs:**
 
-- **Kondo et al. (2009), obese adults (Japan):** In a double-blind trial, participants drank 500 ml a day of a drink containing 15 ml of vinegar (750 mg acetic acid), 30 ml of vinegar (1,500 mg acetic acid) or no vinegar for 12 weeks. Weight, BMI, triglycerides, waist size and visceral fat were significantly lower in both vinegar groups than with placebo [30]. Brad gives the average losses as 2.6 pounds in the low-dose group and about 4.4 pounds in the high-dose group [66]. He also notes that fasting blood sugar, insulin sensitivity and HbA1c did not change in this trial [67].
+- **Kondo et al. (2009), obese adults (Japan):** In a double-blind trial, participants drank 500 ml a day of a drink containing 15 ml of vinegar (750 mg acetic acid), 30 ml of vinegar (1,500 mg acetic acid) or no vinegar for 12 weeks. Weight, BMI, triglycerides, waist size and visceral fat were significantly lower in both vinegar groups than with placebo [30].
 
 - **Abou-Khalil et al. (2024, RETRACTED):** This trial in Lebanese adolescents and young adults reported weight loss with ACV. It was retracted in 2025, and its results should not be relied on [32].
 
-**Synthesis:** ACV may produce modest weight loss over up to 12 weeks [12][30]. Brad notes that the appetite effects in these studies seem short-term, and very few long-term studies exist [67].
+**Synthesis:** ACV may produce modest weight loss, based on one 12-week trial [30]. Brad judges the data too limited and inconsistent for a strong recommendation [66]. He also notes that the appetite effects in these studies seem short-term, and very few long-term studies exist [67].
 
 ### Lipid Profile (Cholesterol and Triglycerides)
 
@@ -155,7 +151,7 @@ The study was small, and the pill control did not match the vinegar drink, so th
 
 ### Digestion and Acid Reflux
 
-Social media claims that ACV eases bloating, gas and heartburn. Brad notes that very little research has tested this: in the one study, some people reported a brief drop in heartburn and others reported worse heartburn, and as an acid, vinegar can make stomach and esophagus problems worse [67].
+Social media claims that ACV eases bloating, gas and heartburn. Brad notes that very little research has tested this, and that as an acid, vinegar can make stomach and esophagus problems worse [67].
 
 ### Balancing pH
 
@@ -181,9 +177,11 @@ No evidence shows that drinking or gargling ACV prevents or treats colds, flu, C
 
 - **Jung et al. (2002), granular myringitis:** All 15 patients treated with dilute vinegar irrigation had a dry ear within three weeks, compared with two-thirds of 15 patients given antibiotic drops. Vinegar caused ear canal irritation with pain and dizziness [48].
 
+- **Yamano et al. (2015) and Jinn et al. (2001), animal studies:** Acetic acid in the middle ear of guinea pigs dulled hearing-nerve responses at pH 5.0 or lower, more so with stronger acid and longer exposure [71], and it was the most toxic of several ear drops to isolated cochlear hair cells from chinchillas [72]. These findings may not apply to people, but ask a doctor before putting vinegar in your ear.
+
 ### Topical Uses
 
-**Warts:** Home skin treatments with vinegar can cause chemical burns: an adolescent was burned after following an internet protocol for removing moles with ACV [69].
+**Home skin treatments:** Vinegar can cause chemical burns: an adolescent was burned after following an internet protocol for removing moles with ACV [69].
 
 **Eczema:** In a 14-day study of 22 people (11 with atopic dermatitis and 11 without), soaking one forearm in dilute ACV (0.5% acetic acid) for 10 minutes a day did not improve the skin barrier compared with water, and 72.7% (16/22) reported mild side effects that improved after stopping [50].
 
@@ -204,12 +202,11 @@ Brad does not recommend taking ACV as a supplement [67]. The amounts below are w
 ### For Blood Sugar Control
 
 - **With a meal:** 18 to 28 mmol of acetic acid as vinegar with a bread meal lowered the blood sugar rise in healthy volunteers [20].
-- **Longer term:** 20 ml of apple vinegar per day for 8 weeks lowered fasting blood sugar in type 2 diabetes [26]. In the 2021 meta-analysis, the fall in fasting glucose was significant only in studies lasting more than 8 weeks [17].
+- **Longer term:** 20 ml of apple vinegar per day for 8 weeks lowered fasting blood sugar in type 2 diabetes [26]. In the 2021 meta-analysis, the fall in fasting glucose was significant in studies lasting more than 8 weeks, and ACV appeared to raise fasting glucose in apparently healthy participants [17].
 
 ### For Weight Loss
 
 - **Kondo et al. (2009):** 500 ml daily of a drink containing 15 ml or 30 ml of vinegar, for 12 weeks [30].
-- **Castagna et al. (2025):** Effects were seen at up to 12 weeks and at 30 mL/day [12].
 
 ### General Dosing Principles
 
@@ -224,7 +221,6 @@ Brad does not recommend taking ACV as a supplement [67]. The amounts below are w
 
 - **Always dilute:** Studies use a very diluted drink, typically a tablespoon at most of ACV in an 8 oz glass of water [67].
 - **Protect tooth enamel:** Rinse your mouth with water after drinking any vinegar [67].
-- **Pills are not effective substitutes:** In a small study, capsules did not give the benefit seen with liquid [67].
 - **If you take medicines for diabetes**, check with your doctor before starting, because vinegar lowers blood sugar after meals [22].
 
 ## 5. Dietary Sources
@@ -272,7 +268,7 @@ For sudden severe upper belly pain with nausea or vomiting, call your local emer
 
 - **Andonie et al. (2025), case report:** A man aged 60 developed jaundice, pale stools and dark urine after four years of drinking about 30 cc of ACV after meals three times a week. His liver tests improved after he stopped [61].
 
-If your skin or eyes turn yellow, stop taking it and see your doctor the same day.
+If your skin or eyes turn yellow, stop taking it and see your doctor.
 
 ### Hypokalemia (Low Potassium)
 
@@ -376,3 +372,7 @@ If you take prescription medicines, check with your doctor or pharmacist before 
 [69] Feldstein S et al. Chemical Burn from Vinegar Following an Internet-based Protocol for Self-removal of Nevi. J Clin Aesthet Dermatol. 2015. PMID: 26155328. https://pubmed.ncbi.nlm.nih.gov/26155328/
 
 [70] Launholt TL et al. Safety and side effects of apple vinegar intake and its effect on metabolic parameters and body weight: a systematic review. Eur J Nutr. 2020. PMID: 32170375. https://pubmed.ncbi.nlm.nih.gov/32170375/
+
+[71] Yamano T et al. Ototoxicity of acetic acid on the guinea pig cochlea. J Otolaryngol Head Neck Surg. 2015. PMID: 26666456. https://pubmed.ncbi.nlm.nih.gov/26666456/
+
+[72] Jinn TH et al. Determination of ototoxicity of common otic drops using isolated cochlear outer hair cells. Laryngoscope. 2001. PMID: 11802005. https://pubmed.ncbi.nlm.nih.gov/11802005/
