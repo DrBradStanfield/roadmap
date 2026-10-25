@@ -6,7 +6,7 @@ publishedAt: "2025-05-20T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["saw palmetto", "prostate", "BPH", "beta-sitosterol", "psa", "prostate cancer", "pumpkin seed", "pygeum", "stinging nettle", "selenium", "zinc", "hair loss", "androgenetic alopecia", "finasteride", "testosterone", "dht", "urinary", "cholesterol", "ldl", "inflammation"]
-summary: "Evidence summary on saw palmetto and prostate supplements: saw palmetto alone probably does not help BPH symptoms; beta-sitosterol and pygeum helped in older short trials; high-dose zinc and selenium carry prostate cancer risks. Talk to your doctor first if you take blood thinners or are pregnant."
+summary: "Saw palmetto alone probably does not help BPH symptoms; beta-sitosterol and pygeum helped in older trials; high-dose zinc was linked to advanced prostate cancer, and selenium of 140 μg/day or more to cancer death after diagnosis. Talk to your doctor first if you take blood thinners or are pregnant."
 reviewed: "2026-10-25"
 sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/saw-palmetto","checked":"2026-09-29","fingerprint":"sha256:3e32e6bfce236f97042954244674e09ef617722fdef67ff7e201aa1c3f43e4bf"}]
 ---
@@ -15,13 +15,13 @@ sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/saw-palmetto
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. For urinary symptoms from an enlarged prostate (benign prostatic hyperplasia, BPH), saw palmetto taken alone is probably not helpful: a 2023 Cochrane review of 27 trials found little to no benefit, and an NIH-funded trial found none even at up to three times the standard 320 mg/d extract dose [1][7][15]. Beta-sitosterol (a mixture of plant sterols) and pygeum improved symptoms and urine flow in older trials, but those trials were short and used products that were not standardized [29][32]. Saw palmetto is usually well tolerated and does not appear to change PSA readings, but it may be unsafe in pregnancy or breastfeeding, and case reports link it to bleeding during surgery and to inflammation of the pancreas or liver [1][16][48][68][70]; for severe upper belly pain with vomiting, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department. Selenium did not prevent prostate cancer in the SELECT trial, and men who took more than 100 mg/day of supplemental zinc had a higher risk of advanced prostate cancer [36][38].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. For urinary symptoms from an enlarged prostate (benign prostatic hyperplasia, BPH), saw palmetto taken alone is probably not helpful: a 2023 Cochrane review of 27 trials found little to no benefit, and an NIH-funded trial found none even at up to three times the standard 320 mg/d extract dose [1][7][15]. Beta-sitosterol (a mixture of plant sterols) and pygeum improved symptoms and urine flow in older trials, but those trials were short and used products that were not standardized [29][32]. Saw palmetto is usually well tolerated and does not appear to change PSA readings, but it may be unsafe in pregnancy or breastfeeding, and case reports link it to bleeding during surgery and to inflammation of the pancreas or liver [1][16][48][68][70]; for severe upper belly pain with vomiting, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). Selenium did not prevent prostate cancer in the SELECT trial, and men who took more than 100 mg/day of supplemental zinc had a higher risk of advanced prostate cancer [36][38].
 
 ## Key safety points
 
-- Saw palmetto use has been tied to bleeding, including severe bleeding during surgery, and case reports describe severe problems such as bleeding in people taking it with warfarin [48][72][73]. Check with your doctor first if you take a blood thinner, and stop it before planned surgery [72].
+- Saw palmetto use has been tied to bleeding, including severe bleeding during surgery, and case reports describe severe problems such as bleeding in people taking it with warfarin [48][72][73]. Check with your doctor first if you take a blood thinner, and stop it about 2 weeks before planned surgery [72].
 - Saw palmetto may be unsafe during pregnancy or while breastfeeding [1].
-- Case reports link saw palmetto to pancreatitis and liver injury that improved after stopping it [68][69][70]. For severe upper belly pain with vomiting, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- Case reports link saw palmetto to pancreatitis and liver injury that improved after stopping it or with treatment, though its role in liver injury remains uncertain [68][69][70][79]. See a doctor promptly for yellow skin or eyes or pale stools; for severe upper belly pain with vomiting, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - People with sitosterolemia, a rare inherited disorder, need to limit plant sterols in their diet, so beta-sitosterol supplements are not for them [77].
 - Men who took more than 100 mg/day of supplemental zinc had a higher risk of advanced prostate cancer [38]. After a prostate cancer diagnosis, selenium supplements of 140 μg/day or more were linked to higher prostate cancer death [67].
 - Side effects of saw palmetto are usually mild and infrequent, such as digestive upset, dizziness and headache [1][51].
@@ -66,9 +66,9 @@ Liquid saw palmetto supplements contained significantly more total fatty acids (
 
 ### Beta-Sitosterol Forms
 
-Products sold as "beta-sitosterol" usually contain a mixture of plant sterols. The Berges 1995 trial used 20 mg of beta-sitosterol, which contains a mixture of phytosterols, three times a day [26]. The Klippel 1997 trial used 130 mg of free beta-sitosterol daily, from a defined extract of phytosterols with beta-sitosterol as the main component [27].
+Products sold as "beta-sitosterol" can contain a mixture of plant sterols. The Berges 1995 trial used 20 mg of beta-sitosterol, which contains a mixture of phytosterols, three times a day [26]. The Klippel 1997 trial used 130 mg of free beta-sitosterol daily, from a defined extract of phytosterols with beta-sitosterol as the main component [27].
 
-A 1999 review noted that one trial using pure beta-sitosterol-beta-d-glucoside showed no improvement in urine flow, while the three trials using non-glucoside beta-sitosterol improved symptoms [29].
+A 1999 review of four trials found that, pooled, beta-sitosterol improved symptoms and urine flow, but the one trial using pure beta-sitosterol-beta-d-glucoside showed no improvement in urine flow [29].
 
 Much higher amounts of plant sterols, about 2 g a day, lower LDL cholesterol; this is a different use from BPH [76].
 
@@ -76,7 +76,7 @@ Much higher amounts of plant sterols, about 2 g a day, lower LDL cholesterol; th
 
 **Pygeum bark** extracts were tested in 18 trials, but the preparations varied and the reviewers called for standardized products [32].
 
-**Pumpkin seed oil** was taken at 320 mg/day in the Hong 2009 trial [12]. In the GRANU trial (1,431 men), 5 g of pumpkin seed twice a day for 12 months gave more responders than placebo, while pumpkin seed extract capsules (500 mg twice a day) did not [13].
+**Pumpkin seed oil** was taken at 320 mg/day in the Hong 2009 trial [12]. In the partially blinded GRANU trial (1,431 men), 5 g of pumpkin seed twice a day for 12 months gave more responders than placebo, a difference the authors called descriptively significant, while pumpkin seed extract capsules (500 mg twice a day) did not [13].
 
 **Stinging nettle root** was tested as a dry extract of 459 mg in a one-year trial [33].
 
@@ -156,9 +156,9 @@ Because saw palmetto inhibits 5-alpha reductase in laboratory studies, it has be
 
 **Pumpkin seed oil for hair loss (Cho et al., 2014):** In a placebo-controlled trial of 76 men, pumpkin seed oil at 400 mg a day for 24 weeks raised mean hair count by 40%, compared with 10% on placebo [42].
 
-**Network meta-analysis and emerging research:** A 2025 network meta-analysis of 19 trials (1,658 patients) found that saw palmetto extract gave higher blinded doctor-assessed hair regeneration scores than placebo or conventional treatments [66]. A 2020 systematic review of five trials and two cohort studies reported 60% improvement in overall hair quality, 27% improvement in total hair count, increased hair density in 83.3% of patients, and stabilized disease in 52% with various saw palmetto products (100-320 mg), while noting that high-quality data are lacking [43].
+**Network meta-analysis and emerging research:** A 2025 network meta-analysis of 19 trials (1,658 patients) found that saw palmetto extract gave higher blinded doctor-assessed hair regeneration scores than placebo [66]. A 2020 systematic review of five trials and two cohort studies reported 60% improvement in overall hair quality, 27% improvement in total hair count, increased hair density in 83.3% of patients, and stabilized disease in 52% with various saw palmetto products (100-320 mg), while noting that high-quality data are lacking [43].
 
-**Summary for hair loss:** Saw palmetto may give modest benefit for androgenetic alopecia, mainly at the vertex, but it was less effective than finasteride in a head-to-head study [40]. A 2024 expert review still names topical minoxidil and oral finasteride as the preferred treatments [64].
+**Summary for hair loss:** Saw palmetto may give modest benefit for androgenetic alopecia, mainly at the vertex, but it was less effective than finasteride in a head-to-head study [40]. A 2024 expert review still names topical minoxidil and oral finasteride as the preferred treatments [64]. NCCIH judges the evidence on saw palmetto for male-pattern hair loss too limited to allow conclusions [1].
 
 ### Other Investigated Conditions
 
@@ -222,15 +222,15 @@ Saw palmetto is well tolerated and has been used safely in research studies for 
 
 **Adverse event reports (Crescioli et al., *Phytother Res* 2023):** In 1,810 reports of suspected adverse reactions worldwide, serious reactions were more likely with dietary supplements, with products containing more than four active compounds (OR 4.38, 95% CI 3.21 to 5.99), and with saw palmetto use for more than 14 days (OR 1.89) [47].
 
-**Bleeding risk:** A man taking saw palmetto had severe bleeding during surgery; his prolonged bleeding time returned to normal within days of stopping the herb (Cheema et al., *J Intern Med* 2001) [48]. A man who took saw palmetto before hernia surgery later developed a large retroperitoneal hematoma [71]. In laboratory tests an acidic fatty fraction of the extract inhibited cyclooxygenase (Breu et al., *Arzneimittel-forschung* 1992) [49]. A 2015 review lists saw palmetto among supplements with reported bleeding risks and advises stopping such supplements before surgery [72].
+**Bleeding risk:** A man taking saw palmetto had severe bleeding during surgery; his prolonged bleeding time returned to normal within days of stopping the herb (Cheema et al., *J Intern Med* 2001) [48]. A man who took saw palmetto before hernia surgery later developed a large retroperitoneal hematoma [71]. In laboratory tests an acidic fatty fraction of the extract inhibited cyclooxygenase (Breu et al., *Arzneimittel-forschung* 1992) [49]. A 2015 review lists saw palmetto among supplements with reported bleeding risks and recommends stopping herbal medicines about 2 weeks before planned surgery [72].
 
-**Hepatic and pancreatic effects:** Case reports link saw palmetto to inflammation of the liver or pancreas that improved after stopping it. In one man, hepatitis and pancreatitis cleared when he stopped saw palmetto and returned twice when he restarted it (Jibrin et al., *South Med J* 2006) [68]. Another man developed acute pancreatitis while taking saw palmetto and recovered in hospital [69]. A 2026 case report describes cholestatic liver injury attributed to saw palmetto, though the man had also taken other drugs [70]. For severe upper belly pain with vomiting, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+**Hepatic and pancreatic effects:** Case reports link saw palmetto to inflammation of the liver or pancreas that improved after stopping it or with treatment. In one man, hepatitis and pancreatitis cleared when he stopped saw palmetto and returned twice when he restarted it (Jibrin et al., *South Med J* 2006) [68]. Another man developed acute pancreatitis while taking saw palmetto and recovered in hospital [69]. A 2026 case report describes cholestatic liver injury attributed to saw palmetto, though the man had also taken other drugs [70]. LiverTox, an NIH resource, says saw palmetto has been implicated in rare cases of clinically apparent liver injury, but its specific role remains uncertain [79]. See a doctor promptly for yellow skin or eyes or pale stools. For severe upper belly pain with vomiting, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 **Erectile dysfunction:** Decreased libido is among the most often reported adverse events [51]. A 2022 phytovigilance report examined erectile dysfunction attributed to saw palmetto (Gallo et al., *Br J Clin Pharmacol* 2022) [52]. In a 2021 meta-analysis, sexual function did not differ significantly between saw palmetto and placebo [46].
 
 **PSA levels:** Saw palmetto does not appear to affect PSA readings, even at higher-than-usual doses [1][16].
 
-**Hormonal effects:** Saw palmetto may be unsafe during pregnancy or while breastfeeding [1]. If you take prescription medicines, check with your doctor or pharmacist before starting.
+**Hormonal effects:** Saw palmetto may be unsafe during pregnancy or while breastfeeding [1]. If you take prescription medicines, check with your doctor or pharmacist before starting [1].
 
 ### Beta-Sitosterol Safety Profile
 
@@ -244,7 +244,7 @@ In the 1999 review, withdrawal rates were 7.8% with beta-sitosterol and 8.0% wit
 
 **Bleeding risk:** In laboratory and mouse studies, beta-sitosterol inhibited thrombin, an enzyme in blood clotting, and had anticoagulant activity when given by mouth (Gogoi et al., *J Nat Prod* 2018) [53]. Whether this affects bleeding in people is unknown.
 
-**Adverse event reports:** A 2023 review of FDA adverse event reports from 2004 to 2021 named beta-sitosterol among the supplements with the most reports [54]. Visible blood in your urine has several possible causes, so see your doctor if you notice it.
+**Adverse event reports:** A 2023 review of FDA adverse event reports from 2004 to 2021 named beta-sitosterol among the supplements with the most reports [54].
 
 ### Stinging Nettle Safety
 
@@ -254,15 +254,13 @@ A man developed breast enlargement (gynecomastia) for which nettle tea was the o
 
 ### Saw Palmetto Drug Interactions
 
-**Anticoagulants and antiplatelet agents:** A 2014 review lists saw palmetto among the herbs in case reports of severe adverse effects, such as bleeding, in people also taking warfarin [73]. Two systematic reviews found no reported drug interactions with saw palmetto [51][74]. If you take warfarin or another blood thinner, check with your doctor first.
+**Anticoagulants and antiplatelet agents:** A 2014 review lists saw palmetto among the herbs in case reports of severe adverse effects, such as bleeding, in people also taking warfarin [73]. A 2013 overview of systematic reviews noted moderately severe interactions for saw palmetto, and across the herbs it covered, antiplatelet agents and anticoagulants were the drugs that interacted most often [78]. Two earlier systematic reviews found no reported drug interactions with saw palmetto [51][74]. If you take warfarin or another blood thinner, check with your doctor first.
 
-**Hormonal medications:** If you take prescription medicines, check with your doctor or pharmacist before starting.
+**Hormonal medications:** If you take prescription medicines, check with your doctor or pharmacist before starting [1].
 
 **Alpha-blockers:** Adding saw palmetto to silodosin or tamsulosin has been studied for benefit, not for interactions [21][22].
 
-**Cytochrome P450:** A 2009 systematic review found no reported interactions between saw palmetto and prescribed drugs [74].
-
-**Pre-surgical considerations:** Stop saw palmetto before planned surgery, because of the reported bleeding cases [48][71][72].
+**Pre-surgical considerations:** Stop saw palmetto about 2 weeks before planned surgery, because of the reported bleeding cases [48][71][72].
 
 ### Beta-Sitosterol Drug Interactions
 
@@ -272,7 +270,7 @@ A man developed breast enlargement (gynecomastia) for which nettle tea was the o
 
 ### Stinging Nettle Interactions
 
-If you take prescription medicines, check with your doctor or pharmacist before starting.
+If you take prescription medicines, check with your doctor or pharmacist before starting [1].
 
 ### Supplement-Supplement Interactions
 
@@ -293,9 +291,7 @@ Beta-sitosterol and other plant sterols are found in many foods. Dietary sources
 
 These foods are listed in a review of sitosterolemia as rich in plant sterols [77].
 
-**Pumpkin seeds:** In the GRANU trial, 5 g of pumpkin seed twice a day gave more responders than placebo, though the authors asked for confirmation [13].
-
-**Selenium-rich foods:** Given the SELECT result and the link between high-dose selenium supplements and prostate cancer death, food may be the safer source of selenium [36][67].
+**Pumpkin seeds:** In the partially blinded GRANU trial, 5 g of pumpkin seed twice a day gave more responders than placebo, a difference the authors called descriptively significant, and they asked for confirmation [13].
 
 **Zinc-rich foods:** Higher dietary zinc was linked to BPH in one Greek study [37], and high-dose zinc supplements to advanced prostate cancer [38], so neither supports extra zinc for the prostate.
 
@@ -414,3 +410,7 @@ These foods are listed in a review of sitosterolemia as rich in plant sterols [7
 [76] Gylling H, et al. Plant sterols and plant stanols in the management of dyslipidaemia and prevention of cardiovascular disease. Atherosclerosis. 2014;232(2):346-60. PMID: 24468148. https://pubmed.ncbi.nlm.nih.gov/24468148/
 
 [77] Yoo EG. Sitosterolemia: a review and update of pathophysiology, clinical spectrum, diagnosis, and management. Ann Pediatr Endocrinol Metab. 2016;21(1):7-14. PMID: 27104173. https://pubmed.ncbi.nlm.nih.gov/27104173/
+
+[78] Posadzki P, et al. Herb-drug interactions: an overview of systematic reviews. Br J Clin Pharmacol. 2013;75(3):603-18. PMID: 22670731. https://pubmed.ncbi.nlm.nih.gov/22670731/
+
+[79] LiverTox: Clinical and Research Information on Drug-Induced Liver Injury. "Saw Palmetto." National Institute of Diabetes and Digestive and Kidney Diseases; updated 2020. PMID: 31643699. https://pubmed.ncbi.nlm.nih.gov/31643699/
