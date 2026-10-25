@@ -6,7 +6,7 @@ publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["chromium", "chromium picolinate", "chromium polynicotinate", "chromium chloride", "chromium glycinate", "blood sugar", "diabetes", "insulin resistance", "hba1c", "weight loss", "hdl", "cholesterol", "triglycerides", "insulin", "metabolic syndrome"]
-summary: "Reference on chromium. Brad's view: its role and essential status are unsettled, most people get enough from diet, and megadoses are the main risk. Trials suggest small, uncertain effects on blood sugar and weight. Talk to your doctor first if you take insulin or diabetes medicines."
+summary: "Reference on chromium. Brad's view: its role and essential status are unsettled, most people get enough from diet, and megadoses are the main risk. Talk to your doctor first if you take insulin or diabetes medicines."
 reviewed: "2026-10-25"
 sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/Chromium-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:39efa66fc856ccc513c5f54c390717e56b201fbdeecfa521d83dc28ce314c6e7"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad","checked":"2026-10-25","fingerprint":"publishedAt:2025-01-07T00:08:13Z"}]
 ---
@@ -15,15 +15,15 @@ sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/Chromium-He
 
 ## Current view (reviewed 25 October 2026)
 
-Brad calls chromium an odd trace mineral: how it works, and what symptoms a deficiency would cause, have not yet been identified, so it cannot necessarily be considered essential ([Brad, 7 Jan 2025](https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad)). Recommended intakes once ranged from 11 mcg in children up to 25 to 35 mcg in healthy adults and as much as 45 mcg in breastfeeding women, but Brad notes these were cautiously retracted, not because chromium is bad, but because the evidence behind them still needs more testing ([Brad, 7 Jan 2025](https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad)). For trace minerals in general, he says a healthy diet provides all you need and then some, and a small amount in a multivitamin and mineral supplement is a way to be sure of getting enough ([Brad, 7 Jan 2025](https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad)). His main warning is megadosing: trace minerals almost all become toxic at megadose levels, so avoid supplements with hundreds of times more than you need ([Brad, 7 Jan 2025](https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad)).
+Brad calls chromium an odd trace mineral: how it works, and what symptoms a deficiency would cause, have not yet been identified, so it cannot necessarily be considered essential ([Brad, 7 Jan 2025](https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad)). Recommended intakes once ranged from 11 mcg in children up to 25 to 35 mcg in healthy adults and as much as 45 mcg in breastfeeding women, but Brad notes these were cautiously retracted, not because chromium is bad, but because the evidence behind them still needs more testing ([Brad, 7 Jan 2025](https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad)); in fact, Europe's EFSA judged in 2014 that setting chromium intake recommendations would be inappropriate, while the US AIs from 2001 still stand [1][7]. For trace minerals in general, he says a healthy diet provides all you need and then some, and a small amount in a multivitamin and mineral supplement is a way to be sure of getting enough ([Brad, 7 Jan 2025](https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad)). His main warning is megadosing: trace minerals almost all become toxic at megadose levels, so avoid supplements with hundreds of times more than you need ([Brad, 7 Jan 2025](https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad)).
 
 ## Key safety points
 
-- Chromium may lower blood sugar, so with insulin, metformin or other diabetes medicines it could raise the risk of hypoglycemia; talk to your doctor first, as medicine doses may need to come down [1][65]. If someone with diabetes is unconscious, having a seizure, or cannot swallow safely, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) and give nothing by mouth.
-- Taking chromium picolinate at the same time as levothyroxine reduced levothyroxine absorption in a small study, so take them several hours apart [78].
-- The US Food and Nutrition Board noted that people with kidney or liver disease might be more prone to harm from high chromium intakes, so ask your doctor first [1].
-- No upper limit has been set because the data are limited, and long-term safety in humans has not been studied [1][77]. Isolated case reports link chromium supplements to anemia, low platelets, liver dysfunction, kidney failure, muscle breakdown and low blood sugar [1].
-- In healthy adults without diabetes or obesity, 500 mcg of chromium picolinate twice a day did not improve insulin sensitivity, and those with the highest blood chromium had worse insulin sensitivity [44].
+- Chromium may lower blood sugar, so with insulin, metformin or other diabetes medicines it could raise the risk of hypoglycemia; talk to your doctor first, as doses may need to come down [1][65]. If someone with diabetes is unconscious, having a seizure, or cannot swallow safely, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) and give nothing by mouth.
+- Chromium picolinate taken with levothyroxine reduced levothyroxine absorption in a small study, so take them several hours apart [78].
+- The US Food and Nutrition Board noted people with kidney or liver disease might be more prone to harm from high intakes, so ask your doctor first [1].
+- No upper limit has been set because the data are limited, and long-term safety in humans has not been studied [1][77]. Isolated case reports link chromium supplements to anemia, low platelets, liver dysfunction, kidney failure, muscle breakdown and low blood sugar [1]; a woman taking 1,200 to 2,400 mcg a day of chromium picolinate needed dialysis [80].
+- In healthy, non-obese adults, 500 mcg of chromium picolinate twice a day did not improve insulin sensitivity, and those with the highest blood chromium had worse insulin sensitivity [44].
 - People sensitised to chromate can develop skin inflammation (systemic contact dermatitis) after taking chromium picolinate [76].
 - Side effects reported in weight-loss trials included watery stools, vertigo, headaches and hives [59].
 
@@ -148,7 +148,7 @@ PCOS is a common endocrine disorder affecting women of reproductive age, charact
 
 **Weight and metabolic outcomes.** Maleki et al. (2018) conducted a systematic review concluding that chromium supplementation does not improve weight loss or metabolic and hormonal variables in PCOS patients [54].
 
-**Individual trial (IVF patients).** Jamilian et al. (2018) conducted an RCT in infertile PCOS women undergoing IVF. Chromium supplementation improved glycemic control markers and reduced oxidative stress, but sample size was small [55].
+**Individual trial (IVF patients).** Jamilian et al. (2018) gave 40 infertile women with PCOS who were candidates for IVF 200 mcg/day of chromium or placebo for 8 weeks. Chromium lowered fasting glucose, insulin and insulin resistance and reduced oxidative stress; its lipid results are under Dyslipidemia below [55].
 
 **Synthesis.** The evidence on chromium for PCOS is mixed. One meta-analysis found small reductions in BMI, free testosterone and fasting insulin, another found testosterone rose, and effects on insulin resistance are small and of uncertain clinical significance. Larger, longer trials are needed before chromium can be recommended as a standard treatment for PCOS.
 
@@ -158,7 +158,7 @@ Numerous studies have found associations between poor chromium status and elevat
 
 **In type 2 diabetes (negative result).** A trial of 71 participants with poorly controlled type 2 diabetes found that 600 mcg/day chromium picolinate for 4 months had no effect on total cholesterol, HDL, LDL, or triglycerides (Paiva et al., *J Trace Elem Med Biol*, 2015) [28].
 
-**In PCOS (positive result).** An 8-week trial in 40 women with PCOS found that 200 mcg/day chromium picolinate significantly decreased serum triglycerides (-19.2 vs +8.3 mg/dL) and total cholesterol (-15.3 vs -0.6 mg/dL) compared to placebo (Jamilian et al., *Biol Trace Elem Res*, 2018) [55].
+**In PCOS (positive result).** The same 8-week IVF trial in 40 infertile women with PCOS (see above) found that 200 mcg/day chromium significantly decreased serum triglycerides (-19.2 vs +8.3 mg/dL) and total cholesterol (-15.3 vs -0.6 mg/dL) compared to placebo (Jamilian et al., *Biol Trace Elem Res*, 2018) [55].
 
 **HDL and triglyceride effects (meta-analyses).** Multiple meta-analyses examining chromium in diabetes and PCOS have shown no significant changes in total cholesterol or LDL cholesterol [1][35][36]. However, some meta-analyses have found that chromium increases HDL cholesterol by 1.73-4.64 mg/dL and decreases triglycerides by 11.71-26.57 mg/dL [1].
 
@@ -174,7 +174,7 @@ The hypothesis that chromium might aid weight loss is based on its role in insul
 
 **2019 meta-analysis (21 trials, n=1,316).** This analysis of adults with overweight or obesity (trial durations 9-24 weeks, chromium doses 200-1,000 mcg/day, primarily chromium picolinate) found that participants taking chromium lost significantly more weight than placebo: 0.75 kg, with a 0.40 kg/m2 reduction in BMI and 0.68% reduction in body fat percentage. There was no significant effect on waist circumference or waist-to-hip ratio (Tsang et al., *Clin Obes*, 2019) [57].
 
-**2013 Cochrane Review.** This systematic review of nine trials (622 participants) found chromium picolinate reduced body weight by 1.1 kg more than placebo after 12 to 16 weeks, an effect the authors called of "debatable clinical relevance", with low-quality evidence (Tian et al., *Cochrane Database Syst Rev*, 2013) [58].
+**2013 Cochrane Review.** This systematic review included nine trials (622 participants). Pooled across 6 trials (392 participants), chromium picolinate reduced body weight by 1.1 kg more than placebo after 12 to 16 weeks, an effect the authors called of "debatable clinical relevance", with low-quality evidence. They found no current, reliable evidence to guide firm decisions on its efficacy and safety (Tian et al., *Cochrane Database Syst Rev*, 2013) [58].
 
 **2013 systematic review and meta-analysis.** Onakpoya et al. also found a small but statistically significant reduction in body weight (0.50 kg) with chromium in overweight and obese adults, and judged its clinical relevance uncertain (*Obes Rev*, 2013) [59].
 
@@ -186,7 +186,7 @@ The hypothesis that chromium might aid weight loss is based on its role in insul
 
 **Sports performance.** A 2003 review found that more than a decade of human studies showed no effect of chromium picolinate on body composition in healthy people, even with exercise training [74].
 
-**Synthesis.** Chromium supplementation, primarily as chromium picolinate, reduces body weight and body fat percentage to a very small but statistically significant extent (approximately 0.75 kg over 9-24 weeks). This is well below what would be considered clinically meaningful for weight management, and the quality of evidence is low. Chromium should not be relied upon as a weight loss supplement.
+**Synthesis.** Chromium supplementation, primarily as chromium picolinate, reduces body weight and body fat percentage to a very small but statistically significant extent (approximately 0.75 kg over 9-24 weeks). Its clinical relevance for weight management remains uncertain, and the quality of evidence is low [57][58]. Chromium should not be relied upon as a weight loss supplement.
 
 ### Cognitive Function
 
@@ -294,6 +294,8 @@ Side effects reported in weight-loss trials included [59]:
 - Headaches
 - Hives (urticaria)
 
+In the 2013 Cochrane review, only three trials reported adverse events: two serious adverse events occurred with 1,000 mcg of chromium picolinate, one with 400 mcg and one with placebo [58].
+
 ### Serious Adverse Effects (Case Reports)
 
 Isolated case reports link chromium supplements to the problems below, though causality has not been established [1][74]:
@@ -303,6 +305,8 @@ Isolated case reports link chromium supplements to the problems below, though ca
 - **Renal:** Kidney failure
 - **Musculoskeletal:** Rhabdomyolysis (muscle breakdown)
 - **Other:** Dermatitis, weight loss, hypoglycemia
+
+In one case, a 33-year-old woman who took 1,200 to 2,400 mcg a day of chromium picolinate for 4 to 5 months to lose weight developed anemia, low platelets, hemolysis, liver dysfunction and kidney failure needing hemodialysis; she recovered fully [80]. In another, a patient developed toxic hepatitis after 5 months of chromium polynicotinate taken with plant extracts for weight loss; liver chromium was more than 10 times normal, and the hepatitis resolved after stopping [75].
 
 The FNB noted that while no adverse effects have been definitively linked to high chromium intakes from food or supplements (and therefore no UL was established), caution may be warranted due to limited long-term safety data [2]. The FNB specifically noted that people with renal and liver disease might be susceptible to adverse effects [2].
 
@@ -320,7 +324,7 @@ Two laboratory studies suggested chromium picolinate could damage DNA (Speetjens
 
 ### Neurotransmitter Concerns with Picolinate Form
 
-A 2003 review noted that possible neurological effects of chromium picolinate, good or bad, need further study [74]. People with depression, bipolar disorder or psychosis should check with their doctor before taking chromium picolinate, and a non-picolinate form may be preferable.
+A 2003 review noted that possible neurological effects of chromium picolinate, good or bad, need further study [74].
 
 ### Acute Toxicity
 
@@ -362,13 +366,13 @@ Prostaglandin inhibitors such as aspirin increase chromium absorption. No clinic
 Chromium picolinate at doses of 200-1,000 mcg/day may produce modest reductions in fasting glucose and HbA1c (approximately 0.6% average HbA1c reduction) in some people with type 2 diabetes, particularly those with poor glycemic control. However, the evidence is mixed, effect sizes are small, and major organizations including the American Diabetes Association do not recommend routine chromium supplementation for diabetes [32][34][41][42].
 
 **Is chromium effective for weight loss?**
-Chromium produces statistically significant but clinically insignificant weight loss -- approximately 0.75 kg over 9-24 weeks, with a 0.68% reduction in body fat. This is well below what would be considered meaningful for weight management [57][58].
+Chromium produces statistically significant weight loss of uncertain clinical relevance: about 0.75 kg, with a 0.68% reduction in body fat [57][58].
 
 **Which form of chromium is best?**
 Chromium picolinate has the most clinical evidence [1]. All forms are poorly absorbed, and NIH describes their absorption as similar [1]. The 43.4% absorption advantage often quoted for glycinate comes from a zinc study, not chromium [24].
 
 **Should healthy people take chromium supplements?**
-There is no evidence that chromium supplementation benefits healthy, non-diabetic individuals. One study found that high-dose chromium (1,000 mcg/day) actually worsened insulin sensitivity in healthy adults who achieved high blood levels [44]. Most people in developed countries meet the Adequate Intake through diet alone.
+There is no evidence that chromium supplementation benefits healthy, non-diabetic individuals. In one trial, 500 mcg of chromium picolinate twice a day did not improve insulin sensitivity in healthy adults, and those with the highest blood chromium had worse insulin sensitivity [44]. Most people in developed countries meet the Adequate Intake through diet alone.
 
 **Is chromium safe?**
 No Tolerable Upper Intake Level has been set because the data are limited [2]. In trials, usual doses caused no more adverse events than placebo [37], but isolated case reports link chromium supplements to liver dysfunction, kidney failure, blood disorders and other problems, though causality is uncertain [1].
@@ -524,6 +528,8 @@ This is debated. The US Food and Nutrition Board considers it essential (2001), 
 
 [74] Vincent JB. "The potential value and toxicity of chromium picolinate as a nutritional supplement, weight loss agent and muscle development agent." *Sports Med*. 2003;33(3):213-230. [https://pubmed.ncbi.nlm.nih.gov/12656641/](https://pubmed.ncbi.nlm.nih.gov/12656641/)
 
+[75] Lança S, Alves A, Vieira AI, Barata J, de Freitas J, de Carvalho A. "Chromium-induced toxic hepatitis." *Eur J Intern Med*. 2002;13(8):518-520. [https://doi.org/10.1016/s0953-6205(02)00164-4](https://doi.org/10.1016/s0953-6205(02)00164-4) [https://pubmed.ncbi.nlm.nih.gov/12446198/](https://pubmed.ncbi.nlm.nih.gov/12446198/)
+
 [76] Fowler JF Jr. "Systemic contact dermatitis caused by oral chromium picolinate." *Cutis*. 2000;65(2):116. [https://pubmed.ncbi.nlm.nih.gov/10696566/](https://pubmed.ncbi.nlm.nih.gov/10696566/)
 
 [77] Landman GW, Bilo HJ, Houweling ST, Kleefstra N. "Chromium does not belong in the diabetes treatment arsenal: Current evidence and future perspectives." *World J Diabetes*. 2014;5(2):160-164. [https://pubmed.ncbi.nlm.nih.gov/24748929/](https://pubmed.ncbi.nlm.nih.gov/24748929/)
@@ -531,3 +537,5 @@ This is debated. The US Food and Nutrition Board considers it essential (2001), 
 [78] John-Kalarickal J, Pearlman G, Carlson HE. "New medications which decrease levothyroxine absorption." *Thyroid*. 2007;17(8):763-765. [https://pubmed.ncbi.nlm.nih.gov/17725434/](https://pubmed.ncbi.nlm.nih.gov/17725434/)
 
 [79] Roeback JR, Hla KM, Chambless LE, et al. "Effects of chromium supplementation on serum high-density lipoprotein cholesterol levels in men taking beta-blockers. A randomized, controlled trial." *Ann Intern Med*. 1991;115(12):917-924. [https://pubmed.ncbi.nlm.nih.gov/1683196/](https://pubmed.ncbi.nlm.nih.gov/1683196/)
+
+[80] Cerulli J, Grabe DW, Gauthier I, Malone M, McGoldrick MD. "Chromium picolinate toxicity." *Ann Pharmacother*. 1998;32(4):428-431. [https://doi.org/10.1345/aph.17327](https://doi.org/10.1345/aph.17327) [https://pubmed.ncbi.nlm.nih.gov/9562138/](https://pubmed.ncbi.nlm.nih.gov/9562138/)
