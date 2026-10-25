@@ -15,7 +15,7 @@ sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/garcinia-cam
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. NIH's complementary health center says it is unclear whether garcinia cambogia products help with weight loss: some evidence suggests a modest effect, while other evidence shows none [2]. In a 2011 meta-analysis, garcinia extract providing 1,000 to 2,800 mg a day of hydroxycitric acid (HCA) for 2 to 12 weeks gave a mean of 0.88 kg more weight loss than placebo, but the effect was no longer significant in the two rigorously designed trials [30]. Case reports link garcinia products to severe liver injury, including liver failure that needed a transplant and death, and to serotonin toxicity in a patient also taking SSRI antidepressants [7][26][30]. All trials have been short, so long-term safety is unknown, and anyone who takes medicines or is pregnant or breastfeeding should talk to a doctor first [2][30].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. NIH's complementary health center says it is unclear whether garcinia cambogia products help with weight loss: some evidence suggests a modest effect, while other evidence shows none [2]. In a 2011 meta-analysis, garcinia extract providing 1,000 to 2,800 mg a day of hydroxycitric acid (HCA) for 2 to 12 weeks gave a mean of 0.88 kg more weight loss than placebo, but the effect was no longer significant in the two rigorously designed trials [30]. Case reports link garcinia products to severe liver injury, including liver failure that needed a transplant and death, and to serotonin toxicity in a patient also taking SSRI antidepressants [7][26][30]. All trials have been short, so long-term safety is unknown; anyone who takes medicines should talk to a doctor first, and with little known about pregnancy and breastfeeding, garcinia is best avoided then [2][30].
 
 ## Key safety points
 
@@ -155,11 +155,11 @@ Laboratory and animal studies suggest that HCA may stop calcium oxalate crystals
 
 **Human evidence:**
 
-One randomized trial in people has tested HCA:
+One randomized trial in people has tested a supplement containing HCA:
 
-- **Cano García et al. (2023)**: In 81 patients with calcium stones having shock wave lithotripsy, every patient in the HCA group had stone fragmentation, while 17% of those on placebo did not (p = 0.03) [32].
+- **Cano García et al. (2023)**: In 81 patients with calcium stones having shock wave lithotripsy, every patient given FagolitosPlus, a supplement that combines HCA with magnesium, vitamin B6, zinc and vitamin A, had stone fragmentation, while 17% of those on placebo did not (p = 0.03) [32].
 
-**Assessment:** The laboratory and animal results are promising, and one trial suggests HCA may help calcium stone fragmentation with shock wave treatment [32]. The authors of the Nature study concluded that their findings support exploring HCA as an alternative to citrate for treating kidney stones [18].
+**Assessment:** The laboratory and animal results are promising, and one trial suggests a combination supplement containing HCA may help calcium stone fragmentation with shock wave treatment, though it cannot show how much HCA itself contributed [32]. The authors of the Nature study concluded that their findings support exploring HCA as an alternative to citrate for treating kidney stones [18].
 
 ### Serotonin Modulation
 
@@ -186,8 +186,8 @@ Clinical trials of garcinia cambogia have used a range of doses, expressed as ex
 ### Timing and Administration
 
 - **Empty stomach:** Preuss and colleagues' overview of the maker's own HCA-SX studies reported that it was better absorbed without food [33].
-- **Before meals:** Trials gave it 30-60 min before meals [15][33].
-- **Divided doses:** Trials gave the daily amount in three doses [10][17][33].
+- **Before meals:** Several trials gave it 30-60 min before meals [15][33].
+- **Divided doses:** Several trials gave the daily amount in three doses [10][17][33].
 
 ### Typical Supplement Doses
 
@@ -247,9 +247,9 @@ Health agencies have responded to the liver reports:
 - **United States (FDA):** Lunsford and colleagues note that HCA is also found in weight-loss supplements that the FDA banned in 2009 for liver toxicity [7]. The LiverTox database maintained by the National Institute of Diabetes and Digestive and Kidney Diseases catalogues the hepatotoxicity evidence [26].
 - **NCCIH assessment:** The NIH's National Center for Complementary and Integrative Health states: "It may be unsafe to consume garcinia cambogia products, including multi-ingredient products containing garcinia cambogia extract. Several cases of liver damage have been reported. Some of these cases were severe, but this appears to be uncommon" [2].
 
-### Psychiatric Effects — Mania
+### Psychiatric Effects: Mania
 
-Supplements containing garcinia have been implicated in three cases of mania, which might have been caused by the serotonergic activity of HCA [27][30]. Symptoms included grandiosity (an unrealistic sense of superiority), irritability, pressured speech and a decreased need for sleep [30]. Mania, sometimes with psychosis, has been reported, including in people with no history of bipolar disorder [38]. A 2018 systematic review counted four garcinia case reports, and three of those patients had a past history of bipolar disorder [37]. People who have had mania or have bipolar disorder should talk to their doctor before taking garcinia [37].
+The NIH fact sheet cites three cases of mania with supplements containing garcinia, which might have been caused by the serotonergic activity of HCA [27][30]. Symptoms included grandiosity (an unrealistic sense of superiority), irritability, pressured speech and a decreased need for sleep [30]. Mania, sometimes with psychosis, has been reported, including in people with no history of bipolar disorder [38]. A 2018 systematic review counted four garcinia case reports, and three of those patients had a past history of bipolar disorder [37]. People who have had mania or have bipolar disorder should talk to their doctor before taking garcinia [37].
 
 ### Testicular Toxicity (Animal Data)
 
@@ -265,7 +265,7 @@ Little is known about whether it is safe to use Garcinia cambogia during pregnan
 
 The most important interaction concern involves SSRI (selective serotonin reuptake inhibitor) antidepressants. NCCIH reports interactions between garcinia cambogia and some drugs that affect serotonin [2].
 
-**Case report (Lopez et al., 2014):** This case report described serotonin toxicity associated with an over-the-counter garcinia supplement [22]. The NIH weight-loss fact sheet describes the patient as taking garcinia together with two SSRI medicines [30].
+**Case report (Lopez et al., 2014):** A woman taking a garcinia supplement every day developed serotonin toxicity while on escitalopram, which was then stopped. After 2 weeks without any antidepressant she started sertraline while still taking garcinia, and serotonin toxicity returned [22].
 
 **Mechanism:** In rat brain tissue, HCA-SX inhibited serotonin uptake much as SSRIs do, and serum serotonin rose in an 8-week human study [33][34]. Because SSRIs also raise serotonin, the combination may push serotonin activity too high.
 
