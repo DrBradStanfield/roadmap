@@ -1,1 +1,650 @@
-[]
+[
+ {
+  "check": "AC2",
+  "handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+  "match": "token \"65 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Blood Pressure:** In 41 overweight or obese adults aged 65 or older, replacing the usual cooking oils with EVOO for...\"",
+  "reason": "AC2 olive oil tokeniser case from the writer's report notes (+/- units, SEM, middle-dot decimals, number words 'Twenty-three'/'Thirty', 'aged >= 65', '55-80 years', 'g/days'), numbers verbatim in the abstracts; ratified in decisions.md (Olive oil review, Ratified line: 14 AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+  "match": "token \"0.14 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Polyphenol-Dependent Effects on Cholesterol:** A meta-analysis of 26 trials found that high-polyphenol olive oil lo...\"",
+  "reason": "AC2 olive oil tokeniser case from the writer's report notes (+/- units, SEM, middle-dot decimals, number words 'Twenty-three'/'Thirty', 'aged >= 65', '55-80 years', 'g/days'), numbers verbatim in the abstracts; ratified in decisions.md (Olive oil review, Ratified line: 14 AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+  "match": "token \"20000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Observational Evidence:** In a Spanish case-control study of 171 people with a first heart attack, the top fifth of...\" | \"- **Dose-response evidence** suggests the cardiovascular and mortality links level off above about 20 g a day [74].\"",
+  "reason": "AC2 olive oil tokeniser case from the writer's report notes (+/- units, SEM, middle-dot decimals, number words 'Twenty-three'/'Thirty', 'aged >= 65', '55-80 years', 'g/days'), numbers verbatim in the abstracts; ratified in decisions.md (Olive oil review, Ratified line: 14 AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+  "match": "token \"25.5 mg/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Important Caveat: High Intake May Not Be Better:** In a crossover trial in 40 adults at risk of cardiovascular dise...\"",
+  "reason": "AC2 olive oil tokeniser case from the writer's report notes (+/- units, SEM, middle-dot decimals, number words 'Twenty-three'/'Thirty', 'aged >= 65', '55-80 years', 'g/days'), numbers verbatim in the abstracts; ratified in decisions.md (Olive oil review, Ratified line: 14 AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+  "match": "token \"5.1 mg/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Important Caveat: High Intake May Not Be Better:** In a crossover trial in 40 adults at risk of cardiovascular dise...\"",
+  "reason": "AC2 olive oil tokeniser case from the writer's report notes (+/- units, SEM, middle-dot decimals, number words 'Twenty-three'/'Thirty', 'aged >= 65', '55-80 years', 'g/days'), numbers verbatim in the abstracts; ratified in decisions.md (Olive oil review, Ratified line: 14 AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+  "match": "token \"2.4 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a 9-week trial, 41 women with excess body fat ate a calorie-restricted diet with a daily breakfast containing 25 m...\"",
+  "reason": "AC2 olive oil tokeniser case from the writer's report notes (+/- units, SEM, middle-dot decimals, number words 'Twenty-three'/'Thirty', 'aged >= 65', '55-80 years', 'g/days'), numbers verbatim in the abstracts; ratified in decisions.md (Olive oil review, Ratified line: 14 AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+  "match": "token \"1.3 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a 9-week trial, 41 women with excess body fat ate a calorie-restricted diet with a daily breakfast containing 25 m...\"",
+  "reason": "AC2 olive oil tokeniser case from the writer's report notes (+/- units, SEM, middle-dot decimals, number words 'Twenty-three'/'Thirty', 'aged >= 65', '55-80 years', 'g/days'), numbers verbatim in the abstracts; ratified in decisions.md (Olive oil review, Ratified line: 14 AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+  "match": "token \"5.1 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a 9-week trial, 41 women with excess body fat ate a calorie-restricted diet with a daily breakfast containing 25 m...\"",
+  "reason": "AC2 olive oil tokeniser case from the writer's report notes (+/- units, SEM, middle-dot decimals, number words 'Twenty-three'/'Thirty', 'aged >= 65', '55-80 years', 'g/days'), numbers verbatim in the abstracts; ratified in decisions.md (Olive oil review, Ratified line: 14 AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+  "match": "token \"0.76\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Breast Cancer:** In 4152 PREDIMED women aged 60 to 80 years, breast cancer rates per 1000 person-years were 1.1 on ...\"",
+  "reason": "AC2 olive oil tokeniser case from the writer's report notes (+/- units, SEM, middle-dot decimals, number words 'Twenty-three'/'Thirty', 'aged >= 65', '55-80 years', 'g/days'), numbers verbatim in the abstracts; ratified in decisions.md (Olive oil review, Ratified line: 14 AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+  "match": "token \"1.06\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Breast Cancer:** In 4152 PREDIMED women aged 60 to 80 years, breast cancer rates per 1000 person-years were 1.1 on ...\"",
+  "reason": "AC2 olive oil tokeniser case from the writer's report notes (+/- units, SEM, middle-dot decimals, number words 'Twenty-three'/'Thirty', 'aged >= 65', '55-80 years', 'g/days'), numbers verbatim in the abstracts; ratified in decisions.md (Olive oil review, Ratified line: 14 AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"23\": Blood Pressure: In 41 overweight or obese adults aged 65 or older, replacing the usual cooking oils with EVOO for 3 m...",
+  "reason": "AC2 olive oil tokeniser case from the writer's report notes (+/- units, SEM, middle-dot decimals, number words 'Twenty-three'/'Thirty', 'aged >= 65', '55-80 years', 'g/days'), numbers verbatim in the abstracts; ratified in decisions.md (Olive oil review, Ratified line: 14 AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"30\": Prediabetes: In 30 people with impaired fasting glucose, a meal with 10 g of EVOO lowered blood glucose and triglycer...",
+  "reason": "AC2 olive oil tokeniser case from the writer's report notes (+/- units, SEM, middle-dot decimals, number words 'Twenty-three'/'Thirty', 'aged >= 65', '55-80 years', 'g/days'), numbers verbatim in the abstracts; ratified in decisions.md (Olive oil review, Ratified line: 14 AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"55 year\", \"80 year\": In 870 PREDIMED participants aged 55 to 80 years, followed for a median 8.9 years, the top third of extra-virgin oliv...",
+  "reason": "AC2 olive oil tokeniser case from the writer's report notes (+/- units, SEM, middle-dot decimals, number words 'Twenty-three'/'Thirty', 'aged >= 65', '55-80 years', 'g/days'), numbers verbatim in the abstracts; ratified in decisions.md (Olive oil review, Ratified line: 14 AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"0.54\": Breast Cancer: In 4152 PREDIMED women aged 60 to 80 years, breast cancer rates per 1000 person-years were 1.1 on the ...",
+  "reason": "AC2 olive oil tokeniser case from the writer's report notes (+/- units, SEM, middle-dot decimals, number words 'Twenty-three'/'Thirty', 'aged >= 65', '55-80 years', 'g/days'), numbers verbatim in the abstracts; ratified in decisions.md (Olive oil review, Ratified line: 14 AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "avocado-oil-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- About 30 to 50% of people allergic to latex react to some plant foods, avocado among them [48]. Reactions to eating...\" | \"**Latex-fruit syndrome:** Latex allergy can come with avocado allergy, because some of their proteins cross-react. Ab...\"",
+  "reason": "AC2 ruling 17 emergency number \"111\" in the avocado safety line; ratified in decisions.md (Avocado oil review Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "avocado-oil-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- About 30 to 50% of people allergic to latex react to some plant foods, avocado among them [48]. Reactions to eating...\" | \"**Latex-fruit syndrome:** Latex allergy can come with avocado allergy, because some of their proteins cross-react. Ab...\"",
+  "reason": "AC2 ruling 17 emergency number \"911\" in the avocado safety line; ratified in decisions.md (Avocado oil review Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "avocado-oil-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- About 30 to 50% of people allergic to latex react to some plant foods, avocado among them [48]. Reactions to eating...\" | \"**Latex-fruit syndrome:** Latex allergy can come with avocado allergy, because some of their proteins cross-react. Ab...\"",
+  "reason": "AC2 ruling 17 emergency number \"999\" in the avocado safety line; ratified in decisions.md (Avocado oil review Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "avocado-oil-benefits-forms-dosing-and-side-effects",
+  "match": "token \"24.5\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Avocado oil is rich in fat-soluble bioactive compounds, but the amounts vary with the fruit and the processing [63]. ...\" | \"| Vitamin E (mg/100 g) | 24.5 | 35.52 |\"",
+  "reason": "AC2 avocado glued-unit token (Berasategi '24.5','35.52 mg','228.27','4 hour'); ratified in decisions.md (Avocado oil review, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "avocado-oil-benefits-forms-dosing-and-side-effects",
+  "match": "token \"35.52 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Avocado oil is rich in fat-soluble bioactive compounds, but the amounts vary with the fruit and the processing [63]. ...\"",
+  "reason": "AC2 avocado glued-unit token (Berasategi '24.5','35.52 mg','228.27','4 hour'); ratified in decisions.md (Avocado oil review, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "avocado-oil-benefits-forms-dosing-and-side-effects",
+  "match": "token \"228.27\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Total phytosterols (mg/100 g, before heating) | 339.64 | 228.27 |\"",
+  "reason": "AC2 avocado glued-unit token (Berasategi '24.5','35.52 mg','228.27','4 hour'); ratified in decisions.md (Avocado oil review, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "avocado-oil-benefits-forms-dosing-and-side-effects",
+  "match": "token \"4 hour\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Vitamin E gone during heating at 180°C | At 4 hours | At 5 hours |\" | \"When avocado and olive oils were heated at 180°C, their stability was similar [62]. Vitamin E fell faster in avocado ...\"",
+  "reason": "AC2 avocado glued-unit token (Berasategi '24.5','35.52 mg','228.27','4 hour'); ratified in decisions.md (Avocado oil review, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Anaphylaxis after eating linseed (flaxseed) has been reported [38][65]. For trouble breathing or swelling of the fa...\" | \"Anaphylaxis after eating linseed (flaxseed) has been reported [38][65]. For trouble breathing or swelling of the face...\"",
+  "reason": "AC2 ruling 17 emergency number \"111\" in the flax safety line; ratified in decisions.md (Flaxseed oil review Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Anaphylaxis after eating linseed (flaxseed) has been reported [38][65]. For trouble breathing or swelling of the fa...\" | \"Anaphylaxis after eating linseed (flaxseed) has been reported [38][65]. For trouble breathing or swelling of the face...\"",
+  "reason": "AC2 ruling 17 emergency number \"0\" in the flax safety line; ratified in decisions.md (Flaxseed oil review Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Anaphylaxis after eating linseed (flaxseed) has been reported [38][65]. For trouble breathing or swelling of the fa...\" | \"Anaphylaxis after eating linseed (flaxseed) has been reported [38][65]. For trouble breathing or swelling of the face...\"",
+  "reason": "AC2 ruling 17 emergency number \"911\" in the flax safety line; ratified in decisions.md (Flaxseed oil review Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Anaphylaxis after eating linseed (flaxseed) has been reported [38][65]. For trouble breathing or swelling of the fa...\" | \"Anaphylaxis after eating linseed (flaxseed) has been reported [38][65]. For trouble breathing or swelling of the face...\"",
+  "reason": "AC2 ruling 17 emergency number \"999\" in the flax safety line; ratified in decisions.md (Flaxseed oil review Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+  "match": "token \"28\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In healthy adults, 6 g of ALA a day for 4 weeks, from ground flaxseed or flaxseed oil, did not change total, LDL or H...\"",
+  "reason": "AC2 spelled count 'Twenty-eight'; ratified in decisions.md (Flaxseed fix committed df90200d, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+  "match": "token \"0.21 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In healthy adults, 6 g of ALA a day for 4 weeks, from ground flaxseed or flaxseed oil, did not change total, LDL or H...\"",
+  "reason": "AC2 Pan 2009 '-0.21 and -0.16 mmol/L' form; ratified in decisions.md (Flaxseed fix committed df90200d, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+  "match": "token \"59\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Flaxseed oil alone** did not lower blood pressure in a 12-week trial in 59 overweight or obese adults whose reading...\"",
+  "reason": "AC2 spelled count ('59','60','85','440') in the abstract; ratified in decisions.md (Flaxseed oil review, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+  "match": "token \"60\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In pregnant people with gestational diabetes, some research suggests that flaxseed oil supplements containing ALA mig...\"",
+  "reason": "AC2 spelled count ('59','60','85','440') in the abstract; ratified in decisions.md (Flaxseed oil review, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+  "match": "token \"85\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a 6-month randomized trial in 85 women with cyclical breast pain, evening primrose oil (3,000 mg per day), vitamin...\"",
+  "reason": "AC2 spelled count ('59','60','85','440') in the abstract; ratified in decisions.md (Flaxseed oil review, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+  "match": "token \"440\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 440 women from the Nurses' Health Study, nuclear density (clouding) of the eye lens rose 16% more over five years ...\"",
+  "reason": "AC2 spelled count ('59','60','85','440') in the abstract; ratified in decisions.md (Flaxseed oil review, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-and-mct-oil-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[81] raw_quote shares no number with its body_line: In hypertensive rats, virgin coconut oil, with or without exercise, lowered blood pressure [30], ...",
+  "reason": "AC2 Junior 2021 abstract 'Forty-five hypertensive volunteers' (changed_tokens[81] and \"45\"); ratified in decisions.md (Coconut fix committed bddcdbe0, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-and-mct-oil-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Coconut allergy is rare, but anaphylaxis to coconut has been reported [68][71]. For trouble breathing or swelling o...\" | \"Coconut allergy is rare and is not directly linked to nut allergy [68]. A case report describes a child who became al...\"",
+  "reason": "AC2 ruling 17 emergency number \"111\" in the coconut safety line; ratified in decisions.md (Coconut/MCT review Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-and-mct-oil-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Coconut allergy is rare, but anaphylaxis to coconut has been reported [68][71]. For trouble breathing or swelling o...\" | \"Coconut allergy is rare and is not directly linked to nut allergy [68]. A case report describes a child who became al...\"",
+  "reason": "AC2 ruling 17 emergency number \"911\" in the coconut safety line; ratified in decisions.md (Coconut/MCT review Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-and-mct-oil-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Coconut allergy is rare, but anaphylaxis to coconut has been reported [68][71]. For trouble breathing or swelling o...\" | \"Coconut allergy is rare and is not directly linked to nut allergy [68]. A case report describes a child who became al...\"",
+  "reason": "AC2 ruling 17 emergency number \"999\" in the coconut safety line; ratified in decisions.md (Coconut/MCT review Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "coconut-and-mct-oil-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"45\": In hypertensive rats, virgin coconut oil, with or without exercise, lowered blood pressure [30], and lauric acid give...",
+  "reason": "AC2 Junior 2021 abstract 'Forty-five hypertensive volunteers' (changed_tokens[81] and \"45\"); ratified in decisions.md (Coconut fix committed bddcdbe0, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Allergic reactions to chia, including anaphylaxis, have been reported, and lab studies suggest cross-reactivity wit...\" | \"**Prevention:** Eat them soaked or mixed into moist food, not dry by the spoonful, especially if you have trouble swa...\" | \"- **Anaphylaxis:** Published case reports describe immediate allergic reactions to chia, including anaphylaxis [32]. ...\"",
+  "reason": "AC2 ruling 17 emergency number \"111\" in the chia safety line; ratified in decisions.md (Chia review Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Allergic reactions to chia, including anaphylaxis, have been reported, and lab studies suggest cross-reactivity wit...\" | \"**Prevention:** Eat them soaked or mixed into moist food, not dry by the spoonful, especially if you have trouble swa...\" | \"- **Anaphylaxis:** Published case reports describe immediate allergic reactions to chia, including anaphylaxis [32]. ...\"",
+  "reason": "AC2 ruling 17 emergency number \"0\" in the chia safety line; ratified in decisions.md (Chia review Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Allergic reactions to chia, including anaphylaxis, have been reported, and lab studies suggest cross-reactivity wit...\" | \"**Prevention:** Eat them soaked or mixed into moist food, not dry by the spoonful, especially if you have trouble swa...\" | \"- **Anaphylaxis:** Published case reports describe immediate allergic reactions to chia, including anaphylaxis [32]. ...\"",
+  "reason": "AC2 ruling 17 emergency number \"911\" in the chia safety line; ratified in decisions.md (Chia review Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Allergic reactions to chia, including anaphylaxis, have been reported, and lab studies suggest cross-reactivity wit...\" | \"**Prevention:** Eat them soaked or mixed into moist food, not dry by the spoonful, especially if you have trouble swa...\" | \"- **Anaphylaxis:** Published case reports describe immediate allergic reactions to chia, including anaphylaxis [32]. ...\"",
+  "reason": "AC2 ruling 17 emergency number \"999\" in the chia safety line; ratified in decisions.md (Chia review Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"5060 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Alpha-linolenic acid (ALA):** about 65% of the oil [12]; 5.06 g per 1-ounce serving [36]\" | \"**For omega-3 ALA intake:** One ounce of chia provides 5.06 g of ALA [36], more than the Adequate Intake of 1.1 g/day...\"",
+  "reason": "AC2 chia NIH-table unit form; ratified in decisions.md (Chia review, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"76 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Minerals:** one ounce (28.35 g) provides 95 mg of magnesium [4], and one tablespoon provides 76 mg of calcium [38]\" | \"- **Calcium:** 76 mg per tablespoon [38]\"",
+  "reason": "AC2 chia NIH-table unit form; ratified in decisions.md (Chia review, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"138\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Calories | 138 | 151 |\" | \"| 1 ounce (28.35 g) | 138 | 9.8 | 4.7 | 5.1 | 179 | 95 |\"",
+  "reason": "AC2 per-ounce value scaled from USDA FDC per-100 g (28.35/100), glycine FDC precedent; ratified in decisions.md (Chia fix committed 6ab65d20, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"151\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Calories | 138 | 151 |\"",
+  "reason": "AC2 per-ounce value scaled from USDA FDC per-100 g (28.35/100), glycine FDC precedent; ratified in decisions.md (Chia fix committed 6ab65d20, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"9800 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Dietary Fiber | 9.8 g | 7.7 g |\" | \"**Mechanisms:** The soluble fiber in chia seeds forms a gel in the digestive tract that may slow carbohydrate digesti...\"",
+  "reason": "AC2 per-ounce value scaled from USDA FDC per-100 g (28.35/100), glycine FDC precedent; ratified in decisions.md (Chia fix committed 6ab65d20, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"7700 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Dietary Fiber | 9.8 g | 7.7 g |\"",
+  "reason": "AC2 per-ounce value scaled from USDA FDC per-100 g (28.35/100), glycine FDC precedent; ratified in decisions.md (Chia fix committed 6ab65d20, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"4700 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Protein | 4.7 g | 5.2 g |\"",
+  "reason": "AC2 per-ounce value scaled from USDA FDC per-100 g (28.35/100), glycine FDC precedent; ratified in decisions.md (Chia fix committed 6ab65d20, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"5200 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Protein | 4.7 g | 5.2 g |\"",
+  "reason": "AC2 per-ounce value scaled from USDA FDC per-100 g (28.35/100), glycine FDC precedent; ratified in decisions.md (Chia fix committed 6ab65d20, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"6500 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| ALA Omega-3 | 5.1 g | 6.5 g |\"",
+  "reason": "AC2 per-ounce value scaled from USDA FDC per-100 g (28.35/100), glycine FDC precedent; ratified in decisions.md (Chia fix committed 6ab65d20, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"72 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Calcium | 179 mg | 72 mg |\"",
+  "reason": "AC2 per-ounce value scaled from USDA FDC per-100 g (28.35/100), glycine FDC precedent; ratified in decisions.md (Chia fix committed 6ab65d20, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"182 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Phosphorus | 244 mg | 182 mg |\"",
+  "reason": "AC2 per-ounce value scaled from USDA FDC per-100 g (28.35/100), glycine FDC precedent; ratified in decisions.md (Chia fix committed 6ab65d20, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Magnesium | 95 mg | 111 mg |\"",
+  "reason": "AC2 per-ounce value scaled from USDA FDC per-100 g (28.35/100), glycine FDC precedent; ratified in decisions.md (Chia fix committed 6ab65d20, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"115 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Potassium | 115 mg | 230 mg |\"",
+  "reason": "AC2 per-ounce value scaled from USDA FDC per-100 g (28.35/100), glycine FDC precedent; ratified in decisions.md (Chia fix committed 6ab65d20, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"230 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Potassium | 115 mg | 230 mg |\"",
+  "reason": "AC2 per-ounce value scaled from USDA FDC per-100 g (28.35/100), glycine FDC precedent; ratified in decisions.md (Chia fix committed 6ab65d20, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"37000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Mixed evidence overall:** In the 8-week trial in 66 adults with high triglycerides, chia lowered diastolic blood pr...\" | \"**For blood pressure and cardiometabolic support:** Trials showing effects on blood pressure and triglycerides used a...\" | \"Chia's effect on blood clotting is uncertain. A 2009 systematic review noted some evidence of possible anticoagulant ...\"",
+  "reason": "AC2 chia +/- SD tokeniser form; ratified in decisions.md (Chia review, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"6.3 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Mixed evidence overall:** In the 8-week trial in 66 adults with high triglycerides, chia lowered diastolic blood pr...\"",
+  "reason": "AC2 chia +/- SD tokeniser form; ratified in decisions.md (Chia review, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1.9 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Waist circumference reduction:** A 2025 meta-analysis of eight randomized controlled trials found that chia reduced...\"",
+  "reason": "AC2 chia +/- SD tokeniser form; ratified in decisions.md (Chia review, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.3 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Waist circumference reduction:** A 2025 meta-analysis of eight randomized controlled trials found that chia reduced...\"",
+  "reason": "AC2 chia +/- SD tokeniser form; ratified in decisions.md (Chia review, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"40 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Human data:** Human trials specifically testing chia's antioxidant effects remain limited. The 2024 meta-analysis s...\"",
+  "reason": "AC2 chia +/- SD tokeniser form; ratified in decisions.md (Chia review, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"9.8\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| 1 ounce (28.35 g) | 138 | 9.8 | 4.7 | 5.1 | 179 | 95 |\"",
+  "reason": "AC2 per-ounce value scaled from USDA FDC per-100 g (28.35/100), glycine FDC precedent; ratified in decisions.md (Chia fix committed 6ab65d20, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"4.7\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| 1 ounce (28.35 g) | 138 | 9.8 | 4.7 | 5.1 | 179 | 95 |\"",
+  "reason": "AC2 per-ounce value scaled from USDA FDC per-100 g (28.35/100), glycine FDC precedent; ratified in decisions.md (Chia fix committed 6ab65d20, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"5.1\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| 1 ounce (28.35 g) | 138 | 9.8 | 4.7 | 5.1 | 179 | 95 |\"",
+  "reason": "AC2 per-ounce value scaled from USDA FDC per-100 g (28.35/100), glycine FDC precedent; ratified in decisions.md (Chia fix committed 6ab65d20, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "token \"5100 mg\" changed between paired sentences and no entry covers it: ALA Omega-3 | 5.1 g | 6.5 g |",
+  "reason": "AC2 per-ounce value scaled from USDA FDC per-100 g (28.35/100), glycine FDC precedent; ratified in decisions.md (Chia fix committed 6ab65d20, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Bone Fracture Risk",
+  "reason": "AC4 heading removed or renamed by decision; ratified in decisions.md (Olive oil review, Ratified line: Bone Fracture Risk renamed Bone Fracture Prevention Evidence) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Seizure Risk with GLA",
+  "reason": "AC4 heading removed or renamed by decision; ratified in decisions.md (Flaxseed fix df90200d / Chia recheck entry Ratified lines (Estrogenic Effects emptied by the decided lignan cut; Seizure Risk with GLA renamed Epilepsy and GLA Oils)) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Estrogenic Effects",
+  "reason": "AC4 heading removed or renamed by decision; ratified in decisions.md (Flaxseed fix df90200d / Chia recheck entry Ratified lines (Estrogenic Effects emptied by the decided lignan cut; Seizure Risk with GLA renamed Epilepsy and GLA Oils)) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "coconut-and-mct-oil-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### MCT Powder",
+  "reason": "AC4 heading removed or renamed by decision; ratified in decisions.md (Coconut/MCT review and Coconut fix bddcdbe0 Ratified lines (AC4 x7 removed headings; Theoretical Interactions decided nit)) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "coconut-and-mct-oil-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Fractionated Coconut Oil",
+  "reason": "AC4 heading removed or renamed by decision; ratified in decisions.md (Coconut/MCT review and Coconut fix bddcdbe0 Ratified lines (AC4 x7 removed headings; Theoretical Interactions decided nit)) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "coconut-and-mct-oil-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: #### Wound Healing",
+  "reason": "AC4 heading removed or renamed by decision; ratified in decisions.md (Coconut/MCT review and Coconut fix bddcdbe0 Ratified lines (AC4 x7 removed headings; Theoretical Interactions decided nit)) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "coconut-and-mct-oil-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Coronary Artery Disease (Rare Condition)",
+  "reason": "AC4 heading removed or renamed by decision; ratified in decisions.md (Coconut/MCT review and Coconut fix bddcdbe0 Ratified lines (AC4 x7 removed headings; Theoretical Interactions decided nit)) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "coconut-and-mct-oil-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Ophthalmic Uses",
+  "reason": "AC4 heading removed or renamed by decision; ratified in decisions.md (Coconut/MCT review and Coconut fix bddcdbe0 Ratified lines (AC4 x7 removed headings; Theoretical Interactions decided nit)) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "coconut-and-mct-oil-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Comedogenic Risk",
+  "reason": "AC4 heading removed or renamed by decision; ratified in decisions.md (Coconut/MCT review and Coconut fix bddcdbe0 Ratified lines (AC4 x7 removed headings; Theoretical Interactions decided nit)) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "coconut-and-mct-oil-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Theoretical Interactions",
+  "reason": "AC4 heading removed or renamed by decision; ratified in decisions.md (Coconut/MCT review and Coconut fix bddcdbe0 Ratified lines (AC4 x7 removed headings; Theoretical Interactions decided nit)) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "coconut-and-mct-oil-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Other Dietary Sources of MCTs",
+  "reason": "AC4 heading removed or renamed by decision; ratified in decisions.md (Coconut/MCT review and Coconut fix bddcdbe0 Ratified lines (AC4 x7 removed headings; Theoretical Interactions decided nit)) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Phytoestrogens",
+  "reason": "AC4 heading removed or renamed by decision; ratified in decisions.md (Chia review, Ratified line: Phytoestrogens, CL-only content) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "avocado-oil-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Avocado Oil in Global Production and Environmental Context",
+  "reason": "AC7 heading contains 'product' but is not a Brad product section; ratified in decisions.md (Avocado oil review, Ratified line ('Production' contains 'Product'; not a product section)) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+  "match": "report says product mentions 15 -> 13, recomputed 15 -> 12",
+  "reason": "AC7 flaxseed product mentions 15 -> 12 (fell; 'omega-3 index' left the view); ratified in decisions.md (Flaxseed fix committed df90200d, Ratified line) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+  "match": "product section changed: ### Product Considerations",
+  "reason": "AC7 heading contains 'product' but is not a Brad product section; ratified in decisions.md (Flaxseed oil review, Ratified line: AC7 x3 'product' headings, not Brad product sections) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+  "match": "product section changed: ### Fish Allergy Concerns with Combination Products",
+  "reason": "AC7 heading contains 'product' but is not a Brad product section; ratified in decisions.md (Flaxseed oil review, Ratified line: AC7 x3 'product' headings, not Brad product sections) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+  "match": "product section changed: ### THC in Hemp Products",
+  "reason": "AC7 heading contains 'product' but is not a Brad product section; ratified in decisions.md (Flaxseed oil review, Ratified line: AC7 x3 'product' headings, not Brad product sections) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "coconut-and-mct-oil-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### How to Choose a Product",
+  "reason": "AC7 heading contains 'product' but is not a Brad product section; ratified in decisions.md (Coconut/MCT review, Ratified line: How to Choose a Product) (orchestrator 2026-10-26, masters-new-14).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ }
+]
