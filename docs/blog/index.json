@@ -2717,7 +2717,8 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/same-supplement-guide",
     "type": "reference",
     "product": "microvitamin",
-    "summary": "Reference on SAMe: depression, joint pain (osteoarthritis), liver health, fibromyalgia. Enteric-coated tosylate form; dosing 800-1,600 mg/day. Avoid in bipolar disorder; caution with antidepressants. Always discuss with your doctor."
+    "summary": "SAMe may help depression, but trial evidence is low quality. In osteoarthritis it eased pain about as well as NSAIDs in head-to-head trials, but pooled placebo trials were inconclusive. It can trigger mania. Talk to your doctor first if you have bipolar disorder or take an antidepressant.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Supplement (Not Melatonin) Improved Sleep in 155-Person Study",
@@ -2801,7 +2802,8 @@
     "publishedAt": "2025-09-28T09:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/saffron-benefits-forms-dosing",
     "type": "reference",
-    "summary": "Reference on saffron: mood support, depression, anxiety, sleep, eye health (macular degeneration), cognitive decline. Adults with mild-to-moderate depression or poor sleep. Standardized extracts (Affron, Safr'Inside); typical doses 28-30 mg/day. Caution with blood thinners. Always discuss with your doctor."
+    "summary": "Saffron, about 30 mg a day in trials, for low mood, mild to moderate depression and sleep. Studies suggest benefit, but trials are small, mostly Iranian, and show publication bias; it is not a stand-alone treatment. Talk to your doctor first if pregnant or on blood thinners or antidepressants.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Rhodiola: Benefits, Forms, Dosing, and Side Effects",
@@ -3761,7 +3763,8 @@
     "publishedAt": "2025-06-10T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/aloe-vera-gel-latex-guide",
     "type": "reference",
-    "summary": "Reference on aloe vera: skin healing, gut health, blood sugar, constipation, GERD. Topical use for burns, sunburn, psoriasis, acne; oral use for IBS, ulcerative colitis, diabetes. Gel vs latex distinction critical — latex carries carcinogenicity and liver toxicity risks. Always discuss with your doctor."
+    "summary": "Reference on aloe vera. Gel on the skin may help burns and some skin conditions; gel by mouth may lower blood sugar a little. Aloe latex and non-decolorized whole-leaf extract carry cancer and liver concerns. Talk to your doctor first if pregnant, breastfeeding, or on digoxin or diabetes medicines.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "If you’re struggling to find time to exercise, read this",
@@ -5852,7 +5855,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/shilajit-benefits-forms-dosing",
     "type": "reference",
-    "summary": "Reference on shilajit: testosterone support in older men, bone density in postmenopausal women, exercise fatigue reduction. Most evidence is small, short-term, and industry-funded. Resin (300-2000mg/day) or standardized extract (200-500mg/day). Heavy metal contamination risk — third-party testing essential. Always discuss with your doctor."
+    "summary": "Shilajit is a mineral resin used in Ayurveda. Small trials of purified extracts suggest gains in testosterone and slower bone loss, but the evidence is limited. Some samples contain lead, arsenic or thallium. Avoid it in pregnancy; talk to your doctor first if you take diabetes medicines.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Turmeric and Curcumin: Benefits, Best Forms, Dosing, and Side Effects",
@@ -7521,7 +7525,8 @@
     "publishedAt": "2025-04-15T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/reishi-mushroom-evidence-guide",
     "type": "reference",
-    "summary": "Reference on reishi mushroom: immune support, cancer adjunct, blood sugar, liver health. Evidence mostly preclinical; small trials. Extract or powder 1,500-5,400 mg/day. Liver injury risk; avoid with anticoagulants. Always discuss with your doctor."
+    "summary": "Reishi trials are small and low quality; Cochrane reviews do not back it as a first-line cancer treatment or for heart risk in diabetes. Reishi powder is linked to rare liver injury, including a death. Talk to your doctor first if you take a blood thinner or diabetes medicines or have liver disease.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Vitamin D: Benefits, Forms, Dosing, and Side Effects",
