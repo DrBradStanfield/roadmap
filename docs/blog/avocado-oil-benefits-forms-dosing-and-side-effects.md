@@ -6,24 +6,24 @@ publishedAt: "2025-05-20T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["avocado oil", "monounsaturated fat", "oleic acid", "cholesterol", "ldl", "hdl", "triglycerides", "heart health", "cardiovascular", "skin", "cooking oil", "olive oil", "seed oil", "inflammation", "blood pressure", "diabetes", "insulin resistance", "obesity", "weight loss", "vitamin e", "lutein", "Mediterranean diet", "smoke point", "phytosterols", "beta-sitosterol"]
-summary: "Reference on avocado oil, mostly monounsaturated fat. Heart and anticancer effects come from cell and animal studies; human trials used whole avocado, with mixed cholesterol results. It boosts carotenoid absorption from salad. Talk to your doctor first if you take warfarin or have a latex allergy."
+summary: "Avocado oil is mostly monounsaturated fat. Heart and cancer effects rest on lab and animal studies; human trials used whole avocado, with mixed cholesterol results. In one small trial it boosted carotenoid absorption from salad. Talk to your doctor first if you take warfarin or have a latex allergy."
 reviewed: "2026-10-26"
-sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/34146454/","checked":"2026-10-26","fingerprint":"sha256:b8844b084d6f07c677ec6024d7655894a1f5f1411b1d8a988a9710c39594903d"}]
+sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/34146454/","checked":"2026-10-26","fingerprint":"sha256:b8844b084d6f07c677ec6024d7655894a1f5f1411b1d8a988a9710c39594903d"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/foods-help-unclog-arteries","checked":"2026-10-26","fingerprint":"publishedAt:2024-09-10T20:19:42Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/avocado-oil-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/avocado-oil-benefits-forms-dosing-and-side-effects)*
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. Avocado oil is about 71% monounsaturated fat, but its effects on cancer, diabetes and heart disease have been shown in laboratory and animal studies, not in people [9][63]. Human trials have mostly used whole avocado, with mixed results: one meta-analysis found lower LDL cholesterol, another found no change in LDL but a small rise in HDL, and the large HAT trial found only modest cholesterol falls and no drop in visceral fat [27][28][60]. In one small trial, adding 24 g of avocado oil to a salad raised absorption of lutein, alpha-carotene and beta-carotene, much as whole avocado did [61]. Avocado has been reported to weaken the effect of warfarin, and people with latex allergy may also react to avocado [47][48][54].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Brad recommends swapping saturated fats for unsaturated ones such as avocados and extra-virgin olive oil; he has not discussed avocado oil itself ([Brad, 10 Sep 2024](https://drstanfield.com/blogs/articles/foods-help-unclog-arteries)). Avocado oil is about 71% monounsaturated fat, but its effects on cancer, diabetes and heart disease have been shown in laboratory and animal studies, not in people [9][63]. Human trials have mostly used whole avocado, with mixed results: one meta-analysis found lower LDL cholesterol, another found no change in LDL but a small rise in HDL, and the large HAT trial found only modest cholesterol falls and no drop in visceral fat [27][28][60]. In one small trial, adding 24 g of avocado oil to a salad raised absorption of lutein, alpha-carotene and beta-carotene, much as whole avocado did [61]. Avocado has been reported to weaken the effect of warfarin, and people with latex allergy may also react to avocado [47][48][54].
 
 ## Key safety points
 
-- A 1991 case report described avocado weakening the effect of warfarin [54]. If you take warfarin, talk to your doctor before changing how much avocado or avocado oil you eat.
+- A 1991 report in *The Lancet* described avocado weakening the effect of warfarin [54]. If you take warfarin, talk to your doctor before changing how much avocado or avocado oil you eat.
 - About 30 to 50% of people allergic to latex react to some plant foods, avocado among them [48]. Reactions to eating avocado have included anaphylaxis, sometimes in people without latex allergy [47][49]. For trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - Avocado oil in a sunscreen caused contact allergy in a case report [50].
 - Avocado oil is pure fat and high in calories [5][6]. Use it in place of other fats rather than on top of them [27].
-- In trials of avocado-soybean unsaponifiable supplements, side effects were similar to placebo [32].
+- Avocado poisoning has been reported in pet birds, rabbits and other animals. Keep avocado and its oil away from pet birds and rabbits [67].
 
 ## Brad's videos on this topic
 
@@ -35,7 +35,7 @@ Avocado oil is made from the flesh of the avocado fruit (*Persea americana* Mill
 
 Interest in the oil has grown, but a 2019 review found little known about avocado oil and the health effects of eating it [64].
 
-One tablespoon (approximately 14 g) provides approximately 124 kilocalories and 14 g of total fat, with roughly 10 g as monounsaturated oleic acid [5][6]. It contains no carbohydrates or protein. Its fat is about 71% monounsaturated, 13% polyunsaturated and 16% saturated [9].
+One tablespoon (approximately 14 g) provides approximately 124 kilocalories and 14 g of total fat, with roughly 10 g as monounsaturated oleic acid [5][6]. It contains no carbohydrates or protein. About 71% of its fatty acids are monounsaturated and 13% polyunsaturated, and 16% of its fatty acids are saturated [9].
 
 A 2013 review proposed that this fat profile helps promote healthy blood lipids and helps the body take up fat-soluble vitamins and phytochemicals from other foods [9].
 
@@ -55,7 +55,7 @@ Oil is extracted by cold pressing (sometimes with enzymes), by centrifugation wi
 
 ### Fatty Acid Profile
 
-Avocado oil's fat is about 71% monounsaturated, 13% polyunsaturated and 16% saturated [9], but composition varies widely between cultivars such as Hass, Reed, Ettinger and Fuerte [70].
+About 71% of avocado oil's fatty acids are monounsaturated and 13% polyunsaturated, and 16% of its fatty acids are saturated [9], but composition varies widely between cultivars such as Hass, Reed, Ettinger and Fuerte [70].
 
 In one oil sample analysed by gas chromatography, oleic acid made up 47.20% of the fatty acids, palmitic acid 23.66% and linoleic acid 13.46% [40]. Avocado oil had a higher omega-6 to omega-3 ratio than olive oil (14.05 before heating) [62].
 
@@ -65,14 +65,12 @@ Avocado oil is rich in fat-soluble bioactive compounds, but the amounts vary wit
 
 ### Comparison to Olive Oil
 
-Given that avocado oil is frequently compared to or marketed as a substitute for olive oil, a direct comparison is informative:
-
 | Property | Avocado Oil | Olive Oil |
 |----------|:---:|:---:|
 | Total phytosterols (mg/100 g, before heating) | 339.64 | 228.27 |
 | Vitamin E (mg/100 g) | 24.5 | 35.52 |
 | Vitamin E gone during heating at 180°C | At 4 hours | At 5 hours |
-| Large outcome trials | None (laboratory and animal studies only) | PREDIMED |
+| Large outcome trials | None (laboratory and animal studies only) | PREDIMED (Mediterranean diet with extra-virgin olive oil) |
 
 Sources: [62][63][69].
 
@@ -114,7 +112,7 @@ Avocado-soybean unsaponifiables (ASU) are an extract of avocado and soybean oils
 
 **Mixed evidence (hip osteoarthritis, structural):** In a 2-year trial of 163 people with hip osteoarthritis, ASU did not slow joint space loss overall. In a post hoc analysis of people with joint space at or below the median, loss was smaller with ASU (−0.43 mm with ASU, −0.86 mm with placebo) (Lequesne, *Arthritis Rheum*, 2002) [35].
 
-**Synthesis:** ASU may modestly ease knee osteoarthritis pain, but hip trials found no clear symptom benefit and only hints of slower joint damage [32][34][35]. Importantly, ASUs are specialized extracts, not the same as consuming avocado oil. Regular avocado oil consumption cannot be expected to provide the same effects as purified ASU supplements.
+**Synthesis:** ASU may modestly ease knee osteoarthritis pain, but hip trials found no clear symptom benefit and only hints of slower joint damage [32][34][35]. ASUs are specialized extracts, not the same as consuming avocado oil. Regular avocado oil consumption cannot be expected to provide the same effects as purified ASU supplements.
 
 ### Skin Health (Topical Use)
 
@@ -130,13 +128,13 @@ Avocado oil has been investigated for topical skin applications, though the evid
 
 ### Carotenoid Absorption Enhancement
 
-One of avocado oil's potentially most valuable nutritional roles is enhancing the absorption of fat-soluble nutrients from other foods consumed at the same meal.
+Avocado oil may help the body absorb fat-soluble nutrients from other foods eaten at the same meal.
 
 In a small crossover study (11 people), adding 24 g of avocado oil to a salad raised absorption of alpha-carotene, beta-carotene and lutein, much as 150 g of avocado did. With the avocado, absorption was 7.2, 15.3 and 5.1 times that from the avocado-free salad (Unlu, *J Nutr*, 2005) [61]. In two further studies, eating avocado with a high-beta-carotene tomato sauce or with carrots raised beta-carotene absorption 2.4-fold and 6.6-fold and increased its conversion to vitamin A (Kopec, *J Nutr*, 2014) [26].
 
 The effect is attributed mainly to the fat in avocado [61].
 
-This supports the practical recommendation of using avocado oil in salad dressings or drizzled over vegetables to maximize nutrient absorption from the meal.
+This supports the practical recommendation of using avocado oil in salad dressings or drizzled over vegetables to help absorb carotenoids from the meal.
 
 ### Body Composition and Weight
 
@@ -198,7 +196,7 @@ No upper intake limit has been established specifically for avocado oil. As with
 
 ### Persin Content
 
-Persin, found in all parts of the avocado plant, causes avocado poisoning in some animals, including rabbits, parrots, ostriches, sheep, goats, dogs and horses, where it can damage the heart [67][68].
+Persin, found in all parts of the avocado plant, causes avocado poisoning in some animals, including parrots, ostriches, sheep, goats, dogs and rabbits, and has been linked to heart damage in horses [67][68]. These reports are in animals. Keep avocado and its oil away from pet birds and rabbits [67].
 
 ### Caloric Density
 
@@ -216,13 +214,13 @@ Product quality may matter as much as the oil itself. Avocado oil is a high-valu
 
 ### Warfarin (Coumadin)
 
-A 1991 case report in *The Lancet* described warfarin antagonism by avocado: avocado appeared to weaken warfarin (Coumadin), a blood thinner (Blickstein, *The Lancet*, 1991) [54].
+A 1991 report in *The Lancet* described warfarin antagonism by avocado: avocado appeared to weaken warfarin (Coumadin), a blood thinner (Blickstein, *The Lancet*, 1991) [54].
 
 The report concerned the fruit, and avocado oil itself has not been studied. If you take warfarin, keep your avocado and avocado oil intake steady and tell your doctor before making large changes, since your INR (International Normalized Ratio) may need checking.
 
 ### Vitamin K Content
 
-Avocado fruit contains vitamin K1, about 14 micrograms in half an avocado [9]. The amount in the oil is not well documented. Vitamin K affects blood clotting and the action of warfarin, so steady intake matters more than avoidance.
+Avocado fruit contains vitamin K1, about 14 micrograms in half an avocado [9]. The amount in the oil is not well documented. No mechanism was established for the avocado report.
 
 ### Fat-Soluble Medication Absorption
 
@@ -278,7 +276,7 @@ Half an avocado (68 g, the average amount eaten) provides nutrients that avocado
 
 Source: Dreher, *Crit Rev Food Sci Nutr*, 2013 [9]; USDA FoodData Central [6].
 
-This comparison underscores that the cardiovascular and metabolic benefits observed in whole avocado trials cannot be straightforwardly attributed to avocado oil alone. The whole fruit provides fiber, potassium, magnesium and vitamin C that are absent from the oil.
+Results from whole avocado trials cannot be credited to avocado oil alone. The whole fruit provides fiber, potassium, magnesium and vitamin C that are absent from the oil.
 
 ### Avocado Oil in Global Production and Environmental Context
 
