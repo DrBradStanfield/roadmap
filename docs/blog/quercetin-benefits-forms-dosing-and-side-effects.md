@@ -224,17 +224,17 @@ In a one-week trial in people with COPD, a chronic lung disease, 500, 1000 or 20
 
 There are no adequate data to judge the safety of doses of 1000 mg or more taken for more than 12 weeks [68].
 
-### Long-Term Animal Toxicity
-
-In a 2-year feeding study, male rats given high doses of quercetin had more renal tubule adenomas, a type of kidney tumor; female rats showed no such effect [77]. Rats in the top dose group ate about 1,900 mg/kg of body weight a day, far above supplement doses [77].
-
 ### Kidney Concerns
 
 In animals, quercetin may make existing kidney damage worse [68]. Given intravenously in a cancer trial, quercetin caused kidney toxicity: 3 of 14 patients at 945 mg/m2 had clinically significant renal toxicity, and it was dose-limiting at 1700 mg/m2 [64]. People with kidney disease should talk to their doctor before taking it.
 
 ### Blood Pressure
 
-Because quercetin may lower blood pressure a little [31], take care if your blood pressure runs low or you take medicine to lower it.
+Because quercetin may lower blood pressure a little, it could add to the effect of blood-pressure medicines [31].
+
+### Long-Term Animal Toxicity
+
+In a 2-year feeding study, male rats given high doses of quercetin had more renal tubule adenomas, a type of kidney tumor; female rats showed no such effect [77]. Rats in the top dose group ate about 1,900 mg/kg of body weight a day, far above supplement doses [77].
 
 ### Thyroid Function
 
@@ -262,7 +262,15 @@ Quercetin can change how much of some drugs reaches the blood [68]. If you take 
 
 ### Warfarin
 
-In laboratory tests, quercetin's main metabolites bound strongly to albumin, the blood protein that carries warfarin, and displaced warfarin from it; the authors warn that high quercetin doses could strongly interfere with warfarin therapy [89]. The same lab study found that quercetin and its metabolites inhibited CYP2C9, the enzyme that clears warfarin, weakly or not at all, and judged a CYP2C9 effect on warfarin very unlikely [89]. A human study points the other way for CYP2C9 in general: quercetin raised blood levels of diclofenac, apparently by inhibiting CYP2C9 [82]. If you take warfarin, check with your doctor before using quercetin.
+In laboratory tests, quercetin's main metabolites bound strongly to albumin, the blood protein that carries warfarin, and displaced warfarin from it; the authors warn that high quercetin doses could strongly interfere with warfarin therapy [89]. The same lab study found that quercetin and its metabolites showed no inhibition of CYP2C9, the enzyme that clears warfarin, or weaker than warfarin's own binding, and judged a CYP2C9 effect on warfarin very unlikely [89]. A human study points the other way for CYP2C9 in general: quercetin raised blood levels of diclofenac, apparently by inhibiting CYP2C9 [82]. If you take warfarin, check with your doctor before using quercetin.
+
+### CYP2C9 Inhibition (Increased Drug Effects)
+
+Quercetin inhibited the enzyme CYP2C9 in lab tests on human liver enzyme preparations [81]. In 12 healthy volunteers, a 10-day course of quercetin, 500 mg twice a day, raised blood levels of diclofenac, a CYP2C9 substrate, and the authors advise caution with drugs cleared by CYP2C9 [82].
+
+### CYP3A Induction (Decreased Drug Effects)
+
+Quercetin may speed up CYP3A, an enzyme that clears many drugs, which could make those drugs weaker. Eighteen healthy men had quercetin 500 mg or placebo once a day for 13 days; quercetin lowered blood levels of one 7.5 mg midazolam tablet given on day 14, and the effect was more prominent in men carrying the CYP3A5*1 gene variant [84]. In lab tests on human liver enzymes, by contrast, quercetin was a potent CYP3A4 inhibitor [81], so the direction of the effect in people is not settled.
 
 ### OATP1B1 Substrates (Increased Absorption)
 
@@ -270,17 +278,9 @@ Quercetin may raise blood levels of drugs carried into the liver by the transpor
 
 Many statins are OATP1B1 substrates, and the transporter also handles repaglinide and fexofenadine [79].
 
-### CYP2C9 Inhibition (Increased Drug Effects)
-
-Quercetin inhibited the enzyme CYP2C9 in lab tests on human liver enzyme preparations [81]. In 12 healthy volunteers, a 10-day course of quercetin, 500 mg twice a day, raised blood levels of diclofenac (Voltaren, Flector), a CYP2C9 substrate, and the authors advise caution with drugs cleared by CYP2C9 [82].
-
 ### Amiodarone
 
-In rats, 14 days of quercetin before a dose of the heart-rhythm drug amiodarone (Cordarone, Pacerone) raised peak amiodarone levels by 45.52% [83]. The authors attribute the effect to quercetin blocking drug transporters and CYP enzymes, and suggest amiodarone doses may need adjusting [83]. Amiodarone has a narrow therapeutic index, so small changes in its blood levels can matter [83]; anyone on it should ask their doctor before using quercetin.
-
-### CYP3A Induction (Decreased Drug Effects)
-
-Quercetin may speed up CYP3A, an enzyme that clears many drugs, which could make those drugs weaker. Eighteen healthy men had quercetin 500 mg or placebo once a day for 13 days; quercetin lowered blood levels of one 7.5 mg midazolam tablet given on day 14, and the effect was more prominent in men carrying the CYP3A5*1 gene variant [84]. In lab tests on human liver enzymes, by contrast, quercetin was a potent CYP3A4 inhibitor [81], so the direction of the effect in people is not settled.
+In rats, 14 days of quercetin before a dose of the heart-rhythm drug amiodarone raised peak amiodarone levels by 45.52% [83]. The authors attribute the effect to quercetin blocking drug transporters and CYP enzymes, and suggest amiodarone doses may need adjusting [83]. Amiodarone has a narrow therapeutic index, so small changes in its blood levels can matter [83]; anyone on it should ask their doctor before using quercetin.
 
 ### Chemotherapy Agents
 
