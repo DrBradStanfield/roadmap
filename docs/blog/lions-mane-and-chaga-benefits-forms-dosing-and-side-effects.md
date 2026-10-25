@@ -6,7 +6,7 @@ publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["lions mane", "chaga", "mushroom", "hericium erinaceus", "inonotus obliquus", "nerve growth factor", "cognitive", "brain health", "beta-glucan", "erinacine", "hericenone", "dementia", "alzheimer", "depression", "anxiety", "immune", "inflammation", "gut health", "neuropathy", "blood sugar", "diabetes", "kidney"]
-summary: "Lion's mane: a few small trials, one positive in mild cognitive impairment, little effect in healthy adults. Chaga rests on lab and animal studies; case reports link high-dose chaga to kidney injury. Talk to your doctor first if you have kidney disease or take blood thinners or diabetes medicines."
+summary: "Lion's mane: small trials, one positive in mild cognitive impairment. Chaga: lab and animal studies; case reports of kidney injury. Do not take chaga if you have kidney disease or have had a calcium oxalate kidney stone; ask your doctor first if you take blood thinners or diabetes medicines."
 reviewed: "2026-10-26"
 sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/40959699/","checked":"2026-10-26","fingerprint":"sha256:93744bc3c3fa1e48191aa241db090b24cb8f64a346ba0138d0b41d013b102abf"}]
 ---
@@ -145,7 +145,7 @@ A 2025 systematic review found that Mini-Mental State Examination scores in one 
 
 ### Lion's Mane: Depression and Anxiety
 
-A meta-analysis of seven studies found lower nerve growth factor levels in people with major depressive disorder than in healthy controls [30]. Because lion's mane compounds stimulate NGF in cells, there is interest in it for depression, but clinical evidence for this use is weak.
+A meta-analysis of seven studies found significantly lower NGF levels in the blood of people with major depressive disorder than in healthy controls [30]. In a meta-analysis of four studies, NGF levels did not change significantly with treatment [30].
 
 **Study 1, women (Japan):** In a 4-week trial, 30 women were randomly assigned to cookies containing lion's mane or to placebo cookies. Depression (CES-D) and Indefinite Complaints Index scores fell within the treated group, but differences from placebo were significant for only two complaint items [31].
 
@@ -245,20 +245,20 @@ No human clinical trials exist to guide dosing. Traditional use as tea involves 
 
 ### Lion's Mane Safety
 
-In a 49-week trial, four people dropped out because of abdominal discomfort, nausea and skin rash, and no other adverse events were reported [29]. In the 16-week mild cognitive impairment trial, laboratory tests showed no adverse effect [26]. In rats, erinacine A-enriched mycelium caused no adverse effects at doses up to 3 g/kg body weight a day for 28 days [50].
-
-**Reported side effects** include:
-- Abdominal discomfort, nausea and skin rash [29]
-- Stomach discomfort, headache and allergic reactions, listed as possible side effects in a 2025 systematic review [56]
-
 **Allergic reactions** (case reports):
 - A 63-year-old man developed acute respiratory distress syndrome, a severe lung reaction, four months after using a Hericium erinaceum extract product; he needed a ventilator and recovered with steroid treatment [51]. If you have trouble breathing after taking lion's mane, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 - A case report described allergic contact dermatitis from lion's mane in a person exposed to it at work [52]
 - Allergic reactions have been reported [51][52]; if mushrooms give you allergic reactions, avoid lion's mane.
 
+**Bleeding risk (theoretical):** Hericenone B, a lion's mane compound, blocked collagen-triggered platelet clumping in rabbit and human platelets in the lab [60]. In a lab screen of hot water extracts from eight edible mushrooms, including lion's mane, none changed prothrombin time or INR [53]. Whether this matters for people taking lion's mane is unknown.
+
 **HMGCR immune-mediated necrotizing myopathy:** Mushrooms are natural inhibitors of HMGCR, the enzyme that statins block. A woman in her 30s with HMGCR IMNM, an autoimmune muscle disease thought to be triggered by statins, had a clear flare after she began mushroom supplements [59]. Anyone who has had HMGCR IMNM should stay away from mushroom supplements, including chaga and lion's mane.
 
-**Bleeding risk (theoretical):** Hericenone B, a lion's mane compound, blocked collagen-triggered platelet clumping in rabbit and human platelets in the lab [60]. In a lab screen of hot water extracts from eight edible mushrooms, including lion's mane, none changed prothrombin time or INR [53]. Whether this matters for people taking lion's mane is unknown.
+**Reported side effects** include:
+- Abdominal discomfort, nausea and skin rash [29]
+- Stomach discomfort, headache and allergic reactions, listed as possible side effects in a 2025 systematic review [56]
+
+In a 49-week trial, four people dropped out because of abdominal discomfort, nausea and skin rash, and no other adverse events were reported [29]. In the 16-week mild cognitive impairment trial, laboratory tests showed no adverse effect [26]. In rats, erinacine A-enriched mycelium caused no adverse effects at doses up to 3 g/kg body weight a day for 28 days [50].
 
 **Pregnancy and breastfeeding:** There are no safety data, so avoid it.
 
@@ -295,7 +295,7 @@ In rats, high-dose chaga powder caused oxalate crystal deposits and kidney tubul
 | Allergic reactions | Case reports | Not well characterized |
 | Bleeding risk | Theoretical (lab data) | Theoretical (lab and mouse data) |
 | Immune stimulation concerns | Possible | Possible |
-| Safe in pregnancy | Insufficient data | Insufficient data |
+| Safe in pregnancy | No safety data | No safety data |
 | Safe in kidney disease | Unknown | **Avoid** |
 | Longest use in studies | 49 weeks | No human studies |
 
@@ -349,8 +349,6 @@ Chaga is not a typical food because it is hard and woody. Traditional consumptio
 **Wild harvesting:** Chaga grows as a charcoal-black conk on birch trees, mainly in cold boreal forests [14].
 
 ### What Supplements Cannot Replace
-
-Neither lion's mane nor chaga provides meaningful amounts of the vitamins and minerals most commonly deficient in Western diets.
 
 A well-formulated multivitamin addresses nutritional gaps far more effectively than mushroom supplements. For comprehensive micronutrient coverage, see a dedicated evidence-based multivitamin rather than relying on functional mushroom products.
 
