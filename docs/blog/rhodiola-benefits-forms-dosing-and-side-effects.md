@@ -19,9 +19,9 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Key safety points
 
-- A case report described a potentially dangerous interaction, with a racing heart, when rhodiola was taken with an SSRI antidepressant [32]. If you take an antidepressant, talk to your doctor before starting.
-- In test-tube studies, rhodiola root extracts blocked monoamine oxidase (MAO) [17]. If you take an MAO inhibitor antidepressant, use rhodiola only under your doctor's supervision.
-- An interaction with losartan, a blood pressure drug, has been reported [3]. Lab and mouse studies suggest rhodiola may lower blood pressure and blood sugar, so take care with blood pressure or diabetes medicines [30][31].
+- A case report titled "Herbal medicine -- sets the heart racing!" described a potentially dangerous interaction when rhodiola was taken with an SSRI antidepressant [32]. If you take an antidepressant or any other medicine, talk with your doctor before using rhodiola [3].
+- In test-tube studies, rhodiola root extracts blocked monoamine oxidase (MAO) [17]. If you take an MAO inhibitor, talk to your doctor before using rhodiola [3][17].
+- An interaction with losartan, a blood pressure drug, has been reported [3]. In theory rhodiola could add to blood pressure or diabetes medicines: in the test tube it blocked an enzyme that some blood pressure drugs target [30], and it lowered blood sugar in diabetic mice [31].
 - Little is known about whether rhodiola is safe in pregnancy or breastfeeding [3].
 - Rhodiola is possibly safe for up to 12 weeks; longer use has not been shown to be safe [3].
 - Side effects may include dizziness, headache, insomnia, and dry mouth or excess saliva [3][9].
@@ -85,7 +85,7 @@ A study of about 40 rhodiola products sold to European buyers found that about o
 
 ### Depression
 
-Depression is the most studied use, but results are mixed.
+Depression is the most studied use, but results are mixed. NCCIH notes that depression can be a serious illness and advises anyone who may have it to consult a health care provider [3].
 
 **Darbinyan et al. (2007) -- Mild to Moderate Depression [7]:** A randomized, double-blind, placebo-controlled trial in adults aged 18-70 years gave SHR-5 extract at 340 mg/day (31 people) or 680 mg/day (29 people), or placebo (29 people), for six weeks. Both doses improved overall depression, insomnia, emotional instability and somatization, but not self-esteem, while the placebo group did not improve. No serious side effects were reported.
 
@@ -143,7 +143,7 @@ Rhodiola is marketed for exercise performance and endurance. Most studies are ve
 **De Bock et al. (2004) -- Endurance [21]:** In a trial, 24 young adults took one 200 mg dose of rhodiola extract (3% rosavin, 1% salidroside) an hour before testing. Results:
 
 - Time to exhaustion in a cycling test was 17.2 minutes, against 16.8 minutes on placebo.
-- Other measures, including muscle strength and reaction time, did not change.
+- Peak oxygen uptake (VO2peak) and peak carbon dioxide output (VCO2peak) also rose; muscle strength and reaction time did not change.
 - In 12 people who then took 200 mg a day for four weeks, daily use did not change any measure.
 
 A single dose gave a small gain in endurance; four weeks of daily use added nothing.
@@ -186,7 +186,7 @@ The adaptogen idea is central to rhodiola's marketing, though "adaptogen" has no
 - Effects on heat shock proteins such as Hsp70 and other cell defence proteins.
 - Effects on the stress-signalling enzyme p-JNK and on nitric oxide.
 
-**Lopresti et al. (2022) [4]:** In randomized human trials, the effect of rhodiola and most other plants on stress hormones was unclear.
+**Lopresti et al. (2022) [4]:** In randomized human trials, the effect of most plants studied, rhodiola among them, on stress hormones was unclear.
 
 **Tao et al. (2019) [29]:** A review of seven main Rhodiola species covered traditional use, chemistry, pharmacology, toxicity and clinical studies. Lab studies report anti-fatigue, antidepressant, anxiolytic, neuroprotective and cardioprotective effects [15].
 
@@ -202,7 +202,7 @@ Depression and anxiety trials used 340 or 680 mg/day of standardized extract [7]
 
 | Indication | Dose Range | Duration Studied | Extract Type | Key Study |
 |-----------|:--:|:--:|------|-------|
-| Mild to moderate depression | 340 or 680 mg/day | 6-12 weeks | SHR-5 or other standardized extract | Darbinyan 2007 [7]; Mao 2015 [8] |
+| Mild to moderate depression | 340 or 680 mg/day | 6 weeks | SHR-5 | Darbinyan 2007 [7] |
 | Depression, added to sertraline | 0.3 or 0.6 g/day | 12 weeks | Rhodiola capsule | Gao 2020 [14] |
 | Anxiety (preliminary) | Total daily dose of 340 mg; 200 mg twice a day | 2-10 weeks | Vitano or Rhodax | Cropley 2015 [13]; Bystritsky 2008 [9] |
 | Mental fatigue (under stress) | One low-dose tablet a day | 2 weeks to 20 days | SHR-5 | Darbinyan 2000 [11]; Spasov 2000 [12] |
@@ -216,11 +216,11 @@ Trials used these timing patterns:
 
 - For exercise studies, single doses were taken about one hour before exercise [21][22].
 - For the anxiety study, one 200 mg tablet was taken before breakfast and one before lunch [13].
-- For the depression trial, 340 mg/day was given as two tablets once a day and 680 mg/day as two tablets twice a day [7].
+- For the depression trial, 340 mg/day was given as two tablets daily and 680 mg/day as two tablets twice a day [7].
 
 ### Important Considerations
 
-- Higher doses did not clearly do better for depression alone: at either 340 or 680 mg/day, symptoms improved and self-esteem did not [7]. Added to sertraline, 0.6 g/day did better than 0.3 g/day [14].
+- Higher doses did not clearly do better for depression alone: at either 340 or 680 mg/day, symptoms improved and self-esteem did not [7]. Added to sertraline, 0.6 g/day did better than 0.3 g/day [14]. In a 12-week comparison with sertraline, a standardized extract did no better than placebo [8].
 - In one trial, 364 mg capsules taken for 42 days worsened fatigue compared with placebo [10].
 - For exercise, 1,500 mg/day for 4 days did not help muscle recovery [24], while single doses lowered perceived effort in two small trials [22][23].
 
@@ -242,23 +242,17 @@ The following side effects have been reported:
 | Insomnia | Not stated | NCCIH [3] |
 | Excessive saliva production | Not stated | NCCIH [3] |
 
-Nausea and diarrhea, and single reports of blurred vision and of dark stools, have also been described in small trials.
+In one 42-day trial, one rhodiola user each reported nausea, diarrhea with nausea, dark stools or blurred vision; the total number of adverse events matched placebo [10].
 
 ### Blood Pressure Effects
 
-In lab tests, *R. rosea* extracts blocked angiotensin-converting enzyme (ACE), the target of some blood pressure drugs, so rhodiola could lower blood pressure [30]. Use caution if you:
-
-- Have low blood pressure (hypotension).
-- Take blood pressure medicines; rhodiola may add to their effect [30].
+In lab tests, *R. rosea* extracts blocked angiotensin-converting enzyme (ACE), the target of some blood pressure drugs [30]. This was a test-tube finding, but in theory rhodiola could lower blood pressure, which matters most if yours is already low or you take blood pressure medicines.
 
 NCCIH notes that interactions between rhodiola and losartan (a blood pressure drug) have been reported [3].
 
 ### Blood Sugar Effects
 
-Lab and mouse studies hint that *R. rosea* may reduce blood sugar: extracts blocked the carbohydrate-digesting enzyme alpha-glucosidase in the lab [30] and lowered blood glucose in diabetic mice [31]. Use caution if you:
-
-- Have diabetes and take blood-sugar-lowering medicines, as rhodiola may add to their effect.
-- Are prone to low blood sugar (hypoglycemia) [30][31].
+Lab and mouse studies hint that *R. rosea* may reduce blood sugar: extracts blocked the carbohydrate-digesting enzyme alpha-glucosidase in a test tube [30] and lowered blood glucose in diabetic mice [31]. Neither was a human study, but in theory rhodiola could add to the effect of diabetes medicines or lower blood sugar in people prone to low blood sugar.
 
 ### Pregnancy and Breastfeeding
 
@@ -272,23 +266,23 @@ Most clinical trials lasted 2-12 weeks, and NCCIH rates rhodiola possibly safe o
 
 ### Antidepressants
 
-**SSRIs (Selective Serotonin Reuptake Inhibitors):** A case report described a potentially dangerous interaction, with a racing heart, when rhodiola was taken with the SSRI escitalopram (Lexapro) [32]. If you take a prescription antidepressant or another supplement for depression, talk to your doctor before taking rhodiola.
+**SSRIs (Selective Serotonin Reuptake Inhibitors):** A case report titled "Herbal medicine -- sets the heart racing!" described a potentially dangerous interaction when rhodiola was taken with an SSRI antidepressant [32]. If you take an antidepressant, talk with your doctor before using rhodiola [3].
 
-**MAO Inhibitors:** In test-tube studies, *R. rosea* root extracts blocked MAO A and MAO B [17]. This may not happen when rhodiola is taken by mouth. Even so, if you take an MAO inhibitor, such as furazolidone (Furoxone), phenelzine (Nardil) or tranylcypromine (Parnate), take *R. rosea* only under your doctor's supervision.
+**MAO Inhibitors:** In test-tube studies, *R. rosea* root extracts blocked MAO A and MAO B [17]. This may not happen when rhodiola is taken by mouth. If you take an MAO inhibitor, talk to your doctor before using rhodiola [3][17].
 
 **Sertraline combination:** In one trial, the higher dose of rhodiola capsule added to sertraline lowered depression scores more than sertraline with placebo [14]. Given the case report with an SSRI [32], any combination of rhodiola with an antidepressant should be supervised by a doctor.
 
 ### Antihypertensive Medications
 
-Rhodiola may add to the effect of blood pressure drugs [30]. NCCIH notes reported interactions with losartan (Cozaar) [3]. Other classes (ACE inhibitors, calcium channel blockers, beta-blockers) have not been studied with rhodiola, so take care.
+NCCIH notes reported interactions with losartan (Cozaar) [3]. Because a test-tube study found rhodiola blocks ACE [30], it could in theory add to the effect of other blood pressure drugs. If you take one, talk with your doctor before using rhodiola [3].
 
 ### Blood Sugar-Lowering Medications
 
-Because lab and mouse studies suggest rhodiola may lower blood sugar [30][31], it could add to the effect of diabetes medicines such as insulin, metformin and sulfonylureas. Check your blood glucose closely if you combine them.
+Because a test-tube study [30] and a study in diabetic mice [31] suggest rhodiola may lower blood sugar, it could in theory add to the effect of diabetes medicines. If you take one, talk with your doctor before using rhodiola [3].
 
 ### Other Potential Interactions
 
-Rhodiola's effects alongside other medicines have not been studied. If you take prescription medicines, check with your doctor or pharmacist before starting.
+If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### General Guidance
 
