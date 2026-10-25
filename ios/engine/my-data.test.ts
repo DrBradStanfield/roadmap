@@ -242,6 +242,17 @@ describe('medications and supplements (US-06, D4b)', () => {
     expect(applyEdit(file, { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: -5 }, NOW)).toMatchObject({ ok: false, reason: 'invalid-value' });
   });
 
+  it('words a refused dose as before zod 4 (zod 3 texts, shown on the phone)', () => {
+    const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    const supplement = { kind: 'supplement', supplementKey: 'omega3', supplementName: 'Omega-3', status: 'active' } as const;
+    expect(applyEdit(file, { ...supplement, doseValue: 0, doseUnit: 'g' }, NOW))
+      .toEqual({ ok: false, reason: 'invalid-value', message: 'Number must be greater than 0' });
+    expect(applyEdit(file, { ...supplement, doseValue: 1, doseUnit: 'x'.repeat(21) }, NOW))
+      .toEqual({ ok: false, reason: 'invalid-value', message: 'String must contain at most 20 character(s)' });
+    expect(applyEdit(file, { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: -5 }, NOW))
+      .toEqual({ ok: false, reason: 'invalid-value', message: 'Number must be greater than 0' });
+  });
+
   it('saves and soft-stops a supplement, keeping its start', () => {
     let file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
     file = edited(file, { kind: 'supplement', supplementKey: 'omega3', supplementName: 'Omega-3', doseValue: 1, doseUnit: 'g', status: 'active' });

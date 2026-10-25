@@ -7,7 +7,7 @@
  * to stdout, and a logged token reads the extracted lab text back.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { z } from 'zod';
+import * as z from '../../../packages/health-core/src/zod';
 import { labImport, labImportBatch, pollBatchStatus } from './upload-api';
 import { batchImportRequestSchema, labImportPageSchema, labImportRequestSchema } from '../../../packages/health-core/src/validation';
 

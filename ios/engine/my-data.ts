@@ -13,7 +13,7 @@ import { appendMeasurement, bulkAppendValues, correctValue, validDay } from '../
 import { labRows, type Extraction } from './lab-review';
 import { updateProfile } from '../../packages/health-core/src/mcp-tools';
 import { stampProfile, upsertMedication, upsertSupplement } from '../../packages/health-core/src/state-edits';
-import { medicationSchema, supplementSchema } from '../../packages/health-core/src/validation';
+import { medicationSchema, supplementSchema, zod3Message } from '../../packages/health-core/src/validation';
 import { customSupplementAdd, customSupplementMatch } from '../../packages/health-core/src/input-form';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { importDeviceSamples, type DeviceSample } from '../../packages/health-core/src/device-import';
@@ -258,7 +258,7 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
     // The web's own writes (state-edits.ts), behind the API's own schemas:
     // the app's input is checked the way a request to the server was.
     case 'medication': {
-      const checked = medicationSchema.safeParse(edit);
+      const checked = medicationSchema.safeParse(edit, { error: zod3Message });
       if (!checked.success) return { ok: false, reason: 'invalid-value', message: checked.error.issues[0]?.message ?? 'Not a medication.' };
       const { medicationKey, drugName, doseValue = null, doseUnit = null } = checked.data;
       return { ok: true, file: upsertMedication(file, { medicationKey, drugName, doseValue, doseUnit }, now).file };
@@ -267,7 +267,7 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
       // A key the record holds passes as it is: older browser records hold
       // custom keys over the 100 characters a new key may have (US-06 AC1a).
       const held = file.supplements.some((row) => row.supplementKey === edit.supplementKey);
-      const checked = (held ? supplementSchema.omit({ supplementKey: true }) : supplementSchema).safeParse(edit);
+      const checked = (held ? supplementSchema.omit({ supplementKey: true }) : supplementSchema).safeParse(edit, { error: zod3Message });
       if (!checked.success || !checked.data.status) {
         return { ok: false, reason: 'invalid-value', message: checked.success ? 'A supplement is active or stopped.' : checked.error.issues[0]?.message ?? 'Not a supplement.' };
       }
