@@ -9,7 +9,7 @@ keywords: ["menopause", "soy isoflavones", "black cohosh", "red clover", "phytoe
 product: "sleep"
 summary: "Evidence summary on menopause supplements: black cohosh and red clover did not beat placebo for hot flashes, soy isoflavone results are mixed, and hormone therapy works best. Black cohosh has rare liver injury reports. Talk to your doctor first with liver disease or breast cancer, or on simvastatin."
 reviewed: "2026-10-25"
-sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/BlackCohosh-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:364c7be86c787d780d44fe200d74f52180b992ec05c296917aaac5ac590af9a8"}]
+sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/BlackCohosh-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:364c7be86c787d780d44fe200d74f52180b992ec05c296917aaac5ac590af9a8"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/hrt-just-changed","checked":"2026-10-25","fingerprint":"publishedAt:2026-01-16T00:00:34Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/menopause-supplements-benefits-evidence-dosing-and-side-effects](https://drstanfield.com/blogs/articles/menopause-supplements-benefits-evidence-dosing-and-side-effects)*
@@ -20,17 +20,18 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Key safety points
 
-- Soy isoflavones (about 80 mg a day) lowered blood levels of simvastatin in a small study, mainly in people with the SLCO1B1 521TT gene type [51]. Soy foods may also raise the dose of thyroid hormone that people with hypothyroidism need [40].
-- Black cohosh has been linked to at least 83 reports of liver damage, though no causal link is proven. People with liver disorders should avoid it; stop it and contact your doctor if you develop abdominal pain, dark urine or jaundice [15][47].
-- The safety of red clover isoflavone supplements in women with breast or endometrial cancer has not been established [13].
-- The American Herbal Products Association advises pregnant women not to take black cohosh except under a health professional's supervision [15].
-- In one 5-year trial, 150 mg a day of soy isoflavones was linked to more endometrial hyperplasia than placebo (3.37% vs 0%) [39].
+- Black cohosh has been linked to at least 83 reports of liver damage, though no causal link is proven, and people with liver disorders should avoid it [15]. Stop it and see your doctor for abdominal pain, dark urine, tiredness or yellow skin or eyes [47][59]; if yellow skin or eyes come with confusion, unusual drowsiness, or easy bleeding or bruising, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- In 18 healthy men, about 80 mg a day of soy isoflavones lowered blood levels of one simvastatin dose, mainly in those with the SLCO1B1 521TT gene type; only drug levels were measured [51].
+- Soy foods may raise the dose of thyroid hormone that people with hypothyroidism need [40].
+- Black cohosh may not be safe during pregnancy or breastfeeding [59].
+- Safety in breast or endometrial cancer is not established for red clover isoflavones [13], and is uncertain for black cohosh after breast or uterine cancer [59].
+- In one 5-year trial, 150 mg a day of soy isoflavones was linked to more endometrial hyperplasia than placebo (3.37% vs 0%); the journal later published an expression of concern about it [39].
 - Progesterone cream may not deliver enough progesterone to protect the uterus from estrogen [56].
 - Black cohosh side effects in trials are usually mild stomach upset and rash [15]. Genistein caused more stomach side effects than placebo (19% vs 8%) [30].
 
 ## Brad's videos on this topic
 
-None yet.
+- 16 Jan 2026, [HRT Just Changed](https://drstanfield.com/blogs/articles/hrt-just-changed): the FDA's label change reopens hormone therapy, an effective treatment for hot flashes and other menopause symptoms, best started before 60 or within 10 years of menopause; the post covers hormone therapy, not supplements.
 
 ## 1. Overview
 
@@ -61,12 +62,12 @@ Some, but not all, adults carry gut bacteria that turn daidzein into equol, an i
 ### Red Clover Isoflavones
 
 Red clover (Trifolium pratense) contains the same main isoflavones as soy, genistein and daidzein, plus two others:
-- **Biochanin A**, a methylated precursor of genistein; demethylated in vivo to genistein
-- **Formononetin**, a methylated precursor of daidzein; demethylated in vivo to daidzein
+- **Biochanin A**
+- **Formononetin**
 
 Both are weaker estrogens than genistein in laboratory tests [9]. Extracts are standardized to total isoflavones; one 12-month trial used 398 mg a day of extract standardized to 120 mg isoflavones [15].
 
-Red clover isoflavones are extracted from the aerial parts (leaves and flowers) of the plant, in contrast to soy isoflavones which come from the bean or germ.
+Red clover extracts in trials are made from the aerial parts of the plant [15], while soy isoflavones come from the bean.
 
 ### Black Cohosh
 
@@ -92,7 +93,7 @@ Progesterone cream delivers the hormone through the skin. When women using estro
 | Supplement | Main compounds | Plant part | Proposed action |
 |---|---|---|---|
 | Soy Isoflavones | Genistein, daidzein, glycitein [29] | Bean | Weak estrogen-like effects; some people make equol from daidzein [8][11] |
-| Red Clover | Genistein, daidzein, biochanin A, formononetin | Leaves and flowers | Same isoflavones as soy; biochanin A and formononetin are weaker [9] |
+| Red Clover | Genistein, daidzein, biochanin A, formononetin | Aerial parts [15] | Same isoflavones as soy; biochanin A and formononetin are weaker [9] |
 | Black Cohosh | Triterpene glycosides, resins, aromatic acids [15] | Root and rhizome | Unknown; possibly an action in the brain [15][19] |
 | Progesterone Cream | Progesterone | Not a plant product | Hormone absorbed through the skin; blood levels stay low [56] |
 
@@ -116,7 +117,7 @@ A 2008 trial (Khaodhiar et al.) randomized 190 menopausal women to placebo or 40
 
 **Equol production as a modifier:**
 
-Women whose gut bacteria make equol may get more benefit from soy [11]. The North American Menopause Society lists S-equol derivatives of soy isoflavones among the therapies it recommends with caution, pending more studies [18].
+Women whose gut bacteria make equol may get more benefit from soy [11]. The North American Menopause Society's 2023 position statement does not recommend soy foods, soy extracts or the soy metabolite equol for hot flashes, rating the evidence for them as limited or inconsistent [61].
 
 **Epidemiological context:**
 
@@ -128,7 +129,7 @@ The evidence for red clover isoflavones in treating vasomotor symptoms is weaker
 
 **RCT evidence:**
 
-A 2009 trial (Geller et al.) assigned 88 perimenopausal and postmenopausal women (mean age 53 years; 55% from underrepresented minority groups) with at least 35 hot flashes and night sweats a week to 128 mg/day black cohosh, 398 mg/day red clover extract (standardized to 120 mg isoflavones), hormone therapy (estrogen and progesterone), or placebo [15]. After 12 months, vasomotor symptoms had fallen by 34% with black cohosh, 57% with red clover, 63% with placebo and 94% with hormone therapy; only hormone therapy differed significantly from placebo [14].
+A 2009 trial (Geller et al.) assigned 88 perimenopausal and postmenopausal women (mean age 53 years; 55% from underrepresented minority groups) with at least 35 hot flashes and night sweats a week to 128 mg/day black cohosh, 398 mg/day red clover extract (standardized to 120 mg isoflavones), hormone therapy, or placebo [15]. After 12 months, vasomotor symptoms had fallen by 34% with black cohosh, 57% with red clover, 63% with placebo and 94% with hormone therapy (conjugated equine estrogens plus medroxyprogesterone acetate); only hormone therapy differed significantly from placebo [14].
 
 **Clinical guideline position:**
 
@@ -165,7 +166,7 @@ Franco et al. (2016) examined four black cohosh trials (three from the Cochrane 
 
 **Clinical guideline positions:**
 
-- The American College of Obstetricians and Gynecologists (ACOG), in its 2014 clinical guidelines for managing menopausal symptoms, concluded that "data do not show that" herbal dietary supplements like black cohosh "are efficacious for the treatment of vasomotor symptoms" [27].
+- The American College of Obstetricians and Gynecologists (ACOG), in its 2014 clinical guidelines for managing menopausal symptoms, concluded that "data do not show that" herbal dietary supplements like black cohosh "are efficacious for the treatment of vasomotor symptoms" [15][27].
 - The North American Menopause Society (NAMS) advises clinicians against recommending herbal therapies such as black cohosh because "they are unlikely to be beneficial" (italics in original) in alleviating vasomotor symptoms [18].
 
 #### Progesterone Cream
@@ -198,7 +199,7 @@ The 2012 Cochrane review found too few data to assess black cohosh for bone heal
 
 #### Soy Isoflavones
 
-Evidence that isoflavone supplements lower LDL cholesterol is weak; a review of red clover studies found no clinical evidence that its isoflavone extracts lower LDL [13].
+Soy protein eaten in place of other proteins may lower cholesterol slightly, but soy isoflavones may not have the same effect [60]. A review of red clover studies found that clinical evidence is lacking that its isoflavone extracts lower LDL [13].
 
 Cardiovascular disease is more common after menopause, and in the Framingham study the gap was not explained by the usual risk factors [5]. Cholesterol rose somewhat more steeply in women going through menopause [5].
 
@@ -206,7 +207,7 @@ Cardiovascular disease is more common after menopause, and in the Framingham stu
 
 Estrogen decline during menopause is linked to cognitive changes. In a cohort of 15,754 women (Gilsanz et al., 2019), natural menopause at an age less than 47.4 (the mean) was linked to a higher risk of dementia (HR 1.19, 95% CI 1.07 to 1.31) [31].
 
-However, there is no robust clinical trial evidence demonstrating that phytoestrogen supplements (soy isoflavones, red clover, or black cohosh) meaningfully improve cognitive function or reduce dementia risk in menopausal women. In the Geller trial, mood outcomes such as depression and anxiety mostly did not differ between black cohosh, red clover and placebo [15].
+Whether soy improves cognitive function is uncertain, as studies have given conflicting results [60]. In the Geller trial, mood outcomes such as depression and anxiety mostly did not differ between black cohosh, red clover and placebo [15].
 
 Cognitive behavioural therapy (CBT) has stronger trial support. In the MENOS 2 trial of 140 women, group and self-help CBT both made hot flushes and night sweats less of a problem at 6 and 26 weeks, and improved mood and quality of life at 6 weeks [32].
 
@@ -260,7 +261,6 @@ No dose has been firmly established. Doses used in trials:
 ### Progesterone Cream
 
 - 20 mg of progesterone a day in cream helped hot flashes in one trial [54], but creams with 60, 40, 20 or 5 mg of progesterone did not beat placebo in another [55]
-- Must be used under physician supervision as it is a hormone
 
 ### Dosing Summary Table
 
@@ -278,17 +278,15 @@ No dose has been firmly established. Doses used in trials:
 
 **Gastrointestinal effects:** In a 24-month trial, more women taking 54 mg of genistein a day had gastrointestinal side effects than women on placebo (19% vs 8%) [30].
 
-**Breast cancer concerns:** Because isoflavones act as weak estrogens, women who have or have had breast cancer that is sensitive to estrogen should talk to their doctor before taking them.
-
-**Uterine stimulation:** In a 5-year trial (Unfer et al., 2004), postmenopausal women taking 150 mg a day of soy isoflavones had more endometrial hyperplasia than those on placebo (3.37% vs 0%), and no cancers were found [39]. The journal has since published an expression of concern about this paper. In the genistein bone trial, endometrial thickness did not change [30].
+**Uterine stimulation:** In a 5-year trial (Unfer et al., 2004), postmenopausal women taking 150 mg a day of soy isoflavones had more endometrial hyperplasia than those on placebo (3.37% vs 0%), and no cancers were found [39]. The journal has since published an expression of concern about this paper [39]. In the genistein bone trial, endometrial thickness did not change [30].
 
 **Thyroid effects:** A review of 14 trials found little evidence that soy foods or isoflavones harm thyroid function in healthy people who get enough iodine, but soy foods may raise the dose of thyroid hormone that people with hypothyroidism need by reducing its absorption [40]. In a crossover trial in people with subclinical hypothyroidism, 66 mg of soy phytoestrogens a day for 8 weeks did not change thyroid function tests, though two people progressed to overt hypothyroidism after the high dose [41].
 
-**Soy allergy:** Anyone allergic to soy may react to soy isoflavone supplements.
+**Soy allergy:** Some people are allergic to soy [60].
 
 **Fertility:** In women attending a US fertility center (median age 35.0 years), soy food intake was not linked to antral follicle count or FSH, though the highest-intake group had lower AMH; overall, the authors found no strong link between soy or isoflavone intake and ovarian reserve [42].
 
-**Pregnancy and lactation:** If you are pregnant or breastfeeding, talk to your doctor before taking isoflavone supplements.
+**Pregnancy and lactation:** Soy in amounts greater than those in foods may be unsafe during pregnancy, and little is known about its safety in such amounts while breastfeeding [60].
 
 ### Red Clover
 
@@ -300,7 +298,7 @@ Red clover contains the same main isoflavones as soy, so similar cautions may ap
 
 **Hepatotoxicity (liver damage):**
 
-Liver injury is the most serious concern. Worldwide, at least 83 cases of liver damage, including hepatitis, liver failure and raised liver enzymes, have been linked to black cohosh, but a causal link has not been shown [15]. Some cases may have come from impurities, adulterants or the wrong Actaea species, though no one analyzed the products to check [15]. A US Pharmacopeia review of the case reports rated every case as possible, none as probable or certain, and recommended a cautionary label [47]. A later analysis found no causal role for black cohosh in any published case but noted quality problems in a few products [44], and a 2008 systematic review judged that the safety concerns need urgent investigation [43]. Liver failure is a medical emergency: if you become very unwell with yellow skin or eyes, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+Liver injury is the most serious concern. Worldwide, at least 83 cases of liver damage, including hepatitis, liver failure and raised liver enzymes, have been linked to black cohosh, but a causal link has not been shown [15]. Some cases may have come from impurities, adulterants or the wrong Actaea species, though no one analyzed the products to check [15]. A US Pharmacopeia review of the case reports rated every case as possible, none as probable or certain, and recommended a cautionary label [47]. A later analysis found no causal role for black cohosh in any published case but noted quality problems in a few products [44], and a 2008 systematic review judged that the safety concerns need urgent investigation [43]. If you take black cohosh, stop it and see your doctor if you get abdominal pain, dark urine, tiredness or yellow skin or eyes [47][59]. If yellow skin or eyes come with confusion, unusual drowsiness, or easy bleeding or bruising, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 Regulatory responses to these reports include:
 - **Australia (2007):** Required the label statement: "Warning: Black cohosh may harm the liver in some individuals. Use under the supervision of a healthcare professional" [15]
@@ -311,9 +309,9 @@ Regulatory responses to these reports include:
 
 A case report described repeated fainting in a 76-year-old woman taking black cohosh for years, with her heart rate dropping to 30 beats per minute; the slow heart rate gradually resolved after she stopped black cohosh [48]. If you faint, or feel faint with a very slow pulse, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
-**Breast cancer:** Women with breast cancer, or at high risk of it, should ask their doctor before taking black cohosh.
+**Breast cancer:** Whether black cohosh is safe for women who have had hormone-sensitive conditions such as breast or uterine cancer is uncertain [59].
 
-**Pregnancy and adolescents:** The American Herbal Products Association advises pregnant women not to take black cohosh except under the supervision of their health care provider, because its use in pregnancy has not been rigorously studied [15]. Breastfeeding women and teenagers should check with a doctor first.
+**Pregnancy and breastfeeding:** The American Herbal Products Association advises pregnant women not to take black cohosh except under the supervision of their health care provider, because its use in pregnancy has not been rigorously studied [15]. Black cohosh may not be safe during pregnancy or while breastfeeding [59].
 
 **Confusion with blue cohosh:** Black cohosh should not be confused with blue cohosh (Caulophyllum thalictroides), a different plant. In one case report, a newborn whose mother took blue cohosh to bring on contractions had a heart attack with severe heart failure and shock [58].
 
@@ -323,34 +321,27 @@ A case report described repeated fainting in a 76-year-old woman taking black co
 
 - Headache was more common with progesterone cream than with placebo in one trial [55]
 - In women also using estrogen, creams giving 16 to 64 mg of progesterone a day did not change the endometrium, so cream may not protect the uterus from estrogen [56]
-- Use it only under a doctor's supervision, as it is a hormone
 
 ### Safety Summary Table
 
 | Supplement | Common Side Effects | Serious Concerns | Talk to your doctor first if |
 |---|---|---|---|
-| Soy Isoflavones | Stomach upset [30] | Endometrial hyperplasia with long-term high doses [39] | ER+ breast cancer; hypothyroidism; soy allergy; pregnancy |
+| Soy Isoflavones | Stomach upset [30] | Endometrial hyperplasia with long-term high doses [39] | Hypothyroidism; soy allergy; pregnancy [40][60] |
 | Red Clover | Not well studied | Safety in breast or endometrial cancer not established [13] | Breast or endometrial cancer; pregnancy |
-| Black Cohosh | Stomach upset, rash [15] | Liver injury reports; one case of slow heart rate [15][48] | Liver disorder; breast cancer; pregnancy |
+| Black Cohosh | Stomach upset, rash [15] | Liver injury reports; one case of slow heart rate [15][48] | Liver disorder; past breast or uterine cancer; pregnancy or breastfeeding [47][59] |
 | Progesterone Cream | Headache [55] | May not protect the uterus [56] | You also use estrogen |
 
 ## 6. Drug Interactions
 
 ### Soy Isoflavones
 
-**Simvastatin:** In a crossover study of 18 healthy Chinese men, taking about 80 mg of soy isoflavones a day for 14 days, then one 20 mg dose of simvastatin, lowered exposure to simvastatin acid, with the geometric mean AUC falling from 16.1 to 12.1 [51]. The drop was significant only in people with the SLCO1B1 521TT genotype [51]. In a separate cohort, simvastatin users with the 521 CC genotype were more likely to need a dose decrease or switch than those with the TT genotype (HR 1.74, 95% CI 1.05 to 2.88) [52].
-
-**Other statin interactions:** While data are limited to simvastatin, the pharmacokinetic mechanism (likely involving CYP enzyme or transporter modulation) raises theoretical concerns about interactions with other statins, particularly atorvastatin which shares metabolic pathways.
+**Simvastatin:** In a crossover study of 18 healthy Chinese men, taking about 80 mg of soy isoflavones a day for 14 days, then one 20 mg dose of simvastatin, lowered exposure to simvastatin acid, with the geometric mean AUC falling from 16.1 to 12.1 [51]. The drop was significant only in people with the SLCO1B1 521TT genotype [51]. In a separate cohort study with no soy involved, simvastatin users with the 521 CC genotype were more likely than those with the TT genotype to need a dose decrease or switch, a sign of side effects (HR 1.74, 95% CI 1.05 to 2.88) [52].
 
 **Thyroid medications:** If you take levothyroxine or another thyroid hormone, soy may change the dose you need [40].
-
-**Anticoagulants and antiplatelet agents:** No established interactions, but the estrogenic activity of soy isoflavones theoretically could affect coagulation factors.
 
 ### Black Cohosh
 
 **Prescription medicines:** If you take prescription medicines, check with your doctor or pharmacist before starting.
-
-**Hepatotoxic drugs:** Given the reports of liver damage associated with black cohosh, concomitant use with other potentially hepatotoxic medications (acetaminophen at high doses, statins, some antibiotics) warrants caution.
 
 **Overall assessment:** The NIH Office of Dietary Supplements notes that black cohosh "is not known to have any clinically relevant interactions with medications, although this has not been systematically studied" [15]. The lack of known interactions reflects limited study rather than confirmed safety.
 
@@ -360,18 +351,13 @@ No well-established drug interactions have been identified for red clover specif
 
 ### Progesterone Cream
 
-Given that progesterone cream delivers a bioactive hormone, potential interactions exist with:
-- Hormonal therapies (estrogen, other progestogens)
-- Medications metabolized by CYP3A4 (progesterone is both a substrate and inhibitor)
-- Anticoagulants (progesterone may affect clotting factor synthesis)
+If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Drug Interaction Summary
 
 | Drug Class | Soy Isoflavones | Red Clover | Black Cohosh | Progesterone Cream |
 |---|---|---|---|---|
 | Statins (simvastatin) | May lower simvastatin exposure, depending on genotype [51] | Theoretical (same isoflavones) | No known interaction | No known interaction |
-| Thyroid medications | May alter thyroid function/requirements | Theoretical | No known interaction | No known interaction |
-| Hormonal therapies | Weak additive estrogenic effect | Weak additive estrogenic effect | Unknown mechanism | Additive hormonal effect |
 
 ## 7. Dietary Sources
 
@@ -468,7 +454,7 @@ The Endocrine Society advises all postmenopausal women to adopt appropriate life
 
 [37] Huang AJ, Subak LL, Wing R, et al. "An intensive behavioral weight loss intervention and hot flushes in women." *Arch Intern Med*. 2010;170(13):1161-1167. doi: [10.1001/archinternmed.2010.162](https://doi.org/10.1001/archinternmed.2010.162) [PubMed abstract](https://pubmed.ncbi.nlm.nih.gov/20625026/)
 
-[39] Unfer V, Casini ML, Costabile L, Mignosa M, Gerli S, Di Renzo GC. "Endometrial effects of long-term treatment with phytoestrogens: a randomized, double-blind, placebo-controlled study." *Fertil Steril*. 2004;82(1):145-148. doi: [10.1016/j.fertnstert.2003.11.041](https://doi.org/10.1016/j.fertnstert.2003.11.041) [PubMed abstract](https://pubmed.ncbi.nlm.nih.gov/15237003/)
+[39] Unfer V, Casini ML, Costabile L, Mignosa M, Gerli S, Di Renzo GC. "Endometrial effects of long-term treatment with phytoestrogens: a randomized, double-blind, placebo-controlled study." *Fertil Steril*. 2004;82(1):145-148. doi: [10.1016/j.fertnstert.2003.11.041](https://doi.org/10.1016/j.fertnstert.2003.11.041) [PubMed abstract](https://pubmed.ncbi.nlm.nih.gov/15237003/) Expression of concern: *Fertil Steril*. 2025;123(4):746. doi: [10.1016/j.fertnstert.2025.01.025](https://doi.org/10.1016/j.fertnstert.2025.01.025) [PubMed](https://pubmed.ncbi.nlm.nih.gov/40221168/)
 
 [40] Messina M, Redmond G. "Effects of soy protein and soybean isoflavones on thyroid function in healthy adults and hypothyroid patients: a review of the relevant literature." *Thyroid*. 2006;16(3):249-258. doi: [10.1089/thy.2006.16.249](https://doi.org/10.1089/thy.2006.16.249) [PubMed abstract](https://pubmed.ncbi.nlm.nih.gov/16571087/)
 
@@ -497,3 +483,9 @@ The Endocrine Society advises all postmenopausal women to adopt appropriate life
 [57] Mohammad-Alizadeh-Charandabi S, Shahnazi M, Nahaee J, et al. "Efficacy of black cohosh (Cimicifuga racemosa L.) in treating early symptoms of menopause: a randomized clinical trial." *Chin Med*. 2013;8(1):20. doi: [10.1186/1749-8546-8-20](https://doi.org/10.1186/1749-8546-8-20) [PubMed abstract](https://pubmed.ncbi.nlm.nih.gov/24499633/)
 
 [58] Jones TK, Lawson BM. "Profound neonatal congestive heart failure caused by maternal consumption of blue cohosh herbal medication." *J Pediatr*. 1998;132(3 Pt 1):550-552. [PubMed abstract](https://pubmed.ncbi.nlm.nih.gov/9544922/)
+
+[59] National Center for Complementary and Integrative Health. "Black Cohosh." Last updated November 2024. [https://www.nccih.nih.gov/health/black-cohosh](https://www.nccih.nih.gov/health/black-cohosh)
+
+[60] National Center for Complementary and Integrative Health. "Soy." Last updated April 2025. [https://www.nccih.nih.gov/health/soy](https://www.nccih.nih.gov/health/soy)
+
+[61] The North American Menopause Society. "The 2023 nonhormone therapy position statement of The North American Menopause Society." *Menopause*. 2023;30(6):573-590. doi: [10.1097/GME.0000000000002200](https://doi.org/10.1097/GME.0000000000002200) [PubMed abstract](https://pubmed.ncbi.nlm.nih.gov/37252752/)
