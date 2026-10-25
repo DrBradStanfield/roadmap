@@ -15,15 +15,14 @@ sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/39672763/","ch
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. Chia seeds supply fiber and the plant omega-3 alpha-linolenic acid (ALA), but a 2018 meta-analysis of 12 trials rated the evidence low or very low, and every trial measured only surrogate markers such as blood pressure or blood lipids [27]. A 2025 meta-analysis of eight randomized trials (372 participants) found lower systolic and diastolic blood pressure and a smaller waist, with no effect on body weight [11], and a 2024 meta-analysis found no effect on fasting glucose, HbA1c or insulin [28]. Chia raises blood ALA, but the body converts little ALA to EPA and DHA [7][13]. Apart from allergy, a 2019 European safety review found no hazard of concern [34]; allergic reactions including anaphylaxis, and one case of oxalate kidney damage after very large daily amounts, have been reported [20][32].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Chia seeds supply fiber and the plant omega-3 alpha-linolenic acid (ALA), but a 2018 meta-analysis of 12 trials rated the evidence low or very low, and every trial measured only surrogate markers such as blood pressure or blood lipids [27]. A 2025 meta-analysis of eight randomized trials (372 participants) found lower systolic and diastolic blood pressure and a smaller waist, with no effect on body weight [11], and a 2024 meta-analysis found no effect on fasting glucose, HbA1c or insulin [28]. Chia raises blood ALA, but the body converts little ALA to EPA and DHA [7][8]. Apart from allergy, a 2019 European safety review found no hazard of concern [34]; allergic reactions including anaphylaxis, and one case of oxalate kidney damage after very large daily amounts, have been reported [20][32].
 
 ## Key safety points
 
-- Chia's effect on blood clotting is uncertain: a 2009 review noted possible anticoagulant effects, while a 12-week trial in type 2 diabetes found no change in clotting function [10][35]. If you take warfarin or another blood thinner, talk to your doctor before eating large amounts.
-- Chia lowered blood pressure in a meta-analysis of eight trials [11]. If you take blood pressure medicines, check with your doctor before adding large amounts.
 - Allergic reactions to chia, including anaphylaxis, have been reported, and lab studies suggest cross-reactivity with sesame [19][32]. For trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- Chia's effect on blood clotting is uncertain: a 2009 review noted possible anticoagulant effects, and a 12-week trial in type 2 diabetes found no change in hemostatic safety tests, though the clotting factors fibrinogen and von Willebrand factor fell [10][35]. If you take warfarin or another blood thinner, talk to your doctor before eating large amounts.
 - A woman who ate six tablespoons of chia seeds and five handfuls of almonds a day developed oxalate kidney damage [20]. If you have had kidney stones, ask your doctor before eating large amounts.
-- Sprouted chia seed powder caused a Salmonella outbreak in 2013 and 2014; 94 people were infected and 21% were hospitalized [33].
+- Chia lowered blood pressure in a meta-analysis of eight trials [11]. If you take blood pressure medicines, check with your doctor before adding large amounts.
 
 ## Brad's videos on this topic
 
@@ -42,7 +41,7 @@ The nutritional profile of chia seeds per 100 g of dried seeds is as follows [4]
 - **Protein:** 16.5 g
 - **Total fat:** 30.7 g
 - **Alpha-linolenic acid (ALA):** about 65% of the oil [12]; 5.06 g per 1-ounce serving [36]
-- **Minerals:** one ounce provides 111 mg of magnesium [37], and one tablespoon provides 76 mg of calcium [38]
+- **Minerals:** one ounce (28.35 g) provides 95 mg of magnesium [4], and one tablespoon provides 76 mg of calcium [38]
 - **Bioactive compounds:** chlorogenic acid, caffeic acid, myricetin, quercetin and kaempferol [12]
 
 The fiber forms a gel (mucilage) when the seeds are soaked, which is why chia is used in puddings, drinks and as an egg substitute in baking.
@@ -71,26 +70,28 @@ Sprouted chia seeds are sold as a more nutritious form, but the main concern wit
 
 ### Chia Oil
 
-Chia oil is pressed or extracted from the seeds, and about 65% of it is ALA [12]. Chia oil supplements are sold as capsules and provide ALA without the fiber. Evidence for topical use remains limited.
+Chia oil is pressed or extracted from the seeds, and about 65% of it is ALA [12]. Chia oil supplements are sold as capsules and provide ALA without the fiber.
 
 ### Chia Seeds vs. Flaxseeds: A Comparison
 
-Both chia and flax are popular plant-based omega-3 sources, but they differ in several respects per 28 g (1 oz) serving [4]:
+Both chia and flax are popular plant-based omega-3 sources, but they differ in several respects per 1 oz (28.35 g) serving, from USDA values per 100 g [4][41]:
 
-| Nutrient | Chia Seeds (28 g) | Flaxseeds (28 g) |
+| Nutrient | Chia Seeds (28.35 g) | Flaxseeds (28.35 g) |
 |----------|:-:|:-:|
-| Calories | 137 | 150 |
-| Dietary Fiber | 9.6 g | 7.6 g |
-| Protein | 4.6 g | 5.1 g |
-| ALA Omega-3 | 5.0 g | 6.4 g |
-| Calcium | 179 mg | 71 mg |
-| Phosphorus | 244 mg | 180 mg |
-| Magnesium | 95 mg | 110 mg |
-| Potassium | 114 mg | 228 mg |
+| Calories | 138 | 151 |
+| Dietary Fiber | 9.8 g | 7.7 g |
+| Protein | 4.7 g | 5.2 g |
+| ALA Omega-3 | 5.1 g | 6.5 g |
+| Calcium | 179 mg | 72 mg |
+| Phosphorus | 244 mg | 182 mg |
+| Magnesium | 95 mg | 111 mg |
+| Potassium | 115 mg | 230 mg |
+
+The flaxseed ALA figure is USDA's total 18:3 fatty acid value [41].
 
 Chia seeds are higher in calcium, phosphorus and fiber. Flaxseeds provide more ALA and potassium.
 
-One practical difference: flaxseeds are usually ground before eating, while whole chia seeds are soft enough to eat as they are.
+One practical difference: flaxseeds are usually ground before eating, while whole chia seeds are soft enough to eat as they are, though milled chia may raise blood ALA and EPA more [26].
 
 ### ALA Conversion to EPA and DHA
 
@@ -141,7 +142,7 @@ Chia seeds are one of the richest plant sources of ALA. In trials they raised bl
 
 Chia's soluble fiber is thought to slow carbohydrate absorption after a meal.
 
-**Mechanisms:** The soluble fiber in chia seeds forms a gel in the digestive tract that may slow carbohydrate digestion and glucose absorption. A standard 28 g serving provides about 10 g of fiber [4].
+**Mechanisms:** The soluble fiber in chia seeds forms a gel in the digestive tract that may slow carbohydrate digestion and glucose absorption. One ounce (28.35 g) provides about 9.8 g of fiber [4].
 
 **After-meal blood sugar:** A 2018 meta-analysis found lower after-meal blood glucose only in subgroups given medium or high doses of chia [27]. In 13 healthy adults, chia baked into bread lowered the after-meal rise in glucose in a dose-dependent way [30].
 
@@ -155,7 +156,7 @@ Evidence that chia helps with weight loss is limited and mixed; most trials foun
 
 **No effect in the primary weight loss trial:** A 12-week study in 76 overweight adults found that 25 g of chia seed mixed in water, taken twice daily before the first and last meal, did not change body mass or composition compared with placebo (Nieman, *Nutrition Research* 2009) [13].
 
-**Obese children:** A small double-blind trial of ground chia in 30 obese 5- to 10-year-old children in Brazil reported changes in fibrinogen and some inflammatory markers (da Silva, *J Med Food* 2020) [14].
+**Obese children:** A small double-blind trial of ground chia in 30 obese 5- to 10-year-old children reported changes in fibrinogen and some inflammatory markers (da Silva, *J Med Food* 2020) [14].
 
 **Waist circumference reduction:** A 2025 meta-analysis of eight randomized controlled trials found that chia reduced waist circumference by 1.46 cm, while body weight and body mass index (BMI) did not change significantly [11]. A second 2025 meta-analysis found no significant effect on body weight or waist circumference [24]. In a 6-month trial in 77 people with type 2 diabetes on a calorie-restricted diet, those given chia lost 1.9 kg compared with 0.3 kg on an oat bran control [29].
 
@@ -171,11 +172,11 @@ Chia seeds are one of the highest-fiber foods available, providing approximately
 
 ### Bone Health
 
-Chia seeds are a plant source of several minerals involved in bone health [4][37][38]:
+Chia seeds are a plant source of several minerals involved in bone health [4][38]:
 
 - **Calcium:** 76 mg per tablespoon [38]
-- **Phosphorus:** 244 mg per 28 g serving [4]
-- **Magnesium:** 111 mg per ounce [37]
+- **Phosphorus:** 244 mg per ounce (28.35 g) [4]
+- **Magnesium:** 95 mg per ounce (28.35 g) [4]
 
 The calcium content of chia seeds may help people on dairy-free or plant-based diets. Chia seeds also contain oxalate, which can bind calcium; a diet that included six tablespoons of chia a day was high enough in oxalate to damage the kidneys in one case [20].
 
@@ -235,9 +236,9 @@ These effects can usually be reduced by starting with a small amount, increasing
 
 ### Choking Hazard
 
-Dry chia seeds swell and turn to gel when they meet liquid. Swallowed dry and followed by a drink, they may form a lump that blocks the esophagus, a risk that is higher in people who already have trouble swallowing.
+Dry chia seeds swell into a gel when wet.
 
-**Prevention:** Soak chia seeds in liquid before eating them, or mix them well into food. Do not swallow a spoonful of dry seeds followed by water. If food sticks in your throat and you cannot swallow your saliva, or you have trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+**Prevention:** Eat them soaked or mixed into moist food, not dry by the spoonful, especially if you have trouble swallowing. If food sticks in your throat and you cannot swallow your saliva, or you have trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 ### Allergic Reactions
 
@@ -277,7 +278,7 @@ No major drug interactions with chia seeds are well documented. The cautions bel
 
 ### Anticoagulants and Antiplatelet Medications
 
-Chia's effect on blood clotting is uncertain. A 2009 systematic review noted some evidence of possible anticoagulant effects [35]. In a 12-week trial of about 37 g a day in type 2 diabetes, chia caused no change in safety measures, including blood clotting (hemostatic) function [10]. Blood thinners include:
+Chia's effect on blood clotting is uncertain. A 2009 systematic review noted some evidence of possible anticoagulant effects [35]. In a 12-week trial of about 37 g a day in type 2 diabetes, chia caused no change in hemostatic safety measures, though von Willebrand factor fell compared with the control and fibrinogen fell from baseline [10]. Blood thinners include:
 
 - **Warfarin (Coumadin)**
 - **Aspirin**
@@ -298,8 +299,7 @@ Chia did not change fasting glucose or HbA1c in a 2024 meta-analysis [28], but h
 
 Chia seeds contain oxalate [20], which can bind minerals and reduce their absorption. This may be relevant when taking mineral supplements:
 
-- **Calcium supplements:** Oxalates in chia can bind calcium, reducing absorption of both the calcium in the seeds and any concurrent calcium supplements
-- **Iron supplements:** Phytic acid may reduce iron absorption when consumed simultaneously
+- **Calcium supplements:** Oxalate in chia may bind calcium and may reduce absorption of both the calcium in the seeds and calcium supplements taken at the same time.
 
 Taking mineral supplements at a different time from large servings of chia may reduce this effect.
 
@@ -315,10 +315,10 @@ Chia seeds are eaten as a whole food; the seeds themselves are the dietary sourc
 
 | Serving Size | Calories | Fiber (g) | Protein (g) | ALA Omega-3 (g) | Calcium (mg) | Magnesium (mg) |
 |-------------|:-:|:-:|:-:|:-:|:-:|:-:|
-| 2 tablespoons (28 g) | 137 | 9.6 | 4.6 | 5.0 | 179 | 95 |
-| 100 g (about 7 tbsp) | 486 | 34.4 | 16.5 | 17.8 | 631 | 335 |
+| 1 ounce (28.35 g) | 138 | 9.8 | 4.7 | 5.1 | 179 | 95 |
+| 100 g | 486 | 34.4 | 16.5 | 17.8 | 631 | 335 |
 
-Source: USDA FoodData Central [4].
+Source: USDA FoodData Central [4]; the 1-ounce row is the 100 g values scaled to USDA's 28.35 g ounce.
 
 ### Common Preparations
 
@@ -404,10 +404,10 @@ Among the whole foods in the NIH table, chia seeds supply the most ALA per servi
 
 [36] NIH Office of Dietary Supplements. "Omega-3 Fatty Acids: Fact Sheet for Health Professionals." [https://ods.od.nih.gov/factsheets/Omega3FattyAcids-HealthProfessional/](https://ods.od.nih.gov/factsheets/Omega3FattyAcids-HealthProfessional/)
 
-[37] NIH Office of Dietary Supplements. "Magnesium: Fact Sheet for Health Professionals." [https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/](https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/)
-
 [38] NIH Office of Dietary Supplements. "Calcium: Fact Sheet for Health Professionals." [https://ods.od.nih.gov/factsheets/Calcium-HealthProfessional/](https://ods.od.nih.gov/factsheets/Calcium-HealthProfessional/)
 
 [39] Silva LA, et al. "Chia seed (*Salvia hispanica* L.) consumption and lipid profile: a systematic review and meta-analysis." *Food Funct*. 2021;12(19):8835-8849. doi: [10.1039/d1fo01287h](https://doi.org/10.1039/d1fo01287h) PMID: 34378609. [https://pubmed.ncbi.nlm.nih.gov/34378609/](https://pubmed.ncbi.nlm.nih.gov/34378609/)
 
 [40] Kiani S, et al. "Effects of chia (*Salvia hispanica*. L) on anthropometric measures and other cardiometabolic risk factors: A systematic review and dose-response meta-analysis." *Complement Ther Med*. 2024;86:103086. doi: [10.1016/j.ctim.2024.103086](https://doi.org/10.1016/j.ctim.2024.103086) PMID: 39299654. [https://pubmed.ncbi.nlm.nih.gov/39299654/](https://pubmed.ncbi.nlm.nih.gov/39299654/)
+
+[41] U.S. Department of Agriculture, FoodData Central. "Seeds, flaxseed." [https://fdc.nal.usda.gov/fdc-app.html#/food-details/169414/nutrients](https://fdc.nal.usda.gov/fdc-app.html#/food-details/169414/nutrients)
