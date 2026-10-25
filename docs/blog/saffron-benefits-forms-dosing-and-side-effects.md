@@ -6,7 +6,7 @@ publishedAt: "2025-09-28T09:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["saffron", "crocin", "safranal", "picrocrocin", "crocetin", "depression", "mood", "anxiety", "eye health", "cognitive", "brain health", "alzheimer", "sleep", "insomnia", "melatonin", "weight loss", "inflammation", "antioxidant", "age-related macular degeneration", "lutein", "zeaxanthin"]
-summary: "Saffron, usually about 30 mg a day in trials, for low mood, mild to moderate depression and sleep. Small, short trials, many from Iran, suggest modest benefit; it is not a stand-alone depression treatment. Talk to your doctor first if pregnant or taking blood thinners or antidepressants."
+summary: "Saffron, about 30 mg a day in trials, for low mood, mild to moderate depression and sleep. Studies suggest benefit, but trials are small, mostly Iranian, and show publication bias; it is not a stand-alone treatment. Talk to your doctor first if pregnant or on blood thinners or antidepressants."
 reviewed: "2026-10-26"
 sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/31135916/","checked":"2026-10-26","fingerprint":"sha256:d0a8be592e86cf607fbfbd7ea5e93cd16846080a4099f0ebb5638957dc22b0d1"}]
 ---
@@ -15,15 +15,15 @@ sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/31135916/","ch
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. Meta-analyses of small, short trials, many run in Iran, found that saffron eased symptoms of mild to moderate depression more than placebo and about as well as antidepressants, but one found signs of publication bias and others called for larger trials [14][15][61][62]. Most of those trials gave saffron at 30 mg a day, split into two or three doses [7][59][60]. An umbrella review concluded that saffron cannot be considered a stand-alone treatment for depression [63]. Side effects in trials were no more common than with placebo, but a bleeding case with the blood thinner rivaroxaban and a link between high exposure and miscarriage mean people on blood thinners and pregnant women should talk to their doctor first [15][51][55][71].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Meta-analyses of small, short trials, many run in Iran, found that saffron eased symptoms of mild to moderate depression more than placebo and about as well as antidepressants, but one found signs of publication bias and others called for larger trials [14][15][61][62]. Early trials gave saffron at 30 mg a day, split into two or three doses [7][59][60]. An umbrella review concluded that saffron cannot be considered a stand-alone treatment for depression [63]. Side effects in trials were no more common than with placebo, but a bleeding case with the blood thinner rivaroxaban and a link between high exposure and miscarriage mean people on blood thinners and pregnant women should talk to their doctor first [15][51][55][71].
 
 ## Key safety points
 
-- A man taking the blood thinner rivaroxaban had nosebleeds and bleeding gums after adding saffron, and the authors advised against the combination [55]. Ask your doctor first if you take any blood thinner. For bleeding that will not stop, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- A man taking the blood thinner rivaroxaban had nosebleeds and bleeding gums after adding saffron, and the authors advised against the combination [55]. Ask your doctor first if you take any blood thinner. For bleeding that will not stop, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - Saffron cannot be considered a stand-alone treatment for depression [63]. Do not stop or swap an antidepressant for saffron without your doctor's advice.
 - Avoid saffron supplements in pregnancy: high exposure has been linked to uterine stimulation and miscarriage, and safety trials in pregnancy are lacking [51][71].
 - Hypomania was recorded in a few people taking saffron in trials, at rates similar to the comparison groups [51]. Ask your doctor first if you have bipolar disorder.
-- High doses caused nausea, vomiting, diarrhoea and bleeding [51]. A week of 200 mg or 400 mg saffron tablets slightly lowered platelets, within normal ranges [68].
+- High doses (1.2 to 2 g) caused nausea, vomiting, diarrhoea and bleeding [51]. A week of 200 mg or 400 mg saffron tablets slightly lowered platelets, within normal ranges [68].
 - At trial doses, side effects such as nausea, headache, dizziness and dry mouth were about as common as with placebo or the comparison drug [15][51].
 
 ## Brad's videos on this topic
@@ -32,9 +32,9 @@ None yet.
 
 ## 1. Overview
 
-Saffron is the dried stigma of the *Crocus sativus* flower, a plant of the Iridaceae family, and is the world's most expensive spice [31][60]. Its main compounds are crocin, picrocrocin and safranal [70]. Crocins, the main pigments, are also found in gardenia fruit [73].
+Saffron is the dried stigma of the *Crocus sativus* flower, a plant of the Iridaceae family, and is the world's most expensive spice [31][60]. Its main compounds are crocin, picrocrocin and safranal [70].
 
-A 2015 review reports that saffron and its compounds raise glutamate and dopamine levels in the brain in a dose-dependent way [70]. Saffron has been tested in people for depression, anxiety, sleep, memory and eye health.
+A 2015 review reports that, in animal studies, saffron and its compounds raise glutamate and dopamine levels in the brain in a dose-dependent way [70]. Saffron has been tested in people for depression, anxiety, sleep, memory and eye health.
 
 Most trials are small and short, and many come from Iran [14][19]. Meta-analyses have called for larger trials run elsewhere and found signs of publication bias [14][61].
 
@@ -58,8 +58,6 @@ The trials below used these branded extracts:
 
 The ISO 3632 standard grades saffron with a UV-vis (spectrophotometric) test. A 2017 study found no correlation between safranal measured by UV-vis and by HPLC [11]. UV-vis overestimated safranal, partly because it also picks up crocetin esters, and ISO quality categories did not match HPLC safranal content [11]. The authors judged HPLC preferable [11].
 
-**Practical implication:** A label percentage based on UV-vis may not reflect the true safranal content [11].
-
 ### Solubility and Absorption
 
 In mice, crocins taken by mouth were broken down to crocetin before or during absorption, and only crocetin and its glucuronide forms reached the blood [73]. In people, urine crocetin rose during 8 weeks of a saffron extract, and the rise tracked the fall in depression scores [20].
@@ -82,7 +80,9 @@ Saffron and other parts of Crocus plants contain carotenoids, flavonoids, anthoc
 
 ### Low Mood and Stress (Non-Clinical Depression)
 
-Trials in people without clinical depression give mixed results [19][20][22].
+Four placebo-controlled trials tested saffron extract in adults without a diagnosis of depression [19][20][21][22].
+
+**Emotional well-being, 6-week trial (n=51):** In healthy adults with mild symptoms of depression, a saffron extract did not improve a combined score of depression, anxiety and fatigue, or any single symptom, compared with placebo [22]. Self-rated mental health on one questionnaire improved over time, which the authors said needs replication [22].
 
 **Low mood, 12-week trial (n=202):** Adults aged 18 to 70 with depressive symptoms took affron 28 mg a day or placebo. A clinically significant fall in depression score (a drop of at least 7 points) occurred in 72.3% of the saffron group and 54.3% of the placebo group [19]. Other secondary outcomes did not differ, and the placebo response was large [19].
 
@@ -90,23 +90,19 @@ Trials in people without clinical depression give mixed results [19][20][22].
 
 **Acute stress response (single dose, 30 mg):** In a crossover trial in 19 healthy men aged 18 to 25, a single 30 mg dose of Safr'Inside, or 0.06 mg of synthetic safranal, given before a lab stress test lowered self-rated stress and anxiety compared with placebo and delayed the peak in salivary cortisol [21].
 
-**Emotional well-being, 6-week trial (n=51):** In healthy adults with mild symptoms of depression, a saffron extract did not improve a combined score of depression, anxiety and fatigue, or any single symptom, compared with placebo [22]. Self-rated mental health on one questionnaire improved over time, which the authors said needs replication [22].
-
 ### Sleep
 
-Sleep trials of saffron extract are small and short, and most found modest gains [24][25][26][27].
-
-**Self-reported poor sleep, 28-day trial (n=63):** In healthy adults with self-reported sleep problems, affron 14 mg twice daily improved insomnia severity, restorative sleep and sleep quality ratings more than placebo, with no reported side effects [24].
-
-**Dose comparison, 28 mg vs. 14 mg (n=120):** Adults with unsatisfactory sleep took 14 mg or 28 mg of affron, or placebo, 1 hour before bed for 28 days. Both doses improved sleep quality ratings, mood on waking and insomnia symptom scores to a similar degree, but other diary and questionnaire measures did not differ from placebo [25]. Evening melatonin rose with saffron, and evening cortisol did not change [25].
-
-**Mild to moderate sleep disorder with anxiety, 6-week trial (n=66):** A saffron extract at 15.5 mg a day increased time in bed measured by a wrist activity monitor (actigraphy) and improved ease of getting to sleep on one questionnaire, and sleep quality, sleep latency and sleep duration on another, while placebo did not [26].
-
-**Moderate insomnia, 4-week trial (n=165):** Adults took Safr'Inside at 20 mg or 30 mg, or placebo. Saffron reduced insomnia symptoms (Athens Insomnia Scale) more than placebo, improved sleep quality after 3 weeks, and lowered perceived stress scores by 1.87 points (30 mg) and 1.89 points (20 mg) [27]. Psychological symptoms (PHQ-4) also improved with 30 mg; other measures showed no difference [27].
+Four placebo-controlled trials have tested saffron extract for sleep [24][25][26][27].
 
 **Meta-analytic evidence:** A 2022 meta-analysis of eight trials (431 people) found that saffron improved sleep quality (very low-quality evidence) and sleep duration (moderate-quality evidence), but its effect on insomnia severity was not significant [28]. Another 2022 meta-analysis found the most stable effect on sleep quality in a subgroup taking 100 mg a day [64].
 
-**Practical note:** In the 120-person trial, affron was taken 1 hour before bed [25].
+**Moderate insomnia, 4-week trial (n=165):** Adults took Safr'Inside at 20 mg or 30 mg, or placebo. Saffron reduced insomnia symptoms (Athens Insomnia Scale) more than placebo, improved sleep quality after 3 weeks, and lowered perceived stress scores by 1.87 points (30 mg) and 1.89 points (20 mg) [27]. Psychological symptoms (PHQ-4) also improved with 30 mg; other measures showed no difference [27].
+
+**Dose comparison, 28 mg vs. 14 mg (n=120):** Adults with unsatisfactory sleep took 14 mg or 28 mg of affron, or placebo, 1 hour before bed for 28 days. Both doses improved sleep quality ratings, mood on waking and insomnia symptom scores to a similar degree, but other diary and questionnaire measures did not differ from placebo [25]. Evening melatonin rose with saffron, and evening cortisol did not change [25].
+
+**Mild to moderate sleep disorder with anxiety, 6-week trial (n=66):** Compared with placebo, a saffron extract at 15.5 mg a day increased time in bed measured by a wrist activity monitor (actigraphy) and sleep duration on a questionnaire [26]. Ease of getting to sleep, sleep quality and sleep latency improved from baseline with saffron but not with placebo; the trial reported a difference between groups only for time in bed and sleep duration [26].
+
+**Self-reported poor sleep, 28-day trial (n=63):** In healthy adults with self-reported sleep problems, affron 14 mg twice daily improved insomnia severity, restorative sleep and sleep quality ratings more than placebo, with no reported side effects [24].
 
 ### Cognitive Impairment and Alzheimer's Disease
 
@@ -124,11 +120,11 @@ A 2020 meta-analysis of four trials found that saffron improved cognitive scores
 
 Several small studies tested saffron 20 mg a day in AMD [37][38][39][40].
 
+**Placebo-controlled trial in mild-to-moderate AMD (n=100):** In a crossover trial in 100 adults over 50 years old, saffron 20 mg a day for 3 months improved best-corrected visual acuity by 0.69 letters compared with placebo, and by 0.73 letters in people already taking AREDS supplements [40]. Adverse events did not differ [40].
+
 **Retinal sensitivity, 3-month trial (crossover with placebo):** In 25 people with early AMD, 3 months of saffron 20 mg a day improved retinal flicker sensitivity compared with baseline and with placebo [37].
 
-**Visual acuity, long-term follow-up (no placebo):** In an open-label study of 29 people with early AMD taking 20 mg a day, retinal sensitivity improved after 3 months and visual acuity improved by two lines on an eye chart (0.75 to 0.9); the gains held through an average of 14 (±2) months [38]. In 33 people treated for about 11 months, the benefit did not depend on the main AMD risk genes [39].
-
-**Placebo-controlled trial in mild-to-moderate AMD (n=100):** In a crossover trial in 100 adults over 50 years old, saffron 20 mg a day for 3 months improved best-corrected visual acuity by 0.69 letters compared with placebo, and by 0.73 letters in people already taking AREDS supplements [40]. Adverse events did not differ [40].
+**Visual acuity, long-term follow-up (no placebo):** In 33 people with early AMD treated for about 11 months, the benefit did not depend on the main AMD risk genes [39]. In an open-label study of 29 people with early AMD taking 20 mg a day, retinal sensitivity improved after 3 months and visual acuity improved by two lines on an eye chart (0.75 to 0.9); the gains held through an average of 14 (±2) months [38].
 
 ### Weight and Appetite
 
@@ -144,7 +140,7 @@ A 2024 meta-analysis of ten trials in 562 people with diabetes, using doses from
 
 ### Male Sexual Health
 
-A 2018 meta-analysis of six trials found that saffron improved erectile function scores, but results on semen quality conflicted and the trials had methodological flaws [46]. In a 12-week crossover trial in 346 men with erectile dysfunction, saffron 30 mg twice daily did not improve erectile function [53].
+A 2018 meta-analysis of six trials found that saffron improved erectile function scores, but results on semen quality conflicted and the trials had methodological flaws [46]. In an open-label crossover trial in 346 men with erectile dysfunction, 12 weeks of saffron 30 mg twice daily did not improve erectile function; the comparison was sildenafil, and there was no placebo group [53].
 
 ### Immune Function
 
@@ -177,7 +173,7 @@ Dosing depends on the product. These are the doses used in the trials above:
 
 ### Key Dosing Principles
 
-**Extract concentration matters:** Trials gave affron at 14 mg twice daily and Safr'Inside at 20 mg or 30 mg, but Satiereal at 176.5 mg a day [24][27][43].
+**Doses differ by product:** Trials gave affron at 14 mg twice daily, Safr'Inside at 20 mg or 30 mg, and Satiereal at 176.5 mg a day [24][27][43].
 
 **Timing:** In the 120-person sleep trial, affron was taken 1 hour before bed [25]. Depression and Alzheimer's trials split the daily dose into two or three doses [7][32][59].
 
@@ -191,9 +187,7 @@ Some trials used saffron itself in capsules or tablets: 30 mg a day for depressi
 
 ### General Safety Profile
 
-In depression trials, side effects were no more common with saffron than with placebo or antidepressants [15], and a 2025 meta-analysis found fewer adverse events with saffron than with SSRIs [62]. Long-term data are limited; the longest controlled trial ran 12 months [33].
-
-Clinical trials on safety in pregnancy are lacking [51] (see Special Population Concerns). Safety while breastfeeding is not established.
+The longest controlled trial ran 12 months [33], so long-term data are limited. In depression trials, side effects were no more common with saffron than with placebo or antidepressants [15], and a 2025 meta-analysis found fewer adverse events with saffron than with SSRIs [62].
 
 ### Dose-Dependent Toxicity
 
@@ -201,28 +195,28 @@ Side effects appear to depend on dose:
 
 - **Trial doses (extract at 14 to 30 mg a day [24][51], or saffron at 100 mg a day [48]):** side effects about as common as with placebo [15][48].
 - **200 mg or 400 mg saffron tablets for 1 week:** in healthy volunteers (three groups of 10), small falls in red blood cells, haemoglobin and platelets, all within normal ranges; 400 mg lowered standing systolic blood pressure [68]. In another trial with three groups of 20 volunteers, the same doses did not change clotting tests [69].
-- **High doses:** a toxicology review lists nausea, vomiting, diarrhoea and bleeding [51]. Very large doses, many grams at once, may cause serious and possibly fatal poisoning. If someone has taken a large amount of saffron and has bleeding or severe vomiting, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
-- **Animal LD50:** the median lethal dose of saffron in animal studies is 20.7 g/kg [70].
+- **High doses:** a European monograph quoted in a 2017 review reports no documented risk up to 1.5 g of saffron a day, poisoning from 5 g a day, and 20 g as a lethal dose [76]. A toxicology review lists nausea, vomiting, diarrhoea and bleeding at 1.2 to 2 g [51]. If someone has taken a large amount of saffron and has bleeding or severe vomiting, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- **Animal LD50:** median lethal doses of saffron in animal studies range from 4120 mg/kg by mouth in mice [51] to 20.7 g/kg [70].
 
 ### Reported Side Effects
 
 In trials at 30 mg a day, reported side effects included anxiety, changes in appetite, sedation, nausea, headache, dizziness, dry mouth, fatigue and hypomania, at rates not significantly different from placebo or the comparison drug [51].
 
-Severe poisoning may also cause numbness and tingling, yellowing of the skin (jaundice), spontaneous bleeding and low platelet counts.
+Poisoning from 5 g a day can cause vomiting, bloody diarrhoea, blood in the urine, bleeding into the skin of the nose, lips and eyelids, vertigo and yellowing of the skin and mucous membranes [76].
 
 ### Blood Thinning Effects
 
 Trials found small falls in platelets but no change in clotting tests [48][68][69].
 
-**Platelet count changes:** A week of 200 mg or 400 mg saffron tablets slightly lowered platelets, within normal ranges [68]. At 100 mg a day, platelets fell from baseline at 3 weeks and returned to baseline by 6 weeks [48]. Clotting tests (PT, PTT, fibrinogen, factor VII, and proteins C and S) did not change with 200 mg or 400 mg saffron tablets for a week [69].
-
 **Case report, bleeding with an anticoagulant:** A man aged 64 who was taking rivaroxaban had sudden nosebleeds and bleeding gums after starting a saffron supplement [55]. The authors advised against combining saffron with DOACs (direct oral anticoagulants, such as rivaroxaban) and called for larger studies [55].
+
+**Platelet count changes:** A week of 200 mg or 400 mg saffron tablets slightly lowered platelets, within normal ranges [68]. At 100 mg a day, platelets fell from baseline at 3 weeks and returned to baseline by 6 weeks [48]. Clotting tests (PT, PTT, fibrinogen, factor VII, and proteins C and S) did not change with 200 mg or 400 mg saffron tablets for a week [69].
 
 ### Special Population Concerns
 
 **Bipolar disorder:** Hypomania, a mild form of mania, was recorded in a few people taking saffron in depression and Alzheimer's trials, at rates similar to the comparison groups [51]. People with bipolar disorder should ask their doctor before taking saffron.
 
-**Pregnancy:** Higher doses of saffron, or heavy exposure at work, have been linked to uterine stimulation and more miscarriages [71]. Women between the first and twentieth week of pregnancy who were exposed to high levels of saffron while harvesting it had a higher miscarriage rate than controls [51]. At term, three 250 mg doses of saffron in 24 hours made the cervix more ready for labour [72]. Clinical trials on safety in pregnancy are lacking, and a toxicology review advises pregnant women to avoid high doses [51]. Avoid saffron supplements during pregnancy unless your doctor advises them.
+**Pregnancy:** Higher doses of saffron, or heavy exposure at work, have been linked to uterine stimulation and more miscarriages [71]. More than 5 g can stimulate the uterus [76]. Women between the first and twentieth week of pregnancy who were exposed to high levels of saffron while harvesting it had a higher miscarriage rate than controls [51]. At term, three 250 mg doses of saffron in 24 hours made the cervix more ready for labour [72]. Clinical trials on safety in pregnancy are lacking, and a toxicology review advises pregnant women to avoid high doses [51]. Avoid saffron supplements during pregnancy unless your doctor advises them. Safety while breastfeeding is not established.
 
 **Children and adolescents:** One 8-week trial gave affron 14 mg twice a day to youth aged 12 to 16 years, and it was well tolerated [16]. Evidence in children is limited.
 
@@ -234,11 +228,11 @@ Saffron's high price makes it a target for fraud. A 2026 systematic review of 23
 
 ### Blood Thinners (Anticoagulants and Antiplatelets)
 
-Saffron may add to the effect of blood thinners. A man on rivaroxaban had bleeding after adding saffron, and the case report's authors advised against combining saffron with DOACs [55]. If you take an anticoagulant (warfarin, rivaroxaban, apixaban, dabigatran) or an antiplatelet drug (aspirin, clopidogrel), ask your doctor before taking saffron. For bleeding that will not stop, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+A man on rivaroxaban had bleeding after adding saffron, and the case report's authors advised against combining saffron with DOACs [55]. Saffron may add to the effect of other blood thinners too. If you take an anticoagulant (warfarin, rivaroxaban, apixaban, dabigatran) or an antiplatelet drug (aspirin, clopidogrel), ask your doctor before taking saffron. For bleeding that will not stop, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 ### Antidepressant Medications
 
-In an 8-week trial in adults already taking antidepressants, adding affron did not increase antidepressant side effects [17]. In theory, saffron could add to the serotonin effects of SSRIs (such as fluoxetine or sertraline), SNRIs (such as venlafaxine or duloxetine) or MAOIs and raise the risk of serotonin syndrome, so ask your doctor before combining them. Signs of serotonin syndrome include agitation, confusion, a fast heartbeat, high temperature, heavy sweating and muscle twitching or stiffness; if they appear, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department. Do not stop or swap an antidepressant for saffron without your doctor's advice: saffron cannot be considered a stand-alone treatment for depression [63].
+In an 8-week trial in adults already taking antidepressants, adding affron did not increase antidepressant side effects [17]. In theory, saffron could add to the serotonin effects of SSRIs (such as fluoxetine or sertraline), SNRIs (such as venlafaxine or duloxetine) or MAOIs and raise the risk of serotonin syndrome, so ask your doctor before combining them. Signs of serotonin syndrome include agitation, confusion, a fast heartbeat, high temperature, heavy sweating and muscle twitching or stiffness; if they appear, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). Do not stop or swap an antidepressant for saffron without your doctor's advice: saffron cannot be considered a stand-alone treatment for depression [63].
 
 ### Sedative Medications
 
@@ -353,3 +347,5 @@ Saffron is widely used in food for its colour, taste and smell [51].
 [74] Mykhailenko O, Kovalyov V, Goryacha O et al. Biologically active compounds and pharmacological activities of species of the genus Crocus: A review. Phytochemistry. 2019;162:56-89. PMID: 30856530. https://pubmed.ncbi.nlm.nih.gov/30856530/
 
 [75] Jarukas L, Vitkevicius K, Mykhailenko O et al. Effective Isolation of Picrocrocin and Crocins from Saffron: From HPTLC to Working Standard Obtaining. Molecules. 2022;27(13):4286. PMID: 35807531. https://pubmed.ncbi.nlm.nih.gov/35807531/
+
+[76] José Bagur M, Alonso Salinas GL, Jiménez-Monreal AM et al. Saffron: An Old Medicinal Plant and a Potential Novel Functional Food. Molecules. 2017;23(1):30. PMID: 29295497. https://pubmed.ncbi.nlm.nih.gov/29295497/
