@@ -6,7 +6,7 @@ publishedAt: "2025-01-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["pomegranate", "pomegranate extract", "pomegranate juice", "punicalagin", "ellagic acid", "urolithin", "antioxidant", "cardiovascular", "blood pressure", "hypertension", "atherosclerosis", "cholesterol", "ldl", "triglycerides", "prostate", "psa", "cognitive", "brain health", "blood sugar", "diabetes", "insulin resistance", "hba1c", "inflammation", "exercise", "muscle", "testosterone", "heart health", "aging", "longevity", "gut health", "microbiome", "potassium", "vitamin c", "folate"]
-summary: "Reference on pomegranate juice and extract. Pooled trials suggest small falls in blood pressure and blood sugar, but no clear effect on cholesterol, and prostate cancer trials were mostly negative. Talk to your doctor first if you take warfarin, a statin, sildenafil or blood pressure medicines."
+summary: "Pomegranate juice and extract: pooled trials suggest small falls in blood pressure and blood sugar, but no clear effect on cholesterol, and placebo-controlled prostate cancer trials were negative. Talk to your doctor first if you take warfarin, a statin, sildenafil or blood pressure medicines."
 reviewed: "2026-10-26"
 sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/pomegranate","checked":"2026-10-26","fingerprint":"sha256:79f1ed0b8cfa6adb0d7b9dabe044151255aec5f43e5ccb3b428765c999cbeabe"}]
 ---
@@ -21,7 +21,7 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 - Warfarin: one woman's INR fell below target after she stopped drinking pomegranate juice [33]. If you take warfarin, ask your doctor before starting or stopping pomegranate.
 - Three men developed priapism (a prolonged, painful erection) after taking sildenafil with pomegranate juice [26]. Priapism needs urgent treatment: call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
-- A man on rosuvastatin developed severe muscle breakdown three weeks after starting pomegranate juice; the role of the juice is unclear [29]. If you take a statin, drink pomegranate juice cautiously.
+- A man on rosuvastatin developed severe muscle breakdown three weeks after starting pomegranate juice; the case report's authors suggested the juice may raise this risk [29]. If you take a statin, ask your doctor before drinking pomegranate juice regularly.
 - Allergic reactions have been reported [2][30]. If you get swelling of the face, lips or tongue, or trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 - Because pomegranate may reduce blood pressure [9][10], it could add to blood pressure medicines. Ask your doctor if you take them.
 - The root, stem and peel may not be safe in large amounts. Juice may be safe in pregnancy and breastfeeding; little is known about other forms [2].
@@ -53,11 +53,11 @@ Concentrate is juice with much of its water removed, diluted before drinking. Di
 
 ### Pomegranate Extract (Supplements)
 
-Extract trials used 1 g capsules [21][37] or 1 or 3 g doses of POMx extract [20]. Extracts avoid the sugar in juice, but they may not act the same way: in a crossover trial in healthy adults, juice blunted the post-meal glucose rise from bread while a polyphenol-rich extract did not [7].
+Extract trials used 1 g capsules [21] or 1 or 3 g doses of POMx extract [20]. Extracts avoid the sugar in juice, but they may not act the same way: in a crossover trial in healthy adults, juice blunted the post-meal glucose rise from bread while a polyphenol-rich extract did not [7].
 
 ### Polyphenol Content Comparison
 
-Polyphenol content differs by product. The 8-ounce daily juice serving in one prostate cancer trial held 570 mg of total polyphenols [18], and extract trials used 1 g capsules [21][37].
+Polyphenol content differs by product. The 8-ounce daily juice serving in one prostate cancer trial held 570 mg of total polyphenols [18], and extract trials used 1 g capsules [21].
 
 ### Key Bioactive Compounds
 
@@ -129,17 +129,18 @@ Laboratory work found that a pomegranate extract slowed the growth of human pros
 
 **Early positive study:** In a phase II trial of men with a rising PSA after surgery or radiation, 8 ounces (about 240 mL) of Wonderful variety juice a day lengthened mean PSA doubling time from 15 months to 54 months. There was no placebo group, and the authors called for a placebo-controlled trial (Pantuck et al., *Clin Cancer Res*, 2006) [18].
 
-**Subsequent negative study #1:** In a placebo-controlled trial of 183 men, PSA doubling time lengthened in both the extract and placebo arms, and the extract did not lengthen it significantly more than placebo (Pantuck et al., *Prostate Cancer Prostatic Dis*, 2015) [19].
+**Dose-comparison study (no placebo):** In a trial of 104 men randomised to 1 or 3 g doses of pomegranate extract, median PSA doubling time lengthened from 11.9 to 18.5 months, with no difference between doses. The authors said the meaning of this was unclear without a placebo group (Paller et al., *Prostate Cancer Prostatic Dis*, 2013) [20].
 
-**Subsequent negative study #2:** In a trial of 104 men randomised to 1 or 3 g doses of pomegranate extract, median PSA doubling time lengthened from 11.9 to 18.5 months, with no difference between doses. The authors said the meaning of this was unclear without a placebo group (Paller et al., *Prostate Cancer Prostatic Dis*, 2013) [20].
+**Subsequent negative study:** In a placebo-controlled trial of 183 men, PSA doubling time lengthened in both the extract and placebo arms, and the extract did not lengthen it significantly more than placebo (Pantuck et al., *Prostate Cancer Prostatic Dis*, 2015) [19].
 
-**RCT in active surveillance (negative):** Men with favorable-risk prostate cancer on active surveillance took 1,000 mg of pomegranate fruit extract (15 men) or placebo (15 men) daily for a year. The extract made no difference to PSA doubling time, IGF-1 levels or biopsy findings compared with placebo, though it did reduce a DNA damage marker and androgen receptor expression in prostate tissue (Jarrard et al., *Prostate*, 2021) [21].
+
+**RCT in active surveillance (negative):** Men with favorable-risk prostate cancer on active surveillance took 1,000 mg of pomegranate fruit extract (15 men) or placebo (15 men) daily for a year. The extract made no difference to PSA doubling time, IGF-1 levels or biopsy findings compared with placebo, though it did reduce a DNA damage marker and androgen receptor expression in prostate tumour tissue (Jarrard et al., *Prostate*, 2021) [21].
 
 **Preclinical urolithin data:** Ellagic acid and several urolithins slowed the growth of human prostate cancer cells in the laboratory [5]. This has not translated into benefit in placebo-controlled trials [19][21].
 
 ### Cognitive Function and Memory
 
-**12-month RCT (n=200):** In a year-long trial, 261 adults aged 50 to 75 drank 8 ounces (236.5 mL) of pomegranate juice or a placebo drink daily; 98 in the juice group and 102 on placebo finished. The juice group held steady on one test of visual learning while the placebo group declined; other memory scores did not differ (Siddarth et al., *Am J Clin Nutr*, 2020) [22].
+**12-month RCT (261 randomised):** In a year-long trial, 261 adults aged 50 to 75 drank 8 ounces (236.5 mL) of pomegranate juice or a placebo drink daily; 98 in the juice group and 102 on placebo finished. The juice group held steady on one test of visual learning while the placebo group declined; other memory scores did not differ (Siddarth et al., *Am J Clin Nutr*, 2020) [22].
 
 **NCCIH assessment:** The limited research completed so far "doesn't allow conclusions to be reached about whether pomegranate is helpful" for other conditions [2].
 
@@ -151,7 +152,7 @@ Laboratory work found that a pomegranate extract slowed the growth of human pros
 
 ### Inflammation
 
-**Meta-analysis of 16 trials:** A 2020 meta-analysis of 16 randomised trials (572 people) found that pomegranate lowered hs-CRP by 6.57 mg/L (95% CI -10.04 to -3.10) and also reported lower IL-6 and TNF-alpha. Standard CRP, E-selectin, ICAM, VCAM and MDA did not change significantly (Wang et al., *Complement Ther Med*, 2020) [32].
+**Meta-analysis of 16 trials:** A 2020 meta-analysis of 16 randomised trials (572 people) found that pomegranate lowered hs-CRP by 6.57 mg/L (95% CI -10.04 to -3.10) and TNF-alpha; the IL-6 result's confidence interval included no effect. Standard CRP, E-selectin, ICAM, VCAM and MDA did not change significantly (Wang et al., *Complement Ther Med*, 2020) [32].
 
 **Adverse effect reporting review:** Of 66 clinical articles on pomegranate, 11 reported side effects, 21 recorded none and 34 did not mention them; the authors called for better documentation of side effects (Zare et al., *J Complement Integr Med*, 2024) [30].
 
@@ -204,7 +205,7 @@ There is no established Recommended Dietary Allowance (RDA) for pomegranate, as 
 
 ### General Safety
 
-Pomegranate fruit and juice are generally considered safe as foods. The NCCIH states that "pomegranate juice is believed to be safe. Pomegranate extract may also be safe" [2]. A systematic review of 66 clinical articles concluded that pomegranate and its extract seem safe on the side effects reported, and called for better-controlled trials that document side effects (Zare et al., *J Complement Integr Med*, 2024) [30].
+The NCCIH states that "pomegranate juice is believed to be safe. Pomegranate extract may also be safe" [2]. A systematic review of 66 clinical articles concluded that pomegranate and its extract seem safe on the side effects reported, and called for better-controlled trials that document side effects (Zare et al., *J Complement Integr Med*, 2024) [30].
 
 ### Gastrointestinal Effects
 
@@ -216,7 +217,7 @@ Allergic reactions to pomegranate have been reported [2]. In case reports, aller
 
 ### Pomegranate Bark and Peel Preparations
 
-Pomegranate root, stem, and peel "may not be safe when consumed in large amounts because they contain substances that can have harmful effects" [2]. Bark extract is not the same as juice or fruit extract, and large amounts may cause serious harm, such as muscle weakness.
+Pomegranate root, stem, and peel "may not be safe when consumed in large amounts because they contain substances that can have harmful effects" [2].
 
 ### Blood Pressure Lowering Effect
 
@@ -224,7 +225,7 @@ Because pomegranate may reduce blood pressure [9][10], it could add to the effec
 
 ### Statin Interaction Concern
 
-A 48-year-old man with a possible underlying muscle disorder, taking rosuvastatin and ezetimibe, developed rhabdomyolysis (rapid muscle breakdown) three weeks after starting 200 mL of pomegranate juice twice a week. The authors suggested the juice may raise this risk, though rosuvastatin is not known to be broken down by liver CYP3A4 (Sorokin et al., *Am J Cardiol*, 2006) [29]. If you take a statin, drink pomegranate juice cautiously.
+A 48-year-old man with a possible underlying muscle disorder, taking rosuvastatin and ezetimibe, developed rhabdomyolysis (rapid muscle breakdown) three weeks after starting 200 mL of pomegranate juice twice a week. The authors suggested the juice may raise this risk, though rosuvastatin is not known to be broken down by liver CYP3A4 (Sorokin et al., *Am J Cardiol*, 2006) [29]. If you take a statin, ask your doctor before drinking pomegranate juice regularly.
 
 ### Pregnancy and Breastfeeding
 
@@ -246,11 +247,11 @@ Because pomegranate may reduce blood pressure [9][10], it may add to the effect 
 
 ### Statins (HMG-CoA Reductase Inhibitors)
 
-A case report linked pomegranate juice with rhabdomyolysis in a man taking rosuvastatin; the authors pointed to the juice's known effect on intestinal CYP3A4 [29]. In rats, pomegranate juice blocked enteric (gut) but not liver CYP3A [34]. In 13 healthy volunteers, though, 8 ounces of juice did not change how the body cleared midazolam, a test drug for CYP3A [36]. The clinical meaning is uncertain, so caution remains sensible.
+A case report linked pomegranate juice with rhabdomyolysis in a man taking rosuvastatin; the authors pointed to the juice's known effect on intestinal CYP3A4 [29]. In rats, pomegranate juice blocked enteric (gut) but not liver CYP3A [34]. In 13 healthy volunteers, though, 8 ounces of juice did not change how the body cleared midazolam, a test drug for CYP3A [36]. If you take a statin, ask your doctor before drinking pomegranate juice regularly.
 
 ### Warfarin and Other Anticoagulants
 
-A 64-year-old woman on a stable warfarin dose was drinking pomegranate juice 2 to 3 times a week; when she stopped, her INR fell below target and her dose had to be raised. A probability scale rated the link as possible (Komperda, *Pharmacotherapy*, 2009) [33]. In laboratory tests with human liver microsomes (enzyme preparations), pomegranate juice blocked CYP2C9, one of the enzymes that clears warfarin [35], though in human volunteers juice and extract did not change the clearance of flurbiprofen, another CYP2C9 drug [37]. Arils also contain vitamin K (16 mcg per 100 g) [4]. If you take warfarin, tell your doctor before starting or stopping pomegranate; a steady intake may make INR easier to manage.
+A 64-year-old woman on a stable warfarin dose was drinking pomegranate juice 2 to 3 times a week; when she stopped, her INR fell below target and her dose had to be raised. A probability scale rated the link as possible (Komperda, *Pharmacotherapy*, 2009) [33]. In laboratory tests with human liver microsomes (enzyme preparations), pomegranate juice blocked CYP2C9, one of the enzymes that clears warfarin [35], though in human volunteers juice and extract did not change the clearance of flurbiprofen, another CYP2C9 drug [37]. Arils also contain vitamin K (16.4 mcg per 100 g) [4]. If you take warfarin, tell your doctor before starting or stopping pomegranate, and avoid sudden changes in how much you drink.
 
 ### Phosphodiesterase-5 (PDE-5) Inhibitors
 
@@ -286,22 +287,22 @@ Pomegranate seed oil is pressed from the seeds and sold as a supplement and for 
 
 ### Nutritional Profile of Raw Pomegranate Arils (per 100 g)
 
-| Nutrient | Amount | % Daily Value |
-|----------|:-:|:-:|
-| Energy | 83 kcal | 4% |
-| Protein | 1.7 g | 3% |
-| Total Fat | 1.2 g | 2% |
-| Carbohydrates | 18.7 g | 7% |
-| Dietary Fiber | 4 g | 14% |
-| Sugars | 13.7 g | -- |
-| Vitamin C | 10 mg | 11% |
-| Vitamin K | 16 mcg | 14% |
-| Folate | 38 mcg | 10% |
-| Potassium | 236 mg | 5% |
-| Copper | 0.16 mg | 18% |
-| Sodium | 3 mg | <1% |
+| Nutrient | Amount |
+|----------|:-:|
+| Energy | 83 kcal |
+| Protein | 1.67 g |
+| Total Fat | 1.17 g |
+| Carbohydrates | 18.7 g |
+| Dietary Fiber | 4 g |
+| Sugars | 13.67 g |
+| Vitamin C | 10.2 mg |
+| Vitamin K | 16.4 mcg |
+| Folate | 38 mcg |
+| Potassium | 236 mg |
+| Copper | 0.158 mg |
+| Sodium | 3 mg |
 
-Source: USDA FoodData Central (2024) [4].
+Source: USDA FoodData Central, SR Legacy record 169134, "Pomegranates, raw", values per 100 g [4].
 
 ### Seasonal Availability and Storage
 
@@ -321,7 +322,7 @@ Arils give fiber, while whole-fruit juice gives more punicalagin.
 
 [2] National Center for Complementary and Integrative Health (NCCIH). "Pomegranate." Updated April 2025. [https://www.nccih.nih.gov/health/pomegranate](https://www.nccih.nih.gov/health/pomegranate)
 
-[4] U.S. Department of Agriculture, FoodData Central. "Pomegranates, raw." [https://fdc.nal.usda.gov/](https://fdc.nal.usda.gov/)
+[4] U.S. Department of Agriculture, FoodData Central. "Pomegranates, raw." SR Legacy, FDC ID 169134. [https://fdc.nal.usda.gov/food-details/169134/nutrients](https://fdc.nal.usda.gov/food-details/169134/nutrients)
 
 [5] Seeram NP, Aronson WJ, Zhang Y, et al. Pomegranate ellagitannin-derived metabolites inhibit prostate cancer growth and localize to the mouse prostate gland. *J Agric Food Chem*. 2007;55(19):7732-7737. PMID: 17722872. [https://pubmed.ncbi.nlm.nih.gov/17722872/](https://pubmed.ncbi.nlm.nih.gov/17722872/)
 
