@@ -20,7 +20,7 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 ## Key safety points
 
 - Allergic reactions to chia, including anaphylaxis, have been reported, and lab studies suggest cross-reactivity with sesame [19][32]. For trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
-- Chia's effect on blood clotting is uncertain: a 2009 review noted possible anticoagulant effects, and a 12-week trial in type 2 diabetes found no change in hemostatic safety tests, though the clotting factors fibrinogen and von Willebrand factor fell [10][35]. If you take warfarin or another blood thinner, talk to your doctor before eating large amounts.
+- Chia's effect on blood clotting is uncertain: a 2009 review noted possible anticoagulant effects, and a 12-week trial in type 2 diabetes found no change in hemostatic safety tests, though von Willebrand factor fell, and fibrinogen fell from baseline [10][35]. If you take warfarin or another blood thinner, talk to your doctor before eating large amounts.
 - A woman who ate six tablespoons of chia seeds and five handfuls of almonds a day developed oxalate kidney damage [20]. If you have had kidney stones, ask your doctor before eating large amounts.
 - Chia lowered blood pressure in a meta-analysis of eight trials [11]. If you take blood pressure medicines, check with your doctor before adding large amounts.
 
