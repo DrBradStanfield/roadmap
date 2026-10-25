@@ -37,6 +37,58 @@ final class MyDataLayoutTests: XCTestCase {
         XCTAssertEqual(ChartRange.year.start(ending: newest), DayText.utc.date(byAdding: .year, value: -1, to: newest))
     }
 
+    /// US-58 AC3: the engine's My data carries a guide for every metric page and every drug
+    /// question, and Swift reads each one's parts and sources.
+    func testMyDataCarriesAGuideForEveryMetricAndDrugQuestion_US58() throws {
+        let engine = try HealthEngine()
+        let empty = try record(engine)
+        let shown = try engine.blocking { [now] in try $0.myData(recordJSON: empty, now: now, deviceId: "test") }
+        let guides = try XCTUnwrap(shown.guides)
+        for row in shown.vitals + shown.bloodTests + [shown.psa] {
+            XCTAssertNotNil(guides[row.metric], row.metric)
+        }
+        for key in ["statin", "ezetimibe", "pcsk9i", "bempedoic_acid", "glp1", "sglt2i", "metformin"] {
+            XCTAssertNotNil(guides[key], key)
+        }
+        XCTAssertNil(guides["statin_escalation"])
+        let pressure = try XCTUnwrap(guides[MyData.bloodPressure])
+        XCTAssertEqual(pressure.title, "Blood pressure")
+        XCTAssertEqual(pressure.howTo.heading, "How to measure")
+        XCTAssertFalse(pressure.howTo.points.isEmpty)
+        XCTAssertEqual(pressure.sources.first?.url.host(), "doi.org")
+    }
+
+    /// US-58 AC3: one malformed guide is left out, and a malformed map reads as none; My data still draws.
+    func testABadGuideNeverBlanksMyData_US58() throws {
+        let engine = try HealthEngine()
+        let empty = try record(engine)
+        let raw = try engine.blocking { [now] in try $0.call("screenJson", [empty, now.formatted(HealthEngine.iso), "test", "{}"]) }
+        let answer = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any])
+        var myData = try XCTUnwrap(answer["myData"] as? [String: Any])
+        var guides = try XCTUnwrap(myData["guides"] as? [String: Any])
+        guides["weight"] = ["title": "Weight"] // parts missing
+        guides["waist"] = 42
+        myData["guides"] = guides
+        let decoded = try JSONDecoder().decode(MyData.self, from: JSONSerialization.data(withJSONObject: myData))
+        XCTAssertNil(decoded.guides?["weight"])
+        XCTAssertNil(decoded.guides?["waist"])
+        XCTAssertNotNil(decoded.guides?["ldl"])
+
+        myData["guides"] = "not a map"
+        let none = try JSONDecoder().decode(MyData.self, from: JSONSerialization.data(withJSONObject: myData))
+        XCTAssertEqual(none.guides?.keys, [])
+        XCTAssertEqual(none.vitals.map(\.metric), decoded.vitals.map(\.metric))
+    }
+
+    /// US-58 AC4: only an https source is a link; any other scheme is shown as text.
+    func testOnlyHttpsSourcesAreLinks_US58() throws {
+        let decode = { (url: String) in try JSONDecoder().decode(Suggestion.Reference.self, from: Data(#"{"label":"A","url":"\#(url)"}"#.utf8)) }
+        XCTAssertEqual(MetricGuide.link(try decode("https://doi.org/10.1/x"))?.host(), "doi.org")
+        XCTAssertNil(MetricGuide.link(try decode("http://example.com")))
+        XCTAssertNil(MetricGuide.link(try decode("javascript:alert(1)")))
+        XCTAssertNil(MetricGuide.link(try decode("tel:123")))
+    }
+
     func testABloodPressureSavesBothHalvesOrNeither() throws {
         let engine = try HealthEngine()
         let empty = try record(engine)

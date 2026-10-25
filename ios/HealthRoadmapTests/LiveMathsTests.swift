@@ -72,13 +72,42 @@ final class LiveMathsTests: XCTestCase {
         let start = try at("2026-10-01T00:00:00Z")
         let days = (0..<10).map { LivePoint(start: start.addingTimeInterval(Double($0) * 86_400), value: Double(60 + $0)) }
             + [LivePoint(start: start.addingTimeInterval(20 * 86_400), value: nil, low: 1, high: 2)]
-        let card = try XCTUnwrap(LiveMaths.card(days: days.shuffled()))
+        // Long after the last day, so the trend is the last seven readings (AC14).
+        let (later, utc) = (try at("2026-12-01T00:00:00Z"), try calendar("UTC"))
+        let card = try XCTUnwrap(LiveMaths.card(days: days.shuffled(), today: later, calendar: utc))
         XCTAssertEqual(card.value, 69)
         XCTAssertEqual(card.date, start.addingTimeInterval(9 * 86_400))
         XCTAssertEqual(card.trend, [63, 64, 65, 66, 67, 68, 69], "the last seven days, oldest first")
-        XCTAssertNil(LiveMaths.card(days: []), "no data: no card")
-        let heart = try XCTUnwrap(LiveMaths.card(days: days, latest: (value: 74, date: start)))
+        XCTAssertNil(LiveMaths.card(days: [], today: later, calendar: utc), "no data: no card")
+        let heart = try XCTUnwrap(LiveMaths.card(days: days, latest: (value: 74, date: start), today: later, calendar: utc))
         XCTAssertEqual(heart.value, 74, "heart rate's card is its newest sample")
+    }
+
+    /// AC14 (Brad 2026-10-25, as Apple Health): the last 30 days' readings, today and the 29
+    /// before; with fewer than two there, the last seven however old.
+    func testACardsTrendIsTheLast30DaysOrTheLastSeven_AC14() throws {
+        let calendar = try calendar("Pacific/Auckland")
+        let today = try at("2026-10-26T09:00:00+13:00")
+        let day = { (back: Int) in calendar.date(byAdding: .day, value: -back, to: calendar.startOfDay(for: today))! }
+        let points = { (backs: [Int]) in backs.enumerated().map { LivePoint(start: day($1), value: Double($0)) } }
+        // 40 days back to today: the last 30 are the days 29 back to today.
+        let daily = points(Array((0...40).reversed()))
+        XCTAssertEqual(LiveMaths.card(days: daily, today: today, calendar: calendar)?.trend, (11...40).map(Double.init))
+        // One reading in the 30 days: the last seven, ending on it.
+        let sparse = points([300, 250, 200, 150, 120, 90, 60, 45, 3])
+        XCTAssertEqual(LiveMaths.card(days: sparse, today: today, calendar: calendar)?.trend, [2, 3, 4, 5, 6, 7, 8])
+        // None in the 30 days and fewer than seven in all: all of them.
+        XCTAssertEqual(LiveMaths.card(days: points([200, 100, 45]), today: today, calendar: calendar)?.trend, [0, 1, 2])
+        // Two in the 30 days: only those.
+        XCTAssertEqual(LiveMaths.card(days: points([200, 100, 60, 45, 29, 0]), today: today, calendar: calendar)?.trend, [4, 5])
+        // Sleep's nights follow the same rule.
+        let nights = (0..<40).map { back in
+            LiveMaths.nights([SleepSegment(stage: .asleep, start: day(back).addingTimeInterval(-3600), end: day(back).addingTimeInterval(Double(back % 3 + 5) * 3600), source: "watch")], calendar: calendar)[0]
+        }
+        let sleep = try XCTUnwrap(LiveMaths.card(nights: nights.shuffled(), today: calendar.startOfDay(for: today), calendar: calendar))
+        XCTAssertEqual(sleep.trend, (0..<30).reversed().map { Double($0 % 3 + 6) }, "the last 30 nights, oldest first")
+        let oldNights = [nights[39], nights[35], nights[33]]
+        XCTAssertEqual(LiveMaths.card(nights: oldNights, today: calendar.startOfDay(for: today), calendar: calendar)?.trend.count, 3)
     }
 
     func testSleepsCardIsTheNewestNightAsleep_AC9() throws {
@@ -89,18 +118,18 @@ final class LiveMathsTests: XCTestCase {
             SleepSegment(stage: .inBed, start: try at("2026-10-22T22:00:00Z"), end: try at("2026-10-23T06:00:00Z"), source: "phone"),
         ], calendar: calendar)
         let today = try at("2026-10-25T00:00:00Z")
-        let card = try XCTUnwrap(LiveMaths.card(nights: Array(nights.prefix(2)), today: today))
+        let card = try XCTUnwrap(LiveMaths.card(nights: Array(nights.prefix(2)), today: today, calendar: calendar))
         XCTAssertEqual(card.value, 7.5 * 3600, "the newest night's time asleep")
         XCTAssertEqual(card.date, try at("2026-10-22T00:00:00Z"))
         XCTAssertEqual(card.trend, [7, 7.5])
         XCTAssertFalse(card.inBed)
         // Codex R3: a newest night recorded only as In Bed shows as time in bed, as Apple Health shows it.
-        let inBed = try XCTUnwrap(LiveMaths.card(nights: nights, today: today))
+        let inBed = try XCTUnwrap(LiveMaths.card(nights: nights, today: today, calendar: calendar))
         XCTAssertEqual(inBed.value, 8 * 3600)
         XCTAssertEqual(inBed.date, try at("2026-10-23T00:00:00Z"))
         XCTAssertTrue(inBed.inBed)
         XCTAssertEqual(inBed.trend, [7, 7.5, 8])
-        XCTAssertNil(LiveMaths.card(nights: [], today: today))
+        XCTAssertNil(LiveMaths.card(nights: [], today: today, calendar: calendar))
     }
 
     /// Codex R3, AC9: a history recorded only as In Bed (the iPhone's sleep schedule, an
@@ -111,7 +140,7 @@ final class LiveMathsTests: XCTestCase {
             SleepSegment(stage: .inBed, start: try at("2026-10-20T22:00:00Z"), end: try at("2026-10-21T06:00:00Z"), source: "phone"),
             SleepSegment(stage: .inBed, start: try at("2026-10-21T23:00:00Z"), end: try at("2026-10-22T06:00:00Z"), source: "phone"),
         ], calendar: calendar)
-        let card = try XCTUnwrap(LiveMaths.card(nights: nights, today: try at("2026-10-25T00:00:00Z")), "an In Bed-only history has a card")
+        let card = try XCTUnwrap(LiveMaths.card(nights: nights, today: try at("2026-10-25T00:00:00Z"), calendar: calendar), "an In Bed-only history has a card")
         XCTAssertTrue(card.inBed)
         XCTAssertEqual(card.value, 7 * 3600)
         XCTAssertEqual(card.trend, [8, 7])
@@ -256,7 +285,7 @@ final class LiveMathsTests: XCTestCase {
         let today = try at("2026-10-25T00:00:00Z")
         XCTAssertEqual(nights.map(\.day), [today, try at("2026-10-26T00:00:00Z")], "the nap is tomorrow's")
         XCTAssertEqual(LiveMaths.newestNight(nights, today: today)?.day, today)
-        XCTAssertEqual(LiveMaths.card(nights: nights, today: today)?.date, today)
+        XCTAssertEqual(LiveMaths.card(nights: nights, today: today, calendar: calendar)?.date, today)
     }
 
     // MARK: Pages

@@ -3,7 +3,8 @@ import SwiftUI
 /// One metric's page, pushed from My data (US-25 AC9, AC17), laid out as Apple
 /// Health's (Brad 2026-10-23: "just copy what Apple Health have done"): "+" at
 /// the top, the range picker, the latest value large with its day, a chart that
-/// opens on the newest value and scrolls back, then Show All Data and Unit.
+/// opens on the newest value and scrolls back, then Show All Data and Unit, then
+/// "About" the metric and its sources (US-58).
 /// Tapping an active value in Show All Data corrects it: a new row, the old one
 /// kept and struck through as entered in error. There is no delete: the record
 /// is append-only (Brad 2026-09-24). The web twin is
@@ -54,6 +55,10 @@ struct MetricDetailView: View {
                         AllDataView(store: store, row: row, saved: saved)
                     }
                     unitRow(chart.history)
+                }
+                // Apple Health's About section, then its sources (US-58 AC4).
+                if let guide = store.myData?.guides?[row.metric] {
+                    GuideSections(guide: guide)
                 }
             }
         }

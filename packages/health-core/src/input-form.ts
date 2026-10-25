@@ -63,7 +63,7 @@ export const MEDICATION_TEXT = {
   bempedoicAcidLabel: 'Bempedoic acid',
   bempedoicAcidHint: 'Bempedoic acid lowers cholesterol production via a different pathway than statins, and can be used alongside them.',
   pcsk9iLabel: 'On a PCSK9 inhibitor?',
-  pcsk9iHint: (lipid: string) => `PCSK9 inhibitors are injectable medications that help your body clear ${lipid} from the blood. They can reduce ${lipid} by ~50%.`,
+  pcsk9iHint: (lipid: string) => `PCSK9 inhibitors help your body clear ${lipid} from the blood. They can reduce ${lipid} by ~50%.`,
   statinEscalationLabel: { increase: 'Tried increasing statin dose?', switch: 'Tried switching to a more potent statin?' },
   statinEscalationHint: {
     increase: (lipid: string) => `A higher dose may lower your ${lipid} further.`,

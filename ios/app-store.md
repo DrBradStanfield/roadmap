@@ -149,7 +149,7 @@ declares the three rows below; declare them as written.
    (see ios/architecture.md D5 for the bundle id and redirect).
 5. Deploy the server routes for chat and lab upload and run their SQL migration (see
    ios/architecture.md D8).
-6. Screenshots: 6.9-inch iPhone (1320 × 2868), at least three. `ios/scripts/app-store-shots.sh`
+6. Screenshots: App Store Connect's iPhone slot (2026-10-26) takes 6.3-inch, 1206 × 2622 (it refused 6.9-inch), at least three. `ios/scripts/app-store-shots.sh`
    takes five into `ios/build/app-store-shots/`: My data, My plan, a card opened, the
    weight page and Chat, from the fictional sample record. Rerun it after a UI change.
 7. Archive in Xcode, upload, TestFlight, then submit.

@@ -1,6 +1,6 @@
 # Metric guides (DRAFT for Brad)
 
-Status: draft, 2026-10-25. Not wired into any code. Brad asked for short "about this measure" sections on each metric page in the iOS app, like Apple Health's. This file holds the proposed text for review.
+Status: wired into the app as US-58, 2026-10-26 (`packages/health-core/src/metric-guides.ts` holds the shipped text; this draft is history). Brad asked for short "about this measure" sections on each metric page in the iOS app, like Apple Health's. This file holds the proposed text for review.
 
 
 ## Brad's decisions (2026-10-25)

@@ -3856,7 +3856,8 @@
     "publishedAt": "2025-06-03T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/huperzine-a-benefits-dosing-safety",
     "type": "reference",
-    "summary": "Reference on huperzine A: memory, cognitive function, Alzheimer's disease, vascular dementia. Adults with dementia or age-related memory concerns. Natural Huperzia serrata extract preferred; 50-400 mcg/day, cycling recommended. Always discuss with your doctor."
+    "summary": "Huperzine A, a cholinesterase inhibitor from Chinese club moss, for memory and Alzheimer's disease. Small, low-quality trials suggest benefit; the largest Western trial found 200 mcg twice daily did not help. Talk to your doctor first if you take dementia, heart-rate or anticholinergic drugs.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Doctor Reveals Why He Takes Glycine Every Day",
@@ -5143,7 +5144,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/gaba-supplement-evidence",
     "type": "reference",
-    "summary": "Reference on GABA: stress, relaxation, sleep, blood pressure, muscle mass. Limited evidence oral GABA crosses the blood-brain barrier; effects are modest. Dosing ranges 100-3,000 mg depending on use. Avoid in pregnancy and with alcohol. Always discuss with your doctor."
+    "summary": "GABA, the brain's main calming chemical, is sold for stress and sleep. A systematic review found limited evidence for stress and very limited evidence for sleep, and oral GABA may not reach the brain. Talk to your doctor first if you take blood pressure medicines or are pregnant.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Garlic: Benefits, Best Forms, Dosing, and Side Effects",
@@ -5293,7 +5295,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/green-coffee-bean-extract",
     "type": "reference",
-    "summary": "Reference on green coffee bean extract: weight loss, blood sugar, blood pressure, cholesterol. Useful for overweight or diabetic adults. Standardized extracts (Svetol/GCA) 200-400 mg/day; key study retracted, evidence modest. Contains caffeine; avoid in pregnancy. Always discuss with your doctor."
+    "summary": "Reference on green coffee bean extract and weight, blood pressure, blood sugar and cholesterol: small, poor-quality trials, small pooled effects and a retracted key study. Many extracts contain caffeine. Effects in pregnancy are unknown and caffeine passes into breast milk; avoid it if you are pregnant or breastfeeding unless your doctor advises it. Talk to your doctor first if you take prescription medicines.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Lutein and Zeaxanthin: Benefits, Forms, Dosing, and Side Effects",
@@ -5339,7 +5342,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/lutein-zeaxanthin-eye-health-guide",
     "type": "reference",
-    "summary": "Reference on lutein and zeaxanthin: eye health, macular degeneration (AMD) prevention and slowing, blue light protection, and cataract risk reduction; food sources (leafy greens, egg yolk); dosing (10mg lutein/2mg zeaxanthin); and evidence quality. Always discuss with your doctor."
+    "summary": "Lutein and zeaxanthin are the eye pigments that replaced beta-carotene in the AREDS2 formula for intermediate AMD, without its lung cancer signal. They raise macular pigment; brain benefits are unproven. Talk to your doctor first if you smoke or are pregnant.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Lycopene: Benefits, Forms, Dosing, and Side Effects",
@@ -5470,7 +5474,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/milk-thistle-silymarin-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on milk thistle (silymarin): liver health, fatty liver, blood sugar in type 2 diabetes, drug-induced liver injury, menopausal hot flashes. Standardized extract 200 mg 2-3x/day. Warfarin interaction risk. Always discuss with your doctor."
+    "summary": "Milk thistle (silymarin) may lower blood sugar a little in type 2 diabetes, and liver enzymes in fatty liver disease, but NCCIH finds the evidence too weak for firm conclusions, and hepatitis C trials found no benefit. Talk to your doctor first if you take warfarin or diabetes medicines.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "N-Acetyl Cysteine (NAC): Benefits, Forms, Dosing, and Side Effects",
@@ -6514,7 +6519,8 @@
     "publishedAt": "2025-04-29T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/weight-loss-supplements-evidence-guide",
     "type": "reference",
-    "summary": "Reference on weight loss supplements: appetite, fat burning, metabolism; ephedra/ECA stack harms and ban. For adults with overweight or obesity. Covers caffeine, green tea, CLA, chromium, garcinia cambogia, fiber; most show modest 1-2 kg benefit. Always discuss with your doctor."
+    "summary": "Most weight-loss supplements add little or no weight loss, and some cause harm: stimulant heart effects, liver injury, hidden drugs. Brad avoids fat burners and backs diet, exercise, sleep and, if suited, GLP-1 drugs. Talk to your doctor first if you take medicines or have heart or liver disease.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Is the Berberine Hype Justified & Should You Take It?",
@@ -6700,7 +6706,8 @@
     "publishedAt": "2025-04-22T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/garcinia-cambogia-hca-evidence",
     "type": "reference",
-    "summary": "Reference on garcinia cambogia (HCA): weight loss, appetite suppression. Clinical evidence is weak — women-only modest benefit. Serious liver injury risk (transplant, death cases reported). Avoid with SSRIs. Unsafe in bipolar disorder. Doses 900-1500mg HCA/day before meals. Always discuss with your doctor."
+    "summary": "Reference on garcinia cambogia (HCA) for weight loss. Trials are short and mixed, and any extra weight loss is small. Case reports link it to severe liver injury, serotonin toxicity with SSRI antidepressants, and mania. Talk to your doctor first if you take antidepressants or any other medicine.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Ginkgo Biloba: Benefits, Forms, Dosing, and Side Effects",
@@ -6994,7 +7001,8 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/phosphatidylserine-benefits-forms-dosing",
     "type": "reference",
     "product": "microvitamin",
-    "summary": "Reference on phosphatidylserine (PS): memory, cognitive decline, stress, cortisol reduction. Older adults with memory concerns; athletes managing exercise stress. Soy/sunflower forms (100-300 mg/day); PS-DHA conjugate shows more promise. Caution with blood thinners. Always discuss with your doctor."
+    "summary": "Reference on phosphatidylserine (PS) for memory, stress and exercise. Cow-brain PS helped memory in early trials; the FDA says soy PS may differ, and the one soy trial it weighed found no effect. Trials used 100 to 800 mg a day. Talk to your doctor first if you take prescription medicines.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Potassium: Benefits, Best Forms, Dosing, and Side Effects",
@@ -10244,7 +10252,8 @@
     "publishedAt": "2024-06-25T18:38:34Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/cla-benefits-forms-dosing",
     "type": "reference",
-    "summary": "Reference on CLA (conjugated linoleic acid): modest fat loss, body composition, inflammation. Used by overweight adults seeking weight loss or exercise support. Forms: c9,t11 and t10,c12 isomers; typical dose 3-6 g/day. Safety concerns: insulin resistance, reduced HDL, liver effects. Always discuss with your doctor."
+    "summary": "Evidence summary on CLA (conjugated linoleic acid): about 3 to 3.4 g a day gave small fat loss in trials, but high-quality trials found none, and the t10,c12 isomer raised insulin resistance. Talk to your doctor first if you have diabetes or liver disease, or are breastfeeding.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Vitamin D3 and K2: The Benefits, Differences, and Usage",
@@ -10726,7 +10735,8 @@
     "publishedAt": "2024-01-15T22:42:51Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/african-mango-irvingia-gabonensis-evidence",
     "type": "reference",
-    "summary": "Reference on African mango (Irvingia gabonensis): weight loss, cholesterol, blood sugar. Marketed for obesity and weight management; very weak evidence — only 3 small trials from one research group. IGOB131 extract 300mg/day studied. GI side effects possible. Always discuss with your doctor."
+    "summary": "African mango (Irvingia gabonensis) seed extract is sold for weight loss. Small, poorly reported trials found falls in weight and cholesterol, but reviews call the benefit unproven. IGOB131 was tested at 150 mg twice daily. Talk to your doctor first if you take diabetes medicines or blood thinners.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Acetyl-L-Carnitine: Benefits, Forms, Dosing, and Side Effects",

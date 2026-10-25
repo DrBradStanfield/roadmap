@@ -2,7 +2,7 @@
 // health-core's own write functions. The app runs this same code in
 // JavaScriptCore; these tests run it in Node.
 import { describe, expect, it } from 'vitest';
-import { applyEdit, myData, newRecord, readNumber, readRecord, TREND_POINTS } from './my-data';
+import { applyEdit, myData, newRecord, readNumber, readRecord } from './my-data';
 import { metricHistory } from './my-data-forms';
 import { readUnitChoices } from './unit-choices';
 import { healthWritesJson, planJson } from './entry';
@@ -71,13 +71,26 @@ describe('myData (AC5)', () => {
     expect(myData(si).bloodTests.find((row) => row.metric === 'ldl')!.trend[0]).toBeCloseTo(2.59, 2);
   });
 
-  it('keeps only the newest days of a long trend', () => {
+  it('shows the last 30 days in a row\'s trend, today and the 29 days before (US-25 AC17f)', () => {
     let file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
-    const days = Array.from({ length: TREND_POINTS + 5 }, (_, i) => new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10));
+    // NOW is 2026-10-21: 2026-09-22 is the 30-day window's first day.
+    const days = ['2026-08-01', '2026-08-15', '2026-09-01', '2026-09-21', '2026-09-22', '2026-10-05', '2026-10-21'];
     file = edited(file, ...days.map((day, i) => ({ kind: 'add' as const, metric: 'weight', value: 60 + i, day })));
-    const trend = myData(file).vitals.find((row) => row.metric === 'weight')!.trend;
-    expect(trend).toHaveLength(TREND_POINTS);
-    expect(trend.at(-1)).toBe(60 + TREND_POINTS + 4);
+    expect(myData(file, NOW).vitals.find((row) => row.metric === 'weight')!.trend).toEqual([64, 65, 66]);
+  });
+
+  it('falls back to the last seven readings, however old, with fewer than two in 30 days (US-25 AC17f)', () => {
+    let file = newRecord(NOW, 'phone', 'en-US', 'America/New_York');
+    const years = Array.from({ length: 9 }, (_, i) => `${2017 + i}-03-01`);
+    file = edited(file, ...years.map((day, i) => ({ kind: 'add' as const, metric: 'ldl', value: 100 + i, day })));
+    const ldl = () => myData(file, NOW).bloodTests.find((row) => row.metric === 'ldl')!.trend.map(Math.round);
+    expect(ldl()).toEqual([102, 103, 104, 105, 106, 107, 108]);
+    // One reading in the last 30 days is still fewer than two: the last seven, ending on it.
+    file = edited(file, { kind: 'add', metric: 'ldl', value: 90, day: '2026-10-20' });
+    expect(ldl()).toEqual([103, 104, 105, 106, 107, 108, 90]);
+    // A second recent reading: only the last 30 days.
+    file = edited(file, { kind: 'add', metric: 'ldl', value: 95, day: '2026-09-30' });
+    expect(ldl()).toEqual([95, 90]);
   });
 
   it('shows and takes a test in its own units, the rest in the record\'s (US-25 AC17e)', () => {

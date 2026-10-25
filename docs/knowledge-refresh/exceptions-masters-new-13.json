@@ -1,0 +1,698 @@
+[
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"11\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The body absorbs and transforms chlorogenic acids extensively. In a randomised trial in 11 healthy volunteers who dra...\"",
+  "reason": "AC2 green coffee tokeniser/raw-encoding case from the writer's report notes (&#xb7; decimals, +/- forms, 'eleven', '>7 wk', '95%CI'); ratified in decisions.md (Green coffee fix committed 6454074d, Ratified line: writer's AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"8.04 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Vinson et al. (2012), RETRACTED**: A 22-week crossover trial in 16 overweight adults tested 700 mg and 1,050 mg of ...\" | \"**The Study**: Published in *Diabetes, Metabolic Syndrome and Obesity*, the study was described as a randomized, doub...\"",
+  "reason": "AC2 green coffee tokeniser/raw-encoding case from the writer's report notes (&#xb7; decimals, +/- forms, 'eleven', '>7 wk', '95%CI'); ratified in decisions.md (Green coffee fix committed 6454074d, Ratified line: writer's AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2.08 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Roshan et al. (2018)**: In adults with the metabolic syndrome, 400 mg of decaffeinated GCE twice daily for 8 weeks,...\"",
+  "reason": "AC2 green coffee tokeniser/raw-encoding case from the writer's report notes (&#xb7; decimals, +/- forms, 'eleven', '>7 wk', '95%CI'); ratified in decisions.md (Green coffee fix committed 6454074d, Ratified line: writer's AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.92 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Roshan et al. (2018)**: In adults with the metabolic syndrome, 400 mg of decaffeinated GCE twice daily for 8 weeks,...\"",
+  "reason": "AC2 green coffee tokeniser/raw-encoding case from the writer's report notes (&#xb7; decimals, +/- forms, 'eleven', '>7 wk', '95%CI'); ratified in decisions.md (Green coffee fix committed 6454074d, Ratified line: writer's AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.05\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Roshan et al. (2018)**: In adults with the metabolic syndrome, 400 mg of decaffeinated GCE twice daily for 8 weeks,...\"",
+  "reason": "AC2 green coffee tokeniser/raw-encoding case from the writer's report notes (&#xb7; decimals, +/- forms, 'eleven', '>7 wk', '95%CI'); ratified in decisions.md (Green coffee fix committed 6454074d, Ratified line: writer's AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"7 week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Yang et al. (2024)**: An umbrella review pooling 5 meta-analyses estimated a fall in body weight of 1.22 kg (95% CI...\" | \"- **Dose and effect**: A 2024 umbrella review found weight loss more likely with 600 mg a day or less and courses lon...\"",
+  "reason": "AC2 green coffee tokeniser/raw-encoding case from the writer's report notes (&#xb7; decimals, +/- forms, 'eleven', '>7 wk', '95%CI'); ratified in decisions.md (Green coffee fix committed 6454074d, Ratified line: writer's AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"185 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Kozuma et al. (2005)**: In 117 men with mild hypertension given 46 mg, 93 mg or 185 mg of GCE daily, systolic blood...\"",
+  "reason": "AC2 green coffee tokeniser/raw-encoding case from the writer's report notes (&#xb7; decimals, +/- forms, 'eleven', '>7 wk', '95%CI'); ratified in decisions.md (Green coffee fix committed 6454074d, Ratified line: writer's AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"5.6 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Kozuma et al. (2005)**: In 117 men with mild hypertension given 46 mg, 93 mg or 185 mg of GCE daily, systolic blood...\"",
+  "reason": "AC2 green coffee tokeniser/raw-encoding case from the writer's report notes (&#xb7; decimals, +/- forms, 'eleven', '>7 wk', '95%CI'); ratified in decisions.md (Green coffee fix committed 6454074d, Ratified line: writer's AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1.3 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Kozuma et al. (2005)**: In 117 men with mild hypertension given 46 mg, 93 mg or 185 mg of GCE daily, systolic blood...\"",
+  "reason": "AC2 green coffee tokeniser/raw-encoding case from the writer's report notes (&#xb7; decimals, +/- forms, 'eleven', '>7 wk', '95%CI'); ratified in decisions.md (Green coffee fix committed 6454074d, Ratified line: writer's AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"13.76 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Roshan et al. (2018)**: In adults with the metabolic syndrome, systolic blood pressure fell by 13.76 mmHg on GCE ve...\"",
+  "reason": "AC2 green coffee tokeniser/raw-encoding case from the writer's report notes (&#xb7; decimals, +/- forms, 'eleven', '>7 wk', '95%CI'); ratified in decisions.md (Green coffee fix committed 6454074d, Ratified line: writer's AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"6.56 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Roshan et al. (2018)**: In adults with the metabolic syndrome, systolic blood pressure fell by 13.76 mmHg on GCE ve...\"",
+  "reason": "AC2 green coffee tokeniser/raw-encoding case from the writer's report notes (&#xb7; decimals, +/- forms, 'eleven', '>7 wk', '95%CI'); ratified in decisions.md (Green coffee fix committed 6454074d, Ratified line: writer's AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2.35 mg/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Asbaghi et al. (2020)**: A meta-analysis of 14 trials with 766 participants found falls in fasting glucose (-2.35 m...\"",
+  "reason": "AC2 green coffee tokeniser/raw-encoding case from the writer's report notes (&#xb7; decimals, +/- forms, 'eleven', '>7 wk', '95%CI'); ratified in decisions.md (Green coffee fix committed 6454074d, Ratified line: writer's AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2.4 cm\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Waist circumference**: The 2024 umbrella review estimated a fall of 0.55 cm (95% CI -0.80 to -0.31) [57], and in th...\"",
+  "reason": "AC2 green coffee tokeniser/raw-encoding case from the writer's report notes (&#xb7; decimals, +/- forms, 'eleven', '>7 wk', '95%CI'); ratified in decisions.md (Green coffee fix committed 6454074d, Ratified line: writer's AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.66 cm\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Waist circumference**: The 2024 umbrella review estimated a fall of 0.55 cm (95% CI -0.80 to -0.31) [57], and in th...\"",
+  "reason": "AC2 green coffee tokeniser/raw-encoding case from the writer's report notes (&#xb7; decimals, +/- forms, 'eleven', '>7 wk', '95%CI'); ratified in decisions.md (Green coffee fix committed 6454074d, Ratified line: writer's AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"95 %\": Onakpoya et al. (2011): The first systematic review and meta-analysis pooled 3 RCTs in overweight adults taking 180 o...",
+  "reason": "AC2 green coffee tokeniser/raw-encoding case from the writer's report notes (&#xb7; decimals, +/- forms, 'eleven', '>7 wk', '95%CI'); ratified in decisions.md (Green coffee fix committed 6454074d, Ratified line: writer's AC2 tokeniser cases) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "garcinia-cambogia-benefits-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Case reports link garcinia products to severe liver injury, including liver failure needing a transplant, and Liver...\" | \"- Garcinia has been linked to serotonin toxicity in a patient also taking SSRI antidepressants, and interactions with...\" | \"The most serious safety concern with garcinia cambogia is liver injury. The NIH weight-loss fact sheet cites reports ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 000, 911, 999); ratified in decisions.md (Garcinia review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "garcinia-cambogia-benefits-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Case reports link garcinia products to severe liver injury, including liver failure needing a transplant, and Liver...\" | \"- Garcinia has been linked to serotonin toxicity in a patient also taking SSRI antidepressants, and interactions with...\" | \"The most serious safety concern with garcinia cambogia is liver injury. The NIH weight-loss fact sheet cites reports ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 000, 911, 999); ratified in decisions.md (Garcinia review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "garcinia-cambogia-benefits-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Case reports link garcinia products to severe liver injury, including liver failure needing a transplant, and Liver...\" | \"- Garcinia has been linked to serotonin toxicity in a patient also taking SSRI antidepressants, and interactions with...\" | \"The most serious safety concern with garcinia cambogia is liver injury. The NIH weight-loss fact sheet cites reports ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 000, 911, 999); ratified in decisions.md (Garcinia review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "garcinia-cambogia-benefits-dosing-and-side-effects",
+  "match": "token \"3.2 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Both groups lost weight, but the difference between them was not significant (3.2 kg with HCA vs 4.1 kg with placebo)...\"",
+  "reason": "AC2 garcinia bracketed-SD case; ratified in decisions.md (Garcinia review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "garcinia-cambogia-benefits-dosing-and-side-effects",
+  "match": "token \"4.1 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Both groups lost weight, but the difference between them was not significant (3.2 kg with HCA vs 4.1 kg with placebo)...\"",
+  "reason": "AC2 garcinia bracketed-SD case; ratified in decisions.md (Garcinia review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "garcinia-cambogia-benefits-dosing-and-side-effects",
+  "match": "token \"11\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2-week crossover trial in 11 overweight men compared 500 mg of HCA, 500 mg of HCA with 3 g of medium-chain triglyce...\" | \"| Kovacs et al. | 2001 | 2 weeks | 11 overweight men | 500 mg (frequency not reported) | No effect on satiety or weig...\"",
+  "reason": "AC2 garcinia spelled number (\"Eleven\"); ratified in decisions.md (Garcinia review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "garcinia-cambogia-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"0\": Case reports link garcinia products to severe liver injury, including liver failure needing a transplant, and LiverTo...",
+  "reason": "AC2 ruling 17 emergency numbers (111, 000, 911, 999); ratified in decisions.md (Garcinia review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "garcinia-cambogia-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"0\": Garcinia has been linked to serotonin toxicity in a patient also taking SSRI antidepressants, and interactions with s...",
+  "reason": "AC2 ruling 17 emergency numbers (111, 000, 911, 999); ratified in decisions.md (Garcinia review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "garcinia-cambogia-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"0\": The most serious safety concern with garcinia cambogia is liver injury. The NIH weight-loss fact sheet cites reports ...",
+  "reason": "AC2 ruling 17 emergency numbers (111, 000, 911, 999); ratified in decisions.md (Garcinia review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "garcinia-cambogia-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"0\": Clinical implication: Interactions with drugs that affect serotonin have been reported [2][22]. If you take an SSRI o...",
+  "reason": "AC2 ruling 17 emergency numbers (111, 000, 911, 999); ratified in decisions.md (Garcinia review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[83] raw_quote shares no number with its body_line: **Findings in overweight children:** In a 7-month trial in 62 children aged 6 to 10, 3 g a day of...",
+  "reason": "AC2 CLA changed_tokens[83] Racine +/- form and [85] Gaullier \"1-y\"; ratified in decisions.md (CLA fix committed d672dc3c, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[85] raw_quote shares no number with its body_line: In a 1-year trial, HDL cholesterol fell with one form of CLA and LDL cholesterol rose with the ot...",
+  "reason": "AC2 CLA changed_tokens[83] Racine +/- form and [85] Gaullier \"1-y\"; ratified in decisions.md (CLA fix committed d672dc3c, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"70\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. A 2024 meta-analysis of 70 ...\" | \"**Large-scale meta-analyses:** A 2024 meta-analysis of 70 randomized trials (4,159 adults) found that CLA lowered bod...\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.44 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. A 2024 meta-analysis of 70 ...\" | \"**Large-scale meta-analyses:** A 2024 meta-analysis of 70 randomized trials (4,159 adults) found that CLA lowered bod...\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- CLA has been linked to three reported cases of acute hepatitis, one needing a liver transplant. With yellow skin or...\" | \"**Hepatitis case reports:** By 2015, CLA had been linked to three reported cases of acute hepatitis worldwide [45]. O...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 000, 911, 999); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- CLA has been linked to three reported cases of acute hepatitis, one needing a liver transplant. With yellow skin or...\" | \"**Hepatitis case reports:** By 2015, CLA had been linked to three reported cases of acute hepatitis worldwide [45]. O...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 000, 911, 999); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- CLA has been linked to three reported cases of acute hepatitis, one needing a liver transplant. With yellow skin or...\" | \"**Hepatitis case reports:** By 2015, CLA had been linked to three reported cases of acute hepatitis worldwide [45]. O...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 000, 911, 999); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- CLA has been linked to three reported cases of acute hepatitis, one needing a liver transplant. With yellow skin or...\" | \"**Hepatitis case reports:** By 2015, CLA had been linked to three reported cases of acute hepatitis worldwide [45]. O...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 000, 911, 999); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1500 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In breastfeeding women, 1.5 g a day of CLA lowered milk fat, and the authors advise lactating women not to take CLA...\" | \"In a crossover trial in 9 breastfeeding women, 1.5 g a day of a CLA supplement lowered milk fat compared with placebo...\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"30\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Vaccenic acid, a trans fat made in the rumen, is converted in tissues to rumenic acid by delta-9 desaturase. In a con...\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"212 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Measured CLA intake from food was 212 mg a day in men and 151 mg a day in women in one US study [7]. That is far belo...\" | \"Measured CLA intake from food was 212 mg a day in men and 151 mg a day in women in one US study, far below trial dose...\" | \"| US men | 212 mg/day [7] |\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"151 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Measured CLA intake from food was 212 mg a day in men and 151 mg a day in women in one US study [7]. That is far belo...\" | \"Measured CLA intake from food was 212 mg a day in men and 151 mg a day in women in one US study, far below trial dose...\" | \"| US women | 151 mg/day [7] |\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In one children's trial the product was 80% CLA in a 50:50 isomer blend [39]. CLA has been given as free fatty acids ...\" | \"In a 1-year trial of 180 overweight adults, body fat mass was 8.7% lower with the triacylglycerol form and 6.9% lower...\" | \"**Six-month RCT:** In 118 overweight and obese adults, 3.4 g a day of CLA for 6 months lowered body fat mass by 3.4% ...\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"8.7 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a 1-year trial of 180 overweight adults, body fat mass was 8.7% lower with the triacylglycerol form and 6.9% lower...\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"6.9 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a 1-year trial of 180 overweight adults, body fat mass was 8.7% lower with the triacylglycerol form and 6.9% lower...\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.09 kg/week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Long-term supplementation:** A 2007 meta-analysis of 18 trials found that, at a median dose of 3.2 g a day, CLA red...\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤6 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Long-term supplementation:** A 2007 meta-analysis of 18 trials found that, at a median dose of 3.2 g a day, CLA red...\" | \"Fat-loss trials have run from 12 weeks to 1 year or longer [25][26][27]. In a 2007 meta-analysis, the effect grew for...\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Long-term supplementation:** A 2007 meta-analysis of 18 trials found that, at a median dose of 3.2 g a day, CLA red...\" | \"Fat-loss trials have run from 12 weeks to 1 year or longer [25][26][27]. In a 2007 meta-analysis, the effect grew for...\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"7\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Long-term supplementation:** A 2007 meta-analysis of 18 trials found that, at a median dose of 3.2 g a day, CLA red...\" | \"## 7. Dietary Sources\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1700 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Chinese RCT in overweight/obese individuals:** In 63 overweight and obese Chinese adults, 1.7 g of CLA twice daily ...\" | \"**The Chen (2012) protocol:** 1.7 g of CLA twice daily in milk for 12 weeks lowered body weight and fat mass from bas...\" | \"Trials gave CLA in divided doses; in one, 1.7 g was taken twice daily in 200 mL of milk [27].\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \">3400 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Dose:** In a 12-week dose-ranging trial in 60 overweight or obese adults, doses above 3.4 g a day gave no additiona...\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"60708\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Colorectal cancer:** In 60,708 Swedish women followed for an average of 14.8 years, those eating 4 or more servings...\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"14.8 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Colorectal cancer:** In 60,708 Swedish women followed for an average of 14.8 years, those eating 4 or more servings...\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≥4\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Colorectal cancer:** In 60,708 Swedish women followed for an average of 14.8 years, those eating 4 or more servings...\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"7 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Findings in overweight children:** In a 7-month trial in 62 children aged 6 to 10, 3 g a day of 80% CLA lowered bod...\" | \"| Overweight children | 3.0 | 7 months | Lower body fat, lower HDL [39] |\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1.3 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Findings in overweight children:** In a 7-month trial in 62 children aged 6 to 10, 3 g a day of 80% CLA lowered bod...\"",
+  "reason": "AC2 CLA token \"1.3 %\" (+/- form); ratified in decisions.md (CLA fix committed d672dc3c, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3000 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Most trials used about 3 to 3.4 g of CLA a day, often as a 50:50 blend of the two main isomers [8][17][25].\" | \"Measured CLA intake from food was 212 mg a day in men and 151 mg a day in women in one US study, far below trial dose...\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3400 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Most trials used about 3 to 3.4 g of CLA a day, often as a 50:50 blend of the two main isomers [8][17][25].\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3.2\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Fat loss (meta-analysis) | 3.2 (median) | Up to 2 years | Modest fat loss [25] |\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤2 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Fat loss (meta-analysis) | 3.2 (median) | Up to 2 years | Modest fat loss [25] |\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"6.8\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Dose-ranging | 1.7 to 6.8 | 12 weeks | No added fat loss above 3.4 [56] |\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \">3.4\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Dose-ranging | 1.7 to 6.8 | 12 weeks | No added fat loss above 3.4 [56] |\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"64\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Animal data:** In a review of 64 experiments, t10,c12 CLA caused severe fatty liver in mice and a milder response i...\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3.8\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Milk, cows on typical diets | 3.8 to 5.3 | Corn-based or alfalfa silage and grain diets [42] |\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"22.1\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Milk, cows on all pasture | 22.1 | No supplemental feed [42] |\"",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1.09\": Large-scale meta-analyses: A 2024 meta-analysis of 70 randomized trials (4,159 adults) found that CLA lowered body ma...",
+  "reason": "AC2 CLA tokeniser/raw-encoding case from the writer's report notes (spelled numbers, &#xb7; decimals, unit forms, y/mo, '60 708', '> or =4', Dhiman 3.8/22.1, Blankson 6.8); ratified in decisions.md (CLA review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "weight-loss-supplements-benefits-evidence-and-safety",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Bitter orange, yohimbe and ephedra have been linked to heart attack, stroke and death [243]. For chest pain or sign...\" | \"- Chitosan may strengthen the effect of warfarin [239]. Garcinia was linked to serotonin toxicity in a person also ta...\" | \"- Reports tie green tea extract, garcinia and CLA to liver injury, including liver failure and hepatitis [118][135][2...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 000, 911, 999); ratified in decisions.md (Weight-loss category review and fix, Ratified lines: 8 ruling 17 lines) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "weight-loss-supplements-benefits-evidence-and-safety",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Bitter orange, yohimbe and ephedra have been linked to heart attack, stroke and death [243]. For chest pain or sign...\" | \"- Chitosan may strengthen the effect of warfarin [239]. Garcinia was linked to serotonin toxicity in a person also ta...\" | \"- Reports tie green tea extract, garcinia and CLA to liver injury, including liver failure and hepatitis [118][135][2...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 000, 911, 999); ratified in decisions.md (Weight-loss category review and fix, Ratified lines: 8 ruling 17 lines) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "weight-loss-supplements-benefits-evidence-and-safety",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Bitter orange, yohimbe and ephedra have been linked to heart attack, stroke and death [243]. For chest pain or sign...\" | \"- Chitosan may strengthen the effect of warfarin [239]. Garcinia was linked to serotonin toxicity in a person also ta...\" | \"- Reports tie green tea extract, garcinia and CLA to liver injury, including liver failure and hepatitis [118][135][2...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 000, 911, 999); ratified in decisions.md (Weight-loss category review and fix, Ratified lines: 8 ruling 17 lines) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "weight-loss-supplements-benefits-evidence-and-safety",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Bitter orange, yohimbe and ephedra have been linked to heart attack, stroke and death [243]. For chest pain or sign...\" | \"- Chitosan may strengthen the effect of warfarin [239]. Garcinia was linked to serotonin toxicity in a person also ta...\" | \"- Reports tie green tea extract, garcinia and CLA to liver injury, including liver failure and hepatitis [118][135][2...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 000, 911, 999); ratified in decisions.md (Weight-loss category review and fix, Ratified lines: 8 ruling 17 lines) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "weight-loss-supplements-benefits-evidence-and-safety",
+  "match": "token \"50\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A Japanese RCT in 75 healthy adults with overweight (BMI 24-30) compared placebo to four formulations of caffeine (0,...\" | \"**Safety:** Safe at recommended intakes (1,000-1,200 mg/day for adults). The UL is 2,500 mg/day for ages 19-50 and 2,...\" | \"In a 60-day trial in 50 overweight adults, 1 g a day of Caralluma extract reduced hunger and waist size compared with...\"",
+  "reason": "AC2 category tokeniser case (\"Fifty\", \"seventy\", middle-dot 0.44 kg); ratified in decisions.md (Weight-loss category review, Ratified tokeniser line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "weight-loss-supplements-benefits-evidence-and-safety",
+  "match": "token \"70\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2024 meta-analysis of 70 trials with 4,159 adults found a mean fat-mass drop of 0.44 kg, but no fat loss in the hig...\" | \"The only human RCT (n=70, BMI >27) used a multi-ingredient product (METABO) containing 2,000 mg of a proprietary blen...\"",
+  "reason": "AC2 category tokeniser case (\"Fifty\", \"seventy\", middle-dot 0.44 kg); ratified in decisions.md (Weight-loss category review, Ratified tokeniser line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "weight-loss-supplements-benefits-evidence-and-safety",
+  "match": "token \"0.44 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2024 meta-analysis of 70 trials with 4,159 adults found a mean fat-mass drop of 0.44 kg, but no fat loss in the hig...\"",
+  "reason": "AC2 category tokeniser case (\"Fifty\", \"seventy\", middle-dot 0.44 kg); ratified in decisions.md (Weight-loss category review, Ratified tokeniser line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "weight-loss-supplements-benefits-evidence-and-safety",
+  "match": "body line has no entry quoting \"200 mg/day\": Pregnancy/breastfeeding: Most weight-loss supplements have not been studied in these populations and should be avoide...",
+  "reason": "AC2 \"200 mg/day\" pregnancy line (unchanged base text, EFSA [52]); ratified in decisions.md (Weight-loss category fix committed b29e3675, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Extraction and Processing",
+  "reason": "AC4 heading removed by decision (section emptied; all Grokipedia); ratified in decisions.md (Green coffee fix committed 6454074d, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Other Jurisdictions",
+  "reason": "AC4 heading removed by decision (section emptied; all Grokipedia); ratified in decisions.md (Green coffee fix committed 6454074d, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "garcinia-cambogia-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Psychiatric Effects — Mania in Bipolar Disorder",
+  "reason": "AC4 heading renamed by decision (F1, mania not limited to bipolar disorder); ratified in decisions.md (Garcinia fix committed 36126188, Ratified line; Codex r1 R4) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Label Reading",
+  "reason": "AC4 heading removed by decision (F4 label reading / F5 empty anticoagulant heading); ratified in decisions.md (CLA fix committed d672dc3c, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "cla-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Anticoagulants and Antiplatelet Agents",
+  "reason": "AC4 heading removed by decision (F4 label reading / F5 empty anticoagulant heading); ratified in decisions.md (CLA fix committed d672dc3c, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "weight-loss-supplements-benefits-evidence-and-safety",
+  "match": "heading missing from new body: ### Vitamin C",
+  "reason": "AC4 heading removed or renamed by decision (R4: diuretics and vitamin C sections cut, laxative heading renamed); ratified in decisions.md (Weight-loss category fix committed b29e3675, Ratified line; Codex r3 R2) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "weight-loss-supplements-benefits-evidence-and-safety",
+  "match": "heading missing from new body: ### Stimulant Laxatives (Aloe, Senna, Cascara)",
+  "reason": "AC4 heading removed or renamed by decision (R4: diuretics and vitamin C sections cut, laxative heading renamed); ratified in decisions.md (Weight-loss category fix committed b29e3675, Ratified line; Codex r3 R2) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "weight-loss-supplements-benefits-evidence-and-safety",
+  "match": "heading missing from new body: ### Diuretics (Dandelion, Asparagus, Uva Ursi)",
+  "reason": "AC4 heading removed or renamed by decision (R4: diuretics and vitamin C sections cut, laxative heading renamed); ratified in decisions.md (Weight-loss category fix committed b29e3675, Ratified line; Codex r3 R2) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host dailymed.nlm.nih.gov: [71] Astellas Pharma US. LEXISCAN (regadenoson) injection, prescribing information, sections 7.1 ...",
+  "reason": "AC7 host dailymed.nlm.nih.gov (NIH DailyMed Lexiscan label, legitimate); ratified in decisions.md (Green coffee fix committed 6454074d, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "garcinia-cambogia-benefits-dosing-and-side-effects",
+  "match": "product section changed: ### Multi-Ingredient Products: A Caution",
+  "reason": "AC7 product-section false positive: \"Multi-Ingredient Products: A Caution\" is NCCIH/ODS text, not a Brad product section; ratified in decisions.md (Garcinia review, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "weight-loss-supplements-benefits-evidence-and-safety",
+  "match": "reference line has unknown host ecfr.gov: [253] US Food and Drug Administration. 21 CFR 201.319, \"Water-soluble gums, hydrophilic gums, and...",
+  "reason": "AC7 host ecfr.gov ([253] 21 CFR 201.319, as in the prebiotics master); ratified in decisions.md (Weight-loss category fix committed b29e3675, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"If you have chest pain, a fast or irregular heartbeat, or blood pressure of 180/120 or higher, call your local emerge...\"",
+  "reason": "AC2 ruling 17 emergency line added by the green coffee recheck S2 decision (house wording, numbers included, WebMD 180/120 threshold); ratified in decisions.md (Integration stop resolved, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"If you have chest pain, a fast or irregular heartbeat, or blood pressure of 180/120 or higher, call your local emerge...\"",
+  "reason": "AC2 ruling 17 emergency line added by the green coffee recheck S2 decision (house wording, numbers included, WebMD 180/120 threshold); ratified in decisions.md (Integration stop resolved, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"If you have chest pain, a fast or irregular heartbeat, or blood pressure of 180/120 or higher, call your local emerge...\"",
+  "reason": "AC2 ruling 17 emergency line added by the green coffee recheck S2 decision (house wording, numbers included, WebMD 180/120 threshold); ratified in decisions.md (Integration stop resolved, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"If you have chest pain, a fast or irregular heartbeat, or blood pressure of 180/120 or higher, call your local emerge...\"",
+  "reason": "AC2 ruling 17 emergency line added by the green coffee recheck S2 decision (house wording, numbers included, WebMD 180/120 threshold); ratified in decisions.md (Integration stop resolved, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"180\": If you have chest pain, a fast or irregular heartbeat, or blood pressure of 180/120 or higher, call your local emerge...",
+  "reason": "AC2 ruling 17 emergency line added by the green coffee recheck S2 decision (house wording, numbers included, WebMD 180/120 threshold); ratified in decisions.md (Integration stop resolved, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "african-mango-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[65] raw_quote shares no number with its body_line: **Gastrointestinal effects:** The seed contains mucilage [20], a soluble fiber. Fiber supplements...",
+  "reason": "AC2 African mango mucilage entries re-filed to [20] Kothari by the recheck nit 2 decision; the quote carries no number (the 150 mg token has its own entry); ratified in decisions.md (Integration stop resolved, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "african-mango-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[67] raw_quote shares no number with its body_line: The seed contains mucilage [20]. Soluble fibers can form a gel in the gut that may slow or reduce...",
+  "reason": "AC2 African mango mucilage entries re-filed to [20] Kothari by the recheck nit 2 decision; the quote carries no number (the 150 mg token has its own entry); ratified in decisions.md (Integration stop resolved, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ }
+]

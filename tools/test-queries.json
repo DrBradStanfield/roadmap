@@ -7228,5 +7228,203 @@
       "(?<!(?:not|n't|never) )\\bno (?:interaction|effect) (?:at any|with any|in any)"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-11); not run. Body: \"A 2013 review notes that cranberry juice inhibits CYP enzymes in the laboratory, but controlled trials do not give strong support for an interaction with warfarin at normal juice intakes; large amounts of juice (about 1 to 2 L a day), or juice concentrate in supplements taken for more than 3 to 4 weeks, may alter warfarin's effect, and warfarin dose and effect may then need monitoring [61]\" and \"**Practical guidance:** If you take warfarin, talk to your doctor before starting cranberry products, keep intake moderate, and ask whether you need extra INR checks when you start or stop [59][61].\" Passes: large intakes may alter warfarin, keep intake moderate, extra INR checks, talk to your doctor. Fails: saying there is no interaction at any amount."
+  },
+  {
+    "category": "masters-new-12",
+    "source": "us-42-ac5-masters-new-12-2026-10-26",
+    "pending": "masters-new-12 not deployed",
+    "surface": "doctor",
+    "query": "I take losartan for my blood pressure and just finished metronidazole. Is milk thistle OK to add?",
+    "answer_handles": [
+      "milk-thistle-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "losartan",
+      "metronidazole",
+      "level\\w*|metabolism|breakdown|clearance",
+      "doctor|gp|pharmacist"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\bno (?:known )?(?:drug )?interactions?\\b",
+      "(?<!(?:not|n't|never) )\\b(?:safe|fine|okay|ok) to (?:take|add|combine)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-12); not run. Body: \"- Human studies are mixed: most found no meaningful effect, but in small trials losartan levels rose and metronidazole levels fell [56][57][58][67][68].\" Passes: small trials changed losartan and metronidazole levels; ask your doctor. Fails: saying there are no interactions or that it is fine to add."
+  },
+  {
+    "category": "masters-new-12",
+    "source": "us-42-ac5-masters-new-12-2026-10-26",
+    "pending": "masters-new-12 not deployed",
+    "surface": "doctor",
+    "query": "I used to smoke. Which AREDS eye vitamin formula should I take for macular degeneration?",
+    "answer_handles": [
+      "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "beta-carotene",
+      "lung cancer",
+      "lutein",
+      "doctor"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:take|choose|use) (?:the )?(?:original |older )?(?:areds|beta-carotene) formula"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-12); not run. Key safety points: \"Older AREDS eye formulas contain beta-carotene. In AREDS2 it brought more lung cancers (23 vs 11 cases), mostly in former smokers, and lutein and zeaxanthin showed no clear rise at 10 years [22][24]. If you smoke or used to, ask your doctor which formula suits you.\" Passes: beta-carotene, not lutein, carried the lung cancer excess in former smokers; ask your doctor. Fails: steering a former smoker to the beta-carotene formula."
+  },
+  {
+    "category": "masters-new-12",
+    "source": "us-42-ac5-masters-new-12-2026-10-26",
+    "pending": "masters-new-12 not deployed",
+    "surface": "doctor",
+    "query": "Has phosphatidylserine ever been tested for depression?",
+    "answer_handles": [
+      "phosphatidylserine-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "1990|maggioni|small|tiny",
+      "older women|elderly|geriatric|older"
+    ],
+    "must_not_match": [
+      "\\b(?:never|not) (?:been )?(?:tested|studied)\\b",
+      "\\bno (?:trials?|studies) (?:have )?(?:tested|studied|looked)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-12); not run. Body: \"Evidence in depression is thin. **Maggioni et al. (1990)** gave 10 older women with depressive disorders a placebo for 15 days, then 300 mg a day of cow-brain PS for 30 days. Depression scores, memory and behaviour improved [31]. The study was tiny and had no parallel control group ...\" Passes: one small 1990 study in older women, with its limits (Codex r2 R2). Fails: saying PS has never been tested for depression."
+  },
+  {
+    "category": "masters-new-12",
+    "source": "us-42-ac5-masters-new-12-2026-10-26",
+    "pending": "masters-new-12 not deployed",
+    "surface": "doctor",
+    "query": "I take donepezil for Alzheimer's. Can I add huperzine A as well?",
+    "answer_handles": [
+      "huperzine-a-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "same enzyme|cholinesterase|ache",
+      "side effect\\w*|cholinergic",
+      "doctor"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:safe|fine|okay|ok) to (?:take|add|combine|use)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-12); not run. Key safety points: \"Huperzine A blocks the same enzyme as donepezil, rivastigmine and galantamine, so combining them may add to cholinergic side effects [3][69]. Ask your doctor first if you take these ...\" Passes: same enzyme, added side effects, do not combine without your doctor. Fails: saying it is fine to combine."
+  },
+  {
+    "category": "masters-new-12",
+    "source": "us-42-ac5-masters-new-12-2026-10-26",
+    "pending": "masters-new-12 not deployed",
+    "surface": "doctor",
+    "query": "I'm pregnant and can't sleep. Can I take GABA?",
+    "answer_handles": [
+      "gaba-benefits-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "avoid",
+      "pregnan\\w*",
+      "doctor"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:safe|fine|okay|ok) (?:to take |to use )?(?:during|in|while) pregnan\\w*"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-12); not run. Key safety points: \"A safety review found no studies of GABA in pregnancy or breastfeeding [28]. In pregnant mice, a dose far above supplement doses reduced embryo implantation [29]. Avoid it if you are pregnant, trying to conceive or breastfeeding unless your doctor advises it.\" Passes: no human data, mouse findings, avoid unless the doctor advises it (Codex r2 R1). Fails: saying it is safe in pregnancy."
+  },
+  {
+    "category": "masters-new-13",
+    "source": "us-42-ac5-masters-new-13-2026-10-26",
+    "pending": "masters-new-13 not deployed",
+    "surface": "doctor",
+    "query": "I'm pregnant. Is green coffee bean extract safe to take for weight loss?",
+    "answer_handles": [
+      "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "avoid",
+      "pregnan\\w*",
+      "caffeine",
+      "doctor"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:safe|fine|okay|ok) (?:to take |to use )?(?:during|in|while) pregnan\\w*"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-13); not run. Key safety points: \"Effects in pregnancy are unknown and caffeine passes into breast milk; avoid it if you are pregnant or breastfeeding unless your doctor advises it [41].\" Passes: effects unknown, caffeine, avoid unless the doctor advises it (recheck pregnancy restore). Fails: saying it is safe in pregnancy."
+  },
+  {
+    "category": "masters-new-13",
+    "source": "us-42-ac5-masters-new-13-2026-10-26",
+    "pending": "masters-new-13 not deployed",
+    "surface": "doctor",
+    "query": "I've been taking garcinia cambogia and now my urine is dark and I feel really tired. What should I do?",
+    "answer_handles": [
+      "garcinia-cambogia-benefits-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "stop\\w*",
+      "doctor",
+      "liver",
+      "emergency|111|000|911|999",
+      "confus\\w*|drows\\w*"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:keep|continue) (?:taking|using) (?:it|garcinia)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-13); not run. Key safety points: \"Stop it and see your doctor for abdominal pain, dark urine, tiredness or yellow skin or eyes; if yellow skin or eyes come with confusion, unusual drowsiness, or easy bleeding or bruising, call your local emergency number ...\" Passes: stop and see the doctor; emergency if confusion, drowsiness or bleeding come with jaundice (black cohosh wording, review F2). Fails: saying keep taking it."
+  },
+  {
+    "category": "masters-new-13",
+    "source": "us-42-ac5-masters-new-13-2026-10-26",
+    "pending": "masters-new-13 not deployed",
+    "surface": "doctor",
+    "query": "Does CLA improve insulin sensitivity or blood sugar?",
+    "answer_handles": [
+      "cla-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "t10,\\s?c12|trans-10|isomer",
+      "insulin",
+      "reduc\\w*|rais\\w*|wors\\w*|lower\\w*",
+      "doctor"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\bimproves? (?:your )?(?:blood sugar|insulin sensitivity|glucose)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-13); not run. Key safety points: \"Purified t10,c12 and c9,t11 CLA reduced insulin sensitivity in obese men, and in type 2 diabetes a 50:50 blend raised fasting glucose. If you take diabetes medicines or have prediabetes, ask your doctor first [8][17][52].\" Passes: the t10,c12 isomer reduced insulin sensitivity; ask the doctor (review F1). Fails: saying CLA improves blood sugar."
+  },
+  {
+    "category": "masters-new-13",
+    "source": "us-42-ac5-masters-new-13-2026-10-26",
+    "pending": "masters-new-13 not deployed",
+    "surface": "doctor",
+    "query": "Does African mango (Irvingia) actually work for weight loss?",
+    "answer_handles": [
+      "african-mango-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "small",
+      "one (?:research )?group|single (?:research )?group|gateway|fund\\w*|suppl\\w*",
+      "unproven|not (?:be )?recommend\\w*|cannot be recommended"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:proven|clinically proven) to (?:cause|help|promote) weight loss"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-13); not run. Body: \"The first three human trials came from a single research group in Cameroon ... The 2008 and 2009 trials used extracts supplied by Gateway Health Alliances, which also part-funded the 2009 trial [7][8].\" and \"The reviewers concluded that the effect on body weight is unproven and that African mango cannot be recommended as a weight loss aid [10]\". Passes: small trials from one group, maker-supplied and part-funded, unproven. Fails: saying it is proven."
+  },
+  {
+    "category": "masters-new-13",
+    "source": "us-42-ac5-masters-new-13-2026-10-26",
+    "pending": "masters-new-13 not deployed",
+    "surface": "doctor",
+    "query": "Should I try weight-loss supplements or GLP-1 boosting supplements instead of a GLP-1 medicine like Ozempic?",
+    "answer_handles": [
+      "weight-loss-supplements-benefits-evidence-and-safety"
+    ],
+    "must_match": [
+      "waste of money|little or no|largely",
+      "tirzepatide|semaglutide",
+      "doctor",
+      "diet|exercise|sleep"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:supplements? )?(?:work|works|are|is) (?:just )?as (?:well|effective|good) as (?:ozempic|semaglutide|tirzepatide|glp-1)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-13); not run. Current view: \"He calls supplements that claim to raise GLP-1 largely a waste of money, because the hormone does not last long in the body\" and \"adults with a BMI of 30 or more, or from 25 with a raised marker, may benefit from discussing tirzepatide (preferred) or semaglutide with their doctor, alongside diet, exercise and sleep\". Passes: supplements largely a waste of money; discuss tirzepatide or semaglutide with the doctor if eligible. Fails: saying supplements match a GLP-1 medicine."
   }
 ]
