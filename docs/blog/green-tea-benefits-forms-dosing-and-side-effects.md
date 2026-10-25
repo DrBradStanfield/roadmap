@@ -89,7 +89,7 @@ In the Japanese Ohsaki study of 40,530 adults, women drinking 5 or more cups a d
 
 **Cholesterol:** A meta-analysis of 14 randomised trials (1,136 people) found that green tea beverages or extracts lowered total cholesterol by 7.20 mg/dL and LDL by 2.19 mg/dL, with no effect on HDL [29].
 
-A larger analysis of 31 trials (3,321 people) found smaller falls: 4.66 mg/dL for total cholesterol and 4.55 mg/dL for LDL. Green tea did not affect HDL cholesterol and did not lower triglycerides [12]. Most of the trials tested extract supplements rather than the beverage [7].
+A larger analysis of 31 trials (3,321 people) found smaller falls: 4.66 mg/dL for total cholesterol and 4.55 mg/dL for LDL. Green tea did not affect HDL cholesterol and did not significantly lower triglycerides [12]. Most of the trials tested extract supplements rather than the beverage [7].
 
 **Stroke:** A meta-analysis of 9 studies found that people who drank at least 3 cups of tea a day, green or black, had a 21% lower risk of stroke than those drinking less than 1 cup [30]. In a Japanese cohort of 82,369 adults, hazard ratios for stroke were 0.86 for green tea at 2 to 3 cups a day and 0.80 at 4 or more, compared with seldom drinking it [31]. In the China Kadoorie Biobank (487,377 adults, mostly green tea drinkers), daily tea drinking had a hazard ratio for stroke of 0.92 (95% CI 0.89 to 0.95); the link held for green tea and was seen in men but not women [101].
 
@@ -332,7 +332,7 @@ Green tea, particularly at higher intakes or in supplement form, can interact wi
 
 **Fluvastatin:** Fluvastatin levels did not change with green tea extract (150 mg of EGCG) or with 300 mL of brewed green tea [55].
 
-**Simvastatin, tamoxifen and pseudoephedrine:** In a 2025 review, green tea did not affect their pharmacokinetics in clinical studies [54]. For simvastatin, two earlier reviews disagree: they list it among drugs that interact with green tea, with mild to modest average effects [103] and mild to moderate effects on drug exposure that varied widely between people [102].
+**Simvastatin, tamoxifen and pseudoephedrine:** In a 2025 review, green tea did not affect their pharmacokinetics in clinical studies [54]. Two earlier reviews disagree with it: they list simvastatin among drugs that interact with green tea, with mild to modest average effects [103] and mild to moderate effects on drug exposure that varied widely between people [102].
 
 **Overall guidance:** If you take any type of medicine, talk with your health care provider before using green tea supplements [7].
 
@@ -548,6 +548,6 @@ Green tea extracts may contain elemental impurities, a group that includes heavy
 
 [101] Tian T, et al. "Tea consumption and risk of stroke in Chinese adults: a prospective cohort study of 0.5 million men and women." *Am J Clin Nutr*. 2020;111(1):197-206. PMID: 31711152. [https://pubmed.ncbi.nlm.nih.gov/31711152/](https://pubmed.ncbi.nlm.nih.gov/31711152/)
 
-[102] Werba JP, et al. "Update of green tea interactions with cardiovascular drugs and putative mechanisms." *J Food Drug Anal*. 2018. doi: [10.1016/j.jfda.2018.01.008](https://doi.org/10.1016/j.jfda.2018.01.008) PMID: 29703388. [https://pubmed.ncbi.nlm.nih.gov/29703388/](https://pubmed.ncbi.nlm.nih.gov/29703388/)
+[102] Werba JP, et al. "Update of green tea interactions with cardiovascular drugs and putative mechanisms." *J Food Drug Anal*. 2018;26(2S):S72-S77. doi: [10.1016/j.jfda.2018.01.008](https://doi.org/10.1016/j.jfda.2018.01.008) PMID: 29703388. [https://pubmed.ncbi.nlm.nih.gov/29703388/](https://pubmed.ncbi.nlm.nih.gov/29703388/)
 
-[103] Werba JP, et al. "Overview of green tea interaction with cardiovascular drugs." *Curr Pharm Des*. 2015. doi: [10.2174/1381612820666141013135045](https://doi.org/10.2174/1381612820666141013135045) PMID: 25312732. [https://pubmed.ncbi.nlm.nih.gov/25312732/](https://pubmed.ncbi.nlm.nih.gov/25312732/)
+[103] Werba JP, et al. "Overview of green tea interaction with cardiovascular drugs." *Curr Pharm Des*. 2015;21(9):1213-1219. doi: [10.2174/1381612820666141013135045](https://doi.org/10.2174/1381612820666141013135045) PMID: 25312732. [https://pubmed.ncbi.nlm.nih.gov/25312732/](https://pubmed.ncbi.nlm.nih.gov/25312732/)
