@@ -19,13 +19,13 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Key safety points
 
-- Echinacea might interact with immunosuppressant medicines, and case reports link immune-stimulating supplements, including echinacea, to autoimmune flares [3][46]. If you take immunosuppressants or have an autoimmune disease, talk to your doctor first.
-- Echinacea root slowed caffeine clearance in one small study [35], and echinacea lowered S-warfarin levels without a clinically significant change in INR in another [39]. If you take prescription medicines, check with your doctor or pharmacist before starting.
-- Echinacea is related to daisies, sunflowers and ragweed, and allergic reactions may be severe [3]. Anaphylaxis has been reported, sometimes after a first dose and mostly in people with allergies such as asthma or hay fever [44][45].
+- Echinacea might interact with immunosuppressants, and case reports link immune-stimulating supplements, including echinacea, to autoimmune flares [3][46]. If you take immunosuppressants or have an autoimmune disease, talk to your doctor first.
+- Echinacea root slowed caffeine clearance in one small study [35]; in another, echinacea lowered S-warfarin levels without a clinically significant INR change [39]. If you take prescription medicines, check with your doctor or pharmacist before starting.
+- Echinacea is related to ragweed; allergic reactions may be severe [3]. Allergic reactions, including anaphylaxis, have been reported, some after a first dose and more than half in people with known allergies [44][45].
 - If hives, swelling of the face or throat, wheezing or trouble breathing start after a dose, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [44].
 - In children aged 2 to 11 years, rash occurred during 7.1% of colds treated with echinacea and 2.7% with placebo [20]. Talk to your child's doctor first [3].
-- Some studies suggest use for up to 7 days in the first trimester of pregnancy is possibly safe; little is known about breastfeeding [3].
-- Rare cases of cholestatic hepatitis have been reported [32][33]. The most common side effects are digestive: abdominal pain, nausea or stomach pain [3].
+- Some studies suggest use for up to 7 days in the first trimester of pregnancy is possibly safe; little is known about breastfeeding. If you are pregnant or breastfeeding, talk to your health care provider first [3].
+- Rare cholestatic hepatitis cases have been reported [32][33]. The most common side effects are digestive: abdominal pain, nausea or stomach pain [3].
 
 ## Brad's videos on this topic
 
@@ -57,7 +57,7 @@ Trials have used several forms. The largest prevention trial used liquid drops o
 
 - **E. angustifolia:** A standardized root extract has been studied for anxiety [10][11][47]. In a 12-week prevention trial, adverse effects were reported by 18 people taking *E. angustifolia* root extract, 10 taking *E. purpurea* root extract and 11 taking placebo [12].
 
-- **E. pallida:** Its root has mainly been tested as part of combination products [22].
+- **E. pallida:** Its root is an ingredient in some tested combination products [22].
 
 ### Quality Considerations
 
@@ -71,9 +71,9 @@ The evidence for preventing colds is mixed. Any benefit appears small.
 
 **Meta-analysis (2007):** A meta-analysis of 14 studies found that echinacea decreased the odds of developing a cold by 58% (OR 0.42; 95% CI 0.25 to 0.71) and shortened colds by 1.4 days (Shah et al., *Lancet Infect Dis*, 2007) [14]. Later reviews were more cautious [16][43].
 
-**Largest prevention trial (2012):** 755 healthy people took an alcohol extract of freshly harvested *E. purpurea* (95% herb, 5% root) or placebo for 4 months (Jawad et al., *Evid Based Complement Alternat Med*, 2012) [8]. Echinacea reduced the number of colds, the total days with colds and the colds treated with painkillers, and it had its largest effect on recurrent infections [8]. Cold episodes and episode days were each 26% lower, a difference that was statistically significant for episode days [8]. Participants took 3 × 0.9 mL a day (2400 mg of extract) for prevention and 5 × 0.9 mL a day (4000 mg) during colds, diluting each dose in water and holding it in the mouth for 10 s [8]. The placebo drops contained the same amount of alcohol [8]. Benefits grew with better adherence, and adverse events were similar to placebo [8].
+**Largest prevention trial (2012):** 755 healthy people took an alcohol extract of freshly harvested *E. purpurea* (95% herb, 5% root) or placebo for 4 months (Jawad et al., *Evid Based Complement Alternat Med*, 2012) [8]. Echinacea had 149 colds and 672 cold days against 188 and 850 with placebo (about 21% fewer); only the difference in cold days was statistically significant [8]. It also reduced colds treated with painkillers and had its largest effect on recurrent infections [8]. Participants took 3 × 0.9 mL a day (2400 mg of extract) for prevention and 5 × 0.9 mL a day (4000 mg) during colds, diluting each dose in water and holding it in the mouth for 10 s [8]. The placebo drops contained the same amount of alcohol [8]. Benefits grew with better adherence, and adverse events were similar to placebo [8].
 
-**Negative prevention trial (2008):** 90 hospital staff took 3 capsules of *E. purpurea* or placebo twice daily for 8 weeks in winter. The echinacea group reported 9 sick days per person and the placebo group 14, a difference that was not significant (O'Neil et al., *Ann Allergy Asthma Immunol*, 2008) [15].
+**Negative prevention trial (2008):** 90 hospital staff were randomized to 3 capsules of *E. purpurea* or placebo twice daily for 8 weeks in winter, and 58 were analysed. The echinacea group reported 9 sick days per person and the placebo group 14, a difference that was not significant (O'Neil et al., *Ann Allergy Asthma Immunol*, 2008) [15].
 
 **E. angustifolia and E. purpurea root comparison:** In a trial of 302 volunteers, alcohol extracts of *E. angustifolia* root or *E. purpurea* root for 12 weeks did not prevent upper respiratory tract infections. Infections occurred in 36.7% of the placebo group, 32.0% of the *E. angustifolia* group and 29.3% of the *E. purpurea* group. People in the echinacea groups thought the medicine helped them more than the placebo group did (Melchart et al., *Arch Fam Med*, 1998) [12].
 
@@ -89,11 +89,11 @@ The evidence for preventing colds is mixed. Any benefit appears small.
 
 **Children — no benefit (2003):** In 407 children aged 2 to 11 years, *E. purpurea* started at the first symptoms and taken for up to 10 days did not shorten colds or ease symptoms. Rash occurred during 7.1% of colds treated with echinacea and 2.7% of those treated with placebo (Taylor et al., *JAMA*, 2003) [20].
 
-**Esberitox combination product:** A fixed combination of echinacea root, wild indigo (*Baptisia*) root and thuja (*Thuja occidentalis*) has been tested in colds. In 263 patients, 3 tablets three times daily for 7 to 9 days brought equal levels of improvement three days earlier than placebo, with the clearest effect in people who started early (Henneicke-von Zepelin et al., *Curr Med Res Opin*, 1999) [21]. In 91 adults, a higher dose worked better than a lower dose, which worked better than placebo (Naser et al., *Phytomedicine*, 2005) [22]. Thuja oil contains thujone and has caused convulsions in poisoning cases [23].
+**Esberitox combination product:** A fixed combination of echinacea root, wild indigo (*Baptisia*) root and thuja (*Thuja occidentalis*) has been tested in colds. In 263 patients, 3 tablets three times daily for 7 to 9 days brought equal levels of improvement three days earlier than placebo, with the clearest effect in people who started early (Henneicke-von Zepelin et al., *Curr Med Res Opin*, 1999) [21]. In 91 adults, the benefit grew with dose: fewer tissues were used as the dose rose (p = 0.0259 for the trend) (Naser et al., *Phytomedicine*, 2005) [22]. Thuja oil contains thujone and has caused convulsions in poisoning cases [23].
 
 **Esberitox in chronic bronchitis exacerbation:** In 53 adults taking an antibiotic for a flare of chronic bronchitis, adding Esberitox N for 28 days gave better lung function at day 10 than placebo, 68.7 versus 59.2 points (Hauke et al., *Chemotherapy*, 2002) [24]. There were no serious adverse events.
 
-**Novel echinacea formulations (2023):** In 246 adults with a respiratory infection, high-dose lozenges or spray (16,800 mg/d of extract on days 1-3) were compared with standard tablets or drops at a lower daily dose of 2,400 mg. Viral clearance by day 10 was more frequent with the high-dose forms (70 vs. 53%), but faster recovery was not significant by day 10 (Sumer et al., *Front Med*, 2023) [25]. There was no placebo group.
+**Novel echinacea formulations (2023):** In 246 adults with a respiratory infection, high-dose lozenges or spray (16,800 mg/d of extract on days 1-3) were compared with standard tablets or drops at a lower daily dose of 2,400 mg. Among those with an identified respiratory virus, viral clearance by day 10 was more frequent with the high-dose forms (70 vs. 53%), but faster recovery was not significant by day 10 (Sumer et al., *Front Med*, 2023) [25]. There was no placebo group.
 
 **Cochrane Review (2006):** A Cochrane review found some evidence that preparations based on the aerial parts of *E. purpurea* might help in the early treatment of colds in adults, but results were not fully consistent (Linde et al., *Cochrane Database Syst Rev*, 2006) [9]. Its 2014 update, with 24 trials and 4631 participants, found that only one of seven treatment trials reporting cold duration showed a significant effect (Karsch-Völk et al., *Cochrane Database Syst Rev*, 2014) [43].
 
@@ -101,7 +101,7 @@ The evidence for preventing colds is mixed. Any benefit appears small.
 
 ### Synthesis: Echinacea for Colds
 
-The best evidence suggests echinacea, particularly *E. purpurea* extracts, may slightly reduce the chance of catching a cold when taken regularly. The effect is modest: a risk ratio of 0.78 in one meta-analysis [16], a possible 10% to 20% relative risk reduction in the Cochrane review [43], and 26% fewer cold days in the largest trial [8]. For treating colds, the larger trials show no clear benefit [19][20][43]. Differences in species, plant part, preparation and dose likely explain much of the inconsistency [43].
+The best evidence suggests echinacea, particularly *E. purpurea* extracts, may slightly reduce the chance of catching a cold when taken regularly. The effect is modest: a risk ratio of 0.78 in one meta-analysis [16], a possible 10% to 20% relative risk reduction in the Cochrane review [43], and about 21% fewer cold days in the largest trial [8]. For treating colds, the larger trials show no clear benefit [19][20][43]. Differences in species, plant part, preparation and dose likely explain much of the inconsistency [43].
 
 NCCIH reflects this uncertainty: echinacea may slightly reduce your chance of catching a cold, but whether it shortens a cold remains unclear [3].
 
@@ -134,7 +134,7 @@ Echinacea is thought to act mainly on the immune system [3][6]. Proposed mechani
 - **Immunostimulation:** In laboratory studies, *E. purpurea* extracts stimulate the phagocytic activity of macrophages [6].
 - **Anti-inflammatory effects:** The same extracts suppress pro-inflammatory responses of airway cells to viruses and bacteria [6].
 - **Viral replication inhibition (in vitro):** Laboratory studies show activity against respiratory viruses, though the clinical relevance is uncertain [6][28].
-- **Soil microbiome influence:** NCCIH-funded research found that raising soil organic matter from 5.6% to 67.4% led to a 4.2-fold increase in the immune-stimulating activity of *E. purpurea* root extracts, through changes in the plant's bacteria (Haron et al., *Sci Rep*, 2019) [5]. This may partly explain why products vary.
+- **Soil microbiome influence:** NCCIH-funded research found that raising soil organic matter from 5.6% to 67.4% led to a 4.2-fold increase in the immune-stimulating activity of *E. purpurea* root extracts, linked to changes in the plant's bacteria (Haron et al., *Sci Rep*, 2019) [5]. This may partly explain why products vary.
 
 ## 4. Recommended Dosing
 
@@ -193,11 +193,11 @@ Case reports describe acute cholestatic hepatitis linked to echinacea, one with 
 
 ### Autoimmune Concerns
 
-There are theoretical reasons to suspect that echinacea might interact with immunosuppressants [3]. In a case series, flares of pemphigus vulgaris, an autoimmune blistering disease, were linked to echinacea or spirulina; the authors proposed that immune-stimulating supplements may worsen existing autoimmune disease [46]. The evidence is limited to case reports. If you have an autoimmune disease, such as lupus, rheumatoid arthritis or multiple sclerosis, talk to your doctor before taking echinacea.
+There are theoretical reasons to suspect that echinacea might interact with immunosuppressants [3]. In a case series, echinacea and spirulina were implicated in two patients' flares of pemphigus vulgaris, an autoimmune blistering disease; the authors proposed that immune-stimulating supplements may worsen existing autoimmune disease [46]. The evidence is limited to case reports. If you have an autoimmune disease, such as lupus, rheumatoid arthritis or multiple sclerosis, talk to your doctor before taking echinacea.
 
 ### Thuja-Containing Combination Products
 
-Some echinacea combination products contain thuja (*Thuja occidentalis*). Commercial thuja oil, which contains thujone, has caused convulsions in poisoning cases (Millet et al., *Clin Toxicol*, 1981) [23]. Check ingredient labels, and talk to your doctor first if you have epilepsy.
+Some echinacea combination products contain thuja (*Thuja occidentalis*). Commercial thuja oil, which contains thujone, has caused convulsions in poisoning cases (Millet et al., *Clin Toxicol*, 1981) [23]. In animal and laboratory studies, alpha-thujone inhibited GABA type A receptors, which may explain this (Höld et al., *Proc Natl Acad Sci U S A*, 2000) [49]. Check ingredient labels, and talk to your doctor first if you have epilepsy.
 
 ### Pregnancy and Lactation
 
@@ -215,7 +215,7 @@ In 12 healthy people, *E. purpurea* root (400 mg 4 times a day for 8 days) reduc
 
 ### CYP3A4 Metabolism
 
-In the same study, echinacea changed how the body handled midazolam, a CYP3A drug: it altered clearance in the liver and gut in opposite directions [35]. The authors advised caution with drugs that depend on CYP3A [35]. In a laboratory test, *E. angustifolia* root extract inhibited CYP3A4 (Budzinski et al., *Phytomedicine*, 2000) [36]. Common CYP3A4 substrates include:
+In the same study, echinacea changed how the body handled midazolam, a CYP3A drug: it changed liver and gut availability in opposite directions [35]. The authors advised caution with drugs that depend on CYP3A [35]. In a laboratory test, *E. angustifolia* root extract inhibited CYP3A4 (Budzinski et al., *Phytomedicine*, 2000) [36]. Common CYP3A4 substrates include:
 
 - Lovastatin (Mevacor)
 - Atorvastatin (Lipitor)
@@ -232,7 +232,7 @@ In 12 healthy men, 2 weeks of echinacea lowered blood levels of S-warfarin, but 
 
 ### Immunosuppressant Drugs
 
-There are theoretical reasons to suspect that echinacea might interact with immunosuppressants [3], such as cyclosporine, tacrolimus, azathioprine and corticosteroids. If you take immunosuppressive therapy, avoid echinacea or use it only under your doctor's supervision.
+There are theoretical reasons to suspect that echinacea might interact with immunosuppressants [3], such as cyclosporine, tacrolimus, azathioprine and corticosteroids. If you take immunosuppressive therapy, talk to your doctor first.
 
 ### General Recommendation
 
@@ -248,7 +248,7 @@ Echinacea is sometimes combined with other ingredients:
 
 - **Thuja (*Thuja occidentalis*) and wild indigo (*Baptisia tinctoria*):** Fixed combinations of echinacea with thuja and wild indigo have improved cold symptoms in trials [21][22], and one helped lung function alongside antibiotics in chronic bronchitis [24]. Thuja oil has caused convulsions in poisoning cases [23].
 
-- **Other ingredients:** Products also pair echinacea with goldenseal, elderberry, propolis, vitamin C or andrographis. Results from echinacea-only trials do not apply to these combinations. Goldenseal may not be safe in pregnancy, so check with your doctor first.
+- **Other ingredients:** Products also pair echinacea with goldenseal, elderberry, propolis, vitamin C or andrographis. Results from echinacea-only trials do not apply to these combinations. Goldenseal may change the way your body processes many medications. Women who are pregnant or breastfeeding should not use goldenseal, and it should not be given to infants [48].
 
 ## 8. References
 
@@ -323,3 +323,7 @@ Echinacea is sometimes combined with other ingredients:
 [46] Lee AN, Werth VP. "Activation of autoimmunity following use of immunostimulatory herbal supplements." *Arch Dermatol*. 2004;140(6):723-727. doi: [10.1001/archderm.140.6.723](https://doi.org/10.1001/archderm.140.6.723). PMID: [15210464](https://pubmed.ncbi.nlm.nih.gov/15210464/)
 
 [47] Haller J, Freund TF, Pelczer KG, Füredi J, Krecsak L, Zámbori J. "The anxiolytic potential and psychotropic side effects of an echinacea preparation in laboratory animals and healthy volunteers." *Phytother Res*. 2013;27(1):54-61. doi: [10.1002/ptr.4677](https://doi.org/10.1002/ptr.4677). PMID: [22451347](https://pubmed.ncbi.nlm.nih.gov/22451347/)
+
+[48] NCCIH. "Goldenseal." Updated February 2025. [https://www.nccih.nih.gov/health/goldenseal](https://www.nccih.nih.gov/health/goldenseal)
+
+[49] Höld KM, Sirisoma NS, Ikeda T, Narahashi T, Casida JE. "Alpha-thujone (the active component of absinthe): gamma-aminobutyric acid type A receptor modulation and metabolic detoxification." *Proc Natl Acad Sci U S A*. 2000;97(8):3826-3831. doi: [10.1073/pnas.070042397](https://doi.org/10.1073/pnas.070042397). PMID: [10725394](https://pubmed.ncbi.nlm.nih.gov/10725394/)
