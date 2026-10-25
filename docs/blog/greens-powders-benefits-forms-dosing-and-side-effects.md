@@ -19,10 +19,10 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Key safety points
 
-- If you take warfarin or a similar anticoagulant, sudden changes in vitamin K intake can strengthen or weaken its effect, and leafy greens and alfalfa supply vitamin K. Talk to your doctor before starting a greens powder [66].
-- Spirulina, Aphanizomenon flos-aquae, chlorella and alfalfa can boost immune activity, and they are linked to the onset or flare of autoimmune diseases such as dermatomyositis and lupus. If you have an autoimmune disease, ask your doctor first [17][53][54][65].
-- Some powders add green tea extract or ashwagandha in undisclosed amounts, and both have been linked to liver injury [36][37].
-- Aphanizomenon flos-aquae products have tested positive for microcystins, and one study found cyanotoxins above tolerable daily intake values in 8 of 18 algae supplements [9][33].
+- If you take warfarin or a similar anticoagulant, sudden changes in vitamin K intake can strengthen or weaken its effect, and leafy greens, alfalfa and chlorella supply vitamin K. Talk to your doctor before starting a greens powder [16][66][68].
+- Spirulina, Aphanizomenon flos-aquae, chlorella and alfalfa can boost immune activity, and they are linked to the onset or flare of autoimmune diseases such as dermatomyositis and lupus. If you have an autoimmune disease, ask your doctor first [17][30][52][54][65].
+- Some powders add green tea extract or ashwagandha in undisclosed amounts, and both have been linked to liver injury; with green tea, the most serious cases involved multi-ingredient products. If you have liver disease, ask your doctor first [36][37].
+- Aphanizomenon flos-aquae products have tested positive for microcystins, and one study found cyanotoxins above tolerable daily intake values in 8 of 18 algae supplements. Avoid products that list Aphanizomenon flos-aquae [9][33].
 - Concentrated spinach, beet or rhubarb powders add oxalate, which may promote kidney stones. If you have had kidney stones, check the label [10].
 
 ## Brad's videos on this topic
@@ -65,7 +65,7 @@ Clinical evidence for spirulina is more robust than for most greens powder ingre
 
 - **Blood lipids:** A meta-analysis of 7 RCTs found that spirulina supplementation significantly reduced total cholesterol (mean reduction ~47 mg/dL), LDL cholesterol (~41 mg/dL), and triglycerides (~44 mg/dL), while increasing HDL cholesterol (~6 mg/dL) [21]. The effect did not depend on the dose given.
 - **Blood pressure:** In an uncontrolled 6-week study of 36 adults, 4.5 g/day of Spirulina maxima lowered systolic and diastolic blood pressure from baseline in both men and women [22]. With no placebo group, the result is preliminary.
-- **Blood glucose:** A randomized trial in 25 patients with type 2 diabetes found that 2 g/day of spirulina for 2 months significantly reduced fasting blood glucose and HbA1c compared to control [23]. Another randomized trial in 37 patients with type 2 diabetes found that 8 g/day for 12 weeks lowered plasma triglycerides and malondialdehyde, a marker of oxidative stress [24].
+- **Blood glucose:** A randomized trial in 25 patients with type 2 diabetes found that 2 g/day of spirulina for 2 months gave an appreciable fall in fasting blood glucose and a significant fall in HbA1c [23]. Another randomized trial in 37 patients with type 2 diabetes found that 8 g/day for 12 weeks lowered plasma triglycerides and malondialdehyde, a marker of oxidative stress [24].
 - **Allergic rhinitis:** In a double-blind, placebo-controlled trial, spirulina improved nasal discharge, sneezing, nasal congestion and itching compared with placebo [25]. The mechanism may involve blocking histamine release from mast cells [18].
 - **Antioxidant and anti-inflammatory effects:** Intervention studies support an antioxidant effect, including lower malondialdehyde in the 8 g/day diabetes trial [19][24].
 - **Anemia in older adults:** In an uncontrolled 12-week study, 40 adults aged 50 or older took spirulina; among those who finished, mean corpuscular hemoglobin rose steadily and most had higher white cell counts and IDO activity, a marker of immune function [26].
@@ -100,7 +100,7 @@ Many greens powders incorporate freeze-dried or spray-dried fruit powders from b
 Some greens powders include ashwagandha, rhodiola, reishi mushroom, green tea extract, or other botanical ingredients. These are present in highly variable amounts, and their efficacy depends on achieving clinically studied doses — which proprietary blends make impossible to verify. Of particular safety note:
 
 - **Green tea extract** at concentrated doses has been associated with hepatotoxicity in case reports [36].
-- **Ashwagandha** has been linked to liver injury in a small number of published cases [37].
+- **Ashwagandha** has caused liver injury in a few published case reports [37].
 
 ### 2.7 Bioavailability Considerations
 
@@ -122,7 +122,7 @@ Spirulina in particular has demonstrated significant antioxidant effects. The ph
 
 Chlorella has also shown antioxidant properties, though fewer human trials exist. A randomized trial in 52 smokers found that 6.3 g/day of chlorella for 6 weeks raised plasma vitamin C (44.4%) and alpha-tocopherol (15.7%); DNA damage fell, but it also fell with placebo [42].
 
-However, a key limitation is that most greens powder blends include spirulina and chlorella in undisclosed amounts that may be far below the 1-8 g/day doses used in clinical trials. Without label transparency, consumers cannot determine whether the antioxidant effect of the whole product is clinically meaningful or merely a marketing claim.
+However, a key limitation is that most greens powder blends include spirulina and chlorella in undisclosed amounts that may be far below the 2-8 g/day doses used in clinical trials. Without label transparency, consumers cannot determine whether the antioxidant effect of the whole product is clinically meaningful or merely a marketing claim.
 
 ### 3.2 Blood Pressure
 
@@ -141,7 +141,7 @@ However, these results are from studies using specific, known doses of individua
 
 ### 3.4 Blood Sugar and Metabolic Health
 
-Spirulina has shown promise for glycemic control. The trial of 2 g/day in 25 type 2 diabetic patients found significant reductions in fasting glucose and HbA1c [23]. Another trial using 8 g/day for 12 weeks lowered triglycerides and malondialdehyde [24].
+Spirulina has shown promise for glycemic control. The trial of 2 g/day in 25 type 2 diabetic patients found an appreciable fall in fasting glucose and a significant fall in HbA1c [23]. Another trial using 8 g/day for 12 weeks lowered triglycerides and malondialdehyde [24].
 
 These effects are biologically plausible given spirulina's high protein content, chromium content, and phycocyanin's anti-inflammatory properties. However, the clinical significance of these findings is uncertain when spirulina is present as one of 25-40 ingredients in an undisclosed proprietary blend.
 
@@ -227,7 +227,7 @@ Because greens powders contain variable amounts of each ingredient, it is useful
 
 | Ingredient | Studied Dose | Duration | Primary Outcome |
 |---|---|---|---|
-| Spirulina | 1-8 g/day | 2-12 weeks | Blood lipids, blood pressure, glycemic control, allergic rhinitis |
+| Spirulina | 2-8 g/day | 2-12 weeks | Blood lipids, blood pressure, glycemic control, allergic rhinitis |
 | Chlorella | 5 g/day | 4-8 weeks | Blood lipids, immune function |
 | Wheatgrass juice | 100 mL/day | 4 weeks | Ulcerative colitis symptom reduction |
 | Beetroot (nitrate) | Juice or nitrate salts | 2 hours to 15 days | Blood pressure reduction |
@@ -253,24 +253,24 @@ Spirulina and chlorella taste strongly savory, so many people mix them, or green
 Digestive upset is the most commonly reported side effect of greens powders, including:
 
 - **Bloating and gas:** Often attributed to high fiber content, probiotics, or the introduction of new plant compounds to the gut. Usually resolves within 1-2 weeks of consistent use [1][3].
-- **Diarrhea and abdominal cramping:** Some people report these with chlorella, though in an uncontrolled study of 18 adults with hepatitis C who took it for 12 weeks, it was well tolerated [31].
-- **Constipation:** Reported by some chlorella users.
-- **Nausea and vomiting:** These may occur with chlorella products.
+- **Diarrhea:** In an uncontrolled 12-week study of chlorella in adults with hepatitis C, a few patients had mild diarrhea in the first week, though most tolerated it well [31].
+- **Constipation:** In the same study, constipation was the other main side effect; it was mild to moderate and settled within two weeks, though one person stopped because of it [31].
 
 ### 5.2 Liver Injury
 
 Some greens powders contain undisclosed amounts of ingredients linked to liver injury, including:
 
-- **Green tea extract:** A 2015 review identified nineteen cases of liver injury linked to supplements containing green tea; most were hepatocellular, and all resolved [36].
+- **Green tea extract:** A 2015 review found nineteen cases of liver injury linked to green tea products. Cases with green tea alone all resolved, but four of the twelve linked to multi-ingredient products needed a liver transplant [36].
 - **Ashwagandha (Withania somnifera):** A case series of five patients described jaundice and liver injury 2 to 12 weeks after starting ashwagandha supplements; none developed liver failure [37].
+- **AG1:** An analysis of US FDA adverse event reports from 2004 to 2025 found preliminary signals of raised liver enzymes for AG1, which the authors called flags for further investigation rather than confirmed risks [67].
 
-If you have liver disease, or are at risk of it, it may be wise to avoid products that do not disclose how much of these ingredients they contain.
+The 2015 review judged green tea mixed with other ingredients a major safety concern and advised against supplements that contain complex mixtures [36]. If you have liver disease, ask your doctor before taking a greens powder.
 
 ### 5.3 Autoimmune Disease
 
 Spirulina, Aph. flos-aquae, chlorella and alfalfa, all common in greens supplements, can stimulate the immune system in laboratory studies, and they have been linked with the onset or worsening of autoimmune disease [52][54][65]:
 
-- **Spirulina** raised production of inflammatory cytokines (interferon beta, TNF-alpha and interferon gamma) in blood cells taken from patients with dermatomyositis, an autoimmune condition that inflames the skin and muscles [53]. In one case report, a woman took a supplement containing Aph. flos-aquae and spirulina days before both the onset and a severe flare of dermatomyositis [54].
+- **Spirulina** raised production of inflammatory cytokines (interferon beta, TNF-alpha and interferon gamma) in blood cells taken from patients with dermatomyositis, an autoimmune condition that inflames the skin and muscles [53]. In one case report, a woman took a supplement containing Aph. flos-aquae and spirulina days before both the onset and a severe flare of dermatomyositis [54]. A Japanese case report described inflammatory muscle disease with a widespread rash after spirulina supplements [55].
 - **Alfalfa** contains L-canavanine, which can take the place of L-arginine when the body builds proteins, and the result is faulty proteins. Lupus-like autoimmunity was first reported in a volunteer eating alfalfa seed, and a few cases of lupus starting or flaring on alfalfa tablets have been reported, though the link remains controversial [17].
 - **Chlorella** raised natural killer cell activity and interferon-gamma in a trial of healthy adults [30], which could be harmful for people with autoimmune conditions.
 
@@ -282,7 +282,7 @@ Immune-stimulating supplements may worsen existing autoimmune disease or trigger
 
 **BMAA concern:** Some cyanobacteria can make the neurotoxin beta-methylamino-L-alanine (BMAA) [57]. In vervet monkeys, chronic dietary BMAA caused brain changes seen in Alzheimer's disease, namely neurofibrillary tangles and amyloid deposits [56]. A study of ten spirulina samples (six pure samples from two suppliers, plus four multi-ingredient products) found no detectable BMAA [57].
 
-**Aph. flos-aquae contamination:** Of the algae tested in the German study, only Aph. flos-aquae products contained microcystins, and consumers have reported adverse health effects after taking such products [9]. The 2017 study found cyanotoxins above tolerable daily intake values in some Aph. flos-aquae and spirulina products (Section 2.3) [33]. Products containing this ingredient may pose a risk that outweighs any purported benefit.
+**Aph. flos-aquae contamination:** Of the algae tested in the German study, only Aph. flos-aquae products contained microcystins, and the authors noted that consumers have reported adverse health effects after taking cyanobacterial products [9]. The 2017 study found cyanotoxins above tolerable daily intake values in 8 of 18 algae products (Section 2.3) [33]. Microcystins can harm the liver: in one case report, a chlorella supplement contaminated with a microcystin was linked, along with turmeric and chemotherapy, to acute toxic hepatitis [69]. Products containing this ingredient may pose a risk that outweighs any purported benefit.
 
 **Bacterial contamination:** In 2025, a Salmonella outbreak linked to moringa leaf powder and super greens supplements sold at Sam's Club sickened at least 11 people [59]. In January 2026, Superfoods Inc. (dba Live it Up) issued a voluntary nationwide recall of all Live It Up Super Greens powders due to possible Salmonella contamination, linked to a multistate outbreak resulting in 45 reported illnesses and 12 hospitalizations across 21 states [60][61]. These events underscore the importance of selecting products from manufacturers with rigorous quality control and third-party testing.
 
@@ -312,7 +312,7 @@ Pregnant and breastfeeding individuals should consult a healthcare provider befo
 
 ### 6.1 Vitamin K and Warfarin
 
-This is the most clinically significant drug interaction associated with greens powders. Alfalfa, kale, spinach, and other green leafy ingredients are sources of vitamin K [16]. Warfarin (Coumadin) works against vitamin K, so sudden changes in vitamin K intake can strengthen or weaken its anticoagulant effect [66].
+This is the most clinically significant drug interaction associated with greens powders. Alfalfa, kale, spinach, and other green leafy ingredients are sources of vitamin K [16]. Chlorella is rich in vitamin K too, and in one case report warfarin worked less well after a patient started taking it [68]. Warfarin (Coumadin) works against vitamin K, so sudden changes in vitamin K intake can strengthen or weaken its anticoagulant effect [66].
 
 Check the label for vitamin K. If you take warfarin, talk to your doctor before starting any greens supplement, and keep your vitamin K intake consistent [66].
 
@@ -400,7 +400,7 @@ The nutrients found in greens powders are available — often in more bioavailab
 
 [6] U.S. Food and Drug Administration. "Dietary Supplements." [https://www.fda.gov/food/dietary-supplements](https://www.fda.gov/food/dietary-supplements)
 
-[8] Al-Dhabi NA. "Heavy metal analysis in commercial Spirulina products for safety." *Saudi J Biol Sci*. 2013;20(4):383-389. doi: [10.1016/j.sjbs.2013.04.006](https://doi.org/10.1016/j.sjbs.2013.04.006)
+[8] Al-Dhabi NA. "Heavy metal analysis in commercial Spirulina products for human consumption." *Saudi J Biol Sci*. 2013;20(4):383-389. doi: [10.1016/j.sjbs.2013.04.006](https://doi.org/10.1016/j.sjbs.2013.04.006). PMID: [24235875](https://pubmed.ncbi.nlm.nih.gov/24235875/)
 
 [9] Heussner AH et al. "Toxin content and cytotoxicity of algal dietary supplements." *Toxicol Appl Pharmacol*. 2012;265(2):263-271. doi: [10.1016/j.taap.2012.10.005](https://doi.org/10.1016/j.taap.2012.10.005). PMID: [23064102](https://pubmed.ncbi.nlm.nih.gov/23064102/)
 
@@ -456,7 +456,7 @@ The nutrients found in greens powders are available — often in more bioavailab
 
 [35] Ianiro G et al. "Digestive Enzyme Supplementation in Gastrointestinal Diseases." *Curr Drug Metab*. 2016;17(2):187-193. doi: [10.2174/138920021702160114150137](https://doi.org/10.2174/138920021702160114150137)
 
-[36] Mazzanti G et al. "Hepatotoxicity of green tea: an update." *Arch Toxicol*. 2015;89(8):1175-1191. doi: [10.1007/s00204-015-1521-x](https://doi.org/10.1007/s00204-015-1521-x)
+[36] Mazzanti G et al. "Hepatotoxicity of green tea: an update." *Arch Toxicol*. 2015;89(8):1175-1191. doi: [10.1007/s00204-015-1521-x](https://doi.org/10.1007/s00204-015-1521-x). PMID: [25975988](https://pubmed.ncbi.nlm.nih.gov/25975988/)
 
 [37] Bjornsson HK et al. "Ashwagandha-induced liver injury: A case series from Iceland and the US Drug-Induced Liver Injury Network." *Liver Int*. 2020;40(4):825-829. doi: [10.1111/liv.14393](https://doi.org/10.1111/liv.14393)
 
@@ -490,6 +490,8 @@ The nutrients found in greens powders are available — often in more bioavailab
 
 [54] Lee AN, Werth VP. "Activation of autoimmunity following use of immunostimulatory herbal supplements." *Arch Dermatol*. 2004;140(6):723-727. doi: [10.1001/archderm.140.6.723](https://doi.org/10.1001/archderm.140.6.723)
 
+[55] Konno T et al. "A case of inflammatory myopathy with widely skin rash following use of supplements containing Spirulina." *Rinsho Shinkeigaku*. 2011;51(5):330-333. doi: [10.5692/clinicalneurol.51.330](https://doi.org/10.5692/clinicalneurol.51.330). PMID: [21706829](https://pubmed.ncbi.nlm.nih.gov/21706829/)
+
 [56] Cox PA et al. "Dietary exposure to an environmental toxin triggers neurofibrillary tangles and amyloid deposits in the brain." *Proc Biol Sci*. 2016;283(1823):20152397. doi: [10.1098/rspb.2015.2397](https://doi.org/10.1098/rspb.2015.2397). PMID: [26791617](https://pubmed.ncbi.nlm.nih.gov/26791617/)
 
 [57] McCarron P et al. "Analysis of beta-N-methylamino-L-alanine (BMAA) in spirulina-containing supplements by liquid chromatography-tandem mass spectrometry." *Aquat Biosyst*. 2014;10:5. doi: [10.1186/2046-9063-10-5](https://doi.org/10.1186/2046-9063-10-5)
@@ -505,3 +507,9 @@ The nutrients found in greens powders are available — often in more bioavailab
 [65] Bax CE et al. "Environmental triggers of dermatomyositis: a narrative review." *Ann Transl Med*. 2021;9(5):434. doi: [10.21037/atm-20-3719](https://doi.org/10.21037/atm-20-3719). PMID: [33842655](https://pubmed.ncbi.nlm.nih.gov/33842655/)
 
 [66] NIH Office of Dietary Supplements. "Vitamin K -- Health Professional Fact Sheet." [https://ods.od.nih.gov/factsheets/VitaminK-HealthProfessional/](https://ods.od.nih.gov/factsheets/VitaminK-HealthProfessional/)
+
+[67] Farquhar H. "Disproportionality analysis of dietary supplement adverse events in the FDA CAERS database, 2004-2025." *Food Chem Toxicol*. 2026;215:116225. doi: [10.1016/j.fct.2026.116225](https://doi.org/10.1016/j.fct.2026.116225). PMID: [42323077](https://pubmed.ncbi.nlm.nih.gov/42323077/)
+
+[68] Ohkawa S et al. "Warfarin therapy and chlorella." *Rinsho Shinkeigaku*. 1995;35(7):806-807. PMID: [8777808](https://pubmed.ncbi.nlm.nih.gov/8777808/)
+
+[69] Costa ML et al. "Hepatotoxicity induced by paclitaxel interaction with turmeric in association with a microcystin from a contaminated dietary supplement." *Toxicon*. 2018;150:207-211. doi: [10.1016/j.toxicon.2018.05.022](https://doi.org/10.1016/j.toxicon.2018.05.022). PMID: [29857089](https://pubmed.ncbi.nlm.nih.gov/29857089/)
