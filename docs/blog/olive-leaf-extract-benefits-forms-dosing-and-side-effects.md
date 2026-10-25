@@ -19,10 +19,11 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Key safety points
 
+- In lab tests on human blood, olive leaf extract reduced platelet activity; whether it does so in people is unknown [54]. If you take a blood thinner or antiplatelet medicine, ask your doctor first.
 - Olive leaf extract lowered HbA1c and fasting insulin in a type 2 diabetes trial [29], and in diabetic rats it strengthened the glucose-lowering effect of glyburide [53]. If you take insulin or other diabetes medicines, talk to your doctor first and check your glucose more often.
-- It lowered blood pressure in trials, and in one the drop was close to that with low-dose captopril [17][25]. If you take blood pressure medicines or have low blood pressure, ask your doctor first and watch for dizziness, light-headedness or fainting.
-- People with olive pollen allergy may also react to olive products; one man with olive pollen allergy developed itching and hives after eating olives [52]. For trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
-- In a six-month trial, the extract was well tolerated [33].
+- It lowered blood pressure in trials, and in one the drop was similar to captopril (12.5 to 25 mg twice daily) [17][25]. If you take blood pressure medicines or have low blood pressure, ask your doctor first and watch for dizziness, light-headedness or fainting.
+- People with olive pollen allergy may also react to olives, and possibly to olive leaf extract; one man with olive pollen allergy developed itching and hives after eating olives [52]. For trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- In a six-month trial, gastrointestinal complaints (abdominal pain, nausea, dyspepsia) were the most common side effects in both the extract and placebo groups [33].
 
 ## Brad's videos on this topic
 
@@ -44,17 +45,17 @@ Clinical research has focused on blood pressure, cholesterol and blood sugar, an
 
 Olive leaf extract is sold in several forms, which differ in strength and in how well they are standardized.
 
-**Capsules and Tablets:** The most common supplement form, and the form used in most of the trials described below. Trials used 250 mg [27][28] to 1,000 mg [25] of extract a day.
+**Capsules and Tablets:** The form used in most of the trials described below. Trials used 250 mg [27][28] to 1,000 mg [25] of extract a day.
 
-**Liquid Extracts and Tinctures:** Liquid concentrates and alcohol-based tinctures are also sold. Their oleuropein content varies, so check the label.
+**Liquid Extracts and Tinctures:** Liquid concentrates and alcohol-based tinctures are also sold, with widely varying oleuropein content.
 
-**Teas and Infusions:** Dried olive leaves can be steeped in hot water. Tea generally delivers less, and more variable, oleuropein than a standardized extract.
+**Teas and Infusions:** Dried olive leaves can be steeped in hot water.
 
 **Topical Preparations:** A 2% olive leaf extract cream has been tested for cold sores (herpes simplex labialis) [18]. Creams act on the skin and are not meant for whole-body effects.
 
 ### Oleuropein Standardization
 
-Extracts differ widely in their oleuropein content, so the milligrams of extract on a label say little on their own. Compare products by the milligrams of oleuropein per serving. Trials that reported oleuropein content gave from 51.1 mg [14] to 136 mg [17] of oleuropein a day.
+Extracts are made to different strengths, and their mix of phenolic compounds also varies, so the milligrams of extract on a label say little on their own. Compare products by the milligrams of oleuropein per serving. Trials that reported oleuropein content gave from 51.1 mg [14] to 136 mg [17] of oleuropein a day.
 
 ### Key Bioactive Compounds
 
@@ -66,25 +67,17 @@ Olive leaf extract contains several classes of bioactive compounds:
 - **Flavonoids:** Including luteolin 7-O-glucoside, luteolin 4'-O-glucoside, apigenin 7-O-glucoside and rutin [35].
 - **Triterpenes:** Reported among the compounds isolated from the olive tree [8].
 
-### Factors Affecting Composition
-
-The phenolic make-up of olive leaf products varies, which is one more reason to compare them by oleuropein content (see Oleuropein Standardization above).
-
-### Synergistic Effects
-
-Whether the compounds in olive leaf extract work better together than alone is unknown; no clinical trial has compared a whole extract with isolated oleuropein.
-
 ## 3. Evidence for Health Benefits
 
 ### Blood Pressure
 
-Olive leaf extract's possible blood pressure effect has been studied in several clinical trials. In isolated rabbit hearts and rat heart cells, an olive leaf extract blocked L-type calcium channels [24], the target of blood pressure drugs such as diltiazem and verapamil.
+Olive leaf extract's possible blood pressure effect has been studied in several clinical trials. In isolated rabbit hearts and rat heart cells, an olive leaf extract blocked L-type calcium channels [24], the target of calcium channel blocker medicines.
 
-**Meta-analysis of 5 RCTs (n=325, 2021):** A systematic review of five trials in adults aged 18 to 80 years with prehypertension or hypertension found that 500 mg a day of olive leaf extract, compared with placebo or no treatment, lowered systolic blood pressure over at least 8 weeks (MD -5.78 mmHg, 95% CI -10.27 to -1.30), with no significant change in diastolic pressure. A 1,000 mg a day combined formulation showed no significant change, and a third comparison at 1,000 mg a day showed no significant difference (systolic -11.5 mmHg vs -13.7 mmHg) [12]; these figures match the captopril-controlled trial below [25]. The authors noted the small number of participants [12].
+**Meta-analysis of 5 RCTs (n=325, 2021):** A systematic review of five trials in adults aged 18 to 80 years with prehypertension or hypertension found that 500 mg a day of olive leaf extract, compared with placebo or no treatment, lowered systolic blood pressure over at least 8 weeks (MD -5.78 mmHg, 95% CI -10.27 to -1.30), with no significant change in diastolic pressure. A 1,000 mg a day combined formulation showed no significant change, and a third comparison at 1,000 mg a day showed no significant difference (systolic -11.5 mmHg vs -13.7 mmHg) [12]; the meta-analysis labels this comparison placebo, but its figures are those of the captopril trial [25]. The authors noted the small number of participants [12].
 
 **Olive leaf extract vs. captopril (2011):** In a double-blind, eight-week trial in stage 1 hypertension (olive group mean baseline systolic 149.3 mmHg, diastolic 93.9 mmHg), the extract (500 mg twice daily) lowered systolic blood pressure by 11.5 mmHg and diastolic by 4.8 mmHg from baseline, compared with 13.7 and 6.4 mmHg with captopril (12.5 to 25 mg twice daily); the two groups did not differ significantly. The trial had no placebo arm [25].
 
-**Olive leaf extract and 24-hour ambulatory BP (n=60, 2017):** In a crossover trial, 60 men with prehypertension (mean age 45) (systolic 121 to 140 mmHg, diastolic 81 to 90 mmHg) took an extract providing 136 mg of oleuropein and 6 mg of hydroxytyrosol a day for six weeks. It lowered 24-hour systolic blood pressure by 3.33 mmHg and diastolic by 2.42 mmHg compared with a polyphenol-free control. Ambulatory monitoring is considered more reliable than office readings [17].
+**Olive leaf extract and 24-hour ambulatory BP (n=60, 2017):** In a crossover trial, 60 men with prehypertension (mean age 45) (systolic 121 to 140 mmHg, diastolic 81 to 90 mmHg) took an extract providing 136 mg of oleuropein and 6 mg of hydroxytyrosol a day for six weeks. It lowered 24-hour systolic blood pressure by 3.33 mmHg and diastolic by 2.42 mmHg compared with a polyphenol-free control [17].
 
 **Overweight men (n=46, 2013):** In a 12-week crossover trial, olive leaf polyphenols did not change 24-hour ambulatory blood pressure [14].
 
@@ -166,7 +159,7 @@ Early evidence, mostly from creams, suggests olive leaf extract may help herpes 
 
 **Genital herpes case report (2021):** A case report described treating genital herpes with olive leaf extract [42].
 
-**Overall assessment:** Preliminary evidence suggests topical olive leaf extract may help cold sores, with one small trial favouring it over acyclovir cream. Oral supplements have not been shown to help herpes infections. Larger, independent trials are needed.
+**Overall assessment:** Preliminary evidence suggests topical olive leaf extract may help cold sores, with one small trial favouring it over acyclovir cream. Larger, independent trials are needed.
 
 ### Antioxidant and Anti-inflammatory Activity
 
@@ -197,7 +190,7 @@ Clinical trials of olive leaf extract have used a range of doses. Where reported
 | Blood sugar/HbA1c (type 2 diabetes) | Not stated | 500 mg extract tablet (once daily) | 14 weeks | Wainstein et al. 2012 [29] |
 | Insulin sensitivity (overweight men) | 51.1 mg oleuropein | Olive leaf extract capsules daily | 12 weeks | de Bock et al. 2013 [14] |
 | Bone metabolism (postmenopausal) | Not stated | 250 mg extract (Bonolive) once daily | 12 months | Filip et al. 2015 [27] |
-| Knee pain | 50 mg oleuropein per capsule | 125 mg extract (Bonolive) twice daily | 6 months | Horcajada et al. 2022 [33] |
+| Knee pain | 50 mg per capsule, twice daily | 125 mg extract (Bonolive) twice daily | 6 months | Horcajada et al. 2022 [33] |
 | Cold duration (athletes) | 100 mg oleuropein | Equiv. 20 g olive leaf, once daily | 9 weeks | Somerville et al. 2019 [36] |
 | Cold sores (topical) | N/A (topical 2%) | Cream, 5x/day topically | 6 days | Toulabi et al. 2022 [18] |
 
@@ -206,16 +199,12 @@ Clinical trials of olive leaf extract have used a range of doses. Where reported
 Based on the available clinical evidence:
 
 - **Doses used in trials:** 250 mg [27][28] to 1,000 mg [25] of extract a day; trials that reported oleuropein content gave 51.1 mg [14] to 136 mg [17] of oleuropein a day.
-- **Dosing frequency:** Some trials split the daily dose in two (500 mg twice daily [25]; one 125 mg capsule twice a day [33]); others used one daily dose [29].
+- **Dosing frequency:** The captopril trial gave 500 mg twice daily [25] and the knee trial one 125 mg capsule twice a day [33]; the diabetes trial used one 500 mg tablet a day [29].
 - **Duration:** Clinical trials have ranged from 6 weeks to 12 months. Longer-term safety data are limited.
 
 ### How to Read a Supplement Label
 
-The oleuropein content is critical for comparing products. A product listing "500 mg olive leaf extract" tells you very little without the oleuropein standardization percentage:
-
-- 500 mg extract at 40% oleuropein = 200 mg oleuropein
-- 500 mg extract at 20% oleuropein = 100 mg oleuropein
-- 500 mg extract at 6% oleuropein = 30 mg oleuropein
+Compare products by their oleuropein content. The milligrams of extract alone say little without the percentage of oleuropein. For example, 400 mg of an extract that is 25% oleuropein provides 100 mg of oleuropein.
 
 ## 5. Safety and Side Effects
 
@@ -227,13 +216,13 @@ In a six-month trial, olive leaf extract was well tolerated [33]. Most trials we
 
 The most commonly reported side effects are gastrointestinal:
 
-- **Gastrointestinal symptoms:** Abdominal pain, nausea, indigestion and stomach ache have been reported.
-- **Headaches:** Reported occasionally, particularly in the first days of use.
-- **Allergic reactions:** People with olive pollen allergy may also react to olive products; one man with olive pollen allergy developed itching of the palate and widespread hives after eating olives [52]. For trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- **Gastrointestinal symptoms:** In the six-month knee trial, gastrointestinal complaints (abdominal pain, nausea, dyspepsia) were the most common adverse events in both groups: 7 of the 47 adverse events with olive leaf extract and 6 of the 67 with placebo [33].
+- **Headaches:** Headaches may occur, though how often is unknown.
+- **Allergic reactions:** People with olive pollen allergy may also react to olives, and possibly to olive leaf extract; one man with olive pollen allergy developed itching of the palate and widespread hives after eating olives [52]. For trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 ### Toxicology
 
-Safety data in people come from short trials, the longest lasting 12 months [27].
+In a 90-day study in rats, an olive leaf extract (Bonolive) caused no deaths or toxic effects, and the highest dose tested, 1,000 mg/kg body weight a day, was the no observed adverse effect level. Laboratory and mouse tests found no mutagenic or genotoxic activity up to the limit dose of 2,000 mg/kg body weight a day [55]. Safety data in people come from short trials, the longest lasting 12 months [27].
 
 ### Hypotension Risk
 
@@ -261,7 +250,7 @@ Olive leaf extract may add to the blood pressure-lowering effects of antihyperte
 - Beta-blockers
 - Diuretics
 
-In one trial, the drop in blood pressure with olive leaf extract was close to that with low-dose captopril [25], so additive effects are plausible. Blood pressure should be monitored, particularly when starting olive leaf extract while already on blood pressure medicines.
+In one trial, the drop in blood pressure with olive leaf extract was similar to captopril (12.5 to 25 mg twice daily) [25], so additive effects are plausible. Blood pressure should be monitored, particularly when starting olive leaf extract while already on blood pressure medicines.
 
 ### Antidiabetic Medications
 
@@ -269,7 +258,7 @@ Olive leaf extract may add to the effects of insulin, sulfonylureas, metformin o
 
 ### Blood Thinners and Antiplatelet Agents
 
-If you take prescription medicines, check with your doctor or pharmacist before starting.
+In lab tests on human blood, olive leaf extract reduced platelet activity; whether it does so in people is unknown [54]. If you take a blood thinner or antiplatelet medicine, ask your doctor first. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Cytochrome P450 Interactions
 
@@ -287,11 +276,7 @@ Extra-virgin olive oil contains some of the same phenolic compounds, including o
 
 ### Olives
 
-Table olives (both green and black) contain oleuropein in varying amounts depending on the curing and processing method. Green olives generally retain more oleuropein than black olives, as the curing process (brine, water, or lye treatment) progressively degrades oleuropein. Even so, the amounts are substantially lower than in concentrated leaf extracts.
-
-### Global Production
-
-Olive leaves are mostly collected as a by-product of olive harvesting and pruning.
+Olive fruit is a main part of the Mediterranean diet [6], but its polyphenols differ in structure from those in olive leaf [4], so table olives are not a stand-in for olive leaf extract.
 
 ## 8. References
 
@@ -356,3 +341,7 @@ Olive leaves are mostly collected as a by-product of olive harvesting and prunin
 [52] Unsel M, Ardeniz O, Mete N, et al. "Food allergy due to olive." *J Investig Allergol Clin Immunol*. 2009;19(6):497-499. PMID: [20128426](https://pubmed.ncbi.nlm.nih.gov/20128426/)
 
 [53] Abdel-Kader MS, Soliman GA, Abdel-Rahman RF, et al. "Effect of olive leaves extract on the antidiabetic effect of glyburide for possible herb-drug interaction." *Saudi Pharm J*. 2019;27(8):1182-1195. PMID: 31885478. doi: [10.1016/j.jsps.2019.10.001](https://doi.org/10.1016/j.jsps.2019.10.001)
+
+[54] Singh I, Mok M, Christensen AM, Turner AH, Hawley JA. "The effects of polyphenols in olive leaves on platelet function." *Nutr Metab Cardiovasc Dis*. 2008;18(2):127-132. PMID: 17346951. doi: [10.1016/j.numecd.2006.09.001](https://doi.org/10.1016/j.numecd.2006.09.001)
+
+[55] Clewell AE, Beres E, Vertesi A, et al. "A Comprehensive Toxicological Safety Assessment of an Extract of Olea Europaea L. Leaves (Bonolive)." *Int J Toxicol*. 2016;35(2):208-221. PMID: 26658007. doi: [10.1177/1091581815619764](https://doi.org/10.1177/1091581815619764)
