@@ -19,12 +19,12 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Key safety points
 
+- Heavy use can cause dangerous heart rhythms, paralysis and death [50][62]. If you take licorice regularly or in large amounts and get palpitations, chest pain, severe headache or muscle weakness, stop it and call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [52][53][62].
 - Licorice can lower potassium. With thiazide or loop diuretics the risk of severe low potassium rises, and low potassium from licorice has caused digoxin toxicity [4][62][66].
-- Licorice was reported to strengthen the effect of warfarin, and glycyrrhizin directly inhibits two blood clotting factors [4][48]. If you take warfarin or another anticoagulant, ask your doctor first.
+- A 2012 review reported that licorice may strengthen warfarin's effect, and glycyrrhizin is reported to inhibit two blood clotting factors [4][48]. In rats, Chinese licorice sped up warfarin clearance, so the direction is uncertain [72]. If you take warfarin or another anticoagulant, ask your doctor first.
 - Corticosteroids such as prednisone add to licorice's effect, and blood pressure medicines may hide the rise in blood pressure it causes [62][67].
-- Heavy use can cause dangerous heart rhythms, paralysis and death [50][62]. If you have used licorice and get palpitations, fainting, chest pain or sudden weakness, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 - Avoid regular licorice in pregnancy: heavy intake was linked to more than twice the risk of preterm birth [61]. Those with hypertension, heart disease, or kidney or liver failure are more sensitive [62][64].
-- The EU upper limit for glycyrrhizin is 100 mg/day, but a 2024 trial raised blood pressure at that dose [4][19].
+- The EU Scientific Committee on Food's upper limit for regular intake of glycyrrhizin is 100 mg/day, but a 2024 trial raised blood pressure at that dose [4][19][70].
 - The DGL extract GutGard was well tolerated in short trials, with no serious adverse events reported [22][23].
 
 ## Brad's videos on this topic
@@ -66,7 +66,7 @@ DGL products have had most of the glycyrrhizin removed [4]. Key forms include:
 
 Some DGL products are standardized to flavonoid content rather than simply listing total DGL weight:
 
-- **GutGard** (by Natural Remedies Private Limited): A flavonoid-rich DGL extract standardized to at least 3.5% glabridin and at least 10% total flavonoids, with no more than 3.0% glycyrrhizin [22]. It is the extract used in the recent reflux, dyspepsia and *H. pylori* trials, at 150 mg a day, given as 75 mg twice daily in the dyspepsia trial [22][23][37].
+- **GutGard** (by Natural Remedies Private Limited): A flavonoid-rich DGL extract standardized to at least 3.5% glabridin and at least 10% total flavonoids, with no more than 3.0% glycyrrhizin [22]. It is the extract used in the recent reflux, dyspepsia and *H. pylori* trials, at 150 mg a day, given as 75 mg twice daily in the reflux and dyspepsia trials [22][23][37].
 - **Non-standardized DGL:** Products that list only a total DGL weight have not been tested in these trials, so the GutGard results may not apply to them.
 
 ### Comparison Table
@@ -74,7 +74,7 @@ Some DGL products are standardized to flavonoid content rather than simply listi
 | Form | Glycyrrhizin Content | Primary Uses | Key Considerations |
 |------|:---:|------|------|
 | Licorice root extract | Varies; one supplement had at least 20% glycyrrhizic acid [49] | Traditional medicine, supplements | Can raise blood pressure and lower potassium [62] |
-| Licorice tea | Around 31.5 mg per 250 mL cup on average [51] | Herbal tea | Case reports of low potassium and high blood pressure [18][51] |
+| Licorice tea | Around 31.5 mg of glycyrrhetinic acid per 250 mL cup on average [51] | Herbal tea | Case reports of low potassium and high blood pressure [18][51] |
 | US soft candy | Up to 3.1% by weight [4] | Confectionery | 100 mg glycyrrhizic acid a day raised blood pressure [19] |
 | GutGard (standardized DGL) | No more than 3.0% [22] | Reflux, dyspepsia, *H. pylori* trials | Trial data mostly for this extract [22][23][37] |
 | Other DGL products | Varies | Heartburn, stomach complaints | GutGard trial results may not apply [22] |
@@ -117,7 +117,7 @@ Licorice was first used for ulcers in the 1940s, when Revers reported benefit bu
 
 **Historical context:** DGL is not a substitute for standard ulcer treatment, which today targets stomach acid and, where present, *H. pylori* infection.
 
-**Synthesis:** Ulcer trials from the 1960s to the 1980s give mixed results: DGL matched cimetidine in one trial and did no better than placebo in another [32][60]. The trials are old and mostly small.
+**Synthesis:** Ulcer trials from the 1960s to the 1980s give mixed results: Caved-S, a branded tablet, matched cimetidine in one trial and did no better than placebo in another [32][60]. These results apply to that product, not to DGL products in general. The trials are old and mostly small.
 
 ### Helicobacter pylori
 
@@ -179,7 +179,7 @@ DGL doses come from a few trials, mostly of GutGard:
 
 | Indication | Dose | Frequency | Duration | Form | Notes |
 |-----------|------|-----------|----------|------|-------|
-| GERD / heartburn | 150 mg/day standardized extract (GutGard) | Split not stated | 28 days | Extract | 2025 trial sponsored by the maker [22] |
+| GERD / heartburn | 75 mg standardized extract (GutGard) | Twice daily (150 mg/day) | 28 days | Extract | 2025 trial sponsored by the maker [22] |
 | Functional dyspepsia | 75 mg standardized extract (GutGard) | Twice daily | 30 days | Extract | Symptoms improved vs placebo [23] |
 | Gastric ulcers | 760 mg DGL (Caved-S) | Three times daily | 4 weeks | Tablets | No healing effect vs placebo [32] |
 | Gastric ulcers | Caved-S, six tablets | Daily | 6 to 12 weeks | Tablets | Similar healing to cimetidine [60] |
@@ -194,13 +194,13 @@ DGL doses come from a few trials, mostly of GutGard:
 
 Use regular licorice with great caution, because glycyrrhizin can raise blood pressure and lower potassium [62].
 
-**European Commission Scientific Committee on Food recommendation:** In April 2003 the Scientific Committee on Food confirmed an upper limit for glycyrrhizin of 100 mg/day, based on human volunteer studies [4][62]. Sensitivity varies with age, other medicines, high blood pressure, and kidney or liver failure [62]. Constipation and low blood albumin also raise exposure [63].
+**European Commission Scientific Committee on Food recommendation:** In April 2003 the Scientific Committee on Food confirmed an upper limit for regular intake of glycyrrhizin of 100 mg/day, drawing on human volunteer studies, and judged that it protects most people [4][62][70]. It added that the limit may not protect people with lower 11beta-HSD2 activity, slow gut transit, high blood pressure, or conditions that upset electrolyte or fluid balance [70]. Sensitivity also varies with age, other medicines, and kidney or liver failure [62]. Constipation and low blood albumin also raise exposure [63].
 
 **More conservative limit:** A 1993 review treated 100 mg glycyrrhizic acid a day as the lowest dose that causes harm and, applying a safety factor of 10, proposed a daily intake of 10 mg as safe for most healthy adults [47].
 
-**FDA limits:** The US FDA lists licorice as generally recognized as safe in foods within set maximum levels, such as 3.1% glycyrrhizin in soft candy [4].
+**FDA limits:** The US FDA lists licorice as generally recognized as safe in foods within set maximum levels, such as 3.1% glycyrrhizin in soft candy [4]. Its consumer advice warns that people aged 40 or older who eat 2 ounces of black licorice daily for two weeks or more could end up in hospital with an irregular heart rhythm; potassium usually recovers, with no lasting harm, once they stop [71].
 
-**Blood pressure effects in healthy young adults:** In a 2024 randomized crossover trial, 28 healthy volunteers with a median age of 24.0 ate licorice containing 100 mg glycyrrhizic acid a day for 2 weeks [19]. Home systolic blood pressure rose by 3.1 mm Hg, compared with -0.3 mm Hg on the control product, and renin and aldosterone fell [19]. In a 2014 study, 290 to 370 mg of glycyrrhizin a day for two weeks raised blood pressure by 7/4 mm Hg [65].
+**Blood pressure effects in healthy young adults:** In a 2024 nonblinded randomized crossover trial, 28 healthy volunteers with a median age of 24.0 ate licorice containing 100 mg glycyrrhizic acid a day for 2 weeks [19]. Home systolic blood pressure rose by 3.1 mm Hg, compared with -0.3 mm Hg on the control product, and renin and aldosterone fell [19]. In a 2014 study, 290 to 370 mg of glycyrrhizin a day for two weeks raised blood pressure by 7/4 mm Hg [65].
 
 ### How to Read a Licorice/DGL Supplement Label
 
@@ -226,7 +226,7 @@ Regular licorice can cause harm at doses reached through supplements, candy or t
 - Metabolic alkalosis
 - Reduced consciousness or coma [47][49][62]
 
-In a 2023 review of 104 case reports, 84 people needed hospital admission [62]. If you have used licorice and develop palpitations, fainting, chest pain, a severe headache or sudden muscle weakness, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+In a 2023 review of 104 case reports, 84 people needed hospital admission [62]. If you take licorice regularly or in large amounts and get palpitations, chest pain, severe headache or muscle weakness, stop it and call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [52][53][62].
 
 **Case reports illustrating severity:**
 
@@ -250,7 +250,7 @@ DGL appears well tolerated in trials [22][23][32].
 
 **Long-term safety:** The longest DGL data come from a year of maintenance treatment with Caved-S in a gastric ulcer trial [60]. Longer use has little trial data.
 
-### Populations Who Should Avoid All Forms of Licorice (Including DGL)
+### Who Should Avoid Regular Licorice or Ask First
 
 These groups should avoid regular licorice or ask their doctor before using any licorice product. Most of the evidence concerns regular licorice; DGL contains much less glycyrrhizin [22][62]:
 
@@ -260,7 +260,7 @@ These groups should avoid regular licorice or ask their doctor before using any 
 - **Pregnant women:** heavy glycyrrhizin intake (500 mg/week and above) was linked to more than twice the risk of preterm birth, and for early preterm birth the odds ratio was 3.07 (95% confidence interval: 1.17, 8.05) [61]
 - **Nursing women:** ask your doctor before using licorice while breastfeeding
 - **People with hormone-sensitive conditions** (e.g., breast cancer, endometriosis): licorice has estrogen-like activity, so ask your doctor first [13][62]
-- **Older adults:** 11beta-HSD2 activity falls with age, which raises the risk [63]
+- **Older adults:** 11beta-HSD2 activity falls with age, which may raise the risk, though a 2023 review of 104 cases did not find age a clear risk factor [62][63]
 
 ### How Quickly Effects Appear and Resolve
 
@@ -276,9 +276,9 @@ Blood pressure rose within 2 weeks at 100 mg glycyrrhizic acid a day [19]. In ca
 | **Diuretics** (furosemide, thiazides) | Thiazide and loop diuretics add to potassium loss | Higher risk of severe low potassium [62][63] |
 | **Digoxin** | Low potassium from licorice can cause digoxin toxicity | Reported case of digoxin toxicity with heart failure [4][66] |
 | **Antihypertensives** | Licorice raises blood pressure; these drugs may hide the rise | Low potassium reported with licorice plus antihypertensives [62][67] |
-| **Warfarin and anticoagulants** | One study found licorice strengthened warfarin's effect; glycyrrhizin directly inhibits clotting factors Xa and thrombin | Ask your doctor before combining [4][48] |
+| **Warfarin and anticoagulants** | A 2012 review reported that licorice may strengthen warfarin's effect, and glycyrrhizin is reported to inhibit clotting factors Xa and thrombin; in rats, Chinese licorice (Gan Cao) sped up warfarin clearance | Direction uncertain; ask your doctor before combining [4][48][72] |
 | **Oral contraceptives** | A 2023 review advises avoiding glycyrrhetinic acid with oral contraceptives | Avoid combining [62] |
-| **Spironolactone** | Potassium-sparing drugs such as spironolactone may prevent licorice-induced low potassium | Spironolactone is used to treat licorice toxicity [51][62] |
+| **Spironolactone** | Potassium-sparing drugs, such as aldosterone blockers, may prevent licorice-induced low potassium [62] | Mineralocorticoid receptor blockers are used to treat licorice toxicity; ask your doctor before combining [51][69] |
 | **SGLT2 inhibitors** | Severe low potassium from licorice tea in a woman taking an SGLT2 inhibitor | The combination made the diagnosis harder [51] |
 | **Laxatives** | Some herbal laxatives contain licorice; diarrhoea adds to potassium loss | Pseudohyperaldosteronism and digoxin toxicity reported [4][66][68] |
 
@@ -299,7 +299,7 @@ Licorice is found in candy, drinks, breath fresheners, tobacco, cosmetics and so
 | Source | Typical Glycyrrhizin Content | Notes |
 |--------|:---:|-------|
 | Black licorice candy | Up to 3.1% by weight in US soft candy [4] | 100 mg glycyrrhizic acid a day raised blood pressure [19] |
-| Licorice tea | Around 31.5 mg per 250 mL cup on average [51] | Case reports of low potassium and high blood pressure [18][51] |
+| Licorice tea | Around 31.5 mg of glycyrrhetinic acid per 250 mL cup on average [51] | Case reports of low potassium and high blood pressure [18][51] |
 | Homemade licorice root drinks | Not measured | Hypertensive emergency after 1 to 2 glasses a day for 2 weeks [52] |
 | Herbal laxatives | Variable | Pseudohyperaldosteronism reported [68] |
 | Chinese herbal medicine formulations | Variable | A daily supplement whose label listed licorice root at 800 mg preceded a brain bleed [48] |
@@ -308,6 +308,7 @@ Licorice is found in candy, drinks, breath fresheners, tobacco, cosmetics and so
 
 - **Licorice root in herbal teas** can be a hidden source of glycyrrhizin; two case reports involved herbal teas [18][51]. Check ingredient lists for *Glycyrrhiza glabra* or "licorice root" if you are avoiding glycyrrhizin.
 - **DGL** has most, but not all, of its glycyrrhizin removed [22].
+- **Licorice-flavoured sweets:** Many US "licorice" products contain no licorice at all; they use anise oil, which smells and tastes the same [71].
 
 ### Geographic and Cultural Context
 
@@ -398,3 +399,9 @@ Industry demand for licorice and other traditional medicinal plants, for use in 
 [68] Scali M, Pratesi C, Zennaro MC, et al. "Pseudohyperaldosteronism from liquorice-containing laxatives." *J Endocrinol Invest*. 1990;13(10):847-848. PMID: 2096161. doi: [10.1007/BF03349639](https://doi.org/10.1007/BF03349639)
 
 [69] Sabbadin C, Graziani A, Bavaresco A, et al. "Pseudohyperaldosteronism Due to Licorice: A Practice-Based Learning from a Case Series." *Int J Mol Sci*. 2024;25(13):7454. PMID: 39000561. doi: [10.3390/ijms25137454](https://doi.org/10.3390/ijms25137454)
+
+[70] Scientific Committee on Food. "Opinion of the Scientific Committee on Food on glycyrrhizinic acid and its ammonium salt." European Commission, SCF/CS/ADD/EDUL/225 Final, 10 April 2003. [ec.europa.eu/food/fs/sc/scf/out186_en.pdf](https://ec.europa.eu/food/fs/sc/scf/out186_en.pdf)
+
+[71] US Food and Drug Administration. "Black Licorice: Trick or Treat?" Consumer update, content current as of 6 November 2017. Archived copy: [web.archive.org](https://web.archive.org/web/20190506230403/https://www.fda.gov/consumers/consumer-updates/black-licorice-trick-or-treat)
+
+[72] Mu Y, Zhang J, Zhang S, et al. "Traditional Chinese medicines Wu Wei Zi (Schisandra chinensis Baill) and Gan Cao (Glycyrrhiza uralensis Fisch) activate pregnane X receptor and increase warfarin clearance in rats." *J Pharmacol Exp Ther*. 2006;316(3):1369-1377. PMID: 16267138. doi: [10.1124/jpet.105.094342](https://doi.org/10.1124/jpet.105.094342)
