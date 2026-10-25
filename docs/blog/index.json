@@ -3856,7 +3856,8 @@
     "publishedAt": "2025-06-03T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/huperzine-a-benefits-dosing-safety",
     "type": "reference",
-    "summary": "Reference on huperzine A: memory, cognitive function, Alzheimer's disease, vascular dementia. Adults with dementia or age-related memory concerns. Natural Huperzia serrata extract preferred; 50-400 mcg/day, cycling recommended. Always discuss with your doctor."
+    "summary": "Huperzine A, a cholinesterase inhibitor from Chinese club moss, for memory and Alzheimer's disease. Small, low-quality trials suggest benefit; the largest Western trial found 200 mcg twice daily did not help. Talk to your doctor first if you take dementia, heart-rate or anticholinergic drugs.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Doctor Reveals Why He Takes Glycine Every Day",
@@ -5143,7 +5144,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/gaba-supplement-evidence",
     "type": "reference",
-    "summary": "Reference on GABA: stress, relaxation, sleep, blood pressure, muscle mass. Limited evidence oral GABA crosses the blood-brain barrier; effects are modest. Dosing ranges 100-3,000 mg depending on use. Avoid in pregnancy and with alcohol. Always discuss with your doctor."
+    "summary": "GABA, the brain's main calming chemical, is sold for stress and sleep. A systematic review found limited evidence for stress and very limited evidence for sleep, and oral GABA may not reach the brain. Talk to your doctor first if you take blood pressure medicines or are pregnant.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Garlic: Benefits, Best Forms, Dosing, and Side Effects",
@@ -5339,7 +5341,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/lutein-zeaxanthin-eye-health-guide",
     "type": "reference",
-    "summary": "Reference on lutein and zeaxanthin: eye health, macular degeneration (AMD) prevention and slowing, blue light protection, and cataract risk reduction; food sources (leafy greens, egg yolk); dosing (10mg lutein/2mg zeaxanthin); and evidence quality. Always discuss with your doctor."
+    "summary": "Lutein and zeaxanthin are the eye pigments that replaced beta-carotene in the AREDS2 formula for intermediate AMD, without its lung cancer signal. They raise macular pigment; brain benefits are unproven. Talk to your doctor first if you smoke or are pregnant.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Lycopene: Benefits, Forms, Dosing, and Side Effects",
@@ -5470,7 +5473,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/milk-thistle-silymarin-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on milk thistle (silymarin): liver health, fatty liver, blood sugar in type 2 diabetes, drug-induced liver injury, menopausal hot flashes. Standardized extract 200 mg 2-3x/day. Warfarin interaction risk. Always discuss with your doctor."
+    "summary": "Milk thistle (silymarin) may lower blood sugar a little in type 2 diabetes, and liver enzymes in fatty liver disease, but NCCIH finds the evidence too weak for firm conclusions, and hepatitis C trials found no benefit. Talk to your doctor first if you take warfarin or diabetes medicines.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "N-Acetyl Cysteine (NAC): Benefits, Forms, Dosing, and Side Effects",
@@ -6994,7 +6998,8 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/phosphatidylserine-benefits-forms-dosing",
     "type": "reference",
     "product": "microvitamin",
-    "summary": "Reference on phosphatidylserine (PS): memory, cognitive decline, stress, cortisol reduction. Older adults with memory concerns; athletes managing exercise stress. Soy/sunflower forms (100-300 mg/day); PS-DHA conjugate shows more promise. Caution with blood thinners. Always discuss with your doctor."
+    "summary": "Reference on phosphatidylserine (PS) for memory, stress and exercise. Cow-brain PS helped memory in early trials; the FDA says soy PS may differ, and the one soy trial it weighed found no effect. Trials used 100 to 800 mg a day. Talk to your doctor first if you take prescription medicines.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Potassium: Benefits, Best Forms, Dosing, and Side Effects",
