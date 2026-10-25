@@ -19,11 +19,11 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Key safety points
 
-- Huperzine A blocks the same enzyme as donepezil, rivastigmine and galantamine, so combining them may add to cholinergic side effects [3][69]. Ask your doctor first if you take these, anticholinergic drugs or heart-rate-lowering drugs, or before a general anaesthetic [69][70].
-- Drugs of this kind raised hospital visits for fainting and slow heart rate in older people [68]. If you faint, or have a very slow pulse with dizziness, chest pain or breathlessness, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
-- Too much can cause cholinergic poisoning: sweating, vomiting, diarrhoea, dizziness, cramps and slurred speech [67]. For severe symptoms, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
-- Ask your doctor first if you have asthma or COPD, epilepsy or kidney disease [22][71][73].
-- With NSAID painkillers, drugs of this kind raised peptic ulcer risk more than NSAIDs alone [74].
+- Huperzine A blocks the same enzyme as donepezil, rivastigmine and galantamine, so combining them may add to cholinergic side effects [3][69]. Ask your doctor first if you take these, anticholinergic drugs, older antipsychotics or heart-rate-lowering drugs, or before a general anaesthetic [69][70].
+- Drugs of this kind were linked to more hospital visits for fainting and slow heart rate in older people with dementia [68]. If you faint, or have a very slow pulse with dizziness, chest pain or breathlessness, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- Tea brewed by mistake from fir club moss (*Lycopodium selago*), which holds huperzine A, caused cholinergic poisoning: sweating, vomiting, diarrhoea, dizziness, cramps and slurred speech [67]. An overdose of the supplement may do the same. For severe symptoms, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- Ask your doctor first if you have asthma or COPD, a bladder outflow blockage, epilepsy or kidney disease [22][77]. A large COPD study found no added risk of flare-ups (RR 1.02) [72].
+- With NSAID painkillers, drugs of this kind raised peptic ulcer risk more than NSAIDs alone, so ask your doctor before combining them [74][77].
 - Trial side effects were mostly mild: nausea, dizziness, insomnia and ankle swelling [25][46][64].
 
 ## Brad's videos on this topic
@@ -55,7 +55,7 @@ Synthetic huperzine A is often a racemic mix of both forms. In lab tests the rac
 
 ### Standardized Extracts
 
-Chinese trials used tablets or capsules holding 50 mcg each, and in one 60-day trial in Alzheimer's disease the capsules and tablets worked equally well [64]. Supplements sold in the US often hold far more or less than the label says (see Supplement Quality Concerns) [48].
+Chinese trials used tablets or capsules holding 50 mcg each, and in one 60-day trial in Alzheimer's disease the capsules and tablets worked equally well [64]. Only 2 of 22 products tested held within 10% of the labelled amount (see Supplement Quality Concerns) [48].
 
 ### Pharmacokinetics
 
@@ -168,7 +168,7 @@ These doses come from clinical trials:
 
 **Senile and presenile memory disorders:** The doses used (0.03 mg and 0.05 mg twice a day) were intramuscular injections, so they do not translate to supplement doses [46].
 
-**Memory enhancement (healthy individuals):** 100 mcg twice daily (200 mcg/day total), based on the adolescent memory trial [32]. Evidence for this indication is limited to a single small trial.
+**Memory enhancement (healthy individuals):** The one adolescent trial used 100 mcg twice daily for 4 weeks [32].
 
 **General cognitive support (supplement use):** No dose is established for general memory support; the only trial in healthy people studied adolescents [32].
 
@@ -176,7 +176,7 @@ These doses come from clinical trials:
 
 **Timing:** The long half-life (see Pharmacokinetics) suits twice-daily dosing, which most trials used [16][25][61].
 
-**Form selection:** Natural (-)-huperzine A is more potent than the racemic synthetic mix [14][66], so a label that names the form and amount of (-)-huperzine A is easier to dose.
+**Form selection:** Natural (-)-huperzine A is more potent than the racemic synthetic mix [14][66], so a racemic product holds less active drug than the same labelled amount of the natural form.
 
 ### Dose Comparison with Prescription AChE Inhibitors
 
@@ -202,7 +202,7 @@ Drugs that block AChE can slow the heart and cause fainting (see Cardiac Effects
 
 ### Dose-Related Effects
 
-The US trial's highest dose was 400 mcg twice daily, given for at least 16 weeks [16]. Overdose can cause cholinergic poisoning (see Cholinergic Crisis) [67].
+The US trial's highest dose was 400 mcg twice daily, given for at least 16 weeks [16]. An overdose may cause cholinergic poisoning, as club moss tea did (see Cholinergic Crisis) [67].
 
 ### Discontinuation Rates
 
@@ -220,13 +220,12 @@ Cholinesterase inhibitors can slow the heart. In older adults with dementia in O
 
 ### Conditions That May Be Worsened
 
-Because huperzine A increases cholinergic activity, it may worsen some conditions:
+Donepezil, which blocks the same enzyme, carries these cautions; they may also apply to huperzine A [77]:
 
-- **Gastrointestinal obstruction:** In theory, extra acetylcholine may increase gut movement and worsen a blockage. Ask your doctor first.
-- **Urinary tract obstruction:** Cholinesterase inhibitors may add to new or worsening urinary incontinence [70]. With a bladder outlet blockage, ask your doctor first.
-- **Peptic ulcer disease:** In older Swedish adults, cholinesterase inhibitors alone did not raise peptic ulcer risk (IRR 1.0, 0.9 to 1.2), but with NSAID painkillers the risk rose more (IRR 9.0, 6.8 to 11.8) than with NSAIDs alone (IRR 5.2, 4.4 to 6.0) [74].
-- **Asthma and COPD:** Acetylcholine narrows the airways and increases mucus, so these drugs may worsen COPD [71]. A small chart review found a trend to more COPD flare-ups in the first 90 days (10 of 52 vs 3 of 42; P = 0.133), but a large Ontario cohort found no higher risk of exacerbations (RR 1.02; 95% CI 0.91, 1.15) [71][72]. With asthma or COPD, ask your doctor first.
-- **Epilepsy:** In older adults with dementia, cholinesterase inhibitors did not raise seizure risk straight away, though the risk rose after one year of continued use [73]. In mice, huperzine A protected against seizures [36]. With epilepsy, ask your doctor first.
+- **Peptic ulcer disease:** Drugs of this kind may raise stomach acid, so people with a past ulcer or on NSAIDs should be watched for bleeding [77]. In older Swedish adults, cholinesterase inhibitors alone did not raise peptic ulcer risk (IRR 1.0, 0.9 to 1.2), but with NSAID painkillers the risk rose more (IRR 9.0, 6.8 to 11.8) than with NSAIDs alone (IRR 5.2, 4.4 to 6.0) [74].
+- **Asthma and COPD:** Drugs of this kind call for care with asthma or obstructive lung disease [77]. A small chart review found a trend to more COPD flare-ups in the first 90 days (10 of 52 vs 3 of 42; P = 0.133) [71], but a large Ontario cohort found no higher risk of exacerbations (RR 1.02; 95% CI 0.91, 1.15) [72]. With asthma or COPD, ask your doctor first.
+- **Urinary tract obstruction:** Drugs of this kind may cause bladder outflow obstruction, though donepezil trials did not show it [77]. They have also been linked to new or worsening urinary incontinence [70]. With a bladder outlet blockage, ask your doctor first.
+- **Epilepsy:** Drugs of this kind are thought to carry some seizure risk, though Alzheimer's disease itself can cause seizures [77]. A Korean study of older adults with dementia found no statistically significant association overall between how long people took them and seizure risk; one comparison suggested a slight rise after a year of donepezil [73]. With epilepsy, ask your doctor first.
 
 ### Long-Term Safety
 
@@ -256,25 +255,21 @@ Products with independent third-party testing may lower these risks; consumerlab
 
 ### Cholinergic Drugs (Major Interaction)
 
-Huperzine A blocks AChE, as do the dementia drugs donepezil, rivastigmine and galantamine [3][69]. Taking it with them, or with other drugs that boost acetylcholine, may add to cholinergic side effects. Examples:
+Huperzine A blocks AChE, as do the dementia drugs donepezil, rivastigmine and galantamine [3][69]. Taking it with them, or with other drugs that boost acetylcholine, may add to cholinergic effects [77]. Examples:
 
+- Succinylcholine and similar muscle relaxants used in anaesthesia, whose effect these drugs may exaggerate [69][77]
 - Dementia drugs: donepezil, rivastigmine, galantamine
 - Myasthenia gravis drugs: pyridostigmine, neostigmine
-- Other cholinergic drugs: bethanechol, physostigmine, echothiophate eye drops
-- Succinylcholine, a muscle relaxant used in anaesthesia; a review lists general anaesthetic agents among the main interaction concerns for cholinesterase inhibitors [69]
+- Bethanechol, which stimulates acetylcholine receptors directly [77]
 
 Signs of excess cholinergic effect include sweating, vomiting, diarrhoea, dizziness, cramps and slurred speech [67]. For severe symptoms, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 ### Anticholinergic Drugs (Opposing Interaction)
 
-Anticholinergic drugs block acetylcholine, so they and huperzine A may weaken each other. A review of dementia drug interactions lists anticholinergic drugs among the main concerns for cholinesterase inhibitors [69]. In older adults with dementia, starting a cholinesterase inhibitor was linked to a higher chance of then receiving an anticholinergic drug for urinary incontinence (adjusted hazard ratio, 1.55; 95% confidence interval, 1.39-1.72), which may be one drug treating the side effect of another [70]. Examples:
+Anticholinergic drugs block acetylcholine, so they and huperzine A may weaken each other [77]. A review of dementia drug interactions lists anticholinergic drugs among the main concerns for cholinesterase inhibitors [69]. In older adults with dementia, starting a cholinesterase inhibitor was linked to a higher chance of then receiving an anticholinergic drug for urinary incontinence (adjusted hazard ratio, 1.55; 95% confidence interval, 1.39-1.72), which may be one drug treating the side effect of another [70]. Examples:
 
-- Atropine
-- Benztropine (Cogentin)
-- Biperiden (Akineton)
-- Trihexyphenidyl (Artane)
-- Oxybutynin, tolterodine (bladder antimuscarinics)
-- Diphenhydramine, chlorpheniramine (antihistamines with anticholinergic properties)
+- Bladder medicines such as oxybutynin and tolterodine
+- Sedating antihistamines such as diphenhydramine and chlorpheniramine
 
 ### Beta-Blockers (Cardiac Interaction)
 
@@ -282,7 +277,7 @@ Cholinesterase inhibitors can slow the heart, and a review lists bradycardia-ind
 
 ### Pharmacokinetic Considerations
 
-Human liver microsomes did not metabolise huperzine A, and it barely affected CYP enzymes, so it is unlikely to change blood levels of drugs cleared by them [22]. The main concerns are its added or opposing effects on acetylcholine.
+Huperzine A barely affects CYP enzymes, so the main concerns are its added or opposing effects on acetylcholine, not blood levels of other drugs [22].
 
 ### General Recommendation
 
@@ -291,6 +286,7 @@ Check with your doctor before taking huperzine A alongside any prescription medi
 - Medications for myasthenia gravis
 - Heart rate-lowering drugs (beta-blockers, calcium channel blockers, digoxin)
 - Anticholinergic medications
+- Older (conventional) antipsychotics, which a review lists among the main interaction concerns [69]
 - Anesthetics (succinylcholine)
 
 ## 7. Dietary Sources
@@ -319,7 +315,7 @@ In 2023, researchers identified carbonic anhydrase-like enzymes that club mosses
 
 ### Practical Implication
 
-Because huperzine A cannot be obtained from food, supplementation is the only option for individuals seeking its cognitive effects. There is no dietary strategy to increase huperzine A intake.
+Because huperzine A cannot be obtained from food, supplementation is the only option for individuals seeking it.
 
 ## 8. References
 
@@ -402,3 +398,5 @@ Because huperzine A cannot be obtained from food, supplementation is the only op
 [75] Friedli MJ, Inestrosa NC. Huperzine A and Its Neuroprotective Molecular Signaling in Alzheimer's Disease. Molecules. 2021;26(21):6531. PMID: 34770940. https://pubmed.ncbi.nlm.nih.gov/34770940/
 
 [76] Yang Y, Dai L, Wu D et al. In Vitro Propagation, Huperzine A Content and Antioxidant Activity of Three Genotypic Huperzia serrata. Plants (Basel). 2021;10(6):1112. PMID: 34072855. https://pubmed.ncbi.nlm.nih.gov/34072855/
+
+[77] ARICEPT (donepezil hydrochloride) tablets. Prescribing information, Eisai. DailyMed, 2026. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=98e451e1-e4d7-4439-a675-c5457ba20975](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=98e451e1-e4d7-4439-a675-c5457ba20975)
