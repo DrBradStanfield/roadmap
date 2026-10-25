@@ -19,6 +19,8 @@ import { resetMcpMemory } from '../lib/mcp-grants.server';
 import { INSTRUCTIONS, mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
 import { callKnowledgeTool, cutEntry, isServed, KNOWLEDGE_NOTE, KNOWLEDGE_TOOLS, MAX_ARTICLE_CHARS, MAX_EXCERPT_CHARS, MAX_MASTER_EXCERPT_CHARS, MAX_RESULTS, NOTICE, safetyBlocks } from '../lib/mcp-knowledge.server';
 import { loadBlogIndex } from '../lib/blog-index.server';
+import { routerView } from '../lib/router-view';
+import { buildIndex, search } from '../../tools/search-knowledge';
 import { parseFrontmatter } from '../lib/frontmatter';
 import { recordServerEvent } from '../lib/product-events.server';
 import { action, loader } from './mcp.$';
@@ -218,7 +220,9 @@ describe('US-41 AC7 — search_knowledge: masters first, capped, the notice on e
   it('does not promote a master on the words every master shares, or on generic ones (adversary R4)', async () => {
     const access = await connect();
     const results = (await call(access, 'search_knowledge', { query: 'benefits of exercise' })).structuredContent!.results as Array<Record<string, any>>;
-    expect(results[0].master).toBe(false);
+    // 2026-10-25 (masters-new-7): was results[0].master === false, a 0.01 BM25 margin that flipped when df[benefit] went 74 -> 81; no master jumping the raw order is the real check.
+    const served = buildIndex(routerView(loadBlogIndex()).filter(isServed));
+    expect(results.map((r) => r.handle)).toEqual(search(served, 'benefits of exercise', MAX_RESULTS, MAX_RESULTS).map((h) => h.handle));
     const olive = (await call(access, 'search_knowledge', { query: 'olive oil heart' })).structuredContent!.results as Array<Record<string, any>>;
     expect(olive[0].handle).not.toBe(OMEGA3);
   });
