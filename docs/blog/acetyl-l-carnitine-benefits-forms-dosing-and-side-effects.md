@@ -19,8 +19,8 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Key safety points
 
-- Two reports describe L-carnitine strengthening the effect of acenocoumarol, a blood thinner like warfarin [85][86]. If you take warfarin or another blood thinner, talk to your doctor before starting, as your INR may need checking.
 - In women having taxane chemotherapy, acetyl-L-carnitine 3,000 mg a day made nerve damage worse, and the harm lasted two years [28][78]. The American Society of Clinical Oncology says its use to prevent this nerve damage should be discouraged [29].
+- Two reports describe L-carnitine strengthening the effect of acenocoumarol, a blood thinner like warfarin [85][86]. If you take warfarin or another blood thinner, talk to your doctor before starting, as your INR may need checking.
 - Carnitine blocks thyroid hormone from entering cell nuclei [70][81]. If you have an underactive thyroid or take thyroid medicine, talk to your doctor first.
 - Carnitine can cause seizures in people with seizure disorders and muscle weakness in people with uremia [1].
 - No upper limit has been set. About 3 g a day can cause nausea, vomiting, abdominal cramps, diarrhea and a fishy body odor [1].
@@ -53,7 +53,6 @@ The two main forms of carnitine in supplements are L-carnitine and acetyl-L-carn
 | L-Carnitine | Unacetylated form. Oral supplement bioavailability 14-18%. Dietary bioavailability 63-75% [1]. | Cardiovascular disease, athletic performance, weight loss, dialysis-related deficiency [1][3] |
 | Propionyl-L-Carnitine | Acyl derivative of L-carnitine. | Peripheral artery disease, intermittent claudication [3][13] |
 | L-Carnitine-L-Tartrate | L-carnitine combined with tartaric acid. | Used in some exercise studies [58] |
-| D-Carnitine | Biologically inactive mirror-image form. Not used in supplements, as it may interfere with L-carnitine. | None |
 
 ### Bioavailability and Absorption
 
@@ -145,7 +144,7 @@ Carnitine helps transport long-chain fatty acids into heart mitochondria for ene
 
 Whether acetyl-L-carnitine raises TMAO the way L-carnitine does has not been well studied.
 
-**Johri et al. 2022 (atherosclerosis RCT):** A clinical trial in 157 individuals aged 58-75 with metabolic syndrome who received 1 g supplemental L-carnitine or placebo twice daily for 6 months found potentially deleterious outcomes. Although total plaque volume did not differ between groups, total cholesterol and LDL cholesterol levels were higher in participants taking L-carnitine. L-carnitine supplementation was also associated with 9.3% greater carotid arterial plaque stenosis in males who ate less red meat and had lower baseline stenosis and total plaque volume [3][37].
+**Johri et al. 2022 (atherosclerosis RCT):** A clinical trial in 157 individuals aged 58-75 with metabolic syndrome who received 1 g supplemental L-carnitine or placebo twice daily for 6 months found potentially deleterious outcomes. Although total plaque volume did not differ between groups, total cholesterol and LDL cholesterol levels were higher in participants taking L-carnitine. Carotid plaque stenosis also rose 9.3% more on L-carnitine than on placebo (p = 0.02) [3][37].
 
 #### Peripheral Artery Disease
 
@@ -155,7 +154,7 @@ Whether acetyl-L-carnitine raises TMAO the way L-carnitine does has not been wel
 
 Insulin resistance may be associated with mitochondrial dysfunction and defects in fatty-acid oxidation in muscle. Carnitine supplementation has therefore been studied for possible effects on insulin resistance and diabetes [3][39][40].
 
-**Zamani et al. 2023 meta-analysis:** A meta-analysis of 41 randomized clinical trials examined the effects of L-carnitine supplementation on glycemic markers in 2,900 men and women aged 18 years and older. Most participants had health conditions such as type 2 diabetes, obesity, polycystic ovary syndrome, or nonalcoholic fatty liver disease. L-carnitine supplements at doses of 0.25 to 4 g/day for 2 to 52 weeks reduced fasting blood glucose, insulin resistance, and glycosylated hemoglobin (HbA1c) but NOT serum insulin levels [3][41].
+**Zamani et al. 2023 meta-analysis:** A meta-analysis of 41 randomized clinical trials examined the effects of L-carnitine supplementation on glycemic markers in 2,900 men and women aged 18 years and older. Most participants had health conditions such as type 2 diabetes, obesity, polycystic ovary syndrome, or nonalcoholic fatty liver disease. L-carnitine supplements at doses of 0.25 to 4 g/day for 2 to 52 weeks reduced fasting blood glucose, insulin resistance, and glycosylated hemoglobin (HbA1c) but NOT serum insulin levels [3][41]. This meta-analysis pooled two PCOS trials that have since been retracted, so its estimates may be overstated [41][80][89].
 
 **Xu et al. 2017 meta-analysis:** A meta-analysis of five randomized clinical trials (three included in the 2023 meta-analysis) in 631 adults with insulin resistance who took 2 or 3 g/day L-carnitine or placebo for 4 weeks to 12 months found that L-carnitine improved measures of insulin resistance. Benefits at 12 months exceeded those at 3 months [3][42].
 
@@ -163,7 +162,7 @@ Insulin resistance may be associated with mitochondrial dysfunction and defects 
 
 ### Male Infertility
 
-Carnitine might play a role in sperm maturation, motility, and sperm production, and might reduce oxidative stress in ways that could improve egg growth and maturation [3][45].
+Carnitine might play a role in sperm maturation, motility, and sperm production [3].
 
 **Salas-Huetos et al. 2018 meta-analysis:** A systematic review and meta-analysis of three randomized clinical trials examined the effects of 1-3 g/day L-carnitine or acetyl-L-carnitine for 2 to 6 months on sperm parameters in 201 men aged 20-40 years with infertility. Compared to placebo, supplemental carnitine improved sperm motility by 7.84% and morphology by 4.91% but did NOT affect sperm concentration [3][46].
 
@@ -171,7 +170,7 @@ Carnitine might play a role in sperm maturation, motility, and sperm production,
 
 ### Female Infertility (PCOS)
 
-Two randomized trials once reported that L-carnitine improved ovulation and pregnancy rates in women with polycystic ovary syndrome (PCOS) [49][50]. Both trials have since been retracted by their journals, so they no longer count as evidence [79][80].
+Carnitine might reduce oxidative stress in ways that could improve egg growth and maturation [45]. Two randomized trials once reported that L-carnitine improved ovulation and pregnancy rates in women with polycystic ovary syndrome (PCOS) [49][50]. Both trials have since been retracted by their journals, so they no longer count as evidence [79][80].
 
 ### Osteoarthritis
 
@@ -205,7 +204,7 @@ Carnitine helps preserve muscle glycogen and promotes fat oxidation, spares amin
 
 **Villani et al. 2000:** In 36 moderately overweight women who walked four days a week, L-carnitine 2 g twice daily for 8 weeks did not change body weight or fat mass compared with placebo. Five women taking L-carnitine dropped out because of nausea or diarrhea [62].
 
-**Pooyandjoo et al. 2016 meta-analysis:** A systematic review and meta-analysis combining results from nine randomized clinical trials in 911 participants found that study participants taking carnitine supplements lost an average of 1.33 kg more weight than those who took placebo, regardless of study duration or L-carnitine dose [3][63].
+**Pooyandjoo et al. 2016 meta-analysis:** A systematic review and meta-analysis combining results from nine randomized clinical trials in 911 participants found that study participants taking carnitine supplements lost an average of 1.33 kg more weight than those who took placebo, but the effect shrank with longer use (p = 0.002) [3][63].
 
 **Derosa et al. 2010:** In 258 adults aged 47-59 with uncontrolled type 2 diabetes, participants taking 2 g/day L-carnitine plus orlistat (360 mg/day) for 1 year lost more weight (11.3 kg) than those taking orlistat alone (9.5 kg) [3][64].
 
@@ -243,9 +242,9 @@ There is no established Dietary Reference Intake for carnitine [1]. The doses be
 |-----------|--------------------------|----------|
 | Mild cognitive impairment / early Alzheimer's disease | 1.5-3.0 g/day | 3-12 months [16] |
 | Depression | Varied by trial | Varied [30] |
-| Blood pressure | 1 g twice daily | 24 weeks [21] |
+| Blood pressure | 1 g twice daily | 24 weeks [21]; no effect on blood pressure in a 6-month RCT [23] |
 | Diabetic neuropathy | 1.5-3 g/day | 6-12 months [26] |
-| Antiretroviral neuropathy | 1 g twice daily (after 2 weeks of injections) | 6 weeks [27] |
+| Antiretroviral neuropathy | 1 g twice daily (after 2 weeks of injections) | 6 weeks, open-label [27] |
 | Fibromyalgia | 1.5 g/day (500 mg three times daily) | 12 weeks [31] |
 | Male infertility | 1-3 g/day (L-carnitine or acetyl-L-carnitine) | 2-6 months [3] |
 | Peyronie's disease | 1 g twice daily | 3 months [66] |
@@ -284,13 +283,12 @@ Poultry, fish, and dairy provide some carnitine, while vegetables, fruits, and g
 
 ### General Safety Profile
 
-Carnitine does not have an established tolerable upper intake level [1]. Trials of acetyl-L-carnitine in dementia and nerve pain reported adverse events at similar rates on acetyl-L-carnitine and placebo [15][25].
+Carnitine does not have an established tolerable upper intake level [1]. Trials of acetyl-L-carnitine in dementia and nerve pain reported adverse events at similar rates on acetyl-L-carnitine and placebo [15][25]. A Cochrane review in diabetic nerve pain judged the adverse-event evidence too uncertain to make any judgements on safety [26].
 
 ### Common Side Effects
 
 - **Gastrointestinal:** Doses of about 3 g/day can cause nausea, vomiting, abdominal cramps, and diarrhea [1].
 - **Fishy body odor:** Carnitine supplementation at approximately 3 g/day can cause a fishy body odor [1].
-- **Agitation and restlessness:** Some people may feel restless or have trouble sleeping on acetyl-L-carnitine.
 - **Muscle weakness:** Can occur in people with uremia [1].
 - **Seizures:** Can occur in those with seizure disorders [1].
 
@@ -302,7 +300,7 @@ Carnitine does not have an established tolerable upper intake level [1]. Trials 
 
 **Seizure disorders:** Carnitine can cause seizures in people with seizure disorders [1].
 
-**Renal disease / dialysis:** Renal diseases can impair carnitine homeostasis due to reduced synthesis and increased elimination [1][3]. Studies in hemodialysis gave high doses of carnitine, often by injection [1]. People on dialysis should take it only under their kidney doctor's supervision.
+**Renal disease / dialysis:** Renal diseases can impair carnitine homeostasis due to reduced synthesis and increased elimination [1][3]. Studies in hemodialysis gave high doses of carnitine, often by injection [1], and a National Kidney Foundation consensus conference has set practice recommendations for its use in dialysis [88]. People on dialysis should take it only under their kidney doctor's supervision.
 
 **Pregnancy and breastfeeding:** Insufficient evidence to establish safety during pregnancy and breastfeeding.
 
@@ -481,3 +479,7 @@ Carnitine interacts with pivalate-conjugated antibiotics such as pivampicillin (
 [86] Bachmann HU, Hoffmann A. "Interaction of food supplement L-carnitine with oral anticoagulant acenocoumarol." Swiss Med Wkly 2004;134(25-26):385. PMID: 15340883. [https://pubmed.ncbi.nlm.nih.gov/15340883/](https://pubmed.ncbi.nlm.nih.gov/15340883/)
 
 [87] Foitzik K, Hoting E, Forster T, Pertile P, Paus R. "L-carnitine-L-tartrate promotes human hair growth in vitro." Exp Dermatol 2007;16(11):936-45. PMID: 17927577. [https://pubmed.ncbi.nlm.nih.gov/17927577/](https://pubmed.ncbi.nlm.nih.gov/17927577/)
+
+[88] Eknoyan G, Latos DL, Lindberg J, National Kidney Foundation Carnitine Consensus Conference. "Practice recommendations for the use of L-carnitine in dialysis-related carnitine disorder." Am J Kidney Dis 2003;41:868-76. PMID: 12666074. [https://pubmed.ncbi.nlm.nih.gov/12666074/](https://pubmed.ncbi.nlm.nih.gov/12666074/)
+
+[89] Retraction notice to "Randomized controlled trial of N-acetylcysteine versus l-carnitine among women with clomiphene-citrate-resistant polycystic ovary syndrome." Int J Gynaecol Obstet 2023. PMID: 37422702. [https://pubmed.ncbi.nlm.nih.gov/37422702/](https://pubmed.ncbi.nlm.nih.gov/37422702/)
