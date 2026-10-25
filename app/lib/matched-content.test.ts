@@ -130,14 +130,14 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
   // masters their room too (the re-check: 197 of 1,140 pairs with one between,
   // 42 with it first, dropped a master whole).
   const LITHIUM = 'lithium-benefits-forms-dosing-and-side-effects';
-  // US-50 masters-new-7 (2026-10-25): probiotics became a master, so the largest non-master (about 76K) stands in.
-  const BIG_POST = 'weight-loss-supplements-benefits-evidence-and-safety';
+  // US-50 masters-new-7 (2026-10-25): probiotics became a master; masters-new-13 (2026-10-26): weight loss did too, so beetroot (about 63K, held from the masters plan) stands in.
+  const BIG_POST = 'beetroot-benefits-forms-dosing-and-side-effects';
   const warfarin = (content: string | null) => {
     expect(content).toMatch(/^#+ Warfarin and Vitamin K Antagonists$/m);
     expect(content).toContain('Vitamin K can have a serious and potentially dangerous interaction with warfarin');
   };
 
-  it('[lithium, weight-loss post, vitamin K]: vitamin K loads with its warfarin lines', () => {
+  it('[lithium, beetroot post, vitamin K]: vitamin K loads with its warfarin lines', () => {
     const { content, skipped } = loadMatchedContent([LITHIUM, BIG_POST, K]);
     expect(skipped).not.toContain(K);
     expect(skipped).not.toContain(LITHIUM);
@@ -145,7 +145,7 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
     warfarin(content);
   });
 
-  it('[weight-loss post, vitamin C, B vitamins]: a non-master first leaves both masters their room', () => {
+  it('[beetroot post, vitamin C, B vitamins]: a non-master first leaves both masters their room', () => {
     const C = 'vitamin-c-benefits-forms-dosing-and-side-effects';
     const B = 'b-vitamins-benefits-forms-dosing-and-side-effects';
     const { content, skipped } = loadMatchedContent([BIG_POST, C, B]);
@@ -159,7 +159,7 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
   it('a non-master that fits alongside the later masters\' reserve still loads', () => {
     const { content, skipped } = loadMatchedContent([BIG_POST, LITHIUM]);
     expect(skipped).toEqual([]);
-    expect(content).toContain('title: Weight Loss Supplements: Benefits');
+    expect(content).toContain('title: Beetroot: Benefits');
     expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
   });
 
