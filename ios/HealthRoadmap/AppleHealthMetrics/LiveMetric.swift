@@ -44,7 +44,7 @@ enum LiveMetric: String, CaseIterable, Identifiable, Hashable, Sendable {
         }
     }
 
-    /// The key of its graph colour (`MetricChart.livePalette`).
+    /// The key of its graph colour in `MetricChart.palette`.
     var paletteKey: String {
         switch self {
         case .heartRate: "heart_rate"
@@ -87,6 +87,8 @@ struct LiveCard: Equatable, Sendable {
     let showsTime: Bool
     /// The recent days or nights, oldest first, for the card's trend line.
     let trend: [Double]
+    /// Sleep from a writer that records only "In Bed": the value is time in bed (AC9, Codex R3).
+    var inBed = false
 }
 
 /// A range of a metric page (AC7): a day by hour, a week or month by day, six months
@@ -255,11 +257,19 @@ enum LiveMaths {
         return LiveCard(value: value, date: newest.start, showsTime: false, trend: trend)
     }
 
-    /// Sleep's card: the newest night's time asleep, and the last seven nights' for its trend (in hours).
+    /// Sleep's card: the newest night's time asleep, and the last seven nights' for its trend
+    /// (in hours). A night recorded only as In Bed shows its time in bed, as Apple Health
+    /// shows it (AC9, Codex R3).
     static func card(nights: [SleepNight]) -> LiveCard? {
-        let held = nights.filter { $0.asleep > 0 }.sorted { $0.day < $1.day }
+        let held = nights.filter { $0.asleep > 0 || $0.inBed > 0 }.sorted { $0.day < $1.day }
         guard let newest = held.last else { return nil }
-        return LiveCard(value: newest.asleep, date: newest.day, showsTime: false, trend: held.suffix(7).map { $0.asleep / 3600 })
+        return LiveCard(value: shown(newest), date: newest.day, showsTime: false, trend: held.suffix(7).map { shown($0) / 3600 },
+                        inBed: newest.asleep == 0)
+    }
+
+    /// A night's time asleep, or its time in bed when it has no sleep.
+    static func shown(_ night: SleepNight) -> TimeInterval {
+        night.asleep > 0 ? night.asleep : night.inBed
     }
 
     /// The card's day or time, as Apple Health writes it: the time for a reading today
@@ -315,6 +325,12 @@ enum LiveMaths {
     /// The nights' average time asleep, of nights with any sleep.
     static func averageAsleep(_ nights: [SleepNight]) -> TimeInterval? {
         let held = nights.map(\.asleep).filter { $0 > 0 }
+        return held.isEmpty ? nil : held.reduce(0, +) / Double(held.count)
+    }
+
+    /// The nights' average time in bed, of nights in bed.
+    static func averageInBed(_ nights: [SleepNight]) -> TimeInterval? {
+        let held = nights.map(\.inBed).filter { $0 > 0 }
         return held.isEmpty ? nil : held.reduce(0, +) / Double(held.count)
     }
 

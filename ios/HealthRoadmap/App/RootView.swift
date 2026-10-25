@@ -29,6 +29,7 @@ struct RootView: View {
     @Environment(ReminderScheduler.self) private var reminders
     @Environment(ReminderTaps.self) private var reminderTaps
     @Environment(AppleHealthSync.self) private var health: AppleHealthSync?
+    @Environment(LiveHealth.self) private var live: LiveHealth?
     @Environment(DataEraser.self) private var eraser
     /// Set once the welcome screen is done; a setting, not health data.
     @AppStorage("welcomed") private var welcomed = false
@@ -169,7 +170,8 @@ struct RootView: View {
         switch firstRun {
         case .welcome: .welcome
         case .questions: .onboarding
-        case nil: switch tab { case .data: .myData; case .plan: .plan; case .chat: .chat }
+        // A US-56 page on My data names only the screen, never the metric (its usage signal).
+        case nil: switch tab { case .data: (live?.pagesOpen ?? 0) > 0 ? .appleHealthMetric : .myData; case .plan: .plan; case .chat: .chat }
         }
     }
 

@@ -412,6 +412,30 @@ final class OnboardingUITests: XCTestCase {
         snap(app, "health sheet")
     }
 
+    /// US-56 AC4, AC5: onboarding asked for nothing ("Not now"); My data's access card asks
+    /// Apple's sheet to read exactly the five live types, and none of onboarding's six.
+    /// Answering the sheet is checked by hand, as AC3's is.
+    @MainActor
+    func testTheAccessCardAsksForOnlyTheFiveLiveTypes_US56_AC4() throws {
+        let app = launch()
+        try answerUpToWeight(app)
+        answerWeight(app)
+        XCTAssertTrue(app.tabBars.buttons["My data"].waitForExistence(timeout: 10))
+        app.tabBars.buttons["My data"].tap()
+        let show = app.buttons["Show from Apple Health"]
+        XCTAssertTrue(scrollTo(show, in: app), "the access card shows in Vitals before access")
+        XCTAssertTrue(app.staticTexts["Heart, sleep and fitness"].exists)
+        snap(app, "us56 access card")
+        show.tap()
+        let sheet = XCUIApplication(bundleIdentifier: "com.apple.HealthPrivacyService")
+        XCTAssertTrue(sheet.cells["UIA.Health.AuthSheet.AllCategoryButton"].waitForExistence(timeout: 10), "Apple's Health sheet appears")
+        snap(app, "us56 health sheet")
+        let asked = sheet.switches.allElementsBoundByIndex.map(\.identifier).filter { $0.hasPrefix("UIA.Health.Read.") }.sorted()
+        XCTAssertEqual(asked, ["CardioFitness", "HeartRate", "RestingHeartRate", "Sleep", "Steps"].map { "UIA.Health.Read.\($0).SwitchCell.Switch" },
+                       "only the five live types are read")
+        XCTAssertTrue(sheet.switches.allElementsBoundByIndex.allSatisfy { !$0.identifier.hasPrefix("UIA.Health.Write.") }, "nothing is written")
+    }
+
     /// "Delete all my data" brings the questions back, not the welcome screen (AC7).
     @MainActor
     func testDeletingAllMyDataStartsTheQuestionsAgain_AC7() throws {

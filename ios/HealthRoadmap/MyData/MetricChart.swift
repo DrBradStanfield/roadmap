@@ -104,6 +104,12 @@ struct MetricChart: View {
         "lpa": [Color(light: 0xB2598C, dark: 0xA0708C)],
         "psa": [Color(light: 0x6680A6, dark: 0x738195)],
         "height": [Color(light: 0x8E8E93, dark: 0x828284)],
+        // US-56, read live from Apple Health (AppleHealthMetrics/): heart red, sleep teal, activity orange.
+        "heart_rate": [Color(light: 0xE5244B, dark: 0xEC7F92)],
+        "resting_heart_rate": [Color(light: 0xA8323E, dark: 0xC98C93)],
+        "sleep": [Color(light: 0x0E8A86, dark: 0x5EC2BC)],
+        "vo2_max": [Color(light: 0xB35C00, dark: 0xE0A46A)],
+        "steps": [Color(light: 0xD9480F, dark: 0xF0985E)],
     ]
 
     var body: some View {
