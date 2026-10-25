@@ -122,8 +122,9 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   WORKING localStorage. Audit shortcut: `grep -rn "localStorage\." widget-src
   --include=*.ts* | grep -v test` — anything outside lib/storage.ts and a
   try/catch is this class again. A scrub keeping only closed tags can still
-  carry the error NAME value-free (`cause`): 6M sat unreadable at 32 events
-  without it. Upload `no_files` (6W): read product_events `upload_outcome` keys first (10-22: openFailed).
+  carry the error NAME value-free (`cause`), but a name list needs a CLASS beside it: 77
+  (10-25, 6M's regrouped successor) read `other`, which pools ~7 non-browser refusals.
+  Upload `no_files` (6W): read product_events `upload_outcome` keys first (10-22: openFailed).
 - `[class][widget]` 2026-10-02 — Bundled DEPENDENCIES escape our ES2020 floor:
   tsc checks our source only, and pdfjs-dist 4.9 ships 41 bare
   `Promise.withResolvers` calls (ES2024) in health-upload.js, so every PDF fails
