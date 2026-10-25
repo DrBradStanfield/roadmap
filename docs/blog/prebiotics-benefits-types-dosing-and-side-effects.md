@@ -287,6 +287,10 @@ Wheat and onions supply most of the inulin and oligofructose in American diets, 
 
 ## 6. Safety and Side Effects
 
+### Choking Risk
+
+Psyllium, glucomannan and guar gum swell when wet. The FDA requires over-the-counter drug products made with them to warn that, taken without enough fluid, they can swell and block the throat or esophagus and may cause choking [50]. Take each dose with a full glass of water or other fluid, at least 8 ounces. Do not take them if you have trouble swallowing. If you get chest pain, vomiting, or trouble swallowing or breathing after a dose, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [50].
+
 ### Common Side Effects
 
 The main side effects of prebiotic fiber are **gas, bloating and flatulence**, as colon bacteria ferment the fiber [26][46]. How much depends on:
