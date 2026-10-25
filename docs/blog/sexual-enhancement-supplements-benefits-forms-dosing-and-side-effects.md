@@ -8,23 +8,23 @@ tags: ["Supplements"]
 keywords: ["yohimbe", "yohimbine", "horny goat weed", "epimedium", "icariin", "tribulus terrestris", "maca", "maca root", "ginseng", "panax ginseng", "korean red ginseng", "l-arginine", "arginine", "erectile dysfunction", "libido", "testosterone", "sexual health", "nitric oxide", "zinc", "magnesium", "blood pressure", "cardiovascular", "anxiety", "depression", "cocoa", "fenugreek"]
 summary: "Evidence summary on sexual enhancement supplements (yohimbe, maca, ginseng, L-arginine, tribulus, horny goat weed): small trials and limited benefit, and many products hide prescription drugs such as sildenafil. Talk to your doctor first, especially if you take nitrates or have heart disease."
 reviewed: "2026-10-25"
-sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30646238/","checked":"2026-10-25","fingerprint":"sha256:ff2a9cd80eddb142678b95d6fd27031d90e8b634acd6282f1a645ffd93f1beee"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/21782365/","checked":"2026-10-25","fingerprint":"sha256:f50f6f58169ca6e2e5ea4b6336499f5409516b5e654019b50cbe1b82800b0a87"}]
+sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/WeightLoss-HealthProfessional/","checked":"2026-10-25","fingerprint":"sha256:d7e4c6628de89807e9c519029e843d841dc0a1cd3caea44699ce5f3aa30ce990"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30646238/","checked":"2026-10-25","fingerprint":"sha256:ff2a9cd80eddb142678b95d6fd27031d90e8b634acd6282f1a645ffd93f1beee"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/21782365/","checked":"2026-10-25","fingerprint":"sha256:f50f6f58169ca6e2e5ea4b6336499f5409516b5e654019b50cbe1b82800b0a87"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects)*
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. Supplements sold for sexual enhancement are the largest group of products the FDA has found to contain hidden prescription drugs: from 2007 through 2016, 353 of 776 adulterated supplements in its warnings were marketed for sexual enhancement, and sildenafil was the most common hidden drug in them [6]. For the herbs themselves, an overview of systematic reviews drew cautiously positive conclusions for yohimbine and ginseng in erectile dysfunction and found the evidence for maca insufficient, and small trials suggest L-arginine and L-citrulline may help mild to moderate erectile dysfunction [67][53][27]. Yohimbe can be dangerous: high doses have caused heart attack, heart failure and death, and NIH advises using it only under medical supervision [62]. Erection problems are most often caused by artery disease, so see a doctor before trying any of these products [46].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Supplements sold for sexual enhancement are the largest group of products the FDA has found to contain hidden prescription drugs: from 2007 through 2016, 353 of 776 adulterated supplements in its warnings were marketed for sexual enhancement, and sildenafil was the most common hidden drug in them [6]. For the herbs themselves, an overview of systematic reviews drew cautiously positive conclusions for yohimbine and ginseng in erectile dysfunction and found the evidence for maca insufficient, and small trials suggest L-arginine and L-citrulline may help mild to moderate erectile dysfunction [67][53][27]. Yohimbe can be dangerous: high doses can cause heart attack, heart failure and death, and NIH advises using it only under medical supervision [62]. Erection problems are most often caused by artery disease, so see a doctor before trying any of these products [46].
 
 ## Key safety points
 
-- These products often hide sildenafil or similar drugs, which with nitrate heart medicines can drop blood pressure sharply, so do not use them if you take a nitrate [6][66]. For fainting or chest pain, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
-- Tribulus may block CYP3A4, which clears statins and other medicines; a man on atorvastatin developed muscle breakdown after taking it [41]. For muscle pain with dark urine on a statin, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
-- Asian ginseng may affect blood clotting, and American ginseng weakened warfarin in a small trial; ask your doctor first if you take a blood thinner [59][61].
-- Do not take L-arginine after a heart attack: in one trial, 6 people on it died and none on placebo [54]. It might lower blood pressure too far with blood pressure medicines, nitrates or sildenafil [55].
-- Yohimbe raises blood pressure and heart rate, and 200 mg or more has caused heart attack and death; use it only under medical supervision [62]. For chest pain, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
-- Asian ginseng may be unsafe in pregnancy [61].
+- Some of these products contain hidden sildenafil or similar drugs, which with nitrates can drop blood pressure sharply; never use them with a nitrate [6][66]. For fainting or chest pain, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- Tribulus may block CYP3A4, which clears statins; a man on atorvastatin taking it had muscle breakdown [41]. For muscle pain with dark urine, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- Never use yohimbe with an MAOI or tricyclic antidepressant [69]. It raises blood pressure and pulse. At 200 mg or more, yohimbine can cause heart attack and death; use it only under a doctor's care [62]. For chest pain, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- Asian ginseng may affect clotting, and American ginseng weakened warfarin in a small trial; on a blood thinner, ask your doctor first [59][61].
+- Do not take L-arginine after a heart attack: 6 people on it died in a trial vs none on placebo [54]. It might drop blood pressure too far with blood pressure drugs, nitrates or sildenafil [55].
+- Asian ginseng may be unsafe in pregnancy; yohimbe, in pregnancy or breastfeeding [61][69].
 - Insomnia is ginseng's most common side effect; L-arginine can cause diarrhea and stomach pain [61][55].
 
 ## Brad's videos on this topic
@@ -39,7 +39,7 @@ The evidence for most of these ingredients is limited. An overview of systematic
 
 The bigger problem is what the label leaves out. From 2007 through 2016, the FDA identified 776 adulterated dietary supplements; 353 (45.5%) were marketed for sexual enhancement, and sildenafil was the most common hidden drug in that group (166 of 353) [6]. Hidden drugs kept turning up even after FDA warnings [6]. A hidden PDE5 inhibitor is dangerous for anyone taking nitrate heart medicines, because the two together lower blood pressure sharply [66].
 
-Lifestyle changes have better trial support. In obese men with erectile dysfunction, two years of weight loss and more exercise improved erectile function scores [65], and a review of exercise trials recommended about 160 minutes of aerobic exercise a week [46]. Persistent erection problems deserve a doctor's visit, because the leading cause is artery disease [46].
+Lifestyle changes also have trial support. In obese men with erectile dysfunction, two years of weight loss and more exercise improved erectile function scores [65], and a review of exercise trials recommended about 160 minutes of aerobic exercise a week [46]. Persistent erection problems deserve a doctor's visit, because the leading cause is artery disease [46].
 
 ## 2. Forms and Bioavailability
 
@@ -109,7 +109,7 @@ L-arginine is an amino acid that the body uses to make nitric oxide [22].
 
 ## 3. Evidence for Benefits
 
-### Erectile Dysfunction — Yohimbine
+### Erectile Dysfunction: Yohimbine
 
 Yohimbine blocks alpha-2 adrenergic receptors, which increases the release of noradrenaline [38].
 
@@ -123,7 +123,7 @@ A toxicology report puts the usual oral dose at 5 to 15 mg [38]. At much higher 
 
 **Limitations:** Yohimbine's safety profile limits its use (see Safety section).
 
-### Erectile Dysfunction — L-Arginine
+### Erectile Dysfunction: L-Arginine
 
 Erection depends on nitric oxide, which relaxes the smooth muscle of the penis; L-arginine is the raw material the body uses to make it [22]. PDE5 inhibitors act on the same pathway.
 
@@ -133,9 +133,11 @@ Erection depends on nitric oxide, which relaxes the smooth muscle of the penis; 
 
 **L-arginine plus sildenafil:** Combining the two might lower blood pressure too far, so check with your doctor first [55].
 
-**L-citrulline as an alternative:** L-citrulline raises blood arginine more effectively than L-arginine [23]. In a single-blind study in 24 men with mild erectile dysfunction, 1.5 g a day for one month brought erection hardness to normal in 12 men (50%), against 2 (8.3%) on placebo [27].
+**L-citrulline as an alternative:** L-citrulline raises blood arginine more effectively than L-arginine [23]. In a single-blind study, 24 men with mild erectile dysfunction took placebo for 1 month and then 1.5 g a day of L-citrulline for 1 month; erection hardness became normal in 12 (50%) on L-citrulline, against 2 (8.3%) on placebo [27].
 
-### Erectile Dysfunction — Ginseng
+**Brad's position:** Brad does not recommend L-arginine or L-citrulline supplements (Brad's current guidance, 9 Aug 2026).
+
+### Erectile Dysfunction: Ginseng
 
 Korean red ginseng is the form most studied for erectile dysfunction [16].
 
@@ -145,7 +147,7 @@ Korean red ginseng is the form most studied for erectile dysfunction [16].
 
 **Synthesis:** Ginseng may offer a small benefit for erectile function, but the trials are small and of low quality [16][28].
 
-### Erectile Dysfunction — Horny Goat Weed (Epimedium)
+### Erectile Dysfunction: Horny Goat Weed (Epimedium)
 
 Icariin, the main marker compound in epimedium, inhibits PDE5 in laboratory tests [10]. This has led to its marketing as a "natural Viagra."
 
@@ -155,7 +157,7 @@ Icariin, the main marker compound in epimedium, inhibits PDE5 in laboratory test
 
 **Optimal doses:** No dose has been established in human trials.
 
-### Erectile Dysfunction — Tribulus Terrestris
+### Erectile Dysfunction: Tribulus Terrestris
 
 Tribulus terrestris is marketed as a testosterone booster and sexual enhancer, with roots in Ayurvedic and traditional Chinese medicine.
 
@@ -163,9 +165,9 @@ Tribulus terrestris is marketed as a testosterone booster and sexual enhancer, w
 
 **Testosterone claims:** In a 4-week trial in 21 healthy young men, tribulus extract at 20 and 10 mg/kg body weight per day did not change testosterone, androstenedione or luteinizing hormone [48].
 
-**Women with hypoactive sexual desire disorder:** In a 4-week trial in premenopausal women with low sexual desire, tribulus extract (7.5 mg a day) improved desire, arousal and overall sexual function scores more than placebo, with similar side effects [49].
+**Women with hypoactive sexual desire disorder:** In a 4-week trial in premenopausal women with low sexual desire, tribulus extract improved desire, arousal and overall sexual function scores more than placebo, with similar side effects [49].
 
-### Libido Enhancement — Maca Root
+### Libido Enhancement: Maca Root
 
 Maca has some evidence for increasing sexual desire, but the trials are few and small [2].
 
@@ -179,7 +181,7 @@ Maca has some evidence for increasing sexual desire, but the trials are few and 
 
 **Mechanism:** How maca might act is unknown.
 
-### Vascular Health and Erectile Function — Cocoa Flavanols
+### Vascular Health and Erectile Function: Cocoa Flavanols
 
 Cocoa flavanols are promoted for blood flow, but the largest study of flavonoids and erectile dysfunction found its links with other flavonoid groups, mainly from fruit [4].
 
@@ -197,13 +199,11 @@ Zinc is needed by hundreds of enzymes [63]. Severe and moderate zinc deficiency 
 
 ### DHEA (Dehydroepiandrosterone)
 
-DHEA is a steroid hormone precursor produced primarily by the adrenal glands. DHEA levels decline substantially with age, falling approximately 80% from peak levels (around age 25) to age 70.
+**Evidence in women:** A meta-analysis of 23 randomized trials in 1188 postmenopausal women with normal adrenal function found no significant improvement in libido or sexual function, and confidence in the evidence was low [70]. Prasterone, the synthetic form of DHEA, is FDA-approved as a vaginal treatment for moderate to severe pain during sex due to menopause [72].
 
-**Evidence in women:** DHEA supplementation has been studied primarily in postmenopausal women with sexual dysfunction. Some studies show improvements in sexual function, arousal, and desire, particularly in women with documented low DHEA-S levels. Intravaginal DHEA (prasterone) is FDA-approved for dyspareunia due to vulvovaginal atrophy.
+**Evidence in men:** In the DAWN trial in 110 men and 115 women aged 55 to 85, 50 mg a day of oral DHEA for 1 year did no better than placebo on sexual function scales [71].
 
-**Evidence in men:** Evidence for oral DHEA supplementation improving sexual function in men is limited and inconsistent. DHEA may benefit men with documented adrenal insufficiency or very low DHEA-S levels, but routine supplementation in age-related DHEA decline is not well-supported.
-
-**Safety note:** DHEA is a hormonal precursor and can convert to both testosterone and estrogen. This creates risks including acne, hair loss, virilization in women, and potential worsening of hormone-sensitive conditions (prostate, breast, uterine cancers).
+**Safety note:** In a lupus trial, 200 mg a day of prasterone raised testosterone and, to a lesser extent, estradiol, and acne (33% vs 14%) and excess hair growth (16% vs 2%) were more common than on placebo [73]. If you have had a hormone-sensitive cancer, ask your doctor before taking DHEA. The DHEA article covers its safety in full.
 
 ### Fenugreek (Trigonella foenum-graecum)
 
@@ -220,7 +220,7 @@ Fenugreek is a leguminous plant whose seed extracts have been studied for effect
 | L-Arginine | Unchanged in meta-analysis | Modest benefit in mild to moderate ED | Not relevant | Small trials; check interactions |
 | Panax ginseng | Not established | Trivial to small | No change in one trial | Low-certainty evidence |
 | Tribulus terrestris | Improved in one trial | Improved in one trial | No change | Few trials |
-| Epimedium/Icariin | No human data | No human data | No human data | Laboratory and animal data only |
+| Epimedium/Icariin | Not established | Very limited human data | Not established | Mostly laboratory and animal data |
 | Zinc | Unknown | Unknown | Raised in deficient men | Only for deficiency |
 | Cocoa flavanols | Indirect | Not tested in trials | Not relevant | Observational data on other flavonoids |
 | Fenugreek | Improved in one trial | Improved in one trial | Raised in one trial | One main trial |
@@ -229,7 +229,7 @@ Fenugreek is a leguminous plant whose seed extracts have been studied for effect
 
 ### Yohimbe / Yohimbine
 
-No safe supplement dose is established. A toxicology report puts the usual oral dose of yohimbine at 5 to 15 mg [38]. NIH notes that 20 to 40 mg can raise blood pressure slightly, while 200 mg or more can cause serious harm, including death [62].
+No safe supplement dose is established. A toxicology report puts the usual oral dose of yohimbine at 5 to 15 mg [38]. NIH notes that 20 to 40 mg of yohimbine can raise blood pressure slightly, while 200 mg or more can cause serious harm, including death [62].
 
 **Important dosing notes:**
 - Supplement labels often misstate yohimbine content, so the dose you take may differ from the label [58].
@@ -252,7 +252,7 @@ No dose has been established in human trials.
 ### Tribulus Terrestris
 
 - **Dose in the main trial:** 250 mg tablets of Tribestan, taken as 3×2 tablets daily after meals for 12 weeks [47]
-- **Women:** 7.5 mg a day of extract for 4 weeks [49]
+- **Women:** extract for 4 weeks in one trial; the dose is not clearly reported [49]
 
 ### L-Arginine
 
@@ -262,7 +262,7 @@ No dose has been established in human trials.
 ### Zinc
 
 - **Use:** only to correct a deficiency your doctor has found
-- **Upper limit:** 40 mg/day for adults (to avoid copper depletion)
+- **Upper limit:** 40 mg/day for adults; higher doses taken for weeks can block copper absorption [63]
 
 ### Fenugreek
 
@@ -275,11 +275,11 @@ No dose has been established in human trials.
 
 ## 5. Safety and Side Effects
 
-### Widespread Adulteration — The Largest Safety Concern
+### Widespread Adulteration: The Largest Safety Concern
 
 The biggest safety issue is what is not on the label. Products marketed for sexual enhancement made up 353 of the 776 adulterated supplements the FDA identified from 2007 through 2016, and sildenafil was the most common hidden drug in them [6].
 
-**Key findings from testing:**
+**Key findings from FDA warnings:**
 - Across all categories, 157 adulterated products (20.2%) contained more than 1 unapproved ingredient [6].
 - Of 28 products named in repeat warnings, 19 (67.9%) contained new unapproved ingredients the second or third time [6].
 - The authors warn that these hidden drugs can cause serious harm through misuse, overuse or interactions with other medicines and health conditions [6].
@@ -299,10 +299,13 @@ Yohimbe can be dangerous [62].
 **Serious adverse events:**
 - A 49-year-old man came to an emergency department with palpitations and severely raised blood pressure that did not respond to several blood pressure drugs; he had been using a herbal product containing yohimbine [37].
 - Two deaths were attributed to acute yohimbine poisoning [38].
-- Doses of 200 mg or more can cause heart attack, heart failure and death [62]. If you have chest pain, a pounding or irregular heartbeat or a severe headache after taking yohimbe, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- Yohimbine has been linked with irregular heartbeat, blood pressure problems, heart attacks and seizures [69].
+- Yohimbine doses of 200 mg or more can cause heart attack, heart failure and death [62]. If you have chest pain, a pounding or irregular heartbeat or a severe headache after taking yohimbe, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 **Contraindications:**
 - Because yohimbe raises blood pressure and heart rate, people with high blood pressure, heart disease or anxiety disorders are likely at higher risk; use it only under medical supervision [62].
+- Do not use yohimbe if you take a monoamine oxidase inhibitor (MAOI) or tricyclic antidepressant; it can interact with these medicines [69].
+- Yohimbe might be unsafe in pregnancy or while breastfeeding [69].
 - If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Epimedium (Horny Goat Weed)
@@ -312,9 +315,8 @@ Yohimbe can be dangerous [62].
 - In rats, an epimedium extract lowered sildenafil blood levels [30].
 
 **Contraindications:**
-- People with bipolar disorder or a history of mania may want to avoid it, given the case report [57].
+- Because of this case report, people with a history of mania may want to avoid it [57].
 - Concurrent PDE5 inhibitor use (possible interference with the drug) [30]
-- Icariin may affect platelets in laboratory studies, so people with bleeding disorders should check with their doctor first.
 
 ### L-Arginine
 
@@ -327,6 +329,8 @@ Yohimbe can be dangerous [62].
 - **Blood pressure effects:** L-arginine might lower blood pressure too far when combined with blood pressure medicines, nitrates or sildenafil [55].
 - **Diabetes medications:** L-arginine might lower blood sugar in people with diabetes, so diabetes medicine doses may need adjusting [55].
 - **Blood thinners:** L-arginine might increase the risk of bleeding with anticoagulant or antiplatelet medicines [55].
+- **Potassium-sparing diuretics:** Do not take L-arginine with amiloride, spironolactone or triamterene; these medicines raise potassium, and the combination risks high blood potassium (hyperkalemia) [55].
+- **Allergies and asthma:** L-arginine can worsen allergies or asthma, so use it with caution if you have either [55].
 
 **Drug interaction with PDE5 inhibitors:** Check with your doctor before combining L-arginine with sildenafil, because blood pressure might drop too low [55].
 
@@ -366,17 +370,17 @@ Research suggests tribulus is a moderate inhibitor of CYP3A4, a liver enzyme tha
 
 ### Special Populations
 
-**Pregnant or breastfeeding women:** Most sexual enhancement supplements lack safety data in pregnancy, and Asian ginseng may be unsafe [61].
+**Pregnant or breastfeeding women:** Most sexual enhancement supplements lack safety data in pregnancy. Asian ginseng may be unsafe in pregnancy, and yohimbe in pregnancy or while breastfeeding [61][69].
 
 **Individuals with cardiovascular disease:** Yohimbe poses the greatest risk [62]. Arginine should be avoided after a heart attack [54]. Hidden PDE5 inhibitors are dangerous with nitrates [66].
 
-**Individuals with psychiatric conditions:** Yohimbe can cause anxiety and agitation [9][62]. Horny goat weed has been linked to hypomania [57].
+**Individuals with psychiatric conditions:** Yohimbe can cause anxiety and agitation [9][62], and it must not be taken with MAOI or tricyclic antidepressants [69]. Horny goat weed has been linked to hypomania [57].
 
 **Individuals taking multiple medications:** Tribulus may block CYP3A4 [41], arginine and yohimbine affect blood pressure, and ginseng may affect clotting [55][62][61]. Check with your doctor or pharmacist if you take several medicines.
 
 ## 6. Drug Interactions
 
-### Tribulus Terrestris — CYP3A4 Inhibition
+### Tribulus Terrestris: CYP3A4 Inhibition
 
 Tribulus may be a moderate inhibitor of CYP3A4 [41], which could raise blood levels of medicines this enzyme breaks down:
 
@@ -386,11 +390,11 @@ Tribulus may be a moderate inhibitor of CYP3A4 [41], which could raise blood lev
 
 If you take prescription medicines, check with your doctor or pharmacist before starting.
 
-### Yohimbe — Cardiovascular and Psychiatric Drug Interactions
+### Yohimbe: Cardiovascular and Psychiatric Drug Interactions
 
-Yohimbe raises blood pressure and heart rate [62], so it may work against blood pressure medicines and add to the effects of stimulants. If you take prescription medicines, check with your doctor or pharmacist before starting.
+Do not use yohimbe if you take an MAOI or tricyclic antidepressant; it can interact with these medicines [69]. Yohimbe raises blood pressure and heart rate [62], so it may work against blood pressure medicines and add to the effects of stimulants. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
-### L-Arginine — Vasodilatory Drug Interactions
+### L-Arginine: Vasodilatory Drug Interactions
 
 | Drug Class | Examples | Risk |
 |---|---|---|
@@ -399,22 +403,23 @@ Yohimbe raises blood pressure and heart rate [62], so it may work against blood 
 | Antihypertensives | All classes | Blood pressure may drop too low [55] |
 | Diabetes medications | Insulin, sulfonylureas | Blood sugar may drop; doses may need adjusting [55] |
 | Anticoagulants and antiplatelets | Warfarin, aspirin | Bleeding risk may rise [55] |
+| Potassium-sparing diuretics | Amiloride, spironolactone, triamterene | High blood potassium [55] |
 
-### Epimedium — PDE5 Inhibitor Interaction
+### Epimedium: PDE5 Inhibitor Interaction
 
 In rats, an extract of *Epimedium sagittatum* lowered blood levels of sildenafil [30]. If this happens in people, combining horny goat weed with a PDE5 inhibitor could make the drug less effective.
 
-### Ginseng — Anticoagulant Interactions
+### Ginseng: Anticoagulant Interactions
 
 Asian ginseng may interfere with blood clotting [61]. American ginseng reduced warfarin's effect in a small trial in healthy volunteers [59], while Asian ginseng did not change warfarin's effect in another [60]. If you take warfarin or another blood thinner, check with your doctor before using ginseng.
 
-### Maca — Hormone-Sensitive Conditions
+### Maca: Hormone-Sensitive Conditions
 
 Maca did not change sex hormones in trials and showed no meaningful estrogen-like activity in a laboratory test [15][33]. Its effects in hormone-sensitive conditions are not known, so check with your doctor first if you have one.
 
 ### Multi-Ingredient Products — Compounded Risk
 
-Many sexual enhancement supplements combine multiple ingredients (e.g., yohimbe + arginine + tribulus + ginseng), creating compounded interaction risks that are difficult to predict. The combination of CYP3A4 inhibition (tribulus), sympathomimetic effects (yohimbe), and vasodilation (arginine, ginseng) in a single product creates a particularly dangerous drug interaction profile for patients on cardiovascular medications.
+Many sexual enhancement supplements combine several of these ingredients, so they carry the interaction risks of each: tribulus may block CYP3A4 [41], yohimbe raises blood pressure and heart rate [62], and L-arginine might lower blood pressure too far with blood pressure medicines [55]. If you take heart or blood pressure medicines, check with your doctor first.
 
 ## 7. Dietary Sources
 
@@ -422,20 +427,17 @@ Most sexual enhancement ingredients are herbal extracts with no real dietary equ
 
 ### Nitric Oxide Precursors (Arginine Pathway)
 
-L-arginine is obtained through dietary protein. Foods rich in arginine include:
+L-arginine comes from dietary protein. Arginine content of some common foods, per 100 g [74]:
 
-| Food | Serving | Arginine (mg) |
-|---|---|---|
-| Turkey breast | 100g | ~1,600 |
-| Pork loin | 100g | ~1,400 |
-| Chicken breast | 100g | ~1,300 |
-| Soybeans (roasted) | 1/2 cup | ~1,200 |
-| Pumpkin seeds | 1 oz (28g) | ~1,100 |
-| Peanuts | 1 oz (28g) | ~900 |
-| Lentils (cooked) | 1 cup | ~700 |
-| Chickpeas (cooked) | 1 cup | ~600 |
-
-**Nitrate-rich vegetables:** Dietary nitrates from beetroot, spinach, arugula, and other leafy greens are converted to nitric oxide by a separate pathway that does not need L-arginine.
+| Food | Arginine (g per 100 g) |
+|---|---|
+| Pumpkin seed kernels, dried | 5.35 |
+| Top sirloin steak, lean, broiled | 1.98 |
+| Chicken breast, roasted | 1.87 |
+| Pork top loin roast, lean, roasted | 1.81 |
+| Atlantic salmon, farmed, cooked | 1.32 |
+| Egg, whole, raw | 0.82 |
+| Lentils, boiled | 0.697 |
 
 ### Zinc-Rich Foods
 
@@ -445,23 +447,19 @@ Meat, fish and other seafood are the richest sources of zinc, and oysters contai
 
 In a large prospective study, higher intakes of flavones, flavanones and anthocyanins, and of fruit, were linked to less erectile dysfunction [4]:
 
-- **Berries** (blueberries, strawberries, blackberries) — Anthocyanins
-- **Citrus fruits** — Flavanones (hesperidin, naringenin)
+- **Berries** (blueberries, strawberries, blackberries): anthocyanins
+- **Citrus fruits**: flavanones (hesperidin, naringenin)
 
 ### Maca as a Food
 
 Maca has been cultivated in Peru for more than 2,000 years and is used as a food supplement as well as for its traditional medicinal properties [11].
 
-### Lifestyle Factors That Outperform Supplements
+### Lifestyle Factors
 
 Lifestyle changes have trial evidence for improving erectile function [46][65]:
 
 - **Regular exercise:** A review of exercise trials recommended 40 minutes of moderate to vigorous aerobic exercise 4 times a week, with weekly exercise of about 160 minutes for 6 months [46].
 - **Healthy weight:** In obese men with erectile dysfunction, two years of weight loss and more exercise improved erectile function, with about one third of men improving [65].
-- **Adequate sleep** — Sleep deprivation reduces testosterone levels and impairs sexual function.
-- **Stress management** — Chronic stress elevates cortisol, which suppresses testosterone and libido.
-- **Mediterranean diet** — Associated with better endothelial function and lower ED risk.
-- **Smoking cessation** — Smoking damages endothelial function and is an independent risk factor for ED.
 
 ## 8. References
 
@@ -553,3 +551,14 @@ Lifestyle changes have trial evidence for improving erectile function [46][65]:
 
 [68] Ito TY, Trant AS, Polan ML. "A double-blind placebo-controlled study of ArginMax, a nutritional supplement for enhancement of female sexual function." *J Sex Marital Ther*. 2001;27(5):541-549. PMID: 11554217. [https://doi.org/10.1080/713846828](https://doi.org/10.1080/713846828)
 
+[69] National Center for Complementary and Integrative Health. "Yohimbe." Updated May 2025. [https://www.nccih.nih.gov/health/yohimbe](https://www.nccih.nih.gov/health/yohimbe)
+
+[70] Elraiyah T, Sonbol MB, Wang Z, et al. "Clinical review: The benefits and harms of systemic dehydroepiandrosterone (DHEA) in postmenopausal women with normal adrenal function: a systematic review and meta-analysis." *J Clin Endocrinol Metab*. 2014;99(10):3536-3542. PMID: 25279571. [https://doi.org/10.1210/jc.2014-2261](https://doi.org/10.1210/jc.2014-2261)
+
+[71] Kritz-Silverstein D, Von Muhlen D, Laughlin GA, Bettencourt R. "Effects of dehydroepiandrosterone supplementation on cognitive function and quality of life: the DHEA and Well-Ness (DAWN) trial." *J Am Geriatr Soc*. 2008;56(7):1292-1298. PMID: 18482290. [https://doi.org/10.1111/j.1532-5415.2008.01768.x](https://doi.org/10.1111/j.1532-5415.2008.01768.x)
+
+[72] Portman DJ, Goldstein SR, Kagan R. "Treatment of moderate to severe dyspareunia with intravaginal prasterone therapy: a review." *Climacteric*. 2019;22(1):65-72. PMID: 30554531. [https://doi.org/10.1080/13697137.2018.1535583](https://doi.org/10.1080/13697137.2018.1535583)
+
+[73] Petri MA, Mease PJ, Merrill JT, et al. "Effects of prasterone on disease activity and symptoms in women with active systemic lupus erythematosus." *Arthritis Rheum*. 2004;50(9):2858-2868. PMID: 15452837. [https://doi.org/10.1002/art.20427](https://doi.org/10.1002/art.20427)
+
+[74] U.S. Department of Agriculture, FoodData Central, SR Legacy (FDC 170556, 168634, 171477, 168254, 175168, 171287, 172421). [https://fdc.nal.usda.gov/](https://fdc.nal.usda.gov/)
