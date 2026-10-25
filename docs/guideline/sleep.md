@@ -3,506 +3,483 @@ title: "Sleep: Clinical Insomnia Guidance"
 type: "guideline"
 tags: ["Guideline"]
 keywords: ["sleep", "insomnia", "sleep hygiene", "CBT-I", "cognitive behavioural therapy", "melatonin", "zopiclone", "zolpidem", "benzodiazepine", "DORA", "suvorexant", "lemborexant", "doxepin", "ramelteon", "trazodone", "magnesium glycinate", "glycine", "sleep restriction", "stimulus control", "sleep duration", "PSQI", "ISI", "Epworth", "ICSD-3", "sleep apnea", "restless legs", "circadian rhythm", "shift work", "sleep supplement", "valerian", "L-theanine", "GABA", "tryptophan", "5-HTP"]
-summary: "Sleep and insomnia — can't sleep, trouble staying asleep, sleep hygiene, CBT-I as first-line, melatonin dosing, magnesium glycinate, glycine. Covers ICSD-3-TR diagnosis, CBT-I techniques, pharmacotherapy drug classes (DORAs, Z-drugs, doxepin, trazodone) with dosing tables, and supplement evidence. Brad's key divergence: 0.8mg sustained-release melatonin vs typical 3–5mg immediate-release OTC. Compiled from UpToDate 2025–2026 insomnia articles and Brad's clinical framework."
+summary: "Sleep and insomnia: how much sleep, daily habits that help, when poor sleep becomes insomnia, CBT-I as the first treatment, supplements (melatonin, magnesium glycinate, glycine and others) and prescription sleep medicines with FDA label doses. Brad's key divergence: 0.8 mg sustained-release melatonin, against the typical 3 to 5 mg immediate-release products. Written from AASM, ACP and European guidelines, FDA labels, NIH (NCCIH and ODS) pages and primary studies, plus Brad's clinical framework."
 ---
 
 # Sleep: Clinical Insomnia Guidance
 
-*Sources: UpToDate — Overview of Treatment of Insomnia in Adults (Dec 2025), Evaluation and Diagnosis of Insomnia in Adults (Jul 2025), Pharmacotherapy for Insomnia in Adults (Feb 2026), Cognitive Behavioral Therapy for Insomnia in Adults (Mar 2026), Risk Factors, Comorbidities, and Consequences of Insomnia in Adults (Mar 2026). Centre for Clinical Interventions (CCI) — Sleep Hygiene.*
+*Sources: AASM clinical practice guidelines (Sateia 2017 on medicines; Edinger 2021 on behavioural treatment), ACP 2016 insomnia guideline (Qaseem), European Insomnia Guideline 2023 (Riemann), AASM/SRS 2015 and National Sleep Foundation 2015 sleep-duration statements, FDA prescribing information (DailyMed), NIH NCCIH and ODS fact sheets, Cochrane and other systematic reviews, and primary trials. Full list at the end.*
 
-This guideline covers the clinical management of insomnia in adults, cross-referenced with Dr. Stanfield's Health Roadmap algorithm and Sleep by Dr Brad product.
-
----
-
-## Section 1: Sleep Duration
-
-**Guideline position:** Adults require approximately 7–9 hours of sleep per night to support adequate alertness, performance, and health. The American Academy of Sleep Medicine (AASM) endorses 7–9 hours as the recommended range for adults aged 18–64, with 7–8 hours for those 65 and over. A well-rested adult typically takes 10–20 minutes to fall asleep and is awake for under 30 minutes in total overnight. Short sleep duration (consistently <6 hours) is a distinct entity from insomnia disorder — short sleepers who feel refreshed without daytime impairment do not have insomnia. The adverse outcome data are clear: both short sleep (<6 hours) and long sleep (>8–9 hours) are associated with significantly increased all-cause mortality risk.
-
-A large meta-analysis of over 1.3 million participants confirmed a U-shaped relationship between sleep duration and mortality (Cappuccio 2010). People with insomnia whose sleep, measured objectively, is under 6 hours appear to fare worse than people with insomnia and normal sleep time: more high blood pressure, poorer cognitive performance and higher death rates (Vgontzas 2013, DOI: 10.1016/j.smrv.2012.09.005).
-
-**Brad's position:** Aligns with AASM. The algorithm uses a single `sleep` suggestion (always-show) recommending 7–9 hours nightly, sourced directly from Cappuccio 2010. No additional sub-thresholds are currently modelled.
-
-**Algorithm links:** `sleep` (always-show lifestyle suggestion)
-
-**References:**
-- Cappuccio 2010 – Sleep duration and all-cause mortality, meta-analysis (DOI: 10.1093/sleep/33.5.585)
-- AASM Sleep Duration Consensus Statement
+This guideline follows the order a person meets the problem in: how much sleep to aim for, the habits that protect it, how to tell ordinary bad nights from insomnia, and then the treatments in the order Brad uses them. Each part separates what the evidence says from Brad's position and links to the Health Roadmap algorithm and the Sleep by Dr Brad product.
 
 ---
 
-## Section 2: Sleep Hygiene
+## 1. The sleep target
 
-**Guideline position:** Sleep hygiene refers to a set of behavioural and environmental practices that promote healthy sleep. Considerable research supports these guidelines as long-term solutions to sleep difficulties. Crucially, sleep hygiene alone is not an effective treatment for established insomnia disorder — it is incorporated as one component of CBT-I. However, it is appropriate as initial counselling for mild or short-term sleep difficulties.
+### What the evidence says
 
-Core sleep hygiene recommendations:
+Two expert panels set adult targets in 2015. The AASM and Sleep Research Society advise at least 7 hours a night, on a regular basis, for adults aged 18 to 60 [Watson 2015]. They add that more than 9 hours can suit young adults, people repaying a sleep debt and people who are ill; for everyone else, whether regular sleep beyond 9 hours carries risk is uncertain. The National Sleep Foundation panel gave a range: 7 to 9 hours for adults and 7 to 8 hours from age 65 [Hirshkowitz 2015].
 
-1. **Consistent schedule** — go to bed and wake at the same time every day, including weekends. A fixed rise time is the anchor.
-2. **Sleep only when sleepy** — go to bed only when actually feeling drowsy, not just tired.
-3. **20-minute rule** — if sleep has not come after about 20 minutes, get up and spend some time on a quiet, relaxing activity in dim light, away from screens. Go back to bed only once sleepy again.
-4. **Avoid caffeine and nicotine** — for at least 4–6 hours before bedtime. Caffeine is a stimulant that directly interferes with sleep onset.
-5. **Avoid alcohol** — for at least 4–6 hours before bed. Alcohol may initially aid sleep onset but fragments sleep architecture and reduces sleep quality.
-6. **Bed is for sleep and sex only** — do not use the bed for screens, eating, reading, or working. This strengthens the conditioned association between bed and sleepiness.
-7. **Pre-sleep routine** — engage in relaxing activities for 30–60 minutes before bed (bath, light reading, breathing exercises, calm music).
-8. **Hot bath 1–2 hours before bed** — raises body temperature; the subsequent drop promotes sleepiness.
-9. **No clock-watching** — clock-watching at night reinforces anxiety about sleep loss. Place clocks out of sight.
-10. **Optimise the sleep environment** — cool, dark, quiet room. Use blackout curtains or eyemask; earplugs if noise is an issue.
-11. **Exercise regularly** — a well-established aid for sleep quality. Avoid strenuous exercise within 4 hours of bedtime. Morning exercise (with light exposure) is ideal.
-12. **Eat right** — avoid heavy meals close to bedtime. A light snack may help if hunger is distracting.
-13. **Keep daytime routine consistent** — even after a bad night, keep normal daytime activities. Avoiding activities due to tiredness reinforces the insomnia cycle.
+Both too little and too much sleep track with earlier death. A meta-analysis of prospective cohorts (over 1.3 million people) found higher all-cause mortality with short sleep (under 6 hours) and with long sleep (over 8 to 9 hours) [Cappuccio 2010]. These are associations, and long sleep may often be a marker of illness rather than its cause.
 
-**Brad's position:** Aligns with all guideline recommendations. Brad emphasises the 20-minute rule and bed-sleep association as the most impactful individual habits. The algorithm does not have dedicated sleep hygiene suggestion IDs beyond the general `sleep` suggestion — sleep hygiene is delivered as content rather than discrete conditional triggers.
+Short sleep also travels with metabolic and heart risk. In a meta-analysis of 36 cohorts (about 1.06 million people), sleeping 5 hours or less carried a 48% higher risk of developing diabetes, and poor sleep quality a 40% higher risk [Anothaisintawee 2016]. People with insomnia whose measured sleep is under 6 hours appear to fare worst: more high blood pressure, more diabetes, poorer thinking and higher mortality than people with insomnia who sleep a normal length [Vgontzas 2013].
 
-**Algorithm gap:** No standalone sleep hygiene checklist suggestion. The `sleep` suggestion could link to a detailed sleep hygiene resource.
+### Brad's position
 
-**References:**
-- CCI Sleep Hygiene guidelines (Government of Western Australia)
-- UpToDate Table 3: "Sleep hygiene guidelines"
+Aligns. The roadmap shows a single `sleep` card to everyone: 7 to 9 hours nightly, sourced to Cappuccio 2010. No sub-thresholds are modelled.
+
+**Algorithm link:** `sleep` (always-show lifestyle suggestion)
 
 ---
 
-## Section 3: Insomnia — Evaluation and Diagnosis
+## 2. Daily habits that protect sleep
 
-**Guideline position:** Insomnia ranks among the problems patients raise with doctors most often. The diagnosis is clinical, made from the history and the patient's own account — no routine laboratory tests or sleep studies are required for most patients.
+Brad lays these out across the day, the way his patients live them [Brad, sleep schedule post; Brad, morning light post; roadmap_text Sleep section]. They suit anyone. For established insomnia they are a starting point, not a treatment on their own (part 4).
 
-### Types of insomnia
+### Morning: set the clock
 
-- **Short-term insomnia** (also called acute or adjustment insomnia): symptoms present for less than 3 months, usually in response to an identifiable stressor (job loss, bereavement, illness, relationship stress). Usually self-limiting; may progress to chronic insomnia if maladaptive sleep habits develop.
-- **Chronic insomnia (insomnia disorder)**: symptoms occurring at least 3 nights per week for at least 3 months. This is the form requiring active management.
+- **Same wake time every day,** weekends included. A fixed rise time anchors the body clock, and a steady wake time makes a steady bedtime easier.
+- **Morning daylight.** Open the curtains on waking and aim for at least 30 minutes of daylight, ideally early. Brad's estimate from the light studies is 30 to 60 minutes. Skip sunglasses for the first hour outdoors; protect the skin with clothing and sunscreen, which does not blunt the effect, since it works through the eyes.
+- **Caffeine early only.** Brad's cut-off is 3 hours after waking (the roadmap text puts it at 9:30 am). Caffeine's half-life averages about 5 hours, so an afternoon coffee is still active at bedtime. In a randomised trial, 400 mg of caffeine taken 6 hours before bed still disturbed sleep measured at home, and the authors advise no substantial caffeine for at least 6 hours before bed [Drake 2013]. Brad sees no human evidence for the popular advice to wait 90 minutes after waking before the first coffee.
 
-### ICSD-3-TR diagnostic criteria (all four must be met)
+### Daytime: keep going
 
-1. Difficulty initiating sleep, maintaining sleep, or waking earlier than desired.
-2. The sleep problem happens even though there is enough time, and a suitable setting, for sleep.
-3. The sleep problem causes daytime consequences: fatigue or malaise; impaired attention, concentration, or memory; social, vocational, or educational dysfunction; mood disturbance or irritability; daytime sleepiness; reduced motivation or energy; increased errors or accidents; ongoing worry about sleep.
-4. No other sleep disorder, medical or mental illness, medication or substance fully accounts for the sleep problem.
+- **Keep your plans after a bad night.** Cancelling activities because you feel tired can reinforce insomnia.
+- **Exercise regularly.** Evening exercise does not generally harm sleep; a meta-analysis found slightly more deep sleep after it [Stutz 2019]. The exception was vigorous exercise ending within an hour of bedtime. The roadmap text advises no strenuous exercise in the 2 hours before bed.
+- **Avoid naps** so you are sleepy at bedtime. If a nap is unavoidable, keep it under an hour and before 3 pm. A short nap is the safer choice for anyone who would otherwise drive drowsy.
 
-In practice, difficulty falling asleep is defined as sleep latency >30 minutes; difficulty maintaining sleep as >30 minutes of wakefulness after sleep onset; early morning awakening as waking >30 minutes before the desired time.
+### Evening: wind down
 
-### Screening tools
+- **Light, early dinner.** Avoid large meals close to bedtime.
+- **Alcohol: ideally none, and none within 4 to 6 hours of bed.** Alcohol helps people fall asleep faster, but it disturbs the second half of the night and delays and reduces REM sleep [Ebrahim 2013].
+- **A warm bath or shower 1 to 2 hours before bed.** In a meta-analysis, water at 40 to 42.5 °C at that time, for as little as 10 minutes, shortened the time to fall asleep and improved rated sleep quality [Haghayegh 2019]. Core temperature falls afterwards, which signals sleep.
+- **A wind-down ritual** in the hour or two before bed, such as gentle stretches or 15 minutes of breathing exercises. No phone or TV for the last hour.
+- **Park the worries.** Write down what is on your mind, plus a few good things from the day, and set the list aside for tomorrow.
 
-- **Pittsburgh Sleep Quality Index (PSQI)**: global score >5/21 indicates significant sleep disturbance.
-- **Insomnia Severity Index (ISI)**: a short questionnaire scoring insomnia severity.
-- **Epworth Sleepiness Scale (ESS)**: assesses excessive daytime sleepiness. A low ESS score does not rule out severe insomnia — many insomnia patients feel fatigued but paradoxically cannot nap.
-- **Sleep diary**: 2-week daily record of sleep times, awakenings, and quality. Essential when history is variable or recall is unreliable.
-- **PHQ-2/PHQ-9**: screen for depression (highly comorbid with insomnia).
-- **GAD-7**: screen for anxiety.
+### The bedroom and the bed
 
-### Differential diagnosis
+- **Cool, dark and quiet.** Around 18 to 20 °C. Blackout curtains or an eye mask.
+- **Bed for sleep and sex only.** No screens, work or worrying in bed. Keep the phone out of the bedroom and use a cheap alarm clock instead.
+- **The 20-minute rule.** If sleep has not come after about 20 minutes, get up, do something calm or dull in dim light away from screens, and go back to bed only when sleepy. Do the same after a night waking.
+- **Turn the clock away.** Watching it feeds the worry that keeps you awake.
+- **Comfortable bed.** Brad suggests replacing a mattress every 9 to 10 years and pillows every 1 to 2 years. Pets are better kept out of the bedroom.
+- **A sleep diary** gives you facts about your sleep in place of impressions.
 
-- **Short sleep duration** (natural short sleeper): <7 hours without daytime impairment — distinguishable from insomnia by the absence of dysfunction.
-- **Chronic sleep insufficiency**: due to volitional sleep restriction or insufficient opportunity. These people will rapidly fall asleep if given the chance — unlike insomnia patients who are fatigued but cannot sleep.
-- **Delayed sleep-wake phase disorder (DSWPD)**: common in adolescents and young adults. The patient can sleep normally if allowed to follow their preferred schedule (midnight or later). Distinguished from insomnia by consistent sleep on weekends/holidays.
-- **Advanced sleep-wake phase disorder (ASWPD)**: more common in older adults; early sleep onset (7 PM), early waking (3–4 AM). Falls asleep easily if allowed to go to bed early — unlike insomnia.
-- **Restless legs syndrome (RLS)**: uncomfortable, restless sensations in the legs at rest, worse in evenings. Screen with: "Do your legs bother you at night?" RLS is a clinical diagnosis; check iron stores.
-- **Obstructive sleep apnea (OSA)**: 30–40% of chronic insomnia patients have comorbid OSA. Consider OSA if daytime sleepiness is prominent, if there is snoring or witnessed apneas, or if insomnia is treatment-refractory.
+### How strong is this evidence?
 
-**Brad's position:** Aligns. Brad would use ISI or PSQI for monitoring progress. Screening for depression and anxiety in all insomnia presentations aligns with the algorithm's general mental health awareness.
+Each habit has epidemiological or laboratory support, but bundled "sleep hygiene" advice does little for chronic insomnia on its own. The AASM suggests clinicians not use it as a single treatment for chronic insomnia (conditional recommendation) [Edinger 2021 guideline], and a component network meta-analysis of 241 trials found that sleep hygiene education added nothing measurable to CBT-I [Furukawa 2024].
 
-**References:**
-- ICSD-3-TR, American Academy of Sleep Medicine, 2023
-- UpToDate: Evaluation and Diagnosis of Insomnia in Adults (Topic 7676, Version 53.0)
-- Buysse DJ et al. 1989, PSQI (DOI: 10.1016/0165-1781(89)90047-4)
+### Brad's position
 
----
+Aligns. Brad treats the 20-minute rule and keeping the bed for sleep as the most useful single habits. The roadmap has no separate sleep-habits card; the `sleep` card and the roadmap text carry this content.
 
-## Section 4: CBT-I (Cognitive Behavioural Therapy for Insomnia)
-
-**Guideline position:** CBT-I is the recommended first-line treatment for chronic insomnia disorder, endorsed by the American Academy of Sleep Medicine (AASM), American College of Physicians (ACP), British Association for Psychopharmacology (BAP), European Sleep Research Society (ESRS), and VA/DoD guidelines. It is preferred over medication because: (1) it is equally or more efficacious than medications, (2) it avoids medication side effects and dependence risks, (3) benefits are durable beyond the end of treatment, and (4) it provides patients with lifelong skills for managing recurrent symptoms.
-
-A 2021 AASM meta-analysis of 49 randomised trials of CBT-I versus control conditions in nearly 4,000 patients with chronic insomnia confirmed clinically significant improvements across all primary outcomes.
-
-### The 5 components of CBT-I
-
-**1. Sleep education**
-Education about how insomnia develops (predisposing, precipitating, and perpetuating factors — the "3 P's") and the two-process model of sleep (homeostatic sleep drive + circadian rhythm). Understanding why the counterintuitive CBT-I strategies work is essential for patient engagement.
-
-**2. Sleep restriction therapy**
-Addresses the maladaptive pattern of excessive time in bed, which fragments sleep and worsens insomnia.
-
-Steps:
-1. Use a sleep diary to calculate average total sleep time (TST) over the past week.
-2. Set initial time in bed (TIB) = average TST (minimum 5 hours).
-3. Choose a fixed rise time; set bedtime by subtracting prescribed TIB from rise time.
-4. Maintain this schedule for 7–10 days with a sleep diary.
-5. Calculate sleep efficiency (SE = TST/TIB × 100%):
-   - SE ≥ 90%: extend TIB by 15–30 minutes (earlier bedtime).
-   - SE 85–89%: keep TIB the same.
-   - SE <85%: reduce TIB by 15–30 minutes (later bedtime).
-6. Repeat at each visit until sleep goals achieved.
-
-*Precautions:* Sleep restriction should not be used in patients with epilepsy, untreated bipolar disorder (with manic episode history), significant sleep deprivation, or high-risk occupations (pilots, surgeons, commercial drivers) without adaptation. Sleep compression (gradual reduction in TIB) is an alternative for high-risk patients.
-
-**3. Stimulus control therapy**
-Retrains the conditioned association between the bed/bedroom and arousal, anxiety, and wakefulness.
-
-Instructions:
-1. Keep the bed and bedroom for sleep and sex only. No TV, reading, eating, or worrying in bed.
-2. Go to bed only when sleepy (not just tired).
-3. If sleep has not come after about 20 minutes, at bedtime or after a night waking, leave the bed for another room. Go back only once sleepy. Repeat as often as the night requires.
-4. Set an alarm and rise at the same time every morning regardless of sleep quality.
-5. Do not nap during the day.
-
-**4. Cognitive therapy**
-Identifies and restructures maladaptive thoughts and beliefs about sleep that increase arousal and perpetuate insomnia:
-- Unrealistic expectations ("I must get 8 hours to function").
-- Fear of the consequences of poor sleep.
-- Overestimating the impact of poor sleep on daytime performance.
-- Catastrophising about not sleeping.
-
-Mindfulness-based approaches (MBCT) are sometimes incorporated as "third-wave" cognitive techniques. A network meta-analysis (2023) found that the components most likely to produce a treatment response were sleep restriction, stimulus control, cognitive restructuring and third-wave techniques.
-
-**5. Relaxation and counter-arousal**
-Progressive muscle relaxation (PMR) and diaphragmatic breathing reduce physiological arousal at bedtime. These are supportive components, not stand-alone treatments — the network meta-analysis found relaxation therapy alone may actually reduce the likelihood of treatment response compared with other CBT-I components.
-
-### Delivery formats
-
-- **Traditional individual CBT-I**: 4–8 sessions face-to-face or via telehealth with a trained provider. Greatest benefit from 4 or 8 sessions vs 1–2.
-- **Brief behavioural treatment for insomnia (BBTI)**: 2–4 sessions focused on behavioural elements; deliverable by GPs with some training.
-- **Digital/app-based CBT-I**: lower adherence but broader access. Free options include Insomnia Coach (VA) and CBT-I Coach apps. Paid options: Sleepio (6-week programme).
-
-### Efficacy
-
-Moderate-quality evidence: multicomponent CBT-I produces clinically significant improvements in sleep onset latency, wake after sleep onset, sleep efficiency, and subjective sleep quality in patients with and without comorbid disorders. Benefits are durable beyond treatment end (unlike medication, which loses effect when stopped). Long-term studies (12–24 months) show CBT-I alone and CBT-I combined with medication outperform medication alone.
-
-**Brad's position:** Strongly aligns. Brad's approach prioritises behavioural strategies before medication, consistent with guidelines from AASM, ACP, and BAP. For patients with severe distress or rapid deterioration in daytime function, a short-term medication plus CBT-I combination is reasonable.
-
-**References:**
-- AASM 2021 meta-analysis of CBT-I (49 trials, ~4,000 patients) — Martin et al. (see CBT-I UpToDate article)
-- UpToDate: Cognitive Behavioral Therapy for Insomnia in Adults (Topic Version 29.0, Mar 2026)
-- Qaseem 2016 – ACP Guideline on Chronic Insomnia (DOI: 10.7326/M15-2175)
-- Riemann 2023 – European Insomnia Guideline update (DOI: 10.1111/jsr.14035)
+**Algorithm gap:** no standalone sleep-habits checklist. The `sleep` card could link to one.
 
 ---
 
-## Section 5: Pharmacotherapy
+## 3. Is it insomnia?
 
-**Guideline position:** Medication should not be used on its own to treat insomnia. When used, medications are combined with CBT-I and healthy sleep habits. Selection is individualized based on the type of insomnia complaint (sleep-onset vs sleep-maintenance), patient age and comorbidities, side effect profile, cost, and preference.
+### A working definition
 
-### Class overview
+Most people have bad nights. Insomnia disorder is narrower. The AASM classification (ICSD-3-TR, 2023) requires all of these:
 
-| Class | Mechanism | Examples | Indication | Schedule |
-|-------|-----------|---------|-----------|---------|
-| Non-BZ BZRAs | GABA-A agonist | Zolpidem, eszopiclone, zopiclone, zaleplon | Sleep onset ± maintenance | IV |
-| Benzodiazepine hypnotics | GABA-A agonist | Temazepam, triazolam | Sleep onset ± maintenance | IV |
-| DORAs | Orexin receptor antagonist | Suvorexant, lemborexant, daridorexant | Sleep onset and maintenance | IV |
-| Low-dose doxepin | H1 antagonist | Doxepin 3–6 mg | Sleep maintenance only | No schedule |
-| Ramelteon | MT1/MT2 agonist | Ramelteon 8 mg | Sleep onset only | No schedule |
-| Off-label antidepressants | Mixed | Trazodone, mirtazapine | Sleep onset ± maintenance | — |
-| Off-label antipsychotics | H1 antagonist (mainly) | Quetiapine 6.25–25 mg | Not recommended without psychiatric comorbidity | — |
-| OTC antihistamines | H1 antagonist | Diphenhydramine, doxylamine | Short-term only; limited efficacy | — |
-| Melatonin (supplement) | MT1/MT2 agonist | Various | Sleep-onset; mild efficacy | — |
+1. Trouble falling asleep, staying asleep or waking too early.
+2. This happens even though the person has enough time and a suitable place to sleep.
+3. It harms the day: tiredness, poor concentration or memory, low mood or irritability, sleepiness, less drive, more mistakes or accidents, or constant worry about sleep.
+4. No other sleep disorder, illness, medicine or substance fully explains it.
 
-### Benzodiazepine receptor agonists (BZRAs)
+When the problem occurs on at least 3 nights a week for at least 3 months, it counts as chronic. Shorter episodes, often after a stressful event, usually settle on their own but can become chronic if coping habits such as long lie-ins or hours awake in bed take hold. NICE uses the same 3-nights, 3-months line in its daridorexant guidance [NICE TA922].
 
-**Mechanism:** Enhance GABA inhibitory action at GABA-A receptors, promoting sedation.
+How common is it? Across more than 50 population surveys, about a third of adults report at least one insomnia symptom, 9% to 15% have symptoms that affect the day, and about 6% meet full diagnostic criteria. Rates are higher in women, and symptoms rise with age [Ohayon 2002].
 
-**Nonbenzodiazepine BZRAs** (preferred over benzodiazepine hypnotics):
+### Measuring it
 
-| Drug | Half-life | Starting dose | Max dose | Notes |
-|------|-----------|--------------|---------|------|
-| Eszopiclone (Lunesta) | ~6 hours | 1 mg | 3 mg (2 mg elderly) | Sleep onset and maintenance |
-| Zaleplon (Sonata) | ~1 hour | 5 mg | 20 mg (10 mg elderly) | Sleep onset; can use middle-of-night |
-| Zolpidem IR (Ambien) | 1.5–4.5 hours | 5 mg (F); 5–10 mg (M) | 10 mg | Sleep onset and maintenance |
-| Zolpidem ER (Ambien CR) | 2.8 hours | 6.25 mg (F); 6.25–12.5 mg (M) | 12.5 mg | Sleep onset and maintenance |
-| Zopiclone (non-US) | ~5 hours | 3.75–7.5 mg | 7.5 mg | Sleep onset and maintenance |
+The diagnosis rests on the person's own account, and the European guideline recommends a clinical interview plus questionnaires and diaries [Riemann 2023]. Sleep studies are kept for suspected sleep apnoea or limb-movement disorders and for insomnia that does not respond to treatment.
 
-**Benzodiazepine hypnotics** (generally avoided as first-line due to longer half-lives, higher dependence risk):
+Useful tools:
 
-| Drug | Half-life | Dose range | Notes |
-|------|-----------|-----------|------|
-| Temazepam | 8–20 hours | 7.5–30 mg | Best safety profile in class |
-| Triazolam | 1.5–5.5 hours | 0.125–0.25 mg | Shortest-acting; risk of rebound |
-| Estazolam | 10–24 hours | 0.5–2 mg | Avoid in elderly |
-| Flurazepam | 40–250 hours | 15–30 mg | Very long half-life; generally avoid |
+- **Sleep diary,** kept for 1 to 2 weeks: bedtime, rise time, time to fall asleep, time awake in the night, naps, caffeine and alcohol. It also drives sleep restriction (part 4).
+- **Insomnia Severity Index (ISI):** a short questionnaire on severity and impact, validated as a treatment outcome measure [Bastien 2001]. Brad's pick for tracking progress.
+- **Pittsburgh Sleep Quality Index (PSQI):** a global score above 5 (out of 21) marks poor sleep [Buysse 1989].
+- **Epworth Sleepiness Scale:** rates the chance of dozing in 8 everyday situations [Johns 1991]. Many people with insomnia score low because they feel exhausted yet cannot nap. A high score points away from simple insomnia.
+- **Mood screen** (PHQ-9 for depression, GAD-7 for anxiety), because both often come with insomnia.
 
-Lower doses in older patients due to falls, fractures, cognitive impairment risk. All BZRAs carry dependence/habituation risk with prolonged use; rebound insomnia occurs on cessation. FDA 2019 boxed warning for nonbenzodiazepines: risk of rare but serious complex sleep-related behaviours (sleepwalking, sleep-driving) — contraindicated after any such episode.
+### Brad's position
 
-**Efficacy:** Meta-analyses confirm BZRAs decrease sleep latency by ~10 minutes and increase total sleep time by 30–60 minutes vs placebo.
-
-### Dual orexin receptor antagonists (DORAs)
-
-**Mechanism:** Block both orexin (hypocretin) receptors (OX1R and OX2R), reducing the wake drive and facilitating sleep onset and maintenance. Novel class with a better safety profile than BZRAs — do not cause respiratory depression, do not appear to worsen OSA.
-
-| Drug | Starting dose | Max dose | Half-life | Schedule |
-|------|--------------|---------|---------|---------|
-| Suvorexant (Belsomra) | 10 mg (30 min before bed) | 20 mg | ~12 hours | IV |
-| Lemborexant (Dayvigo) | 5 mg (immediately before bed) | 10 mg | ~17–19 hours | IV |
-| Daridorexant (Quviviq) | 25 or 50 mg (30 min before bed) | 50 mg | ~8 hours | IV |
-
-Efficacy: Suvorexant — reduces sleep latency ~7 min, increases total sleep time ~18 min vs placebo at 1, 3, and 12 months. Lemborexant — superior to placebo and zolpidem ER in adults 55+ (phase 3 trial). Daridorexant — dose-dependent improvements, efficacy maintained at 12 months. Main side effect: somnolence. Contraindicated in narcolepsy. Schedule IV controlled substances. Cost may be a limiting factor.
-
-### Low-dose doxepin
-
-Doxepin 3–6 mg is FDA-approved specifically for sleep-maintenance insomnia. Mechanism: postsynaptic H1 histamine receptor antagonism at very low doses (minimal anticholinergic effects at these doses). Useful for middle-of-night and early morning awakening insomnia. Not useful for isolated sleep-onset insomnia. No abuse potential. Efficacy: improves total sleep time by 25–38 minutes vs placebo in adults and older adults. Starting dose: 6 mg for adults, 3 mg for older adults, taken within 30 minutes of bedtime and not within 3 hours of a meal.
-
-### Ramelteon
-
-Ramelteon 8 mg is FDA-approved for sleep-onset insomnia. MT1/MT2 agonist — facilitates sleep onset by reducing evening SCN-driven arousal and reinforcing circadian periodicity. Works similarly to melatonin but is more potent and selective. Not useful for sleep maintenance. No abuse potential, no scheduled status. Efficacy is modest: reduces subjective sleep latency by ~4.6 minutes, increases total sleep time by ~7.3 minutes vs placebo (meta-analysis, 11 trials, 5,700+ patients). Contraindicated with fluvoxamine (strong CYP1A2 inhibitor).
-
-### Off-label medications
-
-**Trazodone** (50–100 mg nightly): most widely used off-label medication for insomnia despite AASM guideline recommending against it due to limited evidence. A systematic review identified 7 trials (429 patients total); the largest RCT (306 nondepressed patients) found benefit at 1 week but not at 2 weeks vs placebo. Use is pragmatic in practice. Key risks: orthostatic hypotension, QT prolongation, priapism (males), serotonin syndrome risk with serotonergic drugs.
-
-**Mirtazapine** (7.5–15 mg nightly): sedating antidepressant. Limited evidence in insomnia without comorbid depression; benefits may not be sustained chronically. Side effects: significant weight gain, somnolence, increased appetite.
-
-**Quetiapine** (6.25–25 mg nightly): low-dose antipsychotic. Not approved for insomnia; use only with psychiatric comorbidity. Little evidence in primary insomnia.
-
-**Gabapentin** (limited evidence): may help in patients with comorbid pain syndromes or alcohol use disorder. Avoid in renal impairment (renally eliminated).
-
-### OTC antihistamines
-
-Diphenhydramine 25–50 mg and doxylamine 25 mg. Only modest evidence: diphenhydramine reduces sleep onset by ~8 minutes vs placebo. Tolerance develops with extended use. Anticholinergic effects are significant (confusion, delirium, urinary retention) — particularly dangerous in older adults. UpToDate notes: avoid in older adults, use very cautiously and only short-term.
-
-### Safe prescribing principles
-
-- Prescribe the lowest effective dose.
-- Avoid doses above the maximum recommended.
-- Avoid combining with alcohol, opioids, or other sedatives.
-- Extra caution in older adults (increased sedation, falls, cognitive impairment, altered drug metabolism).
-- Assess for suicidal ideation before prescribing hypnotics in depressed patients.
-- Schedule follow-up within a few weeks of starting, then at least every 6 months for long-term use.
-- Have a plan for tapering — gradual reduction over months, ideally alongside CBT-I.
-- Avoid long-term prescribing: the harms are well documented, while data on benefit and safety over longer use are sparse.
-
-**Brad's position:** Aligns with guidelines. Brad does not prescribe sleep medications via the Health Roadmap app (it is a lifestyle/supplement tool). Brad's clinical practice aligns with the guideline hierarchy: CBT-I first, short-term medication when necessary, long-term hypnotics avoided.
-
-**References:**
-- Sateia MJ et al. 2017 – AASM Clinical Practice Guideline for Pharmacologic Treatment of Chronic Insomnia (DOI: 10.5664/jcsm.6470)
-- De Crescenzo et al. 2022 – Network meta-analysis of insomnia medications, Lancet (DOI: 10.1016/S0140-6736(22)00831-8)
-- UpToDate: Pharmacotherapy for Insomnia in Adults (Feb 2026)
+Aligns. Brad would track progress with the ISI or PSQI and check for depression and anxiety in anyone with ongoing insomnia.
 
 ---
 
-## Section 6: Supplements for Sleep
+## 4. When it is something else: sleep disorders and red flags
 
-**Guideline position:** Dietary supplements marketed for sleep are regulated as food in the US (DSHEA), and concentration/purity are not guaranteed. The best evidence among supplements is for melatonin, though even that is described as weak by UpToDate. No herbal supplement (valerian, chamomile, kava, hops, passionflower) has shown significant benefit over placebo in a 14-trial meta-analysis (1,600+ patients). Rare cases of severe liver injury have been reported with valerian and kava.
+Some problems look like insomnia but need different care.
+
+- **Sleep apnoea.** Snoring, gasping or pauses in breathing that a partner notices, morning headaches, and real sleepiness in the day (falling asleep without meaning to) suggest obstructive sleep apnoea. It often overlaps with insomnia: in a meta-analysis of 37 studies, 38% of people with sleep apnoea had insomnia, and 35% of people with insomnia had sleep apnoea on testing (apnoea-hypopnoea index of 5 or more) [Zhang 2019]. Brad's sleep apnoea post covers the STOP-BANG questionnaire, CPAP and the role of weight loss and GLP-1 medicines [Brad, sleep apnoea post]. **If you nod off while driving, stop driving and see your doctor promptly.** If a crash or near miss has left you or someone else hurt, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- **Restless legs.** A need to move the legs, with unpleasant sensations, that comes on at rest in the evening and eases with movement. Ask a doctor to check iron stores.
+- **Body-clock timing problems.** A "night owl" who sleeps well when allowed to keep late hours (weekends, holidays) has a delayed sleep phase, not insomnia; it is common in teenagers and young adults. The reverse, sleepy by early evening and awake before dawn, is commoner later in life and is often mistaken for early-waking insomnia.
+- **Too little time in bed.** People who cut sleep short by choice or circumstance fall asleep fast when given the chance. People with insomnia are tired but cannot sleep.
+- **Natural short sleepers** feel fine on under 7 hours and have no daytime problems. That is not insomnia.
+
+**Mental health.** Insomnia doubles the risk of later depression in people who are not depressed: in a meta-analysis of 21 cohort studies, the odds ratio was 2.10 to 2.60 [Baglioni 2011]. Sleep disturbance is also linked to suicidal thoughts and behaviour, independent of depression [Pigeon 2012]. For suicidal thoughts, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+
+**See a doctor** if insomnia has lasted more than 3 months and affects your days, if you are sleepy in the day rather than just tired, if you snore loudly or stop breathing in sleep, if depression, anxiety or pain drive your sleep problems, if you worry about dependence on sleeping pills, or if CBT-I and a supplement trial have not helped. The zolpidem label makes the same point for medicines: insomnia that persists after 7 to 10 days of treatment may signal an illness that needs assessment [FDA, Ambien].
+
+---
+
+## 5. CBT-I: the first treatment
+
+### What guidelines recommend
+
+Every major guideline puts cognitive behavioural therapy for insomnia (CBT-I) first:
+
+- **ACP 2016:** all adults with chronic insomnia should receive CBT-I as initial treatment (strong recommendation, moderate-quality evidence). Medicines enter through shared decision-making only when CBT-I alone has not worked, and for short-term use (weak recommendation, low-quality evidence) [Qaseem 2016].
+- **AASM 2021:** multicomponent CBT-I is a strong recommendation. Brief behavioural therapy, stimulus control, sleep restriction and relaxation on their own are conditional recommendations; sleep hygiene alone is advised against [Edinger 2021 guideline]. The supporting review screened 1,244 studies and included 124 trials [Edinger 2021 review].
+- **European guideline 2023:** CBT-I first for adults of any age, including those with other conditions, delivered in person or digitally (grade A) [Riemann 2023].
+
+Why first? Benefits persist after treatment stops, there is no dependence, and it teaches skills people reuse when insomnia returns. In a trial of 160 adults, CBT-I with or without zolpidem gave similar response rates at 6 weeks (60% and 61%). The best long-term results came from starting both and then stopping the medicine while continuing CBT-I [Morin 2009].
+
+### What CBT-I involves
+
+A course runs about 4 to 8 weekly sessions. The parts below are listed in the order Brad explains them to patients.
+
+**Understanding sleep.** Two systems drive sleep: sleep pressure, which builds the longer you are awake, and the body clock. Insomnia usually starts with a trigger (stress, illness, a new baby) in someone already prone to it, and then lasts because of the habits that grow up around it: long lie-ins, early nights, hours awake in bed, worry. CBT-I targets those habits. Knowing why makes the harder steps easier to stick with.
+
+**Stimulus control: re-link bed and sleep.**
+
+- Head to bed only once sleepy, not just tired.
+- Keep the bed for sleep and sex alone.
+- If you are awake for about 20 minutes, at bedtime or in the night, get up and leave the bedroom. Come back only when sleepy. Repeat as often as needed.
+- Rise at one fixed time each morning, however the night went.
+- No daytime naps.
+
+**Sleep restriction: match time in bed to actual sleep.** Lying in bed longer to "catch up" spreads sleep thin. The method:
+
+1. From a week of sleep diary, work out average actual sleep time.
+2. Set time in bed equal to that average, but never below 5 hours.
+3. Fix the rise time and count back to set the earliest bedtime.
+4. After about a week, work out sleep efficiency: time asleep divided by time in bed. At 90% or more, move bedtime 15 to 30 minutes earlier. At 85% to 89%, hold steady. Below 85%, move bedtime 15 to 30 minutes later.
+5. Repeat weekly until sleep is solid and the day feels better.
+
+It causes short-term sleepiness. A gentler version, sleep compression, trims time in bed gradually. People with sleep apnoea, restless legs, bipolar disorder, a seizure disorder or sleepwalking should talk to a clinician first, because changing sleep habits can affect these conditions; the VA's Insomnia Coach app gives the same list [VA, Insomnia Coach]. Anyone whose work makes sleepiness dangerous (drivers, pilots, machine operators) needs a plan before starting.
+
+**Changing unhelpful thoughts.** Beliefs such as "I must get 8 hours or tomorrow is ruined" raise arousal at bedtime. Cognitive work tests them against the person's own diary. Mindfulness-based ("third-wave") methods are sometimes added.
+
+**Calming the body.** Breathing exercises and progressive muscle relaxation can help some people wind down.
+
+### Which parts matter most
+
+The largest analysis to date, 241 trials with over 31,000 adults, linked remission most strongly to cognitive restructuring, third-wave methods, sleep restriction and stimulus control, delivered in person [Furukawa 2024]. Relaxation looked possibly counterproductive as a package component, and sleep hygiene education looked inessential. The best combination had a number needed to treat of 3 compared with psychoeducation alone. The authors caution that undetected interactions between components could change these conclusions.
+
+### Getting CBT-I
+
+- **In person or by video** with a trained psychologist or clinician: the most effective format [Furukawa 2024].
+- **Brief behavioural therapy** (2 to 4 sessions, mostly stimulus control and sleep restriction), a conditional AASM recommendation [Edinger 2021 guideline].
+- **Digital programmes.** Free from the US Department of Veterans Affairs: Insomnia Coach (a guided weekly plan, usable on its own) and CBT-i Coach (designed for use alongside a clinician) [VA apps]. Paid programmes such as Sleepio also exist. Digital CBT-I works, including in pregnancy [Felder 2020], though fewer people finish it.
+
+### Brad's position
+
+Strongly aligns. Brad puts behavioural treatment before medicines, as the AASM, ACP and European guidelines do. For severe distress or a rapid fall in daytime function, a short course of medicine alongside CBT-I is reasonable.
+
+**Algorithm gap:** no card points people to CBT-I or free digital programmes.
+
+---
+
+## 6. Supplements
+
+### The overall picture
+
+Supplements sold for sleep are regulated as foods in the US, so dose and purity are not checked before sale. Guidelines are cool on all of them. The AASM 2017 guideline suggests clinicians not use melatonin, tryptophan or valerian for chronic insomnia (each a weak recommendation) [Sateia 2017]. The European guideline does not recommend fast-release melatonin or herbal remedies, but allows prolonged-release melatonin for up to 3 months in people aged 55 and over (grade B) [Riemann 2023].
 
 ### Melatonin
 
-**Guideline position:** Supplemental melatonin may help some people who have trouble falling asleep. Its hypnotic effect is weak, and it does little to keep people asleep later in the night. It works primarily by augmenting natural circadian alignment — reducing the evening SCN-driven arousal (via MT1) and reinforcing circadian periodicity (via MT2). A 2020 systematic review of 12 meta-analyses concluded that melatonin shortens the time to fall asleep and lengthens total sleep by a small, statistically significant margin; reviewers disagree on whether that gain is clinically meaningful.
+**What the evidence says.** The body releases melatonin in the evening as a darkness signal. It nudges the body clock and makes sleep easier to start; it is not a sedative in the way sleeping pills are. An umbrella review of 12 meta-analyses found that melatonin shortens the time to fall asleep and lengthens total sleep by statistically significant amounts, but reviewers disagree on whether the gains are clinically meaningful, and the reviews ranged from moderate to critically low quality [Low 2020]. A meta-analysis found that its modest effects did not appear to fade with continued use [Ferracioli-Oda 2013]. In the 2022 network meta-analysis of insomnia medicines, melatonin showed no overall material benefit [De Crescenzo 2022].
 
-UpToDate dosing note: most insomnia doses sit between 1 and 5 mg, though products on sale run from 200 mcg up to 20 mg, and **under 1 mg may work as well as larger doses.** Potential benefits are improved when dosed a few hours before bedtime (circadian signal, not sedative timing). Half-life: ~20–50 minutes (rapidly cleared). Side effects: vivid dreams, daytime sleepiness, headache, dizziness — not well-established in controlled studies. Long-term safety not established.
+Safety, per NIH: short-term use appears safe for most people, but long-term safety data are lacking; melatonin may stay active longer in older people and cause daytime drowsiness; side effects are usually mild (headache, dizziness, nausea, sleepiness) [NCCIH, melatonin]. Brad's melatonin reference adds the interactions: check with a doctor first if you take fluvoxamine, a blood thinner, sedatives (including zolpidem), blood pressure medicines or diabetes medicines, or if you are pregnant [Brad, melatonin reference]. Brad regards the 2025 report linking long-term melatonin to an 89% higher risk of heart failure as preliminary and flawed: an unreviewed conference abstract showing association, not causation [Brad, Mar 2026 post].
 
-**Brad's position: DIVERGES from typical consumer behaviour, ALIGNS with evidence.**
+**Brad's position: diverges from typical consumer products, aligns with the dose evidence.**
 
-Brad's Sleep product uses **0.8 mg sustained-release melatonin** (Melotime®) — far below the typical 3–5 mg immediate-release OTC doses. (The earlier V1 formula used 0.3 mg immediate-release; it was superseded in August 2026 and is quoted here only to explain what changed.) His rationale:
-- The body makes roughly 10–80 mcg of melatonin a night (Kor 2014, a range statement from a secondary source); direct measurement puts most adults at 20–35 mcg (Fourtillan 2001). Only ~15% of oral melatonin is absorbed (DeMuro 2000), so 0.8 mg delivers ~120 mcg to the bloodstream — a few times what the body makes, and about a quarter of a 3 mg capsule. Do not describe this as restoring or replacing a physiological range.
-- High-dose melatonin (3–5 mg) is associated with next-morning grogginess, daytime melatonin elevation and receptor desensitisation (Zhdanova 2001: 3 mg kept melatonin elevated into daylight and lowered body temperature).
-- Zhdanova 2001 found 0.3 mg improved sleep efficiency, acting mainly in the mid-third of the night — which is why the sustained-release form was adopted rather than a higher immediate-release dose. Never say the V1 dose "did nothing" later in the night.
-- UpToDate explicitly states doses below 1 mg may be as effective as higher amounts — supporting Brad's position.
-- Sustained-release pharmacokinetics (Thanawala 2024, Pharmaceutics, n=16): about half the peak concentration of immediate-release, half-life ~5.1 h vs ~1.0 h. Levels after 4 h were higher with sustained-release but the difference was not statistically significant, so say "a lower peak, with a lower level kept going later into the night" rather than claiming it is still present at 3 am.
+Brad keeps melatonin to 1 mg or less, taken 2 to 4 hours before sleep [Brad, melatonin reference]. His Sleep product uses **0.8 mg of sustained-release melatonin** (Melotime®), well below the 3 to 5 mg of immediate-release melatonin in most products. (The V1 formula used 0.3 mg immediate-release; it was replaced in August 2026 and is quoted here only to explain what changed.) His reasoning, as products.md states it:
 
-At 0.8 mg the dose stays below the 1 mg threshold UpToDate identifies as potentially equal to higher amounts, while the sustained-release profile spreads delivery across the night instead of one spike.
+- The body makes roughly 10 to 80 mcg of melatonin a night (a range statement in Kor 2014, a secondary source). A study that tracked it in the blood found about 22 mcg a night in women and 36 mcg in men [Fourtillan 2001], and overnight urine tests in healthy adults find about 18 to 24 mcg of its breakdown product [Leger 2004].
+- In a study of 2 mg and 4 mg tablets, only about 15% of an oral dose reached the bloodstream [DeMuro 2000]. By that estimate 0.8 mg delivers about 120 mcg, against about 450 mcg for a 3 mg capsule. This is an estimate, not measured for Sleep. It is a few times what the body makes, so never describe it as restoring or replacing a natural level.
+- In adults over 50, 0.3 mg raised night-time melatonin to normal levels, while 3 mg kept it raised into the daylight hours and lowered body temperature [Zhdanova 2001]. The 0.3 mg dose improved sleep efficiency in the subgroup with poor sleep and acted mainly in the middle third of the night. That is why Brad moved to a sustained-release form rather than a higher immediate-release dose. Never say the V1 dose "did nothing" later in the night.
+- In young adults, 0.3 mg or 1 mg taken 2 to 4 hours before bed helped them fall asleep sooner than placebo, with no next-morning effects on mood or performance tests [Zhdanova 1996].
+- Sustained-release pharmacokinetics come from a study of 5 mg capsules in 16 people, funded by the ingredient's maker, with two authors employed by it: about half the peak of immediate-release, and a half-life of about 5.1 hours against 1.0 hour [Thanawala 2024]. Levels after 4 hours were higher with sustained-release, but not significantly. Say "a lower peak, with a lower level kept going later into the night", not that melatonin is still present at 3 am. The study did not test Sleep's 0.8 mg dose.
 
-**Algorithm links:** `supplement-sleep` (always-show supplement suggestion, links to Sleep by Dr Brad product)
+**Algorithm link:** `supplement-sleep` (always-show supplement card, links to Sleep by Dr Brad)
 
-### Magnesium glycinate
+### Magnesium
 
-**Guideline position:** UpToDate notes magnesium among the "many other dietary supplements marketed for insomnia" with insufficient evidence. It is listed as generally safe.
+**What the evidence says.** NIH's complementary health centre calls the research on magnesium for insomnia very limited [NCCIH, sleep disorders]. A 2023 systematic review (9 studies, 7,582 people, no meta-analysis) found that observational studies link magnesium status with sleep quality, while its randomised trials gave conflicting results [Arab 2023]. A 2021 meta-analysis reported falling asleep about 17 minutes sooner than with placebo, but that figure pooled 2 small trials that both gave 500 to 729 mg a day of elemental magnesium as magnesium oxide, and the evidence was rated low to very low quality; neither trial tested bisglycinate or a 126 mg dose [Mah & Pitre 2021]. A 2025 randomised trial in 155 adults reporting poor sleep gave 250 mg a day of magnesium as bisglycinate or placebo for 4 weeks. The Insomnia Severity Index fell more with magnesium (−3.9 against −2.3, p = 0.049; a small effect, Cohen's d 0.2), and a single-question sleep quality rating did not differ significantly [Schuster 2025]. In an exploratory subgroup, people with lower dietary magnesium improved more; that idea is untested.
 
-**Evidence:** A 2023 systematic review without meta-analysis (Arab et al.; 9 cross-sectional, cohort and randomized studies, 7,582 participants) found that observational studies linked magnesium status with sleep quality, while its randomized trials gave contradictory results and an uncertain association between magnesium supplementation and sleep. A 2025 randomized, double-blind, placebo-controlled trial (Schuster et al.; 155 adults aged 18–65 reporting poor sleep, 250 mg elemental magnesium as bisglycinate daily) found a greater fall in Insomnia Severity Index score than placebo at 4 weeks (−3.9 vs −2.3; p = 0.049; Cohen's d 0.2, a small effect). In an exploratory subgroup analysis of the Schuster trial, participants reporting lower dietary magnesium intake improved more; this is hypothesis-generating, not confirmed. Low magnesium intake is common in Western diets (40–50% of adults fall below recommended intake).
+NIH sets the upper limit for magnesium from supplements and medicines at 350 mg a day for adults, unless a clinician advises more [NCCIH, sleep disorders].
 
-The glycinate chelate form has high bioavailability and is well-tolerated (no laxative effect unlike magnesium oxide or citrate at sleep-relevant doses).
-
-**Brad's position:** Aligns with cautious use. Brad's Sleep product contains 126 mg elemental magnesium as fully chelated magnesium bisglycinate (each magnesium bound to two glycines). The elemental amount is unchanged from V1; what changed in V2 is that the chelate is now fully chelated, where V1's magnesium glycinate was not. Brad cites a meta-analysis finding reduced time to fall asleep by approximately 17 minutes (Mah & Pitre 2021; 3 small RCTs in 151 older adults; trials at moderate-to-high risk of bias, low to very low quality evidence). Framed as "promising, not definitive" — consistent with honest evidence communication.
-
-Note: MicroVitamin and MicroVitamin+ use magnesium taurate (chosen for cardiovascular benefit). The Sleep product uses magnesium glycinate (chosen for sleep/relaxation benefit). Different forms serve different purposes.
-
-**References:**
-- Arab et al. 2023 – The Role of Magnesium in Sleep Health: systematic review of observational studies and RCTs, no meta-analysis (DOI: 10.1007/s12011-022-03162-1)
-- Schuster et al. 2025 – Magnesium bisglycinate in healthy adults reporting poor sleep, randomized placebo-controlled trial (DOI: 10.2147/NSS.S524348)
-- Mah & Pitre 2021 – Oral magnesium supplementation for insomnia in older adults: systematic review and meta-analysis (DOI: 10.1186/s12906-021-03297-z)
+**Brad's position.** Cautious use: "promising, not definitive." Sleep contains 126 mg of elemental magnesium as fully chelated magnesium bisglycinate (each magnesium bound to two glycines). The elemental amount is unchanged from V1; V2 made the chelate fully chelated. MicroVitamin and MicroVitamin+ use magnesium taurate, chosen for heart health; Sleep uses bisglycinate, chosen for sleep and relaxation.
 
 ### Glycine
 
-**Guideline position:** UpToDate lists glycine among dietary supplements "marketed for insomnia" with insufficient evidence but generally regarded as safe. No RCTs were large enough to be included in the broader herbal meta-analysis.
+**What the evidence says.** Three small Japanese trials tested 3 g of glycine before bed. People rated their sleep better and fell asleep faster [Inagawa 2006; Yamadera 2007], and partly sleep-deprived volunteers reported less next-day tiredness and sleepiness [Bannai 2012]. In one trial, overnight recordings showed people reached slow-wave sleep sooner, with no change in sleep architecture [Yamadera 2007]. No trial reported fewer night wakings. Glycine is a calming neuromodulator. In rats it lowered core body temperature, which the researchers suggest may be one way it helps sleep, because body temperature drops as sleep begins [Bannai & Kawai 2012]. Glycine is an amino acid found in food, and 3 g is a modest dose.
 
-**Evidence:** Three small Japanese RCTs (Inagawa 2006; Yamadera 2007; Bannai 2012) tested glycine 3 g at bedtime:
-- Inagawa 2006: improved subjective sleep quality vs placebo.
-- Yamadera 2007: reduced sleep latency and improved sleep quality on polysomnography.
-- Bannai 2012: reduced next-day fatigue, improved daytime performance.
-
-Mechanism: glycine lowers core body temperature at sleep onset (via peripheral vasodilation), which is a key circadian signal for sleep initiation. It also acts as an inhibitory neuromodulator in the CNS. The 3 g dose is well below any toxicity threshold (glycine is a non-essential amino acid present in food).
-
-**Brad's position:** Includes 2,400 mg glycine in his Sleep product, targeting the 3 g threshold studied in the RCTs. (V1 stated 2,500 mg; the V2 label now counts the glycine carried in the magnesium bisglycinate chelate, and 2,400 mg is the most that fits in four capsules.) Brad cites the three RCTs for sleep quality improvement and next-day fatigue reduction. This is the strongest ingredient-level evidence in Brad's sleep stack.
-
-**References:**
-- Inagawa K et al. 2006 – Glycine and sleep quality, J Sleep Res
-- Yamadera W et al. 2007 – Glycine ingestion improves subjective sleep quality, Sleep Biol Rhythms (DOI: 10.1111/j.1479-8425.2007.00262.x)
-- Bannai M et al. 2012 – Effects of dietary glycine on daytime performance, Sleep Biol Rhythms
+**Brad's position.** Sleep contains 2,400 mg of glycine, close to the 3 g used in the trials. (V1 stated 2,500 mg; the V2 label counts the glycine carried in the magnesium chelate, and 2,400 mg is the most that fits in four capsules.) Brad cites the three trials for sleep quality and next-day tiredness and regards glycine as the best-supported ingredient in his sleep stack.
 
 ### L-theanine
 
-**Evidence:** L-theanine is an amino acid found in green tea, usually taken at 200–400 mg. The trials are small and short, and their results are mixed, with no consistent benefit for sleep or anxiety:
-- Hidese 2019: in a four-week crossover trial in 30 adults, 200 mg a day improved some sleep quality subscores (sleep latency, sleep disturbance, use of sleep medication) compared with placebo.
-- Moulin 2024: in a 28-day trial in 30 moderately stressed adults, 400 mg a day did no better than placebo for perceived stress. On an activity tracker the L-theanine group had less time asleep and significantly less light sleep than placebo; the authors reported better sleep quality. The authors are employees of KGK Science (the contract research company) and Ethical Naturals (the maker of the L-theanine tested).
-- Sarris 2019: in 46 people with generalized anxiety disorder, 450–900 mg a day added to their antidepressants for 8 weeks was no better than placebo for anxiety or insomnia severity. Sleep satisfaction improved compared with placebo, and insomnia scores improved in the subgroup with non-clinical insomnia symptoms.
-- Lyon 2011: in 98 boys aged 8 to 12 with ADHD, 400 mg a day for six weeks improved sleep percentage and sleep efficiency on actigraphy but not time to fall asleep.
+**What the evidence says.** L-theanine is an amino acid from tea, usually taken at 200 to 400 mg. The trials are small and short, and results are mixed:
 
-Safe and well tolerated in these trials. Not included in standard clinical guidelines.
+- 30 healthy adults, 200 mg a day for 4 weeks (crossover): some sleep-quality subscores improved against placebo [Hidese 2019].
+- 30 moderately stressed adults, 400 mg a day for 28 days: no better than placebo for stress. On an activity tracker the L-theanine group slept less and had significantly less light sleep than placebo, while the authors reported better sleep quality. The authors work for the contract research company and the maker of the product tested [Moulin 2024].
+- 46 people with generalised anxiety disorder, 450 to 900 mg a day added to antidepressants for 8 weeks: no better than placebo for anxiety or insomnia severity; sleep satisfaction improved [Sarris 2019].
+- 98 boys aged 8 to 12 with ADHD, 400 mg a day for 6 weeks: better sleep efficiency on wrist monitoring, no change in time to fall asleep [Lyon 2011].
 
-**Brad's position:** Not convinced by the evidence for L-theanine's benefits.
+It was well tolerated. No guideline covers it.
 
-**References:**
-- Hidese S et al. 2019 – Effects of L-theanine administration on stress-related symptoms and cognitive functions in healthy adults, Nutrients (DOI: 10.3390/nu11102362)
-- Moulin M et al. 2024 – Safety and efficacy of L-theanine supplementation for 28 days in healthy adults with moderate stress: a randomized, double-blind, placebo-controlled trial, Neurol Ther (PMID: 38758503; DOI: 10.1007/s40120-024-00624-7)
-- Sarris J et al. 2019 – L-theanine in the adjunctive treatment of generalized anxiety disorder, J Psychiatr Res (DOI: 10.1016/j.jpsychires.2018.12.014)
-- Lyon MR et al. 2011 – Effects of L-theanine on objective sleep quality in boys with ADHD, Altern Med Rev (PMID: 22214254)
+**Brad's position.** Not convinced by the evidence for L-theanine's benefits.
 
-### GABA (gamma-aminobutyric acid)
+### Other supplements
 
-**Evidence:** Oral GABA supplements have limited evidence for sleep — poor gastrointestinal absorption means most oral GABA may not cross the blood-brain barrier effectively. Some studies show modest reductions in sleep latency. Not included in clinical guidelines. Considered generally safe at typical supplement doses.
+- **Valerian.** Trials have been inconsistent and its value for insomnia is not shown; long-term safety is uncertain [NCCIH, sleep disorders; ODS, valerian]. The AASM suggests not using it [Sateia 2017]. Not recommended.
+- **Kava.** Little research for sleep, and it has been linked to liver injury that is sometimes serious or fatal [NCCIH, sleep disorders]. Avoid.
+- **Chamomile.** No conclusive trial evidence; allergy is possible in people sensitive to ragweed [NCCIH, sleep disorders].
+- **Tryptophan and 5-HTP.** Precursors of serotonin and melatonin, with very limited insomnia data [NCCIH, sleep disorders]. The AASM suggests clinicians not use L-tryptophan for chronic insomnia (weak recommendation) [Sateia 2017]. Tryptophan taken with medicines that affect serotonin may cause life-threatening serotonin toxicity [NCCIH, sleep disorders].
+- **GABA.** Little evidence for sleep, and it is unclear how much oral GABA reaches the brain. No guideline covers it.
 
-### Valerian
+### Sleep by Dr Brad
 
-**Evidence:** 11 of 14 trials in a meta-analysis studied valerian; no significant difference from placebo on any of 13 insomnia outcome measures. Additionally, valerian may cause severe liver injury in rare cases. UpToDate classifies it as no evidence of efficacy with hepatotoxicity risk. Not recommended.
+**Current formula (V2, on sale since August 2026):** 0.8 mg sustained-release melatonin (Melotime®), 126 mg elemental magnesium as fully chelated magnesium bisglycinate, and 2,400 mg glycine. 120 capsules; **4 capsules about 3 hours before you want to fall asleep** (30 servings). $40 one-time, $36 on subscription. Third-party tested by Labdoor (LTSCERT-151).
 
-### Tryptophan / 5-HTP
+Superseded V1 formula, only for "what changed" questions: 0.3 mg immediate-release melatonin, 126 mg elemental magnesium as magnesium glycinate (not fully chelated) and 2,500 mg glycine, taken 2 hours before bed. V2 made three changes: melatonin form and dose, a fully chelated magnesium, and a glycine figure that now counts the chelate's glycine.
 
-**Evidence:** Tryptophan is a melatonin and serotonin precursor. Small older studies reported modest sleep-onset effects at 1–2 g, but the AASM 2017 insomnia guideline does not recommend it: it suggests that clinicians not use L-tryptophan to treat chronic sleep onset or sleep maintenance insomnia in adults (weak recommendation). 5-HTP (5-hydroxytryptophan) may have similar effects. Interactions with serotonergic drugs (SSRIs, SNRIs) are a safety concern (serotonin syndrome risk).
+**Brad's reasoning for the combination:** three complementary mechanisms at once: body-clock timing (melatonin), relaxation and faster sleep onset (magnesium bisglycinate), and sleep quality (glycine). Brad approved two product claims: no morning grogginess, and non-habit-forming. Each ingredient has a safety profile compatible with long-term use.
 
-**References:**
-- Sateia MJ et al. 2017 – AASM Clinical Practice Guideline for Pharmacologic Treatment of Chronic Insomnia (DOI: 10.5664/jcsm.6470)
-
-### Brad's Sleep product summary
-
-**Sleep by Dr Brad — current formula (V2, on sale since August 2026):** melatonin 0.8 mg sustained-release (Melotime®) + 126 mg elemental magnesium as fully chelated magnesium bisglycinate + glycine 2,400 mg. 120 capsules, **4 capsules about 3 hours before you want to fall asleep** (30 servings). $40 one-time / $36 subscription. Labdoor-certified (LTSCERT-151).
-
-Superseded V1 formula, for answering "what changed" only: melatonin 0.3 mg immediate-release + 126 mg elemental magnesium glycinate (not fully chelated) + glycine 2,500 mg, taken 2 hours before bed. Three changes in V2: melatonin form and dose, fully chelated magnesium, and the glycine figure now counting the chelate's glycine.
-
-Brad's rationale for this combination: addresses three complementary mechanisms simultaneously — circadian timing (melatonin), relaxation and reduced sleep latency (magnesium bisglycinate), and core body temperature reduction plus sleep quality improvement (glycine). All three are non-habit-forming and have safety profiles compatible with long-term use.
-
-**Brad's position:** His Sleep product represents his curated evidence-based stack for mild-moderate sleep difficulties. For consumers wanting to try supplements before seeing a doctor, this is a reasonable starting point for sleep-onset and sleep-quality issues. It does not replace CBT-I or medical evaluation for chronic insomnia.
-
-**References:**
-- Low et al. 2020 – Melatonin for insomnia, umbrella review of meta-analyses (DOI: 10.1016/j.jpsychires.2019.10.022)
-- UpToDate: Pharmacotherapy for Insomnia — Dietary Supplements section
+**Brad's position.** Sleep is his evidence-based stack for mild to moderate sleep trouble and a reasonable first step for people who want to try a supplement before seeing a doctor, mainly for falling asleep and sleep quality. It does not replace CBT-I or a medical assessment of chronic insomnia.
 
 ---
 
-## Section 7: Risk Factors and Consequences
+## 7. Prescription sleep medicines
 
-**Guideline position:** Insomnia affects approximately 15% of adults as a disorder (with daytime consequences); up to two-thirds report at least some insomnia symptoms. Insomnia has a heritability of ~40%.
+### Where they fit
 
-### Key risk factors
+Medicines are an add-on, not a stand-alone answer. ACP reserves them for adults whose insomnia has not responded to CBT-I, after a shared discussion of benefits, harms and costs, and for short-term use [Qaseem 2016]. The European guideline allows benzodiazepines, Z-drugs, daridorexant and low-dose sedating antidepressants for up to 4 weeks, and orexin antagonists for up to 3 months or longer in some cases [Riemann 2023].
 
-- Older age (prevalence increases with age)
-- Female sex (1.2–1.4× higher risk; worsens during pregnancy, peri- and postmenopause)
-- Personal or family history of insomnia
-- Psychiatric disorders (especially depression, anxiety, PTSD, substance use)
-- Chronic medical conditions (pain, COPD, diabetes, heart failure, cancer, kidney disease)
-- Neurological disorders (Alzheimer disease, Parkinson disease, traumatic brain injury)
-- Medications: SSRIs/SNRIs (5–35% incidence), MAOIs (~70%), stimulants, glucocorticoids (50–70%), beta-blockers (lipid-soluble: bisoprolol, metoprolol, carvedilol — associated with nightmares), diuretics (nocturia), opioids, alcohol, caffeine, nicotine
-- Social stressors: unemployment, divorce, widowhood, low socioeconomic status, discrimination
-- Other sleep disorders: OSA (30–40% of insomnia patients), RLS, circadian rhythm disorders
+How well do they work? A network meta-analysis of 154 double-blind trials (44,089 adults) found that benzodiazepines, doxylamine, eszopiclone, lemborexant, seltorexant, zolpidem and zopiclone improved sleep quality more than placebo in the short term [De Crescenzo 2022]. Only eszopiclone and lemborexant showed a long-term benefit, on very low-certainty evidence. The authors judged that eszopiclone and lemborexant had the most favourable overall profiles, while noting that eszopiclone may cause substantial side effects and lemborexant's safety data were inconclusive.
 
-### Adverse consequences
+### The AASM 2017 view, drug by drug
 
-Chronic insomnia is associated with:
+Each of these is a weak recommendation [Sateia 2017]:
 
-- **Psychiatric disorders**: insomnia *precedes* and predicts new-onset depression, anxiety, and alcohol use disorder. ~40% of patients with insomnia have comorbid depression; ~80% of patients with depression have insomnia.
-- **Suicidal ideation and behaviour**: independent risk factor for suicide, even after adjusting for psychiatric comorbidities.
-- **Cardiovascular disease**: associated with sympathetic activation, non-dipping nocturnal blood pressure, hypertension, myocardial infarction, atrial fibrillation, and increased cardiovascular mortality. Particularly elevated risk when insomnia coexists with objectively short sleep duration.
-- **Diabetes**: insomnia is a risk factor for incident diabetes (HR 1.40) and progression from prediabetes to T2DM (HR 1.59) — confirmed in meta-analyses of >1 million adults.
-- **Cancer**: 24% increased cancer risk in those with insomnia history (meta-analysis of 8 cohort studies, 500,000+ individuals).
-- **Neurodegenerative disease**: increased risk of dementia, particularly Alzheimer disease. Insomnia is associated with elevated beta-amyloid levels. Ongoing insomnia may contribute to nocturnal agitation, delirium, and wandering.
-- **Quality of life and performance**: similar magnitude of impairment to heart failure or depression on SF-36. Increased work absenteeism, errors, accidents. Fatigue is the dominant daytime complaint — note that excessive daytime sleepiness (actually falling asleep involuntarily) is uncommon in pure insomnia and should prompt evaluation for OSA or other sleep disorder.
-- **Self-medication**: ~25% of untreated insomnia patients use alcohol as a sleep aid; alcohol withdrawal itself worsens insomnia.
+- **Suggested for sleep onset and staying asleep:** eszopiclone, zolpidem, temazepam.
+- **Suggested for sleep onset:** zaleplon, triazolam, ramelteon.
+- **Suggested for staying asleep:** suvorexant, low-dose doxepin.
+- **Suggested against:** trazodone, tiagabine, diphenhydramine, melatonin, tryptophan, valerian.
 
-**Brad's position:** Aligns. The algorithm currently flags sleep as an always-show lifestyle suggestion but does not yet have conditional triggers for high cardiovascular risk or diabetic patients who may especially benefit from sleep optimisation. This is a gap worth considering.
+(Lemborexant and daridorexant were approved after this guideline.)
 
-**References:**
-- UpToDate: Risk Factors, Comorbidities, and Consequences of Insomnia in Adults (Mar 2026)
-- Cappuccio 2010 (DOI: 10.1093/sleep/33.5.585)
+### FDA label doses
 
----
+All doses below come from the US prescribing information. Each is taken once a night, close to bedtime.
 
-## Section 8: Special Populations
+| Medicine (US brand) | Class | Starting dose | Maximum | Older adults | Label timing notes |
+|---|---|---|---|---|---|
+| Zolpidem (Ambien) | Z-drug; Schedule IV | Women 5 mg; men 5 or 10 mg | 10 mg | 5 mg | Immediately before bed, with 7 to 8 hours left before waking |
+| Zolpidem extended-release (Ambien CR) | Z-drug; Schedule IV | Women 6.25 mg; men 6.25 or 12.5 mg | 12.5 mg | 6.25 mg | Swallow whole; 7 to 8 hours left before waking |
+| Eszopiclone (Lunesta) | Z-drug; Schedule IV | 1 mg | 3 mg | No more than 2 mg | Immediately before bed; not with or right after a meal |
+| Temazepam (Restoril) | Benzodiazepine; Schedule IV | 15 mg usual (7.5 mg may be enough) | 30 mg | Start at 7.5 mg | Taper to stop |
+| Suvorexant (Belsomra) | Orexin antagonist; Schedule IV | 10 mg | 20 mg | Same | Within 30 minutes of bed, 7 hours left before waking |
+| Lemborexant (Dayvigo) | Orexin antagonist; Schedule IV | 5 mg | 10 mg | Same | Immediately before bed, 7 hours left before waking |
+| Daridorexant (Quviviq) | Orexin antagonist; Schedule IV | 25 to 50 mg | 50 mg | Same | Within 30 minutes of bed, 7 hours left before waking |
+| Doxepin, low dose (Silenor) | Antihistamine (tricyclic at low dose); not controlled | 6 mg | 6 mg | Start at 3 mg (65 and over) | Within 30 minutes of bed; not within 3 hours of a meal |
+| Ramelteon (Rozerem) | Melatonin receptor agonist; not controlled | 8 mg | 8 mg | Same | Within 30 minutes of bed; not with a high-fat meal |
 
-### Older adults
+Sources: FDA labels for Ambien, Ambien CR, Lunesta, Restoril, Belsomra, Dayvigo, Quviviq, Silenor and Rozerem (DailyMed). Liver impairment and interacting drugs lower several of these doses; see each label. Zopiclone, widely used outside the US, has no US label.
 
-Sleep maintenance difficulties and early morning awakening become more prominent with age. The prevalence of insomnia disorder is somewhat lower in older adults despite more sleep complaints — possibly due to adjusted expectations or flexible schedules.
+### What the trials and labels show
 
-CBT-I is the treatment of choice in older adults. All BZRAs are considered potentially inappropriate in older adults per Beers Criteria (AGS 2019) due to elevated risk of falls, fractures, cognitive impairment, delirium, and prolonged effects from slower drug metabolism. When medications are necessary, DORAs, low-dose doxepin, and ramelteon are preferred. Use the lowest available dose. OTC antihistamines (diphenhydramine, doxylamine) carry significant anticholinergic and confusion risks in older adults — avoid.
+- **Orexin antagonists** block the brain's wake signal. In a 1-year trial, suvorexant improved self-reported total sleep by about 23 minutes more than placebo at month 1; somnolence was the commonest side effect (13% against 3%) [Michelson 2014]. In adults aged 55 and over, lemborexant beat both placebo and extended-release zolpidem on objective sleep onset and staying asleep [Rosenberg 2019]. Daridorexant 50 mg cut time awake after sleep onset by about 23 minutes more than placebo at month 1 and also improved daytime functioning [Mignot 2022]. All three labels contraindicate them in narcolepsy. The suvorexant label reports a dose-related increase in suicidal thoughts on questionnaires [FDA, Belsomra]. NICE recommends daridorexant only when CBT-I has been tried and failed or is unavailable or unsuitable [NICE TA922].
+- **Low-dose doxepin** may improve sleep quality slightly in the short term; in a Cochrane review, tricyclics (mostly doxepin) added about 23 minutes of sleep and made little difference to time to fall asleep [Everitt 2018]. It is not for use with MAO inhibitors, untreated narrow-angle glaucoma or severe urinary retention [FDA, Silenor].
+- **Ramelteon** cut the time to fall asleep by about 4 minutes in a meta-analysis of 13 trials (5,812 people), a small effect [Kuriyama 2014]. Do not take it with fluvoxamine [FDA, Rozerem].
+- **Z-drugs** (zolpidem, eszopiclone, zaleplon) carry a boxed warning for complex sleep behaviours: sleepwalking, sleep-driving and other activities while not fully awake, some causing serious injury or death. Stop the medicine and tell your doctor after any such episode; the labels contraindicate further use [FDA, Ambien; FDA, Lunesta]. If someone has been hurt, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- **Benzodiazepines** carry a boxed warning: combined with opioids they can cause profound sedation, breathing depression, coma and death, and they carry risks of abuse, dependence and withdrawal reactions, which can include seizures. Stop them with a gradual taper [FDA, Restoril].
+- **Next-day impairment.** The labels warn that these medicines can impair driving and alertness the next morning, especially at higher doses or with too little time in bed.
 
-Advanced sleep-wake phase disorder (ASWPD) is more common in older adults and mimics early morning insomnia — distinguish by the fact that ASWPD patients fall asleep easily if allowed to go to bed early (typically 6–7 PM).
+### Off-label and over-the-counter choices
 
-### Shift workers
+- **Trazodone** is widely prescribed for sleep. A Cochrane review pooled 3 trials (370 people) and found a moderate improvement in self-rated sleep against placebo, with more side effects such as morning grogginess [Everitt 2018]. The AASM suggests not using it [Sateia 2017].
+- **Antipsychotics** such as low-dose quetiapine are not recommended for insomnia [Riemann 2023].
+- **Sedating antihistamines** (diphenhydramine, doxylamine): the European guideline does not recommend them [Riemann 2023], and the AASM suggests not using diphenhydramine [Sateia 2017]. They are a particular risk for confusion in older adults.
 
-Shift work sleep disorder (SWD) affects 10–23% of shift workers. Criteria: insomnia, excessive daytime sleepiness and shortened total sleep that arise because working hours fall in the time the person would normally sleep.
+### Safe use
 
-### Pregnancy
+- Use the lowest dose that works, for the shortest time, and never above the label maximum.
+- Do not combine with alcohol, opioids or other sedatives.
+- Ask about mood and suicidal thoughts before prescribing to someone who is depressed.
+- Review within a few weeks, and regularly after that.
+- Plan the exit from the start: taper slowly, ideally alongside CBT-I [Morin 2009].
 
-Sleep disturbance affects 25–70% of pregnant individuals, increasing across trimesters. Common causes change: nausea and urinary frequency early; fetal movements, heartburn, leg cramps, RLS, OSA, and positional discomfort later. RLS occurs with increased frequency in pregnancy — screen with "Do your legs bother you when lying down at night?"
+### Brad's position
 
-Non-pharmacological therapies (CBT-I) are preferred and have been validated in RCTs for pregnancy. Several RCTs confirm digital CBT-I is effective in pregnancy. OTC sedating antihistamines (doxylamine) can be used cautiously if non-pharmacological options are insufficient. BZRAs and sedating antidepressants should generally be avoided.
-
-### Comorbid OSA
-
-Insomnia and OSA co-occur in 30–40% of cases. OSA should be considered in all insomnia patients with daytime sleepiness, snoring, or witnessed apneas — especially in males, older adults, and those with obesity or metabolic syndrome. CPAP treatment for OSA may resolve insomnia. If insomnia persists despite OSA treatment, independent CBT-I is needed. CBT-I also improves CPAP adherence. BZRAs are not strictly contraindicated in mild-moderate OSA but should be avoided in severe OSA.
-
-### Comorbid depression and anxiety
-
-A third or more of people with chronic insomnia also have a psychiatric disorder. Bidirectional relationship: insomnia predicts new-onset depression, and depression perpetuates insomnia. Treat both disorders concurrently — do not assume insomnia will resolve when the psychiatric disorder improves. CBT-I is valuable even in psychiatric comorbidity. Concurrent treatment of insomnia with eszopiclone during initial antidepressant treatment has been shown to enhance psychiatric treatment response time.
-
-### Comorbid chronic pain
-
-~75% of patients with chronic pain have insomnia. Pain and insomnia amplify each other bidirectionally. Pain management is the primary approach; however, treating insomnia independently also improves pain outcomes. CBT-I is first-line; medications with dual indications (e.g., gabapentin for neuropathic pain and sleep, sedating antidepressants) may be considered.
-
-**Brad's position:** Aligns with guideline approaches for all special populations. The Health Roadmap app does not currently have population-specific sleep management branches beyond the general `sleep` suggestion.
+Aligns. The Health Roadmap does not prescribe sleep medicines; it is a lifestyle and supplement tool. In practice Brad follows the guideline order: CBT-I first, short-term medicine when needed, long-term sleeping pills avoided.
 
 ---
 
-## Section 9: Common Questions
+## 8. People who need extra care
 
-**Q: How much sleep do I need?**
-Most adults need 7–9 hours of sleep per night. Some individuals are natural short sleepers (consistently <7 hours without daytime impairment) — this is a distinct biological trait, not insomnia. If you feel refreshed, function well, and have no daytime symptoms, you may not need 8 hours. Age matters: after 65, 7–8 hours is typical.
+**Older adults.** Sleep becomes lighter and earlier with age, and early waking is common. In people over 60, sleeping pills added about 25 minutes of sleep but made adverse cognitive events about 4.8 times as common, with more daytime fatigue; the review concluded that the benefits may not justify the risks [Glass 2005]. The AGS Beers Criteria list medicines best avoided in people aged 65 and over [AGS 2023]. Labels lower the starting dose for zolpidem, eszopiclone, temazepam and doxepin (part 7). CBT-I comes first. NIH notes melatonin may linger and cause daytime drowsiness in older people [NCCIH, melatonin].
 
-**Q: Is melatonin safe long-term?**
-Short-term safety is well-established. Long-term safety has not been studied in controlled trials. Melatonin is generally regarded as safe. At physiological doses (0.3–0.8 mg, as in Brad's product), it simply replaces or augments your body's natural melatonin — there is no evidence of receptor desensitisation at these doses. High-dose melatonin (3–10 mg) carries more theoretical risk of disrupting natural melatonin patterns. Brad's approach of using physiological doses appears safer for long-term use, though this has not been confirmed in long-term RCTs.
+**Pregnancy.** Sleep worsens through pregnancy with nausea, bladder frequency, heartburn, leg cramps, restless legs and discomfort. Digital CBT-I improved insomnia in a randomised trial of 208 pregnant women [Felder 2020]. Brad's Sleep product is not for use in pregnancy or breastfeeding, and medicines should be discussed with a doctor.
 
-**Q: Should I take magnesium for sleep?**
-The evidence is modest but promising. If you are magnesium-deficient (common in Western diets), supplementation may improve sleep quality and reduce time to fall asleep. The glycinate form has the best bioavailability and tolerability for sleep purposes. A dose of around 150–400 mg elemental magnesium glycinate at bedtime is reasonable to try. Effects may take a few weeks to notice. It is not a substitute for CBT-I if you have chronic insomnia.
+**Sleep apnoea with insomnia.** Treat both. CPAP may ease insomnia, and CBT-I can help people stick with CPAP. Sedatives deserve extra caution when apnoea is severe or untreated.
 
-**Q: How is insomnia different from just "bad sleep"?**
-Insomnia disorder requires three things: difficulty sleeping (initiating, maintaining, or waking too early), adequate opportunity and conditions for sleep, and daytime impairment (fatigue, concentration problems, mood disturbance, etc.) lasting at least 3 months, at least 3 nights per week. If you sleep poorly but have no daytime consequences, or if your sleep difficulties resolve quickly, you may have short-term or subclinical sleep issues — not insomnia disorder.
+**Depression and anxiety.** Insomnia predicts later depression [Baglioni 2011], and the two feed each other. Treat both at once; do not assume sleep will fix itself when mood improves. CBT-I still helps when another mental health condition is present [Riemann 2023].
 
-**Q: Will sleeping pills fix my insomnia?**
-Sleeping pills help in the short term (reducing sleep latency by ~5–15 minutes, increasing total sleep time by 30–60 minutes vs placebo), but they do not fix the underlying cause. When you stop taking them, insomnia often returns. CBT-I addresses the perpetuating factors that keep insomnia going — and its benefits last after treatment ends. Medication is most useful as a short-term bridge, or in combination with CBT-I for severe or refractory cases.
+**Heart and metabolic risk.** In 13 cohort studies (122,501 people), insomnia carried a 45% higher risk of developing or dying from cardiovascular disease [Sofi 2014]. Poor sleep quality carried a 40% higher risk of diabetes [Anothaisintawee 2016]. In a meta-analysis of 18 cohorts, insomnia was linked to Alzheimer disease but not to all-cause dementia, while sleep-disordered breathing was linked to all types [Shi 2018]. These are associations; whether treating insomnia lowers these risks is not established.
 
-**Q: Is CBT-I available without seeing a therapist?**
-Yes. Digital CBT-I programmes are effective. Free options include the Insomnia Coach app (US Department of Veterans Affairs) and CBT-I Coach. Paid options include Sleepio (6-week self-directed programme). These have lower adherence than face-to-face CBT-I but reach more patients.
+**Shift workers.** Working through the usual sleep period can cause insomnia, daytime sleepiness and short sleep. Bright light at the right times helps reset the clock [Brad, morning light post].
 
-**Q: What should I do if I wake at 3 AM and can't get back to sleep?**
-Do not lie in bed clock-watching for hours — this strengthens the association between your bed and wakefulness (conditioned arousal). If awake for more than ~20 minutes, get out of bed. Sit quietly in dim light. Do something calm and non-stimulating (light reading, breathing exercises). Return to bed only when sleepy. This is the core of stimulus control therapy. It feels counterintuitive but works. Checking your phone or watching TV in bed is the worst thing you can do.
-
-**Q: Does alcohol help sleep?**
-No. Alcohol may reduce sleep onset latency (helps you fall asleep faster) but it fragments sleep architecture — it suppresses REM sleep in the first half of the night and causes rebound arousals in the second half. Net effect: poorer sleep quality, more awakenings, and less restorative sleep. Avoid alcohol within 4–6 hours of bedtime.
-
-**Q: Can supplements replace medication for insomnia?**
-For mild, short-term sleep difficulties or subclinical sleep problems, supplements (melatonin, magnesium glycinate, glycine) may be sufficient. For established chronic insomnia disorder, supplements alone are unlikely to produce full remission — they may be a useful adjunct to CBT-I. Prescription medication is reserved for moderate-severe insomnia not responding to behavioural approaches, or when rapid symptom relief is needed. The hierarchy: sleep hygiene → CBT-I → supplement trial → short-term medication → longer-term medication with regular review.
-
-**Q: I've tried everything. When should I see a doctor?**
-See your doctor if: insomnia has persisted for more than 3 months and is affecting your daytime function; you have significant daytime sleepiness (particularly falling asleep involuntarily — this may suggest OSA or another sleep disorder); you are concerned about medication dependence; you have underlying depression, anxiety, or chronic pain contributing to your sleep problems; or you have had a trial of CBT-I and supplements without adequate improvement.
+**Brad's position.** Aligns. The roadmap has no population-specific sleep branches beyond the `sleep` card.
 
 ---
 
-## Section 10: Algorithm Gap Summary
+## 9. Common questions
 
-Guideline recommendations not currently covered by dedicated suggestion IDs in the Health Roadmap algorithm:
+**How much sleep do I need?**
+Most adults do best on 7 to 9 hours; from 65, 7 to 8 hours is typical [Hirshkowitz 2015]. Some people are natural short sleepers who feel fine on less. If you wake refreshed and function well, you may not need 8 hours.
 
-| Gap | Guideline recommendation | Priority |
-|-----|-------------------------|---------|
-| Sleep hygiene checklist | The sleep hygiene checklist is not delivered as structured content | Medium |
-| CBT-I signposting | No suggestion directing patients to CBT-I resources or digital programmes | High |
-| Alcohol and sleep | Alcohol-sleep interaction not flagged unless triggered by alcohol use question | Medium |
-| Caffeine timing | No sleep-specific caffeine suggestion (current suggestions only general) | Low |
-| OSA screening | No conditional branch for insomnia + sleepiness + snoring → OSA evaluation | High |
-| Shift work | No shift work-specific sleep management pathway | Low |
-| Sleep for CVD / diabetes risk | Patients with elevated BP or HbA1c could benefit from targeted sleep messaging | Medium |
-| Short sleep duration consequence education | The `sleep` suggestion recommends hours but does not explain the health consequences of short sleep to motivate behaviour change | Low |
-| Melatonin dose education | No content explaining why low-dose melatonin is preferred over OTC high-dose products | Medium (aligns with Brad's product differentiation) |
+**Is melatonin safe long term?**
+Short-term use appears safe for most people. Long-term safety has not been tested in controlled trials [NCCIH, melatonin]. Brad uses a low dose (0.8 mg sustained-release in his Sleep product), but even that delivers a few times the body's own nightly amount, so it is not a "natural replacement". Higher doses (3 mg and up) kept melatonin raised into the next day in older adults [Zhdanova 2001]. A low dose may be the safer choice for long-term use, though no long-term trial has confirmed it.
+
+**Should I take magnesium for sleep?**
+The evidence is modest. Trials are small, the 17-minute figure came from magnesium oxide trials of low to very low quality, and one bisglycinate trial found a small benefit [Mah & Pitre 2021; Schuster 2025]. People with low dietary intake may gain most, though that is unproven. Around 150 to 400 mg of elemental magnesium as glycinate in the evening is a reasonable trial; note that NIH's upper limit for supplemental magnesium is 350 mg a day. Give it a few weeks. It does not replace CBT-I for chronic insomnia.
+
+**How is insomnia different from just bad sleep?**
+Insomnia disorder needs three things: trouble sleeping, enough opportunity to sleep, and a real effect on your days. Chronic insomnia lasts 3 months or more, on at least 3 nights a week. Poor sleep without daytime effects, or a rough patch that passes, is not insomnia disorder.
+
+**Will sleeping pills fix my insomnia?**
+They help in the short term; in older adults, for example, they added about 25 minutes of sleep [Glass 2005]. But they do not fix the habits that keep insomnia going, and it often returns when they stop. CBT-I targets those habits, and its benefits last. Medicine works best as a short bridge or alongside CBT-I [Morin 2009].
+
+**Can I do CBT-I without a therapist?**
+Yes. Digital programmes work. Free: Insomnia Coach and CBT-i Coach from the US Department of Veterans Affairs. Paid: Sleepio. Fewer people finish them than finish in-person therapy, but they reach far more people.
+
+**I wake at 3 am and can't get back to sleep. What should I do?**
+Don't lie there watching the clock; that teaches your brain that bed means wakefulness. After about 20 minutes, get up, sit somewhere dim and do something calm (a book, breathing exercises). Go back when sleepy. It feels backwards, but this is the core of stimulus control. Scrolling a phone in bed is the worst option.
+
+**Does alcohol help sleep?**
+No. You may fall asleep faster, but the second half of the night is more broken, and REM sleep is delayed and reduced [Ebrahim 2013]. Brad's advice: ideally no alcohol, and none within 4 to 6 hours of bed.
+
+**Can supplements replace medicine for insomnia?**
+For mild or short-lived sleep trouble, a supplement (melatonin, magnesium glycinate, glycine) may be enough. For chronic insomnia disorder, supplements alone are unlikely to bring full remission; they may help alongside CBT-I. Prescription medicine is kept for moderate to severe insomnia that has not responded, or when fast relief is needed. Brad's order: sleep habits, then CBT-I, then a supplement trial, then short-term medicine, then longer-term medicine with regular review.
+
+**When should I see a doctor?**
+See the list at the end of part 4.
 
 ---
 
-*Compiled April 2026. Sources current through March 2026 (UpToDate literature review). Refer to your doctor for personalised clinical decisions.*
+## 10. Algorithm gap summary
+
+Guideline recommendations the Health Roadmap does not cover with a dedicated suggestion:
+
+| Gap | What is missing | Priority |
+|---|---|---|
+| Sleep-habits checklist | The habits in part 2 are not delivered as structured content | Medium |
+| CBT-I signposting | No card points to CBT-I or free digital programmes | High |
+| Alcohol and sleep | Not flagged unless an alcohol trigger fires | Medium |
+| Caffeine timing | No sleep-specific caffeine advice | Low |
+| Sleep apnoea screening | No branch for insomnia plus sleepiness plus snoring | High |
+| Shift work | No shift-work sleep pathway | Low |
+| Sleep and heart or diabetes risk | People with raised blood pressure or HbA1c could get targeted sleep messages | Medium |
+| Why short sleep matters | The `sleep` card gives hours but not the health consequences | Low |
+| Melatonin dose education | No content on why low-dose melatonin is preferred over high-dose products | Medium (fits Brad's product positioning) |
+
+---
+
+## References
+
+**Guidelines and consensus statements**
+- Watson NF et al. 2015. Recommended amount of sleep for a healthy adult: AASM and SRS joint consensus statement. J Clin Sleep Med (DOI: 10.5664/jcsm.4758; PMID 25979105)
+- Hirshkowitz M et al. 2015. National Sleep Foundation's sleep time duration recommendations. Sleep Health (DOI: 10.1016/j.sleh.2014.12.010; PMID 29073412)
+- Qaseem A et al. 2016. Management of chronic insomnia disorder in adults: ACP clinical practice guideline. Ann Intern Med (DOI: 10.7326/M15-2175; PMID 27136449)
+- Sateia MJ et al. 2017. AASM clinical practice guideline for the pharmacologic treatment of chronic insomnia in adults. J Clin Sleep Med (DOI: 10.5664/jcsm.6470; PMID 27998379)
+- Edinger JD et al. 2021. Behavioral and psychological treatments for chronic insomnia disorder in adults: AASM clinical practice guideline. J Clin Sleep Med (DOI: 10.5664/jcsm.8986; PMID 33164742)
+- Edinger JD et al. 2021. Behavioral and psychological treatments for chronic insomnia disorder in adults: AASM systematic review, meta-analysis and GRADE assessment. J Clin Sleep Med (DOI: 10.5664/jcsm.8988; PMID 33164741)
+- Riemann D et al. 2023. The European Insomnia Guideline: 2023 update. J Sleep Res (DOI: 10.1111/jsr.14035; PMID 38016484)
+- American Academy of Sleep Medicine. International Classification of Sleep Disorders, third edition, text revision (ICSD-3-TR), 2023
+- NICE 2023. TA922: Daridorexant for treating long-term insomnia. https://www.nice.org.uk/guidance/ta922
+- American Geriatrics Society 2023. Updated AGS Beers Criteria. J Am Geriatr Soc (DOI: 10.1111/jgs.18372; PMID 37139824)
+
+**Regulators and public health bodies**
+- FDA prescribing information via DailyMed: Ambien and Ambien CR (zolpidem), Lunesta (eszopiclone), Restoril (temazepam), Belsomra (suvorexant), Dayvigo (lemborexant), Quviviq (daridorexant), Silenor (doxepin), Rozerem (ramelteon). https://dailymed.nlm.nih.gov
+- NCCIH. Melatonin: what you need to know. https://www.nccih.nih.gov/health/melatonin-what-you-need-to-know
+- NCCIH. Sleep disorders and complementary health approaches: in depth. https://www.nccih.nih.gov/health/sleep-disorders-in-depth
+- NIH ODS. Valerian fact sheet for health professionals. https://ods.od.nih.gov/factsheets/Valerian-HealthProfessional/
+- US Department of Veterans Affairs. Insomnia Coach and CBT-i Coach apps. https://mobile.va.gov/app/insomnia-coach; https://mobile.va.gov/app/cbt-i-coach
+
+**Sleep duration, epidemiology and consequences**
+- Cappuccio FP et al. 2010. Sleep duration and all-cause mortality: meta-analysis. Sleep (DOI: 10.1093/sleep/33.5.585; PMID 20469800)
+- Vgontzas AN et al. 2013. Insomnia with objective short sleep duration. Sleep Med Rev (DOI: 10.1016/j.smrv.2012.09.005; PMID 23419741)
+- Ohayon MM 2002. Epidemiology of insomnia. Sleep Med Rev (DOI: 10.1053/smrv.2002.0186; PMID 12531146)
+- Baglioni C et al. 2011. Insomnia as a predictor of depression: meta-analysis. J Affect Disord (DOI: 10.1016/j.jad.2011.01.011; PMID 21300408)
+- Pigeon WR et al. 2012. Meta-analysis of sleep disturbance and suicidal thoughts and behaviors. J Clin Psychiatry (DOI: 10.4088/JCP.11r07586; PMID 23059158)
+- Sofi F et al. 2014. Insomnia and risk of cardiovascular disease: meta-analysis. Eur J Prev Cardiol (DOI: 10.1177/2047487312460020; PMID 22942213)
+- Anothaisintawee T et al. 2016. Sleep disturbances compared with traditional risk factors for diabetes. Sleep Med Rev (PMID 26687279)
+- Shi L et al. 2018. Sleep disturbances increase the risk of dementia: meta-analysis. Sleep Med Rev (DOI: 10.1016/j.smrv.2017.06.010; PMID 28890168)
+- Zhang Y et al. 2019. Prevalence of co-occurring insomnia and obstructive sleep apnea. Sleep Med Rev (DOI: 10.1016/j.smrv.2019.01.004; PMID 30844624)
+
+**Assessment tools**
+- Buysse DJ et al. 1989. The Pittsburgh Sleep Quality Index. Psychiatry Res (DOI: 10.1016/0165-1781(89)90047-4; PMID 2748771)
+- Bastien CH et al. 2001. Validation of the Insomnia Severity Index. Sleep Med (DOI: 10.1016/s1389-9457(00)00065-4; PMID 11438246)
+- Johns MW 1991. The Epworth Sleepiness Scale. Sleep (DOI: 10.1093/sleep/14.6.540; PMID 1798888)
+
+**Habits**
+- Drake C et al. 2013. Caffeine taken 0, 3 or 6 hours before bed. J Clin Sleep Med (DOI: 10.5664/jcsm.3170; PMID 24235903)
+- Ebrahim IO et al. 2013. Alcohol and sleep I: effects on normal sleep. Alcohol Clin Exp Res (DOI: 10.1111/acer.12006; PMID 23347102)
+- Haghayegh S et al. 2019. Warm shower or bath before bed: meta-analysis. Sleep Med Rev (DOI: 10.1016/j.smrv.2019.04.008; PMID 31102877)
+- Stutz J et al. 2019. Evening exercise and sleep: meta-analysis. Sports Med (DOI: 10.1007/s40279-018-1015-0; PMID 30374942)
+
+**CBT-I**
+- Furukawa Y et al. 2024. Components and delivery formats of CBT-I: component network meta-analysis. JAMA Psychiatry (DOI: 10.1001/jamapsychiatry.2023.5060; PMID 38231522)
+- Morin CM et al. 2009. CBT singly and combined with medication for persistent insomnia. JAMA (DOI: 10.1001/jama.2009.682; PMID 19454639)
+- Felder JN et al. 2020. Digital CBT for insomnia in pregnancy: randomised trial. JAMA Psychiatry (DOI: 10.1001/jamapsychiatry.2019.4491; PMID 31968068)
+
+**Medicines**
+- De Crescenzo F et al. 2022. Pharmacological interventions for insomnia disorder in adults: network meta-analysis. Lancet (DOI: 10.1016/S0140-6736(22)00878-9; PMID 35843245)
+- Everitt H et al. 2018. Antidepressants for insomnia in adults. Cochrane Database Syst Rev (DOI: 10.1002/14651858.CD010753.pub2; PMID 29761479)
+- Glass J et al. 2005. Sedative hypnotics in older people with insomnia: meta-analysis. BMJ (DOI: 10.1136/bmj.38623.768588.47; PMID 16284208)
+- Michelson D et al. 2014. Suvorexant over 1 year. Lancet Neurol (DOI: 10.1016/S1474-4422(14)70044-2; PMID 24680372)
+- Rosenberg R et al. 2019. Lemborexant vs placebo and zolpidem ER in older adults. JAMA Netw Open (DOI: 10.1001/jamanetworkopen.2019.18254; PMID 31880796)
+- Mignot E et al. 2022. Daridorexant in insomnia disorder: two phase 3 trials. Lancet Neurol (DOI: 10.1016/S1474-4422(21)00436-1; PMID 35065036)
+- Kuriyama A et al. 2014. Ramelteon for insomnia: meta-analysis. Sleep Med (PMID 24656909)
+
+**Melatonin**
+- Low TL et al. 2020. Melatonin and melatonin agonists in insomnia: umbrella review. J Psychiatr Res (DOI: 10.1016/j.jpsychires.2019.10.022; PMID 31715492)
+- Ferracioli-Oda E et al. 2013. Melatonin for primary sleep disorders: meta-analysis. PLoS One (DOI: 10.1371/journal.pone.0063773; PMID 23691095)
+- Zhdanova IV et al. 1996. Low oral doses of melatonin 2 to 4 hours before bedtime in young adults. Sleep (PMID 8843534)
+- Zhdanova IV et al. 2001. Melatonin treatment for age-related insomnia. J Clin Endocrinol Metab (DOI: 10.1210/jcem.86.10.7901; PMID 11600532)
+- DeMuro RL et al. 2000. Absolute bioavailability of oral melatonin. J Clin Pharmacol (DOI: 10.1177/00912700022009422; PMID 10883420)
+- Fourtillan JB et al. 2001. Melatonin secretion in young and older adults. Am J Physiol Endocrinol Metab (DOI: 10.1152/ajpendo.2001.280.1.E11; PMID 11120654)
+- Leger D, Laudon M, Zisapel N 2004. Nocturnal 6-sulfatoxymelatonin excretion in insomnia. Am J Med (DOI: 10.1016/j.amjmed.2003.07.017; PMID 14715322)
+- Thanawala S et al. 2024. Sustained- vs immediate-release melatonin pharmacokinetics. Pharmaceutics (DOI: 10.3390/pharmaceutics16101248; PMID 39458580)
+- Kor Y et al. 2014. Melatonin (range statement, secondary source). Indian J Endocrinol Metab (as cited in docs/products.md)
+
+**Magnesium, glycine and L-theanine**
+- Arab A et al. 2023. Magnesium in sleep health: systematic review. Biol Trace Elem Res (DOI: 10.1007/s12011-022-03162-1; PMID 35184264)
+- Mah J, Pitre T 2021. Oral magnesium for insomnia in older adults: meta-analysis. BMC Complement Med Ther (DOI: 10.1186/s12906-021-03297-z; PMID 33865376)
+- Schuster J et al. 2025. Magnesium bisglycinate in adults reporting poor sleep: randomised trial. Nat Sci Sleep (DOI: 10.2147/NSS.S524348; PMID 40918053)
+- Inagawa K et al. 2006. Glycine and subjective sleep quality. Sleep Biol Rhythms (DOI: 10.1111/j.1479-8425.2006.00193.x)
+- Yamadera W et al. 2007. Glycine ingestion improves subjective sleep quality. Sleep Biol Rhythms (DOI: 10.1111/j.1479-8425.2007.00262.x)
+- Bannai M et al. 2012. Glycine and daytime performance after partial sleep restriction. Front Neurol (DOI: 10.3389/fneur.2012.00061; PMID 22529837)
+- Bannai M, Kawai N 2012. Glycine improves the quality of sleep. J Pharmacol Sci (DOI: 10.1254/jphs.11R04FM; PMID 22293292)
+- Hidese S et al. 2019. L-theanine, stress and cognition in healthy adults. Nutrients (DOI: 10.3390/nu11102362; PMID 31623400)
+- Moulin M et al. 2024. L-theanine for 28 days in adults with moderate stress. Neurol Ther (DOI: 10.1007/s40120-024-00624-7; PMID 38758503)
+- Sarris J et al. 2019. L-theanine as adjunct in generalized anxiety disorder. J Psychiatr Res (DOI: 10.1016/j.jpsychires.2018.12.014; PMID 30580081)
+- Lyon MR et al. 2011. L-theanine and sleep in boys with ADHD. Altern Med Rev (PMID 22214254)
+
+**Brad's own material**
+- Brad, sleep schedule post: https://drstanfield.com/blogs/articles/sleep-schedule-wake-refreshed
+- Brad, morning light post: https://drstanfield.com/blogs/articles/these-tiny-changes-massively-upgrade-your-sleep-quality
+- Brad, sleep apnoea post: https://drstanfield.com/blogs/articles/sleep-apnea-brain-aging
+- Brad, melatonin reference: https://drstanfield.com/blogs/articles/melatonin-benefits-forms-dosing-and-side-effects
+- Brad, Mar 2026 melatonin and heart post: https://drstanfield.com/blogs/articles/surprising-heart-results-from-this-huge-melatonin-study
+- Sleep product formula and FAQ: docs/products.md
+
+---
+
+*Rewritten October 2026 from public guidelines, FDA labels, NIH pages and primary studies. Refer to your doctor for personal clinical decisions.*
