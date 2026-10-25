@@ -284,6 +284,8 @@ No dose has been firmly established. Doses used in trials:
 
 **Uterine stimulation:** In a 5-year trial (Unfer et al., 2004), postmenopausal women taking 150 mg a day of soy isoflavones had more endometrial hyperplasia than those on placebo (3.37% vs 0%), and no cancers were found [39]. The journal has since published an expression of concern about this paper [39]. In the genistein bone trial, endometrial thickness did not change [30].
 
+**Breast cancer:** A 2013 systematic review found no clear evidence that soy harms women with breast cancer, but said better evidence of safety is needed before high-dose isoflavones (100 mg or more) can be recommended for them [63].
+
 **Thyroid effects:** A review of 14 trials found little evidence that soy foods or isoflavones harm thyroid function in healthy people who get enough iodine, but soy foods may raise the dose of thyroid hormone that people with hypothyroidism need by reducing its absorption [40]. In a crossover trial in people with subclinical hypothyroidism, 66 mg of soy phytoestrogens a day for 8 weeks did not change thyroid function tests, though two people progressed to overt hypothyroidism after the high dose [41].
 
 **Soy allergy:** Some people are allergic to soy [60].
@@ -330,7 +332,7 @@ A case report described repeated fainting in a 76-year-old woman taking black co
 
 | Supplement | Common Side Effects | Serious Concerns | Talk to your doctor first if |
 |---|---|---|---|
-| Soy Isoflavones | Stomach upset [30] | Endometrial hyperplasia with long-term high doses [39] | Hypothyroidism; soy allergy; pregnancy [40][60] |
+| Soy Isoflavones | Stomach upset [30] | Endometrial hyperplasia with long-term high doses [39] | Breast cancer; hypothyroidism; soy allergy; pregnancy [40][60][63] |
 | Red Clover | Not well studied | Safety in breast or endometrial cancer not established [13] | Breast or endometrial cancer |
 | Black Cohosh | Stomach upset, rash [15] | Liver injury reports; one case of slow heart rate [15][48] | Liver disorder; past breast or uterine cancer; pregnancy or breastfeeding [47][59] |
 | Progesterone Cream | Headache [55] | May not protect the uterus [56] | You also use estrogen |
@@ -495,3 +497,5 @@ The Endocrine Society advises all postmenopausal women to adopt appropriate life
 [61] The North American Menopause Society. "The 2023 nonhormone therapy position statement of The North American Menopause Society." *Menopause*. 2023;30(6):573-590. doi: [10.1097/GME.0000000000002200](https://doi.org/10.1097/GME.0000000000002200) [PubMed abstract](https://pubmed.ncbi.nlm.nih.gov/37252752/)
 
 [62] Sadahiro R, Matsuoka LN, Zeng BS, et al. "Black cohosh extracts in women with menopausal symptoms: an updated pairwise meta-analysis." *Menopause*. 2023;30(7):766-773. doi: [10.1097/GME.0000000000002196](https://doi.org/10.1097/GME.0000000000002196) [PubMed abstract](https://pubmed.ncbi.nlm.nih.gov/37192826/)
+
+[63] Fritz H, Seely D, Flower G, et al. "Soy, red clover, and isoflavones and breast cancer: a systematic review." *PLoS One*. 2013;8(11):e81968. doi: [10.1371/journal.pone.0081968](https://doi.org/10.1371/journal.pone.0081968) [PubMed abstract](https://pubmed.ncbi.nlm.nih.gov/24312387/)
