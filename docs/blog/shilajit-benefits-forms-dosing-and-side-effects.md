@@ -53,18 +53,19 @@ Shilajit is thought to form over centuries as microorganisms break down certain 
 
 ## 2. Forms and Bioavailability
 
-Shilajit is sold as purified resin and as more concentrated extracts. The main difference is how much fulvic acid each holds.
+Shilajit is sold as resin and as standardised extracts. Fulvic acid content differs between products, so the table gives each study's measured or stated content.
 
 ### Comparison of Forms
 
 | Form | Fulvic Acid Content | Processing | Doses in Trials | Key Characteristics |
 |------|:-:|:-:|:-:|------|
-| **Purified Resin** | 6.61% in one trial [17] | Soaked in water, filtered, boiled down and dried [17] | 2 g a day [17]; 500 mg a day [28] | Far less fulvic acid per gram than extracts. |
+| **Purified Resin** | 6.61% in one trial [17] | Soaked in water, filtered, boiled down and dried [17] | 2 g a day [17] | The one controlled resin trial [17]. |
+| **Standardised Resin (TruBlk)** | At least 60% fulvic acids [28] | Solvent-free water extraction, standardised for fulvic acids [28] | 500 mg a day [28] | Tested in one open-label pilot with no placebo group [28]. |
 | **Standardized Extract** | 56.75% fulvic acids in one standardised product [41] | Processed and standardised to set levels of fulvic acids and dibenzo-alpha-pyrones [41] | See the dosing table below | Used in most trials, including the branded extract PrimaVie [15]. |
 
 ### Key Bioavailability Considerations
 
-**Resin vs. extract potency.** The resin in one trial held 6.61% fulvic acid [17], while one standardised extract held 56.75% fulvic acids [41]. A gram of resin therefore delivers much less fulvic acid than a gram of extract. Most trials used extracts, so their results may not apply to resins.
+**Fulvic acid content by product.** The purified resin in one trial held 6.61% fulvic acid [17]. The TruBlk resin in another trial was standardised to at least 60% fulvic acids [28]. One standardised extract held 56.75% fulvic acids [41]. Most trials used extracts, so their results may not apply to resins.
 
 **Standardization variability.** Some trials used a branded extract, PrimaVie [15][30]. Results from one standardised extract may not apply to other products.
 
@@ -250,7 +251,7 @@ Shilajit seeps from rock layers in many mountain ranges, especially the Himalaya
 ### Quality Indicators for Consumers
 
 When evaluating shilajit products:
-- **Fulvic acid content disclosure:** Content differs widely, from 6.61% in one purified resin [17] to 56.75% fulvic acids in one standardised extract [41]. A label that states it lets you compare products.
+- **Fulvic acid content disclosure:** Content differs widely: 6.61% in one purified resin [17], at least 60% fulvic acids in one standardised resin [28] and 56.75% fulvic acids in one standardised extract [41]. A label that states it lets you compare products.
 - **Third-party heavy metal testing:** Look for certificates of analysis for lead, arsenic, mercury, cadmium and thallium [27][34].
 
 ## 8. Summary and Bottom Line
