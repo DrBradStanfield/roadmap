@@ -415,7 +415,7 @@ Stimulant laxatives cause fluid loss, not fat loss: most nutrients are absorbed 
 
 ### Ephedra (Ma Huang) -- Banned Ingredient
 
-Ephedra contains the alkaloids ephedrine, pseudoephedrine, norephedrine, and norpseudoephedrine [226-228]. In the 1990s, ephedra -- frequently combined with caffeine -- was popular in weight-loss supplements.
+Ephedra contains the alkaloids ephedrine, pseudoephedrine, norephedrine, and norpseudoephedrine [226][228]. In the 1990s, ephedra -- frequently combined with caffeine -- was popular in weight-loss supplements.
 
 **Historical clinical evidence:** A meta-analysis of 20 clinical trials concluded that ephedrine and ephedra are modestly effective for short-term weight loss (6 months or less) [232]. Ephedrine stimulates the central nervous system, may increase thermogenesis, and acts as an appetite suppressant [229-231].
 
@@ -522,7 +522,7 @@ Weight-loss supplement ingredients can interact with numerous medications:
 
 | Ingredient | Interacting Drugs | Mechanism/Effect |
 |---|---|---|
-| Caffeine/stimulant blends | Other stimulants, decongestants, MAOIs | Additive cardiovascular stimulation; increased BP and HR |
+| Caffeine/stimulant blends | Other stimulants, MAOIs | Additive cardiovascular stimulation; increased BP and HR |
 | Bitter orange/synephrine | Caffeine, CYP3A4 substrates (cyclosporine, saquinavir) | Additive stimulant effects; inhibits CYP3A4 increasing drug levels [43] |
 | Glucomannan | Oral medications (general), diabetes drugs | Decreases absorption of many oral drugs; may lower blood glucose [139][147] |
 | Guar gum | Oral medications (general) | Decreases absorption of many oral drugs [147][179] |
@@ -968,8 +968,6 @@ None of the dietary supplement ingredients reviewed here produce weight loss com
 [225] Natural Medicines Comprehensive Database. Yohimbe. 2012.
 
 [226] Hu SY. Ephedra (ma-huang) in the new Chinese materia medica. Econ Bot 1969;23:346-51.
-
-[227] Karch SB, Stephens BG. Toxicology and pathology of deaths related to methadone: retrospective review. West J Med 2000;172:11-4. [PubMed](https://pubmed.ncbi.nlm.nih.gov/10695434/)
 
 [228] Leung AY, Foster S. Encyclopedia of Common Natural Ingredients Used in Foods, Drugs, and Cosmetics. New York: John Wiley; 1996.
 
