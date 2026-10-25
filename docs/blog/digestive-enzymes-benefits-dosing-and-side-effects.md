@@ -6,348 +6,311 @@ publishedAt: "2024-09-04T23:34:17Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["digestive enzymes", "bromelain", "papain", "lactase", "lipase", "amylase", "protease", "pancreatin", "alpha-galactosidase", "phytase", "gut health", "digestion", "bloating", "lactose intolerance", "exocrine pancreatic insufficiency", "inflammation", "iron", "fiber", "probiotic", "prebiotic", "microbiome", "blood sugar", "diabetes", "insulin resistance", "folate", "folic acid", "calcium", "weight loss"]
-summary: "Reference on digestive enzymes: bloating, gas, lactose intolerance, malabsorption, pancreatic insufficiency. Bromelain, lactase, alpha-galactosidase, pancreatin; plant, fungal, and animal forms. Dosing by enzyme type; interactions with blood thinners and diabetes drugs. Always discuss with your doctor."
+summary: "Evidence summary on digestive enzymes: prescription pancreatic enzymes treat pancreatic insufficiency, and lactase, alpha-galactosidase and sacrosidase ease specific sugar intolerances; evidence for everyday bloating is weak. Talk to your doctor first if you take diabetes drugs or blood thinners."
+reviewed: "2026-10-25"
+sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/39639485/","checked":"2026-10-25","fingerprint":"sha256:e4899ce6cb644ab3c783af2862618ec490f59d2b7f8c7007e57fe1a8a1fe58c1"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/digestive-enzymes-benefits-dosing-and-side-effects](https://drstanfield.com/blogs/articles/digestive-enzymes-benefits-dosing-and-side-effects)*
 
+## Current evidence position
+
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Prescription pancreatic enzymes, taken with meals alongside dietary advice, are the standard treatment for exocrine pancreatic insufficiency, usually at 40,000 to 50,000 lipase units per main meal [13][90][98]. For specific sugar intolerances, small trials suggest that lactase can ease symptoms after a moderate lactose dose, alpha-galactosidase can reduce gas after a bean meal, and sacrosidase can prevent symptoms in children with congenital sucrase-isomaltase deficiency [45][95][52][51]. For everyday bloating or indigestion without a diagnosed enzyme deficiency, the evidence is limited to small, short studies, and a 12-week trial of alpha-galactosidase in irritable bowel syndrome found no evidence to support routine use [16][93]. Bromelain may inhibit platelet aggregation, papaya preparations have been reported to increase the effect of warfarin, and alpha-galactosidase partly blunted acarbose in a trial, so check with your doctor first if you take blood thinners or diabetes medicines [72][97][80].
+
+## Key safety points
+
+- Bromelain may inhibit platelet aggregation, and papaya preparations have been reported to cause over-anticoagulation with warfarin. Check with your doctor before using bromelain or papain with warfarin, aspirin, clopidogrel or other blood thinners [72][97].
+- Alpha-galactosidase partly blunted the blood-sugar-lowering effect of acarbose in people with type 2 diabetes [80]. If you take diabetes medicines, check with your doctor first.
+- Papain can cause allergic reactions, including a severe one after eating meat tenderizer, and people allergic to weeping fig latex may react to papain [67][68][92]. In a severe allergic reaction, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- In young children with cystic fibrosis, high daily doses of pancreatic enzymes were strongly linked to fibrosing colonopathy, a scarring of the bowel; daily doses should usually stay below 10,000 lipase units per kilogram [91].
+- Pancreatic extract can reduce folate absorption, and high doses raised uric acid in the urine of children with cystic fibrosis [74][94].
+- In a 12-week trial, more people stopped alpha-galactosidase than placebo, most often for abdominal pain and diarrhea [93].
+
+## Brad's videos on this topic
+
+None yet.
+
 ## 1. Overview
 
-Digestive enzymes are specialized proteins produced by the gastrointestinal system that catalyze the hydrolysis of complex food molecules — carbohydrates, proteins, and fats — into simpler, absorbable nutrients such as monosaccharides, amino acids, and fatty acids [1][2]. These enzymes function as biological catalysts, accelerating breakdown reactions without being consumed in the process, and are essential for maintaining metabolic health and preventing malabsorption [2][3].
+Digestive enzymes are proteins made along the digestive tract that break carbohydrates, proteins and fats into smaller pieces the gut can absorb [3]. Each enzyme acts on specific chemical bonds, and different enzymes work in different parts of the gut [3].
 
-The human body produces digestive enzymes at multiple sites throughout the gastrointestinal tract, each optimized for specific substrates and pH environments [1][2]:
+The human body produces digestive enzymes at several sites along the digestive tract [3]:
 
-- **Mouth:** Salivary glands (parotid, submandibular, sublingual) produce 0.5-1.5 liters of saliva per day containing salivary amylase (ptyalin) for starch digestion, lingual lipase for initial fat breakdown, and lysozyme for antibacterial defense [2][4][5].
-- **Stomach:** Chief cells secrete pepsinogen, activated by hydrochloric acid (pH 1.5-3.5) into pepsin for protein digestion. Gastric lipase contributes to fat hydrolysis, particularly important in infants where it accounts for 10-30% of total fat digestion [2][6][7].
-- **Pancreas:** The exocrine pancreas produces 1-2 liters of pancreatic juice daily containing amylase, lipase, proteases (trypsin, chymotrypsin, elastase, carboxypeptidases), and nucleases. Secretion is regulated by cholecystokinin (CCK) and secretin [2][8][9].
-- **Small intestine:** Brush border enzymes on enterocytes perform terminal digestion — disaccharidases (maltase, sucrase, lactase) break down disaccharides into monosaccharides, peptidases complete protein digestion, and nucleoside phosphorylase processes nucleotides [2][10][11].
+- **Mouth:** Saliva starts enzymatic digestion, and glands on the tongue release lingual lipase, which keeps breaking down fat in the stomach [4][7].
+- **Stomach:** Chief cells release pepsin and gastric lipase. Gastric lipase matters most in newborns, where it starts the digestion of milk fat [7].
+- **Pancreas:** The pancreas makes proteases, lipases and amylases and delivers them to the small intestine. The gut hormone cholecystokinin (CCK) stimulates this secretion [19][39].
+- **Small intestine:** Enzymes on the brush border of the gut lining finish digestion close to the absorbing surface [10]. They include lactase, which splits lactose into glucose and galactose, and sucrase-isomaltase [22][50].
 
-The discovery of digestive enzymes dates to 1833, when French chemists Anselme Payen and Jean-Francois Persoz isolated diastase (an amylase) from malt extract, marking the first identification of an enzyme as an organic catalyst [2][12].
-
-Disruptions in enzyme production or activity — such as in exocrine pancreatic insufficiency (EPI), lactose intolerance, or congenital sucrase-isomaltase deficiency — impair nutrient absorption and lead to symptoms including diarrhea, bloating, flatulence, steatorrhea, and weight loss [2][13][14]. Digestive enzyme supplements, available as both prescription and over-the-counter products, aim to replace or augment deficient enzyme activity, though their clinical utility varies significantly depending on the specific condition being treated.
+Disruptions in enzyme production or activity, such as exocrine pancreatic insufficiency (EPI), lactose intolerance or congenital sucrase-isomaltase deficiency, impair digestion and can cause diarrhea, bloating, gas, fatty stools and weight loss [13][43][51]. Digestive enzyme supplements, available as both prescription and over-the-counter products, aim to replace or augment deficient enzyme activity, though their clinical utility varies significantly depending on the specific condition being treated. Animal-derived enzymes are the established standard of care, while plant- and microbe-derived enzymes are still being studied [11].
 
 ## 2. Forms and Bioavailability
 
-Digestive enzyme supplements are derived from three main sources, each with distinct characteristics affecting their activity range, pH stability, and clinical applications.
+Digestive enzyme supplements come from three main sources, which differ in the conditions they work under and how well they are studied.
 
 ### Source Comparison
 
-| Source | Examples | Active pH Range | Key Characteristics |
-|--------|----------|:-:|------|
-| Animal (porcine) | Pancreatin, pancrelipase (Creon) | 7.2-9.0 (narrow, alkaline) | Contains lipase, protease, and amylase. Requires enteric coating to survive stomach acid. Gold standard for EPI treatment [15][16]. |
-| Plant-derived | Bromelain (pineapple), papain (papaya) | 3.0-11.0 (broad) | Stable across wide pH range. Active in both stomach and small intestine without enteric coating [15][17]. |
-| Fungal/microbial | Aspergillus niger, Aspergillus oryzae derived enzymes | 3.0-11.0 (broad) | Broad pH stability. Available as amylase, lipase, protease, lactase, and other specialized enzymes [15][18]. |
+| Source | Examples | Key Characteristics |
+|--------|----------|------|
+| Animal (porcine) | Pancreatin, pancrelipase | Contains lipase, protease and amylase. Enteric-coated minimicrospheres protect lipase from stomach acid and leave the stomach with the food. The standard treatment for EPI [30][40]. |
+| Plant-derived | Bromelain (pineapple), papain (papaya) | Bromelain is a mix of protein-digesting enzymes from pineapple stem or fruit [17]. Papain is used in meat tenderizer [67]. |
+| Fungal/microbial | Enzymes from Aspergillus niger and Aspergillus oryzae | Easy and consistent to produce [18]. Microbe-derived lipase works across a broader pH range than porcine lipase [42], though one review judged fungal lipase inferior to porcine products [30]. |
 
 ### Key Enzyme Types and Activity Units
 
-Understanding enzyme activity units is critical for evaluating supplement labels. The FDA only requires weight (milligrams) to be listed, but activity — how much substrate an enzyme can digest in a given time period — is the true measure of efficacy [15]. Industry best practice guidelines recommend listing activity units for each enzyme.
+Trials report enzyme doses as activity, not weight: for example lipase units for pancreatic enzymes, GalU for alpha-galactosidase and phytase units for phytase [13][27][52].
 
-| Enzyme | Substrate | Activity Unit | What It Digests |
-|--------|-----------|:---:|------|
-| Amylase | Starch, glycogen | DU (Dextrinizing Units) | Breaks starch into maltose and glucose by cleaving alpha-1,4-glycosidic bonds [2][19] |
-| Protease (general) | Proteins | HUT (Hemoglobin Units, Tyrosine basis) | Cleaves peptide bonds in proteins to produce peptides and amino acids [2][20] |
-| Lipase | Triglycerides | FIP or LU (Lipase Units) | Hydrolyzes fats into monoglycerides and free fatty acids [2][21] |
-| Lactase (beta-galactosidase) | Lactose | ALU (Acid Lactase Units) | Breaks lactose into glucose and galactose [15][22] |
-| Alpha-galactosidase | Raffinose, stachyose | GALU (Galactosidase Units) | Breaks down complex sugars in beans, cruciferous vegetables, and other gas-producing foods [15][23] |
-| Cellulase | Cellulose | CU (Cellulase Units) | Breaks down plant cell wall fiber; humans lack endogenous cellulase [2][24] |
-| Bromelain | Proteins | GDU (Gelatin Digesting Units) or MCU | Pineapple-derived protease with both digestive and anti-inflammatory properties [15][17] |
-| Papain | Proteins | PU (Papain Units) | Papaya-derived protease; active across broad pH range [15][25] |
-| Invertase | Sucrose | SU (Sumner Units) | Breaks sucrose into glucose and fructose [26] |
-| Phytase | Phytic acid | FTU (Phytase Units) | Releases bound minerals (iron, zinc, calcium) from phytic acid in plant foods [15][27] |
-| Dipeptidyl peptidase IV (DPP-IV) | Gluten/casein peptides | DPPU | Targets proline-rich peptides found in gluten and dairy proteins [28] |
-| Pancreatin | Proteins, fats, starches | USP (United States Pharmacopeia) | Porcine-derived blend containing lipase, protease, and amylase in standardized ratios [15][16] |
+| Enzyme | Substrate | What It Digests |
+|--------|-----------|------|
+| Amylase | Starch | Breaks down starch [19] |
+| Protease (general) | Proteins | Breaks proteins into smaller peptides [19] |
+| Lipase | Triglycerides | Digests dietary fat, with help from its cofactor colipase [21] |
+| Lactase (beta-galactosidase) | Lactose | Breaks lactose into glucose and galactose [22] |
+| Alpha-galactosidase | Oligosaccharides in beans and other foods | Breaks down sugars with an alpha-galactosidic bond that human enzymes cannot digest [93] |
+| Cellulase | Cellulose | Breaks down cellulose, the main fiber in plant cell walls [24] |
+| Bromelain | Proteins | Pineapple-derived protease [17] |
+| Papain | Proteins | Papaya-derived protease used in meat tenderizer [67] |
+| Invertase | Sucrose | Breaks sucrose into glucose and fructose [26] |
+| Phytase | Phytic acid | Breaks down phytate, which blocks iron and zinc absorption from plant foods [27] |
+| Dipeptidyl peptidase IV (DPP-IV) | Gluten peptides | Food-grade enzyme from Aspergillus oryzae studied for breaking down gluten [28] |
+| Pancreatin | Proteins, fats, starches | Porcine-derived blend of lipase, protease and amylase [19][30] |
 
 ### Label Reading: Activity vs. Weight
 
-A label showing "Amylase 40,000 DU" is far more informative than "Amylase 400 mg" because different versions of the same enzyme can have dramatically different activity levels per milligram [15]. Products that list enzymes only in terms of FCC (e.g., "Lipase 375 FCC") are using undefined units and should be viewed with caution. Look for specific activity units (HUT, PU, CU, ALU, GALU) rather than weight alone or generic FCC designations.
+Because trials dose enzymes by activity, compare the activity units on a label with the trial doses below rather than the weight in milligrams [13][52].
 
 ### pH Stability and Enzyme Selection
 
-The pH environment determines which enzymes will be active at different stages of digestion [2][29]:
+Acidity changes along the gut: it is highly acid in the stomach, about pH 6 in the duodenum, and rises to about pH 7.4 at the end of the small intestine [29]:
 
-- **Stomach (pH 1.5-3.5):** Only acid-stable enzymes are functional here. Plant-derived enzymes (bromelain, papain) and fungal enzymes maintain activity in acidic conditions. Porcine pancreatin is destroyed at this pH unless enterically coated [15][30].
-- **Small intestine (pH 6-8):** Pancreatic enzymes (both endogenous and supplemental porcine pancreatin) are optimally active. Plant and fungal enzymes also remain active at this pH [2][8].
-- **Practical implication:** Plant-derived and fungal enzymes offer the advantage of working throughout the entire digestive tract (stomach through small intestine), while animal-derived enzymes function only in the alkaline small intestinal environment [15].
+- **Stomach:** Porcine lipase is inactivated by acid unless protected by an enteric coating [40].
+- **Small intestine:** Pancreatic enzymes, made by the body or taken as supplements, do their work here [19][40].
+- **Practical implication:** Some fungal enzymes stay active in acid. Phytase from Aspergillus niger was active at every pH between 1.0 and 7.5 and broke down phytate in the stomach [102].
 
 ### Enzyme Activation: The Zymogen System
 
-Endogenous digestive enzymes — particularly pancreatic proteases — are secreted as inactive precursors (zymogens) to prevent autodigestion of the producing tissues [2][6][31]:
+The pancreas protects itself from its own protein-digesting enzymes. It also makes a trypsin inhibitor, SPINK1, and gene changes that raise trypsin activity in the pancreas or that affect SPINK1 are linked to chronic pancreatitis [32]:
 
-- **Pepsinogen** is activated to pepsin by hydrochloric acid in the stomach [6].
-- **Trypsinogen** is activated to trypsin by enterokinase (enteropeptidase) on the duodenal brush border. Trypsin then activates chymotrypsinogen to chymotrypsin, proelastase to elastase, and procarboxypeptidases to carboxypeptidases [2][8][31].
-- **Pancreatic secretory trypsin inhibitor (SPINK1)** prevents premature trypsin activation within the pancreas [32].
-- **Colipase** is required as a cofactor for pancreatic lipase to function on bile salt-emulsified fats [2][33].
-
-This elaborate safety system underscores why pancreatitis (premature enzyme activation within the pancreas) is a serious medical condition requiring immediate treatment.
+- **Colipase** is required as a cofactor for pancreatic lipase to digest dietary fat efficiently [21][33].
 
 ### Cofactors and Supporting Factors
 
-Several non-enzyme factors are essential for optimal digestive enzyme function [2][34]:
+Several non-enzyme factors help digestive enzymes work [21]:
 
-- **Bile salts** emulsify dietary fats into micelles, increasing the surface area available for lipase activity. Without bile, fat digestion is severely impaired [2][35].
-- **Bicarbonate** from the pancreas neutralizes stomach acid to create the optimal pH 7-8 environment for pancreatic enzyme function [2][8].
-- **Zinc ions** serve as an essential cofactor for carboxypeptidase, stabilizing the active site for peptide bond cleavage [34].
-- **Calcium ions** contribute to lipid digestion by forming insoluble salts with free fatty acids, preventing product inhibition of lipases [34].
+- **Bile salts** form micelles that, with colipase, activate pancreatic lipase at the fat-water surface [21].
 
 ## 3. Evidence for Benefits
 
 ### Exocrine Pancreatic Insufficiency (EPI)
 
-Exocrine pancreatic insufficiency is a condition in which the pancreas fails to produce sufficient digestive enzymes, leading to impaired digestion and absorption of nutrients, particularly fats [13][36]. The primary causes include chronic pancreatitis (in adults) and cystic fibrosis (in children), though EPI also occurs after pancreatic surgery, with pancreatic cancer, and in some cases of type 2 diabetes [13][37].
+Exocrine pancreatic insufficiency is a condition in which the pancreas fails to produce sufficient digestive enzymes, leading to impaired digestion and absorption of nutrients, particularly fats [13][36]. The most common causes are chronic pancreatitis, cystic fibrosis and past necrotizing pancreatitis, and EPI also occurs after pancreatic and gut surgery, with pancreatic cancer and in some people with diabetes [36][39].
 
-**Diagnosis:** The fecal elastase-1 test is the standard non-invasive diagnostic tool. Values below 200 micrograms per gram of stool indicate EPI, with values below 100 micrograms per gram indicating severe insufficiency [13][38].
+**Diagnosis:** Fecal elastase-1 is the most widely used non-invasive test [37]. With a cut-off of 200 micrograms per gram of stool, it detected 93% of patients with EPI, but only 63% of mild cases [38].
 
-**Symptoms:** Steatorrhea (foul-smelling, greasy, floating stools), diarrhea, abdominal bloating, flatulence, unintended weight loss, and deficiencies in fat-soluble vitamins (A, D, E, K) that can manifest as night blindness, osteomalacia, neuropathy, and coagulopathy [13][36][39].
+**Symptoms:** Fatty stools (steatorrhea), diarrhea, bloating, abdominal pain and weight loss, with malnutrition-related problems such as osteoporosis [13][98].
 
-**Pancreatic Enzyme Replacement Therapy (PERT):** PERT using porcine-derived pancrelipase (such as Creon) is the gold standard treatment. A landmark study demonstrated that prescription pancreatin (Creon, containing lipase 10,000 USP, protease 37,500 USP, and amylase 33,200 USP) taken as one capsule immediately before a high-fat, high-calorie meal and two capsules immediately after the meal significantly reduced bloating, gas, and fullness compared to placebo (Suarez et al., *Dig Dis Sci*, 1999) [15][16].
+**Pancreatic Enzyme Replacement Therapy (PERT):** Enzyme replacement together with dietary advice and support is the cornerstone of EPI treatment [90]. Enzymes come as enteric-coated minimicrospheres taken during meals, so that active lipase reaches the duodenum as food leaves the stomach [13][40].
 
-PERT improves fat absorption by up to 80% and resolves symptoms including weight loss and diarrhea in most patients [40]. Recommended starting doses are 30,000-40,000 USP units of lipase per main meal and 15,000-20,000 units per snack, adjusted according to dietary fat content and clinical response [16][41]. Dosing is individualized — the goal is to achieve normal nutritional status and minimize gastrointestinal symptoms.
+In a trial in people with EPI from chronic pancreatitis or pancreatectomy, pancrelipase at 72,000 lipase units per meal and 36,000 per snack improved fat and protein absorption more than placebo [99]. The usual dose is 40,000 to 50,000 lipase units per main meal and half that for a snack, matched to the meal's fat content; if symptoms persist, the dose can be doubled and an acid-reducing drug added [13]. In real-world studies, 40% reported average doses below this range, and lower doses still eased diarrhea but did not improve nutritional status [98].
 
-**For people with general malabsorption disorders:** 25,000-40,000 USP of porcine-derived lipase or 18,750-30,000 LU of fungal-derived lipase per meal has been recommended (Roxas, *Alt Med Rev*, 2008) [15][42].
+**Older dosing advice:** A 2003 review advised 25,000 to 40,000 units of porcine lipase per meal [30]; current guidance is higher [13].
 
 ### Lactose Intolerance
 
-Lactose intolerance results from insufficient lactase (beta-galactosidase) activity in the small intestine, preventing breakdown of lactose into absorbable glucose and galactose [22][43]. Globally, lactose malabsorption affects approximately 68% of the world's population, with prevalence highest in Asian, African, and Native American populations compared to those of Northern European descent [22][44].
+Lactose intolerance results from insufficient lactase (beta-galactosidase) activity in the small intestine, preventing breakdown of lactose into absorbable glucose and galactose [22][43]. Primary lactose malabsorption is inherited and affects the majority of the world's population [46].
 
 **Types:**
-- **Primary (genetic):** Adult-type hypolactasia, where lactase production naturally declines after weaning due to genetic polymorphisms affecting the LCT gene. This is the most common form [22][43].
-- **Secondary:** Temporary reduction in lactase following gastrointestinal infections, celiac disease, Crohn's disease, or other mucosal injuries [22][43].
-- **Congenital:** Extremely rare complete absence of lactase from birth [22].
+- **Primary (genetic):** Lactase production declines in adulthood. In adult Caucasians who keep producing lactase, this is linked to a single gene variant near the LCT gene [22].
+- **Secondary:** Lactase falls after infections or other conditions that damage the lining of the small intestine [22].
 
-**Symptoms** typically appear 30 minutes to 2 hours after consuming lactose-containing dairy products and include abdominal bloating, cramping, flatulence, nausea, and watery diarrhea [22][43].
+**Symptoms** include abdominal pain and swelling, rumbling, gas and diarrhea after eating dairy foods [43].
 
-**Lactase supplementation:** A dose of 3,000 to 6,000 ALU (Acid Lactase Units) can help people with lactose intolerance digest approximately 20 grams of lactose from milk (the amount in about 1.5 cups), with the larger dose providing greater benefit (Lin et al., *Dig Dis Sci*, 1993) [15][45]. Clinical studies demonstrate that exogenous beta-galactosidase significantly reduces hydrogen breath excretion — a marker of undigested lactose fermentation — and alleviates gastrointestinal symptoms in lactose-intolerant adults [46][47]. Efficacy varies by enzyme dose and individual lactase deficiency severity, but supplementation provides a practical alternative to dietary lactose restriction without altering food choices [48].
+**Lactase supplementation:** In lactose maldigesters drinking milk with 20 g of lactose, about 6,000 IU of lactase lowered breath hydrogen more than about 3,000 IU, and all enzyme products eased symptoms; with 50 g of lactose in water, neither dose helped significantly [45]. In a crossover trial in 47 adults, lactase tablets improved symptoms and cut cumulative breath hydrogen by 55% compared with placebo [95]. Overall, the benefit of lactose-intolerance treatments is modest, because lactose is only one of several poorly absorbed carbohydrates that cause similar symptoms [22].
 
 ### Congenital Sucrase-Isomaltase Deficiency (CSID)
 
-CSID is a rare autosomal recessive genetic disorder caused by mutations in the SI gene, leading to impaired digestion of sucrose and starches [49]. Affected individuals experience chronic watery diarrhea, abdominal pain, bloating, and excessive gas, particularly after ingesting sucrose-rich foods [49][50].
+CSID is an inherited condition in which changes in the sucrase-isomaltase gene produce an enzyme that does not reach the gut surface or does not work, so sucrose is poorly digested [50]. Affected children have diarrhea, abdominal cramps, gas and bloating when they eat sucrose [51].
 
-**Treatment:** Sacrosidase (Sucraid), a recombinant sucrase enzyme derived from yeast, is the FDA-approved enzyme replacement therapy. The standard dose is 1 mL (8,500 international units) taken with each sucrose-containing meal or snack, with studies demonstrating significant improvement in disaccharide absorption and symptom relief [49][51].
+**Treatment:** Sacrosidase is a liquid sucrase made from baker's yeast (Saccharomyces cerevisiae). In a randomized double-blind trial in 28 children, it lowered breath hydrogen after sucrose, and higher concentrations meant fewer stools and fewer symptoms on a normal diet [51]. Doses depended on body weight, with 2 mL for children over 15 kg [51].
 
 ### Gas and Bloating from Fermentable Carbohydrates
 
-Alpha-galactosidase (the active ingredient in products like Beano) targets the complex oligosaccharides raffinose and stachyose found in beans, lentils, cruciferous vegetables, and other gas-producing foods. These sugars are normally undigested by human enzymes and are instead fermented by colonic bacteria, producing gas.
+Beans and some other foods contain oligosaccharides with a bond that human enzymes cannot break. Gut bacteria ferment them instead, which produces gas, and alpha-galactosidase (sold as Beano) breaks that bond before the sugars reach the colon [80][93].
 
 **Clinical evidence:**
-- A dose between 240 GALU and 1,200 GALU may help reduce gas from a meal rich in fermentable carbohydrates such as beans (Ganiats et al., *J Fam Pract*, 1994) [15][23].
-- A subsequent study confirmed dose-dependent benefit, with higher doses providing greater gas reduction (Di Stefano et al., *Dig Dis Sci*, 2007) [15][52].
+- In a crossover trial in 19 people eating meatless chili, 8 drops of alpha-galactosidase solution reduced flatulence events per hour over the 6-hour follow-up, but not bloating or pain [23].
+- In 8 healthy volunteers eating 420 g of cooked beans, 1,200 GalU reduced breath hydrogen and the severity of flatulence, and both 300 and 1,200 GalU lowered the total symptom score [52].
+- In 52 children with recurring gas symptoms, 2 weeks of alpha-galactosidase reduced distress, days with moderate to severe bloating and flatulence compared with placebo [101].
+- In 125 adults with irritable bowel syndrome, 12 weeks of alpha-galactosidase showed only a trend toward fewer symptoms, and the authors found no evidence to support routine use [93].
 
 ### Protein Digestion and Amino Acid Absorption
 
 Fungal-derived proteases may enhance protein digestion and amino acid absorption from supplemental protein:
 
-- A study found that 2.5 grams or 5 grams of a patented blend of proteases derived from Aspergillus niger and Aspergillus oryzae (Aminogen, Triarco Industries) — enzyme activity units not provided — added to 50 grams of whey protein concentrate increased the rate of absorption and total amino acid absorption (Oben et al., *J Int Soc Sports Nutr*, 2008) [15][53]. This finding is relevant for athletes and older adults seeking to maximize protein utilization from dietary or supplemental sources.
+- In an open-label study in healthy men, adding 2.5 g or 5 g of a protease blend from Aspergillus niger and Aspergillus oryzae (Aminogen) to 50 g of whey protein concentrate raised the absorption of amino acids into the blood compared with whey alone [53].
 
 ### Bloating and Indigestion in Healthy Adults
 
-The evidence for digestive enzyme supplements in otherwise healthy adults with occasional digestive discomfort is limited but emerging:
+The evidence for digestive enzyme supplements in otherwise healthy adults with occasional digestive discomfort is limited:
 
-- A small observational study compared a non-animal digestive enzyme complex (Similase Total) to domperidone (a gastroprokinetic drug) in 62 volunteers with common digestive complaints (bloating, diarrhea, stomach pain, cramps) over 5 days. Both treatments significantly reduced symptom severity (P<0.05), with the enzyme complex performing significantly better for abdominal pain reduction (P=0.021). The authors concluded that digestive enzyme supplementation may offer a valuable alternative to gastroprokinetics for common gastrointestinal complaints [54].
-- A randomized, double-blind, placebo-controlled crossover study found that a multi-digestive enzyme and herbal dietary supplement reduced bloating and abdominal distension in healthy adults [55].
-- However, for irritable bowel syndrome (IBS), trials have shown only minor reductions in bloating with no consistent overall benefit compared to standard treatments [56].
+- In a double-blind crossover trial in 18 healthy volunteers, three pancrelipase capsules taken with a high-fat meal of cookies reduced bloating over the whole recording period, and bloating, gas and fullness between dinner and bedtime, compared with placebo [16].
+- In a small crossover trial in 49 people with diarrhea-predominant irritable bowel syndrome, the main result (how many chose pancrelipase over placebo) was not statistically significant, although symptoms improved in a subgroup and the authors called for more study [56].
 
 ### Bromelain: Digestive and Anti-Inflammatory Uses
 
 Bromelain, the protease derived from pineapple stems and fruit, has both digestive and systemic applications [17]:
 
-**Digestive use:** For digestion, a dose of 2,000 MCU or 1,200 GDU is recommended, taken with meals (Roxas, *Alt Med Rev*, 2008) [15][42].
+**Digestive use:** Bromelain helps break down proteins and has been used alongside animal-derived enzymes [42].
 
-**Osteoarthritis pain:** When taken on an empty stomach (for systemic absorption rather than digestive action), 540 mg of bromelain taken 3 times daily has been studied for knee osteoarthritis pain [15][17]. The anti-inflammatory properties of bromelain are attributed to its ability to modulate prostaglandin synthesis, reduce fibrin formation, and decrease vascular permeability [17][57].
+**Osteoarthritis pain:** In a 16-week pilot trial in 40 people with mild-to-moderate knee osteoarthritis, bromelain 500 mg a day eased symptoms about as much as diclofenac at 4 weeks, and symptom scores kept improving from baseline to 16 weeks [96]. Laboratory and animal studies show anti-inflammatory, anti-swelling and clot-dissolving effects, partly through the arachidonic acid pathway [57][72].
 
-**Key distinction:** The timing of bromelain relative to food determines its action. Taken with meals, it functions as a digestive protease. Taken on an empty stomach (at least 30 minutes before eating), it is absorbed systemically and may exert anti-inflammatory effects [15][58].
+**Key distinction:** Bromelain is absorbed from the gut while keeping its protein-digesting activity, which means it may act beyond the gut [17].
 
 ### Phytase and Mineral Absorption
 
-Phytase breaks down phytic acid (phytate), the primary storage form of phosphorus in grains, legumes, nuts, and seeds. Phytic acid is a potent chelator that binds iron, zinc, calcium, and other minerals, reducing their bioavailability [27][59].
+Phytase breaks down phytic acid (phytate), which is found in cereals and legumes. In adults, phytic acid inhibits the absorption of iron, zinc, calcium and manganese [59].
 
-- A dose between 20 and 320 FTU of phytase per 100 grams of flour may help increase iron absorption (Troesch et al., *Food Nutr Bull*, 2013) [15][27].
-- This is particularly relevant for individuals on plant-based diets, where phytic acid in grains and legumes can significantly reduce mineral absorption. Phytase supplementation or food preparation techniques that activate endogenous phytases (soaking, sprouting, fermenting) can improve mineral bioavailability from these foods [59].
+- Across 12 human studies, 20 to 320 phytase units per 100 g of flour significantly improved iron absorption [27]. In one study, adding Aspergillus niger phytase to a bran meal raised iron absorption from 14.3% to 26.1% [102].
+- Phytase can be added during food processing or taken with the meal to break down phytate in the stomach [27].
 
 ### Emerging Research: Microbiome and Enzyme Synergy
 
-Emerging approaches include combining digestive enzyme supplements with probiotics or synbiotics to both replace deficient enzyme activity and support endogenous enzyme production through healthier gut microbiota [60][61]. Some preliminary evidence suggests that probiotics can enhance brush border enzyme expression in individuals with gut dysbiosis, potentially amplifying the effects of enzyme supplementation, though this area requires further investigation [60].
+Live bacteria can supply enzymes too. Yogurt cultures carry their own lactase and improve lactose digestion, while probiotic strains, which act mainly in the colon, do this less well [48].
 
 ## 4. Recommended Dosing
 
 ### By Enzyme Type
 
-| Enzyme | Indication | Recommended Dose | Timing | Source |
+| Enzyme | Indication | Dose Studied | Timing | Source |
 |--------|-----------|:-:|:-:|------|
-| Pancreatin (PERT) | EPI (cystic fibrosis, chronic pancreatitis) | 30,000-40,000 USP lipase per meal; 15,000-20,000 USP per snack | With meals | [16][41] |
-| Pancreatin (general) | Occasional bloating from high-fat meals | 1 capsule before + 2 after meal (lipase 10,000 USP, protease 37,500 USP, amylase 33,200 USP per capsule) | Immediately before and after meal | Suarez 1999 [15] |
-| Lipase | General malabsorption | 25,000-40,000 USP (porcine) or 18,750-30,000 LU (fungal) per meal | With meals | Roxas 2008 [42] |
-| Lipase | Healthy adults, high-fat meals | 10,000 USP before meal + 20,000 USP after meal | Immediately before/after | Suarez 1999 [15] |
-| Amylase | Healthy adults, starch-heavy meals | 33,200 USP porcine-derived | Immediately before meal | Suarez 1999 [15] |
-| Bromelain (digestive) | Protein digestion aid | 2,000 MCU or 1,200 GDU | With meals | Roxas 2008 [42] |
-| Bromelain (systemic) | Osteoarthritis, inflammation | 540 mg three times daily | On empty stomach, 30+ min before meals | [15][17] |
-| Lactase | Lactose intolerance | 3,000-6,000 ALU | Immediately before or with dairy-containing meal | Lin 1993 [45] |
-| Alpha-galactosidase | Gas from beans/legumes | 240-1,200 GALU | With meal | Ganiats 1994; Di Stefano 2007 [23][52] |
-| Phytase | Improved mineral absorption | 20-320 FTU per 100g flour | With plant-based meals | Troesch 2013 [27] |
-| Sacrosidase (Sucraid) | CSID | 1 mL (8,500 IU) per meal/snack | With sucrose-containing foods | [49][51] |
+| Pancreatin (PERT) | EPI | 40,000-50,000 lipase units per main meal; half for a snack | During meals | [13] |
+| Pancreatin (general) | Healthy adults, high-fat meal | 3 pancrelipase capsules | With the meal | Suarez 1999 [16] |
+| Lactase | Lactose intolerance | About 6,000 IU with milk holding 20 g of lactose | With the milk | Lin 1993 [45] |
+| Alpha-galactosidase | Gas from beans/legumes | 300-1,200 GalU | With the meal | Di Stefano 2007 [52] |
+| Phytase | Iron absorption from phytate-rich flour | 20-320 phytase units per 100 g of flour | In the food | Troesch 2013 [27] |
+| Bromelain (systemic) | Knee osteoarthritis | 500 mg a day | Daily for 16 weeks | Kasemsuk 2016 [96] |
+| Sacrosidase | CSID | By body weight; 2 mL for children over 15 kg | As prescribed | Treem 1999 [51] |
 
 ### General Dosing Principles
 
-**Timing is critical:** Digestive enzymes work best when taken immediately before or during a meal, although there may still be a benefit when taken immediately after eating [15]. The goal is to have the enzyme present in the stomach and small intestine while food is being processed.
+**Timing is critical:** Pancreatic enzymes are taken during meals, so they leave the stomach together with the food [13][40].
 
-**Systemic vs. digestive use:** Enzymes taken for non-digestive purposes (such as proteases for pain and inflammation) should be taken on an empty stomach, at least 30 minutes before a meal, to promote systemic absorption rather than local digestive action [15][58].
+**Dose-response relationship:** More enzyme helped in some trials, up to a limit. About 6,000 IU of lactase beat 3,000 IU with 20 g of lactose, but neither dose coped with 50 g [45], and alpha-galactosidase at 1,200 GalU reduced breath hydrogen where 300 GalU did not [52].
 
-**Dose-response relationship:** For most digestive enzymes, higher doses provide greater benefit up to a ceiling effect. This is well-demonstrated with lactase (6,000 ALU more effective than 3,000 ALU) and alpha-galactosidase (1,200 GALU more effective than 240 GALU) [15][23][45].
-
-**Individualization:** PERT dosing for EPI must be individualized based on the degree of pancreatic insufficiency, dietary fat content, body weight, and clinical response. The maximum recommended dose for EPI is 2,500 USP lipase units per kilogram of body weight per meal and no more than 10,000 USP per kilogram per day [62].
+**Individualization:** PERT doses follow the fat content of the meal and the response to treatment [13]. In young children with cystic fibrosis, the risk of fibrosing colonopathy rose steeply with high daily doses, which supports keeping the daily dose below 10,000 lipase units per kilogram for most patients [91].
 
 ### Storage
 
-Digestive enzymes should be stored in their original container in a cool, dry place. Exposure to excessive heat can reduce potency through protein denaturation [15]. Most enzyme supplements do not require refrigeration but should not be stored in hot environments (e.g., car glove boxes, direct sunlight).
+Follow the storage directions on the product label.
 
 ## 5. Safety and Side Effects
 
 ### General Tolerability
 
-Digestive enzymes are generally well-tolerated. The most commonly reported side effects are mild and gastrointestinal in nature [15][63].
+In a trial of prescription pancrelipase, side effects, including low and high blood sugar, were about as common as with placebo [99]. No side effects were reported in a 2-week trial of alpha-galactosidase in children [101].
 
 ### Side Effects by Enzyme Type
 
-**Fungal proteases (Aspergillus-derived):**
-- May cause stomach upset, nausea, and headache in some individuals [64].
-- A 30-day safety study found no adverse effects on metabolic or cardiovascular markers, including liver function, kidney function, and blood pressure (Anderson et al., *Food Dig*, 2013) [64].
-- Allergic reactions to Aspergillus-derived enzymes are possible but rare, typically reported in individuals with occupational exposure to large amounts of these fungi over time (e.g., brewery workers) (Ishiguro et al., *Clin Case Rep*, 2018; EPA 1998) [65][66].
+**Fungal enzymes (Aspergillus-derived):**
+- Bakers who breathed in alpha-amylase from Aspergillus oryzae, a flour additive, developed asthma or nasal allergy [100].
 
 **Papain:**
-- May cause itching, sweating, watery eyes, diarrhea, or exacerbation of asthma in people allergic to papaya or fig (Ficus benjamina) (Mansfield et al., *Ann Allergy*, 1985; Diez-Gomez et al., *Ann Allergy Asthma Immunol*, 1998) [67][68].
-- May potentially increase bleeding risk and should be used with caution in people taking blood-thinning medications such as warfarin (Shaw et al., *Drug Saf*, 1997) [69].
+- Among 475 allergy-clinic patients with seasonal allergies, 5 had papain allergy confirmed by blinded challenge, with symptoms such as an itchy palate, itchy watery eyes, sneezing, runny nose, abdominal cramps, diarrhea and sweating [92]. A severe whole-body allergic reaction followed eating a papain meat tenderizer [67], and people allergic to weeping fig latex may cross-react with papain [68]. In a severe allergic reaction, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- Papaya preparations have been reported to cause over-anticoagulation in people taking warfarin [97].
 
 **Bromelain:**
-- May have anti-platelet activity, which could increase the risk of bleeding or bruising when taken with blood-thinning drugs [70].
-- Allergic reactions have been reported (Nettis et al., *Allergy*, 2001) [71].
-- May increase the effects of sedative drugs or certain antibiotics, especially amoxicillin [15][72].
-- High doses may increase heart rate, but not blood pressure (Gutfreund et al., *Hawaii Med J*, 1978) [73].
+- Bromelain may inhibit platelet aggregation, so taking it with blood thinners could raise bleeding risk [72].
+- IgE-mediated allergy to bromelain has been reported [71].
+- Bromelain may increase the absorption of some drugs, particularly antibiotics [17][57].
 
-**Pancreatin and other animal-derived enzymes:**
-- May inhibit folic acid absorption with regular use. Individuals taking pancreatin chronically may need extra folate (Russell et al., *Dig Dis Sci*, 1980) [74].
-- People with known allergy to porcine (pig) protein should avoid porcine-derived enzymes [15].
-- Porcine-derived enzymes contain purines, which can increase blood uric acid levels. People with gout, renal impairment, or hyperuricemia should consult their healthcare provider before use [15].
-- Changes in blood sugar levels (hyperglycemia and hypoglycemia) have been reported in people with EPI due to chronic pancreatitis or pancreatectomy taking prescription pancreatin (Creon Prescribing Information, 2015) [75].
-- **Fibrosing colonopathy:** Very high doses of lipase can increase the risk of this rare but serious bowel disorder causing stricture of the colon. Cases have been reported primarily with animal-source lipase. This is of particular concern in infants and children under 12 years requiring enzyme replacement for cystic fibrosis. It is not advisable to exceed 2,500 USP lipase per kilogram of body weight per meal, or 10,000 USP per kilogram per day (Cystic Fibrosis Foundation, 2021) [62].
-
-**Lactase:**
-- Very few side effects reported. Rarely, nausea and allergic reactions have occurred [15][76].
+**Pancreatin and other porcine enzymes:**
+- Pancreatic extract reduced folate absorption in both healthy people and people with pancreatic insufficiency, so folate status should be monitored in people on long-term treatment [74].
+- If you are allergic to pork protein, do not take enzymes made from pig pancreas.
+- High doses of pancreatic extract raised uric acid in the urine of children with cystic fibrosis, and the authors advised using the lowest effective dose to protect the kidneys [94]. People with gout or kidney problems should ask their doctor before use.
+- In people with EPI after chronic pancreatitis or pancreatectomy, low and high blood sugar were about as common with pancrelipase as with placebo [99].
+- **Fibrosing colonopathy:** This rare scarring of the colon has been reported in young children with cystic fibrosis taking high-strength pancreatic enzymes. Compared with 0 to 24,000 lipase units per kilogram per day, the relative risk was 10.9 (95% CI 1.6 to 71.8) at 24,001 to 50,000 units and 199.5 (95% CI 9.9 to 4026.0) above 50,000 units [91].
 
 **Alpha-galactosidase:**
-- Generally well-tolerated at recommended doses [23][52].
+- More people stopped alpha-galactosidase than placebo in a 12-week trial in irritable bowel syndrome, most often for abdominal pain and diarrhea [93].
 
 ### Fat-Soluble Vitamin Deficiencies from Untreated EPI
 
-Untreated exocrine pancreatic insufficiency leads to chronic fat malabsorption, which in turn causes deficiencies in fat-soluble vitamins with significant consequences [13][36][39]:
-
-- **Vitamin A deficiency:** Night blindness, xerophthalmia
-- **Vitamin D deficiency:** Osteomalacia, increased fracture risk
-- **Vitamin E deficiency:** Peripheral neuropathy, ataxia
-- **Vitamin K deficiency:** Coagulopathy, easy bruising
-
-Additionally, chronic malabsorption can lead to deficiencies in water-soluble vitamins and minerals including iron and vitamin B12, contributing to anemia, muscle wasting, fatigue, and growth impairment in children [39][77].
+Untreated exocrine pancreatic insufficiency causes malabsorption and nutritional deficiencies, which lower quality of life and raise illness and death rates [90]. Complications include osteoporosis [13].
 
 ## 6. Drug Interactions
 
-Digestive enzyme supplements have clinically significant interactions with several medication classes. Awareness of these interactions is essential for safe use.
+Some digestive enzymes interact with medicines. Check with your doctor or pharmacist before combining them.
 
 ### Enzymes Affecting Drug Efficacy
 
 | Enzyme | Drug Affected | Interaction | Clinical Significance |
 |--------|-------------|-------------|------|
-| Amylase / Pancreatin | Acarbose (Precose) | Amylase breaks down the same starches that acarbose is designed to block. Concurrent use reduces acarbose's glucose-lowering effect | People taking acarbose should NOT take digestive supplements containing amylase or pancreatin (Precose Prescribing Information, 2011) [78] |
-| Amylase / Pancreatin | Miglitol (Glyset) | Same mechanism as acarbose — both are alpha-glucosidase inhibitors | People taking miglitol should NOT take amylase or pancreatin supplements (Glyset Prescribing Information, 2012) [79] |
-| Alpha-galactosidase | Acarbose (Precose) | A clinical study found that people with type 2 diabetes taking acarbose who also took 15 drops of alpha-galactosidase (Beano) with meals had higher blood glucose levels than those not taking the enzyme — though levels remained significantly lower than placebo (Lettieri et al., *Clin Ther*, 1998) | Alpha-galactosidase may partially counteract acarbose's mechanism. Caution advised [80] |
-| DPP-IV (dipeptidyl peptidase IV) | DPP-IV inhibitors (gliptins): alogliptin (Nesina), linagliptin (Tradjenta), saxagliptin (Onglyza), sitagliptin (Januvia) | Supplemental DPP-IV enzyme could theoretically interfere with the pharmacological action of DPP-IV inhibitor drugs | People on gliptin therapy should NOT take digestive enzyme products containing DPP-IV [28][81] |
+| Amylase / Pancreatin | Acarbose | Acarbose works by blocking carbohydrate digestion [80], so enzymes that digest starch may weaken it | Check with your doctor before combining |
+| Amylase / Pancreatin | Miglitol | Miglitol also blocks carbohydrate digestion, so starch-digesting enzymes may weaken it | Check with your doctor before combining |
+| Alpha-galactosidase | Acarbose | In a crossover trial in 37 people with type 2 diabetes, blood sugar after meals was higher with alpha-galactosidase plus acarbose than with acarbose alone, though still lower than with placebo [80] | Alpha-galactosidase may partly counteract acarbose |
+| DPP-IV (dipeptidyl peptidase IV) | DPP-4 inhibitors (gliptins) such as sitagliptin | Gliptins work by blocking the DPP-4 enzyme [81], so a supplement containing the enzyme could in theory interfere | Check with your doctor before combining |
 
 ### Enzymes Affecting Nutrient Absorption
 
 | Enzyme | Nutrient Affected | Interaction |
 |--------|------------------|-------------|
-| Pancreatin (chronic use) | Folic acid | Pancreatin may inhibit folic acid absorption. Supplemental folate may be needed with long-term pancreatin use (Russell et al., *Dig Dis Sci*, 1980) [74] |
+| Pancreatin (chronic use) | Folic acid | Pancreatic extract binds folate and reduces its absorption; monitor folate status with long-term use [74] |
 
 ### Enzymes with Bleeding Risk
 
 | Enzyme | Drugs Affected | Mechanism |
 |--------|---------------|-----------|
-| Bromelain | Aspirin, clopidogrel (Plavix), heparin, warfarin (Coumadin), and other anticoagulants | Anti-platelet activity may increase bleeding risk [70][72] |
-| Papain | Warfarin and other blood thinners | May increase bleeding risk (Shaw et al., *Drug Saf*, 1997) [69] |
+| Bromelain | Warfarin and other anticoagulants; antiplatelet drugs such as aspirin or clopidogrel | May inhibit platelet aggregation and so add to bleeding risk [72] |
+| Papain | Warfarin and other blood thinners | Papaya preparations have been reported to cause over-anticoagulation with warfarin [97] |
 
 ### Bromelain and Drug Potentiation
 
-Bromelain may increase the absorption and tissue levels of certain drugs [15][72]:
+Bromelain may increase the absorption of certain drugs [17][57][72]:
 
-- **Amoxicillin:** Bromelain may increase amoxicillin absorption, potentially increasing both efficacy and side effects.
-- **Sedative drugs:** May increase the effects of benzodiazepines, barbiturates, and other CNS depressants.
+- **Antibiotics:** Reviews describe enhanced absorption of antibiotics taken with bromelain [17][57].
+- **Other medicines:** If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Practical Guidance
 
-- **Diabetes medications:** Do not combine amylase, pancreatin, alpha-galactosidase, or DPP-IV enzyme supplements with acarbose, miglitol, or DPP-IV inhibitor drugs without medical supervision [78][79][80][81].
-- **Blood thinners:** Use bromelain and papain with caution when taking anticoagulant or antiplatelet medications. Inform your healthcare provider before combining [69][70].
-- **Chronic pancreatin use:** Monitor folate status and consider supplementation, especially during pregnancy or in those at risk of folate deficiency [74].
+- **Diabetes medications:** Check with your doctor before combining amylase, pancreatin, alpha-galactosidase or DPP-IV enzyme supplements with acarbose, miglitol or gliptins [80].
+- **Blood thinners:** Use bromelain and papain with caution when taking anticoagulant or antiplatelet medicines, and tell your doctor before combining them [72][97].
+- **Chronic pancreatin use:** Have folate status monitored; supplementation may be needed [74].
 
 ## 7. Dietary Sources
 
-The human body produces all necessary digestive enzymes endogenously when the gastrointestinal system is functioning normally. However, certain foods contain natural enzymes that can assist in pre-digestion of food before and during consumption.
+The human body produces all necessary digestive enzymes when the digestive system is working normally. Some foods also contain enzymes or live cultures that act on food.
 
 ### Enzyme-Rich Foods
 
 | Food | Enzyme(s) | Function |
 |------|-----------|----------|
-| Pineapple (especially stem) | Bromelain | Protease — breaks down proteins. Most concentrated in the stem and core [17] |
-| Papaya | Papain | Protease — tenderizes meat and breaks down proteins. Most active in unripe papaya [25] |
-| Mango | Amylase | Breaks down starches into sugars. Amylase activity increases as the fruit ripens [82] |
-| Banana | Amylase, glucosidase | Starch and sugar digestion. Activity increases as bananas ripen [82] |
-| Honey (raw) | Diastase (amylase), invertase, glucose oxidase | Breaks down starches and sugars. Pasteurized honey has reduced enzyme activity [83] |
-| Kefir and yogurt | Lactase (from bacterial cultures), lipase, protease | Fermented dairy contains microbial enzymes that partially pre-digest lactose, fat, and protein [84] |
-| Sauerkraut and kimchi | Various (from Lactobacillus fermentation) | Fermentation produces enzymes that break down sugars and fiber; also a probiotic source [85] |
-| Miso and tempeh | Protease, amylase, lipase (from Aspergillus oryzae and Rhizopus fermentation) | Soy fermentation by fungi produces enzymes that pre-digest protein, starch, and fat [86] |
-| Avocado | Lipase | Breaks down dietary fat [87] |
-| Ginger | Zingibain (protease) | Protein digestion; traditional use as a digestive aid [88] |
-| Kiwifruit | Actinidin (protease) | Protein digestion; studies show kiwifruit consumption enhances gastric protein digestion [89] |
-| Sprouted grains and seeds | Amylase, protease, phytase | Sprouting activates endogenous enzymes, reducing phytic acid and improving nutrient availability [59] |
+| Pineapple (especially stem) | Bromelain | Protease that breaks down proteins [17] |
+| Papaya | Papain | Protease used to tenderize meat [67] |
+| Kefir and yogurt | Lactase (from live cultures) | Yogurt's own lactase improves digestion of its lactose; pasteurizing yogurt removes this effect [47]. Kefir eased lactose malabsorption in at least one randomized trial [85] |
+| Sauerkraut, kimchi, miso and tempeh | Various (from fermentation) | Made by microbial growth that changes food components through enzyme action; no randomized trials have tested kimchi, miso or tempeh for gut health [85] |
+| Kiwifruit | Actinidin (protease) | In a laboratory model of the stomach, kiwifruit extract improved the digestion of some, but not all, food proteins [89] |
 
 ### Important Notes on Dietary Enzyme Sources
 
-- **Cooking destroys enzymes.** Most digestive enzymes in foods are denatured above 45-50 degrees Celsius (113-122 degrees Fahrenheit). To benefit from food-based enzymes, consume these foods raw or minimally processed [2].
-- **Quantity matters.** The amount of active enzyme in a serving of food is typically much lower than in supplement form. Eating pineapple with a steak may modestly improve protein digestion, but it does not provide the therapeutic enzyme levels found in concentrated supplements [17].
-- **Fermented foods have dual benefits.** Beyond contributing enzymes, fermented foods (kefir, sauerkraut, kimchi, miso) provide probiotic bacteria that support gut health and may enhance endogenous enzyme production [60][85].
-- **Traditional food preparation techniques** — soaking, sprouting, and fermenting grains and legumes — activate endogenous phytase, which reduces phytic acid content and improves mineral absorption from these foods. This is an alternative to supplemental phytase [27][59].
+- **Fermented foods vary.** Of the common fermented foods, kefir has the most trial evidence for gut effects [85].
+- **Food processing with phytase** breaks down phytate before the food is eaten and improves iron absorption from phytate-rich foods [27].
 
 ### When Dietary Sources Are Insufficient
 
-Dietary enzyme sources alone are unlikely to compensate for clinically significant enzyme deficiency. Individuals with exocrine pancreatic insufficiency, lactose intolerance, CSID, or other diagnosed enzyme deficiencies require targeted supplementation at therapeutic doses, not simply increased consumption of enzyme-rich foods [13][22][49].
+Dietary enzyme sources alone are unlikely to compensate for clinically significant enzyme deficiency. Individuals with exocrine pancreatic insufficiency, lactose intolerance, CSID, or other diagnosed enzyme deficiencies require targeted supplementation at therapeutic doses, not simply increased consumption of enzyme-rich foods [13][22][51].
 
 ## 8. References
-
-[1] National Institute of Diabetes and Digestive and Kidney Diseases. "Your Digestive System & How it Works." [https://www.niddk.nih.gov/health-information/digestive-diseases/digestive-system-how-it-works](https://www.niddk.nih.gov/health-information/digestive-diseases/digestive-system-how-it-works)
-
-[2] Grokipedia. "Digestive enzyme." [https://grokipedia.com/page/Digestive_enzyme](https://grokipedia.com/page/Digestive_enzyme)
 
 [3] Goodman BE. "Insights into digestion and absorption of major nutrients in humans." *Adv Physiol Educ*. 2010;34(2):44-53. doi: [10.1152/advan.00094.2009](https://doi.org/10.1152/advan.00094.2009)
 
 [4] Pedersen AM, Bardow A, Jensen SB, Nauntofte B. "Saliva and gastrointestinal functions of taste, mastication, swallowing and digestion." *Oral Dis*. 2002;8(3):117-129. doi: [10.1034/j.1601-0825.2002.02851.x](https://doi.org/10.1034/j.1601-0825.2002.02851.x)
 
-[5] Humphrey SP, Williamson RT. "A review of saliva: normal composition, flow, and function." *J Prosthet Dent*. 2001;85(2):162-169. doi: [10.1067/mpr.2001.113778](https://doi.org/10.1067/mpr.2001.113778)
-
-[6] Piper DW, Fenton BH. "pH stability and activity curves of pepsin with special reference to their clinical importance." *Gut*. 1965;6(5):506-508. PMID: [4158734](https://pubmed.ncbi.nlm.nih.gov/4158734/)
-
-[7] Hamosh M. "Lingual and gastric lipases." *Nutrition*. 1990;6(6):421-428. PMID: [2134571](https://pubmed.ncbi.nlm.nih.gov/2134571/)
-
-[8] Pandol SJ. "The Exocrine Pancreas." *Colloquium Series on Integrated Systems Physiology*. Morgan & Claypool Life Sciences; 2010. [https://www.ncbi.nlm.nih.gov/books/NBK54128/](https://www.ncbi.nlm.nih.gov/books/NBK54128/)
-
-[9] Keller J, Layer P. "Human pancreatic exocrine response to nutrients in health and disease." *Gut*. 2005;54(Suppl 6):vi1-vi28. doi: [10.1136/gut.2005.065946](https://doi.org/10.1136/gut.2005.065946)
+[7] Hamosh M. "Lingual and gastric lipases." *Nutrition*. 1990;6(6):421-428. PMID: [2134569](https://pubmed.ncbi.nlm.nih.gov/2134569/)
 
 [10] Hooton D, Lentle R, Monro J, Wickham M, Simpson R. "The Secretion and Action of Brush Border Enzymes in the Mammalian Small Intestine." *Rev Physiol Biochem Pharmacol*. 2015;168:59-118. doi: [10.1007/112_2015_24](https://doi.org/10.1007/112_2015_24)
 
 [11] Ianiro G, Pecere S, Giorgio V, Gasbarrini A, Cammarota G. "Digestive Enzyme Supplementation in Gastrointestinal Diseases." *Curr Drug Metab*. 2016;17(2):187-193. doi: [10.2174/138920021702160114150137](https://doi.org/10.2174/138920021702160114150137)
 
-[12] Payen A, Persoz JF. "Memoire sur la diastase, les principaux produits de ses reactions, et leurs applications aux arts industriels." *Ann Chim Phys*. 1833;53:73-92.
-
 [13] Lindkvist B. "Diagnosis and treatment of pancreatic exocrine insufficiency." *World J Gastroenterol*. 2013;19(42):7258-7266. doi: [10.3748/wjg.v19.i42.7258](https://doi.org/10.3748/wjg.v19.i42.7258)
-
-[14] Hammer HF, Hammer J. "Lipase supplementation therapy: standards, alternatives, and perspectives." *Scand J Gastroenterol*. 2009;44(10):1152-1155. doi: [10.1080/00365520903171572](https://doi.org/10.1080/00365520903171572)
-
-[15] ConsumerLab. "Digestive Enzyme Supplements Review." Accessed 2026. [https://www.consumerlab.com/reviews/digestive-enzyme-supplements/digestive-enzymes/](https://www.consumerlab.com/reviews/digestive-enzyme-supplements/digestive-enzymes/)
 
 [16] Suarez F, Levitt MD, Adshead J, Barkin JS. "Pancreatic supplements reduce symptomatic response of healthy subjects to a high fat meal." *Dig Dis Sci*. 1999;44(7):1317-1321. doi: [10.1023/A:1026675012864](https://doi.org/10.1023/A:1026675012864)
 
@@ -357,8 +320,6 @@ Dietary enzyme sources alone are unlikely to compensate for clinically significa
 
 [19] Whitcomb DC, Lowe ME. "Human pancreatic digestive enzymes." *Dig Dis Sci*. 2007;52(1):1-17. doi: [10.1007/s10620-006-9589-z](https://doi.org/10.1007/s10620-006-9589-z)
 
-[20] Rawlings ND, Barrett AJ. "Families of serine peptidases." *Methods Enzymol*. 1994;244:19-61. doi: [10.1016/0076-6879(94)44004-2](https://doi.org/10.1016/0076-6879(94)44004-2)
-
 [21] Lowe ME. "The triglyceride lipases of the pancreas." *J Lipid Res*. 2002;43(12):2007-2016. doi: [10.1194/jlr.R200012-JLR200](https://doi.org/10.1194/jlr.R200012-JLR200)
 
 [22] Misselwitz B, Butter M, Verbeke K, Fox MR. "Update on lactose malabsorption and intolerance: pathogenesis, diagnosis and clinical management." *Gut*. 2019;68(11):2080-2091. doi: [10.1136/gutjnl-2019-318404](https://doi.org/10.1136/gutjnl-2019-318404)
@@ -366,8 +327,6 @@ Dietary enzyme sources alone are unlikely to compensate for clinically significa
 [23] Ganiats TG, Norcross WA, Halverson AL, Burford PA, Palinkas LA. "Does Beano prevent gas? A double-blind crossover study of oral alpha-galactosidase to treat dietary oligosaccharide intolerance." *J Fam Pract*. 1994;39(5):441-445. PMID: [7964541](https://pubmed.ncbi.nlm.nih.gov/7964541/)
 
 [24] Bayer EA, Chanzy H, Lamed R, Shoham Y. "Cellulose, cellulases and cellulosomes." *Curr Opin Struct Biol*. 1998;8(5):548-557. doi: [10.1016/S0959-440X(98)80143-7](https://doi.org/10.1016/S0959-440X(98)80143-7)
-
-[25] Amri E, Mamboya F. "Papain, a Plant Enzyme of Biological Importance: A Review." *Am J Biochem Biotechnol*. 2012;8(2):99-104. doi: [10.3844/ajbbsp.2012.99.104](https://doi.org/10.3844/ajbbsp.2012.99.104)
 
 [26] Kotwal SM, Shankar V. "Immobilized invertase." *Biotechnol Adv*. 2009;27(4):311-322. doi: [10.1016/j.biotechadv.2009.01.009](https://doi.org/10.1016/j.biotechadv.2009.01.009)
 
@@ -379,15 +338,9 @@ Dietary enzyme sources alone are unlikely to compensate for clinically significa
 
 [30] Layer P, Keller J. "Lipase supplementation therapy: standards, alternatives, and perspectives." *Pancreas*. 2003;26(1):1-7. doi: [10.1097/00006676-200301000-00001](https://doi.org/10.1097/00006676-200301000-00001)
 
-[31] Bhatt DL, et al. "Trypsinogen activation in health and disease." *Pancreatology*. 2005;5:2-3. doi: [10.1159/000084484](https://doi.org/10.1159/000084484)
-
 [32] Witt H, Luck W, Hennies HC, et al. "Mutations in the gene encoding the serine protease inhibitor, Kazal type 1 are associated with chronic pancreatitis." *Nat Genet*. 2000;25(2):213-216. doi: [10.1038/76088](https://doi.org/10.1038/76088)
 
 [33] van Tilbeurgh H, Bezzine S, Gancet C, Sarda L, Verger R. "Colipase: structure and interaction with pancreatic lipase." *Biochim Biophys Acta*. 1999;1441(2-3):173-184. doi: [10.1016/S1388-1981(99)00149-3](https://doi.org/10.1016/S1388-1981(99)00149-3)
-
-[34] Auld DS. "Zinc coordination sphere in biochemical zinc sites." *Biometals*. 2001;14(3-4):271-313. doi: [10.1023/A:1012976615056](https://doi.org/10.1023/A:1012976615056)
-
-[35] Hofmann AF, Borgstrom B. "The intraluminal phase of fat digestion in man: the lipid content of the micellar and oil phases of intestinal content obtained during fat digestion and absorption." *J Clin Invest*. 1964;43(2):247-257. doi: [10.1172/JCI104909](https://doi.org/10.1172/JCI104909)
 
 [36] Struyvenberg MR, Martin CR, Freedman SD. "Practical guide to exocrine pancreatic insufficiency - Breaking the myths." *BMC Med*. 2017;15(1):29. doi: [10.1186/s12916-017-0783-y](https://doi.org/10.1186/s12916-017-0783-y)
 
@@ -399,23 +352,17 @@ Dietary enzyme sources alone are unlikely to compensate for clinically significa
 
 [40] Dominguez-Munoz JE. "Pancreatic enzyme replacement therapy for pancreatic exocrine insufficiency: when is it indicated, what is the goal and how to do it?" *Adv Med Sci*. 2011;56(1):1-5. doi: [10.2478/v10039-011-0005-3](https://doi.org/10.2478/v10039-011-0005-3)
 
-[41] Dominguez-Munoz JE. "Pancreatic enzyme therapy for pancreatic exocrine insufficiency." *Curr Gastroenterol Rep*. 2007;9(2):116-122. doi: [10.1007/s11894-007-0005-4](https://doi.org/10.1007/s11894-007-0005-4)
-
 [42] Roxas M. "The role of enzyme supplementation in digestive disorders." *Altern Med Rev*. 2008;13(4):307-314. PMID: [19152478](https://pubmed.ncbi.nlm.nih.gov/19152478/)
 
 [43] Deng Y, Misselwitz B, Dai N, Fox M. "Lactose Intolerance in Adults: Biological Mechanism and Dietary Management." *Nutrients*. 2015;7(9):8020-8035. doi: [10.3390/nu7095380](https://doi.org/10.3390/nu7095380)
-
-[44] Storhaug CL, Fosse SK, Fadnes LT. "Country, regional, and global estimates for lactose malabsorption in adults: a systematic review and meta-analysis." *Lancet Gastroenterol Hepatol*. 2017;2(10):738-746. doi: [10.1016/S2468-1253(17)30154-1](https://doi.org/10.1016/S2468-1253(17)30154-1)
 
 [45] Lin MY, Dipalma JA, Martini MC, Gross CJ, Harlander SK, Savaiano DA. "Comparative effects of exogenous lactase (beta-galactosidase) preparations on in vivo lactose digestion." *Dig Dis Sci*. 1993;38(11):2022-2027. doi: [10.1007/BF01297079](https://doi.org/10.1007/BF01297079)
 
 [46] Montalto M, Curigliano V, Santoro L, et al. "Management and treatment of lactose malabsorption." *World J Gastroenterol*. 2006;12(2):187-191. doi: [10.3748/wjg.v12.i2.187](https://doi.org/10.3748/wjg.v12.i2.187)
 
-[47] Savaiano DA, AbouElAnouar A, Smith DE, Levitt MD. "Lactose malabsorption from yogurt, pasteurized yogurt, sweet acidophilus milk, and cultured milk in lactase-deficient individuals." *Am J Clin Nutr*. 1984;40(6):1219-1223. PMID: [6507345](https://pubmed.ncbi.nlm.nih.gov/6507345/)
+[47] Savaiano DA, AbouElAnouar A, Smith DE, Levitt MD. "Lactose malabsorption from yogurt, pasteurized yogurt, sweet acidophilus milk, and cultured milk in lactase-deficient individuals." *Am J Clin Nutr*. 1984;40(6):1219-1223. PMID: [6439026](https://pubmed.ncbi.nlm.nih.gov/6439026/)
 
 [48] de Vrese M, Stegelmann A, Richter B, Fenselau S, Laue C, Schrezenmeir J. "Probiotics--compensation for lactase insufficiency." *Am J Clin Nutr*. 2001;73(2 Suppl):421S-429S. PMID: [11157352](https://pubmed.ncbi.nlm.nih.gov/11157352/)
-
-[49] Treem WR. "Congenital sucrase-isomaltase deficiency." *J Pediatr Gastroenterol Nutr*. 2012;55(Suppl 2):S7-S13. doi: [10.1097/01.mpg.0000421401.57633.90](https://doi.org/10.1097/01.mpg.0000421401.57633.90)
 
 [50] Naim HY, Roth J, Sterchi EE, et al. "Sucrase-isomaltase deficiency in humans. Different mutations disrupt intracellular transport, processing, and function of an intestinal brush border enzyme." *J Clin Invest*. 1988;82(2):667-679. doi: [10.1172/JCI113646](https://doi.org/10.1172/JCI113646)
 
@@ -425,74 +372,52 @@ Dietary enzyme sources alone are unlikely to compensate for clinically significa
 
 [53] Oben J, Kothari SC, Anderson ML. "An open label study to determine the effects of an oral proteolytic enzyme system on whey protein concentrate metabolism in healthy males." *J Int Soc Sports Nutr*. 2008;5:10. doi: [10.1186/1550-2783-5-10](https://doi.org/10.1186/1550-2783-5-10)
 
-[54] Boltin D, et al. "Can the supplementation of a digestive enzyme complex offer a solution for common digestive problems?" *Arch Gastroenterol Res*. 2021.
-
-[55] Quinten T, Philippart JM, De Beer T, Vervarcke S, Van Den Driessche M. "A multi-digestive enzyme and herbal dietary supplement reduces bloating and abdominal distension: results from a randomized, double-blind, placebo-controlled, crossover study in healthy adults." *J Diet Suppl*. 2021;18(6):610-624. doi: [10.1080/19390211.2020.1814542](https://doi.org/10.1080/19390211.2020.1814542)
-
 [56] Money ME, Walkowiak J, Virgilio C, Talley NJ. "Pilot study: a randomised, double blind, placebo controlled trial of pancrealipase for the treatment of postprandial irritable bowel syndrome-diarrhoea." *Frontline Gastroenterol*. 2011;2(1):48-56. doi: [10.1136/fg.2010.002253](https://doi.org/10.1136/fg.2010.002253)
 
 [57] Maurer HR. "Bromelain: biochemistry, pharmacology and medical use." *Cell Mol Life Sci*. 2001;58(9):1234-1245. doi: [10.1007/PL00000936](https://doi.org/10.1007/PL00000936)
 
-[58] Leipner J, Saller R. "Systemic enzyme therapy in oncology: effect and mode of action." *Drugs*. 2000;59(4):769-780. doi: [10.2165/00003495-200059040-00004](https://doi.org/10.2165/00003495-200059040-00004)
-
 [59] Hurrell RF. "Influence of vegetable protein sources on trace element and mineral bioavailability." *J Nutr*. 2003;133(9):2973S-2977S. doi: [10.1093/jn/133.9.2973S](https://doi.org/10.1093/jn/133.9.2973S)
 
-[60] Sanders ME, Merenstein DJ, Reid G, Gibson GR, Rastall RA. "Probiotics and prebiotics in intestinal health and disease: from biology to the clinic." *Nat Rev Gastroenterol Hepatol*. 2019;16(10):605-616. doi: [10.1038/s41575-019-0173-3](https://doi.org/10.1038/s41575-019-0173-3)
+[67] Mansfield LE, Bowers CH. "Systemic reaction to papain in a nonoccupational setting." *J Allergy Clin Immunol*. 1983;71(4):371-374. PMID: [6601123](https://pubmed.ncbi.nlm.nih.gov/6601123/)
 
-[61] Hill C, Guarner F, Reid G, et al. "Expert consensus document. The International Scientific Association for Probiotics and Prebiotics consensus statement on the scope and appropriate use of the term probiotic." *Nat Rev Gastroenterol Hepatol*. 2014;11(8):506-514. doi: [10.1038/nrgastro.2014.66](https://doi.org/10.1038/nrgastro.2014.66)
+[68] Diez-Gomez ML, Quirce S, Aragoneses E, Cuevas M. "Asthma caused by Ficus benjamina latex: evidence of cross-reactivity with fig fruit and papain." *Ann Allergy Asthma Immunol*. 1998;80(1):24-30. PMID: [9475562](https://pubmed.ncbi.nlm.nih.gov/9475562/)
 
-[62] Cystic Fibrosis Foundation. "Enzymes." Updated 2021. [https://www.cff.org/managing-cf/enzymes](https://www.cff.org/managing-cf/enzymes)
-
-[63] Graham DY. "Enzyme replacement therapy of exocrine pancreatic insufficiency before and after the Cystic Fibrosis Foundation consensus conference." *J Pediatr Gastroenterol Nutr*. 1999;29(2):141-145. doi: [10.1097/00005176-199908000-00008](https://doi.org/10.1097/00005176-199908000-00008)
-
-[64] Anderson ML, Oben J, Kothari S. "Metabolic and cardiovascular safety of a protease enzyme blend: a 30-day toxicity study." *Food Dig*. 2013;4:28-36.
-
-[65] Ishiguro T, et al. "Occupational asthma caused by alpha-amylase from Aspergillus oryzae." *Clin Case Rep*. 2018.
-
-[66] U.S. Environmental Protection Agency. "Aspergillus niger Final Risk Assessment." 1998. [https://www.epa.gov/risk/aspergillus-niger-final-risk-assessment](https://www.epa.gov/risk/aspergillus-niger-final-risk-assessment)
-
-[67] Mansfield LE, Bowers CH. "Systemic reaction to papain in a nonoccupational setting." *Ann Allergy*. 1985;55(3):469-470. PMID: [4037440](https://pubmed.ncbi.nlm.nih.gov/4037440/)
-
-[68] Diez-Gomez ML, Quirce S, Cuevas M, et al. "Fruit-pollen-latex cross-reactivity: implication of profilin (Bet v 2)." *Ann Allergy Asthma Immunol*. 1998;80:369.
-
-[69] Shaw D, Leon C, Kolev S, Murray V. "Traditional remedies and food supplements. A 5-year toxicological study (1991-1995)." *Drug Saf*. 1997;17(5):342-356. doi: [10.2165/00002018-199717050-00006](https://doi.org/10.2165/00002018-199717050-00006)
-
-[70] Heinicke RM, van der Wal L, Yokoyama M. "Effect of bromelain (Ananase) on human platelet aggregation." *Experientia*. 1972;28(7):844-845. doi: [10.1007/BF01923166](https://doi.org/10.1007/BF01923166)
-
-[71] Nettis E, Napoli G, Ferrannini A, Tursi A. "IgE-mediated allergy to bromelain." *Allergy*. 2001;56(3):257-258. doi: [10.1034/j.1398-9995.2001.00105.x](https://doi.org/10.1034/j.1398-9995.2001.00105.x)
+[71] Nettis E, Napoli G, Ferrannini A, Tursi A. "IgE-mediated allergy to bromelain." *Allergy*. 2001;56(3):257-258. doi: [10.1034/j.1398-9995.2001.056003257.x](https://doi.org/10.1034/j.1398-9995.2001.056003257.x)
 
 [72] Taussig SJ, Batkin S. "Bromelain, the enzyme complex of pineapple (Ananas comosus) and its clinical application. An update." *J Ethnopharmacol*. 1988;22(2):191-203. doi: [10.1016/0378-8741(88)90127-4](https://doi.org/10.1016/0378-8741(88)90127-4)
 
-[73] Gutfreund AE, Taussig SJ, Morris AK. "Effect of oral bromelain on blood pressure and heart rate of hypertensive patients." *Hawaii Med J*. 1978;37(5):143-146. PMID: [659095](https://pubmed.ncbi.nlm.nih.gov/659095/)
-
 [74] Russell RM, Dutta SK, Oaks EV, Rosenberg IH, Giovetti AC. "Impairment of folic acid absorption by oral pancreatic extracts." *Dig Dis Sci*. 1980;25(5):369-373. doi: [10.1007/BF01308061](https://doi.org/10.1007/BF01308061)
 
-[75] Creon (pancrelipase) Prescribing Information. AbbVie Inc. 2015.
-
-[76] Savaiano DA. "Lactose digestion from yogurt: mechanism and relevance." *Am J Clin Nutr*. 2014;99(5 Suppl):1251S-1255S. doi: [10.3945/ajcn.113.073023](https://doi.org/10.3945/ajcn.113.073023)
-
-[77] Leeds JS, Oppong K, Sanders DS. "The role of fecal elastase-1 in detecting exocrine pancreatic disease." *Nat Rev Gastroenterol Hepatol*. 2011;8(7):405-415. doi: [10.1038/nrgastro.2011.91](https://doi.org/10.1038/nrgastro.2011.91)
-
-[78] Precose (acarbose) Prescribing Information. Bayer HealthCare Pharmaceuticals Inc. 2011.
-
-[79] Glyset (miglitol) Prescribing Information. Pfizer Inc. 2012.
-
-[80] Lettieri JT, Dain B. "Effects of Beano on the tolerability and pharmacodynamics of acarbose." *Clin Ther*. 1998;20(3):497-504. doi: [10.1016/S0149-2918(98)80060-X](https://doi.org/10.1016/S0149-2918(98)80060-X)
+[80] Lettieri JT, Dain B. "Effects of Beano on the tolerability and pharmacodynamics of acarbose." *Clin Ther*. 1998;20(3):497-504. doi: [10.1016/S0149-2918(98)80059-3](https://doi.org/10.1016/S0149-2918(98)80059-3)
 
 [81] Drucker DJ, Nauck MA. "The incretin system: glucagon-like peptide-1 receptor agonists and dipeptidyl peptidase-4 inhibitors in type 2 diabetes." *Lancet*. 2006;368(9548):1696-1705. doi: [10.1016/S0140-6736(06)69705-5](https://doi.org/10.1016/S0140-6736(06)69705-5)
 
-[82] Bhatia S, Prabhu RM, Nair MK. "Changes in enzyme activities in mango fruit." *Indian J Exp Biol*. 1997;35(7):768-772.
-
-[83] Bogdanov S. "Nature and origin of the antibacterial substances in honey." *LWT - Food Sci Technol*. 1997;30(7):748-753. doi: [10.1006/fstl.1997.0259](https://doi.org/10.1006/fstl.1997.0259)
-
-[84] Bourrie BC, Willing BP, Cotter PD. "The Microbiota and Health Promoting Characteristics of the Fermented Beverage Kefir." *Front Microbiol*. 2016;7:647. doi: [10.3389/fmicb.2016.00647](https://doi.org/10.3389/fmicb.2016.00647)
-
 [85] Dimidi E, Cox SR, Rossi M, Whelan K. "Fermented Foods: Definitions and Characteristics, Impact on the Gut Microbiota and Effects on Gastrointestinal Health and Disease." *Nutrients*. 2019;11(8):1806. doi: [10.3390/nu11081806](https://doi.org/10.3390/nu11081806)
 
-[86] Nout MJR, Kiers JL. "Tempe fermentation, innovation and functionality: update into the third millenium." *J Appl Microbiol*. 2005;98(4):789-805. doi: [10.1111/j.1365-2672.2004.02471.x](https://doi.org/10.1111/j.1365-2672.2004.02471.x)
-
-[87] Dreher ML, Davenport AJ. "Hass avocado composition and potential health effects." *Crit Rev Food Sci Nutr*. 2013;53(7):738-750. doi: [10.1080/10408398.2011.556759](https://doi.org/10.1080/10408398.2011.556759)
-
-[88] Mao QQ, Xu XY, Cao SY, et al. "Bioactive Compounds and Bioactivities of Ginger (Zingiber officinale Roscoe)." *Foods*. 2019;8(6):185. doi: [10.3390/foods8060185](https://doi.org/10.3390/foods8060185)
-
 [89] Kaur L, Rutherfurd SM, Moughan PJ, Drummond L, Boland MJ. "Actinidin enhances gastric protein digestion as assessed using an in vitro gastric digestion model." *J Agric Food Chem*. 2010;58(8):5068-5073. doi: [10.1021/jf903332a](https://doi.org/10.1021/jf903332a)
+
+[90] Dominguez-Munoz JE, Vujasinovic M, de la Iglesia D, et al. "European guidelines for the diagnosis and treatment of pancreatic exocrine insufficiency: UEG, EPC, EDS, ESPEN, ESPGHAN, ESDO, and ESPCG evidence-based recommendations." *United European Gastroenterol J*. 2025;13(1):125-172. PMID: [39639485](https://pubmed.ncbi.nlm.nih.gov/39639485/)
+
+[91] FitzSimmons SC, Burkhart GA, Borowitz D, et al. "High-dose pancreatic-enzyme supplements and fibrosing colonopathy in children with cystic fibrosis." *N Engl J Med*. 1997;336(18):1283-1289. PMID: [9113931](https://pubmed.ncbi.nlm.nih.gov/9113931/)
+
+[92] Mansfield LE, Ting S, Haverly RW, Yoo TJ. "The incidence and clinical implications of hypersensitivity to papain in an allergic population, confirmed by blinded oral challenge." *Ann Allergy*. 1985;55(4):541-543. PMID: [4051260](https://pubmed.ncbi.nlm.nih.gov/4051260/)
+
+[93] Hillila M, Farkkila MA, Sipponen T, et al. "Does oral alpha-galactosidase relieve irritable bowel symptoms?" *Scand J Gastroenterol*. 2016;51(1):16-21. PMID: [26133538](https://pubmed.ncbi.nlm.nih.gov/26133538/)
+
+[94] Stapleton FB, Kennedy J, Nousia-Arvanitakis S, Linshaw MA. "Hyperuricosuria due to high-dose pancreatic extract therapy in cystic fibrosis." *N Engl J Med*. 1976;295(5):246-248. PMID: [934188](https://pubmed.ncbi.nlm.nih.gov/934188/)
+
+[95] Baijal R, Tandon RK. "Effect of lactase on symptoms and hydrogen breath levels in lactose intolerance: A crossover placebo-controlled study." *JGH Open*. 2021;5(1):143-148. PMID: [33490624](https://pubmed.ncbi.nlm.nih.gov/33490624/)
+
+[96] Kasemsuk T, Saengpetch N, Sibmooh N, Unchern S. "Improved WOMAC score following 16-week treatment with bromelain for knee osteoarthritis." *Clin Rheumatol*. 2016;35(10):2531-2540. PMID: [27470088](https://pubmed.ncbi.nlm.nih.gov/27470088/)
+
+[97] Izzo AA, Di Carlo G, Borrelli F, Ernst E. "Cardiovascular pharmacotherapy and herbal medicines: the risk of drug interaction." *Int J Cardiol*. 2005;98(1):1-14. PMID: [15676159](https://pubmed.ncbi.nlm.nih.gov/15676159/)
+
+[98] Kadaj-Lipka R, Monica M, Stozek-Tutro A, Rys P. "Pancreatic Enzyme Replacement Therapy in Pancreatic Exocrine Insufficiency-Real-World's Dosing and Effectiveness: A Systematic Review." *Dig Dis Sci*. 2025;70(7):2270-2284. PMID: [40169459](https://pubmed.ncbi.nlm.nih.gov/40169459/)
+
+[99] Whitcomb DC, Bodhani A, Beckmann K, et al. "Efficacy and Safety of Pancrelipase/Pancreatin in Patients With Exocrine Pancreatic Insufficiency and a Medical History of Diabetes Mellitus." *Pancreas*. 2016;45(5):679-686. PMID: [26495784](https://pubmed.ncbi.nlm.nih.gov/26495784/)
+
+[100] Valdivieso R, Subiza J, Subiza JL, Hinojosa M. "Bakers' asthma caused by alpha amylase." *Ann Allergy*. 1994;73(4):337-342. PMID: [7944002](https://pubmed.ncbi.nlm.nih.gov/7944002/)
+
+[101] Di Nardo G, Oliva S, Ferrari F, et al. "Efficacy and tolerability of alpha-galactosidase in treating gas-related symptoms in children: a randomized, double-blind, placebo controlled trial." *BMC Gastroenterol*. 2013;13:142. PMID: [24063420](https://pubmed.ncbi.nlm.nih.gov/24063420/)
+
+[102] Sandberg AS, Hulthen LR, Turk M. "Dietary Aspergillus niger phytase increases iron absorption in humans." *J Nutr*. 1996;126(2):476-480. PMID: [8632221](https://pubmed.ncbi.nlm.nih.gov/8632221/)
