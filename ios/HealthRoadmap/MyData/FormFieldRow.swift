@@ -14,6 +14,10 @@ struct FormFieldRow: View {
     /// A dated value's current row (PSA), and how to open it.
     var measurement: MyData.Row?
     var openMeasurement: () -> Void = {}
+    /// The question's guide (US-58 AC5), opened from the info button beside it.
+    var guide: MetricGuide?
+    @Environment(\.analytics) private var analytics
+    @State private var guideShown = false
 
     @State private var asking: Asking?
     /// Why a menu answer was not saved, in the engine's words.
@@ -111,17 +115,37 @@ struct FormFieldRow: View {
         }
     }
 
+    /// The question, then its guide's info button when it has one (US-58 AC5).
+    private func title(_ label: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text(label)
+            if let guide {
+                Button {
+                    guideShown = true
+                    analytics?.event(.guideOpened)
+                } label: {
+                    Image(systemName: "info.circle").foregroundStyle(Color.accentColor)
+                }
+                .buttonStyle(.borderless)
+                // A 44-point tap area that leaves the row's layout as it was.
+                .padding(12).contentShape(Rectangle()).padding(-12)
+                .accessibilityLabel("About \(guide.title)")
+                .sheet(isPresented: $guideShown) { GuideSheet(guide: guide) }
+            }
+        }
+    }
+
     /// The question on the left, wrapped as long as it needs, the answer on the right, the hint below.
     private func labelled(_ label: String, hint: String?, @ViewBuilder trailing: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             ViewThatFits(in: .horizontal) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text(label)
+                    title(label)
                     Spacer(minLength: 12)
                     trailing()
                 }
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(label)
+                    title(label)
                     trailing()
                 }
             }

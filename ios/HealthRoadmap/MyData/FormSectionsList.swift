@@ -14,6 +14,8 @@ struct FormSectionsList: View {
     /// For a dated value (PSA): its row, and how to open it.
     var measurement: (String) -> MyData.Row? = { _ in nil }
     var openMeasurement: (String) -> Void = { _ in }
+    /// Guides by question key (US-58 AC5): a question with one gets an info button that opens it.
+    var guides: MetricGuides?
 
     var body: some View {
         ForEach(sections) { section in
@@ -40,7 +42,8 @@ struct FormSectionsList: View {
         }
         ForEach(group.fields) { field in
             FormFieldRow(field: field, months: months, answer: { value in await answer(key(field), value) },
-                         measurement: metric(field).flatMap(measurement), openMeasurement: { metric(field).map(openMeasurement) })
+                         measurement: metric(field).flatMap(measurement), openMeasurement: { metric(field).map(openMeasurement) },
+                         guide: guides?[key(field)])
         }
     }
 

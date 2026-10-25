@@ -3856,7 +3856,8 @@
     "publishedAt": "2025-06-03T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/huperzine-a-benefits-dosing-safety",
     "type": "reference",
-    "summary": "Reference on huperzine A: memory, cognitive function, Alzheimer's disease, vascular dementia. Adults with dementia or age-related memory concerns. Natural Huperzia serrata extract preferred; 50-400 mcg/day, cycling recommended. Always discuss with your doctor."
+    "summary": "Huperzine A, a cholinesterase inhibitor from Chinese club moss, for memory and Alzheimer's disease. Small, low-quality trials suggest benefit; the largest Western trial found 200 mcg twice daily did not help. Talk to your doctor first if you take dementia, heart-rate or anticholinergic drugs.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Doctor Reveals Why He Takes Glycine Every Day",
@@ -4341,7 +4342,8 @@
     "publishedAt": "2025-05-13T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/ginger-benefits-dosing-safety",
     "type": "reference",
-    "summary": "Reference on ginger: nausea (pregnancy, chemotherapy), indigestion, joint pain, blood sugar, menstrual pain. Powder 1-3g/day or extract 100-500mg/day. Caution: bleeding risk with blood thinners, CYP3A4 interactions. Always discuss with your doctor."
+    "summary": "Evidence summary on ginger: it may ease pregnancy nausea and modestly reduce osteoarthritis pain; results for chemotherapy nausea, motion sickness and blood sugar are mixed. Talk to your doctor first if you take warfarin or another blood thinner, or are pregnant.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Probiotics: Benefits, Best Strains, Dosing, and Side Effects",
@@ -5000,7 +5002,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/echinacea-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on echinacea: cold prevention, upper respiratory infections, immune support. E. purpurea aerial extract most studied; ~900 mg/day. Avoid with autoimmune disease or immunosuppressants. Always discuss with your doctor."
+    "summary": "Reference on echinacea for colds and immune support. It may slightly lower the chance of catching a cold; whether it shortens a cold is unclear. Allergic reactions can be severe. Talk to your doctor first if you have an autoimmune disease, take immunosuppressants, or are pregnant.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Electrolytes: Benefits, Types, Dosing, and Side Effects",
@@ -5141,7 +5144,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/gaba-supplement-evidence",
     "type": "reference",
-    "summary": "Reference on GABA: stress, relaxation, sleep, blood pressure, muscle mass. Limited evidence oral GABA crosses the blood-brain barrier; effects are modest. Dosing ranges 100-3,000 mg depending on use. Avoid in pregnancy and with alcohol. Always discuss with your doctor."
+    "summary": "GABA, the brain's main calming chemical, is sold for stress and sleep. A systematic review found limited evidence for stress and very limited evidence for sleep, and oral GABA may not reach the brain. Talk to your doctor first if you take blood pressure medicines or are pregnant.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Garlic: Benefits, Best Forms, Dosing, and Side Effects",
@@ -5337,7 +5341,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/lutein-zeaxanthin-eye-health-guide",
     "type": "reference",
-    "summary": "Reference on lutein and zeaxanthin: eye health, macular degeneration (AMD) prevention and slowing, blue light protection, and cataract risk reduction; food sources (leafy greens, egg yolk); dosing (10mg lutein/2mg zeaxanthin); and evidence quality. Always discuss with your doctor."
+    "summary": "Lutein and zeaxanthin are the eye pigments that replaced beta-carotene in the AREDS2 formula for intermediate AMD, without its lung cancer signal. They raise macular pigment; brain benefits are unproven. Talk to your doctor first if you smoke or are pregnant.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Lycopene: Benefits, Forms, Dosing, and Side Effects",
@@ -5468,7 +5473,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/milk-thistle-silymarin-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on milk thistle (silymarin): liver health, fatty liver, blood sugar in type 2 diabetes, drug-induced liver injury, menopausal hot flashes. Standardized extract 200 mg 2-3x/day. Warfarin interaction risk. Always discuss with your doctor."
+    "summary": "Milk thistle (silymarin) may lower blood sugar a little in type 2 diabetes, and liver enzymes in fatty liver disease, but NCCIH finds the evidence too weak for firm conclusions, and hepatitis C trials found no benefit. Talk to your doctor first if you take warfarin or diabetes medicines.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "N-Acetyl Cysteine (NAC): Benefits, Forms, Dosing, and Side Effects",
@@ -6134,7 +6140,8 @@
     "publishedAt": "2025-04-29T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/cranberry-uti-prevention-forms-dosing",
     "type": "reference",
-    "summary": "Reference on cranberry: UTI prevention, bladder health. Women with recurrent UTIs, children, men with urinary symptoms. Juice or capsules (36 mg PACs/day); kidney stone risk at high doses; warfarin interaction. Always discuss with your doctor."
+    "summary": "Reference on cranberry and urinary tract infection (UTI) prevention. A 2023 Cochrane review found it probably lowers UTI risk in women with recurrent UTIs, children and people after medical procedures; it does not treat an active UTI. Talk to your doctor first if you take warfarin or are pregnant.",
+    "reviewed": "2026-10-25"
   },
   {
     "title": "Flaxseed Oil and Omega-6 Oils: Benefits, Forms, Dosing, and Side Effects",
@@ -6991,7 +6998,8 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/phosphatidylserine-benefits-forms-dosing",
     "type": "reference",
     "product": "microvitamin",
-    "summary": "Reference on phosphatidylserine (PS): memory, cognitive decline, stress, cortisol reduction. Older adults with memory concerns; athletes managing exercise stress. Soy/sunflower forms (100-300 mg/day); PS-DHA conjugate shows more promise. Caution with blood thinners. Always discuss with your doctor."
+    "summary": "Reference on phosphatidylserine (PS) for memory, stress and exercise. Cow-brain PS helped memory in early trials; the FDA says soy PS may differ, and the one soy trial it weighed found no effect. Trials used 100 to 800 mg a day. Talk to your doctor first if you take prescription medicines.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Potassium: Benefits, Best Forms, Dosing, and Side Effects",
@@ -8409,7 +8417,8 @@
     "publishedAt": "2025-01-15T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/elderberry-supplement-guide",
     "type": "reference",
-    "summary": "Reference on elderberry: cold and flu symptom relief, immune support. Evidence mixed; small trials suggest may shorten illness. Syrup or capsule forms. Raw berries are toxic. Caution with autoimmune disease. Always discuss with your doctor."
+    "summary": "Reference on elderberry for colds and flu. Small trials suggest it may ease symptoms if started within 48 hours, but a 2020 flu trial found no benefit. Raw or unripe berries, leaves and stems are poisonous unless cooked. Talk to your doctor first if you take any medicine or are pregnant.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Lysine (L-Lysine): Benefits, Forms, Dosing, and Side Effects",
@@ -10322,7 +10331,8 @@
     "publishedAt": "2024-06-19T07:17:08Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/cinnamon-benefits-forms-dosing",
     "type": "reference",
-    "summary": "Reference on cinnamon: blood sugar, cholesterol, inflammation. Adults with type 2 diabetes or prediabetes. Cassia vs Ceylon forms; Ceylon safer (lower coumarin). Dosing 1-6g/day bark or 250-500mg extract. Coumarin liver/bleeding risk; interacts with blood thinners. Always discuss with your doctor."
+    "summary": "Cinnamon may modestly lower fasting glucose in type 2 diabetes, but trial results vary and NCCIH sees no clear benefit. Cassia cinnamon is high in coumarin, which can harm the liver. Talk to your doctor first if you take a blood thinner, diabetes medicines or a statin, or are pregnant.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Magnesium L-Threonate and Its Effects on Sleep Quality",
