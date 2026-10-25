@@ -15,15 +15,15 @@ sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/37432337/","ch
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. Baobab fruit pulp is a dried powder that is roughly half fiber [56], and the USDA lists 44.5 g of fiber, 173.2 mg of vitamin C and 2189 mg of potassium per 100 g of baobab powder [50]. In single-meal trials, a baobab extract drink (18.5 g or 37 g in 250 mL of water) taken with white bread [10], or a baobab drink after a glucose load in healthy adults [39], lowered the rise in blood glucose, while baobab baked into white bread did not [40]. One trial found less hunger after a baobab smoothie but no change in how much people ate at the next meal [22], and a 12-week trial in Kenyan schoolchildren found no significant effect on hemoglobin or iron status [43]. The EU authorized the pulp as a novel food ingredient in 2008 [7], the US FDA had no questions about its GRAS notice in 2009 [8], and eating a lot of it can loosen the stools [56].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Baobab fruit pulp is a dried powder that is roughly half fiber [56], and the USDA lists 44.5 g of fiber, 173.2 mg of vitamin C and 2189 mg of potassium per 100 g of baobab powder [50]. In single-meal trials, a baobab extract drink (18.5 g or 37 g in 250 mL of water) taken with white bread [10], or a baobab drink after a glucose load in healthy adults [39], lowered the rise in blood glucose, while baobab baked into white bread did not [40]. One trial found less hunger after a baobab smoothie but no change in how much people ate at the next meal [22], and a 12-week trial in Kenyan schoolchildren found no significant effect on hemoglobin or iron status [43]. The EU authorized the pulp as a novel food ingredient in 2008 [7], the US FDA had no questions about its GRAS notice in 2009 [8], and eating a lot of it may loosen the stools [56].
 
 ## Key safety points
 
-- Baobab lowered the rise in blood glucose in single-meal trials [10][39], so it could add to the effect of diabetes medicines. If you take them, ask your doctor first and watch for signs of low blood sugar.
+- Baobab lowered the rise in blood glucose in single-meal trials [10][39], so it could add to the effect of diabetes medicines. If you take them, ask your doctor first and watch for signs of low blood sugar. If someone with diabetes is unconscious, having a seizure, or cannot swallow safely, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). Do not give food or drink by mouth.
 - Baobab powder is high in potassium [50]. In chronic kidney disease, or with ACE inhibitors, ARBs or potassium-sparing diuretics, extra potassium can cause high blood potassium, so ask your doctor first [54].
 - Anaphylaxis to baobab fruit has been reported [47]. For trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
-- In hereditary hemochromatosis, long-term high doses of vitamin C could worsen iron overload [55]. Baobab contains vitamin C [50], so ask your doctor first if you have this condition.
-- Baobab pulp is roughly half fiber, and eating too much of it can loosen the stools, which settles once you stop [56].
+- People who form calcium oxalate kidney stones are advised to avoid oxalate-rich foods [36], and reported oxalate levels in baobab pulp vary widely [56].
+- Eating a lot of baobab may loosen the stools [56].
 
 ## Brad's videos on this topic
 
@@ -37,7 +37,7 @@ A survey in Benin, Mali and Senegal recorded 300 traditional uses of baobab acro
 
 In 2008, the European Commission authorized baobab dried fruit pulp as a novel food ingredient, after the UK food assessment body concluded that it was safe at the proposed use levels [7]. In 2009, the FDA closed GRAS notice 273 with no questions; the notice covered use at up to 10 percent in blended fruit drinks, 15 percent in fruit cereal bars, and from 0.5 up to 3.8 percent in other foods such as grain products, juices, milk products and candies [8].
 
-Baobab pulp is sold for its fiber, vitamin C, minerals and polyphenols [41]. Its extracts show antioxidant activity in laboratory tests [6][14], but none of the human trials described below measured antioxidant markers in the blood [10][22][39][43].
+Baobab pulp is sold for its fiber, vitamin C, minerals and polyphenols [41]. Its extracts show antioxidant activity in laboratory tests [6][14].
 
 ### Nutritional Composition
 
@@ -58,7 +58,7 @@ Reported nutrient contents of baobab pulp vary widely between studies [4][20]. T
 
 The main polyphenols in the pulp are procyanidins and flavonol glycosides, led by tiliroside [14]. In a study of 14 wild fruits from Burkina Faso, baobab had the highest phenolic and flavonoid content after *Detarium microcarpum* [6].
 
-The pulp analyzed for the GRAS notice had less vitamin C than the USDA record, at 74.1 to 76.2 mg per 100 g [56]. Dried powder and fresh fruit are not directly comparable, because the powder holds little water (10.92 g per 100 g) [50].
+The pulp analyzed for the GRAS notice had less vitamin C than the USDA record, at 74.1 to 76.2 mg per 100 g [56].
 
 ## 2. Forms and Bioavailability
 
@@ -93,8 +93,6 @@ Baobab is primarily available in the following forms:
 ### Antioxidant Activity
 
 Extracts of baobab pulp show antioxidant activity in standard laboratory tests (DPPH, FRAP and ABTS) [6][14][39]. A 2009 review found more antioxidant activity in the pulp than in the leaves [4]. Extracts from 6 locations in Africa were all good sources of polyphenols [10].
-
-**In vivo antioxidant evidence:** No published randomized controlled trial has demonstrated that consuming baobab fruit pulp raises systemic antioxidant status or reduces oxidative stress biomarkers in humans.
 
 ### Glycemic Response and Blood Sugar
 
@@ -168,10 +166,12 @@ Several studies have reported antimicrobial activity of baobab [41].
 
 No optimal therapeutic dose of baobab has been established from clinical research. The amounts below come from the regulatory notices and the trials.
 
-### As a Food Ingredient (FDA/EU Guidance)
+### Notified food-use levels
 
-- **Blended fruit drinks:** Up to 10 percent baobab dried fruit pulp, per the FDA GRAS notice [8]
-- **Fruit cereal bars:** Up to 15 percent baobab dried fruit pulp, per the FDA GRAS notice [8]
+These are the use levels in GRAS notice 273, which FDA did not question [8].
+
+- **Blended fruit drinks:** Up to 10 percent baobab dried fruit pulp [8]
+- **Fruit cereal bars:** Up to 15 percent baobab dried fruit pulp [8]
 - **Other foods:** From 0.5 up to 3.8 percent in grain products, juices, milk products, beverages and candies [8]
 - **General food use:** The EU decision authorizes the pulp as a novel food ingredient and lists no use levels [7]
 
@@ -205,19 +205,17 @@ Baobab fruits are eaten throughout the year in rural West Africa [49]. The UK fo
 
 **Gastrointestinal effects:** In a survey reported in the GRAS notice, one respondent said that eating too much baobab pulp could loosen the stools, which resolved without treatment once the person stopped [56]. The notice put the fiber content of the pulp at roughly 50% by weight [56]. Starting with a small amount and increasing gradually may help.
 
-**Acidic pH:** Citric acid is the main organic acid in baobab pulp, at 2.7 to 3.2% by weight in the GRAS notice [56]. People with reflux or an acid-sensitive stomach may get heartburn, particularly from concentrated baobab drinks on an empty stomach.
-
 ### Contaminants
 
 **Cyanide:** In samples tested for the GRAS notice, cyanide was below the detection limit of 0.5 mg/100 g, while an earlier study reported 4.9 mg/100 g of fruit pulp [56]. The notice concluded that the pulp is expected to be safe at the anticipated intake [56].
 
-**Oxalic acid:** Reported oxalic acid levels in baobab pulp vary. One study using titration reported levels as high as 9.5% by weight, but the pulp in the GRAS notice, tested by HPLC, was below the detection limit of 400 mg/kg [56]. People who form calcium oxalate kidney stones are advised to avoid oxalate-rich foods [36].
+**Oxalic acid:** Reported oxalic acid levels in baobab pulp vary. One study using titration reported levels as high as 9.5% by weight of fruit pulp, by a titration method the notice considers inaccurate, but the pulp in the GRAS notice, tested by HPLC, was below the detection limit of 400 mg/kg [56]. People who form calcium oxalate kidney stones are advised to avoid oxalate-rich foods [36].
 
 **Heavy metals and mycotoxins:** The GRAS notice lists pesticide residues, heavy metals and mycotoxins as possible contaminants of the pulp [56]. Commercial products sourced from reputable suppliers should be tested for contaminants.
 
 ### Allergic Potential
 
-Anaphylaxis to baobab fruit has been described in a published case report [47]. For trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department. Baobab belongs to the Malvaceae family [14], and individuals with known allergies to Malvaceae family plants should exercise caution.
+Anaphylaxis to baobab fruit has been described in a published case report [47]. For trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 ### Pregnancy and Lactation
 
@@ -240,7 +238,7 @@ Baobab pulp is roughly half fiber by weight [56], but no study has tested whethe
 
 ### Blood Sugar-Lowering Interaction
 
-Because baobab lowered the glycemic response in single-meal trials [10][39], people taking insulin or other glucose-lowering medicines should check their blood glucose more carefully when starting baobab, as there is a theoretical risk of low blood sugar.
+Because baobab lowered the glycemic response in single-meal trials [10][39], people taking insulin or other glucose-lowering medicines should check their blood glucose more carefully when starting baobab, as there is a theoretical risk of low blood sugar. If someone with diabetes is unconscious, having a seizure, or cannot swallow safely, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). Do not give food or drink by mouth.
 
 ### Iron Absorption Interaction
 
@@ -286,7 +284,7 @@ In rural West Africa, baobab is used extensively for subsistence [49]:
 | Iron (mg) | 8.42 | 0.1 | 0.26 | 0.28 |
 | Total Fiber (g) | 44.5 | 2.4 | 2.6 | 2.4 |
 
-Note: Baobab values are for dried powder; fresh fruit values are for the raw edible portion. The comparison illustrates nutrient density but the forms are not directly equivalent (dried vs. fresh) [50][51][52][53].
+Note: Baobab values are for dried powder; fresh fruit values are for the raw edible portion [50][51][52][53]. Dried powder and fresh fruit are not directly comparable, because the powder holds little water (10.92 g per 100 g) [50].
 
 ### Sustainability Considerations
 
@@ -294,13 +292,11 @@ A 2010 study warned that exporting baobab fruits could reduce nutritional intake
 
 ## 8. Comparison with Established Fiber and Vitamin C Sources
 
-Baobab's main nutrients are fiber and vitamin C [50].
-
-### Fiber Comparison (per typical serving)
+### Fiber Comparison (per 100 g)
 
 Per 100 g, baobab powder has 44.5 g of fiber, while raw orange, banana and blueberries have 2.4 to 2.6 g [50][51][52][53]. No trial has compared baobab with fiber supplements such as psyllium.
 
-### Vitamin C Comparison (per typical serving)
+### Vitamin C Comparison (per 40 g of pulp)
 
 A 2009 review found that 40 g of baobab pulp covers 84 to more than 100% of the recommended daily intake of vitamin C for pregnant women aged 19 to 30 years [4].
 
@@ -314,7 +310,7 @@ A 2009 review found that 40 g of baobab pulp covers 84 to more than 100% of the 
 | Reduces postprandial glycemic response | Preliminary (single-meal trials) | Not shown when baked into bread; not tested in diabetes |
 | Improves iron status | Laboratory data; one small trial in children found no significant effect | Trial was small and short |
 | Prebiotic effects | In vitro only | No human gut microbiome studies |
-| Antioxidant effect in people | No human evidence | In vitro data only |
+| Antioxidant activity | Laboratory data only | The trials measured blood glucose, insulin, hunger and iron status |
 | Anti-inflammatory effects | No human trials | Reports outside human trials only |
 | Cardiovascular benefits | No human trials | Potassium content only |
 | Weight management / satiety | Mixed (single-meal studies) | Less hunger in one trial, no change in food intake |
@@ -364,7 +360,7 @@ A 2009 review found that 40 g of baobab pulp covers 84 to more than 100% of the 
 
 [46] Hanafy A, Aldawsari HM, Badr JM, et al. "Evaluation of Hepatoprotective Activity of Adansonia digitata Extract on Acetaminophen-Induced Hepatotoxicity in Rats." *Evid Based Complement Alternat Med*. 2016;2016:4579149. PMID: 27118980. https://pubmed.ncbi.nlm.nih.gov/27118980/
 
-[47] Martini M, Mistrello G, Amato S, et al. "Anaphylaxis to baobab fruit: the paradox of 'natural healthy food'." *Eur Ann Allergy Clin Immunol*. 2019;51(6):282-284. PMID: 31686469. https://pubmed.ncbi.nlm.nih.gov/31686469/
+[47] Martini M, Mistrello G, Amato S, et al. "Anaphylaxis to baobab fruit: the paradox of 'natural healthy food'." *Eur Ann Allergy Clin Immunol*. 2019;51(6):282-284. PMID: 31686469. doi: [10.23822/EurAnnACI.1764-1489.91](https://doi.org/10.23822/EurAnnACI.1764-1489.91)
 
 [48] Riedel S, de Buys K, Tshivhase AM, et al. "Effects of Baobab fruit powder on gut and cardiometabolic health in obesity: Protocol for a randomised placebo-controlled trial." *PLoS One*. 2025;20(8):e0328774. PMID: 40802664. https://pubmed.ncbi.nlm.nih.gov/40802664/
 
