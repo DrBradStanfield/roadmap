@@ -7,7 +7,7 @@ type: "reference"
 tags: ["Supplements"]
 keywords: ["same", "s-adenosyl-methionine", "sam-e", "ademetionine", "depression", "anxiety", "osteoarthritis", "joint health", "liver", "fibromyalgia", "cognitive", "brain health", "inflammation", "betaine", "tmg", "folate", "vitamin b12", "homocysteine", "cardiovascular", "methylation", "serotonin", "dopamine", "glutathione", "parkinson"]
 product: "microvitamin"
-summary: "SAMe is a methyl donor sold as a supplement. Trials suggest it may help depression and osteoarthritis pain, but Cochrane reviews rate the evidence low quality or inconclusive, and it can trigger mania. Talk to your doctor first if you have bipolar disorder or take an antidepressant."
+summary: "SAMe, a methyl donor, may help depression, but trial evidence is low quality. In osteoarthritis it may help function; pain was not significantly better than placebo in pooled trials. It can trigger mania. Talk to your doctor first if you have bipolar disorder or take an antidepressant."
 reviewed: "2026-10-26"
 sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/27727432/","checked":"2026-10-26","fingerprint":"sha256:3b229fad9512f6bc5eb97060ef2d122597ec1894f0518355b1f801e12e1d5894"}]
 ---
@@ -16,13 +16,14 @@ sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/27727432/","ch
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. A 2016 Cochrane review of eight trials in 934 adults with major depression found that SAMe did about as well as imipramine or escitalopram and beat placebo as an add-on to an SSRI in one trial, but the evidence was low or very low quality and SAMe alone did not clearly beat placebo [2]; the add-on trial used 800 mg twice a day [11]. For knee or hip osteoarthritis, a 2009 Cochrane review of four small placebo-controlled trials was inconclusive and advised against routine use [20]. In alcoholic liver disease, a Cochrane review found no evidence for or against SAMe [27], and a 24-week trial of 1.2 g a day found it no better than placebo [49]. SAMe has triggered mania, including in people with bipolar disorder [45], and with antidepressants it was linked to one case of serotonin syndrome-like symptoms [12], so anyone with bipolar disorder or taking an antidepressant should talk to a doctor first.
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. A 2016 Cochrane review of eight trials in 934 adults with major depression found that SAMe did about as well as imipramine or escitalopram and beat placebo as an add-on to an SSRI in one trial, but the evidence was low or very low quality and SAMe alone did not clearly beat placebo [2]; the add-on trial used 800 mg twice a day [11]. For knee or hip osteoarthritis, a 2009 Cochrane review of four small placebo-controlled trials was inconclusive and advised against routine use [20]. In alcoholic liver disease, a 2006 Cochrane review, since withdrawn as out of date, found no evidence for or against SAMe [27][48], and a 24-week trial of 1.2 g a day found it no better than placebo [49]. SAMe has triggered mania, including in people with bipolar disorder [45], and with antidepressants it was linked to one case of serotonin syndrome-like symptoms [12], so anyone with bipolar disorder or taking an antidepressant should talk to a doctor first.
 
 ## Key safety points
 
 - With antidepressants, SAMe was linked to serotonin syndrome-like symptoms in a trial [12] and to a toxic interaction with clomipramine in a case report [39]. Do not stop or swap an antidepressant for SAMe without your doctor's advice. Serotonin syndrome can be deadly: for tremor, a racing heart, a high temperature, agitation or severe confusion, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [40].
 - SAMe has set off mania or hypomania, including in people with bipolar disorder [2][45], and one volunteer had a mixed manic state with suicidal thoughts [33]. If you have bipolar disorder, take it only if your psychiatrist agrees. For suicidal thoughts, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
-- Levodopa uses up SAMe, and SAMe injected into rat brains caused Parkinson's-like movement problems [47]. If you have Parkinson's disease, ask your neurologist first.
+- SAMe may decrease the effects of levodopa [53], and SAMe injected into rat brains caused Parkinson's-like movement problems [47]. If you have Parkinson's disease, ask your neurologist first.
+- In theory SAMe could promote Pneumocystis infection, so if you are immunocompromised, such as with HIV, ask your doctor first [53].
 - Stomach discomfort (19%) and diarrhoea (20%) were the most frequent side effects of SAMe in a 12-week trial [38]; in a small Parkinson's study, 2 of 13 people stopped because of increased anxiety [23].
 
 ## Brad's videos on this topic
@@ -36,12 +37,12 @@ S-adenosyl-L-methionine (SAMe) is present in all living cells [1]. Cells make it
 The three pathways work as follows:
 
 - **Transmethylation:** SAMe hands a methyl group to DNA, RNA, proteins, lipids and other molecules [51], including those involved in making brain chemical messengers [3].
-- **Transsulfuration:** through this route SAMe takes part in making glutathione, the main antioxidant inside cells [1][27].
+- **Transsulfuration:** through this route SAMe takes part in making glutathione, the main antioxidant inside cells [1][49].
 - **Aminopropylation (polyamine synthesis):** SAMe is the precursor for this route, which makes polyamines [1].
 
 Making SAMe depends on methionine and on folate and vitamin B12, which recycle homocysteine back to methionine [50][51]. Betaine (TMG) and choline offer a second recycling route [31].
 
-SAMe is abundant in the liver [29], and every form of chronic liver injury lowers its production there [4]. SAMe was first described in 1952 [1]. It has been a prescription drug in Europe for depression and arthritis since 1975 and a supplement in the US since 1999 [35]. An evidence report for the US Agency for Healthcare Research and Quality (AHRQ) reviewed its use in depression, osteoarthritis and liver disease [37], and a 2017 review found promising but limited evidence for depression [42].
+SAMe is abundant in the liver [29], and every form of chronic liver injury lowers its production there [4]. SAMe was first described in 1952 [1], and clinical studies have covered depression, dementia, vacuolar myelopathy (a spinal cord disorder), liver disease and osteoarthritis [1]. It has been a prescription drug in Europe for depression and arthritis since 1975 and a supplement in the US since 1999 [35]. An evidence report for the US Agency for Healthcare Research and Quality (AHRQ) reviewed its use in depression, osteoarthritis and liver disease [37], and a 2017 review found promising but limited evidence for depression [42].
 
 ## 2. Forms and Bioavailability
 
@@ -63,7 +64,7 @@ Do not stop or swap a prescribed antidepressant for SAMe without your doctor's a
 
 **Mechanism:** SAMe is a methyl donor involved in making several brain chemical messengers, and it has been proposed to have antidepressant properties [3].
 
-**SAMe vs. tricyclic antidepressants:** Older trials compared SAMe with the tricyclic imipramine, and a newer one with escitalopram:
+**SAMe vs. other antidepressants:** Older trials compared SAMe with the tricyclic imipramine, and a newer one with escitalopram:
 
 - Delle Chiaie et al. (Am J Clin Nutr 2002) ran two double-blind multicentre studies in major depression. In the first, 143 patients took 1,600 mg of oral SAMe a day and 138 took 150 mg of imipramine a day for 6 weeks; in the second, SAMe was given by injection for 4 weeks. Neither study found a difference in any efficacy measure, and adverse events were significantly fewer with SAMe [7].
 - Mischoulon et al. (J Clin Psychiatry 2014) compared SAMe 1,600 to 3,200 mg a day, escitalopram 10 to 20 mg a day and placebo for 12 weeks in 189 outpatients. All three groups improved by about 5 to 6 points, with no significant differences: response rates were 36% for SAMe, 34% for escitalopram and 30% for placebo [38].
@@ -74,12 +75,12 @@ Do not stop or swap a prescribed antidepressant for SAMe without your doctor's a
 
 - Papakostas et al. (Am J Psychiatry 2010) gave 73 people with major depression who had not responded to a serotonin reuptake inhibitor (SRI) SAMe (target 800 mg twice a day) or placebo for 6 weeks, alongside their usual SRI. Response rates were 36.1% with SAMe and 17.6% with placebo, and remission rates 25.8% and 11.7%. The authors called the results preliminary [11].
 
-**Lower-dose adjunctive studies (mixed results):** Two trials of 800 mg a day, one as an add-on and one on its own, did not show a clear benefit:
+**Lower-dose trials (both negative):** Two trials gave 800 mg a day of SAMe with folinic acid and vitamin B12, one as an add-on and one as monotherapy, and neither clearly beat placebo:
 
-- Sarris et al. (Eur Neuropsychopharmacol 2018) added SAMe or placebo to antidepressants for 8 weeks in 107 outpatients whose depression had not remitted. There was no significant difference between groups: response rates were 54.3% with SAMe and 50.0% with placebo. SAMe was linked to one case of serotonin syndrome-like symptoms [12].
-- Sarris et al. (Psychopharmacology (Berl) 2020) gave 49 people with mild to moderate major depression, not taking antidepressants, SAMe or placebo for 8 weeks. SAMe reduced scores by 3.76 points more than placebo, but the difference was not significant (p = 0.13); an exploratory analysis found a benefit in those with milder depression (p = 0.045) [13].
+- Sarris et al. (Eur Neuropsychopharmacol 2018) added SAMe with folinic acid and vitamin B12, or placebo, to antidepressants for 8 weeks in 107 outpatients whose depression had not remitted. There was no significant difference between groups: response rates were 54.3% with the SAMe combination and 50.0% with placebo. SAMe was linked to one case of serotonin syndrome-like symptoms [12].
+- Sarris et al. (Psychopharmacology (Berl) 2020) gave 49 people with mild to moderate major depression, not taking antidepressants, SAMe with folinic acid and vitamin B12, or placebo, for 8 weeks. The combination reduced scores by 3.76 points more than placebo, but the difference was not significant (p = 0.13); an exploratory analysis found a benefit in those with milder depression (p = 0.045) [13].
 
-**Dose-response relationship:** The positive add-on trial used 800 mg twice a day [11]; the negative one used 800 mg a day [12]. A 2002 review noted that some people may need doses higher than 1,600 mg a day [3].
+**Dose-response relationship:** The positive add-on trial used 800 mg twice a day [11]; the negative one used 800 mg a day with folinic acid and vitamin B12 [12]. A 2002 review noted that some people may need doses higher than 1,600 mg a day [3].
 
 **Speed of onset:** Kagan et al. described a rapid onset of action [9], and a 2002 review suggested SAMe may act faster than conventional antidepressants [3].
 
@@ -91,12 +92,12 @@ An earlier meta-analysis by Soeken et al. (J Fam Pract 2002) pooled 11 studies. 
 
 **Mechanism:** SAMe has anti-inflammatory and pain-relieving effects [14]; animal studies showed anti-inflammatory activity when it was taken by mouth [41].
 
-**SAMe vs. NSAIDs (active comparator trials):** Several trials compared SAMe 1,200 mg a day with nonsteroidal anti-inflammatory drugs (NSAIDs):
+**SAMe vs. NSAIDs (active comparator trials):** Several trials compared SAMe with nonsteroidal anti-inflammatory drugs (NSAIDs):
 
 - Caruso and Pietrogrande (Am J Med 1987) enrolled 734 patients with hip, knee, spine or hand osteoarthritis. SAMe 1,200 mg a day relieved pain as well as naproxen 750 mg a day, both beat placebo (p less than 0.01), and SAMe was better tolerated than naproxen [17].
 - Kim et al. (Clin Ther 2009) randomised 134 Korean patients with knee osteoarthritis to SAMe 1,200 mg a day or nabumetone 1,000 mg a day for 8 weeks. Pain fell in both groups, with no significant difference in pain relief or tolerability [14].
 - Najm et al. (BMC Musculoskelet Disord 2004) compared SAMe 1,200 mg with celecoxib 200 mg in a 16-week crossover trial in 61 adults with knee osteoarthritis. Celecoxib reduced pain more in the first month, but by the second month the groups did not differ. The authors concluded SAMe has a slower onset of action but is as effective as celecoxib [15].
-- Domljan et al. (Int J Clin Pharmacol Ther Toxicol 1989) found no significant difference between SAMe and naproxen after 6 weeks in 20 patients with knee osteoarthritis [18].
+- Domljan et al. (Int J Clin Pharmacol Ther Toxicol 1989) gave 20 patients with knee osteoarthritis SAMe 1,200 mg a day in week 1 and then 800 mg a day, or naproxen, and found no significant difference after 6 weeks [18].
 
 **SAMe vs. placebo (mixed results):** Single placebo-controlled trials have been less consistent:
 
@@ -124,7 +125,7 @@ One small trial has tested SAMe for fibromyalgia [25].
 
 Every form of chronic liver injury lowers SAMe production in the liver, and SAMe protected the liver in animal models [4].
 
-**Mechanism:** SAMe helps make glutathione, the main antioxidant inside cells [27], and restores glutathione stores in the liver [44].
+**Mechanism:** SAMe helps make glutathione, the main antioxidant inside cells [49], and restores glutathione stores in the liver [44].
 
 **Alcoholic liver disease:** Trials in alcohol-related liver disease have mostly found no clear benefit:
 
@@ -137,15 +138,11 @@ Every form of chronic liver injury lowers SAMe production in the liver, and SAMe
 - An early Cochrane review found four SAMe-versus-placebo trials in 82 women; only one showed greater improvement in itching, bile salts and liver enzymes [28].
 - The 2020 update found insufficient evidence that SAMe is effective in cholestasis of pregnancy [43].
 
-**Metabolic dysfunction-associated steatotic liver disease (MASLD/NAFLD):** Interest here comes from animal work:
+**Nonalcoholic fatty liver disease (NAFLD):** Interest here comes from animal work:
 
-- Noureddin et al. (Exp Biol Med (Maywood) 2015) reported that knocking out enzymes of SAMe metabolism in mice leads to fatty liver inflammation (NASH) [29].
+- Noureddin et al. (Exp Biol Med (Maywood) 2015) reported that mice lacking enzymes of SAMe metabolism develop nonalcoholic steatohepatitis (NASH), the inflammatory form of fatty liver disease [29].
 
 A 2015 meta-analysis of 12 trials with 705 patients with chronic liver disease found some improvement in bilirubin and AST but not ALT, and judged SAMe of limited clinical value in certain liver diseases [44].
-
-### AIDS-Related Myelopathy
-
-Vacuolar myelopathy, a spinal cord disorder, is among the conditions in which SAMe has been studied clinically [1].
 
 ### ADHD in Adults
 
@@ -166,10 +163,10 @@ Trials have given SAMe by mouth at 800 to 1,600 mg a day for depression [7][11][
 | Condition | Daily Dose | Duration | Evidence Level |
 |-----------|:---:|:---:|:---:|
 | Depression (monotherapy) | 1,600 mg | 30 days to 6 weeks | Comparable with imipramine in a multicentre trial [7]; better than placebo in one trial [8] |
-| Depression (adjunctive to SSRI/SRI) | 1,600 mg (800 mg twice daily) | 6 weeks | One small positive trial [11]; 800 mg/day did not beat placebo [12] |
+| Depression (adjunctive to SSRI/SRI) | 1,600 mg (800 mg twice daily) | 6 weeks | One small positive trial [11]; 800 mg/day with folinic acid and B12 did not beat placebo [12] |
 | Osteoarthritis | 1,200 mg | 8 to 16 weeks | Comparable with NSAIDs [14][15][17]; Cochrane review of placebo trials inconclusive [20] |
 | Fibromyalgia | 800 mg | 6 weeks | One small trial [25] |
-| Liver disease | 1,200 mg | 24 weeks to 2 years | Mixed: one 2-year trial [26]; no benefit at 24 weeks [49] |
+| Liver disease | 1,200 mg | 24 weeks to 2 years | No clear benefit: 2-year trial not significant overall [26]; none at 24 weeks [49] |
 | Parkinson's disease depression | 800-3,600 mg/day | 10 weeks | One small uncontrolled study [23] |
 
 ### Practical Dosing Advice
@@ -177,8 +174,6 @@ Trials have given SAMe by mouth at 800 to 1,600 mg a day for depression [7][11][
 **Starting dose:** In one study the dose was built up over 5 days to 1,600 mg a day [33].
 
 **Time to benefit:** In depressed women after menopause, SAMe beat placebo from day 10 [8]. In knee osteoarthritis, celecoxib worked faster in the first month and SAMe caught up by the second [15].
-
-**B-vitamin co-supplementation:** Two studies found no rise in homocysteine with SAMe: 800 mg a day for 4 weeks in 52 healthy volunteers [32], and 1,600 mg a day for 4 weeks in 15 healthy volunteers [33].
 
 ### Relationship to TMG, Folate, and B12
 
@@ -197,13 +192,12 @@ In trials, side effects of SAMe were mostly mild [34]. The most commonly reporte
 
 - **Gastrointestinal:** In a 12-week trial, stomach discomfort (19%) and diarrhoea (20%) led the side effects of SAMe [38]. A small Parkinson's study recorded mild nausea in one person and mild diarrhoea in two [23].
 - **Anxiety or restlessness:** Two of 13 people with Parkinson's disease stopped SAMe because of increased anxiety [23].
-- **Drowsiness and insomnia:** SAMe may cause drowsiness at higher doses or disturb sleep in some people.
 
 ### Serious Concerns
 
 **Bipolar disorder:** SAMe can trigger mania. An open trial saw mania in two patients with bipolar disorder [45], one placebo-controlled trial saw it in a patient with no history of mania [9], and the Cochrane review recorded two reports of mania or hypomania among 441 people taking SAMe [2]. A healthy volunteer taking 1,600 mg a day developed a mixed manic state with suicidal thoughts within 2 weeks and recovered within 3 days of stopping [33]. People with known or suspected bipolar disorder should take SAMe only if their psychiatrist agrees.
 
-**Serotonergic reaction:** In an 8-week trial of SAMe added to antidepressants, SAMe was linked to one case of serotonin syndrome-like symptoms [12]. A case report also described a toxic interaction between SAMe and the tricyclic antidepressant clomipramine [39]. Serotonin syndrome can be deadly; its features include tremor, overactive reflexes, a racing heart, a high temperature, agitation and delirium (severe confusion) [40]. If these appear, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+**Serotonergic reaction:** In an 8-week trial of SAMe, given with folinic acid and vitamin B12, added to antidepressants, SAMe was linked to one case of serotonin syndrome-like symptoms [12]. A case report also described a toxic interaction between SAMe and the tricyclic antidepressant clomipramine [39]. Serotonin syndrome can be deadly; its features include tremor, overactive reflexes, a racing heart, a high temperature, agitation and delirium (severe confusion) [40]. If these appear, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 **Potential formation of toxic metabolites:** In laboratory work, excess SAMe disrupted biological rhythms and was broken down to adenine and methylthioadenosine, which block methylation. The authors said the findings question the safety of SAMe as a supplement [35].
 
@@ -214,37 +208,29 @@ SAMe turns into homocysteine after donating its methyl group, and raised homocys
 ### Who Should Avoid SAMe
 
 - People with bipolar disorder (risk of mania) [33][45]
-- People taking MAO inhibitors
-- People taking SSRIs, SNRIs, tricyclics or other antidepressants without their doctor's agreement [12][39]
-- Pregnant or breastfeeding women
+- People taking antidepressants, unless their doctor agrees [12][39][53]
+- Pregnant or breastfeeding women, unless their doctor agrees: its safety during pregnancy has not been established [53]
+- People who are immunocompromised, such as with HIV, unless their doctor agrees: in theory SAMe could promote Pneumocystis infection [53]
 - People with Parkinson's disease taking levodopa, without their neurologist's advice [47]
 
 ## 6. Drug Interactions
 
-SAMe is involved in making brain chemical messengers [3], so it may interact with medicines that affect serotonin or dopamine. If you take prescription medicines, check with your doctor or pharmacist before starting.
+SAMe may interact with some medicines and supplements [53]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Serotonergic Medications
 
 | Drug Class | Examples | Interaction | Clinical Advice |
 |-----------|---------|-------------|:---:|
-| SSRIs | Fluoxetine, sertraline, escitalopram, paroxetine | Added to SRIs at 1,600 mg a day, SAMe was well tolerated in one trial [11]; at 800 mg a day it was linked to one case of serotonin syndrome-like symptoms [12] | Use only with your doctor's agreement |
-| SNRIs | Venlafaxine, duloxetine | May carry a similar serotonin risk to SSRIs | Use only with your doctor's agreement |
-| Tricyclic antidepressants | Imipramine, amitriptyline, nortriptyline | Toxic interaction with clomipramine in a case report [39]; trials compared SAMe with imipramine rather than combining them [7] | Do not combine without your doctor's agreement |
-| MAO inhibitors | Phenelzine, tranylcypromine, selegiline | Possibly dangerous: theoretical risk of serotonin syndrome and a hypertensive crisis | Do not combine |
-| Triptans | Sumatriptan, rizatriptan | Theoretical added serotonin risk | Ask your doctor |
-| Tramadol | -- | Theoretical added serotonin risk | Ask your doctor |
+| SSRIs | Fluoxetine, sertraline, escitalopram, paroxetine | Added to SRIs at 1,600 mg a day, SAMe was well tolerated in one trial [11]; at 800 mg a day with folinic acid and B12 it was linked to one case of serotonin syndrome-like symptoms [12] | Use only with your doctor's agreement |
+| Tricyclic antidepressants | Imipramine, amitriptyline, nortriptyline | Toxic interaction with clomipramine in a case report [39]. One trial added SAMe to imipramine and found a faster early response [34] | Do not combine without your doctor's agreement |
 
 ### Dopaminergic Medications
 
-**Levodopa (for Parkinson's disease):** Levodopa reacts with SAMe and depletes it, and in rats excess SAMe in the brain caused Parkinson's-like movement problems, which levodopa blocked [47]. People taking levodopa should use SAMe only with their neurologist's advice.
+**Levodopa (for Parkinson's disease):** SAMe may decrease the effects of levodopa [53]. Levodopa reacts with SAMe and depletes it, and in rats excess SAMe in the brain caused Parkinson's-like movement problems, which levodopa blocked [47]. People taking levodopa should use SAMe only with their neurologist's advice.
 
 ### Other Interactions
 
-**Dextromethorphan (DXM):** This cough medicine ingredient affects serotonin, so combining it with SAMe may add to serotonin risk in theory.
-
-**Meperidine (pethidine):** This opioid painkiller affects serotonin; avoid combining it with SAMe.
-
-**Diabetes medications:** If you take insulin or other diabetes medicines, check with your doctor or pharmacist before starting.
+SAMe might interact with medicines and supplements that raise serotonin, such as antidepressants, L-tryptophan and St John's wort [53].
 
 ## 7. Dietary Sources
 
@@ -367,3 +353,5 @@ Chronic liver disease lowers SAMe production in the liver [4].
 [51] National Institutes of Health, Office of Dietary Supplements. "Vitamin B12: Fact Sheet for Health Professionals." [https://ods.od.nih.gov/factsheets/VitaminB12-HealthProfessional/](https://ods.od.nih.gov/factsheets/VitaminB12-HealthProfessional/)
 
 [52] National Institutes of Health, Office of Dietary Supplements. "Vitamin B6: Fact Sheet for Health Professionals." [https://ods.od.nih.gov/factsheets/VitaminB6-HealthProfessional/](https://ods.od.nih.gov/factsheets/VitaminB6-HealthProfessional/)
+
+[53] National Center for Complementary and Integrative Health. "S-Adenosyl-L-Methionine (SAMe): In Depth." Last updated January 2017. [https://www.nccih.nih.gov/health/sadenosyllmethionine-same-in-depth](https://www.nccih.nih.gov/health/sadenosyllmethionine-same-in-depth)
