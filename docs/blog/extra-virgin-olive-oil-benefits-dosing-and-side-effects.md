@@ -15,7 +15,7 @@ sources: [{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/shr
 
 ## Current view (reviewed 26 October 2026)
 
-Brad counts extra-virgin olive oil among the healthy fats, alongside avocado, that belong on a whole-food plate ([Brad, 16 Jul 2026](https://drstanfield.com/blogs/articles/shrink-the-fat-around-your-heart)). He points to the PREDIMED study, where people on a Mediterranean diet with olive oil had a 31% lower risk of heart attack or stroke than those on a low-fat diet ([Brad, 14 Aug 2025](https://drstanfield.com/blogs/articles/harvard-says-this-is-the-healthiest-way-to-eat)). He also cites a meta-analysis in which higher olive oil consumption reduced heart disease risk by 15% and all-cause mortality by 17% ([Brad, 8 Feb 2026](https://drstanfield.com/blogs/articles/coronary-heart-disease-is-almost-eliminated)). His plan uses extra-virgin olive oil as monounsaturated fat replacing butter or saturated fat, with a modest direct effect on LDL cholesterol (Brad's current guidance, 18 Mar 2026). He treats olive oil's fat-burning angle as a promising idea, not a proven lever, because it rests on one small trial of total body fat ([Brad, 16 Jul 2026](https://drstanfield.com/blogs/articles/shrink-the-fat-around-your-heart)). In a PREDIMED ultrasound substudy, the olive oil group showed no significant change in neck artery wall thickness, while the nuts group saw a decrease ([Brad, 15 Feb 2025](https://drstanfield.com/blogs/articles/the-best-diet-to-unclog-your-arteries)).
+Brad counts extra-virgin olive oil among the healthy fats, alongside avocado, that belong on a whole-food plate ([Brad, 16 Jul 2026](https://drstanfield.com/blogs/articles/shrink-the-fat-around-your-heart)). He points to the PREDIMED study, where people on a Mediterranean diet with olive oil had a 31% lower risk of heart attack or stroke than those on a low-fat diet ([Brad, 14 Aug 2025](https://drstanfield.com/blogs/articles/harvard-says-this-is-the-healthiest-way-to-eat)). He also cites a meta-analysis in which higher olive oil consumption reduced heart disease risk by 15% and all-cause mortality by 17% ([Brad, 8 Feb 2026](https://drstanfield.com/blogs/articles/coronary-heart-disease-is-almost-eliminated)). When LDL or ApoB is above target, his plan suggests extra-virgin olive oil as monounsaturated fat replacing butter or saturated fat, with a modest direct effect on LDL cholesterol (Brad's current guidance, 18 Mar 2026). He treats olive oil's fat-burning angle as a promising idea, not a proven lever, because it rests on one small trial of total body fat ([Brad, 16 Jul 2026](https://drstanfield.com/blogs/articles/shrink-the-fat-around-your-heart)). In a PREDIMED ultrasound substudy, the olive oil group showed no significant change in neck artery wall thickness, while the nuts group saw a decrease ([Brad, 15 Feb 2025](https://drstanfield.com/blogs/articles/the-best-diet-to-unclog-your-arteries)).
 
 ## Key safety points
 
@@ -117,7 +117,7 @@ The evidence linking olive oil consumption to cardiovascular benefit comes from 
 
 Swapping saturated fat for modest amounts of EVOO may help insulin sensitivity and blood sugar control. Trials cover prediabetes, type 2 diabetes and type 1 diabetes.
 
-**Mechanism:** In a small study of 6 people without obesity and 6 with severe obesity, 25 mL of EVOO raised GLP-1 (a gut hormone that increases insulin release) and insulin, and lowered the hunger hormone ghrelin and blood triglycerides after the dose more than common olive oil or sunflower oil. This held in the people without obesity and in those with severe obesity after gastric bypass; before surgery the response was blunted (Garcia-Serrano, Mol Nutr Food Res 2021) [35].
+**Mechanism:** In a small study of 6 people without obesity and 6 with severe obesity, 25 mL of EVOO raised GLP-1 (a gut hormone that increases insulin release) and insulin, and lowered the hunger hormone ghrelin and blood triglycerides after the dose more than common olive oil or sunflower oil. This held in the people without obesity and in those with severe obesity after gastric bypass; before surgery the response was markedly altered (Garcia-Serrano, Mol Nutr Food Res 2021) [35].
 
 **Prediabetes:** In 30 people with impaired fasting glucose, a meal with 10 g of EVOO lowered blood glucose and triglycerides after the meal, and raised insulin and GLP-1, compared with the same meal without it (Carnevale, Clin Nutr 2017) [36].
 
@@ -155,7 +155,9 @@ The Ruiz-Garcia trial (see Blood Sugar above) found lower interferon-gamma and h
 
 ### Depression
 
-Olive oil has been tested for depression only as part of whole-diet changes. In the SMILES trial, 67 adults with moderate to severe depression were enrolled; after 12 weeks, 32.3% in a dietary improvement programme reached remission, against 8.0% in a social support control group (Jacka, BMC Medicine 2017) [47].
+In a double-blind trial, 73 patients with major depression took 25 mL a day of EVOO or sunflower oil for 52 days. On a clinician-rated depression scale, scores fell more with EVOO than with sunflower oil, and the results suggested a benefit in severe depression but not in mild to moderate depression (Foshati, J Acad Nutr Diet 2022) [75].
+
+Olive oil has also been tested for depression as part of whole-diet changes. In the SMILES trial, 67 adults with moderate to severe depression were enrolled; after 12 weeks, 32.3% in a dietary improvement programme reached remission, against 8.0% in a social support control group (Jacka, BMC Medicine 2017) [47].
 
 ### Cancer
 
@@ -198,7 +200,7 @@ The FDA claim rests on about 23 g (2 tablespoons) a day, eaten in place of satur
 | Indication | Daily Amount | Evidence Level |
 |-----------|:-:|:-:|
 | Cardiovascular risk reduction | About 2 tablespoons, replacing saturated fat [31]; top PREDIMED intake averaged 49.2 g a day [18] | RCTs (PREDIMED) + large observational studies |
-| LDL oxidation protection (hydroxytyrosol) | ≥ 5 mg hydroxytyrosol daily, with its derivatives, in olive oil [27] | EFSA-authorized health claim |
+| LDL oxidation protection (hydroxytyrosol) | 5 mg hydroxytyrosol and its derivatives daily, in olive oil [27] | EFSA-authorized health claim |
 | Blood pressure and weight management | 25 mL EVOO within a calorie-restricted diet [41] | Small RCT |
 | Blood sugar control (with meals) | 10 g EVOO in a meal [36] | Small RCT |
 | Fatty liver (association only) | Mediterranean diet with free EVOO [44] | Sub-study of PREDIMED |
@@ -313,7 +315,7 @@ The studies on this page tested single cultivars, such as Hojiblanca, Arbequina 
 
 [25] Sarapis K, George ES, Marx W, et al. "Extra virgin olive oil improves HDL lipid fraction but not HDL-mediated cholesterol efflux capacity: a double-blind, randomised, controlled, cross-over study (OLIVAUS)." *Br J Nutr*. 2023;130(4):641-650. PMID: 36377535. doi: [10.1017/S0007114522003634](https://doi.org/10.1017/S0007114522003634)
 
-[27] European Food Safety Authority (EFSA). "Scientific Opinion on the substantiation of health claims related to polyphenols in olive oil and protection of LDL particles from oxidative damage." *EFSA Journal*. 2011;9(4):2033. doi: [10.2903/j.efsa.2011.2033](https://doi.org/10.2903/j.efsa.2011.2033)
+[27] European Food Safety Authority (EFSA). "Scientific Opinion on the substantiation of health claims related to polyphenols in olive and protection of LDL particles from oxidative damage (ID 1333, 1638, 1639, 1696, 2865), maintenance of normal blood HDL cholesterol concentrations (ID 1639), maintenance of normal blood pressure (ID 3781), 'anti-inflammatory properties' (ID 1882), 'contributes to the upper respiratory tract health' (ID 3468), 'can help to maintain a normal function of gastrointestinal tract' (3779), and 'contributes to body defences against external agents' (ID 3467) pursuant to Article 13(1) of Regulation (EC) No 1924/2006." *EFSA Journal*. 2011;9(4):2033. doi: [10.2903/j.efsa.2011.2033](https://doi.org/10.2903/j.efsa.2011.2033)
 
 [28] Jimenez-Torres J, Alcalá-Diaz JF, Torres-Peña JD, et al. "Mediterranean Diet Reduces Atherosclerosis Progression in Coronary Heart Disease: An Analysis of the CORDIOPREV Randomized Controlled Trial." *Stroke*. 2021;52(11):3440-3449. PMID: 34372670. doi: [10.1161/STROKEAHA.120.033214](https://doi.org/10.1161/STROKEAHA.120.033214) (An erratum has been published.)
 
@@ -392,3 +394,5 @@ The studies on this page tested single cultivars, such as Hojiblanca, Arbequina 
 [73] Sala-Vila A, Romero-Mamani ES, Gilabert R, et al. "Changes in ultrasound-assessed carotid intima-media thickness and plaque with a Mediterranean diet: a substudy of the PREDIMED trial." *Arterioscler Thromb Vasc Biol*. 2014;34(2):439-445. PMID: 24285581. doi: [10.1161/ATVBAHA.113.302327](https://doi.org/10.1161/ATVBAHA.113.302327)
 
 [74] Xia M, Zhong Y, Peng Y, et al. "Olive oil consumption and risk of cardiovascular disease and all-cause mortality: A meta-analysis of prospective cohort studies." *Front Nutr*. 2022;9:1041203. PMID: 36330142. doi: [10.3389/fnut.2022.1041203](https://doi.org/10.3389/fnut.2022.1041203)
+
+[75] Foshati S, Ghanizadeh A, Akhlaghi M. "Extra-Virgin Olive Oil Improves Depression Symptoms Without Affecting Salivary Cortisol and Brain-Derived Neurotrophic Factor in Patients With Major Depression: A Double-Blind Randomized Controlled Trial." *J Acad Nutr Diet*. 2022;122(2):284-297.e1. PMID: 34358723. doi: [10.1016/j.jand.2021.07.016](https://doi.org/10.1016/j.jand.2021.07.016)
