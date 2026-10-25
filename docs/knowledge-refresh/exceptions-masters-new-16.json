@@ -1,0 +1,882 @@
+[
+ {
+  "check": "AC2",
+  "handle": "reishi-mushroom-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Rare liver injury has been linked to reishi, including fatal hepatitis after a switch to reishi powder, so ask your...\" | \"The cause of reishi-linked liver injury is not known. Because one case was fatal, people with liver disease, or who t...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Reishi review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "reishi-mushroom-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Rare liver injury has been linked to reishi, including fatal hepatitis after a switch to reishi powder, so ask your...\" | \"The cause of reishi-linked liver injury is not known. Because one case was fatal, people with liver disease, or who t...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Reishi review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "reishi-mushroom-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Rare liver injury has been linked to reishi, including fatal hepatitis after a switch to reishi powder, so ask your...\" | \"The cause of reishi-linked liver injury is not known. Because one case was fatal, people with liver disease, or who t...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Reishi review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "reishi-mushroom-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Rare liver injury has been linked to reishi, including fatal hepatitis after a switch to reishi powder, so ask your...\" | \"The cause of reishi-linked liver injury is not known. Because one case was fatal, people with liver disease, or who t...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Reishi review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "reishi-mushroom-benefits-forms-dosing-and-side-effects",
+  "match": "token \"34\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Immune Function in Advanced Cancer (Uncontrolled):** In 34 people with advanced cancer, 1800 mg of Ganopoly three t...\"",
+  "reason": "AC2 reishi tokeniser case (spelled number or g->mg form; number present in the cited source in another form); ratified in decisions.md (Reishi review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "reishi-mushroom-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1440 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Positive Trials:** In a 2025 randomized trial in people with type 2 diabetes, fasting glucose, 2-hour glucose after...\"",
+  "reason": "AC2 reishi tokeniser case (spelled number or g->mg form; number present in the cited source in another form); ratified in decisions.md (Reishi review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "reishi-mushroom-benefits-forms-dosing-and-side-effects",
+  "match": "token \"42\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Fatty Liver (Clinical Trial):** In a double-blind crossover trial in 42 healthy adults, a reishi extract enriched i...\"",
+  "reason": "AC2 reishi tokeniser case (spelled number or g->mg form; number present in the cited source in another form); ratified in decisions.md (Reishi review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "reishi-mushroom-benefits-forms-dosing-and-side-effects",
+  "match": "token \"64\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A single trial has tested reishi for fibromyalgia. In 64 women with fibromyalgia, 6 g of reishi a day for 6 weeks imp...\"",
+  "reason": "AC2 reishi tokeniser case (spelled number or g->mg form; number present in the cited source in another form); ratified in decisions.md (Reishi review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "reishi-mushroom-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"5\": Important Caveat: The same mushroom has been linked to rare liver injury, including a death from fulminant hepatitis ...",
+  "reason": "AC2 reishi section/case label number (see Section 5, Case 4), not a clinical value; ratified in decisions.md (Reishi review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "reishi-mushroom-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"4\": Case 4 (with alcohol): A 47-year-old man developed acute hepatitis, with headache and abdominal pain, after taking re...",
+  "reason": "AC2 reishi section/case label number (see Section 5, Case 4), not a clinical value; ratified in decisions.md (Reishi review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "reishi-mushroom-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"5\": Mushrooms, including reishi, naturally inhibit HMG-CoA reductase, the enzyme that statins block [39][41]. In theory, ...",
+  "reason": "AC2 reishi section/case label number (see Section 5, Case 4), not a clinical value; ratified in decisions.md (Reishi review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "saffron-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[129] raw_quote shares no number with its body_line: - **High doses:** a European monograph quoted in a 2017 review reports no documented risk up to 1...",
+  "reason": "AC2 Saffron fix-round changed_tokens[129] (same number in another form in the raw quote); ratified in decisions.md (Saffron fix committed 772d1aa9, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "saffron-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[130] raw_quote shares no number with its body_line: - High doses (1.2 to 2 g) caused nausea, vomiting, diarrhoea and bleeding [51]. A week of 200 mg ...",
+  "reason": "AC2 Saffron fix-round changed_tokens[130] (same number in another form in the raw quote); ratified in decisions.md (Saffron fix committed 772d1aa9, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "saffron-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[131] raw_quote shares no number with its body_line: - **Animal LD50:** median lethal doses of saffron in animal studies range from 4120 mg/kg by mout...",
+  "reason": "AC2 Saffron fix-round changed_tokens[131] (same number in another form in the raw quote); ratified in decisions.md (Saffron fix committed 772d1aa9, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "saffron-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A man taking the blood thinner rivaroxaban had nosebleeds and bleeding gums after adding saffron, and the authors a...\" | \"- **High doses:** a European monograph quoted in a 2017 review reports no documented risk up to 1.5 g of saffron a da...\" | \"A man on rivaroxaban had bleeding after adding saffron, and the case report's authors advised against combining saffr...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Saffron review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "saffron-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A man taking the blood thinner rivaroxaban had nosebleeds and bleeding gums after adding saffron, and the authors a...\" | \"- **High doses:** a European monograph quoted in a 2017 review reports no documented risk up to 1.5 g of saffron a da...\" | \"A man on rivaroxaban had bleeding after adding saffron, and the case report's authors advised against combining saffr...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Saffron review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "saffron-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A man taking the blood thinner rivaroxaban had nosebleeds and bleeding gums after adding saffron, and the authors a...\" | \"- **High doses:** a European monograph quoted in a 2017 review reports no documented risk up to 1.5 g of saffron a da...\" | \"A man on rivaroxaban had bleeding after adding saffron, and the case report's authors advised against combining saffr...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Saffron review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "saffron-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A man taking the blood thinner rivaroxaban had nosebleeds and bleeding gums after adding saffron, and the authors a...\" | \"- **High doses:** a European monograph quoted in a 2017 review reports no documented risk up to 1.5 g of saffron a da...\" | \"A man on rivaroxaban had bleeding after adding saffron, and the case report's authors advised against combining saffr...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Saffron review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "saffron-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1200 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- High doses (1.2 to 2 g) caused nausea, vomiting, diarrhoea and bleeding [51]. A week of 200 mg or 400 mg saffron ta...\" | \"- **High doses:** a European monograph quoted in a 2017 review reports no documented risk up to 1.5 g of saffron a da...\"",
+  "reason": "AC2 saffron tokeniser case (spelled number or g->mg form; number present in the cited source in another form); ratified in decisions.md (Saffron review Ratified line and Saffron fix 772d1aa9 entry) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "saffron-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2000 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- High doses (1.2 to 2 g) caused nausea, vomiting, diarrhoea and bleeding [51]. A week of 200 mg or 400 mg saffron ta...\" | \"- **High doses:** a European monograph quoted in a 2017 review reports no documented risk up to 1.5 g of saffron a da...\"",
+  "reason": "AC2 saffron tokeniser case (spelled number or g->mg form; number present in the cited source in another form); ratified in decisions.md (Saffron review Ratified line and Saffron fix 772d1aa9 entry) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "saffron-benefits-forms-dosing-and-side-effects",
+  "match": "token \"63\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Self-reported poor sleep, 28-day trial (n=63):** In healthy adults with self-reported sleep problems, affron 14 mg ...\"",
+  "reason": "AC2 saffron tokeniser case (spelled number or g->mg form; number present in the cited source in another form); ratified in decisions.md (Saffron review Ratified line and Saffron fix 772d1aa9 entry) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "saffron-benefits-forms-dosing-and-side-effects",
+  "match": "token \"54\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Comparison with donepezil (22 weeks):** In 54 adults aged 55 or older with mild to moderate Alzheimer's disease, sa...\"",
+  "reason": "AC2 saffron tokeniser case (spelled number or g->mg form; number present in the cited source in another form); ratified in decisions.md (Saffron review Ratified line and Saffron fix 772d1aa9 entry) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "saffron-benefits-forms-dosing-and-side-effects",
+  "match": "token \"33\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Visual acuity, long-term follow-up (no placebo):** In 33 people with early AMD treated for about 11 months, the ben...\"",
+  "reason": "AC2 saffron tokeniser case (spelled number or g->mg form; number present in the cited source in another form); ratified in decisions.md (Saffron review Ratified line and Saffron fix 772d1aa9 entry) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "saffron-benefits-forms-dosing-and-side-effects",
+  "match": "token \"29\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Visual acuity, long-term follow-up (no placebo):** In 33 people with early AMD treated for about 11 months, the ben...\"",
+  "reason": "AC2 saffron tokeniser case (spelled number or g->mg form; number present in the cited source in another form); ratified in decisions.md (Saffron review Ratified line and Saffron fix 772d1aa9 entry) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "saffron-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤1500 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **High doses:** a European monograph quoted in a 2017 review reports no documented risk up to 1.5 g of saffron a da...\"",
+  "reason": "AC2 saffron tokeniser case (spelled number or g->mg form; number present in the cited source in another form); ratified in decisions.md (Saffron review Ratified line and Saffron fix 772d1aa9 entry) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "saffron-benefits-forms-dosing-and-side-effects",
+  "match": "token \"4120 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Animal LD50:** median lethal doses of saffron in animal studies range from 4120 mg/kg by mouth in mice [51] to 20...\"",
+  "reason": "AC2 saffron tokeniser case (spelled number or g->mg form; number present in the cited source in another form); ratified in decisions.md (Saffron review Ratified line and Saffron fix 772d1aa9 entry) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In one case report, shilajit was a possible cofactor in anaphylaxis [36]. If you develop hives with trouble breathi...\" | \"- **Allergic reactions:** A woman with a possible mast-cell disorder developed hives after a meal that included shila...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In one case report, shilajit was a possible cofactor in anaphylaxis [36]. If you develop hives with trouble breathi...\" | \"- **Allergic reactions:** A woman with a possible mast-cell disorder developed hives after a meal that included shila...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In one case report, shilajit was a possible cofactor in anaphylaxis [36]. If you develop hives with trouble breathi...\" | \"- **Allergic reactions:** A woman with a possible mast-cell disorder developed hives after a meal that included shila...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In one case report, shilajit was a possible cofactor in anaphylaxis [36]. If you develop hives with trouble breathi...\" | \"- **Allergic reactions:** A woman with a possible mast-cell disorder developed hives after a meal that included shila...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "token \"8.9 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Fatigued muscular strength in recreationally active men.** In a trial funded by Natreon Inc., 63 recreationally act...\"",
+  "reason": "AC2 shilajit tokeniser case (number present in the cited source in another form, or no-entry spelled number); ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "token \"500\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Collagen synthesis biomarker.** In 35 recreationally trained men, 500 or 1,000 mg a day for 8 weeks raised serum pr...\"",
+  "reason": "AC2 shilajit tokeniser case (number present in the cited source in another form, or no-entry spelled number); ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "token \"60\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Bone mineral density in postmenopausal women with osteopenia.** In a randomised, double-blind trial, 60 postmenopau...\" | \"| Bone density (postmenopausal) | 250 mg or 500 mg/day | Standardised aqueous extract | 48 weeks | RCT, placebo-contr...\"",
+  "reason": "AC2 shilajit tokeniser case (number present in the cited source in another form, or no-entry spelled number); ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "token \"24 week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Both shilajit doses slowed this loss in a dose-dependent way, with significantly better percentage changes from bas...\"",
+  "reason": "AC2 shilajit tokeniser case (number present in the cited source in another form, or no-entry spelled number); ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤1000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- No maximum safe dose has been set. Trials have used up to 2 g a day of resin for 45 days [17] and up to 1,000 mg a ...\"",
+  "reason": "AC2 shilajit tokeniser case (number present in the cited source in another form, or no-entry spelled number); ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤5000 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Short trials have reported few problems. In the sperm study, liver and kidney tests were unchanged after 90 days [14]...\"",
+  "reason": "AC2 shilajit tokeniser case (number present in the cited source in another form, or no-entry spelled number); ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤0.5 mcg/g\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A 2025 study found thallium at up to 0.5 µg/g in shilajit supplements, or up to 0.095 µg per pill, and more thalliu...\"",
+  "reason": "AC2 shilajit tokeniser case (number present in the cited source in another form, or no-entry spelled number); ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "token \"16\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Children and breastfeeding:** The trials enrolled adults (the youngest were 16 [17]); safety in children and in b...\"",
+  "reason": "AC2 shilajit '16' (\"ranging in age from 16 to 30 years\", 22557121-fulltext.md); ratified in decisions.md (Shilajit fix committed 0ce50b9e) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20\": It has been used as a rejuvenator and adaptogen for thousands of years in the traditional medicine of several countri...",
+  "reason": "AC2 shilajit tokeniser case (number present in the cited source in another form, or no-entry spelled number); ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"35\": Collagen synthesis biomarker. In 35 recreationally trained men, 500 or 1,000 mg a day for 8 weeks raised serum pro-c1...",
+  "reason": "AC2 shilajit tokeniser case (number present in the cited source in another form, or no-entry spelled number); ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"28\": Sperm (men with low sperm count) | 100 mg twice daily | Processed shilajit | 90 days | No control group; 28 of 35 fin...",
+  "reason": "AC2 shilajit tokeniser case (number present in the cited source in another form, or no-entry spelled number); ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"35\": Collagen marker | 500 mg/day or 1,000 mg/day | Shilajit | 8 weeks | RCT, n=35 | Neltner 2024 [20] |",
+  "reason": "AC2 shilajit tokeniser case (number present in the cited source in another form, or no-entry spelled number); ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[58] raw_quote shares no number with its body_line: - Aloe leaf extracts taken for 3 weeks to 5 years have been linked to acute hepatitis [2]. In thr...",
+  "reason": "AC2 Aloe vera fix-round changed_tokens[58] (same number in another form in the raw quote); ratified in decisions.md (Aloe fix committed dfead075, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Overuse of aloe latex may raise the risk of side effects from digoxin and other cardiac glycosides, likely through ...\" | \"Overuse of aloe latex may increase the risk of adverse effects from cardiac glycosides such as digoxin [2]. Oral aloe...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Overuse of aloe latex may raise the risk of side effects from digoxin and other cardiac glycosides, likely through ...\" | \"Overuse of aloe latex may increase the risk of adverse effects from cardiac glycosides such as digoxin [2]. Oral aloe...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Overuse of aloe latex may raise the risk of side effects from digoxin and other cardiac glycosides, likely through ...\" | \"Overuse of aloe latex may increase the risk of adverse effects from cardiac glycosides such as digoxin [2]. Oral aloe...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.22 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Meta-analysis:** Suksomboon et al. (*J Clin Pharm Ther*, 2016) [27] pooled 8 randomized trials with 470 patients. I...\"",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.32\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Meta-analysis:** Suksomboon et al. (*J Clin Pharm Ther*, 2016) [27] pooled 8 randomized trials with 470 patients. I...\"",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.12\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Meta-analysis:** Suksomboon et al. (*J Clin Pharm Ther*, 2016) [27] pooled 8 randomized trials with 470 patients. I...\"",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1.17 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Meta-analysis:** Suksomboon et al. (*J Clin Pharm Ther*, 2016) [27] pooled 8 randomized trials with 470 patients. I...\"",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2.35\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Meta-analysis:** Suksomboon et al. (*J Clin Pharm Ther*, 2016) [27] pooled 8 randomized trials with 470 patients. I...\"",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"19\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Meta-analysis:** Suksomboon et al. (*J Clin Pharm Ther*, 2016) [27] pooled 8 randomized trials with 470 patients. I...\"",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"9\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Results:** Clinical remission occurred in 9 of 30 patients (30%) on aloe and 1 of 14 (7%) on placebo, a differenc...\" | \"## 9. References\"",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"11\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Results:** At 1 month, 11 of 31 (35%) on aloe and 6 of 27 (22%) on placebo responded (p = 0.763), so the trial fo...\"",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"31\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Results:** At 1 month, 11 of 31 (35%) on aloe and 6 of 27 (22%) on placebo responded (p = 0.763), so the trial fo...\"",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"60\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a placebo-controlled trial of 60 patients, a hydrophilic cream with 0.5% aloe extract, applied 3 times daily for 5...\"",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"5 day/week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a placebo-controlled trial of 60 patients, a hydrophilic cream with 0.5% aloe extract, applied 3 times daily for 5...\" | \"| Psoriasis (topical) | 0.5% aloe extract cream | Applied to plaques | 3 times daily, 5 days a week | Up to 4 weeks |\"",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"55 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a placebo-controlled trial of 60 patients, a hydrophilic cream with 0.5% aloe extract, applied 3 times daily for 5...\"",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"54\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a randomized, double-blind trial of 54 people with oral lichen planus, 22 of 27 (81%) treated with aloe gel for 8 ...\"",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"22\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a randomized, double-blind trial of 54 people with oral lichen planus, 22 of 27 (81%) treated with aloe gel for 8 ...\"",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Oral submucous fibrosis is a disease that causes scars and tissue fibrosis and can involve a burning sensation in the...\"",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"21\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In one study of 21 women whose wounds after cesarean delivery or gynecologic surgery had to heal by second intention,...\"",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"83 day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In one study of 21 women whose wounds after cesarean delivery or gynecologic surgery had to heal by second intention,...\"",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"53 day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In one study of 21 women whose wounds after cesarean delivery or gynecologic surgery had to heal by second intention,...\"",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"57 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In one report, a 57-year-old, a 62-year-old and a 55-year-old woman were admitted to hospital with acute hepatitis ...\"",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"62 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In one report, a 57-year-old, a 62-year-old and a 55-year-old woman were admitted to hospital with acute hepatitis ...\"",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "token \"55 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In one report, a 57-year-old, a 62-year-old and a 55-year-old woman were admitted to hospital with acute hepatitis ...\"",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"0\": Overuse of aloe latex may raise the risk of side effects from digoxin and other cardiac glycosides, likely through po...",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"8\": Aloe syrup reduced how often each of the 8 assessed GERD symptoms occurred, including heartburn, food regurgitation, ...",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2\": Results: Clinical remission occurred in 9 of 30 patients (30%) on aloe and 1 of 14 (7%) on placebo, a difference that...",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"5\": Two phase III trials, in 194 and 108 women having breast or chest wall radiation, found dermatitis scores were virtua...",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1\": In a randomized, double-blind trial of 54 people with oral lichen planus, 22 of 27 (81%) treated with aloe gel for 8 ...",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"6\", \"2 month\": Oral submucous fibrosis is a disease that causes scars and tissue fibrosis and can involve a burning sensation in the...",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"0\": Overuse of aloe latex may increase the risk of adverse effects from cardiac glycosides such as digoxin [2]. Oral aloe...",
+  "reason": "AC2 aloe vera tokeniser case (spelled numbers, middle dots, yr forms, +/- days, day/week; no-entry spelled numbers); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "same-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[116] raw_quote shares no number with its body_line: - Domljan et al. (Int J Clin Pharmacol Ther Toxicol 1989) gave 20 patients with knee osteoarthrit...",
+  "reason": "AC2 SAMe fix-round changed_tokens[116] (same number in another form in the raw quote); ratified in decisions.md (SAMe fix committed 0cdbf437, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "same-benefits-forms-dosing-and-side-effects",
+  "match": "token \"800 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. A 2016 Cochrane review of e...\" | \"- Papakostas et al. (Am J Psychiatry 2010) gave 73 people with major depression who had not responded to a serotonin ...\" | \"**Dose-response relationship:** The positive add-on trial used 800 mg twice a day [11]; the negative one used 800 mg ...\"",
+  "reason": "AC2 SAMe tokeniser case ('800 mg' as 800 mg twice daily, '12' twelve, no-entry '15' Fifteen); ratified in decisions.md (SAMe review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "same-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- With antidepressants, SAMe was linked to serotonin syndrome-like symptoms in a trial [12] and to a toxic interactio...\" | \"- SAMe has set off mania or hypomania, including in people with bipolar disorder [2][45], and one volunteer had a mix...\" | \"**Serotonergic reaction:** In an 8-week trial of SAMe, given with folinic acid and vitamin B12, added to antidepressa...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (SAMe review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "same-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- With antidepressants, SAMe was linked to serotonin syndrome-like symptoms in a trial [12] and to a toxic interactio...\" | \"- SAMe has set off mania or hypomania, including in people with bipolar disorder [2][45], and one volunteer had a mix...\" | \"**Serotonergic reaction:** In an 8-week trial of SAMe, given with folinic acid and vitamin B12, added to antidepressa...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (SAMe review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "same-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- With antidepressants, SAMe was linked to serotonin syndrome-like symptoms in a trial [12] and to a toxic interactio...\" | \"- SAMe has set off mania or hypomania, including in people with bipolar disorder [2][45], and one volunteer had a mix...\" | \"**Serotonergic reaction:** In an 8-week trial of SAMe, given with folinic acid and vitamin B12, added to antidepressa...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (SAMe review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "same-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- With antidepressants, SAMe was linked to serotonin syndrome-like symptoms in a trial [12] and to a toxic interactio...\" | \"- SAMe has set off mania or hypomania, including in people with bipolar disorder [2][45], and one volunteer had a mix...\" | \"**Serotonergic reaction:** In an 8-week trial of SAMe, given with folinic acid and vitamin B12, added to antidepressa...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (SAMe review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "same-benefits-forms-dosing-and-side-effects",
+  "match": "token \"12\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2015 meta-analysis of 12 trials with 705 patients with chronic liver disease found some improvement in bilirubin an...\"",
+  "reason": "AC2 SAMe tokeniser case ('800 mg' as 800 mg twice daily, '12' twelve, no-entry '15' Fifteen); ratified in decisions.md (SAMe review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "same-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"15\": SAMe taken by mouth is absorbed. In 15 healthy volunteers whose dose was built up over 5 days to 1,600 mg a day, bloo...",
+  "reason": "AC2 SAMe tokeniser case ('800 mg' as 800 mg twice daily, '12' twelve, no-entry '15' Fifteen); ratified in decisions.md (SAMe review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "same-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"15\": SAMe turns into homocysteine after donating its methyl group, and raised homocysteine is a possible heart risk factor...",
+  "reason": "AC2 SAMe tokeniser case ('800 mg' as 800 mg twice daily, '12' twelve, no-entry '15' Fifteen); ratified in decisions.md (SAMe review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "reishi-mushroom-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Fruiting Body vs. Mycelium",
+  "reason": "AC4 heading removed (ConsumerLab-only or unsourced section); ratified in decisions.md (Reishi review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "reishi-mushroom-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Comparison of Reishi Product Types",
+  "reason": "AC4 heading removed (ConsumerLab-only or unsourced section); ratified in decisions.md (Reishi review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "saffron-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Nutritional Content per 100 g of Dried Saffron",
+  "reason": "AC4 heading removed (ConsumerLab-only or unsourced section); ratified in decisions.md (Saffron review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "saffron-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Culinary Use and Preparation",
+  "reason": "AC4 heading removed (ConsumerLab-only or unsourced section); ratified in decisions.md (Saffron review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "saffron-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Global Production",
+  "reason": "AC4 heading removed (ConsumerLab-only or unsourced section); ratified in decisions.md (Saffron review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Traditional Grading",
+  "reason": "AC4 heading removed (ConsumerLab-only or unsourced section); ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Historical Context",
+  "reason": "AC4 heading removed (ConsumerLab-only or unsourced section); ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Other Commercial Forms",
+  "reason": "AC4 heading removed (ConsumerLab-only or unsourced section); ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### CoQ10 Enhancement",
+  "reason": "AC4 heading removed (ConsumerLab-only or unsourced section); ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Interactions NOT Documented",
+  "reason": "AC4 heading removed (ConsumerLab-only or unsourced section); ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Harvesting",
+  "reason": "AC4 heading removed (ConsumerLab-only or unsourced section); ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## 8. Regulatory Status",
+  "reason": "AC4 heading removed (ConsumerLab-only or unsourced section); ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### United States",
+  "reason": "AC4 heading removed (ConsumerLab-only or unsourced section); ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### European Union",
+  "reason": "AC4 heading removed (ConsumerLab-only or unsourced section); ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### India",
+  "reason": "AC4 heading removed (ConsumerLab-only or unsourced section); ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## 9. Summary and Bottom Line",
+  "reason": "AC4 heading renumbered (now '## 8. Summary and Bottom Line' / '## 9. References'); ratified in decisions.md (Shilajit review nits and Shilajit fix 0ce50b9e) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## 10. References",
+  "reason": "AC4 heading renumbered (now '## 8. Summary and Bottom Line' / '## 9. References'); ratified in decisions.md (Shilajit review nits and Shilajit fix 0ce50b9e) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "same-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Enteric Coating and Absorption",
+  "reason": "AC4 heading removed (ConsumerLab-only or unsourced section); ratified in decisions.md (SAMe review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "same-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Storage Considerations",
+  "reason": "AC4 heading removed (ConsumerLab-only or unsourced section); ratified in decisions.md (SAMe review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "same-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### AIDS-Related Myelopathy",
+  "reason": "AC4 heading removed (folded into the Overview, F5); ratified in decisions.md (SAMe review F5 and SAMe fix 0cdbf437) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "reishi-mushroom-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Types of Reishi Products",
+  "reason": "AC7 product-heading keyword false positive (no product named); ratified in decisions.md (Reishi review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "reishi-mushroom-benefits-forms-dosing-and-side-effects",
+  "match": "product section missing: ### Comparison of Reishi Product Types",
+  "reason": "AC7 product-heading keyword false positive (no product named) or section removed under a ratified AC4 removal; ratified in decisions.md (Reishi review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "reishi-mushroom-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Gut Microbiota and Butyrate Production",
+  "reason": "AC7 product-heading keyword false positive (no product named); ratified in decisions.md (Reishi review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "saffron-benefits-forms-dosing-and-side-effects",
+  "match": "product section missing: ### Global Production",
+  "reason": "AC7 product-heading keyword false positive (no product named) or section removed under a ratified AC4 removal; ratified in decisions.md (Saffron review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "shilajit-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Collagen Production and Bone Health",
+  "reason": "AC7 product-heading keyword false positive (no product named); ratified in decisions.md (Shilajit review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Types of Aloe Products",
+  "reason": "AC7 product-heading keyword false positive (no product named); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Choosing an Aloe Product",
+  "reason": "AC7 product-heading keyword false positive (no product named); ratified in decisions.md (Aloe vera review, Ratified line) (orchestrator 2026-10-26, masters-new-16).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ }
+]
