@@ -125,7 +125,7 @@ A small amount of research suggests that aloe taken by mouth may lower blood sug
 Langmead et al. (*Aliment Pharmacol Ther*, 2004) [8] conducted a randomized, double-blind, placebo-controlled trial of aloe vera gel for mildly to moderately active ulcerative colitis:
 
 - **Design:** 44 evaluable outpatients given oral aloe vera gel or placebo, 100 mL twice daily for 4 weeks, in a 2:1 ratio
-- **Results:** Clinical remission occurred in 9 of 30 patients (30%) on aloe and 1 of 14 (7%) on placebo, a difference that was not significant (P = 0.09). Clinical response, in 14 (47%) on aloe and 2 (14%) on placebo, was the only significant difference (P < 0.05)
+- **Results:** Clinical remission occurred in 9 of 30 patients (30%) on aloe and 1 of 14 (7%) on placebo, a difference that was not significant (P = 0.09). Clinical response, in 14 (47%) on aloe and 2 (14%) on placebo, was the only one of the three clinical outcomes to differ significantly from placebo (P < 0.05)
 - **Histological scores** fell with aloe, but sigmoidoscopic scores and laboratory tests did not differ from placebo
 - **Limitations:** Small sample size (n=44), short duration (4 weeks)
 
@@ -215,7 +215,7 @@ The evidence is too limited to recommend aloe vera for weight management.
 
 ### Eye Health (Dry Eye)
 
-Aloe eye drops have been studied only in human corneal cells and in rats [16][18].
+Aloe has been studied for the eye only in human corneal cells and, as eye drops, in rats [16][18].
 
 Wozniak and Paduch (*Pharm Biol*, 2012) [16] studied human corneal cells and found that aloe extracts made with ethanol or ethyl acetate lowered nitric oxide and inflammatory cytokines; only the ethyl acetate extract showed a clear free radical scavenging effect.
 
@@ -283,9 +283,9 @@ Stop aloe and see your doctor promptly if your skin or eyes turn yellow or your 
 
 Ask a doctor before using aloe if you are in one of these groups:
 
-- **Pregnant or nursing women:** Aloe in gel, latex, or whole leaf extract form, when taken by mouth, may be unsafe during pregnancy and breastfeeding [2]. If aloe is put on the nipples, wash it off before nursing, because its taste may upset feeding or give the baby diarrhea [42].
-- **People with kidney problems:** Taking aloe by mouth has been linked to kidney failure and low potassium [22].
+- **Kidney failure:** Swallowing aloe has been linked to kidney failure [22].
 - **People with diabetes:** In trials, aloe gel lowered fasting blood sugar, including in people on glyburide and metformin, so it may add to the effect of diabetes medicines [7][27].
+- **Pregnant or nursing women:** Aloe in gel, latex, or whole leaf extract form, when taken by mouth, may be unsafe during pregnancy and breastfeeding [2]. If aloe is put on the nipples, wash it off before nursing, because its taste may upset feeding or give the baby diarrhea [42].
 
 ## 6. Drug Interactions
 
@@ -295,7 +295,7 @@ Aloe gel lowered fasting blood sugar and HbA1c in trials, including in people al
 
 ### Cardiac Glycosides (Digoxin)
 
-Overuse of aloe latex may increase the risk of adverse effects from cardiac glycosides such as digoxin [2]. Oral aloe has been linked to low potassium [22], and low potassium makes digoxin toxicity, including dangerous heart rhythm problems, more likely. Digoxin toxicity can cause nausea and vomiting, and it can trigger fatal heart rhythm problems [41]. If you take digoxin and have a racing, slow or irregular heartbeat, or faint, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+Overuse of aloe latex may increase the risk of adverse effects from cardiac glycosides such as digoxin [2]. Oral aloe has been linked to low potassium [22], and digoxin toxicity may occur at lower digoxin levels when potassium is low [43]. Digoxin toxicity can cause nausea and vomiting, and it can trigger fatal heart rhythm problems [41]. If you take digoxin and have a racing, slow or irregular heartbeat, or faint, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 ### Stimulant Laxatives
 
@@ -437,3 +437,5 @@ Kim et al. (*Food Chem Toxicol*, 2023) [19] reviewed the genotoxicity data for c
 [41] Pincus M. "Management of digoxin toxicity." *Aust Prescr*. 2016;39(1):18-20. PMID: 27041802. [https://pubmed.ncbi.nlm.nih.gov/27041802/](https://pubmed.ncbi.nlm.nih.gov/27041802/)
 
 [42] National Institute of Child Health and Human Development. "Aloe." *Drugs and Lactation Database (LactMed)*. Bethesda (MD): NICHD; updated 15 November 2024. PMID: 30000889. [https://pubmed.ncbi.nlm.nih.gov/30000889/](https://pubmed.ncbi.nlm.nih.gov/30000889/)
+
+[43] Dec GW. "Digoxin remains useful in the management of chronic heart failure." *Med Clin North Am*. 2003;87(2):317-337. PMID: 12693728. [https://pubmed.ncbi.nlm.nih.gov/12693728/](https://pubmed.ncbi.nlm.nih.gov/12693728/)
