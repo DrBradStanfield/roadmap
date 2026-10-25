@@ -22,9 +22,9 @@ Brad is not convinced by the evidence for L-theanine's benefits (Brad's current 
 - In rats, L-theanine taken with the sedative midazolam had an additive or synergistic effect on anxiety and movement [21]. If you take benzodiazepines or other sedatives, talk to your doctor first.
 - In mice, theanine raised doxorubicin levels in tumours; in the same work it also strengthened other chemotherapy drugs [20]. If you are having chemotherapy, talk to your oncologist first.
 - L-theanine blunted rises in blood pressure from caffeine, and from mental stress in people whose blood pressure rose most, in small trials [11][18]. If you take prescription medicines, check with your doctor or pharmacist before starting.
-- Trials of 400 mg a day for six to eight weeks found it well tolerated, including in boys aged 8 to 12 years with ADHD [15][17].
-- In a 28-day trial in adults with moderate stress, the group taking 400 mg of L-theanine a day had less time asleep on an activity tracker, though the authors reported less light sleep and better sleep quality [7].
+- In a 28-day trial in adults with moderate stress, the group taking 400 mg of L-theanine a day had less time asleep on an activity tracker, though the abstract gives no significance for that change. The authors reported significantly less light sleep than placebo and better sleep quality [7].
 - L-theanine alone raised headache ratings in one crossover trial [12].
+- Trials of 400 mg a day for six to eight weeks found it well tolerated, including in boys aged 8 to 12 years with ADHD [15][17].
 
 ## Brad's videos on this topic
 
@@ -231,7 +231,7 @@ Trials of up to 8 weeks report L-theanine as well tolerated. At 400 mg a day it 
 
 **Headaches:** In a crossover trial, 250 mg of L-theanine alone raised headache ratings, while headache ratings fell when it was taken with 150 mg of caffeine [12].
 
-**Children with tics:** In the ADHD trial, one boy who already had facial tics developed a new, very subtle facial tic within four days of starting L-theanine; it stopped after he left the study, and the supervising physician judged it unlikely to be related to L-theanine [15].
+**Children with tics:** In the ADHD trial, one boy who already had facial tics developed a new, very subtle facial tic within four days of starting L-theanine; it reportedly stopped after he left the study, and the supervising physician judged it unlikely to be related to L-theanine [15].
 
 **Possible sleep disruption:** In the 28-day trial, the group taking 400 mg of L-theanine a day had less time asleep after 28 days [7]. This is worth knowing if you take L-theanine for sleep.
 
