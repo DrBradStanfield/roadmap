@@ -19,9 +19,9 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Key safety points
 
-- DHEA changes sex hormone levels, so it may add to or work against HRT, birth control pills, testosterone and 5-alpha reductase inhibitors such as finasteride [74]; in lab studies it also switched on liver enzymes that process medicines [75]. If you take prescription medicines, check with your doctor or pharmacist before starting.
-- Higher natural DHEA levels were linked with later postmenopausal breast cancer and ovarian cancer [51][53], and a review advises caution with DHEA supplements [68]. If you have had a hormone-sensitive cancer, ask your cancer specialist first.
-- A Cochrane review found too little evidence to judge the safety of DHEA in women having fertility treatment [42].
+- DHEA changes sex hormone levels, so it may add to or work against HRT, birth control pills, testosterone and 5-alpha reductase inhibitors such as finasteride [74]; in a lab study it also switched on liver enzymes that process medicines [75]. If you take prescription medicines, check with your doctor or pharmacist before starting.
+- Higher natural DHEA levels were linked with later postmenopausal breast cancer and ovarian cancer [51][53], and a review advises caution with DHEA supplements [68]. Estrogen is a breakdown product of DHEA, and the vaginal prasterone label notes that estrogen is contraindicated after breast cancer [76]. If you have had a hormone-sensitive cancer, ask your cancer specialist first.
+- The vaginal prasterone label has no data on use in pregnancy and no information on breast milk [76]. Avoid DHEA during pregnancy or breastfeeding unless a doctor prescribes it.
 - A case report describes mania starting during DHEA use [69].
 - DHEA lowered HDL ("good") cholesterol in pooled trials, mainly in women [67].
 - Acne and excess hair growth are common: 33% and 16% of women taking 200 mg a day in a lupus trial, against 14% and 2% on placebo [63].
@@ -60,17 +60,17 @@ DHEA can be applied to the skin, which avoids its first pass through the liver; 
 
 ### Vaginal DHEA (Intrarosa/Prasterone)
 
-The prescription vaginal insert contains 6.5 mg of prasterone (0.50%) and is an FDA-approved treatment for moderate to severe pain during sex due to menopause [61][62]. It acts locally: in its phase III trial, blood steroid levels stayed within the normal postmenopausal range [62].
+The prescription vaginal insert contains 6.5 mg of prasterone (0.50%) and is an FDA-approved treatment for moderate to severe pain during sex due to menopause [61][62]. It acts locally: in its phase III trial, blood steroid levels stayed within the normal postmenopausal range [62]. Its label says it should not be used with undiagnosed abnormal genital bleeding, and in a 52-week open-label trial 11 of 521 women (2.1 percent) had an abnormal Pap smear [76].
 
 In that randomized, placebo-controlled trial (325 women on DHEA, 157 on placebo), 12 weeks of daily use lowered vaginal pH, improved vaginal cells and reduced pain during sex compared with placebo [62]. The only side effect judged related to treatment was vaginal discharge, in about 6% of women [62].
 
 ### Bioavailability Enhancers
 
-Some DHEA products add black pepper extract (piperine); the DHEA trials used DHEA on its own.
+The DHEA trials on this page tested DHEA on its own.
 
 ### Bovine Adrenal Gland Concentrates
 
-Some older DHEA products contained cow adrenal gland concentrate. Products made from animal glands may carry a risk of prion infection, so synthetic DHEA is the safer choice.
+Some older DHEA products contained cow adrenal gland concentrate.
 
 ### Comparison of DHEA Forms
 
@@ -114,7 +114,7 @@ Nair and colleagues gave DHEA or placebo for 2 years to 87 older men and 57 olde
 
 Small trials suggest DHEA may help some people with depression [25][26][46].
 
-**HIV/AIDS-associated depression:** In the largest trial, 145 people with HIV and mild but persistent depression took DHEA (100-400 mg a day) or placebo for 8 weeks. The response rate was 56% on DHEA and 31% on placebo [26].
+**HIV/AIDS-associated depression:** In a trial of 145 people with HIV and mild but persistent depression, participants took DHEA (100-400 mg a day) or placebo for 8 weeks. The response rate was 56% on DHEA and 31% on placebo [26].
 
 **Midlife depression:** Schmidt and colleagues treated 23 men and 23 women aged 45 to 65 years with midlife-onset major or minor depression, none on antidepressants, in a crossover trial: 90 mg a day for 3 weeks, then 450 mg a day for 3 weeks. Depression scores improved more on DHEA than on placebo; 23 people had at least a 50% drop in scores on DHEA, against 13 on placebo [25].
 
@@ -158,7 +158,7 @@ People with adrenal insufficiency lack DHEA. Unlike cortisol and aldosterone, DH
 
 **Pituitary insufficiency (hypopituitarism):** Brooke and colleagues added 50 mg of DHEA or placebo for 6 months in people with hypopituitarism on growth hormone, analysing 26 women and 18 men. Quality of life improved modestly in women, with small gains in self-esteem and mood in men [36].
 
-**Current guidelines:** The evidence on who benefits from DHEA replacement is inconsistent, and recent trials are few [65]. Reviewers judge women with adrenal insufficiency the group most likely to benefit [4].
+**Current guidelines:** The evidence on DHEA replacement is inconsistent, it is unclear which patients are most likely to benefit, and recent trials are few [65].
 
 ### Fertility and IVF
 
@@ -218,7 +218,7 @@ The effects of DHEA on the heart and blood vessels are uncertain.
 
 ### Dosing by Indication
 
-Doses in trials vary with the condition, from 25 mg a day in adrenal failure [34] to 200 mg a day in lupus [28] and 450 mg a day in depression [25].
+Doses in trials vary with the condition, from 25 mg a day in adrenal failure [34] to 200 mg a day in lupus [28] and 450 mg a day in depression [25]. These are trial doses, not recommendations.
 
 | Indication | Dose | Duration Studied | Key Reference |
 |-----------|:---:|:---:|------|
@@ -261,14 +261,13 @@ DHEA can raise testosterone, particularly in women [13][48], leading to:
 - **Acne**: the most common side effect in lupus trials, in 33% of women on 200 mg a day against 14% on placebo [63]
 - **Hirsutism** (excess facial or body hair): 16% against 2% in the same trial [63]
 - **Oily skin and stronger sweat odour**: 60% reported oily-skin effects at 50 mg of DHEA a day in one small trial [21], and 89% had side effects such as sweat odour and scalp itching at 25 mg of DHEA a day in another [34]
-- **Thinning scalp hair, a deeper voice and irregular periods** may also occur
 
 Most acne and hair growth in the lupus trial was mild and did not require stopping treatment [63]. Women are more sensitive because DHEA raises their androgen levels more than men's [48].
 
 ### Estrogenic Concerns
 
 Because DHEA is converted to estrogen [4]:
-- A review advises caution with DHEA supplements, particularly in obese postmenopausal women, because DHEA could encourage breast cancer growth [68]. Women with a hormone-sensitive condition such as breast, ovarian or uterine cancer, endometriosis or fibroids should ask their specialist before using DHEA
+- A review advises caution with DHEA supplements, particularly in obese postmenopausal women, because DHEA could encourage breast cancer growth [68]. The prescription label for vaginal prasterone notes that estrogen is one of its breakdown products, that estrogen is contraindicated in women with a known or suspected history of breast cancer, and that the insert has not been studied in these women [76]. Women who have had breast cancer should ask their specialist before using DHEA
 - There is not enough evidence to confirm that vaginal DHEA is safe for women with breast cancer [70]
 
 ### Cardiovascular Risks
@@ -292,7 +291,7 @@ Pooled trials in postmenopausal women and in older men found no effect on blood 
 
 ### Psychiatric Effects
 
-A case report describes mania starting while a person was using DHEA [69]. This is a particular concern for people with bipolar disorder or a history of manic episodes.
+A case report describes mania starting while a person was using DHEA [69].
 
 ### Other Reported Side Effects
 
@@ -301,15 +300,15 @@ Prasterone trials have also reported [74]:
 - Blood in the urine
 - A rise in serum creatinine (a kidney blood test)
 
-Liver enzymes did not change in pooled trials [72]. Rare reports of liver problems, abdominal pain, sleep problems and an irregular heartbeat have also been described.
+Liver enzymes did not change in pooled trials [72].
 
 ### Special Populations
 
-**Pregnancy and nursing:** DHEA has not been shown to be safe during pregnancy or breastfeeding, so avoid it then unless a doctor prescribes it.
+**Pregnancy and nursing:** The prescription label for vaginal prasterone covers only postmenopausal women; it has no data on use in pregnancy and no information on whether prasterone passes into breast milk [76]. Avoid DHEA during pregnancy or breastfeeding unless a doctor prescribes it.
 
-**Severe liver or kidney disease:** Safety has not been established in these groups.
+**Severe liver or kidney disease:** The vaginal prasterone label says the effect of kidney or liver impairment on how the body handles prasterone has not been studied [76].
 
-**Children and adolescents:** DHEA should not be used in children or adolescents, as it may interfere with normal pubertal development and hormonal maturation.
+**Children and adolescents:** The vaginal prasterone label says its safety and effectiveness have not been established in children [76].
 
 ### Duration of Use
 
@@ -327,7 +326,7 @@ Because DHEA is converted to both androgens and estrogens [4], a drug review lis
 - **Hormone replacement therapy (HRT):** possible additive estrogen or androgen effects [74]
 - **Oral contraceptives:** possible additive or opposing hormonal effects [74]
 - **Aromatase inhibitors** (e.g., anastrozole, letrozole): DHEA can be converted to estrogen [4], so it may work against these breast cancer drugs
-- **Anti-androgens** (e.g., spironolactone) and 5-alpha reductase inhibitors (e.g., finasteride): DHEA may counteract them [74]
+- **5-alpha reductase inhibitors** (e.g., finasteride): a possible interaction [74]
 - **Testosterone therapy:** additive androgen effects are possible [74]
 
 ### Insulin and Hypoglycemic Agents
@@ -344,14 +343,14 @@ In a lupus trial, prasterone let more women with active disease lower their pred
 
 ### Summary of Key Interactions
 
-| Drug/Class | Interaction Type | Risk Level | Clinical Action |
-|-----------|:---:|:---:|------|
-| Drugs processed by CYP3A4 and related liver enzymes | Possible change in drug levels | Unknown | Check with your doctor or pharmacist [75] |
-| Hormone replacement therapy | Additive hormonal effects | Moderate | Monitor hormone levels closely [74] |
-| Aromatase inhibitors | DHEA may counteract effect | High | Avoid in cancer treatment unless the oncologist agrees [4] |
-| Insulin / hypoglycemics | Uncertain glucose effects | Moderate | Check glucose more often [54] |
-| Anti-androgens and 5-alpha reductase inhibitors | DHEA may counteract effect | Moderate | Avoid or monitor closely [74] |
-| Testosterone therapy | Additive androgenic effects | Moderate | Use only under specialist supervision [74] |
+| Drug/Class | Interaction Type |
+|-----------|------|
+| Drugs processed by CYP3A4 and related liver enzymes | Possible change in drug levels; enzyme activity rose in human liver cells in the lab [75] |
+| Hormone replacement therapy | Possible additive or opposing hormonal effects [74] |
+| Aromatase inhibitors | DHEA can be converted to estrogen [4], so it may work against them |
+| Insulin / hypoglycemics | Effect on glucose in type 2 diabetes not fully worked out [54] |
+| 5-alpha reductase inhibitors | Possible interaction [74] |
+| Testosterone therapy | Possible additive androgen effects [74] |
 
 ## 7. Dietary Sources
 
@@ -372,7 +371,7 @@ While no food directly provides DHEA, some lifestyle factors are linked with DHE
 
 ### Nutrients That Support Adrenal Health
 
-Vitamin C does not directly increase DHEA, but it supports adrenal function:
+The adrenal glands hold high levels of vitamin C, a cofactor for hormone production; the evidence comes mostly from animal and cell studies [59].
 
 | Nutrient | Role in Adrenal Function |
 |----------|------|
@@ -513,3 +512,5 @@ Vitamin C does not directly increase DHEA, but it supports adrenal function:
 [74] Kocis P. "Prasterone." *Am J Health Syst Pharm*. 2006;63(22):2201-2210. doi: [10.2146/ajhp060100](https://doi.org/10.2146/ajhp060100). PMID: [17090740](https://pubmed.ncbi.nlm.nih.gov/17090740/)
 
 [75] Kohalmy K, Tamasi V, Kobori L, et al. "Dehydroepiandrosterone induces human CYP2B6 through the constitutive androstane receptor." *Drug Metab Dispos*. 2007;35(9):1495-1501. doi: [10.1124/dmd.107.016303](https://doi.org/10.1124/dmd.107.016303). PMID: [17591676](https://pubmed.ncbi.nlm.nih.gov/17591676/)
+
+[76] INTRAROSA (prasterone) vaginal insert. Prescribing information, Millicent U.S. Inc. DailyMed, 2026. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=ada639d4-bac0-2ad0-e053-2a95a90afce7](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=ada639d4-bac0-2ad0-e053-2a95a90afce7)
