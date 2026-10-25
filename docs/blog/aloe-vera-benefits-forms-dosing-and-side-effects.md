@@ -19,12 +19,12 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Key safety points
 
-- Overuse of aloe latex may raise the risk of side effects from digoxin and other cardiac glycosides, likely through potassium loss [2][22]. If you take digoxin and have a racing, slow or irregular heartbeat, or faint, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- Overuse of aloe latex may raise the risk of side effects from digoxin and other cardiac glycosides, likely through potassium loss [2][22]. Digoxin toxicity can trigger fatal heart rhythm problems [41]. If you take digoxin and have a racing, slow or irregular heartbeat, or faint, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- Aloe leaf extracts taken for 3 weeks to 5 years have been linked to acute hepatitis [2]. In three reported cases, it settled after stopping [21]. Stop aloe and see your doctor promptly if your skin or eyes turn yellow or your urine turns dark.
 - Aloe has been loosely linked with bleeding during surgery, and one woman taking aloe tablets bled heavily during surgery under sevoflurane [35][38]. Stop aloe 2 weeks before planned surgery and tell your surgeon [38].
 - Aloe gel lowered fasting blood sugar in trials, including in people already taking glyburide and metformin [7][27]. With diabetes medicines, check your blood sugar more often.
 - Aloe gel, latex or whole-leaf extract taken by mouth may be unsafe during pregnancy and breastfeeding [2].
 - Non-decolorized whole-leaf extract caused large-intestine cancers in rats, and IARC classes it as a possible human carcinogen [2][36].
-- Aloe leaf extracts taken for 3 weeks to 5 years have been linked to acute hepatitis [2]. In reported cases, it settled after stopping [21].
 - Latex can cause abdominal pain, cramps and diarrhea; on the skin, aloe gel occasionally causes burning, itching, rash or eczema [2].
 
 ## Brad's videos on this topic
@@ -125,7 +125,7 @@ A small amount of research suggests that aloe taken by mouth may lower blood sug
 Langmead et al. (*Aliment Pharmacol Ther*, 2004) [8] conducted a randomized, double-blind, placebo-controlled trial of aloe vera gel for mildly to moderately active ulcerative colitis:
 
 - **Design:** 44 evaluable outpatients given oral aloe vera gel or placebo, 100 mL twice daily for 4 weeks, in a 2:1 ratio
-- **Results:** Clinical remission occurred in 9 of 30 patients (30%) on aloe and 1 of 14 (7%) on placebo; clinical response occurred in 14 (47%) and 2 (14%), respectively
+- **Results:** Clinical remission occurred in 9 of 30 patients (30%) on aloe and 1 of 14 (7%) on placebo, a difference that was not significant (P = 0.09). Clinical response, in 14 (47%) on aloe and 2 (14%) on placebo, was the only significant difference (P < 0.05)
 - **Histological scores** fell with aloe, but sigmoidoscopic scores and laboratory tests did not differ from placebo
 - **Limitations:** Small sample size (n=44), short duration (4 weeks)
 
@@ -143,7 +143,7 @@ The NIH says there is not enough reliable information to know whether aloe helps
 
 ### Burns and Sunburn
 
-Aloe vera gel is a common home remedy for burns, and the clinical evidence is encouraging but small [2][11].
+For burns, the clinical evidence is encouraging but small [2][11]. A 2009 review found that aloe on the skin gives no sunburn or suntan protection [40].
 
 **Positive evidence:** The NIH states that clinical research suggests topical application of aloe gel may speed burn healing and reduce burn-related pain [2]. Mahboub et al. (*J Caring Sci*, 2022) [10] randomized patients with first- and second-degree burns to aloe vera gel or silver sulfadiazine cream (34 per group); wounds healed faster and hurt less with aloe. Sharma et al. (*Adv Skin Wound Care*, 2022) [11] pooled 4 trials of second-degree burns (133 patients, 163 wounds) and found healing was 4.44 days faster with aloe (P = .004).
 
@@ -151,9 +151,9 @@ Aloe vera gel is a common home remedy for burns, and the clinical evidence is en
 
 ### Radiation Dermatitis
 
-Aloe vera gel has been tested on the skin of people having radiation therapy for cancer, and trials found no protection [31][32].
+Trials of aloe gel to prevent skin damage from cancer radiation therapy found no protection [31][32].
 
-Two phase III trials, in 194 and 108 women having breast or chest wall radiation, found dermatitis scores were virtually identical with or without aloe gel [31]. A 2005 systematic review of 5 published randomized trials found no evidence that topical aloe prevents or reduces radiation skin reactions [32]. The NIH lists radiation skin damage among uses where a small amount of research suggests topical aloe may help [2].
+Two phase III trials, in 194 and 108 women having breast or chest wall radiation, found dermatitis scores were virtually identical with or without aloe gel [31]. A 2005 systematic review of 5 published randomized trials found no evidence that topical aloe prevents or reduces radiation skin reactions [32]. A 2009 review also concluded that topical aloe is not an effective prevention for radiation-induced injuries [40]. The NIH lists radiation skin damage among uses where a small amount of research suggests topical aloe may help [2].
 
 ### Genital Herpes
 
@@ -165,7 +165,7 @@ A 2009 review of dermatology studies concluded that topical aloe can be effectiv
 
 Evidence for topical aloe in psoriasis is mixed [29][30].
 
-In a placebo-controlled trial of 60 patients, a hydrophilic cream with 0.5% aloe extract, applied 3 times daily for 5 days a week (up to 4 weeks), cured 25 of 30 patients (83.3%) compared with 2 of 30 (6.6%) on placebo [29]. A later trial in 41 patients found a commercial aloe gel, applied twice daily for 4 weeks, was not better than placebo; 55% of patients reported local side effects, mainly dry skin [30].
+In a placebo-controlled trial of 60 patients, a hydrophilic cream with 0.5% aloe extract, applied 3 times daily for 5 days a week (up to 4 weeks), cured 25 of 30 patients (83.3%) compared with 2 of 30 (6.6%) on placebo [29]. A later trial in 41 patients found a commercial aloe gel, applied twice daily for 4 weeks, was not better than placebo; placebo did significantly better (P = 0.0197), and 55% of patients reported local side effects, mainly dry skin [30].
 
 The NIH notes that a small amount of research suggests topical use of aloe may help people with psoriasis [2].
 
@@ -215,13 +215,13 @@ The evidence is too limited to recommend aloe vera for weight management.
 
 ### Eye Health (Dry Eye)
 
-Some websites suggest putting aloe in the eye for dry eye. The research behind this is laboratory and animal work.
+Aloe eye drops have been studied only in human corneal cells and in rats [16][18].
 
 Wozniak and Paduch (*Pharm Biol*, 2012) [16] studied human corneal cells and found that aloe extracts made with ethanol or ethyl acetate lowered nitric oxide and inflammatory cytokines; only the ethyl acetate extract showed a clear free radical scavenging effect.
 
 In rats with corneal alkali burns, aloe gel eye drops improved healing of the corneal surface, most clearly in diabetic rats [18].
 
-These are cell and animal studies and do not show that aloe helps dry eye in people. Putting non-sterile plant material in the eye may cause infection or irritation.
+They do not show that aloe helps dry eye in people. Putting non-sterile plant material in the eye may cause infection or irritation.
 
 ## 4. Recommended Dosing
 
@@ -251,13 +251,13 @@ Aloe gel appears safe short term by mouth and is generally well tolerated on the
 
 **Oral use:** Research studies suggest that short-term use of oral aloe gel up to 42 days is safe [2]. Aloe gel can lower fasting blood sugar, which matters for people with diabetes or those taking glucose-lowering medicines [7][27].
 
-**Topical use:** Generally well tolerated. However, there have been occasional reports of burning, itching, rash, and eczema with topical application [2]. Aloe extracts contain substances that may be allergenic, and rare contact dermatitis was the only side effect of aloe gel in two radiation trials [24][31]. People allergic to plants in the lily family, such as garlic and onions, may be more likely to react.
+**Topical use:** Generally well tolerated. However, there have been occasional reports of burning, itching, rash, and eczema with topical application [2]. Aloe extracts contain substances that may be allergenic, and rare contact dermatitis was the only side effect of aloe gel in two radiation trials [24][31].
 
 ### Aloe Latex Safety — Serious Concerns
 
 Products containing aloe latex carry much greater safety concerns [2][22]:
 
-**Gastrointestinal effects:** Oral aloe latex can cause abdominal pain, cramps, and diarrhea [2]. Taking aloe by mouth has been linked to low potassium and kidney failure [22]. Nausea, headache and a dry mouth may also occur.
+**Gastrointestinal effects:** Oral aloe latex can cause abdominal pain, cramps, and diarrhea [2]. Taking aloe by mouth has been linked to low potassium and kidney failure [22].
 
 **Carcinogenicity concerns:** Animal studies have linked non-decolorized whole leaf extract to cancer [2][36]. The evidence includes:
 - IARC classes the non-decolorized form of whole leaf extract as a possible human carcinogen [2][4]
@@ -271,23 +271,21 @@ Products containing aloe latex carry much greater safety concerns [2][22]:
 
 ### Liver Toxicity
 
-Rarely, liver injury linked to aloe taken by mouth has been reported [2][21]:
+Case reports link aloe taken by mouth to liver injury [2][21]:
 
 - Oral consumption of aloe leaf extracts (for as little as 3 weeks and as long as 5 years) has been related to cases of acute hepatitis [2]
 - In one report, a 57-year-old, a 62-year-old and a 55-year-old woman were admitted to hospital with acute hepatitis after taking aloe preparations for months; their liver enzymes returned to normal after they stopped [21]
 - A systematic review of herb-induced liver injury listed aloe vera among the supplements most often reported [39]
 
+Stop aloe and see your doctor promptly if your skin or eyes turn yellow or your urine turns dark.
+
 ### Contraindicated Populations
 
-The following groups should avoid aloe products or use them only with medical advice [2][22]:
+Ask a doctor before using aloe if you are in one of these groups:
 
-- **Pregnant or nursing women:** Aloe in gel, latex, or whole leaf extract form, when taken by mouth, may be unsafe during pregnancy and breastfeeding [2]. Wash off any aloe used on the nipples before breastfeeding, as reports link it to feeding problems and infant diarrhea.
-- **Children:** Should avoid latex-containing aloe products.
-- **Older adults:** Should avoid latex-containing aloe products.
-- **People with kidney disorders:** Should avoid aloe latex, since oral aloe has been linked to low potassium and kidney failure [22].
-- **People with gastrointestinal disorders:** Aloe latex may worsen existing gut conditions.
-- **People with hemorrhoids:** Should avoid aloe latex.
-- **People with diabetes:** Aloe gel can lower blood sugar, so blood sugar may fall further when it is combined with diabetes medicines [7][27].
+- **Pregnant or nursing women:** Aloe in gel, latex, or whole leaf extract form, when taken by mouth, may be unsafe during pregnancy and breastfeeding [2]. If aloe is put on the nipples, wash it off before nursing, because its taste may upset feeding or give the baby diarrhea [42].
+- **People with kidney problems:** Taking aloe by mouth has been linked to kidney failure and low potassium [22].
+- **People with diabetes:** In trials, aloe gel lowered fasting blood sugar, including in people on glyburide and metformin, so it may add to the effect of diabetes medicines [7][27].
 
 ## 6. Drug Interactions
 
@@ -297,7 +295,7 @@ Aloe gel lowered fasting blood sugar and HbA1c in trials, including in people al
 
 ### Cardiac Glycosides (Digoxin)
 
-Overuse of aloe latex may increase the risk of adverse effects from cardiac glycosides such as digoxin [2]. Oral aloe has been linked to low potassium [22], and low potassium makes digoxin toxicity, including dangerous heart rhythm problems, more likely. If you take digoxin and have a racing, slow or irregular heartbeat, or faint, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+Overuse of aloe latex may increase the risk of adverse effects from cardiac glycosides such as digoxin [2]. Oral aloe has been linked to low potassium [22], and low potassium makes digoxin toxicity, including dangerous heart rhythm problems, more likely. Digoxin toxicity can cause nausea and vomiting, and it can trigger fatal heart rhythm problems [41]. If you take digoxin and have a racing, slow or irregular heartbeat, or faint, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 ### Stimulant Laxatives
 
@@ -329,27 +327,16 @@ The plant grows well in hot, dry climates [2]. Gel scooped from a fresh leaf can
 
 ### Choosing an Aloe Product
 
-The first question is whether a product contains only gel or also contains latex [2]:
-
-**If you want to avoid latex (most consumers):**
-- Choose products made from inner-leaf gel, or decolorized whole-leaf products, which have had activated carbon treatment to remove the anthraquinones [2]
-- Avoid products labeled "whole leaf" unless they state that they are decolorized [2]
-
-**If you are considering latex (laxative effect):**
-- Latex and non-decolorized whole-leaf products carry the safety concerns outlined above, including the FDA's 2002 removal of latex from over-the-counter laxatives [2][3]
-- Use only short-term and be aware of the safety concerns outlined above
+Decolorized aloe has had activated carbon treatment to remove the toxic anthraquinones; the non-decolorized form is the one IARC classes as a possible human carcinogen [2][4].
 
 ### Quality Concerns
 
 - Controlled decolorization markedly reduces aloin and potential allergens [24]
 - Independent testers such as ConsumerLab.com publish product test results
-- Look for products that specify the standardized content of polysaccharides or acemannan
 
 ### The Aloe Vera Plant
 
-Aloe vera (*Aloe barbadensis* Miller) is a succulent that grows easily in hot, dry climates and is widely distributed in Asia, Africa, and other tropical areas [40]. Older sources place it in the lily family (Liliaceae) [16]; a 2016 meta-analysis placed it in the Xanthorrhoeaceae family [27]. The plant has:
-- Thick, fleshy leaves
-- A central gel (inner leaf) surrounded by a layer of latex beneath the outer skin [2]
+Aloe vera (*Aloe barbadensis* Miller) is a succulent that grows easily in hot, dry climates and is widely distributed in Asia, Africa, and other tropical areas [40]. Older sources place it in the lily family (Liliaceae) [16]; a 2016 meta-analysis placed it in the Xanthorrhoeaceae family [27]. Its leaf holds gel in the inner part and latex in the outer layer [2].
 
 Aloe was used in ancient Greece, Rome, Babylonia, and China [2].
 
@@ -446,3 +433,7 @@ Kim et al. (*Food Chem Toxicol*, 2023) [19] reviewed the genotoxicity data for c
 [39] Ballotin VR, Bigarella LG, Brandão ABM, et al. "Herb-induced liver injury: systematic review and meta-analysis." *World J Clin Cases*. 2021;9(20):5490-5513. PMID: 34307603. [https://pubmed.ncbi.nlm.nih.gov/34307603/](https://pubmed.ncbi.nlm.nih.gov/34307603/)
 
 [40] Feily A, Namazi MR. "Aloe vera in dermatology: a brief review." *G Ital Dermatol Venereol*. 2009;144(1):85-91. PMID: 19218914. [https://pubmed.ncbi.nlm.nih.gov/19218914/](https://pubmed.ncbi.nlm.nih.gov/19218914/)
+
+[41] Pincus M. "Management of digoxin toxicity." *Aust Prescr*. 2016;39(1):18-20. PMID: 27041802. [https://pubmed.ncbi.nlm.nih.gov/27041802/](https://pubmed.ncbi.nlm.nih.gov/27041802/)
+
+[42] National Institute of Child Health and Human Development. "Aloe." *Drugs and Lactation Database (LactMed)*. Bethesda (MD): NICHD; updated 15 November 2024. PMID: 30000889. [https://pubmed.ncbi.nlm.nih.gov/30000889/](https://pubmed.ncbi.nlm.nih.gov/30000889/)
