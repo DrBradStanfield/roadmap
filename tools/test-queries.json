@@ -7719,5 +7719,40 @@
       "(?<!(?:not|n't|never) )\\b(?:is )?(?:safe|fine|okay|ok) to (?:take|combine) (?:it |same )?with (?:your |an |any )?antidepressants?"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-16); not run. Key safety points: \"With antidepressants, SAMe was linked to serotonin syndrome-like symptoms in a trial [12] ... Do not stop or swap an antidepressant for SAMe without your doctor's advice\" and \"SAMe has set off mania or hypomania, including in people with bipolar disorder [2][45]\". Passes: serotonin syndrome risk, do not combine without the doctor, mania in bipolar. Fails: saying it is safe to combine."
+  },
+  {
+    "category": "sleep-guideline-rewrite",
+    "source": "us-15-ac39-sleep-guideline-rewrite-2026-10-26",
+    "pending": "sleep guideline rewrite not deployed",
+    "surface": "doctor",
+    "query": "What time should I stop drinking coffee so it doesn't wreck my sleep?",
+    "answer_handles": [
+      "sleep"
+    ],
+    "must_match": [
+      "3 hours after (?:you )?wak|three hours after (?:you )?wak|9:30"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:wait|delay) (?:at least )?90 minutes after (?:waking|you wake)"
+    ],
+    "notes": "US-15 AC39 (Codex R1 on the sleep rewrite), pre-registered 2026-10-26; not run. Brad's caffeine cut-off: about 3 hours after waking, by about 9:30 am. Passes: a cut-off about 3 hours after waking or by 9:30 am. Fails: advising a 90-minute wait after waking before the first coffee."
+  },
+  {
+    "category": "sleep-guideline-rewrite",
+    "source": "us-15-ac39-sleep-guideline-rewrite-2026-10-26",
+    "pending": "sleep guideline rewrite not deployed",
+    "surface": "doctor",
+    "query": "Is it ok to do a hard workout right before bed?",
+    "answer_handles": [
+      "sleep"
+    ],
+    "must_match": [
+      "2 hours|two hours",
+      "before (?:bed|sleep)"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:right|just|immediately) before bed is (?:fine|ok|okay)"
+    ],
+    "notes": "US-15 AC39 (Codex R1 on the sleep rewrite), pre-registered 2026-10-26; not run. Strenuous exercise: finish at least 2 hours before bed. Passes: finish strenuous exercise at least 2 hours before bed. Fails: saying a hard workout right before bed is fine."
   }
 ]

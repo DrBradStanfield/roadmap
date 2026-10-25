@@ -199,6 +199,15 @@ describe('US-15 AC39 — no third-party pathway content', () => {
     expect(sleep).not.toContain('Screen time / blue light');
   });
 
+  // 2026-10-26 sleep rewrite (Codex R1): the guideline the web chat loads no longer quotes a point-of-care reference.
+  it('the sleep guideline and its index summary never mention UpToDate', () => {
+    const sleep = fs.readFileSync(path.join(ROOT, 'docs/guideline/sleep.md'), 'utf-8');
+    expect(sleep).not.toMatch(/uptodate/i);
+    const entry = loadBlogIndex().find(e => e.handle === 'sleep' && (e.type as string | undefined) === 'guideline');
+    expect(entry).toBeDefined();
+    expect(entry!.summary ?? '').not.toMatch(/uptodate/i);
+  });
+
   it('the router routes a named condition only when an entry covers it', () => {
     const prompt = fs.readFileSync(path.join(ROOT, 'app/lib/chat-router-prompt.md'), 'utf-8');
     expect(prompt).not.toContain('are NEVER out of scope');
