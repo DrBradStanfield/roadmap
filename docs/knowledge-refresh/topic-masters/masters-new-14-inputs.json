@@ -1,0 +1,331 @@
+[
+ {
+  "handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-extra-virgin-olive-oil-review-evoo.md",
+  "cl_raw_sha256": "33655c3ded571a15db5cb00c0bde39ad59f2e0496c00943af05150b8b32ec79e",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [
+   {
+    "file": "packages/health-core/src/evidence.ts",
+    "line": 174,
+    "text": "reason: 'These foods lower LDL cholesterol through complementary mechanisms: beta-glucan (oats) and soluble fibre (psyllium, flaxseed) bind bile acids, reducing cholesterol reabsorption. Nuts (walnuts, almonds) provide unsaturated fats that"
+   },
+   {
+    "file": "packages/health-core/src/evidence.ts",
+    "line": 388,
+    "text": "reason: 'Low HDL cholesterol is associated with increased cardiovascular risk. Unlike LDL, HDL is generally considered protective — it helps remove cholesterol from arteries. Regular exercise and healthy fats (olive oil, nuts, avocado) can "
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 703,
+    "text": "| Extra-virgin olive oil | Monounsaturated fat replacing butter/saturated fat | Modest direct LDL effect |"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 117,
+    "text": "<p>Prioritize the consumption of unsaturated fats,[6] which are found in foods like avocados, nuts, seeds, and extra-virgin olive oil. Try to limit your intake of saturated fats, which are present in foods such as fatty cuts of beef and ful"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 126,
+    "text": "<em> Extra-virgin Olive Oil:</em> high in monounsaturated fats and is a staple in the heart-healthy Mediterranean diet.</li>"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 5,
+    "text": "keywords: [\"diet\", \"nutrition\", \"sodium\", \"salt\", \"dash\", \"mediterranean\", \"portfolio diet\", \"fiber\", \"whole grains\", \"vegetables\", \"fruits\", \"protein\", \"saturated fat\", \"unsaturated fat\", \"olive oil\", \"coconut oil\", \"ultraprocessed\", \"proc"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 155,
+    "text": "Sources of saturated fat: animal fats (beef tallow, butter), tropical oils (coconut oil, cocoa butter, palm oil). Sources of unsaturated fat: nontropical plant oils (soybean, canola, olive oils). Strong evidence shows replacing butter with "
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 159,
+    "text": "**Brad's position:** Aligns. The `lipid-diet` section specifically recommends \"extra-virgin olive oil — monounsaturated fat replacing butter/saturated fat\" with a \"modest direct LDL effect.\" The algorithm frames this as a specific dietary i"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 171,
+    "text": "**Brad's position:** Aligns in principle. The algorithm does not have a standalone ultraprocessed food suggestion, but the dietary pattern implied by the `lipid-diet` foods (oats, nuts, edamame, EVOO, flaxseed) is inherently whole-food and "
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 309,
+    "text": "The Mediterranean dietary pattern is recommended by the AHA as a heart-healthy pattern [9,20]. The PREDIMED trial demonstrated primary prevention of cardiovascular disease with a Mediterranean diet supplemented with extra-virgin olive oil o"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 313,
+    "text": "- Extra-virgin olive oil as primary fat source"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 319,
+    "text": "**Brad's position:** Aligns with the dietary pattern, diverges on alcohol. The algorithm's `lipid-diet` section recommends EVOO specifically (\"monounsaturated fat replacing butter/saturated fat\"). The Mediterranean pattern's emphasis on leg"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 337,
+    "text": "| Extra-virgin olive oil | Monounsaturated fat replacing saturated fat | — | Modest |"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 415,
+    "text": "**Brad's algorithm IBS-safe foods:** The `lipid-diet` section categorises foods as \"Universal (IBS/IBD-safe, low-FODMAP at recommended amounts)\" — oats, walnuts, almonds, ground flaxseed, edamame, EVOO — and \"Additional options (no IBS/IBD)"
+   }
+  ],
+  "positions_candidates_total": 14,
+  "posts": [
+   {
+    "handle": "shrink-the-fat-around-your-heart",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/shrink-the-fat-around-your-heart.md",
+    "url": "https://drstanfield.com/blogs/articles/shrink-the-fat-around-your-heart",
+    "publishedAt": "2026-07-16T08:00:00Z",
+    "title": "Shrink the Fat Around Your Heart",
+    "topic_mentions": 5,
+    "title_names_topic": false
+   },
+   {
+    "handle": "the-truth-about-seed-oil-toxicity",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-truth-about-seed-oil-toxicity.md",
+    "url": "https://drstanfield.com/blogs/articles/the-truth-about-seed-oil-toxicity",
+    "publishedAt": "2026-05-18T12:00:00Z",
+    "title": "The Truth About Seed Oil Toxicity",
+    "topic_mentions": 6,
+    "title_names_topic": false
+   },
+   {
+    "handle": "coronary-heart-disease-is-almost-eliminated",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/coronary-heart-disease-is-almost-eliminated.md",
+    "url": "https://drstanfield.com/blogs/articles/coronary-heart-disease-is-almost-eliminated",
+    "publishedAt": "2026-02-08T19:17:34Z",
+    "title": "Coronary Heart Disease is Almost ELIMINATED",
+    "topic_mentions": 4,
+    "title_names_topic": false
+   },
+   {
+    "handle": "harvard-says-this-is-the-healthiest-way-to-eat",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/harvard-says-this-is-the-healthiest-way-to-eat.md",
+    "url": "https://drstanfield.com/blogs/articles/harvard-says-this-is-the-healthiest-way-to-eat",
+    "publishedAt": "2025-08-14T19:50:15Z",
+    "title": "Harvard Says THIS Is the Healthiest Way to Eat",
+    "topic_mentions": 5,
+    "title_names_topic": false
+   },
+   {
+    "handle": "the-food-pyramids-replacement-is-a-huge-upgrade",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-food-pyramids-replacement-is-a-huge-upgrade.md",
+    "url": "https://drstanfield.com/blogs/articles/the-food-pyramids-replacement-is-a-huge-upgrade",
+    "publishedAt": "2025-06-12T23:08:09Z",
+    "title": "The Food Pyramid's Replacement is a HUGE Upgrade",
+    "topic_mentions": 5,
+    "title_names_topic": false
+   },
+   {
+    "handle": "the-best-diet-to-unclog-your-arteries",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-best-diet-to-unclog-your-arteries.md",
+    "url": "https://drstanfield.com/blogs/articles/the-best-diet-to-unclog-your-arteries",
+    "publishedAt": "2025-02-15T00:14:11Z",
+    "title": "The Best Diet to Unclog Your Arteries",
+    "topic_mentions": 7,
+    "title_names_topic": false
+   },
+   {
+    "handle": "seed-oils-toxic-inflammatory",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/seed-oils-toxic-inflammatory.md",
+    "url": "https://drstanfield.com/blogs/articles/seed-oils-toxic-inflammatory",
+    "publishedAt": "2024-09-29T01:35:00Z",
+    "title": "Are Seed Oils Toxic and Inflammatory?",
+    "topic_mentions": 4,
+    "title_names_topic": false
+   }
+  ]
+ },
+ {
+  "handle": "avocado-oil-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-avocado-oil-review-avocado-oil.md",
+  "cl_raw_sha256": "1b40521fbeb4bd8fba18ef9146b63d2675a88c81bb0277df681501e2265deff3",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [
+   {
+    "file": "packages/health-core/src/evidence.ts",
+    "line": 388,
+    "text": "reason: 'Low HDL cholesterol is associated with increased cardiovascular risk. Unlike LDL, HDL is generally considered protective — it helps remove cholesterol from arteries. Regular exercise and healthy fats (olive oil, nuts, avocado) can "
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 117,
+    "text": "<p>Prioritize the consumption of unsaturated fats,[6] which are found in foods like avocados, nuts, seeds, and extra-virgin olive oil. Try to limit your intake of saturated fats, which are present in foods such as fatty cuts of beef and ful"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 120,
+    "text": "<em> Avocados:</em> These are rich in monounsaturated fats, and they're also high in fiber and potassium.</li>"
+   }
+  ],
+  "positions_candidates_total": 3,
+  "posts": []
+ },
+ {
+  "handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-black-currant-borage-evening-primrose-flaxseed-and-hemp-oils-sources-of-ala-and-gla-omega-3-and-6-fatty-acids-fl.md",
+  "cl_raw_sha256": "1584a24e77ce204c98c30f64b2d77cb7b7d8b55dbd2ce40b7c9b7c3a9a5441ca",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/flaxseed-nih.md",
+  "nih_raw_sha256": "0ce000395055a98ba67ad8c78415a72fef8fa5f9bde7a2d84adf678b8dc1ed71",
+  "positions_candidates": [
+   {
+    "file": "packages/health-core/src/evidence.ts",
+    "line": 174,
+    "text": "reason: 'These foods lower LDL cholesterol through complementary mechanisms: beta-glucan (oats) and soluble fibre (psyllium, flaxseed) bind bile acids, reducing cholesterol reabsorption. Nuts (walnuts, almonds) provide unsaturated fats that"
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 701,
+    "text": "| Ground flaxseed | Soluble fibre + ALA omega-3 | 5–10% (~30g/day) |"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 122,
+    "text": "<em> Nuts and Seeds:</em> Almonds, walnuts, flaxseeds, chia seeds, and others are high in healthy fats and also provide a good amount of protein and fiber.</li>"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 130,
+    "text": "<em> Chia Seeds and Flaxseeds:<strong data-mce-fragment=\"1\"> </strong></em>These seeds are not only high in fiber but also rich in omega-3 fatty acids.</li>"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 171,
+    "text": "**Brad's position:** Aligns in principle. The algorithm does not have a standalone ultraprocessed food suggestion, but the dietary pattern implied by the `lipid-diet` foods (oats, nuts, edamame, EVOO, flaxseed) is inherently whole-food and "
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 271,
+    "text": "- **IBS-safe alternatives from Brad's algorithm:** Oats (beta-glucan, 5-10% LDL reduction), walnuts (unsaturated fat + ALA, 3-7% LDL reduction), almonds (unsaturated fat + plant sterols, 3-5% LDL reduction), ground flaxseed (soluble fibre +"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 335,
+    "text": "| Ground flaxseed | Soluble fibre + ALA omega-3 | ~30g | 5-10% |"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 415,
+    "text": "**Brad's algorithm IBS-safe foods:** The `lipid-diet` section categorises foods as \"Universal (IBS/IBD-safe, low-FODMAP at recommended amounts)\" — oats, walnuts, almonds, ground flaxseed, edamame, EVOO — and \"Additional options (no IBS/IBD)"
+   }
+  ],
+  "positions_candidates_total": 8,
+  "posts": []
+ },
+ {
+  "handle": "coconut-and-mct-oil-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-coconut-and-mct-oils-coconut-mct-oil.md",
+  "cl_raw_sha256": "7c7cde3e922eebb0a6e101fc2315f57306a87972bc7b881676d23d5ef5bedf6c",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 5,
+    "text": "keywords: [\"diet\", \"nutrition\", \"sodium\", \"salt\", \"dash\", \"mediterranean\", \"portfolio diet\", \"fiber\", \"whole grains\", \"vegetables\", \"fruits\", \"protein\", \"saturated fat\", \"unsaturated fat\", \"olive oil\", \"coconut oil\", \"ultraprocessed\", \"proc"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 155,
+    "text": "Sources of saturated fat: animal fats (beef tallow, butter), tropical oils (coconut oil, cocoa butter, palm oil). Sources of unsaturated fat: nontropical plant oils (soybean, canola, olive oils). Strong evidence shows replacing butter with "
+   }
+  ],
+  "positions_candidates_total": 2,
+  "posts": []
+ },
+ {
+  "handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-chia-seed-reviews-chia.md",
+  "cl_raw_sha256": "a27d6e3b5bbbc69d819c23ca1fb8d7c8a5fb2a7ed75f194b487a893e85278823",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [
+   {
+    "file": "docs/products.md",
+    "line": 224,
+    "text": "The body makes roughly 10-80mcg of melatonin a night (range statement in Kor et al., Indian J Endocrinol Metab, 2014, a secondary source); one study that tracked it in the blood found about 22mcg a night in women and 36mcg in men (Fourtilla"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 242,
+    "text": "Three key differences: (1) Low-dose sustained-release melatonin — 0.8mg Melotime® releasing over up to 8 hours (in a 5mg study funded by the ingredient's manufacturer, with two authors employed by it, half-life ~5h vs ~1h immediate-release,"
+   },
+   {
+    "file": "packages/health-core/src/evidence.ts",
+    "line": 586,
+    "text": "{ label: 'Low 2020 – Melatonin efficacy for insomnia (J Psychiatr Res)', url: 'https://doi.org/10.1016/j.jpsychires.2019.10.022' },"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 122,
+    "text": "<em> Nuts and Seeds:</em> Almonds, walnuts, flaxseeds, chia seeds, and others are high in healthy fats and also provide a good amount of protein and fiber.</li>"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 130,
+    "text": "<em> Chia Seeds and Flaxseeds:<strong data-mce-fragment=\"1\"> </strong></em>These seeds are not only high in fiber but also rich in omega-3 fatty acids.</li>"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 855,
+    "text": "<li>Wang, L., et al., <em>Coffee and caffeine consumption and depression: A meta-analysis of observational studies.</em> Aust N Z J Psychiatry, 2016. <strong>50</strong>(3): p. 228-42.</li>"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 904,
+    "text": "<li>Yu, J.T., et al., <em>Evidence-based prevention of Alzheimer's disease: systematic review and meta-analysis of 243 observational prospective studies and 153 randomised controlled trials.</em> J Neurol Neurosurg Psychiatry, 2020. <strong"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 913,
+    "text": "<li>Low, T.L., F.N. Choo, and S.M. Tan, <em>The efficacy of melatonin and melatonin agonists in insomnia - An umbrella review.</em> J Psychiatr Res, 2020. <strong>121</strong>: p. 10-23.</li>"
+   },
+   {
+    "file": "docs/guideline/sleep.md",
+    "line": 191,
+    "text": "| Off-label antipsychotics | H1 antagonist (mainly) | Quetiapine 6.25–25 mg | Not recommended without psychiatric comorbidity | — |"
+   },
+   {
+    "file": "docs/guideline/sleep.md",
+    "line": 248,
+    "text": "**Quetiapine** (6.25–25 mg nightly): low-dose antipsychotic. Not approved for insomnia; use only with psychiatric comorbidity. Little evidence in primary insomnia."
+   },
+   {
+    "file": "docs/guideline/sleep.md",
+    "line": 349,
+    "text": "- Sarris J et al. 2019 – L-theanine in the adjunctive treatment of generalized anxiety disorder, J Psychiatr Res (DOI: 10.1016/j.jpsychires.2018.12.014)"
+   },
+   {
+    "file": "docs/guideline/sleep.md",
+    "line": 392,
+    "text": "- Psychiatric disorders (especially depression, anxiety, PTSD, substance use)"
+   },
+   {
+    "file": "docs/guideline/sleep.md",
+    "line": 403,
+    "text": "- **Psychiatric disorders**: insomnia *precedes* and predicts new-onset depression, anxiety, and alcohol use disorder. ~40% of patients with insomnia have comorbid depression; ~80% of patients with depression have insomnia."
+   },
+   {
+    "file": "docs/guideline/sleep.md",
+    "line": 404,
+    "text": "- **Suicidal ideation and behaviour**: independent risk factor for suicide, even after adjusting for psychiatric comorbidities."
+   },
+   {
+    "file": "docs/guideline/sleep.md",
+    "line": 446,
+    "text": "A third or more of people with chronic insomnia also have a psychiatric disorder. Bidirectional relationship: insomnia predicts new-onset depression, and depression perpetuates insomnia. Treat both disorders concurrently — do not assume ins"
+   }
+  ],
+  "positions_candidates_total": 15,
+  "posts": []
+ }
+]

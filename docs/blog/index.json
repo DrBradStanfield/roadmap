@@ -4037,7 +4037,8 @@
     "publishedAt": "2025-05-20T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/avocado-oil-benefits-forms-dosing",
     "type": "reference",
-    "summary": "Reference on avocado oil: heart health, cholesterol, skin moisturizing, carotenoid absorption. Extra virgin to refined forms; 1-2 tbsp/day. Latex allergy risk; warfarin interaction. Commercial adulteration common. Always discuss with your doctor."
+    "summary": "Avocado oil is mostly monounsaturated fat. Heart and cancer effects rest on lab and animal studies; human trials used whole avocado, with mixed cholesterol results. In one small trial it boosted carotenoid absorption from salad. Talk to your doctor first if you take warfarin or have a latex allergy.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Holy Basil (Tulsi): Benefits, Forms, Dosing, and Side Effects",
@@ -5111,7 +5112,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/extra-virgin-olive-oil-benefits",
     "type": "reference",
-    "summary": "Reference on extra virgin olive oil: heart health, blood sugar, brain health, inflammation. Most studied at 2-4 tablespoons/day replacing saturated fat. Polyphenol-rich EVOO preferred over refined oil. Always discuss with your doctor."
+    "summary": "Brad counts extra-virgin olive oil as a healthy fat to use in place of butter and other saturated fat. In PREDIMED, a Mediterranean diet with it cut heart attacks and strokes. It is calorie-dense. Talk to your doctor first if you take blood pressure or diabetes medicines.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "GABA: Benefits, Forms, Dosing, and Side Effects",
@@ -5295,7 +5297,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/green-coffee-bean-extract",
     "type": "reference",
-    "summary": "Reference on green coffee bean extract: weight loss, blood sugar, blood pressure, cholesterol. Useful for overweight or diabetic adults. Standardized extracts (Svetol/GCA) 200-400 mg/day; key study retracted, evidence modest. Contains caffeine; avoid in pregnancy. Always discuss with your doctor."
+    "summary": "Reference on green coffee bean extract and weight, blood pressure, blood sugar and cholesterol: small, poor-quality trials, small pooled effects and a retracted key study. Many extracts contain caffeine. Effects in pregnancy are unknown and caffeine passes into breast milk; avoid it if you are pregnant or breastfeeding unless your doctor advises it. Talk to your doctor first if you take prescription medicines.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Lutein and Zeaxanthin: Benefits, Forms, Dosing, and Side Effects",
@@ -6196,7 +6199,8 @@
     "publishedAt": "2025-04-29T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/flaxseed-oil-omega-6-evidence-guide",
     "type": "reference",
-    "summary": "Reference on flaxseed oil, evening primrose, borage, and hemp oils: heart health, blood pressure, acne, dry eye, joint pain. ALA for vegans; whole flaxseed best for blood pressure. GLA may lower seizure threshold. Always discuss with your doctor."
+    "summary": "Flaxseed oil supplies ALA, a plant omega-3 the body turns into little EPA or DHA. In a trial the oil did not lower blood pressure; milled whole flaxseed did. Evening primrose and borage oils did not help eczema. Talk to your doctor first if you take blood thinners or are pregnant.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "L-Tryptophan and 5-HTP: Benefits, Forms, Dosing, and Side Effects",
@@ -6518,7 +6522,8 @@
     "publishedAt": "2025-04-29T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/weight-loss-supplements-evidence-guide",
     "type": "reference",
-    "summary": "Reference on weight loss supplements: appetite, fat burning, metabolism; ephedra/ECA stack harms and ban. For adults with overweight or obesity. Covers caffeine, green tea, CLA, chromium, garcinia cambogia, fiber; most show modest 1-2 kg benefit. Always discuss with your doctor."
+    "summary": "Most weight-loss supplements add little or no weight loss, and some cause harm: stimulant heart effects, liver injury, hidden drugs. Brad avoids fat burners and backs diet, exercise, sleep and, if suited, GLP-1 drugs. Talk to your doctor first if you take medicines or have heart or liver disease.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Is the Berberine Hype Justified & Should You Take It?",
@@ -6704,7 +6709,8 @@
     "publishedAt": "2025-04-22T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/garcinia-cambogia-hca-evidence",
     "type": "reference",
-    "summary": "Reference on garcinia cambogia (HCA): weight loss, appetite suppression. Clinical evidence is weak — women-only modest benefit. Serious liver injury risk (transplant, death cases reported). Avoid with SSRIs. Unsafe in bipolar disorder. Doses 900-1500mg HCA/day before meals. Always discuss with your doctor."
+    "summary": "Reference on garcinia cambogia (HCA) for weight loss. Trials are short and mixed, and any extra weight loss is small. Case reports link it to severe liver injury, serotonin toxicity with SSRI antidepressants, and mania. Talk to your doctor first if you take antidepressants or any other medicine.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Ginkgo Biloba: Benefits, Forms, Dosing, and Side Effects",
@@ -10151,7 +10157,8 @@
     "publishedAt": "2024-07-08T17:21:25Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/mct-oil-coconut-oil-evidence-guide",
     "type": "reference",
-    "summary": "Reference on coconut oil and MCT oil: weight loss, cognitive support in MCI, skin moisturizing. MCT oil (C8/C10) differs from coconut oil; 5-30 g/day dosing. AHA cautions on LDL and cardiovascular risk. Always discuss with your doctor."
+    "summary": "Brad lists coconut oil among the saturated fats that can raise LDL cholesterol and favours swapping them for unsaturated fats. In trials, coconut oil raised LDL more than nontropical vegetable oils. Talk to your doctor first if you take a statin.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Can Older Adults and Seniors Still Take Creatine Supplements?",
@@ -10249,7 +10256,8 @@
     "publishedAt": "2024-06-25T18:38:34Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/cla-benefits-forms-dosing",
     "type": "reference",
-    "summary": "Reference on CLA (conjugated linoleic acid): modest fat loss, body composition, inflammation. Used by overweight adults seeking weight loss or exercise support. Forms: c9,t11 and t10,c12 isomers; typical dose 3-6 g/day. Safety concerns: insulin resistance, reduced HDL, liver effects. Always discuss with your doctor."
+    "summary": "Evidence summary on CLA (conjugated linoleic acid): about 3 to 3.4 g a day gave small fat loss in trials, but high-quality trials found none, and the t10,c12 isomer raised insulin resistance. Talk to your doctor first if you have diabetes or liver disease, or are breastfeeding.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Vitamin D3 and K2: The Benefits, Differences, and Usage",
@@ -10439,7 +10447,8 @@
     "publishedAt": "2024-05-24T09:51:25Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/chia-seed-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on chia seeds: high fiber, plant-based omega-3 (ALA), blood sugar, blood pressure, gut and bone health. Dose 1-2 tbsp/day; soak before eating to avoid choking. Caution if kidney stone history (oxalates). Always discuss with your doctor."
+    "summary": "Chia seeds supply fiber and plant omega-3 (ALA). Trials suggest lower blood pressure but no clear effect on weight or blood sugar, and the evidence is low quality. Soak before eating. Talk to your doctor first if you take blood thinners or have had kidney stones.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "CBD (Cannabidiol): Benefits, Forms, Dosing, and Side Effects",
@@ -10731,7 +10740,8 @@
     "publishedAt": "2024-01-15T22:42:51Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/african-mango-irvingia-gabonensis-evidence",
     "type": "reference",
-    "summary": "Reference on African mango (Irvingia gabonensis): weight loss, cholesterol, blood sugar. Marketed for obesity and weight management; very weak evidence — only 3 small trials from one research group. IGOB131 extract 300mg/day studied. GI side effects possible. Always discuss with your doctor."
+    "summary": "African mango (Irvingia gabonensis) seed extract is sold for weight loss. Small, poorly reported trials found falls in weight and cholesterol, but reviews call the benefit unproven. IGOB131 was tested at 150 mg twice daily. Talk to your doctor first if you take diabetes medicines or blood thinners.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Acetyl-L-Carnitine: Benefits, Forms, Dosing, and Side Effects",
