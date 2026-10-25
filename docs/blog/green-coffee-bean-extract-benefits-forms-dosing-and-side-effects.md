@@ -6,7 +6,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["green coffee", "green coffee bean extract", "chlorogenic acid", "chlorogenic acids", "weight loss", "blood pressure", "blood sugar", "diabetes", "insulin resistance", "obesity", "bmi", "triglycerides", "cholesterol", "ldl", "hdl", "antioxidant", "inflammation", "caffeine", "gut health", "microbiome"]
-summary: "Reference on green coffee bean extract and weight, blood pressure, blood sugar and cholesterol: small, poor-quality trials, small pooled effects and a retracted key study. Many extracts contain caffeine. Talk to your doctor first if pregnant or breastfeeding, or if you take prescription medicines."
+summary: "Reference on green coffee bean extract and weight, blood pressure, blood sugar and cholesterol: small, poor-quality trials, small pooled effects and a retracted key study. Many extracts contain caffeine. Effects in pregnancy are unknown and caffeine passes into breast milk; avoid it if you are pregnant or breastfeeding unless your doctor advises it. Talk to your doctor first if you take prescription medicines."
 reviewed: "2026-10-26"
 sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/WeightLoss-HealthProfessional/","checked":"2026-10-26","fingerprint":"sha256:d7e4c6628de89807e9c519029e843d841dc0a1cd3caea44699ce5f3aa30ce990"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/20871849/","checked":"2026-10-26","fingerprint":"sha256:419e927247e5d11ab33c2e70f64470d76ab21f76942b820ba48859e49bf67380"}]
 ---
@@ -22,7 +22,7 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 - If you are booked for a heart stress test with regadenoson, avoid caffeine for at least 12 hours beforehand, as its label advises; caffeine blunts the test [71].
 - If you take theophylline or clozapine, ask your doctor first: caffeine and many medicines can change each other's blood levels, and caffeine raised clozapine levels in a small trial [41][70]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 - Combining caffeine with other stimulants can make its side effects worse [52].
-- Safety in pregnancy is unknown and caffeine passes into breast milk, so ask your doctor first if you are pregnant or breastfeeding [41]. US paediatricians discourage caffeine for children and teenagers [52].
+- Effects in pregnancy are unknown and caffeine passes into breast milk; avoid it if you are pregnant or breastfeeding unless your doctor advises it [41]. US paediatricians discourage caffeine for children and teenagers, so do not give caffeinated extracts to children or teenagers [52].
 - Caffeine ranged from 0% to 17% across 54 commercial extracts [53]. Count it toward your daily caffeine; for healthy adults, up to 400 mg a day is not considered a safety concern [52].
 - Reported side effects include headaches and urinary tract infections, and caffeine can cause poor sleep, nervousness, jitteriness and an upset stomach. Trials were short, so long-term safety is unknown [41][52].
 
@@ -210,6 +210,8 @@ The main safety concern is the caffeine in extracts that are not decaffeinated; 
 - A greater need to urinate
 - A faster heart rate and higher blood pressure
 
+If you have chest pain, a fast or irregular heartbeat, or blood pressure of 180/120 or higher, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [41].
+
 ### Preclinical Safety Data
 
 In Wistar rats, a single oral dose of 2,000 mg/kg of a decaffeinated extract with 50% chlorogenic acids caused no signs of toxicity or deaths during 14 days of observation. Daily doses of 250, 500, and 1,000 mg/kg for 90 days caused no organ toxicity, and the changes seen in some blood and organ-weight measures were judged toxicologically insignificant [64].
@@ -220,9 +222,9 @@ Human safety data are limited to short-term use (12 weeks or less) [52][63]. Lon
 
 ### Special Populations
 
-**Pregnancy and breastfeeding**: It is not known whether green coffee affects pregnancy. Its caffeine passes into breast milk, and large amounts can make breastfed babies fussy or disturb their sleep. Ask your doctor first if you are pregnant or breastfeeding [41].
+**Pregnancy and breastfeeding**: Effects in pregnancy are unknown and caffeine passes into breast milk; avoid it if you are pregnant or breastfeeding unless your doctor advises it [41]. Large amounts of caffeine can make breastfed babies fussy or disturb their sleep [41].
 
-**Children**: The American Academy of Pediatrics discourages children and teenagers from having caffeine and other stimulants [52].
+**Children**: The American Academy of Pediatrics discourages children and teenagers from having caffeine and other stimulants, so do not give caffeinated extracts to children or teenagers [52].
 
 **Caffeine-sensitive individuals**: Should use extracts that contain caffeine with caution [41].
 
@@ -249,6 +251,9 @@ The following conditions warrant medical consultation before using green coffee 
 
 - **Anxiety**
 - **Heart rhythm problems or heart disease**: Caffeine may raise heart rate and blood pressure or cause an abnormal heart rhythm
+- **Kidney or liver problems**
+- **Stomach ulcers**
+- **Tremors**
 
 ### Caffeine Accumulation
 
@@ -278,7 +283,7 @@ Regular coffee consumption provides chlorogenic acids alongside other bioactive 
 
 In the US, green coffee bean extract is regulated as a dietary supplement under the Dietary Supplement Health and Education Act (DSHEA) of 1994, which exempts such products from pre-market FDA approval for safety or efficacy [45]. The FDA has not reviewed green coffee extracts for safety and effectiveness, and they cannot be marketed to treat or cure a disease [41].
 
-The 2014 FTC settlement with Applied Food Sciences, a $3.5 million payment over weight-loss claims based on the retracted Vinson study, remains a landmark case in supplement enforcement. The order barred the company from misrepresenting any study and required at least two adequate and well-controlled human clinical tests to support future weight-loss claims [12]. In 2015 promoter Lindsey Duncan and his companies agreed to pay $9 million for consumer redress [73]. In 2016 a court entered a $30 million judgment against the ringleader of the Pure Green Coffee operation, which the FTC had sued in 2014 [13][74]. In 2025 the FTC sent more than $905,000 in refunds to 39,977 people who bought Pure Green Coffee [9].
+The 2014 FTC settlement with Applied Food Sciences, a $3.5 million payment over weight-loss claims based on the retracted Vinson study, remains a landmark case in supplement enforcement. The order barred the company from misrepresenting any aspect of a test or study related to the products it sells and required at least two adequate and well-controlled human clinical tests to support future weight-loss claims [12]. In 2015 promoter Lindsey Duncan and his companies agreed to pay $9 million for consumer redress [73]. In 2016 a court entered a $30 million judgment against the ringleader of the Pure Green Coffee operation, which the FTC had sued in 2014 [13][74]. In 2025 the FTC sent more than $905,000 in refunds to 39,977 people who bought Pure Green Coffee [9].
 
 ### European Union
 
