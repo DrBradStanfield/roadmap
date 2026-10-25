@@ -15,15 +15,15 @@ sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/36839349/","ch
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. An integrative review found 23 clinical trials of acai or the related juçara berry up to April 2020; they suggest acai may improve antioxidant defence and ease metabolic stress and inflammation, but the trials differed widely [8]. In placebo-controlled trials, an acai drink in people with metabolic syndrome and acai pulp added to a low-calorie diet in overweight adults each lowered one or two markers of oxidative stress or inflammation, but blood fats and blood sugar did not change [13][14]. A cancer trial in 21 men with recurrent prostate cancer did not meet its main goal [19], and the brain and kidney findings come from animal studies [21][34]. Raw acai from the Brazilian Amazon has caused outbreaks of Chagas disease [39][40], and over half of 20 acai supplements tested held little or no acai [9].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. An integrative review found 23 clinical trials of acai or the related juçara berry up to April 2020; they suggest acai may improve antioxidant defence and ease metabolic stress and inflammation, but the trials differed widely [8]. In placebo-controlled trials, an acai drink in people with metabolic syndrome and acai pulp added to a low-calorie diet in overweight adults each lowered one or two markers of oxidative stress or inflammation, but blood fats and blood sugar did not change [13][14]. A cancer trial in 21 men with recurrent prostate cancer did not meet its main goal [19], and the brain and kidney findings come from animal studies [21][34]. Raw acai from the Brazilian Amazon has caused outbreaks of Chagas disease [39][40], and over half of 20 acai supplements tested held little acai or were heavily diluted [9].
 
 ## Key safety points
 
-- In rats, acai lowered blood levels of atorvastatin and raised those of alogliptin and empagliflozin [44], and acai extracts inhibited the drug enzyme CYP2C9 in lab tests [45]. If you take prescription medicines, check with your doctor or pharmacist before starting.
-- Acai lowered fasting glucose and insulin in a small uncontrolled study [15]. If you take diabetes medicines, ask your doctor first.
-- Raw acai pulp or juice from the Brazilian Amazon has caused outbreaks of Chagas disease, which can be fatal [39][40][49]. Freezing does not kill the parasite [46], so travellers should avoid unpasteurised acai there [48]. If fever or a racing heart follows, see a doctor; for chest pain or trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- Raw acai pulp or juice from the Brazilian Amazon has caused outbreaks of Chagas disease, which can be fatal [39][40][49]. Freezing for a day did not kill the parasite [46], so travellers should avoid fresh acai pulp or juice there [48]. If fever or a racing heart follows, see a doctor; for chest pain or trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - Some products sold as acai hold little or none, or carry unlisted ingredients [9]. One was linked to muscle breakdown (rhabdomyolysis) [50]: for severe muscle pain or weakness with dark urine, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
-- Acai pulp changes MRI images of the gut [41]. Tell the radiology team if you have had acai before an abdominal scan.
+- In rats, acai lowered blood levels of atorvastatin and raised those of alogliptin and empagliflozin [44], and acai extracts inhibited the drug enzyme CYP2C9 in lab tests [45]. If you take prescription medicines, check with your doctor or pharmacist before starting.
+- If you are having cancer treatment, tell your oncology team before taking acai [45].
+- Acai lowered fasting glucose and insulin in a small uncontrolled study [15]. If you take diabetes medicines, ask your doctor first.
 - Short human studies found acai well tolerated [19][52], but they were small.
 
 ## Brad's videos on this topic
@@ -73,7 +73,7 @@ In a four-way crossover trial, 12 healthy volunteers consumed acai pulp, clarifi
 - **Peak plasma anthocyanin concentration (Cmax):** 2321 ng/L for pulp and 1138 ng/L for juice
 - **Time to peak (tmax):** 2.2 hours for pulp and 2.0 hours for juice
 - **Area under the curve (AUClast):** 8568 ng h/L for pulp and 3314 ng h/L for juice
-- **Plasma antioxidant capacity:** rose significantly after pulp, with individual increases of up to 3-fold for pulp and 2.3-fold for juice
+- **Plasma antioxidant capacity:** rose significantly after pulp and after the applesauce control, with individual increases of up to 3-fold for pulp and 2.3-fold for juice
 - Antioxidant capacity in urine, reactive oxygen species and plasma uric acid did not change
 
 Larger volumes gave lower relative absorption [10].
@@ -92,7 +92,7 @@ Larger volumes gave lower relative absorption [10].
 
 Human trials report some antioxidant effects, but results differ between markers [8][11].
 
-**Healthy volunteers, single dose (n=12):** In the Mertens-Talcott et al. (2008) crossover trial, plasma antioxidant capacity rose significantly after acai pulp [10]. Urinary antioxidant capacity, reactive oxygen species and uric acid did not change, so the effect may be short-lived and confined to the blood.
+**Healthy volunteers, single dose (n=12):** In the Mertens-Talcott et al. (2008) crossover trial, plasma antioxidant capacity rose significantly after acai pulp, as did the applesauce control [10]. Urinary antioxidant capacity, reactive oxygen species and uric acid did not change [10].
 
 **Healthy adults, crossover trial (n=30):** In a randomised crossover study, 30 healthy adults drank 200 mL/day of acai or juçara juice for four weeks. Compared with baseline, acai juice increased total antioxidant capacity (66.7%), catalase (275.1%) and glutathione peroxidase (15.3%) and lowered the oxidative stress index (55.7%); the two juices did not differ from each other (de Liz et al., 2020) [12].
 
@@ -102,7 +102,7 @@ Human trials report some antioxidant effects, but results differ between markers
 
 **Systematic review of berry RCTs:** A 2023 review of 28 randomised trials of berries found that of about 56 oxidative stress markers measured, 32% showed significant benefit and 68% showed no significant difference (Stote et al., Antioxidants, 2023) [11].
 
-**Synthesis:** Acai raised plasma antioxidant capacity after a single dose of pulp and lowered 8-isoprostane in two placebo-controlled trials. Many other markers did not change, and the clinical meaning of these blood tests is uncertain [8][11].
+**Synthesis:** Plasma antioxidant capacity rose after a single dose of acai pulp, as it did after applesauce, and acai lowered 8-isoprostane in two placebo-controlled trials. Many other markers did not change, and the clinical meaning of these blood tests is uncertain [8][11].
 
 ### Cardiovascular Health and Lipid Profile
 
@@ -146,13 +146,13 @@ A 2018 review describes acai's protective effects on the brain in animals [51].
 
 ### Exercise Performance and Muscle Recovery
 
-**Elite athletes, RCT (n=14):** Fourteen athletes ran to exhaustion at 90% of maximal oxygen uptake with and without an acai functional beverage that contained 27.6 mg of anthocyanins per dose. The beverage increased time to exhaustion (mean difference 69 s, 95% confidence interval -296 s to 159 s, p = 0.045), lowered perceived exertion and reduced exercise-induced metabolic stress (Carvalho-Peixoto et al., Applied Physiology, Nutrition, and Metabolism, 2015) [22].
+**Elite athletes, RCT (n=14):** Fourteen athletes ran to exhaustion at 90% of maximal oxygen uptake with and without an acai functional beverage that contained 27.6 mg of anthocyanins per dose. The beverage increased time to exhaustion (mean difference 69 s, 95% confidence interval -296 s to 159 s, p = 0.045), lowered perceived exertion and reduced exercise-induced metabolic stress (Carvalho-Peixoto et al., Applied Physiology, Nutrition, and Metabolism, 2015) [22]. The reported confidence interval does not fit the p-value.
 
 **Junior hurdlers, pilot study (n=7):** Seven junior hurdlers (17.5 ± 1.2 years) drank 100 mL a day of an acai-based juice blend for six weeks during a training camp. Plasma antioxidant capacity rose, exercise-induced muscle damage fell and the lipid profile improved, but 300-m sprint times did not change (Sadowska-Krępa et al., Biology of Sport, 2015) [23].
 
-**Young men, jump protocol (n=12):** Twelve men took 40 g/day of dehydrated acai (*Euterpe precatoria*, a related species) or placebo for 7 days around a jumping protocol that damages muscle. Acai raised antioxidant capacity (TEAC) by 11% at 24 hours and gave faster recovery of knee-flexor strength at 24 and 72 hours; fatigue did not differ (Dos Reis et al., Research in Sports Medicine, 2024) [24].
+**Young men, jump protocol (n=12):** Twelve men took 40 g/day of dehydrated acai (*Euterpe precatoria*, a related species) or placebo for 7 days around a jumping protocol that damages muscle. Acai raised antioxidant capacity (TEAC) by 11% at 24 hours and gave faster recovery of knee-flexor strength at 24 and 72 hours; fatigue did not differ (Dos Reis et al., Research in Sports Medicine, 2024) [24]. The abstract does not report soreness or muscle thickness.
 
-**Synthesis:** Three small trials suggest acai may reduce exercise stress markers and help some measures of recovery [22][23][24]. Sprint performance did not improve [23], and the best result for endurance had a wide confidence interval [22].
+**Synthesis:** Three small trials suggest acai may reduce exercise stress markers and help some measures of recovery [22][23][24]. Sprint performance did not improve [23], and the endurance result's reported confidence interval does not fit its p-value [22].
 
 ### Weight Loss and Obesity
 
@@ -166,6 +166,8 @@ Acai is widely sold for weight loss, but no trial cited here shows that it cause
 
 **Mislabelled weight-loss products:** A 22-year-old man developed rhabdomyolysis about 2 weeks after starting a weight-loss supplement sold as acai; analysis found no acai in it [50].
 
+**Regulator action:** In April 2011 the US Federal Trade Commission (FTC) asked courts to halt 10 operations that used fake news websites to sell acai weight-loss products. It charged that the sites falsely claimed acai supplements "will cause rapid and substantial weight loss", and that the reporters pictured, typically said to have lost 25 pounds in four weeks, were fictional [54]. In January 2012 the acai marketer Central Coast Nutraceuticals agreed to pay $1.5 million to settle FTC charges that it falsely claimed its acai pill would cause rapid and substantial weight loss and made unauthorised charges to bank accounts after "free" trials; an $80 million judgment was to be suspended once the FTC received about $1.5 million in assets [55].
+
 **Synthesis:** The human data on body size come from one 4-week study in 40 women, which found no change [16].
 
 ### Skin Health
@@ -174,7 +176,7 @@ The skin evidence comes from cell and animal wound models [28].
 
 **Lab and animal studies, wound healing:** An acai berry water extract was not toxic to skin cells, increased the migration of fibroblasts, raised fibronectin and lowered MMP-1 gene activity. It also sped wound healing in animal models (Kang et al., Toxicological Research, 2017) [28].
 
-**Synthesis:** Lab and animal data suggest acai extracts may help wounds heal. Claims that oral acai rejuvenates skin have no support from human trials [28].
+**Synthesis:** Lab and animal data suggest acai extracts may help wounds heal [28]. No human trial cited here tested acai on skin.
 
 ### Gut Health and Prebiotic Effects
 
@@ -250,7 +252,7 @@ Based on the doses used in clinical trials:
 
 ### Standardization Problem
 
-Acai supplements are not reliably standardised. In a study of 20 acai products, over half held little or no acai fruit or enough water to dilute it heavily, and two contained unlisted ingredients that changed their chemistry [9]. Testing several markers together, including individual anthocyanins, helped show which products held real acai [9].
+Acai content varies widely between supplements. In a study of 20 acai products, over half held little or no acai fruit or enough water to dilute it heavily, and two contained unlisted ingredients that changed their chemistry [9]. Testing several markers together, including individual anthocyanins, helped show which products held real acai [9].
 
 ## 5. Dietary Sources
 
@@ -265,7 +267,7 @@ Acai is native to the Amazon basin [4].
 | Acai juice | Clarified juice gave lower blood anthocyanin levels than pulp [10]. |
 | Acai supplement capsules | Acai content varies widely, and some hold little or none [9]. |
 
-### Nutritional Profile (Freeze-Dried Pulp per 100 g)
+### Nutritional Profile (Freeze-Dried Pulp)
 
 Schauss and colleagues published a full nutrient analysis of a freeze-dried pulp and skin powder [4]. The abstract reports its fatty acid profile (above), 19 amino acids making up 7.59% of its weight, and sterols at 0.048% by weight [4].
 
@@ -277,20 +279,18 @@ The same powder had the highest ORAC-FL value of any food reported to date [5]. 
 
 ### General Safety
 
-Acai is eaten widely as a food, and a critical review reported no undesirable effects [3]. In trials, people took 200 g of pulp a day for 60 days [13] or 325 mL of an acai beverage twice a day for 12 weeks [14]. In an MRI study, acai pulp was given to 5 healthy volunteers and 35 patients, and no side effect was recorded [52], and the prostate cancer trial reported acai as well tolerated [19].
+A critical review reported no undesirable effects of acai [3]. In trials, people took 200 g of pulp a day for 60 days [13] or 325 mL of an acai beverage twice a day for 12 weeks [14]. In an MRI study, acai pulp was given to 5 healthy volunteers and 35 patients, and no side effect was recorded [52], and the prostate cancer trial reported acai as well tolerated [19].
 
 ### Reported Side Effects
 
 Side effects in trials appear to be few [19][52]. Possible effects include:
 
 - **Gastrointestinal:** Diarrhoea may occur, especially with large amounts of pulp
-- **Headache and dizziness:** May occur occasionally
 - **Lower insulin levels:** Acai lowered fasting glucose and insulin in an uncontrolled pilot study, which may matter for people on diabetes medicines [15]
-- **Mouth and throat:** Swelling of the mouth, tongue, lips or throat may be an allergic reaction
 
 ### Allergic Reactions
 
-Acai comes from a palm (the Arecaceae family) [3]. Anyone allergic to acai or other palm fruits should avoid acai products, and people with pollen allergies may react to it. If your lips, tongue or throat swell, or you have trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+Acai comes from a palm (the Arecaceae family) [3]. Avoid acai if it has caused you an allergic reaction. If your lips, tongue or throat swell, or you have trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 ### Chagas Disease Risk (Raw Juice in Endemic Areas)
 
@@ -299,7 +299,7 @@ Raw acai pulp or juice from the Brazilian Amazon can carry *Trypanosoma cruzi*, 
 - In 2006, Pará state reported 178 cases of acute Chagas disease; 11 occurred in Barcarena, where studies linked them to eating acai [39]
 - In another outbreak in the Brazilian Amazon, 10 patients fell ill, and the parasite was found in both their blood and the suspected acai juice [40]
 - A 2026 review counted 114 outbreaks with 1,293 cases and 77 deaths; acai was the food most often implicated in Brazil (32 of 64 outbreaks) [49]
-- In acai pulp, the parasite survived 24 h at room temperature, 144 h at 4°C and 26 h at -20°C, so cooling and freezing do not prevent infection [46]
+- In acai pulp, the parasite survived 24 h at room temperature, 144 h at 4°C and 26 h at -20°C; the authors concluded that cooling and freezing are not suitable ways to prevent infection [46]
 - Heating acai pulp above 43°C for 20 minutes stopped the parasite causing disease in mice [47]
 
 Travel health advisers counsel travellers to South America to avoid risky drinks and foods, including acai pulp [48]. In the review, most patients had fever, and many had heart problems [49]. If you develop a fever, facial swelling or a racing heart in the weeks after drinking fresh acai in the Amazon, see a doctor and mention the drink. For chest pain or trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
@@ -310,17 +310,17 @@ Some acai products do not contain what the label says [9][50]:
 
 - Over half of 20 acai supplements tested held little or no acai or were heavily diluted, and two contained unlisted ingredients [9]
 - A weight-loss supplement sold as acai contained no acai; a young man who took it developed rhabdomyolysis, and a link was rated possible [50]
-- Weight-loss blends may also contain undeclared drugs, so read the full label
+- Any dietary supplement may contain unknown contaminants [50], and a review noted adulteration in a commercial acai product [51]
 
 For severe muscle pain or weakness with dark urine, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 ### MRI Interference
 
-Acai pulp contains iron, manganese and copper, which change MRI signals: in the gut it brightened T1-weighted images and darkened T2-weighted images (Córdova-Fraga et al., Magnetic Resonance Imaging, 2004) [41]. Radiologists have used acai pulp, and acai juice in children, as an oral contrast agent for imaging the bile and pancreatic ducts [52][53]. Recent acai could therefore change the look of a gut MRI. If you have an abdominal MRI booked, tell the radiology team about any acai you have had.
+In the gut, acai pulp brightened T1-weighted MRI images and darkened T2-weighted images. It contains iron, manganese and copper, and the authors linked the change to these paramagnetic minerals (Córdova-Fraga et al., Magnetic Resonance Imaging, 2004) [41]. Radiologists have used acai pulp, and acai juice in children, as an oral contrast agent for imaging the bile and pancreatic ducts [52][53]. Recent acai could therefore change the look of a gut MRI. If you have an abdominal MRI booked, tell the radiology team about any acai you have had.
 
 ### Special Populations
 
-**Pregnancy and lactation:** No safety data exist for acai supplements in pregnancy or breastfeeding. Acai as a normal food is presumed safe, but concentrated supplements are best avoided.
+**Pregnancy and lactation:** There are no human studies of acai supplements in pregnancy or breastfeeding, so avoid concentrated supplements.
 
 **Diabetes and blood sugar medications:** Acai lowered fasting glucose and insulin in an uncontrolled pilot study [15], though placebo-controlled trials found no change in blood sugar [13][14]. In rats, acai raised blood levels of the diabetes drugs alogliptin and empagliflozin [44]. If you take diabetes medicines, ask your doctor first and watch your blood sugar closely if you take large amounts of acai.
 
@@ -334,13 +334,12 @@ The interaction evidence comes only from rats and lab enzyme tests [44][45].
 
 | Drug/Drug Class | Interaction Type | Evidence Level | Clinical Notes |
 |----------------|:-:|:-:|------|
-| Anticoagulants/Antiplatelets (warfarin, aspirin, clopidogrel) | Theoretical additive effect | Low (lab COX inhibition only) | Acai inhibited COX-1 and COX-2 in lab assays [5], the enzymes aspirin blocks. Check with your doctor before using concentrated acai. |
+| Antiplatelets (aspirin, clopidogrel) | Theoretical additive effect | Low (lab COX inhibition only) | Acai inhibited COX-1 and COX-2 in lab assays [5], the enzymes aspirin blocks. Check with your doctor before using concentrated acai. |
 | Diabetes medications (insulin, metformin, sulfonylureas) | Possible additive effect on blood sugar | Low (one uncontrolled pilot) | Acai lowered fasting glucose and insulin in overweight adults [15]. Monitor blood sugar. |
 | Atorvastatin | Lower blood levels | Low (rats only) | In rats, acai lowered atorvastatin's Cmax from 41.78 to 34.65 ng/ml [44]. Clinical relevance unknown. |
 | Alogliptin (DPP-4 inhibitor) | Higher blood levels | Low (rats only) | In rats, acai raised alogliptin's Cmax from 43.43 to 68.71 ng/ml [44]. |
 | Empagliflozin (SGLT2 inhibitor) | Higher blood levels | Low (rats only) | In rats, acai raised empagliflozin's Cmax from 173.99 to 250.1 ng/ml [44]. |
-| Drugs broken down by CYP2C9 | Possible higher drug levels | Very low (lab only) | Some acai extracts inhibited CYP2C9 in lab tests; the authors flagged chemotherapy drugs [45]. |
-| Antihypertensive medications | Theoretical additive effect | Very low (theoretical) | No clinical evidence. Check with your doctor if you take blood pressure medicines. |
+| Drugs broken down by CYP2C9 (such as warfarin) | Possible higher drug levels | Very low (lab only) | Some acai extracts inhibited CYP2C9 in lab tests; the authors flagged chemotherapy drugs [45]. Warfarin is cleared partly by CYP2C9, so its levels could rise in theory. If you are having cancer treatment, tell your oncology team before taking acai [45]. |
 
 ### Important Caveats
 
@@ -367,13 +366,13 @@ Pulp gave higher blood anthocyanin levels: a peak of 2321 ng/L for pulp against 
 Human evidence does not support it. Acai slows cancer cells in the lab and tumours in rodents [17][18], but the one human trial cited here (prostate cancer, phase II, n=21) did not meet its primary endpoint [19].
 
 **Are acai supplements reliable?**
-Many are not. Over half of 20 acai supplements tested held little or no acai, and two contained unlisted ingredients [9].
+Many are not. Over half of 20 acai supplements tested held little acai or were heavily diluted, and two contained unlisted ingredients [9].
 
 **Can I eat acai if I'm on blood thinners?**
-Acai inhibited COX-1 and COX-2 in lab assays, the same enzymes aspirin blocks [5]. No human interaction study exists, so check with your doctor before using concentrated acai supplements.
+Acai inhibited COX-1 and COX-2 in lab assays, the same enzymes aspirin blocks [5]. Some acai extracts also inhibited CYP2C9, an enzyme that helps clear warfarin, in lab tests [45]. No human interaction study exists, so check with your doctor before using concentrated acai supplements.
 
 **Is acai safe during pregnancy?**
-There are no safety studies of acai supplements in pregnancy. Acai as a normal food is presumed safe, but concentrated supplements are best avoided.
+There are no human studies of acai supplements in pregnancy or breastfeeding, so avoid concentrated supplements.
 
 ## 9. References
 
@@ -460,3 +459,7 @@ There are no safety studies of acai supplements in pregnancy. Acai as a normal f
 [52] Sanchez TA, Elias J Jr, Colnago LA, et al. "Clinical feasibility of Açai (Euterpe olerácea) pulp as an oral contrast agent for magnetic resonance cholangiopancreatography." *J Comput Assist Tomogr*. 2009;33(5):666-671. PMID: 19820489. [https://doi.org/10.1097/RCT.0b013e31819012a0](https://doi.org/10.1097/RCT.0b013e31819012a0)
 
 [53] Bittman ME, Callahan MJ. "The effective use of acai juice, blueberry juice and pineapple juice as negative contrast agents for magnetic resonance cholangiopancreatography in children." *Pediatr Radiol*. 2014;44(7):883-887. PMID: 24573534. [https://doi.org/10.1007/s00247-014-2884-5](https://doi.org/10.1007/s00247-014-2884-5)
+
+[54] Federal Trade Commission. "FTC Seeks to Halt 10 Operators of Fake News Sites from Making Deceptive Claims About Acai Berry Weight Loss Products." 19 April 2011. [https://www.ftc.gov/news-events/news/press-releases/2011/04/ftc-seeks-halt-10-operators-fake-news-sites-making-deceptive-claims-about-acai-berry-weight-loss](https://www.ftc.gov/news-events/news/press-releases/2011/04/ftc-seeks-halt-10-operators-fake-news-sites-making-deceptive-claims-about-acai-berry-weight-loss)
+
+[55] Federal Trade Commission. "Internet Marketers of Acai Berry Weight-Loss Pills and 'Colon Cleansers' to Pay $1.5 Million to Settle FTC Charges of Deceptive Advertising and Unfair Billing." 9 January 2012. [https://www.ftc.gov/news-events/news/press-releases/2012/01/internet-marketers-acai-berry-weight-loss-pills-colon-cleansers-pay-15-million-settle-ftc-charges](https://www.ftc.gov/news-events/news/press-releases/2012/01/internet-marketers-acai-berry-weight-loss-pills-colon-cleansers-pay-15-million-settle-ftc-charges)
