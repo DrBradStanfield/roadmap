@@ -69,6 +69,8 @@ const REFS_PESA: SuggestionReference[] = [
   { label: 'Ibanez 2021 – PESA study: subclinical atherosclerosis progression (JACC)', url: 'https://doi.org/10.1016/j.jacc.2021.05.011' },
 ];
 
+const REF_EZ_PAVE: SuggestionReference = { label: 'Lee 2026 – Ez-PAVE: LDL target <55 vs <70 mg/dL (NEJM)', url: 'https://doi.org/10.1056/NEJMoa2600283' };
+
 const REFS_LDL_SAFETY: SuggestionReference[] = [
   { label: 'Karagiannis 2021 – Safety of very low LDL (<30 mg/dL) (Eur Heart J)', url: 'https://doi.org/10.1093/eurheartj/ehaa1080' },
   { label: 'Patti 2023 – Very low LDL intensive lowering: safety & efficacy', url: 'https://doi.org/10.1093/ehjcvp/pvac049' },
@@ -295,15 +297,15 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Blood Work: Atherogenic Lipids ─────────────────────────
 
   'apob-very-high': {
-    reason: 'ApoB directly measures the number of atherogenic (artery-clogging) particles in your blood and is considered the most accurate predictor of cardiovascular risk by the European Atherosclerosis Society. Each LDL, VLDL, and Lp(a) particle carries exactly one ApoB molecule, making it a superior marker to LDL cholesterol, which only estimates particle concentration. A very high ApoB indicates significantly elevated cardiovascular risk, and statin therapy is typically recommended.\n\nSome doctors use on-treatment targets below 50 mg/dL (0.5 g/L) based on the ESC/EAS guidelines and the PESA study, which demonstrated that subclinical atherosclerosis progression is driven by cumulative LDL/ApoB exposure over time — even in young, apparently healthy adults.',
+    reason: 'ApoB directly measures the number of atherogenic (artery-clogging) particles in your blood and is considered the most accurate predictor of cardiovascular risk by the European Atherosclerosis Society. Each LDL, VLDL, and Lp(a) particle carries exactly one ApoB molecule, making it a superior marker to LDL cholesterol, which only estimates particle concentration. A very high ApoB indicates significantly elevated cardiovascular risk, and statin therapy is typically recommended.\n\nESC/EAS 2019 recommends ApoB below 65 mg/dL for very high risk; based on the Ez-PAVE trial and the PESA study, this tool aims lower, for ApoB below 50 mg/dL (0.5 g/L). PESA demonstrated that subclinical atherosclerosis progression is driven by cumulative LDL/ApoB exposure over time — even in young, apparently healthy adults.',
     guidelines: [...GUIDELINES_LIPIDS, 'EAS Consensus'],
-    references: [...REFS_LIPID_EVIDENCE, ...REFS_PESA, ...REFS_LDL_SAFETY],
+    references: [...REFS_LIPID_EVIDENCE, REF_EZ_PAVE, ...REFS_PESA, ...REFS_LDL_SAFETY],
   },
 
   'apob-high': {
-    reason: 'ApoB directly measures the number of atherogenic (artery-clogging) particles in your blood. It is considered a more accurate predictor of cardiovascular risk than LDL cholesterol by the European Atherosclerosis Society. Your level is elevated and lifestyle modifications and/or medication should be discussed with your doctor.\n\nSome doctors use on-treatment targets below 50 mg/dL (0.5 g/L) based on ESC/EAS guidelines and the PESA study, which showed that early ApoB/LDL exposure drives atherosclerosis even in young, healthy adults.',
+    reason: 'ApoB directly measures the number of atherogenic (artery-clogging) particles in your blood. It is considered a more accurate predictor of cardiovascular risk than LDL cholesterol by the European Atherosclerosis Society. Your level is elevated and lifestyle modifications and/or medication should be discussed with your doctor.\n\nESC/EAS 2019 recommends ApoB below 65 mg/dL for very high risk; based on the Ez-PAVE trial and the PESA study, this tool aims lower, for ApoB below 50 mg/dL (0.5 g/L). PESA showed that early ApoB/LDL exposure drives atherosclerosis even in young, healthy adults.',
     guidelines: [...GUIDELINES_LIPIDS, 'EAS Consensus'],
-    references: [...REFS_LIPID_EVIDENCE, ...REFS_PESA, ...REFS_LDL_SAFETY],
+    references: [...REFS_LIPID_EVIDENCE, REF_EZ_PAVE, ...REFS_PESA, ...REFS_LDL_SAFETY],
   },
 
   'apob-borderline': {
@@ -643,6 +645,8 @@ const REFS_IBW: SuggestionReference[] = [
 
 const REFS_WHTR: SuggestionReference[] = [
   { label: 'Ashwell 2012 – WHtR better than BMI for cardiometabolic risk (Obes Rev)', url: 'https://doi.org/10.1111/j.1467-789X.2011.00952.x' },
+  { label: 'Browning 2010 – WHtR boundary values: 0.5 as a global cut-off (Nutr Res Rev)', url: 'https://doi.org/10.1017/S0954422410000144' },
+  { label: 'Ashwell 2005 – Six reasons to use waist-to-height ratio (Int J Food Sci Nutr)', url: 'https://doi.org/10.1080/09637480500195066' },
 ];
 
 /** Static stat card evidence entries. */
