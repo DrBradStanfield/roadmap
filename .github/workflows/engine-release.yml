@@ -1,0 +1,250 @@
+# Over-the-air engine release, signed in CI (ios/architecture.md D3, US-25 AC18).
+# How it works and why: ios/engine-updates.md, "Automatic after a Deploy on main".
+# Added with Brad's explicit permission, 2026-10-25.
+#
+# build:  builds the engine with no secret and uploads it as an artifact. It runs repo
+#         code, so it decides only whether to upload; nothing reads its other outputs.
+# verify: runs no repo code and no npm. Takes the commit from the event, computes the
+#         bridge itself, checks the artifact, and writes what will be signed into its
+#         summary.
+# sign:   gated by the `engine-signing` environment (Brad approves, main only). Runs no
+#         repo code: checks the artifact again, signs it with openssl and the ci key, and
+#         commits only the new files.
+name: Engine release
+on:
+  workflow_run:
+    workflows: [Deploy]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      reissue:
+        description: "Re-issue an unchanged engine (a fresh 30-day manifest at a new version)"
+        type: boolean
+        default: false
+permissions: {}
+# One queue for every ref: all runs write the same ios/engine-release folder on main.
+concurrency: engine-release
+jobs:
+  build:
+    # A Deploy dispatched on main in this repo only. `branches: [main]` alone also matches
+    # a pull request from a fork's branch named main; a merged PR's Deploy has the PR's
+    # head branch, so it never matched (dispatch this workflow for those).
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'workflow_dispatch' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.release.outputs.changed }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+      - id: release
+        name: Build the release, unsigned (no secret in this job)
+        env:
+          REISSUE: ${{ inputs.reissue }}
+        run: |
+          set -euo pipefail
+          bridge=$(sha256sum ios/engine/bridge-contract.json | cut -c1-16)
+          mkdir -p release-out artifact
+          if [ -d "ios/engine-release/bridge-$bridge" ]; then cp -R "ios/engine-release/bridge-$bridge" release-out/; fi
+          if [ "$REISSUE" = true ]; then flag=; else flag=--if-changed; fi
+          env -u ENGINE_SIGNING_KEY node ios/scripts/release-engine.mjs --key ci $flag --out release-out
+          out="release-out/bridge-$bridge"
+          if diff -r "ios/engine-release/bridge-$bridge" "$out" >/dev/null 2>&1; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            # The artifact is the manifest and the new bundle only.
+            cp "$out/manifest.json" "$out/$(jq -r .sha256 "$out/manifest.json").js" artifact/
+          fi
+      - if: steps.release.outputs.changed == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: engine-release
+          path: artifact
+          if-no-files-found: error
+  verify:
+    # No repo code and no npm: what Brad reads before approving `sign` comes from here.
+    # A re-issue runs it even when build said unchanged; it then fails with no artifact.
+    needs: build
+    if: needs.build.outputs.changed == 'true' || (github.event_name == 'workflow_dispatch' && inputs.reissue)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      sha: ${{ steps.check.outputs.sha }}
+      bridge: ${{ steps.check.outputs.bridge }}
+      bundle: ${{ steps.check.outputs.bundle }}
+    env:
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: engine-release
+          path: built
+      - id: check
+        name: Check the artifact against this commit, not the build's word
+        run: |
+          set -euo pipefail
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          test "$(git rev-parse HEAD)" = "$SHA"
+          # Main moved: Deploy ships main's tip, which may not be this commit.
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          if ! git diff --quiet "$SHA" origin/main -- packages/health-core ios/engine ios/scripts ios/HealthRoadmap.xcodeproj/project.pbxproj package.json package-lock.json ':(glob)**/.npmrc' ':(glob)**/tsconfig*'; then
+            echo "::error::main moved since this Deploy; dispatch Engine release again"; exit 1
+          fi
+          bridge=$(sha256sum ios/engine/bridge-contract.json | cut -c1-16)
+          [[ "$bridge" =~ ^[0-9a-f]{16}$ ]] || exit 1
+          bundle=$(jq -r .sha256 built/manifest.json)
+          [[ "$bundle" =~ ^[0-9a-f]{64}$ ]] || exit 1
+          test "$(cd built && find . -mindepth 1 | sort)" = "$(printf './%s\n' "$bundle.js" manifest.json | sort)"
+          jq -cjS . built/manifest.json | cmp -s - built/manifest.json
+          test "$(jq -r .bridge built/manifest.json)" = "$bridge"
+          test "$(jq -r .keyId built/manifest.json)" = ci
+          test "$(sha256sum "built/$bundle.js" | cut -c1-64)" = "$bundle"
+          test "$(stat -c %s "built/$bundle.js")" = "$(jq -r .size built/manifest.json)"
+          [[ "$(jq -r .version built/manifest.json)" =~ ^[0-9]{12}$ ]] || exit 1
+          { echo "sha=$SHA"; echo "bridge=$bridge"; echo "bundle=$bundle"; } >> "$GITHUB_OUTPUT"
+      - name: What will be signed (read this before approving)
+        run: |
+          set -euo pipefail
+          bridge=$(sha256sum ios/engine/bridge-contract.json | cut -c1-16)
+          summary=$(mktemp); warn=
+          # Base: the commit the last CI release was built from, as recorded on main.
+          base=$(git show "origin/main:ios/engine-release/bridge-$bridge/built-from" 2>/dev/null | head -n1 || true)
+          if [[ "$base" =~ ^[0-9a-f]{40}$ ]] && git cat-file -e "$base^{commit}" 2>/dev/null; then
+            :
+          else
+            base=$(git log -1 --format=%H -- ios/engine-release || true)
+            if [ -n "$base" ]; then warn="> **WARNING: no built-from record for this bridge; the base below is the last commit that touched ios/engine-release, so it is approximate.**"; fi
+          fi
+          {
+            if [ -z "$base" ]; then
+              echo "> **WARNING: first release. There is no earlier release to compare with; review the whole commit.**"
+            else
+              if [ -n "$warn" ]; then echo "$warn"; fi
+              git diff --name-only "$base" "$SHA" > changed.txt
+              if grep -Eq '^(ios/scripts/|ios/HealthRoadmap\.xcodeproj/project\.pbxproj$|package\.json$|package-lock\.json$|packages/[^/]+/package\.json$|(.*/)?\.npmrc$|(.*/)?tsconfig[^/]*$)' changed.txt; then
+                echo "> **WARNING: the build scripts, the Xcode project, packages, .npmrc or tsconfig changed since the last release. Read those diffs before approving.**"
+              fi
+            fi
+            echo "## Engine release for bridge $bridge, built from $SHA"
+            echo '```json'; cat built/manifest.json; echo; echo '```'
+            echo '```'; sha256sum built/*; echo '```'
+            echo "### Every file changed since the last release (${base:-none})"
+            echo '```'
+            if [ -n "$base" ]; then git diff --stat "$base" "$SHA"; echo; git log --stat "$base".."$SHA"; fi
+            echo '```'
+          } > "$summary"
+          # GitHub drops a step summary over 1 MiB: never approve a release without one.
+          if [ "$(stat -c %s "$summary")" -gt 1000000 ]; then
+            { head -c 900000 "$summary"; echo; echo '```'; echo "**SUMMARY TRUNCATED at 900 KB: too much changed to show. Not approvable; review the commits by hand and dispatch again.**"; } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          cat "$summary" >> "$GITHUB_STEP_SUMMARY"
+  sign:
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: engine-signing
+    permissions:
+      contents: write
+    env:
+      BRIDGE: ${{ needs.verify.outputs.bridge }}
+      BUILT_SHA: ${{ needs.verify.outputs.sha }}
+      BUNDLE: ${{ needs.verify.outputs.bundle }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: engine-release
+          path: built
+      - name: Main has not moved since the build
+        run: |
+          set -euo pipefail
+          [[ "$BUILT_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          if ! git diff --quiet "$BUILT_SHA" HEAD -- packages/health-core ios/engine ios/scripts ios/HealthRoadmap.xcodeproj/project.pbxproj package.json package-lock.json ':(glob)**/.npmrc' ':(glob)**/tsconfig*'; then
+            echo "::error::main moved since this Deploy; dispatch Engine release again"; exit 1
+          fi
+      - name: Check the artifact again, and the floor on main (as sign-engine.mjs does)
+        run: |
+          set -euo pipefail
+          [[ "$BRIDGE" =~ ^[0-9a-f]{16}$ ]] || exit 1
+          [[ "$BUILT_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          [[ "$BUNDLE" =~ ^[0-9a-f]{64}$ ]] || exit 1
+          test "$(cd built && find . -mindepth 1 | sort)" = "$(printf './%s\n' "$BUNDLE.js" manifest.json | sort)"
+          jq -cjS . built/manifest.json | cmp -s - built/manifest.json
+          test "$(jq -r .bridge built/manifest.json)" = "$BRIDGE"
+          test "$(jq -r .keyId built/manifest.json)" = ci
+          test "$(jq -r .sha256 built/manifest.json)" = "$BUNDLE"
+          test "$(sha256sum "built/$BUNDLE.js" | cut -c1-64)" = "$BUNDLE"
+          test "$(stat -c %s "built/$BUNDLE.js")" = "$(jq -r .size built/manifest.json)"
+          new=$(jq -r .version built/manifest.json); floor=$(jq -r .minVersion built/manifest.json)
+          [[ "$new" =~ ^[0-9]{12}$ ]] || exit 1
+          [[ "$floor" =~ ^[0-9]+$ ]] || exit 1
+          main="ios/engine-release/bridge-$BRIDGE/manifest.json"
+          if [ -f "$main" ]; then
+            mainFloor=$(jq -r .minVersion "$main")
+            [[ "$mainFloor" =~ ^[0-9]+$ ]] || exit 1
+            if [ "$floor" -lt "$mainFloor" ]; then
+              echo "::error::minVersion $floor is below main's floor $mainFloor: the floor only rises"; exit 1
+            fi
+          fi
+      - name: Sign with the ci key (inline; no repo code runs here)
+        env:
+          ENGINE_SIGNING_KEY: ${{ secrets.ENGINE_SIGNING_KEY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          key=$(mktemp); der=$(mktemp); pub=$(mktemp); sig=$(mktemp)
+          { printf '\x30\x2e\x02\x01\x00\x30\x05\x06\x03\x2b\x65\x70\x04\x22\x04\x20'; printf '%s' "$ENGINE_SIGNING_KEY" | base64 -d; } > "$der"
+          test "$(stat -c %s "$der")" = 48
+          openssl pkey -inform DER -in "$der" -out "$key"
+          # The key must be the pinned ci key, or the app refuses its signature.
+          test "$(openssl pkey -in "$key" -pubout -outform DER | tail -c 32 | base64 -w0)" = "$(jq -r .ci ios/engine/signing-keys.json)"
+          openssl pkey -in "$key" -pubout -out "$pub"
+          { printf 'health-roadmap-engine-manifest/v1\n'; cat built/manifest.json; } > signed.tmp
+          openssl pkeyutl -sign -inkey "$key" -rawin -in signed.tmp -out "$sig"
+          openssl pkeyutl -verify -pubin -inkey "$pub" -rawin -in signed.tmp -sigfile "$sig"
+          base64 -w0 "$sig" > built/manifest.sig
+          echo >> built/manifest.sig
+          shred -u "$key" "$der"; rm -f "$pub" "$sig" signed.tmp
+      - name: Commit the release (add files only; never lower or replace a newer release)
+        run: |
+          set -euo pipefail
+          dest="ios/engine-release/bridge-$BRIDGE"
+          new=$(jq -r .version built/manifest.json)
+          [[ "$new" =~ ^[0-9]{12}$ ]] || exit 1
+          if [ -f "$dest/manifest.json" ]; then
+            have=$(jq -r .version "$dest/manifest.json")
+            [[ "$have" =~ ^[0-9]{12}$ ]] || exit 1
+            if [ "$have" -ge "$new" ]; then
+              echo "main already has release $have, not older than $new: nothing to commit"; exit 0
+            fi
+          fi
+          mkdir -p "$dest"
+          cp "built/$BUNDLE.js" built/manifest.json built/manifest.sig "$dest/"
+          # The commit this release was built from: the next summary's base. Not signed; phones never read it.
+          printf '%s\n' "$BUILT_SHA" > "$dest/built-from"
+          git add "$dest"
+          git -c user.name="Brad Stanfield" -c user.email="95190896+DrBradStanfield@users.noreply.github.com" commit -m "Engine release $new (built from $BUILT_SHA, signed in CI)"
+          git push origin HEAD:main

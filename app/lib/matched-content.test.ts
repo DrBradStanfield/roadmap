@@ -130,24 +130,25 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
   // masters their room too (the re-check: 197 of 1,140 pairs with one between,
   // 42 with it first, dropped a master whole).
   const LITHIUM = 'lithium-benefits-forms-dosing-and-side-effects';
-  const PROBIOTICS = 'probiotics-benefits-strains-dosing-and-side-effects';
+  // US-50 masters-new-7 (2026-10-25): probiotics became a master, so the largest non-master (about 76K) stands in.
+  const BIG_POST = 'weight-loss-supplements-benefits-evidence-and-safety';
   const warfarin = (content: string | null) => {
     expect(content).toMatch(/^#+ Warfarin and Vitamin K Antagonists$/m);
     expect(content).toContain('Vitamin K can have a serious and potentially dangerous interaction with warfarin');
   };
 
-  it('[lithium, probiotics, vitamin K]: vitamin K loads with its warfarin lines', () => {
-    const { content, skipped } = loadMatchedContent([LITHIUM, PROBIOTICS, K]);
+  it('[lithium, weight-loss post, vitamin K]: vitamin K loads with its warfarin lines', () => {
+    const { content, skipped } = loadMatchedContent([LITHIUM, BIG_POST, K]);
     expect(skipped).not.toContain(K);
     expect(skipped).not.toContain(LITHIUM);
     expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
     warfarin(content);
   });
 
-  it('[probiotics, vitamin C, B vitamins]: a non-master first leaves both masters their room', () => {
+  it('[weight-loss post, vitamin C, B vitamins]: a non-master first leaves both masters their room', () => {
     const C = 'vitamin-c-benefits-forms-dosing-and-side-effects';
     const B = 'b-vitamins-benefits-forms-dosing-and-side-effects';
-    const { content, skipped } = loadMatchedContent([PROBIOTICS, C, B]);
+    const { content, skipped } = loadMatchedContent([BIG_POST, C, B]);
     expect(skipped).not.toContain(C);
     expect(skipped).not.toContain(B);
     expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
@@ -156,9 +157,9 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
   });
 
   it('a non-master that fits alongside the later masters\' reserve still loads', () => {
-    const { content, skipped } = loadMatchedContent([PROBIOTICS, LITHIUM]);
+    const { content, skipped } = loadMatchedContent([BIG_POST, LITHIUM]);
     expect(skipped).toEqual([]);
-    expect(content).toContain('title: Probiotics: Benefits');
+    expect(content).toContain('title: Weight Loss Supplements: Benefits');
     expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
   });
 
@@ -274,7 +275,7 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
     const large = loadBlogIndex().filter(e => !isMaster(e))
       .map(e => ({ handle: e.handle, size: contentBlock(e.handle, loadBlogArticle(e.handle) ?? '').length }))
       .sort((x, y) => y.size - x.size).slice(0, 3).map(e => e.handle);
-    expect(large).toContain(PROBIOTICS);
+    expect(large).toContain(BIG_POST);
     for (const n of large) for (const a of masters) for (const b of masters) {
       if (a === b) continue;
       for (const order of [[a, n, b], [n, a, b]]) {
