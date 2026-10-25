@@ -19,10 +19,10 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Key safety points
 
-- Echinacea might interact with immunosuppressants, and case reports link immune-stimulating supplements, including echinacea, to autoimmune flares [3][46]. If you take immunosuppressants or have an autoimmune disease, talk to your doctor first.
-- Echinacea root slowed caffeine clearance in one small study [35]; in another, echinacea lowered S-warfarin levels without a clinically significant INR change [39]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 - Echinacea is related to ragweed; allergic reactions may be severe [3]. Allergic reactions, including anaphylaxis, have been reported, some after a first dose and more than half in people with known allergies [44][45].
 - If hives, swelling of the face or throat, wheezing or trouble breathing start after a dose, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [44].
+- Echinacea might interact with immunosuppressants, and case reports link immune-stimulating supplements, including echinacea, to autoimmune flares [3][46]. If you take immunosuppressants or have an autoimmune disease, talk to your doctor first.
+- Echinacea root slowed caffeine clearance in one small study [35]; in another, echinacea lowered S-warfarin levels without a clinically significant INR change [39]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 - In children aged 2 to 11 years, rash occurred during 7.1% of colds treated with echinacea and 2.7% with placebo [20]. Talk to your child's doctor first [3].
 - Some studies suggest use for up to 7 days in the first trimester of pregnancy is possibly safe; little is known about breastfeeding. If you are pregnant or breastfeeding, talk to your health care provider first [3].
 - Rare cholestatic hepatitis cases have been reported [32][33]. The most common side effects are digestive: abdominal pain, nausea or stomach pain [3].
@@ -71,7 +71,7 @@ The evidence for preventing colds is mixed. Any benefit appears small.
 
 **Meta-analysis (2007):** A meta-analysis of 14 studies found that echinacea decreased the odds of developing a cold by 58% (OR 0.42; 95% CI 0.25 to 0.71) and shortened colds by 1.4 days (Shah et al., *Lancet Infect Dis*, 2007) [14]. Later reviews were more cautious [16][43].
 
-**Largest prevention trial (2012):** 755 healthy people took an alcohol extract of freshly harvested *E. purpurea* (95% herb, 5% root) or placebo for 4 months (Jawad et al., *Evid Based Complement Alternat Med*, 2012) [8]. Echinacea had 149 colds and 672 cold days against 188 and 850 with placebo (about 21% fewer); only the difference in cold days was statistically significant [8]. It also reduced colds treated with painkillers and had its largest effect on recurrent infections [8]. Participants took 3 × 0.9 mL a day (2400 mg of extract) for prevention and 5 × 0.9 mL a day (4000 mg) during colds, diluting each dose in water and holding it in the mouth for 10 s [8]. The placebo drops contained the same amount of alcohol [8]. Benefits grew with better adherence, and adverse events were similar to placebo [8].
+**Largest prevention trial (2012):** 755 healthy people took an alcohol extract of freshly harvested *E. purpurea* (95% herb, 5% root) or placebo for 4 months (Jawad et al., *Evid Based Complement Alternat Med*, 2012) [8]. Echinacea had 149 colds and 672 cold days against 188 and 850 with placebo; only the difference in cold days was statistically significant [8]. It also reduced colds treated with painkillers and had its largest effect on recurrent infections [8]. Participants took 3 × 0.9 mL a day (2400 mg of extract) for prevention and 5 × 0.9 mL a day (4000 mg) during colds, diluting each dose in water and holding it in the mouth for 10 s [8]. The placebo drops contained the same amount of alcohol [8]. Benefits grew with better adherence, and adverse events were similar to placebo [8].
 
 **Negative prevention trial (2008):** 90 hospital staff were randomized to 3 capsules of *E. purpurea* or placebo twice daily for 8 weeks in winter, and 58 were analysed. The echinacea group reported 9 sick days per person and the placebo group 14, a difference that was not significant (O'Neil et al., *Ann Allergy Asthma Immunol*, 2008) [15].
 
@@ -101,7 +101,7 @@ The evidence for preventing colds is mixed. Any benefit appears small.
 
 ### Synthesis: Echinacea for Colds
 
-The best evidence suggests echinacea, particularly *E. purpurea* extracts, may slightly reduce the chance of catching a cold when taken regularly. The effect is modest: a risk ratio of 0.78 in one meta-analysis [16], a possible 10% to 20% relative risk reduction in the Cochrane review [43], and about 21% fewer cold days in the largest trial [8]. For treating colds, the larger trials show no clear benefit [19][20][43]. Differences in species, plant part, preparation and dose likely explain much of the inconsistency [43].
+The best evidence suggests echinacea, particularly *E. purpurea* extracts, may slightly reduce the chance of catching a cold when taken regularly. The effect is modest: a risk ratio of 0.78 in one meta-analysis [16], a possible 10% to 20% relative risk reduction in the Cochrane review [43], and 672 versus 850 cold days in the largest trial [8]. For treating colds, the larger trials show no clear benefit [19][20][43]. Differences in species, plant part, preparation and dose likely explain much of the inconsistency [43].
 
 NCCIH reflects this uncertainty: echinacea may slightly reduce your chance of catching a cold, but whether it shortens a cold remains unclear [3].
 
