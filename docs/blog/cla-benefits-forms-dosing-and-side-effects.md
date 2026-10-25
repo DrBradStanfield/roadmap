@@ -36,7 +36,7 @@ The term CLA (conjugated linoleic acid) covers a group of positional and geometr
 
 Vaccenic acid, a trans fat made in the rumen, is converted in tissues to rumenic acid by delta-9 desaturase. In a controlled feeding study in 30 healthy people, this conversion averaged 19%, with large differences between people [16].
 
-Commercial CLA supplements contain both main isomers, and trials often used a 50:50 blend of c9,t11 and t10,c12 [17][39][53]. In one children's trial the product was 80% CLA [39]. The t10,c12 isomer drives the effects on fat cells, and it is also the isomer that raised insulin resistance in obese men [6][8].
+Commercial CLA supplements contain both main isomers, and trials often used a 50:50 blend of c9,t11 and t10,c12 [17][39]. In one children's trial the product was 80% CLA [39]. The t10,c12 isomer drives the effects on fat cells, and it is also the isomer that raised insulin resistance in obese men [6][8].
 
 Measured CLA intake from food was 212 mg a day in men and 151 mg a day in women in one US study [7]. That is far below the 3 to 3.4 g a day used in most trials [8][17].
 
@@ -106,7 +106,7 @@ CLA has shown anti-cancer effects in animals, but human evidence comes from obse
 
 CLA's effects on blood fats are mixed, and some are unfavorable.
 
-**Lipid profile effects:** A 2022 meta-analysis of 56 trials found no significant effect on LDL cholesterol (WMD 0.49; 95% CI -0.75 to 2.74) and a small fall in HDL cholesterol (WMD -0.40; 95% CI -0.72 to -0.07) (Asbaghi et al., *Front Nutr*, 2022) [38]. The abstract's text calls this an improvement, so the direction is uncertain [38].
+**Lipid profile effects:** A 2022 meta-analysis of 56 trials found no significant effect on LDL cholesterol (WMD 0.49; 95% CI -0.75 to 2.74) and an HDL change of WMD -0.40 (95% CI -0.72 to -0.07) (Asbaghi et al., *Front Nutr*, 2022) [38]. The abstract's text calls this an improvement, so the direction is uncertain [38].
 
 **Animal studies:** A 2019 review describes anti-atherosclerotic effects of CLA in pre-clinical studies [15].
 
