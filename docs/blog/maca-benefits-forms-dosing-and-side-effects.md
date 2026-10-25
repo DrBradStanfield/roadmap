@@ -15,16 +15,16 @@ sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/20691074/","ch
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. In small randomized trials, gelatinized maca at 1,500 mg or 3,000 mg a day improved sexual desire in healthy men in a 12-week trial [23], and 3.5 g a day of maca powder for 6 weeks lowered anxiety, depression and sexual dysfunction scores in 14 postmenopausal women [26]; neither trial found changes in sex hormone levels. Systematic reviews call the evidence limited because the trials are few and small [54][35], and a 2022 meta-analysis of five trials found no clear effect on sperm concentration [55]. Safety data are thin: in one 90-day trial maca at 0.6 g a day raised the liver enzyme AST and diastolic blood pressure [42], a case report linked maca root powder to a rise in blood lead [58], and lab studies found estrogen-like activity [62] and faster migration of breast cancer cells [47].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. In small randomized trials, gelatinized maca at 1,500 mg or 3,000 mg a day improved sexual desire in healthy men in a 12-week trial [23], and 3.5 g a day of maca powder for 6 weeks lowered anxiety, depression and sexual dysfunction scores in 14 postmenopausal women [26]; neither trial found changes in sex hormone levels. Systematic reviews call the evidence limited because the trials are few and small [54][35], and a 2022 review of five trials found unclear effects on semen quality; its pooled analysis showed no clear rise in sperm concentration [55]. Safety data are thin: in one 90-day trial maca at 0.6 g a day raised the liver enzyme AST and diastolic blood pressure [42], a case report linked maca root powder to a rise in blood lead [58], and lab studies found estrogen-like activity [62] and faster migration of breast cancer cells [47].
 
 ## Key safety points
 
 - Lab studies found estrogen-like activity in breast cancer cells, and maca extract made triple-negative breast cancer cells migrate more [62][47]. If you have a hormone-sensitive cancer or condition, talk to your doctor before using maca.
 - Maca products can contain lead. One woman's blood lead rose after she began maca root powder and fell when she stopped; the authors warn women of childbearing age in particular [58].
-- In a 90-day trial, maca at 0.6 g a day raised the liver enzyme AST and diastolic blood pressure [42], and a case report describes liver injury after a maca liquor [59]. If you have liver disease or high blood pressure, ask your doctor first.
+- In a 90-day trial, maca at 0.6 g a day raised the liver enzyme AST and diastolic blood pressure [42]. LiverTox says maca has not been implicated in liver injury, though one case report followed a single drink of a maca liquor [66][59]; if you have liver disease or high blood pressure, ask your doctor first.
 - Maca contains glucosinolates, and some glucosinolates can affect the thyroid [7][51]. If you have a thyroid condition or take thyroid medicine, ask your doctor first.
-- A case report and a review of online reports link maca to psychotic symptoms, mood changes and anxiety [60][61]. If you have bipolar disorder or a history of psychosis, ask your doctor first.
-- In a small trial in people taking SSRI antidepressants, maca was well tolerated [27].
+- A report of two cases and a review of online reports link maca to psychotic symptoms, mood changes and anxiety [60][61]. If you have bipolar disorder or a history of psychosis, ask your doctor first.
+- A chart review reported restless legs with maca taken alongside the antidepressant mianserin [65]. If you take an antidepressant, ask your prescriber first.
 
 ## Brad's videos on this topic
 
@@ -62,7 +62,7 @@ Maca hypocotyls come in different colors, from white to black, and one research 
 
 **Raw maca powder:** The dried root is ground into powder. Trials have tested maca powder [26] and maca tablets [32].
 
-**Gelatinized maca powder:** Gelatinized maca was used in a trial in men [23][52], and pre-gelatinized maca in trials in women around menopause [17][34]. Despite the name, gelatinization does not involve gelatin; it refers to a change in the starch.
+**Gelatinized maca powder:** Gelatinized maca was used in a trial in men [23][52], and pre-gelatinized maca in trials in women around menopause [17][34].
 
 **Maca extract:** Trials have also used maca extracts [29][25]. Results from one preparation may not apply to another; a toxicology review stressed the need for standardized quality [4].
 
@@ -114,7 +114,7 @@ The 2010 systematic review counted this trial as positive but judged the overall
 
 An early study gave nine men maca tablets (1500 or 3000 mg/day) for 4 months. Semen volume, sperm count per ejaculate, the number of motile sperm and sperm motility rose, while hormone levels did not change [32]. All nine men took maca; there was no comparison group.
 
-A 2016 systematic review of five studies (three randomized trials and two uncontrolled studies) found suggestive evidence that maca improves semen quality, but too few, small and biased studies to draw firm conclusions [33]. A 2022 meta-analysis of five randomized trials found no significant increase in sperm concentration compared with placebo (weighted mean difference, 2.22, 95% confidence interval -2.94 to 7.37) and called the effects on semen quality unclear [55].
+A 2016 systematic review of five studies (three randomized trials and two uncontrolled studies) found suggestive evidence that maca improves semen quality, but too few, small and biased studies to draw firm conclusions [33]. A 2022 systematic review of five randomized trials found unclear effects on semen quality; its pooled analysis showed no clear rise in sperm concentration compared with placebo (weighted mean difference, 2.22, 95% confidence interval -2.94 to 7.37) [55].
 
 In rats, black maca raised sperm counts within days of starting treatment [15].
 
@@ -136,7 +136,7 @@ An extract of yellow maca increased litter size in female mice, and it increased
 
 **Postmenopausal anxiety and depression:** In the Brooks (2008) trial, anxiety and depression scores fell in 14 postmenopausal women taking 3.5 g a day of maca for 6 weeks, compared with placebo [26]. In the Hong Kong trial, depression scores also fell [53].
 
-**Reports of worse mental health:** A review of online sources linked maca, among other sexual enhancement products, to mood changes, anxiety and hallucinations [61]. A 2024 report describes acute psychotic episodes after regular use of herbal products and discusses maca as a possible cause [60].
+**Reports of worse mental health:** A review of online sources linked maca, among other sexual enhancement products, to mood changes, anxiety and hallucinations [61]. A 2024 report of two cases describes acute psychotic episodes after regular use of herbal products and discusses maca as a possible cause [60].
 
 **Synthesis:** Small trials suggest maca may ease anxiety and depression symptoms in postmenopausal women [26][53]. The trials were small and short, so maca cannot be recommended as a treatment for clinical anxiety or depression.
 
@@ -158,7 +158,7 @@ A laboratory study found that a maca extract (RNI 249) raised production of IGF-
 
 A randomized, double-blind trial in 95 adults with knee osteoarthritis compared reparagen (1800 mg/day), a combination of 300 mg of vincaria (*Uncaria guianensis*, a cat's claw species) and 1500 mg of the maca extract RNI 249 taken twice daily, with 1500 mg/day of glucosamine sulfate for 8 weeks. At least a 20% fall in pain scores occurred in 94% of people on reparagen and 89% on glucosamine, and the reparagen group used less rescue paracetamol [41].
 
-**Critical limitations:** The trial had no placebo group, so natural improvement cannot be ruled out. The product also contained cat's claw, so the result cannot be credited to maca alone [41].
+**Critical limitations:** The trial compared reparagen with glucosamine and had no placebo group, and reparagen also contained cat's claw [41].
 
 ### Prostate Health
 
@@ -214,12 +214,12 @@ In animals, maca has a low degree of acute oral toxicity, and it has low toxicit
 ### Reported Side Effects
 
 - **General tolerance:** Maca was well tolerated in a small trial in people taking SSRIs [27].
-- **Mild symptoms:** Mild side effects such as stomach upset, headache, trouble sleeping or sweating have been reported.
-- **Anxiety or mood changes:** Online reports link maca to mood changes, anxiety and hallucinations [61], and a 2024 report discusses maca as a possible cause of psychotic episodes [60].
+- **Mild symptoms:** In the SSRI trial, 11 of 16 people reported at least one side effect: stomach upset (5 people), headache (2), irritability (2), and one case each of panic attack, trouble sleeping, sweating and several other complaints. All were short-lived, and none led anyone to stop [27].
+- **Anxiety or mood changes:** In the SSRI trial, one person had a panic attack and two had irritability, though the authors found it hard to link most events directly to maca [27]. Online reports link maca to mood changes, anxiety and hallucinations [61], and a 2024 report of two cases discusses maca as a possible cause of psychotic episodes [60].
 
 ### Liver Enzyme Effects
 
-In a 90-day randomized, placebo-controlled trial in people with the metabolic syndrome, maca at 0.6 g a day caused a moderate rise in the liver enzyme AST [42]. The authors advised that this be considered with high doses of maca powder. A 2017 case report describes drug-induced liver injury from a maca medicinal liquor [59]. In rat liver cells, maca extracts were not toxic [62]. People with liver disease should ask their doctor before taking maca.
+In a 90-day randomized, placebo-controlled trial in people with the metabolic syndrome, maca at 0.6 g a day caused a moderate rise in the liver enzyme AST [42]. The authors advised that this be considered with high doses of maca powder. A 2017 case report describes liver injury in a man after one 300 ml drink of a maca medicinal liquor containing 50% alcohol; such liquors are made with traditional Chinese medicines, and its other ingredients were not listed [59]. LiverTox states that maca has not been implicated in liver injury, either as passing rises in liver enzymes or as clinically apparent liver injury [66]. In rat liver cells, maca extracts were not toxic [62]. People with liver disease should ask their doctor before taking maca.
 
 ### Blood Pressure Effects
 
@@ -231,7 +231,7 @@ Maca contains glucosinolates [7], and some glucosinolates can affect the thyroid
 
 ### MTCA Concerns
 
-Maca contains a beta-carboline compound, (1R,3S)-1-methyltetrahydro-beta-carboline-3-carboxylic acid, which is reported to act on the central nervous system [7]. A toxicology review lists carbolines among maca's compounds of toxicological interest [4]. Its safety at supplement doses has not been well studied.
+Maca contains a beta-carboline compound, (1R,3S)-1-methyltetrahydro-beta-carboline-3-carboxylic acid, which is reported to act on the central nervous system [7]. A toxicology review lists carbolines among maca's compounds of toxicological interest [4]. A French health agency issued an alert about powdered maca, describing an alkaloid derived from this compound that inhibits monoamine oxidase (MAO) [67]. Later lab work found that these compounds did not affect MAO activity in the brain [67] and that maca root extracts did not inhibit MAO-A [68]. Its safety at supplement doses has not been well studied.
 
 ### Hormone-Sensitive Conditions
 
@@ -243,11 +243,11 @@ Claims that maca enlarges the breasts, hips or buttocks have not been tested in 
 
 ### Pregnancy and Lactation
 
-Maca's safety in pregnancy and breastfeeding has not been studied. Avoid it while pregnant or breastfeeding unless your doctor advises otherwise. A case report on lead in maca powder warns women of childbearing age to be aware that imported products may contain significant amounts of lead [58].
+No trial has tested maca in pregnancy or breastfeeding; the SSRI trial excluded women who were pregnant or breastfeeding [27]. Avoid it while pregnant or breastfeeding unless your doctor advises otherwise. A case report on lead in maca powder warns women of childbearing age to be aware that imported products may contain significant amounts of lead [58].
 
 ### Psychiatric Effects
 
-A 2024 report describes acute psychotic episodes after regular use of herbal products and discusses maca as a possible cause [60]. People with bipolar disorder, a history of psychosis or another psychiatric condition should ask their doctor before using maca.
+A 2024 report of two cases describes acute psychotic episodes after regular use of herbal products and discusses maca as a possible cause [60]. In the SSRI trial, one person had a panic attack, though the authors found it hard to link most side effects directly to maca [27]. People with bipolar disorder, a history of psychosis or another psychiatric condition should ask their doctor before using maca.
 
 ### Long-Term Safety
 
@@ -279,7 +279,7 @@ Because maca contains glucosinolates, some of which are goitrogenic [7][51], it 
 
 ### Monoamine Oxidase Inhibitors (MAOIs)
 
-Maca contains a beta-carboline compound reported to act on the central nervous system [7]. Whether maca affects MAO inhibitor medicines (phenelzine, tranylcypromine, selegiline) is unknown. If you take prescription medicines, check with your doctor or pharmacist before starting.
+Maca contains a beta-carboline compound reported to act on the central nervous system [7]. A French health agency alert said a related alkaloid inhibits MAO, but later lab work found no effect on brain MAO activity and no MAO-A inhibition by maca extracts [67][68]. Whether maca affects MAO inhibitor medicines (phenelzine, tranylcypromine, selegiline) is unknown. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### SSRI Antidepressants
 
@@ -300,7 +300,7 @@ Diastolic blood pressure rose with maca in one trial [42] but fell in another [5
 | Anticoagulants (warfarin) | Not tested | Ask your doctor or pharmacist |
 | Hormone therapies (HRT, OC, tamoxifen) | Estrogen-like activity in lab studies | Consult provider; avoid with hormone-sensitive cancers |
 | Thyroid medications | Glucosinolate goitrogenic effects | Consult provider |
-| MAO inhibitors | Contains a beta-carboline that acts on the nervous system; interaction unknown | Ask your doctor or pharmacist |
+| MAO inhibitors | Contains a beta-carboline; a French alert cited MAO inhibition, later lab work found none [67][68]; interaction unknown | Ask your doctor or pharmacist |
 | SSRIs | One small trial; well tolerated | Discuss with prescriber |
 | Antihypertensives | Blood pressure rose in one trial and fell in others | Monitor blood pressure |
 
@@ -425,3 +425,9 @@ Traditionally, maca is used as a tonic, a fertility enhancer for people and catt
 [62] Valentová K, Buckiová D, Kren V, et al. "The in vitro biological activity of Lepidium meyenii extracts." *Cell Biol Toxicol*. 2006;22(2):91-99. doi: [10.1007/s10565-006-0033-0](https://doi.org/10.1007/s10565-006-0033-0). PMID: [16528448](https://pubmed.ncbi.nlm.nih.gov/16528448/)
 
 [65] Siwek M, et al. "Harder, better, faster, stronger? Retrospective chart review of adverse events of interactions between adaptogens and antidepressant drugs." *Front Pharmacol*. 2023;14:1271776. doi: [10.3389/fphar.2023.1271776](https://doi.org/10.3389/fphar.2023.1271776). PMID: [37829299](https://pubmed.ncbi.nlm.nih.gov/37829299/)
+
+[66] LiverTox: Clinical and Research Information on Drug-Induced Liver Injury. "Maca." Bethesda (MD): National Institute of Diabetes and Digestive and Kidney Diseases; 2012 (updated 2019). NCBI Bookshelf NBK548552. PMID: [31643869](https://pubmed.ncbi.nlm.nih.gov/31643869/)
+
+[67] Gonzales GF, Gonzales-Castañeda C. "The methyltetrahydro-beta-carbolines in maca (Lepidium meyenii)." *Evid Based Complement Alternat Med*. 2009;6(3):315-316. doi: [10.1093/ecam/nen041](https://doi.org/10.1093/ecam/nen041). PMID: [18955346](https://pubmed.ncbi.nlm.nih.gov/18955346/)
+
+[68] Herraiz T, Guillén H. "Monoamine oxidase-A inhibition and associated antioxidant activity in plant extracts with potential antidepressant actions." *Biomed Res Int*. 2018;2018:4810394. doi: [10.1155/2018/4810394](https://doi.org/10.1155/2018/4810394). PMID: [29568754](https://pubmed.ncbi.nlm.nih.gov/29568754/)
