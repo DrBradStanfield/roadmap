@@ -642,7 +642,7 @@ const REFS_IBW: SuggestionReference[] = [
 ];
 
 const REFS_WHTR: SuggestionReference[] = [
-  { label: 'Ashwell & Hsieh 2005 – WHtR as screening tool for metabolic risk (Obes Rev)', url: 'https://doi.org/10.1111/j.1467-789X.2005.00165.x' },
+  { label: 'Ashwell 2012 – WHtR better than BMI for cardiometabolic risk (Obes Rev)', url: 'https://doi.org/10.1111/j.1467-789X.2011.00952.x' },
 ];
 
 /** Static stat card evidence entries. */

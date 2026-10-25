@@ -46,7 +46,7 @@ Source list: `VITAL_METRICS` (`weight`, `waist`, `systolic_bp`, `diastolic_bp`).
 
 **NEEDS BRAD:** which landmark should the app teach: the midpoint between the lowest rib and the top of the hip bone, or the level of the belly button? They give different numbers, and the 0.5 ratio the plan uses was derived with a specific method.
 
-**Source.** evidence.ts: Ashwell & Hsieh 2005 (`REFS_WHTR`); Ashwell 2012 (`measure-waist`).
+**Source.** evidence.ts: Ashwell, Gunn & Gibson 2012 (`REFS_WHTR`); Ashwell 2012 (`measure-waist`).
 
 ### Blood pressure (`blood_pressure`: `systolic_bp` and `diastolic_bp`)
 
