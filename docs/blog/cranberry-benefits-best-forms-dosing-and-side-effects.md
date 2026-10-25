@@ -19,7 +19,7 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Key safety points
 
-- Evidence on cranberry and warfarin conflicts [4]. One review rated it a major-severity interaction [58]; another linked reported cases to very large intakes and to people with serious illness or other medicines [59]. If you take warfarin, talk to your doctor first.
+- Evidence on cranberry and warfarin conflicts [4]. One review rated it a major-severity interaction [58]; another found no interaction at moderate juice intakes, said reports suggest one needs very large amounts, and noted that most cases involved people with serious illness or other medicines [59]. If you take warfarin, talk to your doctor first.
 - Cranberry does not treat an existing UTI [4][29]. See a doctor the same day for urinary symptoms with fever, back or side pain, or vomiting, or any UTI symptoms in pregnancy; if you feel very unwell, confused or faint, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 - A kidney transplant patient had low tacrolimus levels while taking cranberry extract, and they returned to range when she stopped it [64]. If you take tacrolimus, ask your transplant team first.
 - Cranberry tablets raised urinary oxalate in small studies, and 1 L a day of juice raised calcium oxalate saturation, though another juice study found the opposite [52][53][54][55]. If you have had kidney stones, ask your doctor before taking cranberry supplements.
@@ -84,7 +84,7 @@ The review could not tell whether juice and tablets, or different PAC doses, dif
 
 **PAC dose-response analysis (2024):** A meta-analysis of 10 randomised trials found that a daily PAC intake of at least 36 mg lowered UTI risk (RR 0.82, 95% CI 0.69 to 0.98), while intakes below 36 mg showed no significant effect [21].
 
-**Network meta-analysis (2024):** Across 20 trials with 3,091 participants, cranberry juice was linked to a 54% lower rate of UTIs than no treatment and a 27% lower rate than a placebo liquid, with moderate to low certainty; extra fluids alone also helped compared with no treatment [22].
+**Network meta-analysis (2024):** The analysis included 20 trials with 3,091 participants; in 18 of them, cranberry juice was linked to a 54% lower rate of UTIs than no treatment and a 27% lower rate than a placebo liquid, with moderate to low certainty; extra fluids alone also helped compared with no treatment [22].
 
 #### Cranberry Juice Trials
 
@@ -96,7 +96,7 @@ The review could not tell whether juice and tablets, or different PAC doses, dif
 
 **Tsiakoulias et al. (2024):** In 160 women with recurrent UTIs (median age 40 years), a daily high-dose PAC product (Cysticlean 240 mg) for 12 months lowered the number of UTIs compared with placebo (incidence rate ratio 0.49) and reduced *E. coli* in vaginal and rectal swabs. The trial reported no adverse events [25].
 
-**Foxman et al. (2015):** In 160 women having elective gynaecological surgery with urinary catheterisation, 2 cranberry juice capsules twice a day for 6 weeks after surgery cut the UTI rate from 30 of 80 (38%) on placebo to 15 of 80 (19%) (odds ratio 0.38, 95% CI 0.19 to 0.79). The benefit held after adjusting for self-catheterisation (odds ratio 0.42, 95% CI 0.18 to 0.94) [26].
+**Foxman et al. (2015):** In 160 women having elective gynaecological surgery with urinary catheterisation, 2 cranberry juice capsules twice a day for 6 weeks after surgery cut the UTI rate from 30 of 80 (38%) on placebo to 15 of 80 (19%) (odds ratio 0.38, 95% CI 0.19 to 0.79). The benefit held after adjusting for self-catheterisation (odds ratio 0.42, 95% CI 0.18 to 0.94) [26]. NIH, however, notes that studies in women having gynaecological surgery have not found cranberry beneficial for UTI prevention [4].
 
 **Juthani-Mehta et al. (2016):** In 185 women aged 65 or older in 21 nursing homes, 2 capsules a day (72 mg of PACs in total) for a year did not reduce bacteriuria plus pyuria compared with placebo (29.1% vs 29.0%). Symptomatic UTIs (10 vs 12 episodes) and hospitalisations (RR 0.67, 95% CI 0.32 to 1.40) did not differ significantly [19].
 
@@ -154,13 +154,13 @@ Results during radiation therapy for prostate cancer are mixed across three stud
 
 **Herst et al. (2020):** In a larger trial of 101 men, cranberry capsules were not better than beetroot-containing placebo capsules and did worse for daytime frequency and bladder control [37].
 
-**Bonetta et al. (2012):** In 370 men having radiotherapy, 16 of 184 (8.7%) taking an enteric-coated cranberry extract developed a lower urinary tract infection, against 45 of 186 (24.2%) untreated controls, with less night-time voiding, urgency, frequency and painful urination [38].
+**Bonetta et al. (2012):** In 370 men having radiotherapy, 16 of 184 (8.7%) taking an enteric-coated cranberry extract developed a lower urinary tract infection, against 45 of 186 (24.2%) controls, with less night-time voiding, urgency, frequency and painful urination [38].
 
 ### Helicobacter pylori Infection
 
 *H. pylori* is a stomach bacterium linked to gastritis and peptic ulcers. Trials of cranberry juice, alone or with antibiotics, show modest and inconsistent effects.
 
-**Evidence for cranberry with antibiotics:** In 177 people on one week of triple therapy, 250 mL of cranberry juice twice daily did not change the overall eradication rate (82.5% across arms), though women had higher eradication with cranberry (95.2% vs 86.8%) [40]. In 200 people with peptic ulcer disease, adding 500 mg cranberry capsules, twice a day, to 14 days of triple therapy raised eradication from 74% to 89% [42]. Without antibiotics, two 250 mL servings of juice a day for 90 days led to negative breath tests in 14 of 97 people against 5 of 92 on placebo [39]. In a trial of 522 H. pylori-positive adults, only high-PAC juice twice daily (44 mg of PACs per 240 mL serving) for 8 weeks lowered the infection rate, while cranberry powder capsules did not [41].
+**Evidence for cranberry with antibiotics:** In 177 people on one week of triple therapy, 250 mL of cranberry juice twice daily did not change the overall eradication rate (82.5% across arms), though women had higher eradication with cranberry (95.2%) than with placebo (86.8%, significance not reported) and significantly higher than the 80% on antibiotics alone (p = 0.03) [40]. In 200 people with peptic ulcer disease, adding 500 mg cranberry capsules, twice a day, to 14 days of triple therapy raised eradication from 74% to 89% [42]. Without antibiotics, two 250 mL servings of juice a day for 90 days led to negative breath tests in 14 of 97 people against 5 of 92 on placebo [39]. In a trial of 522 H. pylori-positive adults, only high-PAC juice twice daily (44 mg of PACs per 240 mL serving) for 8 weeks lowered the infection rate, while cranberry powder capsules did not [41].
 
 **Gao et al. (2021):** In 171 H. pylori positive participants, 480 mL of cranberry beverage for 4 weeks raised total antioxidant capacity compared with placebo, and both the 480 mL and 240 mL doses reduced *Pseudomonas* in the gut [7].
 
@@ -207,7 +207,7 @@ No dose is established. Doses that helped in trials include:
 **Cranberry capsules/supplements:**
 - One capsule of 500 mg a day of whole cranberry powder for 6 months [15]
 - A daily high-dose PAC product (Cysticlean 240 mg) for 12 months [25]
-- After gynaecological surgery, 2 cranberry juice capsules twice a day for 6 weeks [26]
+- After gynaecological surgery, 2 cranberry juice capsules twice a day for 6 weeks [26], though NIH reads the surgery evidence as showing no benefit [4]
 - A meta-analysis found benefit only with a daily PAC intake of at least 36 mg [21]
 
 **For children:** Trials in children used cranberry juice or extract products [27][28]. Ask your child's doctor about dose.
@@ -245,7 +245,7 @@ Studies of cranberry and kidney stones conflict [59]:
 
 ### Sugar and Calorie Content
 
-Cranberry juice cocktails and sweetened dried cranberries contain added sugar [17]. If you have diabetes or are limiting sugar, check the label or choose a capsule.
+Some cranberry products, such as sweetened dried cranberries, are sweetened [17][18]. If you have diabetes or are limiting sugar, check the label or choose a capsule.
 
 ### Bladder Irritation
 
@@ -268,9 +268,9 @@ Key nuances:
 - A 2021 safety review found no interactions with moderate juice intakes (240 to 480 mL); some reports suggest an interaction needs very large intakes (1 to 2 L of juice a day, or cranberry extracts at 3,000 mg/day), and most cases involved people with serious illness or other medicines [59]
 - In a randomised trial of 30 patients on stable warfarin, 240 mL of cranberry juice once daily for 2 weeks did not change warfarin blood levels, and INR differed from placebo only on day 12 [67]
 - In 10 men on stable warfarin, cranberry juice at 240 mL twice daily for 7 days did not change prothrombin time [68]
-- A 2013 review notes that cranberry juice inhibits CYP enzymes in the laboratory, but controlled trials do not give strong support for an interaction with warfarin [61]
+- A 2013 review notes that cranberry juice inhibits CYP enzymes in the laboratory, but controlled trials do not give strong support for an interaction with warfarin at normal juice intakes; large amounts of juice (about 1 to 2 L a day), or juice concentrate in supplements taken for more than 3 to 4 weeks, may alter warfarin's effect, and warfarin dose and effect may then need monitoring [61]
 
-**Practical guidance:** If you take warfarin, talk to your doctor before starting cranberry products.
+**Practical guidance:** If you take warfarin, talk to your doctor before starting cranberry products, keep intake moderate, and ask whether you need extra INR checks when you start or stop [59][61].
 
 ### Statins (Atorvastatin)
 
@@ -285,7 +285,7 @@ A 40-year-old kidney transplant patient taking cranberry extract capsules had lo
 | Medication | Interaction | Risk Level | Recommendation |
 |-----------|:-:|:-:|---------|
 | Warfarin (Coumadin) | Conflicting evidence on raised INR | Rated major in one review; cases mostly at very large intakes | Talk to your doctor first [4][58][59] |
-| Atorvastatin (Lipitor) | Back pain in one case report | Low (single case report) | Report muscle pain to your doctor [63] |
+| Atorvastatin (Lipitor) | Back pain in one case report | Low (single case report) | Tell your doctor about any new pain [63] |
 | Tacrolimus | Lower drug levels | Low (single case report) | Ask your transplant team first [64] |
 
 ## 7. Dietary Sources
@@ -309,7 +309,7 @@ USDA FoodData Central lists the full nutrient profile of raw cranberries [65].
 
 - **Processing reduces bioactive content:** Commercially processed cranberry products held less polyphenol than fresh or home-prepared ones, and anthocyanins broke down more easily than PACs [18]. Freeze-drying caused no detectable loss [18].
 - **Juice type matters:** Not-from-concentrate juice held more than twice the PACs of juice from concentrate [18].
-- **Added sugar:** Juice cocktails and sweetened dried cranberries add sugar to offset the fruit's tartness [17].
+- **Added sugar:** Sweetened dried cranberries are, as the name says, sweetened [17][18].
 
 ## 8. References
 
