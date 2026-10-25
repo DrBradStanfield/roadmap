@@ -41,7 +41,7 @@ The body makes PS from phosphatidylcholine or phosphatidylethanolamine by swappi
 
 Research on PS supplements began with PS taken from cow brain cortex, tested in older adults with memory problems in the late 1980s and early 1990s [7][8][16]. Concern about bovine spongiform encephalopathy (BSE, or "mad cow disease") led the FDA in 2003 to say that bovine sources, if used, should not come from cattle in countries where BSE exists [9]. Later studies tested soy-derived PS and PS with omega-3 fats attached, which their authors described as possible safe alternatives to PS from bovine cortex [13][17].
 
-In 2003, the FDA said it would use enforcement discretion for two qualified health claims on PS supplements: "Consumption of phosphatidylserine may reduce the risk of dementia in the elderly," and the same wording for "cognitive dysfunction in the elderly" [9]. Each claim carries its own disclaimer; the dementia one reads: "Very limited and preliminary scientific research suggests that phosphatidylserine may reduce the risk of dementia in the elderly. FDA concludes that there is little scientific evidence supporting this claim" [9]. The FDA also said cow-brain and soy PS may be different substances, the only soy trial it weighed showed no effect, and soy PS sold with the claims should be of very high purity [9]. In 2004 it re-reviewed the evidence and kept the same wording and conditions [11].
+In 2003, the FDA said it intended to exercise enforcement discretion for two qualified health claims on PS supplements: "Consumption of phosphatidylserine may reduce the risk of dementia in the elderly," and the same wording for "cognitive dysfunction in the elderly" [9]. Each claim carries its own disclaimer; the dementia one reads: "Very limited and preliminary scientific research suggests that phosphatidylserine may reduce the risk of dementia in the elderly. FDA concludes that there is little scientific evidence supporting this claim" [9]. The FDA also said cow-brain and soy PS may be different substances, the only soy trial it weighed showed no effect, and soy PS sold with the claims should be of very high purity [9]. In 2004 it re-reviewed the evidence and kept the same wording and conditions [11].
 
 ## 2. Forms and Bioavailability
 
@@ -169,7 +169,7 @@ The evidence is preliminary. The trials are few, the first was small, and the se
 
 ### Depression and Mood
 
-No trial has tested PS as a treatment for depression or anxiety disorders. The mood findings come from stress studies in healthy people.
+Evidence in depression is thin. **Maggioni et al. (1990)** gave 10 older women with depressive disorders a placebo for 15 days, then 300 mg a day of cow-brain PS for 30 days. Depression scores, memory and behaviour improved [31]. The study was tiny and had no parallel control group: everyone took the placebo first, then PS. It also used cow-brain PS, not the soy form tested in later trials. Most other mood findings come from stress studies in healthy people.
 
 **Benton et al. (2001)** found that 300 mg of PS a day for a month was linked to better mood in young adults with above-median neuroticism scores [22].
 
@@ -295,11 +295,11 @@ Brain PS carries a lot of DHA [3].
 
 [8] Cenacchi T, Bertoldin T, Farina C, et al. "Cognitive decline in the elderly: a double-blind, placebo-controlled multicenter study on efficacy of phosphatidylserine administration." *Aging (Milano)*. 1993;5(2):123-133. PMID: [8323999](https://pubmed.ncbi.nlm.nih.gov/8323999/)
 
-[9] U.S. Food and Drug Administration. "Phosphatidylserine and Cognitive Dysfunction and Dementia (Qualified Health Claim: Final Decision Letter)." 13 May 2003. [http://wayback.archive-it.org/7993/20171114183649/https://www.fda.gov/Food/IngredientsPackagingLabeling/LabelingNutrition/ucm072999.htm](http://wayback.archive-it.org/7993/20171114183649/https://www.fda.gov/Food/IngredientsPackagingLabeling/LabelingNutrition/ucm072999.htm)
+[9] U.S. Food and Drug Administration. "Phosphatidylserine and Cognitive Dysfunction and Dementia (Qualified Health Claim: Final Decision Letter)." 13 May 2003. [http://wayback.archive-it.org/7993/20171114183737/https://www.fda.gov/Food/IngredientsPackagingLabeling/LabelingNutrition/ucm072999.htm](http://wayback.archive-it.org/7993/20171114183737/https://www.fda.gov/Food/IngredientsPackagingLabeling/LabelingNutrition/ucm072999.htm)
 
 [10] Kato-Kataoka A, Sakai M, Ebina R, et al. "Soybean-derived phosphatidylserine improves memory function of the elderly Japanese subjects with memory complaints." *J Clin Biochem Nutr*. 2010;47(3):246-255. PMID: 21103034. doi: [10.3164/jcbn.10-62](https://doi.org/10.3164/jcbn.10-62)
 
-[11] U.S. Food and Drug Administration. "Letter Updating the Phosphatidylserine and Cognitive Function and Dementia Qualified Health Claim." 24 November 2004. [http://wayback.archive-it.org/7993/20171114183649/https://www.fda.gov/Food/IngredientsPackagingLabeling/LabelingNutrition/ucm072993.htm](http://wayback.archive-it.org/7993/20171114183649/https://www.fda.gov/Food/IngredientsPackagingLabeling/LabelingNutrition/ucm072993.htm)
+[11] U.S. Food and Drug Administration. "Letter Updating the Phosphatidylserine and Cognitive Function and Dementia Qualified Health Claim." 24 November 2004. [http://wayback.archive-it.org/7993/20171114183738/https://www.fda.gov/Food/IngredientsPackagingLabeling/LabelingNutrition/ucm072993.htm](http://wayback.archive-it.org/7993/20171114183738/https://www.fda.gov/Food/IngredientsPackagingLabeling/LabelingNutrition/ucm072993.htm)
 
 [12] Jorissen BL, Brouns F, Van Boxtel MP, et al. "The influence of soy-derived phosphatidylserine on cognition in age-associated memory impairment." *Nutr Neurosci*. 2001;4(2):121-134. PMID: 11842880. doi: [10.1080/1028415X.2001.11747356](https://doi.org/10.1080/1028415X.2001.11747356)
 
@@ -337,3 +337,5 @@ Brain PS carries a lot of DHA [3].
 [29] Monteleone P, Beinat L, Tanzillo C, Maj M, Kemali D. "Effects of phosphatidylserine on the neuroendocrine response to physical stress in humans." *Neuroendocrinology*. 1990;52(3):243-248. PMID: 2170852. doi: [10.1159/000125593](https://doi.org/10.1159/000125593)
 
 [30] Glade MJ, Smith K. "Phosphatidylserine and the human brain." *Nutrition*. 2015;31(6):781-786. PMID: 25933483. doi: [10.1016/j.nut.2014.10.014](https://doi.org/10.1016/j.nut.2014.10.014)
+
+[31] Maggioni M, Picotti GB, Bondiolotti GP, et al. "Effects of phosphatidylserine therapy in geriatric patients with depressive disorders." *Acta Psychiatr Scand*. 1990;81(3):265-270. PMID: 1693032. doi: [10.1111/j.1600-0447.1990.tb06494.x](https://doi.org/10.1111/j.1600-0447.1990.tb06494.x)
