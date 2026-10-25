@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { planJson, screenJson, sectionsJson } from './entry';
-import { statTiles as tilesFor, type StatTile } from '../../packages/health-core/src/stat-tiles';
+import { STAT_TILE_ABOUT, statTiles as tilesFor, type StatTile } from '../../packages/health-core/src/stat-tiles';
 import type { Plan } from '../../packages/health-core/src/plan';
 import { STAT_CARD_EVIDENCE, getIbwEvidence } from '../../packages/health-core/src/evidence';
 
@@ -74,7 +74,13 @@ describe('statTiles (US-25 AC22)', () => {
     for (const tile of tiles) {
       expect(tile.status, tile.key).toBeUndefined();
       expect(tile.evidence, tile.key).toBeUndefined();
+      // US-57 AC5: a minor's tile still says what it is.
+      expect(tile.about, tile.key).toBe(STAT_TILE_ABOUT[tile.key]);
     }
+  });
+
+  it('serves each tile\'s "what it is" through the screen door (US-57 AC5)', () => {
+    for (const tile of statTiles(recordOf())) expect(tile.about, tile.key).toBe(STAT_TILE_ABOUT[tile.key]);
   });
 
   it('is health-core\'s statTiles for the plan, as JSON', () => {

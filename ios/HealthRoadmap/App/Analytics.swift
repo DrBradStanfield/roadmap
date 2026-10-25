@@ -49,6 +49,41 @@ final class Analytics {
         if started { sdk.screen(screen.rawValue) }
     }
 
+    /// Sends one of the fixed events (US-57's usage signal). A no-op until started.
+    func event(_ event: Event) {
+        if started { sdk.event(event.rawValue) }
+    }
+
+    /// The only events Clarity ever gets (D9, Brad 2026-10-25): fixed words, never a value
+    /// and never a tile's name. AnalyticsMaskingTests pins the list.
+    enum Event: String, CaseIterable {
+        case tourStarted = "Tour started"
+        case tourTipClosed1 = "Tour tip closed 1", tourTipClosed2 = "Tour tip closed 2", tourTipClosed3 = "Tour tip closed 3"
+        case tourSkipped1 = "Tour skipped 1", tourSkipped2 = "Tour skipped 2", tourSkipped3 = "Tour skipped 3"
+        case tileExplainerOpened = "Tile explainer opened"
+        case cloudPromptShown = "Cloud prompt shown", cloudPromptBackUp = "Cloud prompt back up", cloudPromptNotNow = "Cloud prompt not now"
+
+        /// A tour tip closed with its x, or acted on: the tour moved on.
+        static func tipClosed(_ step: TourStep) -> Event? {
+            switch step {
+            case .snapshot: .tourTipClosed1
+            case .foundation: .tourTipClosed2
+            case .bloodTests: .tourTipClosed3
+            case .notStarted, .done: nil
+            }
+        }
+
+        /// "Skip tour" on a tip.
+        static func skipped(_ step: TourStep) -> Event? {
+            switch step {
+            case .snapshot: .tourSkipped1
+            case .foundation: .tourSkipped2
+            case .bloodTests: .tourSkipped3
+            case .notStarted, .done: nil
+            }
+        }
+    }
+
     /// The only screen names Clarity ever gets.
     enum Screen: String {
         case welcome = "Welcome", onboarding = "Onboarding", myData = "My data", plan = "My plan", chat = "Chat"
@@ -68,6 +103,7 @@ protocol AnalyticsSDK {
     func mask(_ view: UIView)
     func start(projectId: String) -> Bool
     func screen(_ name: String)
+    func event(_ name: String)
 }
 
 struct ClarityAnalytics: AnalyticsSDK {
@@ -90,6 +126,17 @@ struct ClarityAnalytics: AnalyticsSDK {
         _ = ClaritySDK.setCurrentScreenName(name)
         #endif
     }
+
+    func event(_ name: String) {
+        #if canImport(Clarity)
+        _ = ClaritySDK.sendCustomEvent(value: name)
+        #endif
+    }
+}
+
+extension EnvironmentValues {
+    /// The app's one Analytics, for views that send a fixed event (RootView sets it).
+    @Entry var analytics: Analytics? = nil
 }
 
 extension View {

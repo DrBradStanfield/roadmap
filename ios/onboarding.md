@@ -145,49 +145,58 @@ Health, and see my plan, without facing the full form.
 - Tests: the step model (what to ask, resume, skip), the prefill mapping from HealthKit
   (sex other, no birth day kept), and a UI pass on the simulator and the iPhone.
 
-## The tour (US-57, approved by Brad 2026-10-25)
+## The tour (US-57, approved and built 2026-10-25)
 
 After the last question the person lands on My plan, and a three-tip tour starts. It uses
-Apple's TipKit, shows once and can be skipped. The story and its ACs are US-57.
+Apple's TipKit, shows each tip once and can be skipped. Brad: "This tour mustn't go on and
+on", so each tip is one line. The story and its ACs are US-57.
 
-1. **The snapshot** (the summary tiles): "Your numbers at a glance". Every tile opens a
-   short explainer of what it is, for good, not only during the tour.
-2. **The first Foundation step**: each step comes with its reason and its evidence.
-3. **Blood tests, on My data**: the more you add, the more personal the plan; a lab
-   report fills these in. Its action opens the lab upload sheet.
+1. **The snapshot**, one tip for the whole row of tiles: "A snapshot of your health. Tap
+   any tile to learn more." Every tile opens its "what it is" line, for good.
+2. **The first Foundation card**: "Start here. Each step comes with the reason and the
+   evidence." My plan scrolls the card into view when the tip is due.
+3. **Blood tests, on My data**: "The more you add, the more personal your plan. A lab
+   report fills these in for you." Its action, "Add a lab report", opens the lab upload.
 
-No cloud sign-up in the tour. One prompt after the person's third save offers to back up
-the record to their own Dropbox or Google Drive. It shows once and opens the Sync sheet.
+Tips 1 and 2 offer "Skip tour" as plain text. The x moves on to the next tip. A tap
+outside a popover only hides it: the same tip shows on return (iOS 27; iOS 17 was not
+checked, no runtime installed).
+
+No cloud sign-up in the tour. One prompt after the person's third own save (a My data
+edit or a saved lab report, not onboarding's answers, Apple Health or a merge) offers a
+copy in their own Dropbox or Google Drive. It shows once, waits for the tour to finish
+and for no sheet to be up, and opens the Sync sheet once it has gone.
 
 ### Code
 
 - `Onboarding/TourTips.swift`: the three tips, the tour's step (one TipKit parameter),
-  `TourStep` (the pure order: close moves on, skip ends), `TourSetup` (`Tips.configure`
-  at launch, and the launch arguments), and the `tourTip` modifier the anchors use.
-- `Onboarding/CloudPrompt.swift`: the third-save rule (a count and a done flag in
-  UserDefaults) and `CloudPromptView`, which opens the existing `SyncView`. Built in
-  phase 1, not wired yet. Not named `*Backup*`: `.gitignore`'s `*backup*` would hide it.
-- `Plan/TileExplainerSheet.swift`: a tile's "what it is" above its existing why. It
-  replaces `SummaryTiles`' private `TileEvidenceSheet` in phase 2.
-- Phase 2 wires the anchors (`PlanView`, `SummaryTiles`, `MyDataView`), starts the tour
-  from `RootView.finishOnboarding`, and counts saves from `RecordStore`.
+  `TourStep` (the pure order: close moves on, skip ends), the `tourTip` modifier the
+  anchors use (it sends the fixed Clarity events), `TourTipStyle` (the app's accent
+  button, OnAccent text), and `TourSetup` (`Tips.configure` at launch; `--ui-testing`
+  hides the tips, `--ui-testing --show-tips` starts them fresh).
+- Anchors: `SummaryTiles` (the grid, tip 1), `PlanView` (the first Foundation card,
+  tip 2), `MyDataView` (the Blood tests header, tip 3). `RootView.finishOnboarding`
+  starts the tour.
+- `Plan/TileExplainerSheet.swift`: a tile's line above its existing evidence. It
+  replaced `SummaryTiles`' `TileEvidenceSheet`.
+- `Onboarding/CloudPrompt.swift`: the third-save rule and `CloudPromptView`. Not named
+  `*Backup*`: `.gitignore`'s `*backup*` would hide it. `RecordStore.ownSaves` counts the
+  person's saves; `RootView` feeds them to the rule after onboarding and shows the sheet.
 
-### Tile explainers: what exists, what is new
+### Tile lines
 
-The web has no plain "what it is" text for its tiles. A tile's tap opens its evidence:
-`STAT_CARD_EVIDENCE`, `getBmiEvidence`, `getIbwEvidence` and `getProteinEvidence` in
-`packages/health-core/src/evidence.ts`, which `statTiles` (`stat-tiles.ts`) already hands
-to the web's `ResultsPanel` and to the phone. That evidence is reused as is, below the new
-words. `roadmap_text.html` explains the protein target in its body text but has no tile
-text.
+The web had no plain "what it is" text for its tiles; a tap opened only the evidence
+(`STAT_CARD_EVIDENCE` and the `get*Evidence` builders in `evidence.ts`), which stays, under
+"The evidence". The ten new lines (Brad approved them as drafted, 2026-10-25) live in
+health-core as `STAT_TILE_ABOUT` beside `statTiles`, which sets each tile's `about`; the
+engine serves it through `screenJson`. The web may show them later. Rule: no threshold and
+no grading, so a line never disagrees with the status or evidence beneath and suits a
+known minor's tile, which now opens its line alone (US-07 AC6 holds: no evidence). Brad
+kept them outside the three-file sync (definitions, no rule). He also chose: ideal body
+weight says "a healthy weight" with no mortality link; eGFR has no "higher is better";
+protein keeps "more so after 40".
 
-The new words are a short "what it is" for each tile key. Rule: no threshold and no
-grading, so they suit a known minor's tile (US-07 AC6) and never disagree with the status
-or the evidence beneath. Proposed home: a `STAT_TILE_ABOUT` map beside `statTiles`, served
-as `StatTile.about` through `screenJson`, so the engine serves it and Swift holds no
-clinical words. Not wired yet.
-
-| Tile key | Draft "what it is" | Source in health_roadmap_algorithm.md / evidence.ts |
+| Tile key | "What it is" (in `STAT_TILE_ABOUT`) | Source in health_roadmap_algorithm.md / evidence.ts |
 |---|---|---|
 | `whtr` | Your waist measurement divided by your height. It shows how much weight you carry around your middle, which BMI cannot show. | § Waist-to-Height Ratio; `STAT_CARD_EVIDENCE.whtr` (central adiposity) |
 | `bmi` | Body mass index: your weight in kilograms divided by your height in metres, squared. It cannot tell muscle from fat, so your waist measurement can change how the plan reads it. | § BMI, § Composite Assessment (WHtR reclassifies 25 to 29.9) |
@@ -199,18 +208,3 @@ clinical words. Not wired yet.
 | `egfr` | Estimated glomerular filtration rate: how well your kidneys filter your blood, worked out from a creatinine blood test, your age and your sex. | `STAT_CARD_EVIDENCE.egfr` (CKD-EPI 2021) |
 | `lpa` | Lipoprotein(a), a cholesterol particle whose level is set mostly by your genes. Diet and exercise change it little, so one test in a lifetime is usually enough. | `STAT_CARD_EVIDENCE.lpa` |
 | `hba1c` | Your average blood sugar over the last two to three months, from one blood test. | `STAT_CARD_EVIDENCE.hba1c` |
-
-**NEEDS BRAD:**
-1. A known minor's BMI, lipid, Lp(a) and HbA1c tiles are not buttons today (US-07 AC6
-   drops their why). "Every tile tappable" would let them open the "what it is" alone, with
-   no why. The words carry no threshold. Allow it, or keep a minor's tiles as they are?
-2. Do these words fall under the three-file sync? They add no rule or threshold, but they
-   are health content shown to the person. If yes: a "Tile explainers" table in
-   health_roadmap_algorithm.md, and roadmap_text.html needs nothing (it has no tile text).
-3. `ibw`: the evidence says target BMI 24 (men) and 22 (women) is linked with the lowest
-   all-cause mortality. The draft leaves that out and says only "a healthy weight". Keep it
-   plain, or name the mortality link?
-4. `egfr`: the draft does not say "higher is better", because a very high eGFR is not
-   always good. Right to leave it out?
-5. `protein`: "more so after 40" follows the evidence's "particularly important for adults
-   over 40". Keep the age, or drop it?

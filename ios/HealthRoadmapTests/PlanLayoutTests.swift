@@ -77,6 +77,11 @@ final class PlanLayoutTests: XCTestCase {
         XCTAssertEqual(tiles[3].status?.tone, "info")
         XCTAssertEqual("\(tiles[4].value) \(tiles[4].unit)", "5.6 %", "the phone's own units (AC17e)")
         for tile in tiles { XCTAssertFalse(tile.evidence?.reason.isEmpty ?? true, tile.key) }
+        // US-57 AC5: and what it is, so every tile opens.
+        for tile in tiles {
+            XCTAssertFalse(tile.about?.isEmpty ?? true, tile.key)
+            XCTAssertTrue(tile.opens, tile.key)
+        }
     }
 
     /// Re-check F1: a tile Swift cannot decode leaves no tiles, never a blank plan.

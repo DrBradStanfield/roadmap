@@ -10,9 +10,10 @@ final class OnboardingUITests: XCTestCase {
 
     /// The app, flagged so its session never reaches Clarity (US-25 AC19).
     @MainActor
-    private func launch(textSize: String? = nil) -> XCUIApplication {
+    /// `tips`: the tour's tips on, from an empty TipKit store (US-57 AC10); otherwise hidden.
+    private func launch(textSize: String? = nil, tips: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["--ui-testing"]
+        app.launchArguments = ["--ui-testing"] + (tips ? ["--show-tips"] : [])
         if let textSize { app.launchArguments += ["-UIPreferredContentSizeCategoryName", textSize] }
         app.launch()
         return app
@@ -138,11 +139,84 @@ final class OnboardingUITests: XCTestCase {
         // The plan, not the form, and the flow does not come back (AC7).
         XCTAssertFalse(app.buttons["onboarding.continue"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.tabBars.buttons["My plan"].isSelected)
+        XCTAssertFalse(app.staticTexts[Self.tourLines[0]].waitForExistence(timeout: 2), "--ui-testing hides the tour (US-57 AC10)")
         snap(app, "7 plan")
         app.terminate()
         let again = launch()
         XCTAssertFalse(again.buttons["welcome.start"].waitForExistence(timeout: 3))
         XCTAssertFalse(again.buttons["onboarding.continue"].exists)
+    }
+
+    /// US-57's three tips, word for word (Brad 2026-10-25).
+    static let tourLines = [
+        "A snapshot of your health. Tap any tile to learn more.",
+        "Start here. Each step comes with the reason and the evidence.",
+        "The more you add, the more personal your plan. A lab report fills these in for you.",
+    ]
+
+    /// US-57: after onboarding, the three tips in order, one at a time; a tile explains
+    /// itself; the last tip's action opens the lab upload (AC1, AC2, AC4-AC7).
+    @MainActor
+    func testTheTourWalksItsThreeTips_US57() throws {
+        let app = launch(tips: true)
+        try answerUpToWeight(app)
+        answerWeight(app)
+
+        let snapshot = app.staticTexts[Self.tourLines[0]]
+        XCTAssertTrue(snapshot.waitForExistence(timeout: 10), "tip 1 shows on My plan after onboarding")
+        XCTAssertFalse(app.staticTexts[Self.tourLines[1]].exists, "one tip at a time")
+        XCTAssertTrue(app.buttons["Skip tour"].exists, "the tour can be skipped")
+        snap(app, "tour 1 snapshot")
+        closeTip(app)
+
+        let foundation = app.staticTexts[Self.tourLines[1]]
+        XCTAssertTrue(foundation.waitForExistence(timeout: 10), "tip 2 follows tip 1")
+        XCTAssertFalse(snapshot.exists)
+        snap(app, "tour 2 foundation")
+        closeTip(app)
+        XCTAssertFalse(foundation.waitForExistence(timeout: 2))
+
+        // Every tile explains itself, for good (AC5).
+        let tile = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Ideal Body Weight'")).firstMatch
+        if !tile.isHittable { app.swipeDown() }
+        tile.tap()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'A healthy weight for your height and sex'")).firstMatch.waitForExistence(timeout: 5),
+                      "the tile's what-it-is")
+        snap(app, "tour tile explainer")
+        app.buttons["Done"].tap()
+
+        app.tabBars.buttons["My data"].tap()
+        let bloodTests = app.staticTexts[Self.tourLines[2]]
+        var tries = 0
+        while !bloodTests.exists && tries < 8 { app.swipeUp(); tries += 1 }
+        XCTAssertTrue(bloodTests.waitForExistence(timeout: 10), "tip 3 shows at Blood tests on My data")
+        snap(app, "tour 3 blood tests")
+        app.buttons["Add a lab report"].tap()
+        XCTAssertTrue(app.staticTexts["Add medical records"].waitForExistence(timeout: 5), "the action opens the lab upload")
+        XCTAssertFalse(bloodTests.exists, "acting on it ends the tour")
+        snap(app, "tour lab upload")
+    }
+
+    /// "Skip tour" ends it: no later tip shows (AC3).
+    @MainActor
+    func testSkipEndsTheTour_US57() throws {
+        let app = launch(tips: true)
+        try answerUpToWeight(app)
+        answerWeight(app)
+        XCTAssertTrue(app.buttons["Skip tour"].waitForExistence(timeout: 10))
+        app.buttons["Skip tour"].tap()
+        XCTAssertFalse(app.staticTexts[Self.tourLines[1]].waitForExistence(timeout: 3), "no tip 2")
+        app.tabBars.buttons["My data"].tap()
+        for _ in 0..<4 { app.swipeUp() }
+        XCTAssertFalse(app.staticTexts[Self.tourLines[2]].exists, "no tip 3")
+    }
+
+    /// Closes the tip on screen with its x.
+    @MainActor
+    private func closeTip(_ app: XCUIApplication) {
+        let close = app.buttons["Close"].firstMatch
+        XCTAssertTrue(close.waitForExistence(timeout: 5), "the tip has its x")
+        close.tap()
     }
 
     /// The plan follows an edit made on My data while it was hidden (US-25 AC6): it

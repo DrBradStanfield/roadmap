@@ -12,6 +12,7 @@ final class AnalyticsMaskingTests: XCTestCase {
         func mask(_ view: UIView) { calls.append(view is UIWindow ? "mask window" : "mask view") }
         func start(projectId: String) -> Bool { calls.append("start \(projectId)"); return true }
         func screen(_ name: String) { calls.append("screen \(name)") }
+        func event(_ name: String) { calls.append("event \(name)") }
     }
 
     func testTheWindowIsMaskedBeforeClarityStarts_AC19() {
@@ -30,6 +31,36 @@ final class AnalyticsMaskingTests: XCTestCase {
         analytics.start(in: UIWindow())
         analytics.screen(.myData)
         XCTAssertEqual(sdk.calls.last, "screen My data")
+    }
+
+    /// US-57's usage signal (D9, Brad 2026-10-25): exactly these fixed words, no value and no
+    /// tile name, and nothing before Clarity starts.
+    func testEventsAreExactlyTheFixedWords_US57() {
+        XCTAssertEqual(Analytics.Event.allCases.map(\.rawValue), [
+            "Tour started",
+            "Tour tip closed 1", "Tour tip closed 2", "Tour tip closed 3",
+            "Tour skipped 1", "Tour skipped 2", "Tour skipped 3",
+            "Tile explainer opened",
+            "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now",
+        ])
+        let sdk = FakeSDK()
+        let analytics = Analytics(sdk: sdk, projectId: "abc", testing: false)
+        analytics.event(.tourStarted)
+        XCTAssertEqual(sdk.calls, [], "nothing before Clarity starts")
+        analytics.start(in: UIWindow())
+        analytics.event(.tileExplainerOpened)
+        XCTAssertEqual(sdk.calls.last, "event Tile explainer opened")
+    }
+
+    func testEachTourTipHasItsOwnClosedAndSkippedWords_US57() {
+        XCTAssertEqual(Analytics.Event.tipClosed(.snapshot), .tourTipClosed1)
+        XCTAssertEqual(Analytics.Event.tipClosed(.foundation), .tourTipClosed2)
+        XCTAssertEqual(Analytics.Event.tipClosed(.bloodTests), .tourTipClosed3)
+        XCTAssertEqual(Analytics.Event.skipped(.snapshot), .tourSkipped1)
+        XCTAssertEqual(Analytics.Event.skipped(.foundation), .tourSkipped2)
+        XCTAssertEqual(Analytics.Event.skipped(.bloodTests), .tourSkipped3)
+        XCTAssertNil(Analytics.Event.tipClosed(.notStarted))
+        XCTAssertNil(Analytics.Event.skipped(.done))
     }
 
     func testNoProjectIdMeansClarityStaysOff_AC19() {

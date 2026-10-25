@@ -27,7 +27,28 @@ export interface StatTile {
   status?: StatTileStatus;
   /** What a tap opens. */
   evidence?: SuggestionEvidence;
+  /** What the tile is, in plain words (US-57 AC5); kept for a known minor's tile too. */
+  about?: string;
 }
+
+/**
+ * What each tile is, one to three plain sentences (US-57 AC5, approved by Brad 2026-10-25).
+ * No threshold and no grading, so a line never disagrees with the tile's status or its
+ * evidence, and suits a known minor's tile (US-07 AC6). Definitions only: outside the
+ * three-file sync (Brad, 2026-10-25). The phone shows them; the web may later.
+ */
+export const STAT_TILE_ABOUT: Record<string, string> = {
+  whtr: 'Your waist measurement divided by your height. It shows how much weight you carry around your middle, which BMI cannot show.',
+  bmi: 'Body mass index: your weight in kilograms divided by your height in metres, squared. It cannot tell muscle from fat, so your waist measurement can change how the plan reads it.',
+  ibw: 'A healthy weight for your height and sex, from the Peterson formula (2016). The plan sets your protein target from it, not from your current weight.',
+  protein: 'How much protein to eat each day, set from your ideal body weight. Enough protein helps you keep muscle, more so after 40.',
+  apoB: 'Apolipoprotein B counts the particles in your blood that can build up in artery walls. The plan prefers it to the other cholesterol tests because it predicts heart risk most closely.',
+  nonHdl: 'Your total cholesterol minus your HDL cholesterol: the cholesterol in every particle that can build up in artery walls. The plan uses it when there is no ApoB result.',
+  ldl: 'The cholesterol carried by LDL particles, the main kind that builds up in artery walls. The plan uses it when there is no ApoB or non-HDL result.',
+  egfr: 'Estimated glomerular filtration rate: how well your kidneys filter your blood, worked out from a creatinine blood test, your age and your sex.',
+  lpa: 'Lipoprotein(a), a cholesterol particle whose level is set mostly by your genes. Diet and exercise change it little, so one test in a lifetime is usually enough.',
+  hba1c: 'Your average blood sugar over the last two to three months, from one blood test.',
+};
 
 export interface StatTileOptions {
   unitSystem: UnitSystem;
@@ -137,7 +158,7 @@ export function statTiles(results: HealthResults, { unitSystem, unitOverrides, s
       status: reading(graded(getHba1cStatus(results.hba1c))), evidence: reading(STAT_CARD_EVIDENCE['hba1c']),
     });
   }
-  return tiles;
+  return tiles.map((t) => ({ ...t, about: STAT_TILE_ABOUT[t.key] }));
 }
 
 /** A tile's value and unit as one line, as the web prints it: "72g/day", "60.0 kg", "25.2". */

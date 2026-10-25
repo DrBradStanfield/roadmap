@@ -6,6 +6,7 @@ import SwiftUI
 struct SummaryTiles: View {
     let tiles: [StatTile]
     @Environment(\.dynamicTypeSize) private var textSize
+    @Environment(\.analytics) private var analytics
     @State private var opened: StatTile?
 
     var body: some View {
@@ -13,15 +14,20 @@ struct SummaryTiles: View {
         let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: textSize.isAccessibilitySize ? 1 : 2)
         LazyVGrid(columns: columns, spacing: 12) {
             ForEach(tiles) { tile in
-                // A tile with no why (a known minor's, US-07 AC6) is not a button.
-                Button { opened = tile } label: { TileCard(tile: tile) }
+                // Every tile says what it is (US-57 AC5); a known minor's has no why (US-07 AC6).
+                Button {
+                    opened = tile
+                    analytics?.event(.tileExplainerOpened)
+                } label: { TileCard(tile: tile) }
                     .buttonStyle(PressableStyle())
-                    .disabled(tile.evidence == nil)
-                    .accessibilityHint(tile.evidence == nil ? "" : "Shows why")
+                    .disabled(!tile.opens)
+                    .accessibilityHint(tile.opens ? "Shows what it means" : "")
             }
         }
+        // One tip for the whole row, never one per tile (Brad 2026-10-25).
+        .tourTip(SnapshotTip(), step: .snapshot, arrowEdge: .bottom)
         .sheet(item: $opened) { tile in
-            if let evidence = tile.evidence { TileEvidenceSheet(title: tile.label, evidence: evidence) }
+            TileExplainerSheet(title: tile.label, about: tile.about, evidence: tile.evidence)
         }
     }
 }
@@ -58,27 +64,4 @@ private struct TileCard: View {
 
     /// The web's status colours; no tone is gray.
     static let tones: [String: Color] = ["normal": .green, "info": .blue, "attention": .orange, "urgent": .red]
-}
-
-/// What a tile's tap shows, as the web's opened tile: the guideline tags, the reason and the references.
-private struct TileEvidenceSheet: View {
-    let title: String
-    let evidence: StatTile.Evidence
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                EvidenceDetails(reason: evidence.reason, guidelines: evidence.guidelines, references: evidence.references)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
-            }
-            .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
-            }
-        }
-        .presentationDetents([.medium, .large])
-    }
 }

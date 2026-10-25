@@ -87,6 +87,10 @@ struct StatTile: Decodable, Identifiable {
     let unit: String
     let status: Status?
     let evidence: Evidence?
+    /// What the tile is, in plain words (US-57 AC5); a known minor's tile has it too.
+    let about: String?
 
     var id: String { key }
+    /// A tile is a button when it has anything to show.
+    var opens: Bool { about != nil || evidence != nil }
 }

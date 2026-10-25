@@ -60,7 +60,10 @@ struct MyDataView: View {
             if let data = store.myData {
                 List {
                     vitals(data)
-                    metrics(data.bloodTests) { SectionTitle.bloodTests() }
+                    metrics(data.bloodTests) {
+                        // Tour tip 3 (US-57 AC7); its action is the lab upload.
+                        SectionTitle.bloodTests().tourTip(BloodTestsTip(), step: .bloodTests) { addingLabs = true }
+                    }
                     MedicationsSection(store: store, data: data, saved: saved)
                     ScreeningsSection(store: store, data: data, saved: saved, open: open)
                     SupplementsSection(store: store, supplements: data.supplements, saved: saved)

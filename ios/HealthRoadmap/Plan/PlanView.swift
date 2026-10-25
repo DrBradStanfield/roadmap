@@ -58,44 +58,69 @@ private struct PlanList: View {
     let planMs: Double
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 28) {
-                // The web's Quick Stats, above the suggestions as there (US-25 AC22).
-                if !tiles.isEmpty { SummaryTiles(tiles: tiles) }
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 28) {
+                    // The web's Quick Stats, above the suggestions as there (US-25 AC22).
+                    if !tiles.isEmpty { SummaryTiles(tiles: tiles) }
 
-                ForEach(sections) { section in
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(section.title)
-                            .font(.title3.weight(.semibold))
-                            .padding(.horizontal, 4)
-                            .modifier(RiseIn())
-                        ForEach(section.cards) { PlanCardView(card: $0).modifier(RiseIn()) }
+                    ForEach(sections) { section in
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(section.title)
+                                .font(.title3.weight(.semibold))
+                                .padding(.horizontal, 4)
+                                .modifier(RiseIn())
+                            ForEach(section.cards) { card in
+                                // Tour tip 2 (US-57 AC6): the first Foundation step.
+                                if section.key == Self.foundation, card.id == section.cards.first?.id {
+                                    PlanCardView(card: card).modifier(RiseIn())
+                                        .id(Self.foundation)
+                                        .tourTip(FoundationTip(), step: .foundation)
+                                } else {
+                                    PlanCardView(card: card).modifier(RiseIn())
+                                }
+                            }
+                        }
                     }
-                }
 
-                // Same words as the web's disclaimer (ResultsPanel.tsx, `health-disclaimer`).
-                Text("**Disclaimer:** This tool is for educational purposes only and is not a substitute for professional medical advice. Always consult with your healthcare provider before making any health decisions. Suggestions are based on general guidelines and may not apply to your individual situation.")
+                    // Same words as the web's disclaimer (ResultsPanel.tsx, `health-disclaimer`).
+                    Text("**Disclaimer:** This tool is for educational purposes only and is not a substitute for professional medical advice. Always consult with your healthcare provider before making any health decisions. Suggestions are based on general guidelines and may not apply to your individual situation.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 4)
+
+                    // Chat and lab upload send data (US-52 AC9, architecture.md D9), so the
+                    // line claims only where the plan was worked out, and how long the engine
+                    // took to plan it, in its own whole milliseconds (D2's plan budget).
+                    Label {
+                        Text(PlanView.workedOut(ms: planMs))
+                    } icon: {
+                        Image(systemName: "lock.shield")
+                    }
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                    .padding(.horizontal, 4)
-
-                // Chat and lab upload send data (US-52 AC9, architecture.md D9), so the
-                // line claims only where the plan was worked out, and how long the engine
-                // took to plan it, in its own whole milliseconds (D2's plan budget).
-                Label {
-                    Text(PlanView.workedOut(ms: planMs))
-                } icon: {
-                    Image(systemName: "lock.shield")
+                    .frame(maxWidth: .infinity)
                 }
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 32)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 32)
+            .task {
+                // Tip 2 is due once tip 1 closes: bring its card into view, or it waits off
+                // screen. A plan with no Foundation card has no tip 2 (AC6): the tour moves on.
+                for await due in FoundationTip().shouldDisplayUpdates where due {
+                    if sections.contains(where: { $0.key == Self.foundation && !$0.cards.isEmpty }) {
+                        withAnimation { proxy.scrollTo(Self.foundation, anchor: .center) }
+                    } else {
+                        _ = Tour.close(.foundation)
+                    }
+                }
+            }
         }
     }
+
+    /// health-core's planSections key for the Foundation section.
+    static let foundation = "info"
 }
 
 /// A card rises in the first time any of it scrolls into view, then stays (Brad 2026-10-23).

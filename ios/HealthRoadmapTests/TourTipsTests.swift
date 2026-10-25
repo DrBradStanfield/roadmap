@@ -42,6 +42,21 @@ final class TourTipsTests: XCTestCase {
         XCTAssertEqual(TourStep.allCases.map(\.rawValue), [0, 1, 2, 3, 4])
     }
 
+    /// Brad 2026-10-25: exactly three tips, one short line each.
+    func testThreeTipsOneShortLineEach_AC4_AC6_AC7() {
+        XCTAssertEqual(TourStep.allCases.filter(\.isTip), [.snapshot, .foundation, .bloodTests])
+        XCTAssertEqual(SnapshotTip.line, "A snapshot of your health. Tap any tile to learn more.")
+        XCTAssertEqual(FoundationTip.line, "Start here. Each step comes with the reason and the evidence.")
+        XCTAssertEqual(BloodTestsTip.line, "The more you add, the more personal your plan. A lab report fills these in for you.")
+        XCTAssertNil(SnapshotTip().message, "one line: the title alone")
+        XCTAssertNil(FoundationTip().message)
+        XCTAssertNil(BloodTestsTip().message)
+        XCTAssertEqual(BloodTestsTip.actionTitle, "Add a lab report")
+        XCTAssertEqual(BloodTestsTip().actions.map(\.id), [Tour.uploadAction], "its one action opens the lab upload")
+        XCTAssertEqual(SnapshotTip().actions.map(\.id), [Tour.skipAction])
+        XCTAssertEqual(FoundationTip().actions.map(\.id), [Tour.skipAction])
+    }
+
     func testUnitTestsNeverConfigureTipKit() {
         XCTAssertEqual(TourSetup.mode(environment: ["XCTestConfigurationFilePath": "x"], arguments: []), .none)
         XCTAssertEqual(TourSetup.mode(environment: ["XCTestConfigurationFilePath": "x"], arguments: ["--ui-testing", "--show-tips"]), .none)

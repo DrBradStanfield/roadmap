@@ -1,6 +1,6 @@
 // US-25 AC22: the plan's summary tiles, one source for the web's Quick Stats and the phone's tiles.
 import { describe, expect, it } from 'vitest';
-import { statTiles, statTileText, type StatTile, type StatTileOptions } from './stat-tiles';
+import { STAT_TILE_ABOUT, statTiles, statTileText, type StatTile, type StatTileOptions } from './stat-tiles';
 import { calculateHealthResults } from './calculations';
 import { STAT_CARD_EVIDENCE, getBmiEvidence, getIbwEvidence, getProteinEvidence } from './evidence';
 import type { HealthResults } from './types';
@@ -132,6 +132,37 @@ describe('a known minor (US-07 AC6)', () => {
     }
     // Waist-to-height keeps its reading, as the web always has.
     expect(tiles[0].status).toEqual({ label: 'Elevated', tone: 'attention' });
+  });
+
+  it('keeps each tile\'s "what it is", which grades nothing (US-57 AC5)', () => {
+    const tiles = statTiles(results({
+      knownMinor: true, bmi: 27, bmiCategory: 'Overweight', waistToHeightRatio: 0.55, ldlC: 4, lpa: 200, hba1c: 50,
+    }), SI);
+    for (const t of tiles) expect(t.about, t.key).toBe(STAT_TILE_ABOUT[t.key]);
+  });
+});
+
+describe('what each tile is (US-57 AC5, Brad 2026-10-25)', () => {
+  const KEYS = ['whtr', 'bmi', 'ibw', 'protein', 'apoB', 'nonHdl', 'ldl', 'egfr', 'lpa', 'hba1c'];
+
+  it('has one line for each of the ten tiles, and no other', () => {
+    expect(Object.keys(STAT_TILE_ABOUT).sort()).toEqual([...KEYS].sort());
+  });
+
+  it('gives every drawn tile its line', () => {
+    const r = calculateHealthResults({
+      heightCm: 175, weightKg: 80, waistCm: 90, sex: 'male', ldlC: 3, apoB: 0.8, creatinine: 80, lpa: 60, hba1c: 36, birthYear: 1980,
+    });
+    for (const t of statTiles(r, SI)) expect(t.about, t.key).toBe(STAT_TILE_ABOUT[t.key]);
+    const noApoB = byKey(statTiles(results({ nonHdlCholesterol: 4, ldlC: 3 }), SI));
+    expect(noApoB.nonHdl.about).toBe(STAT_TILE_ABOUT.nonHdl);
+  });
+
+  it('names no threshold, so no line can disagree with a status (or grade a minor)', () => {
+    for (const [key, text] of Object.entries(STAT_TILE_ABOUT)) {
+      expect(text, key).not.toMatch(/[<>≥≤]|\b0\.5\b|\d+\s*(mg|mmol|nmol|mL|%)/);
+      expect(text, key).not.toContain('—');
+    }
   });
 });
 

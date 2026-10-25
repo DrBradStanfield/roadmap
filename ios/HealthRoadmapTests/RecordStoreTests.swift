@@ -66,6 +66,29 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(store.myData?.vitals.first?.latest?.value, "82.0")
     }
 
+    /// US-57 AC9: the cloud prompt counts the person's own saves: a My data edit, or a lab
+    /// report's values. An Apple Health import, a units choice, a refusal and an edit that
+    /// changed nothing count for nothing. (Onboarding's answers are left out by RootView.)
+    func testOnlyThePersonsOwnSavesAreCounted_US57() async throws {
+        let store = try store()
+        XCTAssertEqual(store.ownSaves, 0)
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
+        XCTAssertEqual(store.ownSaves, 1, "a My data edit counts")
+        _ = await store.apply(.add(metric: "systolic_bp", value: 400, day: "2026-10-20"))
+        XCTAssertEqual(store.ownSaves, 1, "a refusal does not")
+        await XCTAssertSaved(await store.applyNow(.add(metric: "waist", value: 90, day: "2026-10-20")))
+        XCTAssertEqual(store.ownSaves, 1, "an edit no sheet opened (Apple Health) does not")
+        await XCTAssertSaved(await store.apply(.units("conventional")))
+        XCTAssertEqual(store.ownSaves, 1, "a units choice does not")
+        let extraction = #"""
+        {"classification":"lab_report","reportDate":"2026-10-01",
+         "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],
+         "additionalValues":[], "refusedValues":[]}
+        """#
+        _ = try (await store.importLabs(extractionJSON: extraction, refs: ["v0"], reportDay: "2026-10-01")).get()
+        XCTAssertEqual(store.ownSaves, 2, "a saved lab report counts once")
+    }
+
     /// A value page asks for its history on every redraw; the answer is cached per
     /// record, so a correction must show at once (US-25 AC9, the cache in RecordStore).
     func testTheValueHistoryFollowsACorrection() async throws {

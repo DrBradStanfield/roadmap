@@ -1013,6 +1013,13 @@ health tool (`data-clarity-mask` on `HealthTool.tsx`'s root). The app matches th
   never a navigation title, which can carry a supplement's name. Nothing is ever unmasked.
 - `AnalyticsMaskingTests` (US-25 AC19) fails if the window is not masked first, if any code
   unmasks, if a text input lacks its mask, or if any file but Analytics.swift calls Clarity.
+- **Custom events, exactly eleven fixed words (Brad 2026-10-25, US-57's usage signal):**
+  `Analytics.event` sends `ClaritySDK.sendCustomEvent` with a word from one enum,
+  `Analytics.Event`: "Tour started", "Tour tip closed 1/2/3", "Tour skipped 1/2/3", "Tile
+  explainer opened", "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now".
+  Never a value, a tile's name or any other text; nothing before Clarity starts.
+  `AnalyticsMaskingTests` pins the list, so a new word is a test change and a D9 change.
+  Views reach the one `Analytics` through the environment (`\.analytics`, set by RootView).
 - Second layer: the Clarity project's masking mode is set to **Strict** on its dashboard
   (Brad), which masks all text and images whatever the code does.
 - **What masking cannot hide:** where a person taps on a masked layout. On a two-button
@@ -1184,7 +1191,9 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled).
   - `Onboarding/`: the new-user flow (D12, US-54). `OnboardingSteps` (which questions,
     resume, region units, Health's sex and birth month and year), `TypedAnswer` (a typed
     height or weight and its entry-only unit switch), `OnboardingView` and `OnboardingPage`
-    (one screen's layout).
+    (one screen's layout). The tour after it (US-57): `TourTips` (three TipKit tips, one
+    line each; `TourSetup` configures TipKit at launch and hides it under `--ui-testing`
+    unless `--show-tips`) and `CloudPrompt` (the one backup offer after the third own save).
   - `Engine/`: `HealthEngine.swift` loads the bundle into a `JSContext` and awaits its
     Promises; `EngineNatives.swift` is the bridge (D2); `PhoneFiles.swift` the phone's
     record file and pending marker the natives read and write; `EngineHTTP.swift` its network
