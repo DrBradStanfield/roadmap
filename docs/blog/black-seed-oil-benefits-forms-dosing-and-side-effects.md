@@ -6,7 +6,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["black seed oil", "nigella sativa", "thymoquinone", "black cumin seed oil", "blood sugar", "diabetes", "insulin resistance", "hba1c", "cholesterol", "ldl", "hdl", "triglycerides", "blood pressure", "hypertension", "weight loss", "obesity", "inflammation", "immune", "asthma", "osteoarthritis", "thyroid", "gut health", "acne", "skin", "antioxidant", "omega-3", "seed oil"]
-summary: "Black seed oil (Nigella sativa): small trials suggest it may lower blood sugar, cholesterol, blood pressure and weight. Case reports link it to kidney and liver injury and low platelets. Talk to your doctor first if you take diabetes, blood pressure or blood-thinning drugs, or are pregnant."
+summary: "A 2025 review of 82 trials found black seed (Nigella sativa) improved weight, blood pressure, blood sugar and cholesterol. Case reports link it to kidney and liver injury and low platelets. Talk to your doctor first if you take diabetes, blood pressure or blood-thinning drugs, or are pregnant."
 reviewed: "2026-10-26"
 sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/40714301/","checked":"2026-10-26","fingerprint":"sha256:9ddd276187a82841608da1d13719a270ba163256ddd1b468832dc3d20c0752f5"}]
 ---
@@ -23,8 +23,8 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 - It can lower fasting blood sugar and blood pressure [34][26]. If you take diabetes or blood pressure medicines, ask your doctor first and check your levels more often.
 - Case reports link it to acute kidney failure, and to kidney injury with muscle breakdown and liver damage [75][74]. If you have kidney or liver disease, ask your doctor first. Stop it and see your doctor if you become unwell while taking it.
 - One case report linked it to serotonin syndrome after an endoscopic procedure [65]. Tell your surgeon and anaesthetist that you take it.
-- Its volatile oil blocked uterine contractions in animal tissue [78]. Do not take it while pregnant.
-- On the skin it has caused contact dermatitis [5], and case reports describe blistering reactions to the oil and to a swallowed supplement [79][81]. For a widespread blistering rash or peeling skin, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- Its safety in pregnancy and breastfeeding has not been established, and its volatile oil affected uterine muscle in animal tissue [78]. Avoid it while pregnant or breastfeeding.
+- On the skin it has caused contact dermatitis [5], and case reports describe blistering reactions to the oil and to a swallowed supplement [79][81]. For a widespread blistering rash or peeling skin, stop black seed and call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 ## Brad's videos on this topic
 
@@ -32,7 +32,7 @@ None yet.
 
 ## 1. Overview
 
-Black seed oil comes from the seeds of *Nigella sativa*, an annual flowering plant in the Ranunculaceae family, native to southwest Asia [1][2]. Its seeds and oil have a long history of use in food and in traditional medicine, including the Unani, Tibb and Ayurveda systems [1]. In Islamic literature, black seed is considered one of the greatest forms of healing medicine [1].
+Black seed oil comes from the seeds of *Nigella sativa*, an annual flowering plant in the Ranunculaceae family [1][2], native to southwest Asia [2]. Its seeds and oil have a long history of use in food and in traditional medicine, including the Unani, Tibb and Ayurveda systems [1]. In Islamic literature, black seed is considered one of the greatest forms of healing medicine [1].
 
 Black seed goes by several names, including black cumin, black caraway and kalonji in South Asia [22].
 
@@ -42,8 +42,6 @@ Thymoquinone is the main active compound of the essential oil, and it is also pr
 
 The oil can be extracted by cold pressing, supercritical fluid extraction or solvent methods, and its oxidative stability is very low, with heat and light affecting it [71].
 
-Black seed is sold as bottled oil, softgel capsules, ground seed powder in capsules, and extracts.
-
 A 2025 review of 82 randomized trials found that black seed improved several heart disease risk factors, including weight, blood pressure, blood sugar and cholesterol [72]. A 2016 overview noted that only limited non-clinical safety studies had been reported, and called for standardised dosage forms and formal studies of its safety [22].
 
 ## 2. Forms and Bioavailability
@@ -52,9 +50,9 @@ Black seed products differ in what they contain, and the form can matter: a meta
 
 ### Black Seed Oil (Liquid)
 
-Oil pressed without heat is the most common form. It carries the full fatty acid profile plus thymoquinone [70][71]. Thymoquinone content in commercial oils and capsules varied from 3.08 to 809.4 mg/100 g in one analysis [23].
+The oil carries the full fatty acid profile plus thymoquinone [70][71]. Thymoquinone content in commercial oils and capsules varied from 3.08 to 809.4 mg/100 g in one analysis [23].
 
-The oil can be taken by the spoonful or mixed with food. One trial gave 5 ml of the oil a day in a honey-based formulation [49]. Because its oxidative stability is low and heat and light affect it, store it away from heat and light [71].
+One trial gave 5 ml of the oil a day in a honey-based formulation [49].
 
 ### Black Seed Oil Capsules (Softgels)
 
@@ -82,7 +80,7 @@ Thymoquinone content varies widely between products. An analysis of six bottled 
 |------|:-:|------|------|
 | Liquid oil | 5 ml of oil by mouth each day [49]; 2.5 mL by mouth twice a day [30] | Full fatty acid profile; greater cholesterol effect than powder [37] | Low oxidative stability [71] |
 | Oil capsules (softgels) | 450 mg or 500 mg twice daily [35][42] | Measured dose | Thymoquinone content varies [23] |
-| Ground seed powder | 1 to 3 g a day [50] | Greater blood-pressure effect than oil [26] | |
+| Seed | 1 to 3 g a day [50] | Powder lowered blood pressure more than oil [26] | |
 | Seed extract | 300 mg of seed extract, twice daily [84] | Concentrated | No proven blood-pressure benefit in one trial [84] |
 | Topical (hydrogel or oil) | Twice daily [29]; three times a day [30] | Studied for acne and knee pain | Contact dermatitis reported [5] |
 
@@ -106,7 +104,7 @@ Glycemic control in type 2 diabetes and prediabetes is among the most studied us
 
 **Meta-analysis of 17 trials:** A 2016 meta-analysis of 17 randomized trials found that black seed lowered total cholesterol (-15.65 mg/dL), LDL cholesterol (-14.10 mg/dL) and triglycerides (-20.64 mg/dL), with no effect on HDL cholesterol. The oil had a greater effect on total and LDL cholesterol than the powder, and HDL rose only with powder (Sahebkar et al., *Pharmacol Res*, 2016) [37].
 
-**Hashimoto's disease subgroup:** In a trial of 40 people with Hashimoto's thyroiditis, powdered black seed for 8 weeks lowered LDL cholesterol and triglycerides and raised HDL cholesterol, while placebo changed none of them (Farhangi et al., *Lipids Health Dis*, 2018) [38].
+**Hashimoto's disease subgroup:** In a trial of 40 people with Hashimoto's thyroiditis, powdered black seed for 8 weeks lowered LDL cholesterol and triglycerides and raised HDL cholesterol within the black seed group, not tested against placebo; placebo changed none of them (Farhangi et al., *Lipids Health Dis*, 2018) [38].
 
 **Summary:** Black seed may lower total cholesterol, LDL and triglycerides. The effects are smaller than those of statins.
 
@@ -122,7 +120,7 @@ Glycemic control in type 2 diabetes and prediabetes is among the most studied us
 
 ### Weight Loss
 
-**Meta-analyses of 13 trials:** A meta-analysis of 11 studies found that black seed reduced body weight by 2.11 kg compared with placebo (Namazi et al., *J Ethnopharmacol*, 2018) [27]. A second, of 13 randomized trials with 875 people, found a weight loss of 1.76 kg but no significant change in waist size (Mousavi et al., *Complement Ther Med*, 2018) [28]. Both noted high variation between studies.
+**Meta-analyses of 11 and 13 trials:** A meta-analysis of 11 studies found that black seed reduced body weight by 2.11 kg compared with placebo (Namazi et al., *J Ethnopharmacol*, 2018) [27]. A second, of 13 randomized trials with 875 people, found a weight loss of 1.76 kg but no significant change in waist size (Mousavi et al., *Complement Ther Med*, 2018) [28]. Both noted high variation between studies.
 
 **Type 2 diabetes:** The 2025 meta-analysis of 16 trials in type 2 diabetes found no effect on body weight [36].
 
@@ -134,7 +132,7 @@ Two placebo-controlled trials suggest that black seed may improve asthma control
 
 **Black seed oil trial:** In 80 adults with asthma, black seed oil capsules (500 mg twice daily) for 4 weeks improved Asthma Control Test scores (21.1 versus 19.6) and lowered blood eosinophils compared with placebo. The gain in lung function was not significant (Koshak et al., *Phytother Res*, 2017) [42].
 
-**Black seed powder trial:** In partly controlled asthma, groups given 1 and 2 g/day of black seed for 3 months, with usual inhalers, improved some lung function measures, and fewer people had flare-ups in the 1 g group (Salem et al., *Ann Saudi Med*, 2017) [41].
+**Black seed trial (1 or 2 g/day):** In partly controlled asthma, groups given 1 and 2 g/day of black seed for 3 months, with usual inhalers, improved some lung function measures, and fewer people had flare-ups in the 1 g group (Salem et al., *Ann Saudi Med*, 2017) [41].
 
 **Lung function meta-analysis:** A meta-analysis of four trials found improved Asthma Control Test scores and FEV1, but no effect on peak expiratory flow [44].
 
@@ -146,7 +144,7 @@ Two placebo-controlled trials suggest that black seed may improve asthma control
 
 Hashimoto's disease is an autoimmune condition and the most common cause of an underactive thyroid. A trial of 40 people aged 22 to 50 years with the condition tested powdered black seed or placebo daily for 8 weeks. Black seed lowered TSH and anti-thyroid peroxidase (anti-TPO) antibodies, raised T3, and reduced body weight, with none of these changes in the placebo group [45].
 
-The same trial found lower LDL cholesterol and triglycerides and higher HDL cholesterol with black seed (Farhangi et al., *Lipids Health Dis*, 2018) [38].
+The same trial found lower LDL cholesterol and triglycerides and higher HDL cholesterol within the black seed group, not tested against placebo (Farhangi et al., *Lipids Health Dis*, 2018) [38].
 
 The trial used powdered seed, not oil [45].
 
@@ -222,7 +220,7 @@ There is no established dose for black seed oil. Trials have used 200 to 4600 mg
 - Dyspepsia: 5 ml in a honey-based formulation, daily for 8 weeks [49]
 - Knee osteoarthritis (oral): 2.5 mL twice a day for 6 weeks [30]
 
-**Black seed powder (capsules):**
+**Black seed (seed), g/day:**
 - Asthma: 1 and 2 g/day groups, for 3 months [41]
 - *H. pylori* (with standard treatment): 2 g a day for 8 weeks [48]; 1 g, 2 g or 3 g with omeprazole [50]
 
@@ -239,7 +237,7 @@ Based on the literature, the same authors suggested that a safe daily thymoquino
 
 Trials have usually given black seed in divided doses, such as twice daily [35][42].
 
-One trial mixed the oil with honey [49]. Capsules avoid the taste of the oil.
+One trial mixed the oil with honey [49].
 
 ### Dosing Summary Table
 
@@ -248,7 +246,7 @@ One trial mixed the oil with honey [49]. Capsules avoid the taste of the oil.
 | Blood sugar (prediabetes) | Oil capsules | 450 mg twice daily | six months | Trial [35] |
 | Blood sugar (type 2 diabetes) | Oil or powder | Varied | Varied | Meta-analyses of 7 and 16 trials [34][36] |
 | Cholesterol | Oil or powder | Varied | Varied | Meta-analysis of 17 trials [37] |
-| Blood pressure | Powder | Varied | Average 8.3 weeks | Meta-analysis of 11 trials [26] |
+| Blood pressure | Oil or powder (powder larger effect) | Varied | Average 8.3 weeks | Meta-analysis of 11 trials [26] |
 | Weight loss | Oil or powder | Varied | Varied | Meta-analyses of 11 and 13 trials [27][28] |
 | Asthma | Oil or seed | 1 to 2 g | 4 weeks to 3 months | 2 small trials [41][42] |
 | Hashimoto's thyroiditis | Powder | Not stated | 8 weeks | Small trial, 40 people [45] |
@@ -263,7 +261,7 @@ A review of black seed clinical trials judged that its side effects appear not t
 
 ### Common Side Effects
 
-In a trial of black seed extract in older adults, reported side effects in the 38 people taking it were dyspepsia (6), nausea (3) and constipation (2) [84]:
+In a trial of black seed extract in older adults, reported adverse events were dyspepsia (6), nausea (3) and constipation (2) [84]:
 - **Dyspepsia** (indigestion) was the most common [84]
 - **Nausea** [84]
 - **Constipation** [84]
@@ -272,7 +270,7 @@ A systematic review of knee osteoarthritis trials found that oral and topical bl
 
 ### Topical Side Effects
 
-When applied to the skin, black seed oil may cause:
+Skin reactions reported with black seed include:
 - **Contact dermatitis**: two cases have been reported (Ali and Blunden, *Phytother Res*, 2003) [5]
 - **Severe skin reactions**: case reports describe a blistering drug eruption to the oil [79], DRESS syndrome (a drug reaction with rash, fever and internal organ involvement) after the oil was applied to the skin [80], and a blistering reaction resembling Stevens-Johnson syndrome after a supplement was swallowed [81]
 
@@ -282,7 +280,7 @@ Stevens-Johnson syndrome and DRESS can be life-threatening. For a widespread bli
 
 #### Serotonin Syndrome Risk
 
-In rats, black seed oil raised brain serotonin and slowed its breakdown (Perveen et al., *Sci Pharm*, 2014) [64]. This could, in theory, add to the effects of medicines that raise serotonin.
+In rats, black seed oil raised brain serotonin and slowed its breakdown, and the authors described an antidepressant-like effect (Perveen et al., *Sci Pharm*, 2014) [64].
 
 One case report described serotonin syndrome immediately after an endoscopic procedure, in which taking black seed oil beforehand appeared to have played a role (Warner et al., *A A Pract*, 2019) [65].
 
@@ -293,7 +291,7 @@ The authors advised that anaesthesia teams be aware that people taking black see
 Black seed oil has been linked to low platelet counts and bleeding:
 
 - **Case report:** A 69-year-old woman who had taken black seed oil and evening primrose oil for about a month had a fall of more than 90% in her platelet count one day after surgery, with a low point of 31,000 from 410,000. The authors put this down to clots using up platelets, made worse by the two supplements (Wang et al., *Cureus*, 2020) [66].
-- **Case report:** A 51-year-old man on two antiplatelet drugs and chemotherapy developed a large bleed under the skin after his black seed oil dose was raised to 2000 mg a day, with a clinically significant fall in platelets. It resolved within 10 days, and the authors rated it a possible adverse reaction [77].
+- **Case report:** A 51-year-old man on two antiplatelet drugs and chemotherapy developed a large bleed under the skin after his black seed oil dose was raised to 2000 mg a day. Tests showed a clinically significant fall in platelets, which the authors put in the setting of his chemotherapy. The bleed resolved within 10 days, he later took 1000 mg a day without further bleeding, and the authors rated the link possible [77].
 - **Animal data:** In rats fed the oil daily for 12 weeks, platelet counts fell significantly (Zaoui et al., *Phytomedicine*, 2002) [67].
 - **In vitro data:** Thymoquinone can trigger the death of platelets in the laboratory (Towhid et al., *J Cell Biochem*, 2011) [68].
 
@@ -301,7 +299,7 @@ These findings do not show that usual doses of black seed oil cause bleeding in 
 
 #### Pregnancy
 
-Do not take black seed oil during pregnancy. Its volatile oil blocked spontaneous and oxytocin-induced contractions of rat and guinea pig uterine muscle, which suggests it may act against oxytocin [78]. Its safety in pregnancy and breastfeeding is not established.
+Its safety in pregnancy and breastfeeding has not been established; avoid it while pregnant or breastfeeding. In animal tissue, its volatile oil blocked spontaneous and oxytocin-induced contractions of rat and guinea pig uterine muscle, which suggests it may act against oxytocin [78].
 
 ### Long-term Safety
 
@@ -327,9 +325,9 @@ Black seed, especially as powder, can lower blood pressure [26], so it may add t
 
 ### Anticoagulant and Antiplatelet Medications
 
-In laboratory tests, thymoquinone slowed the breakdown of warfarin by a liver enzyme, and the authors predicted that black seed oil at more than 1 g a day might change warfarin levels [76]. A man taking two antiplatelet drugs developed a large bleed under the skin on black seed oil [77]. This could increase bleeding risk when combined with:
+In laboratory tests, thymoquinone slowed the breakdown of warfarin by a liver enzyme, and the authors predicted that black seed oil at more than 1 g a day might change warfarin levels [76]. A man on two antiplatelet drugs and chemotherapy, with chemotherapy-related low platelets, developed a large bleed under the skin after his black seed oil dose was raised to 2000 mg a day; he later took 1000 mg a day without further bleeding, and the authors rated the link possible [77]. This could increase bleeding risk when combined with:
 - Warfarin [76]
-- Antiplatelet drugs such as aspirin or clopidogrel [77]
+- Antiplatelet drugs [77]
 - Other anticoagulants
 
 How much this matters at usual doses in people is unclear, but caution is warranted [66][76][77].
@@ -339,13 +337,13 @@ How much this matters at usual doses in people is unclear, but caution is warran
 Black seed oil raised brain serotonin in rats [64] and was linked to serotonin syndrome in one surgical patient [65], so it may interact with:
 - MAO inhibitor antidepressants
 - SSRIs and SNRIs
-- Anaesthetic and pain medicines that affect serotonin [65]
+- Anaesthesia around surgery or procedures [65]
 
 If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Immunosuppressants
 
-Laboratory and animal studies show that black seed and thymoquinone change immune responses [47]. In theory, black seed oil could interfere with immunosuppressive treatment. If you are a transplant recipient or take immunosuppressants, ask your doctor first.
+Laboratory and animal studies show that black seed and thymoquinone change immune responses [47]. Whether this affects immunosuppressive treatment in people is unknown. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Drug Interaction Summary Table
 
@@ -354,10 +352,9 @@ Laboratory and animal studies show that black seed and thymoquinone change immun
 | Antidiabetic drugs (metformin, insulin, sulfonylureas) | Added blood-sugar lowering | Meta-analyses [34][36] | Check blood sugar more often |
 | Blood pressure drugs | Added blood-pressure lowering | Meta-analysis [26] | Check blood pressure |
 | Warfarin | Changed warfarin levels | Laboratory study [76] | Talk to your doctor first |
-| Antiplatelet drugs (aspirin, clopidogrel) | Bleeding | Case report [77] | Talk to your doctor first |
+| Antiplatelet drugs | Bleeding | Case report [77] | Talk to your doctor first |
 | MAOIs, SSRIs, SNRIs | Serotonin excess | Rat study and case report [64][65] | Check with your doctor or pharmacist |
-| Anaesthetics | Serotonin syndrome after surgery | Case report [65] | Tell your surgeon and anaesthetist |
-| Immunosuppressants | Changed immune response | Laboratory and animal studies [47] | Ask your doctor first |
+| Anaesthesia | Serotonin syndrome after a procedure | Case report [65] | Tell your surgeon and anaesthetist |
 
 ## 7. Dietary Sources
 
@@ -377,7 +374,7 @@ Black seed oil is used in food products, and encapsulation has been used to impr
 
 ### Storage
 
-Black seed oil has very low oxidative stability, and heat and light affect it [71]. Store it in a cool, dark place.
+Black seed oil has very low oxidative stability, and heat and light affect it [71]. Store it away from heat and light.
 
 ## 8. References
 
