@@ -198,7 +198,7 @@ IBD encompasses ulcerative colitis and Crohn's disease — chronic inflammatory 
 
 **Clinical guidelines:** AGA recommends using probiotics in adults and children with ulcerative colitis or Crohn's disease only in the context of clinical trials [68]. The British Society of Gastroenterology (2019) concluded that while probiotics may be modestly beneficial for ulcerative colitis, they should not be routinely used, and found no evidence of benefit for Crohn's disease [73]. ESPGHAN (2023) stated insufficient evidence to recommend for or against probiotics in pediatric IBD [51].
 
-### Cholesterol and Cardiovascular Risk
+### Cholesterol and Cardiovascular Effects
 
 Probiotics may reduce cholesterol through several mechanisms: increasing bile salt hydrolase activity (which increases bile acid synthesis and thus reduces serum cholesterol), binding cholesterol in the small intestine to reduce absorption, incorporating cholesterol into bacterial cell membranes, and producing short-chain fatty acids that modulate hepatic cholesterol metabolism [74][75][76].
 
