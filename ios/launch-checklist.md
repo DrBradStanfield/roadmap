@@ -49,7 +49,7 @@ by the orchestrator, not a fresh reviewer.
      (engine-updates.md says how).
    - On every release prompt, click **Allow**, never **Always Allow**.
 2. **Apple enrolment** (ID 726UVSY5YZ). When approved: in Xcode set the team, confirm
-   the bundle id `com.drbrad.healthroadmap` (the Google iOS client uses it), and add the
+   the bundle id `com.drstanfield.healthroadmap` (registered 2026-10-25; the free team holds the old `com.drbrad.healthroadmap`, which Apple will not release; the Google iOS client was made for the old id), and add the
    HealthKit and App Attest capabilities
    (`com.apple.developer.devicecheck.appattest-environment` = production). Replace the
    placeholder release host in `ios/HealthRoadmap/Chat/ServerConfig.swift`.

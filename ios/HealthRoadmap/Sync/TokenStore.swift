@@ -17,7 +17,7 @@ struct TokenStore: Sendable {
     /// The Keychain service; tests use their own.
     let service: String
 
-    init(service: String = "com.drbrad.healthroadmap.oauth") {
+    init(service: String = "com.drstanfield.healthroadmap.oauth") {
         self.service = service
     }
 

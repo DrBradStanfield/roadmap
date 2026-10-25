@@ -286,9 +286,9 @@ final class HealthSampleTests: XCTestCase {
     }
 
     func testOurOwnSamplesAreNeverReadBack() {
-        XCTAssertTrue(HealthKitClient.isOwn(bundleIdentifier: "com.drbrad.healthroadmap", syncIdentifier: nil, ownBundle: "com.drbrad.healthroadmap"))
-        XCTAssertTrue(HealthKitClient.isOwn(bundleIdentifier: "com.apple.Health", syncIdentifier: "healthroadmap:abc", ownBundle: "com.drbrad.healthroadmap"))
-        XCTAssertFalse(HealthKitClient.isOwn(bundleIdentifier: "com.withings.wiScaleNG", syncIdentifier: nil, ownBundle: "com.drbrad.healthroadmap"))
+        XCTAssertTrue(HealthKitClient.isOwn(bundleIdentifier: "com.drstanfield.healthroadmap", syncIdentifier: nil, ownBundle: "com.drstanfield.healthroadmap"))
+        XCTAssertTrue(HealthKitClient.isOwn(bundleIdentifier: "com.apple.Health", syncIdentifier: "healthroadmap:abc", ownBundle: "com.drstanfield.healthroadmap"))
+        XCTAssertFalse(HealthKitClient.isOwn(bundleIdentifier: "com.withings.wiScaleNG", syncIdentifier: nil, ownBundle: "com.drstanfield.healthroadmap"))
     }
 
     func testAWriteLandsAtNoonOnItsDay() throws {

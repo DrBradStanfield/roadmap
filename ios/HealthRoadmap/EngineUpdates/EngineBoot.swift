@@ -26,7 +26,7 @@ struct EngineBoot: Sendable {
         let version: Int?
     }
 
-    private static let log = Logger(subsystem: "com.drbrad.healthroadmap", category: "engine-update")
+    private static let log = Logger(subsystem: "com.drstanfield.healthroadmap", category: "engine-update")
 
     @MainActor
     func start() async throws -> Choice {

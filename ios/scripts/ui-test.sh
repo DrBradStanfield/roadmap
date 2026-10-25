@@ -19,7 +19,7 @@ for TEST in $TESTS; do
   CLASS=$(grep -l "func $TEST(" HealthRoadmapUITests/*.swift | head -1 | xargs basename | sed 's/\.swift$//')
   xcrun simctl boot "$ID" 2>/dev/null || true
   xcrun simctl bootstatus "$ID" -b >/dev/null
-  xcrun simctl uninstall "$ID" com.drbrad.healthroadmap 2>/dev/null || true
+  xcrun simctl uninstall "$ID" com.drstanfield.healthroadmap 2>/dev/null || true
   if xcodebuild test-without-building -project HealthRoadmap.xcodeproj -scheme HealthRoadmap \
       -destination "id=$ID" -derivedDataPath "$DERIVED" -parallel-testing-enabled NO \
       -only-testing:"HealthRoadmapUITests/$CLASS/$TEST" 2>&1 | grep -q "TEST EXECUTE SUCCEEDED"; then

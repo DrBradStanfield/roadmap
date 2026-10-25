@@ -8,7 +8,7 @@ import Security
 /// another phone never carries them.
 struct EngineWatermark: Sendable {
     let service: String
-    static let live = EngineWatermark(service: "com.drbrad.healthroadmap.engine-watermark")
+    static let live = EngineWatermark(service: "com.drstanfield.healthroadmap.engine-watermark")
 
     /// Both marks; 0 for one never set or not readable now.
     func read() -> (highWater: Int, floor: Int) {
