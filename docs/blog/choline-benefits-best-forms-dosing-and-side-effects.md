@@ -108,7 +108,7 @@ Choline, especially as phosphatidylcholine, is needed to move fat out of the liv
 
 ### Stroke
 
-A 2002 pooled analysis of four trials of oral citicoline (500, 1,000 or 2,000 mg) given within 24 hours of a moderate to severe ischemic stroke included 1,372 patients. Recovery at 3 months was 25.2% with citicoline and 20.2% with placebo (OR 1.33, 95% CI 1.10 to 1.62); the 2,000 mg dose showed the largest difference [36]. A 2014 review later noted that two large pivotal trials found no benefit of citicoline in ischemic stroke or traumatic brain injury [72]. A supplement is no substitute for emergency care: if you think someone is having a stroke (face drooping, arm or leg weakness or numbness, trouble speaking, or vision loss that has not recovered), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+A 2002 pooled analysis of four trials of oral citicoline (500, 1,000 or 2,000 mg) given within 24 hours of a moderate to severe ischemic stroke included 1,372 patients. Recovery at 3 months was 25.2% with citicoline and 20.2% with placebo (OR 1.33, 95% CI 1.10 to 1.62); the 2,000 mg dose showed the largest difference [36]. A 2014 review later noted that two large pivotal trials found no benefit of citicoline in ischemic stroke or traumatic brain injury [72]. A supplement is no substitute for emergency care. For signs of a stroke (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 ### Memory and Cognition
 
@@ -193,7 +193,7 @@ In a population-based study of 1,508 women with breast cancer and 1,556 controls
 
 In an Indian trial, choline 500 mg or 1,000 mg three times daily or placebo was given for four months. Symptom scores fell and symptom-free days rose in all three groups, but the changes were significant only in the choline groups, and only the higher dose significantly reduced the need for asthma medicine [66].
 
-In a 6-month trial in 76 people with asthma, a choline supplement of 1,500 mg twice daily lowered symptom and drug scores and markers of airway inflammation compared with baseline or standard treatment [67].
+In a 6-month trial in 76 people with asthma, a choline supplement of 1,500 mg twice daily lowered symptom and drug scores and markers of airway inflammation in an unblinded comparison with standard treatment [67].
 
 ### Ulcerative Colitis
 
@@ -291,7 +291,7 @@ A South Korean cohort study followed about 12 million adults aged 50 or older. P
 
 ### Choline and Mortality
 
-In 80,978 women and 39,434 men followed for mortality, higher phosphatidylcholine intake was linked to higher all-cause mortality (HR 1.11, 95% CI 1.06 to 1.17) and cardiovascular mortality (HR 1.26, 95% CI 1.15 to 1.39), top versus bottom quintile [94]. The authors suggest TMAO as a cause but did not measure it, and the link is observational [93]. In US national survey data, adults in the highest quartile of choline intake had a greater risk of total (23%), cardiovascular (33%) and stroke (30%) mortality than those in the lowest. In the same paper's meta-analysis of prospective studies, choline intake was linked to overall (RR 1.12, 95% CI 1.08 to 1.17) and cardiovascular (RR 1.28, 95% CI 1.17 to 1.39) mortality, but not significantly to stroke mortality [80].
+In 80,978 women and 39,434 men followed for mortality, higher phosphatidylcholine intake was linked to higher all-cause mortality (HR 1.11, 95% CI 1.06 to 1.17) and cardiovascular mortality (HR 1.26, 95% CI 1.15 to 1.39), top versus bottom quintile [94]. The authors suggest TMAO as a cause but did not measure it, and the link is observational [93]. In US national survey data, adults in the highest quartile of choline intake had a greater risk of total (23%), cardiovascular (33%) and stroke (30%) mortality than those in the lowest. In the same paper's meta-analysis of prospective studies, choline intake was linked to overall (RR 1.12, 95% CI 1.08 to 1.17) and cardiovascular (RR 1.28, 95% CI 1.17 to 1.39) mortality, but not significantly to stroke mortality, an observational finding that cannot show cause [80].
 
 Several large observational studies have found no significant associations between choline intakes and cardiovascular disease risk. An analysis of 72,348 women and 44,504 men showed no association between choline intake and risk of peripheral artery disease [93]. A prospective study of 14,430 middle-aged adults found that over 14 years, risk of coronary heart disease was not significantly different across choline intake quartiles [82]. Choline intakes also had no association with cardiovascular disease risk in 16,165 women in the European Prospective Investigation into Cancer and Nutrition [93].
 
@@ -301,7 +301,7 @@ In 96,831 postmenopausal women in the Women's Health Initiative, eating one or m
 
 ### Kidney Stones
 
-Rare kidney stones made of calcium tartrate have been reported in people who regularly took an energy supplement; in one case report, the supplement held choline bitartrate and L-carnitine tartrate [24][95]. The link to the supplement is unproven [95].
+Rare kidney stones made of calcium tartrate have been reported in people who regularly took an energy supplement [24]; in one case report, the supplement held choline bitartrate and L-carnitine tartrate [95]. The link to the supplement is unproven [95].
 
 ### Cancer Risk
 
