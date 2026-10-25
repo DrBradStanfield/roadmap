@@ -6,7 +6,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["shilajit", "fulvic acid", "testosterone", "energy", "aging", "adaptogen", "fertility", "cholesterol", "ldl", "hdl", "triglycerides", "blood sugar", "diabetes", "insulin resistance", "bone density", "osteoporosis", "collagen", "coq10", "cognitive", "brain health", "alzheimer", "inflammation", "anti-aging", "longevity", "muscle", "strength training", "exercise", "iron", "zinc", "calcium", "magnesium", "copper", "selenium", "chromium", "potassium"]
-summary: "Shilajit is a mineral resin used in Ayurveda. Small trials of purified extracts suggest gains in testosterone and slower bone loss, but the evidence is limited. Some samples contain lead, arsenic or thallium. Talk to your doctor first if you are pregnant or take diabetes medicines."
+summary: "Shilajit is a mineral resin used in Ayurveda. Small trials of purified extracts suggest gains in testosterone and slower bone loss, but the evidence is limited. Some samples contain lead, arsenic or thallium. Avoid it in pregnancy; talk to your doctor first if you take diabetes medicines."
 reviewed: "2026-10-26"
 sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23733436/","checked":"2026-10-26","fingerprint":"sha256:01ec07bc296c5b801a7463cddcfb20d659985c49245eb82333d2b921c62d6d46"}]
 ---
@@ -19,11 +19,11 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Key safety points
 
-- Shilajit lowered blood glucose in rats [43], so it could add to diabetes medicines. If you take them, ask your doctor first and watch for signs of low blood sugar.
 - In one case report, shilajit was a possible cofactor in anaphylaxis [36]. If you develop hives with trouble breathing or feel faint, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - Avoid shilajit in pregnancy. A pregnant woman who took mumijo developed persistent high blood pressure and low potassium [35].
 - Some shilajit samples and supplements contain lead, arsenic, mercury or thallium [27][33][34]. Never take raw shilajit [17], and choose products that publish heavy-metal test results.
-- Shilajit contains iron, aluminium and other metals [33]. Talk to your doctor first if you have iron overload or kidney disease.
+- No human trial found a drop in blood sugar [17][19], but it fell in rats [43]. If you take diabetes medicines, ask your doctor first.
+- Shilajit contains iron [33][39]. Talk to your doctor first if you have iron overload.
 - Short trials reported no change in liver or kidney tests [14][17] and no more side effects than placebo [37]. Long-term safety is unknown.
 
 ## Brad's videos on this topic
@@ -88,7 +88,7 @@ Two small trials suggest shilajit may raise testosterone, and one uncontrolled s
 
 ### Energy, Physical Performance, and Fatigue
 
-**Fatigued muscular strength in recreationally active men.** In a trial funded by Natreon Inc., 63 recreationally active men took 250 mg or 500 mg of PrimaVie shilajit a day, or placebo, for 8 weeks [15]. In the stronger half of the men, the 500 mg group lost less strength after a fatiguing leg exercise (8.9% decline, against 17.0% on 250 mg and 16.0% on placebo) and had lower resting serum hydroxyproline [15]. The 250 mg dose did no better than placebo [15].
+**Fatigued muscular strength in recreationally active men.** In a trial funded by Natreon Inc., 63 recreationally active men took 250 mg or 500 mg of PrimaVie shilajit a day, or placebo, for 8 weeks [15]. In the stronger half of the men, the 500 mg group lost less strength after a fatiguing leg exercise (8.9% vs 17.0% and 16.0%); in men with higher baseline hydroxyproline, 500 mg also lowered it [15]. The 250 mg dose did no better than placebo [15].
 
 **Open-label pilot study.** In a 28-day study with no placebo group, 25 healthy men aged 21 to 55 years took 500 mg a day of a shilajit resin (TruBlk) [28]. Within the group, leg press strength rose 12.94%, lean mass rose 1.5% and fatigue scores fell 32.40% [28]. Several authors list affiliations with a botanicals company. Without a control group, training, expectation and chance could explain changes of this size.
 
@@ -102,9 +102,9 @@ In a double-blind trial in India, 20 medical students aged 16 to 30 years took 2
 
 - Triglycerides: 116.9 mg/dL before, 92.7 mg/dL after
 - Total cholesterol: 145.3 mg/dL before, 125.1 mg/dL after
+- HDL cholesterol: 41.2 mg/dL before, 43.6 mg/dL after
 - LDL cholesterol: 81.8 mg/dL before, 63.30 mg/dL after
 - VLDL cholesterol: 23.30 mg/dL before, 18.50 mg/dL after
-- HDL cholesterol: 41.2 mg/dL before, 43.6 mg/dL after
 
 The paper tested each group before and after treatment; it reported no test between the shilajit and placebo groups [17]. The volunteers were young and healthy.
 
@@ -159,7 +159,7 @@ In a rat model of chronic fatigue, shilajit protected mitochondrial function [41
 
 ### Important Caveat
 
-No dose of shilajit is established for any condition. The doses below come from small published trials and are not proven treatment doses.
+The doses below come from small published trials and are not proven treatment doses. A 2014 review called for more well-controlled human studies [9].
 
 ### Doses Used in Clinical Studies
 
@@ -176,9 +176,9 @@ No dose of shilajit is established for any condition. The doses below come from 
 
 ### General Dosing Guidance
 
-- **Extracts:** Most trials used extracts. In the one trial that compared doses for strength, 500 mg a day worked and 250 mg a day did not [15].
+- **Extracts:** Most trials used extracts. In the one trial that compared doses, in the stronger half of the men, 500 mg a day reduced strength loss and 250 mg did not [15].
 - **Purified resin:** The one controlled resin trial used 2 g a day [17].
-- **Duration:** The longest trial lasted 48 weeks [8]. How long shilajit takes to work, if it works, is unknown.
+- **Duration:** The longest trial lasted 48 weeks [8].
 
 ### Practical Notes
 
@@ -201,29 +201,27 @@ However, several important caveats apply:
 
 Reported or potential side effects include:
 
-- **Allergic reactions:** A woman developed hives after a meal that included shilajit, then anaphylaxis with breathing difficulty, low blood pressure and loss of consciousness after exertion; the authors judged shilajit a possible cofactor [36]. If you develop hives with trouble breathing or feel faint, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- **Allergic reactions:** A woman with a possible mast-cell disorder developed hives after a meal that included shilajit, then anaphylaxis with breathing difficulty, low blood pressure and loss of consciousness after exertion; skin tests with shilajit were negative, and the authors judged it a possible cofactor [36]. If you develop hives with trouble breathing or feel faint, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - **High blood pressure and low potassium:** A pregnant woman who took mumijo for 6 months developed persistent high blood pressure and low potassium, a liquorice-like syndrome. She was treated with potassium and by stopping mumijo [35].
-- **Stomach upset or headache:** Some people may get these.
 
 ### Heavy Metal Contamination
 
 Heavy metals are the main quality concern with shilajit. A 2024 review found that shilajit can hold around 65 metals, including toxic metals such as lead, arsenic, mercury and cadmium. Most reported levels were under WHO and FDA limits for herbal drugs, but a few studies found levels above them [34].
 
-- Indian and Pakistani shilajit tested in a 2022 study contained lead, arsenic, mercury and aluminium above permissible limits [33].
+- Indian and Pakistani shilajit tested in a 2022 study contained lead, arsenic and aluminium above permissible limits; only the Indian samples contained mercury [33].
 - A 2025 study found thallium at up to 0.5 µg/g in shilajit supplements, or up to 0.095 µg per pill, and more thallium in some supplements than in raw shilajit [27].
 - Raw shilajit carries heavy metals, microbial debris and other impurities that purification is meant to remove [17]. Never take raw shilajit.
 - Look for products with third-party test results for lead, arsenic, mercury, cadmium and thallium [27][34].
 
 ### Blood Sugar Concerns
 
-Human trials in people without diabetes found no change in blood sugar [17][19], but shilajit lowered blood glucose in rats [43]. Use it with caution if you have low blood sugar or take blood sugar-lowering medicines, as it could add to their effect and raise the risk of hypoglycemia.
+No human trial found a drop in blood sugar [17][19], but it fell in rats [43]. If you take diabetes medicines, ask your doctor first.
 
 ### Populations That Should Avoid Shilajit
 
-- **Children:** No safety data exist.
-- **Pregnant or breastfeeding women:** Should avoid shilajit. A case of high blood pressure and low potassium in pregnancy has been linked to mumijo [35], and safety in breastfeeding is unknown.
-- **People with hemochromatosis or iron overload conditions:** Shilajit contains iron [33], which could worsen iron overload.
-- **People with kidney disease:** Shilajit contains aluminium and other metals [33], which could be a problem for people whose kidneys clear them less well.
+- **Children and breastfeeding:** The trials enrolled adults (the youngest were 16 [17]); safety in children and in breastfeeding has not been studied.
+- **Pregnant women:** Should avoid shilajit. A case of high blood pressure and low potassium in pregnancy has been linked to mumijo [35].
+- **People with hemochromatosis or iron overload conditions:** Shilajit contains iron [33][39], which could worsen iron overload.
 
 ## 6. Drug Interactions
 
@@ -231,13 +229,11 @@ Human trials in people without diabetes found no change in blood sugar [17][19],
 
 | Drug Class | Examples | Interaction Risk | Clinical Implication |
 |-----------|---------|:-:|----------|
-| **Diabetes medications** | Insulin, metformin, sulfonylureas, SGLT2 inhibitors | Possible | Shilajit lowered blood glucose in rats [43] and could add to the effect of these drugs, causing low blood sugar. Monitor blood sugar closely if combining. |
-| **Anticoagulants/blood thinners** | Warfarin, heparin | Unknown | No studies. If you take a blood thinner, check with your doctor or pharmacist before starting. |
-| **Immunosuppressants** | Cyclosporine, tacrolimus | Theoretical | Fulvic acid from shilajit showed complement-fixing activity in lab tests [40], though a review judged its immune effects unproven [6]. Interference with these drugs is a theoretical risk. |
+| **Diabetes medications** | Insulin, metformin, sulfonylureas, SGLT2 inhibitors | Possible | No human trial found a drop in blood sugar [17][19], but it fell in rats [43]. If you take diabetes medicines, ask your doctor first. |
 
 ### Drug Absorption Considerations
 
-In lab work, fulvic acid extracted from shilajit formed a complex with the diuretic furosemide [42]. Such binding could alter how medicines are absorbed. While this interaction has not been studied for shilajit taken by mouth, it is prudent to separate shilajit from medications by at least 2 hours as a precaution.
+In lab work, fulvic acid extracted from shilajit formed a complex with the diuretic furosemide [42]. Such binding could alter how medicines are absorbed.
 
 ### General Recommendation
 
@@ -257,7 +253,7 @@ When evaluating shilajit products:
 - **Fulvic acid content disclosure:** Content differs widely, from 6.61% in one purified resin [17] to 56.75% fulvic acids in one standardised extract [41]. A label that states it lets you compare products.
 - **Third-party heavy metal testing:** Look for certificates of analysis for lead, arsenic, mercury, cadmium and thallium [27][34].
 
-## 9. Summary and Bottom Line
+## 8. Summary and Bottom Line
 
 Shilajit is a mineral-rich exudate with a long history in Ayurveda. It contains fulvic acid and dibenzo-alpha-pyrones, but the human evidence for most claims is preliminary.
 
@@ -276,7 +272,7 @@ Shilajit is a mineral-rich exudate with a long history in Ayurveda. It contains 
 
 **Safety:** Short trials reported few side effects [14][17][37]. Some samples and supplements carry heavy metals [27][33][34], and case reports link shilajit to anaphylaxis [36] and to high blood pressure with low potassium in pregnancy [35].
 
-## 10. References
+## 9. References
 
 [6] Wilson E, Rajamanickam GV, Dubey GP, et al. "Review on shilajit used in traditional Indian medicine." *J Ethnopharmacol*. 2011;136(1):1-9. PMID: 21530631. [https://doi.org/10.1016/j.jep.2011.04.033](https://doi.org/10.1016/j.jep.2011.04.033)
 
