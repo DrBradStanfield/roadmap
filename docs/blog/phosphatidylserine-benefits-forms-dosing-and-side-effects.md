@@ -7,20 +7,20 @@ type: "reference"
 tags: ["Supplements"]
 keywords: ["phosphatidylserine", "cognitive", "brain health", "memory", "cortisol", "exercise", "dementia", "alzheimer", "depression", "anxiety", "choline", "phosphatidylcholine", "citicoline", "aging", "longevity", "inflammation", "dha", "omega-3", "fish oil"]
 product: "microvitamin"
-summary: "Reference on phosphatidylserine (PS) for memory, stress and exercise. Cow-brain PS helped memory in early trials; soy PS has shown little or no benefit. Trials used 300 to 800 mg a day. Talk to your doctor first if you take blood thinners."
+summary: "Reference on phosphatidylserine (PS) for memory, stress and exercise. Cow-brain PS helped memory in early trials; the FDA says soy PS may differ, and the one soy trial it weighed found no effect. Trials used 100 to 800 mg a day. Talk to your doctor first if you take prescription medicines."
 reviewed: "2026-10-26"
-sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/25933483/","checked":"2026-10-26","fingerprint":"sha256:e805d2085a6569b2501e39a1f33d5d78007f6fdf77947de5662d1b114792e07e"}]
+sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11842880/","checked":"2026-10-26","fingerprint":"sha256:2e927860ad178a0c57e883a4560a1406c11ee4cf7a3523986f451efd308046bb"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/phosphatidylserine-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/phosphatidylserine-benefits-forms-dosing-and-side-effects)*
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. The clearest memory results came from phosphatidylserine (PS) made from cow brain: 100 mg three times a day for 12 weeks helped learning and memory tests in 149 people with age-associated memory impairment, and 300 mg a day for 6 months helped behaviour and memory scores in a trial that recruited 494 older adults with moderate to severe cognitive decline [7][8]. PS made from soy has done less well: 300 mg a day or 600 mg a day for 12 weeks made no difference in 120 older adults with memory complaints, and in another trial memory gains were seen only in people with low scores at the start [10][12]. In small trials, 600 to 800 mg a day for 10 days blunted the cortisol rise after exercise, but effects on performance were mixed [18][24][25][26]. Trials lasting 6 months reported PS was well tolerated, but PS takes part in blood clotting, so people who take blood thinners should talk to their doctor first [4][8][10].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. The clearest memory results came from phosphatidylserine (PS) made from cow brain: 100 mg three times a day for 12 weeks helped learning and memory tests in 149 people with age-associated memory impairment, and 300 mg a day for 6 months helped behaviour and memory scores in a trial that recruited 494 older adults with moderate to severe cognitive decline [7][8]. PS made from soy has done less well: 300 mg a day or 600 mg a day for 12 weeks made no difference in 120 older adults with memory complaints, and in another trial memory gains were seen only in people with low scores at the start [10][12]. Two small trials at 600 and 800 mg a day blunted the cortisol rise after exercise [18][26]; two at 750 mg did not [24][25]; performance results were mixed. Trials lasting 6 months reported PS was well tolerated [8][10].
 
 ## Key safety points
 
-- PS takes part in blood clotting, and in a 1981 study PS given into a vein lowered blood clotting activity [4][5]. If you take warfarin, another anticoagulant or an antiplatelet drug, ask your doctor before using it; this interaction is theoretical.
+- PS takes part in blood clotting, and very high injected doses (30 and 60 mg/kg, species not reported) slowed clotting in one old study; any effect of oral PS on blood thinners is unknown. If you take a blood thinner, ask your doctor first [4][5].
 - Trials in children with ADHD gave PS for 2 months to 30 weeks and reported it was well tolerated [27][28]. Ask a doctor before giving it to a child, and do not use it in place of ADHD treatment.
 - In a small study without a placebo group, soy PS unexpectedly lowered blood pressure [17]. If you take blood pressure medicines, tell your doctor.
 - Trials in older adults lasting 6 months reported PS was well tolerated; one saw no side effects and no change in blood tests [8][10]. Safety beyond 6 months is not known.
@@ -31,7 +31,7 @@ None yet.
 
 ## 1. Overview
 
-Phosphatidylserine (PS) is a phospholipid, a fat that forms part of cell membranes. It is the main negatively charged phospholipid in the inner layer of nerve cell membranes [3]. A 2015 review describes it as needed for healthy nerve cell membranes and myelin [30].
+Phosphatidylserine (PS) is a phospholipid, a fat that forms part of cell membranes. It is the main negatively charged phospholipid in the inner layer of nerve cell membranes [3]. A 2015 narrative review describes it as needed for healthy nerve cell membranes and myelin [30].
 
 PS normally sits on the inner side of the cell membrane. When it moves to the outer side of a dying cell, immune cells recognise and clear that cell; on the surface of activated platelets it binds clotting factors and speeds up thrombin production, which helps blood clot [4].
 
@@ -41,7 +41,7 @@ The body makes PS from phosphatidylcholine or phosphatidylethanolamine by swappi
 
 Research on PS supplements began with PS taken from cow brain cortex, tested in older adults with memory problems in the late 1980s and early 1990s [7][8][16]. Concern about bovine spongiform encephalopathy (BSE, or "mad cow disease") led the FDA in 2003 to say that bovine sources, if used, should not come from cattle in countries where BSE exists [9]. Later studies tested soy-derived PS and PS with omega-3 fats attached, which their authors described as possible safe alternatives to PS from bovine cortex [13][17].
 
-In 2003, the FDA allowed two qualified health claims for PS supplements made from soy or cow sources: "Consumption of phosphatidylserine may reduce the risk of dementia in the elderly," and the same wording for "cognitive dysfunction in the elderly" [9][11]. Each claim must carry the FDA's disclaimer: "Very limited and preliminary scientific research suggests that phosphatidylserine may reduce the risk of dementia in the elderly. FDA concludes that there is little scientific evidence supporting this claim" [9][11]. The claim covers soy PS, but the trials with clearer benefits used PS from cow brain [7][8].
+In 2003, the FDA said it would use enforcement discretion for two qualified health claims on PS supplements: "Consumption of phosphatidylserine may reduce the risk of dementia in the elderly," and the same wording for "cognitive dysfunction in the elderly" [9]. Each claim carries its own disclaimer; the dementia one reads: "Very limited and preliminary scientific research suggests that phosphatidylserine may reduce the risk of dementia in the elderly. FDA concludes that there is little scientific evidence supporting this claim" [9]. The FDA also said cow-brain and soy PS may be different substances, the only soy trial it weighed showed no effect, and soy PS sold with the claims should be of very high purity [9]. In 2004 it re-reviewed the evidence and kept the same wording and conditions [11].
 
 ## 2. Forms and Bioavailability
 
@@ -100,7 +100,7 @@ Trials of soy-derived PS for memory have been small, and their results are mixed
 
 **Jorissen et al. (2001)** randomised 120 older adults with age-associated memory impairment to placebo, 300 mg a day or 600 mg a day of soy PS for 12 weeks. Neither dose changed memory or any other cognitive test compared with placebo [12].
 
-**Kato-Kataoka et al. (2010)** randomised older Japanese adults with mild cognitive impairment to 100 mg or 300 mg a day of soy PS, or placebo, for 6 months. Test scores rose in all groups, including placebo. In people with relatively low scores at the start, memory scores rose from baseline with PS and stayed flat with placebo, mostly through better delayed verbal recall [10].
+**Kato-Kataoka et al. (2010)** randomised Japanese adults aged 50 to 69 with mild cognitive impairment to 100 mg or 300 mg a day of soy PS, or placebo, for 6 months. Test scores rose in all groups, including placebo. In people with relatively low scores at the start, memory scores rose from baseline with PS and stayed flat with placebo, mostly through better delayed verbal recall [10].
 
 **Richter et al. (2013)** gave 300 mg a day of soy PS for 12 weeks to 30 older adults with memory complaints, with no placebo group. Memory, executive function and learning scores improved, and blood pressure fell; the authors called the study exploratory [17].
 
@@ -125,7 +125,7 @@ These trials were small, limited to older adults with memory complaints, and run
 | Bovine-derived (300 mg/day) | Two placebo-controlled trials | Benefit in age-associated memory impairment and in moderate to severe cognitive decline; low scorers responded most [7][8] |
 | Plant-derived soy | Mixed | No benefit in one trial; gains only in low scorers in another [10][12] |
 | PS-DHA | Limited (small or exploratory trials) | Better verbal recall in one trial; best response in those with higher baseline scores [14][15] |
-| FDA position | Qualified health claim with mandatory disclaimer | "Very limited and preliminary scientific research" and "little scientific evidence supporting this claim" [9][11] |
+| FDA position | Qualified health claim with mandatory disclaimer | "Very limited and preliminary scientific research" and "little scientific evidence supporting this claim" [9] |
 
 ### Cortisol and Stress Response
 
@@ -193,7 +193,7 @@ In the body, PS is made from phosphatidylcholine or phosphatidylethanolamine [3]
 
 ### General Guidelines
 
-Trials have used a wide range of doses. Memory trials gave 100 mg of cow-brain PS three times a day [7], 300 mg a day of cow-brain PS [8], 100 mg or 300 mg a day of soy PS [10], and 300 mg a day or 600 mg a day of soy PS [12]. A PS-DHA extension used 100 mg a day [15]. Stress and exercise trials used 200 mg per day [19], 600 mg per day [26] and 800 mg a day [18].
+Trials have used a wide range of doses. Memory trials gave 100 mg of cow-brain PS three times a day [7], 300 mg a day of cow-brain PS [8], 100 mg or 300 mg a day of soy PS [10], and 300 mg a day or 600 mg a day of soy PS [12]. A PS-DHA extension used 100 mg a day [15]. Stress and exercise trials used 200 mg per day [19], 300 mg a day [22], 400 to 800 mg a day of a soy PS complex (PAS) [20], 600 mg per day [26], 750 mg a day [24][25] and 800 mg a day [18].
 
 ### Dosing by Indication
 
@@ -220,7 +220,7 @@ Trials have used a wide range of doses. Memory trials gave 100 mg of cow-brain P
 2. Soy PS has had mixed or null results for memory [10][12].
 3. PS-DHA trials were small and exploratory [14][15].
 4. Cortisol effects after stress or exercise appeared in some small trials but not others [18][20][24][25][26].
-5. The FDA's disclaimer says there is "little scientific evidence" for its memory claims [9][11].
+5. The FDA's disclaimer says there is "little scientific evidence" for its memory claims [9].
 
 ## 5. Safety and Side Effects
 
@@ -230,7 +230,7 @@ Trials of PS lasting 6 months in older adults reported it was well tolerated [8]
 
 ### Common Side Effects
 
-PS may cause mild stomach upset or trouble sleeping in some people.
+Common side effects are not well documented; trials reported it was well tolerated [8][10][17].
 
 Trials in children reported PS was well tolerated, with no adverse effects in the smaller trial [27][28].
 
@@ -249,22 +249,13 @@ The longest trials lasted 6 months in older adults and 30 weeks in children [8][
 
 PS normally sits on the inner side of the cell membrane. On activated platelets it moves to the outer side, where it binds clotting factors and speeds up thrombin production [4]. When this exposure fails, blood disorders such as Scott syndrome can occur [4].
 
-In a 1981 study, PS given into a vein lowered blood clotting activity in proportion to the dose, and in the lab it slowed thrombin formation [5]. Whether PS supplements taken by mouth affect clotting is unknown.
-
-Because of this role in clotting, people who take anticoagulant or antiplatelet medicines should talk to their doctor before taking PS [4][5].
+In a 1981 study, PS given into a vein at high doses (30 and 60 mg/kg), species not reported, lowered blood clotting activity in proportion to the dose, and in the lab it slowed thrombin formation [5]. Whether PS supplements taken by mouth affect clotting is unknown.
 
 ## 6. Drug Interactions
 
 ### Anticoagulants and Antiplatelet Agents
 
-PS takes part in blood clotting [4], and injected PS lowered clotting activity in a 1981 study [5], so it could in theory interact with blood thinners. This interaction is theoretical. Medicines of concern include:
-
-- **Warfarin (Coumadin)**, a vitamin K antagonist
-- **Heparin and low-molecular-weight heparins** (enoxaparin, dalteparin)
-- **Direct oral anticoagulants (DOACs):** apixaban (Eliquis), rivaroxaban (Xarelto), dabigatran (Pradaxa), edoxaban (Savaysa)
-- **Antiplatelet drugs:** aspirin, clopidogrel (Plavix), ticagrelor (Brilinta), prasugrel (Effient)
-
-If you take any of these, talk to your doctor before starting PS [4][5].
+PS takes part in blood clotting, and very high injected doses slowed clotting in one old study; any effect of oral PS on blood thinners is unknown. If you take a blood thinner, ask your doctor first [4][5].
 
 ### Anticholinergic Medications
 
@@ -276,7 +267,7 @@ PS could in theory add to the effects of cholinesterase inhibitors used for Alzh
 
 ### Cortisol-Modulating Substances
 
-PS blunted cortisol responses to stress in some trials [18][20], so it could in theory add to other products or medicines that affect cortisol, including corticosteroids. This interaction is theoretical. If you take prescription medicines, check with your doctor or pharmacist before starting.
+PS blunted cortisol responses to stress in some trials [18][20], so it could in theory add to other products or medicines that affect cortisol. This interaction is theoretical. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ## 7. Dietary Sources
 
@@ -304,11 +295,11 @@ Brain PS carries a lot of DHA [3].
 
 [8] Cenacchi T, Bertoldin T, Farina C, et al. "Cognitive decline in the elderly: a double-blind, placebo-controlled multicenter study on efficacy of phosphatidylserine administration." *Aging (Milano)*. 1993;5(2):123-133. PMID: [8323999](https://pubmed.ncbi.nlm.nih.gov/8323999/)
 
-[9] U.S. Food and Drug Administration. "Phosphatidylserine and Cognitive Dysfunction and Dementia (Qualified Health Claim: Final Decision Letter)." May 2003. [https://www.fda.gov/food/cfsan-constituent-updates/phosphatidylserine-and-cognitive-dysfunction-and-dementia](https://www.fda.gov/food/cfsan-constituent-updates/phosphatidylserine-and-cognitive-dysfunction-and-dementia)
+[9] U.S. Food and Drug Administration. "Phosphatidylserine and Cognitive Dysfunction and Dementia (Qualified Health Claim: Final Decision Letter)." 13 May 2003. [http://wayback.archive-it.org/7993/20171114183649/https://www.fda.gov/Food/IngredientsPackagingLabeling/LabelingNutrition/ucm072999.htm](http://wayback.archive-it.org/7993/20171114183649/https://www.fda.gov/Food/IngredientsPackagingLabeling/LabelingNutrition/ucm072999.htm)
 
 [10] Kato-Kataoka A, Sakai M, Ebina R, et al. "Soybean-derived phosphatidylserine improves memory function of the elderly Japanese subjects with memory complaints." *J Clin Biochem Nutr*. 2010;47(3):246-255. PMID: 21103034. doi: [10.3164/jcbn.10-62](https://doi.org/10.3164/jcbn.10-62)
 
-[11] U.S. Food and Drug Administration. "Qualified Health Claims: Letter of Enforcement Discretion: Phosphatidylserine and Cognitive Dysfunction and Dementia." November 2004.
+[11] U.S. Food and Drug Administration. "Letter Updating the Phosphatidylserine and Cognitive Function and Dementia Qualified Health Claim." 24 November 2004. [http://wayback.archive-it.org/7993/20171114183649/https://www.fda.gov/Food/IngredientsPackagingLabeling/LabelingNutrition/ucm072993.htm](http://wayback.archive-it.org/7993/20171114183649/https://www.fda.gov/Food/IngredientsPackagingLabeling/LabelingNutrition/ucm072993.htm)
 
 [12] Jorissen BL, Brouns F, Van Boxtel MP, et al. "The influence of soy-derived phosphatidylserine on cognition in age-associated memory impairment." *Nutr Neurosci*. 2001;4(2):121-134. PMID: 11842880. doi: [10.1080/1028415X.2001.11747356](https://doi.org/10.1080/1028415X.2001.11747356)
 
