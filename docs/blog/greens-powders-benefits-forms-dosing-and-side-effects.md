@@ -254,15 +254,15 @@ Digestive upset is the most commonly reported side effect of greens powders, inc
 
 - **Bloating and gas:** Often attributed to high fiber content, probiotics, or the introduction of new plant compounds to the gut. Usually resolves within 1-2 weeks of consistent use [1][3].
 - **Diarrhea:** In an uncontrolled 12-week study of chlorella in adults with hepatitis C, a few patients had mild diarrhea in the first week, though most tolerated it well [31].
-- **Constipation:** In the same study, constipation was the other main side effect; it was mild to moderate and settled within two weeks, though one person stopped because of it [31].
+- **Constipation:** In the same study, constipation was the other main side effect: four of the 13 patients with a previous history of constipation said it got worse. It was mild to moderate and settled within two weeks, though one person stopped because of it [31].
 
 ### 5.2 Liver Injury
 
-Some greens powders contain undisclosed amounts of ingredients linked to liver injury, including:
+Some greens powders contain undisclosed amounts of ingredients linked to liver injury. Ingredients or products with reported liver concerns include:
 
 - **Green tea extract:** A 2015 review found nineteen cases of liver injury linked to green tea products. Cases with green tea alone all resolved, but four of the twelve linked to multi-ingredient products needed a liver transplant [36].
 - **Ashwagandha (Withania somnifera):** A case series of five patients described jaundice and liver injury 2 to 12 weeks after starting ashwagandha supplements; none developed liver failure [37].
-- **AG1:** An analysis of US FDA adverse event reports from 2004 to 2025 found preliminary signals of raised liver enzymes for AG1, which the authors called flags for further investigation rather than confirmed risks [67].
+- **AG1:** An analysis of US FDA adverse event reports from 2004 to 2025 found preliminary signals of raised liver enzymes for AG1 in 2023-2025, which the authors called flags for further investigation rather than confirmed risks [67].
 
 The 2015 review judged green tea mixed with other ingredients a major safety concern and advised against supplements that contain complex mixtures [36]. If you have liver disease, ask your doctor before taking a greens powder.
 
@@ -282,7 +282,7 @@ Immune-stimulating supplements may worsen existing autoimmune disease or trigger
 
 **BMAA concern:** Some cyanobacteria can make the neurotoxin beta-methylamino-L-alanine (BMAA) [57]. In vervet monkeys, chronic dietary BMAA caused brain changes seen in Alzheimer's disease, namely neurofibrillary tangles and amyloid deposits [56]. A study of ten spirulina samples (six pure samples from two suppliers, plus four multi-ingredient products) found no detectable BMAA [57].
 
-**Aph. flos-aquae contamination:** Of the algae tested in the German study, only Aph. flos-aquae products contained microcystins, and the authors noted that consumers have reported adverse health effects after taking cyanobacterial products [9]. The 2017 study found cyanotoxins above tolerable daily intake values in 8 of 18 algae products (Section 2.3) [33]. Microcystins can harm the liver: in one case report, a chlorella supplement contaminated with a microcystin was linked, along with turmeric and chemotherapy, to acute toxic hepatitis [69]. Products containing this ingredient may pose a risk that outweighs any purported benefit.
+**Aph. flos-aquae contamination:** Of the algae tested in the German study, only Aph. flos-aquae products contained microcystins, and the authors noted that consumers have reported adverse health effects after taking cyanobacterial products [9]. The 2017 study found cyanotoxins above tolerable daily intake values in 8 of 18 algae products (Section 2.3) [33]. Products containing this ingredient may pose a risk that outweighs any purported benefit. In one case report, a chlorella supplement contaminated with a microcystin was linked, along with turmeric and chemotherapy, to acute toxic hepatitis; the authors thought a turmeric-chemotherapy interaction the likely cause [69].
 
 **Bacterial contamination:** In 2025, a Salmonella outbreak linked to moringa leaf powder and super greens supplements sold at Sam's Club sickened at least 11 people [59]. In January 2026, Superfoods Inc. (dba Live it Up) issued a voluntary nationwide recall of all Live It Up Super Greens powders due to possible Salmonella contamination, linked to a multistate outbreak resulting in 45 reported illnesses and 12 hospitalizations across 21 states [60][61]. These events underscore the importance of selecting products from manufacturers with rigorous quality control and third-party testing.
 
@@ -338,7 +338,7 @@ Greens powders high in calcium, oxalates, or polyphenols (such as green tea extr
 
 ## 7. Dietary Sources: Whole Food Alternatives
 
-The nutrients found in greens powders are available — often in more bioavailable forms and with added fiber — from whole foods. For individuals seeking the benefits attributed to greens powders, increasing intake of the following whole foods may be a more effective and evidence-based approach:
+The nutrients found in greens powders are available, often in more bioavailable forms and with added fiber, from whole foods. For individuals seeking the benefits attributed to greens powders, increasing intake of the following whole foods may be a more effective and evidence-based approach:
 
 ### Leafy Greens
 
