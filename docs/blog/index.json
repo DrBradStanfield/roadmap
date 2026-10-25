@@ -4037,7 +4037,8 @@
     "publishedAt": "2025-05-20T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/avocado-oil-benefits-forms-dosing",
     "type": "reference",
-    "summary": "Reference on avocado oil: heart health, cholesterol, skin moisturizing, carotenoid absorption. Extra virgin to refined forms; 1-2 tbsp/day. Latex allergy risk; warfarin interaction. Commercial adulteration common. Always discuss with your doctor."
+    "summary": "Avocado oil is mostly monounsaturated fat. Heart and cancer effects rest on lab and animal studies; human trials used whole avocado, with mixed cholesterol results. In one small trial it boosted carotenoid absorption from salad. Talk to your doctor first if you take warfarin or have a latex allergy.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Holy Basil (Tulsi): Benefits, Forms, Dosing, and Side Effects",
@@ -5111,7 +5112,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/extra-virgin-olive-oil-benefits",
     "type": "reference",
-    "summary": "Reference on extra virgin olive oil: heart health, blood sugar, brain health, inflammation. Most studied at 2-4 tablespoons/day replacing saturated fat. Polyphenol-rich EVOO preferred over refined oil. Always discuss with your doctor."
+    "summary": "Brad counts extra-virgin olive oil as a healthy fat to use in place of butter and other saturated fat. In PREDIMED, a Mediterranean diet with it cut heart attacks and strokes. It is calorie-dense. Talk to your doctor first if you take blood pressure or diabetes medicines.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "GABA: Benefits, Forms, Dosing, and Side Effects",
@@ -6197,7 +6199,8 @@
     "publishedAt": "2025-04-29T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/flaxseed-oil-omega-6-evidence-guide",
     "type": "reference",
-    "summary": "Reference on flaxseed oil, evening primrose, borage, and hemp oils: heart health, blood pressure, acne, dry eye, joint pain. ALA for vegans; whole flaxseed best for blood pressure. GLA may lower seizure threshold. Always discuss with your doctor."
+    "summary": "Flaxseed oil supplies ALA, a plant omega-3 the body turns into little EPA or DHA. In a trial the oil did not lower blood pressure; milled whole flaxseed did. Evening primrose and borage oils did not help eczema. Talk to your doctor first if you take blood thinners or are pregnant.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "L-Tryptophan and 5-HTP: Benefits, Forms, Dosing, and Side Effects",
@@ -10154,7 +10157,8 @@
     "publishedAt": "2024-07-08T17:21:25Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/mct-oil-coconut-oil-evidence-guide",
     "type": "reference",
-    "summary": "Reference on coconut oil and MCT oil: weight loss, cognitive support in MCI, skin moisturizing. MCT oil (C8/C10) differs from coconut oil; 5-30 g/day dosing. AHA cautions on LDL and cardiovascular risk. Always discuss with your doctor."
+    "summary": "Brad lists coconut oil among the saturated fats that can raise LDL cholesterol and favours swapping them for unsaturated fats. In trials, coconut oil raised LDL more than nontropical vegetable oils. Talk to your doctor first if you take a statin.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Can Older Adults and Seniors Still Take Creatine Supplements?",
@@ -10443,7 +10447,8 @@
     "publishedAt": "2024-05-24T09:51:25Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/chia-seed-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on chia seeds: high fiber, plant-based omega-3 (ALA), blood sugar, blood pressure, gut and bone health. Dose 1-2 tbsp/day; soak before eating to avoid choking. Caution if kidney stone history (oxalates). Always discuss with your doctor."
+    "summary": "Chia seeds supply fiber and plant omega-3 (ALA). Trials suggest lower blood pressure but no clear effect on weight or blood sugar, and the evidence is low quality. Soak before eating. Talk to your doctor first if you take blood thinners or have had kidney stones.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "CBD (Cannabidiol): Benefits, Forms, Dosing, and Side Effects",

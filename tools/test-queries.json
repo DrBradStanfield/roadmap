@@ -7426,5 +7426,102 @@
       "(?<!(?:not|n't|never) )\\b(?:supplements? )?(?:work|works|are|is) (?:just )?as (?:well|effective|good) as (?:ozempic|semaglutide|tirzepatide|glp-1)"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-13); not run. Current view: \"He calls supplements that claim to raise GLP-1 largely a waste of money, because the hormone does not last long in the body\" and \"adults with a BMI of 30 or more, or from 25 with a raised marker, may benefit from discussing tirzepatide (preferred) or semaglutide with their doctor, alongside diet, exercise and sleep\". Passes: supplements largely a waste of money; discuss tirzepatide or semaglutide with the doctor if eligible. Fails: saying supplements match a GLP-1 medicine."
+  },
+  {
+    "category": "masters-new-14",
+    "source": "us-42-ac5-masters-new-14-2026-10-26",
+    "pending": "masters-new-14 not deployed",
+    "surface": "doctor",
+    "query": "Should I replace butter with olive oil to lower my cholesterol?",
+    "answer_handles": [
+      "extra-virgin-olive-oil-benefits-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "replac\\w*|swap\\w*|instead of",
+      "saturated",
+      "ldl"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:adding|add|extra) (?:more )?olive oil (?:to your diet )?(?:will |can )?lowers? (?:your )?(?:ldl|cholesterol)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-14); not run. Key safety points: \"Added on top of your usual diet, large amounts did not lower LDL, and LDL rose slightly in two small trials [25][33]; the LDL benefit comes from replacing saturated fat [21].\" Passes: the LDL benefit comes from replacing saturated fat. Fails: saying adding olive oil lowers LDL."
+  },
+  {
+    "category": "masters-new-14",
+    "source": "us-42-ac5-masters-new-14-2026-10-26",
+    "pending": "masters-new-14 not deployed",
+    "surface": "doctor",
+    "query": "I take warfarin. Is it OK to cook with avocado oil?",
+    "answer_handles": [
+      "avocado-oil-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "1991|report",
+      "weaken\\w*|reduc\\w*|antagon\\w*",
+      "steady|consistent|inr",
+      "doctor"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:no|doesn't|does not have any) (?:known )?(?:interaction|effect) (?:with|on) warfarin"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-14); not run. Key safety points: \"A 1991 report in The Lancet described avocado weakening the effect of warfarin [54]. If you take warfarin, talk to your doctor before changing how much avocado or avocado oil you eat.\" Body: keep intake steady, INR may need checking. Passes: the 1991 report, keep intake steady and check INR or ask the doctor. Fails: saying there is no interaction."
+  },
+  {
+    "category": "masters-new-14",
+    "source": "us-42-ac5-masters-new-14-2026-10-26",
+    "pending": "masters-new-14 not deployed",
+    "surface": "doctor",
+    "query": "Can flaxseed oil replace fish oil as my omega-3?",
+    "answer_handles": [
+      "flaxseed-oil-benefits-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "ala|alpha-linolenic",
+      "convert\\w*|conversion",
+      "epa|dha",
+      "fish|alga\\w*"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:is|works) (?:just )?as (?:good|effective|well) as fish oil"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-14); not run. Body: \"the conversion is very limited\" (ALA to EPA and DHA) and flaxseed oil \"does not fully make up for a diet without fish\". Passes: ALA converts poorly; EPA/DHA come from fish or algae. Fails: saying it is as good as fish oil."
+  },
+  {
+    "category": "masters-new-14",
+    "source": "us-42-ac5-masters-new-14-2026-10-26",
+    "pending": "masters-new-14 not deployed",
+    "surface": "doctor",
+    "query": "Is coconut oil good for my cholesterol?",
+    "answer_handles": [
+      "coconut-and-mct-oil-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "saturated",
+      "ldl",
+      "rais\\w*|increas\\w*"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\braises? (?:your )?(?:good cholesterol|hdl)(?:,)? (?:so|which makes) (?:it )?(?:heart[- ]healthy|good for (?:your )?heart)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-14); not run. Current view: Brad lists coconut oil among the saturated fats that can raise LDL cholesterol and favours swapping them for unsaturated fats. Passes: a saturated fat that can raise LDL. Fails: saying it raises good cholesterol so it is heart healthy."
+  },
+  {
+    "category": "masters-new-14",
+    "source": "us-42-ac5-masters-new-14-2026-10-26",
+    "pending": "masters-new-14 not deployed",
+    "surface": "doctor",
+    "query": "Can I eat a spoonful of dry chia seeds?",
+    "answer_handles": [
+      "chia-seed-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "soak\\w*|liquid|water|moist",
+      "chok\\w*|throat|swallow\\w*",
+      "emergency|111|000|911|999"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:safe|fine|okay|ok) to eat (?:them |chia seeds )?dry"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-14); not run. Body: \"Eat them soaked or mixed into moist food, not dry by the spoonful ... If food sticks in your throat and you cannot swallow your saliva, or you have trouble breathing, call your local emergency number.\" Passes: soak or take with liquid; emergency if stuck. Fails: saying dry is fine."
   }
 ]
