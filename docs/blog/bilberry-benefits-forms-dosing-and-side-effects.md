@@ -91,6 +91,8 @@ Check that the label names *Vaccinium myrtillus*. Bilberries are expensive, and 
 
 A 2022 review found that vision trials gave contradictory results with no clear conclusion on benefit or dose, and that the vision claims arose from unproven or false claims [1].
 
+Bilberry has not been clearly shown to help any health condition, including retinopathy [9].
+
 ### Night Vision
 
 This is bilberry's most famous claim, and rigorous trials do not support it.
@@ -202,6 +204,8 @@ Bilberry fruit is considered safe in amounts typically found in foods [9]. Bilbe
 
 ### Reported Side Effects
 
+Fruit extracts appear to be well tolerated [9].
+
 - **Allergic reactions:** Possible. For trouble breathing, swelling of the face or throat, or fainting, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 ### Blood Sugar Effects
@@ -261,7 +265,6 @@ Bilberry extract lowered the blood sugar response to a starch drink [25], so it 
 ### Other Potential Interactions
 
 - **Drug absorption:** In cells, bilberry extract blocked a gut transporter (OATP-B) that carries some medicines by 75.5%, and the authors suggest some supplements may reduce the absorption of drugs that use it [47]. Whether this matters in people is unknown. If you take prescription medicines, check with your doctor or pharmacist before starting.
-- **Iron absorption:** Bilberry contains tannins [9].
 
 ## 7. Dietary Sources
 
