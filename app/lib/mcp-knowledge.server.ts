@@ -14,7 +14,7 @@
  * The query and the handle are read and dropped: no log, no counter, and no
  * refusal repeats them.
  */
-import { z } from 'zod';
+import * as z from '../../packages/health-core/src/zod';
 import { bestSection, buildIndex, search, tokenize, type Index } from '../../tools/search-knowledge';
 import { isMaster, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { loadBlogArticle } from './matched-content';

@@ -2,8 +2,8 @@ import AuthenticationServices
 import SwiftUI
 
 /// The one way the app signs in to a cloud (US-25 AC11): Sync's Connect and
-/// "Sign in again" rows, and "+"'s Connect Dropbox (US-52 AC11), all run
-/// `CloudSync.connect` through this button, so there is one OAuth flow.
+/// "Sign in again" rows, and the welcome screen's, all run `CloudSync.connect`
+/// through this button, so there is one OAuth flow.
 struct ConnectCloudButton<Label: View>: View {
     let sync: CloudSync
     let provider: CloudProvider

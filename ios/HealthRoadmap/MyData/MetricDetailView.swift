@@ -60,9 +60,7 @@ struct MetricDetailView: View {
         // What My data's tap already read draws at once; the engine answers the rest off
         // the main thread, again whenever the record or its units move.
         .task(id: store.revision) { _ = await store.chart(for: row.metric) }
-        .listStyle(.insetGrouped)
-        .navigationTitle(row.label)
-        .navigationBarTitleDisplayMode(.inline)
+        .metricPageList(title: row.label)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { editing = .add(Self.live(row, in: store) ?? row, store.screen) } label: {
@@ -125,21 +123,9 @@ struct MetricDetailView: View {
 
     /// The newest value, large, with its day: Apple Health's headline.
     private func headline(_ latest: MetricHistory.Row?, unit: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("Latest").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(latest?.value ?? "None")
-                    .font(.system(.largeTitle, design: .rounded).weight(.semibold))
-                    .monospacedDigit()
-                    .contentTransition(.numericText())
-                if latest != nil { Text(unit).font(.title3).foregroundStyle(.secondary) }
-            }
-            if let latest {
-                Text(DayText.short(latest.day)).font(.subheadline).foregroundStyle(.secondary)
-            }
-        }
-        .accessibilityElement(children: .combine)
-        .animation(.snappy, value: latest?.value)
+        PageHeadline(headline: Headline(title: "Latest", parts: latest.map { [.init(number: $0.value, unit: unit)] } ?? [],
+                                        span: latest.map { DayText.short($0.day) } ?? ""))
+            .animation(.snappy, value: latest?.value)
     }
 
     // MARK: Unit

@@ -57,14 +57,24 @@ final class TourTipsTests: XCTestCase {
                        "and its own tab: a hidden tab's tip never shows over another")
         XCTAssertEqual(SnapshotTip.line, "A snapshot of your health. Tap any tile to learn more.")
         XCTAssertEqual(FoundationTip.line, "Start here. Each step comes with the reason and the evidence.")
-        XCTAssertEqual(BloodTestsTip.line, "The more you add, the more personal your plan. A lab report fills these in for you.")
+        XCTAssertEqual(BloodTestsTip.line, "The more data you add, the more personal your plan. You can upload lab reports to fill these in for you.")
         XCTAssertNil(SnapshotTip().message, "one line: the title alone")
         XCTAssertNil(FoundationTip().message)
         XCTAssertNil(BloodTestsTip().message)
         XCTAssertEqual(BloodTestsTip.actionTitle, "Add a lab report")
-        XCTAssertEqual(BloodTestsTip().actions.map(\.id), [Tour.uploadAction], "its one action opens the lab upload")
-        XCTAssertEqual(SnapshotTip().actions.map(\.id), [Tour.skipAction])
-        XCTAssertEqual(FoundationTip().actions.map(\.id), [Tour.skipAction])
+    }
+
+    /// Brad 2026-10-25: every tip ends on one row, "Skip tour", "1/3", "Next"; the last
+    /// tip's "Next" reads "Done". Tip 3 keeps its lab upload above the row (AC2, AC3, AC7).
+    func testEveryTipHasSkipACounterAndNext_AC2_AC3() {
+        XCTAssertEqual(SnapshotTip().actions.map(\.id), [Tour.skipAction, Tour.nextAction])
+        XCTAssertEqual(FoundationTip().actions.map(\.id), [Tour.skipAction, Tour.nextAction])
+        XCTAssertEqual(BloodTestsTip().actions.map(\.id), [Tour.uploadAction, Tour.skipAction, Tour.nextAction],
+                       "the lab upload first, then the row")
+        XCTAssertEqual([SnapshotTip.counter, FoundationTip.counter, BloodTestsTip.counter], ["1/3", "2/3", "3/3"])
+        XCTAssertEqual([SnapshotTip.spokenCounter, FoundationTip.spokenCounter, BloodTestsTip.spokenCounter],
+                       ["Tip 1 of 3", "Tip 2 of 3", "Tip 3 of 3"], "what VoiceOver reads")
+        XCTAssertEqual([SnapshotTip.nextTitle, FoundationTip.nextTitle, BloodTestsTip.nextTitle], ["Next", "Next", "Done"])
     }
 
     func testUnitTestsNeverConfigureTipKit() {

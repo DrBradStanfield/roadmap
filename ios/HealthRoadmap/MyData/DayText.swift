@@ -33,6 +33,22 @@ enum DayText {
         date(day)?.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, timeZone: .gmt)) ?? day
     }
 
+    /// A card's day or time, as Apple Health writes it on its cards (US-25 AC17, US-56 AC6):
+    /// "Today" (or, with `time`, the time of a reading today), "Yesterday", then the short date.
+    static func when(_ date: Date, time: Bool = false, now: Date, calendar: Calendar) -> String {
+        if calendar.isDate(date, inSameDayAs: now) {
+            return time ? date.formatted(Date.FormatStyle(date: .omitted, time: .shortened, calendar: calendar, timeZone: calendar.timeZone)) : "Today"
+        }
+        if let yesterday = calendar.date(byAdding: .day, value: -1, to: now), calendar.isDate(date, inSameDayAs: yesterday) { return "Yesterday" }
+        return date.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, calendar: calendar, timeZone: calendar.timeZone))
+    }
+
+    /// A record's YYYY-MM-DD the same way, read as noon of that day where the phone is; the
+    /// text as given if it is not a day.
+    static func when(day: String, now: Date, calendar: Calendar) -> String {
+        noon(day, timeZone: calendar.timeZone).map { when($0, now: now, calendar: calendar) } ?? day
+    }
+
     /// Midnight UTC of YYYY-MM-DD, for placing a value on a chart; nil if it is not a day.
     static func date(_ day: String) -> Date? {
         let parts = day.split(separator: "-").compactMap { Int($0) }

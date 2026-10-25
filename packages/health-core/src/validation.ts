@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from './zod';
 import { roundBoundInward, UNIT_DEFS, UnitSystem } from './units';
 import { FIELD_METRIC_MAP } from './mappings';
 import type { HealthInputs } from './types';
@@ -28,9 +28,7 @@ export const healthInputSchema = z.object({
     .number()
     .min(50, 'Height must be at least 50 cm')
     .max(250, 'Height must be at most 250 cm'),
-  sex: z.enum(['male', 'female'], {
-    errorMap: () => ({ message: 'Please select male or female' }),
-  }),
+  sex: z.enum(['male', 'female'], { error: 'Please select male or female' }),
 
   // Optional body measurements
   weightKg: z
@@ -170,7 +168,7 @@ export function validateHealthInputs(data: unknown): {
   data?: ValidatedHealthInputs;
   errors?: z.ZodError;
 } {
-  const result = healthInputSchema.safeParse(data);
+  const result = healthInputSchema.safeParse(data, { error: zod3Message });
 
   if (result.success) {
     return { success: true, data: result.data };
@@ -193,6 +191,81 @@ export function getValidationErrors(errors: z.ZodError): Record<string, string> 
   }
 
   return errorMap;
+}
+
+/** Zod 3's name for a value's type, as its messages print it. */
+function parsedType(v: unknown): string {
+  if (v === null) return 'null';
+  if (Array.isArray(v)) return 'array';
+  if (typeof v === 'number') return Number.isNaN(v) ? 'nan' : 'number';
+  return typeof v;
+}
+const quoteAll = (values: readonly unknown[], separator = ' | ') =>
+  values.map((v) => (typeof v === 'string' ? `'${v}'` : v)).join(separator);
+const SIZE_NOUN: Record<string, [string, string]> = { array: ['Array must contain', 'element(s)'], string: ['String must contain', 'character(s)'] };
+
+/** Zod 4 refuses ±Infinity as a type; zod 3 ran the number's checks on it, and
+ *  the first to fail spoke. With none failing, `.finite()` refused it (a plain
+ *  `z.number()` let it through, which zod 4 cannot do). */
+function infinityMessage(schema: z.ZodNumber, n: number): string | undefined {
+  for (const check of schema._zod.def.checks ?? []) {
+    const def = check._zod.def as { check: string; value: number; inclusive: boolean; error?: (issue: unknown) => string | undefined };
+    if (def.check === 'number_format') return 'Expected integer, received float';
+    const code = def.check === 'less_than' && n > def.value ? 'too_big' : def.check === 'greater_than' && n < def.value ? 'too_small' : null;
+    if (!code) continue;
+    const issue = { code, origin: 'number', minimum: def.value, maximum: def.value, inclusive: def.inclusive, input: n } as unknown as z.core.$ZodRawIssue;
+    return def.error?.(issue) ?? zod3Message(issue);
+  }
+  return 'Number must be finite';
+}
+
+/**
+ * Zod 3's default English for an issue, so the messages agents and people read
+ * (a malformed tool call, a form error, a CLI refusal) kept their words when
+ * zod 4 reworded its defaults. Pass as `safeParse(data, { error: zod3Message })`
+ * wherever an issue's message is shown; a schema's own message still wins.
+ */
+export function zod3Message(issue: z.core.$ZodRawIssue): string | undefined {
+  const { input } = issue;
+  const def = (issue.inst as z.core.$ZodType | undefined)?._zod.def;
+  switch (issue.code) {
+    case 'invalid_type':
+      if (input === undefined) return 'Required';
+      if (typeof input === 'number' && !Number.isNaN(input) && issue.expected === 'number') {
+        return infinityMessage(issue.schema as z.ZodNumber, input);
+      }
+      if (issue.expected === 'int') return 'Expected integer, received float';
+      return `Expected ${issue.expected === 'record' ? 'object' : issue.expected}, received ${parsedType(input)}`;
+    case 'invalid_value':
+      if (def?.type === 'literal') return `Invalid literal value, expected ${JSON.stringify(issue.values[0])}`;
+      if (typeof input !== 'string') return input === undefined ? 'Required' : `Expected ${quoteAll(issue.values)}, received ${parsedType(input)}`;
+      return `Invalid enum value. Expected ${quoteAll(issue.values)}, received '${input}'`;
+    case 'unrecognized_keys':
+      return `Unrecognized key(s) in object: ${quoteAll(issue.keys, ', ')}`;
+    case 'invalid_format':
+      return issue.format === 'regex' ? 'Invalid' : `Invalid ${issue.format === 'guid' ? 'uuid' : issue.format}`;
+    case 'too_small':
+    case 'too_big': {
+      const small = issue.code === 'too_small';
+      const bound = small ? issue.minimum : issue.maximum;
+      const noun = SIZE_NOUN[issue.origin];
+      if (noun) {
+        const strict = issue.origin === 'array' ? (small ? 'more than' : 'less than') : small ? 'over' : 'under';
+        return `${noun[0]} ${issue.exact ? 'exactly' : issue.inclusive ? (small ? 'at least' : 'at most') : strict} ${bound} ${noun[1]}`;
+      }
+      if (issue.origin === 'number') {
+        return small
+          ? `Number must be ${issue.exact ? 'exactly equal to ' : issue.inclusive ? 'greater than or equal to ' : 'greater than '}${bound}`
+          : `Number must be ${issue.exact ? 'exactly' : issue.inclusive ? 'less than or equal to' : 'less than'} ${bound}`;
+      }
+      return 'Invalid input';
+    }
+    case 'invalid_union':
+    case 'custom':
+      return 'Invalid input';
+    default:
+      return undefined;
+  }
 }
 
 /**
@@ -220,7 +293,7 @@ export type MeasurementStatus = typeof MEASUREMENT_STATUS[number];
 export const measurementSchema = z.object({
   metricType: z.enum(METRIC_TYPES),
   value: z.number(),
-  recordedAt: z.string().datetime().optional(), // defaults to now on server
+  recordedAt: z.iso.datetime().optional(), // defaults to now on server
   source: z.enum(MEASUREMENT_SOURCES).optional(), // defaults to 'manual' in DB
   externalId: z.string().max(200).optional(), // external system ID (e.g. HealthKit sample UUID)
 });

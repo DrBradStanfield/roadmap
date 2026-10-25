@@ -63,7 +63,7 @@ final class Analytics {
         case tileExplainerOpened = "Tile explainer opened"
         case cloudPromptShown = "Cloud prompt shown", cloudPromptBackUp = "Cloud prompt back up", cloudPromptNotNow = "Cloud prompt not now"
 
-        /// A tour tip closed (its x, a tap outside it, its action, or no anchor) or skipped.
+        /// A tour tip closed (its Next or Done, a tap outside it, leaving it, its action, or no anchor) or skipped.
         static func tip(_ step: TourStep, skipped: Bool) -> Event? {
             switch (step, skipped) {
             case (.snapshot, false): .tourTipClosed1

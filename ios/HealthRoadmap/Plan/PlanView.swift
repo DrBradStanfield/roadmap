@@ -15,7 +15,7 @@ struct PlanView: View {
         Group {
             switch store.plan {
             case .planned(let tiles, let sections, let ms):
-                PlanList(tiles: tiles, sections: sections, planMs: ms)
+                PlanList(tiles: tiles, sections: sections, planMs: ms, showMyData: showMyData)
             case .needsDetails:
                 // health-core's PlanError: its own words are written for connectors, so
                 // people get a plain sentence.
@@ -56,6 +56,7 @@ private struct PlanList: View {
     let tiles: [StatTile]
     let sections: [PlanSection]
     let planMs: Double
+    let showMyData: () -> Void
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -71,11 +72,11 @@ private struct PlanList: View {
                                 .padding(.horizontal, 4)
                                 .modifier(RiseIn())
                             ForEach(section.cards) { card in
-                                // Tour tip 2 (US-57 AC6): the first Foundation step.
+                                // Tour tip 2 (US-57 AC6): the first Foundation step; its Next opens tip 3 on My data.
                                 if section.isFoundation, card.id == section.cards.first?.id {
                                     PlanCardView(card: card).modifier(RiseIn())
                                         .id(Self.foundationCard)
-                                        .tourTip(FoundationTip())
+                                        .tourTip(FoundationTip(), next: showMyData)
                                 } else {
                                     PlanCardView(card: card).modifier(RiseIn())
                                 }

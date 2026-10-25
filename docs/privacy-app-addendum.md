@@ -44,9 +44,23 @@ We never use Apple Health data for advertising or marketing. We never sell it or
 a data broker. We never store it in iCloud. Apple Health keeps its own data under your
 Apple settings, as it does for every app.
 
-A value read from Apple Health becomes part of your record, so it goes where your record
+A value imported from Apple Health becomes part of your record, so it goes where your record
 goes: this iPhone, the Dropbox or Google Drive you connect, and, if you use the chat, the
 summary of your record that each question carries (below). The app sends it nowhere else.
+
+### Heart rate, resting heart rate, sleep, VO2 max and steps
+
+These five are different. They are shown, never kept. The app asks to read them, in a
+separate Apple Health permission, only when you tap **Show from Apple Health** on My data, or
+**Reconnect** there after you said no. Once you have answered, iOS does not ask again, so
+Reconnect opens Settings, where you can turn them on. It
+reads them from Apple Health each time it shows a card or a chart of them, and holds them in
+memory only while the app is open. It never saves them: not in your record, not in a file,
+not in the app's settings. So they never reach your Dropbox or Google Drive, the chat's
+summary of your record, the Health Roadmap website or our server. The app sends them
+nowhere. Clarity learns only that one of these pages was opened, never which one or any
+value. The app writes none of them to Apple Health, so **Delete all my data** leaves them
+where they are: in Apple Health, under your Apple settings.
 
 ## Chat
 
@@ -190,6 +204,10 @@ time.
 - [VERIFY] Supabase's backup window, for the App Attest rows.
 - [VERIFY] Apple Health reading, writing and erase are checked only against a fake Health
   store. Confirm on a real iPhone.
+- [VERIFY] The five readings shown from Apple Health (US-56) were checked against the code on
+  2026-10-25: `ios/HealthRoadmap/AppleHealthMetrics/**`, whose source-scan test
+  (`LiveHealthTests`) finds no file, settings, record, engine, log or telemetry call. Confirm
+  the permission sheet on a real iPhone.
 - [VERIFY] The seller name DR BRAD, INC. matches the App Store listing once enrolment
   (726UVSY5YZ) is approved.
 - [VERIFY] Whether GDPR or CCPA wording is needed. The main policy carries that language.

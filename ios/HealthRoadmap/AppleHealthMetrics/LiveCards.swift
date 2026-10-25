@@ -1,9 +1,10 @@
 import SwiftUI
+import UIKit
 
 /// US-56's cards on My data: the access card until Apple's sheet is done (AC4, AC5), then
 /// heart rate, resting heart rate and sleep in Vitals and VO2 max and steps under Fitness
-/// (AC6), each in the vitals card style. A metric with no data is left out. The sections
-/// read `LiveHealth` from the environment, so My data adds one line for each.
+/// (AC6), each in the vitals card style. A metric with no data is left out. The section
+/// reads `LiveHealth` from the environment, so My data adds one line for each place.
 
 extension LiveMetric {
     /// Its graph colour.
@@ -32,72 +33,108 @@ extension SectionTitle {
 /// The footer under the new cards (AC6, AC4).
 enum LiveFooter {
     static let shownOnly = "From Apple Health. Shown here only: not saved to your record or the website."
-    static let access = "To change what Health Roadmap can read: Settings › Health › Data Access & Devices › Health Roadmap."
+    /// The path as iOS 27 has it (checked on the simulator 2026-10-25: Health moved under Apps).
+    static let access = "To change what Health Roadmap can read: Settings › Apps › Health › Data Access & Devices › Health Roadmap."
+    /// The Reconnect row's words (AC5b).
+    static let reconnect = "Heart rate, sleep, VO2 max and steps can show here from Apple Health."
 }
 
-/// Vitals' part (AC5, AC6): the access card, or heart rate, resting heart rate and sleep,
-/// each its own section as the vitals are. Placed in Vitals under blood pressure.
-struct LiveVitalsCards: View {
+/// One place's cards (AC5, AC6), each its own section as the vitals are. In Vitals, under
+/// blood pressure: the access card, or heart rate, resting heart rate and sleep, or the
+/// Reconnect row. Under Fitness: VO2 max and steps, not shown when neither has data.
+struct LiveCardsSection: View {
     @Environment(LiveHealth.self) private var live: LiveHealth?
+    /// `LiveMetric.vitals` or `LiveMetric.fitness`.
+    let metrics: [LiveMetric]
     let open: (LiveMetric) -> Void
+
+    /// What a place shows.
+    enum Shown: Equatable {
+        case nothing, access, reconnect
+        /// The metrics with a reading, in order.
+        case cards([LiveMetric])
+    }
+
+    /// Vitals shows the access card until Apple's sheet is done (AC4, AC5). After it, the
+    /// cards with a reading. With none anywhere, after a "Don't Allow" or with an empty Health
+    /// (iOS cannot tell them apart), Vitals shows one calm Reconnect row, never an error or a
+    /// greyed line (AC5b, Brad 2026-10-25). Nothing while the answer is unknown or unread.
+    static func shown(_ metrics: [LiveMetric], needsAccess: Bool?, hasRead: Bool, cards: [LiveMetric: LiveCard]) -> Shown {
+        let vitals = metrics == LiveMetric.vitals
+        if needsAccess == true { return vitals ? .access : .nothing }
+        guard needsAccess == false, hasRead else { return .nothing }
+        if vitals, cards.isEmpty { return .reconnect }
+        let held = metrics.filter { cards[$0] != nil }
+        return held.isEmpty && !vitals ? .nothing : .cards(held)
+    }
 
     var body: some View {
         if let live, live.available {
-            if live.needsAccess == true {
+            switch Self.shown(metrics, needsAccess: live.needsAccess, hasRead: live.hasRead, cards: live.cards) {
+            case .nothing:
+                EmptyView()
+            case .access:
                 Section { LiveAccessCard(live: live) }
                     .listSectionSpacing(.compact)
-            } else if live.needsAccess == false, live.hasRead {
-                let shown = LiveMetric.vitals.filter { live.cards[$0] != nil }
-                let nothing = shown.isEmpty && LiveMetric.fitness.allSatisfy { live.cards[$0] == nil }
+            case .reconnect:
+                Section { LiveReconnectRow(live: live) }
+                    .listSectionSpacing(.compact)
+            case .cards(let shown):
+                let vitals = metrics == LiveMetric.vitals
+                let fitnessFollows = LiveMetric.fitness.contains { live.cards[$0] != nil }
                 ForEach(shown) { metric in
-                    Section {
-                        Button { open(metric) } label: { LiveCardView(metric: metric, card: live.cards[metric]!, now: live.now(), calendar: live.calendar) }
-                            .tint(.primary)
-                    } footer: {
-                        if metric == shown.last { footer(fitnessFollows: LiveMetric.fitness.contains { live.cards[$0] != nil }) }
+                    if let card = live.cards[metric] {
+                        Section {
+                            Button { open(metric) } label: { LiveCardView(metric: metric, card: card, now: live.now(), calendar: live.calendar) }
+                                .tint(.primary)
+                        } header: {
+                            if !vitals, metric == shown.first { SectionTitle.fitness() }
+                        } footer: {
+                            // Fitness, when shown, carries the access line, so it is said once.
+                            if metric == shown.last { Text(vitals && fitnessFollows ? LiveFooter.shownOnly : "\(LiveFooter.shownOnly) \(LiveFooter.access)") }
+                        }
+                        .listSectionSpacing(.compact)
                     }
-                    .listSectionSpacing(.compact)
-                }
-                // Nothing to show: refused or empty look the same (AC4), so say where access lives.
-                if nothing {
-                    Section {
-                        Label("No heart, sleep or fitness data in Apple Health yet.", systemImage: "heart.text.square")
-                            .foregroundStyle(.secondary)
-                    } footer: {
-                        Text(LiveFooter.access)
-                    }
-                    .listSectionSpacing(.compact)
                 }
             }
         }
-    }
-
-    /// Fitness, when shown, carries the access line, so it is said once.
-    private func footer(fitnessFollows: Bool) -> some View {
-        Text(fitnessFollows ? LiveFooter.shownOnly : "\(LiveFooter.shownOnly) \(LiveFooter.access)")
     }
 }
 
-/// The Fitness heading's cards (AC6): VO2 max and steps; not shown when neither has data.
-struct LiveFitnessSection: View {
-    @Environment(LiveHealth.self) private var live: LiveHealth?
-    let open: (LiveMetric) -> Void
+/// After "Don't Allow", or with nothing in Health (AC5b, Brad 2026-10-25): one calm row in
+/// normal text with a Reconnect button and, under it, where the readings are turned on.
+/// VoiceOver reads the words as one element, then the button.
+struct LiveReconnectRow: View {
+    let live: LiveHealth
+    @State private var asking = false
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
-        if let live, live.available, live.needsAccess == false {
-            let shown = LiveMetric.fitness.filter { live.cards[$0] != nil }
-            ForEach(Array(shown.enumerated()), id: \.element) { index, metric in
-                Section {
-                    Button { open(metric) } label: { LiveCardView(metric: metric, card: live.cards[metric]!, now: live.now(), calendar: live.calendar) }
-                        .tint(.primary)
-                } header: {
-                    if index == 0 { SectionTitle.fitness() }
-                } footer: {
-                    if index == shown.count - 1 { Text("\(LiveFooter.shownOnly) \(LiveFooter.access)") }
+        VStack(alignment: .leading, spacing: 10) {
+            Text(LiveFooter.reconnect)
+                .font(.subheadline)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityLabel("\(LiveFooter.reconnect) \(LiveFooter.access)")
+            Button {
+                asking = true
+                Task {
+                    if await live.reconnect() == .settings, let settings = URL(string: UIApplication.openSettingsURLString) {
+                        openURL(settings)
+                    }
+                    asking = false
                 }
-                .listSectionSpacing(.compact)
+            } label: {
+                Text("Reconnect").frame(maxWidth: .infinity)
             }
+            .buttonStyle(.bordered)
+            .disabled(asking)
+            Text(LiveFooter.access)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityHidden(true)
         }
+        .padding(.vertical, 4)
     }
 }
 
@@ -134,49 +171,31 @@ struct LiveAccessCard: View {
     }
 }
 
-/// One metric's card, drawn as a vital's (`ValueRow` with `card:`): the plain name, its day
-/// or time and a chevron on top; the value large with its trend in the metric's colour.
-/// VoiceOver reads it as one sentence (AC12); at accessibility sizes the name stacks over the day.
+/// One metric's card, drawn as a vital's (`CardShell`): the plain name, its day or time
+/// and a chevron on top; the value large with its trend in the metric's colour. VoiceOver
+/// reads it as one sentence (AC12).
 struct LiveCardView: View {
     let metric: LiveMetric
     let card: LiveCard
     let now: Date
     let calendar: Calendar
-    @Environment(\.dynamicTypeSize) private var textSize
 
     var body: some View {
-        let when = LiveMaths.when(card.date, showsTime: card.showsTime, now: now, calendar: calendar)
-        VStack(alignment: .leading, spacing: 10) {
-            LabelValue.layout(textSize).callAsFunction {
-                Text(metric.label).font(.subheadline.weight(.semibold))
-                Spacer()
-                HStack {
-                    Text(when).font(.footnote).foregroundStyle(.secondary)
-                    Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
-                }
-            }
-            HStack(alignment: .bottom) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    LiveValue(metric: metric, value: card.value)
-                    if card.inBed { Text("in bed").font(.subheadline.weight(.medium)).foregroundStyle(.secondary) }
-                }
-                Spacer(minLength: 12)
-                if !textSize.isAccessibilitySize {
-                    Sparkline(points: card.trend, tint: metric.tint, size: CGSize(width: 110, height: 40))
-                }
+        // Heart rate's card is its newest sample: today it shows the time, as Apple Health's does.
+        let when = DayText.when(card.date, time: metric.aggregation == .range, now: now, calendar: calendar)
+        CardShell(label: metric.label, when: when, trend: card.trend, tint: metric.tint) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                LiveValue(metric: metric, value: card.value)
+                if card.inBed { Text("in bed").font(.subheadline.weight(.medium)).foregroundStyle(.secondary) }
             }
         }
-        .padding(.vertical, 4)
         .contentShape(Rectangle())
-        .accessibilityElement(children: .ignore)
         .accessibilityLabel(LiveCardView.spoken(metric, card: card, when: when))
-        .accessibilityAddTraits(.isButton)
     }
 
     /// "Heart Rate, 72 beats per minute, 10:42."
     static func spoken(_ metric: LiveMetric, card: LiveCard, when: String) -> String {
-        let value = card.value
-        let reading = metric == .sleep ? "\(metric.text(value)) \(card.inBed ? "in bed" : "asleep")" : "\(metric.text(value)) \(metric.spokenUnit)"
+        let reading = metric == .sleep ? "\(metric.text(card.value)) \(card.inBed ? "in bed" : "asleep")" : "\(metric.text(card.value)) \(metric.spokenUnit)"
         return "\(metric.label), \(reading), \(when)"
     }
 }
@@ -189,7 +208,7 @@ struct LiveValue: View {
     var body: some View {
         if metric == .sleep {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                ForEach(LiveMaths.duration(value), id: \.1) { CardValue(value: $0.0, unit: $0.1) }
+                ForEach(LiveMaths.duration(value), id: \.self) { CardValue(value: $0.number, unit: $0.unit) }
             }
         } else {
             CardValue(value: metric.text(value), unit: metric.unit)

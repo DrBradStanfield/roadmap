@@ -4,7 +4,7 @@ import Foundation
 /// HealthKit each time they show, held in memory only while the app is open, never in
 /// the record, a cache file or UserDefaults, and never sent to telemetry or a log.
 /// Display only (AC1): nothing here feeds the plan, the engine or the chat.
-enum LiveMetric: String, CaseIterable, Identifiable, Hashable, Sendable {
+enum LiveMetric: String, CaseIterable, Identifiable {
     case heartRate, restingHeartRate, sleep, vo2Max, steps
 
     var id: String { rawValue }
@@ -12,6 +12,21 @@ enum LiveMetric: String, CaseIterable, Identifiable, Hashable, Sendable {
     /// Heart rate, resting heart rate and sleep sit in Vitals; VO2 max and steps under Fitness (AC6).
     static let vitals: [LiveMetric] = [.heartRate, .restingHeartRate, .sleep]
     static let fitness: [LiveMetric] = [.vo2Max, .steps]
+
+    /// How a bucket's readings combine, as Apple Health combines them: steps summed (and
+    /// sleep, a night's stages added up, on its own path); heart rate as its lowest to
+    /// highest; resting heart rate and VO2 max averaged. It sets the HealthKit statistics
+    /// asked for, the headline, the mark, the y-scale, the audio graph's series and the
+    /// card's reading (heart rate's is its newest sample, with the time).
+    enum Aggregation { case sum, range, mean }
+
+    var aggregation: Aggregation {
+        switch self {
+        case .steps, .sleep: .sum
+        case .heartRate: .range
+        case .restingHeartRate, .vo2Max: .mean
+        }
+    }
 
     /// Apple Health's names, VO2 max as the story names it.
     var label: String {
@@ -55,13 +70,27 @@ enum LiveMetric: String, CaseIterable, Identifiable, Hashable, Sendable {
         }
     }
 
+    /// The range its page opens on, as Apple Health's: the day for heart rate, steps and
+    /// sleep; the week for resting heart rate, one value a day; six months for VO2 max, a
+    /// few a month.
+    var opening: LiveRange {
+        switch self {
+        case .heartRate, .steps, .sleep: .day
+        case .restingHeartRate: .week
+        case .vo2Max: .sixMonths
+        }
+    }
+
+    /// A page with nothing to draw for the time in view.
+    var empty: String { "No \(label) data in Apple Health for this time." }
+
     /// The value as Apple Health writes it: whole beats and steps (steps grouped), VO2 max to one place.
     func text(_ value: Double) -> String {
         switch self {
         case .heartRate, .restingHeartRate: String(Int(value.rounded()))
         case .steps: Int(value.rounded()).formatted(.number.grouping(.automatic))
         case .vo2Max: value.formatted(.number.precision(.fractionLength(1)))
-        case .sleep: LiveMaths.duration(value).map { "\($0.0) \($0.1)" }.joined(separator: " ")
+        case .sleep: LiveMaths.duration(value).map { "\($0.number) \($0.unit)" }.joined(separator: " ")
         }
     }
 }
@@ -69,7 +98,7 @@ enum LiveMetric: String, CaseIterable, Identifiable, Hashable, Sendable {
 /// One bar or point: an hour, a day, a week or a month, starting at `start`. Steps carry
 /// `value` (the sum, or a daily average for a week or month); heart rate `low` and `high`
 /// (and `value`, the average, for its trend); resting heart rate and VO2 max `value`.
-struct LivePoint: Equatable, Sendable, Identifiable {
+struct LivePoint: Equatable, Identifiable {
     let start: Date
     var value: Double?
     var low: Double?
@@ -79,12 +108,10 @@ struct LivePoint: Equatable, Sendable, Identifiable {
 }
 
 /// The latest reading of one metric, for its card.
-struct LiveCard: Equatable, Sendable {
+struct LiveCard: Equatable {
     let value: Double
     /// When it was taken (heart rate) or the day or night it belongs to.
     let date: Date
-    /// Heart rate's card shows the reading's time today, as Apple Health's does.
-    let showsTime: Bool
     /// The recent days or nights, oldest first, for the card's trend line.
     let trend: [Double]
     /// Sleep from a writer that records only "In Bed": the value is time in bed (AC9, Codex R3).
@@ -93,7 +120,7 @@ struct LiveCard: Equatable, Sendable {
 
 /// A range of a metric page (AC7): a day by hour, a week or month by day, six months
 /// by week, a year by month, as Apple Health buckets them. Sleep offers D, W, M, 6M.
-enum LiveRange: String, CaseIterable, Identifiable, Sendable {
+enum LiveRange: String, CaseIterable, Identifiable {
     case day = "D", week = "W", month = "M", sixMonths = "6M", year = "Y"
 
     var id: String { rawValue }
@@ -109,6 +136,10 @@ enum LiveRange: String, CaseIterable, Identifiable, Sendable {
         case .year: "Year"
         }
     }
+
+    /// D, W and M: bars of hours or days, ending with today. Their headline reads their own
+    /// bars; 6M and Y read the days under their weeks and months.
+    var isShort: Bool { bucket == .hour || bucket == .day }
 
     /// What one bar or point covers.
     var bucket: Calendar.Component {
@@ -134,7 +165,7 @@ enum LiveRange: String, CaseIterable, Identifiable, Sendable {
 }
 
 /// Apple's sleep stages (AC9). A source with no stages records only asleep or in bed.
-enum SleepStage: String, CaseIterable, Sendable, Comparable {
+enum SleepStage: String, CaseIterable, Comparable {
     case awake, rem, core, deep, asleep, inBed
 
     /// Drawn top to bottom in this order, as Apple Health's hypnogram.
@@ -161,7 +192,7 @@ enum SleepStage: String, CaseIterable, Sendable, Comparable {
 
 /// One sleep sample: a stage from `start` to `end`, written by `source` (a bundle id,
 /// used only to pick one writer per night; never shown or logged).
-struct SleepSegment: Equatable, Sendable {
+struct SleepSegment: Equatable {
     let stage: SleepStage
     let start: Date
     let end: Date
@@ -169,7 +200,7 @@ struct SleepSegment: Equatable, Sendable {
 }
 
 /// One night, dated the morning it ends (AC2): what it drew and its totals.
-struct SleepNight: Equatable, Sendable, Identifiable {
+struct SleepNight: Equatable, Identifiable {
     /// Local midnight of the day the night belongs to.
     let day: Date
     /// The segments drawn: the chosen writer's stages, overlaps kept as recorded.
@@ -183,6 +214,12 @@ struct SleepNight: Equatable, Sendable, Identifiable {
 
     var id: Date { day }
     var hasStages: Bool { stages.keys.contains(where: \.isStage) }
+    /// Any sleep or time in bed: a night to show.
+    var hasSleep: Bool { asleep > 0 || inBed > 0 }
+    /// Recorded only as In Bed: shown as time in bed (AC9, Codex R3).
+    var isInBedOnly: Bool { asleep == 0 && inBed > 0 }
+    /// Its time asleep, or its time in bed when it has no sleep.
+    var shown: TimeInterval { asleep > 0 ? asleep : inBed }
     var start: Date { segments.map(\.start).min() ?? day }
     var end: Date { segments.map(\.end).max() ?? day }
 }
@@ -192,11 +229,12 @@ struct SleepNight: Equatable, Sendable, Identifiable {
 /// range's headline, the cards' latest and trend, and sleep's nights.
 enum LiveMaths {
     /// Hours and minutes, as Apple Health writes sleep: "7 hr 32 min", "45 min", "8 hr".
-    static func duration(_ seconds: TimeInterval) -> [(String, String)] {
+    static func duration(_ seconds: TimeInterval) -> [Headline.Part] {
         let minutes = Int((seconds / 60).rounded())
         let (hours, rest) = (minutes / 60, minutes % 60)
-        if hours == 0 { return [(String(rest), "min")] }
-        return rest == 0 ? [(String(hours), "hr")] : [(String(hours), "hr"), (String(rest), "min")]
+        let (h, m) = (Headline.Part(number: String(hours), unit: "hr"), Headline.Part(number: String(rest), unit: "min"))
+        if hours == 0 { return [m] }
+        return rest == 0 ? [h] : [h, m]
     }
 
     // MARK: Buckets
@@ -204,7 +242,7 @@ enum LiveMaths {
     /// Days grouped into weeks or months: steps as the daily average of the days with
     /// steps (Apple Health's 6M and Y bars), heart rate as the lowest to highest, resting
     /// heart rate and VO2 max as the mean.
-    static func bucket(_ days: [LivePoint], by component: Calendar.Component, metric: LiveMetric, calendar: Calendar) -> [LivePoint] {
+    static func bucket(_ days: [LivePoint], by component: Calendar.Component, calendar: Calendar) -> [LivePoint] {
         guard component != .day, component != .hour else { return days }
         let groups = Dictionary(grouping: days) { calendar.dateInterval(of: component, for: $0.start)?.start ?? $0.start }
         return groups.keys.sorted().map { start in
@@ -219,28 +257,21 @@ enum LiveMaths {
 
     // MARK: Headline
 
-    struct Headline: Equatable {
-        /// "Total", "Average" or "Range", as Apple Health heads its chart.
-        let title: String
-        /// The number, or "52–140" for a range; nil when the window holds nothing.
-        let value: String?
-    }
-
     /// The headline for what is in view: steps a day's total or the daily average, heart
     /// rate its lowest to highest, resting heart rate and VO2 max their average. `points`
     /// are the range's own buckets for D (hours) and W or M (days); for 6M and Y pass the days,
     /// so the average is of days, not of weekly averages.
     static func headline(_ metric: LiveMetric, range: LiveRange, points: [LivePoint]) -> Headline {
-        switch metric {
-        case .heartRate:
-            guard let low = points.compactMap(\.low).min(), let high = points.compactMap(\.high).max() else { return Headline(title: "Range", value: nil) }
-            return Headline(title: "Range", value: "\(metric.text(low))–\(metric.text(high))")
-        case .steps where range == .day:
-            let values = points.compactMap(\.value)
-            return Headline(title: "Total", value: values.isEmpty ? nil : metric.text(values.reduce(0, +)))
-        default:
-            let values = points.compactMap(\.value)
-            return Headline(title: "Average", value: values.isEmpty ? nil : metric.text(values.reduce(0, +) / Double(values.count)))
+        let shown = { (text: String) in [Headline.Part(number: text, unit: metric.unit)] }
+        let values = points.compactMap(\.value)
+        switch metric.aggregation {
+        case .range:
+            guard let low = points.compactMap(\.low).min(), let high = points.compactMap(\.high).max() else { return Headline(title: "Range") }
+            return Headline(title: "Range", parts: shown("\(metric.text(low))–\(metric.text(high))"))
+        case .sum where range == .day:
+            return Headline(title: "Total", parts: values.isEmpty ? [] : shown(metric.text(values.reduce(0, +))))
+        case .sum, .mean:
+            return Headline(title: "Average", parts: values.isEmpty ? [] : shown(metric.text(values.reduce(0, +) / Double(values.count))))
         }
     }
 
@@ -252,43 +283,37 @@ enum LiveMaths {
     static func card(days: [LivePoint], latest: (value: Double, date: Date)? = nil) -> LiveCard? {
         let held = days.filter { $0.value != nil }.sorted { $0.start < $1.start }
         let trend = held.suffix(7).compactMap(\.value)
-        if let latest { return LiveCard(value: latest.value, date: latest.date, showsTime: true, trend: trend) }
+        if let latest { return LiveCard(value: latest.value, date: latest.date, trend: trend) }
         guard let newest = held.last, let value = newest.value else { return nil }
-        return LiveCard(value: value, date: newest.start, showsTime: false, trend: trend)
+        return LiveCard(value: value, date: newest.start, trend: trend)
     }
 
-    /// Sleep's card: the newest night's time asleep, and the last seven nights' for its trend
-    /// (in hours). A night recorded only as In Bed shows its time in bed, as Apple Health
-    /// shows it (AC9, Codex R3).
-    static func card(nights: [SleepNight]) -> LiveCard? {
-        let held = nights.filter { $0.asleep > 0 || $0.inBed > 0 }.sorted { $0.day < $1.day }
+    /// Sleep's card: the newest night up to today (`newestNight`), and the last seven
+    /// nights' time for its trend (in hours). A night recorded only as In Bed shows its time
+    /// in bed, as Apple Health shows it (AC9, Codex R3).
+    static func card(nights: [SleepNight], today: Date) -> LiveCard? {
+        let held = nights.filter { $0.hasSleep && $0.day <= today }.sorted { $0.day < $1.day }
         guard let newest = held.last else { return nil }
-        return LiveCard(value: shown(newest), date: newest.day, showsTime: false, trend: held.suffix(7).map { shown($0) / 3600 },
-                        inBed: newest.asleep == 0)
+        return LiveCard(value: newest.shown, date: newest.day, trend: held.suffix(7).map { $0.shown / 3600 }, inBed: newest.isInBedOnly)
     }
 
-    /// A night's time asleep, or its time in bed when it has no sleep.
-    static func shown(_ night: SleepNight) -> TimeInterval {
-        night.asleep > 0 ? night.asleep : night.inBed
-    }
-
-    /// The card's day or time, as Apple Health writes it: the time for a reading today
-    /// (heart rate), "Today", "Yesterday", else the day.
-    static func when(_ date: Date, showsTime: Bool, now: Date, calendar: Calendar) -> String {
-        if calendar.isDate(date, inSameDayAs: now) {
-            return showsTime ? date.formatted(Date.FormatStyle(date: .omitted, time: .shortened, calendar: calendar, timeZone: calendar.timeZone)) : "Today"
-        }
-        if let yesterday = calendar.date(byAdding: .day, value: -1, to: now), calendar.isDate(date, inSameDayAs: yesterday) { return "Yesterday" }
-        return date.formatted(Date.FormatStyle(calendar: calendar, timeZone: calendar.timeZone).day().month(.abbreviated))
+    /// The newest night with sleep or time in bed, dated today or earlier: the card's night
+    /// and the one D opens on. A nap after 6 pm is dated tomorrow, so it is left out
+    /// (adversary R3).
+    static func newestNight(_ nights: [SleepNight], today: Date) -> SleepNight? {
+        nights.filter { $0.hasSleep && $0.day <= today }.max { $0.day < $1.day }
     }
 
     // MARK: Sleep
 
     /// A night's day: sleep starting from 6 pm on belongs to the next morning, so a night
     /// from 11 pm to 7 am, and every segment of it, is dated the day it ends (AC2), in the
-    /// zone of the calendar given (the phone's).
+    /// zone of the calendar given (the phone's). The cut is the local hour, not six hours
+    /// of seconds, which a clock change at midnight would shift (adversary R5).
     static func nightDay(of segment: SleepSegment, calendar: Calendar) -> Date {
-        calendar.startOfDay(for: segment.start.addingTimeInterval(6 * 3600))
+        let day = calendar.startOfDay(for: segment.start)
+        guard calendar.component(.hour, from: segment.start) >= 18 else { return day }
+        return calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: day) ?? day)
     }
 
     /// Segments as nights, oldest first. Several writers can record one night (a watch, the
@@ -310,7 +335,7 @@ enum LiveMaths {
             let inBed = all.filter { $0.stage == .inBed }
             var stages: [SleepStage: TimeInterval] = [:]
             if chosen.contains(where: \.stage.isStage) {
-                for stage in [SleepStage.awake, .rem, .core, .deep] {
+                for stage in SleepStage.drawn {
                     stages[stage] = covered(chosen.filter { $0.stage == stage }.map { ($0.start, $0.end) })
                 }
             }
@@ -322,15 +347,10 @@ enum LiveMaths {
         }
     }
 
-    /// The nights' average time asleep, of nights with any sleep.
-    static func averageAsleep(_ nights: [SleepNight]) -> TimeInterval? {
-        let held = nights.map(\.asleep).filter { $0 > 0 }
-        return held.isEmpty ? nil : held.reduce(0, +) / Double(held.count)
-    }
-
-    /// The nights' average time in bed, of nights in bed.
-    static func averageInBed(_ nights: [SleepNight]) -> TimeInterval? {
-        let held = nights.map(\.inBed).filter { $0 > 0 }
+    /// The nights' average time asleep (`\.asleep`) or in bed (`\.inBed`), of the nights
+    /// that have any; nil when none has.
+    static func average(_ nights: [SleepNight], _ time: KeyPath<SleepNight, TimeInterval>) -> TimeInterval? {
+        let held = nights.map { $0[keyPath: time] }.filter { $0 > 0 }
         return held.isEmpty ? nil : held.reduce(0, +) / Double(held.count)
     }
 

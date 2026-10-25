@@ -43,7 +43,14 @@ struct MyDataView: View {
 
     var body: some View {
         // The tab's NavigationStack is RootView's; this screen hides its bar.
-        content
+        ScrollViewReader { proxy in
+            // Tour tip 3 is due (tip 2's Next, or My data opened after it): bring Blood tests into view (US-57 AC2).
+            content.task {
+                for await due in BloodTestsTip().shouldDisplayUpdates where due {
+                    withAnimation { proxy.scrollTo(store.myData?.bloodTests.first?.id, anchor: .center) }
+                }
+            }
+        }
             .toolbar(.hidden, for: .navigationBar)
             // With no bar, iOS 26's edge effect leaves rows legible under the clock.
             // A zero-height inset whose background reaches into the status bar hides them.
@@ -58,11 +65,11 @@ struct MyDataView: View {
             }
             // Read from Health each time My data shows and on return to the app; nothing is kept (US-56 AC2).
             .task { await live?.refresh() }
-            .onChange(of: scenePhase) { if scenePhase == .active { Task { await live?.refresh() } } }
+            .onChange(of: scenePhase) { if scenePhase == .active { live?.wake() } }
             .sheet(isPresented: $showSync) { SyncView(sync: sync) }
             // Here, not on the header's "+": a sheet declared in a section header took
             // its grey text, large font and icon-only labels (seen 2026-10-22).
-            .sheet(isPresented: $addingLabs) { LabUploadSheet(engine: engine, store: store, sync: sync) }
+            .sheet(isPresented: $addingLabs) { LabUploadSheet(engine: engine, store: store) }
     }
 
     private var content: some View {
@@ -71,11 +78,11 @@ struct MyDataView: View {
                 List {
                     vitals(data)
                     // Under blood pressure: the access card, then heart rate, resting heart rate and sleep (US-56 AC5, AC6).
-                    LiveVitalsCards { liveDetail = $0 }
-                    LiveFitnessSection { liveDetail = $0 }
+                    LiveCardsSection(metrics: LiveMetric.vitals) { liveDetail = $0 }
+                    LiveCardsSection(metrics: LiveMetric.fitness) { liveDetail = $0 }
                     metrics(data.bloodTests) {
                         // Tour tip 3 (US-57 AC7); its action is the lab upload.
-                        SectionTitle.bloodTests().tourTip(BloodTestsTip()) { addingLabs = true }
+                        SectionTitle.bloodTests().tourTip(BloodTestsTip(), action: { addingLabs = true })
                     }
                     MedicationsSection(store: store, data: data, saved: saved)
                     ScreeningsSection(store: store, data: data, saved: saved, open: open)

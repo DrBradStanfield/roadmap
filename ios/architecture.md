@@ -257,8 +257,8 @@ A signature means "the key holder approved this bundle", nothing more.
 - **Swift holds the tokens; the network is fenced (R3, R4).** The engine's `accessToken`
   native answers the sentinel `native-token:<provider>`, never the token. Native `http`
   (`EngineHTTP`) sends only the allow-listed calls, method, host and path, of the provider
-  the sentinel names: Dropbox `files/download`, `files/upload`, `files/list_folder`
-  (+`/continue`); Drive `files` list, create, get (metadata and media) and the upload
+  the sentinel names: Dropbox `files/download` and `files/upload` (`files/list_folder`
+  went 2026-10-25 with the lab list, US-52 AC11); Drive `files` list, create, get (metadata and media) and the upload
   create and update. Each route also lists its query parameters (Dropbox none; Drive
   only what drive-rest.ts sends on it: `q`, `spaces`, `fields`, `pageSize`, `pageToken`,
   `alt`, `uploadType`), and every call may carry only the adapters' headers
@@ -267,8 +267,7 @@ A signature means "the key holder approved this bundle", nothing more.
   case (review R2). It swaps the real token in there and nowhere else. Any other header,
   path (Dropbox `sharing/*`, `delete_v2`, Drive `permissions`), host (the app's own
   server included) or plain http is refused. The engine has its own ephemeral session,
-  and every redirect is refused. The upload branch's lab reads (`files/list_folder` and
-  `files/download`, no query) fit the list as it is. So no engine, however changed, can
+  and every redirect is refused. So no engine, however changed, can
   send the record or a token anywhere new by itself. **One path remains, by design: the
   chat context** (review R7). The engine builds it from the record, and Swift sends it
   to our server when the user asks a question (US-52); the server rebuilds its prompt
@@ -284,15 +283,21 @@ A signature means "the key holder approved this bundle", nothing more.
   when it checks and the check carries no health data; the App Review notes say updates
   change computation and text only (ios/app-store.md). The plan line ("Worked out on this
   iPhone", D9) stays true.
-- **Automatic on GitHub.** Workflows are Brad's, so agents wrote the job for him to paste
-  (engine-updates.md, R1, R3, N2): a build job with no secret (`npm ci --ignore-scripts`)
-  uploads the artifact; a `verify` job, with no repo code and no npm, writes that
-  artifact's manifest and sha256s and the engine source log and diffstat since the last
-  release into its run summary, for Brad to read before he approves; then a signing job
-  in a separate `engine-signing` environment (Brad the required reviewer, `main` only,
-  the `ci` key) checks the same artifact against the bridge the build declared, signs it
-  with openssl, and commits only the new files, refusing to lower or replace a newer
-  release on `main`. Neither of the last two runs repo code. Until he pastes it, releasing is the two local steps.
+- **Automatic on GitHub.** Workflows are Brad's; with his permission (2026-10-25) an
+  agent added `.github/workflows/engine-release.yml` (engine-updates.md, R1, R3, N2): a
+  build job with no secret (`npm ci --ignore-scripts`) decides only whether to upload
+  the artifact; a `verify` job, with no repo code and no npm, takes the commit from the
+  Deploy event, computes the bridge itself, checks the artifact, and fails if `main`'s
+  engine inputs moved since, then writes the manifest, sha256s and every file changed
+  since the commit the last release was built from into its run summary, for Brad to
+  read before he approves; then a signing job in a separate `engine-signing`
+  environment (Brad the required reviewer, `main` only, the `ci` key) checks the same
+  artifact again, repeats the main-moved check, refuses a floor below `main`'s, signs it
+  with openssl, and commits only the new files (plus an unsigned `built-from` record), refusing to lower or replace a newer release on `main`. Neither of the
+  last two runs repo code. It runs once Brad pushes it from his own account (the
+  workflow-integrity tripwire disables workflow files pushed by anyone else) and sets
+  the secret; each release still needs his approval. Until then, releasing is the two
+  local steps.
 - **Revocation needs the repo public** (review R10). Phones read releases without a
   sign-in; if the repo goes private, no phone can fetch a release that raises the floor
   to kill a bad one. The fallback is an App Store update, whose newer bundled engine
@@ -642,7 +647,7 @@ line (`chain`), not because of the main actor; a refresh asked for during one lo
 Health Records access) is set as `CODE_SIGN_ENTITLEMENTS`; the purpose strings are
 `INFOPLIST_KEY_NSHealthShareUsageDescription` and `...UpdateUsageDescription`. The simulator
 build signs it locally with no team. **For Brad, once the Apple Developer team exists:** set
-the team in Xcode (Signing & Capabilities), confirm the App ID `com.drbrad.healthroadmap`
+the team in Xcode (Signing & Capabilities), confirm the App ID `com.drstanfield.healthroadmap`
 has the HealthKit capability (Xcode adds it when signing automatically), and test the
 background delivery and blood pressure both ways on a real iPhone: the simulator shows
 neither. App Store Connect's privacy answers must list Health data (read and written, not
@@ -688,14 +693,24 @@ table is not yet in the clinical files).
 - `LiveHealthStore` is the protocol; `LiveHealthKitStore` the only code touching HealthKit for these
   five types, with its own `HKHealthStore` so its request never carries D6's six. It asks to read
   exactly heart rate, resting heart rate, sleep analysis, VO2 max and step count, shares none, and
-  uses `statusForAuthorizationRequest` for the access card. Every call is `@concurrent`: HealthKit
-  and the maths run off the main thread. HealthKit's statistics collection queries do the daily and
-  hourly maths (steps summed, heart rate min, max and average, the others averaged); sleep is a
-  category sample query.
+  uses `statusForAuthorizationRequest` for the access card; a status check that throws keeps the
+  answer `LiveHealth` had, so the access card never flashes (adversary R4). Every call is
+  `@concurrent`: HealthKit and the maths run off the main thread. HealthKit's statistics collection
+  queries do the daily and hourly maths, chosen by each metric's `aggregation` (`.sum` steps,
+  `.range` heart rate's min, max and average, `.mean` the others); sleep is a category sample query.
+  The same field picks the headline, the mark, the y-scale, the audio graph's series and the card
+  rule (heart rate's card is its newest sample, with the time).
+- **One calendar (adversary R2, 2026-10-25):** `Calendar.autoupdatingCurrent`, made once in
+  `AppParts` and given to both `LiveHealthKitStore` (the statistics' day and hour anchor) and
+  `LiveHealth` (days, nights, labels), so a trip to another zone never labels a day with the
+  zone the app launched in.
 - `LiveMaths` (pure, tested) buckets days into weeks and months, works out the headline in view,
   the cards' latest and trend, and sleep's nights. A night recorded only as "In Bed" shows its time
   in bed, on the card and the page (Codex R3). A night runs 6 pm to 6 pm in the phone's zone
-  and is dated the morning it ends. Several writers can record one night and Apple's source order
+  and is dated the morning it ends; the cut is the local hour (`component(.hour) >= 18`), not six
+  hours of seconds, which a clock change at midnight shifts (America/Santiago, adversary R5). A
+  night dated after today (a nap after 6 pm) stays off the card and off the night D opens on
+  (`newestNight`, adversary R3). Several writers can record one night and Apple's source order
   is not readable, so the writer with the most staged time draws the stages; with none, every
   writer's "asleep" is joined; "In Bed" comes from all. Overlaps count once.
 - `LiveHealth` (`@Observable`, main actor; one per app in `AppParts`, in the environment) holds only
@@ -703,15 +718,26 @@ table is not yet in the clinical files).
   however old (`LiveHealthStore.latest`), then reads the 30 days (sleep: the fortnight) ending on it;
   a fixed window back from today dropped a VO2 max from six weeks ago (Codex R2).
   No record row, file, UserDefaults value, log or telemetry (a source-scan test enforces it). A
-  locked phone's read keeps the cards; the unlock notification reads again.
-- Views: `LiveVitalsCards` and `LiveFitnessSection` (sections that read `LiveHealth` from the
-  environment), `LiveAccessCard`, `LiveCardView` (the vitals card, rebuilt from `CardValue`,
-  `Sparkline` and `LabelValue` because heart rate shows a time, not a day), `LiveMetricPage`
-  (D, W, M, 6M, Y; bars, low-to-high bars or points; read-only) and `SleepPage` (D's stages over the
-  night, W/M/6M stacked nights with stage averages). Colours: five entries in `MetricChart.palette`
+  locked phone's read keeps the cards. A return to the app (My data's `scenePhase`) or an unlock
+  calls `wake()`, which bumps `wakes` and refreshes; an open page reads again on each wake (Codex
+  R1). A second wake within about 2 s is the same one, and a refresh asked for under 2 s after a
+  running read began is that read (E1); unchanged results are not written (E5).
+- Views: `LiveCardsSection` (one view for Vitals' and Fitness's cards, reading `LiveHealth` from the
+  environment), `LiveAccessCard`, `LiveCardView` (on `CardShell`, the card a vital's `ValueRow`
+  draws too; both write the day as Apple Health's cards do: Today, Yesterday, then the short date,
+  `DayText.when`), `LiveMetricPage` (D, W, M, 6M, Y; bars, low-to-high bars or points; read-only) and
+  `SleepPage` (D's stages over the night, W/M/6M stacked nights with stage averages, its chart its
+  own view, E3). Both pages share `LivePageFrame` (picker, empty line, footnote, read, range
+  reset), `ScrollingChart` (axes, scroll, scrub, haptic, calendar) with `SelectionRule`, and
+  `PageHeadline`, which `MetricDetailView` uses too. Every metric page, MetricDetailView's included, takes `metricPageList` (inset grouped, inline title, an 8 pt top margin so the picker sits under the title; Brad 2026-10-25). After "Don't Allow" (or an empty Health) Vitals shows one Reconnect row (`LiveReconnectRow`, US-56 AC5b): the sheet again while due, else Settings; iOS 27's app page in Settings has no Health row, so the row names Settings › Apps › Health › Data Access & Devices. **A page always shows its card's reading
+  (Codex R2, adversary R7):** it reads 400 days (sleep 200) or back to the reading, opens with it in
+  view (`LiveChartGeometry.opening`, the window's own length so a 31-day month still holds it),
+  reads D's hours a day at a time as the scroll reaches a day (D scrolls a week back, or to the reading's day: a 400-day hourly domain took Swift Charts several seconds to lay out on the simulator), and reads the days only once the
+  range leaves D (E4). Its bars live in `@State`, rebuilt after a read or a range change (E2). The
+  audio graphs describe what is in view (adversary R8) and say "Time in bed" for In Bed-only nights. Colours: five entries in `MetricChart.palette`
   (checked by `MyDataLayoutTests` with the rest); Apple's stage colours by eye, to match on a real iPhone.
-- My data: `LiveVitalsCards` right after the vitals (so under blood pressure), then
-  `LiveFitnessSection`, both before Blood tests; tour tip 3 still anchors to the Blood tests header
+- My data: `LiveCardsSection(metrics: .vitals)` right after the vitals (so under blood pressure),
+  then `LiveCardsSection(metrics: .fitness)`, both before Blood tests; tour tip 3 still anchors to the Blood tests header
   (the tour UI tests pass). A tap pushes `LiveHealthPage` through My data's own
   `navigationDestination`; My data reads Health on `.task` and on return to the app.
 - Usage signal: `Analytics.Screen.appleHealthMetric` ("Apple Health metric"); `LiveHealth.pagesOpen`
@@ -921,7 +947,7 @@ log a closed reason word, never the key id or IP.
 - Over a limit: 429 with a plain message; no model call.
 
 **Config.** `APP_ATTEST_TEAM_ID` (no default: Apple enrolment pending; until set, the
-endpoints answer 503), `APP_ATTEST_BUNDLE_ID` (default `com.drbrad.healthroadmap`, the
+endpoints answer 503), `APP_ATTEST_BUNDLE_ID` (default `com.drstanfield.healthroadmap`, the
 placeholder above), `APP_ATTEST_ALLOW_DEVELOPMENT`, `APP_ATTEST_DEV_BYPASS`,
 `APP_CHAT_DAILY_CAP`, `APP_LAB_DAILY_CAP`. The app's server address is a build setting; the release value is a
 placeholder until Brad picks the host.
@@ -959,36 +985,29 @@ for confirmation and writes the ticked ones itself, through health-core's
 `bulkAppendValues` in the engine. Chat history is the web's `chat-history.json`, written
 by health-core's `ChatSession` in the engine, kept beside the record.
 
-**Where a report comes from (2026-10-22, US-52 AC10 to AC12).** Brad could not find how to
-connect Dropbox from "+". "+" now opens a chooser: From Dropbox, From Google Drive, From
-Files, From Photos, and Scan a paper report (VisionKit's document camera, real phones only).
-- *One connection, two jobs.* Connect Dropbox under "+" is Sync's own sign-in
-  (`ConnectCloudButton` → `CloudSync.connect`), so connecting to upload also syncs the
-  record. The screen says so in one sentence before the sign-in. A second OAuth flow, or a
-  token that reads files but does not sync, would be two Dropbox grants for one app key.
-- *The app folder is the inbox.* The Dropbox app is an App folder app, so the app lists
-  only `Apps/Health Plan by Dr Brad`, the root the hosted connector imports from too, and
-  its subfolders (US-52 AC13c, 2026-10-23). The listing is health-core's `dropboxListTree`
-  (folders and files, recursive for "Read every report in this folder"); the connector's
-  `dropboxListFolder` is left exactly as it was, under the OpenAI review. Download is
-  `dropboxDownload`. They run in the engine (`labFolderJson`, `labFolderFilesJson`,
-  `labFile` in lab-files.ts), filtered by the connector's name rule (`isImportableEntryName`,
-  `FOLDER_IMPORT_EXTENSIONS`), so the record and the app's own files never list. Download
-  is by listing id only, never a path, and only an id a fresh listing of its own folder
-  still offers as a lab file (review R3): any Dropbox id the phone could
-  learn, the record's included, is otherwise refused. A file over the web's size limit
-  is refused before it downloads, an empty one (or one listed with no size) is called empty, and the bytes are checked again
-  (R5). The bridge's fetch holds the whole answer in Swift before JavaScript sees its
-  headers, so a header check would guard nothing more; a true cap would sit in
-  `EngineNatives.http`.
-- *Google Drive cannot list.* `drive.file` sees only the files the app made, so Drive
-  reports come in through the Files picker (the Google Drive app's file provider). "From
-  Google Drive" offers Connect (for the record) and says that plainly.
+**Where a report comes from (2026-10-22; redesigned 2026-10-25, US-52 AC10 to AC12).**
+"+" opens a chooser: Files first, then Photos and Scan (VisionKit's document camera, real
+phones only). Brad decided the order on 2026-10-25.
+- *Files reaches every cloud.* The Files picker (`fileImporter`, which is
+  `UIDocumentPickerViewController`) reaches any folder in Dropbox, Google Drive or iCloud
+  Drive through their File Provider apps, and hands the app only the one file or folder the
+  person picks, as a security-scoped URL. The sheet says so in one line.
+- *Why no cloud lists (Brad, 2026-10-25).* From 2026-10-22 to 2026-10-25 the sheet had
+  "From Dropbox" (a listing of the App folder, `Apps/Health Plan by Dr Brad`, and its
+  subfolders, through engine doors over health-core's `dropboxListTree`) and "From Google
+  Drive" (a Connect button and a pointer to Files). The Dropbox app is an App folder app
+  and Google's scope is `drive.file`, so neither could ever show a person's own folders:
+  Brad could not see his "Health" folder. Both screens, the doors `labFolderJson`,
+  `labFolderFilesJson` and `labFile` (`engine/lab-files.ts`) and their Swift side went in
+  one change, which moved the bridge id (D3). Sync keeps its scopes, `CloudSync` and the
+  token store; the hosted connector still imports from the App folder (US-35 AC2).
+- *Orphans removed (orchestrator, 2026-10-25).* health-core's `dropboxListTree` went with
+  its only caller, and the fence no longer allows Dropbox `files/list_folder` or its
+  `/continue`: nothing on the app's path lists a folder (EngineFenceTests
+  `testADropboxFolderListingIsRefused`). The hosted connector's `dropboxListFolder` stays.
 - *Consent moved to the send.* The AI consent now comes after a file is picked and read on
   the phone, before anything goes to the server. Choosing a source and signing in to
   Dropbox are not AI steps, so asking first got in the way.
-- *Bytes across the bridge.* `labFile` answers `{ name, bytes }`: the fresh listing's name, which
-  the phone reads the file under (re-check R3), and an ArrayBuffer that `HealthEngine.callAsync(_:_:read:)` turns into `Data` (the shim's own `EngineNatives.data`), so no base64 detour. Refusals are `{"refused": "…"}`, told from a cloud failure by that marker (re-check R1).
 - *Sync screen.* It says what sync does before a connect, names the cloud and folder once
   connected, and draws "not connected" as a phone (`SyncStatusText.symbol`): a struck-out
   iCloud symbol read as "iCloud is off".
@@ -1152,8 +1171,7 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled).
   `cloudLabImport`, `documentSave`, `cloudErase`, `cloudVisible`, `cloudHidden`,
   `cloudRefresh`, `cloudFlush`, `cloudClose`), D5. `engine/cloud-adapters.ts`: the two
   stores it stands on (the cloud through health-core's REST adapters, the phone's file as
-  the mirror), the cloud natives and the failure kinds. `engine/lab-files.ts`: the Dropbox
-  lab-file doors (US-52 AC11). All tested in Node by `shim.test.ts` and `cloud.test.ts`,
+  the mirror), the cloud natives and the failure kinds. All tested in Node by `shim.test.ts` and `cloud.test.ts`,
   which `test:all` runs.
 - `engine/reminders.ts`: the phone's reminders, `remindersJson` in `entry.ts`: health-core's
   schedule plus the notification days (D7). Tested by `engine/reminders.test.ts`.
@@ -1219,8 +1237,7 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled).
     `HealthEngine`; the core doors (plan, My data, edits) stay in `HealthEngine.swift`. This is
     the split the files already follow (two of each), so neither moves.
   - `LabUpload/`: "Add medical records" (US-52). `LabUploadSheet` (the flow) and
-    `LabUploadExplainer`, `LabSourceViews` (Files, Photos, the scanner and the Dropbox app
-    folder as sources), `DocumentScanner`, `EngineLabDoors` (the engine doors it calls),
+    `LabUploadExplainer`, `DocumentScanner`, `EngineLabDoors` (the engine doors it calls),
     `LabUploadClient` (the server's extraction), `LabReview` and `LabReviewView` (the
     engine's answers and their screen), `LabReadingDiagram`, `LabFileReader` and `ZipReader`.
   - `EngineUpdates/`: over-the-air engines (D3, AC18). `EngineRelease` (pins, bridge,
@@ -1301,8 +1318,9 @@ by AI agents, so the code is shaped for a reader with no memory of how it got he
 - **This file is the map.** A new folder or a moved responsibility updates the layout
   above in the same commit.
 
-**Bundle ID:** `com.drbrad.healthroadmap` is a placeholder until the Apple Developer
-account exists; it is permanent once the app is on the App Store. Enrolment: DR BRAD, INC.
+**Bundle ID:** `com.drstanfield.healthroadmap` (2026-10-25, team KAV75KMV2R, Dr Brad, Inc), permanent once
+the app is on the App Store. The earlier `com.drbrad.healthroadmap` was claimed by the free personal team
+when the app was first installed on Brad's iPhone, and Apple will not move an id from a free team to a paid one. Enrolment: DR BRAD, INC.
 under brad@drstanfield.com, Enrollment ID 726UVSY5YZ, waiting on Apple's check of signing
 authority (2026-10-21). The 2015 team (Caddy Limited, b.d.stanfield@gmail.com) expired in
 2020 and is not used.

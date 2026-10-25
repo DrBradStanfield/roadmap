@@ -2520,7 +2520,8 @@
     "publishedAt": "2025-10-18T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/sexual-enhancement-supplements-guide",
     "type": "reference",
-    "summary": "Reference on sexual enhancement supplements: libido, erectile dysfunction. Covers maca root, yohimbine, L-arginine, ginseng, horny goat weed, tribulus. Evidence weak for most; major adulteration risk. Always discuss with your doctor."
+    "summary": "Evidence summary on sexual enhancement supplements (yohimbe, maca, ginseng, L-arginine, tribulus, horny goat weed): small trials and limited benefit, and some products hide prescription drugs such as sildenafil. Talk to your doctor first, especially if you take nitrates or have heart disease.",
+    "reviewed": "2026-10-25"
   },
   {
     "title": "New Vitamin D Study on Telomeres and Aging",
@@ -2831,7 +2832,8 @@
     "publishedAt": "2025-09-21T21:38:34Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/rhodiola-rosea-benefits-dosing-side-effects",
     "type": "reference",
-    "summary": "Reference on rhodiola rosea: stress, fatigue, mild depression, anxiety. Evidence preliminary. Standardized extract 200-680 mg/day (3% rosavins). Caution with antidepressants and blood pressure meds. Always discuss with your doctor."
+    "summary": "Rhodiola rosea is sold for stress, fatigue and mood. Evidence is preliminary and mixed; a 6-week trial found 340 or 680 mg/day of extract eased mild to moderate depression. Possibly safe up to 12 weeks. Talk to your doctor first if you take any medicine, or if you are pregnant or breastfeeding.",
+    "reviewed": "2026-10-25"
   },
   {
     "title": "This Commonly Missed Diagnosis Can Rapidly Age Your Brain",
@@ -4069,7 +4071,8 @@
     "publishedAt": "2025-05-20T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/holy-basil-tulsi-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on holy basil (tulsi): stress, anxiety, blood sugar (type 2 diabetes), immune support, cognition. Adults with stress symptoms or type 2 diabetes. Extract 300-1200 mg/day or leaf powder 1000-2500 mg/day. Always discuss with your doctor."
+    "summary": "Holy basil (tulsi) for stress, anxiety, blood sugar, immunity and cognition. One placebo-controlled stress trial used 1,200 mg a day of extract actives; others are small. Avoid if pregnant, breastfeeding or trying to conceive. Talk to your doctor first if on diabetes medicines or blood thinners.",
+    "reviewed": "2026-10-25"
   },
   {
     "title": "L-Citrulline: Benefits, Forms, Dosing, and Side Effects",
@@ -4138,7 +4141,8 @@
     "publishedAt": "2025-05-20T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/maca-root-benefits-dosing-safety",
     "type": "reference",
-    "summary": "Reference on maca root: libido, sexual function, erectile dysfunction, sperm quality, menopausal symptoms. Used by men and postmenopausal women. Powder or capsules; 1,500-3,000 mg/day. Thyroid caution; avoid in hormone-sensitive conditions. Always discuss with your doctor."
+    "summary": "Maca root may improve sexual desire and sexual function scores in small trials, without changing sex hormones; reviews call the evidence limited. Safety data are thin, and products can contain lead. Talk to your doctor first if you have a hormone-sensitive cancer, liver disease or a thyroid condition.",
+    "reviewed": "2026-10-25"
   },
   {
     "title": "Saw Palmetto and Prostate Supplements: Benefits, Forms, Dosing, and Side Effects",
@@ -4172,7 +4176,8 @@
     "publishedAt": "2025-05-20T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/saw-palmetto-prostate-supplements",
     "type": "reference",
-    "summary": "Reference on saw palmetto and prostate supplements: BPH urinary symptoms, hair loss. Lipid extract 320mg/day; beta-sitosterol 30-91mg/day. Evidence mixed; excess zinc linked to prostate cancer risk. Always discuss with your doctor."
+    "summary": "Saw palmetto alone likely won't help BPH; beta-sitosterol and pygeum helped in older trials. Selenium did not prevent prostate cancer; ≥140 μg/day was tied to cancer death in men already diagnosed, high-dose zinc to advanced cancer. Ask your doctor first if you take blood thinners or are pregnant.",
+    "reviewed": "2026-10-25"
   },
   {
     "title": "St. John's Wort: Benefits, Forms, Dosing, and Side Effects",
@@ -4965,7 +4970,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/dhea-supplement-guide",
     "type": "reference",
-    "summary": "Reference on DHEA: hormone studied for adrenal insufficiency, depression, vaginal dryness and painful sex (FDA-approved), and bone density in women. Anti-aging evidence weak. Oral 25-50 mg/day with hormone monitoring. Always discuss with your doctor."
+    "summary": "DHEA is a hormone the body turns into testosterone and estrogen. Trials in healthy older adults found no benefit for mood, thinking or body composition. A 6.5 mg prescription vaginal form eases painful sex after menopause. Talk to your doctor first if you have had a hormone-sensitive cancer.",
+    "reviewed": "2026-10-25"
   },
   {
     "title": "Echinacea: Benefits, Forms, Dosing, and Side Effects",
@@ -6873,7 +6879,8 @@
     "publishedAt": "2025-04-22T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/dgl-licorice-forms-dosing-safety",
     "type": "reference",
-    "summary": "Reference on licorice and DGL: heartburn, acid reflux, peptic ulcers, canker sores. DGL is safer; regular licorice raises blood pressure and depletes potassium. Avoid in hypertension, pregnancy, heart disease. Always discuss with your doctor."
+    "summary": "Reference on licorice and DGL for heartburn, reflux, ulcers and H. pylori. DGL evidence rests on a few small trials. Regular licorice can raise blood pressure and lower potassium, sometimes dangerously. Talk to your doctor first if pregnant or on diuretics, digoxin, steroids or blood pressure drugs.",
+    "reviewed": "2026-10-25"
   },
   {
     "title": "Menopause Supplements: Benefits, Evidence, Dosing, and Side Effects",
@@ -6913,7 +6920,8 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/menopause-supplements-phytoestrogens",
     "type": "reference",
     "product": "sleep",
-    "summary": "Reference on menopause supplements: hot flashes, night sweats, bone loss. Soy isoflavones (50-120 mg/day), red clover, black cohosh, progesterone cream. Liver risk (black cohosh); soy: thyroid, breast cancer risk. Always discuss with your doctor."
+    "summary": "Menopause supplement evidence: black cohosh and red clover mostly did not beat placebo for hot flashes, soy isoflavone results are mixed, and hormone therapy works best. Black cohosh has rare liver injury reports. Talk to your doctor first with liver disease or breast cancer, or on simvastatin.",
+    "reviewed": "2026-10-25"
   },
   {
     "title": "Nitric Oxide Supplements: Benefits, Forms, Dosing, and Side Effects",
@@ -9019,7 +9027,8 @@
     "publishedAt": "2024-11-15T04:30:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/ginseng-benefits-forms-dosing",
     "type": "reference",
-    "summary": "Reference on ginseng (Panax ginseng, Korean red ginseng, American ginseng): fatigue, blood sugar control, erectile dysfunction, sexual function, immune support. Forms: root powder 1000-3000 mg/day, standardized extract 200-400 mg/day. Avoid in pregnancy, breast cancer, and warfarin use. Always discuss with your doctor."
+    "summary": "Evidence summary on ginseng (Asian, Korean red and American): small, short trials suggest modest help for fatigue and possibly blood sugar, and a trivial effect on erectile function. Talk to your doctor first if you take warfarin or diabetes medicines, or are pregnant.",
+    "reviewed": "2026-10-25"
   },
   {
     "title": "Retinoids: The World's #1 NIGHTLY Anti-Wrinkle Gel Is Stupidly Cheap",
@@ -10455,7 +10464,8 @@
     "publishedAt": "2024-05-17T22:30:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/cbd-benefits-dosing-side-effects",
     "type": "reference",
-    "summary": "Reference on CBD (cannabidiol): anxiety, insomnia, pain, and epilepsy/seizures. Adults use it for social anxiety (300 mg), sleep problems (160 mg), and chronic pain. Forms: full-spectrum, isolate, oils, topicals. Always discuss with your doctor."
+    "summary": "Reference on CBD (cannabidiol). Prescription CBD cuts seizures in two rare epilepsies; evidence for anxiety, sleep and pain is small and mixed. CBD can raise liver enzymes and alter other drug levels. Talk to your doctor first if you take prescription drugs, especially clobazam, valproate or warfarin.",
+    "reviewed": "2026-10-25"
   },
   {
     "title": "Bilberry: Benefits, Forms, Dosing, and Side Effects",

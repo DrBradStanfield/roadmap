@@ -125,7 +125,11 @@ struct AppParts {
     /// observers are in place when iOS wakes the app for new Health data.
     let health: AppleHealthSync
     /// US-56: heart rate, resting heart rate, sleep, VO2 max and steps, read live from Health and never kept.
-    let live = LiveHealth(store: LiveHealthKitStore())
+    /// One calendar, following the phone's zone, for the store's day anchor and the app's days (adversary R2).
+    let live: LiveHealth = {
+        let calendar = Calendar.autoupdatingCurrent
+        return LiveHealth(store: LiveHealthKitStore(calendar: calendar), calendar: calendar)
+    }()
     /// The chat history file: Chat's list and the eraser's tombstones, one store.
     let chat: ChatHistoryStore
     let eraser: DataEraser

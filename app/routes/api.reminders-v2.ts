@@ -1,5 +1,5 @@
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
-import { z } from 'zod';
+import * as z from '../../packages/health-core/src/zod';
 import { createRateLimiter, DAY_MS } from '../lib/rate-limiter';
 import { ALLOWED_ORIGINS, BODY_TOO_LARGE, corsHeaders, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
 import {
@@ -66,16 +66,16 @@ const bodySchema = z.union([
     provider: z.literal('google-drive'),
     idToken: z.string().min(1).max(4096),
     schedule: scheduleSchema,
-    marketingEmail: z.string().email().max(320).optional(),
+    marketingEmail: z.email().max(320).optional(),
   }),
   z.object({
     op: z.literal('optin'),
     // 'typed' here is also the widget's Drive fallback with no fresh ID token —
     // an address-only optin must never be recorded as the verified lane.
     provider: z.enum(['dropbox', 'github', 'typed']),
-    email: z.string().email().max(254),
+    email: z.email().max(254),
     schedule: scheduleSchema,
-    marketingEmail: z.string().email().max(320).optional(),
+    marketingEmail: z.email().max(320).optional(),
   }),
   z.object({
     op: z.literal('update'),

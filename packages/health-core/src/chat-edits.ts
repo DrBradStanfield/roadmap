@@ -22,7 +22,7 @@
  *                               these on change, so the widget asks the user
  *                               to confirm before it writes anything.
  */
-import { z } from 'zod';
+import * as z from './zod';
 import { lookupUnit, reportedToCanonical, type MetricType, type UnitSystem } from './units';
 import { FIELD_TO_METRIC, LONGITUDINAL_FIELDS } from './mappings';
 import { MEDICATION_KEYS, sanitizeInputs } from './validation';
@@ -228,7 +228,7 @@ const isoDateRe = /^\d{4}-\d{2}-\d{2}$/;
 
 const rawFieldEditSchema = z.object({
   field: z.enum(EDITABLE_FIELDS as unknown as [EditableField, ...EditableField[]]),
-  value: z.number().finite(),
+  value: z.number(),
   unit: z.string().min(1),
   date: z.string().regex(isoDateRe).optional().nullable(),
 });
@@ -236,7 +236,7 @@ const rawFieldEditSchema = z.object({
 const rawMedicationEditSchema = z.object({
   medicationKey: z.enum(MEDICATION_KEYS),
   drugName: z.string().min(1).max(64),
-  doseValue: z.number().finite().positive().optional().nullable(),
+  doseValue: z.number().positive().optional().nullable(),
   doseUnit: z.string().max(16).optional().nullable(),
 });
 
@@ -244,7 +244,7 @@ const rawMedicationEditSchema = z.object({
 // either level, refuses the whole edit.
 const rawProfileEditSchema = z.object({
   sex: z.enum(['male', 'female']).nullish(),
-  height: z.object({ value: z.number().finite(), unit: z.enum(['cm', 'in']) }).strict().nullish(),
+  height: z.object({ value: z.number(), unit: z.enum(['cm', 'in']) }).strict().nullish(),
 }).strict();
 
 /**

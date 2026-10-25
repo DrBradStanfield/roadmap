@@ -135,13 +135,20 @@ struct MetricChart: View {
         .chartLegend(chart.history.metric == MyData.bloodPressure ? .visible : .hidden)
         .chartYScale(domain: .automatic(includesZero: false))
         // Aligned, so the newest month's label stays inside the card.
-        .chartXAxis { AxisMarks(preset: .aligned, values: .automatic(desiredCount: textSize.isAccessibilitySize ? 2 : 4)) }
+        .chartXAxis {
+            let (start, length) = (scrolledTo, MetricChart.visibleLength(window: window))
+            AxisMarks(preset: .aligned, values: .automatic(desiredCount: textSize.isAccessibilitySize ? 2 : 4)) { value in
+                AxisGridLine()
+                AxisTick()
+                if let date = value.as(Date.self), ChartRange.labels(date, from: start, length: length) { AxisValueLabel() }
+            }
+        }
         .modifier(XDomain(window: window, scrolledTo: $scrolledTo, first: chart.first, last: chart.last))
         .chartXSelection(value: $finger)
         .onChange(of: finger) {
             // Only the days in view: a finger in a gap never picks one off screen.
             let inView = MetricChart.inView(chart.days, scrolledTo: scrolledTo, window: window)
-            let day = finger.flatMap { ChartRange.nearest(to: $0, in: inView) }
+            let day = finger.flatMap { ChartRange.nearest(to: $0, in: inView, by: \.self) }
             if day != selected { selected = day }
         }
         .sensoryFeedback(.selection, trigger: selected) { _, new in new != nil }

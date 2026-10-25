@@ -22,16 +22,13 @@ enum EngineHTTP {
 
     /// Every call the adapters make on the app's path, with the query parameters
     /// drive-rest.ts sends on each. Not here, because the app never makes them:
-    /// Dropbox delete_v2, get_metadata and longpoll (push is web-only), Drive DELETE and
-    /// permissions. The upload branch's lab reads (files/list_folder, files/download, no
-    /// query) are the first two Dropbox routes; its originals (US-52 AC13d) use the record's
-    /// own routes: Dropbox files/upload, and Drive's folder lookup, folder create and
-    /// multipart upload.
+    /// Dropbox delete_v2, get_metadata, longpoll (push is web-only) and list_folder (no
+    /// folder listing since 2026-10-25, US-52 AC11), Drive DELETE and permissions. Lab
+    /// originals (US-52 AC13d) use the record's own routes: Dropbox files/download and
+    /// files/upload, and Drive's folder lookup, folder create and multipart upload.
     static let routes: [Route] = [
         Route(provider: "dropbox", method: "POST", host: "content.dropboxapi.com", path: ["2", "files", "download"]),
         Route(provider: "dropbox", method: "POST", host: "content.dropboxapi.com", path: ["2", "files", "upload"]),
-        Route(provider: "dropbox", method: "POST", host: "api.dropboxapi.com", path: ["2", "files", "list_folder"]),
-        Route(provider: "dropbox", method: "POST", host: "api.dropboxapi.com", path: ["2", "files", "list_folder", "continue"]),
         Route(provider: "google-drive", method: "GET", host: "www.googleapis.com", path: ["drive", "v3", "files"],
               query: ["q", "spaces", "fields", "pageSize", "pageToken"]),
         Route(provider: "google-drive", method: "POST", host: "www.googleapis.com", path: ["drive", "v3", "files"], query: ["fields"]),

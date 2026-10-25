@@ -99,8 +99,8 @@ final class EngineFenceTests: XCTestCase {
     func testDropboxTakesNoQueryParameters() async throws {
         let answer = try await fetch("https://content.dropboxapi.com/2/files/download?arg=x")
         XCTAssertEqual(answer, "refused")
-        let list = try await fetch("https://api.dropboxapi.com/2/files/list_folder?cursor=1")
-        XCTAssertEqual(list, "refused")
+        let upload = try await fetch("https://content.dropboxapi.com/2/files/upload?x=1")
+        XCTAssertEqual(upload, "refused")
         XCTAssertTrue(seen.isEmpty)
     }
 
@@ -140,14 +140,22 @@ final class EngineFenceTests: XCTestCase {
         XCTAssertEqual(seen.count, 1)
     }
 
-    func testTheUploadBranchesLabCallsPass() async throws {
-        // labFolderJson, labFolderFilesJson (recursive: the same route, a body Swift does not read) and labFile: files/list_folder and files/download, no query.
-        let list = try await fetch("https://api.dropboxapi.com/2/files/list_folder",
-                                   headers: "{ Authorization: 'Bearer native-token:dropbox', 'Content-Type': 'application/json' }")
-        XCTAssertEqual(list, "200")
+    func testDropboxDownloadPasses() async throws {
+        // The record's read and a stored original's (DropboxAdapter.read, readDocument): files/download, no query.
         let download = try await fetch("https://content.dropboxapi.com/2/files/download",
                                        headers: "{ Authorization: 'Bearer native-token:dropbox', 'Dropbox-API-Arg': '{\"path\":\"/a.pdf\"}' }")
         XCTAssertEqual(download, "200")
+    }
+
+    /// US-52 AC11 (2026-10-25): with the Dropbox list gone, nothing on the app's path lists
+    /// a folder, so the fence refuses list_folder and its continue outright.
+    func testADropboxFolderListingIsRefused() async throws {
+        let headers = "{ Authorization: 'Bearer native-token:dropbox', 'Content-Type': 'application/json' }"
+        for url in ["https://api.dropboxapi.com/2/files/list_folder", "https://api.dropboxapi.com/2/files/list_folder/continue"] {
+            let answer = try await fetch(url, headers: headers)
+            XCTAssertEqual(answer, "refused", url)
+        }
+        XCTAssertTrue(seen.isEmpty)
     }
 
     func testACookieOrNoAuthorizationIsRefused() async throws {
