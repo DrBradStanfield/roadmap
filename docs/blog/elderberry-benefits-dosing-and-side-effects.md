@@ -15,13 +15,13 @@ sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/elderberry",
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. NIH notes that a small number of studies suggest elderberry may relieve symptoms of flu, colds or other upper respiratory infections [3], and a 2020 rapid review of five clinical studies in 936 adults found it may shorten and ease cold and flu symptoms when taken within 48 hours of the first symptoms [28]. A 2004 trial in 60 adults gave 15 mL of elderberry syrup four times a day for 5 days and found symptoms eased on average 4 days earlier than with placebo [24], but a 2020 trial in 87 people aged 5 and over with confirmed flu found no evidence that elderberry shortened or eased the illness [15]. There is no good evidence that it helps COVID-19 [3]. Raw or unripe elderberries, leaves and stems contain cyanide-producing substances, causing nausea, vomiting and severe diarrhea until cooked, and NIH advises anyone who takes medicine to talk with their health care provider first; little is known about safety in pregnancy or breastfeeding [3].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. NIH notes that a small number of studies suggest elderberry may relieve symptoms of flu, colds or other upper respiratory infections [3], and a 2020 rapid review of five clinical studies in 936 adults found it may shorten and ease cold and flu symptoms when taken within 48 hours of the first symptoms [28]. A 2004 trial in 60 adults gave 15 mL of elderberry syrup four times a day for 5 days and found symptoms eased on average 4 days earlier than with placebo [24], but a 2020 trial in 87 people aged 5 and over with confirmed flu found no evidence that elderberry shortened or eased the illness [15]. There is no good evidence that it helps COVID-19 [3]. Raw or unripe elderberries, leaves and stems contain cyanide-producing substances, which can cause nausea, vomiting and severe diarrhea, and cooking eliminates the toxin; NIH advises anyone who takes medicine to talk with their health care provider first, and little is known about safety in pregnancy or breastfeeding [3].
 
 ## Key safety points
 
-- If you take any medicine, talk with your health care provider before using elderberry; some herbs and medicines interact in harmful ways [3]. A woman taking elderberry with the cancer drug pazopanib developed grade 3 liver injury [46].
+- Raw or unripe elderberries, leaves and stems contain cyanide-producing substances, which can cause nausea, vomiting and severe diarrhea; large amounts may cause serious illness, cooking eliminates the toxin, and leaves or stems should not be crushed into juice [3][18]. If someone becomes very drowsy or hard to wake, faint, or weak, dizzy or numb after eating or drinking them, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [18].
+- If you take any medicine, talk with your health care provider before using elderberry; some herbs and medicines interact in harmful ways [3]. A woman taking elderberry with the cancer drug pazopanib developed grade 3 liver injury; the case report's authors proposed an interaction [46].
 - Little is known about whether elderberry is safe in pregnancy or while breastfeeding, and no reliable evidence supports its use then [3][28].
-- Raw or unripe elderberries, leaves and stems contain cyanide-producing substances, causing nausea, vomiting and severe diarrhea; large amounts may cause serious illness, and cooking removes the toxin [3]. If someone becomes seriously ill after eating them, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - Case reports have linked elderberry products to acute pancreatitis and to autoimmune hepatitis [38][42].
 - Some people with summer hay fever are allergic to elderberry, with eye and nose symptoms or shortness of breath [39]. For trouble breathing, swelling of the face or throat, or fainting, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 - In clinical studies, side effects were rare and none were serious [28].
@@ -40,7 +40,7 @@ Elderberry has been used in folk medicine to treat colds and flu [3].
 
 NIH notes that only a small number of studies have tested elderberry for colds, flu and other upper respiratory infections, and that little research in people has looked at its other uses [3]. Small trials suggest it may shorten flu symptoms, but a 2020 placebo-controlled trial found no benefit [15][24]. In a trial among air travellers it did not significantly cut the number of colds [21], and a trial in postmenopausal women found no change in heart disease risk markers [16].
 
-**Important safety note:** Raw or unripe elderberries and other parts of the elder tree, such as the leaves and stem, contain cyanide-producing substances, causing nausea, vomiting and severe diarrhea; cooking eliminates this toxin [3]. Large quantities may cause serious illness [3]. If someone becomes seriously ill after eating them, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+**Important safety note:** Raw or unripe elderberries and other parts of the elder tree, such as the leaves and stem, contain cyanide-producing substances, which can cause nausea, vomiting and severe diarrhea; cooking eliminates this toxin [3]. Large quantities may cause serious illness [3]. If someone becomes very drowsy or hard to wake, faint, or weak, dizzy or numb after eating or drinking them, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [18].
 
 ## 2. Forms and Bioavailability
 
@@ -103,7 +103,7 @@ Most elderberry trials have tested whether it shortens or eases flu. The results
 
 **In vitro evidence:** In immune cells from 12 healthy donors, Sambucol products raised production of the inflammatory cytokines IL-1 beta, TNF-alpha, IL-6 and IL-8, by 2 to 45 fold for the extract, with the largest rise in TNF-alpha (44.9 fold) [29]. Sambucol also reduced hemagglutination and blocked replication of several human influenza A and B strains in cell culture [14], and elderberry flavonoids bound to H1N1 virus and blocked infection [30].
 
-**Anti-inflammatory effects:** In a 2-year placebo-controlled trial, Inflaminat, a herbal mix of black elder berries, violet tricolor herb and calendula flowers, slowed thickening of the carotid artery wall [31]. Because it is a combination, the result cannot be credited to elderberry alone. It also points the other way from the cytokine findings above, so elderberry's immune effects may depend on context.
+**Anti-inflammatory effects:** In a 2-year placebo-controlled trial, Inflaminat, a herbal mix of black elder berries, violet tricolor herb and calendula flowers, slowed thickening of the carotid artery wall [31]. Because it is a combination, the result cannot be credited to elderberry alone.
 
 **Clinical relevance:** The immune effects seen in lab studies have not been shown to give clinical benefits beyond the small flu and cold trials above. The rise in cytokines has also raised theoretical safety concerns (see COVID-19 section below).
 
@@ -111,7 +111,7 @@ Most elderberry trials have tested whether it shortens or eases flu. The results
 
 Elderberry has been promoted for COVID-19, but there is no good evidence to support this use [3], and a 2020 review found no evidence for treating or preventing COVID-19 with it [28].
 
-Some authors have raised concern that elderberry may overstimulate the immune system and raise the risk of a cytokine storm, the immune overreaction seen in some severe COVID-19 cases [33][55]. The concern grew from lab work showing that Sambucol raised inflammatory cytokine production [29]. A 2022 review found not yet enough evidence to support it, but called for more research in COVID-19 patients [55].
+Some authors have raised concern that elderberry may overstimulate the immune system and raise the risk of a cytokine storm [55], the immune overreaction seen in some severe COVID-19 cases [33]. The concern grew from lab work showing that Sambucol raised inflammatory cytokine production [29]. A 2022 review found not yet enough evidence to support it, but called for more research in COVID-19 patients [55].
 
 The U.S. Food and Drug Administration (FDA) and Federal Trade Commission have taken action against companies that marketed elderberry products with unsubstantiated claims of effectiveness for COVID-19 [3].
 
@@ -121,7 +121,7 @@ The U.S. Food and Drug Administration (FDA) and Federal Trade Commission have ta
 
 **Metabolic, emerging evidence:** In a crossover trial in which 18 adults with overweight or obesity completed both arms [35], drinking elderberry juice twice a day for a week lowered blood glucose after a test meal, raised fat oxidation and shifted gut bacteria, with more Firmicutes, Actinobacteria and Bifidobacterium [34]. An earlier pilot of the same design, with 9 people analysed, found no difference in glucose or insulin response, and fat oxidation was higher after placebo [53]. Larger and longer trials are needed to confirm these findings [34].
 
-**Thyroid effects:** Serum from the 18-person trial showed higher thyroxine (T4) after a week of elderberry juice than after placebo (49.3 vs 42.3 ng/mL), and higher thyroid stimulating hormone (TSH) (0.104 vs 0.094 ng/mL). The authors linked this to a higher metabolic rate and called their work a preliminary analysis [35]. People taking thyroid hormone or with an overactive thyroid may want to ask their doctor before regular use.
+**Thyroid effects:** Serum from the 18-person trial showed higher thyroxine (T4) after a week of elderberry juice than after placebo (49.3 vs 42.3 ng/mL), and higher thyroid stimulating hormone (TSH) (0.104 vs 0.094 ng/mL). The authors linked this to a higher metabolic rate and called their work a preliminary analysis [35].
 
 ### Antioxidant Activity
 
@@ -153,7 +153,7 @@ No official Recommended Dietary Allowance (RDA) or Tolerable Upper Intake Level 
 **For cold and flu symptom relief (most common use):** In the trials, adults took 15 mL of elderberry syrup four times a day for 5 days, when symptoms had lasted 48 hours or less [15][24].
 
 **Important caveats:**
-- Start within 48 hours of symptom onset, as in the trials that found benefit [24][28]
+- The trials that found benefit started within 48 hours of symptom onset [24][28]
 - A 2020 trial found no benefit, so efficacy is not established [15]
 - Elderberry did not significantly reduce the number of colds in air travellers; it has been studied to shorten symptoms in people who are already ill [21]
 - Do not use elderberry as a substitute for influenza vaccination or antiviral medications such as oseltamivir (Tamiflu)
@@ -172,9 +172,9 @@ In clinical studies, elderberry has generally been well tolerated: a 2020 review
 
 This is the most serious safety concern with elderberry. Raw or unripe elderberries and other parts of the elder tree, such as the leaves and stem, contain cyanide-producing substances; cooking eliminates this toxin [3]. These substances, cyanogenic glycosides, release hydrogen cyanide when enzymes break them down [54].
 
-**Symptoms of raw elderberry poisoning:** Nausea, vomiting and severe diarrhea; large quantities may cause serious illness [3]. If someone becomes seriously ill after eating raw or unripe elderberries, leaves or stems, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+**Symptoms of raw elderberry poisoning:** Nausea, vomiting and severe diarrhea; large quantities may cause serious illness [3]. If someone becomes very drowsy or hard to wake, faint, or weak, dizzy or numb after eating raw or unripe elderberries, leaves or stems, or drinking juice made with them, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [18].
 
-**Case example:** In 1984 the CDC reported an outbreak of poisoning from elderberry juice in California [18].
+**Case example:** In 1984 the CDC reported an outbreak in California after wild elderberries were crushed with their leaves and branches to make juice [18]. Within 15 minutes of drinking it, 11 of the 25 people at a gathering began to have nausea and vomiting [18]. Eight were flown to hospital with nausea, vomiting, abdominal cramps and weakness, some also dizzy and numb, and one was stuporous and kept overnight; all recovered quickly [18]. The report advised against crushing leaves and stems into juice [18].
 
 **Toxic plant parts:** Elder leaves and flowers hold more cyanogenic glycosides than the berries [8]. In American elderberry, the stems and green berries had the highest cyanide-producing potential [54].
 
@@ -190,7 +190,7 @@ Elderberry can cause allergy. Of 3,668 patients tested at random, 0.6% were sens
 
 ### Thyroid Effects
 
-A week of elderberry juice raised T4 and TSH in a small trial in adults with overweight or obesity [35]. The meaning of this for people taking thyroid hormone (levothyroxine) or with an overactive thyroid is unknown, so ask your doctor before regular use.
+A week of elderberry juice raised T4 and TSH in a small trial in adults with overweight or obesity [35]. Its meaning for people on thyroid medicine is unknown. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Autoimmune Disease Concerns
 
@@ -206,7 +206,7 @@ One placebo-controlled trial that included children aged 5 and over found no ben
 
 ### Cytokine Storm Concern (Theoretical)
 
-Lab work showing that Sambucol raises inflammatory cytokine production by immune cells [29] has raised a theoretical concern about elderberry in severe viral infections where a cytokine storm is a risk, such as severe COVID-19 [33]. A 2022 review found not yet enough evidence to support this concern, but called for more research in COVID-19 patients [55]. The question remains unresolved.
+Lab work showing that Sambucol raises inflammatory cytokine production by immune cells [29] has raised a theoretical concern about elderberry in severe viral infections where a cytokine storm is a risk [55], such as severe COVID-19 [33]. A 2022 review found not yet enough evidence to support this concern, but called for more research in COVID-19 patients [55]. The question remains unresolved.
 
 ## 6. Drug Interactions
 
@@ -216,15 +216,15 @@ Small lab studies suggest elderberry extracts weakly inhibit CYP3A4, a liver enz
 
 A middle-aged woman who had taken elderberry supplements for years developed intense nausea, loose stools and grade 3 liver injury, with a fivefold rise in liver enzymes, by the fourth week of the cancer drug pazopanib, which CYP3A4 breaks down. Her liver enzymes returned to normal after all her medicines were stopped, and pazopanib was later restarted without the problem coming back. The authors proposed an interaction between elderberry and pazopanib [46].
 
-If you take a medicine that CYP3A4 breaks down, such as some statins, some blood pressure medicines, or the blood thinners apixaban and rivaroxaban, check with your doctor or pharmacist before using concentrated elderberry extracts.
+If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Immunosuppressant Drugs
 
-Because lab studies show elderberry can raise inflammatory cytokine production [29], it could in theory work against medicines that suppress the immune system, such as azathioprine, cyclosporine, tacrolimus, mycophenolate and biologic drugs. If you take one of these, ask your doctor before using elderberry.
+If you take medicines that suppress the immune system, check with your doctor or pharmacist before starting.
 
 ### Thyroid Hormones
 
-Because elderberry juice raised T4 and TSH in one small study [35], it could in theory alter thyroid hormone balance in people taking levothyroxine (Synthroid) or other thyroid medicines. Ask your doctor before regular use.
+Elderberry juice raised T4 and TSH in one small study [35]; its meaning for people on thyroid medicine is unknown. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Chemotherapy Drugs
 
