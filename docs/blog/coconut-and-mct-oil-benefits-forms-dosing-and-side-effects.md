@@ -6,29 +6,31 @@ publishedAt: "2024-07-08T17:21:25Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["coconut oil", "mct oil", "medium chain triglycerides", "caprylic acid", "capric acid", "lauric acid", "weight loss", "obesity", "cholesterol", "ldl", "hdl", "triglycerides", "cardiovascular", "heart health", "cognitive", "brain health", "dementia", "alzheimer", "blood sugar", "insulin resistance", "diabetes", "blood pressure", "skin", "inflammation", "gut health", "olive oil", "saturated fat", "ketogenic", "intermittent fasting", "exercise", "muscle", "epilepsy", "sleep"]
-summary: "Reference on coconut oil and MCT oil. Coconut oil is high in saturated fat and raised LDL cholesterol more than nontropical vegetable oils in trials. An MCT drink improved some cognitive tests in mild cognitive impairment. Talk to your doctor first if you take a statin or diabetes medicines."
+summary: "Brad lists coconut oil among the saturated fats that raise LDL cholesterol and favours swapping them for unsaturated fats. In trials, coconut oil raised LDL more than nontropical vegetable oils. Talk to your doctor first if you take a statin."
 reviewed: "2026-10-26"
-sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/31928080/","checked":"2026-10-26","fingerprint":"sha256:69c1ffc409e396b50471b0a40e3be484b84f1f5457a8a6e811e14b4c6a9aef15"}]
+sources: [{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/how-to-prevent-a-heart-attack-for-5-45","checked":"2026-10-26","fingerprint":"publishedAt:2025-02-04T23:48:02Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/diet-strongly-suspected-best","checked":"2026-10-26","fingerprint":"publishedAt:2024-10-14T22:54:37Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/coconut-and-mct-oil-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/coconut-and-mct-oil-benefits-forms-dosing-and-side-effects)*
 
-## Current evidence position
+## Current view (reviewed 26 October 2026)
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. Coconut oil is high in saturated fat, and in a meta-analysis of 16 trials it raised LDL cholesterol by 10.47 mg/dL compared with nontropical vegetable oils, with no benefit for blood sugar, inflammation or body fat [7]. Over the long term, coconut fat appeared to increase insulin resistance [29]. Purified MCT oil behaves differently: a ketogenic MCT drink of 30 g a day for 6 months raised brain ketone use and improved some cognitive tests in mild cognitive impairment, but virgin coconut oil gave no cognitive benefit in Alzheimer's disease [19][20][25]. Coconut oil blunted the LDL-lowering effect of atorvastatin in one trial, and MCT oil can cause cramping and diarrhea at higher doses [35][61][66].
+Brad lists coconut oil with fatty meats, full-fat dairy and palm oil as foods high in saturated fat, which research has shown can raise LDL cholesterol ([Brad, 4 Feb 2025](https://drstanfield.com/blogs/articles/how-to-prevent-a-heart-attack-for-5-45)). He cites research in which reducing saturated fats from sources like fatty meats, butter and coconut oil, and replacing them with unsaturated fats from sources like extra-virgin olive oil and avocados, resulted in a 17% reduction in the risk of heart disease ([Brad, 14 Oct 2024](https://drstanfield.com/blogs/articles/diet-strongly-suspected-best)). He says saturated fat clearly boosts LDL levels, and a high intake of saturated and trans fats makes low LDL hard to maintain ([Brad, 4 Feb 2025](https://drstanfield.com/blogs/articles/how-to-prevent-a-heart-attack-for-5-45)). His plan uses extra-virgin olive oil as monounsaturated fat replacing butter or saturated fat, with a modest direct effect on LDL cholesterol (Brad's current guidance, 18 Mar 2026). Overall, he says the evidence suggests that we might want a diet that is high in protein, includes healthy unsaturated fats and is low in saturated fats ([Brad, 14 Oct 2024](https://drstanfield.com/blogs/articles/diet-strongly-suspected-best)).
 
 ## Key safety points
 
-- In a trial of people taking atorvastatin, adding virgin coconut oil gave smaller falls in LDL cholesterol, total cholesterol and lipoprotein(a) than atorvastatin alone [66]. If you take a statin, avoid high intakes of coconut oil and ask your doctor about checking your cholesterol.
+- In an 8-week trial in 150 people taking atorvastatin, LDL cholesterol, total cholesterol and lipoprotein(a) fell less with 1000 mg a day of added virgin coconut oil than on atorvastatin alone, though HDL cholesterol rose more [66]. The authors judged the add-on beneficial. If you take a statin, ask your doctor and have your cholesterol checked.
 - MCTs have been considered contraindicated in cirrhosis, ketosis and acidosis [6]. If you have liver disease, ask your doctor first.
+- Never use homemade coconut milk as infant formula. A 5-month-old fed only homemade coconut milk formula developed fatty liver, which resolved when it was stopped [72].
 - Coconut allergy is rare, but anaphylaxis to coconut has been reported [68][71]. For trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - Coconut oil raises LDL cholesterol compared with nontropical vegetable oils [7]. Replacing saturated fat with unsaturated fats lowers LDL cholesterol [9].
-- Long-term coconut fat intake appeared to increase insulin resistance [29]. If you have diabetes or take glucose-lowering medicines, be cautious about high intakes of coconut oil.
+- Coconut fat did not help long-term blood sugar control and appeared to raise insulin resistance [29]. If you have diabetes, ask your doctor first.
 - MCT oil can cause diarrhea, vomiting, bloating and cramps, more so at high doses [35][39][61]. Virgin coconut oil caused mild diarrhea in some people [60].
 
 ## Brad's videos on this topic
 
-None yet.
+- 4 Feb 2025, [How to Prevent a Heart Attack for $5.45](https://drstanfield.com/blogs/articles/how-to-prevent-a-heart-attack-for-5-45): coconut oil is one of the foods high in saturated fat, which can raise LDL; replacing saturated fats with unsaturated ones lowers heart disease risk.
+- 14 Oct 2024, [Why This Diet is Strongly Suspected To Be The Best](https://drstanfield.com/blogs/articles/diet-strongly-suspected-best): cut saturated fats such as coconut oil and replace them with unsaturated fats from extra-virgin olive oil and avocados.
 
 ## 1. Overview
 
@@ -95,15 +97,15 @@ In diabetic rats, a coconut oil diet lowered total cholesterol and showed a tren
 
 A meta-analysis of short-term meal studies and 11 long-term trials found that meals with coconut fat raised blood glucose slightly and lowered insulin after the meal [29]. Long-term coconut fat intake increased insulin resistance (HOMA-IR) and did not improve fasting glucose or insulin [29]. The authors concluded that the claim that coconut fat improves blood sugar control is disproved [29].
 
-If you have diabetes or take glucose-lowering medicines, be cautious about high intakes of coconut oil over the long term [29].
+If you have diabetes, ask your doctor first.
 
 ### Blood Pressure
 
-In hypertensive rats, virgin coconut oil, with or without exercise, lowered blood pressure [30], and lauric acid given into a vein lowered blood pressure [31]. These are animal studies.
+In hypertensive rats, virgin coconut oil, with or without exercise, lowered blood pressure [30], and lauric acid given into a vein lowered blood pressure [31]. These are animal studies. In a placebo-controlled trial in 45 people with stage 1 hypertension, extra virgin coconut oil, alone or with aerobic exercise training, had no antihypertensive effect [73].
 
 ### Sports Performance
 
-MCTs have not improved exercise performance in trials [33][34][35][36].
+Results are mixed: MCT alone slowed time trials [33][35], one small trial found MCT added to carbohydrate slightly faster [33], and 2 weeks of MCT oil did not help runners [34].
 
 **Negative findings.** In trained cyclists, drinking MCT alone during exercise gave a 17-18% lower time-trial work rate and caused intestinal cramping; 85 g of MCT added to carbohydrate had no effect compared with placebo [35]. In endurance-trained cyclists, replacing carbohydrate with MCT slowed a time trial, while adding MCT to carbohydrate made it slightly faster [33]. In trained male runners, 60 g a day of MCT oil for 2 weeks did not improve endurance [34]. In recreational runners, caffeine with extra virgin coconut oil before a 1600 m run did not improve running time [36].
 
@@ -151,7 +153,7 @@ In 40 dental students, a 10-minute daily coconut oil rinse for seven days lowere
 
 In a crossover trial in 29 volunteers, oil pulling with coconut oil slowed plaque regrowth across a 4-day test about as well as 0.2% chlorhexidine mouthwash, with less tooth staining [56].
 
-In 60 teenagers with gingivitis, adding coconut oil pulling for 30 days lowered plaque and gum scores from day 7; there was no control group [57]. A 2016 systematic review of five trials (160 people) found limited evidence that oil pulling may help oral hygiene over short periods [70]. The authors of the teenage study called it a possible adjuvant to oral hygiene [57].
+In 60 teenagers with gingivitis, adding coconut oil pulling for 30 days lowered plaque and gum scores from day 7; there was no control group [57]. A 2016 systematic review of five trials (160 people) found no significant differences in plaque index (3 studies) and gingival index (2 studies) between oil pulling and control groups, and concluded that limited evidence suggests oil pulling may help oral hygiene over short periods [70]. The authors of the teenage study called it a possible adjuvant to oral hygiene [57].
 
 ### Fat Malabsorption
 
@@ -202,17 +204,17 @@ This is the main safety concern with coconut oil, which is high in saturated fat
 
 **AHA position.** An American Heart Association advisory concluded that replacing saturated fat with unsaturated fats, especially polyunsaturated fats, lowers LDL cholesterol and will lower cardiovascular disease [9].
 
-**Meta-analysis evidence.** In a meta-analysis of 16 trials, coconut oil raised LDL cholesterol by 10.47 mg/dL (95% CI 3.01 to 17.94) and HDL cholesterol by 4.00 mg/dL compared with nontropical vegetable oils [7]. The authors concluded that coconut oil results in higher LDL cholesterol than nontropical vegetable oils [7].
+**Meta-analysis evidence.** In a meta-analysis of 16 articles, coconut oil raised LDL cholesterol by 10.47 mg/dL (95% CI 3.01 to 17.94) and HDL cholesterol by 4.00 mg/dL compared with nontropical vegetable oils [7]. The authors concluded that coconut oil results in higher LDL cholesterol than nontropical vegetable oils [7].
 
 **Dissenting evidence.** Some smaller trials found no LDL rise. In 32 healthy young Thai adults, a twice-daily 15 mL dose of virgin coconut oil for 8 weeks raised HDL cholesterol by 5.72 mg/dL without changing LDL cholesterol, total cholesterol or triglycerides compared with a control [60]. In the Sri Lankan Alzheimer's trial, virgin coconut oil did not change the lipid profile compared with canola oil [25]. These trials were smaller than the pooled analysis, which still shows higher LDL cholesterol with coconut oil [7].
 
 ### Interaction with Statin Therapy
 
-In a double-blind trial in 150 people with dyslipidemia on atorvastatin 10 mg a day, adding virgin coconut oil (1000 mg a day) for 8 weeks raised HDL cholesterol more, but LDL cholesterol, total cholesterol and lipoprotein(a) fell more in the group taking atorvastatin alone [66]. The authors judged the add-on beneficial because of HDL and oxidative stress measures [66]. Lowering LDL cholesterol, a cause of atherosclerosis, is how replacing saturated fat cuts cardiovascular disease [9].
+In a double-blind trial in 150 people with dyslipidemia on atorvastatin 10 mg a day, adding virgin coconut oil (1000 mg a day) for 8 weeks raised HDL cholesterol more, but LDL cholesterol, total cholesterol and lipoprotein(a) fell more in the group taking atorvastatin alone [66]. The authors judged the add-on beneficial because of HDL and oxidative stress measures [66].
 
 ### Insulin Resistance
 
-Long-term coconut fat intake appeared to increase insulin resistance in a meta-analysis of 11 long-term trials [29]. If you have diabetes or take glucose-lowering medicines, be cautious about high intakes of coconut oil over the long term [29].
+In a meta-analysis of 11 long-term trials, coconut fat did not help long-term blood sugar control and appeared to raise insulin resistance [29]. If you have diabetes, ask your doctor first.
 
 ### Allergic Reactions
 
@@ -222,20 +224,17 @@ Coconut allergy is rare and is not directly linked to nut allergy [68]. A case r
 
 **Liver disease.** MCTs have been considered contraindicated in cirrhosis, ketosis and acidosis [6]. If you have liver disease, ask your doctor before taking MCT oil.
 
+**Infants.** Never use homemade coconut milk as infant formula. A 5-month-old fed only homemade coconut milk formula developed fatty liver (hepatic steatosis), which resolved when it was stopped [72].
+
 ## 6. Drug Interactions
 
-Two possible interactions follow from trial evidence.
+One possible interaction follows from trial evidence. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Documented Interactions
 
 | Drug / Drug Class | Interaction | Evidence | Management |
 |----------|------------|:-:|----------|
 | Statins (e.g., atorvastatin) | Smaller falls in LDL cholesterol, total cholesterol and lipoprotein(a) | One 8-week randomized trial [66] | Avoid high intakes of coconut oil with a statin; if you use coconut oil, have your cholesterol checked |
-| Diabetes medications | Long-term coconut fat intake increased insulin resistance | Meta-analysis of 11 long-term trials [29] | Avoid high intakes of coconut oil over the long term; monitor blood glucose |
-
-### Theoretical Interactions
-
-If you take prescription medicines, check with your doctor or pharmacist before starting. Coconut oil has about 120 calories per tablespoon [8], which counts in a calorie-restricted diet.
 
 ## 7. Dietary Sources
 
@@ -248,7 +247,7 @@ Whole coconut is rich in dietary fibre, vitamins and minerals [24]. Coconut oil 
 One tablespoon (14 g) of coconut oil provides approximately [8]:
 - 120 calories
 - 14 g total fat (all from fat)
-- ~11.5 g saturated fat (88% of calories)
+- ~11.5 g saturated fat
 - ~0.8 g monounsaturated fat
 - ~0.2 g polyunsaturated fat
 - 0 g protein
@@ -348,3 +347,7 @@ Coconut oil contains mostly medium-chain fatty acids, and 45 to 50% of its fatty
 [70] Gbinigie O, Onakpoya I, Spencer E, et al. "Effect of oil pulling in promoting oro dental hygiene: A systematic review of randomized clinical trials." *Complement Ther Med*. 2016;26:47-54. PMID: 27261981. doi: [10.1016/j.ctim.2016.02.011](https://doi.org/10.1016/j.ctim.2016.02.011)
 
 [71] Nguyen SA, More DR, Whisman BA, et al. "Cross-reactivity between coconut and hazelnut proteins in a patient with coconut anaphylaxis." *Ann Allergy Asthma Immunol*. 2004;92(2):281-284. PMID: 14989401. doi: [10.1016/S1081-1206(10)61562-1](https://doi.org/10.1016/S1081-1206(10)61562-1)
+
+[72] Prieto Jimenez PM, Jun-Ihn E, Matthews M, et al. "An Unusual Case of Infantile Hepatic Steatosis Caused by Coconut-Based Infant Formula." *JPGN Rep*. 2022;3(4):e235. PMID: 37168470. doi: [10.1097/PG9.0000000000000235](https://doi.org/10.1097/PG9.0000000000000235)
+
+[73] Júnior FAO, Ruiz CR, de Oliveira Y, et al. "Coconut Oil Supplementation Does Not Affect Blood Pressure Variability and Oxidative Stress: A Placebo-Controlled Clinical Study in Stage-1 Hypertensive Patients." *Nutrients*. 2021;13(3):798. PMID: 33670999. doi: [10.3390/nu13030798](https://doi.org/10.3390/nu13030798)
