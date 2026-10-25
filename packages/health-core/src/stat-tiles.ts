@@ -36,7 +36,8 @@ export interface StatTile {
 /**
  * What each tile is, one to three plain sentences (US-57 AC5, approved by Brad 2026-10-25).
  * No threshold and no grading, so a line never disagrees with the tile's status or its
- * evidence, and suits a known minor's tile (US-07 AC6). Definitions only: outside the
+ * evidence. A known minor's tiles keep these lines, except BMI, which reads
+ * STAT_TILE_ABOUT_MINOR_BMI (US-07 AC6). Definitions only: outside the
  * three-file sync (Brad, 2026-10-25). The phone shows them; the web may later.
  */
 export const STAT_TILE_ABOUT: Record<StatTileKey, string> = {

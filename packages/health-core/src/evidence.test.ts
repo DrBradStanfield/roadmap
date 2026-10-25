@@ -13,6 +13,7 @@ describe('WHtR tile citation (US-07 AC1)', () => {
     ]);
     expect(refs[0].label).toMatch(/^Ashwell 2012 /);
     expect(refs[1].label).toMatch(/^Browning 2010 /);
+    expect(refs[1].label).toContain('possible');
     expect(refs[2].label).toMatch(/^Ashwell 2005 /);
   });
 
@@ -27,8 +28,15 @@ describe('WHtR tile citation (US-07 AC1)', () => {
 describe('ApoB target attribution (US-07 AC1)', () => {
   it.each(['apob-very-high', 'apob-high'])('%s credits ESC/EAS with 65 and the tool with 50, citing Ez-PAVE', (id) => {
     const e = SUGGESTION_EVIDENCE[id];
-    expect(e.reason).toContain('ESC/EAS 2019 recommends ApoB below 65 mg/dL for very high risk; based on the Ez-PAVE trial and the PESA study, this tool aims lower, for ApoB below 50 mg/dL (0.5 g/L).');
+    expect(e.reason).toContain('ESC/EAS 2019 recommends ApoB below 65 mg/dL for very high risk; based on the Ez-PAVE trial of LDL-C targets and the PESA study, this tool aims lower, for ApoB below 50 mg/dL (0.5 g/L).');
     expect(e.reason).not.toMatch(/50 mg\/dL \(0\.5 g\/L\) based on (the )?ESC\/EAS/);
+    expect(e.references.map(r => r.url)).toContain('https://doi.org/10.1056/NEJMoa2600283');
+    expect(e.reason).not.toContain('—');
+  });
+
+  it('apob-borderline credits Ez-PAVE and PESA, not PESA alone', () => {
+    const e = SUGGESTION_EVIDENCE['apob-borderline'];
+    expect(e.reason).toContain('the Ez-PAVE trial of LDL-C targets and the PESA study');
     expect(e.references.map(r => r.url)).toContain('https://doi.org/10.1056/NEJMoa2600283');
   });
 });
