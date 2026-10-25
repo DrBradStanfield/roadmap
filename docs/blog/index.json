@@ -4341,7 +4341,8 @@
     "publishedAt": "2025-05-13T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/ginger-benefits-dosing-safety",
     "type": "reference",
-    "summary": "Reference on ginger: nausea (pregnancy, chemotherapy), indigestion, joint pain, blood sugar, menstrual pain. Powder 1-3g/day or extract 100-500mg/day. Caution: bleeding risk with blood thinners, CYP3A4 interactions. Always discuss with your doctor."
+    "summary": "Evidence summary on ginger: it may ease pregnancy nausea and modestly reduce osteoarthritis pain; results for chemotherapy nausea, motion sickness and blood sugar are mixed. Talk to your doctor first if you take warfarin or another blood thinner, or are pregnant.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Probiotics: Benefits, Best Strains, Dosing, and Side Effects",
@@ -5000,7 +5001,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/echinacea-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on echinacea: cold prevention, upper respiratory infections, immune support. E. purpurea aerial extract most studied; ~900 mg/day. Avoid with autoimmune disease or immunosuppressants. Always discuss with your doctor."
+    "summary": "Reference on echinacea for colds and immune support. It may slightly lower the chance of catching a cold; whether it shortens a cold is unclear. Allergic reactions can be severe. Talk to your doctor first if you have an autoimmune disease, take immunosuppressants, or are pregnant.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Electrolytes: Benefits, Types, Dosing, and Side Effects",
@@ -6134,7 +6136,8 @@
     "publishedAt": "2025-04-29T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/cranberry-uti-prevention-forms-dosing",
     "type": "reference",
-    "summary": "Reference on cranberry: UTI prevention, bladder health. Women with recurrent UTIs, children, men with urinary symptoms. Juice or capsules (36 mg PACs/day); kidney stone risk at high doses; warfarin interaction. Always discuss with your doctor."
+    "summary": "Reference on cranberry and urinary tract infection (UTI) prevention. A 2023 Cochrane review found it probably lowers UTI risk in women with recurrent UTIs, children and people after medical procedures; it does not treat an active UTI. Talk to your doctor first if you take warfarin or are pregnant.",
+    "reviewed": "2026-10-25"
   },
   {
     "title": "Flaxseed Oil and Omega-6 Oils: Benefits, Forms, Dosing, and Side Effects",
@@ -8409,7 +8412,8 @@
     "publishedAt": "2025-01-15T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/elderberry-supplement-guide",
     "type": "reference",
-    "summary": "Reference on elderberry: cold and flu symptom relief, immune support. Evidence mixed; small trials suggest may shorten illness. Syrup or capsule forms. Raw berries are toxic. Caution with autoimmune disease. Always discuss with your doctor."
+    "summary": "Reference on elderberry for colds and flu. Small trials suggest it may ease symptoms if started within 48 hours, but a 2020 flu trial found no benefit. Raw or unripe berries, leaves and stems are poisonous unless cooked. Talk to your doctor first if you take any medicine or are pregnant.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Lysine (L-Lysine): Benefits, Forms, Dosing, and Side Effects",
@@ -10322,7 +10326,8 @@
     "publishedAt": "2024-06-19T07:17:08Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/cinnamon-benefits-forms-dosing",
     "type": "reference",
-    "summary": "Reference on cinnamon: blood sugar, cholesterol, inflammation. Adults with type 2 diabetes or prediabetes. Cassia vs Ceylon forms; Ceylon safer (lower coumarin). Dosing 1-6g/day bark or 250-500mg extract. Coumarin liver/bleeding risk; interacts with blood thinners. Always discuss with your doctor."
+    "summary": "Cinnamon may modestly lower fasting glucose in type 2 diabetes, but trial results vary and NCCIH sees no clear benefit. Cassia cinnamon is high in coumarin, which can harm the liver. Talk to your doctor first if you take a blood thinner, diabetes medicines or a statin, or are pregnant.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Magnesium L-Threonate and Its Effects on Sleep Quality",
