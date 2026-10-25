@@ -23,8 +23,8 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 - Maca products can contain lead. One woman's blood lead rose after she began maca root powder and fell when she stopped; the authors warn women of childbearing age in particular [58].
 - In a 90-day trial, maca at 0.6 g a day raised the liver enzyme AST and diastolic blood pressure [42]. LiverTox says maca has not been implicated in liver injury, though one case report followed a single drink of a maca liquor [66][59]; if you have liver disease or high blood pressure, ask your doctor first.
 - Maca contains glucosinolates, and some glucosinolates can affect the thyroid [7][51]. If you have a thyroid condition or take thyroid medicine, ask your doctor first.
-- A report of two cases and a review of online reports link maca to psychotic symptoms, mood changes and anxiety [60][61]. If you have bipolar disorder or a history of psychosis, ask your doctor first.
 - A chart review reported restless legs with maca taken alongside the antidepressant mianserin [65]. If you take an antidepressant, ask your prescriber first.
+- A report of two cases and a review of online reports link maca to psychotic symptoms, mood changes and anxiety [60][61]. If you have bipolar disorder or a history of psychosis, ask your doctor first.
 
 ## Brad's videos on this topic
 
@@ -213,7 +213,7 @@ In animals, maca has a low degree of acute oral toxicity, and it has low toxicit
 
 ### Reported Side Effects
 
-- **General tolerance:** Maca was well tolerated in a small trial in people taking SSRIs [27].
+- **General tolerance:** In a small trial in people taking SSRIs, side effects were common but mild and short-lived [27].
 - **Mild symptoms:** In the SSRI trial, 11 of 16 people reported at least one side effect: stomach upset (5 people), headache (2), irritability (2), and one case each of panic attack, trouble sleeping, sweating and several other complaints. All were short-lived, and none led anyone to stop [27].
 - **Anxiety or mood changes:** In the SSRI trial, one person had a panic attack and two had irritability, though the authors found it hard to link most events directly to maca [27]. Online reports link maca to mood changes, anxiety and hallucinations [61], and a 2024 report of two cases discusses maca as a possible cause of psychotic episodes [60].
 
@@ -231,7 +231,7 @@ Maca contains glucosinolates [7], and some glucosinolates can affect the thyroid
 
 ### MTCA Concerns
 
-Maca contains a beta-carboline compound, (1R,3S)-1-methyltetrahydro-beta-carboline-3-carboxylic acid, which is reported to act on the central nervous system [7]. A toxicology review lists carbolines among maca's compounds of toxicological interest [4]. A French health agency issued an alert about powdered maca, describing an alkaloid derived from this compound that inhibits monoamine oxidase (MAO) [67]. Later lab work found that these compounds did not affect MAO activity in the brain [67] and that maca root extracts did not inhibit MAO-A [68]. Its safety at supplement doses has not been well studied.
+Maca contains a beta-carboline compound, (1R,3S)-1-methyltetrahydro-beta-carboline-3-carboxylic acid, which is reported to act on the central nervous system [7]. A toxicology review lists carbolines among maca's compounds of toxicological interest [4]. A French health agency issued an alert about powdered maca, describing an alkaloid derived from this compound that inhibits monoamine oxidase (MAO) [67]. The authors of a 2009 commentary reported that their lab found no effect on brain MAO [67], and later lab work found that maca root extracts did not inhibit MAO-A [68]. Its safety at supplement doses has not been well studied.
 
 ### Hormone-Sensitive Conditions
 
@@ -279,11 +279,11 @@ Because maca contains glucosinolates, some of which are goitrogenic [7][51], it 
 
 ### Monoamine Oxidase Inhibitors (MAOIs)
 
-Maca contains a beta-carboline compound reported to act on the central nervous system [7]. A French health agency alert said a related alkaloid inhibits MAO, but later lab work found no effect on brain MAO activity and no MAO-A inhibition by maca extracts [67][68]. Whether maca affects MAO inhibitor medicines (phenelzine, tranylcypromine, selegiline) is unknown. If you take prescription medicines, check with your doctor or pharmacist before starting.
+Maca contains a beta-carboline compound reported to act on the central nervous system [7]. A French health agency alert said a related alkaloid inhibits MAO [67]. The authors of a 2009 commentary reported that their lab found no effect on brain MAO [67], and later lab work found no MAO-A inhibition by maca extracts [68]. Whether maca affects MAO inhibitor medicines (phenelzine, tranylcypromine, selegiline) is unknown. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### SSRI Antidepressants
 
-One small study tested maca in people taking SSRIs for sexual dysfunction [27]. Maca was well tolerated. A chart review of drug interactions reported restless legs syndrome with maca taken alongside the antidepressant mianserin [65]. People taking antidepressants should discuss maca with their prescriber.
+One small study tested maca in people taking SSRIs for sexual dysfunction [27]. Side effects were common but mild and short-lived [27]. A chart review of drug interactions reported restless legs syndrome with maca taken alongside the antidepressant mianserin [65]. People taking antidepressants should discuss maca with their prescriber.
 
 ### Stimulant Medications
 
@@ -301,7 +301,7 @@ Diastolic blood pressure rose with maca in one trial [42] but fell in another [5
 | Hormone therapies (HRT, OC, tamoxifen) | Estrogen-like activity in lab studies | Consult provider; avoid with hormone-sensitive cancers |
 | Thyroid medications | Glucosinolate goitrogenic effects | Consult provider |
 | MAO inhibitors | Contains a beta-carboline; a French alert cited MAO inhibition, later lab work found none [67][68]; interaction unknown | Ask your doctor or pharmacist |
-| SSRIs | One small trial; well tolerated | Discuss with prescriber |
+| SSRIs | One small trial; side effects common but mild and short-lived | Discuss with prescriber |
 | Antihypertensives | Blood pressure rose in one trial and fell in others | Monitor blood pressure |
 
 ## 7. Dietary Sources
