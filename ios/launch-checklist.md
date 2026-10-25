@@ -39,12 +39,17 @@ by the orchestrator, not a fresh reviewer.
 ## What only you can do
 
 1. **Signing keys for engine updates** ([engine-updates.md](engine-updates.md)).
-   - Copy `~/.config/health-roadmap/engine-signing-key-COLD-move-to-1password.txt` into
-     the Passwords app, then `rm -P` it.
-   - In GitHub, create the environment `engine-signing`, limited to `main`, with you as
-     required reviewer. Add the secret `ENGINE_SIGNING_KEY` from
-     `~/.config/health-roadmap/engine-signing-key-CI-move-to-github-secret.txt`, then
-     `rm -P` it. Paste the workflow from engine-updates.md.
+   - Done 2026-10-25: the workflow `.github/workflows/engine-release.yml` (added with
+     your permission) and the GitHub environment `engine-signing`, limited to `main`,
+     with you as required reviewer. No secret is set yet.
+   - Left for you, in Terminal. The ci key into the environment's secret, then delete
+     its file:
+     `gh secret set ENGINE_SIGNING_KEY --env engine-signing < ~/.config/health-roadmap/engine-signing-key-CI-move-to-github-secret.txt && rm -P ~/.config/health-roadmap/engine-signing-key-CI-move-to-github-secret.txt`
+   - And the cold key into the Passwords app, then delete its file: copy the one line of
+     `~/.config/health-roadmap/engine-signing-key-COLD-move-to-1password.txt` into a new
+     entry "Health Roadmap engine signing key (cold)", save it, then
+     `rm -P ~/.config/health-roadmap/engine-signing-key-COLD-move-to-1password.txt`
+     (engine-updates.md has the steps).
    - The daily key is in this Mac's Keychain. To release from another Mac, move it there
      (engine-updates.md says how).
    - On every release prompt, click **Allow**, never **Always Allow**.
@@ -56,9 +61,9 @@ by the orchestrator, not a fresh reviewer.
    Google iOS client was made for the old id: if Drive sign-in fails, change its bundle id
    in Google Cloud (Brad approved).
 3. **Dropbox.** The redirect `db-xf96vqvjotm5xhx://2/token` is added. Sign in once in the
-   simulator (Sync, or "+", From Dropbox) as brad@microvitamin.com, so the live sync
-   check can run. Agents may not type passwords. Put lab reports in
-   Dropbox › Apps › Health Plan by Dr Brad to see them in the list.
+   simulator (Sync) as brad@microvitamin.com, so the live sync check can run. Agents
+   may not type passwords. To read a lab report from Dropbox, "+" then Files: with the
+   Dropbox app installed, any Dropbox folder is reachable (2026-10-25, US-52 AC10).
 4. **Google Drive.** The iOS client exists (2026-10-22). Keep it in the website's project
    (687809032623): `drive.file` shows an app only the files its own project created.
 5. **Server, for chat and lab upload: done 2026-10-25.** Brad ran
