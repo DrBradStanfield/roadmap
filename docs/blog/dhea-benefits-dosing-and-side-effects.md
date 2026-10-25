@@ -21,7 +21,7 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 - DHEA changes sex hormone levels, so it may add to or work against HRT, birth control pills, testosterone and 5-alpha reductase inhibitors such as finasteride [74]; in a lab study it also switched on liver enzymes that process medicines [75]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 - Higher natural DHEA levels were linked with later postmenopausal breast cancer and ovarian cancer [51][53], and a review advises caution with DHEA supplements [68]. Estrogen is a breakdown product of DHEA, and the vaginal prasterone label notes that estrogen is contraindicated after breast cancer [76]. If you have had a hormone-sensitive cancer, ask your cancer specialist first.
-- The vaginal prasterone label has no data on use in pregnancy and no information on breast milk [76]. Avoid DHEA during pregnancy or breastfeeding unless a doctor prescribes it.
+- With no safety data, it is safest to avoid DHEA during pregnancy or breastfeeding unless a doctor prescribes it [76].
 - A case report describes mania starting during DHEA use [69].
 - DHEA lowered HDL ("good") cholesterol in pooled trials, mainly in women [67].
 - Acne and excess hair growth are common: 33% and 16% of women taking 200 mg a day in a lupus trial, against 14% and 2% on placebo [63].
@@ -70,7 +70,7 @@ The DHEA trials on this page tested DHEA on its own.
 
 ### Bovine Adrenal Gland Concentrates
 
-Some older DHEA products contained cow adrenal gland concentrate.
+None of the studies on this page tested cow adrenal gland concentrates.
 
 ### Comparison of DHEA Forms
 
@@ -304,7 +304,7 @@ Liver enzymes did not change in pooled trials [72].
 
 ### Special Populations
 
-**Pregnancy and nursing:** The prescription label for vaginal prasterone covers only postmenopausal women; it has no data on use in pregnancy and no information on whether prasterone passes into breast milk [76]. Avoid DHEA during pregnancy or breastfeeding unless a doctor prescribes it.
+**Pregnancy and nursing:** The prescription label for vaginal prasterone covers only postmenopausal women; it has no data on use in pregnancy and no information on whether prasterone passes into breast milk [76]. With no safety data, it is safest to avoid DHEA during pregnancy or breastfeeding unless a doctor prescribes it [76].
 
 **Severe liver or kidney disease:** The vaginal prasterone label says the effect of kidney or liver impairment on how the body handles prasterone has not been studied [76].
 
