@@ -6,7 +6,7 @@ publishedAt: "2025-05-20T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["holy basil", "tulsi", "ocimum sanctum", "ocimum tenuiflorum", "adaptogen", "stress", "anxiety", "blood sugar", "diabetes", "hba1c", "insulin resistance", "inflammation", "immune system", "eugenol", "ursolic acid", "oleanolic acid", "cortisol", "depression", "cognitive", "brain health", "antioxidant"]
-summary: "Reference on holy basil (tulsi): stress, anxiety, blood sugar, immune markers and cognition. One placebo-controlled trial used 1,200 mg a day of an extract for stress; the other trials are small. Talk to your doctor first if pregnant, breastfeeding, or on diabetes medicines or blood thinners."
+summary: "Holy basil (tulsi) for stress, anxiety, blood sugar, immunity and cognition. One placebo-controlled stress trial used 1,200 mg a day of extract actives; others are small. Avoid if pregnant, breastfeeding or trying to conceive. Talk to your doctor first if on diabetes medicines or blood thinners."
 reviewed: "2026-10-25"
 sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28400848/","checked":"2026-10-25","fingerprint":"sha256:caddfb53f5fccb508efdd3a3d5b231ca9930163d11dc4221944033f21958e9cb"}]
 ---
@@ -15,17 +15,17 @@ sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28400848/","ch
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. A 2017 systematic review found 24 human studies of tulsi; all reported favourable outcomes and none reported significant adverse events, but the authors called for more work on dose, dose form and who is most likely to benefit [3]. The largest placebo-controlled trial gave adults with stress symptoms 1,200 mg a day of a holy basil extract (OciBest) for six weeks, and control of their stress symptoms improved 39% more than with placebo [14]. Smaller trials suggest holy basil leaves may lower fasting blood sugar in type 2 diabetes and that leaf extracts may affect anxiety, attention and immune markers, but these trials were small or short, and the anxiety study had no placebo group [15][17][18][24]. People who take diabetes medicines, and women who are pregnant, breastfeeding or trying to conceive, should talk to their doctor before using it [30][38].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. A 2017 systematic review found 24 human studies of tulsi; all reported favourable outcomes and none reported significant adverse events, but the authors called for more work on dose, dose form and who is most likely to benefit [3]. The largest placebo-controlled trial gave adults with stress symptoms 1,200 mg a day of holy basil extract actives (OciBest) for six weeks, and control of their stress symptoms improved 39% more than with placebo [14]. Smaller trials suggest holy basil leaves may lower fasting blood sugar in type 2 diabetes and that leaf extracts may affect anxiety, attention and immune markers, but these trials were small or short, and the anxiety study had no placebo group [15][17][18][24]. People who take diabetes medicines should talk to their doctor first [15][30]; women who are trying to conceive, pregnant or breastfeeding should avoid it, because a rat study raised fertility concerns [38] and safety in pregnancy and breastfeeding has not been studied.
 
 ## Key safety points
 
 - Holy basil may lower blood sugar, and in rats a leaf extract strengthened the effect of insulin [15][30]. If you take insulin or other diabetes medicines, talk to your doctor first and watch for low blood sugar.
 - In animals, holy basil seed oil lengthened blood clotting time about as much as aspirin did [12]. If you take warfarin, another anticoagulant or an antiplatelet drug, ask your doctor before using it.
-- In female rats, a leaf extract raised progesterone and impaired fertility [38]. Avoid holy basil supplements if you are pregnant, breastfeeding or trying to conceive.
+- In female rats given a high dose, a leaf extract raised progesterone; the authors concluded this may impair fertility, but no mating test was done [38][39]. Avoid the supplements if you are trying to conceive, pregnant or breastfeeding; safety in pregnancy and breastfeeding is unstudied.
 - In mice, a leaf extract lowered the thyroid hormone T4 [32]. If you have thyroid disease or take levothyroxine, ask your doctor first.
-- Eugenol, a compound in both holy basil and clove oil, harmed liver cells in the lab, and a baby who swallowed clove oil developed liver failure [19][34]. If a child swallows clove oil or another essential oil, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
-- Eugenol in dental products can cause skin reactions and, rarely, a serious allergic reaction [35][36]. If you have trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
-- Human studies reviewed in 2017 reported no significant adverse events [3].
+- Eugenol, a compound in both holy basil and clove oil, harmed liver cells in the lab, and a baby who swallowed clove oil developed liver failure [19][34]. With liver disease, talk to your doctor first.
+- Eugenol in dental products can cause skin reactions and, rarely, a serious allergic reaction [35][36]. Avoid holy basil if you are allergic to eugenol or clove; for trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- Human studies reviewed in 2017 reported no significant adverse events; one trial reported brief mild nausea [3].
 
 ## Brad's videos on this topic
 
@@ -37,15 +37,14 @@ Holy basil (*Ocimum sanctum*, also sold as *Ocimum tenuiflorum*) is a plant nati
 
 An adaptogen is a substance said to help the body cope with stress. A 2014 review describes tulsi countering chemical, physical, metabolic and psychological stress [1].
 
-The leaves contain several active compounds. Studies have looked most at these:
+The leaves contain several bioactive compounds, including eugenol and ursolic acid, and rosmarinic acid is among the other possible active compounds [3]. Studies have looked most at these:
 
 - **Eugenol** has been described as the constituent largely responsible for tulsi's therapeutic effects [4].
 - **Ursolic acid** is a plant triterpene that acts on targets involved in cell death, tumour spread, blood vessel growth and inflammation [20].
-- **Oleanolic acid** is a related triterpene reported to improve insulin response and protect insulin-making beta cells [7].
 - **Rosmarinic acid** is a plant compound with antiviral, antibacterial, anti-inflammatory and antioxidant activity [8].
 - **Ocimumosides A and B** are compounds isolated from the leaves that normalised stress-induced changes, including raised corticosterone, in rats [9].
 
-Human trials have tested leaves, leaf powder and leaf extracts for stress, anxiety, blood sugar, immunity and cognition [3]. The 2017 systematic review found that all 24 studies reported favourable outcomes, but it called for more work to clarify the dose and dose form [3].
+Human trials have tested tulsi for metabolic disorders, cardiovascular disease, immunity and neurocognition [3]. The 2017 systematic review found that all 24 studies reported favourable outcomes, but it called for more work to clarify the dose and dose form [3].
 
 ### Three Main Varieties
 
@@ -93,7 +92,7 @@ Store holy basil supplements as the label directs.
 
 Holy basil has been studied most for stress, in line with its traditional use as an adaptogen [1].
 
-**Placebo-controlled trial for stress:** Adults with stress symptoms took either OciBest, 1,200 mg a day of a holy basil extract (71 people), or placebo (79 people) for six weeks [14]. Symptom scores for forgetfulness, sexual problems of recent origin, frequent exhaustion and recent sleep problems fell more with OciBest than with placebo, and so did the total symptom score [14]. Overall control of stress symptoms was 39% better than with placebo, and no adverse events were reported [14].
+**Placebo-controlled trial for stress:** Adults with stress symptoms took either OciBest, 1,200 mg a day of holy basil extract actives (71 people), or placebo (79 people) for six weeks [14]. Symptom scores for forgetfulness, sexual problems of recent origin, frequent exhaustion and recent sleep problems fell more with OciBest than with placebo, and so did the total symptom score [14]. Overall control of stress symptoms was 39% better than with placebo, and no adverse events were reported [14].
 
 **Uncontrolled trial for generalized anxiety disorder (n=35):** Thirty-five adults with generalized anxiety disorder took 500 mg of a holy basil leaf extract twice daily after meals and were assessed up to day 60 [17]. Anxiety, stress and depression scores fell, and attention improved [17]. Every participant took holy basil, so the study cannot separate its effect from a placebo response or natural change.
 
@@ -101,7 +100,7 @@ Holy basil has been studied most for stress, in line with its traditional use as
 
 **Animal evidence for anti-stress mechanisms:** In rats, compounds isolated from holy basil leaves normalised stress-induced rises in blood sugar and corticosterone and enlargement of the adrenal glands [9].
 
-**Summary of stress/anxiety evidence:** One placebo-controlled trial supports 1,200 mg a day of an extract for stress symptoms [14]. The anxiety disorder evidence is preliminary because the trial had no control group [17].
+**Summary of stress/anxiety evidence:** One placebo-controlled trial supports 1,200 mg a day of extract actives for stress symptoms [14]. The anxiety disorder evidence is preliminary because the trial had no control group [17].
 
 ### Blood Sugar and Diabetes
 
@@ -127,7 +126,7 @@ The trial measured immune markers, not infections [24].
 
 **Animal evidence for immune modulation:** In rats, leaf extracts raised antibody levels and boosted cell-based immune responses [26].
 
-**Radioprotective effects:** Claims that holy basil protects against radiation rest on animal studies; it has not been tested in people for this.
+**Radioprotective effects:** Claims that holy basil protects against radiation rest on animal studies; clinical trials in people appear to be lacking.
 
 ### Anti-Inflammatory and Analgesic Effects
 
@@ -182,7 +181,7 @@ These findings come from animals and have not been confirmed in people.
 **Preclinical findings:**
 - Ursolic acid acts on targets involved in cell death, tumour spread and blood vessel growth in laboratory studies [20]
 
-**Human evidence:** There are no published clinical trials of holy basil for preventing or treating cancer, and the human studies in the 2017 systematic review did not include cancer [3].
+**Human evidence:** Holy basil appears not to have been tested in cancer trials, and the human studies in the 2017 systematic review did not include cancer [3].
 
 ## 4. Recommended Dosing
 
@@ -190,7 +189,7 @@ The doses below are those the trials used; the 2017 systematic review called for
 
 ### By Indication
 
-**For stress:** 1,200 mg a day of the OciBest holy basil extract for six weeks, in the one placebo-controlled stress trial [14].
+**For stress:** 1,200 mg a day of OciBest extract actives for six weeks, in the one placebo-controlled stress trial [14].
 
 **For generalized anxiety:** A leaf extract, 500 mg twice daily after meals, in a trial without a placebo group [17].
 
@@ -223,18 +222,19 @@ The 2017 systematic review found no significant adverse events in 24 human studi
 ### Reported Side Effects
 
 - **Adverse events:** None were reported in the six-week stress trial [14].
+- **Nausea:** In the 2017 systematic review, one trial (Satapathy 2016) reported brief mild nausea [3].
 
 ### Pregnancy and Breastfeeding
 
-In female rats, a holy basil leaf extract raised progesterone, reduced ovulation and impaired fertility [38].
+In female rats given a high dose, a leaf extract raised progesterone; the authors concluded this may impair fertility, but no mating test was done [38][39].
 
-**Recommendation:** Women who are pregnant, planning a pregnancy or breastfeeding should avoid holy basil supplements. The evidence comes from animals, and safety in human pregnancy has not been established.
+**Recommendation:** Women who are trying to conceive should avoid holy basil supplements. Safety in pregnancy and breastfeeding has not been studied, so it is best avoided then too.
 
 ### Thyroid Function
 
-In male mice, a leaf extract lowered blood levels of the thyroid hormone thyroxine (T4) without changing T3 [32].
+In male mice, a leaf extract significantly decreased serum T4, with no marked change in serum T3 [32].
 
-**Clinical significance:** Whether this happens in people is not known. People with hypothyroidism or those taking levothyroxine should discuss holy basil with their doctor.
+**Clinical significance:** This finding comes from mice; human data appear to be lacking. People with hypothyroidism or those taking levothyroxine should discuss holy basil with their doctor.
 
 ### Blood Pressure Effects
 
@@ -244,17 +244,19 @@ In anaesthetised dogs, holy basil seed oil lowered blood pressure [12]. Its rele
 
 In cultured rat liver cells, eugenol depleted the protective antioxidant glutathione and caused cell damage, mainly through a breakdown product [19].
 
-Clove oil, which also contains eugenol, can cause severe poisoning. One case of clove oil ingestion caused coma, seizures, a blood clotting disorder and acute liver damage [33]. A 3-month-old who swallowed less than 8 mL of clove oil developed liver failure and recovered after hospital treatment with N-acetylcysteine [34]. If a child swallows clove oil or another essential oil, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+Clove oil, which also contains eugenol, can cause severe poisoning. One case of clove oil ingestion caused coma, seizures, a blood clotting disorder and acute liver damage [33]. A 3-month-old who swallowed less than 8 mL of clove oil developed liver failure and recovered after hospital treatment with N-acetylcysteine [34]. If a child swallows clove oil, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 **Risk assessment:** People with liver disease should talk to their doctor before using holy basil.
 
 ### Allergic Reactions
 
-Eugenol used in dentistry can cause contact dermatitis and hives [35][36]. Serious allergic reactions to eugenol are rare but have been reported [35]. If you have trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+Eugenol used in dentistry can cause contact dermatitis and hives [35][36]. Serious allergic reactions to eugenol are rare but have been reported [35]. If you are allergic to eugenol or clove, avoid holy basil. If you have trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 ### Blood Sugar — Risk of Hypoglycemia
 
-Holy basil lowered blood sugar in a small trial, and in rats a leaf extract strengthened the effect of insulin [15][30]. People taking insulin, sulfonylureas such as glibenclamide or other glucose-lowering medicines should watch for low blood sugar; their doses may need adjusting.
+Holy basil lowered blood sugar in a small trial, and in rats a leaf extract strengthened the effect of insulin [15][30]. People taking insulin, sulfonylureas or other glucose-lowering medicines should watch for low blood sugar; their doses may need adjusting.
+
+If someone with diabetes is unconscious, having a seizure, or cannot swallow safely, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). Do not give food or drink by mouth.
 
 ### Fertility
 
@@ -273,8 +275,8 @@ Drug interactions with holy basil have not been studied in people. The cautions 
 | Drug Class | Examples | Concern | Recommendation |
 |-----------|---------|---------|----------------|
 | Insulin | All formulations | Additive low blood sugar [30] | Monitor blood sugar closely |
-| Sulfonylureas | Glibenclamide, glipizide, gliclazide | Additive low blood sugar [15] | Monitor blood sugar |
-| Other glucose-lowering medicines | Metformin, SGLT2 inhibitors, GLP-1 receptor agonists | Additive blood sugar lowering [15] | Monitor blood sugar |
+| Sulfonylureas | Glipizide, gliclazide | Possible additive low blood sugar (theoretical); in lab tests, tolbutamide strengthened the extract's insulin release [22] | Monitor blood sugar |
+| Other glucose-lowering medicines | Metformin, SGLT2 inhibitors, GLP-1 receptor agonists | Possible additive blood sugar lowering (theoretical) [15] | Monitor blood sugar |
 
 ### Anticoagulant and Antiplatelet Medications
 
@@ -335,8 +337,6 @@ Tea and fresh leaves give lower and more variable amounts of active compounds th
 
 [5] Khanna N, Bhatia J. "Antinociceptive action of Ocimum sanctum (Tulsi) in mice: possible mechanisms involved." *J Ethnopharmacol*. 2003;88(2-3):293-296. PMID: 12963158. doi: [10.1016/S0378-8741(03)00215-0](https://doi.org/10.1016/S0378-8741(03)00215-0)
 
-[7] Castellano JM, Guinda A, Delgado T, Rada M, Cayuela JA. "Biochemical Basis of the Antidiabetic Activity of Oleanolic Acid and Related Pentacyclic Triterpenes." *Diabetes*. 2013;62(6):1791-1799. PMID: 23704520. doi: [10.2337/db12-1215](https://doi.org/10.2337/db12-1215)
-
 [8] Petersen M, Simmonds MSJ. "Rosmarinic acid." *Phytochemistry*. 2003;62(2):121-125. PMID: 12482446. doi: [10.1016/S0031-9422(02)00513-7](https://doi.org/10.1016/S0031-9422(02)00513-7)
 
 [9] Gupta P, Yadav DK, Siripurapu KB, Palit G, Maurya R. "Constituents of Ocimum sanctum with antistress activity." *J Nat Prod*. 2007;70(9):1410-1416. PMID: 17850106. doi: [10.1021/np0700164](https://doi.org/10.1021/np0700164)
@@ -382,3 +382,5 @@ Tea and fresh leaves give lower and more variable amounts of active compounds th
 [37] Ahmed M, Ahamed RN, Aladakatti RH, Ghosesawar MG. "Reversible anti-fertility effect of benzene extract of Ocimum sanctum leaves on sperm parameters and fructose content in rats." *J Basic Clin Physiol Pharmacol*. 2002;13(1):51-59. PMID: 12099405. doi: [10.1515/JBCPP.2002.13.1.51](https://doi.org/10.1515/JBCPP.2002.13.1.51)
 
 [38] Poli V, Challa C. "A comparative study of eugenol and Ocimum sanctum Linn. leaf extract on the antifertility effect in female albino rats." *J Chin Med Assoc*. 2019;82(3):231-234. PMID: 30908416. doi: [10.1097/JCMA.0000000000000034](https://doi.org/10.1097/JCMA.0000000000000034)
+
+[39] Li YT, Yeh CC, Wang PH. "Without mating test, it is hard to say that the reproductive performance of rats is decreased." *J Chin Med Assoc*. 2019;82(11):884. PMID: 31305348. doi: [10.1097/JCMA.0000000000000143](https://doi.org/10.1097/JCMA.0000000000000143)
