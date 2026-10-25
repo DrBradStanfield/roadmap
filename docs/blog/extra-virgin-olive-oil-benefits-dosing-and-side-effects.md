@@ -22,7 +22,7 @@ Brad counts extra-virgin olive oil among the healthy fats, alongside avocado, th
 - Olive oil may add to blood pressure medicines. In a small trial in people with high blood pressure, the daily drug dose fell 48% on an extra-virgin olive oil diet [20]. If you take blood pressure medicines, ask your doctor before a large change in intake.
 - Olive oil lowered HbA1c and fasting glucose in people with type 2 diabetes [37]. If you take insulin or other glucose-lowering medicines, ask your doctor whether you need closer glucose checks.
 - Olive oil is pure fat, about 120 kcal per tablespoon [5]. Use it to replace butter or other saturated fat, not on top of your usual fat intake [31].
-- Large daily amounts can raise LDL cholesterol in some people: 60 mL a day of a high-polyphenol oil raised it slightly in healthy adults, and 40 g a day raised it compared with sunflower oil in young women [25][33].
+- Added on top of your usual diet, large amounts did not lower LDL, and LDL rose slightly in two small trials [25][33]; the LDL benefit comes from replacing saturated fat [21].
 
 ## Brad's videos on this topic
 
@@ -99,11 +99,11 @@ The evidence linking olive oil consumption to cardiovascular benefit comes from 
 
 **Blood Pressure:** In 41 overweight or obese adults aged 65 or older, replacing the usual cooking oils with EVOO for 3 months lowered systolic blood pressure and tended to raise HDL cholesterol compared with a corn oil, soybean oil and butter mix (Rozati, Nutr Metab (Lond) 2015) [19]. In a 6-month crossover trial in 23 people with high blood pressure, the daily antihypertensive drug dose fell 48% on an extra-virgin olive oil diet, against 4% on a sunflower oil diet, and 8 people on the olive oil diet needed no drugs (Ferrara, Arch Intern Med 2000) [20].
 
-**Cholesterol and Atherosclerosis:** In 18 adults with insulin-resistant dyslipidemia, replacing saturated fat from lard with monounsaturated fat from olive oil for 4 weeks lowered LDL cholesterol by 7.0%, by speeding the clearance of LDL apolipoprotein B (Desjardins, Am J Clin Nutr 2024) [21].
+**Cholesterol and Atherosclerosis:** In 18 adults with insulin-resistant dyslipidemia, replacing saturated fat from lard with monounsaturated fat from olive oil for 4 weeks lowered LDL cholesterol by 7.0%, partly by speeding the clearance of LDL apolipoprotein B (Desjardins, Am J Clin Nutr 2024) [21].
 
-**Polyphenol-Dependent Effects on Cholesterol:** A meta-analysis of 26 trials found that high-polyphenol olive oil lowered total cholesterol by 4.5 mg/dL and oxidised LDL, and raised HDL cholesterol by 2.37 mg/dL, compared with low-polyphenol olive oil (George, Crit Rev Food Sci Nutr 2019) [24]. In a later Australian crossover trial, 50 healthy adults took 60 ml a day of olive oil high (320 mg/kg) or low (86 mg/kg) in polyphenols for 3 weeks; both raised HDL, but the high-polyphenol oil also raised LDL by 0.14 mmol/l (Sarapis, Br J Nutr 2023) [25].
+**Polyphenol-Dependent Effects on Cholesterol:** A meta-analysis of 26 trials found that high-polyphenol olive oil lowered total cholesterol by 4.5 mg/dL and oxidised LDL, and raised HDL cholesterol by 2.37 mg/dL, compared with low-polyphenol olive oil (George, Crit Rev Food Sci Nutr 2019) [24]. In a later Australian crossover trial, 50 healthy adults took 60 ml a day of olive oil high (320 mg/kg) or low (86 mg/kg) in polyphenols for 3 weeks; both raised HDL, but the high-polyphenol oil also raised LDL by 0.14 mmol/l, with no significant difference between the two oils (Sarapis, Br J Nutr 2023) [25].
 
-**Hydroxytyrosol and LDL Oxidation:** EFSA concluded that a minimum of 5 mg of hydroxytyrosol daily (with its derivatives, in olive oil) protects LDL particles from oxidation (EFSA Journal 2011) [27]. In a 1-month crossover trial, 30 people with chronic coronary artery disease took 4 capsules a day, each with 2.5 mg hydroxytyrosol in olive oil, or placebo. Measures of arterial and microvascular function improved from baseline after the active capsules but not after placebo, with no effect on blood pressure (Ikonomidis, Eur J Clin Invest 2023) [6].
+**Hydroxytyrosol and LDL Oxidation:** In a 1-month crossover trial in 30 people with chronic coronary artery disease, olive oil capsules enriched with hydroxytyrosol (4 a day, 2.5 mg each) improved measures of arterial and microvascular function from baseline, while placebo capsules did not, and blood pressure did not change (Ikonomidis, Eur J Clin Invest 2023) [6]. EFSA judged that polyphenols in olive oil protect LDL particles from oxidative damage, and set the condition that 5 mg of hydroxytyrosol and its derivatives (such as the oleuropein complex and tyrosol) are eaten daily in olive oil (EFSA Journal 2011) [27].
 
 **Atherosclerosis Progression:** In the CORDIOPREV trial, 939 people with coronary heart disease followed a Mediterranean diet rich in extra-virgin olive oil or a low-fat diet. Carotid wall thickness fell on the Mediterranean diet at 5 and 7 years, and plaque height fell more than on the low-fat diet, which did not change wall thickness (Jimenez-Torres, Stroke 2021) [28]. In a PREDIMED substudy of 164 people followed for 2.4 years, wall thickness and plaque did not change on the olive oil diet, while they regressed on the nuts diet compared with control (Sala-Vila, Arterioscler Thromb Vasc Biol 2014) [73].
 
@@ -111,13 +111,13 @@ The evidence linking olive oil consumption to cardiovascular benefit comes from 
 
 **FDA Qualified Health Claim:** Under a 2004 FDA qualified health claim, eating about 23 g (2 tablespoons) of olive oil each day may lower coronary heart disease risk, though the evidence is weak and inconclusive; the oil must take the place of saturated fat without raising total calories (FDA 2004) [31].
 
-**Important Caveat: High Intake May Not Be Better:** In a crossover trial in 40 adults at risk of cardiovascular disease, a whole-food, plant-based diet with 4 tablespoons of EVOO a day was compared with the same diet with less than 1 teaspoon. Both lowered LDL cholesterol; after the first period LDL fell by 25.5 mg/dL on the low-oil diet and 16.7 mg/dL on the high-oil diet, a difference that was not significant, and adding EVOO after the low-oil phase raised LDL again (Krenek, J Am Heart Assoc 2024) [32]. In 27 healthy young women, 40 g a day of EVOO for 8 weeks lowered fasting insulin but raised LDL cholesterol by 5.1 mg/dL compared with sunflower seed oil, with no difference in blood pressure (Morris, Pregnancy Hypertens 2026) [33].
+**Important Caveat: High Intake May Not Be Better:** In a crossover trial in 40 adults at risk of cardiovascular disease, a whole-food, plant-based diet with 4 tablespoons of EVOO a day was compared with the same diet with less than 1 teaspoon. Both lowered LDL cholesterol; after the first period LDL fell by 25.5 mg/dL on the low-oil diet and 16.7 mg/dL on the high-oil diet, a difference that was not significant, and adding EVOO after the low-oil phase raised LDL again (Krenek, J Am Heart Assoc 2024) [32]. In 27 healthy young women, 40 g a day of EVOO for 8 weeks lowered fasting insulin but raised LDL cholesterol by 5.1 mg/dL on EVOO, with no difference in blood pressure (Morris, Pregnancy Hypertens 2026) [33].
 
 ### Insulin Control, Blood Sugar, and Diabetes
 
 Swapping saturated fat for modest amounts of EVOO may help insulin sensitivity and blood sugar control. Trials cover prediabetes, type 2 diabetes and type 1 diabetes.
 
-**Mechanism:** In a small study of 6 people without obesity and 6 with severe obesity, 25 mL of EVOO raised GLP-1 (a gut hormone that increases insulin release) and insulin, and lowered the hunger hormone ghrelin and blood triglycerides after the dose more than common olive oil or sunflower oil (Garcia-Serrano, Mol Nutr Food Res 2021) [35].
+**Mechanism:** In a small study of 6 people without obesity and 6 with severe obesity, 25 mL of EVOO raised GLP-1 (a gut hormone that increases insulin release) and insulin, and lowered the hunger hormone ghrelin and blood triglycerides after the dose more than common olive oil or sunflower oil. This held in the people without obesity and in those with severe obesity after gastric bypass; before surgery the response was blunted (Garcia-Serrano, Mol Nutr Food Res 2021) [35].
 
 **Prediabetes:** In 30 people with impaired fasting glucose, a meal with 10 g of EVOO lowered blood glucose and triglycerides after the meal, and raised insulin and GLP-1, compared with the same meal without it (Carnevale, Clin Nutr 2017) [36].
 
@@ -201,13 +201,13 @@ The FDA claim rests on about 23 g (2 tablespoons) a day, eaten in place of satur
 | LDL oxidation protection (hydroxytyrosol) | ≥ 5 mg hydroxytyrosol daily, with its derivatives, in olive oil [27] | EFSA-authorized health claim |
 | Blood pressure and weight management | 25 mL EVOO within a calorie-restricted diet [41] | Small RCT |
 | Blood sugar control (with meals) | 10 g EVOO in a meal [36] | Small RCT |
-| Fatty liver disease prevention | Mediterranean diet with free EVOO [44] | Sub-study of PREDIMED |
+| Fatty liver (association only) | Mediterranean diet with free EVOO [44] | Sub-study of PREDIMED |
 
 ### Practical Considerations
 
 - **Dose-response evidence** suggests the cardiovascular and mortality links level off above about 20 g a day [74].
 - **Replace, don't add.** Olive oil should substitute for less healthy fats (butter, margarine, mayonnaise), not be added on top of existing fat intake. At 120 kcal per tablespoon, excess consumption contributes to weight gain.
-- **EVOO vs. regular olive oil matters.** Several studies found benefits specific to extra virgin olive oil that were not seen with refined or pomace olive oil, suggesting that polyphenol content contributes to benefits beyond those of oleic acid alone [18][24][45].
+- **EVOO vs. regular olive oil matters.** Several studies found benefits specific to extra virgin olive oil that were not seen with common (refined) olive oil [18][45], and high-polyphenol oil beat low-polyphenol oil on some markers [24], suggesting that polyphenol content contributes to benefits beyond those of oleic acid alone.
 
 ## 5. Safety and Side Effects
 
