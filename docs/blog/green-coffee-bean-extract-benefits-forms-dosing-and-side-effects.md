@@ -6,25 +6,25 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["green coffee", "green coffee bean extract", "chlorogenic acid", "chlorogenic acids", "weight loss", "blood pressure", "blood sugar", "diabetes", "insulin resistance", "obesity", "bmi", "triglycerides", "cholesterol", "ldl", "hdl", "antioxidant", "inflammation", "caffeine", "gut health", "microbiome"]
-summary: "Reference on green coffee bean extract and weight, blood pressure, blood sugar and cholesterol: small, poor-quality trials, small pooled effects and a retracted key study. Many extracts contain caffeine. Talk to your doctor first if pregnant or on blood thinners or diabetes medicines."
+summary: "Reference on green coffee bean extract and weight, blood pressure, blood sugar and cholesterol: small, poor-quality trials, small pooled effects and a retracted key study. Many extracts contain caffeine. Talk to your doctor first if pregnant or breastfeeding, or if you take prescription medicines."
 reviewed: "2026-10-26"
-sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/20871849/","checked":"2026-10-26","fingerprint":"sha256:419e927247e5d11ab33c2e70f64470d76ab21f76942b820ba48859e49bf67380"}]
+sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/WeightLoss-HealthProfessional/","checked":"2026-10-26","fingerprint":"sha256:d7e4c6628de89807e9c519029e843d841dc0a1cd3caea44699ce5f3aa30ce990"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/20871849/","checked":"2026-10-26","fingerprint":"sha256:419e927247e5d11ab33c2e70f64470d76ab21f76942b820ba48859e49bf67380"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/green-coffee-bean-extract-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/green-coffee-bean-extract-benefits-forms-dosing-and-side-effects)*
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. The NIH Office of Dietary Supplements notes that only a few human weight-loss trials exist and all were of poor methodological quality; a 2011 meta-analysis of three of them found 2.47 kg more weight loss than placebo [4][52]. Later pooled analyses disagree: one of 16 trials found a small drop in BMI but no significant change in body weight, while a 2024 umbrella review of five meta-analyses estimated 1.22 kg more weight loss [56][57]. The trial that made the extract famous (Vinson, 2012) was retracted in 2014 after the US Federal Trade Commission found serious flaws in it, so its results cannot be relied on [11][51][52]. NIH describes the extract as apparently well tolerated but not rigorously studied for safety, and its caffeine can cause side effects depending on the dose [52].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. The NIH Office of Dietary Supplements notes that only a few human weight-loss trials exist and all were of poor methodological quality; a 2011 meta-analysis of three of them found 2.47 kg more weight loss than placebo [4][52]. Later pooled analyses disagree: one of 16 trials found a small drop in BMI but no significant change in body weight, while a 2024 umbrella review of five meta-analyses estimated 1.22 kg more weight loss, though one of the meta-analyses it pooled later drew a published comment on calculation and data errors [56][57][69]. The trial that made the extract famous (Vinson, 2012) was retracted in 2014 after the US Federal Trade Commission charged that it was seriously flawed, so its results cannot be relied on [11][12][51][52]. NIH describes the extract as apparently well tolerated but not rigorously studied for safety, and its caffeine can cause side effects depending on the dose and whether it is combined with other stimulants [52].
 
 ## Key safety points
 
-- If you take warfarin or another blood thinner, ask your doctor first: the caffeine in many extracts may add to bleeding risk [41][43].
-- The caffeine may also interact with MAOIs, other stimulants, clozapine, lithium, theophylline and the adenosine used in heart stress tests. If you take prescription medicines, check with your doctor or pharmacist before starting [41][43].
-- If you take diabetes medicines, ask your doctor first and watch your blood sugar: the extract may lower fasting glucose slightly, while its caffeine may raise it [41][43][60].
-- Avoid it if you are pregnant or breastfeeding, and do not give it to children, because safety data are lacking [41][43].
+- If you are booked for a heart stress test with regadenoson, avoid caffeine for at least 12 hours beforehand, as its label advises; caffeine blunts the test [71].
+- If you take theophylline or clozapine, ask your doctor first: caffeine and many medicines can change each other's blood levels, and caffeine raised clozapine levels in a small trial [41][70]. If you take prescription medicines, check with your doctor or pharmacist before starting.
+- Combining caffeine with other stimulants can make its side effects worse [52].
+- Safety in pregnancy is unknown and caffeine passes into breast milk, so ask your doctor first if you are pregnant or breastfeeding [41]. US paediatricians discourage caffeine for children and teenagers [52].
 - Caffeine ranged from 0% to 17% across 54 commercial extracts [53]. Count it toward your daily caffeine; for healthy adults, up to 400 mg a day is not considered a safety concern [52].
-- Reported side effects include headaches and urinary tract infections, and caffeine can cause poor sleep, nervousness and jitteriness. Trials were short, so long-term safety is unknown [52].
+- Reported side effects include headaches and urinary tract infections, and caffeine can cause poor sleep, nervousness, jitteriness and an upset stomach. Trials were short, so long-term safety is unknown [41][52].
 
 ## Brad's videos on this topic
 
@@ -62,7 +62,7 @@ Beyond chlorogenic acids, green coffee bean extract usually contains caffeine, w
 
 ### Bioavailability of Chlorogenic Acids
 
-The body absorbs and transforms chlorogenic acids extensively. In a randomised trial in 11 healthy volunteers who drank coffee with three different CGA doses, researchers found 12 metabolites in plasma and 16 in urine, mainly sulphates and glucuronides of caffeic, ferulic, dihydrocaffeic and dihydroferulic acids [17]. Urinary metabolites collected for 24 hours accounted for 24%, 25% and 16% of the doses, and the highest dose showed a trend toward lower bioavailability [17].
+The body absorbs and transforms chlorogenic acids extensively. In a randomised trial in 11 healthy volunteers who drank coffee with three different CGA doses, researchers found 12 metabolites in plasma and 16 in urine, principally sulphates, and to a lesser extent glucuronides, of caffeic, ferulic, dihydrocaffeic and dihydroferulic acids [17]. Urinary metabolites collected for 24 hours accounted for 24%, 25% and 16% of the doses, and the highest dose showed a trend toward lower bioavailability [17].
 
 Ferulic acid, a CGA metabolite, has been identified as a possible mediator of the blood pressure-lowering effect seen in rats, acting through muscarinic acetylcholine receptors [19].
 
@@ -80,7 +80,7 @@ Weight loss is by far the most heavily promoted use of the extract. The evidence
 
 **Thom (2007)**: In a randomised, double-blind, 12-week trial in 30 overweight people, those drinking chlorogenic acid-enriched instant coffee lost an average of 5.4 kg, against 1.7 kg with normal instant coffee [54].
 
-**Vinson et al. (2012), RETRACTED**: A 22-week crossover trial in 16 overweight adults tested 700 mg and 1,050 mg of GCA in six-week periods. It reported falls of 8.04 kg in body weight, 2.92 kg/m2 in BMI and 4.44% in body fat [11]. The study was retracted in 2014, after the FTC found it so flawed that no reliable conclusions could be drawn [12]. The authors retracted it because the sponsors could not vouch for the data [27].
+**Vinson et al. (2012), RETRACTED**: A 22-week crossover trial in 16 overweight adults tested 700 mg and 1,050 mg of GCA in six-week periods. It reported falls of 8.04 kg in body weight, 2.92 kg/m2 in BMI and 4.44% in body fat [11]. The study was retracted in 2014, after the FTC charged that it was so flawed that no reliable conclusions could be drawn from it [12]. The authors retracted it because the sponsors could not vouch for the data [27].
 
 **Roshan et al. (2018)**: In adults with the metabolic syndrome, 400 mg of decaffeinated GCE twice daily for 8 weeks, with an energy-balanced diet, gave a weight change of -2.08 kg versus -0.92 kg with placebo, a difference the authors called marginally significant (P=0.05) [7].
 
@@ -90,7 +90,7 @@ Weight loss is by far the most heavily promoted use of the extract. The evidence
 
 **Gorji et al. (2019)**: A dose-response meta-analysis of 16 RCTs from 13 articles found a small but significant fall in BMI (-0.403 kg/m2, 95% CI -0.800 to -0.005) but no significant change in body weight (-0.585 kg, 95% CI -1.498 to 0.329) or waist circumference. Trials in people with a baseline BMI of 25 kg/m2 or more showed greater falls in weight and BMI, and supplementation for less than 4 weeks had no effect. A corrigendum to the paper was published in 2020 [56].
 
-**Yang et al. (2024)**: An umbrella review pooling 5 meta-analyses estimated a fall in body weight of 1.22 kg (95% CI -1.53 to -0.92), in BMI of 0.48 kg/m2 and in waist circumference of 0.55 cm. Doses of 600 mg a day or less and courses longer than 7 weeks were more likely to reduce weight [57].
+**Yang et al. (2024)**: An umbrella review pooling 5 meta-analyses estimated a fall in body weight of 1.22 kg (95% CI -1.53 to -0.92), in BMI of 0.48 kg/m2 and in waist circumference of 0.55 cm. Doses of 600 mg a day or less and courses longer than 7 weeks were more likely to reduce weight [57]. One of the meta-analyses it pooled, Asbaghi 2020, later drew a published comment titled "Calculation and data errors require correcting" [68][69].
 
 #### Summary of Weight Loss Evidence
 
@@ -197,16 +197,18 @@ Green coffee bean extract is NOT a substitute for dietary modification and physi
 
 NIH describes green coffee bean extract as apparently well tolerated, but its safety has not been rigorously studied. Reported adverse effects include headaches and urinary tract infections [52]. Two blood pressure trials reported no adverse effects [8][55]. A meta-analysis of 8 trials using 50 mg to 1,200 mg a day for 8 to 12 weeks found no significant change in liver enzymes [63].
 
+In a Slovenian case series, four people had liver injury after taking different fat burners; the products contained ingredients such as green tea extract, garcinia, green coffee beans or spirulina, and one person needed a liver transplant [72]. The authors blamed the fat burners, but the series cannot show which ingredient caused the harm. If your skin or eyes turn yellow or your urine turns dark, stop it and see a doctor promptly.
+
 ### Caffeine-Related Side Effects
 
 The main safety concern is the caffeine in extracts that are not decaffeinated; caffeine content ranged from none to 17% of the extract in one analysis [53]. Caffeine-sensitive individuals may experience [41][52]:
 
-- Headache
-- Nervousness and irritability
-- Insomnia
-- Gastrointestinal discomfort (nausea, diarrhea)
-- Elevated heart rate (tachycardia)
-- Jitteriness
+- Trouble sleeping
+- Nervousness, restlessness or jitteriness
+- Shakiness
+- Nausea or an upset stomach
+- A greater need to urinate
+- A faster heart rate and higher blood pressure
 
 ### Preclinical Safety Data
 
@@ -218,11 +220,11 @@ Human safety data are limited to short-term use (12 weeks or less) [52][63]. Lon
 
 ### Special Populations
 
-**Pregnancy and breastfeeding**: Insufficient safety data exist. Potential risks from caffeine and chlorogenic acids outweigh unproven benefits. Green coffee bean extract should be avoided during pregnancy and lactation [41][43].
+**Pregnancy and breastfeeding**: It is not known whether green coffee affects pregnancy. Its caffeine passes into breast milk, and large amounts can make breastfed babies fussy or disturb their sleep. Ask your doctor first if you are pregnant or breastfeeding [41].
 
-**Children**: Not recommended due to lack of safety data in pediatric populations [43].
+**Children**: The American Academy of Pediatrics discourages children and teenagers from having caffeine and other stimulants [52].
 
-**Caffeine-sensitive individuals**: Should choose decaffeinated extracts or avoid the supplement entirely [41].
+**Caffeine-sensitive individuals**: Should use extracts that contain caffeine with caution [41].
 
 ### Contamination Risks
 
@@ -230,35 +232,23 @@ Mould toxins are the main documented contaminant. A 2013 analysis of 50 suppleme
 
 ## 6. Drug Interactions
 
-Green coffee bean extract contains both caffeine and chlorogenic acids, which can interact with various medications through effects on caffeine metabolism, blood pressure, heart rate, and blood glucose levels [41][43].
+Most of the extract's known interactions come from its caffeine. Many medicines can change caffeine levels in the blood, and caffeine can change theirs; research on interactions with green coffee itself is incomplete [41].
 
 ### Medications That May Interact with Green Coffee Extract
 
 | Drug/Drug Class | Interaction | Clinical Concern |
 |----------------|------------|-----------------|
-| **MAOIs** (phenelzine, tranylcypromine) | Inhibited caffeine breakdown | Risk of hypertension and tachycardia [41][43] |
-| **Stimulants** (ephedrine, amphetamines) | Additive stimulant effects | Overstimulation, elevated heart rate, hypertension [41][43] |
-| **Antidiabetic medications** | Dual effect: caffeine may raise blood glucose; CGAs may lower it | Unpredictable glycemic variability — requires blood sugar monitoring [41][43] |
-| **Clozapine** | Slowed metabolism via CYP1A2 competition | Enhanced clozapine side effects [41][43] |
-| **Riluzole** | Slowed metabolism | Enhanced riluzole side effects [41][43] |
-| **Anticoagulants** (warfarin) | Caffeine antiplatelet effects | Increased bleeding risk [41][43] |
-| **Lithium** | Interference with lithium excretion | May require dosage adjustment [41][43] |
-| **Adenosine** | Caffeine antagonizes adenosine receptors | May reduce adenosine efficacy in cardiac stress testing [43] |
-| **Beta-adrenergic agonists** (albuterol) | Additive stimulant effects | Enhanced tachycardia and hypokalemia risk [43] |
-| **Theophylline** | Slowed caffeine and theophylline metabolism | Increased theophylline levels and toxicity risk [43] |
+| **Stimulants** (bitter orange, ephedrine) | Additive stimulant effects | Worse caffeine side effects [52] |
+| **Clozapine** | Caffeine slowed clozapine breakdown in a small trial | Higher clozapine levels [70] |
+| **Regadenoson** (heart stress tests) | Caffeine blocks the adenosine receptors the drug acts on | Weaker test; avoid caffeine for at least 12 hours beforehand [71] |
+| **Theophylline** | Caffeine and theophylline can change each other's blood levels | Ask your doctor before combining them [41] |
 
 ### Conditions Requiring Caution
 
-The following conditions warrant medical consultation before using green coffee bean extract [41][43]:
+The following conditions warrant medical consultation before using green coffee bean extract [41]:
 
-- **Anxiety disorders**: Caffeine may exacerbate symptoms
-- **Glaucoma**: Caffeine may increase intraocular pressure
-- **High blood pressure or heart conditions**: Vasoconstrictive effects of caffeine
-- **Bleeding disorders**: Impaired clotting from caffeine
-- **Epilepsy**: Risk of seizure threshold lowering at high caffeine doses
-- **Osteoporosis**: Caffeine promotes calcium loss (limit total caffeine intake to under 300 mg daily)
-- **Diabetes**: Glycemic variability from competing caffeine and CGA effects requires monitoring
-- **Irritable bowel syndrome**: Caffeine may worsen gastrointestinal symptoms
+- **Anxiety**
+- **Heart rhythm problems or heart disease**: Caffeine may raise heart rate and blood pressure or cause an abnormal heart rhythm
 
 ### Caffeine Accumulation
 
@@ -286,9 +276,9 @@ Regular coffee consumption provides chlorogenic acids alongside other bioactive 
 
 ### United States
 
-In the US, green coffee bean extract is regulated as a dietary supplement under the Dietary Supplement Health and Education Act (DSHEA) of 1994, which exempts such products from pre-market FDA approval for safety or efficacy. The FDA has NOT authorized any health claims for weight loss or metabolic benefits associated with the extract [45].
+In the US, green coffee bean extract is regulated as a dietary supplement under the Dietary Supplement Health and Education Act (DSHEA) of 1994, which exempts such products from pre-market FDA approval for safety or efficacy [45]. The FDA has not reviewed green coffee extracts for safety and effectiveness, and they cannot be marketed to treat or cure a disease [41].
 
-The 2014 FTC settlement against Applied Food Sciences, a $3.5 million payment over its promotion of the retracted Vinson study, remains a landmark case in supplement enforcement. The settlement prohibited unsubstantiated weight-loss claims and required two high-quality human trials to support future assertions [12][13]. Other FTC actions included a $9 million settlement with promoter Lindsey Duncan in 2015 and a 2016 court judgment of $30 million against Pure Green Coffee marketers. As recently as 2025, the FTC was still distributing refunds ($905,000 to over 39,000 consumers) related to green coffee bean deception [9][48].
+The 2014 FTC settlement with Applied Food Sciences, a $3.5 million payment over weight-loss claims based on the retracted Vinson study, remains a landmark case in supplement enforcement. The order barred the company from misrepresenting any study and required at least two adequate and well-controlled human clinical tests to support future weight-loss claims [12]. In 2015 promoter Lindsey Duncan and his companies agreed to pay $9 million for consumer redress [73]. In 2016 a court entered a $30 million judgment against the ringleader of the Pure Green Coffee operation, which the FTC had sued in 2014 [13][74]. In 2025 the FTC sent more than $905,000 in refunds to 39,977 people who bought Pure Green Coffee [9].
 
 ### European Union
 
@@ -300,25 +290,23 @@ Given the centrality of the retracted Vinson et al. (2012) study and subsequent 
 
 **The Study**: Published in *Diabetes, Metabolic Syndrome and Obesity*, the study was described as a randomized, double-blind, placebo-controlled crossover trial in 16 overweight adults over 22 weeks. It reported a fall in body weight of 8.04 kg on GCA, the extract sold by Applied Food Sciences, which also paid for the study, alongside falls in BMI and body fat [11][12].
 
-**The Investigation**: The US Federal Trade Commission investigated the study in 2014, alleging it was "hopelessly flawed" with no reliable conclusions possible. Specific findings included [12][13]:
+**The Investigation**: The US Federal Trade Commission's 2014 complaint alleged the study was so "hopelessly flawed" that no reliable conclusions could be drawn from it. The FTC charged that [12][27]:
 
-- Lack of proper randomization
-- Unblinding of participants and researchers
-- Failure to account for dropouts
-- Inconsistent participant numbers across analyses
-- Discrepancies in reported data, including impossible weight loss rates exceeding physiological limits
-- Evidence of data falsification, including fabricated body composition measurements
-- Alterations to raw data provided by the contract research organization
-- The Scranton authors wrote up data from a trial run in India by researchers whom Applied Food Sciences paid
+- Applied Food Sciences paid researchers in India to run the trial in 2010
+- The lead investigator repeatedly altered subjects' weights and other key measurements
+- The lead investigator changed the length of the trial
+- The lead investigator misstated which subjects were taking placebo or GCA
+
+The company settled the charges [12].
 
 **The Retraction**: In October 2014, authors Vinson and Burnham retracted the paper, saying the sponsors could not vouch for the data [27][51].
 
 **The Consequences**:
 
 - Applied Food Sciences settled with the FTC for $3.5 million [12][13]
-- Promoter Lindsey Duncan settled for $9 million in consumer redress [48]
-- A 2016 court judgment imposed a $30 million penalty against Pure Green Coffee marketers [48]
-- As late as 2025, FTC refund distributions continued ($905,000 to 39,000+ consumers) [48]
+- Promoter Lindsey Duncan settled for $9 million in consumer redress [73]
+- A 2016 court judgment of $30 million was entered against the ringleader of the Pure Green Coffee operation [74]
+- In 2025 the FTC sent more than $905,000 in refunds to 39,977 consumers [9]
 
 This episode is one of the most prominent examples of how industry-funded research, media promotion, and regulatory gaps in the dietary supplement industry can combine to mislead consumers. It reinforced the importance of scrutinizing supplement claims, particularly for weight loss products, and highlighted systemic issues in supplement marketing where preliminary or sponsored research is extrapolated into definitive health benefits.
 
@@ -336,13 +324,13 @@ This episode is one of the most prominent examples of how industry-funded resear
 
 [8] Watanabe T, Arai Y, Mitsui Y, et al. "The blood pressure-lowering effect and safety of chlorogenic acid from green coffee bean extract in essential hypertension." *Clin Exp Hypertens*. 2006;28(5):439-449. doi: [10.1080/10641960600798655](https://doi.org/10.1080/10641960600798655). PMID: [16820341](https://pubmed.ncbi.nlm.nih.gov/16820341/)
 
-[9] Federal Trade Commission. "FTC Sends Refunds to Consumers Deceived by Pure Green Coffee." 2025. [https://www.ftc.gov/news-events/news/press-releases/2025/ftc-sends-refunds-consumers-deceived-pure-green-coffee](https://www.ftc.gov/news-events/news/press-releases/2025/ftc-sends-refunds-consumers-deceived-pure-green-coffee)
+[9] Federal Trade Commission. "FTC Sends Refunds to Consumers Deceived by Pure Green Coffee Weight Loss Ads." 6 March 2025. [https://www.ftc.gov/news-events/news/press-releases/2025/03/ftc-sends-refunds-consumers-deceived-pure-green-coffee-weight-loss-ads](https://www.ftc.gov/news-events/news/press-releases/2025/03/ftc-sends-refunds-consumers-deceived-pure-green-coffee-weight-loss-ads)
 
 [11] Vinson JA, Burnham BR, Nagendran MV. "RETRACTED: Randomized, double-blind, placebo-controlled, linear dose, crossover study to evaluate the efficacy and safety of a green coffee bean extract in overweight subjects." *Diabetes Metab Syndr Obes*. 2012;5:21-27. Retracted October 2014. doi: [10.2147/DMSO.S27665](https://doi.org/10.2147/DMSO.S27665). PMID: [22291473](https://pubmed.ncbi.nlm.nih.gov/22291473/)
 
-[12] Federal Trade Commission. "Green Coffee Bean Manufacturer Settles FTC Charges of Pushing Its Product Based on Results of 'Seriously Flawed' Weight-Loss Study." September 2014. [https://www.ftc.gov/news-events/press-releases/2014/09/green-coffee-bean-manufacturer-settles-ftc-charges-pushing-its](https://www.ftc.gov/news-events/press-releases/2014/09/green-coffee-bean-manufacturer-settles-ftc-charges-pushing-its)
+[12] Federal Trade Commission. "Green Coffee Bean Manufacturer Settles FTC Charges of Pushing Its Product Based on Results of 'Seriously Flawed' Weight-Loss Study." 8 September 2014. [https://www.ftc.gov/news-events/news/press-releases/2014/09/green-coffee-bean-manufacturer-settles-ftc-charges-pushing-its-product-based-results-seriously](https://www.ftc.gov/news-events/news/press-releases/2014/09/green-coffee-bean-manufacturer-settles-ftc-charges-pushing-its-product-based-results-seriously)
 
-[13] Federal Trade Commission. "FTC Charges Green Coffee Bean Sellers with Deceiving Consumers." 2014. [https://www.ftc.gov/news-events/news/press-releases/2014/05/ftc-charges-green-coffee-bean-sellers-deceiving-consumers](https://www.ftc.gov/news-events/news/press-releases/2014/05/ftc-charges-green-coffee-bean-sellers-deceiving-consumers)
+[13] Federal Trade Commission. "FTC Charges Green Coffee Bean Sellers with Deceiving Consumers through Fake News Sites and Bogus Weight Loss Claims." 19 May 2014. [https://www.ftc.gov/news-events/news/press-releases/2014/05/ftc-charges-green-coffee-bean-sellers-deceiving-consumers-through-fake-news-sites-bogus-weight-loss](https://www.ftc.gov/news-events/news/press-releases/2014/05/ftc-charges-green-coffee-bean-sellers-deceiving-consumers-through-fake-news-sites-bogus-weight-loss)
 
 [17] Stalmach A, Williamson G, Crozier A. "Impact of dose on the bioavailability of coffee chlorogenic acids in humans." *Food Funct*. 2014;5(8):1727-1737. doi: [10.1039/c4fo00316k](https://doi.org/10.1039/c4fo00316k). PMID: [24947504](https://pubmed.ncbi.nlm.nih.gov/24947504/)
 
@@ -352,13 +340,9 @@ This episode is one of the most prominent examples of how industry-funded resear
 
 [40] European Food Safety Authority (EFSA). "Scientific Opinion on the substantiation of health claims related to coffee, including chlorogenic acids from coffee." *EFSA Journal*. 2011;9(4):2057. doi: [10.2903/j.efsa.2011.2057](https://doi.org/10.2903/j.efsa.2011.2057)
 
-[41] WebMD. "Green Coffee - Uses, Side Effects, and More." [https://www.webmd.com/vitamins-supplements/ingredientmono-1264/green-coffee](https://www.webmd.com/vitamins-supplements/ingredientmono-1264/green-coffee)
-
-[43] Healthline. "Green Coffee: Benefits, Weight Loss, and Side Effects." [https://www.healthline.com/nutrition/green-coffee](https://www.healthline.com/nutrition/green-coffee)
+[41] McIntyre C. "Green Coffee - Uses, Side Effects, and More." WebMD. Medically reviewed 12 January 2026; accessed 26 October 2026. [https://www.webmd.com/vitamins-supplements/green-coffee](https://www.webmd.com/vitamins-supplements/green-coffee)
 
 [45] U.S. Dietary Supplement Health and Education Act (DSHEA) of 1994. Federal regulatory framework for dietary supplements.
-
-[48] Federal Trade Commission. Multiple enforcement actions: FTC v. Lindsey Duncan (2015, $9M settlement), FTC v. Pure Green Coffee (2016, $30M judgment), FTC refund distributions to 39,000+ consumers (2025, $905,000). [https://www.ftc.gov/news-events/press-releases/2014/09/green-coffee-bean-manufacturer-settles-ftc-charges-pushing-its](https://www.ftc.gov/news-events/press-releases/2014/09/green-coffee-bean-manufacturer-settles-ftc-charges-pushing-its)
 
 [51] Vinson JA, Burnham BR, Nagendran MV. "Randomized, double-blind, placebo-controlled, linear dose, crossover study to evaluate the efficacy and safety of a green coffee bean extract in overweight subjects [Retraction]." *Diabetes Metab Syndr Obes*. 2014;7:467. doi: [10.2147/DMSO.S75357](https://doi.org/10.2147/DMSO.S75357). PMID: [25340633](https://pubmed.ncbi.nlm.nih.gov/25340633/)
 
@@ -393,3 +377,17 @@ This episode is one of the most prominent examples of how industry-funded resear
 [66] Vaclavik L, Vaclavikova M, Begley TH, et al. "Determination of multiple mycotoxins in dietary supplements containing green coffee bean extracts using ultrahigh-performance liquid chromatography-tandem mass spectrometry (UHPLC-MS/MS)." *J Agric Food Chem*. 2013;61(20):4822-4830. doi: [10.1021/jf401139u](https://doi.org/10.1021/jf401139u). PMID: [23631685](https://pubmed.ncbi.nlm.nih.gov/23631685/)
 
 [67] Carbonell-Rozas L, Mihalache OA, Bruni R, et al. "Comprehensive Analysis of Mycotoxins in Green Coffee Food Supplements: Method Development, Occurrence, and Health Risk Assessment." *Toxins (Basel)*. 2025;17(7):316. doi: [10.3390/toxins17070316](https://doi.org/10.3390/toxins17070316). PMID: [40711128](https://pubmed.ncbi.nlm.nih.gov/40711128/)
+
+[68] Asbaghi O, Sadeghian M, Rahmani S, et al. "The effect of green coffee extract supplementation on anthropometric measures in adults: A comprehensive systematic review and dose-response meta-analysis of randomized clinical trials." *Complement Ther Med*. 2020;51:102424. doi: [10.1016/j.ctim.2020.102424](https://doi.org/10.1016/j.ctim.2020.102424). PMID: [32507437](https://pubmed.ncbi.nlm.nih.gov/32507437/)
+
+[69] Chen X, Naaman K, Dickinson SL, et al. "Calculation and data errors require correcting. Comment on 'The effect of green coffee extract supplementation on anthropometric measures in adults: A comprehensive systematic review and dose-response meta-analysis of randomized clinical trials'." *Complement Ther Med*. 2021;58:102685. doi: [10.1016/j.ctim.2021.102685](https://doi.org/10.1016/j.ctim.2021.102685). PMID: [33607214](https://pubmed.ncbi.nlm.nih.gov/33607214/)
+
+[70] Hägg S, Spigset O, Mjörndal T, Dahlqvist R. "Effect of caffeine on clozapine pharmacokinetics in healthy volunteers." *Br J Clin Pharmacol*. 2000;49(1):59-63. doi: [10.1046/j.1365-2125.2000.00111.x](https://doi.org/10.1046/j.1365-2125.2000.00111.x). PMID: [10606838](https://pubmed.ncbi.nlm.nih.gov/10606838/)
+
+[71] Astellas Pharma US. LEXISCAN (regadenoson) injection, prescribing information, sections 7.1 and 17. DailyMed, set ID 057289f4-2e18-4c1e-bed4-6c1858e2ef16; accessed 26 October 2026. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=057289f4-2e18-4c1e-bed4-6c1858e2ef16](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=057289f4-2e18-4c1e-bed4-6c1858e2ef16)
+
+[72] Gavrić A, Ribnikar M, Šmid L, et al. "Fat burner-induced acute liver injury: Case series of four patients." *Nutrition*. 2018;47:110-114. doi: [10.1016/j.nut.2017.10.002](https://doi.org/10.1016/j.nut.2017.10.002). PMID: [29310849](https://pubmed.ncbi.nlm.nih.gov/29310849/)
+
+[73] Federal Trade Commission. "Marketer Who Promoted a Green Coffee Bean Weight-Loss Supplement Agrees to Settle FTC Charges." 26 January 2015. [https://www.ftc.gov/news-events/news/press-releases/2015/01/marketer-who-promoted-green-coffee-bean-weight-loss-supplement-agrees-settle-ftc-charges](https://www.ftc.gov/news-events/news/press-releases/2015/01/marketer-who-promoted-green-coffee-bean-weight-loss-supplement-agrees-settle-ftc-charges)
+
+[74] Federal Trade Commission. "FTC Wins Summary Judgment against Pitchman of Deceptive Green Coffee Weight-Loss Ads; $30 Million Judgment Entered." 14 November 2016. [https://www.ftc.gov/news-events/news/press-releases/2016/11/ftc-wins-summary-judgment-against-pitchman-deceptive-green-coffee-weight-loss-ads-30-million](https://www.ftc.gov/news-events/news/press-releases/2016/11/ftc-wins-summary-judgment-against-pitchman-deceptive-green-coffee-weight-loss-ads-30-million)
