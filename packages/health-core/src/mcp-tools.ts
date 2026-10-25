@@ -53,7 +53,7 @@ import { type McpImportRoute, type McpRefusalReason } from './product-events';
 import { LAB_ARCHIVE_TITLE } from './document-path';
 import { documentRow, labArchiveFields, type DocumentFields } from './document-rows';
 import { DOCUMENT_TYPES, type DocumentType, healthInputSchema, METRIC_TYPES, zod3Message } from './validation';
-import * as z from 'zod';
+import * as z from './zod';
 
 /**
  * Rows one `add_lab_values` call may write. A lab panel is the case this tool

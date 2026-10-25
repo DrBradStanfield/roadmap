@@ -22,7 +22,7 @@
  *                               these on change, so the widget asks the user
  *                               to confirm before it writes anything.
  */
-import * as z from 'zod';
+import * as z from './zod';
 import { lookupUnit, reportedToCanonical, type MetricType, type UnitSystem } from './units';
 import { FIELD_TO_METRIC, LONGITUDINAL_FIELDS } from './mappings';
 import { MEDICATION_KEYS, sanitizeInputs } from './validation';

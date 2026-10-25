@@ -13,7 +13,7 @@
  *    bundle: Brad accepted that 2026-06-10 — it is mechanical value
  *    extraction, not clinical IP (the algorithm doc never leaves the server).
  */
-import * as z from 'zod';
+import * as z from './zod';
 import { reportedToCanonical, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from './units';
 import { foldName, LAB_CATALOG, LAB_GROUPS, normalizeLabUnit, PROMPT_DEFERRED_KEYS } from './lab-catalog';
 import { parseLocalisedNumber } from './parseNumber';

@@ -321,12 +321,12 @@ describe('US-41 AC9 — the user\'s AI pays: no network, no model, no record', (
     const specifiers = [...source.matchAll(/\bfrom\s+'([^']+)'/g)].map((m) => m[1]);
     expect(specifiers.sort()).toEqual([
       '../../packages/health-core/src/mcp-tools', // type-only
+      '../../packages/health-core/src/zod', // zod, jitless
       '../../tools/search-knowledge',
       './blog-index.server',
       './frontmatter',
       './matched-content',
       './router-view',
-      'zod',
     ]);
     expect(source).toMatch(/import type \{ McpToolDefinition, ToolAnswer \} from '\.\.\/\.\.\/packages\/health-core\/src\/mcp-tools'/);
     // ChatGPT's two `_meta` keys are the only place the word may appear.

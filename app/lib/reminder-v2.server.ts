@@ -26,7 +26,7 @@
  *    typed lane has held since US-23.
  */
 import { randomBytes } from 'node:crypto';
-import * as z from 'zod';
+import * as z from '../../packages/health-core/src/zod';
 import { REMINDER_CATEGORIES } from '../../packages/health-core/src/reminders';
 import { SCHEDULE_LABELS } from '../../packages/health-core/src/reminder-schedule';
 import { APP_BASE_URL } from './email.server';

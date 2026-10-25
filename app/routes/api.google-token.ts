@@ -1,5 +1,5 @@
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
-import * as z from 'zod';
+import * as z from '../../packages/health-core/src/zod';
 import { createRateLimiter } from '../lib/rate-limiter';
 import { ALLOWED_ORIGINS, BODY_TOO_LARGE, corsHeaders, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
 

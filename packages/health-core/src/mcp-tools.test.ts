@@ -9,7 +9,7 @@
 import { beforeAll, describe, it, expect, vi } from 'vitest';
 import Ajv2020 from 'ajv/dist/2020';
 import { isRefusalReason, MCP_REFUSAL_REASONS, MCP_TOOL_NAMES } from './product-events';
-import * as z from 'zod';
+import * as z from './zod';
 import {
   addLabValues,
   addLabValuesInput,

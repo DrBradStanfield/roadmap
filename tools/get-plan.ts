@@ -25,7 +25,7 @@
  */
 import { chmodSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import * as z from 'zod';
+import * as z from '../packages/health-core/src/zod';
 import { FileAdapter } from '../packages/health-core/src/file-adapter';
 import { FIELD_METRIC_MAP } from '../packages/health-core/src/mappings';
 import { updateProfile } from '../packages/health-core/src/mcp-tools';

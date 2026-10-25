@@ -1,4 +1,4 @@
-import * as z from 'zod';
+import * as z from './zod';
 import { roundBoundInward, UNIT_DEFS, UnitSystem } from './units';
 import { FIELD_METRIC_MAP } from './mappings';
 import type { HealthInputs } from './types';

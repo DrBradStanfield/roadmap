@@ -15,7 +15,7 @@
  * run_roadmap round, every tool_use answered, the first reply replayed
  * unmodified (thinking signatures included), and no tools on the second call.
  */
-import * as z from 'zod';
+import * as z from './zod';
 import type { HealthInputs } from './types';
 import { reportedToCanonical, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
 import { FIELD_TO_METRIC } from './mappings';

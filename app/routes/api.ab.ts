@@ -1,5 +1,5 @@
 import { type ActionFunctionArgs } from "react-router";
-import * as z from 'zod';
+import * as z from '../../packages/health-core/src/zod';
 import { authenticate } from '../shopify.server';
 import { getActiveABTests, recordABEvent, type ABEventType } from '../lib/supabase.server';
 import { createRateLimiter } from '../lib/rate-limiter';

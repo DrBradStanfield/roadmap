@@ -1,7 +1,7 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
 import { data, useLoaderData, useSubmit, useNavigation } from "react-router";
 import { useState } from "react";
-import * as z from "zod";
+import * as z from "../../packages/health-core/src/zod";
 
 import { authenticateAdmin } from "../lib/admin-shop.server";
 import { zod3Message } from "../../packages/health-core/src/validation";

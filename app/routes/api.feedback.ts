@@ -1,6 +1,6 @@
 import { type ActionFunctionArgs } from "react-router";
 import * as Sentry from '@sentry/react-router';
-import * as z from 'zod';
+import * as z from '../../packages/health-core/src/zod';
 import { authenticate } from '../shopify.server';
 import { sendFeedbackEmail } from '../lib/email.server';
 import { recordFeedbackSubmission } from '../lib/product-events.server';

@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/react-router';
-import * as z from 'zod';
+import * as z from '../../packages/health-core/src/zod';
 // Deep relative import (not '@roadmap/health-core'): the Docker build runs
 // `npm ci` before COPY, so the workspace symlink never exists in the image —
 // same reason chat.server.ts / email.server.ts import health-core this way.
