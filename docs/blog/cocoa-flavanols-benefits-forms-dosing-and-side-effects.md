@@ -15,17 +15,16 @@ sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/35294962/","ch
 
 ## Current view (reviewed 26 October 2026)
 
-Cocoa flavanols were tested in COSMOS, a large trial of more than 21,000 older adults, the same trial that tested a daily multivitamin (Brad's current guidance, 9 Oct 2026). The cocoa extract did not significantly change the trial's main outcome (Brad's current guidance, 9 Oct 2026). Some secondary results were encouraging, and Brad is watching the long-term follow-up closely (Brad's current guidance, 9 Oct 2026). For now, he sees no clear benefit he could stand behind, and cocoa extract brings a bitter taste, a small amount of caffeine and a higher cost (Brad's current guidance, 9 Oct 2026).
+Cocoa flavanols were tested in COSMOS, a large trial of more than 21,000 older adults, the same trial that tested a daily multivitamin (Brad's current guidance, 9 Oct 2026). The cocoa extract did not significantly change the trial's main outcome (Brad's current guidance, 9 Oct 2026). Some secondary results were encouraging, and Brad is watching the long-term follow-up closely (Brad's current guidance, 9 Oct 2026). For now, Brad sees no clear benefit he could stand behind (Brad's current guidance, 9 Oct 2026).
 
 ## Key safety points
 
-- In 20 people with heart disease taking aspirin and clopidogrel, 30 g a day of dark chocolate for a week strengthened clopidogrel's effect on platelets [27]. If you take an antiplatelet or anticoagulant medicine, tell your doctor before using cocoa extract or eating dark chocolate daily.
-- Cocoa products can lower blood pressure slightly [79]. If you take blood pressure medicines, including diuretics, check with your doctor first.
+- In 20 people with heart disease taking aspirin and clopidogrel, 30 g a day of dark chocolate for a week strengthened clopidogrel's effect on platelets [27]. If you take clopidogrel or another antiplatelet medicine, tell your doctor before using cocoa extract or eating dark chocolate daily.
+- Cocoa products can lower blood pressure slightly [79]. If you take blood pressure medicines, check with your doctor first.
 - Theobromine, a stimulant in cocoa, raised blood sugar and insulin after meals at 500 mg a day [19]. If you take diabetes medicines, check your blood sugar and tell your doctor.
 - Chocolate caused a short rise in urine oxalate in a small study [77]. If you have had calcium oxalate kidney stones, ask your doctor before eating cocoa or chocolate regularly.
 - Dark chocolate labelled dairy free can still contain milk [84]. If you have a milk allergy, take care.
-- Cocoa contains caffeine and theobromine [57]; theobromine at higher doses worsened mood and raised heart rate [60].
-- Cocoa and chocolate sold in the US can contain cadmium and lead [80].
+- Cocoa and chocolate sold in the US can contain cadmium and lead [80]. A 2026 assessment judged harm unlikely at typical intakes but possible from lead at high intakes [81].
 - Trials found cocoa flavanols well tolerated; stomach upset and nausea were uncommon [7][79].
 
 ## Brad's videos on this topic
@@ -38,17 +37,15 @@ Cocoa flavanols are plant compounds found in cacao beans, the raw material for c
 
 Processing changes how much flavanol a product holds. "Dutching", or treating cocoa with alkali, darkens the powder and softens its bitterness. In a survey of commercial cocoa powders, natural powders averaged 34.6 mg per gram of powder, lightly alkalized powders 13.8 mg, medium 7.8 mg and heavily alkalized 3.9 mg [3].
 
-The cacao percentage on a label is a poor guide. In one trial, two 50 g dark chocolate bars held 410 mg and 86 mg of flavanols [37].
+Interest began with population studies. The Kuna people of Panama drink large amounts of flavanol-rich cocoa and have very low blood pressure [2]. In the Zutphen Elderly Study of 470 men, those in the highest third of cocoa intake had a relative risk of 0.50 (95% CI 0.32 to 0.78) for cardiovascular death compared with the lowest third [4]. Studies like these cannot show cause and effect. The largest trial, COSMOS, randomized 21,442 older US adults to 500 mg of cocoa flavanols a day, including 80 mg of epicatechin, or placebo. Over a median of 3.6 years, the extract did not significantly reduce total cardiovascular events, its main outcome, though cardiovascular deaths, a secondary outcome, were lower [5].
 
-Interest began with population studies. The Kuna people of Panama drink large amounts of flavanol-rich cocoa and have very low blood pressure [2]. In the Zutphen Elderly Study of 470 men, those in the highest third of cocoa intake had a relative risk of 0.50 (95% CI 0.32 to 0.78) for cardiovascular death compared with the lowest third [4]. Studies like these cannot show cause and effect. The largest trial, COSMOS, randomized 21,442 older US adults to 500 mg of cocoa flavanols a day, including 80 mg of epicatechin, or placebo. Over a median of 3.6 years, the extract did not significantly reduce total cardiovascular events, its main outcome, though cardiovascular deaths were lower [5].
-
-The European Food Safety Authority (EFSA) accepted in 2012 that 200 mg or more of cocoa flavanols a day helps arteries widen normally, which supports normal blood flow [6].
+The European Food Safety Authority (EFSA) concluded in 2012 that cocoa flavanols help arteries widen normally (endothelium-dependent vasodilation), which contributes to normal blood flow, and set 200 mg a day as the amount needed [6].
 
 ## 2. Forms and Bioavailability
 
 ### Sources of Cocoa Flavanols
 
-Cocoa extract capsules and powders give a set dose with few calories; COSMOS used one [5]. Natural (non-alkalized) cocoa powder holds far more flavanol than Dutched powder [3]. Dark chocolate varies widely from bar to bar [37] and carries the calories of cocoa butter and sugar. White chocolate is made from cocoa butter [32] and has no cocoa solids. Section 7 lists measured amounts.
+Cocoa extract capsules and powders give a set dose with few calories; COSMOS used one [5]. Natural (non-alkalized) cocoa powder holds far more flavanol than Dutched powder [3]. Dark chocolate carries the calories of cocoa butter and sugar. White chocolate is made from cocoa butter [32] and has no cocoa solids. Section 7 lists measured amounts.
 
 ### Key Compounds
 
@@ -58,13 +55,13 @@ The main flavanols in cocoa are catechin and epicatechin, plus chains such as pr
 
 **Dutching (alkaline processing):** Flavanol content fell in a straight line as alkalization increased [3].
 
-**Interaction with polyphenol oxidase-containing foods:** Some fruits contain polyphenol oxidase (PPO), an enzyme that breaks down flavanols. In 8 healthy men, flavanols blended into a banana smoothie gave peak blood levels of flavanol metabolites 84% lower than the same flavanols in a capsule. A mixed berry smoothie, low in PPO, gave levels similar to the capsule. Blood levels still fell when banana was eaten alongside the flavanols rather than blended with them [10].
+**Interaction with polyphenol oxidase-containing foods:** Some fruits contain polyphenol oxidase (PPO), an enzyme that breaks down flavanols. In 8 healthy men, flavanols blended into a banana smoothie gave peak blood levels of flavanol metabolites 84% lower than the same flavanols in a capsule. A mixed berry smoothie, low in PPO, gave levels similar to the capsule. In a second study of 11 people, blood levels still fell when the flavanols were swallowed with a banana drink they had not been mixed into [10].
 
 **Caffeine and theobromine content:** Cocoa contains caffeine and theobromine, both stimulants of the methylxanthine family; theobromine is present in larger amounts [57]. These compounds have their own effects (see Sections 3 and 5).
 
 ### Standardized Cocoa Extract vs. Dark Chocolate
 
-Most trials, including COSMOS, used standardized cocoa extracts with a known flavanol dose [5]. Chocolate and cocoa powder vary widely in flavanol content [3][37], and the label rarely gives it. A standardized extract avoids the calories, fat and sugar of chocolate.
+Most trials, including COSMOS, used standardized cocoa extracts with a known flavanol dose [5]. Cocoa powders vary widely in flavanol content [3], and the label rarely gives it. A standardized extract avoids the calories, fat and sugar of chocolate.
 
 ## 3. Evidence for Health Benefits
 
@@ -76,7 +73,7 @@ Most trials, including COSMOS, used standardized cocoa extracts with a known fla
 
 ### Blood Pressure
 
-**Short-term trials:** A Cochrane review of 35 trials in 1,804 mainly healthy adults found that flavanol-rich cocoa products lowered systolic and diastolic blood pressure by 1.76 mmHg each over 2 to 18 weeks. Systolic pressure fell by 4 mmHg in people with high blood pressure, with no significant change in people with normal pressure, though this subgroup difference was of borderline significance. The authors rated the evidence moderate quality [79].
+**Short-term trials:** A Cochrane review of 35 trials in 1,804 mainly healthy adults found that flavanol-rich cocoa products lowered systolic and diastolic blood pressure by 1.76 mmHg each over 2 to 18 weeks. Systolic pressure fell by 4 mmHg in people with high blood pressure, with no significant change in people with normal pressure, though this subgroup difference was of borderline significance and needs confirming. The authors rated the evidence moderate quality [79].
 
 **Short-term effects in healthy adults:** In 100 healthy adults aged 35 to 60, a drink with 450 mg of cocoa flavanols taken twice a day for one month lowered systolic blood pressure by 4.4 mmHg and diastolic by 3.9 mmHg compared with a flavanol-free drink [11].
 
@@ -140,11 +137,11 @@ Results depend on the dose and the people studied.
 
 **No reduction in diabetes risk (COSMOS):** In 18,381 COSMOS participants without diabetes, cocoa extract did not lower the rate of new type 2 diabetes over a median of 3.5 years (HR 1.04, 95% CI 0.91 to 1.20) [31].
 
-**Dark chocolate and appetite regulation:** In 14 healthy postmenopausal women, people ate less at a later meal after 80% dark chocolate (1,355 kJ) than after the same energy of milk chocolate (1,693 kJ) or white chocolate (1,842 kJ). Blood sugar and insulin rose more after milk and white chocolate [32].
+**Dark chocolate and appetite regulation:** In 14 healthy postmenopausal women, people later ate 1,355 kJ after dark chocolate, against 1,693 and 1,842 kJ after milk and white (each dose 2,099 kJ). Blood sugar and insulin rose more after milk and white chocolate [32].
 
 **Modest body composition changes:** In 132 postmenopausal women, adding 10 g of 99% cocoa chocolate a day for 6 months reduced body fat mass by 0.63 kg compared with no chocolate, without changing weight [33].
 
-**Theobromine caution for blood sugar:** In the 4-week trial of 500 mg of theobromine a day, blood sugar and insulin rose more after a meal than on placebo [19]. People watching their blood sugar may do best to keep dark chocolate to two servings a week or fewer.
+**Theobromine caution for blood sugar:** In the 4-week trial of 500 mg of theobromine a day, blood sugar and insulin rose more after a meal than on placebo [19].
 
 ### Memory and Cognition
 
@@ -222,7 +219,7 @@ COSMOS used 500 mg of flavanols a day, 80 mg of it epicatechin, taken once a day
 
 No dose has been shown to prevent heart disease or any other condition. These are the doses trials used.
 
-**Cardiovascular risk reduction:** COSMOS used 500 mg a day and did not significantly reduce total cardiovascular events [5]. EFSA's blood flow claim requires at least 200 mg a day [6].
+**Cardiovascular risk reduction:** COSMOS used 500 mg a day and did not significantly reduce total cardiovascular events [5]. EFSA's blood flow claim is based on 200 mg a day [6].
 
 **Blood lipid support:** 4 g of cocoa with about 220 mg of flavanols a day [17], or 450 mg of flavanols twice daily [11].
 
@@ -236,13 +233,13 @@ No dose has been shown to prevent heart disease or any other condition. These ar
 
 **Non-Dutched cocoa powder:** Natural powder holds the most flavanol; avoid powders labelled "processed with alkali" [3].
 
-**High-flavanol dark chocolate:** Content varies widely between bars [37], and chocolate adds calories and fat.
+**High-flavanol dark chocolate:** One trial compared a high-flavanol (410 mg) and a low-flavanol (86 mg) dark chocolate [37]; chocolate adds calories and fat.
 
 ### Important Dosing Considerations
 
 - **Do not mix with banana or other high-PPO fruit.** A banana smoothie cut peak flavanol levels by 84% [10].
 - **No effective dose is established** for any condition. Trials have used 166 to 2110 mg a day [28].
-- **The EFSA claim** needs 200 mg of flavanols a day or more, which 2.5 grams of cocoa powder high in flavanols, or 10 grams of dark chocolate high in flavanols, can supply [6].
+- **The EFSA claim** is based on 200 mg of flavanols a day. EFSA estimated that 2.5 g of cocoa powder or 10 g of dark chocolate, both high in flavanols, could provide this [6].
 
 ## 5. Safety and Side Effects
 
@@ -256,17 +253,17 @@ In the Cochrane review of cocoa and blood pressure, stomach complaints and nause
 
 ### Caffeine and Theobromine Side Effects
 
-Cocoa contains caffeine and theobromine [57]. Caffeine can trigger heartburn, stomach irritation, poor sleep, anxiety and heart rhythm problems in people sensitive to it.
+Cocoa contains caffeine and theobromine [57].
 
 In 80 healthy adults, theobromine had little effect at 250 mg but worsened mood at higher doses and raised heart rate as the dose rose to 1,000 mg [60]. In a 4-week trial, 500 mg of theobromine a day raised blood sugar and insulin after meals [19].
 
 ### Heavy Metals
 
-Cocoa and chocolate can contain cadmium and lead from the environment. In US retail products, cadmium ranged from 0.004 to 3.15 mg/kg and lead from undetectable to 0.38 mg/kg; both rose with the percentage of cocoa solids, and cadmium was higher in products said to come from Latin America [80]. A 2026 risk assessment of US chocolate bars judged harm from heavy metals unlikely at typical intakes [81]. Under high-end intake assumptions, the same assessment found possible risks from lead [81].
+Cocoa and chocolate can contain cadmium and lead from the environment. In US retail products, cadmium ranged from 0.004 to 3.15 mg/kg and lead from undetectable to 0.38 mg/kg; both rose with the percentage of cocoa solids, and cadmium was higher in products said to come from Latin America [80]. A 2026 risk assessment of US chocolate bars judged harm from heavy metals unlikely at typical intakes [81]. Under high-end intake assumptions, the same assessment found possible risks from lead and arsenic, though arsenic was measured in only two samples [81].
 
 ### Kidney Stones
 
-Chocolate is rich in oxalate, which can form calcium oxalate kidney stones [77]. In 6 men, 50 g and 100 g of chocolate raised urine oxalate 2 to 4 hours later, to 235% and 289% of fasting levels [77]. A 2025 study of 7 people found no significant rise in 24-hour urine oxalate after 100 g of dark chocolate [78]. If you are prone to kidney stones, you may be told to avoid or limit cocoa and chocolate; ask your doctor.
+Chocolate is rich in oxalic acid [77]. In 6 men, 50 g and 100 g of chocolate raised urine oxalate 2 to 4 hours later, to 235% and 289% of fasting levels; the authors judged this short rise an important factor in calcium oxalate stones in people at risk of them [77]. A 2025 study of 7 people found no significant rise in 24-hour urine oxalate after 100 g of dark chocolate [78]. If you have had kidney stones, ask your doctor whether to limit cocoa and chocolate.
 
 ### Acne
 
@@ -286,27 +283,21 @@ Chocolate has long been blamed as a migraine trigger. A 2014 review found that i
 
 ### Toxicity to Pets
 
-Theobromine is safe for people but not for other mammals, pets included [57]. Keep chocolate away from dogs and cats.
+Theobromine is safe for people at normal intakes but not for other mammals, pets included [57]. Keep chocolate away from dogs and cats.
 
 ## 6. Drug Interactions
 
 ### Antiplatelet and Anticoagulant Medications
 
-Dark chocolate may strengthen the effect of clopidogrel. In 20 heart patients taking clopidogrel and aspirin, 30 g of 65% dark chocolate a day for one week reduced platelet reactivity on clopidogrel by 11.9%, with no effect on aspirin [27]. If you take an antiplatelet or anticoagulant medicine, tell your doctor about regular cocoa or dark chocolate.
+Dark chocolate may strengthen the effect of clopidogrel. In 20 heart patients taking clopidogrel and aspirin, 30 g of 65% dark chocolate a day for one week reduced platelet reactivity on clopidogrel by 11.9%, with no effect on aspirin [27]. If you take clopidogrel or another antiplatelet medicine, tell your doctor about regular cocoa or dark chocolate. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Caffeine-Sensitive Medications
 
-Because cocoa contains caffeine, it may interact with:
-- Stimulant drugs (additive effects)
-- MAO inhibitors (enhanced caffeine effects)
-- Medicines for sleep problems, anxiety or abnormal heart rhythms (caffeine works against them)
-- Medications for heartburn/gastritis (may worsen symptoms)
-
-If you take prescription medicines, check with your doctor or pharmacist before starting.
+Cocoa contains caffeine and theobromine [57]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Blood Pressure Medications
 
-Cocoa flavanols can lower blood pressure slightly [79], which could add to the effect of blood pressure medicines. If you take blood pressure medicines, particularly diuretics, check with your doctor first.
+Cocoa flavanols can lower blood pressure slightly [79], which could add to the effect of blood pressure medicines. If you take blood pressure medicines, check with your doctor first.
 
 ### Blood Sugar Medications
 
@@ -325,7 +316,7 @@ Labels rarely state flavanol content. These are measured figures from studies.
 | Medium alkalized cocoa powder | 7.8 mg per gram (average) [3] | |
 | Heavily alkalized cocoa powder | 3.9 mg per gram (average) [3] | |
 | Cocoa extract used in COSMOS | 500 mg per day [5] | Standardized dose. |
-| Dark chocolate | 410 mg or 86 mg per 50 g, depending on the bar [37] | Comes with calories and fat. |
+| High- and low-flavanol dark chocolate in one trial | 410 mg and 86 mg per 50 g [37] | Comes with calories and fat. |
 | White chocolate | None listed | Made from cocoa butter [32]. |
 
 ### Mineral Content
@@ -338,7 +329,6 @@ Cocoa powder and dark chocolate contain iron, copper and magnesium; amounts per 
 - **Do not blend cocoa with banana.** Banana is high in PPO, which can lower flavanol absorption [10].
 - **Berry smoothies are fine.** Flavanol levels after a mixed berry smoothie matched those after a capsule [10].
 - **For a known dose, choose a standardized cocoa extract** rather than food-grade cocoa products [5].
-- **Higher cacao percentage does not guarantee higher flavanols.** Two dark chocolates of the same weight held very different amounts [37].
 
 ## 8. References
 
@@ -350,7 +340,7 @@ Cocoa powder and dark chocolate contain iron, copper and magnesium; amounts per 
 
 [5] Sesso HD, Manson JE, Aragaki AK, et al. "Effect of cocoa flavanol supplementation for the prevention of cardiovascular disease events: the COcoa Supplement and Multivitamin Outcomes Study (COSMOS) randomized clinical trial." *Am J Clin Nutr*. 2022;115(6):1490-1500. doi: [10.1093/ajcn/nqac055](https://doi.org/10.1093/ajcn/nqac055). PMID: [35294962](https://pubmed.ncbi.nlm.nih.gov/35294962/)
 
-[6] European Food Safety Authority (EFSA). "Scientific opinion on the substantiation of a health claim related to cocoa flavanols and maintenance of normal endothelium-dependent vasodilation." *EFSA J*. 2012;10(7):2809. doi: [10.2903/j.efsa.2012.2809](https://doi.org/10.2903/j.efsa.2012.2809)
+[6] EFSA Panel on Dietetic Products, Nutrition and Allergies (NDA). "Scientific Opinion on the substantiation of a health claim related to cocoa flavanols and maintenance of normal endothelium-dependent vasodilation pursuant to Article 13(5) of Regulation (EC) No 1924/2006." *EFSA J*. 2012;10(7):2809. doi: [10.2903/j.efsa.2012.2809](https://doi.org/10.2903/j.efsa.2012.2809). PMID: [42016115](https://pubmed.ncbi.nlm.nih.gov/42016115/)
 
 [7] Ottaviani JI, Balz M, Kimball J, et al. "Safety and efficacy of cocoa flavanol intake in healthy adults: a randomized, controlled, double-masked trial." *Am J Clin Nutr*. 2015;102(6):1425-35. doi: [10.3945/ajcn.115.116178](https://doi.org/10.3945/ajcn.115.116178). PMID: [26537937](https://pubmed.ncbi.nlm.nih.gov/26537937/)
 
