@@ -396,7 +396,7 @@ Green tea extracts may contain elemental impurities, a group that includes heavy
 
 [24] American College of Obstetricians and Gynecologists. "ACOG Committee Opinion No. 462: Moderate caffeine consumption during pregnancy." *Obstet Gynecol*. 2010;116(2 Pt 1):467-468. Reaffirmed 2020. PMID: 20664420. [https://pubmed.ncbi.nlm.nih.gov/20664420/](https://pubmed.ncbi.nlm.nih.gov/20664420/)
 
-[26] Wang ZM, Zhao D, Wang H, et al. "Green tea consumption and the risk of coronary heart disease: a systematic review and meta-analysis of cohort studies." *Nutr Metab Cardiovasc Dis*. 2023;33(4):715-723. doi: [10.1016/j.numecd.2023.01.003](https://doi.org/10.1016/j.numecd.2023.01.003) PMID: 36849317. [https://pubmed.ncbi.nlm.nih.gov/36849317/](https://pubmed.ncbi.nlm.nih.gov/36849317/)
+[26] Wang ZM, Zhao D, Wang H, et al. "Green tea consumption and the risk of coronary heart disease: a systematic review and meta-analysis of cohort studies." *Nutr Metab Cardiovasc Dis*. 2023;33(4):715-723. doi: [10.1016/j.numecd.2023.01.017](https://doi.org/10.1016/j.numecd.2023.01.017) PMID: 36849317. [https://pubmed.ncbi.nlm.nih.gov/36849317/](https://pubmed.ncbi.nlm.nih.gov/36849317/)
 
 [27] Kuriyama S, Shimazu T, Ohmori K, et al. "Green tea consumption and mortality due to cardiovascular disease, cancer, and all causes in Japan: the Ohsaki study." *JAMA*. 2006;296(10):1255-1265. doi: [10.1001/jama.296.10.1255](https://doi.org/10.1001/jama.296.10.1255) PMID: 16968850. [https://pubmed.ncbi.nlm.nih.gov/16968850/](https://pubmed.ncbi.nlm.nih.gov/16968850/)
 
@@ -424,7 +424,7 @@ Green tea extracts may contain elemental impurities, a group that includes heavy
 
 [39] Dostal AM, Samavat H, Bedell S, et al. "The safety of green tea extract supplementation in postmenopausal women at risk for breast cancer: results of the Minnesota Green Tea Trial." *Food Chem Toxicol*. 2015;83:26-35. PMID: 26051348. [https://pubmed.ncbi.nlm.nih.gov/26051348/](https://pubmed.ncbi.nlm.nih.gov/26051348/)
 
-[40] Clarke JD, Judson SM, Tian DD, et al. "Co-consuming green tea with raloxifene decreases raloxifene systemic exposure in healthy adult participants." *Clin Transl Sci*. 2023;16(10):1779-1790. doi: [10.1111/cts.13582](https://doi.org/10.1111/cts.13582) PMID: 37639334. [https://pubmed.ncbi.nlm.nih.gov/37639334/](https://pubmed.ncbi.nlm.nih.gov/37639334/)
+[40] Clarke JD, Judson SM, Tian DD, et al. "Co-consuming green tea with raloxifene decreases raloxifene systemic exposure in healthy adult participants." *Clin Transl Sci*. 2023;16(10):1779-1790. doi: [10.1111/cts.13578](https://doi.org/10.1111/cts.13578) PMID: 37639334. [https://pubmed.ncbi.nlm.nih.gov/37639334/](https://pubmed.ncbi.nlm.nih.gov/37639334/)
 
 [41] Misaka S, Yatabe J, Müller F, et al. "Green tea ingestion greatly reduces plasma concentrations of nadolol in healthy subjects." *Clin Pharmacol Ther*. 2014;95(4):432-438. doi: [10.1038/clpt.2013.241](https://doi.org/10.1038/clpt.2013.241) PMID: 24419562. [https://pubmed.ncbi.nlm.nih.gov/24419562/](https://pubmed.ncbi.nlm.nih.gov/24419562/)
 
