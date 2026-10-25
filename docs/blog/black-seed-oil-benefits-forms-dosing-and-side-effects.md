@@ -6,7 +6,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["black seed oil", "nigella sativa", "thymoquinone", "black cumin seed oil", "blood sugar", "diabetes", "insulin resistance", "hba1c", "cholesterol", "ldl", "hdl", "triglycerides", "blood pressure", "hypertension", "weight loss", "obesity", "inflammation", "immune", "asthma", "osteoarthritis", "thyroid", "gut health", "acne", "skin", "antioxidant", "omega-3", "seed oil"]
-summary: "A 2025 review of 82 trials found black seed (Nigella sativa) improved weight, blood pressure, blood sugar and cholesterol. Case reports link it to kidney and liver injury and low platelets. Talk to your doctor first if you take diabetes, blood pressure or blood-thinning drugs, or are pregnant."
+summary: "A 2025 review of 82 trials found black seed improved weight, blood pressure, blood sugar and cholesterol. Case reports link it to kidney and liver injury and low platelets. Talk to your doctor first if you take diabetes, blood pressure or blood thinners. Avoid it while pregnant or breastfeeding."
 reviewed: "2026-10-26"
 sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/40714301/","checked":"2026-10-26","fingerprint":"sha256:9ddd276187a82841608da1d13719a270ba163256ddd1b468832dc3d20c0752f5"}]
 ---
@@ -268,7 +268,7 @@ In a trial of black seed extract in older adults, reported adverse events were d
 
 A systematic review of knee osteoarthritis trials found that oral and topical black seed were well tolerated, with no serious adverse events [82].
 
-### Topical Side Effects
+### Skin Reactions
 
 Skin reactions reported with black seed include:
 - **Contact dermatitis**: two cases have been reported (Ali and Blunden, *Phytother Res*, 2003) [5]
