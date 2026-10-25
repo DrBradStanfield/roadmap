@@ -96,7 +96,7 @@ Psyllium husk comes from the seeds of Plantago ovata and forms a gel in water; i
 
 **For general gut health and bifidogenic effects:** Short-chain FOS, GOS and oligofructose-enriched inulin have the most trial evidence for raising Bifidobacterium [8][14][30].
 
-**For constipation:** Fiber has a conditional guideline recommendation for chronic idiopathic constipation [22]. Chicory inulin at 12 g a day modestly helped in a small trial, and konjac glucomannan helped in a trial in athletes [19][24].
+**For constipation:** Fiber has a conditional guideline recommendation for chronic idiopathic constipation [22]. Chicory inulin at 12 g a day modestly helped in small trials [11][24], and konjac glucomannan helped in a trial in athletes [19].
 
 **For IBS:** Psyllium showed the clearest benefit in a 2026 meta-analysis, and β-galacto-oligosaccharides improved overall symptoms [48]. Fructans can trigger IBS symptoms [47].
 
@@ -256,7 +256,7 @@ Gut side effects are more common at higher doses and in people who eat less fibe
 
 1. **Start low:** Begin with a small dose
 2. **Increase gradually:** Raise the dose slowly over a few weeks
-3. **Take with food or water:** Mix prebiotic powder into a beverage, shake, or food
+3. **Take with food or water:** Mix prebiotic powder into a beverage, shake, or food (psyllium and glucomannan: take with a full glass of water; see Key safety points) [50]
 4. **Split doses:** Spread larger doses through the day
 5. **Stay hydrated:** Drink enough fluid, especially with gel-forming fibers
 
@@ -310,7 +310,7 @@ Fructans are among the poorly absorbed short-chain carbohydrates (FODMAPs) that 
 
 In mice, adding the soluble fiber inulin to a defined diet caused liver cancer (hepatocellular carcinoma) that depended on gut bacteria; it did not occur in germ-free or antibiotic-treated mice (Singh, *Cell* 2018) [44]. A 2022 follow-up found that cancer-prone mice had a congenital portosystemic shunt, a vessel that lets blood bypass the liver, which raised bile acids in the blood; about 10% of mice from various sources had one (Yeoh, *Gastroenterology* 2022) [45].
 
-The 2018 authors advised great caution about enriching foods with fermentable fiber [44]. The 2022 authors wrote that how often silent shunts occur in people awaits investigation, and that measuring blood bile acids may help assess liver cancer risk [45]. They also note that congenital shunts are recognized in about 1 in 30,000 people, though the true figure may be higher because the shunts cause no symptoms, and that shunts can also be acquired through liver disease [45]. They called the extent to which inulin supplements might promote liver disease in people "far from clear", and proposed that people with a raised risk of liver cancer, or with early liver cancer, might do better eating fewer foods enriched with fermentable fiber [45].
+The 2018 authors advised great caution about enriching foods with fermentable fiber [44]. The 2022 authors wrote that how often silent shunts occur in people awaits investigation, and that measuring blood bile acids may help assess liver cancer risk [45]. They also note that congenital shunts are recognized in about 1 in 30,000 people, though the true figure may be much higher because the shunts cause no symptoms, and that shunts can also be acquired through liver disease [45]. They called the extent to which inulin supplements might promote liver disease in people "far from clear", and proposed that people with a raised risk of liver cancer, or with early liver cancer, might do better eating fewer foods enriched with fermentable fiber [45].
 
 ### Populations Requiring Caution
 
