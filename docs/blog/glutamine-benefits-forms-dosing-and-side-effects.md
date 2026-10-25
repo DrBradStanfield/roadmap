@@ -187,7 +187,7 @@ Glutamine is a nonessential amino acid, and food supplies it: women in the Nurse
 | IBS-D (post-infectious) | 5 g three times daily | 8 weeks | One randomized trial [24] |
 | NSAID-induced permeability | Several doses close in time to the NSAID | Acute use | Pre-treatment for a week did not work [25] |
 | Oral mucositis (chemotherapy) | 10 g three times daily | During chemoradiotherapy | Mixed results; oncologist supervision only [39][40] |
-| Sickle cell disease (prescription) | 0.3 g per kilogram of body weight per dose, twice daily [44] | 48 weeks in the trial [44] | FDA-approved [82]. The FDA label caps the dose at 5, 10 or 15 g per dose by weight, 30 g a day at most [88] |
+| Sickle cell disease (prescription) | 0.3 g per kilogram of body weight per dose, twice daily [44] | 48 weeks in the trial [44] | FDA-approved [82]. The FDA label recommends 5, 10 or 15 g per dose by body weight (up to 30 g a day) [88] |
 | Critical care (parenteral) | Hospital use only | During ICU stay | Higher mortality in multiorgan failure [49] |
 | Perioperative recovery | Hospital use only | Perioperative period | Shorter hospital stay in pooled trials [47] |
 | Exercise recovery (muscle damage) | 6 g/day | 20 days in one study | Lower muscle damage markers [30] |
@@ -216,11 +216,11 @@ In the sickle cell trial, low-grade nausea, noncardiac chest pain, fatigue and m
 
 ### Side Effects at Higher Doses
 
-On the label for prescription L-glutamine, which allows up to 30 g a day, the most common side effects (each in more than 10% of patients) were constipation, nausea, headache, abdominal pain, cough, pain in the arms or legs, back pain and chest pain; several were nearly as common on placebo [88].
+On the label for prescription L-glutamine, dosed at 10 to 30 g a day by weight, the most common side effects in its trials (each in more than 10% of patients) were constipation, nausea, headache, abdominal pain, cough, pain in the arms or legs, back pain and chest pain; several were nearly as common on placebo [88].
 
 ### Kidney Injury
 
-Kidney injury from glutamine has been reported. A 2026 case report described acute kidney injury from tubular damage in a patient who used 18 g of L-glutamine on a daily basis [72]. The authors thought ammonia made in the kidney from glutamine was the most likely cause, and they advise cautious use of L-glutamine in elderly patients with reduced kidney function [72]. Prescription L-glutamine has not been studied in people with kidney or liver impairment, and its sickle cell trial excluded people with renal insufficiency or uncontrolled liver disease [88].
+Kidney injury from glutamine has been reported. A 2026 case report described acute kidney injury from tubular damage in a patient who used 18 g of L-glutamine on a daily basis [72]. The authors thought ammonia made in the kidney from glutamine was the most likely cause, and they advise cautious use of L-glutamine in elderly patients with reduced kidney function [72]. The pharmacokinetics of prescription L-glutamine have not been studied in people with kidney or liver impairment, and its sickle cell trial excluded people with renal insufficiency or uncontrolled liver disease [88].
 
 ### Psychiatric Effects
 
