@@ -259,11 +259,11 @@ In 80 healthy adults, theobromine had little effect at 250 mg but worsened mood 
 
 ### Heavy Metals
 
-Cocoa and chocolate can contain cadmium and lead from the environment. In US retail products, cadmium ranged from 0.004 to 3.15 mg/kg and lead from undetectable to 0.38 mg/kg; both rose with the percentage of cocoa solids, and cadmium was higher in products said to come from Latin America [80]. A 2026 risk assessment of US chocolate bars judged harm from heavy metals unlikely at typical intakes [81]. Under high-end intake assumptions, the same assessment found possible risks from lead and arsenic, though arsenic was measured in only two samples [81].
+Cocoa and chocolate can contain cadmium and lead from the environment. In US retail products, cadmium ranged from 0.004 to 3.15 mg/kg and lead from undetectable to 0.38 mg/kg; both rose with the percentage of cocoa solids, and cadmium was higher in products said to come from Latin America [80]. A 2026 risk assessment of US chocolate bars judged harm from heavy metals unlikely at typical intakes [81]. Under high-end intake assumptions, the same assessment found possible risks from lead and arsenic, though arsenic was found at measurable levels in only two samples [81].
 
 ### Kidney Stones
 
-Chocolate is rich in oxalic acid [77]. In 6 men, 50 g and 100 g of chocolate raised urine oxalate 2 to 4 hours later, to 235% and 289% of fasting levels; the authors judged this short rise an important factor in calcium oxalate stones in people at risk of them [77]. A 2025 study of 7 people found no significant rise in 24-hour urine oxalate after 100 g of dark chocolate [78]. If you have had kidney stones, ask your doctor whether to limit cocoa and chocolate.
+Chocolate is rich in oxalic acid [77]. In 6 men, 50 g and 100 g of chocolate raised urine oxalate 2 to 4 hours later, to 235% and 289% of fasting levels; the authors suggested this short rise may be an important factor in calcium oxalate stones in people at risk of them [77]. A 2025 study of 7 people found no significant rise in 24-hour urine oxalate after 100 g of dark chocolate [78]. If you have had kidney stones, ask your doctor whether to limit cocoa and chocolate.
 
 ### Acne
 
@@ -289,9 +289,9 @@ Theobromine is safe for people at normal intakes but not for other mammals, pets
 
 ### Antiplatelet and Anticoagulant Medications
 
-Dark chocolate may strengthen the effect of clopidogrel. In 20 heart patients taking clopidogrel and aspirin, 30 g of 65% dark chocolate a day for one week reduced platelet reactivity on clopidogrel by 11.9%, with no effect on aspirin [27]. If you take clopidogrel or another antiplatelet medicine, tell your doctor about regular cocoa or dark chocolate. If you take prescription medicines, check with your doctor or pharmacist before starting.
+Dark chocolate may strengthen the effect of clopidogrel. In 20 heart patients taking clopidogrel and aspirin, 30 g of 65% dark chocolate a day for one week reduced platelet reactivity on clopidogrel by 11.9%, with no effect on aspirin [27]. If you take clopidogrel or another antiplatelet medicine, tell your doctor about regular cocoa or dark chocolate.
 
-### Caffeine-Sensitive Medications
+### Caffeine and Theobromine
 
 Cocoa contains caffeine and theobromine [57]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
