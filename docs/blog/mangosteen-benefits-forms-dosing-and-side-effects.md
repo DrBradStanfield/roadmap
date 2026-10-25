@@ -15,13 +15,13 @@ sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28842267/","ch
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. Mangosteen rind xanthones show antioxidant, anti-inflammatory and antibacterial effects in laboratory studies, but they are poorly absorbed by mouth, and most of the evidence comes from cells and animals [10][14][26][56]. Human trials are small and mixed: mangosteen gel placed in gum pockets improved periodontitis in a meta-analysis of randomized trials, and a 0.5% gel reduced acne lesions about as much as clindamycin [60][61]. By mouth, 1,000 mg/day of pericarp extract did not help schizophrenia, and pericarp extract had limited effects in bipolar depression [65][67]. One case report linked severe lactic acidosis to mangosteen juice, and laboratory studies show effects on platelets and on the enzymes and pumps that handle many drugs, so people taking blood thinners, diabetes medicines or other prescription drugs should talk to their doctor first [42][70][79][80][81].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Mangosteen rind xanthones show antioxidant, anti-inflammatory and antibacterial effects, mostly in cell and animal studies [10][14], but absorption by mouth was very low in rats [26] and varied widely in adults who drank the juice with a high-fat meal [56]. Human trials are small and mixed: mangosteen gel placed in gum pockets improved periodontitis in a meta-analysis of randomized trials, and a 0.5% gel reduced acne lesions about as much as clindamycin [60][61]. By mouth, 1,000 mg/day of pericarp extract did not help schizophrenia, and pericarp extract had limited effects in bipolar depression [65][67]. One case report linked severe lactic acidosis to mangosteen juice, and laboratory studies show effects on platelets and on the enzymes and pumps that handle many drugs, so people taking blood thinners, diabetes medicines or other prescription drugs should talk to their doctor first [42][70][79][80][81].
 
 ## Key safety points
 
-- In laboratory tests, alpha- and gamma-mangostin blocked platelet clumping [81]. If you take a blood thinner or an antiplatelet drug, talk to your doctor before using mangosteen.
+- Severe lactic acidosis was reported in a person using mangosteen juice as a supplement [42]. Its general signs include nausea, vomiting, abdominal pain and fast or difficult breathing [82]. If these appear, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - Mangosteen xanthones inhibited drug-processing enzymes and the P-glycoprotein drug pump, and alpha-mangostin boosted a cancer drug in cancer cells [79][80][84]. If you take prescription medicines, including cancer treatment, check with your doctor or pharmacist before starting.
-- Severe lactic acidosis was reported in a person using mangosteen juice as a supplement [42]. Its signs include nausea, vomiting, abdominal pain and fast or difficult breathing [82]: call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- In laboratory tests, alpha- and gamma-mangostin blocked platelet clumping [81]. If you take a blood thinner or an antiplatelet drug, talk to your doctor before using mangosteen.
 - Mangosteen extract improved insulin sensitivity in a small trial and lowered blood glucose in diabetic rats [70][72]. If you take diabetes medicines, talk to your doctor and check your blood sugar more often.
 - Two of 30 volunteers had a delayed allergic skin reaction to a mangosteen patch [63]. Do not use mangosteen products if you have reacted to mangosteen before.
 
@@ -45,9 +45,9 @@ Mangosteen is sold in several forms:
 
 | Form | Description | Key Considerations |
 |------|-------------|-------------------|
-| Fresh fruit (aril) | Edible white flesh eaten as food | Supplies little of the rind xanthones tested in trials [56] |
-| Mangosteen juice | Juice drinks; some include the rind | In one 100% juice, rind particles were 1% of the mass but held 99% of the xanthones [56]; some products are proprietary juice blends [74] |
-| Pericarp extract (capsules) | Dried rind extract | Used in 24-week trials, such as 1,000 mg/day [65] |
+| Fresh fruit (aril) | The white pulp, eaten as fruit | Supplies little of the rind xanthones tested in trials [56] |
+| Mangosteen juice | Juice drinks | In one 100% juice, rind particles were 1% of the mass but held 99% of the xanthones [56]; some products are proprietary juice blends [74] |
+| Pericarp extract | Dried rind extract | Used in 24-week trials, such as 1,000 mg/day [65] |
 | Topical preparations | Gels and patches with rind extract | Tested for acne at 0.5% extract [61][63] |
 | Dental gels and mouthwash | Rind extract placed in gum pockets or used as a rinse | Tested in periodontitis and gingivitis trials [34][60] |
 
@@ -89,19 +89,19 @@ Applying mangosteen to the skin avoids the poor absorption that limits oral use.
 - The sample size was very small (n=20) [36]
 - The study was short
 
-### Neuroprotection and Alzheimer's Disease (Preclinical)
+### Brain and Mental Health
 
 **Human trials:** Several randomized trials have now tested mangosteen pericarp extract in brain and mental health conditions, with mixed results.
 
 - In the WECAN-AD trial in mild to moderate Alzheimer's disease, participants took water-soluble pericarp extract at 4 mg/kg/day (n = 33), 4 mg/kg/day rising to 8 mg/kg/day (n = 33), or placebo (n = 42) for 24 weeks [64]. More people in the low-dose group reached a clinically important improvement on the ADAS-Cog cognitive scale than with placebo, with a trend in the high-dose group, and the extract appeared safe and well tolerated [64].
 - In a 24-week trial in 148 people with schizophrenia or schizoaffective disorder, adjunctive pericarp extract at 1,000 mg/day did not differ from placebo in the rate of change of symptoms, functioning or quality of life [65]. A secondary analysis found no effect on cognition [66].
-- In a trial in bipolar depression (70 people on mangosteen, 82 on placebo), adjunctive pericarp extract did not substantially change overall depressive symptoms compared with placebo [67]. Some mood, severity and social functioning measures improved more with mangosteen at 24 weeks, but the differences faded by week 28, after treatment stopped [67].
+- In a trial in bipolar depression (70 people on mangosteen, 82 on placebo), adjunctive pericarp extract did not substantially change overall depressive symptoms compared with placebo [67]. Some mood, severity and social functioning measures improved more with mangosteen at 24 weeks, but the differences were smaller by week 28, after treatment stopped [67].
 
 **Laboratory and animal evidence:** A 2025 systematic review of 40 studies found that mangosteen extract and xanthones consistently reduced oxidative markers and pro-inflammatory cytokines, acting on the NF-κB and COX-2 pathways, in cell and animal models of neurodegeneration [68]. In nerve cells exposed to amyloid beta 42, the xanthone garcinone D improved cell survival, stabilised mitochondrial function, reduced reactive oxygen species and activated the Nrf2 and HO-1 antioxidant pathway [69]. The review's authors call for clinical trials before therapeutic use [68].
 
-### Diabetes and Blood Sugar (Preclinical)
+### Diabetes and Blood Sugar
 
-**Human evidence:** In a 26-week pilot trial, 22 women with obesity and insulin resistance were randomized to behavioural therapy alone or with mangosteen extract [70]. Among the 20 who finished, insulin resistance (HOMA-IR) fell by 53.22% with mangosteen versus 15.23% without (p = 0.004), and no side effect was attributed to treatment [70]. A 2026 systematic review found only two human studies in type 2 diabetes, this pilot trial and a 7-day study of a pericarp decoction that lowered fasting glucose, and judged the evidence too limited for clinical recommendations [71].
+**Human evidence:** In a 26-week pilot trial, 22 women with obesity and insulin resistance but without diabetes were randomized to behavioural therapy alone or with mangosteen extract [70]. Among the 20 who finished, insulin resistance (HOMA-IR) fell by 53.22% with mangosteen versus 15.23% without (p = 0.004), and no side effect was attributed to treatment [70]. A 2026 systematic review of human studies in type 2 diabetes included this pilot trial and one other study, in which 7 days of a pericarp decoction lowered fasting glucose, and judged the evidence too limited for clinical recommendations [71].
 
 **Animal studies:** In diabetic rats, an ethanol extract of mangosteen pericarp at 50, 100 or 200 mg/kg lowered blood glucose [72]. A 2024 network meta-analysis of rodent studies found that all mangosteen extracts lowered blood glucose more than control within 2 weeks, with 200 mg/kg doses ranking highest [73].
 
@@ -142,7 +142,7 @@ In diabetic rats, mangosteen pericarp extract lowered triglycerides, total chole
 
 ### Antiviral Activity (Preliminary)
 
-Reviews report antiviral activity of mangosteen extracts and xanthones in experimental studies [10][15]. In cell culture, alpha- and gamma-mangostin inhibited four strains of SARS-CoV-2, the virus that causes COVID-19 (EC50 0.70 to 3.05 µM), and the 3C-like protease that earlier computer studies had proposed was unlikely to be their main target [78]. No benefit for COVID-19 or any other viral infection has been shown in people.
+Reviews report antiviral activity of mangosteen extracts and xanthones in experimental studies [10][15]. In cell culture, alpha- and gamma-mangostin inhibited four strains of SARS-CoV-2, the virus that causes COVID-19 (EC50 0.70 to 3.05 µM) [78]. The mangostins interfered with the 3C-like protease, which earlier computer studies had proposed as a target, but this effect was insufficient to be a major target [78]. No benefit for COVID-19 or any other viral infection has been shown in people.
 
 ### Immunomodulatory Effects (Preclinical)
 
@@ -195,17 +195,17 @@ Because nearly all of the xanthones in mangosteen juice came from rind particles
 
 ### Lactic Acidosis Risk
 
-A 2008 case report described severe lactic acidosis associated with mangosteen juice used as a dietary supplement [42]. Lactic acidosis can be fatal, and its signs include nausea, vomiting, abdominal pain, fast breathing and shortness of breath [82]. If these appear, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+A 2008 case report described severe lactic acidosis associated with mangosteen juice used as a dietary supplement [42]. Lactic acidosis can be fatal [82]. Its general signs include nausea, vomiting, abdominal pain, fast breathing and shortness of breath [82]. If these appear, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
-A single case report does not prove that mangosteen caused the illness, and how it might do so is unknown. As a precaution, avoid heavy daily use of mangosteen juice over months.
+A single case report does not prove that mangosteen caused the illness, and how it might do so is unknown.
 
-### Safety of Rind, Bark, Leaves, and Root
+### Safety of Rind Extracts
 
 A 2018 review noted conflicting results from mangosteen safety studies that need further investigation [57]. In 11 healthy volunteers who took a polar fraction of pericarp extract for 24 weeks, only minor and tolerable side effects were reported, and blood tests showed no liver or kidney damage [76]. In a 24-week Alzheimer's trial, water-soluble pericarp extract appeared safe and well tolerated [64]. The human safety data come from juice and rind extracts [64][74][76].
 
 ### Special Populations
 
-**Pregnancy and breastfeeding:** There is insufficient safety data on mangosteen supplements during pregnancy and breastfeeding. Avoid concentrated rind extracts; the fresh fruit eaten as a normal food is unlikely to be a concern.
+**Pregnancy and breastfeeding:** There is insufficient safety data on mangosteen supplements during pregnancy and breastfeeding. Avoid concentrated rind extracts.
 
 **Children:** Safety of mangosteen supplements in children has not been established.
 
@@ -213,17 +213,13 @@ A 2018 review noted conflicting results from mangosteen safety studies that need
 
 **Kidney disease:** People with kidney disease should ask their doctor first, because how reduced kidney function affects xanthone clearance has not been studied.
 
-**Surgery:** Alpha- and gamma-mangostin inhibited platelet clumping in laboratory tests, although effects in people have not been assessed [81]. Stop mangosteen supplements before planned surgery and ask your surgeon how far ahead.
+**Surgery:** Alpha- and gamma-mangostin inhibited platelet clumping in laboratory tests, although effects in people have not been assessed [81]. A 2022 review advises stopping non-essential supplements, such as mangosteen, 2 weeks before planned surgery [85].
 
 ### Common Side Effects
 
 Trials of mangosteen extract and juice reported few side effects. A juice blend trial reported no side effects in any group [74], an insulin resistance pilot attributed no side effect to treatment [70], and healthy volunteers reported only minor, tolerable effects during 24 weeks [76]. On the skin, two of 30 volunteers had a delayed allergic reaction to a mangosteen patch [63].
 
-### Caloric and Sugar Content of Juice Products
-
-Mangosteen juice drinks contain sugar, so people with diabetes or prediabetes, or who are cutting calories, should count them in their daily totals.
-
-### General Safety of Fresh Fruit
+### General Safety of Fruit Supplements
 
 A 2018 review of five fruits sold as supplements in the US, including mangosteen, concluded from safety studies and toxicity case reports that these fruits may generally be considered safe [57].
 
@@ -237,7 +233,7 @@ Formal drug interaction studies of mangosteen in humans are lacking. The interac
 |----------------|----------------------|----------------|----------------------|
 | Anticoagulants/antiplatelets | Possible increased bleeding risk | Alpha- and gamma-mangostin inhibited aggregation of rat platelets [81] | Unknown; not assessed in people |
 | Antidiabetic medications | Potential additive glucose lowering | Better insulin sensitivity in a pilot trial; lower blood glucose in diabetic rats [70][72] | Unknown |
-| Chemotherapy agents | Possible change in drug transport or effect | P-glycoprotein inhibition linked to multidrug resistance [80]; alpha-mangostin enhanced sorafenib in melanoma cells [84] | Unknown; potentially clinically important |
+| Chemotherapy agents | Possible change in drug transport or effect | P-glycoprotein inhibition; the authors propose it may reverse multidrug resistance [80]; alpha-mangostin enhanced sorafenib in melanoma cells [84] | Unknown; potentially clinically important |
 | Drugs broken down by CYP2C8 or CYP2C9 | Possible increased drug levels | In vitro inhibition, with predicted alpha-mangostin levels above the inhibition constants [79] | Unknown; prediction only |
 | P-glycoprotein substrates | Possible increased drug absorption | Alpha-mangostin increased absorption of a P-glycoprotein substrate in mouse intestine [80] | Unknown |
 
@@ -253,10 +249,10 @@ Alpha- and beta-mangostin inhibited P-glycoprotein, a pump that moves drugs out 
 
 Given the limited formal interaction data, the following precautions are advisable:
 
-1. **Consult a healthcare provider** before starting mangosteen supplements if you take prescription medicines, particularly blood thinners, diabetes medicines or cancer treatment. If you take prescription medicines, check with your doctor or pharmacist before starting.
+1. **Consult a healthcare provider.** If you take prescription medicines, check with your doctor or pharmacist before starting. This matters most for blood thinners, diabetes medicines and cancer treatment.
 2. **Avoid concurrent use** with anticoagulants or antiplatelet drugs unless your doctor agrees, given the platelet effects seen in laboratory tests [81].
-3. **Monitor blood glucose** if combining mangosteen supplements with diabetes medicines [70][72].
-4. **Stop before surgery:** stop mangosteen supplements before planned surgery and ask your surgeon how far ahead.
+3. **Monitor blood glucose** if combining mangosteen supplements with diabetes medicines [70][72]. If someone with diabetes is unconscious, having a seizure, or cannot swallow safely, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). Do not give food or drink by mouth.
+4. **Stop before surgery:** A 2022 review advises stopping non-essential supplements, such as mangosteen, 2 weeks before planned surgery [85].
 
 ## 7. Dietary Sources
 
@@ -341,3 +337,5 @@ Mangosteen is eaten as a fresh fruit, valued for its distinctive taste [14]. The
 [83] Tang YP, Li PG, Kondo M, et al. "Effect of a mangosteen dietary supplement on human immune function: a randomized, double-blind, placebo-controlled trial." *J Med Food*. 2009;12(4):755-763. PMID: 19697997. [https://doi.org/10.1089/jmf.2008.0204](https://doi.org/10.1089/jmf.2008.0204)
 
 [84] Xia Y, Li Y, Westover KD, et al. "Inhibition of Cell Proliferation in an NRAS Mutant Melanoma Cell Line by Combining Sorafenib and α-Mangostin." *PLoS One*. 2016;11(5):e0155217. PMID: 27152946. [https://doi.org/10.1371/journal.pone.0155217](https://doi.org/10.1371/journal.pone.0155217)
+
+[85] Hatfield J, Saad S, Housewright C. "Dietary supplements and bleeding." *Proc (Bayl Univ Med Cent)*. 2022;35(6):802-807. PMID: 36304597. [https://doi.org/10.1080/08998280.2022.2121575](https://doi.org/10.1080/08998280.2022.2121575)
