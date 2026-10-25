@@ -19,10 +19,10 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Key safety points
 
-- CLA reduced insulin sensitivity in trials, and in type 2 diabetes a 50:50 blend raised fasting glucose. If you take diabetes medicines or have prediabetes, ask your doctor first [8][17][52].
+- Purified t10,c12 and c9,t11 CLA reduced insulin sensitivity in obese men, and in type 2 diabetes a 50:50 blend raised fasting glucose. If you take diabetes medicines or have prediabetes, ask your doctor first [8][17][52].
 - CLA has been linked to three reported cases of acute hepatitis, one needing a liver transplant. With yellow skin or eyes or itching, stop CLA and see a doctor the same day; if you are very unwell, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [45][54][55].
 - In breastfeeding women, 1.5 g a day of CLA lowered milk fat, and the authors advise lactating women not to take CLA supplements [53].
-- A meta-analysis of 56 trials found a small fall in HDL cholesterol; in overweight children, CLA lowered HDL more than placebo and slowed bone mineral gain [38][39].
+- In obese men and in overweight children, CLA lowered HDL more than placebo; in children it also slowed bone mineral gain [8][39].
 - The t10,c12 isomer causes severe fatty liver in mice, with a milder response in other species [47].
 - Reported side effects include constipation, diarrhea and soft stools [11].
 
@@ -36,7 +36,7 @@ The term CLA (conjugated linoleic acid) covers a group of positional and geometr
 
 Vaccenic acid, a trans fat made in the rumen, is converted in tissues to rumenic acid by delta-9 desaturase. In a controlled feeding study in 30 healthy people, this conversion averaged 19%, with large differences between people [16].
 
-Commercial CLA supplements contain both main isomers; in trials they were often 80% CLA with a 50:50 blend of c9,t11 and t10,c12 [17][39][53]. The t10,c12 isomer drives the effects on fat cells, and it is also the isomer that raised insulin resistance in obese men [6][8].
+Commercial CLA supplements contain both main isomers, and trials often used a 50:50 blend of c9,t11 and t10,c12 [17][39][53]. In one children's trial the product was 80% CLA [39]. The t10,c12 isomer drives the effects on fat cells, and it is also the isomer that raised insulin resistance in obese men [6][8].
 
 Measured CLA intake from food was 212 mg a day in men and 151 mg a day in women in one US study [7]. That is far below the 3 to 3.4 g a day used in most trials [8][17].
 
@@ -54,17 +54,13 @@ The two main isomers act differently, and their effects on body composition and 
 
 ### Supplement Forms
 
-Trial products were commonly 80% CLA, with the two main isomers in a 50:50 blend [17][39]. CLA has been given as free fatty acids and as triacylglycerol; in a 1-year trial both forms lowered body fat mass compared with placebo [26].
+In one children's trial the product was 80% CLA in a 50:50 isomer blend [39]. CLA has been given as free fatty acids and as triacylglycerol; in a 1-year trial both forms lowered body fat mass compared with placebo [26].
 
 ### Bioavailability
 
-In a 1-year trial of 180 overweight adults, body fat mass was 8.7% lower with the triacylglycerol form and 6.9% lower with the free fatty acid form than with placebo, so both forms are absorbed well enough to act [26].
+In a 1-year trial of 180 overweight adults, body fat mass was 8.7% lower with the triacylglycerol form and 6.9% lower with the free fatty acid form than with placebo [26].
 
 Vaccenic acid in food adds to the body's supply of rumenic acid: in one feeding study, about 19% of dietary vaccenic acid was converted [16].
-
-### Label Reading
-
-Check the amount of CLA itself on the label, not the total oil weight: products used in trials were about 80% CLA [39].
 
 ## 3. Evidence for Health Benefits
 
@@ -110,7 +106,7 @@ CLA has shown anti-cancer effects in animals, but human evidence comes from obse
 
 CLA's effects on blood fats are mixed, and some are unfavorable.
 
-**Lipid profile effects:** A 2022 meta-analysis of 56 trials found no significant effect on LDL cholesterol (WMD 0.49; 95% CI -0.75 to 2.74) and a small fall in HDL cholesterol (WMD -0.40; 95% CI -0.72 to -0.07) (Asbaghi et al., *Front Nutr*, 2022) [38].
+**Lipid profile effects:** A 2022 meta-analysis of 56 trials found no significant effect on LDL cholesterol (WMD 0.49; 95% CI -0.75 to 2.74) and a small fall in HDL cholesterol (WMD -0.40; 95% CI -0.72 to -0.07) (Asbaghi et al., *Front Nutr*, 2022) [38]. The abstract's text calls this an improvement, so the direction is uncertain [38].
 
 **Animal studies:** A 2019 review describes anti-atherosclerotic effects of CLA in pre-clinical studies [15].
 
@@ -128,7 +124,7 @@ CLA's effects on blood sugar control are the main safety concern, particularly f
 
 **Mixed-isomer supplement effects:** In the 2002 trial, the CLA mixture did not change glucose metabolism [8]. In 32 people with diet-controlled type 2 diabetes, however, 3 g a day of a 50:50 blend for 8 weeks raised fasting glucose by 6.3% and reduced insulin sensitivity [17].
 
-**Findings in overweight children:** In a 7-month trial in 62 children aged 6 to 10, 3 g a day of 80% CLA slowed fat gain but did not change glucose or insulin [39].
+**Findings in overweight children:** In a 7-month trial in 62 children aged 6 to 10, 3 g a day of 80% CLA lowered body fat compared with placebo (body fat fell 0.5% with CLA and rose 1.3% with placebo) but did not change glucose or insulin [39].
 
 **Practical implication:** People with the metabolic syndrome, diabetes or prediabetes should talk to their doctor before using CLA [8][17].
 
@@ -150,7 +146,7 @@ Most trials used about 3 to 3.4 g of CLA a day, often as a 50:50 blend of the tw
 | Fat loss (RCT) | 3.4 | 6 months | Lower body fat mass [44] |
 | Dose-ranging | 1.7 to 6.8 | 12 weeks | No added fat loss above 3.4 [56] |
 | Type 2 diabetes | 3.0 | 8 weeks | Higher fasting glucose [17] |
-| Overweight children | 3.0 | 7 months | Slower fat gain, lower HDL [39] |
+| Overweight children | 3.0 | 7 months | Lower body fat, lower HDL [39] |
 
 **Most commonly studied dose:** About 3.2 g a day was the median dose across trials in a 2007 meta-analysis [25].
 
@@ -184,7 +180,7 @@ The most common side effects are digestive:
 
 **Insulin resistance:** In abdominally obese men, purified t10,c12 CLA raised insulin resistance by 19% and blood glucose by 4% compared with placebo [8]. In type 2 diabetes, a 50:50 blend raised fasting glucose and reduced insulin sensitivity [17].
 
-**HDL cholesterol reduction:** A 2022 meta-analysis of 56 trials found a small fall in HDL cholesterol with CLA [38]. In children, HDL fell more with CLA than with placebo [39].
+**HDL cholesterol reduction:** In abdominally obese men, both t10,c12 CLA and a CLA mixture lowered HDL cholesterol compared with placebo [8]. In children, HDL fell more with CLA than with placebo [39].
 
 **Pro-oxidant effects:** t10,c12 CLA raised a urinary marker of lipid peroxidation by 578% in obese men, and c9,t11 CLA raised it by 50% [13][52].
 
@@ -192,7 +188,7 @@ The most common side effects are digestive:
 
 **Hepatitis case reports:** By 2015, CLA had been linked to three reported cases of acute hepatitis worldwide [45]. One woman developed fulminant liver failure and needed a liver transplant [55]. In another, symptoms were tiredness, jaundice and itching, and liver enzymes returned to normal after she stopped CLA [54]. If yellow skin or eyes or itching appear while taking CLA, stop it and see a doctor the same day; if you are very unwell, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
-**Liver enzyme elevations:** Reviews of human trials list effects on liver function among the safety concerns for CLA [46].
+**Liver function:** Reviews of human trials list effects on liver function among the safety concerns for CLA [46].
 
 **Animal data:** In a review of 64 experiments, t10,c12 CLA caused severe fatty liver in mice and a milder response in rats, hamsters and humans; where fatty liver occurred, body fat fell at the same time (Vyas et al., *J Nutr Metab*, 2012) [47].
 
@@ -202,26 +198,21 @@ In a crossover trial in 9 breastfeeding women, 1.5 g a day of a CLA supplement l
 
 ### Special Populations
 
-- **Pregnant women:** Safety in pregnancy has not been established; ask your doctor before using CLA
+- **Pregnant women:** No trials in pregnancy were found; ask your doctor first.
 - **Nursing mothers:** CLA lowered breast-milk fat in a small trial; the authors advise lactating women not to take it [53]
 - **Children:** In overweight children, CLA lowered HDL more than placebo and slowed bone mineral gain [39]
 - **Liver disease:** Given the hepatitis case reports, ask your doctor before using CLA [45]
-- **Severe kidney disease:** Ask your doctor before using CLA
 - **Diabetes/prediabetes:** CLA may worsen insulin resistance; ask your doctor first [8][17]
 
 ## 6. Drug Interactions
 
 ### Antidiabetic Medications
 
-CLA reduced insulin sensitivity and raised fasting glucose in trials, which could work against glucose-lowering medicines [8][17]. People taking metformin, sulfonylureas, insulin or other glucose-lowering medicines should ask their doctor before using CLA.
-
-### Anticoagulants and Antiplatelet Agents
-
-If you take prescription medicines, check with your doctor or pharmacist before starting.
+Purified t10,c12 and c9,t11 CLA reduced insulin sensitivity in obese men, and in type 2 diabetes a 50:50 blend raised fasting glucose, which could work against glucose-lowering medicines [8][17][52]. People taking metformin, sulfonylureas, insulin or other glucose-lowering medicines should ask their doctor before using CLA.
 
 ### Lipid-Lowering Medications
 
-CLA has lowered HDL cholesterol and, in some trials, raised LDL cholesterol [26][38]. People taking statins or other lipid-lowering medicines should discuss CLA with their prescriber.
+In a 1-year trial, HDL cholesterol fell with one form of CLA and LDL cholesterol rose with the other, compared with levels at the start [26]. People taking statins or other lipid-lowering medicines should discuss CLA with their prescriber.
 
 ### General Recommendations
 
