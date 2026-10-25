@@ -638,5 +638,61 @@
   "reason": "AC7 host ecfr.gov ([253] 21 CFR 201.319, as in the prebiotics master); ratified in decisions.md (Weight-loss category fix committed b29e3675, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
   "by": "orchestrator",
   "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"If you have chest pain, a fast or irregular heartbeat, or blood pressure of 180/120 or higher, call your local emerge...\"",
+  "reason": "AC2 ruling 17 emergency line added by the green coffee recheck S2 decision (house wording, numbers included, WebMD 180/120 threshold); ratified in decisions.md (Integration stop resolved, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"If you have chest pain, a fast or irregular heartbeat, or blood pressure of 180/120 or higher, call your local emerge...\"",
+  "reason": "AC2 ruling 17 emergency line added by the green coffee recheck S2 decision (house wording, numbers included, WebMD 180/120 threshold); ratified in decisions.md (Integration stop resolved, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"If you have chest pain, a fast or irregular heartbeat, or blood pressure of 180/120 or higher, call your local emerge...\"",
+  "reason": "AC2 ruling 17 emergency line added by the green coffee recheck S2 decision (house wording, numbers included, WebMD 180/120 threshold); ratified in decisions.md (Integration stop resolved, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"If you have chest pain, a fast or irregular heartbeat, or blood pressure of 180/120 or higher, call your local emerge...\"",
+  "reason": "AC2 ruling 17 emergency line added by the green coffee recheck S2 decision (house wording, numbers included, WebMD 180/120 threshold); ratified in decisions.md (Integration stop resolved, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"180\": If you have chest pain, a fast or irregular heartbeat, or blood pressure of 180/120 or higher, call your local emerge...",
+  "reason": "AC2 ruling 17 emergency line added by the green coffee recheck S2 decision (house wording, numbers included, WebMD 180/120 threshold); ratified in decisions.md (Integration stop resolved, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "african-mango-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[65] raw_quote shares no number with its body_line: **Gastrointestinal effects:** The seed contains mucilage [20], a soluble fiber. Fiber supplements...",
+  "reason": "AC2 African mango mucilage entries re-filed to [20] Kothari by the recheck nit 2 decision; the quote carries no number (the 150 mg token has its own entry); ratified in decisions.md (Integration stop resolved, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "african-mango-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[67] raw_quote shares no number with its body_line: The seed contains mucilage [20]. Soluble fibers can form a gel in the gut that may slow or reduce...",
+  "reason": "AC2 African mango mucilage entries re-filed to [20] Kothari by the recheck nit 2 decision; the quote carries no number (the 150 mg token has its own entry); ratified in decisions.md (Integration stop resolved, Ratified line) (orchestrator 2026-10-26, masters-new-13).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
  }
 ]
