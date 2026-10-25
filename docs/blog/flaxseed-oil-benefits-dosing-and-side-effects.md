@@ -23,7 +23,7 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 - Some studies suggest flaxseed is possibly unsafe in pregnancy, though the evidence is not conclusive, and little is known about flaxseed oil in pregnancy or breastfeeding [2]. In one study, evening primrose oil taken late in pregnancy may have been linked to more labour complications [58].
 - Anaphylaxis after eating linseed (flaxseed) has been reported [38][65]. For trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - Do not eat raw or unripe flaxseeds; they may contain potentially toxic compounds [2].
-- Some studies linked higher ALA intake with prostate cancer, but later pooled analyses did not confirm it; men with or at risk of prostate cancer should talk to their doctor [35][61].
+- Some studies linked higher ALA intake with prostate cancer, but a later pooled analysis found the link weak, and absent after correcting for publication bias [35][61]; men with or at risk of prostate cancer should talk to their doctor.
 - Higher doses of flaxseed oil supplements may cause bloating, fullness and diarrhea [2].
 
 ## Brad's videos on this topic
@@ -80,7 +80,7 @@ In a 2004 meta-analysis of cohort studies, high ALA intake was linked to less fa
 
 In a randomized, double-blind crossover trial in 15 Japanese men, 10 g of flaxseed oil (5.49 g ALA) taken at dinner each day for 12 weeks lowered small dense LDL cholesterol, which corn oil did not [13]. Apolipoprotein B was also lower in the flaxseed oil period at 12 weeks, and the fall in small dense LDL was marked in men with triglycerides over 100 mg/dl [13].
 
-In healthy adults, 6 g of ALA a day for 4 weeks, from ground flaxseed or flaxseed oil, did not change total, LDL or HDL cholesterol. Of the two age groups (18-29 or 45-69 years), only the younger saw triglycerides fall [15]. A 2009 meta-analysis of 28 randomized trials found that whole flaxseed lowered total and LDL cholesterol by 0.21 and 0.16 mmol/L, but flaxseed oil did not; the falls were larger in women, particularly after menopause, and in people with high starting cholesterol [63].
+In healthy adults, 6 g of ALA a day for 4 weeks, from ground flaxseed or flaxseed oil, did not change total, LDL or HDL cholesterol. Of the two age groups (18-29 or 45-69 years), only the younger saw triglycerides fall [15]. A 2009 meta-analysis of 28 randomized trials found that whole flaxseed lowered total and LDL cholesterol by 0.21 and 0.16 mmol/L, but flaxseed oil did not; falls with flaxseed overall were larger in women after menopause and in people with high cholesterol [63].
 
 #### Blood Pressure
 
@@ -124,7 +124,7 @@ The American Academy of Neurology's 2022 guideline update on painful diabetic ne
 
 ### Cyclic Mastalgia (Breast Pain) — GLA
 
-In a 6-month randomized trial in 85 women with cyclical breast pain, evening primrose oil (3,000 mg per day), vitamin E, or both improved worst pain from baseline while placebo did not. Compared directly with placebo, the decreases were not statistically significant, and only 41 women completed the study [24]. In a later randomized trial in 126 premenopausal women, evening primrose oil (1000 mg twice daily) reduced breast pain more than placebo, and it worked best combined with vitamin E [64].
+In a 6-month randomized trial in 85 women with cyclical breast pain, evening primrose oil (3,000 mg per day), vitamin E, or both improved worst pain from baseline while placebo did not. Compared directly with placebo, the decreases were not statistically significant, and only 41 women completed the study [24]. In a small randomized trial in 126 premenopausal women, evening primrose oil (1000 mg twice daily) reduced breast pain more than placebo, and it worked best combined with vitamin E [64].
 
 ### Eczema — GLA
 
@@ -199,7 +199,7 @@ Limited amounts of flaxseed oil supplements may be safe for short-term use, up t
 
 Do not eat raw or unripe flaxseeds; they may contain potentially toxic compounds [2].
 
-### Seizure Risk with GLA
+### Epilepsy and GLA Oils
 
 Older drug references listed epilepsy as a reason for caution with evening primrose oil, based on two reports from the early 1980s; a 2007 review judged the link spurious [57]. Mention it to your doctor if you have epilepsy.
 
@@ -245,7 +245,7 @@ If you take any medicine, talk with your health care provider before using flaxs
 
 ### Seizure Medications
 
-If you take anti-seizure medicine, see Seizure Risk with GLA.
+If you take anti-seizure medicine, see Epilepsy and GLA Oils.
 
 ## 7. Dietary Sources
 
