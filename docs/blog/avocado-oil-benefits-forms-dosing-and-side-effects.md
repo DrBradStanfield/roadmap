@@ -8,14 +8,14 @@ tags: ["Supplements"]
 keywords: ["avocado oil", "monounsaturated fat", "oleic acid", "cholesterol", "ldl", "hdl", "triglycerides", "heart health", "cardiovascular", "skin", "cooking oil", "olive oil", "seed oil", "inflammation", "blood pressure", "diabetes", "insulin resistance", "obesity", "weight loss", "vitamin e", "lutein", "Mediterranean diet", "smoke point", "phytosterols", "beta-sitosterol"]
 summary: "Avocado oil is mostly monounsaturated fat. Heart and cancer effects rest on lab and animal studies; human trials used whole avocado, with mixed cholesterol results. In one small trial it boosted carotenoid absorption from salad. Talk to your doctor first if you take warfarin or have a latex allergy."
 reviewed: "2026-10-26"
-sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/34146454/","checked":"2026-10-26","fingerprint":"sha256:b8844b084d6f07c677ec6024d7655894a1f5f1411b1d8a988a9710c39594903d"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/foods-help-unclog-arteries","checked":"2026-10-26","fingerprint":"publishedAt:2024-09-10T20:19:42Z"}]
+sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/34146454/","checked":"2026-10-26","fingerprint":"sha256:b8844b084d6f07c677ec6024d7655894a1f5f1411b1d8a988a9710c39594903d"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/avocado-oil-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/avocado-oil-benefits-forms-dosing-and-side-effects)*
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. Brad recommends swapping saturated fats for unsaturated ones such as avocados and extra-virgin olive oil; he has not discussed avocado oil itself ([Brad, 10 Sep 2024](https://drstanfield.com/blogs/articles/foods-help-unclog-arteries)). Avocado oil is about 71% monounsaturated fat, but its effects on cancer, diabetes and heart disease have been shown in laboratory and animal studies, not in people [9][63]. Human trials have mostly used whole avocado, with mixed results: one meta-analysis found lower LDL cholesterol, another found no change in LDL but a small rise in HDL, and the large HAT trial found only modest cholesterol falls and no drop in visceral fat [27][28][60]. In one small trial, adding 24 g of avocado oil to a salad raised absorption of lutein, alpha-carotene and beta-carotene, much as whole avocado did [61]. Avocado has been reported to weaken the effect of warfarin, and people with latex allergy may also react to avocado [47][48][54].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Avocado oil is about 71% monounsaturated fat, but its effects on cancer, diabetes and heart disease have been shown in laboratory and animal studies, not in people [9][63]. Human trials have mostly used whole avocado, with mixed results: one meta-analysis found lower LDL cholesterol, another found no change in LDL but a small rise in HDL, and the large HAT trial found only modest cholesterol falls and no drop in visceral fat [27][28][60]. In one small trial, adding 24 g of avocado oil to a salad raised absorption of lutein, alpha-carotene and beta-carotene, much as whole avocado did [61]. Avocado has been reported to weaken the effect of warfarin, and people with latex allergy may also react to avocado [47][48][54].
 
 ## Key safety points
 
@@ -23,7 +23,7 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 - About 30 to 50% of people allergic to latex react to some plant foods, avocado among them [48]. Reactions to eating avocado have included anaphylaxis, sometimes in people without latex allergy [47][49]. For trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - Avocado oil in a sunscreen caused contact allergy in a case report [50].
 - Avocado oil is pure fat and high in calories [5][6]. Use it in place of other fats rather than on top of them [27].
-- Avocado poisoning has been reported in pet birds, rabbits and other animals. Keep avocado and its oil away from pet birds and rabbits [67].
+- Avocado poisoning has been reported in pet birds, rabbits and other animals. Keep avocado away from pet birds and rabbits [67].
 
 ## Brad's videos on this topic
 
@@ -196,7 +196,7 @@ No upper intake limit has been established specifically for avocado oil. As with
 
 ### Persin Content
 
-Persin, found in all parts of the avocado plant, causes avocado poisoning in some animals, including parrots, ostriches, sheep, goats, dogs and rabbits, and has been linked to heart damage in horses [67][68]. These reports are in animals. Keep avocado and its oil away from pet birds and rabbits [67].
+Persin, found in all parts of the avocado plant, causes avocado poisoning in some animals, including parrots, ostriches, sheep, goats, dogs and rabbits, and has been linked to heart damage in horses [67][68]. These reports are in animals. Keep avocado away from pet birds and rabbits [67].
 
 ### Caloric Density
 
@@ -220,7 +220,7 @@ The report concerned the fruit, and avocado oil itself has not been studied. If 
 
 ### Vitamin K Content
 
-Avocado fruit contains vitamin K1, about 14 micrograms in half an avocado [9]. The amount in the oil is not well documented. No mechanism was established for the avocado report.
+Avocado fruit contains vitamin K1, about 14 micrograms in half an avocado [9]. The amount in the oil is not well documented.
 
 ### Fat-Soluble Medication Absorption
 
