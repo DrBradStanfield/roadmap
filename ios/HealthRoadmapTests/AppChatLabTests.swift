@@ -220,7 +220,7 @@ final class AppChatLabTests: XCTestCase {
 
     /// A folder's originals are the files themselves, read again when saved: no bytes
     /// mapped from a picked folder outlive the picker's access (US-52 AC13d).
-    func testAFoldersOriginalsAreStillReadableAfterTheRead() throws {
+    func testAFoldersOriginalsAreStillReadableAfterTheRead() async throws {
         let folder = FileManager.default.temporaryDirectory.appending(path: "Picked \(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder.appending(path: "sub"), withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -228,7 +228,7 @@ final class AppChatLabTests: XCTestCase {
         let png = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).pngData { _ in }
         try pdf.write(to: folder.appending(path: "a.pdf"))
         try png.write(to: folder.appending(path: "sub/b.png"))
-        let documents = try LabFileReader.documents(inFolder: folder)
+        let documents = try await LabFileReader.documents(inFolder: folder)
         XCTAssertEqual(documents.map { $0.original?.verifiedData() }, [pdf, png])
         XCTAssertEqual(documents.map { $0.original?.mimeType }, ["application/pdf", "image/png"])
         for document in documents {

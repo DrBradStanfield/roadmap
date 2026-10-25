@@ -27,6 +27,10 @@ Add your height, weight, blood pressure and blood tests. Apple Health can fill i
 the vitals, and you can upload a lab report from your phone, Dropbox or Google
 Drive. The app reads it and asks you to confirm each value before saving it.
 
+If you allow it, My data also shows your heart rate, resting heart rate, sleep, VO2
+max and steps from Apple Health, with a chart for each. They are shown from Apple
+Health and never kept: they stay out of your record and never leave your iPhone.
+
 Your plan shows what to discuss with your doctor: screening tests that are due,
 blood pressure and cholesterol targets, and medicines that guidelines suggest for
 people with numbers like yours. Each step shows the guideline it comes from and the
@@ -62,11 +66,16 @@ three together. Brad's rule (2026-10-22): over-declare rather than under-declare
   upload send data through our server to Anthropic. The record itself never leaves the
   phone except to the user's own Dropbox or Google Drive, which is not collection by us.
 - **Health & Fitness > Health.** Collected. The record summary each chat question carries
-  (including values from Apple Health), and the lab values read from an uploaded report.
-  Purpose: App Functionality only. Linked to the user's identity: Yes, because an uploaded
-  report carries the patient's name and Anthropic may keep API inputs for a time. Used for
-  tracking: No.
-- **Health & Fitness > Fitness.** Not collected. The app reads no workouts or motion data.
+  (including values imported from Apple Health), and the lab values read from an uploaded
+  report. Purpose: App Functionality only. Linked to the user's identity: Yes, because an
+  uploaded report carries the patient's name and Anthropic may keep API inputs for a time.
+  Used for tracking: No. Heart rate, resting heart rate, sleep and VO2 max are not part of
+  this: the app reads them from Apple Health and shows them on the phone, never in the
+  record, and they never leave the device (Apple counts data as collected only when it
+  leaves the device).
+- **Health & Fitness > Fitness.** Not collected. The app reads steps from Apple Health and
+  shows them on the phone; they are never kept and never leave the device. It reads no
+  workouts and no motion sensor data.
 - **User Content > Other User Content.** Collected. Chat questions and the conversation so
   far, and the pages of an uploaded lab report. Purpose: App Functionality only. Linked:
   Yes, for the same reason. Tracking: No.
@@ -114,10 +123,19 @@ declares the three rows below; declare them as written.
   guidelines (each step cites them), shows a medical disclaimer on the first screen
   and under every plan, and tells users to talk to their doctor. It does not diagnose,
   dose or measure anything with the phone's sensors.
+- Apple Health (guideline 2.5.1): the app imports Health values into the person's
+  record and writes typed values back. Separately, from My data ("Show from Apple
+  Health", or "Reconnect" after a refusal), it asks to read heart rate, resting heart
+  rate, sleep, VO2 max and steps; once the sheet has been answered, Reconnect opens
+  Settings instead. These five are shown from Apple Health, never kept: the app reads them each
+  time a card or chart shows, holds them in memory while it is open, and never saves or
+  sends them. To see them on a device without a watch, add sample data in the Health
+  app first.
 - Guideline 5.1.3: HealthKit data is not used for advertising or marketing, not sold,
   and not stored in iCloud by us. It reaches our server only inside the record summary
   a chat question carries, after the user agrees to the chat; the server keeps no copy
-  (privacy policy, "Chat").
+  (privacy policy, "Chat"). The five readings shown from Apple Health are not in the
+  record, so they never reach the server.
 
 ## Before submission (Brad)
 

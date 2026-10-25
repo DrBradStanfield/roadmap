@@ -223,8 +223,9 @@ actor HealthEngine {
         try await settle(callValue(name, arguments))
     }
 
-    /// Calls an engine function that returns a Promise of something other than
-    /// text (an object holding an ArrayBuffer), and answers what `read` makes of it.
+    /// Calls an engine function that returns a Promise, and answers what `read` makes
+    /// of the settled value on the engine's queue (the cloud doors' `stamped`: the
+    /// answer's text and the order it resolved in).
     func callAsync<T: Sendable>(_ name: String, _ arguments: [Any], read: @escaping (JSValue) -> T) async throws -> T {
         try await settle(callValue(name, arguments), read: read)
     }

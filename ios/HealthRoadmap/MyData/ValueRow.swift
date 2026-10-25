@@ -43,30 +43,11 @@ struct ValueRow: View {
         .contentShape(Rectangle())
     }
 
+    /// The card's day as Apple Health's cards write it: Today, Yesterday, then the date (AC17).
     private func cardBody(_ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // Name over day at accessibility sizes, where one line would squeeze.
-            LabelValue.layout(textSize).callAsFunction {
-                Text(label).font(.subheadline.weight(.semibold))
-                Spacer()
-                HStack {
-                    if let day {
-                        Text(DayText.short(day)).font(.footnote).foregroundStyle(.secondary)
-                    }
-                    Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
-                        .accessibilityHidden(true)
-                }
-            }
-            HStack(alignment: .bottom) {
-                CardValue(value: value, unit: unit, bounces: bounces)
-                Spacer(minLength: 12)
-                if !textSize.isAccessibilitySize {
-                    Sparkline(points: trend, tint: tint, size: CGSize(width: 110, height: 40))
-                }
-            }
+        CardShell(label: label, when: day.map { DayText.when(day: $0, now: .now, calendar: .autoupdatingCurrent) }, trend: trend, tint: tint) {
+            CardValue(value: value, unit: unit, bounces: bounces)
         }
-        .padding(.vertical, 4)
-        .accessibilityElement(children: .combine)
     }
 
     private var rowBody: some View {
@@ -146,6 +127,42 @@ struct ValueRow: View {
         } else {
             Text("Add").foregroundStyle(Color.accentColor)
         }
+    }
+}
+
+/// An Apple Health card (AC17), shared by a vital's card and US-56's live cards: the plain
+/// name, its day or time and a chevron on top; the value large with a larger trend in the
+/// metric's colour beside it. VoiceOver reads it as one element, chevron left out. Name
+/// over day at accessibility sizes, where one line would squeeze, and no trend.
+struct CardShell<Value: View>: View {
+    let label: String
+    let when: String?
+    let trend: [Double]
+    let tint: Color
+    @ViewBuilder let value: Value
+    @Environment(\.dynamicTypeSize) private var textSize
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            LabelValue.layout(textSize).callAsFunction {
+                Text(label).font(.subheadline.weight(.semibold))
+                Spacer()
+                HStack {
+                    if let when { Text(when).font(.footnote).foregroundStyle(.secondary) }
+                    Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+                        .accessibilityHidden(true)
+                }
+            }
+            HStack(alignment: .bottom) {
+                value
+                Spacer(minLength: 12)
+                if !textSize.isAccessibilitySize {
+                    Sparkline(points: trend, tint: tint, size: CGSize(width: 110, height: 40))
+                }
+            }
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
     }
 }
 

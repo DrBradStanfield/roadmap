@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { IMPORT_LIMITS } from './import-hints';
-import { convertValidationErrorsToUnits, healthInputSchema, METRIC_TYPES, labImportPageSchema, medicationSchema, screeningSchema, profileUpdateSchema, measurementSchema, validateInputValue, isBirthYearClearlyInvalid, sanitizeInputs, excludedInputFields } from './validation';
+import { convertValidationErrorsToUnits, getValidationErrors, validateHealthInputs, healthInputSchema, METRIC_TYPES, labImportPageSchema, medicationSchema, screeningSchema, profileUpdateSchema, measurementSchema, validateInputValue, isBirthYearClearlyInvalid, sanitizeInputs, excludedInputFields } from './validation';
 import { UNIT_DEFS } from './units';
 import { METRIC_TO_FIELD } from './mappings';
 
@@ -540,5 +540,17 @@ describe('US-12 AC13: labImportPageSchema caps a text page, not an image', () =>
   });
   it('still takes an image page of any length, as its base64 runs far past that', () => {
     expect(labImportPageSchema.safeParse({ type: 'image', content: 'A'.repeat(500_000), mimeType: 'image/jpeg' }).success).toBe(true);
+  });
+});
+
+describe('US-03 — form messages keep their words across the zod 4 upgrade', () => {
+  it('a missing height reads "Required", a missing sex the field\'s own sentence', () => {
+    const result = validateHealthInputs({});
+    expect(getValidationErrors(result.errors!)).toEqual({ heightCm: 'Required', sex: 'Please select male or female' });
+  });
+
+  it('an infinite number is refused by the range it breaks, as zod 3 did', () => {
+    const result = validateHealthInputs({ heightCm: Infinity, sex: 'male', ldlC: -Infinity });
+    expect(getValidationErrors(result.errors!)).toEqual({ heightCm: 'Height must be at most 250 cm', ldlC: 'LDL-c must be positive' });
   });
 });

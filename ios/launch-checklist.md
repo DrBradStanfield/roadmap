@@ -105,6 +105,9 @@ then. App Attest needs the paid team, so chat and upload wait for enrolment.
 - App Attest with a real device key.
 - Deleting the app's Apple Health samples, and the Export share sheet.
 - The document scanner on "+".
+- "+" then Files › Dropbox and Files › Google Drive, with each app installed: one file
+  and one folder from each. A file not yet on the phone should download first, and the
+  reading screen should count a folder's reports (US-52 AC10, 2026-10-25).
 - Whether Quick Start (phone to phone) leaves the record behind, as backups do.
 - Over-the-air updates on a prewarmed launch: no trial starts, no good release is marked
   bad (D3).

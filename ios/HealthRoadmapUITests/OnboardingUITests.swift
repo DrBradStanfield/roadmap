@@ -151,12 +151,13 @@ final class OnboardingUITests: XCTestCase {
     static let tourLines = [
         "A snapshot of your health. Tap any tile to learn more.",
         "Start here. Each step comes with the reason and the evidence.",
-        "The more you add, the more personal your plan. A lab report fills these in for you.",
+        "The more data you add, the more personal your plan. You can upload lab reports to fill these in for you.",
     ]
 
-    /// US-57: after onboarding, the three tips in order, one at a time; a tap outside a
-    /// tip moves on as its x does; a tile explains itself; the last tip's action opens the
-    /// lab upload and ends the tour for good (AC1-AC7; review R2a, R5).
+    /// US-57: after onboarding, the three tips in order, one at a time, each with "Skip
+    /// tour", its counter and "Next"; tip 2's "Next" opens My data at Blood tests, where
+    /// tip 3's "Done" ends the tour for good; a tile explains itself (AC1-AC7; Brad
+    /// 2026-10-25, review R5).
     @MainActor
     func testTheTourWalksItsThreeTips_US57() throws {
         let app = launch(tips: true)
@@ -169,21 +170,43 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertTrue(snapshot.waitForExistence(timeout: 10), "tip 1 shows on My plan after onboarding")
         XCTAssertFalse(foundation.exists, "one tip at a time")
         XCTAssertTrue(app.buttons["Skip tour"].exists, "the tour can be skipped")
+        XCTAssertTrue(app.staticTexts["Tip 1 of 3"].exists, "VoiceOver reads the counter in words")
+        XCTAssertFalse(app.buttons["Close"].exists, "no x: Next and Skip tour do its work")
+        for name in ["Skip tour", "Next"] {
+            let frame = app.buttons[name].firstMatch.frame
+            XCTAssertGreaterThanOrEqual(frame.width, 44, "\(name) is a 44-point target (AC11, review R1)")
+            XCTAssertGreaterThanOrEqual(frame.height, 44, "\(name) is a 44-point target (AC11, review R1)")
+        }
         snap(app, "tour 1 snapshot")
-        closeTip(app)
+        tapNext(app)
         XCTAssertTrue(snapshot.waitForNonExistence(timeout: 5))
 
         XCTAssertTrue(foundation.waitForExistence(timeout: 10), "tip 2 follows tip 1")
+        XCTAssertTrue(app.staticTexts["Tip 2 of 3"].exists)
+        XCTAssertTrue(app.tabBars.buttons["My plan"].isSelected, "tip 2 is on My plan")
         snap(app, "tour 2 foundation")
-        // A tap outside the tip only dismisses it, and counts as closed (review R2a).
-        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08)).tap()
-        XCTAssertTrue(foundation.waitForNonExistence(timeout: 5))
-        // Its card on screen again: the tip does not come back. (Not by visiting My data:
-        // tip 3 would show there, and leaving the tab counts as closing it too.)
-        app.swipeDown()
-        XCTAssertFalse(foundation.waitForExistence(timeout: 3), "tip 2 does not come back: the tour moved on")
+        tapNext(app)
+
+        // Tip 2's Next crosses to My data and brings Blood tests into view: no swipe here.
+        XCTAssertTrue(bloodTests.waitForExistence(timeout: 10), "tip 3 shows at Blood tests on My data")
+        XCTAssertTrue(app.tabBars.buttons["My data"].isSelected, "Next opened My data")
+        XCTAssertTrue(app.staticTexts["Tip 3 of 3"].exists)
+        XCTAssertTrue(app.buttons["Add a lab report"].exists, "tip 3 keeps its lab upload")
+        snap(app, "tour 3 blood tests")
+        let done = app.buttons["Done"].firstMatch
+        XCTAssertTrue(done.exists, "the last tip's Next reads Done")
+        done.tap()
+        XCTAssertTrue(bloodTests.waitForNonExistence(timeout: 5), "Done ends the tour")
+        XCTAssertFalse(app.staticTexts["Add medical records"].waitForExistence(timeout: 2), "Done opens nothing")
+
+        // Back at the Blood tests header, on screen: the tour has ended (review R5).
+        app.tabBars.buttons["My plan"].tap()
+        app.tabBars.buttons["My data"].tap()
+        XCTAssertTrue(scrollTo(app.staticTexts["Blood tests"], in: app), "the header tip 3 anchors to is on screen")
+        XCTAssertFalse(bloodTests.waitForExistence(timeout: 3), "tip 3 never shows again")
 
         // Every tile explains itself, for good (AC5).
+        app.tabBars.buttons["My plan"].tap()
         let tile = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Ideal Body Weight'")).firstMatch
         for _ in 0..<4 where !tile.isHittable { app.swipeDown() }
         tile.tap()
@@ -191,21 +214,41 @@ final class OnboardingUITests: XCTestCase {
                       "the tile's what-it-is")
         snap(app, "tour tile explainer")
         app.buttons["Done"].tap()
+        XCTAssertFalse(snapshot.waitForExistence(timeout: 2), "tip 1 never shows again")
+    }
+
+    /// A tap outside a tip only dismisses it and counts as closed, so the tour moves on
+    /// without switching tabs (review R2a); tip 3 then waits for My data, which brings it
+    /// into view, and its action opens the lab upload and ends the tour (AC2, AC7).
+    @MainActor
+    func testATapOutsideMovesOnAndTipThreeOpensTheLabUpload_US57() throws {
+        let app = launch(tips: true)
+        try answerUpToWeight(app)
+        answerWeight(app)
+        let snapshot = app.staticTexts[Self.tourLines[0]]
+        let foundation = app.staticTexts[Self.tourLines[1]]
+        let bloodTests = app.staticTexts[Self.tourLines[2]]
+        XCTAssertTrue(snapshot.waitForExistence(timeout: 10))
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8)).tap()
+        XCTAssertTrue(snapshot.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(foundation.waitForExistence(timeout: 10), "a tap outside tip 1 moves on to tip 2")
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08)).tap()
+        XCTAssertTrue(foundation.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(app.tabBars.buttons["My plan"].isSelected, "a tap outside never switches tabs")
+        app.swipeDown()
+        XCTAssertFalse(foundation.waitForExistence(timeout: 3), "tip 2 does not come back: the tour moved on")
 
         app.tabBars.buttons["My data"].tap()
-        for _ in 0..<8 where !bloodTests.exists { app.swipeUp() }
-        XCTAssertTrue(bloodTests.waitForExistence(timeout: 10), "tip 3 shows at Blood tests on My data")
-        snap(app, "tour 3 blood tests")
+        XCTAssertTrue(bloodTests.waitForExistence(timeout: 10), "tip 3 shows once My data opens, scrolled into view")
         app.buttons["Add a lab report"].tap()
         XCTAssertTrue(app.staticTexts["Add medical records"].waitForExistence(timeout: 5), "the action opens the lab upload")
         snap(app, "tour lab upload")
         app.buttons["Close"].firstMatch.tap()
         XCTAssertTrue(app.staticTexts["Add medical records"].waitForNonExistence(timeout: 5))
-        // Back at the Blood tests header, on screen: the tour has ended (review R5).
         app.tabBars.buttons["My plan"].tap()
         app.tabBars.buttons["My data"].tap()
-        XCTAssertTrue(scrollTo(app.staticTexts["Blood tests"], in: app), "the header tip 3 anchors to is on screen")
-        XCTAssertFalse(bloodTests.waitForExistence(timeout: 3), "tip 3 never shows again")
+        XCTAssertTrue(scrollTo(app.staticTexts["Blood tests"], in: app))
+        XCTAssertFalse(bloodTests.waitForExistence(timeout: 3), "the upload ended the tour: tip 3 never shows again")
     }
 
     /// "Skip tour" ends it: with each later anchor on screen, no later tip shows (AC3, review R5).
@@ -225,8 +268,8 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts[Self.tourLines[2]].waitForExistence(timeout: 3), "no tip 3")
     }
 
-    /// At the largest accessibility text size a tip scrolls rather than clips, and its x
-    /// and its action stay reachable (AC11, review R3).
+    /// At the largest accessibility text size a tip scrolls rather than clips, and its
+    /// Skip tour, counter and Next stay reachable (AC11, review R3).
     @MainActor
     func testATipWorksAtTheLargestTextSize_US57() throws {
         let app = launch(textSize: "UICTContentSizeCategoryAccessibilityXXXL", tips: true)
@@ -238,10 +281,12 @@ final class OnboardingUITests: XCTestCase {
         let skip = app.buttons["Skip tour"]
         for _ in 0..<4 where !skip.isHittable { app.popovers.firstMatch.swipeUp() }
         XCTAssertTrue(skip.isHittable, "Skip tour can be reached")
-        let close = app.buttons["Close"].firstMatch
-        for _ in 0..<4 where !close.isHittable { app.popovers.firstMatch.swipeDown() }
-        XCTAssertTrue(close.isHittable, "the x can be reached")
-        close.tap()
+        let next = app.buttons["Next"].firstMatch
+        for _ in 0..<4 where !next.isHittable { app.popovers.firstMatch.swipeUp() }
+        XCTAssertTrue(next.isHittable, "Next can be reached")
+        XCTAssertTrue(app.staticTexts["Tip 1 of 3"].exists, "and the counter is there")
+        snap(app, "tour 1 snapshot AX5 controls")
+        next.tap()
         XCTAssertTrue(snapshot.waitForNonExistence(timeout: 5))
     }
 
@@ -306,12 +351,12 @@ final class OnboardingUITests: XCTestCase {
         return element.exists && element.isHittable
     }
 
-    /// Closes the tip on screen with its x.
+    /// Taps the tip's "Next".
     @MainActor
-    private func closeTip(_ app: XCUIApplication) {
-        let close = app.buttons["Close"].firstMatch
-        XCTAssertTrue(close.waitForExistence(timeout: 5), "the tip has its x")
-        close.tap()
+    private func tapNext(_ app: XCUIApplication) {
+        let next = app.buttons["Next"].firstMatch
+        XCTAssertTrue(next.waitForExistence(timeout: 5), "the tip has its Next")
+        next.tap()
     }
 
     /// The plan follows an edit made on My data while it was hidden (US-25 AC6): it
@@ -403,6 +448,9 @@ final class OnboardingUITests: XCTestCase {
         start.tap()
         let allow = app.buttons["onboarding.allow"]
         XCTAssertTrue(allow.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Next, Apple asks for access. Tap Turn On All, then Allow.")).firstMatch.exists,
+                      "the hint above the button says what Apple's sheet asks (Brad 2026-10-25)")
+        snap(app, "health hint")
         allow.tap()
         let sheet = XCUIApplication(bundleIdentifier: "com.apple.HealthPrivacyService")
         XCTAssertTrue(sheet.cells["UIA.Health.AuthSheet.AllCategoryButton"].waitForExistence(timeout: 10), "Apple's Health sheet appears")

@@ -6,8 +6,9 @@ import HealthKit
 protocol LiveHealthStore: Sendable {
     /// False where the device has no Health database (an iPad without Health, AC13).
     var isAvailable: Bool { get }
-    /// Whether Apple's sheet would still show for the five types (AC4).
-    func needsRequest() async -> Bool
+    /// Whether Apple's sheet would still show for the five types (AC4). Throws when iOS
+    /// cannot say (a locked phone, an error): the caller keeps what it knew (adversary R4).
+    func needsRequest() async throws -> Bool
     /// Shows Apple's sheet for reading exactly the five types (AC10).
     func requestAccess() async throws
     /// One point per `component` (an hour or a day) from `start` to `end`, HealthKit's own
@@ -16,21 +17,23 @@ protocol LiveHealthStore: Sendable {
     func points(_ metric: LiveMetric, from start: Date, to end: Date, every component: Calendar.Component) async throws -> [LivePoint]
     /// The metric's newest sample, however old: its value and when it ended. Each card
     /// starts from it, so a reading older than a card's trend still shows (Codex R2).
-    /// Sleep's value is 0: only its date is used.
-    func latest(_ metric: LiveMetric) async throws -> (value: Double, date: Date)?
+    /// Sleep has no value, only a date.
+    func latest(_ metric: LiveMetric) async throws -> (value: Double?, date: Date)?
     /// Sleep samples overlapping `start` to `end`.
     func sleep(from start: Date, to end: Date) async throws -> [SleepSegment]
 }
 
-enum LiveHealthError: Error, Equatable {
-    /// The phone is locked: Health's database is encrypted until it is unlocked (AC13).
-    case locked
-}
-
 /// The real `LiveHealthStore`. Its own `HKHealthStore`, apart from `HealthKitClient`, so
-/// US-54's six types and this story's five never share a request (AC4).
+/// US-54's six types and this story's five never share a request (AC4). Its calendar
+/// anchors the statistics' days and hours: the same one `LiveHealth` buckets and labels
+/// with, following the phone's zone as it travels (adversary R2).
 final class LiveHealthKitStore: LiveHealthStore {
     private let store = HKHealthStore()
+    let calendar: Calendar
+
+    init(calendar: Calendar = .autoupdatingCurrent) {
+        self.calendar = calendar
+    }
 
     /// The five types, and nothing else (AC10).
     static var readTypes: Set<HKObjectType> {
@@ -50,10 +53,8 @@ final class LiveHealthKitStore: LiveHealthStore {
     var isAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
 
     @concurrent
-    func needsRequest() async -> Bool {
-        // An error (unknown) shows the card: tapping it is harmless.
-        let status = try? await store.statusForAuthorizationRequest(toShare: [], read: Self.readTypes)
-        return status != .unnecessary
+    func needsRequest() async throws -> Bool {
+        try await Self.locking { try await store.statusForAuthorizationRequest(toShare: [], read: Self.readTypes) } != .unnecessary
     }
 
     @concurrent
@@ -63,13 +64,12 @@ final class LiveHealthKitStore: LiveHealthStore {
 
     @concurrent
     func points(_ metric: LiveMetric, from start: Date, to end: Date, every component: Calendar.Component) async throws -> [LivePoint] {
-        guard metric != .sleep, let type = Self.type(of: metric) as? HKQuantityType else { return [] }
-        let options: HKStatisticsOptions = switch metric {
-        case .steps: .cumulativeSum
-        case .heartRate: [.discreteMin, .discreteMax, .discreteAverage]
-        default: .discreteAverage
+        guard let type = Self.type(of: metric) as? HKQuantityType else { return [] }
+        let options: HKStatisticsOptions = switch metric.aggregation {
+        case .sum: .cumulativeSum
+        case .range: [.discreteMin, .discreteMax, .discreteAverage]
+        case .mean: .discreteAverage
         }
-        let calendar = Calendar.current
         let anchor = calendar.dateInterval(of: component, for: start)?.start ?? start
         var interval = DateComponents()
         interval.setValue(1, for: component)
@@ -81,7 +81,7 @@ final class LiveHealthKitStore: LiveHealthStore {
         var points: [LivePoint] = []
         collection.enumerateStatistics(from: start, to: end) { statistics, _ in
             let point = LivePoint(start: statistics.startDate,
-                                  value: (metric == .steps ? statistics.sumQuantity() : statistics.averageQuantity())?.doubleValue(for: unit),
+                                  value: (metric.aggregation == .sum ? statistics.sumQuantity() : statistics.averageQuantity())?.doubleValue(for: unit),
                                   low: statistics.minimumQuantity()?.doubleValue(for: unit),
                                   high: statistics.maximumQuantity()?.doubleValue(for: unit))
             if point.value != nil || point.low != nil { points.append(point) }
@@ -90,11 +90,11 @@ final class LiveHealthKitStore: LiveHealthStore {
     }
 
     @concurrent
-    func latest(_ metric: LiveMetric) async throws -> (value: Double, date: Date)? {
+    func latest(_ metric: LiveMetric) async throws -> (value: Double?, date: Date)? {
         if metric == .sleep {
             let descriptor = HKSampleQueryDescriptor(predicates: [.categorySample(type: HKCategoryType(.sleepAnalysis))],
                                                      sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)], limit: 1)
-            return try await Self.locking { try await descriptor.result(for: store) }.first.map { (0, $0.endDate) }
+            return try await Self.locking { try await descriptor.result(for: store) }.first.map { (nil, $0.endDate) }
         }
         guard let type = Self.type(of: metric) as? HKQuantityType else { return nil }
         let descriptor = HKSampleQueryDescriptor(predicates: [.quantitySample(type: type)],
@@ -128,7 +128,7 @@ final class LiveHealthKitStore: LiveHealthStore {
         }
     }
 
-    private static func unit(_ metric: LiveMetric) -> HKUnit {
+    static func unit(_ metric: LiveMetric) -> HKUnit {
         switch metric {
         case .heartRate, .restingHeartRate: .count().unitDivided(by: .minute())
         case .vo2Max: .literUnit(with: .milli).unitDivided(by: .gramUnit(with: .kilo).unitMultiplied(by: .minute()))
@@ -142,7 +142,7 @@ final class LiveHealthKitStore: LiveHealthStore {
         do {
             return try await read()
         } catch let error as HKError where error.code == .errorDatabaseInaccessible {
-            throw LiveHealthError.locked
+            throw HealthStoreError.locked
         }
     }
 }

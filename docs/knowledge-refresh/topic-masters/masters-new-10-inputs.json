@@ -1,0 +1,295 @@
+[
+ {
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-choline-review-choline.md",
+  "cl_raw_sha256": "fda27500d9afb24205b0a0e610c2b946ce3b72ed80f90e3394969dd72fa0eaea",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/choline-nih.md",
+  "nih_raw_sha256": "33b3558bc48be3eef3add1bf3fb0e3193f841679ea255a8347d4db4d7698e380",
+  "positions_candidates": [
+   {
+    "file": "docs/products.md",
+    "line": 3,
+    "text": "> **Current version: v8 (USA) / v8.5 (Australia) / v9 (UK, EU) / v7 (Canada).** Doses, forms and claims in this file are **v8**, the version shipping to USA customers via microvitamin.com, unless a market is named. **Australia** moved to v8"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 20,
+    "text": "- Cognition & Focus (COSMOS-aligned): Choline Bitartrate 181.5mg, Methylated B12 12mcg, Methylated Folate 200mcg DFE, full B-complex (B1 0.9mg, B2 0.975mg, Nicotinamide 16mg, B5 3.75mg, B6 1.275mg as P5P, Biotin 22.5mcg)"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 39,
+    "text": "Effective doses of Magnesium Taurate (126mg elemental; USA; Australia: see Regional Formula Differences), Hyaluronic Acid (200mg), TMG (500mg; USA; in Australia betaine is an excipient), and Choline (181.5mg, as choline bitartrate) physical"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 45,
+    "text": "The COSMOS (COcoa Supplement and Multivitamin Outcomes Study) trial randomized 21,442 US adults aged 60+ to a daily multivitamin vs placebo. A meta-analysis of three COSMOS cognitive substudies (5,203 non-overlapping participants across COS"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 80,
+    "text": "The smell is a normal characteristic of the active ingredients themselves, not a sign that anything is wrong. Our manufacturers have confirmed it comes from the combination of choline bitartrate, the B-vitamin complex, and vitamin D — these"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 306,
+    "text": "| Cognitive decline / brain fog | MicroVitamin or MicroVitamin+ Powder | COSMOS trial-aligned: choline, B-complex, methylated folate/B12. 10 customer reviews across all products (9 of them MicroVitamin) report improved mental clarity or foc"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 323,
+    "text": "- **Do NOT take both** — the Powder contains the full MicroVitamin core formula (US v8, 26 core ingredients, in every market except the Unflavored powder shipping to Europe, which is v9), so taking it with any MicroVitamin Capsules would do"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 428,
+    "text": "- All 26 core ingredients in MicroVitamin / MicroVitamin+: methylated B12 and folate, full B-complex, Vitamin K2 MK-7 90mcg, Vitamin D3 1,000IU, Magnesium Taurate 126mg, glycinate trace minerals, Lutein, Lycopene, Zeaxanthin, Choline Bitart"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 514,
+    "text": "**What stayed the same in v8:** Choline Bitartrate 181.5mg, TMG 500mg, Hyaluronic Acid 200mg, Magnesium Taurate 126mg, Methylated Folate 200mcg DFE, Methylated B12 12mcg, B1/B2/B5/B6/Biotin (75% RDA), Selenium 27.5mcg glycinate, Manganese 1"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 522,
+    "text": "Source of truth: the final AU label (`multivitamin/Manufacturing Australia/BJP laboratories/1 label v8.5/7 MicroVitamin v8.5 With Bleed Area copy.pdf`, LOT 45727, AUST L 524572) and BJP Laboratories product spec **PC2921.01** (`multivitamin"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 543,
+    "text": "Unchanged from v8: Choline 181.5mg, Hyaluronic Acid 200mg (sodium hyaluronate), Nicotinamide 16mg, B12 12mcg (mecobalamin), D3 1,000IU (encapsulated AlgeD3™), K2 90mcg (encapsulated K2VITAL® MK-7), Zinc 11mg glycinate, Copper 0.9mg glycinat"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 547,
+    "text": "**v8.5 vs the v7 sold in Australia (AUST L 509250, Lavida).** The public changelog compares v8.5 with AU v7, not with US v8, and AU v7 was not the international v7. Per the AU v7 label (`multivitamin/Manufacturing Australia/la-vida/2 label "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 557,
+    "text": "| CDP-Citicoline | 500 mg | + | **Replaces** choline bitartrate (181.5 mg choline in US v8) |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 581,
+    "text": "**Ingredient count:** 25 listed actives (the panel also lists the capsule shell, 600 mg vegetable cellulose, HPMC, TiO2-free; it is not an active). Not in v9: potassium, choline bitartrate (CDP-citicoline replaces it), peppermint leaf extra"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 583,
+    "text": "**UK v7 → v9** (UK v7 label, per `claude_business/docs/brief-assets/v9-listing-images/v7-v9-diff.md`): removed choline bitartrate (181.5 mg), potassium (99 mg, chloride) and peppermint leaf extract (50 mg); added CDP-citicoline 500 mg and z"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 585,
+    "text": "**EU v7 → v9** (EU v7 label, BHI Biohealth International, Germany: `multivitamin/Manufacturing EU/BHI Biohealth International GmbH (Germany)/3 label/2 8588672_MircoVitamin_205x75_V8 copy.pdf`, marked v7): removed choline bitartrate (181 mg "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 665,
+    "text": "| Choline (bitartrate) | v1–v8 181.5 mg · v9 **CDP-Choline 500 mg** |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 718,
+    "text": "Australia-specific release; full detail, sources and files in Regional Formula Differences → v8.5. In short: keeps the full v8 ingredient set and v8-era choline bitartrate and potassium (unlike v9), raises B1, B2, B5, B6, biotin, folate, vi"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 722,
+    "text": "Shipped to the UK and EU from 2026-10 (made in the UK by G&G Food Supplies); not yet shipped in the USA. The UK/EU label differs from this US spec (Regional Formula Differences → \"UK/EU v9 vs the US v9 spec\"). US spec: B1, B2, B5, B6, bioti"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 733,
+    "text": "- **Powder v9** (aligns with capsule v9): all capsule v9 dose/form changes, plus: magnesium 126 mg (30% RDA) → 224 mg (53% RDA) (capsules at 150 mg); collagen peptides 12,500 → 10,000 mg; psyllium husk (2,500 mg) → acacia fiber (5,000 mg) ("
+   },
+   {
+    "file": "docs/guideline/sleep.md",
+    "line": 236,
+    "text": "Doxepin 3–6 mg is FDA-approved specifically for sleep-maintenance insomnia. Mechanism: postsynaptic H1 histamine receptor antagonism at very low doses (minimal anticholinergic effects at these doses). Useful for middle-of-night and early mo"
+   },
+   {
+    "file": "docs/guideline/sleep.md",
+    "line": 254,
+    "text": "Diphenhydramine 25–50 mg and doxylamine 25 mg. Only modest evidence: diphenhydramine reduces sleep onset by ~8 minutes vs placebo. Tolerance develops with extended use. Anticholinergic effects are significant (confusion, delirium, urinary r"
+   },
+   {
+    "file": "docs/guideline/sleep.md",
+    "line": 426,
+    "text": "CBT-I is the treatment of choice in older adults. All BZRAs are considered potentially inappropriate in older adults per Beers Criteria (AGS 2019) due to elevated risk of falls, fractures, cognitive impairment, delirium, and prolonged effec"
+   }
+  ],
+  "positions_candidates_total": 23,
+  "posts": []
+ },
+ {
+  "handle": "chromium-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-chromium-supplements-chromium.md",
+  "cl_raw_sha256": "d4738075a29ebb5dcc025953d70c86edc3cdca7394c1782440006207f0816eb7",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/chromium-nih.md",
+  "nih_raw_sha256": "39efa66fc856ccc513c5f54c390717e56b201fbdeecfa521d83dc28ce314c6e7",
+  "positions_candidates": [
+   {
+    "file": "docs/products.md",
+    "line": 28,
+    "text": "- Trace Minerals (glycinate / amino-acid chelates — Albion® for selenium, copper, chromium; iodine is potassium iodide, not a chelate; the +43% bioavailability figure is zinc bisglycinate vs zinc gluconate, Gandia 2007): Zinc 11mg, Selenium"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 65,
+    "text": "Bioavailability refers to how much of a nutrient your body actually absorbs. MicroVitamin supplies zinc, selenium, copper, manganese and chromium as glycinate or amino-acid chelates rather than the cheaper oxide and gluconate forms common i"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 514,
+    "text": "**What stayed the same in v8:** Choline Bitartrate 181.5mg, TMG 500mg, Hyaluronic Acid 200mg, Magnesium Taurate 126mg, Methylated Folate 200mcg DFE, Methylated B12 12mcg, B1/B2/B5/B6/Biotin (75% RDA), Selenium 27.5mcg glycinate, Manganese 1"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 535,
+    "text": "| Chromium | 17.5 mcg glycinate | **35 mcg** (picolinate) | Dose and form change |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 547,
+    "text": "**v8.5 vs the v7 sold in Australia (AUST L 509250, Lavida).** The public changelog compares v8.5 with AU v7, not with US v8, and AU v7 was not the international v7. Per the AU v7 label (`multivitamin/Manufacturing Australia/la-vida/2 label "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 576,
+    "text": "| Chromium (Picolinate) | 35 mcg | 88% | US v8 17.5 mcg glycinate |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 583,
+    "text": "**UK v7 → v9** (UK v7 label, per `claude_business/docs/brief-assets/v9-listing-images/v7-v9-diff.md`): removed choline bitartrate (181.5 mg), potassium (99 mg, chloride) and peppermint leaf extract (50 mg); added CDP-citicoline 500 mg and z"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 585,
+    "text": "**EU v7 → v9** (EU v7 label, BHI Biohealth International, Germany: `multivitamin/Manufacturing EU/BHI Biohealth International GmbH (Germany)/3 label/2 8588672_MircoVitamin_205x75_V8 copy.pdf`, marked v7): removed choline bitartrate (181 mg "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 587,
+    "text": "**UK/EU v9 vs the US v9 spec** (the v9 columns and Version 9 entry in the changelog below, formula file 16): the UK/EU label differs in magnesium (126 mg, not 150 mg), vitamin B1 form (thiamine HCl, not mononitrate), boron form (sodium bora"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 651,
+    "text": "| Chromium | v1–v2 — · v3–v6 17.5 mcg picolinate (50%) · v7–v8 17.5 mcg **glycinate** · v9 **35 mcg glycinate (100%)** |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 686,
+    "text": "Initial formula. Tablets, serving size TBD (moved to 5/serving at v3). B-vitamins at 50% RDA, B12 at 1200 mcg, TMG at 1000 mg; no selenium, copper, manganese, chromium, boron, lutein, or lycopene. Formula file: `multivitamin/formulas/3 form"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 694,
+    "text": "Increased niacin 35→50 mg and switched niacin → nicotinamide; added selenium (41.25 mcg, 75% RDA, selenocysteine), copper (0.45 mg, 50% RDA, cupric sulfate), manganese (1.15 mg, 50% RDA, manganese citrate), chromium (17.5 mcg, 50% RDA, chro"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 710,
+    "text": "B6 → P5P (pyridoxal-5-phosphate); selenium selenocysteine → selenium glycinate; copper cupric sulfate → copper bisglycinate; chromium picolinate → glycinate; peppermint leaf powder → peppermint leaf extract. Formula file: `multivitamin/form"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 718,
+    "text": "Australia-specific release; full detail, sources and files in Regional Formula Differences → v8.5. In short: keeps the full v8 ingredient set and v8-era choline bitartrate and potassium (unlike v9), raises B1, B2, B5, B6, biotin, folate, vi"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 722,
+    "text": "Shipped to the UK and EU from 2026-10 (made in the UK by G&G Food Supplies); not yet shipped in the USA. The UK/EU label differs from this US spec (Regional Formula Differences → \"UK/EU v9 vs the US v9 spec\"). US spec: B1, B2, B5, B6, bioti"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 731,
+    "text": "- **Powder v2** (aligns with capsule v7): same form changes as capsule v7 — B6 to P5P; chromium, selenium and copper to glycinate. File: `powder/formula/2 powder formula v2.xlsx`"
+   }
+  ],
+  "positions_candidates_total": 16,
+  "posts": [
+   {
+    "handle": "trace-minerals-vitamins-fad",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/trace-minerals-vitamins-fad.md",
+    "url": "https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad",
+    "publishedAt": "2025-01-07T00:08:13Z",
+    "title": "Trace Minerals in Vitamins: What Are They and Is It a Fad?",
+    "topic_mentions": 10,
+    "title_names_topic": false
+   }
+  ]
+ },
+ {
+  "handle": "quercetin-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-quercetin-supplements-quercetin.md",
+  "cl_raw_sha256": "20e889fb290344da8cb41719e8eeb2aff2d7c51f2c8b520f14e482fa30cb655b",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [
+   {
+    "file": "docs/products.md",
+    "line": 450,
+    "text": "- **Quercetin / Fisetin** — ITP trialed Fisetin and found no healthspan, lifespan, or senolytic activity."
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 830,
+    "text": "<p><strong>Quercetin/Fisetin:</strong></p>"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 831,
+    "text": "<p>The Interventions Testing Program trialed Fisetin, and unfortunately there was no healthspan, lifespan, or senolytic activity seen. Therefore in my opinion, the preclinical work does not support the use of Quercetin or Fisetin supplement"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 832,
+    "text": "<p>There are a number of human studies ongoing, and until we have robust, published data showing a benefit, neither Quercetin nor Fisetin is included here.  </p>"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 974,
+    "text": "<li>31<sup>st</sup> July 2026: Compliance rewrite. Removed the disease-protection promise from the Introduction. Reframed the Supplements section from a personal stack into an evidence summary, with the personal-use framing removed througho"
+   }
+  ],
+  "positions_candidates_total": 5,
+  "posts": [
+   {
+    "handle": "the-anti-aging-supplement-everyone-took-never-worked",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-anti-aging-supplement-everyone-took-never-worked.md",
+    "url": "https://drstanfield.com/blogs/articles/the-anti-aging-supplement-everyone-took-never-worked",
+    "publishedAt": "2026-07-01T12:00:00Z",
+    "title": "The Anti-Aging Supplement Everyone Took Never Worked",
+    "topic_mentions": 5,
+    "title_names_topic": false
+   }
+  ]
+ },
+ {
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-glutamine-review-comparisons-glutamine.md",
+  "cl_raw_sha256": "7609960f05a8a569d1f008f82f3d6e0f35301d5515af213beb15963dd4e86de9",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [],
+  "positions_candidates_total": 0,
+  "posts": []
+ },
+ {
+  "handle": "acetyl-l-carnitine-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-acetyl-l-carnitine-supplements-review-acetyl-l-carnitine.md",
+  "cl_raw_sha256": "584db3a4d97fb2b230732c8fc5714f9ef84753496cd785cc67b54ba5853ee221",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/acetyl-l-carnitine-nih.md",
+  "nih_raw_sha256": "9c746d275ca48140731d7d04d7954bf10cba243d50bb14ba8532e50cd7a45120",
+  "positions_candidates": [],
+  "positions_candidates_total": 0,
+  "posts": []
+ }
+]

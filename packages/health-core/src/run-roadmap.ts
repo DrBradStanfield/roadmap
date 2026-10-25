@@ -15,7 +15,7 @@
  * run_roadmap round, every tool_use answered, the first reply replayed
  * unmodified (thinking signatures included), and no tools on the second call.
  */
-import { z } from 'zod';
+import * as z from './zod';
 import type { HealthInputs } from './types';
 import { reportedToCanonical, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
 import { FIELD_TO_METRIC } from './mappings';
@@ -136,7 +136,7 @@ const askUnit = (metric: MetricType, r: { valueSI: number; system: UnitSystem })
   r.valueSI < (UNIT_SWAP_FLOORS[metric] ?? -Infinity) || (r.system === 'si' && r.valueSI < (SI_ASK_UNIT_BELOW[metric] ?? -Infinity));
 /** The day of a value whose date could not be read: later than any real day, so it outdates every stated value. */
 const UNKNOWN_DAY = '9999-12-31';
-const measured = z.object({ value: z.number().finite(), unit: z.string().min(1).max(32) });
+const measured = z.object({ value: z.number(), unit: z.string().min(1).max(32) });
 /** A number, or a numeric string read as one (a model may send "16" for an integer field); NaN otherwise. */
 const numeric = (v: unknown) =>
   typeof v === 'number' ? v : typeof v === 'string' && /^\s*\d+(\.\d+)?\s*$/.test(v) ? Number(v) : NaN;

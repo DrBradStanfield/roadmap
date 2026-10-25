@@ -145,18 +145,20 @@ struct OnboardingView: View {
     }
 
     /// The last thing read before the tap: the two taps Apple's sheet asks for (AC3).
-    /// A hint, never a switch: no app can turn that sheet's switches on.
+    /// A hint, never a switch: no app can turn that sheet's switches on. In the accent
+    /// green, not pink: red read as something wrong (Brad 2026-10-25). Primary text on the
+    /// 12% wash; the icon in the accent clears 3:1 on it in both modes.
     private var appleAsksNext: some View {
         Label {
-            Text("Apple asks next: tap **Turn On All**, then **Allow**.")
+            Text(LocalizedStringKey(Self.appleAsksNextWords))
         } icon: {
-            Image(systemName: "hand.tap.fill").foregroundStyle(.pink)
+            Image(systemName: "hand.tap.fill").foregroundStyle(Color.accentColor)
         }
         .font(.subheadline)
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(Color.pink.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .padding(.bottom, 6)
         .accessibilityElement(children: .combine)
     }
@@ -453,6 +455,7 @@ struct OnboardingView: View {
     }
 
     /// Built once: the wheels redraw on every tick.
+    static let appleAsksNextWords = "Next, Apple asks for access. Tap **Turn On All**, then **Allow**."
     private static let months = Array(1...12)
     private static let birthYears = DayText.birthYears(now: .now)
 

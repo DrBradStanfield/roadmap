@@ -2,14 +2,12 @@ import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// "Add medical records" (US-52 AC7–AC13): where the report is (Dropbox, Google
-/// Drive, Files, Photos or the camera), then the file read on the phone, then consent
-/// before the first send, then each report sent and reviewed. The web twin is
-/// widget-src/src/components/UploadModal.tsx.
+/// "Add medical records" (US-52 AC7–AC13): where the report is (Files, Photos or the
+/// camera), then the file read on the phone, then consent before the first send, then
+/// each report sent and reviewed. The web twin is widget-src/src/components/UploadModal.tsx.
 struct LabUploadSheet: View {
     let engine: HealthEngine
     let store: RecordStore
-    let sync: CloudSync
 
     private enum Step {
         case choose
@@ -20,11 +18,8 @@ struct LabUploadSheet: View {
         case failed(String)
     }
 
-    private enum Source: Hashable { case dropbox, dropboxFolder(HealthEngine.CloudLabFolder), googleDrive }
-
     @Environment(\.dismiss) private var dismiss
     @State private var step = Step.choose
-    @State private var path: [Source] = []
     @State private var importing = false
     @State private var scanning = false
     @State private var picking = false
@@ -35,7 +30,7 @@ struct LabUploadSheet: View {
     @State private var work: Task<Void, Never>?
 
     var body: some View {
-        NavigationStack(path: $path) {
+        NavigationStack {
             content
                 .navigationTitle("Add medical records")
                 .navigationBarTitleDisplayMode(.inline)
@@ -50,16 +45,6 @@ struct LabUploadSheet: View {
                                 }
                             } label: { Image(systemName: "ellipsis.circle") }
                         }
-                    }
-                }
-                .navigationDestination(for: Source.self) { source in
-                    switch source {
-                    case .dropbox:
-                        dropbox(DropboxLabFolder.root)
-                    case .dropboxFolder(let folder):
-                        dropbox(folder)
-                    case .googleDrive:
-                        GoogleDriveLabFiles(sync: sync, browseFiles: browseFiles)
                     }
                 }
         }
@@ -113,50 +98,39 @@ struct LabUploadSheet: View {
 
     // MARK: Where the report is (AC10)
 
+    /// Files first: it reaches Dropbox, Google Drive and iCloud Drive through their apps,
+    /// and hands over only the file picked (Brad 2026-10-25). Then Photos and Scan.
     private var chooser: some View {
         List {
             Section { LabUploadExplainer() }
             Section {
-                NavigationLink(value: Source.dropbox) {
-                    SourceRow(title: "From Dropbox", symbol: "shippingbox",
-                              detail: "Pick a folder or files")
+                Button { importing = true } label: {
+                    SourceRow(title: "Files", symbol: "folder", detail: "A PDF, photo, ZIP or folder")
                 }
-                NavigationLink(value: Source.googleDrive) {
-                    SourceRow(title: "From Google Drive", symbol: "externaldrive", detail: "Pick a folder or files")
-                }
-                Button(action: browseFiles) {
-                    SourceRow(title: "A folder or ZIP", symbol: "folder", detail: "From Files or iCloud Drive")
-                }
-                Button { picking = true } label: {
-                    SourceRow(title: "From Photos", symbol: "photo.on.rectangle", detail: "A photo of a paper report")
-                }
-                if DocumentScanner.isAvailable {
-                    Button { scanning = true } label: {
-                        SourceRow(title: "Scan a paper report", symbol: "doc.viewfinder", detail: "Use the camera, one page at a time")
-                    }
-                }
+                .accessibilityIdentifier("labSource.files")
             } header: {
                 Text("Where are your medical records?")
+            } footer: {
+                Text("Files reaches Dropbox, Google Drive and iCloud Drive when their apps are on this iPhone. The app gets only the file you pick.")
+            }
+            Section {
+                Button { picking = true } label: {
+                    SourceRow(title: "Photos", symbol: "photo.on.rectangle", detail: "A photo of a paper report")
+                }
+                .accessibilityIdentifier("labSource.photos")
+                if DocumentScanner.isAvailable {
+                    Button { scanning = true } label: {
+                        SourceRow(title: "Scan", symbol: "doc.viewfinder", detail: "Use the camera, one page at a time")
+                    }
+                    .accessibilityIdentifier("labSource.scan")
+                }
             }
         }
-    }
-
-    private func browseFiles() {
-        importing = true
     }
 
     /// Runs a read or a send as the sheet's tracked work, which Close cancels.
     private func start(_ operation: @escaping @MainActor () async -> Void) {
         work = Task { await operation() }
-    }
-
-    /// One Dropbox folder: a folder opens in place, a file or the whole folder is read.
-    private func dropbox(_ folder: HealthEngine.CloudLabFolder) -> some View {
-        DropboxLabFiles(engine: engine, sync: sync, folder: folder,
-                        pick: { file in start { await read(dropbox: file) } },
-                        open: { inner in path.append(.dropboxFolder(inner)) },
-                        readAll: { folder in start { await read(dropboxFolder: folder) } },
-                        browseFiles: browseFiles)
     }
 
     // MARK: Reading, on the phone
@@ -166,7 +140,6 @@ struct LabUploadSheet: View {
     /// A second pick while one is under way (a double tap) is ignored (review R6).
     private func read(_ documents: () async throws -> [LabFileReader.Document]) async {
         guard case .choose = step else { return }
-        path = []
         step = .working("Reading the file on your iPhone")
         do {
             let read = try await documents()
@@ -182,11 +155,18 @@ struct LabUploadSheet: View {
         }
     }
 
+    /// A file or folder from Files. The picker's access closes once it is read, before
+    /// the engine names it; a folder counts its reports on the reading screen.
     private func read(file url: URL) async {
         await read {
-            let scoped = url.startAccessingSecurityScopedResource()
-            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-            let read = try await LabFileReader.decoded(picked: url)
+            let read: [LabFileReader.Document]
+            do {
+                let scoped = url.startAccessingSecurityScopedResource()
+                defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+                read = try await LabFileReader.decoded(picked: url) { done, total in
+                    step = .working("Reading report \(done + 1) of \(total)", .init(done: done, total: total, started: .now))
+                }
+            }
             return await engine.named(read)
         }
     }
@@ -195,39 +175,6 @@ struct LabUploadSheet: View {
         await read {
             guard let data = try await item.loadTransferable(type: Data.self) else { throw LabFileReader.Failure.unreadable("The photo") }
             return [try await LabFileReader.photo(data)]
-        }
-    }
-
-    /// A Dropbox file, refused before it downloads when it is over the web's limit.
-    private func read(dropbox file: HealthEngine.CloudLabFile) async {
-        guard case .choose = step else { return }
-        guard LabFileReader.fits(name: file.name, bytes: file.size) else {
-            path = []
-            step = .failed(LabFileReader.Failure.tooLarge(file.name).localizedDescription)
-            return
-        }
-        await read {
-            step = .working("Getting the file from Dropbox")
-            let fetched: (name: String, data: Data)
-            do {
-                fetched = try await engine.labFile(file)
-            } catch {
-                throw DropboxFailure(error)
-            }
-            // Read under the name Dropbox gives it now, not the one the list showed (re-check R3).
-            return await engine.named(try await LabFileReader.decoded(fetched.data, name: fetched.name))
-        }
-    }
-
-    /// A whole Dropbox folder (AC13c): every report in it and its folders, each file
-    /// downloaded by id as a tapped one is, the count shown on the reading screen.
-    private func read(dropboxFolder folder: HealthEngine.CloudLabFolder) async {
-        await read {
-            step = .working("Looking in \(folder.name)")
-            let read = try await engine.labFolderDocuments(folder) { done, total in
-                step = .working("Getting report \(done + 1) of \(total) from Dropbox", .init(done: done, total: total, started: .now))
-            }
-            return await engine.named(read)
         }
     }
 
@@ -261,30 +208,6 @@ struct LabUploadSheet: View {
             }
         }
         return Task.isCancelled ? nil : results
-    }
-}
-
-/// A Dropbox download that failed, in plain words: the engine's own refusal
-/// (`{"refused": "…"}`: not a listed lab file, empty, too large), or what the
-/// cloud failure means. The marker tells them apart, never the first character (re-check R1).
-struct DropboxFailure: LocalizedError {
-    let errorDescription: String?
-    /// The file is no longer where the listing put it.
-    var gone = false
-
-    init(_ error: Error) {
-        if let failure = error as? DropboxFailure {
-            self = failure
-        } else if case HealthEngine.EngineError.callFailed(let message) = error,
-           let object = try? JSONSerialization.jsonObject(with: Data(message.utf8)) as? [String: Any],
-           let words = object["refused"] as? String {
-            errorDescription = words
-            gone = object["gone"] as? Bool ?? false
-        } else if SyncProblem(error).kind == .signIn {
-            errorDescription = "Dropbox needs you to sign in again. Open From Dropbox to sign in."
-        } else {
-            errorDescription = "Dropbox could not be reached. Check the connection and try again."
-        }
     }
 }
 

@@ -18,25 +18,33 @@ final class LiveHealth {
     private(set) var cards: [LiveMetric: LiveCard] = [:]
     /// The cards have been read at least once since access.
     private(set) var hasRead = false
+    /// Counts returns to the app and unlocks: an open page reads again on each (Codex R1).
+    private(set) var wakes = 0
     /// A metric page is on screen, for Clarity's fixed screen name "Apple Health metric" (usage signal).
     var pagesOpen = 0
 
     @ObservationIgnored let store: any LiveHealthStore
     @ObservationIgnored let now: @Sendable () -> Date
+    /// One calendar for the days, nights and labels, following the phone's zone (adversary R2).
     @ObservationIgnored let calendar: Calendar
-    @ObservationIgnored private var reading = false
+    /// When the running read began; nil when none runs.
+    @ObservationIgnored private var started: ContinuousClock.Instant?
     @ObservationIgnored private var again = false
-    @ObservationIgnored private var unlock: NSObjectProtocol?
+    @ObservationIgnored private var lastWake: ContinuousClock.Instant?
+    @ObservationIgnored private var observers: [NSObjectProtocol] = []
 
-    init(store: any LiveHealthStore, now: @escaping @Sendable () -> Date = { .now }, calendar: Calendar = .current) {
+    init(store: any LiveHealthStore, now: @escaping @Sendable () -> Date = { .now }, calendar: Calendar = .autoupdatingCurrent) {
         self.store = store
         self.now = now
         self.calendar = calendar
         available = store.isAvailable
         guard available else { return }
-        // A locked phone's read keeps what was drawn; the unlock reads again (AC13).
-        unlock = NotificationCenter.default.addObserver(forName: UIApplication.protectedDataDidBecomeAvailableNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { _ = Task { await self?.refresh() } }
+        // A locked phone's read keeps what was drawn; the unlock reads again (AC13). A new day or
+        // a new time zone reads again too, so "Today" and the days move (N5).
+        observers = [UIApplication.protectedDataDidBecomeAvailableNotification, .NSCalendarDayChanged, .NSSystemTimeZoneDidChange].map { name in
+            NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.wake() }
+            }
         }
     }
 
@@ -44,26 +52,65 @@ final class LiveHealth {
     func requestAccess() async {
         guard available else { return }
         try? await store.requestAccess()
-        await refresh()
+        // The sheet's answer is new: always read after it, never folded into a running read (N2).
+        await refresh(force: true)
+    }
+
+    /// What the Reconnect button did (AC5b).
+    enum Reconnect { case asked, settings }
+
+    /// The Reconnect row's button (AC5b): Apple's sheet again while iOS would still show it.
+    /// Once it has been answered iOS never shows it again, so the caller opens Settings; the
+    /// return to the app reads again (`wake`).
+    func reconnect() async -> Reconnect {
+        guard (try? await store.needsRequest()) == true else { return .settings }
+        await requestAccess()
+        return .asked
+    }
+
+    /// Back in the app, or unlocked: the cards and an open page read again (AC2, AC13,
+    /// Codex R1). An unlock and a return land together, so a second one within about 2 s
+    /// is the same wake (E1).
+    func wake() {
+        guard available else { return }
+        let clock = ContinuousClock.now
+        if let lastWake, clock - lastWake < .seconds(2) { return }
+        lastWake = clock
+        wakes += 1
+        Task { await refresh() }
     }
 
     /// Checks whether the sheet is still due, then reads the cards, each time My data shows
-    /// (AC2). A refresh asked for during one runs once more after it.
-    func refresh() async {
+    /// (AC2). A refresh asked for during one runs once more after it, unless the running
+    /// read began under about 2 s before: its answer is as fresh (E1). `force` always runs it
+    /// once more (after Apple's sheet, N2). A cancelled read writes nothing (N1).
+    func refresh(force: Bool = false) async {
         guard available else { return }
-        if reading { again = true; return }
-        reading = true
-        defer { reading = false }
+        if let started {
+            if force || ContinuousClock.now - started >= .seconds(2) { again = true }
+            return
+        }
+        started = .now
+        defer { started = nil }
         repeat {
             again = false
-            let due = await store.needsRequest()
-            needsAccess = due
-            guard !due else { continue }
+            // A check that fails keeps what was known, so the access card never flashes (adversary R4).
+            let due = (try? await store.needsRequest()) ?? needsAccess
+            guard !Task.isCancelled else { return }
+            if needsAccess != due { needsAccess = due }
+            guard due == false else { continue }
             do {
-                cards = try await Self.readCards(store, now: now(), calendar: calendar)
-                hasRead = true
+                let read = try await Self.readCards(store, now: now(), calendar: calendar)
+                guard !Task.isCancelled else { return }
+                // Unchanged readings are not written, so nothing redraws (E5).
+                if cards != read { cards = read }
+                if !hasRead { hasRead = true }
+            } catch HealthStoreError.locked {
+                // Locked: keep what the last read drew (AC13), and let the unlock's wake through (N2).
+                lastWake = nil
             } catch {
-                // Locked: keep what the last read drew (AC13).
+                // Cancelled: keep what was drawn and mark nothing read (N1).
+                return
             }
         } while again
     }
@@ -74,13 +121,14 @@ final class LiveHealth {
     /// ago (Codex R2).
     @concurrent
     nonisolated static func readCards(_ store: any LiveHealthStore, now: Date, calendar: Calendar) async throws -> [LiveMetric: LiveCard] {
-        async let heart = card(store, .heartRate, now: now, calendar: calendar)
-        async let resting = card(store, .restingHeartRate, now: now, calendar: calendar)
-        async let sleep = card(store, .sleep, now: now, calendar: calendar)
-        async let vo2 = card(store, .vo2Max, now: now, calendar: calendar)
-        async let steps = card(store, .steps, now: now, calendar: calendar)
-        let read = try await [LiveMetric.heartRate: heart, .restingHeartRate: resting, .sleep: sleep, .vo2Max: vo2, .steps: steps]
-        return read.compactMapValues { $0 }
+        try await withThrowingTaskGroup(of: (LiveMetric, LiveCard?).self) { group in
+            for metric in LiveMetric.allCases {
+                group.addTask { (metric, try await card(store, metric, now: now, calendar: calendar)) }
+            }
+            var cards: [LiveMetric: LiveCard] = [:]
+            for try await (metric, card) in group { cards[metric] = card }
+            return cards
+        }
     }
 
     /// One metric's card, or nil when Health holds none of it.
@@ -88,30 +136,53 @@ final class LiveHealth {
         guard let latest = try await optional({ try await store.latest(metric) }) ?? nil else { return nil }
         let newest = min(latest.date, now)
         if metric == .sleep {
+            let today = calendar.startOfDay(for: now)
             let from = calendar.date(byAdding: .day, value: -15, to: newest) ?? newest
             let segments = try await optional { try await store.sleep(from: from, to: now) } ?? []
-            return LiveMaths.card(nights: LiveMaths.nights(segments, calendar: calendar))
+            if let card = LiveMaths.card(nights: LiveMaths.nights(segments, calendar: calendar), today: today) { return card }
+            // The newest sample was a nap after 6 pm, dated tomorrow, and the last real night is
+            // older than the fortnight (Codex R2, 2026-10-26): look back as far as a sleep page does.
+            guard !segments.isEmpty else { return nil }
+            let back = LiveHealth.pageStart(reaching: nil, back: 200, now: now, calendar: calendar)
+            let older = try await optional { try await store.sleep(from: back, to: now) } ?? []
+            return LiveMaths.card(nights: LiveMaths.nights(older, calendar: calendar), today: today)
         }
         let from = calendar.date(byAdding: .day, value: -29, to: calendar.startOfDay(for: newest)) ?? newest
         let days = try await days(store, metric, from: from, to: now)
         // Heart rate's card is its newest sample; its trend is the days' averages.
-        return LiveMaths.card(days: days, latest: metric == .heartRate ? latest : nil)
+        let sample = metric.aggregation == .range ? latest.value.map { (value: $0, date: latest.date) } : nil
+        return LiveMaths.card(days: days, latest: sample)
     }
 
-    /// A metric page's readings (AC7): a year and a bit by day, the last week by hour.
-    @concurrent
-    nonisolated static func readPage(_ store: any LiveHealthStore, _ metric: LiveMetric, now: Date, calendar: Calendar) async throws -> (days: [LivePoint], hours: [LivePoint]) {
-        let yearAgo = calendar.date(byAdding: .day, value: -400, to: calendar.startOfDay(for: now)) ?? now
-        let weekAgo = calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: now)) ?? now
-        async let days = days(store, metric, from: yearAgo, to: now)
-        async let hours = optional { try await store.points(metric, from: weekAgo, to: now, every: .hour) }
-        return try await (days, hours ?? [])
+    /// The first instant a page reads: `back` days before today, or the day of the card's
+    /// reading when that is older, so a page always holds its card's reading (Codex R2).
+    nonisolated static func pageStart(reaching reading: Date?, back: Int, now: Date, calendar: Calendar) -> Date {
+        let start = calendar.date(byAdding: .day, value: -back, to: calendar.startOfDay(for: now)) ?? now
+        return reading.map { min(start, calendar.startOfDay(for: $0)) } ?? start
     }
 
-    /// Sleep's page (AC9): the nights of the last six months and a bit.
+    /// A metric page's days (AC7): 400 days to now, back further to the card's reading.
+    /// Read only once the page leaves D (E4).
     @concurrent
-    nonisolated static func readNights(_ store: any LiveHealthStore, now: Date, calendar: Calendar) async throws -> [SleepNight] {
-        let from = calendar.date(byAdding: .day, value: -200, to: now) ?? now
+    nonisolated static func readDays(_ store: any LiveHealthStore, _ metric: LiveMetric, reaching reading: Date?, now: Date, calendar: Calendar) async throws -> [LivePoint] {
+        try await days(store, metric, from: pageStart(reaching: reading, back: 400, now: now, calendar: calendar), to: now)
+    }
+
+    /// D's hours (AC7): the day holding `day`, up to now, read as the person moves to it.
+    @concurrent
+    nonisolated static func readHours(_ store: any LiveHealthStore, _ metric: LiveMetric, day: Date, now: Date, calendar: Calendar) async throws -> [LivePoint] {
+        let start = calendar.startOfDay(for: day)
+        let end = min(calendar.date(byAdding: .day, value: 1, to: start) ?? now, now)
+        guard end > start else { return [] }
+        return try await optional { try await store.points(metric, from: start, to: end, every: .hour) } ?? []
+    }
+
+    /// Sleep's page (AC9): the nights of the last 200 days, back further to the card's
+    /// night (its sleep began the evening before the day it is dated).
+    @concurrent
+    nonisolated static func readNights(_ store: any LiveHealthStore, reaching night: Date?, now: Date, calendar: Calendar) async throws -> [SleepNight] {
+        let evening = night.flatMap { calendar.date(byAdding: .day, value: -1, to: $0) }
+        let from = pageStart(reaching: evening, back: 200, now: now, calendar: calendar)
         let segments = try await optional { try await store.sleep(from: from, to: now) } ?? []
         return LiveMaths.nights(segments, calendar: calendar)
     }
@@ -120,13 +191,18 @@ final class LiveHealth {
         try await optional { try await store.points(metric, from: from, to: to, every: .day) } ?? []
     }
 
-    /// A read that failed for any reason but a locked phone shows as no data; locked throws.
+    /// A read that failed for any reason but a locked phone or a cancelled task shows as no
+    /// data; those throw, so a cancelled read is never kept as "read, empty" (N1).
     private nonisolated static func optional<T: Sendable>(_ read: @Sendable () async throws -> T) async throws -> T? {
         do {
-            return try await read()
-        } catch LiveHealthError.locked {
-            throw LiveHealthError.locked
+            let value = try await read()
+            try Task.checkCancellation()
+            return value
+        } catch HealthStoreError.locked {
+            throw HealthStoreError.locked
         } catch {
+            try Task.checkCancellation()
+            if error is CancellationError { throw error }
             return nil
         }
     }

@@ -204,4 +204,9 @@ final class OnboardingStepsTests: XCTestCase {
             XCTAssertFalse(answer13, "no weight yet: written")
         }
     }
+
+    /// Brad 2026-10-25: the hint above "Connect Apple Health", short and in plain words.
+    func testTheAppleHealthHintSaysWhatToTap_AC3() {
+        XCTAssertEqual(OnboardingView.appleAsksNextWords, "Next, Apple asks for access. Tap **Turn On All**, then **Allow**.")
+    }
 }

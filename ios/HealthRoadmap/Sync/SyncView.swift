@@ -52,7 +52,7 @@ struct SyncView: View {
                 }
             }
         } footer: {
-            Text("You sign in on Dropbox's or Google's own page. The app sees only its own folder there. In Dropbox, that folder also takes lab reports: put a PDF or photo in it, then add it with +.")
+            Text("You sign in on Dropbox's or Google's own page. The app sees only its own folder there. To add a lab report from Dropbox or Google Drive, tap + and choose Files.")
         }
     }
 

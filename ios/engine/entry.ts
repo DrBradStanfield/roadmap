@@ -41,8 +41,6 @@ export function mergeJson(localJson: string, remoteJson: string, nowIso: string,
 // Cloud sync (cloud.ts): cloudOpen, cloudRefresh, cloudFlush, cloudClose, cloudErase and
 // documentSave answer a Promise; the rest answer at once.
 export { cloudClose, cloudEdit, cloudErase, cloudLabImport, cloudFlush, cloudHidden, cloudOpen, cloudRefresh, cloudVisible, documentSave } from './cloud';
-// Lab files from the Dropbox app folder (lab-files.ts), each async.
-export { labFile, labFolderFilesJson, labFolderJson } from './lab-files';
 // "Delete all my data" on the phone's own file (erase.ts); a cloud's is cloudErase.
 export { erasePhoneJson } from './erase';
 /** The `sourceFileName` of each file read, as JSON (US-52 AC13d): the document

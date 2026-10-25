@@ -38,8 +38,16 @@ enum ChartRange: String, CaseIterable, Identifiable {
         return allCases.first { $0.start(ending: last) <= first } ?? .year
     }
 
-    /// The value day closest to a scrubbing finger.
-    static func nearest(to date: Date, in days: [Date]) -> Date? {
-        days.min { abs($0.timeIntervalSince(date)) < abs($1.timeIntervalSince(date)) }
+    /// Whether a scrolling chart labels a tick: not within 6% of either visible edge, where
+    /// the label would be cut in half ("/lay" for May; review 2026-10-25). The tick and its
+    /// grid line still draw.
+    static func labels(_ date: Date, from start: Date, length: TimeInterval) -> Bool {
+        let margin = length * 0.06
+        return date >= start.addingTimeInterval(margin) && date <= start.addingTimeInterval(length - margin)
+    }
+
+    /// The item whose date (`by`: `\.self` for days) is closest to a scrubbing finger.
+    static func nearest<Item>(to date: Date, in items: [Item], by key: KeyPath<Item, Date>) -> Item? {
+        items.min { abs($0[keyPath: key].timeIntervalSince(date)) < abs($1[keyPath: key].timeIntervalSince(date)) }
     }
 }
