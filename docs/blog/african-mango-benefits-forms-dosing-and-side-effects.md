@@ -15,14 +15,14 @@ sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/31855111/","ch
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. Three small trials from one research group in Cameroon reported weight loss and lower cholesterol with African mango seed, its extract IGOB131 (150 mg twice daily before meals), or IGOB131 combined with *Cissus quadrangularis*, but a systematic review found reporting flaws in all three and judged the effect on weight unproven [7][8][9][10]. A 2020 meta-analysis of five trials found pooled falls in body weight, body fat and waist size, yet four trials had a high risk of bias and the one low-risk trial found no significant difference [16]. Side effects in the trials were minor, such as headache, sleep difficulty and gas [7][8][10][16], with similar rates on placebo [7], and no trial ran long enough to judge long-term safety [10][16].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Three small trials from one research group in Cameroon reported weight loss and lower cholesterol with African mango seed, its extract IGOB131 (150 mg twice daily before meals), or IGOB131 combined with *Cissus quadrangularis*, but a systematic review found reporting flaws in all three and judged the effect on weight unproven [7][8][9][10]. A 2020 meta-analysis of five trials found pooled falls in body weight, body fat and waist size, yet four trials had a high risk of bias and the one low-risk trial found no significant difference [16]. Side effects in the trials were minor, such as headache and sleep difficulty [10][16] and gas [7][8], with similar rates on placebo [7], and no trial ran long enough to judge long-term safety [10][16].
 
 ## Key safety points
 
 - Folk medicine uses the seeds as a blood thinner [14], and no study has tested African mango with warfarin or other anticoagulants. If you take prescription medicines, check with your doctor or pharmacist before starting.
 - Trials reported lower blood glucose with African mango [7][18], so it could add to the effect of diabetes medicines. If you take them, ask your doctor first and watch for signs of low blood sugar.
 - A 2014 case report on African mango is indexed on PubMed under drug-induced liver injury [22]. Stop taking it and see your doctor the same day if you notice yellow skin or eyes or dark urine.
-- Side effects reported in trials were minor, including headache, sleep difficulty and gas [7][8][10][16], at similar rates on placebo [7]. The trials were short, so long-term safety is unknown.
+- Side effects reported in trials were minor, including headache and sleep difficulty [10][16] and gas [7][8], at similar rates on placebo [7]. The trials were short, so long-term safety is unknown.
 
 ## Brad's videos on this topic
 
