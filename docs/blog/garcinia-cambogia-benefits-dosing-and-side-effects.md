@@ -19,11 +19,11 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 
 ## Key safety points
 
+- Case reports link garcinia products to severe liver injury, including liver failure needing a transplant, and LiverTox notes it can be fatal [7][25][26]. Stop it and see your doctor for abdominal pain, dark urine, tiredness or yellow skin or eyes; if yellow skin or eyes come with confusion, unusual drowsiness, or easy bleeding or bruising, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 - Garcinia has been linked to serotonin toxicity in a patient also taking SSRI antidepressants, and interactions with some drugs that affect serotonin have been reported [2][22][30]. Serotonin syndrome can be deadly: for tremor, a racing heart, a high temperature, agitation or severe confusion, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [36].
-- Case reports link garcinia products to severe liver injury, including liver failure that needed a transplant, and LiverTox notes it can be fatal [7][25][26]. Stop it and see your doctor for belly pain with nausea and vomiting [9]; for confusion or unusual drowsiness, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
-- Interactions with some drugs that affect the liver have been reported. If you take any medicine, talk to your doctor before using garcinia [2].
-- Mania has been reported in three people taking garcinia products [27][30].
-- Little is known about safety in pregnancy or breastfeeding, and all trials have been short, so long-term safety is unknown [2][30].
+- Interactions with some drugs that affect the liver have been reported; if you take any medicine, talk to your doctor first [2].
+- Mania, sometimes with psychosis, has been reported, including in people with no history of bipolar disorder [37][38]. If you have had mania or bipolar disorder, talk to your doctor before taking garcinia [37].
+- Little is known about safety in pregnancy or breastfeeding, and all trials were short, so long-term safety is unknown [2][30].
 - Reported side effects include headache, nausea, diarrhea and other gastrointestinal symptoms [2][30].
 
 ## Brad's videos on this topic
@@ -55,7 +55,7 @@ HCA in weight-loss supplements is typically bound to calcium, which Downs and co
 Human data on HCA absorption are sparse:
 
 - **Time course:** In four people who took 2 g of HCA, plasma HCA ranged from 0.8 micrograms/mL at 30 minutes to 8.4 micrograms/mL at 2 hours. The authors concluded that HCA is absorbed but present in small quantities in human plasma [11].
-- **Food effect:** A review of HCA-SX studies reported that it was better absorbed on an empty stomach [33].
+- **Food effect:** Preuss and colleagues' overview of the maker's own HCA-SX studies reported that it was better absorbed on an empty stomach [33].
 
 ### Mineral Content of Garcinia Supplements
 
@@ -117,7 +117,7 @@ Obese women on dietary control took 2.4 g of garcinia extract (50% HCA, 800 mg t
 
 **Golzarand et al. (2020): dose-response meta-analysis**
 
-This meta-analysis of eight trials (530 subjects) found that garcinia reduced weight by -1.34 kg (95% CI -2.62 to -0.07) compared with placebo, with smaller falls in BMI, body fat percentage and waist size [4]. An earlier meta-analysis that pooled nine trials found a small difference of -0.88 kg (95% CI -1.75 to -0.00), of uncertain clinical relevance [35].
+This meta-analysis of eight trials (530 subjects) found that garcinia reduced weight by 1.34 kg (95% CI 0.07 to 2.62) compared with placebo, with falls in BMI, body fat percentage and waist size [4]. An earlier meta-analysis that pooled nine trials found a small difference of -0.88 kg (95% CI -1.75 to -0.00), of uncertain clinical relevance [35].
 
 **Maunder et al. (2020): herbal medicines for weight loss**
 
@@ -159,7 +159,7 @@ One randomized trial in people has tested HCA:
 
 - **Cano García et al. (2023)**: In 81 patients with calcium stones having shock wave lithotripsy, every patient in the HCA group had stone fragmentation, while 17% of those on placebo did not (p = 0.03) [32].
 
-**Assessment:** The laboratory and animal results are promising, and one trial suggests HCA may help shock wave treatment break up calcium stones [32]. The authors of the Nature study concluded that their findings support exploring HCA as an alternative to citrate for treating kidney stones [18].
+**Assessment:** The laboratory and animal results are promising, and one trial suggests HCA may help calcium stone fragmentation with shock wave treatment [32]. The authors of the Nature study concluded that their findings support exploring HCA as an alternative to citrate for treating kidney stones [18].
 
 ### Serotonin Modulation
 
@@ -167,7 +167,7 @@ In rat brain tissue, an HCA extract (HCA-SX, Super CitriMax) inhibited serotonin
 
 ### Lipid Effects
 
-Beyond the triglyceride reduction found by Vasques et al. (2014), the effects of garcinia on blood lipids have been inconsistent. That trial found no significant change in total cholesterol, HDL or LDL [17]. An 8-week HCA-SX study reported lower total cholesterol, LDL and triglycerides and higher HDL [33].
+Beyond the triglyceride reduction found by Vasques et al. (2014), the effects of garcinia on blood lipids have been inconsistent. That trial found no significant change in total cholesterol, HDL or LDL [17]. Preuss and colleagues' overview of the maker's own HCA-SX studies reported lower total cholesterol, LDL and triglycerides and higher HDL in an 8-week study [33].
 
 ## 4. Recommended Dosing
 
@@ -185,9 +185,9 @@ Clinical trials of garcinia cambogia have used a range of doses, expressed as ex
 
 ### Timing and Administration
 
-- **Take on an empty stomach.** A review of HCA-SX studies reported that it was better absorbed without food [33].
-- **Take before meals.** Several trials gave doses 30-60 min before meals [15][33].
-- **Divide doses.** Several trials split the daily amount into three doses [10][17][33].
+- **Empty stomach:** Preuss and colleagues' overview of the maker's own HCA-SX studies reported that it was better absorbed without food [33].
+- **Before meals:** Trials gave it 30-60 min before meals [15][33].
+- **Divided doses:** Trials gave the daily amount in three doses [10][17][33].
 
 ### Typical Supplement Doses
 
@@ -214,7 +214,7 @@ These are generally mild [30]. In one trial within a meta-analysis, gastrointest
 
 ### Liver Toxicity — The Primary Safety Concern
 
-The most serious safety concern with garcinia cambogia is liver injury. The NIH weight-loss fact sheet cites reports of 10 cases of liver toxicity in people taking products containing garcinia, with one death and two liver transplants, though most of these products contained other botanicals and minerals as well [30]. LiverTox notes that this liver injury can be severe and even fatal [26]. If you take garcinia, stop it and see your doctor if you get belly pain with nausea and vomiting [9]. If confusion or unusual drowsiness develops, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+The most serious safety concern with garcinia cambogia is liver injury. The NIH weight-loss fact sheet cites reports of 10 cases of liver toxicity in people taking products containing garcinia, with one death and two liver transplants, though most of these products contained other botanicals and minerals as well [30]. LiverTox notes that this liver injury can be severe and even fatal [26]. If you take garcinia, stop it and see your doctor if you get abdominal pain, dark urine, tiredness or yellow skin or eyes. If yellow skin or eyes come with confusion, unusual drowsiness, or easy bleeding or bruising, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 #### Case Reports
 
@@ -247,9 +247,9 @@ Health agencies have responded to the liver reports:
 - **United States (FDA):** Lunsford and colleagues note that HCA is also found in weight-loss supplements that the FDA banned in 2009 for liver toxicity [7]. The LiverTox database maintained by the National Institute of Diabetes and Digestive and Kidney Diseases catalogues the hepatotoxicity evidence [26].
 - **NCCIH assessment:** The NIH's National Center for Complementary and Integrative Health states: "It may be unsafe to consume garcinia cambogia products, including multi-ingredient products containing garcinia cambogia extract. Several cases of liver damage have been reported. Some of these cases were severe, but this appears to be uncommon" [2].
 
-### Psychiatric Effects — Mania in Bipolar Disorder
+### Psychiatric Effects — Mania
 
-Supplements containing garcinia have been implicated in three cases of mania, which might have been caused by the serotonergic activity of HCA [27][30]. Symptoms included grandiosity (an unrealistic sense of superiority), irritability, pressured speech and a decreased need for sleep [30]. People who have had mania or have bipolar disorder should talk to their doctor before taking garcinia.
+Supplements containing garcinia have been implicated in three cases of mania, which might have been caused by the serotonergic activity of HCA [27][30]. Symptoms included grandiosity (an unrealistic sense of superiority), irritability, pressured speech and a decreased need for sleep [30]. Mania, sometimes with psychosis, has been reported, including in people with no history of bipolar disorder [38]. A 2018 systematic review counted four garcinia case reports, and three of those patients had a past history of bipolar disorder [37]. People who have had mania or have bipolar disorder should talk to their doctor before taking garcinia [37].
 
 ### Testicular Toxicity (Animal Data)
 
@@ -257,7 +257,7 @@ In a study that fed young, genetically obese male rats garcinia extract for 92 o
 
 ### Pregnancy and Breastfeeding
 
-Little is known about whether it is safe to use Garcinia cambogia during pregnancy or while breastfeeding [2]. Given the hepatotoxicity concerns and the lack of safety data, Garcinia supplements should be avoided during pregnancy and breastfeeding.
+Little is known about whether it is safe to use Garcinia cambogia during pregnancy or while breastfeeding [2]. With little known and the liver reports, it is best avoided.
 
 ## 6. Drug Interactions
 
@@ -269,7 +269,7 @@ The most important interaction concern involves SSRI (selective serotonin reupta
 
 **Mechanism:** In rat brain tissue, HCA-SX inhibited serotonin uptake much as SSRIs do, and serum serotonin rose in an 8-week human study [33][34]. Because SSRIs also raise serotonin, the combination may push serotonin activity too high.
 
-**Clinical implication:** People taking SSRI or SNRI antidepressants (such as escitalopram, sertraline, fluoxetine or venlafaxine), or other drugs that affect serotonin, should avoid garcinia unless their doctor advises otherwise [2][22]. Serotonin syndrome can be deadly; its features include tremor, overactive reflexes, a racing heart, a high temperature, agitation and delirium (severe confusion) [36]. If these appear, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+**Clinical implication:** Interactions with drugs that affect serotonin have been reported [2][22]. If you take an SSRI or SNRI antidepressant (such as escitalopram, sertraline, fluoxetine or venlafaxine) or another drug that affects serotonin, do not combine it with garcinia unless your doctor agrees. Serotonin syndrome can be deadly; its features include tremor, overactive reflexes, a racing heart, a high temperature, agitation and delirium (severe confusion) [36]. If these appear, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 ### Drugs Affecting the Liver
 
@@ -283,7 +283,7 @@ NCCIH notes that there are theoretical reasons to suspect garcinia cambogia migh
 
 | Drug Class | Interaction Type | Risk Level | Recommendation |
 |-----------|------|:---:|------|
-| SSRIs, SNRIs and other serotonin drugs | Serotonin toxicity reported | High | Avoid combination [2][22] |
+| SSRIs, SNRIs and other serotonin drugs | Serotonin toxicity reported [2][22] | High | Do not combine unless your doctor agrees |
 | Drugs affecting the liver | Interactions reported | Uncertain | Ask your doctor first [2] |
 | Other medicines | Theoretical | Uncertain | Check with your doctor or pharmacist [2] |
 
@@ -366,3 +366,7 @@ Other Garcinia species, such as kokum (Garcinia indica) and mangosteen (Garcinia
 [35] Onakpoya I, Hung SK, Perry R, Wider B, Ernst E. "The use of garcinia extract (hydroxycitric acid) as a weight loss supplement: a systematic review and meta-analysis of randomised clinical trials." *Journal of Obesity*. 2011;2011:509038. PMID: 21197150. [https://doi.org/10.1155/2011/509038](https://doi.org/10.1155/2011/509038)
 
 [36] Spadaro A, Scott KR, Koyfman A, Long B. "High risk and low prevalence diseases: Serotonin syndrome." *American Journal of Emergency Medicine*. 2022;61:90-97. PMID: 36057215. [https://pubmed.ncbi.nlm.nih.gov/36057215/](https://pubmed.ncbi.nlm.nih.gov/36057215/)
+
+[37] Bostock E, Kirkby K, Garry M, Taylor B, Hawrelak JA. "Mania Associated With Herbal Medicines, Other Than Cannabis: A Systematic Review and Quality Assessment of Case Reports." *Frontiers in Psychiatry*. 2018;9:280. PMID: 30034348. [https://doi.org/10.3389/fpsyt.2018.00280](https://doi.org/10.3389/fpsyt.2018.00280)
+
+[38] Nguyen DC, Timmer TK, Davison BC, McGrane IR. "Possible Garcinia cambogia-Induced Mania With Psychosis: A Case Report." *Journal of Pharmacy Practice*. 2019;32(1):99-102. PMID: 28982303. [https://doi.org/10.1177/0897190017734728](https://doi.org/10.1177/0897190017734728)
