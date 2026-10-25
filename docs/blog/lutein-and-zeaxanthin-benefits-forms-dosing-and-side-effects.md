@@ -6,7 +6,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["lutein", "zeaxanthin", "meso-zeaxanthin", "eye health", "macular degeneration", "vision", "blue light", "cataracts", "retina", "macula", "carotenoid", "lycopene", "vitamin c", "vitamin e", "zinc", "copper", "omega-3", "fish oil", "dha", "epa", "beta-carotene", "astaxanthin", "saffron", "cognitive", "brain health", "skin", "uv", "photoaging", "inflammation", "antioxidant", "aging", "longevity"]
-summary: "Lutein and zeaxanthin are the eye pigments that replaced beta-carotene in the AREDS2 formula (10 mg lutein, 2 mg zeaxanthin) for intermediate AMD, without its lung cancer signal. They raise macular pigment; brain benefits are unproven. Talk to your doctor first if you smoke or are pregnant."
+summary: "Lutein and zeaxanthin are the eye pigments that replaced beta-carotene in the AREDS2 formula for intermediate AMD, without its lung cancer signal. They raise macular pigment; brain benefits are unproven. Talk to your doctor first if you smoke or are pregnant."
 reviewed: "2026-10-26"
 sources: [{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine","checked":"2026-10-26","fingerprint":"publishedAt:2026-08-19T00:00:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial","checked":"2026-10-26","fingerprint":"publishedAt:2026-07-08T12:00:00Z"}]
 ---
@@ -15,13 +15,13 @@ sources: [{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/mul
 
 ## Current view (reviewed 26 October 2026)
 
-For eye health, Brad points to lutein and zeaxanthin as the pair that replaced beta-carotene in AREDS2, and the pair with the trial data behind them ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)). In AREDS2, lung cancer occurred in 2.0 per cent of people taking the older beta-carotene formula and 0.9 per cent of those on the newer one, mostly in former smokers, and head to head the lutein and zeaxanthin formula came out ahead on progression of the disease ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)). The AREDS2 dose was 10 mg lutein plus 2 mg zeaxanthin a day; the macular pigment trials used more (Brad's current guidance, 14 Oct 2026). The AREDS2 evidence is in people who already have intermediate AMD or late AMD in one eye, and for healthy adults the case rests on observational data and on trials that raise macular pigment, which is supportive but not definitive (Brad's current guidance, 14 Oct 2026). The eye effect is solid, but Brad calls the brain effect promising, not proven: the cognitive studies are small, and much of the research is funded by the companies that sell the ingredient ([Brad, 8 Jul 2026](https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial)). He offers this as a general idea to discuss with your doctor, and he does not see a role for vitamin A in a multivitamin, given the safety signals in the trials so far ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)).
+For eye health, Brad points to lutein and zeaxanthin as the pair that replaced beta-carotene in AREDS2, and the pair with the trial data behind them ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)). In AREDS2, lung cancer occurred in 2.0 per cent of people taking the older beta-carotene formula and 0.9 per cent of those on the newer one, mostly in former smokers, and head to head the lutein and zeaxanthin formula came out ahead on progression of the disease ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)). The AREDS2 evidence is in people who already have intermediate AMD or late AMD in one eye, and for healthy adults the case rests on observational data and on trials that raise macular pigment, which is supportive but not definitive (Brad's current guidance, 14 Oct 2026). Raising macular pigment is solid, but Brad calls the brain effect promising, not proven: the cognitive studies are small, and much of the research is funded by the companies that sell the ingredient ([Brad, 8 Jul 2026](https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial)). He offers these as general ideas to discuss with your doctor and notes that he has a commercial interest in this area, so be aware of his potential bias ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)). He does not see a role for vitamin A or vitamin E in a multivitamin, given the safety signals in the trials so far ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)).
 
 ## Key safety points
 
 - Older AREDS eye formulas contain beta-carotene. In AREDS2 it brought more lung cancers (23 vs 11 cases), mostly in former smokers, and lutein and zeaxanthin showed no clear rise at 10 years [22][24]. If you smoke or used to, ask your doctor which formula suits you.
 - In a large cohort study, more than 4 years of individual lutein supplements was linked to higher lung cancer risk [63]. Its authors advise against long-term lutein to prevent lung cancer, especially in smokers.
-- Some eye formulas contain 80 mg of zinc. Too much zinc can cause copper deficiency, with anaemia and low white cell counts [64]. In AREDS2, 25 mg of zinc did as well as 80 mg [22][25].
+- Some eye formulas contain 80 mg of zinc. Too much zinc can cause copper deficiency, with anaemia and low white cell counts [64][73], even with eye formulas that contain copper [72][74]. In AREDS2, 25 mg of zinc showed no clear difference from 80 mg in progression [22][24][25].
 - Evidence on lutein supplements in pregnancy is sparse [49]. If you are pregnant or breastfeeding, ask your doctor first.
 - In short trials, single or daily doses of 10 to 30 mg of lutein were well tolerated [10][37][38].
 
@@ -62,13 +62,13 @@ Meso-zeaxanthin is formed in the macula and is also sold as a supplement ingredi
 
 **Type of fat matters:** In lab digestion models, butter and palm oil gave about 20 to 30% higher lutein and zeaxanthin bioaccessibility than olive and fish oils, and rats fed spinach with butter had higher plasma lutein than with olive or fish oil [14].
 
-**Minerals reduce absorption:** In a lab model, calcium, magnesium, zinc and iron each reduced carotenoid micellarization and uptake into intestinal cells, with iron and zinc having the strongest effects [16]. This was a lab study, so the effect in people is uncertain, but taking lutein apart from a large mineral dose may help.
+**Minerals reduce absorption:** In a lab model, calcium, zinc and iron reduced carotenoid micellarization and uptake into intestinal cells, and magnesium reduced uptake only, with iron and zinc having the strongest effects [16]. This was a lab study, so the effect in people is uncertain, but taking lutein apart from a large mineral dose may help.
 
 **Beta-carotene competition:** Taken together, beta-carotene cut the lutein AUC to 54 to 61% of control values, while lutein's effect on beta-carotene varied between people [18]. In another study, 15 mg lutein given with 15 mg beta-carotene lowered the beta-carotene response to 66% [17].
 
 **Dose-response for macular pigment:** A 2021 meta-analysis of 46 studies (3,189 participants with healthy eyes) found that 5 to less than 20 mg a day of lutein and zeaxanthin raised macular pigment optical density (MPOD) by 0.04 units (95% CI 0.02 to 0.07), and 20 mg or more raised it by 0.11 units (95% CI 0.06 to 0.16), over 3 to 12 months. Intakes under 5 mg a day showed no significant change [19].
 
-Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) includes Lutein 0.25 mg and Lycopene 0.3 mg as part of its 25-ingredient evidence-based formula. While these doses are below the 6-10 mg used in AMD intervention trials, they contribute to baseline carotenoid intake alongside dietary sources.
+Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) includes Lutein 10 mg, Zeaxanthin 2 mg and Lycopene 10 mg as part of its 26-ingredient evidence-based formula.
 
 ## 3. Evidence for Benefits
 
@@ -110,7 +110,7 @@ A 2012 meta-analysis of six cohort studies found that the highest intake of lute
 
 #### Macular Pigment and Long-Term Supplementation
 
-Macular pigment may keep rising over several years with formulas that include meso-zeaxanthin [12]. In healthy eyes, supplementation seems to raise macular pigment mainly when it is low at baseline [28][29].
+Macular pigment may keep rising over several years with formulas that include meso-zeaxanthin [12]. In healthy eyes, supplementation seems to raise macular pigment mainly when it is low at baseline [28].
 
 #### Goji Berries and Macular Pigment
 
@@ -183,8 +183,6 @@ Saffron (*Crocus sativus*) contains the antioxidant carotenoids crocin and croce
 
 Small studies found that 20 mg of saffron a day improved retinal flicker sensitivity in early AMD [51][52][53]; only the first was placebo-controlled [51]. In a crossover trial in 100 adults with mild to moderate AMD, 20 mg of saffron a day for 3 months improved visual acuity by 0.69 letters compared with placebo [54].
 
-If you take a blood thinner, check with your doctor or pharmacist before taking a saffron-containing product.
-
 ### Propolis
 
 Propolis ("bee glue") is included in some vision products. In lab and mouse studies, Brazilian green propolis protected retinal cells against damage [56]. This is lab and animal evidence only.
@@ -225,7 +223,7 @@ After a single dose, serum lutein peaked at about 16 hours [18]. With daily 10 m
 
 - Take lutein with a meal containing fat [13]
 - Consider taking it apart from large mineral doses; the evidence is from lab models [16]
-- If your macular pigment is already high, supplements may add little [28][29]
+- If your macular pigment is already high, supplements may add little [28]
 - Formulas with meso-zeaxanthin kept raising macular pigment into the third year in one trial [12]
 
 ## 5. Safety and Side Effects
@@ -244,9 +242,9 @@ In a cohort of 77,126 people aged 50 to 76 who recalled their supplement use ove
 
 ### High-Dose Zinc Risks in Vision Formulas
 
-The original AREDS formula used 80 mg of zinc [21]. Zinc products can cause copper deficiency, which can lead to sideroblastic anaemia and neutropenia (a low white cell count) and can mimic other serious blood disorders [64].
+The original AREDS formula used 80 mg of zinc [21]. Zinc products can cause copper deficiency, which can lead to sideroblastic anaemia and neutropenia (a low white cell count) and can mimic other serious blood disorders [64][73].
 
-Although these formulas include copper, people who take high-dose zinc long term should discuss copper monitoring with their doctor. In AREDS2, 25 mg of zinc worked as well as 80 mg [22][24][25].
+Case reports describe this even in people taking eye formulas that contain copper [72][74], so people who take high-dose zinc long term should discuss copper monitoring with their doctor. In AREDS2, 25 mg of zinc showed no clear difference from 80 mg in progression (HR 1.04, 95% CI 0.94 to 1.14) [22][24][25].
 
 ## 6. Drug Interactions
 
@@ -262,7 +260,7 @@ If you take prescription medicines, check with your doctor or pharmacist before 
 
 ### Saffron (in Combination Products)
 
-Saffron is sometimes included in vision supplements alongside lutein. If you take an anticoagulant, check with your doctor or pharmacist before taking a saffron-containing vision supplement.
+Saffron is sometimes included in vision supplements alongside lutein.
 
 ### Pregnancy and Breastfeeding
 
@@ -400,3 +398,9 @@ A 2021 meta-analysis found the effect of dietary sources on macular pigment less
 [70] Ma L, et al. "Lutein and zeaxanthin intake and the risk of age-related macular degeneration: a systematic review and meta-analysis." *Br J Nutr*. 2012. doi: [10.1017/S0007114511004260](https://doi.org/10.1017/S0007114511004260). PMID: 21899805. https://pubmed.ncbi.nlm.nih.gov/21899805/
 
 [71] Wu J, et al. "Intakes of Lutein, Zeaxanthin, and Other Carotenoids and Age-Related Macular Degeneration During 2 Decades of Prospective Follow-up." *JAMA Ophthalmol*. 2015. doi: [10.1001/jamaophthalmol.2015.3590](https://doi.org/10.1001/jamaophthalmol.2015.3590). PMID: 26447482. https://pubmed.ncbi.nlm.nih.gov/26447482/
+
+[72] Wahab A, et al. "Zinc-induced hypocupremia and pancytopenia, from zinc supplementation to its toxicity, a case report." *J Community Hosp Intern Med Perspect*. 2021;11(6):843-846. doi: [10.1080/20009666.2021.1983319](https://doi.org/10.1080/20009666.2021.1983319). PMID: 34804403. https://pubmed.ncbi.nlm.nih.gov/34804403/
+
+[73] Stagg, et al. "Zinc-Containing Over-The-Counter Product Causing Sideroblastic Anemia and Neutropenia." *Cureus*. 2024. doi: [10.7759/cureus.59796](https://doi.org/10.7759/cureus.59796). PMID: 38846187. https://pubmed.ncbi.nlm.nih.gov/38846187/
+
+[74] Wang, et al. "Severe Pancytopenia Secondary to Zinc Toxicity from Age-Related Eye Disease Study Vitamin Supplementation." *J Vitreoretin Dis*. 2026. doi: [10.1177/24741264261436350](https://doi.org/10.1177/24741264261436350). PMID: 41918832. https://pubmed.ncbi.nlm.nih.gov/41918832/
