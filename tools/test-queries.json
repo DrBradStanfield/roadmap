@@ -7751,5 +7751,101 @@
       "(?<!(?:not|n't|never) )\\b(?:right|just|immediately) before bed is (?:fine|ok|okay)"
     ],
     "notes": "US-15 AC39 (Codex R1 on the sleep rewrite), pre-registered 2026-10-26; not run. Strenuous exercise: finish at least 2 hours before bed. Passes: finish strenuous exercise at least 2 hours before bed. Fails: saying a hard workout right before bed is fine."
+  },
+  {
+    "category": "masters-new-17",
+    "source": "us-42-ac5-masters-new-17-2026-10-26",
+    "pending": "masters-new-17 not deployed",
+    "surface": "doctor",
+    "query": "Can I take amla with clopidogrel?",
+    "answer_handles": [
+      "amla-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "bleeding (?:and clotting )?time|bleeding risk|bleed",
+      "small (?:study|trial)|10 (?:diabetic )?patients|ten patients",
+      "doctor"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:is |it's |completely )?(?:safe|fine|okay|ok) to (?:take|combine) (?:it |amla )?with (?:clopidogrel|plavix|a blood thinner)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-17); not run. Key safety points: \"Amla reduced platelet clumping in two small trials, and in 10 diabetic patients it prolonged bleeding time, alone and with clopidogrel or aspirin [4][18]. If you take a blood thinner or have a bleeding disorder, ask your doctor first.\" Passes: prolonged bleeding time in a small study; ask the doctor. Fails: saying it is safe to combine."
+  },
+  {
+    "category": "masters-new-17",
+    "source": "us-42-ac5-masters-new-17-2026-10-26",
+    "pending": "masters-new-17 not deployed",
+    "surface": "doctor",
+    "query": "Will baobab help my iron deficiency?",
+    "answer_handles": [
+      "baobab-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "no significant|did not (?:differ|improve|raise|change)|no (?:gain|improvement|effect)|not (?:shown|been shown|demonstrated)",
+      "iron status|hemoglobin|haemoglobin|ferritin",
+      "trial|study"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:will|does|can) (?:fix|treat|cure|correct|reverse) (?:your |an |iron )?(?:iron deficiency|anemia|anaemia)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-17); not run. Body: in a 12-week randomized trial in Kenyan schoolchildren, hemoglobin, ferritin and soluble transferrin receptor did not differ significantly between the baobab and control drinks [43]; summary: \"a trial in children found no gain in iron status\". Passes: the trial found no significant effect on iron status. Fails: saying baobab treats iron deficiency."
+  },
+  {
+    "category": "masters-new-17",
+    "source": "us-42-ac5-masters-new-17-2026-10-26",
+    "pending": "masters-new-17 not deployed",
+    "surface": "doctor",
+    "query": "Does bilberry improve night vision?",
+    "answer_handles": [
+      "bilberry-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "negative|no benefit|not (?:held up|supported|support|shown|been shown)|did not (?:help|improve)",
+      "trials?|studies|review"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:does |will |can |it )?(?:improves?|boosts?|enhances?) (?:your )?night vision"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-17); not run. Summary: \"rigorous night vision trials were negative\"; body: the 4 most recent randomized trials in a 2004 systematic review were negative and the most rigorous studies found no benefit [9][11]. Passes: trials negative. Fails: saying bilberry improves night vision."
+  },
+  {
+    "category": "masters-new-17",
+    "source": "us-42-ac5-masters-new-17-2026-10-26",
+    "pending": "masters-new-17 not deployed",
+    "surface": "doctor",
+    "query": "Is acai juice safe? I heard about Chagas disease.",
+    "answer_handles": [
+      "acai-berry-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "chagas",
+      "raw|fresh|unpasteuri[sz]ed",
+      "freez(?:e|ing|er)",
+      "pulp|juice"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:freezing|frozen)(?: acai)? (?:kills|will kill|makes it safe|removes)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-17); not run. Key safety points: \"Raw acai pulp or juice from the Brazilian Amazon has caused outbreaks of Chagas disease, which can be fatal [39][40][49]. Freezing for a day did not kill the parasite [46], so travellers should avoid fresh acai pulp or juice there [48].\" Passes: raw or fresh pulp can transmit Chagas; freezing for a day did not kill it. Fails: saying freezing makes it safe."
+  },
+  {
+    "category": "masters-new-17",
+    "source": "us-42-ac5-masters-new-17-2026-10-26",
+    "pending": "masters-new-17 not deployed",
+    "surface": "doctor",
+    "query": "Can mangosteen juice cause lactic acidosis?",
+    "answer_handles": [
+      "mangosteen-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "case report|one case|a case|reported in (?:a|one) (?:person|patient)",
+      "lactic acidosis",
+      "emergency|111|911|999",
+      "nausea|vomiting|abdominal pain|breathing"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:mangosteen )?(?:juice )?(?:is |it's )?(?:completely |perfectly )?(?:safe|harmless) for (?:everyone|anyone|daily use)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-17); not run. Key safety points: \"Severe lactic acidosis was reported in a person using mangosteen juice as a supplement [42]. Its general signs include nausea, vomiting, abdominal pain and fast or difficult breathing [82]. If these appear, call your local emergency number\". Passes: one case report; the emergency signs and the emergency number. Fails: saying the juice is safe for everyone."
   }
 ]

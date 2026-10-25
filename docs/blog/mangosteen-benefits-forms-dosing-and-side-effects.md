@@ -6,568 +6,336 @@ publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["mangosteen", "xanthones", "alpha-mangostin", "gamma-mangostin", "antioxidant", "inflammation", "anti-inflammatory", "garcinia mangostana", "skin", "diabetes", "blood sugar", "insulin resistance", "cancer", "neuroprotection", "brain health", "alzheimer", "cognitive", "gut health", "antimicrobial", "obesity", "weight loss", "cholesterol", "cardiovascular", "heart health"]
-summary: "Reference on mangosteen: antioxidant, anti-inflammatory, acne, bad breath. Mostly preclinical evidence; two small RCTs only. Pericarp extract 200-400 mg/day. Avoid chronic high-dose juice (lactic acidosis risk). Always discuss with your doctor."
+summary: "Mangosteen rind xanthones are mostly studied in the lab. Small trials suggest gels may help gum disease and acne; extract trials in brain and mood conditions were mixed. Juice was linked to lactic acidosis in one case. Talk to your doctor first if you take blood thinners or diabetes medicines."
+reviewed: "2026-10-26"
+sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28842267/","checked":"2026-10-26","fingerprint":"sha256:fae2284a472d6998ce92895e641c525dd5995aeebc3f79b9a39137fc84433495"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/mangosteen-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/mangosteen-benefits-forms-dosing-and-side-effects)*
 
+## Current evidence position
+
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Mangosteen rind xanthones show antioxidant, anti-inflammatory and antibacterial effects, mostly in cell and animal studies [10][14], but absorption by mouth was very low in rats [26] and varied widely in adults who drank the juice with a high-fat meal [56]. Human trials are small and mixed: mangosteen gel placed in gum pockets improved periodontitis in a meta-analysis of randomized trials, and a 0.5% gel reduced acne lesions about as much as clindamycin [60][61]. By mouth, 1,000 mg/day of pericarp extract did not help schizophrenia, and pericarp extract had limited effects in bipolar depression [65][67]. One case report linked severe lactic acidosis to mangosteen juice, and laboratory studies show effects on platelets and on the enzymes and pumps that handle many drugs, so people taking blood thinners, diabetes medicines or other prescription drugs should talk to their doctor first [42][70][79][80][81].
+
+## Key safety points
+
+- Severe lactic acidosis was reported in a person using mangosteen juice as a supplement [42]. Its general signs include nausea, vomiting, abdominal pain and fast or difficult breathing [82]. If these appear, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- Mangosteen xanthones inhibited drug-processing enzymes and the P-glycoprotein drug pump, and alpha-mangostin boosted a cancer drug in cancer cells [79][80][84]. If you take prescription medicines, including cancer treatment, check with your doctor or pharmacist before starting.
+- In laboratory tests, alpha- and gamma-mangostin blocked platelet clumping [81]. If you take a blood thinner or an antiplatelet drug, talk to your doctor before using mangosteen.
+- Mangosteen extract improved insulin sensitivity in a small trial and lowered blood glucose in diabetic rats [70][72]. If you take diabetes medicines, talk to your doctor and check your blood sugar more often.
+- Two of 30 volunteers had a delayed allergic skin reaction to a mangosteen patch [63]. Do not use mangosteen products if you have reacted to mangosteen before.
+
+## Brad's videos on this topic
+
+None yet.
+
 ## 1. Overview
 
-Mangosteen (*Garcinia mangostana* L.) is a tropical evergreen tree in the Clusiaceae family, native to the rainforests of Southeast Asia — specifically the Sunda Islands and Moluccas of Malaysia and Indonesia [1][2]. The fruit, often called the "Queen of Fruits," features a thick, leathery, reddish-purple rind (pericarp) that exudes yellow latex when cut, enclosing 4-8 segments of soft, white, juicy aril with a sweet-tangy flavor blending notes of citrus, peach, and lychee [1][3][4]. Despite the similarity in name, mangosteen is entirely unrelated to the mango.
+Mangosteen (*Garcinia mangostana* L.) belongs to the Clusiaceae family; the tree is native to Southeast Asia, and its fruit is known as the "queen of the fruits" [14]. It is grown in Indonesia, Malaysia, Sri Lanka, the Philippines and Thailand [10].
 
-The tree grows slowly, reaching heights of 6-25 meters under optimal conditions, and requires a strictly tropical climate with temperatures between 25-30 degrees Celsius, annual rainfall of 1,500-2,500 mm, and high humidity exceeding 80% [3][5]. The fruit takes 100-120 days from flowering to maturity, and mature trees yield 200-1,000 fruits annually [4][6]. Trees are propagated primarily through seeds, which are recalcitrant (losing viability within 1-5 days of extraction), though grafting and tissue culture methods have been developed to improve propagation efficiency [5][7].
+The health interest lies in the rind (pericarp), not the edible white flesh. The pericarp is a source of prenylated xanthones; the most studied are alpha-, beta- and gamma-mangostin, garcinone E, 8-deoxygartanin and gartanin [10]. In laboratory studies these compounds show antioxidant, anti-inflammatory, antibacterial, antifungal, antiviral and antitumour activity [10][15].
 
-Thailand is the world's top producer and exporter, with approximately 273,000 metric tons in 2023 from over 70,900 hectares, followed by Indonesia (320,000 metric tons), the Philippines (66,000 metric tons), Vietnam (37,000 metric tons), and Malaysia (22,000-30,000 metric tons) [8]. The global mangosteen market was valued at approximately US$338 million in 2023, with fresh fruit accounting for about 70% of trade volume and processed forms (juice, powder, supplements) projected to grow at roughly 5% annually through 2030 [8][9].
-
-What makes mangosteen of particular scientific interest is not the edible aril but the rind (pericarp). The pericarp is rich in a class of polyphenolic compounds called xanthones — oxygenated derivatives of xanthene — with over 50 distinct structures identified to date [10][11]. The two most studied are alpha-mangostin (α-mangostin), which typically constitutes 1.5-2.5% of the dry rind weight, and gamma-mangostin (γ-mangostin), present at approximately 0.3-0.8% [12][13]. Other notable xanthones include β-mangostin, gartanin, 8-desoxygartanin, and garcinone D [12][13]. These prenylated xanthones have demonstrated a wide range of biological activities in laboratory studies, including antioxidant, anti-inflammatory, antimicrobial, neuroprotective, and anticancer effects [10][14][15].
-
-Mangosteen bark, leaf, root, and rind have been used in traditional Southeast Asian medicine for centuries — particularly in Malaysia, Thailand, and the Philippines — as remedies for diarrhea, dysentery, fever, gonorrhea, menstrual irregularities, urinary tract infections, eczema, itching, skin infections, and wound healing [1][16][17]. The bark has been applied topically for infected wounds and ulcers [17]. More recently, mangosteen juice and pericarp extracts have been marketed as health tonics and dietary supplements. However, it is important to note that current commercial usage of mangosteen juice does not reflect the traditional usage patterns, and human clinical evidence for health benefits remains extremely limited [16].
-
-This article synthesizes the available evidence on mangosteen's bioactive compounds, preclinical research, clinical trials, nutritional profile, dosing, safety considerations, and drug interactions.
+In Southeast Asia the pericarp has been used as a traditional medicine for abdominal pain, diarrhoea, dysentery, infected wounds and chronic ulcers [10]. Mangosteen products, including juice drinks, are now sold worldwide as supplements [1][14]. Marketing has labelled mangosteen a "superfruit", and US sales of mangosteen drinks exceeded $200 million in 2008 despite very limited animal and human studies [11]. An analysis of two widely consumed mangosteen juice supplements found that their marketing claims overstated the research they cited and did not disclose its weaknesses [58]. Evidence for the health benefits of these products is still lacking, mainly because clinical data are scarce [1].
 
 ## 2. Forms and Bioavailability
 
 ### Commercial Forms
 
-Mangosteen supplements and products are available in several forms, each with distinct characteristics:
+Mangosteen is sold in several forms:
 
-| Form | Description | Typical Xanthone Content | Key Considerations |
-|------|-------------|--------------------------|-------------------|
-| Fresh fruit (aril) | Edible white flesh consumed as food | Minimal (<0.1% dry weight) | Provides sugars, fiber, vitamin C; negligible xanthone exposure |
-| Mangosteen juice | Blended whole fruit (rind + aril) or aril-only juice | Variable, depends on rind proportion | High sugar (140-170 kcal/cup); xanthone content inconsistent between products [16] |
-| Pericarp extract (capsules/tablets) | Dried, powdered, or standardized rind extract | Often standardized to total xanthones or α-mangostin | Most concentrated form; standardization varies between manufacturers |
-| Pericarp powder | Ground dried rind | 10-15% total xanthones in optimized extracts [18] | Bulk powder allows flexible dosing but standardization less consistent |
-| Topical preparations | Creams, gels, hydrogel patches with mangosteen extract | 0.5-2% extract typical in studies [19][20] | Direct application to skin bypasses oral bioavailability limitations |
-| Mangosteen tea | Dried rind steeped in hot water | Low extraction efficiency | Traditional preparation; limited xanthone delivery [21] |
+| Form | Description | Key Considerations |
+|------|-------------|-------------------|
+| Fresh fruit (aril) | The white pulp, eaten as fruit | Supplies little of the rind xanthones tested in trials [56] |
+| Mangosteen juice | Juice drinks | In one 100% juice, rind particles were 1% of the mass but held 99% of the xanthones [56]; some products are proprietary juice blends [74] |
+| Pericarp extract | Dried rind extract | Used in 24-week trials, such as 1,000 mg/day [65] |
+| Topical preparations | Gels and patches with rind extract | Tested for acne at 0.5% extract [61][63] |
+| Dental gels and mouthwash | Rind extract placed in gum pockets or used as a rinse | Tested in periodontitis and gingivitis trials [34][60] |
 
 ### Xanthone Distribution Across Plant Parts
 
-The bioactive xanthone content varies dramatically across different parts of the mangosteen plant [12][13][22]:
-
-- **Pericarp (rind):** Highest concentration by far. Contains the majority of α-mangostin (1.5-2.5% dry weight), γ-mangostin (0.3-0.8%), β-mangostin, gartanin, and 8-desoxygartanin. The purple rind contains roughly twice the xanthone concentration of the aril. Accounts for 50-60% of total fruit weight [4][12].
-- **Edible aril:** Trace xanthone levels (often <0.1% dry weight). Contains primarily flavonoids like epicatechin and procyanidins rather than xanthones [13].
-- **Bark and stem bark:** Source of condensed tannins contributing to astringency. Also contains benzophenones (mangostanones) [12][13].
-- **Leaves:** Lower xanthone content than pericarp. Used in traditional decoctions and investigated as fodder additives for animal nutrition [23].
-- **Seeds:** Primarily investigated for biodiesel potential (approximately 21% oil yield) rather than xanthone content [24].
-
-This distribution means that consuming fresh mangosteen fruit (the aril) provides minimal xanthone exposure. Supplement products targeting xanthone content therefore focus on pericarp-derived extracts.
+Xanthones have been isolated from the pericarp, whole fruit, heartwood and leaves [10]. In a 100% mangosteen juice, nearly all of the xanthones came from rind particles, so the edible flesh contributes little [56].
 
 ### Bioavailability Considerations
 
-Xanthones from mangosteen face significant bioavailability challenges that are critical for understanding the gap between in vitro potency and potential in vivo efficacy:
+**Oral absorption:** In rats, the oral bioavailability of pure alpha-mangostin was so low that a full blood concentration curve could not be measured [26]. In 10 healthy adults who drank 60 mL of 100% mangosteen juice with a high-fat breakfast, free and conjugated xanthones appeared in blood and urine, but absorption varied widely (peak alpha-mangostin 113 ± 107 nmol/L), and urine held 2.0 ± 0.3% of the ingested dose [56]. In simulated digestion, only 15.4 ± 0.7% of the xanthones in the rind particles moved into mixed micelles, which suggests limited release from the rind [56].
 
-**Extraction and stability:** Optimal extraction from the rind yields approximately 10-15% total xanthones by weight using solvent extraction with ethanol or acetone, where the pericarp provides the highest recovery due to its xanthone concentration [18]. These compounds are heat-sensitive, with degradation observed starting at approximately 60 degrees Celsius, particularly during drying or processing, leading to measurable losses in α-mangostin content [18][25]. This means processing methods significantly affect the xanthone content of finished products.
-
-**Oral absorption:** Like many polyphenolic compounds, xanthones from mangosteen have limited oral bioavailability due to poor aqueous solubility, extensive first-pass metabolism, and rapid phase II conjugation (glucuronidation and sulfation) in the liver and intestine. Pharmacokinetic studies in rats demonstrated low systemic bioavailability of α-mangostin following oral dosing, with extensive metabolism to conjugated metabolites [26]. Specific human pharmacokinetic data for mangosteen xanthones remains sparse, though a small human study with mangosteen juice detected α-mangostin and its phase II metabolites in plasma, confirming at least partial absorption [11].
-
-**Structural features affecting bioavailability:** The prenylated xanthone structures — characterized by isoprenoid (prenyl) side chains — enhance lipophilicity compared to simple polyphenols. This increased lipophilicity may facilitate membrane partitioning and cellular uptake but does not overcome the fundamental limitations of poor aqueous solubility in the gastrointestinal tract and extensive hepatic metabolism [12][26].
-
-**Nano-encapsulation advances:** To address bioavailability limitations, researchers have developed nano-encapsulation techniques. A 2023 study demonstrated that chitosan-oleic acid nano-complexes for α-mangostin encapsulation achieved over 90% encapsulation efficiency and extended storage stability to the equivalent of one year at room temperature, compared to rapid degradation of the free form [27]. These technological advances may improve the practical utility and shelf life of mangosteen supplements, though human pharmacokinetic validation of improved oral bioavailability from nano-formulations has not yet been published.
-
-**Biosynthetic pathway:** Mangosteen xanthones are produced through the acetate-malonate (polyketide) pathway characteristic of Clusiaceae species, involving polyketide synthase-mediated chain elongation followed by cyclization and prenylation [18][25][28]. This biosynthetic origin distinguishes them from flavonoids and other common plant polyphenols, and accounts for their unique tricyclic xanthene scaffold structure.
-
-### Analytical Methods and Quality Control
-
-Quantitative analysis of mangosteen xanthones relies primarily on liquid chromatography-mass spectrometry (LC-MS), which enables precise identification and measurement of individual xanthones based on molecular ions and fragmentation patterns [13][22]. LC-MS outperforms traditional HPLC for resolving complex mixtures of structurally similar xanthones. High-performance liquid chromatography with diode array detection (HPLC-DAD) remains a common quality control method for standardized commercial extracts [12]. Recent studies (as of 2024) have used advanced LC-MS techniques to identify additional previously uncharacterized xanthones in mangosteen [29].
-
-For consumers evaluating mangosteen supplements, key quality parameters include:
-- Standardization to total xanthone or α-mangostin content per serving
-- Specification of source material (pericarp extract vs. whole fruit)
-- Third-party verification of xanthone content
-- Absence of contaminants (heavy metals, pesticide residues)
+**What this means:** Effects of pure xanthones in cell studies may not be reached in the body. The authors of the rat study judged it uncertain whether the effects seen in vitro would occur in vivo, given the low bioavailability [26].
 
 ## 3. Evidence for Health Benefits
 
-### Antioxidant and Anti-inflammatory Activity
-
-The xanthone compounds in mangosteen, particularly α-mangostin and γ-mangostin, have demonstrated potent antioxidant and anti-inflammatory effects in laboratory studies. These constitute the most extensively studied and best-documented biological activities of mangosteen.
-
-**In vitro evidence:** Test tube studies have shown that mangosteen xanthones exhibit antioxidant, anti-histamine, anti-serotonin, anti-inflammatory, and neuroprotective actions — particularly from the rind fraction [16]. The tannin content of the rind also contributes to antioxidant capacity. Multiple research groups have confirmed these findings across different experimental systems and xanthone preparations.
-
-**Anti-inflammatory mechanisms:** γ-Mangostin has been shown to inhibit nitric oxide production in LPS-stimulated macrophages with IC50 values of 10.1-12.4 μM, indicating meaningful anti-inflammatory potency at the cellular level (Chen et al., *Food Chem Toxicol*, 2008) [30]. The mechanism involves suppression of inducible nitric oxide synthase (iNOS) expression and COX-2 activity.
-
-**NF-κB pathway inhibition:** Systematic reviews from 2025 confirm that mangosteen extracts and xanthones consistently lower oxidative stress markers and pro-inflammatory cytokines across in vitro and in vivo models, with NF-κB pathway inhibition identified as a key molecular mechanism [31][32]. NF-κB is a master transcriptional regulator of inflammatory gene expression, and its inhibition by xanthones helps explain the broad anti-inflammatory profile observed in preclinical studies. Specific downstream effects include reduced expression of TNF-α, IL-1β, IL-6, and other pro-inflammatory mediators.
-
-**ORAC measurement:** The fruit's antioxidant capacity has been measured by Oxygen Radical Absorbance Capacity (ORAC) at approximately 2,510 μmol Trolox equivalents per 100 g [33]. However, the USDA discontinued the ORAC database in 2012 because ORAC values, which measure chemical radical-scavenging in a test tube, do not reliably predict in vivo antioxidant benefits in the complex human biological system [33].
-
-**Clinical translation gap:** While the laboratory evidence for antioxidant and anti-inflammatory activity is consistent and robust across multiple studies, it has not been convincingly replicated in human clinical trials measuring meaningful health endpoints. Antioxidant activity in a test tube does not automatically translate to health benefits when consumed orally, due to bioavailability limitations, extensive first-pass metabolism, and the complexity of endogenous human antioxidant defense systems (superoxide dismutase, catalase, glutathione peroxidase, etc.).
-
 ### Antimicrobial Activity
 
-Laboratory studies have demonstrated antimicrobial activity of mangosteen xanthones against a range of pathogens:
+**Gum disease (clinical evidence):** A 2025 meta-analysis of randomized trials found that mangosteen gel placed into gum pockets reduced periodontal pocket depth (effect size -1.08, 95% CI -1.40 to -0.77) and clinical attachment level (effect size -0.96, 95% CI -1.80 to -0.13) compared with placebo or conventional therapies [60].
 
-**Tuberculosis:** Compounds from mangosteen, particularly α-mangostin, have shown activity against *Mycobacterium tuberculosis* in laboratory settings [16]. The mechanism involves disruption of bacterial cell membrane integrity by the prenylated xanthone structures. However, the concentrations required for activity may not be achievable through oral supplementation given bioavailability limitations.
+**Bad breath (clinical study):** In a randomized trial in 60 people with mild or moderate gingivitis, participants rinsed twice daily for 2 weeks with either a placebo rinse or one made with mangosteen pericarp extract [34]. Plaque and gum bleeding improved in both groups; between the groups, volatile sulphur compounds, the gases that cause bad breath, differed significantly [34]. The authors concluded the mouthwash may help as an adjunct for bad breath [34].
 
-**Broad-spectrum antibacterial effects:** Mangosteen rind extracts have demonstrated antibacterial effects against both gram-positive and gram-negative organisms in vitro, including activity against *Staphylococcus aureus*, *Escherichia coli*, and other clinically relevant pathogens [14][17]. The antibacterial mechanism appears related to membrane disruption and interference with bacterial enzyme systems.
+**Tuberculosis (laboratory):** Alpha- and beta-mangostin and garcinone B strongly inhibited *Mycobacterium tuberculosis* in the laboratory, with a minimum inhibitory concentration of 6.25 µg/mL [59]. Whether such levels can be reached by mouth is uncertain, given the low oral bioavailability [26].
 
-**Oral health (clinical study):** One clinical study evaluated a mouthwash containing mangosteen fruit rind extract, used twice daily by rinsing, in a group of 60 people with gingivitis (Rassameemasmaung et al., *J Int Acad Periodontol*, 2007) [34]. Key findings:
-
-- The mangosteen mouthwash was **no different from placebo** for improving gum health (gingivitis scores)
-- The mangosteen mouthwash was **superior to placebo for reducing halitosis** (bad breath)
-- This represents one of the few clinical evaluations of mangosteen's antimicrobial properties in humans, and the results were mixed at best
-
-**Antifungal activity:** Some in vitro studies have also reported antifungal activity of mangosteen xanthones, though this evidence is less extensive than the antibacterial data [14].
+**Other bacteria and fungi (laboratory):** A mangosteen pericarp extract killed *Cutibacterium acnes*, *Staphylococcus epidermidis* and *Staphylococcus aureus*, bacteria linked to acne [63]. Reviews also report antibacterial and antifungal activity of mangosteen xanthones [10][15].
 
 ### Skin Health
 
-Mangosteen has generated interest for topical skin applications due to the antibacterial and antioxidant properties of its xanthone compounds. The topical route circumvents the oral bioavailability limitations that affect systemic delivery.
+Applying mangosteen to the skin avoids the poor absorption that limits oral use.
 
-**Acne (clinical evidence):** Clinical trials from 2015-2023 have evaluated topical mangosteen for acne:
+**Acne (clinical evidence):**
 
-- A 2019 randomized, double-blind study evaluated 0.5% topical mangosteen extract for acne treatment. The study demonstrated preliminary benefits in reducing acne lesions and inflammation through antibacterial and antioxidant effects, though the overall efficacy was characterized as moderate. The investigators concluded that larger-scale trials are needed to confirm the findings [19].
-- As of 2025, additional formulations including hydrogel patches containing mangosteen extract have continued to demonstrate potential for acne treatment in small studies [20].
-- Mangosteen extracts rich in pericarp xanthones are also incorporated into commercial cosmetic soaps marketed for anti-acne properties, attributed to antibacterial and antioxidant effects that target skin imperfections [35].
+- In a 12-week, split-face, double-blind trial in 28 adults with mild to moderate acne, a 0.5% mangosteen extract gel on one side of the face was compared with 1% clindamycin gel on the other, with benzoyl peroxide on both sides [61]. The mangosteen side showed 66.86% and 67.05% reductions in comedones and inflammatory lesions, with no significant difference from clindamycin and no severe side effects [61].
+- In a 4-week, double-blind, placebo-controlled, split-face study in 10 acne patients, alpha-mangostin nanoparticles applied twice daily improved acne; the particles caused no significant skin irritation in 20 healthy volunteers [62].
+- A mangosteen hydrogel patch caused no irritation in 30 healthy volunteers, but two had a delayed allergic skin reaction, and the authors advise against it for anyone who has reacted to mangosteen [63].
 
-**Facial skin texture (clinical evidence):** One study found that using a face cream containing extracts of mangosteen, green and white teas, and pomegranate twice daily for two months improved the texture of facial skin in a group of 20 women with wrinkles (Chiu et al., *J Cosmet Dermatol*, 2018) [16][36]. Critical limitations:
+**Facial skin texture (clinical evidence):** In a split-face study, 20 women aged 35 to 65 with facial wrinkles applied a cream containing green and white tea, mangosteen and pomegranate extracts to one half of the face and a placebo cream to the other, twice daily for 60 days [36]. Twice as many participants reported better skin texture on the treated side [36]. Critical limitations:
 
-- The cream contained multiple active ingredients, making it impossible to attribute the observed improvements specifically to mangosteen
-- The sample size was very small (n=20)
-- The study duration was short (2 months)
-- The study likely lacked adequate statistical power to detect moderate effects
+- The cream contained several active ingredients, so the result cannot be credited to mangosteen
+- The sample size was very small (n=20) [36]
+- The study was short
 
-**Wound healing (preclinical):** The bark of the mangosteen tree has been applied topically in traditional folk remedies for wound healing and to manage infected wounds and ulcers [17]. Modern research has investigated alginate-based wound dressings containing mangosteen extract, with preclinical studies suggesting enhanced wound healing and antioxidant activity at the wound site [37]. These findings remain in early preclinical stages.
+### Brain and Mental Health
 
-**Skin-brightening and anti-aging (cosmetic use):** The fruit's pericarp extracts are increasingly incorporated into cosmetic products and supplements marketed for skin-brightening and anti-aging effects [4]. However, clinical evidence specifically supporting these claims from well-designed trials is lacking.
+**Human trials:** Several randomized trials have now tested mangosteen pericarp extract in brain and mental health conditions, with mixed results.
+
+- In the WECAN-AD trial in mild to moderate Alzheimer's disease, participants took water-soluble pericarp extract at 4 mg/kg/day (n = 33), 4 mg/kg/day rising to 8 mg/kg/day (n = 33), or placebo (n = 42) for 24 weeks [64]. More people in the low-dose group reached a clinically important improvement on the ADAS-Cog cognitive scale than with placebo, with a trend in the high-dose group, and the extract appeared safe and well tolerated [64].
+- In a 24-week trial in 148 people with schizophrenia or schizoaffective disorder, adjunctive pericarp extract at 1,000 mg/day did not differ from placebo in the rate of change of symptoms, functioning or quality of life [65]. A secondary analysis found no effect on cognition [66].
+- In a trial in bipolar depression (70 people on mangosteen, 82 on placebo), adjunctive pericarp extract did not substantially change overall depressive symptoms compared with placebo [67]. Some mood, severity and social functioning measures improved more with mangosteen at 24 weeks, but the differences were smaller by week 28, after treatment stopped [67].
+
+**Laboratory and animal evidence:** A 2025 systematic review of 40 studies found that mangosteen extract and xanthones consistently reduced oxidative markers and pro-inflammatory cytokines, acting on the NF-κB and COX-2 pathways, in cell and animal models of neurodegeneration [68]. In nerve cells exposed to amyloid beta 42, the xanthone garcinone D improved cell survival, stabilised mitochondrial function, reduced reactive oxygen species and activated the Nrf2 and HO-1 antioxidant pathway [69]. The review's authors call for clinical trials before therapeutic use [68].
+
+### Diabetes and Blood Sugar
+
+**Human evidence:** In a 26-week pilot trial, 22 women with obesity and insulin resistance but without diabetes were randomized to behavioural therapy alone or with mangosteen extract [70]. Among the 20 who finished, insulin resistance (HOMA-IR) fell by 53.22% with mangosteen versus 15.23% without (p = 0.004), and no side effect was attributed to treatment [70]. A 2026 systematic review of human studies in type 2 diabetes included this pilot trial and one other study, in which 7 days of a pericarp decoction lowered fasting glucose, and judged the evidence too limited for clinical recommendations [71].
+
+**Animal studies:** In diabetic rats, an ethanol extract of mangosteen pericarp at 50, 100 or 200 mg/kg lowered blood glucose [72]. A 2024 network meta-analysis of rodent studies found that all mangosteen extracts lowered blood glucose more than control within 2 weeks, with 200 mg/kg doses ranking highest [73].
+
+### Antioxidant and Anti-inflammatory Activity
+
+**Laboratory evidence:** Alpha- and gamma-mangostin from the fruit hull inhibited nitric oxide production in stimulated macrophages (IC50 values 12.4 and 10.1 µM) [30]. They reduced iNOS expression and PGE2 production without changing COX-2 expression, and alpha-mangostin reduced paw swelling in mice [30].
+
+**Human trials:**
+
+- In an 8-week trial, 44 adults with obesity and raised C-reactive protein (CRP) were randomized to placebo or a proprietary mangosteen juice blend (XanGo) at 3, 6 or 9 oz twice daily, and 40 completed it [74]. CRP fell compared with placebo only at the highest dose of 18 oz per day (p = 0.02); other inflammatory markers did not differ from placebo [74].
+- In a 30-day trial in 60 healthy adults, a mangosteen-based drink gave 15% more antioxidant capacity in the blood than placebo, and CRP fell by 46% from baseline in the mangosteen group, with no change in liver or kidney tests [75].
+- In 11 healthy volunteers, a polar fraction of mangosteen pericarp extract taken by mouth for 24 weeks improved the antioxidant capacity of red blood cells [76].
+
+**Clinical translation gap:** These trials were small, used different products, and measured blood markers rather than disease outcomes. A laboratory antioxidant effect does not show a health benefit when taken by mouth.
+
+### Obesity and Weight Management
+
+Reviews describe anti-obesity effects of mangosteen xanthones in preclinical studies [14]. In an 8-week trial in 60 adults with obesity, 400 mg twice daily of a blend of *Sphaeranthus indicus* and *Garcinia mangostana* extracts produced a net weight loss of 3.74 kg compared with placebo [77]. The blend combined two plants, so the effect cannot be credited to mangosteen.
 
 ### Anticancer Activity (Preclinical Only)
 
-Laboratory studies have shown that mangosteen xanthones possess cytotoxic activity against isolated cancer cell lines. This is one of the most active areas of mangosteen research, but it remains entirely preclinical — no clinical trials have tested mangosteen for cancer prevention or treatment in humans.
+Laboratory studies show that mangosteen xanthones inhibit the growth of a wide range of human tumour cell types, acting on cell division, apoptosis, inflammation and metastasis [15]. In mice, pure alpha-mangostin showed anticancer activity, and mangosteen slowed human tumours grown in animals, despite alpha-mangostin's low oral bioavailability [57].
 
-**Cell line studies:** Xanthones from mangosteen have shown activity against leukemia, breast cancer, colon cancer, and liver cancer cells in test tube models [16]. More specifically:
-
-- **Breast cancer:** α-Mangostin and related xanthones inhibited proliferation and induced apoptosis (programmed cell death) in MDA-MB-231 breast cancer cells through cell cycle arrest and downregulation of cell survival pathways [38].
-- **Prostate cancer:** Similar antiproliferative effects were observed in PC-3 prostate cancer cell lines, with dose-dependent growth inhibition [38].
-- **Colorectal cancer:** Mangosteen xanthones demonstrated dose-dependent growth inhibition in colon cancer cell models [16][38].
-- **Leukemia:** In vitro activity against leukemia cell lines has been reported, though with variable potency across different xanthone derivatives [16].
-- **Liver cancer:** Hepatocellular carcinoma cell lines have shown susceptibility to mangosteen xanthone treatment in culture [16].
-
-**Identified mechanisms (all in vitro):** The anticancer mechanisms identified in laboratory studies include:
-
-- Induction of apoptosis via caspase activation
-- Cell cycle arrest at G1 or G2/M phases
-- Inhibition of cell migration and invasion (anti-metastatic potential)
-- Downregulation of NF-κB and other survival signaling pathways
-- Modulation of PI3K/Akt signaling
-- Anti-angiogenic effects (inhibition of new blood vessel formation)
-
-(Shan et al., *Curr Mol Med*, 2011) [15][38]
-
-**Critical limitations:** It is essential to emphasize that activity against isolated cancer cells in a laboratory setting does not indicate efficacy against cancer in living humans. Many compounds that potently kill cancer cells in test tubes fail completely in clinical trials due to:
+**Critical limitations:** Activity against isolated cancer cells does not show efficacy against cancer in living humans. Many compounds that kill cancer cells in test tubes fail in clinical trials due to:
 
 - Insufficient bioavailability to achieve therapeutic concentrations at tumor sites
 - Systemic toxicity at doses needed for anticancer effects
 - The complex tumor microenvironment (immune evasion, blood supply, stromal interactions) that cell culture cannot replicate
 - Pharmacokinetic barriers (metabolism, distribution, excretion)
 
-**No clinical trials exist.** Claims that mangosteen prevents or treats cancer are not supported by clinical evidence. The preclinical data, while scientifically interesting, is at too early a stage to inform health decisions.
-
-### Diabetes and Blood Sugar (Preclinical)
-
-Preclinical studies have examined mangosteen's effects on glucose metabolism and diabetes-related endpoints.
-
-**Animal models:** Mangosteen pericarp extracts significantly reduced blood glucose levels in streptozotocin-induced diabetic rats by enhancing insulin sensitivity and improving pancreatic beta cell function [39]. The proposed mechanisms include:
-
-- Protection of pancreatic beta cells from oxidative damage
-- Enhancement of insulin signaling pathways
-- Reduction of inflammatory mediators that impair insulin sensitivity
-
-**Alpha-glucosidase inhibition:** Mangosteen xanthones have shown alpha-glucosidase inhibitory activity in laboratory assays, suggesting a potential mechanism for slowing carbohydrate digestion and reducing postprandial glucose spikes [14][39].
-
-**AMPK activation:** Some preclinical studies suggest that α-mangostin activates AMP-activated protein kinase (AMPK), a key metabolic sensor that promotes glucose uptake and fatty acid oxidation. This mechanism overlaps with that of metformin, though the in vivo relevance for mangosteen at achievable oral doses is unknown [14].
-
-**Clinical evidence:** Human clinical data on mangosteen for diabetes or blood sugar management is essentially absent. The preclinical findings are mechanistically plausible but require translation through well-designed human trials before any conclusions about efficacy can be drawn.
-
-### Neuroprotection and Alzheimer's Disease (Preclinical)
-
-Recent research has increasingly focused on the neuroprotective potential of mangosteen-derived xanthones, particularly for neurodegenerative diseases. This is an emerging area of investigation with some promising preclinical results.
-
-**Garcinone D and Alzheimer's models:** A 2025 study published in *Scientific Reports* demonstrated that garcinone D, a xanthone isolated from mangosteen pericarp, mitigated amyloid-β42-induced neurotoxicity in SH-SY5Y neuroblastoma cells [31]. The key findings included:
-
-- Reduction of reactive oxygen species (ROS) levels by approximately 30-33% at low concentrations (0.1-1.0 μM) — concentrations that might be achievable at the cellular level
-- Restoration of mitochondrial membrane potential by up to 193% compared to amyloid-β-treated controls, indicating protection of mitochondrial function
-- Activation of the Nrf2/HO-1 pathway, which upregulates endogenous antioxidant defenses including heme oxygenase-1, NAD(P)H quinone oxidoreductase 1, and glutathione synthesis enzymes
-
-**Systematic reviews (2025):** Two complementary systematic reviews published in 2025 confirmed that mangosteen extracts and xanthones consistently lower oxidative stress markers and pro-inflammatory cytokines (particularly via NF-κB inhibition) across multiple in vitro and in vivo neurodegeneration models [31][32]. The reviewers characterized mangosteen xanthones as "promising candidates for anti-Alzheimer's therapies" while explicitly noting that clinical trials in humans have not been conducted and are essential for validating these findings.
-
-**Mechanism of neuroprotection (preclinical):** The proposed neuroprotective mechanisms include:
-
-- Reduction of neuroinflammation via NF-κB suppression
-- Scavenging of reactive oxygen species and reduction of oxidative stress
-- Preservation of mitochondrial membrane potential and function
-- Modulation of apoptotic pathways to protect neurons from amyloid-β-induced death
-- Activation of endogenous antioxidant pathways (Nrf2/HO-1)
-
-These effects have been consistently demonstrated across cell culture and animal models but have not been tested in human subjects [31][32].
-
-**Blood-brain barrier considerations:** A key unanswered question is whether mangosteen xanthones can cross the blood-brain barrier at sufficient concentrations following oral administration. The lipophilic nature of prenylated xanthones theoretically favors CNS penetration, but this has not been confirmed in human pharmacokinetic studies.
-
-### Obesity and Weight Management (Preclinical)
-
-Some preclinical research has examined mangosteen xanthones for potential anti-obesity effects.
-
-**Mechanisms investigated in vitro:** α-Mangostin has been studied for effects on adipogenesis (fat cell differentiation), lipid metabolism, and adipocyte function in cell culture models. Reported mechanisms include inhibition of fatty acid synthase activity, modulation of AMPK signaling, and suppression of adipogenic transcription factor expression (PPARγ, C/EBPα) [14].
-
-**Animal studies:** Some rodent studies have reported reductions in body weight gain and adipose tissue accumulation with mangosteen extract supplementation, though these used doses and routes of administration that may not translate to human oral supplementation [14].
-
-**Human evidence:** No clinical trials have established mangosteen's efficacy for weight loss or obesity management in humans.
+**No clinical trials exist.** No human trial has tested mangosteen for cancer prevention or treatment, so claims that it prevents or treats cancer are unsupported.
 
 ### Cardiovascular Effects (Preclinical)
 
-Mangosteen xanthones have been investigated for cardiovascular effects in laboratory and animal studies.
+In diabetic rats, mangosteen pericarp extract lowered triglycerides, total cholesterol and LDL cholesterol and raised HDL cholesterol [72]. A network meta-analysis of rodent studies also found improved lipid profiles [73], and reviews report lipid-lowering effects in animal models [14].
 
-**Cholesterol and lipid metabolism:** Some preclinical evidence suggests that α-mangostin may influence cholesterol metabolism and improve lipid profiles in animal models, with reported reductions in total cholesterol and LDL cholesterol in hyperlipidemic rodent models [14].
-
-**Anti-atherogenic effects:** The anti-inflammatory and antioxidant properties of mangosteen xanthones have led to investigation of potential anti-atherogenic effects, primarily through:
-
-- Reduction of oxidative modification of LDL cholesterol
-- Inhibition of inflammatory signaling in vascular endothelial cells
-- Decreased macrophage foam cell formation in vitro [14][15]
-
-**Cardioprotective effects:** Some animal studies have reported protection against myocardial ischemia-reperfusion injury with mangosteen xanthone pretreatment, attributed to antioxidant and anti-apoptotic mechanisms [14].
-
-**Human evidence:** No clinical trials have evaluated cardiovascular outcomes, blood lipid changes, or atherosclerotic endpoints with mangosteen supplementation in humans.
+**Human evidence:** No trial has tested heart or blood vessel outcomes in people. The human CRP results above are blood markers only [74][75].
 
 ### Antiviral Activity (Preliminary)
 
-**COVID-19 investigations:** During the COVID-19 pandemic, mangosteen attracted attention due to proposed antiviral effects against SARS-CoV-2. In silico (computational molecular docking) studies examined the interaction of α-mangostin and its derivatives with the main protease of SARS-CoV-2 [40]. Some in vitro studies followed, but the findings remained at the earliest preclinical stages. These claims are entirely unproven in human studies, with no established clinical benefit for COVID-19 or any other viral infection [41]. Trials examining mangosteen as an adjunct for COVID-19 due to proposed antiviral effects have not demonstrated clinical benefit [41].
+Reviews report antiviral activity of mangosteen extracts and xanthones in experimental studies [10][15]. In cell culture, alpha- and gamma-mangostin inhibited four strains of SARS-CoV-2, the virus that causes COVID-19 (EC50 0.70 to 3.05 µM) [78]. The mangostins interfered with the 3C-like protease, which earlier computer studies had proposed as a target, but this effect was insufficient to be a major target [78]. No benefit for COVID-19 or any other viral infection has been shown in people.
 
-**Other viruses:** Mangosteen xanthones have shown in vitro activity against HIV, hepatitis C, and influenza viruses in laboratory assays [14]. These findings are preliminary and should not be interpreted as evidence of antiviral efficacy in humans.
+### Immunomodulatory Effects
 
-### Immunomodulatory Effects (Preclinical)
-
-Some preclinical studies have investigated the immunomodulatory effects of mangosteen xanthones:
-
-- Modulation of macrophage activation and cytokine production
-- Effects on T-cell proliferation and differentiation
-- Regulation of dendritic cell function
-
-These findings are at early preclinical stages and have not been evaluated in human clinical trials [14].
+Reviews describe antiallergic activity of mangosteen extracts and xanthones [10][15]. A 30-day trial in 59 healthy adults of a mangosteen product that also contained multivitamins and minerals reported a rise in T-helper cell frequency and a fall in CRP [83]. Because the product held other nutrients, the result cannot be credited to mangosteen.
 
 ### Summary of Evidence Quality
 
 | Condition/Area | Evidence Level | Study Types Available | Key Limitation |
 |---------------|---------------|----------------------|----------------|
-| Antioxidant/anti-inflammatory | Strong in vitro, consistent | Cell culture, animal models | No meaningful human clinical trials |
-| Antimicrobial (general) | Moderate in vitro | Cell culture, zone of inhibition assays | No human clinical data for systemic infections |
-| Oral health (halitosis) | One clinical trial (n=60) | Randomized controlled trial | Mixed results; no gum health benefit; halitosis benefit only |
-| Skin health (acne, topical) | Preliminary clinical | Small RCTs, formulation studies | Small samples, multi-ingredient products |
-| Facial skin texture | One clinical trial (n=20) | Small trial with combination cream | Multi-ingredient product, small sample, cannot attribute to mangosteen |
+| Gum disease (periodontitis) | Meta-analysis of randomized trials [60] | Gel placed in gum pockets | Local dental use only |
+| Bad breath (halitosis) | One clinical trial (n=60) [34] | Randomized controlled trial of a mouthwash | Short, single trial |
+| Acne (topical) | Small randomized trials [61][62] | Split-face gel trials | Small samples |
+| Facial skin texture | One clinical trial (n=20) [36] | Small trial with combination cream | Cannot attribute to mangosteen |
+| Alzheimer's disease | One randomized trial [64] | Water-soluble extract | Single trial; benefit at low dose only |
+| Schizophrenia and bipolar depression | Randomized trials [65][67] | Pericarp extract | No benefit in schizophrenia; limited in bipolar depression |
+| Blood sugar and insulin resistance | One pilot trial, animal studies [70][73] | Extract | Very small human trial |
+| Antioxidant and inflammation markers | Small trials [74][75] | Juice blend, drinks | Blood markers only |
+| Weight | One trial of a two-plant blend [77] | Combination product | Cannot attribute to mangosteen |
 | Anticancer | In vitro/preclinical only | Cell line studies, some animal models | No human clinical data whatsoever |
-| Diabetes/blood sugar | Preclinical only | Animal models, enzyme assays | No human clinical data |
-| Neuroprotection/Alzheimer's | Preclinical, systematically reviewed | Cell culture, animal models, systematic reviews | No human clinical data |
-| Obesity/weight management | Preclinical only | Cell culture, rodent studies | No human clinical data |
-| Cardiovascular | Preclinical only | Animal models, cell culture | No human clinical data |
-| Antiviral (incl. COVID-19) | In silico/preclinical | Molecular docking, some in vitro | No proven clinical benefit |
+| Cardiovascular | Preclinical only | Animal models | No human outcome data |
+| Antiviral (incl. COVID-19) | Laboratory only | Cell culture, computer models | No proven clinical benefit |
 
-The overarching theme across all health claims for mangosteen is a substantial gap between impressive and consistent laboratory findings and the near-total absence of confirmatory human clinical trials. The preponderance of evidence exists at the in vitro and animal model level. Consumers should interpret marketing claims for mangosteen supplements with this critical context in mind.
+Most of the evidence for mangosteen comes from cells and animals. The human trials are few and small, and several tested blended products or local dental and skin use.
 
 ## 4. Recommended Dosing
 
 ### No Established Therapeutic Dose
 
-Unlike well-studied supplements such as magnesium, omega-3 fatty acids, or vitamin D, there is no established Recommended Dietary Allowance (RDA), Adequate Intake (AI), or clinically validated therapeutic dose for mangosteen or its xanthone components. The evidence base does not currently support specific dosing recommendations for any health condition.
+No official intake exists for mangosteen or its xanthones. Trials have used different products, doses and routes, so their doses cannot be compared directly.
 
 ### Doses Used in Available Research
 
-**Pericarp extract (oral supplements):** Typical dosages for mangosteen pericarp extract in supplemental form range from 200 to 400 mg per day, often divided into two doses, based on studies evaluating safety and bioactivity rather than confirmed therapeutic efficacy [41]. Some supplement products market higher doses (up to 500-1,000 mg/day), but clinical evidence supporting these higher doses is absent.
+**Pericarp extract (oral):** A schizophrenia trial used 1,000 mg/day for 24 weeks [65], and an Alzheimer's trial used water-soluble pericarp extract at 4 to 8 mg/kg/day for 24 weeks [64]. These doses come from trials in specific conditions and do not show a benefit for general use.
 
-**Topical preparations:** Clinical studies for acne have used 0.5% mangosteen extract in topical formulations [19]. Cosmetic products typically contain 0.5-2% extract. The 2019 randomized double-blind acne study used 0.5% as the active concentration.
+**Topical preparations:** An acne trial used a 0.5% mangosteen extract gel [61], and a hydrogel patch used 0.5% extract [63].
 
-**Mangosteen juice:** Commercial mangosteen juice products vary widely in xanthone content depending on the proportion of rind included in the juice blend. One cup of mangosteen juice provides approximately 140-170 calories, with the vast majority from sugar [16]. If consuming mangosteen juice for potential health benefits rather than simply as a food, the caloric and sugar contribution should be factored into dietary planning — particularly for individuals with diabetes, insulin resistance, or those on calorie-restricted diets.
+**Mangosteen juice:** A proprietary juice blend was tested at 3, 6 or 9 oz twice daily for 8 weeks [74]. In an absorption study, adults drank 60 mL of 100% mangosteen juice once [56].
 
-**Preclinical doses (for context only):** Animal studies have used doses equivalent to roughly 100-500 mg/kg body weight of mangosteen extract. These doses generally do not translate directly to human supplementation due to differences in metabolism, bioavailability, and body surface area between species. Allometric dose conversion is required, and even then, efficacy in animals does not guarantee efficacy in humans.
-
-### Standardization Considerations
-
-When evaluating mangosteen supplements, key quality parameters include:
-
-- **Total xanthone content per serving:** The most relevant measure of potency. Products should specify this on the label.
-- **α-Mangostin content per serving:** As the most abundant and most studied xanthone, α-mangostin content is a useful quality indicator.
-- **Source material:** Pericarp extract will have substantially higher xanthone content than whole-fruit juice or aril-based products. Products derived from the rind are preferred for xanthone delivery.
-- **Extraction method:** Ethanol and acetone extraction yield higher xanthone recovery than water extraction. Some products may use supercritical CO2 extraction.
-- **Third-party testing:** Given the lack of regulatory standardization for mangosteen supplements, third-party verification of content claims is advisable.
+**Preclinical doses (for context only):** A rat study used 50, 100 or 200 mg/kg of pericarp extract, and a single dose of 2,000 mg/kg caused no acute toxicity in rats [72]. Animal doses do not translate directly to human supplementation, and efficacy in animals does not guarantee efficacy in humans.
 
 ### Timing and Administration
 
-No evidence-based guidance exists for optimal timing of mangosteen supplementation. General principles for polyphenol supplements suggest:
-
-- Taking with food may improve tolerance and potentially improve absorption of lipophilic compounds
-- Splitting the daily dose into two servings may provide more consistent plasma levels
-- These recommendations are extrapolated from general polyphenol pharmacology, not from mangosteen-specific studies
+Xanthones from mangosteen juice were absorbed when taken with a high-fat breakfast [56]. Timing has not been compared in trials.
 
 ### Fruit Consumption
 
-Fresh mangosteen fruit is consumed primarily as a food and provides minimal xanthone exposure through the aril. The nutritional benefits of fresh mangosteen come from its vitamin C, fiber, potassium, and manganese content rather than from xanthone compounds (see Dietary Sources section). There is no established recommendation for fruit consumption quantity beyond normal dietary intake for any health benefit.
+Because nearly all of the xanthones in mangosteen juice came from rind particles, eating the white flesh of the fresh fruit supplies little of the compounds studied in trials [56].
 
 ## 5. Safety and Side Effects
 
-### General Safety of Fresh Fruit
-
-Mangosteen fruit (the edible aril) is generally considered safe as a food [16]. It has been consumed widely throughout Southeast Asia for centuries and is increasingly available in Western markets. The fresh aril has a long history of safe human consumption with no systematic safety concerns reported.
-
-### Safety of Rind, Bark, Leaves, and Root
-
-Little is known about the safety of mangosteen root, bark, leaves, and fruit rind when consumed as dietary supplements or concentrated extracts [16]. The traditional medicinal uses of these plant parts were typically short-term and applied to specific conditions (e.g., diarrhea, wound care), not as chronic daily health tonics. The safety profile of long-term supplementation with concentrated pericarp extracts has not been established through adequate clinical trials.
-
 ### Lactic Acidosis Risk
 
-Excessive amounts or long-term use of mangosteen juice might cause lactic acidosis — a serious and potentially life-threatening metabolic condition. One case report documented lactic acidosis in a man who consumed mangosteen juice daily for more than one year. The lactic acidosis could not be otherwise explained after thorough medical evaluation (Wong & Klemmer, *Am J Kidney Dis*, 2008) [42][16].
+A 2008 case report described severe lactic acidosis associated with mangosteen juice used as a dietary supplement [42]. Lactic acidosis can be fatal [82]. Its general signs include nausea, vomiting, abdominal pain, fast breathing and shortness of breath [82]. If these appear, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
-**Symptoms of lactic acidosis** include:
-- Deep and rapid breathing (Kussmaul breathing)
-- Vomiting
-- Abdominal pain
-- Confusion and altered mental status
-- Cardiovascular instability
+A single case report does not prove that mangosteen caused the illness, and how it might do so is unknown.
 
-Lactic acidosis is a medical emergency requiring immediate treatment.
+### Safety of Rind Extracts
 
-While a single case report does not establish causation, it raises a legitimate concern about chronic high-dose consumption of mangosteen juice — particularly because the mechanism by which mangosteen components might cause lactic acidosis has not been elucidated. Possible mechanisms could include interference with mitochondrial function or pyruvate metabolism by xanthone compounds, but this is speculative.
-
-### Common Side Effects
-
-Side effects with mangosteen supplements at typical doses (200-400 mg/day) are reported as rare but may include [41][43]:
-
-- Mild gastrointestinal upset (nausea, bloating, abdominal discomfort)
-- Gastrointestinal symptoms are more common at higher doses
-- Potential allergic reactions in sensitive individuals (rare)
-- Constipation has been occasionally reported
-
-### Caloric and Sugar Content of Juice Products
-
-If counting calories or monitoring sugar intake, be aware that mangosteen juice — like other fruit juices — contributes significant calories and sugar to the diet. One cup of mangosteen juice provides approximately 140-170 calories, with the vast majority from sugar [16]. This is comparable to other fruit juices (orange juice: ~110 kcal/cup; grape juice: ~150 kcal/cup) and should be factored into dietary planning, particularly for individuals with diabetes, prediabetes, or those on calorie-restricted diets.
-
-### Regulatory Status
-
-In the United States, mangosteen fruit is recognized as safe for use as a food ingredient under FDA GRAS (Generally Recognized as Safe) guidelines [41]. However, mangosteen extracts marketed as dietary supplements are not approved as drugs and cannot legally make therapeutic claims (e.g., claims to treat, prevent, or cure any disease) without FDA evaluation and approval [41]. The FDA has not specifically evaluated mangosteen supplements for any therapeutic purpose.
-
-Fresh mangosteen importation to the United States was restricted until 2007 due to concerns about fruit fly infestation (Bactrocera species, which can devastate domestic agriculture). Since 2007, imports have been permitted provided fruits undergo irradiation or vapor heat treatment to eliminate pest risk [44].
+A 2018 review noted conflicting results from mangosteen safety studies that need further investigation [57]. In 11 healthy volunteers who took a polar fraction of pericarp extract for 24 weeks, only minor and tolerable side effects were reported, and blood tests showed no liver or kidney damage [76]. In a 24-week Alzheimer's trial, water-soluble pericarp extract appeared safe and well tolerated [64]. The human safety data come from juice and rind extracts [64][74][76].
 
 ### Special Populations
 
-**Pregnancy and breastfeeding:** There is insufficient safety data on mangosteen supplements during pregnancy and breastfeeding. While fresh mangosteen fruit consumed in normal dietary quantities is likely safe based on historical use, concentrated pericarp extracts should be avoided due to the complete lack of reproductive safety data.
+**Pregnancy and breastfeeding:** There is insufficient safety data on mangosteen supplements during pregnancy and breastfeeding. Avoid concentrated rind extracts.
 
-**Children:** Safety of mangosteen supplements in children has not been established. Fresh fruit consumption in age-appropriate portions is not a concern.
+**Children:** Safety of mangosteen supplements in children has not been established.
 
-**Liver disease:** Individuals with liver disease should exercise caution, as the hepatic metabolism of xanthone compounds in these populations has not been studied, and impaired hepatic function could alter the metabolism and accumulation of these compounds.
+**Liver disease:** People with liver disease should ask their doctor first, because how they process mangosteen xanthones has not been studied.
 
-**Kidney disease:** Individuals with kidney disease should exercise caution, as renal excretion of xanthone metabolites in impaired kidney function has not been characterized. The case report of lactic acidosis occurred in a patient who was subsequently found to have renal involvement.
+**Kidney disease:** People with kidney disease should ask their doctor first, because how reduced kidney function affects xanthone clearance has not been studied.
 
-**Surgery:** Due to potential antiplatelet effects suggested in preclinical studies, some sources recommend discontinuing mangosteen supplements at least 2 weeks before scheduled surgery. However, clinical evidence for actual bleeding risk from mangosteen supplementation is lacking.
+**Surgery:** Alpha- and gamma-mangostin inhibited platelet clumping in laboratory tests, although effects in people have not been assessed [81]. A 2022 review advises stopping non-essential supplements 2 weeks before planned surgery, which would include mangosteen [85].
+
+### Common Side Effects
+
+Trials of mangosteen extract and juice reported few side effects. A juice blend trial reported no side effects in any group [74], an insulin resistance pilot attributed no side effect to treatment [70], and healthy volunteers reported only minor, tolerable effects during 24 weeks [76]. On the skin, two of 30 volunteers had a delayed allergic reaction to a mangosteen patch [63].
+
+### General Safety of Fruit Supplements
+
+A 2018 review of five fruits sold as supplements in the US, including mangosteen, concluded from safety studies and toxicity case reports that these fruits may generally be considered safe [57].
 
 ## 6. Drug Interactions
 
-Formal drug interaction studies for mangosteen in humans are essentially absent. The following potential interactions are based on pharmacological properties identified in preclinical (in vitro and animal) research and theoretical pharmacological considerations. The clinical significance of these interactions at typical supplement doses is unknown.
+Formal drug interaction studies of mangosteen in humans are lacking. The interactions below come from laboratory and animal research, and their clinical importance at supplement doses is unknown.
 
 ### Potential Interactions
 
 | Drug/Drug Class | Potential Interaction | Evidence Basis | Clinical Significance |
 |----------------|----------------------|----------------|----------------------|
-| Anticoagulants/antiplatelets (warfarin, aspirin, clopidogrel, heparin) | Possible increased bleeding risk | In vitro evidence of antiplatelet activity of xanthones | Unknown; theoretical |
-| Antidiabetic medications (metformin, sulfonylureas, insulin, SGLT2 inhibitors) | Potential additive hypoglycemic effect | Preclinical evidence of blood glucose-lowering activity in diabetic animal models | Unknown; theoretical |
-| Chemotherapy agents | Theoretical interaction — enhancement or interference with cytotoxicity | In vitro cytotoxicity, modulation of drug efflux transporters (P-glycoprotein) | Unknown; potentially clinically important |
-| CYP3A4 substrates (statins, calcium channel blockers, benzodiazepines, immunosuppressants) | Possible increased drug levels | In vitro CYP3A4 inhibition by α-mangostin | Unknown; theoretical |
-| CYP1A2 substrates (caffeine, theophylline, clozapine) | Possible increased drug levels | In vitro CYP1A2 inhibition | Unknown; theoretical |
-| Sedatives and CNS depressants | Possible additive sedation | Limited preclinical evidence of CNS-depressant properties | Unknown; theoretical |
-| P-glycoprotein substrates (digoxin, certain chemotherapy agents) | Possible altered drug absorption/efflux | In vitro P-glycoprotein modulation | Unknown; theoretical |
+| Anticoagulants/antiplatelets | Possible increased bleeding risk | Alpha- and gamma-mangostin inhibited aggregation of rat platelets [81] | Unknown; not assessed in people |
+| Antidiabetic medications | Potential additive glucose lowering | Better insulin sensitivity in a pilot trial; lower blood glucose in diabetic rats [70][72] | Unknown |
+| Chemotherapy agents | Possible change in drug transport or effect | P-glycoprotein inhibition; the authors propose it may reverse multidrug resistance [80]; alpha-mangostin enhanced sorafenib in melanoma cells [84] | Unknown; potentially clinically important |
+| Drugs broken down by CYP2C8 or CYP2C9 | Possible increased drug levels | In vitro inhibition, with predicted alpha-mangostin levels above the inhibition constants [79] | Unknown; prediction only |
+| P-glycoprotein substrates | Possible increased drug absorption | Alpha-mangostin increased absorption of a P-glycoprotein substrate in mouse intestine [80] | Unknown |
 
 ### CYP450 Enzyme Interactions
 
-In vitro studies have shown that α-mangostin may inhibit cytochrome P450 enzymes, particularly CYP3A4 and CYP1A2 [26]. CYP3A4 is responsible for metabolizing approximately 50% of all clinically used drugs. If these inhibitory effects translate to humans at typical supplement doses (which has not been confirmed), mangosteen supplements could potentially increase blood levels of drugs metabolized by these enzymes, including but not limited to:
-
-- **Statins:** Atorvastatin, simvastatin, lovastatin (increasing risk of myopathy/rhabdomyolysis)
-- **Calcium channel blockers:** Amlodipine, diltiazem, felodipine
-- **Benzodiazepines:** Midazolam, alprazolam, triazolam
-- **Immunosuppressants:** Cyclosporine, tacrolimus, sirolimus
-- **HIV protease inhibitors:** Ritonavir, lopinavir
-- **Certain cancer drugs:** Various tyrosine kinase inhibitors
-
-Whether the concentrations of α-mangostin achieved in the intestinal lumen and portal circulation after oral supplementation are sufficient to cause clinically meaningful CYP inhibition is unknown. The in vitro inhibitory concentrations may not be reached in vivo given the low oral bioavailability of mangosteen xanthones.
+In laboratory studies, mangosteen xanthones were both substrates and inhibitors of multiple cytochrome P450 enzymes, which break down many drugs [79]. Modelling predicted that blood levels of alpha-mangostin would be well above the levels that inhibit CYP2C8 and CYP2C9 [79]. This has not been tested in people, and low oral absorption may limit it [26][56].
 
 ### P-glycoprotein Interactions
 
-Some studies have suggested that mangosteen xanthones can modulate P-glycoprotein (P-gp), an efflux transporter that influences the absorption and distribution of many drugs [14]. Inhibition of P-gp could theoretically increase the bioavailability and tissue distribution of P-gp substrate drugs, potentially leading to increased drug effects or toxicity.
+Alpha- and beta-mangostin inhibited P-glycoprotein, a pump that moves drugs out of cells, in cell and mouse intestine studies, and alpha-mangostin increased absorption of a P-glycoprotein substrate [80]. The authors conclude these xanthones may change the bioavailability and transport of drugs carried by this pump [80].
 
 ### Practical Guidance
 
 Given the limited formal interaction data, the following precautions are advisable:
 
-1. **Consult a healthcare provider** before starting mangosteen supplements if taking any prescription medications, particularly those with narrow therapeutic indices (warfarin, digoxin, immunosuppressants, chemotherapy).
-2. **Avoid concurrent use** with anticoagulants or antiplatelet drugs until more data is available, given the theoretical bleeding risk.
-3. **Monitor blood glucose** if combining mangosteen supplements with antidiabetic medications, as additive hypoglycemic effects are theoretically possible.
-4. **Discontinue 2 weeks before surgery** as a precautionary measure.
-
-The drug interaction profile of mangosteen is not well-characterized enough to provide definitive guidance, which is itself a reason for caution — particularly for individuals on multiple medications or medications with narrow therapeutic windows.
+1. **Consult a healthcare provider.** If you take prescription medicines, check with your doctor or pharmacist before starting. This matters most for blood thinners, diabetes medicines and cancer treatment.
+2. **Avoid concurrent use** with anticoagulants or antiplatelet drugs unless your doctor agrees, given the platelet effects seen in laboratory tests [81].
+3. **Monitor blood glucose** if combining mangosteen supplements with diabetes medicines [70][72]. If someone with diabetes is unconscious, having a seizure, or cannot swallow safely, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). Do not give food or drink by mouth.
+4. **Stop before surgery:** A 2022 review advises stopping non-essential supplements 2 weeks before planned surgery, which would include mangosteen [85].
 
 ## 7. Dietary Sources
 
-### Nutritional Profile of Fresh Mangosteen Fruit
-
-The edible aril of mangosteen fruit provides a modest but balanced nutritional profile [45]:
-
-| Nutrient (per 100 g aril) | Amount | % Daily Value* |
-|---------------------------|--------|:-:|
-| Water | 81 g | — |
-| Energy | 73 kcal | 4% |
-| Carbohydrates | 17.9 g | 6% |
-| — Sugars | 16 g | — |
-| Dietary fiber | 1.8 g | 6% |
-| Protein | 0.4 g | 1% |
-| Fat | 0.6 g | 1% |
-| Vitamin C | 2.9 mg | 3% |
-| Thiamine (B1) | 0.05 mg | 4% |
-| Potassium | 48 mg | 1% |
-| Manganese | 0.1 mg | 4% |
-
-*Based on a 2,000 kcal diet. Source: USDA FoodData Central [45].
-
-Mangosteen is a low-calorie, hydrating fruit with moderate carbohydrate content. It provides modest amounts of vitamin C (2.9 mg per 100 g, roughly 3-5% of the daily value), thiamine, potassium (important for electrolyte balance), and manganese (contributing to enzymatic functions). However, it is not a rich source of any single micronutrient [45]. Its nutritional profile is comparable to lychee in calorie and carbohydrate content but features slightly higher dietary fiber, enhancing its satiety value [45].
-
-The rind, while not typically consumed as food due to its bitterness and toughness, is separately nutrient-dense with elevated levels of polyphenols (particularly xanthones), though it is excluded from standard edible portion nutritional analyses [45].
-
-### Glycemic Index
-
-Mangosteen has a low-to-moderate glycemic index of approximately 58, positioning it as a reasonable fruit choice for individuals managing blood sugar levels [46]. The dietary fiber content (1.8 g per 100 g) helps moderate the rate of glucose absorption. For comparison, watermelon has a GI of 72, banana 51, and apple 36.
-
-### Nutrient Variability
-
-Nutritional and phytochemical content varies by growing region, cultivar, maturity stage, and post-harvest processing [29]:
-
-- **Maturity effects:** Unripe green mangosteen has higher titratable acidity (about 0.77% as citric acid) compared to ripe fruit (about 0.73%), with the decrease in acidity during ripening improving palatability [47].
-- **Regional variation:** Growing conditions (soil, rainfall, altitude) affect both nutritional composition and xanthone content of the pericarp.
-- **Processing effects:** Canning, drying, and heat treatment can alter nutrient content. Fresh fruit retains the most complete nutritional profile.
-
-### Availability and Seasonality
-
-Fresh mangosteen availability is strongly seasonal and geographically limited:
-
-- **Southeast Asia:** Widely available and affordable during the May-August harvest season. Wholesale prices range from $2.33-$10.79 per kg depending on grade and market [8].
-- **United States and EU:** Available at specialty grocery stores, Asian markets, and some high-end supermarkets. Retail prices typically range from $14.50-$30 per kg, with seasonal fluctuations of up to 50% driven by harvest peaks and supply variability [8]. Importation to the US was permitted from 2007 following implementation of irradiation/vapor heat treatment requirements [44].
-- **Australia:** Available seasonally; the fruit was introduced to Australia in 1854, with plantings in southern Queensland and New South Wales [48].
-- **Canned mangosteen:** Available year-round in many markets but the soft, delicate aril texture degrades significantly during heat treatment, resulting in a mushier consistency [49].
-- **Frozen mangosteen:** Increasingly available in specialty stores; maintains better texture and flavor than canned.
-
-### Culinary Uses
-
-Beyond simple fresh consumption, mangosteen features in diverse culinary applications:
-
-- **Fresh dessert fruit:** The most common preparation worldwide. The thick purple rind is carefully peeled away (or scored and twisted open) to reveal the white aril segments. Chilling before eating intensifies sweetness [21][50].
-- **Thai salads:** In *yum mangkut*, the aril is combined with shrimp, lime, chili, and fresh herbs for a spicy-sweet profile — one of the few savory applications [51].
-- **Juices and smoothies:** The aril is blended with water and sugar (common ratio: 1 cup aril to 1 cup water); dried powder is blended into smoothies for a nutrient-dense addition [21][50].
-- **Preserves and jams:** Made by simmering aril with sugar and pectin, yielding a vibrant, spreadable product [52].
-- **Tea:** Brewed from the dried rind, producing an earthy infusion often sweetened for everyday consumption. This is a traditional preparation in Indonesia [21].
-- **Vinegar:** In Indonesia, fermented mangosteen products are used in marinades and dressings, adding tangy depth to local cuisine [53].
-- **Functional foods:** Pericarp extract has been added to products like ice cream at up to 2% to increase antioxidant content [54].
-- **Fusion cuisine:** Globally, mangosteen is paired with chocolate in confections, layered with yogurt in parfaits, and used in various dessert applications. It appears seasonally in international markets primarily from June to September [55].
+Mangosteen is eaten as a fresh fruit, valued for its distinctive taste [14]. The xanthones studied for health effects come mainly from the rind: in 100% mangosteen juice, rind particles held 99% of the xanthones [56].
 
 ## 8. References
 
-[1] Obolskiy D, Pischel I, Siriwatanametanon N, Heinrich M. "Garcinia mangostana L.: A phytochemical and pharmacological review." *Phytother Res*. 2009;23(8):1047-1065. [https://doi.org/10.1002/ptr.2730](https://doi.org/10.1002/ptr.2730)
+[1] Obolskiy D, Pischel I, Siriwatanametanon N, Heinrich M. "Garcinia mangostana L.: A phytochemical and pharmacological review." *Phytother Res*. 2009;23(8):1047-1065. PMID: 19172667. [https://doi.org/10.1002/ptr.2730](https://doi.org/10.1002/ptr.2730)
 
-[2] Palapol Y, Ketsa S, Stevenson D, Cooney JM, Allan AC, Ferguson IB. "Colour development and quality of mangosteen (Garcinia mangostana L.) fruit during ripening and after harvest." *Postharvest Biol Technol*. 2009;51(3):349-353. [https://doi.org/10.1016/j.postharvbio.2008.08.003](https://doi.org/10.1016/j.postharvbio.2008.08.003)
+[10] Pedraza-Chaverri J, Cárdenas-Rodríguez N, Orozco-Ibarra M, Pérez-Rojas JM. "Medicinal properties of mangosteen (Garcinia mangostana)." *Food Chem Toxicol*. 2008;46(10):3227-3239. PMID: 18725264. [https://doi.org/10.1016/j.fct.2008.07.024](https://doi.org/10.1016/j.fct.2008.07.024)
 
-[3] Morton JF. *Fruits of Warm Climates*. Miami, FL: Julia F. Morton; 1987. pp. 301-304.
+[11] Gutierrez-Orozco F, Failla ML. "Biological activities and bioavailability of mangosteen xanthones: a critical review of the current evidence." *Nutrients*. 2013;5(8):3163-3183. PMID: 23945675. [https://doi.org/10.3390/nu5083163](https://doi.org/10.3390/nu5083163)
 
-[4] Grokipedia. "Mangosteen." Sections: Overview, Fruit Characteristics, Marketing and Economics. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
+[14] Ovalle-Magallanes B, Eugenio-Pérez D, Pedraza-Chaverri J. "Medicinal properties of mangosteen (Garcinia mangostana L.): A comprehensive update." *Food Chem Toxicol*. 2017;109(Pt 1):102-122. PMID: 28842267. [https://doi.org/10.1016/j.fct.2017.08.021](https://doi.org/10.1016/j.fct.2017.08.021)
 
-[5] Grokipedia. "Mangosteen — Growing Conditions and Practices." [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
+[15] Shan T, Ma Q, Guo K, et al. "Xanthones from mangosteen extracts as natural chemopreventive agents: potential anticancer drugs." *Curr Mol Med*. 2011;11(8):666-677. PMID: 21902651. [https://doi.org/10.2174/156652411797536679](https://doi.org/10.2174/156652411797536679)
 
-[6] Grokipedia. "Mangosteen — Yield and Harvesting." [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
+[26] Li L, Brunner I, Han AR, et al. "Pharmacokinetics of α-mangostin in rats after intravenous and oral application." *Mol Nutr Food Res*. 2011;55(Suppl 1):S67-S74. PMID: 21254395. [https://doi.org/10.1002/mnfr.201000511](https://doi.org/10.1002/mnfr.201000511)
 
-[7] Grokipedia. "Mangosteen — Propagation Methods." [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
+[30] Chen LG, Yang LL, Wang CC. "Anti-inflammatory activity of mangostins from Garcinia mangostana." *Food Chem Toxicol*. 2008;46(2):688-693. PMID: 18029076. [https://doi.org/10.1016/j.fct.2007.09.096](https://doi.org/10.1016/j.fct.2007.09.096)
 
-[8] Grokipedia. "Mangosteen — Global Production Regions; Marketing and Economics." [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
+[34] Rassameemasmaung S, Sirikulsathean A, Amornchat C, et al. "Effects of herbal mouthwash containing the pericarp extract of Garcinia mangostana L on halitosis, plaque and papillary bleeding index." *J Int Acad Periodontol*. 2007;9(1):19-25. PMID: 17274236. [https://pubmed.ncbi.nlm.nih.gov/17274236/](https://pubmed.ncbi.nlm.nih.gov/17274236/)
 
-[9] Grokipedia. "Mangosteen — Marketing and Economics." Global market value US$338 million (2023), projected growth. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
+[36] Hsu J, Skover G, Goldman MP. "Evaluating the efficacy in improving facial photodamage with a mixture of topical antioxidants." *J Drugs Dermatol*. 2007;6(11):1141-1148. PMID: 18038502. [https://pubmed.ncbi.nlm.nih.gov/18038502/](https://pubmed.ncbi.nlm.nih.gov/18038502/)
 
-[10] Pedraza-Chaverri J, Cárdenas-Rodríguez N, Orozco-Ibarra M, Pérez-Rojas JM. "Medicinal properties of mangosteen (Garcinia mangostana)." *Food Chem Toxicol*. 2008;46(10):3227-3239. [https://doi.org/10.1016/j.fct.2008.07.024](https://doi.org/10.1016/j.fct.2008.07.024)
+[42] Wong LP, Klemmer PJ. "Severe lactic acidosis associated with juice of the mangosteen fruit Garcinia mangostana." *Am J Kidney Dis*. 2008;51(5):829-833. PMID: 18436094. [https://doi.org/10.1053/j.ajkd.2007.12.043](https://doi.org/10.1053/j.ajkd.2007.12.043)
 
-[11] Gutierrez-Orozco F, Failla ML. "Biological activities and bioavailability of mangosteen xanthones: a critical review of the current evidence." *Nutrients*. 2013;5(8):3163-3183. [https://doi.org/10.3390/nu5083163](https://doi.org/10.3390/nu5083163)
+[56] Chitchumroonchokchai C, Riedl KM, Suksumrarn S, et al. "Xanthones in mangosteen juice are absorbed and partially conjugated by healthy adults." *J Nutr*. 2012;142(4):675-680. PMID: 22399525. [https://doi.org/10.3945/jn.111.156992](https://doi.org/10.3945/jn.111.156992)
 
-[12] Ibrahim MY, Hashim NM, Mariod AA, et al. "α-Mangostin from Garcinia mangostana Linn: an updated review of its pharmacological properties." *Arab J Chem*. 2016;9(3):317-329. [https://doi.org/10.1016/j.arabjc.2014.02.011](https://doi.org/10.1016/j.arabjc.2014.02.011)
+[57] Benatrehina PA, Pan L, Naman CB, et al. "Usage, biological activity, and safety of selected botanical dietary supplements consumed in the United States." *J Tradit Complement Med*. 2018;8(2):267-277. PMID: 29736381. [https://doi.org/10.1016/j.jtcme.2018.01.006](https://doi.org/10.1016/j.jtcme.2018.01.006)
 
-[13] Grokipedia. "Mangosteen — Bioactive Phytochemicals." Xanthone distribution, α-mangostin content, LC-MS analysis. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
+[58] Lobb AL. "Science in liquid dietary supplement promotion: the misleading case of mangosteen juice." *Hawaii J Med Public Health*. 2012;71(2):46-48. PMID: 22454810. [https://pubmed.ncbi.nlm.nih.gov/22454810/](https://pubmed.ncbi.nlm.nih.gov/22454810/)
 
-[14] Ovalle-Magallanes B, Eugenio-Pérez D, Pedraza-Chaverri J. "Medicinal properties of mangosteen (Garcinia mangostana L.): A comprehensive update." *Food Chem Toxicol*. 2017;109(Pt 1):102-122. [https://doi.org/10.1016/j.fct.2017.08.021](https://doi.org/10.1016/j.fct.2017.08.021)
+[59] Suksamrarn S, Suwannapoch N, Phakhodee W, et al. "Antimycobacterial activity of prenylated xanthones from the fruits of Garcinia mangostana." *Chem Pharm Bull (Tokyo)*. 2003;51(7):857-859. PMID: 12843596. [https://doi.org/10.1248/cpb.51.857](https://doi.org/10.1248/cpb.51.857)
 
-[15] Shan T, Ma Q, Guo K, et al. "Xanthones from mangosteen extracts as natural chemopreventive agents: potential anticancer drugs." *Curr Mol Med*. 2011;11(8):666-677. [https://doi.org/10.2174/156652411797536679](https://doi.org/10.2174/156652411797536679)
+[60] Ramesh KSV, Ramalaxmi K, Sruthima NVSG, et al. "Efficacy of mangosteen as local drug delivery for improving periodontal health in adults with periodontitis: a systematic review and meta-analysis of randomized controlled trials." *J Complement Integr Med*. 2025;22(4):563-573. PMID: 40314616. [https://doi.org/10.1515/jcim-2024-0463](https://doi.org/10.1515/jcim-2024-0463)
 
-[16] ConsumerLab. "Mangosteen Juice and Supplement Review." Sections: What It Is, What It Does, Concerns and Cautions. [https://www.consumerlab.com/reviews/mangosteen-juice-supplement/mangosteen/](https://www.consumerlab.com/reviews/mangosteen-juice-supplement/mangosteen/)
+[61] Lueangarun S, Sriviriyakul K, Tempark T, et al. "Clinical efficacy of 0.5% topical mangosteen extract in nanoparticle loaded gel in treatment of mild-to-moderate acne vulgaris: A 12-week, split-face, double-blinded, randomized, controlled trial." *J Cosmet Dermatol*. 2019;18(5):1395-1403. PMID: 30688020. [https://doi.org/10.1111/jocd.12856](https://doi.org/10.1111/jocd.12856)
 
-[17] Grokipedia. "Mangosteen — Medicinal Applications." Traditional uses, modern research. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
+[62] Pan-In P, Wongsomboon A, Kokpol C, et al. "Depositing α-mangostin nanoparticles to sebaceous gland area for acne treatment." *J Pharmacol Sci*. 2015;129(4):226-232. PMID: 26701606. [https://doi.org/10.1016/j.jphs.2015.11.005](https://doi.org/10.1016/j.jphs.2015.11.005)
 
-[18] Mulia K, Putri GA, Krisanti E. "A Review of the Influence of Various Extraction Techniques and Conditions on Xanthone Yield from Mangosteen Pericarp." *Molecules*. 2023;28(11):4557. [https://doi.org/10.3390/molecules28114557](https://doi.org/10.3390/molecules28114557)
+[63] Phumlek K, Itharat A, Pongcharoen P, et al. "Garcinia mangostana hydrogel patch: bactericidal activity and clinical safety for acne vulgaris treatment." *Res Pharm Sci*. 2022;17(5):457-467. PMID: 36386483. [https://doi.org/10.4103/1735-5362.355195](https://doi.org/10.4103/1735-5362.355195)
 
-[19] Grokipedia. "Mangosteen — Medicinal Applications." 2019 randomized double-blind study of 0.5% topical mangosteen extract for acne. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
+[64] Muangpaisan W, Wiputhanuphongs P, Jaisupa N, et al. "Effects of water-soluble mangosteen extract on cognitive function and neuropsychiatric symptoms in patients with mild to moderate Alzheimer's disease (WECAN-AD): A randomized controlled trial." *Alzheimers Dement (N Y)*. 2022;8(1):e12292. PMID: 35415207. [https://doi.org/10.1002/trc2.12292](https://doi.org/10.1002/trc2.12292)
 
-[20] Grokipedia. "Mangosteen — Medicinal Applications." 2025 hydrogel patch formulations for acne. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
+[65] Turner A, Baker A, Dean OM, et al. "Adjunctive Garcinia mangostana Linn. (Mangosteen) Pericarp for Schizophrenia: A 24-Week Double-blind, Randomized, Placebo Controlled Efficacy Trial." *Can J Psychiatry*. 2021;66(4):354-366. PMID: 33355478. [https://doi.org/10.1177/0706743720982437](https://doi.org/10.1177/0706743720982437)
 
-[21] Grokipedia. "Mangosteen — Culinary Applications." Tea, juice, fresh consumption. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
+[66] Marx W, Skvarc DR, Mohebbi M, et al. "The Effect of Adjunctive Mangosteen Pericarp on Cognition in People With Schizophrenia: Secondary Analysis of a Randomized Controlled Trial." *Front Psychiatry*. 2021;12:626486. PMID: 34211410. [https://doi.org/10.3389/fpsyt.2021.626486](https://doi.org/10.3389/fpsyt.2021.626486)
 
-[22] Wittenauer J, Falk S, Schweiggert-Weisz U, Carle R. "LC-QTOF-MS analysis of xanthone content in different parts of mangosteen fruit." *Food Chem*. 2012;134(1):445-452. [https://doi.org/10.1016/j.foodchem.2012.02.096](https://doi.org/10.1016/j.foodchem.2012.02.096)
+[67] Dean OM, Cotton SM, Ashton MM, et al. "The efficacy of adjunctive Garcinia mangostana Linn. (mangosteen) pericarp extract for bipolar depression: 24-week randomised controlled trial." *Br J Psychiatry*. 2025;227(6):854-863. PMID: 40637133. [https://doi.org/10.1192/bjp.2025.108](https://doi.org/10.1192/bjp.2025.108)
 
-[23] Grokipedia. "Mangosteen — Other Applications." Leaves as fodder additives. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
+[68] Thew HY, Tan YC, Ong YS, et al. "A Systematic Review of Neuroprotective Effects of Mangosteen and its Xanthones Against Oxidative Stress and Inflammation." *Planta Med*. 2025;91(14):786-801. PMID: 40845897. [https://doi.org/10.1055/a-2665-2226](https://doi.org/10.1055/a-2665-2226)
 
-[24] Grokipedia. "Mangosteen — Other Applications." Seeds as biofuel source. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
+[69] Thew HY, Lim WM, Ong YS, et al. "Garcinone D mitigates amyloid β42-Induced neurotoxicity: unravelling mechanisms of neuroprotection." *Sci Rep*. 2025;15(1):33757. PMID: 41028758. Correction published: PMID 41125749. [https://doi.org/10.1038/s41598-025-00414-7](https://doi.org/10.1038/s41598-025-00414-7)
 
-[25] Pothitirat W, Gritsanapan W. "Effects of drying methods on assay and antioxidant activity of xanthones in mangosteen pericarp." *Maejo Int J Sci Technol*. 2008;2(3):420-430.
+[70] Watanabe M, Gangitano E, Francomano D, et al. "Mangosteen Extract Shows a Potent Insulin Sensitizing Effect in Obese Female Patients: A Prospective Randomized Controlled Pilot Study." *Nutrients*. 2018;10(5):586. PMID: 29747432. [https://doi.org/10.3390/nu10050586](https://doi.org/10.3390/nu10050586)
 
-[26] Li L, Brunner I, Han AR, et al. "Pharmacokinetics of α-mangostin in rats after intravenous and oral application." *Mol Nutr Food Res*. 2011;55(Suppl 1):S67-S74. [https://doi.org/10.1002/mnfr.201000511](https://doi.org/10.1002/mnfr.201000511)
+[71] Purwoko Y, Nugroho KH, Setiati S, et al. "Effects of Garcinia mangostana Peel Extract on Glycemic Control in Type 2 Diabetes Mellitus: A Systematic Review of Human Studies." *Acta Med Indones*. 2026;58(1):52-58. PMID: 41978307. [https://pubmed.ncbi.nlm.nih.gov/41978307/](https://pubmed.ncbi.nlm.nih.gov/41978307/)
 
-[27] Grokipedia. "Mangosteen — Recent Research and Developments." Chitosan-oleic acid nano-complexes, 2023. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
+[72] Taher M, Tg Zakaria TM, Susanti D, et al. "Hypoglycaemic activity of ethanolic extract of Garcinia mangostana Linn. in normoglycaemic and streptozotocin-induced diabetic rats." *BMC Complement Altern Med*. 2016;16:135. PMID: 27208974. [https://doi.org/10.1186/s12906-016-1118-9](https://doi.org/10.1186/s12906-016-1118-9)
 
-[28] El-Seedi HR, El-Barbary MA, El-Ghorab DM, et al. "Recent insights into the biosynthesis and biological activities of natural xanthones." *Curr Med Chem*. 2010;17(9):854-901. [https://doi.org/10.2174/092986710790712147](https://doi.org/10.2174/092986710790712147)
+[73] Chatatikun M, Tedasen A, Phinyo P, et al. "Hypoglycemic activity of Garcinia mangostana L. extracts on diabetes rodent models: A systematic review and network meta-analysis." *Front Pharmacol*. 2024;15:1472419. PMID: 39415841. [https://doi.org/10.3389/fphar.2024.1472419](https://doi.org/10.3389/fphar.2024.1472419)
 
-[29] Grokipedia. "Mangosteen — Nutritional Composition." Note on advanced LC-MS identification of additional xanthones (2024). [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
+[74] Udani JK, Singh BB, Barrett ML, et al. "Evaluation of Mangosteen juice blend on biomarkers of inflammation in obese subjects: a pilot, dose finding study." *Nutr J*. 2009;8:48. PMID: 19843321. [https://doi.org/10.1186/1475-2891-8-48](https://doi.org/10.1186/1475-2891-8-48)
 
-[30] Chen LG, Yang LL, Wang CC. "Anti-inflammatory activity of mangostins from Garcinia mangostana." *Food Chem Toxicol*. 2008;46(2):688-693. [https://doi.org/10.1016/j.fct.2007.09.096](https://doi.org/10.1016/j.fct.2007.09.096)
+[75] Xie Z, Sintara M, Chang T, et al. "Daily consumption of a mangosteen-based drink improves in vivo antioxidant and anti-inflammatory biomarkers in healthy adults: a randomized, double-blind, placebo-controlled clinical trial." *Food Sci Nutr*. 2015;3(4):342-348. PMID: 26286710. [https://doi.org/10.1002/fsn3.225](https://doi.org/10.1002/fsn3.225)
 
-[31] Grokipedia. "Mangosteen — Recent Research and Developments." Garcinone D neuroprotection study (*Scientific Reports*, 2025); systematic reviews 2025. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
+[76] Suthammarak W, Numpraphrut P, Charoensakdi R, et al. "Antioxidant-Enhancing Property of the Polar Fraction of Mangosteen Pericarp Extract and Evaluation of Its Safety in Humans." *Oxid Med Cell Longev*. 2016;2016:1293036. PMID: 27703599. [https://doi.org/10.1155/2016/1293036](https://doi.org/10.1155/2016/1293036)
 
-[32] Grokipedia. "Mangosteen — Recent Research and Developments." Systematic review of neuroprotective effects of mangosteen xanthones (2025). [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
+[77] Stern JS, Peerson J, Mishra AT, et al. "Efficacy and tolerability of a novel herbal formulation for weight management." *Obesity (Silver Spring)*. 2013;21(5):921-927. PMID: 23784895. [https://doi.org/10.1002/oby.20211](https://doi.org/10.1002/oby.20211)
 
-[33] USDA. "ORAC of Selected Foods, Release 2 (2010)." Note: ORAC database was discontinued in 2012 because ORAC values do not reliably predict in vivo antioxidant effects.
+[78] Suroengrit A, Cao V, Wilasluck P, et al. "Alpha and gamma mangostins inhibit wild-type B SARS-CoV-2 more effectively than the SARS-CoV-2 variants and the major target is unlikely the 3C-like protease." *Heliyon*. 2024;10(11):e31987. PMID: 38867992. [https://doi.org/10.1016/j.heliyon.2024.e31987](https://doi.org/10.1016/j.heliyon.2024.e31987)
 
-[34] Rassameemasmaung S et al. "Effects of herbal mouthwash containing mangosteen rind extract on halitosis, plaque and gingivitis." *J Int Acad Periodontol*. 2007;9(1):19-25.
+[79] Foti RS, Pearson JT, Rock DA, et al. "In vitro inhibition of multiple cytochrome P450 isoforms by xanthone derivatives from mangosteen extract." *Drug Metab Dispos*. 2009;37(9):1848-1855. PMID: 19541824. [https://doi.org/10.1124/dmd.109.028043](https://doi.org/10.1124/dmd.109.028043)
 
-[35] Grokipedia. "Mangosteen — Other Applications." Cosmetic soaps with pericarp xanthones. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
+[80] Dechwongya P, Limpisood S, Boonnak N, et al. "The Intestinal Efflux Transporter Inhibition Activity of Xanthones from Mangosteen Pericarp: An In Silico, In Vitro and Ex Vivo Approach." *Molecules*. 2020;25(24):5877. PMID: 33322620. [https://doi.org/10.3390/molecules25245877](https://doi.org/10.3390/molecules25245877)
 
-[36] Chiu HF et al. "Improvement of facial skin quality with a topical cream containing mangosteen, green tea, white tea, and pomegranate extracts." *J Cosmet Dermatol*. 2018.
+[81] Liu Y, Park JM, Chang KH, et al. "α- and γ-mangostin cause shape changes, inhibit aggregation and induce cytolysis of rat platelets." *Chem Biol Interact*. 2015;240:240-248. PMID: 26343955. [https://doi.org/10.1016/j.cbi.2015.08.021](https://doi.org/10.1016/j.cbi.2015.08.021)
 
-[37] Nurkhasanah N, Yuwono T, Fitriyani A. "Wound Healing and Antioxidant Evaluations of Alginate from Mangosteen Rind Extract." *Molecules*. 2022. [https://doi.org/10.3390/molecules](https://doi.org/10.3390/molecules)
+[82] Calza L, Manfredi R, Chiodo F. "Hyperlactataemia and lactic acidosis in HIV-infected patients receiving antiretroviral therapy." *Clin Nutr*. 2005;24(1):5-15. PMID: 15681097. [https://doi.org/10.1016/j.clnu.2004.03.009](https://doi.org/10.1016/j.clnu.2004.03.009)
 
-[38] Shan T, Ma Q, Guo K, et al. "Xanthones from mangosteen extracts as natural chemopreventive agents: potential anticancer drugs." *Curr Mol Med*. 2011;11(8):666-677. [https://doi.org/10.2174/156652411797536679](https://doi.org/10.2174/156652411797536679)
+[83] Tang YP, Li PG, Kondo M, et al. "Effect of a mangosteen dietary supplement on human immune function: a randomized, double-blind, placebo-controlled trial." *J Med Food*. 2009;12(4):755-763. PMID: 19697997. [https://doi.org/10.1089/jmf.2008.0204](https://doi.org/10.1089/jmf.2008.0204)
 
-[39] Grokipedia. "Mangosteen — Medicinal Applications." Hypoglycaemic activity of ethanolic extract in diabetic rat models. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
+[84] Xia Y, Li Y, Westover KD, et al. "Inhibition of Cell Proliferation in an NRAS Mutant Melanoma Cell Line by Combining Sorafenib and α-Mangostin." *PLoS One*. 2016;11(5):e0155217. PMID: 27152946. [https://doi.org/10.1371/journal.pone.0155217](https://doi.org/10.1371/journal.pone.0155217)
 
-[40] Grokipedia. "Mangosteen — Medicinal Applications." In silico studies of α-mangostin vs. SARS-CoV-2 main protease. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
-
-[41] Drugs.com. "Mangosteen Uses, Benefits & Dosage." [https://www.drugs.com/npc/mangosteen.html](https://www.drugs.com/npc/mangosteen.html). See also: WebMD. "Mangosteen — Uses, Side Effects, and More." [https://www.webmd.com/vitamins/ai/ingredientmono-1099/mangosteen](https://www.webmd.com/vitamins/ai/ingredientmono-1099/mangosteen). See also: Grokipedia "Medicinal Applications" — FDA GRAS status, COVID-19 trials.
-
-[42] Wong LP, Klemmer PJ. "Severe lactic acidosis associated with juice of the mangosteen fruit Garcinia mangostana." *Am J Kidney Dis*. 2008;51(5):829-833. [https://doi.org/10.1053/j.ajkd.2007.12.043](https://doi.org/10.1053/j.ajkd.2007.12.043)
-
-[43] ConsumerLab. "Mangosteen — Concerns and Cautions." [https://www.consumerlab.com/reviews/mangosteen-juice-supplement/mangosteen/](https://www.consumerlab.com/reviews/mangosteen-juice-supplement/mangosteen/)
-
-[44] USDA-APHIS. "Revision of Fruits and Vegetables Import Regulations." Federal Register, 2007. See also: Grokipedia "Marketing and Economics" — US import restrictions lifted 2007.
-
-[45] USDA FoodData Central. "Mangosteen, canned, syrup pack." [https://fdc.nal.usda.gov/](https://fdc.nal.usda.gov/). Nutritional data also from: Grokipedia "Nutritional Composition" section.
-
-[46] Grokipedia. "Mangosteen — Nutritional Composition." Glycemic index approximately 58. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
-
-[47] Grokipedia. "Mangosteen — Nutritional Composition." Titratable acidity variation with maturity. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
-
-[48] Grokipedia. "Mangosteen — Historical Spread and Cultivation." Introduction to Australia 1854. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
-
-[49] Grokipedia. "Mangosteen — Culinary Applications." Canning limitations. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
-
-[50] Grokipedia. "Mangosteen — Culinary Applications." Fresh consumption, chilling. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
-
-[51] Grokipedia. "Mangosteen — Culinary Applications." Thai salad yum mangkut. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
-
-[52] Grokipedia. "Mangosteen — Culinary Applications." Preserves and jams. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
-
-[53] Grokipedia. "Mangosteen — Culinary Applications." Indonesian fermented vinegar. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
-
-[54] Grokipedia. "Mangosteen — Culinary Applications." Functional ice cream with pericarp extract. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
-
-[55] Grokipedia. "Mangosteen — Culinary Applications." Fusion cuisine, seasonal availability. [https://grokipedia.com/page/Mangosteen](https://grokipedia.com/page/Mangosteen)
+[85] Hatfield J, Saad S, Housewright C. "Dietary supplements and bleeding." *Proc (Bayl Univ Med Cent)*. 2022;35(6):802-807. PMID: 36304597. [https://doi.org/10.1080/08998280.2022.2121575](https://doi.org/10.1080/08998280.2022.2121575)
