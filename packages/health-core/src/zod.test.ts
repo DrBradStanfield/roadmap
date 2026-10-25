@@ -22,7 +22,10 @@ describe('zod runs jitless: no dependency code calls new Function (CLAUDE.md sec
   });
 
   it('every module that builds a schema takes z from ./zod, never from zod itself', () => {
-    const hits = execFileSync('git', ['grep', '-lE', `from ['"]zod(/[^'"]*)?['"]`, '--', '*.ts', '*.tsx', '*.mjs', ':!docs'], { cwd: repo })
+    // import, export-from, require() and import(), of zod or a subpath, in any source a bundle or the server runs.
+    const reachesZod = `(from|require\\(|import\\()[[:space:]]*['"]zod(/[^'"]*)?['"]`;
+    const sources = ['*.ts', '*.tsx', '*.mts', '*.cts', '*.js', '*.mjs', '*.cjs'];
+    const hits = execFileSync('git', ['grep', '--untracked', '-lE', reachesZod, '--', ...sources, ':!docs'], { cwd: repo })
       .toString().trim().split('\n');
     expect(hits).toEqual(['packages/health-core/src/zod.ts']);
   });
