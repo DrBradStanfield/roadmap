@@ -1,1 +1,450 @@
-[]
+[
+ {
+  "check": "AC2",
+  "handle": "cbd-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[209] raw_quote is not in the raw file: - **Mood:** Like other seizure medicines, prescription CBD can raise the risk of suicidal thought...",
+  "reason": "AC2 CBD changed_tokens[209] ruling 17 house-wording emergency line, raw_quote not in the raw by design; ratified in decisions.md (CBD touch-up addendum-3; precedent iron, masters-new-2) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "cbd-benefits-forms-dosing-and-side-effects",
+  "match": "token \"127\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Cannabigerol (CBG) is a related cannabinoid that is also not psychoactive. Laboratory studies show it acts on some of...\"",
+  "reason": "AC2 tokeniser/unit case \"127\" ratified in decisions.md (CBD Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "cbd-benefits-forms-dosing-and-side-effects",
+  "match": "token \">8 hour\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **VESIsorb (self-emulsifying system):** In 16 healthy volunteers given a 25 mg CBD dose while fasting, the VESIsorb...\"",
+  "reason": "AC2 tokeniser/unit case \">8 hour\" ratified in decisions.md (CBD Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "cbd-benefits-forms-dosing-and-side-effects",
+  "match": "token \"43.9 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Lennox-Gastaut syndrome:** During a 14-week trial, 171 patients whose seizures had resisted at least two drugs took...\"",
+  "reason": "AC2 tokeniser/unit case \"43.9 %\" ratified in decisions.md (CBD Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "cbd-benefits-forms-dosing-and-side-effects",
+  "match": "token \"21.8 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Lennox-Gastaut syndrome:** During a 14-week trial, 171 patients whose seizures had resisted at least two drugs took...\"",
+  "reason": "AC2 tokeniser/unit case \"21.8 %\" ratified in decisions.md (CBD Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "cbd-benefits-forms-dosing-and-side-effects",
+  "match": "token \"37\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Social anxiety in adolescents:** In 37 Japanese teenagers aged 18 to 19 years with social anxiety disorder, daily C...\"",
+  "reason": "AC2 tokeniser/unit case \"37\" ratified in decisions.md (CBD Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "cbd-benefits-forms-dosing-and-side-effects",
+  "match": "token \"27\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Healthy adults, no benefit:** In 27 healthy volunteers, CBD 300 mg given 30 minutes before an 8-hour sleep recordin...\"",
+  "reason": "AC2 tokeniser/unit case \"27\" ratified in decisions.md (CBD Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "cbd-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.48 day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Cannabis use disorder:** In a 4-week trial of 82 people trying to stop cannabis, 200 mg of CBD was dropped as ineff...\"",
+  "reason": "AC2 tokeniser/unit case \"0.48 day\" ratified in decisions.md (CBD Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "cbd-benefits-forms-dosing-and-side-effects",
+  "match": "token \"16 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Multiple substance use disorder, case report:** A 16-year-old with several substance use disorders, severe depressi...\"",
+  "reason": "AC2 tokeniser/unit case \"16 year\" ratified in decisions.md (CBD Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "cbd-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"18\": Pain perception: A review of 18 placebo-controlled experimental pain studies in healthy adults found that cannabinoid...",
+  "reason": "AC2 tokeniser/unit case \"18\" ratified in decisions.md (CBD Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "cbd-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"16\": Hepatic: Raised liver enzymes occurred in 9% of patients on 10 mg or 20 mg per kilogram a day in one trial [109], and...",
+  "reason": "AC2 tokeniser/unit case \"16\" ratified in decisions.md (CBD Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "cbd-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"9\": In 9 healthy men, one 600 mg CBD dose cut resting systolic pressure 6 mmHg and raised heart rate. During stress tests...",
+  "reason": "AC2 tokeniser/unit case \"9\" ratified in decisions.md (CBD Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "cbd-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"16\": In healthy adults taking 750 mg CBD twice daily, total caffeine exposure rose by 95% and its half-life doubled from 5...",
+  "reason": "AC2 tokeniser/unit case \"16\" ratified in decisions.md (CBD Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "cbd-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"18\": In 18 healthy adults, brownies with 20 mg of THC plus 640 mg of CBD raised THC blood levels and caused more anxiety, ...",
+  "reason": "AC2 tokeniser/unit case \"18\" ratified in decisions.md (CBD Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "rhodiola-benefits-forms-dosing-and-side-effects",
+  "match": "token \"25.8 min\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Noreen et al. (2013) -- Perceived Exertion [22]:** In a crossover trial, 18 people took 3 mg/kg of body weight of *...\"",
+  "reason": "AC2 tokeniser/unit case \"25.8 min\" ratified in decisions.md (rhodiola Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "rhodiola-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"12\": Walker et al. (2007) -- Muscle Energy Recovery [24]: In 12 resistance-trained men, 1,500 mg/day of R. rosea for 4 day...",
+  "reason": "AC2 tokeniser/unit case \"12\" ratified in decisions.md (rhodiola Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "rhodiola-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"11\": Ballmann et al. (2019) -- Anaerobic Performance [25]: In 11 active college-aged women, 1,500 mg/day of golden root ex...",
+  "reason": "AC2 tokeniser/unit case \"11\" ratified in decisions.md (rhodiola Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "holy-basil-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Eugenol in dental products can cause skin reactions and, rarely, a serious allergic reaction [35][36]. Avoid holy b...\" | \"Clove oil, which also contains eugenol, can cause severe poisoning. One case of clove oil ingestion caused coma, seiz...\" | \"Eugenol used in dentistry can cause contact dermatitis and hives [35][36]. Serious allergic reactions to eugenol are ...\"",
+  "reason": "AC2 ruling 17 emergency numbers: the emergency line's 111/000/911/999 tokens carry no source by design (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "holy-basil-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Eugenol in dental products can cause skin reactions and, rarely, a serious allergic reaction [35][36]. Avoid holy b...\" | \"Clove oil, which also contains eugenol, can cause severe poisoning. One case of clove oil ingestion caused coma, seiz...\" | \"Eugenol used in dentistry can cause contact dermatitis and hives [35][36]. Serious allergic reactions to eugenol are ...\"",
+  "reason": "AC2 ruling 17 emergency numbers: the emergency line's 111/000/911/999 tokens carry no source by design (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "holy-basil-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Eugenol in dental products can cause skin reactions and, rarely, a serious allergic reaction [35][36]. Avoid holy b...\" | \"Clove oil, which also contains eugenol, can cause severe poisoning. One case of clove oil ingestion caused coma, seiz...\" | \"Eugenol used in dentistry can cause contact dermatitis and hives [35][36]. Serious allergic reactions to eugenol are ...\"",
+  "reason": "AC2 ruling 17 emergency numbers: the emergency line's 111/000/911/999 tokens carry no source by design (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "holy-basil-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Eugenol in dental products can cause skin reactions and, rarely, a serious allergic reaction [35][36]. Avoid holy b...\" | \"Clove oil, which also contains eugenol, can cause severe poisoning. One case of clove oil ingestion caused coma, seiz...\" | \"Eugenol used in dentistry can cause contact dermatitis and hives [35][36]. Serious allergic reactions to eugenol are ...\"",
+  "reason": "AC2 ruling 17 emergency numbers: the emergency line's 111/000/911/999 tokens carry no source by design (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginseng-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Insomnia is Asian ginseng's most common side effect. Severe allergic reactions are uncommon; for swelling of the fa...\" | \"- Severe allergic reactions [2]. For swelling of the face, lips or throat, or trouble breathing, call your local emer...\"",
+  "reason": "AC2 ruling 17 emergency numbers: the emergency line's 111/000/911/999 tokens carry no source by design (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginseng-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Insomnia is Asian ginseng's most common side effect. Severe allergic reactions are uncommon; for swelling of the fa...\" | \"- Severe allergic reactions [2]. For swelling of the face, lips or throat, or trouble breathing, call your local emer...\"",
+  "reason": "AC2 ruling 17 emergency numbers: the emergency line's 111/000/911/999 tokens carry no source by design (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginseng-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Insomnia is Asian ginseng's most common side effect. Severe allergic reactions are uncommon; for swelling of the fa...\" | \"- Severe allergic reactions [2]. For swelling of the face, lips or throat, or trouble breathing, call your local emer...\"",
+  "reason": "AC2 ruling 17 emergency numbers: the emergency line's 111/000/911/999 tokens carry no source by design (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginseng-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Insomnia is Asian ginseng's most common side effect. Severe allergic reactions are uncommon; for swelling of the fa...\" | \"- Severe allergic reactions [2]. For swelling of the face, lips or throat, or trouble breathing, call your local emer...\"",
+  "reason": "AC2 ruling 17 emergency numbers: the emergency line's 111/000/911/999 tokens carry no source by design (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginseng-benefits-forms-dosing-and-side-effects",
+  "match": "token \"6.44 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Red Korean ginseng and type 2 diabetes:** In a randomized trial with a placebo group in patients with type 2 diabet...\"",
+  "reason": "AC2 tokeniser/unit case \"6.44 mmol/L\" ratified in decisions.md (ginseng Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginseng-benefits-forms-dosing-and-side-effects",
+  "match": "token \"6.19 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Red Korean ginseng and type 2 diabetes:** In a randomized trial with a placebo group in patients with type 2 diabet...\"",
+  "reason": "AC2 tokeniser/unit case \"6.19 mmol/L\" ratified in decisions.md (ginseng Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginseng-benefits-forms-dosing-and-side-effects",
+  "match": "token \"11.96 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Red Korean ginseng and type 2 diabetes:** In a randomized trial with a placebo group in patients with type 2 diabet...\"",
+  "reason": "AC2 tokeniser/unit case \"11.96 mmol/L\" ratified in decisions.md (ginseng Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginseng-benefits-forms-dosing-and-side-effects",
+  "match": "token \"10.48 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Red Korean ginseng and type 2 diabetes:** In a randomized trial with a placebo group in patients with type 2 diabet...\"",
+  "reason": "AC2 tokeniser/unit case \"10.48 mmol/L\" ratified in decisions.md (ginseng Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginseng-benefits-forms-dosing-and-side-effects",
+  "match": "token \"6.27 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Red Korean ginseng and type 2 diabetes:** In a randomized trial with a placebo group in patients with type 2 diabet...\"",
+  "reason": "AC2 tokeniser/unit case \"6.27 %\" ratified in decisions.md (ginseng Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginseng-benefits-forms-dosing-and-side-effects",
+  "match": "token \"6.12 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Red Korean ginseng and type 2 diabetes:** In a randomized trial with a placebo group in patients with type 2 diabet...\"",
+  "reason": "AC2 tokeniser/unit case \"6.12 %\" ratified in decisions.md (ginseng Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginseng-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2 week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Younger adults:** In a trial in 61 healthy young adults, an American ginseng extract (Cereboost) improved working m...\"",
+  "reason": "AC2 tokeniser/unit case \"2 week\" ratified in decisions.md (ginseng Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginseng-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"12\": Ginseng's effect on CYP3A4, a liver and gut enzyme that breaks down many medicines, is unclear. In 12 healthy volunte...",
+  "reason": "AC2 tokeniser/unit case \"12\" ratified in decisions.md (ginseng Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "licorice-and-dgl-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Heavy use can cause dangerous heart rhythms, paralysis and death [50][62]. If you take licorice regularly or in lar...\" | \"In a 2023 review of 104 case reports, 84 people needed hospital admission [62]. If you take licorice regularly or in ...\"",
+  "reason": "AC2 ruling 17 emergency numbers: the emergency line's 111/000/911/999 tokens carry no source by design (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "licorice-and-dgl-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Heavy use can cause dangerous heart rhythms, paralysis and death [50][62]. If you take licorice regularly or in lar...\" | \"In a 2023 review of 104 case reports, 84 people needed hospital admission [62]. If you take licorice regularly or in ...\"",
+  "reason": "AC2 ruling 17 emergency numbers: the emergency line's 111/000/911/999 tokens carry no source by design (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "licorice-and-dgl-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Heavy use can cause dangerous heart rhythms, paralysis and death [50][62]. If you take licorice regularly or in lar...\" | \"In a 2023 review of 104 case reports, 84 people needed hospital admission [62]. If you take licorice regularly or in ...\"",
+  "reason": "AC2 ruling 17 emergency numbers: the emergency line's 111/000/911/999 tokens carry no source by design (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "licorice-and-dgl-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Heavy use can cause dangerous heart rhythms, paralysis and death [50][62]. If you take licorice regularly or in lar...\" | \"In a 2023 review of 104 case reports, 84 people needed hospital admission [62]. If you take licorice regularly or in ...\"",
+  "reason": "AC2 ruling 17 emergency numbers: the emergency line's 111/000/911/999 tokens carry no source by design (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "licorice-and-dgl-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤3.1 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Licorice candy:** In the US, the FDA allows up to 3.1% glycyrrhizin in soft candy [4]. Candy providing 100 mg gly...\" | \"| US soft candy | Up to 3.1% by weight [4] | Confectionery | 100 mg glycyrrhizic acid a day raised blood pressure [19] |\" | \"| Black licorice candy | Up to 3.1% by weight in US soft candy [4] | 100 mg glycyrrhizic acid a day raised blood pres...\"",
+  "reason": "AC2 tokeniser/unit case \"≤3.1 %\" ratified in decisions.md (licorice Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "licorice-and-dgl-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3.1 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**FDA limits:** The US FDA lists licorice as generally recognized as safe in foods within set maximum levels, such as...\"",
+  "reason": "AC2 tokeniser/unit case \"3.1 %\" ratified in decisions.md (licorice Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "licorice-and-dgl-benefits-forms-dosing-and-side-effects",
+  "match": "token \"40 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**FDA limits:** The US FDA lists licorice as generally recognized as safe in foods within set maximum levels, such as...\"",
+  "reason": "AC2 tokeniser/unit case \"40 year\" ratified in decisions.md (licorice Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC2",
+  "handle": "licorice-and-dgl-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"11\": European Commission Scientific Committee on Food recommendation: In April 2003 the Scientific Committee on Food confi...",
+  "reason": "AC2 tokeniser/unit case \"11\" ratified in decisions.md (licorice Ratified lines) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC4",
+  "handle": "ginseng-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Liver Dysfunction",
+  "reason": "AC4 heading \"### Liver Dysfunction\" removed with its whole section, ratified in decisions.md (ginseng Ratified line) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC4",
+  "handle": "ginseng-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Hair Loss (Alopecia Areata)",
+  "reason": "AC4 heading \"### Hair Loss (Alopecia Areata)\" removed with its whole section, ratified in decisions.md (ginseng Ratified line) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC4",
+  "handle": "licorice-and-dgl-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Populations Who Should Avoid All Forms of Licorice (Including DGL)",
+  "reason": "AC4 rename to \"Who Should Avoid Regular Licorice or Ask First\" ratified in decisions.md (licorice item 5: old heading contradicted its intro, last ConsumerLab n-gram) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "cbd-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host dailymed.nlm.nih.gov: [115] U.S. National Library of Medicine, DailyMed. Epidiolex (cannabidiol) oral solution prescrib...",
+  "reason": "AC7 host dailymed.nlm.nih.gov ratified in decisions.md (CBD Ratified line) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "cbd-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host fda.gov: [116] U.S. Food and Drug Administration. \"What You Need to Know (And What We're Working to Find O...",
+  "reason": "AC7 host fda.gov ratified in decisions.md (CBD Ratified line) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "cbd-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host fda.gov: [117] U.S. Food and Drug Administration. \"What You Should Know About Using Cannabis, Including CB...",
+  "reason": "AC7 host fda.gov ratified in decisions.md (CBD Ratified line) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "cbd-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host fda.gov: [118] U.S. Food and Drug Administration. \"5 Things to Know about Delta-8 Tetrahydrocannabinol (De...",
+  "reason": "AC7 host fda.gov ratified in decisions.md (CBD Ratified line) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "cbd-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Types of CBD Products",
+  "reason": "AC7 product-section false positive \"### Types of CBD Products\" ratified in decisions.md (CBD Ratified line; no Brad product) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "cbd-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Product Safety Concerns",
+  "reason": "AC7 product-section false positive \"### Product Safety Concerns\" ratified in decisions.md (CBD Ratified line; no Brad product) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "cbd-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Common Product Forms",
+  "reason": "AC7 product-section false positive \"### Common Product Forms\" ratified in decisions.md (CBD Ratified line; no Brad product) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "rhodiola-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Identifying Quality Products",
+  "reason": "AC7 product-section false positive \"### Identifying Quality Products\" ratified in decisions.md (rhodiola Ratified line; no Brad product) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "ginseng-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Product Forms",
+  "reason": "AC7 product-section false positive \"### Product Forms\" ratified in decisions.md (ginseng Ratified line; no Brad product) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "licorice-and-dgl-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host web.archive.org: [71] US Food and Drug Administration. \"Black Licorice: Trick or Treat?\" Consumer update, content ...",
+  "reason": "AC7 host web.archive.org ratified in decisions.md (licorice Ratified line) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "licorice-and-dgl-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Production and Quality",
+  "reason": "AC7 product-section false positive \"### Production and Quality\" ratified in decisions.md (licorice Ratified line; no Brad product) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ },
+ {
+  "check": "AC7",
+  "handle": "licorice-and-dgl-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Residual Glycyrrhizin in DGL Products",
+  "reason": "AC7 product-section false positive \"### Residual Glycyrrhizin in DGL Products\" ratified in decisions.md (licorice Ratified line; no Brad product) (orchestrator 2026-10-25, masters-new-9).",
+  "by": "orchestrator",
+  "date": "2026-10-25"
+ }
+]
