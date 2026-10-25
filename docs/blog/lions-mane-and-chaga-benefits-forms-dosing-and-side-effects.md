@@ -6,225 +6,210 @@ publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["lions mane", "chaga", "mushroom", "hericium erinaceus", "inonotus obliquus", "nerve growth factor", "cognitive", "brain health", "beta-glucan", "erinacine", "hericenone", "dementia", "alzheimer", "depression", "anxiety", "immune", "inflammation", "gut health", "neuropathy", "blood sugar", "diabetes", "kidney"]
-summary: "Reference on lion's mane and chaga mushrooms: cognitive support, mood, immune function. Lion's mane may help mild cognitive impairment; chaga has no human trials. Forms differ (fruiting body vs mycelium). Chaga carries kidney injury risk from oxalates. Always discuss with your doctor."
+summary: "Lion's mane: small trials, one positive in mild cognitive impairment. Chaga: lab and animal studies; case reports of kidney injury. Do not take chaga if you have kidney disease or have had a calcium oxalate kidney stone; ask your doctor first if you take blood thinners or diabetes medicines."
+reviewed: "2026-10-26"
+sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/40959699/","checked":"2026-10-26","fingerprint":"sha256:93744bc3c3fa1e48191aa241db090b24cb8f64a346ba0138d0b41d013b102abf"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/lions-mane-and-chaga-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/lions-mane-and-chaga-benefits-forms-dosing-and-side-effects)*
 
+## Current evidence position
+
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. A 2025 systematic review of lion's mane found five randomised trials and three pilot trials, mostly on cognition; in two of them, Mini-Mental State Examination scores showed a combined weighted mean increase of 1.17 [56]. In the best-known trial, 30 adults with mild cognitive impairment scored better than placebo at weeks 8, 12 and 16, but scores fell again 4 weeks after stopping [26], while trials in healthy adults found no overall gain in cognition or mood [21][23] or gains on some tasks only [22][24]. Chaga's possible benefits come from cell and animal studies [44]. Case reports link months to years of daily chaga powder to oxalate kidney injury, including one man who developed end-stage renal disease [46][47][48].
+
+## Key safety points
+
+- Chaga is very high in oxalate and a possible risk factor for chronic kidney disease [48]. Do not take it if you have kidney disease or have ever had a calcium oxalate kidney stone. Case reports describe oxalate kidney injury after daily chaga powder, one ending in end-stage renal disease [46][47][48].
+- A man developed acute respiratory distress syndrome and needed a ventilator after taking lion's mane extract [51]. If you have trouble breathing after taking it, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- Chaga contains a peptide that blocked platelet clumping in lab and mouse tests [55], and a lion's mane compound did so in lab tests [60]. If you take a blood thinner, ask your doctor before using either.
+- Chaga may lower blood sugar in lab and animal studies [44][45]. If you take diabetes medicines, check with your doctor before starting chaga.
+- If you have had HMGCR immune-mediated necrotising myopathy, avoid mushroom supplements: one woman's myositis flared after she began them [59].
+- In a 49-week trial, four participants dropped out because of abdominal discomfort, nausea and skin rash [29].
+
+## Brad's videos on this topic
+
+None yet.
+
 ## 1. Overview
 
-Lion's mane (*Hericium erinaceus*) and chaga (*Inonotus obliquus*) are two fungi with long histories of use in traditional medicine, particularly in East Asia and Northern Europe. Both are widely marketed as dietary supplements with claims ranging from cognitive enhancement to immune support. However, the clinical evidence behind these two organisms differs substantially — and in many cases falls short of the marketing claims.
+Lion's mane (*Hericium erinaceus*) and chaga (*Inonotus obliquus*) are two fungi with long histories of use in traditional medicine. Both are widely sold as supplements with claims that range from better memory to immune support. The clinical evidence for the two differs a great deal, and for both it falls short of the marketing.
 
 ### Lion's Mane
 
-Lion's mane is an edible mushroom that grows on living or dead broadleaf trees, primarily hardwoods such as oak, beech, maple, and walnut [1][2]. It is consumed as a food in Japan and China, where it is known as *yamabushitake* (mountain monk mushroom) and *hóutóugū* (monkey head mushroom), respectively [2]. The mushroom's distinctive white, cascading, spine-covered fruiting body — resembling a lion's mane — typically measures 8–24 cm in diameter and is found in temperate forests across North America, Europe, and Asia [2][3].
+Lion's mane is an edible and medicinal mushroom, known in Japan as Yamabushitake [57]. People in East Asia cook it as a food, and its use is growing in the West [23].
 
-Like other fungi, lion's mane consists of two main parts: the **fruiting body** (the visible "mushroom" growing above the surface) and the **mycelium** (the underground root-like network). This distinction is critical for supplement consumers because the bioactive compounds differ between these parts [1][4].
+Like other fungi, lion's mane consists of two main parts: the **fruiting body** (the visible "mushroom") and the **mycelium** (the root-like network). The difference matters for supplement buyers because the two parts make different compounds [57][58].
 
-Test-tube studies have shown that chemicals in lion's mane called **hericenones** (found primarily in the fruiting body) and **erinacines** (found primarily in the mycelium) can promote the production of nerve growth factor (NGF) in cells of the nervous system [4][5]. NGF is a protein essential for the growth, maintenance, and survival of neurons — particularly cholinergic neurons that tend to decline in activity with age and in Alzheimer's disease [4][6][7]. Japanese researcher Hirokazu Kawagishi and colleagues first identified these NGF-stimulating compounds in the 1990s, isolating erinacines A, B, and C in 1994 and demonstrating their potent stimulatory effects on NGF production in cell cultures [8][9]. Subsequent isolations of erinacines E, F, and G in 1996 further confirmed their NGF-promoting activity [10].
+Researchers led by Hirokazu Kawagishi found hericenones C to H in the fruiting bodies and erinacines A to I in cultured mycelia [57]. The fruiting body does not make detectable amounts of erinacines [58]. In nerve cell cultures, hericenones and erinacines can induce the synthesis of nerve growth factor (NGF) [4]. NGF is essential for maintaining the basal forebrain cholinergic system [4].
 
-Lion's mane also contains **beta-glucans** (mainly in the fruiting body) and **alpha-glucans** (mainly in the mycelium), which are naturally occurring polysaccharides that have been shown in laboratory and animal studies to have anti-cancer, antioxidant, anti-inflammatory, and immunomodulatory effects [1][11]. However, laboratory research with human blood cells found that mycelium extract reduced certain markers of inflammation, while fruiting body extract actually *increased* a key marker of inflammation, suggesting the two parts may have opposing immune effects [12]. The beta-glucans in lion's mane are chemically distinct from the beta-glucan found in oats and other cereals, which has a well-established cholesterol-lowering effect [11][13].
-
-Commercially available lion's mane supplements in the U.S. are generally not standardized to erinacine or hericenone content, and there are currently no certified reference standards or compendial analytical methods available for these compounds [1].
+Lion's mane polysaccharides have shown antitumour, immune-modulating and antioxidant activity in laboratory and animal research [3]. Mushroom beta-glucans in general activate parts of the immune system, such as macrophages and natural killer cells [11].
 
 ### Chaga
 
-Chaga (*Inonotus obliquus*) is not technically a mushroom but rather a fungal growth (sclerotium) consisting of mycelium that forms most commonly on birch trees in response to infection, typically in colder climates such as Northern Europe, Siberia, Russia, Korea, and Northern Canada [1][14]. Due to its tough, charcoal-like exterior texture, chaga has traditionally been consumed as a tea or extract rather than eaten directly [14].
+Chaga is the charcoal-black sterile conk that *Inonotus obliquus* forms on infected birch trees, and its dark pulp is a pure mass of fungal mycelium [14]. It grows mainly in the boreal forests of Russia, Scandinavia and Central and Eastern Europe, and is rare in North America, Japan and Korea [14]. It is a folk remedy in Russia [14].
 
-Chaga supplements are typically made from the mycelium, which contains predominantly **alpha-glucans** and little to no beta-glucans [15]. When a birch tree dies, chaga may produce a fruiting body (sporocarp) under the bark, which does contain beta-glucans. Some supplements use this fruiting body material [1].
+Some North American chaga supplements contain mycelium fermented on grain rather than wild chaga conk [18].
 
-Laboratory and animal studies suggest chaga may have potential benefits for immune function, blood sugar regulation, and anti-tumor activity. However, **there do not appear to be any published clinical trials that have investigated the effects of chaga tea or supplements in people** [1]. This is a critical distinction: all evidence for chaga's health effects comes from cell studies and animal models.
+Cell and animal research points to antitumour, antioxidant and blood sugar-lowering effects of chaga polysaccharides [44]. This evidence comes from cell and animal studies, not trials in people.
 
 ### Nutritional Profile of Lion's Mane
 
-Per 100 grams of fresh lion's mane fruiting body [2][16]:
+Nutrient values for fresh lion's mane are listed in USDA FoodData Central [16].
 
-| Nutrient | Amount | % Daily Value |
-|----------|--------|:---:|
-| Calories | 43 kcal | — |
-| Protein | 2.5 g | — |
-| Carbohydrates | 7.6 g | — |
-| Dietary Fiber | 4.4 g | — |
-| Beta-glucans | ~2.4 g | — |
-| Fat | 0.3 g | — |
-| Biotin | 17 mcg | 57% |
-| Riboflavin (B2) | 0.36 mg | 28% |
-| Thiamin (B1) | 0.15 mg | 13% |
-| Niacin (B3) | 1.63 mg | 10% |
-| Potassium | 443 mg | 9% |
-| Folate | 30 mcg | 8% |
-| Zinc | 0.74 mg | 7% |
-| Phosphorus | 94 mg | — |
-| Iron | 0.69 mg | 4% |
-| Vitamin B6 | 0.07 mg | 4% |
-| Magnesium | 11.7 mg | 3% |
-
-Adding lion's mane to coffee has become a trend marketed as a healthier alternative to regular coffee. However, a study found that a small amount (2 grams) of lion's mane fruiting body powder added to instant coffee provided no meaningful increases in meeting the Daily Value for essential minerals. The greatest increase was for iron, going from 2% DV with instant coffee alone to just 3% DV with lion's mane added [17].
+A 2024 laboratory study compared coffee brewed with lion's mane or *Cordyceps militaris* fruiting bodies. *Cordyceps* was the better added source of magnesium, zinc, copper, sodium, potassium and calcium, while lion's mane gave slightly more iron [17].
 
 ## 2. Forms and Bioavailability
 
 ### Lion's Mane Forms
 
-Lion's mane supplements vary widely in their chemical composition depending on which part of the fungus is used and how it is processed. Understanding these differences is essential for evaluating product quality.
+Lion's mane supplements vary in their chemical makeup depending on which part of the fungus is used and how it is processed.
 
-**Fruiting body products** are derived from the visible mushroom portion. They tend to contain higher concentrations of:
-- **Beta-glucans** — the primary polysaccharides thought to contribute to immune and antioxidant effects [1][15]
-- **Hericenones** — diterpenoid compounds shown to stimulate NGF synthesis in cell cultures [4][5]
-- Higher concentrations of minerals, B vitamins, and dietary fiber [2][16]
+**Fruiting body products** are made from the visible mushroom. They contain:
+- **Hericenones**, compounds found in the fruiting bodies [57]
+- **Polysaccharides**, including beta-glucans, with immune and antioxidant activity in laboratory studies [3][11]
 
-**Mycelium products** are derived from the root-like network. They tend to contain:
-- **Erinacines** — cyathane diterpenoid compounds shown to stimulate NGF synthesis, which are distinct from hericenones [4][5][8]
-- **Alpha-glucans** rather than beta-glucans [1][15]
-- Potentially residual grain substrate, since mycelium is typically grown on grain [18]
+**Mycelium products** are made from the root-like network. They contain:
+- **Erinacines**, cyathane diterpenoids made by the mycelium; the amount depends on what the mycelium is grown on [58]
 
-**Extracts vs. powders:** Extract products should contain higher concentrations of bioactive compounds than products that are simply dried, powdered mushroom. However, the specific extraction method (hot water, ethanol, dual extraction) affects which compounds are present. Hericenones are more soluble in ethanol, while beta-glucans are more water-soluble [1][2].
+**Extracts vs. powders:** Trials have used dried fruiting body powder [26], a 10:1 fruiting body extract [23] and an erinacine A-enriched mycelium extract [29].
 
 ### Critical Quality Issues
 
-**Mycelium-on-grain products:** Many mycelium supplements sold in the U.S. are grown on grain substrates (rice, oats, sorghum), and the final product may contain substantial amounts of grain rather than pure mycelium. Labels may list "mushroom" but indicate the ingredient is from mycelium — these products do not technically include mushroom (the fruiting body) [1].
+**Mycelium-on-grain products:** An analysis of North American chaga supplements found that products made from mycelium fermented on grain were rich in starch and differed sharply in makeup from wild chaga conk [18].
 
-**Chaga myceliated grain concerns:** An analysis of four commercially available chaga "mycelium fermented grain" supplements found they contained similar amounts of alpha-glucans and beta-glucans as the grain substrates alone (47–74% alpha-glucan and 1–7% beta-glucan in powdered brown rice, oats, and sorghum). Furthermore, these supplements did not contain constituents found in whole chaga, such as melanin, triterpenoids, and ergosterol, but did contain relatively high amounts of linoleic and oleic acids found only in the grains [18]. This suggests some myceliated grain products may be more grain than fungus.
+**Chaga myceliated grain concerns:** In the same analysis, wild chaga conk contained triterpenoids (inotodiol and trametenolic acid), phenolic compounds and melanin, and no starch, while the fermented grain products did not share this profile [18].
 
-**Standardization:** Unlike many herbal supplements, lion's mane products are generally not standardized to specific bioactive compound content (hericenones, erinacines). The beta-glucan content listed on some labels is a more reliable quality indicator — fruiting body extracts typically contain higher beta-glucan levels than mycelium products [1][15].
+**Standardization:** Inconsistent testing methods raise concerns about the authenticity and labelling of chaga supplements [18]. A validated method exists for measuring beta-glucan in mushroom and mycelial products [15].
 
 ### Chaga Forms
 
 Chaga supplements are available as:
-- **Whole dried chunks** — traditionally brewed as tea
-- **Powdered chaga** — ground mycelium or sclerotium, often used in hot beverages
-- **Extracts** — concentrated preparations using hot water, ethanol, or dual extraction
-- **Myceliated grain products** — mycelium grown on grain substrate (quality concerns noted above)
+- **Whole dried chunks**, traditionally brewed as tea
+- **Powdered chaga**, often used in hot drinks
+- **Extracts**, made with hot water, ethanol, or both
+- **Myceliated grain products**, mycelium grown on grain (quality concerns noted above)
 
-The key distinction for chaga is between the external sclerotium (the charcoal-like growth on living trees, primarily mycelium and tree components) and the rare fruiting body (which forms under the bark of dying trees). The sclerotium contains primarily alpha-glucans, while the fruiting body contains beta-glucans [1][15]. Chaga supplements may also contain components of wood from the affected tree [19].
+The wild conk that grows on living trees is a pure mass of mycelium [14]. Water and ethanol extracts of chaga contain oxalic acid as their main organic acid, along with phenolic acids [19].
 
 ### Form Comparison Table
 
-| Feature | Fruiting Body Products | Mycelium Products | Myceliated Grain Products |
+| Lion's mane feature | Fruiting Body Products | Mycelium Products |
+|---------|:---:|:---:|
+| Erinacines | Not detected | Present; amount depends on growth medium |
+
+| Chaga feature | Wild Conk | Cultured Mycelium | Myceliated Grain Products |
 |---------|:---:|:---:|:---:|
-| Beta-glucan content | High | Low | Very low (similar to grain alone) |
-| Alpha-glucan content | Low-Moderate | High | High (may be from grain) |
-| Hericenones (lion's mane) | Present | Absent or low | Absent or low |
-| Erinacines (lion's mane) | Absent or low | Present | Variable |
-| Grain filler content | None | None to low | Potentially high |
-| Melanin/triterpenoids (chaga) | Variable | Variable | Absent |
+| Starch | Absent | Not reported | Rich in starch |
+| Triterpenoids and melanin | Present | Makeup differs from wild conk | Makeup differs from wild conk |
+
+Sources: erinacines [58]; chaga starch, triterpenoids and melanin [18].
 
 ## 3. Evidence for Benefits
 
 ### Lion's Mane: Cognitive Function and Memory
 
-Lion's mane is most commonly promoted for improving cognitive function, but the clinical evidence is limited and conflicting. The research suggests that lion's mane might help people with mild cognitive impairment, but it does not appear to benefit people with Alzheimer's disease or healthy adults.
+Lion's mane is most often promoted for memory and thinking, but trials are few and small. A 2025 systematic review found five randomised trials and three pilot trials [56]. One trial in mild cognitive impairment was positive [26], a pilot trial in mild Alzheimer's disease reported mixed results [29], and trials in healthy adults found little overall effect [21][23].
+
+**Study 1, 12-week trial:** A randomised, double-blind trial compared a fruiting body supplement with placebo for 12 weeks. Mini-Mental State Examination scores improved, but the Benton visual retention test and a verbal paired-associate learning test did not [20].
 
 #### Healthy Adults — No Convincing Benefit
 
-Multiple studies in healthy adults have failed to show cognitive benefits from lion's mane supplementation:
+Most trials in healthy adults found no overall cognitive benefit, though some reported gains on particular tasks:
 
-**Study 1 — Healthy older adults (Japan):** A study of 31 healthy older adults (average age 61) given supplements providing 3.2 grams of powdered lion's mane fruiting body or placebo daily for 12 weeks found that, compared to placebo, those given lion's mane showed only very slight improvement in overall score on the Mini Mental State Examination (MMSE). However, there was no difference between groups on subscales measuring memory, orientation, or math skills, and there was no improvement on two other cognitive tests [20].
+**Study 2, college-age adults (U.S.):** A single-blind trial in 24 people found that 10 g of lion's mane a day, eaten in two muffins for 4 weeks, had no effect on cognition or metabolic flexibility compared with placebo [21].
 
-**Study 2 — Healthy young adults (U.S.):** A study of 24 healthy young adults (average age 22) showed that taking 5 grams of lion's mane (1:1 dried mushroom:extract, standardized to 33.69% beta-glucans, from Nammex Organic Mushroom Extracts) twice daily for 4 weeks did not improve cognitive performance during a dual-task challenge (cognitive test during physical balance test), nor did it improve metabolic flexibility compared to placebo [21].
+**Study 3, single 1 g dose:** A crossover trial compared one 1 g dose of Nordic-grown lion's mane with placebo and with guayusa extract. Two hours after the dose, lion's mane improved some measures of working memory, complex attention and reaction time [22].
 
-**Study 3 — Healthy young adults (manufacturer-funded):** A manufacturer-funded study of 40 healthy young adults (average age 34) showed that taking 1 gram of 100% Nordic lion's mane fruiting bodies two hours before cognitive testing did not improve reaction time, mental clarity, focus, concentration, working memory, or accuracy compared to placebo [22].
+**Study 4, single 3 g dose:** In a crossover trial in 18 healthy adults aged 18 to 35 years, one 3 g dose of a 10:1 fruiting body extract did not improve overall cognition or mood 90 minutes later, although performance on a pegboard test improved [23].
 
-**Study 4 — Healthy young adults (U.K.):** A study of healthy young adults showed that taking 3 grams of lion's mane fruiting body extract 90 minutes before cognitive testing did not improve executive function, visual attention, motor speed, reaction time, overall cognitive performance, or mood compared to placebo. The supplement actually showed slight *worsening* in a test evaluating selective attention and impulse control [23].
-
-**Study 5 — Healthy young adults (pilot study):** A double-blind, placebo-controlled RCT of 41 healthy young adults investigated acute and chronic supplementation with 1.8 g/day of lion's mane for 28 days. Acute administration improved speed on the Stroop task (p=0.005), and chronic supplementation showed a trend toward reduced subjective stress (p=0.051), but chronic effects were inconsistent, with no significant overall improvements in global cognition or mood [24][25].
+**Study 5, healthy young adults (pilot study):** A double-blind trial in 41 healthy adults aged 18 to 45 years tested 1.8 g of lion's mane. A single dose sped up performance on the Stroop task at 60 minutes (p = 0.005), and 28 days of use showed a trend towards lower subjective stress (p = 0.051) [24]. The authors also reported null and limited negative findings [24].
 
 #### Mild Cognitive Impairment — Positive but Limited
 
-**Study 6 — Mild cognitive impairment (Japan):** The most frequently cited positive study included 29 Japanese adults (age range 50–80) with mild cognitive impairment who were given tablets providing 960 mg of air-dried, powdered lion's mane fruiting body or placebo three times daily (total 2,880 mg/day). After 16 weeks, significantly more people given lion's mane showed "notable" improvement in cognitive function compared to placebo (71% vs 7%). Notable improvement was defined as an increase of at least 3 points on a 30-point cognitive function scale developed by the investigators. However, improvements tended to decline within 4 weeks of stopping treatment [26].
+**Study 6, mild cognitive impairment (Japan):** In a double-blind trial, 30 Japanese men and women aged 50 to 80, all diagnosed with mild cognitive impairment, were randomised into two 15-person groups. The treated group took four 250 mg tablets containing 96% dried lion's mane powder three times a day for 16 weeks. Their scores on a cognitive function scale were significantly higher than placebo at weeks 8, 12 and 16, but fell significantly 4 weeks after stopping [26].
 
-A 2024 systematic review that synthesized evidence from multiple studies on mushrooms' effects on mood and neurocognitive health found that lion's mane supplementation showed some enhancement of mood and cognitive function in middle-aged and older adults, but results were mixed, and most studies involved small sample sizes (under 50 participants) [27][28].
+A 2025 systematic review found that Mini-Mental State Examination scores in one randomised and one pilot trial showed a combined weighted mean increase of 1.17 with lion's mane [56].
 
-#### Alzheimer's Disease — No Significant Benefit
+#### Alzheimer's Disease — Mixed Pilot Results
 
-**Study 7 — Mild Alzheimer's disease (China):** A study of 41 older adults (average age 76) with mild Alzheimer's disease were given 1.05 grams of lion's mane mycelium extract enriched with erinacine A (5 mg erinacine A per gram of extract) or placebo three times daily with meals (total 3.15 g/day). After 49 weeks, people given lion's mane did not show significantly greater improvement in most measures of cognitive function compared to placebo. The lion's mane group showed only slightly greater improvement on the Instrumental Activities of Daily Living scale, which relates to ability to live independently [29].
+**Study 7, mild Alzheimer's disease:** In a 49-week pilot trial, people with mild Alzheimer's disease took three capsules a day of erinacine A-enriched mycelium (350 mg/capsule, with 5 mg/g erinacine A) or placebo. Mini-Mental State Examination scores improved within the treated group and Cognitive Abilities Screening Instrument scores fell within the placebo group; the groups differed in Instrumental Activities of Daily Living scores, a measure of daily independence [29]. The authors suggested possible benefits, but a pilot trial of this kind cannot settle the question.
 
 #### Summary of Cognitive Evidence
 
 | Population | Studies | Typical Dose | Duration | Result |
 |-----------|:---:|:---:|:---:|--------|
-| Healthy young adults | 4 studies | 1–10 g/day | Acute to 4 weeks | No convincing benefit |
-| Healthy older adults | 1 study | 3.2 g/day | 12 weeks | Minimal benefit |
-| Mild cognitive impairment | 1 study | 2.88 g/day | 16 weeks | Positive (71% vs 7% improved) |
-| Mild Alzheimer's disease | 1 study | 3.15 g/day (erinacine-enriched) | 49 weeks | No significant benefit |
+| Healthy adults | 4 studies | 1 to 10 g/day | Single dose to 4 weeks | Mostly no overall benefit |
+| Adults (12-week trial) | 1 study | Fruiting body supplement | 12 weeks | MMSE improved, other tests did not |
+| Mild cognitive impairment | 1 study | Four 250 mg tablets three times a day | 16 weeks | Positive |
+| Mild Alzheimer's disease | 1 study | Three capsules a day (350 mg/capsule, erinacine A-enriched) | 49 weeks | Mixed (pilot) |
 
 ### Lion's Mane: Depression and Anxiety
 
-Lower levels of nerve growth factor have been linked with major depressive disorder [30]. Based on lion's mane's ability to stimulate NGF production, there is interest in using it for depression, but no strong clinical evidence supports this use.
+A meta-analysis of seven studies found significantly lower NGF levels in the blood of people with major depressive disorder than in healthy controls [30]. In a meta-analysis of four studies, NGF levels did not change significantly with treatment [30].
 
-**Study 1 — Healthy women (Japan):** A study of 26 healthy women (average age 40) who ate four cookies each containing 500 mg of lion's mane powdered fruiting body (total daily dose 2,000 mg) for 4 weeks showed slightly reduced depression scores. However, this improvement was not statistically significant compared to the placebo group, which also showed a reduction in depression scores [31].
+**Study 1, women (Japan):** In a 4-week trial, 30 women were randomly assigned to cookies containing lion's mane or to placebo cookies. Depression (CES-D) and Indefinite Complaints Index scores fell within the treated group, but differences from placebo were significant for only two complaint items [31].
 
-**Study 2 — Overweight/obese women with mood disorders:** A study of 72 women who were overweight or obese and had at least one mood disorder (depression, anxiety, or binge-eating) showed that following a low-calorie diet and supplementing with three capsules of lion's mane (providing 1,200 mg of mycelium and 300 mg of fruiting body extract daily) for 8 weeks did not reduce depression symptoms overall compared to baseline or compared to the control group. However, those supplementing with lion's mane showed a 12.6% decrease in anxiety compared to baseline, while the control group showed no improvement. It was not shown whether this anxiety improvement was statistically significant [32].
+**Study 2, adults with overweight or obesity:** In 77 adults with overweight or obesity and a mood disorder, sleep disorder or binge eating, all on a low-calorie diet, 8 weeks of lion's mane supplementation decreased depression, anxiety and sleep disorder scores [32]. It raised circulating pro-BDNF without changing BDNF [32].
 
-**Study 3 — Menopausal women (Japan):** In menopausal women consuming 2 g/day via cookies for 4 weeks, significant decreases in depression and anxiety scores were observed on the Kupperman Menopausal Index and Indefinite Complaints Index [31][33].
-
-**Study 4 — Overweight adults (8-week trial):** In overweight and obese adults, 550 mg/day supplementation for 8 weeks, combined with a low-calorie diet, led to lowered depression, anxiety, and sleep disorder scores, potentially linked to increased pro-brain-derived neurotrophic factor (BDNF) levels [34].
-
-**Synthesis:** The evidence for lion's mane treating depression or anxiety is preliminary. Small studies show mixed results, with most improvements either not reaching statistical significance or confounded by concurrent dietary interventions. Larger, well-designed RCTs are needed.
+**Synthesis:** Two small studies reported lower depression and anxiety scores; one compared mostly within groups and in the other everyone was dieting. Larger trials are needed.
 
 ### Lion's Mane: Gut Health
 
 Lion's mane has drawn interest for gut health based on preclinical evidence:
 
-- A test-tube study showed that lion's mane could inhibit the activity of *H. pylori*, a bacteria that commonly causes stomach ulcers [35]
-- A study in mice showed that lion's mane protected against alcohol-induced stomach ulcers [36]
+- Ethanol extracts of the fruiting body inhibited *H. pylori*, a bacterium that commonly causes stomach ulcers, in the test tube [35]
+- In mice, a polysaccharide fraction from lion's mane mycelium reduced the area of alcohol-induced stomach ulcers [36]
 
-However, there do not appear to be any studies investigating the effects of lion's mane *alone* on gut health in humans. Studies evaluating supplements containing lion's mane combined with other mushrooms have shown conflicting results:
-
-**Ulcerative colitis (positive):** A study of people with ulcerative colitis showed that taking 60 mL of a mushroom extract (AndoSan by Immunopharma AS) containing approximately 15% lion's mane along with 82% *Agaricus blazei* Murill and approximately 3% maitake mushroom daily for 3 weeks improved symptoms compared to placebo [37].
-
-**Crohn's disease (negative):** Taking the same dose of the same supplement for the same duration showed no benefit for people with Crohn's disease [37].
-
-It remains unclear whether any observed gut health effects are due to lion's mane, other mushroom constituents, or the combination.
+A 2025 systematic review reported that lion's mane increased gut microbial diversity and the bacteria that produce short-chain fatty acids [56].
 
 ### Lion's Mane: Nerve Injury and Neuropathy
 
-In animal studies, lion's mane extract has been shown to:
-- Speed recovery of peripheral nerve injury faster than vitamin B12 (which has some evidence for peripheral neuropathy in humans) [38]
-- Reduce nerve pain caused by the chemotherapy drug cisplatin [39]
-- Reduce sensitivity to pain in chemically induced diabetic neuropathy (polysaccharides isolated from fruiting bodies) [40]
+Animal studies found lion's mane extract could:
+- Speed the return of leg function after a nerve crush injury in rats, as did mecobalamin (a form of vitamin B12) given for comparison [38]
+- Raise the pain threshold in rats with diabetic nerve pain [39]
 
-In vitro studies have demonstrated that extracts enriched with hericenones and erinacines promote neurite outgrowth in neuronal cell lines (PC12 cells and neuroblastoma cells) by enhancing NGF signaling pathways [6][7]. Research also indicates that erinacine S may protect oligodendrocytes and promote myelin sheath formation, as shown by increased myelin basic protein expression in cell cultures and animal models of demyelination [41].
+In nerve cell cultures, a lion's mane water extract induced NGF secretion and promoted the growth of nerve cell branches (neurites) [4]. In rats and mice with chemically induced loss of myelin, erinacine S preserved myelin and the cells that make it [41].
 
-However, **there does not appear to be any research investigating the effects of lion's mane on neuropathy conditions in people** [1]. The animal data is promising but requires human confirmation.
+These findings come from cell and animal studies. The animal data are promising but need confirmation in people.
 
 ### Lion's Mane: Sleep
 
-Preliminary research suggests indirect sleep support via anxiety and mood improvement rather than a direct sleep effect. Studies have linked lion's mane supplementation to reduced anxiety and insomnia symptoms, potentially by stimulating NGF and balancing mood [2][34]. Animal research indicates positive influences on circadian rhythms. However, direct sleep effects have not been confirmed in controlled human trials, and the evidence remains speculative.
+In the 8-week trial in adults with overweight or obesity, lion's mane lowered sleep disorder scores along with mood scores [32]. Direct effects on sleep have not been confirmed in controlled trials, and the evidence remains speculative.
 
 ### Lion's Mane: Immune and Anti-Cancer Effects
 
-Laboratory and animal studies suggest lion's mane polysaccharides (particularly beta-glucans from the fruiting body) have antioxidant, anti-inflammatory, and immunomodulatory effects [1][11]. However, an important caveat emerged from human blood cell research: mycelium extract reduced certain markers of inflammation, while fruiting body extract *increased* a key marker of inflammation [12]. This suggests the immune effects may differ — or even be opposing — depending on which part of the fungus is used.
+Lab and animal research suggests lion's mane polysaccharides have antitumour, immune-modulating and antioxidant effects [3]. Mushroom beta-glucans in general activate macrophages and natural killer cells [11].
 
 No human clinical trials have specifically evaluated lion's mane for cancer prevention or treatment.
 
 ### Chaga: Immune Function
 
-Chaga extract from the mycelial portion has been shown in laboratory cell studies and research in mice to promote the production of white blood cells and beneficial cytokines (proteins involved in immune response), indicating an immune-enhancing effect that could potentially help during chemotherapy for cancer [42].
+In mice whose bone marrow had been suppressed by the chemotherapy drug cyclophosphamide, a chaga water extract restored blood cell precursors and raised the immune signal IL-6. The authors suggested it could help as an immune enhancer during chemotherapy [42].
 
-In contrast, an extract of chaga fruiting body (which grows under the bark of dying trees) showed an immune-*suppressing* effect that could potentially be useful in treating inflammatory bowel disease [43]. This opposing immunological activity between the mycelium and fruiting body parallels the divergent findings seen with lion's mane.
+In mice with chemically induced colitis, a chaga water extract reduced gut inflammation, and the authors suggested it might be useful in inflammatory bowel disease [43].
 
 ### Chaga: Blood Sugar
 
-Human cell studies and studies in mice suggest chaga glucans and other chaga polysaccharides may lower blood sugar levels [44][45]. Due to potential blood sugar-lowering effects, chaga should be used with caution in people with hypoglycemia, diabetes, or those taking anti-diabetes medications [45].
+Chaga polysaccharides may reduce blood sugar, based on cell and animal research [44]. In the lab, two chaga triterpenoids blocked the sugar-digesting enzyme alpha-glucosidase more strongly than the diabetes drug acarbose [45]. Because of these possible effects, people with diabetes or low blood sugar, or who take diabetes medicines, should ask their doctor before using chaga.
 
-However, **no human clinical trials** have confirmed these blood sugar effects.
+These blood sugar effects have not been confirmed in people.
 
 ### Chaga: Anti-Tumor Activity
 
-Cell studies and animal models suggest chaga polysaccharides may slow the growth of certain types of cancerous cells and tumors [44]. These findings are exclusively preclinical and cannot be extrapolated to human use.
+Cell studies and animal models suggest chaga polysaccharides may slow the growth of some cancer cells and tumours [44]. These findings are preclinical and cannot be extrapolated to human use.
 
 ### Summary: Evidence Quality
 
 | Claim | Lion's Mane Evidence | Chaga Evidence |
 |-------|:---:|:---:|
-| Cognitive enhancement (healthy adults) | Multiple RCTs — **negative** | No human studies |
-| Cognitive benefit (mild cognitive impairment) | 1 small RCT — **positive** | No human studies |
-| Alzheimer's disease | 1 small RCT — **negative** | No human studies |
-| Depression/anxiety | Small studies — **mixed/weak** | No human studies |
-| Gut health | No human studies (lion's mane alone) | No human studies |
+| Cognitive enhancement (healthy adults) | Small RCTs, mostly **negative** | No human studies |
+| Cognitive benefit (mild cognitive impairment) | 1 small RCT, **positive** | No human studies |
+| Alzheimer's disease | 1 pilot RCT, **mixed** | No human studies |
+| Depression/anxiety | Small studies, **mixed/weak** | No human studies |
+| Gut health | Lab and animal studies | No human studies |
 | Nerve injury/neuropathy | Animal studies only | No studies |
 | Immune modulation | Lab and animal studies only | Lab and animal studies only |
-| Blood sugar reduction | Not studied | Lab and animal studies only |
+| Blood sugar reduction | One rat study | Lab and animal studies only |
 | Anti-tumor effects | Lab and animal studies only | Lab and animal studies only |
 
 ## 4. Recommended Dosing
@@ -235,273 +220,220 @@ There is no established standard dose for lion's mane. Doses used in clinical tr
 
 | Study Population | Dose | Form | Duration | Outcome |
 |-----------------|------|------|----------|---------|
-| Mild cognitive impairment [26] | 960 mg x 3 daily (2,880 mg total) | Dried powdered fruiting body tablets | 16 weeks | Positive |
-| Mild Alzheimer's disease [29] | 1,050 mg x 3 daily (3,150 mg total) | Erinacine A-enriched mycelium extract | 49 weeks | Negative |
-| Healthy older adults [20] | 3,200 mg/day | Powdered fruiting body | 12 weeks | Minimal benefit |
-| Healthy young adults [21] | 5,000 mg x 2 daily (10,000 mg total) | 1:1 dried mushroom:extract | 4 weeks | Negative |
-| Healthy young adults [22] | 1,000 mg (single dose) | Fruiting body | Acute | Negative |
-| Healthy young adults [23] | 3,000 mg (single dose) | Fruiting body extract | Acute | Negative |
-| Healthy young adults [24] | 1,800 mg/day | Not specified | 28 days | Mixed |
-| Depression (women) [31] | 2,000 mg/day | Powdered fruiting body in cookies | 4 weeks | Not significant |
-| Anxiety/depression (overweight women) [32] | 1,500 mg/day | 1,200 mg mycelium + 300 mg fruiting body extract | 8 weeks | Mixed |
+| Mild cognitive impairment [26] | Four 250 mg tablets three times a day | Tablets with 96% dried powder | 16 weeks | Positive |
+| Mild Alzheimer's disease [29] | Three capsules a day (350 mg/capsule) | Erinacine A-enriched mycelium | 49 weeks | Mixed |
+| Healthy young adults [21] | 10 g/day | Lion's mane in muffins | 4 weeks | Negative |
+| Healthy adults [22] | 1 g (single dose) | Nordic-grown lion's mane | Single dose | Gains on some tasks |
+| Healthy young adults [23] | 3 g (single dose) | 10:1 fruiting body extract | Single dose | No overall effect |
+| Healthy young adults [24] | 1.8 g | Lion's mane | 28 days | Mixed |
 
-**Typical supplemental doses** range from 500 mg to 3,000 mg per day. Most positive findings (limited to mild cognitive impairment) used approximately 2,000–3,200 mg per day of dried fruiting body powder for at least 8–16 weeks [26][20].
+The positive trial in mild cognitive impairment used four 250 mg tablets three times a day for 16 weeks [26].
 
 **Key considerations:**
-- Effects in the one positive cognitive study declined within 4 weeks of stopping supplementation, suggesting ongoing use may be necessary [26]
+- Effects in the one positive cognitive study faded 4 weeks after supplements stopped, suggesting ongoing use may be necessary [26]
 - No dose-response relationship has been established
 - Whether fruiting body, mycelium, or a combination is optimal remains unknown
-- Long-term data beyond 49 weeks are limited [2][29]
+- The longest trial lasted 49 weeks [29]
 
 ### Chaga
 
-No human clinical trials exist to guide dosing. Traditional use as tea typically involves steeping dried chaga chunks in hot water. Supplement doses on the market range from 500 mg to 3,000 mg per day, but these are not evidence-based.
+No human clinical trials exist to guide dosing. Traditional use as tea involves steeping dried chaga chunks in hot water.
 
-**Critical warning:** Due to chaga's extremely high oxalate content, doses above 3 grams per day carry a risk of kidney injury (see Safety section) [46][47][48].
+**Critical warning:** Kidney injury from oxalate has been reported after daily chaga powder taken for months or years, and one man developed end-stage renal disease (see Safety section) [46][47][48].
 
 ## 5. Safety and Side Effects
 
 ### Lion's Mane Safety
 
-Lion's mane supplements have been safely used for up to one year in several clinical studies. The FDA classifies lion's mane as Generally Recognized as Safe (GRAS) when used as a food ingredient [49]. Toxicological studies in animals and limited human trials have shown no significant adverse effects at typical supplemental doses (up to 3 g/day) [2][50].
+**Allergic reactions** (case reports):
+- A 63-year-old man developed acute respiratory distress syndrome, a severe lung reaction, four months after using a Hericium erinaceum extract product; he needed a ventilator and recovered with steroid treatment [51]. If you have trouble breathing after taking lion's mane, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- A case report described allergic contact dermatitis from lion's mane in a person exposed to it at work [52]
+- Allergic reactions have been reported [51][52]; if mushrooms give you allergic reactions, avoid lion's mane.
+
+**Bleeding risk (theoretical):** Hericenone B, a lion's mane compound, blocked collagen-triggered platelet clumping in rabbit and human platelets in the lab [60]. In a lab screen of hot water extracts from eight edible mushrooms, including lion's mane, none changed prothrombin time or INR [53]. Whether this matters for people taking lion's mane is unknown.
+
+**HMGCR immune-mediated necrotizing myopathy:** Mushrooms are natural inhibitors of HMGCR, the enzyme that statins block. A woman in her 30s with HMGCR IMNM, an autoimmune muscle disease thought to be triggered by statins, had a clear flare after she began mushroom supplements [59]. Anyone who has had HMGCR IMNM should stay away from mushroom supplements, including chaga and lion's mane.
 
 **Reported side effects** include:
-- Abdominal discomfort and nausea [26][29]
-- These appear to be uncommon and generally mild
+- Abdominal discomfort, nausea and skin rash [29]
+- Stomach discomfort, headache and allergic reactions, listed as possible side effects in a 2025 systematic review [56]
 
-**Allergic reactions** (rare but documented):
-- A 63-year-old man developed shortness of breath likely due to an allergic reaction approximately 4 months after starting a lion's mane extract supplement [51]
-- A 53-year-old man developed skin rash upon contact with lion's mane after cultivating the mushroom for one month [52]
-- People who are allergic to other mushrooms should avoid lion's mane [1]
+In a 49-week trial, four people dropped out because of abdominal discomfort, nausea and skin rash, and no other adverse events were reported [29]. In the 16-week mild cognitive impairment trial, laboratory tests showed no adverse effect [26]. In rats, erinacine A-enriched mycelium caused no adverse effects at doses up to 3 g/kg body weight a day for 28 days [50].
 
-**Bleeding risk (theoretical):** A test-tube study showed that lion's mane extract can modestly inhibit platelet aggregation, indicating it may increase the risk of bleeding. However, the antiplatelet effect was less than that of aspirin and even less than that of white button mushroom, indicating the risk is probably very low. Lion's mane did not affect prothrombin time or INR, indicating it does not have anticoagulant effects [53].
+**Pregnancy and breastfeeding:** There are no safety data, so avoid it.
 
-**HMGCR immune-mediated necrotizing myopathy:** Due to potential statin-like compounds in lion's mane, people with a history of HMGCR IMNM (an autoimmune condition most commonly triggered by statin medication) should avoid lion's mane mushrooms and other mushroom supplements, as they may cause a flare-up of the autoimmune reaction [1].
-
-**Interference with fungal infection testing:** The 1,3-beta-D-glucan from mushrooms can potentially interfere with beta-glucan assays used to diagnose fungal infections. Inform your doctor if you are taking any mushroom supplement and are being tested for fungal infection [54].
-
-**Pregnancy and breastfeeding:** There is insufficient safety data. Avoidance is recommended [2].
-
-**Autoimmune conditions:** Due to potential immune-stimulating effects, individuals with autoimmune conditions should consult their physician before using lion's mane [2].
+**Autoimmune conditions:** Lion's mane polysaccharides have immune-modulating effects in laboratory studies [3], so people with autoimmune conditions should consult their doctor before using lion's mane.
 
 ### Chaga Safety
 
-Chaga presents more serious safety concerns than lion's mane, primarily related to its extremely high oxalate content.
+Chaga presents more serious safety concerns than lion's mane, mainly because of its very high oxalate content.
 
-**Oxalate nephropathy — the major risk:** Chaga naturally contains very high concentrations of oxalic acid [19]. Oxalic acid can bind to minerals (particularly calcium) to form oxalate crystals that accumulate in the kidneys and cause injury. Three case reports document this:
+**Oxalate nephropathy, the major risk:** Oxalic acid is the main organic acid in chaga extracts [19], and chaga contains extremely high oxalate concentrations [46]. Oxalate can form calcium oxalate crystals that deposit in the kidney tubules and injure them [47]. Three case reports document this:
 
-**Case 1:** A 72-year-old woman in Japan developed oxalate-induced kidney nephropathy (decreased kidney function due to calcium oxalate crystals deposited in kidney tubules) after consuming 4–5 teaspoons of chaga powder daily for six months [46].
+**Case 1:** A 72-year-old Japanese woman took chaga powder, 4 to 5 teaspoons a day, for 6 months for liver cancer [46]. She developed oxalate nephropathy and needed haemodialysis [46].
 
-**Case 2:** A 69-year-old man in Korea developed acute kidney injury after consuming 10–15 grams of chaga powder plus 500 mg of vitamin C for 3 months. He recovered one month after stopping supplementation and receiving treatment [47].
+**Case 2:** A 69-year-old man who took chaga powder (10 to 15 g a day) with vitamin C (500 mg a day) for 3 months developed acute kidney injury with nephrotic syndrome. His kidney function recovered 1 month after treatment with haemodialysis and high-dose steroids began [47].
 
-**Case 3:** A 49-year-old man in Korea suffered **permanent kidney injury** and was diagnosed with end-stage renal disease requiring ongoing hemodialysis due to chaga-induced oxalate nephropathy. He had consumed 3 grams of chaga powder daily for four years, then increased to 9 grams daily for one year. Testing of his chaga powder revealed an extremely high oxalate concentration of 140 mg per gram of powder [48].
+**Case 3:** A 49-year-old Korean man developed **end-stage renal disease** after long-term use of chaga powder for atopic dermatitis. His remaining chaga powder had an extremely high oxalate content (14.2/100 g), and his estimated daily oxalate intake was 2 times that of a usual diet for four years and 5 times for one year [48].
 
-**Who should NOT take chaga:**
-- People with kidney disease
-- People with a history of calcium oxalate kidney stones
-- People at risk of kidney problems
+In rats, high-dose chaga powder caused oxalate crystal deposits and kidney tubule injury [61]. In unexplained kidney injury, case report authors stress checking what supplements a person takes [47], so tell your doctor if you use chaga.
 
-**Blood sugar effects:** Due to potential blood sugar-lowering effects shown in preclinical studies, chaga should be used with caution in people with hypoglycemia, diabetes, or those taking anti-diabetes medications [45].
+**Who should NOT take chaga:** Case report authors call chaga a possible risk factor for chronic kidney disease because of its high oxalate content [48]. Do not take it if you have kidney disease, are at risk of it, or have ever had a calcium oxalate kidney stone.
 
-**Bleeding risk:** Chaga contains a protein that inhibits platelet aggregation, which could potentially increase the risk of bleeding. People who take blood-thinning medication should consult their physician before using chaga [55].
+**Bleeding risk:** An ethanol extract of chaga mycelium inhibited platelet aggregation, and a peptide purified from it did the same in mice [55]. If you take a blood thinner, talk to your doctor before using chaga.
 
-**Immune stimulation:** Preliminary research suggests chaga may have immune-stimulating effects. People with autoimmune conditions (e.g., rheumatoid arthritis, Hashimoto's thyroiditis, Graves' disease, multiple sclerosis, systemic lupus erythematosus) should consult their physician before using chaga [42].
+**Blood sugar effects:** Chaga may lower blood sugar, based on lab and animal research [44][45]. People with diabetes or low blood sugar, or who take diabetes medicines, should ask their doctor before using chaga.
+
+**Immune stimulation:** A chaga water extract restored immune and blood cell precursors in mice given chemotherapy [42]. If you have an autoimmune disease, talk to your doctor before using chaga.
 
 ### Safety Comparison Table
 
 | Safety Concern | Lion's Mane | Chaga |
 |---------------|:---:|:---:|
-| Generally Recognized as Safe (GRAS) | Yes (as food ingredient) | No |
 | Kidney damage risk | Not reported | **High** (oxalate nephropathy) |
-| GI side effects | Mild, uncommon | Not well characterized |
-| Allergic reactions | Rare but documented | Not well characterized |
-| Bleeding risk | Theoretical (less than aspirin) | Theoretical |
+| GI side effects | Reported (abdominal discomfort, nausea) | Not well characterized |
+| Allergic reactions | Case reports | Not well characterized |
+| Bleeding risk | Theoretical (lab data) | Theoretical (lab and mouse data) |
 | Immune stimulation concerns | Possible | Possible |
-| Safe in pregnancy | Insufficient data | Insufficient data |
-| Safe in kidney disease | Likely safe | **Contraindicated** |
-| Longest safe use in studies | 49 weeks | No human studies |
+| Safe in pregnancy | No safety data | No safety data |
+| Safe in kidney disease | Unknown | **Avoid** |
+| Longest use in studies | 49 weeks | No human studies |
 
 ## 6. Drug Interactions
 
+If you take prescription medicines, check with your doctor or pharmacist before starting.
+
 ### Lion's Mane
 
-**Anticoagulants and antiplatelet drugs** (warfarin, aspirin, clopidogrel, heparin): Lion's mane may have a mild antiplatelet effect, though less than aspirin. Use caution and consult a healthcare provider if combining [53].
+**Anticoagulants and antiplatelet drugs** (warfarin, aspirin, clopidogrel, heparin): A lion's mane compound blocked platelet clumping in the lab [60], although a hot water extract did not change prothrombin time or INR [53]. Use caution and talk to your doctor if combining.
 
-**Diabetes medications** (insulin, metformin, sulfonylureas): While lion's mane has not shown blood sugar effects in human studies, preclinical evidence suggests potential hypoglycemic activity. Monitor blood glucose if using concurrently [1].
-
-**Immunosuppressants** (cyclosporine, tacrolimus, corticosteroids): Lion's mane's potential immunomodulatory effects could theoretically interfere with immunosuppressive therapy. Consult a physician before combining [2].
-
-**Statin medications** (atorvastatin, rosuvastatin, simvastatin): Due to potential statin-like compounds in lion's mane, people with HMGCR IMNM should avoid it. For others, no interaction has been documented, but awareness is warranted [1].
-
-**Beta-glucan assay interference:** Lion's mane may cause false-positive results on the serum beta-D-glucan test used to diagnose invasive fungal infections. Inform your doctor of supplement use before testing [54].
+**Diabetes medications** (insulin, metformin, sulfonylureas): Lion's mane has not shown blood sugar effects in people, but an ethanol extract lowered blood and urine glucose in diabetic rats [39]. Monitor blood glucose if using both.
 
 ### Chaga
 
-**Anticoagulants and antiplatelet drugs** (warfarin, aspirin, clopidogrel, heparin): Chaga contains a protein that inhibits platelet aggregation. Concurrent use may increase bleeding risk. Consult a physician before combining [55].
+**Anticoagulants and antiplatelet drugs** (warfarin, aspirin, clopidogrel, heparin): Chaga contains a peptide that inhibits platelet aggregation [55]. Taking it with these drugs may increase bleeding risk. Talk to your doctor before combining.
 
-**Diabetes medications** (insulin, metformin, sulfonylureas): Preclinical studies suggest chaga may lower blood sugar. Combined use could increase the risk of hypoglycemia. Monitor blood glucose closely [45].
-
-**Immunosuppressants:** Chaga's potential immune-stimulating effects could counteract immunosuppressive therapy. Consult a physician [42].
-
-**Drugs cleared by the kidneys:** Given chaga's potential for oxalate-induced kidney injury, concurrent use with nephrotoxic drugs (NSAIDs, aminoglycosides, certain chemotherapy agents) may compound kidney damage risk [46][47][48].
+**Diabetes medications** (insulin, metformin, sulfonylureas): Chaga may lower blood sugar, based on lab and animal research [44][45]. Taking it with these drugs could increase the risk of low blood sugar. Monitor blood glucose closely.
 
 ### Drug Interaction Summary Table
 
 | Drug Class | Lion's Mane Risk | Chaga Risk |
 |-----------|:---:|:---:|
-| Blood thinners (warfarin, aspirin) | Low (mild antiplatelet) | Moderate (platelet inhibition) |
-| Diabetes medications | Theoretical | Theoretical (blood sugar lowering) |
-| Immunosuppressants | Theoretical | Theoretical (immune stimulation) |
-| Nephrotoxic drugs | Not applicable | **Elevated risk** |
-| Beta-glucan diagnostic assay | Interference possible | Interference possible |
+| Blood thinners (warfarin, aspirin) | Theoretical (lab data) | Theoretical (lab and mouse data) |
+| Diabetes medications | Theoretical (rat data) | Theoretical (lab and animal data) |
 
 ## 7. Dietary Sources
 
 ### Lion's Mane
 
-Lion's mane is edible and has been consumed as food for centuries in East Asia, where it is prized for its seafood-like flavor often compared to crab or lobster meat [2][3].
+Lion's mane is a food in East Asia and, increasingly, in the West, sometimes cooked as "mushroom steaks" of up to 300 g of fresh fruiting body [23].
 
 **Fresh lion's mane mushrooms** are increasingly available at specialty grocery stores and farmers' markets, particularly in North America and Europe. They can be:
-- **Sauteed** in butter or oil over medium-high heat for a crispy exterior and tender interior [2]
 - **Roasted** at 375 degrees F (190 degrees C) for 15–20 minutes
 - **Added to soups** by simmering sliced pieces with vegetables and broth for 20–30 minutes
 - **Stir-fried** with garlic, onions, and soy sauce
 - **Dried** for long-term storage, then rehydrated or ground into powder for teas and smoothies
 
-**Important:** It is recommended to cook lion's mane rather than consuming it raw, as the chitin in mushroom cell walls can cause digestive discomfort and cooking improves digestibility [2].
-
-**Growing your own:** Lion's mane can be cultivated at home or commercially on hardwood substrates. Indoor cultivation using sterilized bags of hardwood sawdust supplemented with wheat bran can produce fruiting bodies in 2–5 weeks. Outdoor cultivation on inoculated hardwood logs requires 1–2 years for the first harvest but can yield mushrooms for up to 6 years from a single log [2].
-
-**Lion's mane coffee and beverages:** Adding lion's mane powder to coffee has become a popular trend, but as noted above, the small amounts typically used (1–2 grams) provide negligible nutritional benefit [17].
+**Lion's mane coffee and beverages:** Supplement makers have proposed coffee blends with powdered lion's mane. In the 2024 comparison above, *Cordyceps* was the better coffee additive overall [17].
 
 ### Chaga
 
-Chaga is not a typical food item due to its tough, charcoal-like texture. Traditional consumption methods include:
+Chaga is not a typical food because it is hard and woody. Traditional consumption methods include:
 
-**Chaga tea:** The most traditional preparation. Dried chaga chunks are simmered in hot water for several hours to extract bioactive compounds. The resulting dark liquid has an earthy, slightly bitter flavor sometimes compared to coffee [14].
+**Chaga tea:** The most traditional preparation, made by simmering dried chaga chunks in hot water. Chaga is a folk remedy in Russia [14].
 
 **Chaga powder:** Ground chaga can be added to hot water, coffee, smoothies, or other beverages.
 
 **Chaga tinctures:** Alcohol-based extracts that concentrate bioactive compounds.
 
-**Wild harvesting:** Chaga grows naturally on birch trees in cold-climate regions. It appears as a dark, cracked, irregular growth on the trunk. Only chaga from birch trees is traditionally used — specimens from other trees may have different chemical compositions [14]. Wild-harvested chaga may carry higher contamination risks from heavy metals absorbed from polluted soils [2].
-
-**Sustainability concerns:** Wild chaga harvesting is regulated in some regions. Sustainable practices and certifications (such as PEFC) exist for forest management, and uncontrolled wild collection has been deemed unsustainable for long-term supply [2].
+**Wild harvesting:** Chaga grows as a charcoal-black conk on birch trees, mainly in cold boreal forests [14].
 
 ### What Supplements Cannot Replace
-
-Neither lion's mane nor chaga provides meaningful amounts of the vitamins and minerals most commonly deficient in Western diets. Fresh lion's mane is a moderate source of biotin and riboflavin, but supplement forms (powders and extracts) are consumed in such small amounts (1–3 grams) that their nutritional contribution is negligible. Chaga has no documented nutritional value as a food beyond its polysaccharide content.
 
 A well-formulated multivitamin addresses nutritional gaps far more effectively than mushroom supplements. For comprehensive micronutrient coverage, see a dedicated evidence-based multivitamin rather than relying on functional mushroom products.
 
 ## 8. References
 
-[1] ConsumerLab. "Lion's Mane and Chaga Supplements Review." Accessed 2026. [https://www.consumerlab.com/reviews/lions-mane-and-chaga/lions-mane-chaga/](https://www.consumerlab.com/reviews/lions-mane-and-chaga/lions-mane-chaga/)
+[3] He X, et al. "Structures, biological activities, and industrial applications of the polysaccharides from Hericium erinaceus (Lion's Mane) mushroom: A review." *Int J Biol Macromol*. 2017;97:228-237. doi: [10.1016/j.ijbiomac.2017.01.040](https://doi.org/10.1016/j.ijbiomac.2017.01.040). PMID: [28087447](https://pubmed.ncbi.nlm.nih.gov/28087447/)
 
-[2] Grokipedia. "Lion's Mane Mushroom." [https://grokipedia.com/page/Lions_mane_mushroom](https://grokipedia.com/page/Lions_mane_mushroom)
-
-[3] He X, et al. "Structures, biological activities, and industrial applications of the polysaccharides from Hericium erinaceus." *Int J Biol Macromol*. 2017;97:228-237. doi: [10.1016/j.ijbiomac.2017.01.040](https://doi.org/10.1016/j.ijbiomac.2017.01.040)
-
-[4] Lai PL, et al. "Neurotrophic properties of the Lion's mane medicinal mushroom, Hericium erinaceus." *Int J Med Mushrooms*. 2013;15(6):539-554. doi: [10.1615/IntJMedMushr.v15.i6.30](https://doi.org/10.1615/IntJMedMushr.v15.i6.30)
-
-[5] He X, et al. "Structures, biological activities, and industrial applications of the polysaccharides from Hericium erinaceus (Lion's Mane) mushroom." *Int J Biol Macromol*. 2017;97:228-237. doi: [10.1016/j.ijbiomac.2017.01.040](https://doi.org/10.1016/j.ijbiomac.2017.01.040)
-
-[6] Lazarev KF, et al. "Hericium erinaceus extracts promote neuronal differentiation and survival." *Food Sci Technol*. 2015.
-
-[7] Wong KH, et al. "Neuroregenerative potential of lion's mane mushroom, Hericium erinaceus." *Food Sci Technol*. 2015.
-
-[8] Kawagishi H, et al. "Erinacines A, B, and C, strong stimulators of nerve growth factor (NGF)-synthesis, from the mycelia of Hericium erinaceum." *Tetrahedron Lett*. 1994;35(10):1569-1572.
-
-[9] Kawagishi H, et al. "Hericenones and erinacines: stimulators of nerve growth factor (NGF) biosynthesis in Hericium erinaceus." *Mycol Res*. 1991.
-
-[10] Kawagishi H, et al. "Erinacines E, F, and G, stimulators of nerve growth factor (NGF)-synthesis, from the mycelia of Hericium erinaceum." *Tetrahedron Lett*. 1996;37(41):7399-7402.
+[4] Lai PL, et al. "Neurotrophic properties of the Lion's mane medicinal mushroom, Hericium erinaceus (Higher Basidiomycetes) from Malaysia." *Int J Med Mushrooms*. 2013;15(6):539-554. doi: [10.1615/IntJMedMushr.v15.i6.30](https://doi.org/10.1615/IntJMedMushr.v15.i6.30). PMID: [24266378](https://pubmed.ncbi.nlm.nih.gov/24266378/)
 
 [11] Akramiene D, et al. "Effects of beta-glucans on the immune system." *Medicina (Kaunas)*. 2007;43(8):597-606. PMID: [17895634](https://pubmed.ncbi.nlm.nih.gov/17895634/)
 
-[12] Doar JT, et al. "Differential inflammatory effects of lion's mane mycelium and fruiting body extracts on human blood cells." *Immuno*. 2026.
+[14] Lee MW, et al. "Introduction to Distribution and Ecology of Sterile Conks of Inonotus obliquus." *Mycobiology*. 2008;36(4):199-202. doi: [10.4489/MYCO.2008.36.4.199](https://doi.org/10.4489/MYCO.2008.36.4.199). PMID: [23997626](https://pubmed.ncbi.nlm.nih.gov/23997626/)
 
-[13] De Felice B, et al. "Chemical structure and biological activity of glucans from Hericium erinaceus." *Int J Biol Macromol*. 2020;162:921-928. doi: [10.1016/j.ijbiomac.2020.06.199](https://doi.org/10.1016/j.ijbiomac.2020.06.199)
-
-[14] Lee MW, et al. "Traditional uses and pharmacological studies of Inonotus obliquus." *Mycobiology*. 2008;36(4):195-202. doi: [10.4489/MYCO.2008.36.4.195](https://doi.org/10.4489/MYCO.2008.36.4.195)
-
-[15] McCleary BV, et al. "Measurement of beta-glucan in mushrooms and mycelial products." *J AOAC Int*. 2016;99(2):364-373. doi: [10.5740/jaoacint.15-0289](https://doi.org/10.5740/jaoacint.15-0289)
+[15] McCleary BV, et al. "Measurement of beta-glucan in mushrooms and mycelial products." *J AOAC Int*. 2016;99(2):364-373. doi: [10.5740/jaoacint.15-0289](https://doi.org/10.5740/jaoacint.15-0289). PMID: [26957216](https://pubmed.ncbi.nlm.nih.gov/26957216/)
 
 [16] Food Data Central. "Mushroom, lion's mane." U.S. Department of Agriculture. Accessed June 27, 2025. [https://fdc.nal.usda.gov/](https://fdc.nal.usda.gov/)
 
-[17] Kala M, et al. "Nutritional evaluation of lion's mane-enriched instant coffee." *Pharmaceuticals (Basel)*. 2024.
+[17] Kała K, et al. "Coffee with Cordyceps militaris and Hericium erinaceus Fruiting Bodies as a Source of Essential Bioactive Substances." *Pharmaceuticals (Basel)*. 2024;17(7):955. doi: [10.3390/ph17070955](https://doi.org/10.3390/ph17070955). PMID: [39065803](https://pubmed.ncbi.nlm.nih.gov/39065803/)
 
-[18] Windsor JB, et al. "Analysis of commercially available chaga mycelium fermented grain supplements." *Int J Mol Sci*. 2025.
+[18] Windsor C, et al. "Comparative Study of Chaga (Inonotus obliquus) Dietary Supplements Using Complementary Analytical Techniques." *Int J Mol Sci*. 2025;26(7):2970. doi: [10.3390/ijms26072970](https://doi.org/10.3390/ijms26072970). PMID: [40243601](https://pubmed.ncbi.nlm.nih.gov/40243601/)
 
-[19] Glamoclija J, et al. "Chemical characterization and biological activity of chaga (Inonotus obliquus), a medicinal 'mushroom'." *J Ethnopharmacol*. 2015;162:323-332. doi: [10.1016/j.jep.2014.12.069](https://doi.org/10.1016/j.jep.2014.12.069)
+[19] Glamočlija J, et al. "Chemical characterization and biological activity of Chaga (Inonotus obliquus), a medicinal 'mushroom'." *J Ethnopharmacol*. 2015;162:323-332. doi: [10.1016/j.jep.2014.12.069](https://doi.org/10.1016/j.jep.2014.12.069). PMID: [25576897](https://pubmed.ncbi.nlm.nih.gov/25576897/)
 
-[20] Saitsu Y, et al. "Improvement of cognitive functions by oral intake of Hericium erinaceus." *Biomed Res*. 2019;40(4):125-131. doi: [10.2220/biomedres.40.125](https://doi.org/10.2220/biomedres.40.125)
+[20] Saitsu Y, et al. "Improvement of cognitive functions by oral intake of Hericium erinaceus." *Biomed Res*. 2019;40(4):125-131. doi: [10.2220/biomedres.40.125](https://doi.org/10.2220/biomedres.40.125). PMID: [31413233](https://pubmed.ncbi.nlm.nih.gov/31413233/)
 
-[21] Grozier CD, et al. "Effects of short-term Hericium erinaceus supplementation on cognitive performance and metabolic flexibility." *Int J Exerc Sci*. 2022;15(2):1366-1377.
+[21] Grozier CD, et al. "Four Weeks of Hericium erinaceus Supplementation Does Not Impact Markers of Metabolic Flexibility or Cognition." *Int J Exerc Sci*. 2022;15(2):1366-1380. PMID: [36582308](https://pubmed.ncbi.nlm.nih.gov/36582308/)
 
-[22] La Monica MB, et al. "Acute effects of naturally occurring guaiacol and hericium erinaceus on cognitive function, mood, and reaction time." *Nutrients*. 2023;15(20):4396. doi: [10.3390/nu15204396](https://doi.org/10.3390/nu15204396)
+[22] La Monica MB, et al. "Acute Effects of Naturally Occurring Guayusa Tea and Nordic Lion's Mane Extracts on Cognitive Performance." *Nutrients*. 2023;15(24). PMID: [38140277](https://pubmed.ncbi.nlm.nih.gov/38140277/)
 
-[23] Surendran S, et al. "The acute effects of lion's mane mushroom (Hericium erinaceus) extract on cognitive function and mood." *Front Nutr*. 2025.
+[23] Surendran G, et al. "Acute effects of a standardised extract of Hericium erinaceus (Lion's Mane mushroom) on cognition and mood in healthy younger adults: a double-blind randomised placebo-controlled study." *Front Nutr*. 2025;12:1405796. PMID: [40276537](https://pubmed.ncbi.nlm.nih.gov/40276537/)
 
-[24] Docherty S, et al. "The Acute and Chronic Effects of Lion's Mane Mushroom Supplementation on Cognitive Function, Stress and Mood in Young Adults: A Double-Blind, Parallel Groups, Pilot Study." *Nutrients*. 2023.
+[24] Docherty S, et al. "The Acute and Chronic Effects of Lion's Mane Mushroom Supplementation on Cognitive Function, Stress and Mood in Young Adults: A Double-Blind, Parallel Groups, Pilot Study." *Nutrients*. 2023;15(22). PMID: [38004235](https://pubmed.ncbi.nlm.nih.gov/38004235/)
 
-[25] Docherty S, et al. "The Acute and Chronic Effects of Lion's Mane Mushroom Supplementation on Cognitive Function, Stress and Mood in Young Adults." *Nutrients*. 2023. Referenced in ConsumerLab and Grokipedia reviews.
+[26] Mori K, et al. "Improving effects of the mushroom Yamabushitake (Hericium erinaceus) on mild cognitive impairment: a double-blind placebo-controlled clinical trial." *Phytother Res*. 2009;23(3):367-372. doi: [10.1002/ptr.2634](https://doi.org/10.1002/ptr.2634). PMID: [18844328](https://pubmed.ncbi.nlm.nih.gov/18844328/)
 
-[26] Mori K, et al. "Improving effects of the mushroom Yamabushitake (Hericium erinaceus) on mild cognitive impairment: a double-blind placebo-controlled clinical trial." *Phytother Res*. 2009;23(3):367-372. doi: [10.1002/ptr.2634](https://doi.org/10.1002/ptr.2634)
+[29] Li IC, et al. "Prevention of Early Alzheimer's Disease by Erinacine A-Enriched Hericium erinaceus Mycelia Pilot Double-Blind Placebo-Controlled Study." *Front Aging Neurosci*. 2020;12:155. doi: [10.3389/fnagi.2020.00155](https://doi.org/10.3389/fnagi.2020.00155). PMID: [32581767](https://pubmed.ncbi.nlm.nih.gov/32581767/)
 
-[27] Phungviwatnikul T, et al. "A review of the effects of mushrooms on mood and neurocognitive health across the lifespan." *Neurosci Biobehav Rev*. 2024.
-
-[28] Phungviwatnikul T, et al. "A review of the effects of mushrooms on mood and neurocognitive health." Referenced in Grokipedia and ConsumerLab reviews.
-
-[29] Li IC, et al. "Prevention of Early Alzheimer's Disease by Erinacine A-Enriched Hericium erinaceus Mycelia Pilot Double-Blind Placebo-Controlled Study." *Front Aging Neurosci*. 2020;12:155. doi: [10.3389/fnagi.2020.00155](https://doi.org/10.3389/fnagi.2020.00155)
-
-[30] Chen YW, et al. "Decreased levels of serum brain-derived neurotrophic factor in drug-naive first-episode unipolar depression." *Neuropsychiatr Dis Treat*. 2015;11:911-918. doi: [10.2147/NDT.S81432](https://doi.org/10.2147/NDT.S81432)
+[30] Chen YW, et al. "Significantly lower nerve growth factor levels in patients with major depressive disorder than in healthy subjects: a meta-analysis and systematic review." *Neuropsychiatr Dis Treat*. 2015;11:925-933. PMID: [25897228](https://pubmed.ncbi.nlm.nih.gov/25897228/)
 
 [31] Nagano M, et al. "Reduction of depression and anxiety by 4 weeks Hericium erinaceus intake." *Biomed Res*. 2010;31(4):231-237. PMID: [20834180](https://pubmed.ncbi.nlm.nih.gov/20834180/)
 
-[32] Vigna L, et al. "Hericium erinaceus Improves Mood and Sleep Disorders in Patients Affected by Overweight or Obesity: Could Circulating Pro-BDNF and BDNF Be Potential Biomarkers?" *Evid Based Complement Alternat Med*. 2019;2019:7861297. doi: [10.1155/2019/7861297](https://doi.org/10.1155/2019/7861297)
+[32] Vigna L, et al. "Hericium erinaceus Improves Mood and Sleep Disorders in Patients Affected by Overweight or Obesity: Could Circulating Pro-BDNF and BDNF Be Potential Biomarkers?" *Evid Based Complement Alternat Med*. 2019;2019:7861297. doi: [10.1155/2019/7861297](https://doi.org/10.1155/2019/7861297). PMID: [31118969](https://pubmed.ncbi.nlm.nih.gov/31118969/)
 
-[33] Nagano M, et al. "Reduction of depression and anxiety by 4 weeks Hericium erinaceus intake." *Biomed Res*. 2010;31(4):231-237. Referenced in Grokipedia review — menopausal symptom scales.
+[35] Liu JH, et al. "Anti-Helicobacter pylori activity of bioactive components isolated from Hericium erinaceus." *J Ethnopharmacol*. 2016;183:54-58. doi: [10.1016/j.jep.2015.09.004](https://doi.org/10.1016/j.jep.2015.09.004). PMID: [26364939](https://pubmed.ncbi.nlm.nih.gov/26364939/)
 
-[34] Vigna L, et al. "Hericium erinaceus Improves Mood and Sleep Disorders in Patients Affected by Overweight or Obesity." *Evid Based Complement Alternat Med*. 2019. Referenced in Grokipedia review — BDNF biomarker findings.
+[36] Wang M, et al. "Anti-Gastric Ulcer Activity of Polysaccharide Fraction Isolated from Mycelium Culture of Lion's Mane Medicinal Mushroom, Hericium erinaceus (Higher Basidiomycetes)." *Int J Med Mushrooms*. 2015;17(11):1055-1060. PMID: [26853960](https://pubmed.ncbi.nlm.nih.gov/26853960/)
 
-[35] Liu JH, et al. "Anti-Helicobacter pylori activity of bioactive components isolated from Hericium erinaceus." *J Ethnopharmacol*. 2016;183:54-58. doi: [10.1016/j.jep.2016.02.039](https://doi.org/10.1016/j.jep.2016.02.039)
+[38] Wong KH, et al. "Peripheral Nerve Regeneration Following Crush Injury to Rat Peroneal Nerve by Aqueous Extract of Medicinal Mushroom Hericium erinaceus (Bull.: Fr) Pers. (Aphyllophoromycetideae)." *Evid Based Complement Alternat Med*. 2011;2011:580752. PMID: [21941586](https://pubmed.ncbi.nlm.nih.gov/21941586/) (corrigendum published 2018, PMID: [30643540](https://pubmed.ncbi.nlm.nih.gov/30643540/))
 
-[36] Wang M, et al. "Gastroprotective effects of polysaccharide from Hericium erinaceus against ethanol-induced gastric mucosal lesion." *Int J Med Mushrooms*. 2015;17(11):1083-1089.
+[39] Yi Z, et al. "Protective Effect of Ethanol Extracts of Hericium erinaceus on Alloxan-Induced Diabetic Neuropathic Pain in Rats." *Evid Based Complement Alternat Med*. 2015;2015:595480. PMID: [25960754](https://pubmed.ncbi.nlm.nih.gov/25960754/)
 
-[37] Therkelsen SP, et al. "Effect of a medicinal Agaricus blazei Murill-based mushroom extract, AndoSan, on symptoms, fatigue and quality of life in patients with ulcerative colitis in a randomized single-blinded placebo controlled study." *PLoS One*. 2016;11(3):e0150191. doi: [10.1371/journal.pone.0150191](https://doi.org/10.1371/journal.pone.0150191)
+[41] Fu JT, et al. "Erinacine S, a small active component derived from Hericium erinaceus, protects oligodendrocytes and alleviates mood abnormalities in cuprizone-exposed rodents." *Biomed Pharmacother*. 2024;173:116297. PMID: [38394854](https://pubmed.ncbi.nlm.nih.gov/38394854/)
 
-[38] Wong KH, et al. "Neuroregenerative potential of lion's mane mushroom, Hericium erinaceus: recovery from peripheral nerve injury faster than vitamin B-12." *Food Sci Technol*. 2015.
+[42] Kim YR. "Immunomodulatory activity of the water extract from medicinal mushroom Inonotus obliquus." *Mycobiology*. 2005;33(3):158-162. doi: [10.4489/MYCO.2005.33.3.158](https://doi.org/10.4489/MYCO.2005.33.3.158). PMID: [24049493](https://pubmed.ncbi.nlm.nih.gov/24049493/)
 
-[39] Yi Z, et al. "Protective effects of lion's mane mushroom against cisplatin-induced neuropathic pain." *Evid Based Complement Alternat Med*. 2015;2015:236749.
+[43] Mishra SK, et al. "Orally administered aqueous extract of Inonotus obliquus ameliorates acute inflammation in dextran sulfate sodium (DSS)-induced colitis in mice." *J Ethnopharmacol*. 2012;143(2):524-532. doi: [10.1016/j.jep.2012.07.008](https://doi.org/10.1016/j.jep.2012.07.008). PMID: [22819687](https://pubmed.ncbi.nlm.nih.gov/22819687/)
 
-[40] Ustun R, et al. "Analgesic effects of Hericium erinaceus polysaccharides in chemically-induced diabetic neuropathy." *Int J Exp Clin Anat*. 2019.
+[44] Lu Y, et al. "Recent developments in Inonotus obliquus (Chaga mushroom) polysaccharides: isolation, structural characteristics, biological activities and application." *Polymers (Basel)*. 2021;13(9):1441. doi: [10.3390/polym13091441](https://doi.org/10.3390/polym13091441). PMID: [33947037](https://pubmed.ncbi.nlm.nih.gov/33947037/)
 
-[41] Various authors. "Erinacine S protects oligodendrocytes and promotes myelin sheath formation." Referenced in Grokipedia review — in vitro and animal models of demyelination.
+[45] Ying YM, et al. "Terpenoids with alpha-glucosidase inhibitory activity from the submerged culture of Inonotus obliquus." *Phytochemistry*. 2014;108:171-176. doi: [10.1016/j.phytochem.2014.09.022](https://doi.org/10.1016/j.phytochem.2014.09.022). PMID: [25446238](https://pubmed.ncbi.nlm.nih.gov/25446238/)
 
-[42] Kim YR. "Immunomodulatory activity of the water extract from medicinal mushroom Inonotus obliquus." *Mycobiology*. 2005;33(3):158-162. doi: [10.4489/MYCO.2005.33.3.158](https://doi.org/10.4489/MYCO.2005.33.3.158)
+[46] Kikuchi Y, et al. "Chaga mushroom-induced oxalate nephropathy." *Clin Nephrol*. 2014;81(6):440-444. doi: [10.5414/CN107655](https://doi.org/10.5414/CN107655). PMID: [23149251](https://pubmed.ncbi.nlm.nih.gov/23149251/)
 
-[43] Mishra SK, et al. "Orally administered aqueous extract of Inonotus obliquus ameliorates acute inflammation in dextran sulfate sodium (DSS)-induced colitis in mice." *J Ethnopharmacol*. 2012;143(2):524-532. doi: [10.1016/j.jep.2012.07.008](https://doi.org/10.1016/j.jep.2012.07.008)
+[47] Kwon O, et al. "Chaga mushroom-induced oxalate nephropathy that clinically manifested as nephrotic syndrome: A case report." *Medicine (Baltimore)*. 2022;101(10):e28997. PMID: [35451393](https://pubmed.ncbi.nlm.nih.gov/35451393/)
 
-[44] Lu Y, et al. "Recent developments in Inonotus obliquus (Chaga mushroom) polysaccharides: isolation, structural characteristics, biological activities and application." *Polymers (Basel)*. 2021;13(9):1441. doi: [10.3390/polym13091441](https://doi.org/10.3390/polym13091441)
+[48] Lee S, et al. "Development of End Stage Renal Disease after Long-Term Ingestion of Chaga Mushroom: Case Report and Review of Literature." *J Korean Med Sci*. 2020;35(19):e122. doi: [10.3346/jkms.2020.35.e122](https://doi.org/10.3346/jkms.2020.35.e122). PMID: [32419395](https://pubmed.ncbi.nlm.nih.gov/32419395/)
 
-[45] Ying YM, et al. "Hypoglycaemic activity of lanosteryl triterpenes from Inonotus obliquus." *Phytochemistry*. 2014;108:171-178. doi: [10.1016/j.phytochem.2014.09.022](https://doi.org/10.1016/j.phytochem.2014.09.022)
+[50] Li IC, et al. "Evaluation of the toxicological safety of erinacine A-enriched Hericium erinaceus in a 28-day oral feeding study in Sprague-Dawley rats." *Food Chem Toxicol*. 2014;70:61-67. PMID: [24810469](https://pubmed.ncbi.nlm.nih.gov/24810469/)
 
-[46] Kikuchi Y, et al. "Oxalate nephropathy caused by daily intake of chaga mushroom." *Clin Nephrol*. 2014;81(6):440-444. doi: [10.5414/CN107655](https://doi.org/10.5414/CN107655)
+[51] Nakatsugawa M, et al. "Hericium erinaceum (yamabushitake) extract-induced acute respiratory distress syndrome monitored by serum surfactant proteins." *Intern Med*. 2003;42(12):1219-1222. PMID: [14714963](https://pubmed.ncbi.nlm.nih.gov/14714963/)
 
-[47] Ohyun K, et al. "Chaga mushroom-induced oxalate nephropathy." *Medicine*. 2022;101(40):e31042. doi: [10.1097/MD.0000000000031042](https://doi.org/10.1097/MD.0000000000031042)
+[52] Maes MF, et al. "Occupational allergic contact dermatitis from the mushroom White Pom Pom (Hericium erinaceum)." *Contact Dermatitis*. 1999;40(5):289-290. PMID: [10344494](https://pubmed.ncbi.nlm.nih.gov/10344494/)
 
-[48] Lee SH, et al. "Chaga mushroom-induced oxalate nephropathy causing end-stage renal disease." *J Korean Med Sci*. 2020;35(19):e122. doi: [10.3346/jkms.2020.35.e122](https://doi.org/10.3346/jkms.2020.35.e122)
+[53] Poniedziałek B, et al. "The Effect of Mushroom Extracts on Human Platelet and Blood Coagulation: In vitro Screening of Eight Edible Species." *Nutrients*. 2019;11(12). PMID: [31842490](https://pubmed.ncbi.nlm.nih.gov/31842490/)
 
-[49] U.S. Food and Drug Administration. "Generally Recognized as Safe (GRAS) — Hericium erinaceus." Referenced in Grokipedia review.
+[55] Hyun KW, et al. "Isolation and characterization of a novel platelet aggregation inhibitory peptide from the medicinal mushroom, Inonotus obliquus." *Peptides*. 2006;27(6):1173-1178. doi: [10.1016/j.peptides.2005.10.005](https://doi.org/10.1016/j.peptides.2005.10.005). PMID: [16289471](https://pubmed.ncbi.nlm.nih.gov/16289471/)
 
-[50] Li IC, et al. "A toxicological assessment of Hericium erinaceus (Lion's mane)." Referenced in Grokipedia review — no significant adverse effects at typical doses.
+[56] Menon A, et al. "Benefits, side effects, and uses of Hericium erinaceus as a supplement: a systematic review." *Front Nutr*. 2025;12:1641246. PMID: [40959699](https://pubmed.ncbi.nlm.nih.gov/40959699/)
 
-[51] Nakatsugawa M, et al. "Respiratory distress caused by ingestion of Hericium erinaceum." *Intern Med*. 2003;42(7):632-634. PMID: [12879958](https://pubmed.ncbi.nlm.nih.gov/12879958/)
+[57] Kawagishi H. "Chemical studies on bioactive compounds related to higher fungi." *Biosci Biotechnol Biochem*. 2021;85(1):1-7. doi: [10.1093/bbb/zbaa072](https://doi.org/10.1093/bbb/zbaa072). PMID: [33577664](https://pubmed.ncbi.nlm.nih.gov/33577664/)
 
-[52] Maes M, et al. "Contact dermatitis from lion's mane cultivation." *Contact Dermatitis*. 1999;40(5):275-276.
+[58] Doar E, et al. "Influences of substrate and tissue type on erinacine production and biosynthetic gene expression in Hericium erinaceus." *Fungal Biol Biotechnol*. 2025;12(1):4. doi: [10.1186/s40694-025-00194-9](https://doi.org/10.1186/s40694-025-00194-9). PMID: [40181478](https://pubmed.ncbi.nlm.nih.gov/40181478/)
 
-[53] Poniedzialek B, et al. "Evaluation of antiplatelet activity of lion's mane mushroom, Hericium erinaceus." *Nutrients*. 2019;11(12):2857. doi: [10.3390/nu11122857](https://doi.org/10.3390/nu11122857)
+[59] Adler B, et al. "Mushroom supplements triggering a flare of HMGCR immune mediated necrotising myopathy." *BMJ Case Rep*. 2022;15(5). PMID: [35606030](https://pubmed.ncbi.nlm.nih.gov/35606030/)
 
-[54] Vu-Ticar P, et al. "False-positive beta-D-glucan testing due to mushroom supplement use." *Hospitalist*. 2022.
+[60] Mori K, et al. "Inhibitory effect of hericenone B from Hericium erinaceus on collagen-induced platelet aggregation." *Phytomedicine*. 2010;17(14):1082-1085. PMID: [20637576](https://pubmed.ncbi.nlm.nih.gov/20637576/)
 
-[55] Hyun KW, et al. "Isolation and characterization of a novel platelet aggregation inhibitory peptide from the medicinal mushroom, Inonotus obliquus." *Peptides*. 2006;27(6):1173-1178. doi: [10.1016/j.peptides.2005.10.005](https://doi.org/10.1016/j.peptides.2005.10.005)
+[61] Lee S, et al. "Kidney Injury Induced by High-Dose Chaga Mushroom Consumption: Experimental Evidence in a Rat Model." *J Korean Med Sci*. 2026;41(3):e37. PMID: [41555803](https://pubmed.ncbi.nlm.nih.gov/41555803/)

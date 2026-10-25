@@ -1,0 +1,88 @@
+[
+ {
+  "handle": "pomegranate-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-pomegranate-juice-and-supplements-pomegranate.md",
+  "cl_raw_sha256": "a83cd131a8cd313319e1e54f2049835282e08f843e57cc7ce9f75db31e728a3f",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/pomegranate-nih.md",
+  "nih_raw_sha256": "79f1ed0b8cfa6adb0d7b9dabe044151255aec5f43e5ccb3b428765c999cbeabe",
+  "positions_candidates": [],
+  "positions_candidates_total": 0,
+  "posts": []
+ },
+ {
+  "handle": "cocoa-flavanols-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-cocoa-powders-and-chocolates-sources-of-flavanols-cocoa-flavanols.md",
+  "cl_raw_sha256": "3c49b44648ee1fbdd2164c47f9918c21954f2e7f14e163277df87d0ddaabf146",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [
+   {
+    "file": "docs/products.md",
+    "line": 45,
+    "text": "The COSMOS (COcoa Supplement and Multivitamin Outcomes Study) trial randomized 21,442 US adults aged 60+ to a daily multivitamin vs placebo. A meta-analysis of three COSMOS cognitive substudies (5,203 non-overlapping participants across COS"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 105,
+    "text": "**Why doesn't MicroVitamin contain cocoa flavanols?**"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 106,
+    "text": "Cocoa flavanols were tested in COSMOS, a large trial of more than 21,000 older adults (the same trial that tested a daily multivitamin). The cocoa extract did not significantly change the trial's main outcome. Some secondary results were en"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 189,
+    "text": "Lithium orotate, astaxanthin, cocoa flavanols: same answers as the MicroVitamin FAQ."
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 902,
+    "text": "<li>Baker, L.D., et al., <em>Effects of cocoa extract and a multivitamin on cognitive function: A randomized clinical trial.</em> Alzheimers Dement, 2023. <strong>19</strong>(4): p. 1308-1319.</li>"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 951,
+    "text": "<li>Vyas, C.M., Manson, J.E., Sesso, H.D., et al., <em>Effect of multivitamin-mineral supplementation versus placebo on cognitive function: results from the clinic subcohort of the COcoa Supplement and Multivitamin Outcomes Study (COSMOS) r"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 155,
+    "text": "Sources of saturated fat: animal fats (beef tallow, butter), tropical oils (coconut oil, cocoa butter, palm oil). Sources of unsaturated fat: nontropical plant oils (soybean, canola, olive oils). Strong evidence shows replacing butter with "
+   }
+  ],
+  "positions_candidates_total": 7,
+  "posts": []
+ },
+ {
+  "handle": "black-seed-oil-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-black-cumin-seed-oil-review-blackseedoil.md",
+  "cl_raw_sha256": "af32d6d8099b1406892133115cbcb33390d7560e3ec4a0088ebb72c77bf7e798",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [],
+  "positions_candidates_total": 0,
+  "posts": []
+ },
+ {
+  "handle": "olive-leaf-extract-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-olive-leaf-extract-herbal-supplements-olive-leaf.md",
+  "cl_raw_sha256": "f194c0ca588c7b85218eb40d2f713425ab7e6feae861ab86e12ea33d2d9d187c",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [],
+  "positions_candidates_total": 0,
+  "posts": []
+ },
+ {
+  "handle": "lions-mane-and-chaga-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-lions-mane-and-chaga-lions-mane-chaga.md",
+  "cl_raw_sha256": "f14f39eb1832e85559ee7cdbcd93a2ec257cb8eb297b1bcbe826b95462ee1d85",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [],
+  "positions_candidates_total": 0,
+  "posts": []
+ }
+]
