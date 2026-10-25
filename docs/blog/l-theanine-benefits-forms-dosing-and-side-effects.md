@@ -6,16 +6,16 @@ publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["l-theanine", "anxiety", "sleep", "relaxation", "cognitive", "focus", "green tea", "gaba", "serotonin", "brain health", "blood pressure", "caffeine", "depression", "insomnia", "alpha waves", "suntheanine", "schizophrenia", "adhd", "stress"]
-summary: "Reference on L-theanine, a tea amino acid. Brad does not take it: the anti-ageing claims rest on animal studies, and human trials for stress, sleep and focus are small and mixed. Supplements often hold 200 to 500 mg. Talk to your doctor first if you take sedatives or other prescription medicines."
-reviewed: "2026-10-23"
-sources: [{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/theanine-anti-aging-longevity","checked":"2026-10-23","fingerprint":"publishedAt:2024-11-04T03:07:12Z"}]
+summary: "L-theanine is a tea amino acid. Brad is not convinced by the evidence: anti-ageing claims rest on animal studies, and human trials for stress, sleep and focus are small and mixed. Supplements often hold 200 to 500 mg. Talk to your doctor first if you take sedatives or other prescription medicines."
+reviewed: "2026-10-25"
+sources: [{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/theanine-anti-aging-longevity","checked":"2026-10-25","fingerprint":"publishedAt:2024-11-04T03:07:12Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/l-theanine-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/l-theanine-benefits-forms-dosing-and-side-effects)*
 
-## Current view (reviewed 23 October 2026)
+## Current view (reviewed 25 October 2026)
 
-Brad does not take L-theanine himself: the anti-ageing claims rest on studies in roundworms, rat cells, rats and mice, and until effects show up in randomised controlled trials in people, they are not meaningful to him ([Brad, 4 Nov 2024](https://drstanfield.com/blogs/articles/theanine-anti-aging-longevity)). In 2024 he wrote that the claimed effects on mood, anxiety and stress had not shown up in most human studies, though one two-month trial in 60 patients with schizophrenia showed some benefit ([Brad, 4 Nov 2024](https://drstanfield.com/blogs/articles/theanine-anti-aging-longevity)). His newer sleep guidance says several small trials suggest benefits for sleep quality, particularly in people with anxiety-related sleep difficulties, but the evidence is preliminary and not included in standard clinical guidelines (Brad's current guidance, 17 Apr 2026). Supplements are often 200 to 500 mg, and at that level L-theanine does not appear to have significant side effects ([Brad, 4 Nov 2024](https://drstanfield.com/blogs/articles/theanine-anti-aging-longevity)). If you want some theanine anyway, he sees tea in moderation as an acceptable source, drunk only in the first four or so hours after waking because of its caffeine ([Brad, 4 Nov 2024](https://drstanfield.com/blogs/articles/theanine-anti-aging-longevity)). He cautions that L-theanine could interact badly with other body systems or with medicines, and he would not recommend an untested supplement, let alone a megadose, without good reason ([Brad, 4 Nov 2024](https://drstanfield.com/blogs/articles/theanine-anti-aging-longevity)).
+Brad is not convinced by the evidence for L-theanine's benefits (Brad's current guidance, 25 Oct 2026). He does not take it himself: the anti-ageing claims rest on studies in roundworms, rat cells, rats and mice, and until effects show up in randomised controlled trials in people, they are not meaningful to him ([Brad, 4 Nov 2024](https://drstanfield.com/blogs/articles/theanine-anti-aging-longevity)). In 2024 he wrote that the claimed effects on mood, anxiety and stress had not shown up in most human studies, though one two-month trial in 60 patients with schizophrenia showed some benefit ([Brad, 4 Nov 2024](https://drstanfield.com/blogs/articles/theanine-anti-aging-longevity)). Supplements are often 200 to 500 mg, and at that level L-theanine does not appear to have significant side effects ([Brad, 4 Nov 2024](https://drstanfield.com/blogs/articles/theanine-anti-aging-longevity)). If you want some theanine anyway, he sees tea in moderation as an acceptable source, drunk only in the first four or so hours after waking because of its caffeine ([Brad, 4 Nov 2024](https://drstanfield.com/blogs/articles/theanine-anti-aging-longevity)). He cautions that L-theanine could interact badly with other body systems or with medicines, and he would not recommend an untested supplement, let alone a megadose, without good reason ([Brad, 4 Nov 2024](https://drstanfield.com/blogs/articles/theanine-anti-aging-longevity)).
 
 ## Key safety points
 
@@ -28,7 +28,7 @@ Brad does not take L-theanine himself: the anti-ageing claims rest on studies in
 
 ## Brad's videos on this topic
 
-- 4 Nov 2024, [Does Theanine Really Help with Anti-Aging and Longevity?](https://drstanfield.com/blogs/articles/theanine-anti-aging-longevity): the anti-ageing claims rest only on roundworm, cell, rat and mouse studies, most human studies do not back the claims for mood, anxiety or stress, and Brad does not take it; tea in moderation is an acceptable source if you want some. Superseded on sleep quality (2026 sleep guideline).
+- 4 Nov 2024, [Does Theanine Really Help with Anti-Aging and Longevity?](https://drstanfield.com/blogs/articles/theanine-anti-aging-longevity): the anti-ageing claims rest only on roundworm, cell, rat and mouse studies, most human studies do not back the claims for mood, anxiety or stress, and Brad does not take it; tea in moderation is an acceptable source if you want some.
 
 ## 1. Overview
 
@@ -102,7 +102,7 @@ In the 28-day AlphaWave trial, the L-theanine group had less time asleep after 2
 
 In a six-week trial in 98 boys aged 8 to 12 years with ADHD, 400 mg a day of Suntheanine raised sleep percentage and sleep efficiency on wrist actigraphy compared with placebo [15]. Time to fall asleep did not change [15]. Some boys were also taking stimulant medicine, and the trial balanced them between groups [15].
 
-**Summary:** One small trial in healthy adults found better sleep scores [14], one found less time asleep [7], one in generalized anxiety disorder found better sleep satisfaction but not less insomnia [16], and one in boys with ADHD found better sleep efficiency but not faster sleep onset [15]. These small trials suggest some benefits for sleep quality, but the evidence is preliminary and mixed.
+**Summary:** One small trial in healthy adults found better sleep scores [14], one found less time asleep [7], one in generalized anxiety disorder found better sleep satisfaction but not less insomnia [16], and one in boys with ADHD found better sleep efficiency but not faster sleep onset [15]. The trials are small and short, and their results are mixed.
 
 ### Cognitive Function and Memory
 
