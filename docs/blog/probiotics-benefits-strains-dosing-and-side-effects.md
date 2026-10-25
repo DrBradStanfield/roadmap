@@ -20,7 +20,7 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 ## Key safety points
 
 - People who are critically ill, immunocompromised, tube-fed or have a central venous catheter have developed bloodstream infections (bacteremia or fungemia) from probiotic organisms, some of them fatal [120][122][124]. If you are in one of these groups, check with your doctor first; with fever and shivering, confusion or a racing heart, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
-- The FDA warned in 2023 that probiotics given to preterm infants may cause infection or invasive, potentially fatal disease, and a preterm infant died of a mold infection in 2014 after receiving a probiotic powder. Use them in preterm infants only under medical supervision [138][139].
+- The FDA warned in 2023 that probiotics given to preterm infants may cause infection or invasive, potentially fatal disease, and in 2014 a preterm infant died of a mold infection linked to a contaminated probiotic powder. Use them in preterm infants only under medical supervision [138][139].
 - In a trial of patients having major abdominal operations, perioperative VSL#3 raised 30-day readmissions (16.4% vs 4.4%), often for dehydration from diet intolerance or diarrhea [130].
 - Anaphylaxis from inulin, a prebiotic found in some vegetables and processed foods, has been reported; with trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [133].
 - In healthy people, side effects are usually minor, and short-term use in trials did not raise the overall rate of adverse events [121][138].
@@ -140,7 +140,7 @@ Antibiotics disrupt the intestinal microbiome, reducing microbial diversity, whi
 
 **Overall risk reduction:** Meta-analyses indicate that specific probiotic strains may reduce the risk of AAD by approximately 51% [138]. However, benefits depend on the type of antibiotic, the probiotic strain, patient age, and care setting. Probiotics have been associated with reduced AAD risk in adults aged 18 to 64 years but not in adults over 65 years [44].
 
-**LGG for AAD:** A systematic review and meta-analysis of 12 RCTs (n=1,499 children and adults) found that LGG at 4 x 10^8 to 12 x 10^10 CFU for 10 days to 3 months reduced AAD risk from 22.4% to 12.3% [45]. When children and adults were analyzed separately, the difference was statistically significant only in children. The dose of 1-2 x 10^10 CFU/day reduced AAD risk in children by 71% [45]. Starting probiotics within 2 days of the first antibiotic dose is more effective than starting later.
+**LGG for AAD:** A systematic review and meta-analysis of 12 RCTs (n=1,499 children and adults) found that LGG reduced AAD risk from 22.4% to 12.3% [45]. When children and adults were analyzed separately, the difference was statistically significant only in children [45]. The trials gave 4 x 10^8 to 12 x 10^10 CFU for 10 days to 3 months, and 1 to 2 x 10^10 CFU/day reduced AAD risk in children by 71% [138]. Starting probiotics within 2 days of the first antibiotic dose is more effective than starting later [138].
 
 **Saccharomyces boulardii for AAD:** A systematic review and meta-analysis of 21 RCTs (n=4,780 adults and children aged 6 months to 65 years) found that *S. boulardii* reduced AAD risk in adults from 17.4% to 8.2% and in children from 20.9% to 8.8% compared to placebo [46]. Various doses were tested with no clear dose-dependent effect.
 
@@ -152,7 +152,7 @@ Antibiotics disrupt the intestinal microbiome, reducing microbial diversity, whi
 
 **Guideline positions:** ESPGHAN (2023) recommends administering LGG or *S. boulardii* at 5 x 10^9 CFU/day or more starting simultaneously with antibiotics to prevent AAD in children with risk factors [51]. There is no evidence that using more than one probiotic strain provides additional benefit over effective single strains [2][45].
 
-**Timing and antibiotic interaction:** Starting a probiotic within 2 days of the first antibiotic dose appears to work better than starting later [138]. One study found that a multi-strain probiotic given after a course of antibiotics slowed the return of the person's own gut bacteria [52].
+**Timing and antibiotic interaction:** Some meta-analyses report that starting certain probiotics within 2 days of the first antibiotic dose helps reduce the risk of AAD [138]. One study found that a multi-strain probiotic given after a course of antibiotics slowed the return of the person's own gut bacteria [52].
 
 ### Atopic Dermatitis (Eczema)
 
@@ -220,7 +220,7 @@ The gut microbiota plays an important role in nutrient and energy extraction fro
 **Clinical evidence has been mixed:**
 
 - *Lactobacillus gasseri* SBT2055 (LG2055): An RCT of 210 adults with high visceral fat found that 12 weeks of fermented milk containing 10^7 or 10^6 CFU/g produced significant reductions in visceral fat area (8.5% and 8.2% respectively), BMI, waist and hip circumference, and body fat mass versus control [86].
-- *Lactobacillus rhamnosus* CGMCC1.3724: An RCT (n=125 adults with obesity) found that 3.24 x 10^8 CFU daily for 24 weeks combined with energy restriction did not significantly affect weight loss overall, but female participants lost significantly more weight (1.8 kg at 12 weeks, 2.6 kg at 24 weeks) than placebo [88].
+- *Lactobacillus rhamnosus* CGMCC1.3724: An RCT enrolled 125 adults with obesity [138]. Two capsules a day, each with 1.6 x 10^8 CFU plus oligofructose and inulin, for 24 weeks, combined with energy restriction for the first 12 weeks, made no significant difference to weight loss overall, but women taking this probiotic-plus-prebiotic formulation lost significantly more weight than women on placebo [88].
 - *Bifidobacterium breve* B-3: About 50 billion CFU daily as a capsule for 12 weeks lowered fat mass compared with placebo in adults with a tendency to obesity [89].
 
 **Systematic review findings:**
@@ -306,7 +306,7 @@ Probiotic dosing is inherently strain-specific. There is no universal "optimal d
 
 ### General Dosing Principles
 
-- **Timing**: Bacterial probiotics may survive best when taken with food, ideally a meal with some fat, or shortly before it [18]. For AAD prevention, start within 2 days of the first antibiotic dose [45].
+- **Timing**: Bacterial probiotics may survive best when taken with food, ideally a meal with some fat, or shortly before it [18]. For AAD prevention, the evidence suggests starting LGG or *S. boulardii* within 2 days of the first antibiotic dose [138].
 - **Duration**: For a specific condition, follow the duration used in trials of that strain.
 
 ### Product Selection Guidance
@@ -317,7 +317,7 @@ The World Gastroenterology Organisation (WGO) recommends that clinicians only ad
 2. **Look for specific strain designations** (e.g., *L. rhamnosus* GG, not just "Lactobacillus rhamnosus"). Products using unspecified strains may not provide the same benefits as those used in research.
 3. **Check CFU at expiration**, not at manufacture. Products should guarantee CFU counts through the "Best By" date.
 4. **Note storage requirements.** Some products require refrigeration; others are shelf-stable.
-5. **Be cautious of multi-strain products** without evidence. While some tested multi-strain combinations are effective, many commercial products contain untested combinations. An analysis of 48 multi-strain products found that 12.5% were missing one or more listed strains, and 16 included unlisted strains (including one containing *E. coli*) [119].
+5. **Be cautious of multi-strain products** without evidence. While some tested multi-strain combinations are effective, many commercial products contain untested combinations. A 2024 sequencing study of 50 widely available US probiotic supplements found labeling errors in about one third of them [119].
 
 ## 5. Safety and Side Effects
 
@@ -332,7 +332,7 @@ In rare cases, probiotics have led to bacteremia, fungemia or other serious infe
 - **Lactobacillus bacteremia**: A retrospective analysis of 22,174 ICU patients found that those receiving LGG (typically through a feeding tube) had a markedly higher risk of developing *Lactobacillus* bacteremia — 6 confirmed cases among 522 LGG recipients versus 2 among 21,652 non-recipients [122]. Population monitoring in Finland after LGG was introduced to dairy products in 1990 showed no increase in *Lactobacillus* bacteremia rates through 2000 in the general population [123].
 - **Saccharomyces fungemia**: At least 60 reports since 1966 of fungemia associated with *S. cerevisiae*/*S. boulardii* probiotic use. In many cases, patients were in ICUs, receiving enteral/parenteral nutrition, had central venous catheters, or were on broad-spectrum antimicrobials [124]. Opening capsules or sachets near patients with central lines may carry a risk, so hospital staff may need extra care when handling them.
 - **Bacillus subtilis**: Has caused bacteremia with a sepsis-like illness in hospital patients, most of whom had cancer, some after taking oral *B. subtilis* spores [125][126].
-- **Contamination risk in premature infants**: In 2014, a preterm infant born at 29 weeks who had been given a probiotic powder from the first day of life died of gastrointestinal mucormycosis, a rare mold infection [139].
+- **Contamination risk in premature infants**: In 2014, a preterm infant born at 29 weeks who had been given a contaminated probiotic powder from the first day of life died of gastrointestinal mucormycosis, a rare mold infection [139].
 - **Fatal endocarditis**: A young patient with complicated liver cirrhosis and earlier *C. difficile* colitis died of *L. rhamnosus* endocarditis that the authors thought may have come from a probiotic containing lactobacilli [129].
 
 If you take a probiotic while seriously ill or immunocompromised and develop a fever with shivering, confusion or a racing heart, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
@@ -355,7 +355,7 @@ Two cases of a severe eosinophilic syndrome, with very high eosinophil counts, n
 
 - **Immunocompromised individuals**: The WGO advises restricting probiotic use to strains and indications with proven efficacy [2].
 - **Preterm infants**: FDA has raised safety concerns; use only under medical supervision with quality-assured products [116][138].
-- **Pregnant and breastfeeding women**: Certain strains have been used safely during pregnancy and lactation in multiple RCTs (e.g., LGG, *L. rhamnosus* HN001), but general safety data is limited. Kombucha should be avoided during pregnancy due to alcohol content and contamination risk.
+- **Pregnant and breastfeeding women**: Certain strains have been used safely during pregnancy and lactation in multiple RCTs (e.g., LGG, *L. rhamnosus* HN001), but general safety data is limited. If you are pregnant or breastfeeding, ask your doctor before drinking kombucha.
 
 ## 6. Drug Interactions
 
@@ -368,7 +368,7 @@ Two cases of a severe eosinophilic syndrome, with very high eosinophil counts, n
 
 ### Vitamins and Minerals
 
-The NIH fact sheet has no section on interactions with vitamins or minerals [138].
+No interactions between probiotics and vitamins or minerals are established.
 
 ## 7. Dietary Sources
 
