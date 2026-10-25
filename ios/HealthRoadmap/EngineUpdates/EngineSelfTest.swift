@@ -30,12 +30,12 @@ enum EngineSelfTest {
             try check(outcome.ok, "edit")
             record = try outcome.record ?? { throw Failure(step: "edit") }()
         }
-        let data = try engine.myData(recordJSON: record, now: now, deviceId: device)
-        let weight = data.vitals.first { $0.metric == "weight" }?.latest
+        let drawn = try engine.screen(recordJSON: record, now: now, deviceId: device)
+        let weight = drawn.myData.vitals.first { $0.metric == "weight" }?.latest
         try check(weight?.value == "80.0" && weight?.day == "2026-10-20", "my data")
+        guard case .planned = drawn.plan else { throw Failure(step: "plan view") }
         let plan = try engine.plan(recordJSON: record, now: now, deviceId: device)
         try check((try? JSONSerialization.jsonObject(with: Data(plan.utf8))) is [String: Any], "plan")
-        _ = try engine.planView(record: record, units: "{}", now: now, deviceId: device)
 
         try merges(engine, record)
     }

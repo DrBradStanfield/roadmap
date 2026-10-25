@@ -24,8 +24,7 @@ final class EngineSpeedTests: XCTestCase {
             var run = 0
             print("ENGINE-SPEED \(label) plan cold \(try median { run += 1; _ = try engine.blocking { [now] in try $0.plan(recordJSON: record, now: now, deviceId: "cold\(run)") } }) ms")
             print("ENGINE-SPEED \(label) plan \(try median { _ = try engine.blocking { [now] in try $0.plan(recordJSON: record, now: now, deviceId: "t") } }) ms")
-            print("ENGINE-SPEED \(label) plan view \(try median { _ = try engine.blocking { [now] in try $0.planView(record: record, units: "{}", now: now, deviceId: "t") } }) ms")
-            print("ENGINE-SPEED \(label) myData \(try median { _ = try engine.blocking { [now] in try $0.myData(recordJSON: record, now: now, deviceId: "t") } }) ms")
+            print("ENGINE-SPEED \(label) screen \(try median { _ = try engine.blocking { [now] in try $0.screen(recordJSON: record, now: now, deviceId: "t") } }) ms")
             print("ENGINE-SPEED \(label) history \(try median { _ = try engine.blocking { [now] in try $0.history(recordJSON: record, metric: "weight", now: now, deviceId: "t") } }) ms")
             print("ENGINE-SPEED \(label) apply \(try median { XCTAssertTrue(try engine.blocking { [now] in try $0.apply(.add(metric: "weight", value: 70, day: DayText.iso(now)), to: record, now: now, deviceId: "t") }.ok) }) ms")
             print("ENGINE-SPEED \(label) merge \(try median { _ = try engine.blocking { [now] in try $0.call("mergeJson", [record, record, now.formatted(HealthEngine.iso), "t"]) } }) ms")

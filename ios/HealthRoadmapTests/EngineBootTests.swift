@@ -57,20 +57,22 @@ final class EngineBootTests: XCTestCase {
         XCTAssertEqual(try folder.readState(bundled: 0).bad, [])
     }
 
-    func testMyDataConfirmsATrialThroughItsStore() async throws {
+    /// The trial confirms in one place: the store, once it has drawn the user's own record
+    /// and its plan (here health-core's PlanError), whichever tab is open, and on any later
+    /// draw (a unit switch) had the first one failed.
+    func testTheStoreConfirmsATrialOnceItDrawsTheRecord() async throws {
         let release = fixture.staged(daysAfterBundled: 2)
         try folder.stage(release)
         let choice = try await boot()
+        XCTAssertNotNil(choice.engine.trial)
         let records = FileManager.default.temporaryDirectory.appending(path: "data trial \(UUID().uuidString)", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: records, withIntermediateDirectories: true)
         let store = try RecordStore(folder: records, engine: choice.engine, deviceId: "test")
         XCTAssertNotNil(store.myData, "the engine read the user's record")
-        XCTAssertNotNil(choice.engine.trial)
-        await store.confirmEngineTrial() // MyDataView's one call, on appear: My data, then a silent plan (PlanError here)
         XCTAssertNil(try folder.readState(bundled: 0).trying)
         XCTAssertEqual(try folder.readState(bundled: 0).proven, [release.version])
-        await store.confirmEngineTrial() // idempotent: the plan confirming later changes nothing
-        XCTAssertEqual(try folder.readState(bundled: 0).proven, [release.version])
+        await XCTAssertSaved(await store.apply(.profile(sex: "male", birthYear: 1975, birthMonth: 6, height: 178)))
+        XCTAssertEqual(try folder.readState(bundled: 0).proven, [release.version], "a later draw changes nothing")
     }
 
     /// Review R5: a plan screen whose engine threw on the user's record never confirms.
@@ -85,7 +87,7 @@ final class EngineBootTests: XCTestCase {
         let shown = store.recordJSON
         XCTAssertThrowsError(try choice.engine.blocking { try $0.plan(recordJSON: shown, now: .now, deviceId: "test") })
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
-        window.rootViewController = UIHostingController(rootView: PlanView(engine: choice.engine, store: store, showMyData: {}))
+        window.rootViewController = UIHostingController(rootView: PlanView(store: store, showMyData: {}))
         window.makeKeyAndVisible()
         try await Task.sleep(for: .seconds(2))
         XCTAssertEqual(try folder.readState(bundled: 0).trying, release.version, "still on trial")
@@ -135,8 +137,8 @@ final class EngineBootTests: XCTestCase {
         XCTAssertEqual(folder.stagedVersions(), [])
     }
 
-    /// Review N1: My data's confirm also plans the record; an engine whose plan throws is never proven.
-    func testMyDataNeverConfirmsAnEngineWhosePlanThrows() async throws {
+    /// Review N1: the store's confirm needs the record planned; an engine whose plan throws is never proven.
+    func testTheStoreNeverConfirmsAnEngineWhosePlanThrows() async throws {
         let release = fixture.staged(daysAfterBundled: 2, throwsOnRealRecords: true)
         try folder.stage(release)
         let choice = try await boot()
@@ -144,29 +146,8 @@ final class EngineBootTests: XCTestCase {
         try FileManager.default.createDirectory(at: records, withIntermediateDirectories: true)
         let store = try RecordStore(folder: records, engine: choice.engine, deviceId: "test")
         XCTAssertNotNil(store.myData, "My data drew the record")
-        await store.confirmEngineTrial()
         XCTAssertEqual(try folder.readState(bundled: 0).trying, release.version, "still on trial")
         XCTAssertEqual(try folder.readState(bundled: 0).proven, [])
-    }
-
-    func testThePlanScreenConfirmsATrialOnceThePlanRenders() async throws {
-        let release = fixture.staged(daysAfterBundled: 2)
-        try folder.stage(release)
-        let choice = try await boot()
-        let records = FileManager.default.temporaryDirectory.appending(path: "plan trial \(UUID().uuidString)", directoryHint: .isDirectory)
-        try FileManager.default.createDirectory(at: records, withIntermediateDirectories: true)
-        let store = try RecordStore(folder: records, engine: choice.engine, deviceId: "test")
-        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
-        window.rootViewController = UIHostingController(rootView: PlanView(engine: choice.engine, store: store, showMyData: {}))
-        window.makeKeyAndVisible()
-        var waited = 0
-        while try folder.readState(bundled: 0).trying != nil, waited < 100 {
-            try await Task.sleep(for: .milliseconds(50))
-            waited += 1
-        }
-        XCTAssertNil(try folder.readState(bundled: 0).trying)
-        XCTAssertEqual(try folder.readState(bundled: 0).proven, [release.version])
-        window.isHidden = true
     }
 
     func testTheNewestOfTwoRuns() async throws {

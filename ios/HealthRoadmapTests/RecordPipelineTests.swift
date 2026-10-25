@@ -229,6 +229,22 @@ final class RecordPipelineTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(weights(store.recordJSON).last?.value), other == "si" ? 80 : 36.287, accuracy: 0.01)
     }
 
+    /// Adversary R4: units are published only with a record drawn in them, so the units,
+    /// My data and the plan always move together. A stale erase is not drawn: no units move.
+    func testAnEraseTheScreenDoesNotDrawLeavesTheUnitsAsShown() async throws {
+        let store = try store()
+        let weight = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" })
+        let other = store.myData?.unitSystem == "si" ? "conventional" : "si"
+        await store.switchUnits(for: weight, to: other).value
+        let chosen = store.unitChoices
+        XCTAssertNotEqual(chosen, UnitChoices())
+        let record = try engine.blocking { try $0.newRecord(now: .now, deviceId: "web") }
+        await store.showCloud(HealthEngine.CloudView(record: record, erase: "e1", session: 1, order: 5)).value
+        await store.showErased(HealthEngine.CloudView(record: record, erase: "e2", session: 1, order: 3)).value
+        XCTAssertEqual(store.cloudErase, "e1", "the stale erase was not drawn")
+        XCTAssertEqual(store.unitChoices, chosen, "so its units were not published")
+    }
+
     func testAnOlderCloudRecordNeverReplacesANewerOne() async throws {
         let store = try store()
         let older = try engine.blocking { try $0.newRecord(now: .now, deviceId: "web") }

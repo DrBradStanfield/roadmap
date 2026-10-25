@@ -43,6 +43,19 @@ extension HealthEngine {
         return try work.result!.get()
     }
 
+    /// My data for a record: the screen door's half the tests read.
+    func myData(recordJSON: String, now: Date, deviceId: String, units: String = "{}") throws -> MyData {
+        try screen(recordJSON: recordJSON, now: now, deviceId: deviceId, units: units).myData
+    }
+
+    /// The Plan tab's sections and tiles for a record: the screen door's other half.
+    /// Throws unless the engine planned it.
+    func planView(record: String, units: String, now: Date, deviceId: String) throws -> (sections: [PlanSection], tiles: [StatTile]) {
+        let plan = try screen(recordJSON: record, now: now, deviceId: deviceId, units: units).plan
+        guard case .planned(let tiles, let sections, _) = plan else { throw EngineError.callFailed("not planned: \(plan)") }
+        return (sections, tiles)
+    }
+
     /// Whether the engine's own work runs on the main thread (it must not).
     func onMainThread() -> Bool {
         dispatchPrecondition(condition: .onQueue(queue))

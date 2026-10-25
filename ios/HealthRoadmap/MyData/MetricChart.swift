@@ -30,8 +30,10 @@ struct ChartData {
     let points: [ChartPoint]
     /// Each point's day, in the points' order.
     let days: [Date]
-    /// The ranges the picker offers for those days.
-    let offered: [ChartRange]
+    /// The oldest and newest of those days; nil with no values.
+    let first: Date?, last: Date?
+    /// The range the page opens on for those days.
+    let opening: ChartRange
     /// Each day's active value, for the scrub's callout: looked up, never found by parsing
     /// every row's day on each frame of a scrub.
     let activeRows: [Date: MetricHistory.Row]
@@ -40,7 +42,8 @@ struct ChartData {
         self.history = history
         points = ChartPoint.points(history)
         days = points.map(\.date)
-        offered = ChartRange.offered(for: days)
+        (first, last) = (days.min(), days.max())
+        opening = ChartRange.opening(for: days)
         // The first active row for a day wins, as `rows.first` would pick it.
         activeRows = Dictionary(history.rows.filter(\.isActive).compactMap { row in DayText.date(row.day).map { ($0, row) } },
                                 uniquingKeysWith: { first, _ in first })
@@ -51,12 +54,13 @@ struct ChartData {
 /// line through the values, and a finger dragged across it picks the nearest
 /// day, marked by a rule with a callout of its value and date. No target band:
 /// the engine gives the app no range to shade, and Swift invents none. The web
-/// twin is the chart in widget-src/src/components/HistoryPanel.tsx.
+/// twin is the chart in widget-src/src/components/HistoryPanel.tsx. Drawn only for a
+/// chart with values.
 struct MetricChart: View {
     let chart: ChartData
     /// A range's length: the chart shows that much and scrolls across the rest, as
-    /// Apple Health's does. Nil (All) fits every value.
-    let window: TimeInterval?
+    /// Apple Health's does.
+    let window: TimeInterval
     /// The first day a scrolling chart shows.
     @Binding var scrolledTo: Date
     /// The scrubbed day, shared so the page can hide its headline under the callout.
@@ -70,9 +74,8 @@ struct MetricChart: View {
     /// What the chart shows at once; the scrub filter must use the same length.
     nonisolated static func visibleLength(window: TimeInterval) -> TimeInterval { window + margin(window: window) }
 
-    /// The days a scrubbing finger may pick: those in view on a scrolling range, every day on All.
-    nonisolated static func inView(_ days: [Date], scrolledTo: Date, window: TimeInterval?) -> [Date] {
-        guard let window else { return days }
+    /// The days a scrubbing finger may pick: those in view.
+    nonisolated static func inView(_ days: [Date], scrolledTo: Date, window: TimeInterval) -> [Date] {
         let end = scrolledTo.addingTimeInterval(visibleLength(window: window))
         return days.filter { $0 >= scrolledTo && $0 <= end }
     }
@@ -127,10 +130,10 @@ struct MetricChart: View {
         .chartYScale(domain: .automatic(includesZero: false))
         // Aligned, so the newest month's label stays inside the card.
         .chartXAxis { AxisMarks(preset: .aligned, values: .automatic(desiredCount: textSize.isAccessibilitySize ? 2 : 4)) }
-        .modifier(XDomain(window: window, scrolledTo: $scrolledTo, days: chart.days))
+        .modifier(XDomain(window: window, scrolledTo: $scrolledTo, first: chart.first, last: chart.last))
         .chartXSelection(value: $finger)
         .onChange(of: finger) {
-            // On a scrolling range, only the days in view: a finger in a gap never picks one off screen.
+            // Only the days in view: a finger in a gap never picks one off screen.
             let inView = MetricChart.inView(chart.days, scrolledTo: scrolledTo, window: window)
             let day = finger.flatMap { ChartRange.nearest(to: $0, in: inView) }
             if day != selected { selected = day }
@@ -158,25 +161,20 @@ struct MetricChart: View {
     }
 }
 
-/// A range scrolls across every value, a window at a time; All fits them, or a week
-/// around values closer together than that.
+/// A range scrolls across every value, a window at a time.
 private struct XDomain: ViewModifier {
-    let window: TimeInterval?
+    let window: TimeInterval
     @Binding var scrolledTo: Date
-    let days: [Date]
+    let first: Date?, last: Date?
 
     func body(content: Content) -> some View {
-        if let window, let first = days.min(), let last = days.max() {
+        if let first, let last {
             let margin = MetricChart.margin(window: window)
             content
                 .chartXScale(domain: min(first, last.addingTimeInterval(-window))...last.addingTimeInterval(margin))
                 .chartScrollableAxes(.horizontal)
                 .chartXVisibleDomain(length: MetricChart.visibleLength(window: window))
                 .chartScrollPosition(x: $scrolledTo)
-        } else if let week = ChartRange.atLeastAWeek(days) {
-            content.chartXScale(domain: week)
-        } else {
-            content
         }
     }
 }

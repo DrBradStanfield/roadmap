@@ -18,6 +18,12 @@ final class PlanLayoutTests: XCTestCase {
         return try HealthEngine(bundle: .main).blocking { [now] in try $0.planView(record: record, units: units, now: now, deviceId: "layout-test") }
     }
 
+    /// Adversary R4: the engine's clock counts whole milliseconds, so a fast plan reads 0.
+    func testTheFooterSaysUnderOneMillisecondForZero() {
+        XCTAssertEqual(PlanView.workedOut(ms: 0), "Worked out on this iPhone in under 1 ms.")
+        XCTAssertEqual(PlanView.workedOut(ms: 3), "Worked out on this iPhone in 3 ms.")
+    }
+
     func testSampleRecordMatchesTheWebLayout() throws {
         let sections = try view().sections
         let layout = sections.map { section in (section.title, section.cards.map { $0.suggestions.map(\.id) }) }
@@ -78,9 +84,9 @@ final class PlanLayoutTests: XCTestCase {
         let url = try XCTUnwrap(Bundle.main.url(forResource: "health-engine", withExtension: "js"))
         let source = try String(contentsOf: url, encoding: .utf8) + """
 
-        const realView = HealthEngine.planViewJson;
-        HealthEngine = Object.assign({}, HealthEngine, { planViewJson: function (r, n, d, u) {
-          const view = JSON.parse(realView(r, n, d, u)); view.tiles = [{ key: 7 }]; return JSON.stringify(view);
+        const realScreen = HealthEngine.screenJson;
+        HealthEngine = Object.assign({}, HealthEngine, { screenJson: function (r, n, d, u) {
+          const screen = JSON.parse(realScreen(r, n, d, u)); screen.plan.tiles = [{ key: 7 }]; return JSON.stringify(screen);
         } });
 
         """

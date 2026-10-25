@@ -26,6 +26,23 @@ struct Suggestion: Decodable, Identifiable {
     let ingredients: [String]?
 }
 
+/// The Plan tab for one record, as the engine's `screenJson` gave it with My data (US-25 AC2).
+enum PlanState: Sendable {
+    /// The plan, and how long the engine took to plan it (D2's plan budget).
+    case planned(tiles: [StatTile], sections: [PlanSection], ms: Double)
+    /// health-core's one PlanError: no usable height or sex (plan.ts). The engine worked.
+    case needsDetails
+    /// The engine threw on this record, in its own words.
+    case failed(String)
+
+    /// Whether the engine planned the record: a plan, or health-core's own PlanError.
+    /// Any other throw is not: the failure an engine on trial exists to catch (US-25 AC18).
+    var planned: Bool {
+        if case .failed = self { return false }
+        return true
+    }
+}
+
 /// One section of the plan screen, as health-core's `planSections` lays it out
 /// (packages/health-core/src/plan-sections.ts); the web's results panel uses the same.
 struct PlanSection: Decodable, Identifiable {
@@ -46,7 +63,7 @@ struct PlanCard: Decodable, Identifiable {
     var id: String { suggestions.map(\.id).joined(separator: "+") }
 }
 
-/// One summary tile above the plan, as the engine writes it (ios/engine/entry.ts `planViewJson`): the web's
+/// One summary tile above the plan, as the engine writes it (ios/engine/entry.ts `screenJson`): the web's
 /// Quick Stats. Every word and number is the engine's; the app only draws it (US-25 AC22).
 struct StatTile: Decodable, Identifiable {
     struct Status: Decodable {

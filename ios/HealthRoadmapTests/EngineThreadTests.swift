@@ -26,10 +26,15 @@ final class EngineThreadTests: XCTestCase {
 
         await XCTAssertSaved(await store.apply(.profile(sex: "male", birthYear: 1970, birthMonth: 6, height: 178)))
         await XCTAssertSaved(await store.applyNow(.add(metric: "weight", value: 80, day: "2026-10-20")))
+        let before = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" }?.unit)
         await store.switchUnits(for: weight, to: other).value // My data, drawn again
         await store.showPhone().value // the phone's file, read and drawn
-        let plan = try await engine.planSections(record: store.recordJSON, units: store.unitChoices.json, now: .now, deviceId: "test")
-        XCTAssertFalse(plan.sections.isEmpty)
+        guard case .planned(let tiles, let sections, _) = store.plan else { return XCTFail("the store keeps the plan with My data") }
+        XCTAssertFalse(sections.isEmpty)
+        // Adversary R6: the plan moved with the units, not only My data.
+        let shown = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" }?.unit)
+        XCTAssertNotEqual(shown, before)
+        XCTAssertEqual(tiles.first { $0.key == "ibw" }?.unit, shown, "the plan's weight tile is in the weight's units")
 
     }
 
@@ -46,7 +51,6 @@ final class EngineThreadTests: XCTestCase {
         XCTAssertEqual(TypedNumber.read("3,4"), 3.4)
         let pounds = await store.convert(70, metric: "weight", from: "si", to: "conventional")
         XCTAssertEqual(pounds?.text, "154")
-        await store.confirmEngineTrial() // no trial: a no-op, never a wait
         await chat.record(ChatExchange(conversationId: "c1", isNew: true, userText: "What is ApoB?", assistantText: "A count.", isFallback: false), askedAt: ChatHistoryStore.erasures)
         XCTAssertEqual(chat.conversations.map(\.id), ["c1"])
         let messages = await chat.open("c1").value
@@ -66,17 +70,6 @@ final class EngineThreadTests: XCTestCase {
         let sync = CloudSync(engine: engine, store: store, oauth: OAuthClient(tokens: tokens, session: StubHTTP.session()))
         let attached = await engine.perform { $0.natives.cloud === sync }
         XCTAssertTrue(attached, "the attach was queued ahead of this call")
-    }
-
-    func testAPlanNoLongerWantedIsNotStarted() async throws {
-        let engine = try HealthEngine()
-        let record = try engine.blocking { try $0.newRecord(now: .now, deviceId: "test") }
-        let task = Task { try await engine.planSections(record: record, units: "{}", now: .now, deviceId: "test") }
-        task.cancel()
-        do {
-            _ = try await task.value
-            XCTFail("a cancelled plan ran")
-        } catch is CancellationError {}
     }
 
     func testTheEngineRunsOnItsOwnQueue() async throws {

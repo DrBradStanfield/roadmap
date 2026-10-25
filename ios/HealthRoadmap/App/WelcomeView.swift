@@ -72,7 +72,7 @@ struct WelcomeView: View {
         .sensoryFeedback(.impact(weight: .light), trigger: shown && !reduceMotion)
     }
 
-    /// The icon's idea in symbols: a road that ends at a heart.
+    /// The app icon's mark: a road that ends at a heart.
     private var hero: some View {
         LogoMark(bounce: shown && !reduceMotion)
             .accessibilityHidden(true)

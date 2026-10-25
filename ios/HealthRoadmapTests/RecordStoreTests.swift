@@ -1,3 +1,4 @@
+import SwiftUI
 import XCTest
 @testable import HealthRoadmap
 
@@ -187,10 +188,91 @@ final class RecordStoreTests: XCTestCase {
         await XCTAssertSaved(await store.apply(.profile(sex: "male", birthYear: 1975, birthMonth: 6, height: 178)))
         await XCTAssertSaved(await store.apply(.add(metric: "systolic_bp", value: 150, day: "2026-10-20")))
         await XCTAssertSaved(await store.apply(.add(metric: "diastolic_bp", value: 95, day: "2026-10-20")))
-        let record = store.recordJSON
-        let sections = try engine.blocking { try $0.planView(record: record, units: "{}", now: .now, deviceId: "test") }.sections
+        guard case .planned(_, let sections, _) = store.plan else { return XCTFail("the store keeps the plan for the record it shows") }
         let ids = sections.flatMap(\.cards).flatMap(\.suggestions).map(\.id)
         XCTAssertTrue(ids.contains { $0.hasPrefix("bp-") }, "a 150/95 reading must reach the plan: \(ids)")
+    }
+
+    /// US-25 AC2: one edit is one engine call that draws both My data and the plan, and
+    /// the Plan tab reads the plan the store kept: the record is never planned twice.
+    func testOneEditDrawsMyDataAndThePlanInOneEngineCall() async throws {
+        let url = try XCTUnwrap(Bundle.main.url(forResource: "health-engine", withExtension: "js"))
+        let source = try String(contentsOf: url, encoding: .utf8) + """
+
+        globalThis.__doors = [];
+        HealthEngine = Object.fromEntries(Object.entries(HealthEngine).map(([name, door]) => [name,
+          typeof door === 'function' ? function () { __doors.push(name); return door.apply(this, arguments); } : door]));
+
+        """
+        let engine = try HealthEngine(source: source, sourceURL: url)
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        let doors = { try engine.blocking { try $0.evaluate("__doors.splice(0).join(' ')").toString() ?? "" } }
+        XCTAssertEqual(try doors(), "newRecordJson screenJson", "the launch draws both screens at once")
+        guard case .needsDetails = store.plan else { return XCTFail("an empty record: health-core's PlanError") }
+
+        await XCTAssertSaved(await store.apply(.profile(sex: "male", birthYear: 1975, birthMonth: 6, height: 178)))
+        XCTAssertEqual(try doors(), "applyEditJson screenJson")
+        guard case .planned = store.plan else { return XCTFail("the edit's one call planned the new record") }
+
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        window.rootViewController = UIHostingController(rootView: PlanView(store: store, showMyData: {}))
+        window.makeKeyAndVisible()
+        try await Task.sleep(for: .milliseconds(300))
+        window.isHidden = true
+        XCTAssertEqual(try doors(), "", "the Plan tab draws the stored plan and asks the engine nothing")
+    }
+
+    /// Codex R1, adversary R1: the plan reads the date (ages, screening due dates), so a return
+    /// to the foreground draws the same record again, at the time it returns.
+    func testAReturnRedrawsThePlanOfAnUnchangedRecord() async throws {
+        let store = try store()
+        let year = Calendar.current.component(.year, from: .now)
+        // 34 now and 35 a year on: colorectal screening starts at 35 (health-core suggestions.ts).
+        await XCTAssertSaved(await store.apply(.profile(sex: "male", birthYear: year - 34, birthMonth: 1, height: 178)))
+        XCTAssertFalse(suggestionIds(store.plan).contains("screening-colorectal"))
+        let record = store.recordJSON
+        await store.redraw(now: .now.addingTimeInterval(366 * 86_400)).value
+        XCTAssertEqual(store.recordJSON, record, "only the time moved")
+        XCTAssertTrue(suggestionIds(store.plan).contains("screening-colorectal"), "a birthday crossed the age gate: \(suggestionIds(store.plan))")
+    }
+
+    /// Codex R1: the engine's minor-to-adult switch falls at midday UTC on the 1st of the birth
+    /// month (health-core isKnownMinor judges the date at UTC-12), not at local midnight. A
+    /// return within one local day, either side of it, must redraw. 1 January at 11:30 and
+    /// 12:30 UTC is one calendar day in both test zones (UTC; Auckland on daylight time, +13).
+    func testAReturnWithinOneLocalDayCrossesTheMiddayUTCSwitchToAdult() async throws {
+        let store = try store()
+        let year = Calendar.current.component(.year, from: .now) + 1
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = TimeZone(identifier: "UTC")!
+        let before = try XCTUnwrap(utc.date(from: DateComponents(year: year, month: 1, day: 1, hour: 11, minute: 30)))
+        let after = before.addingTimeInterval(3_600)
+        XCTAssertTrue(Calendar.current.isDate(before, inSameDayAs: after), "the two returns fall on one local day")
+        await XCTAssertSaved(await store.apply(.profile(sex: "male", birthYear: year - 18, birthMonth: 1, height: 178)))
+
+        await store.redraw(now: before).value
+        XCTAssertEqual(suggestionIds(store.plan), ["adults-only"], "17 until midday UTC")
+        await store.redraw(now: after).value
+        XCTAssertFalse(suggestionIds(store.plan).contains("adults-only"), "18 after it: \(suggestionIds(store.plan))")
+    }
+
+    private func suggestionIds(_ plan: PlanState?) -> [String] {
+        guard case .planned(_, let sections, _) = plan else { return [] }
+        return sections.flatMap(\.cards).flatMap(\.suggestions).map(\.id)
+    }
+
+    /// Adversary R3: a record that cannot be read shows its problem on the Plan tab, as
+    /// My data does, never "Your plan needs a few details". Read from the screen's body:
+    /// unit tests have no accessibility tree to search.
+    func testThePlanTabShowsWhyARecordCannotBeOpened() throws {
+        try Data("not a record".utf8).write(to: file)
+        let store = try store()
+        let problem = try XCTUnwrap(store.problem)
+        var shown = ""
+        dump(PlanView(store: store, showMyData: {}).body, to: &shown)
+        XCTAssertTrue(shown.contains("Your record could not be opened"), shown)
+        XCTAssertTrue(shown.contains(String(reflecting: problem)), shown) // dump quotes and escapes it
+        XCTAssertFalse(shown.contains("needs a few details"), shown)
     }
 
     func testTheRecordIsKeptOutOfBackups() throws {

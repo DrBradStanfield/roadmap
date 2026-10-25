@@ -29,6 +29,19 @@ final class OnboardingUITests: XCTestCase {
         return XCTWaiter.wait(for: [focused], timeout: 5) == .completed
     }
 
+    /// Types `text` and waits for the box to show exactly it. Under load the keyboard has
+    /// echoed a key twice ("170" showed "1700"); a box that differs is emptied and typed again.
+    @MainActor
+    private func enter(_ text: String, in field: XCUIElement) {
+        for _ in 0..<3 {
+            field.typeText(text)
+            if shows(field, text) { return }
+            let typed = (field.value as? String) ?? ""
+            field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: typed.count))
+        }
+        XCTFail("the box never showed \(text)")
+    }
+
     /// Waits for a box to show `text`: a unit switch converts it once the record's units land.
     private func shows(_ field: XCUIElement, _ text: String) -> Bool {
         let shown = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", text), object: field)
@@ -82,13 +95,13 @@ final class OnboardingUITests: XCTestCase {
         let feet = app.textFields["onboarding.feet"]
         if feet.exists {
             XCTAssertTrue(hasFocus(feet), "the feet box is focused")
-            feet.typeText("5")
+            enter("5", in: feet)
             app.textFields["onboarding.inches"].tap()
-            app.textFields["onboarding.inches"].typeText("7")
+            enter("7", in: app.textFields["onboarding.inches"])
         } else {
             let cm = app.textFields["onboarding.height"]
             XCTAssertTrue(hasFocus(cm), "the centimetre box is focused")
-            cm.typeText("170")
+            enter("170", in: cm)
         }
         snap(app, prefix + "5 height")
         XCTAssertTrue(next.isEnabled)
@@ -107,7 +120,7 @@ final class OnboardingUITests: XCTestCase {
     @MainActor
     private func answerWeight(_ app: XCUIApplication, reachable: Bool = false) {
         let pounds = app.segmentedControls["onboarding.weightUnits"].buttons["lb"].isSelected
-        app.textFields["onboarding.weight"].typeText(pounds ? "154" : "70")
+        enter(pounds ? "154" : "70", in: app.textFields["onboarding.weight"])
         press(app.buttons["onboarding.continue"], "Continue", reachable)
     }
 

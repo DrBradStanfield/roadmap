@@ -144,3 +144,73 @@ Health, and see my plan, without facing the full form.
   FHIR change.
 - Tests: the step model (what to ask, resume, skip), the prefill mapping from HealthKit
   (sex other, no birth day kept), and a UI pass on the simulator and the iPhone.
+
+## The tour (US-57, approved by Brad 2026-10-25)
+
+After the last question the person lands on My plan, and a three-tip tour starts. It uses
+Apple's TipKit, shows once and can be skipped. The story and its ACs are US-57.
+
+1. **The snapshot** (the summary tiles): "Your numbers at a glance". Every tile opens a
+   short explainer of what it is, for good, not only during the tour.
+2. **The first Foundation step**: each step comes with its reason and its evidence.
+3. **Blood tests, on My data**: the more you add, the more personal the plan; a lab
+   report fills these in. Its action opens the lab upload sheet.
+
+No cloud sign-up in the tour. One prompt after the person's third save offers to back up
+the record to their own Dropbox or Google Drive. It shows once and opens the Sync sheet.
+
+### Code
+
+- `Onboarding/TourTips.swift`: the three tips, the tour's step (one TipKit parameter),
+  `TourStep` (the pure order: close moves on, skip ends), `TourSetup` (`Tips.configure`
+  at launch, and the launch arguments), and the `tourTip` modifier the anchors use.
+- `Onboarding/CloudPrompt.swift`: the third-save rule (a count and a done flag in
+  UserDefaults) and `CloudPromptView`, which opens the existing `SyncView`. Built in
+  phase 1, not wired yet. Not named `*Backup*`: `.gitignore`'s `*backup*` would hide it.
+- `Plan/TileExplainerSheet.swift`: a tile's "what it is" above its existing why. It
+  replaces `SummaryTiles`' private `TileEvidenceSheet` in phase 2.
+- Phase 2 wires the anchors (`PlanView`, `SummaryTiles`, `MyDataView`), starts the tour
+  from `RootView.finishOnboarding`, and counts saves from `RecordStore`.
+
+### Tile explainers: what exists, what is new
+
+The web has no plain "what it is" text for its tiles. A tile's tap opens its evidence:
+`STAT_CARD_EVIDENCE`, `getBmiEvidence`, `getIbwEvidence` and `getProteinEvidence` in
+`packages/health-core/src/evidence.ts`, which `statTiles` (`stat-tiles.ts`) already hands
+to the web's `ResultsPanel` and to the phone. That evidence is reused as is, below the new
+words. `roadmap_text.html` explains the protein target in its body text but has no tile
+text.
+
+The new words are a short "what it is" for each tile key. Rule: no threshold and no
+grading, so they suit a known minor's tile (US-07 AC6) and never disagree with the status
+or the evidence beneath. Proposed home: a `STAT_TILE_ABOUT` map beside `statTiles`, served
+as `StatTile.about` through `screenJson`, so the engine serves it and Swift holds no
+clinical words. Not wired yet.
+
+| Tile key | Draft "what it is" | Source in health_roadmap_algorithm.md / evidence.ts |
+|---|---|---|
+| `whtr` | Your waist measurement divided by your height. It shows how much weight you carry around your middle, which BMI cannot show. | § Waist-to-Height Ratio; `STAT_CARD_EVIDENCE.whtr` (central adiposity) |
+| `bmi` | Body mass index: your weight in kilograms divided by your height in metres, squared. It cannot tell muscle from fat, so your waist measurement can change how the plan reads it. | § BMI, § Composite Assessment (WHtR reclassifies 25 to 29.9) |
+| `ibw` | A healthy weight for your height and sex, from the Peterson formula (2016). The plan sets your protein target from it, not from your current weight. | § Ideal Body Weight; § Daily Protein Target |
+| `protein` | How much protein to eat each day, set from your ideal body weight. Enough protein helps you keep muscle, more so after 40. | § Daily Protein Target; `getProteinEvidence` |
+| `apoB` | Apolipoprotein B counts the particles in your blood that can build up in artery walls. The plan prefers it to the other cholesterol tests because it predicts heart risk most closely. | `STAT_CARD_EVIDENCE.apob`; `lipidMarkerFor` (ApoB, then non-HDL, then LDL) |
+| `nonHdl` | Your total cholesterol minus your HDL cholesterol: the cholesterol in every particle that can build up in artery walls. The plan uses it when there is no ApoB result. | § Non-HDL (`totalCholesterol - HDL`); `STAT_CARD_EVIDENCE['non-hdl']` |
+| `ldl` | The cholesterol carried by LDL particles, the main kind that builds up in artery walls. The plan uses it when there is no ApoB or non-HDL result. | `STAT_CARD_EVIDENCE.ldl`; `lipidMarkerFor` |
+| `egfr` | Estimated glomerular filtration rate: how well your kidneys filter your blood, worked out from a creatinine blood test, your age and your sex. | `STAT_CARD_EVIDENCE.egfr` (CKD-EPI 2021) |
+| `lpa` | Lipoprotein(a), a cholesterol particle whose level is set mostly by your genes. Diet and exercise change it little, so one test in a lifetime is usually enough. | `STAT_CARD_EVIDENCE.lpa` |
+| `hba1c` | Your average blood sugar over the last two to three months, from one blood test. | `STAT_CARD_EVIDENCE.hba1c` |
+
+**NEEDS BRAD:**
+1. A known minor's BMI, lipid, Lp(a) and HbA1c tiles are not buttons today (US-07 AC6
+   drops their why). "Every tile tappable" would let them open the "what it is" alone, with
+   no why. The words carry no threshold. Allow it, or keep a minor's tiles as they are?
+2. Do these words fall under the three-file sync? They add no rule or threshold, but they
+   are health content shown to the person. If yes: a "Tile explainers" table in
+   health_roadmap_algorithm.md, and roadmap_text.html needs nothing (it has no tile text).
+3. `ibw`: the evidence says target BMI 24 (men) and 22 (women) is linked with the lowest
+   all-cause mortality. The draft leaves that out and says only "a healthy weight". Keep it
+   plain, or name the mortality link?
+4. `egfr`: the draft does not say "higher is better", because a very high eGFR is not
+   always good. Right to leave it out?
+5. `protein`: "more so after 40" follows the evidence's "particularly important for adults
+   over 40". Keep the age, or drop it?

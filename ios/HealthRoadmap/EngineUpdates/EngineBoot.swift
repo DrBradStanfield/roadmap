@@ -115,8 +115,8 @@ struct EngineBoot: Sendable {
 /// A downloaded engine on its first foreground launch (US-25 AC18). Its "trying"
 /// mark stays set until it has shown the user's own record, so a crash or hang on the
 /// real record, not only on the self-test's fixture, counts against it at the next
-/// launch. My data (`RecordStore.confirmEngineTrial`, which also plans the record) and
-/// PlanView confirm only when the plan worked; the first one wins.
+/// launch. The store confirms it in one place (`RecordStore.display`), when the user's own
+/// record has been drawn and planned (a plan, or health-core's PlanError), never when the plan threw.
 @MainActor
 final class EngineTrial {
     let version: Int
@@ -128,20 +128,6 @@ final class EngineTrial {
         self.version = version
         self.folder = folder
         self.bundled = bundled
-    }
-
-    /// Whether the engine draws `recordJSON`'s Plan tab (`planView`, what PlanView shows): a
-    /// plan, or health-core's own PlanError (no height or sex), which is the engine working.
-    /// Any other throw is a failure.
-    static func planned(_ engine: isolated HealthEngine, recordJSON: String, deviceId: String, units: String) -> Bool {
-        do {
-            _ = try engine.planView(record: recordJSON, units: units, now: .now, deviceId: deviceId)
-            return true
-        } catch HealthEngine.EngineError.callFailed(let why) where why.hasPrefix("PlanError: ") {
-            return true
-        } catch {
-            return false
-        }
     }
 
     /// The engine drew and planned the user's record: it is proven.

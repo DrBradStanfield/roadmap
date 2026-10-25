@@ -59,7 +59,8 @@ extension RecordStore {
 /// What the phone's file holds, as RecordStore shows it.
 struct PhoneLoad: Sendable {
     let record: String
-    let myData: MyData?
+    /// My data and the plan; nil when it cannot be read.
+    let drawn: HealthEngine.Drawn?
     /// Why it cannot be read; the app then writes nothing.
     let problem: String?
 }
@@ -69,7 +70,7 @@ enum PhoneApply: Sendable {
     case refused(EditOutcome)
     /// The edit changed nothing, so nothing was written.
     case unchanged
-    case saved(record: String, myData: MyData)
+    case saved(record: String, drawn: HealthEngine.Drawn)
 }
 
 /// RecordStore's engine work and disk writes, on the engine's queue.
@@ -82,27 +83,27 @@ extension HealthEngine {
             do {
                 record = try String(contentsOf: file, encoding: .utf8)
             } catch {
-                return PhoneLoad(record: "", myData: nil, problem: "Your saved record could not be opened, so nothing will be saved over it. \(error.localizedDescription)")
+                return PhoneLoad(record: "", drawn: nil, problem: "Your saved record could not be opened, so nothing will be saved over it. \(error.localizedDescription)")
             }
         } else {
             record = try newRecord(now: .now, deviceId: deviceId)
             try RecordStore.create(record, at: file)
         }
         do {
-            return PhoneLoad(record: record, myData: try myData(recordJSON: record, now: .now, deviceId: deviceId, units: units), problem: nil)
+            return PhoneLoad(record: record, drawn: try screen(recordJSON: record, now: .now, deviceId: deviceId, units: units), problem: nil)
         } catch {
             // A damaged file, or one a newer app wrote: keep it as it is for a later fix.
-            return PhoneLoad(record: record, myData: nil, problem: "Your saved record could not be read, so nothing will be saved over it. \(error.localizedDescription)")
+            return PhoneLoad(record: record, drawn: nil, problem: "Your saved record could not be read, so nothing will be saved over it. \(error.localizedDescription)")
         }
     }
 
-    /// My data for `record`, drawn first, then the record written: one that cannot be
+    /// My data and the plan for `record`, drawn first, then the record written: one that cannot be
     /// drawn is never written. `marking`: set the pending marker before the write, in
     /// this same step, so an app killed between the two never leaves an unmarked edit;
     /// a refused write puts back the generation it found (none, or the earlier one an
     /// opening session holds and can still clear).
-    func myDataAndWrite(_ record: String, units: String, to file: URL, marking: PhoneFiles?, deviceId: String) throws -> MyData {
-        let shown = try myData(recordJSON: record, now: .now, deviceId: deviceId, units: units)
+    func drawAndWrite(_ record: String, units: String, to file: URL, marking: PhoneFiles?, deviceId: String) throws -> Drawn {
+        let shown = try screen(recordJSON: record, now: .now, deviceId: deviceId, units: units)
         let before = marking?.pending("get") ?? 0
         let generation = marking?.pending("set") ?? 0
         do {
@@ -114,12 +115,12 @@ extension HealthEngine {
         return shown
     }
 
-    /// One edit to the phone's file: the engine's write rules, My data in `shownIn`
+    /// One edit to the phone's file: the engine's write rules, My data and the plan in `shownIn`
     /// (the per-test units in force after it), then the atomic write.
     func applyOnPhone(_ edit: RecordEdit, to record: String, units: String, shownIn: String, file: URL, marking: PhoneFiles?, deviceId: String) throws -> PhoneApply {
         let outcome = try apply(edit, to: record, now: .now, deviceId: deviceId, units: units)
         guard outcome.ok, let next = outcome.record else { return .refused(outcome) }
         if next == record { return .unchanged }
-        return .saved(record: next, myData: try myDataAndWrite(next, units: shownIn, to: file, marking: marking, deviceId: deviceId))
+        return .saved(record: next, drawn: try drawAndWrite(next, units: shownIn, to: file, marking: marking, deviceId: deviceId))
     }
 }

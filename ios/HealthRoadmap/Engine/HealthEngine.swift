@@ -90,33 +90,57 @@ actor HealthEngine {
         queue.async { run(self) }
     }
 
-    /// The plan's summary tiles and on-screen sections for a record, from one plan, and how
-    /// long the engine took (D2's budget). A plan no longer wanted (the record moved on) is
-    /// not started. Tiles the engine cannot draw come back empty, never blanking the plan.
-    func planSections(record: String, units: String, now: Date, deviceId: String) throws -> (tiles: [StatTile], sections: [PlanSection], ms: Double) {
-        try Task.checkCancellation()
-        let clock = ContinuousClock()
-        let start = clock.now
-        let view = try planView(record: record, units: units, now: now, deviceId: deviceId)
-        return (view.tiles, view.sections, (clock.now - start) / .milliseconds(1))
+    /// What My data and the Plan tab show for a record, from one engine call (`screenJson`):
+    /// one read and one plan, so the two always show the same record (US-25 AC2). The plan
+    /// half carries how long the engine took to plan (D2's plan budget). A plan the engine
+    /// cannot make never blanks My data; tiles it cannot draw come back empty, never blanking
+    /// the plan. My data the engine cannot draw throws the whole call.
+    /// `units`: the phone's per-test units as JSON (UnitChoices, US-25 AC17e); "{}" for none.
+    func screen(recordJSON: String, now: Date, deviceId: String, units: String = "{}") throws -> Drawn {
+        let json = try call("screenJson", [recordJSON, now.formatted(Self.iso), deviceId, units])
+        let answer = try JSONDecoder().decode(Drawn.Answer.self, from: Data(json.utf8))
+        return Drawn(myData: answer.myData, plan: answer.plan.state)
     }
 
-    /// The Plan tab's sections and summary tiles (the web's Quick Stats, US-25 AC22).
-    func planView(record: String, units: String, now: Date, deviceId: String) throws -> (sections: [PlanSection], tiles: [StatTile]) {
-        struct View: Decodable {
-            let sections: [PlanSection]
+    /// One record as the screens show it: My data and the plan, from the same engine call.
+    struct Drawn: Sendable {
+        let myData: MyData
+        let plan: PlanState
+
+        fileprivate struct Answer: Decodable {
+            let myData: MyData
+            let plan: Plan
+        }
+
+        /// `{sections, tiles, ms}`, or `{error, planError}` when the record cannot be planned.
+        fileprivate struct Plan: Decodable {
+            let sections: [PlanSection]?
             let tiles: [StatTile]
-            enum CodingKeys: CodingKey { case sections, tiles }
-            /// Sections decode strictly; a tile Swift cannot read leaves no tiles, never a blank plan.
+            /// The engine's milliseconds from computePlan through the tiles and the layout.
+            let ms: Double
+            let error: String?
+            let planError: Bool
+            enum CodingKeys: CodingKey { case sections, tiles, ms, error, planError }
+            /// Sections decode strictly: sections Swift cannot read fail the plan, never My data.
+            /// A tile Swift cannot read leaves no tiles, never a blank plan.
             init(from decoder: Decoder) throws {
                 let c = try decoder.container(keyedBy: CodingKeys.self)
-                sections = try c.decode([PlanSection].self, forKey: .sections)
                 tiles = (try? c.decode([StatTile].self, forKey: .tiles)) ?? []
+                ms = (try? c.decodeIfPresent(Double.self, forKey: .ms)) ?? 0
+                planError = (try? c.decodeIfPresent(Bool.self, forKey: .planError)) == true
+                do {
+                    (sections, error) = (try c.decodeIfPresent([PlanSection].self, forKey: .sections), try c.decodeIfPresent(String.self, forKey: .error))
+                } catch {
+                    (sections, self.error) = (nil, "the plan could not be read: \(error)")
+                }
+            }
+
+            var state: PlanState {
+                if let sections { return .planned(tiles: tiles, sections: sections, ms: ms) }
+                if planError { return .needsDetails }
+                return .failed(EngineError.callFailed(error ?? "no plan").localizedDescription)
             }
         }
-        let json = try call("planViewJson", [record, now.formatted(Self.iso), deviceId, units])
-        let view = try JSONDecoder().decode(View.self, from: Data(json.utf8))
-        return (view.sections, view.tiles)
     }
 
     /// The plan for a record, as the engine's JSON.
@@ -133,12 +157,6 @@ actor HealthEngine {
     /// A first-launch record, as JSON. Units follow the phone's region.
     func newRecord(now: Date, deviceId: String, locale: Locale = .current, timeZone: TimeZone = .current) throws -> String {
         try call("newRecordJson", [now.formatted(Self.iso), deviceId, Self.languageAndRegion(locale), timeZone.identifier])
-    }
-
-    /// What the My data tab shows for a record.
-    func myData(recordJSON: String, now: Date, deviceId: String, units: String = "{}") throws -> MyData {
-        let json = try call("myDataJson", [recordJSON, now.formatted(Self.iso), deviceId, units])
-        return try JSONDecoder().decode(MyData.self, from: Data(json.utf8))
     }
 
     /// Applies one edit with health-core's own write rules. The record passed in is not changed.

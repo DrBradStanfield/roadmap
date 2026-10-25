@@ -19,8 +19,13 @@ final class RecordStore {
 
     /// The record as stored, JSON text.
     private(set) var recordJSON: String { didSet { if recordJSON != oldValue { revision += 1 } } }
+    /// My data and the plan, from one engine call, so the two always show the same record
+    /// (US-25 AC2); nil while the record cannot be read.
+    private(set) var drawn: HealthEngine.Drawn?
     /// What My data shows; nil while the record cannot be read.
-    private(set) var myData: MyData?
+    var myData: MyData? { drawn?.myData }
+    /// What the Plan tab shows; nil while the record cannot be read.
+    var plan: PlanState? { drawn?.plan }
     /// Why the record cannot be read, if it cannot. The app then writes nothing.
     private(set) var problem: String?
     /// While a cloud record is open (US-25 AC11): the erase the screen shows. Every
@@ -97,19 +102,6 @@ final class RecordStore {
         if pins == 0 { pinned = nil }
     }
 
-    // MARK: Engine trial (US-25 AC18)
-
-    /// The trial's confirm path from My data (review N1): only when the engine drew the
-    /// user's record AND planned it (a plan, or health-core's PlanError), never when either threw.
-    /// The plan runs on the engine's queue; main never waits for it (US-25 AC21).
-    func confirmEngineTrial() async {
-        let (record, deviceId, units) = (recordJSON, deviceId, unitChoices.json)
-        guard let trial = engine.trial, !trial.confirmed, myData != nil,
-              await engine.perform({ EngineTrial.planned($0, recordJSON: record, deviceId: deviceId, units: units) })
-        else { return }
-        trial.confirm()
-    }
-
     // MARK: Opening
 
     /// The store, with the phone's file read and drawn by the engine first: at launch,
@@ -146,11 +138,35 @@ final class RecordStore {
         return task
     }
 
+    /// My data and the plan, from one engine call, together. A downloaded engine on trial
+    /// is proven once it has drawn the user's own record and planned it (a plan, or
+    /// health-core's PlanError), never when the plan threw: the failure the trial exists
+    /// to catch (US-25 AC18, review R5).
+    private func display(_ drawn: HealthEngine.Drawn?) {
+        self.drawn = drawn
+        if drawn?.plan.planned == true { engine.trial?.confirm() }
+    }
+
     /// Shows what the phone's file holds.
     private func show(_ loaded: PhoneLoad) {
         recordJSON = loaded.record
-        myData = loaded.myData
+        display(loaded.drawn)
         problem = loaded.problem
+    }
+
+    /// The same record drawn again at `now` (Codex R1): the plan reads the time (ages,
+    /// screening due dates, and minor status, which turns at midday UTC, not local midnight,
+    /// so no calendar-day check can stand in). Called each time the app becomes active and at
+    /// midnight while it is; a draw takes about a millisecond. In line with every change
+    /// (`chain`); nothing when no record is drawn.
+    @discardableResult
+    func redraw(now: Date = .now) -> Task<Void, Never> {
+        chain {
+            guard self.drawn != nil,
+                  let shown = try? await self.engine.screen(recordJSON: self.recordJSON, now: now, deviceId: self.deviceId, units: self.unitChoices.json)
+            else { return }
+            self.display(shown)
+        }
     }
 
     // MARK: Cloud (US-25 AC11)
@@ -174,19 +190,25 @@ final class RecordStore {
         }.value
     }
 
-    private func draw(_ view: HealthEngine.CloudView) async {
+    /// `choices`: the per-test units to draw it in, published with it (nil: those in force).
+    /// False when it was not drawn: nothing on screen moved, the units included.
+    @discardableResult
+    private func draw(_ view: HealthEngine.CloudView, in choices: UnitChoices? = nil) async -> Bool {
         // One the engine handed over before the record now shown is stale: the screen
         // keeps the newer one (a re-read that crossed an edit).
         if let order = view.order {
-            guard order > shownOrder else { return }
+            guard order > shownOrder else { return false }
             shownOrder = order
         }
-        guard let shown = try? await engine.myData(recordJSON: view.record, now: .now, deviceId: deviceId, units: unitChoices.json) else { return }
+        let choices = choices ?? unitChoices
+        guard let shown = try? await engine.screen(recordJSON: view.record, now: .now, deviceId: deviceId, units: choices.json) else { return false }
         recordJSON = view.record
-        myData = shown
+        display(shown)
+        publish(choices)
         problem = nil
         cloudErase = view.erase
         cloudSession = view.session
+        return true
     }
 
     /// Back to the phone's own file (Disconnect, or a cloud that could not open).
@@ -198,7 +220,7 @@ final class RecordStore {
             do {
                 self.show(try await self.engine.loadPhone(file, deviceId: deviceId, units: units))
             } catch {
-                self.myData = nil
+                self.display(nil)
                 self.problem = "Your record on this iPhone could not be opened. \(error.localizedDescription)"
             }
         }
@@ -236,9 +258,9 @@ final class RecordStore {
                 // Marked and counted as any phone edit is: a connect in flight that lifted
                 // the pre-erase file opens again and merges the erase in, whose higher
                 // eraseEpoch wins (US-09 AC23).
-                let shown = try await self.engine.myDataAndWrite(result.record, units: UnitChoices().json, to: self.file, marking: self.marksPending, deviceId: self.deviceId)
+                let shown = try await self.engine.drawAndWrite(result.record, units: UnitChoices().json, to: self.file, marking: self.marksPending, deviceId: self.deviceId)
                 self.recordJSON = result.record
-                self.myData = shown
+                self.display(shown)
                 self.publish(UnitChoices())
                 self.problem = nil
                 self.erasures += 1
@@ -254,8 +276,8 @@ final class RecordStore {
     @discardableResult
     func showErased(_ view: HealthEngine.CloudView) -> Task<Void, Never> {
         chain {
-            self.publish(UnitChoices())
-            await self.draw(view)
+            // A fresh start: no per-test choice, published only with the erase drawn (adversary R4).
+            await self.draw(view, in: UnitChoices())
             self.erasures += 1
         }
     }
@@ -401,7 +423,7 @@ final class RecordStore {
                 return .saved
             case .saved(let next, let shown):
                 recordJSON = next
-                myData = shown
+                display(shown)
                 publish(choices)
                 onEdit?()
                 return .saved
@@ -426,9 +448,9 @@ final class RecordStore {
             return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
         }
         if next == recordJSON { return .saved }
-        // The session has taken the edit: the choices follow it.
-        if Self.clearsChoices(edit) { publish(UnitChoices()) }
-        await draw(HealthEngine.CloudView(record: next, erase: nextErase, session: cloudSession ?? 0, order: outcome.order))
+        // The session has taken the edit: the choices follow it, once it is drawn (adversary R4).
+        await draw(HealthEngine.CloudView(record: next, erase: nextErase, session: cloudSession ?? 0, order: outcome.order),
+                   in: Self.clearsChoices(edit) ? UnitChoices() : nil)
         onEdit?()
         return .saved
     }
@@ -528,9 +550,9 @@ final class RecordStore {
     func commitPhoneDocument(_ next: String, over before: String) async throws -> Bool {
         guard cloudErase == nil, recordJSON == before else { return false }
         if next != recordJSON {
-            let shown = try await engine.myDataAndWrite(next, units: unitChoices.json, to: file, marking: marksPending, deviceId: deviceId)
+            let shown = try await engine.drawAndWrite(next, units: unitChoices.json, to: file, marking: marksPending, deviceId: deviceId)
             recordJSON = next
-            myData = shown
+            display(shown)
             onEdit?()
         }
         return true
@@ -559,8 +581,8 @@ final class RecordStore {
             guard row.switchable == true, let data = self.myData else { return }
             let choices = self.unitChoices.setting(row.metric, to: system == data.unitSystem ? nil : system)
             // Drawn first: a choice the screen cannot show is not kept, so labels and reading agree.
-            guard let shown = try? await self.engine.myData(recordJSON: self.recordJSON, now: .now, deviceId: self.deviceId, units: choices.json) else { return }
-            self.myData = shown
+            guard let shown = try? await self.engine.screen(recordJSON: self.recordJSON, now: .now, deviceId: self.deviceId, units: choices.json) else { return }
+            self.display(shown)
             self.publish(choices)
         }
     }

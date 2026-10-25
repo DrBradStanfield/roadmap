@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { planJson, planViewJson, sectionsJson } from './entry';
+import { planJson, screenJson, sectionsJson } from './entry';
 import { statTiles as tilesFor, type StatTile } from '../../packages/health-core/src/stat-tiles';
 import type { Plan } from '../../packages/health-core/src/plan';
 import { STAT_CARD_EVIDENCE, getIbwEvidence } from '../../packages/health-core/src/evidence';
@@ -25,8 +25,8 @@ function add(record: typeof sample, metricType: string, value: number) {
 }
 
 const byKey = (tiles: StatTile[]) => Object.fromEntries(tiles.map((t) => [t.key, t]));
-/** The tiles as the app reads them: through the engine's Plan tab door. */
-const statTiles = (record: string, unitsJson = '{}'): StatTile[] => JSON.parse(planViewJson(record, NOW, 'phone', unitsJson)).tiles;
+/** The tiles as the app reads them: the plan half of the engine's screen door. */
+const statTiles = (record: string, unitsJson = '{}'): StatTile[] => JSON.parse(screenJson(record, NOW, 'phone', unitsJson)).plan.tiles;
 
 describe('statTiles (US-25 AC22)', () => {
   it('gives the sample the web\'s tiles, in its order, with its words', () => {
@@ -83,15 +83,16 @@ describe('statTiles (US-25 AC22)', () => {
     expect(statTiles(recordOf(), '{"hba1c":"conventional"}')).toEqual(JSON.parse(JSON.stringify(direct)));
   });
 
-  it('planViewJson is the separate plan, sections and tiles it replaced, from one computePlan', () => {
+  it('screenJson\'s plan is the separate plan, sections and tiles it replaced, from one computePlan', () => {
     for (const units of ['{}', '{"hba1c":"conventional","ldl":"conventional","weight":"conventional"}']) {
       const record = recordOf((r) => { add(r, 'waist', 90); add(r, 'creatinine', 70); });
       const plan = planJson(record, NOW, 'phone', units);
       const parsed = JSON.parse(plan) as Plan;
       const tiles = tilesFor(parsed.results, { unitSystem: parsed.unitSystem, unitOverrides: JSON.parse(units), sex: parsed.inputs.sex });
-      expect(JSON.parse(planViewJson(record, NOW, 'phone', units))).toEqual({
+      expect(JSON.parse(screenJson(record, NOW, 'phone', units)).plan).toEqual({
         sections: JSON.parse(sectionsJson(plan)),
         tiles: JSON.parse(JSON.stringify(tiles)),
+        ms: expect.any(Number),
       });
     }
   });

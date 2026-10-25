@@ -75,8 +75,6 @@ struct MyDataView: View {
                     }
                 }
                 .listStyle(.insetGrouped)
-                // A downloaded engine on trial has drawn the user's own record (US-25 AC18).
-                .task { await store.confirmEngineTrial() }
             } else {
                 ContentUnavailableView("Your record could not be opened", systemImage: "exclamationmark.triangle", description: Text(store.problem ?? ""))
             }

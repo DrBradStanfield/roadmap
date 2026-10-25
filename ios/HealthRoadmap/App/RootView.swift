@@ -52,7 +52,7 @@ struct RootView: View {
             NavigationStack { MyDataView(engine: engine, store: store, sync: sync).firmTopEdge() }
                 .tabItem { Label("My data", systemImage: "list.bullet.clipboard") }
                 .tag(Tab.data)
-            titled("My plan") { PlanView(engine: engine, store: store, showMyData: { tab = .data }) }
+            titled("My plan") { PlanView(store: store, showMyData: { tab = .data }) }
                 .tabItem { Label("My plan", systemImage: "heart.text.square") }
                 .tag(Tab.plan)
             // ChatView keeps its own navigation stack and title.
@@ -76,7 +76,15 @@ struct RootView: View {
         .onChange(of: store.recordJSON) { reviewPrompt.recordChanged() }
         // Reminders refill on launch, on every record change and on return (US-25 AC9).
         .task(id: store.recordJSON) { await reminders.refresh() }
-        .onChange(of: scenePhase) { if scenePhase == .active { Task { await reminders.refresh() } } }
+        .onChange(of: scenePhase) {
+            guard scenePhase == .active else { return }
+            Task { await reminders.refresh() }
+            store.redraw() // the plan reads the time (Codex R1)
+        }
+        // Midnight with the app open: the same redraw.
+        .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged).receive(on: RunLoop.main)) { _ in
+            if scenePhase == .active { store.redraw() }
+        }
         .onChange(of: reminderTaps.planRequests, initial: true) { if reminderTaps.planRequests > 0 { tab = .plan } }
         .task(id: tab) {
             // A pause first, so the plan is on screen before iOS's rating sheet;

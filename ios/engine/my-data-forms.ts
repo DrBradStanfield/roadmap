@@ -5,7 +5,7 @@
 // schema. Swift renders what comes out and sends answers back; it decides
 // nothing clinical.
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
-import { computePlan, derivePlanInputs } from '../../packages/health-core/src/plan';
+import { computePlan, derivePlanInputs, type Plan } from '../../packages/health-core/src/plan';
 import {
   SUPPLEMENT_DOSE_UNITS, SUPPLEMENT_TEXT, medicationForm, medicationWrites, screeningForm,
   screeningMonths, screeningWrites, type FormField, type FormSection,
@@ -86,18 +86,22 @@ export type FormEdit =
   /** A supplement typed by name, not on the list. */
   | { kind: 'customSupplement'; name: string };
 
-/** What the medication and screening questions read: the plan's age, BMI, trigger and lipid marker, as the web's PlanBasis. */
-function basisOf(file: RoadmapFile, now: string, choices: UnitChoices) {
+/** The record's plan for `now` and `choices`; null when it cannot be made (no usable height or sex). */
+export function planOf(file: RoadmapFile, now: string, choices: UnitChoices): Plan | null {
+  try {
+    return computePlan(file, new Date(now), choices);
+  } catch {
+    return null;
+  }
+}
+
+/** What the medication and screening questions read: the plan's age, BMI, trigger and lipid marker, as the web's PlanBasis.
+ *  `plan`: the record's plan (`planOf`); null gives no age and no cascades (the web's planBasis null). */
+function basisOf(file: RoadmapFile, choices: UnitChoices, plan: Plan | null) {
   const derived = derivePlanInputs(file);
   const raw = derived.inputs;
   const hasLipidInput = raw.apoB !== undefined || raw.ldlC !== undefined || raw.totalCholesterol !== undefined || raw.hdlC !== undefined;
   const hasWeightInput = raw.hba1c !== undefined || raw.triglycerides !== undefined || (raw.weightKg !== undefined && raw.heightCm !== undefined);
-  let plan: ReturnType<typeof computePlan> | null = null;
-  try {
-    plan = computePlan(file, new Date(now), choices);
-  } catch {
-    // No usable height or sex: no plan, so no age and no cascades (the web's planBasis null).
-  }
   const results = plan?.results;
   const medicines = !!results && medicinesShown(results);
   return {
@@ -137,16 +141,16 @@ function listable(file: RoadmapFile, status: 'active' | 'stopped') {
  * row this code did not foresee) gets no questions and a plain note, so the
  * rest of My data still opens and saves (adversary R2).
  */
-export function formsOf(file: RoadmapFile, now: string, choices: UnitChoices = {}): FormsView {
-  return formsAndBasis(file, now, choices).forms;
+export function formsOf(file: RoadmapFile, now: string, choices: UnitChoices, plan: Plan | null): FormsView {
+  return formsAndBasis(file, now, choices, plan).forms;
 }
 
 /** The forms, and the basis they were built on (null when they could not be): an
  *  answer is checked against the forms and written from the same basis, so the plan
  *  behind them is computed once per call. */
-function formsAndBasis(file: RoadmapFile, now: string, choices: UnitChoices): { forms: FormsView; basis: Basis | null } {
+function formsAndBasis(file: RoadmapFile, now: string, choices: UnitChoices, plan: Plan | null): { forms: FormsView; basis: Basis | null } {
   try {
-    const basis = basisOf(file, now, choices);
+    const basis = basisOf(file, choices, plan);
     return { forms: buildForms(file, now, basis), basis };
   } catch {
     return {
@@ -217,7 +221,7 @@ type Save = (file: RoadmapFile, edit: { kind: 'medication'; medicationKey: strin
  * could not. The answer's dependent writes follow, as on the web.
  */
 export function applyFormEdit(file: RoadmapFile, edit: Exclude<FormEdit, { kind: 'customSupplement' }>, now: string, saveMedication: Save): Outcome {
-  const { forms, basis } = formsAndBasis(file, now, {});
+  const { forms, basis } = formsAndBasis(file, now, {}, planOf(file, now, {}));
   if (edit.kind === 'medicationField') {
     const field = fieldsByKey(forms.medications).get(edit.field);
     // No basis, no forms: every answer is refused here.
@@ -257,12 +261,8 @@ export function applyFormEdit(file: RoadmapFile, edit: Exclude<FormEdit, { kind:
  * view offers corrections, never removal.
  */
 export function metricHistory(file: RoadmapFile, metric: string, now = new Date().toISOString(), choices: UnitChoices = {}): MetricHistory {
-  let excludedFields: string[] = [];
-  try {
-    excludedFields = computePlan(file, new Date(now)).excluded;
-  } catch {
-    // No plan yet (no usable height or sex): nothing is excluded, and nothing used.
-  }
+  // No plan yet (no usable height or sex): nothing is excluded, and nothing used.
+  const excludedFields = planOf(file, now, {})?.excluded ?? [];
   if (metric === BLOOD_PRESSURE) return pressureHistory(file, excludedFields);
   const shown = cellUnitFor(file, metric, choices);
   const rows = file.measurements.filter((row) => row.metricType === metric);

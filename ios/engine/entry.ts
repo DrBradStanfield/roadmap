@@ -3,10 +3,10 @@
 // string-in, string-out door, because JSON is the one shape both sides share.
 // Its door list is bridge-contract.json; bridge.test.ts holds the two together.
 import { mergeFiles } from '../../packages/health-core/src/merge';
-import { computePlan, type Plan } from '../../packages/health-core/src/plan';
+import { computePlan, PlanError, type Plan } from '../../packages/health-core/src/plan';
 import { CURRENT_SCHEMA_VERSION } from '../../packages/health-core/src/roadmap-file';
-import { planSections } from '../../packages/health-core/src/plan-sections';
-import { statTiles } from '../../packages/health-core/src/stat-tiles';
+import { planSections, type PlanSection } from '../../packages/health-core/src/plan-sections';
+import { statTiles, type StatTile } from '../../packages/health-core/src/stat-tiles';
 import { cmToFeetInches, formatDisplayValue, fromCanonicalValue, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from '../../packages/health-core/src/units';
 import { fileNameLine, MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/src/lab-extraction';
 import { deviceWrites } from '../../packages/health-core/src/device-export';
@@ -67,22 +67,6 @@ export function sectionsJson(planJsonText: string): string {
   return JSON.stringify(planSections(plan.results.suggestions));
 }
 
-/** The Plan tab's view of a record, as JSON, from one computePlan: `{sections, tiles}`,
- *  the layout sectionsJson gives and the summary tiles above it, the web's Quick Stats
- *  (health-core stat-tiles.ts, US-25 AC22), in the phone's per-test units. A tile that
- *  cannot be drawn never blanks the plan below it (adversary R7): no tiles instead. */
-export function planViewJson(recordJson: string, nowIso: string, deviceId: string, unitsJson: string): string {
-  const unitOverrides = readUnitChoices(unitsJson);
-  const plan = computePlan(readRecord(recordJson, nowIso, deviceId), new Date(nowIso), unitOverrides);
-  let tiles: ReturnType<typeof statTiles> = [];
-  try {
-    tiles = statTiles(plan.results, { unitSystem: plan.unitSystem, unitOverrides, sex: plan.inputs.sex });
-  } catch {
-    // tiles stay empty
-  }
-  return JSON.stringify({ sections: planSections(plan.results.suggestions), tiles });
-}
-
 // The My data tab (my-data.ts). A record from disk is read as the plan's is,
 // migrated, so a record the web wrote in an older shape reads the same.
 
@@ -91,9 +75,35 @@ export function newRecordJson(nowIso: string, deviceId: string, locale: string, 
   return JSON.stringify(newRecord(nowIso, deviceId, locale, timeZone));
 }
 
-/** What the My data tab shows, as JSON. */
-export function myDataJson(recordJson: string, nowIso: string, deviceId: string, unitsJson?: string): string {
-  return JSON.stringify(myData(readRecord(recordJson, nowIso, deviceId), nowIso, readUnitChoices(unitsJson)));
+/** What the app shows for a record, as JSON: `{myData, plan}`, from one read and one
+ *  computePlan, so My data and the Plan tab always show the same record (US-25 AC2).
+ *  `plan` is `{sections, tiles, ms}`: the layout sectionsJson gives and the summary tiles
+ *  above it, the web's Quick Stats (health-core stat-tiles.ts, US-25 AC22), in the
+ *  phone's per-test units, and the milliseconds from computePlan through the tiles and the
+ *  layout (D2's plan budget; whole ms, the engine's only clock). A tile that cannot be drawn never
+ *  blanks the plan (adversary R7): no tiles instead. A record that cannot be planned gives
+ *  `{error, planError}`, `planError` true for health-core's PlanError (no usable height or
+ *  sex), and never blanks My data. My data that cannot be drawn throws the whole call. */
+export function screenJson(recordJson: string, nowIso: string, deviceId: string, unitsJson?: string): string {
+  const file = readRecord(recordJson, nowIso, deviceId);
+  const choices = readUnitChoices(unitsJson);
+  let plan: Plan | null = null;
+  let view: { sections: PlanSection[]; tiles: StatTile[]; ms: number } | { error: string; planError: boolean };
+  try {
+    const start = Date.now();
+    plan = computePlan(file, new Date(nowIso), choices);
+    let tiles: StatTile[] = [];
+    try {
+      tiles = statTiles(plan.results, { unitSystem: plan.unitSystem, unitOverrides: choices, sex: plan.inputs.sex });
+    } catch {
+      // tiles stay empty
+    }
+    const sections = planSections(plan.results.suggestions);
+    view = { sections, tiles, ms: Date.now() - start };
+  } catch (error) {
+    view = { error: String(error), planError: error instanceof PlanError };
+  }
+  return JSON.stringify({ myData: myData(file, nowIso, choices, plan), plan: view });
 }
 
 /** One edit, as JSON: `{ ok: true, record }` with the new record as text, or the refusal. */

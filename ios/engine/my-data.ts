@@ -5,6 +5,7 @@
 // twins: the widget's InputPanel.tsx and BloodTestTimeline.tsx, writing through
 // RoadmapStore.
 import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import type { Plan } from '../../packages/health-core/src/plan';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 import { hasStampShape } from '../../packages/health-core/src/migrate';
 import { parseLocalisedNumber } from '../../packages/health-core/src/parseNumber';
@@ -16,7 +17,7 @@ import { medicationSchema, supplementSchema } from '../../packages/health-core/s
 import { customSupplementAdd, customSupplementMatch } from '../../packages/health-core/src/input-form';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { importDeviceSamples, type DeviceSample } from '../../packages/health-core/src/device-import';
-import { applyFormEdit, formsOf, type FormEdit, type FormsView } from './my-data-forms';
+import { applyFormEdit, formsOf, planOf, type FormEdit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
 import {
   cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, getDisplayLabel, toCanonicalValue,
@@ -158,7 +159,9 @@ export function newRecord(now: string, deviceId: string, locale: string, timeZon
   return { ...file, profile: { ...file.profile, unitSystem: detectUnitSystem(locale, timeZone) } };
 }
 
-export function myData(file: RoadmapFile, now = new Date().toISOString(), choices: UnitChoices = {}): MyData & FormsView {
+/** `plan`: the record's plan for `now` and `choices` (null: it could not be made); a caller
+ *  that has it passes it, so the forms are not planned twice (entry.ts screenJson). */
+export function myData(file: RoadmapFile, now = new Date().toISOString(), choices: UnitChoices = {}, plan: Plan | null = planOf(file, now, choices)): MyData & FormsView {
   const system = unitsOf(file);
   const current = new Map(latestActivePerMetric(file.measurements).map((row) => [row.metricType, row]));
   const trend = trends(file, (metric, valueSI) => cellFromSI(metric as MetricType, valueSI, cellUnitFor(file, metric, choices)));
@@ -194,7 +197,7 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
     // PSA is asked for under prostate screening on the web, not with the blood tests.
     bloodTests: BLOOD_TEST_METRICS.filter((metric) => metric !== 'psa').map(row),
     psa: row('psa'),
-    ...formsOf(file, now, choices),
+    ...formsOf(file, now, choices, plan),
   };
 }
 

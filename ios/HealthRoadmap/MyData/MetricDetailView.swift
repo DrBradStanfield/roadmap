@@ -15,7 +15,8 @@ struct MetricDetailView: View {
     /// Counts a save, for the success haptic.
     let saved: (RecordStore.ApplyResult) -> RecordStore.ApplyResult
 
-    @State private var range = ChartRange.all
+    /// The range picked; nil opens on the narrowest holding every value (`ChartRange.opening`).
+    @State private var range: ChartRange?
     @State private var scrubbed: Date?
     /// The first day a scrolling range shows; set to end on the newest value as a range opens.
     @State private var scrolledTo = Date.distantPast
@@ -84,39 +85,42 @@ struct MetricDetailView: View {
     // MARK: Chart
 
     private func chartSection(_ chart: ChartData) -> some View {
-        let (history, all, days, offered) = (chart.history, chart.points, chart.days, chart.offered)
-        let shown = offered.contains(range) ? range : .all
-        // The window ends on the newest value, not today: a weight from months ago fills the chart.
-        let newest = days.max()
-        let opening = newest.flatMap { shown.start(ending: $0) }
-        let window = newest.flatMap { newest in opening.map { newest.timeIntervalSince($0) } }
-        let latest = history.rows.first(where: \.isActive)
+        let latest = chart.history.rows.first(where: \.isActive)
         return Section {
             VStack(alignment: .leading, spacing: 12) {
-                if offered.count > 1 {
-                    Picker("Range", selection: $range) {
-                        ForEach(offered) { Text($0.rawValue).tag($0).accessibilityLabel($0.spoken) }
-                    }
-                    .pickerStyle(.segmented)
-                }
-                headline(latest, unit: history.unit)
-                    .opacity(scrubbed == nil ? 1 : 0)
-                if all.isEmpty {
-                    Text("No values to draw yet.").font(.subheadline).foregroundStyle(.secondary)
+                if let newest = chart.last {
+                    rangedChart(chart, newest: newest, latest: latest)
                 } else {
-                    MetricChart(chart: chart, window: window, scrolledTo: $scrolledTo, selected: $scrubbed)
+                    headline(latest, unit: chart.history.unit)
+                    Text("No values to draw yet.").font(.subheadline).foregroundStyle(.secondary)
                 }
             }
             .padding(.vertical, 6)
+        }
+    }
+
+    /// The range picker, the headline and the chart, for a history with values.
+    @ViewBuilder
+    private func rangedChart(_ chart: ChartData, newest: Date, latest: MetricHistory.Row?) -> some View {
+        let shown = range ?? chart.opening
+        // The window ends on the newest value, not today: a weight from months ago fills the chart.
+        let windowStart = shown.start(ending: newest)
+        let window = newest.timeIntervalSince(windowStart)
+        Picker("Range", selection: Binding { shown } set: { range = $0 }) {
+            ForEach(ChartRange.allCases) { Text($0.rawValue).tag($0).accessibilityLabel($0.spoken) }
+        }
+        .pickerStyle(.segmented)
+        headline(latest, unit: chart.history.unit)
+            .opacity(scrubbed == nil ? 1 : 0)
+        MetricChart(chart: chart, window: window, scrolledTo: $scrolledTo, selected: $scrubbed)
             // Opens on the newest value; coming back from Show All Data keeps where it was scrolled.
-            .onAppear { if let opening, scrolledTo == .distantPast { scrolledTo = opening } }
+            .onAppear { if scrolledTo == .distantPast { scrolledTo = windowStart } }
             .onChange(of: shown) {
                 scrubbed = nil
-                if let opening { scrolledTo = opening }
+                scrolledTo = windowStart
             }
             // A newer value just added: show it.
-            .onChange(of: newest) { if let opening { scrolledTo = opening } }
-        }
+            .onChange(of: newest) { scrolledTo = windowStart }
     }
 
     /// The newest value, large, with its day: Apple Health's headline.
