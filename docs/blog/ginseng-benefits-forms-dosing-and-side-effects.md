@@ -15,7 +15,7 @@ sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/asian-ginsen
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. Most ginseng trials are small and short: Asian ginseng alone may slightly ease general fatigue, and a 2022 review of 20 trials found it improved fasting blood glucose in prediabetes and diabetes, though research on blood sugar control is overall inconclusive and conflicting [2][9][11]. In the largest trial, 2,000 mg a day of Wisconsin American ginseng for 8 weeks improved cancer-related fatigue more than placebo [5], and a Cochrane review found ginseng appears to have a trivial effect on erectile function scores [36]. Short-term use by mouth, up to 6 months, appears to be safe for most people, and insomnia is the most common side effect [2]. If you take warfarin or another blood thinner, have diabetes, or are pregnant or breastfeeding, talk to your doctor first: American ginseng weakened warfarin's effect in one small trial, and ginseng types can lower or raise blood sugar [2][34][37].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Most ginseng trials are small and short: Asian ginseng alone may slightly ease general fatigue, and a 2022 review of 20 trials found it improved fasting blood glucose in prediabetes and diabetes, though research on blood sugar control is overall inconclusive and conflicting [2][9][11]. In the largest trial, 2,000 mg a day of Wisconsin American ginseng for 8 weeks improved cancer-related fatigue more than placebo [5], and a Cochrane review found ginseng appears to have a trivial effect on erectile function scores [36]. Short-term use of Asian ginseng by mouth, up to 6 months, appears to be safe for most people, and insomnia is its most common side effect [2]. If you take warfarin or another blood thinner, have diabetes, or are pregnant or breastfeeding, talk to your doctor first: American ginseng weakened warfarin's effect in one small trial, and ginseng types can lower or raise blood sugar [2][34][37].
 
 ## Key safety points
 
@@ -23,8 +23,8 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 - Ginseng may lower or raise blood sugar, depending on the type. If you have diabetes or take glucose-lowering medicines, talk to your doctor first [2][34].
 - Panax ginseng changed how the body handled a CYP3A test drug, and a case report linked ginseng to liver injury with imatinib. Ask your doctor or pharmacist if you take medicines broken down by CYP3A4 [27][28].
 - Asian ginseng may be unsafe in pregnancy, and little is known about breastfeeding [2].
-- Asian ginseng may worsen autoimmune disorders, and in lab studies ginseng made breast cancer cells grow. With either condition, ask your doctor first [2][39].
-- Insomnia is the most common side effect. Severe allergic reactions are rare; for swelling of the face or throat or trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [2].
+- Asian ginseng may worsen autoimmune disorders, and in lab studies ginseng made breast cancer cells grow, though higher concentrations slowed their growth in one study. With either condition, ask your doctor first [2][39][40].
+- Insomnia is Asian ginseng's most common side effect. Severe allergic reactions are uncommon; for swelling of the face or throat or trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [2].
 
 ## Brad's videos on this topic
 
@@ -76,7 +76,7 @@ Ginseng is available as:
 
 ### Ginsenoside Content Standards
 
-Labels differ in how fully they list the species, plant part, form and ginsenoside content. For independent product testing, see consumerlab.com or Labdoor.
+For independent product testing, see consumerlab.com or Labdoor.
 
 ### Key Bioavailability Considerations
 
@@ -104,7 +104,7 @@ In diabetes and prediabetes, ginseng may lower blood sugar, but results are inco
 
 **Hydrolyzed ginseng extract and impaired fasting glucose:** In an 8-week trial in 23 Korean adults with impaired fasting glucose, 960 mg a day of hydrolyzed ginseng extract lowered fasting and post-meal glucose more than placebo, with no clinically significant change in safety measures [7].
 
-**Red Korean ginseng and type 2 diabetes:** In a randomized trial with a placebo group in patients with type 2 diabetes or impaired glucose regulation, the red ginseng group's fasting blood glucose fell from 6.44 to 6.19 mmol/L, 2-hour glucose from 11.96 to 10.48 mmol/L and HbA1c from 6.27 to 6.12%; no participant had adverse effects [8].
+**Red Korean ginseng and type 2 diabetes:** In a randomized trial with a placebo group in patients with type 2 diabetes or impaired glucose regulation, the red ginseng group's fasting blood glucose fell from 6.44 to 6.19 mmol/L, 2-hour glucose from 11.96 to 10.48 mmol/L and HbA1c from 6.27 to 6.12%; no participant had adverse effects [8]. Compared with placebo, 2-hour glucose and HbA1c fell more with red ginseng; fasting glucose did not differ between groups [8].
 
 **Meta-analysis:** A 2022 review of 20 studies (1,295 participants) found that Asian ginseng improved many cardiometabolic factors in people with prediabetes and diabetes, including fasting blood glucose, total cholesterol and certain inflammatory markers. Research on blood sugar control is still overall inconclusive and conflicting [2][11].
 
@@ -198,7 +198,7 @@ No official dose exists for ginseng. Match the form and dose to the trial behind
 
 ### Practical Dosing Notes
 
-Most ginseng trials have been shorter than 3 months, so less is known about longer use [2].
+Most Asian ginseng trials have been shorter than 3 months, so less is known about longer use [2].
 
 ## 5. Safety and Side Effects
 
@@ -208,20 +208,19 @@ Taken by mouth for up to 6 months in recommended amounts, Asian ginseng appears 
 
 ### Common Side Effects
 
-Insomnia (trouble sleeping) is the herb's most common side effect [2][17]. Other effects reported with ginseng may include:
+Insomnia (trouble sleeping) is Asian ginseng's most common side effect [2][17]. In a systematic review of Panax ginseng, adverse events with ginseng alone were about as common as with placebo, and the most common were [43]:
 - Headache
-- Stomach upset (nausea, diarrhea)
-- Nervousness or agitation
-- Changes in blood pressure (up or down)
+- Sleep problems
+- Stomach and gut upsets
 
 ### Uncommon but Reported Side Effects
 
 - Severe rash [2]
-- Liver damage (rare reports) [2]
+- Liver damage [2]
 - Severe allergic reactions [2]. For swelling of the face, lips or throat, or trouble breathing, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - Vaginal bleeding, in two menopausal women in one trial [14]
 
-Case reports have linked long-term or high-dose use to overstimulation and high blood pressure, but trials have not confirmed this.
+An early uncontrolled report on long-term ginseng users described what it called a ginseng abuse syndrome [44]. Reports of this kind cannot show that ginseng caused the symptoms.
 
 ### Blood Sugar Effects — A Dual Concern
 
@@ -233,7 +232,7 @@ If you have diabetes, talk to your doctor before using ginseng [2][26].
 
 ### Cancer and Estrogenic Effects
 
-Lab studies disagree on whether ginseng acts like estrogen. In one, ginseng made breast cancer cells grow without estrogen-like activity [39]; in another, an alcohol extract of American ginseng acted like estrogen at low concentrations, but a water extract did not [40]. Because of these findings, people with breast cancer should not use ginseng without their oncologist's advice.
+Lab studies disagree on whether ginseng acts like estrogen. In one, ginseng made breast cancer cells grow without estrogen-like activity [39]; in another, a methanol extract of American ginseng acted like estrogen at low concentrations, but a water extract did not, and at higher concentrations both extracts slowed breast cancer cell growth [40]. Because of these findings, people with breast cancer should not use ginseng without their oncologist's advice.
 
 ### Autoimmune Conditions
 
@@ -249,7 +248,7 @@ Case reports describe mania linked to ginseng [41] and a suspected interaction w
 
 ### Long-Term Safety
 
-Questions have been raised about ginseng's long-term safety [2]. The evidence of safety covers use up to 6 months; longer use is less studied [2].
+Questions have been raised about Asian ginseng's long-term safety [2]. The evidence of safety covers use up to 6 months; longer use is less studied [2].
 
 ## 6. Drug Interactions
 
@@ -277,7 +276,7 @@ Asian ginseng may interfere with blood clotting [2]. If you take an antiplatelet
 
 ### Siberian Ginseng (Eleuthero) — Specific Statin Interaction
 
-A 2019 case report described possible liver injury from an interaction between ginseng and atorvastatin [29]. In a lab study, Siberian ginseng extract partly blocked OATP-B, a transporter thought to help the gut absorb some drugs [30]. If you take a statin, check with your doctor before using any product sold as ginseng, including Siberian ginseng.
+A 2019 case report described possible liver injury in a man aged 82, taking atorvastatin 80 mg, who had started a supplement combining Siberian ginseng with silymarin (milk thistle); his liver tests returned to normal within 2 months of stopping the supplement and atorvastatin [29]. In a lab study, Siberian ginseng extract partly blocked OATP-B, a transporter thought to help the gut absorb some drugs [30]. If you take a statin, check with your doctor before using any product sold as ginseng, including Siberian ginseng.
 
 ### General Precaution
 
@@ -292,7 +291,7 @@ Unlike minerals and vitamins, ginseng is not a nutrient found in common foods. I
 - **Ginseng tea**: sliced or powdered root steeped in hot water, widely drunk in Korea, China and Japan.
 - **Ginseng-containing foods**: some Asian dishes include ginseng root, such as samgyetang (Korean ginseng chicken soup).
 - **Ginseng candy and extracts**: sold mainly in East Asian markets.
-- **Energy drinks**: some contain ginseng, usually in small amounts.
+- **Energy drinks**: some contain ginseng.
 
 ### Source Quality Considerations
 
@@ -365,9 +364,9 @@ Teas and soups do not state a ginsenoside dose, so they cannot be matched to tri
 
 [36] Lee HW, Lee MS, Kim TH, et al. "Ginseng for erectile dysfunction: a Cochrane systematic review." *World J Mens Health*. 2022;40(2):264-269. PMID: 34169686. https://pubmed.ncbi.nlm.nih.gov/34169686/
 
-[37] Yuan CS, Wei G, Dey L, et al. "Brief communication: American ginseng reduces warfarin's effect in healthy patients: a randomized, controlled trial." *Ann Intern Med*. 2004;141(1):23-27. PMID: 15238367. https://pubmed.ncbi.nlm.nih.gov/15238367/
+[37] Yuan CS, Wei G, Dey L, et al. "Brief communication: American ginseng reduces warfarin's effect in healthy patients: a randomized, controlled trial." *Ann Intern Med*. 2004;141(1):23-27. PMID: 15238367. doi: [10.7326/0003-4819-141-1-200407060-00011](https://doi.org/10.7326/0003-4819-141-1-200407060-00011)
 
-[38] Jiang X, Williams KM, Liauw WS, et al. "Effect of St John's wort and ginseng on the pharmacokinetics and pharmacodynamics of warfarin in healthy subjects." *Br J Clin Pharmacol*. 2004;57(5):592-599. PMID: 15089812. https://pubmed.ncbi.nlm.nih.gov/15089812/
+[38] Jiang X, Williams KM, Liauw WS, et al. "Effect of St John's wort and ginseng on the pharmacokinetics and pharmacodynamics of warfarin in healthy subjects." *Br J Clin Pharmacol*. 2004;57(5):592-599. PMID: 15089812. doi: [10.1111/j.1365-2125.2003.02051.x](https://doi.org/10.1111/j.1365-2125.2003.02051.x)
 
 [39] Amato P, Christophe S, Mellon PL. "Estrogenic activity of herbs commonly used as remedies for menopausal symptoms." *Menopause*. 2002. PMID: 11875334. https://pubmed.ncbi.nlm.nih.gov/11875334/
 
@@ -376,3 +375,7 @@ Teas and soups do not state a ginsenoside dose, so they cannot be matched to tri
 [41] Engelberg D, McCutcheon A, Wiseman S. "A case of ginseng-induced mania." *J Clin Psychopharmacol*. 2001. PMID: 11593083. https://pubmed.ncbi.nlm.nih.gov/11593083/
 
 [42] Jones BD, Runikis AM. "Interaction of ginseng with phenelzine." *J Clin Psychopharmacol*. 1987. PMID: 3597812. https://pubmed.ncbi.nlm.nih.gov/3597812/
+
+[43] Coon JT, Ernst E. "Panax ginseng: a systematic review of adverse effects and drug interactions." *Drug Saf*. 2002;25(5):323-344. PMID: 12020172. doi: [10.2165/00002018-200225050-00003](https://doi.org/10.2165/00002018-200225050-00003)
+
+[44] Siegel RK. "Ginseng abuse syndrome. Problems with the panacea." *JAMA*. 1979;241(15):1614-1615. PMID: [430716](https://pubmed.ncbi.nlm.nih.gov/430716/)
