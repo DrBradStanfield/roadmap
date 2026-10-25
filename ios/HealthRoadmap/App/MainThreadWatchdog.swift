@@ -58,7 +58,7 @@ enum MainThreadWatchdog {
 /// Debug builds only: milliseconds since the process started, logged at the launch's
 /// milestones, so a change to launch can be timed (US-25 AC21).
 enum LaunchClock {
-    private static let log = Logger(subsystem: "com.drbrad.healthroadmap", category: "launch")
+    private static let log = Logger(subsystem: "com.drstanfield.healthroadmap", category: "launch")
 
     static func mark(_ milestone: String) {
         var info = kinfo_proc()

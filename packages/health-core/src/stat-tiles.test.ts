@@ -1,6 +1,6 @@
 // US-25 AC22: the plan's summary tiles, one source for the web's Quick Stats and the phone's tiles.
 import { describe, expect, it } from 'vitest';
-import { STAT_TILE_ABOUT, statTiles, statTileText, type StatTile, type StatTileKey, type StatTileOptions } from './stat-tiles';
+import { STAT_TILE_ABOUT, STAT_TILE_ABOUT_MINOR_BMI, statTiles, statTileText, type StatTile, type StatTileKey, type StatTileOptions } from './stat-tiles';
 import { calculateHealthResults } from './calculations';
 import { STAT_CARD_EVIDENCE, getBmiEvidence, getIbwEvidence, getProteinEvidence } from './evidence';
 import type { HealthResults } from './types';
@@ -138,7 +138,15 @@ describe('a known minor (US-07 AC6)', () => {
     const tiles = statTiles(results({
       knownMinor: true, bmi: 27, bmiCategory: 'Overweight', waistToHeightRatio: 0.55, ldlC: 4, lpa: 200, hba1c: 50,
     }), SI);
-    for (const t of tiles) expect(t.about, t.key).toBe(STAT_TILE_ABOUT[t.key]);
+    for (const t of tiles.filter((t) => t.key !== 'bmi')) expect(t.about, t.key).toBe(STAT_TILE_ABOUT[t.key]);
+  });
+
+  it('gives a minor\'s BMI tile the growth-chart line, and an adult the waist line (US-07 AC6, Brad 2026-10-25)', () => {
+    const minor = byKey(statTiles(results({ knownMinor: true, bmi: 27, bmiCategory: 'Overweight' }), SI));
+    expect(minor.bmi.about).toBe('Body mass index: your weight in kilograms divided by your height in metres, squared. For under-18s the plan doesn\'t grade BMI, because children are compared with growth charts instead.');
+    expect(minor.bmi.about).toBe(STAT_TILE_ABOUT_MINOR_BMI);
+    const adult = byKey(statTiles(results({ bmi: 27, bmiCategory: 'Overweight' }), SI));
+    expect(adult.bmi.about).toBe('Body mass index: your weight in kilograms divided by your height in metres, squared. It cannot tell muscle from fat, so your waist measurement can change how the plan reads it.');
   });
 });
 
@@ -164,7 +172,7 @@ describe('what each tile is (US-57 AC5, Brad 2026-10-25)', () => {
   });
 
   it('names no threshold, so no line can disagree with a status (or grade a minor)', () => {
-    for (const [key, text] of Object.entries(STAT_TILE_ABOUT)) {
+    for (const [key, text] of [...Object.entries(STAT_TILE_ABOUT), ['minor bmi', STAT_TILE_ABOUT_MINOR_BMI]]) {
       expect(text, key).not.toMatch(/[<>≥≤]|\b0\.5\b|\d+\s*(mg|mmol|nmol|mL|%)/);
       expect(text, key).not.toContain('—');
     }

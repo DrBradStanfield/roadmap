@@ -2,6 +2,16 @@
 
 Status: draft, 2026-10-25. Not wired into any code. Brad asked for short "about this measure" sections on each metric page in the iOS app, like Apple Health's. This file holds the proposed text for review.
 
+
+## Brad's decisions (2026-10-25)
+
+1. Waist: teach the midpoint between the lowest rib and the top of the hip bone (the WHO method).
+2. Lipid fasting: say most labs no longer require fasting, and that a doctor may repeat the test fasting if triglycerides come back high. No alcohol line.
+3. Creatinine: keep both points (hard exercise and a large meat meal the day before; tell your doctor if you take creatine).
+4. PSA: keep all three points (48 hours without ejaculation or hard cycling; wait for a urine infection to clear; finasteride and dutasteride roughly halve PSA).
+5. Medication side effects: yes, a short list of the well-known ones per class, ending with "talk to your doctor".
+6. PCSK9 inhibitors: the question covers the antibody injections, inclisiran, and the new oral PCSK9 inhibitors; the entry names all three kinds.
+
 ## Proposed shape (a proposal only)
 
 - **Where the text lives.** A new data file in health-core, for example `packages/health-core/src/metric-guides.ts`, exporting `METRIC_GUIDES`. Each entry has `title`, `whatItIs`, `whyItMatters`, a `howTo` block (a heading plus 2 to 4 points) and `sources` as `SuggestionReference[]`, reusing the reference objects evidence.ts already defines. No new citations.
@@ -307,7 +317,7 @@ Source list: `MEDICATION_KEYS` in `validation.ts` without the two escalation key
 ## Notes for the orchestrator
 
 1. **Three-file rule.** This is clinical text a user reads. If it ships, the orchestrator decides whether health-core's guides join the algorithm, evidence.ts and roadmap_text.html sync, or stay a fourth file that may only restate them. Every "new text" item above would need its own entry in all three, or a decision that guides may hold standard prescribing facts the others do not.
-2. **roadmap_text.html disagrees with the algorithm on two targets.** Its "Screening Blood Tests" section says "Ideal level: LDL-c <70mg/dL" and ApoB "<60mg/dL". The algorithm's on-treatment targets are LDL <55 mg/dL and ApoB <50 mg/dL, and the cholesterol section of the same page says so. The guides avoid both numbers. Not fixed here (no code or clinical changes in this task).
+2. **roadmap_text.html disagrees with the algorithm on two targets.** Its "Screening Blood Tests" section says "Ideal level: LDL-c <70mg/dL" and ApoB "<60mg/dL". The algorithm's on-treatment targets are LDL <55 mg/dL and ApoB <50 mg/dL, and the cholesterol section of the same page says so. The guides avoid both numbers. **Resolved by 02893a41 (2026-10-25):** the screening section now reads <55 mg/dL (1.4 mmol/L) and <50 mg/dL (0.5 g/L).
 3. **Citation gaps.** SGLT2 inhibitors (Zinman 2015, McMurray 2019) and bempedoic acid (Nissen 2023) are cited in evidence.ts but not in roadmap_text.html, which also never mentions bempedoic acid. PCSK9 inhibitors have no outcome trial cited anywhere.
 4. **Metformin citation.** evidence.ts `weight-med-metformin` cites Lee 2021 for "metformin reduced diabetes progression". Lee 2021 is the DPP Outcomes Study mortality paper, which roadmap_text.html [79] cites for "no benefit" on deaths. The guide states both findings; the evidence.ts reason may want a look.
 5. **Not copied.** All wording is original. No text was taken from Apple Health, UpToDate, pathway publishers or ConsumerLab.

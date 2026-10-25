@@ -36,7 +36,8 @@ export interface StatTile {
 /**
  * What each tile is, one to three plain sentences (US-57 AC5, approved by Brad 2026-10-25).
  * No threshold and no grading, so a line never disagrees with the tile's status or its
- * evidence, and suits a known minor's tile (US-07 AC6). Definitions only: outside the
+ * evidence. A known minor's tiles keep these lines, except BMI, which reads
+ * STAT_TILE_ABOUT_MINOR_BMI (US-07 AC6). Definitions only: outside the
  * three-file sync (Brad, 2026-10-25). The phone shows them; the web may later.
  */
 export const STAT_TILE_ABOUT: Record<StatTileKey, string> = {
@@ -51,6 +52,9 @@ export const STAT_TILE_ABOUT: Record<StatTileKey, string> = {
   lpa: 'Lipoprotein(a), a cholesterol particle whose level is set mostly by your genes. Diet and exercise change it little, so one test in a lifetime is usually enough.',
   hba1c: 'Your average blood sugar over the last two to three months, from one blood test.',
 };
+
+/** A known minor's BMI line in place of the adult one (US-07 AC6, Brad 2026-10-25). */
+export const STAT_TILE_ABOUT_MINOR_BMI = 'Body mass index: your weight in kilograms divided by your height in metres, squared. For under-18s the plan doesn\'t grade BMI, because children are compared with growth charts instead.';
 
 export interface StatTileOptions {
   unitSystem: UnitSystem;
@@ -160,7 +164,7 @@ export function statTiles(results: HealthResults, { unitSystem, unitOverrides, s
       status: reading(graded(getHba1cStatus(results.hba1c))), evidence: reading(STAT_CARD_EVIDENCE['hba1c']),
     });
   }
-  return tiles.map((t) => ({ ...t, about: STAT_TILE_ABOUT[t.key] }));
+  return tiles.map((t) => ({ ...t, about: !adult && t.key === 'bmi' ? STAT_TILE_ABOUT_MINOR_BMI : STAT_TILE_ABOUT[t.key] }));
 }
 
 /** A tile's value and unit as one line, as the web prints it: "72g/day", "60.0 kg", "25.2". */

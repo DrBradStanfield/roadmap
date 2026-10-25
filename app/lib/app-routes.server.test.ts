@@ -54,7 +54,7 @@ import { fakeDevice } from './app-attest.test-helpers';
 import { requestClientData } from './app-attest.server';
 import { machineFiles } from './rate-limiter';
 
-const APP_ID = 'TEAM123456.com.drbrad.healthroadmap';
+const APP_ID = 'TEAM123456.com.drstanfield.healthroadmap';
 const device = fakeDevice(APP_ID);
 mocks.rootPem = device.rootPem;
 const BASE = 'https://health-tool-edu.fly.dev';

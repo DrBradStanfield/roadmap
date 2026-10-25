@@ -27,7 +27,7 @@ final class EngineUpdater {
     private let now: @Sendable () -> Date
     private var running = false
 
-    private static let log = Logger(subsystem: "com.drbrad.healthroadmap", category: "engine-update")
+    private static let log = Logger(subsystem: "com.drstanfield.healthroadmap", category: "engine-update")
 
     init(folder: EngineFolder, bundled: BundledEngine.Facts, session: URLSession = EngineUpdater.session(),
          base: URL = EngineRelease.baseURL, keys: [String: Curve25519.Signing.PublicKey] = EngineRelease.trustedKeys,

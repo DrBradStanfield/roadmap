@@ -4376,7 +4376,8 @@
     "publishedAt": "2025-05-13T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/probiotics-strains-dosing-safety",
     "type": "reference",
-    "summary": "Reference on probiotics: gut health, IBS symptom relief, immune modulation, antibiotic-associated diarrhea prevention; key strains (Lactobacillus, Bifidobacterium); dosing and CFU guidance; and safety. Covers bloating, irregular bowel, gut flora restoration. Always discuss with your doctor."
+    "summary": "Evidence summary on probiotics: effects are strain-specific. L. rhamnosus GG and S. boulardii may lower antibiotic-associated diarrhea; IBS, eczema and cholesterol results are modest and vary by strain. Talk to your doctor first if seriously ill, immunocompromised or caring for a preterm infant.",
+    "reviewed": "2026-10-23"
   },
   {
     "title": "Psyllium: Benefits, Forms, Dosing, and Side Effects",
@@ -5565,7 +5566,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/prebiotics-types-dosing-benefits",
     "type": "reference",
-    "summary": "Reference on prebiotics: gut health, constipation, IBS, mood, anxiety, blood sugar, immune support. Most adults get far less than clinical doses. Types: inulin, FOS, GOS, PHGG, psyllium; 2-20 g/day by indication. Always discuss with your doctor."
+    "summary": "Prebiotics like inulin, FOS and GOS feed gut bacteria. Small trials suggest modest help for constipation and IBS, and single trials for mood and migraine. Inulin's lipid results are mixed; psyllium lowers LDL. Gas and bloating are common. Talk to your doctor first if you have IBS or liver disease.",
+    "reviewed": "2026-10-25"
   },
   {
     "title": "Protein Powders: Benefits, Types, Dosing, and Side Effects",
@@ -6830,7 +6832,8 @@
     "publishedAt": "2025-04-22T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/l-theanine-benefits-dosing-safety",
     "type": "reference",
-    "summary": "Reference on L-theanine: relaxation, anxiety, sleep, focus. Found in green tea; also taken as supplement. Common dose 200-400 mg/day; forms include Suntheanine. Clinical evidence modest — benefits clearest in schizophrenia; limited for stress, sleep, or anxiety disorders. Always discuss with your doctor."
+    "summary": "L-theanine is a tea amino acid. Brad is not convinced by the evidence: anti-ageing claims rest on animal studies, and human trials for stress, sleep and focus are small and mixed. Supplements often hold 200 to 500 mg. Talk to your doctor first if you take sedatives or other prescription medicines.",
+    "reviewed": "2026-10-25"
   },
   {
     "title": "Licorice and DGL: Benefits, Forms, Dosing, and Side Effects",
@@ -8646,7 +8649,8 @@
     "publishedAt": "2024-12-30T12:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/greens-powder-benefits-dosing-safety",
     "type": "reference",
-    "summary": "Reference on greens powders (super greens, AG1 etc.): what they contain, evidence quality (mostly weak observational), whether they replace vegetables, nutrient bioavailability, cost-benefit vs whole food, and Brad's clinical take (whole foods preferred). Always discuss with your doctor."
+    "summary": "Reference on greens powders (super greens, AG1 etc.): what they contain, why most evidence comes from single ingredients such as spirulina and chlorella, contamination and liver concerns, and whole foods first. Talk to your doctor first if you take warfarin or have an autoimmune or liver disease.",
+    "reviewed": "2026-10-25"
   },
   {
     "title": "Green Tea: Benefits, Forms, Dosing, and Side Effects",
@@ -8693,7 +8697,8 @@
     "publishedAt": "2024-12-24T00:38:34Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/green-tea-egcg-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on green tea (EGCG, matcha): heart health, blood pressure, cholesterol, blood sugar, weight, cognition. 2-4 cups/day for general health. Supplements risk liver injury above 338 mg EGCG/day; avoid with iron. Always discuss with your doctor."
+    "summary": "Reference on green tea: brewed tea, matcha and extracts. Brad sees a few cups a day as an easy way to add polyphenols, part of a diet that doubled visceral fat loss in a trial. Extracts have caused rare liver injury. Talk to your doctor first if you are pregnant or take nadolol or other medicines.",
+    "reviewed": "2026-10-23"
   },
   {
     "title": "How To Reverse the Signs of Skin Aging (Latest Protocol)",
@@ -9654,7 +9659,8 @@
     "publishedAt": "2024-09-04T23:34:17Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/digestive-enzymes-guide",
     "type": "reference",
-    "summary": "Reference on digestive enzymes: bloating, gas, lactose intolerance, malabsorption, pancreatic insufficiency. Bromelain, lactase, alpha-galactosidase, pancreatin; plant, fungal, and animal forms. Dosing by enzyme type; interactions with blood thinners and diabetes drugs. Always discuss with your doctor."
+    "summary": "Evidence summary on digestive enzymes: prescription pancreatic enzymes treat pancreatic insufficiency, and lactase, alpha-galactosidase and sacrosidase ease specific sugar intolerances; evidence for everyday bloating is weak. Talk to your doctor first if you take diabetes drugs or blood thinners.",
+    "reviewed": "2026-10-25"
   },
   {
     "title": "The 5 Lifesaving Blood Tests EVERYONE Must Get!",
@@ -10613,7 +10619,8 @@
     "publishedAt": "2024-02-17T07:30:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/apple-cider-vinegar-evidence-guide",
     "type": "reference",
-    "summary": "Reference on apple cider vinegar: blood sugar control, weight loss, cholesterol. Studied in insulin resistance, type 2 diabetes, overweight adults. Liquid form only (pills ineffective); 1-2 tbsp/day diluted in water. Always discuss with your doctor."
+    "summary": "Reference on apple cider vinegar. Small, short trials hint at modest effects on blood sugar and weight, but Brad finds the research limited and sometimes flawed, and he does not take it. It can erode tooth enamel. Talk to your doctor first if you take diabetes medicines or have stomach problems.",
+    "reviewed": "2026-10-25"
   },
   {
     "title": "Alpha Lipoic Acid: Benefits, Forms, Dosing, and Side Effects",
