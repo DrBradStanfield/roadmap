@@ -6,7 +6,7 @@ publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["flaxseed", "flaxseed oil", "omega-3", "omega-6", "ala", "alpha-linolenic acid", "gla", "gamma-linolenic acid", "evening primrose oil", "borage oil", "black currant oil", "hemp oil", "epa", "dha", "fish oil", "inflammation", "blood pressure", "hypertension", "cholesterol", "ldl", "hdl", "triglycerides", "heart health", "cardiovascular", "acne", "eczema", "dry eye", "rheumatoid arthritis", "diabetes", "insulin resistance", "weight loss", "skin", "hair loss", "brain health", "cognitive", "adhd", "depression", "seed oil", "olive oil", "fiber", "gut health"]
-summary: "Flaxseed oil supplies ALA, a plant omega-3 the body turns into little EPA or DHA. In trials the oil did not lower blood pressure; milled whole flaxseed did. Evening primrose and borage oils did not help eczema. Talk to your doctor first if you take blood thinners or are pregnant."
+summary: "Flaxseed oil supplies ALA, a plant omega-3 the body turns into little EPA or DHA. In a trial the oil did not lower blood pressure; milled whole flaxseed did. Evening primrose and borage oils did not help eczema. Talk to your doctor first if you take blood thinners or are pregnant."
 reviewed: "2026-10-26"
 sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/flaxseed-and-flaxseed-oil","checked":"2026-09-29","fingerprint":"sha256:0ce000395055a98ba67ad8c78415a72fef8fa5f9bde7a2d84adf678b8dc1ed71"}]
 ---
@@ -15,15 +15,15 @@ sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/flaxseed-and
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. Flaxseed oil supplies alpha-linolenic acid (ALA), a plant omega-3, but little of it becomes EPA and DHA: NIH calls the conversion very limited, with reported rates of less than 15% [50]. Young men in a tracer study made little or no DHA from ALA [4], and in a 9-month study, flaxseed oil providing 3 g of ALA daily raised red blood cell EPA, DPA and DHA, most in people who started with low EPA [9], yet vegans and vegetarians in a US cohort had omega-3 index values well below recommended targets, and its authors pointed to algae-derived EPA and DHA supplements [6]. Flaxseed oil did not lower blood pressure in adults whose readings were high-normal or at stage I hypertension [17], while 30 g of milled whole flaxseed each day did in people with peripheral artery disease [14], and evening primrose and borage oils, sources of the omega-6 fat GLA, did not help eczema in a Cochrane review [25]. If you take a blood thinner, or are pregnant or breastfeeding, talk with your doctor before using flaxseed oil [2].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Flaxseed oil supplies alpha-linolenic acid (ALA), a plant omega-3, but little of it becomes EPA and DHA: NIH calls the conversion very limited, with reported rates of less than 15% [50]. Flaxseed oil did not lower blood pressure in adults whose readings were high-normal or at stage I hypertension [17], while 30 g of milled whole flaxseed each day did in people with peripheral artery disease [14]. Evening primrose and borage oils, sources of the omega-6 fat GLA, did not help eczema in a Cochrane review [25]. If you take a blood thinner, or are pregnant or breastfeeding, talk with your doctor before using flaxseed oil [2].
 
 ## Key safety points
 
 - Flaxseed oil might interact with anticoagulant or antiplatelet drugs, and in a small trial it reduced platelet clumping [2][44]. Evening primrose oil may increase bleeding in people taking warfarin [25]. If you take a blood thinner, talk with your doctor first.
 - Some studies suggest flaxseed is possibly unsafe in pregnancy, though the evidence is not conclusive, and little is known about flaxseed oil in pregnancy or breastfeeding [2]. In one study, evening primrose oil taken late in pregnancy may have been linked to more labour complications [58].
-- Anaphylaxis after eating linseed (flaxseed) has been reported [38]. For trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- Anaphylaxis after eating linseed (flaxseed) has been reported [38][65]. For trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - Do not eat raw or unripe flaxseeds; they may contain potentially toxic compounds [2].
-- In observational studies, men with a high ALA intake or blood level had a higher risk of prostate cancer (combined relative risk 1.70, 95% CI 1.12 to 2.58) [35].
+- Some studies linked higher ALA intake with prostate cancer, but later pooled analyses did not confirm it; men with or at risk of prostate cancer should talk to their doctor [35][61].
 - Higher doses of flaxseed oil supplements may cause bloating, fullness and diarrhea [2].
 
 ## Brad's videos on this topic
@@ -68,7 +68,7 @@ Polyunsaturated oils break down with heat, light and air, so keep them sealed, c
 
 ### Whole Flaxseed vs. Flaxseed Oil
 
-Milled flaxseed brings fiber and lignans as well as ALA: in a 6-month trial giving 30 g of milled flaxseed each day, plasma ALA and enterolignans rose 2- to 50-fold [14]. Two findings suggest the seed does things the oil does not. Milled flaxseed lowered blood pressure in that trial, while refined flaxseed oil did not in another [14][17]. Flaxseed mucilage helped weight loss, while flaxseed oil supplements did not [2].
+Milled flaxseed brings fiber and lignans as well as ALA: in a 6-month trial giving 30 g of milled flaxseed each day, plasma ALA and enterolignans rose 2- to 50-fold [14]. Two findings suggest the seed does things the oil does not. Milled flaxseed lowered blood pressure in that trial, while refined flaxseed oil did not in another [14][17]. Flaxseed mucilage helped weight loss, while flaxseed oil supplements do not seem to help [2].
 
 ## 3. Evidence for Benefits
 
@@ -76,11 +76,11 @@ Milled flaxseed brings fiber and lignans as well as ALA: in a 6-month trial givi
 
 #### Cholesterol and Lipid Profile
 
-In a 2004 meta-analysis of cohort studies, high ALA intake was linked to less fatal heart disease (combined relative risk 0.79, 95% CI 0.60 to 1.04), and three open-label trials also suggested ALA may protect against heart disease [35].
+In a 2004 meta-analysis of cohort studies, high ALA intake was linked to less fatal heart disease (combined relative risk 0.79, 95% CI 0.60 to 1.04, not statistically significant), and three open-label trials also suggested ALA may protect against heart disease [35].
 
 In a randomized, double-blind crossover trial in 15 Japanese men, 10 g of flaxseed oil (5.49 g ALA) taken at dinner each day for 12 weeks lowered small dense LDL cholesterol, which corn oil did not [13]. Apolipoprotein B was also lower in the flaxseed oil period at 12 weeks, and the fall in small dense LDL was marked in men with triglycerides over 100 mg/dl [13].
 
-In healthy adults, 6 g of ALA a day for 4 weeks, from ground flaxseed or flaxseed oil, did not change total, LDL or HDL cholesterol. Of the two age groups (18-29 or 45-69 years), only the younger saw triglycerides fall [15].
+In healthy adults, 6 g of ALA a day for 4 weeks, from ground flaxseed or flaxseed oil, did not change total, LDL or HDL cholesterol. Of the two age groups (18-29 or 45-69 years), only the younger saw triglycerides fall [15]. A 2009 meta-analysis of 28 randomized trials found that whole flaxseed lowered total and LDL cholesterol by 0.21 and 0.16 mmol/L, but flaxseed oil did not; the falls were larger in women, particularly after menopause, and in people with high starting cholesterol [63].
 
 #### Blood Pressure
 
@@ -96,7 +96,7 @@ Flaxseed oil can raise long-chain omega-3 levels: in the NuEva study, 3 g of ALA
 
 ### Gestational Diabetes
 
-In pregnant people with gestational diabetes, some research suggests that flaxseed oil supplements containing ALA might improve fasting measures and insulin resistance [2]. In a randomized, double-blind trial in 60 women with gestational diabetes, 2 × 1000 mg a day of flaxseed oil capsules (400 mg ALA in each) for 6 weeks lowered fasting plasma glucose, insulin and insulin resistance compared with placebo [19].
+In pregnant people with gestational diabetes, some research suggests that flaxseed oil supplements containing ALA might improve fasting measures and insulin resistance [2]. In a randomized, double-blind trial in 60 women with gestational diabetes, 2 × 1000 mg a day of flaxseed oil capsules (400 mg ALA in each) for 6 weeks lowered fasting plasma glucose, insulin and insulin resistance compared with placebo [19]. The journal later published an expression of concern about this trial [60].
 
 ### Weight Management
 
@@ -124,7 +124,7 @@ The American Academy of Neurology's 2022 guideline update on painful diabetic ne
 
 ### Cyclic Mastalgia (Breast Pain) — GLA
 
-In a 6-month randomized trial in 85 women with cyclical breast pain, evening primrose oil (3,000 mg per day), vitamin E, or both improved worst pain from baseline while placebo did not. Compared directly with placebo, the decreases were not statistically significant, and only 41 women completed the study [24].
+In a 6-month randomized trial in 85 women with cyclical breast pain, evening primrose oil (3,000 mg per day), vitamin E, or both improved worst pain from baseline while placebo did not. Compared directly with placebo, the decreases were not statistically significant, and only 41 women completed the study [24]. In a later randomized trial in 126 premenopausal women, evening primrose oil (1000 mg twice daily) reduced breast pain more than placebo, and it worked best combined with vitamin E [64].
 
 ### Eczema — GLA
 
@@ -201,11 +201,7 @@ Do not eat raw or unripe flaxseeds; they may contain potentially toxic compounds
 
 ### Seizure Risk with GLA
 
-Some references advise people with seizure disorders to take care with GLA oils such as borage and evening primrose oil, because GLA may lower the seizure threshold. A 2007 review traced this concern to two papers from the early 1980s and judged the link spurious [57]. If you have epilepsy, ask your doctor before taking these oils.
-
-### Estrogenic Effects
-
-Whole flaxseed contains lignans [14]. Flaxseed lignans may act like weak estrogens and could affect the menstrual cycle.
+Older drug references listed epilepsy as a reason for caution with evening primrose oil, based on two reports from the early 1980s; a 2007 review judged the link spurious [57]. Mention it to your doctor if you have epilepsy.
 
 ### Borage Plant — Pyrrolizidine Alkaloids
 
@@ -213,7 +209,7 @@ Borage leaves and roots hold pyrrolizidine alkaloids, which may harm the liver a
 
 ### Prostate Cancer Risk — ALA
 
-A 2004 meta-analysis of observational studies found a higher risk of prostate cancer in men with a high intake or blood level of ALA (combined relative risk 1.70, 95% CI 1.12 to 2.58). The authors called the link a concern that warrants further study [35].
+A 2004 meta-analysis of observational studies found a higher risk of prostate cancer in men with a high intake or blood level of ALA (combined relative risk 1.70, 95% CI 1.12 to 2.58). The authors called the link a concern that warrants further study [35]. A 2009 meta-analysis of 8 case-control and 8 prospective studies found a weak link (RR 1.20, 95% CI 1.01 to 1.43) and no association after adjustment for publication bias (RR 0.96, 95% CI 0.79 to 1.17) [61]. A 2015 meta-analysis of prospective studies found dietary ALA inversely associated with prostate cancer risk, a result dominated by a single study [62]. If you have or are at risk of prostate cancer, talk to your doctor before taking flaxseed oil.
 
 ### Cataract Risk — ALA
 
@@ -221,11 +217,11 @@ In 440 women from the Nurses' Health Study, nuclear density (clouding) of the ey
 
 ### Allergic Reactions
 
-Anaphylaxis after eating linseed (flaxseed) has been reported [38]. For trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). Individuals with known flaxseed allergy should avoid both flaxseed and flaxseed oil products.
+Anaphylaxis after eating linseed (flaxseed) has been reported [38][65]. For trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK). Individuals with known flaxseed allergy should avoid both flaxseed and flaxseed oil products.
 
 ### Fish Allergy Concerns with Combination Products
 
-Some products mix seed oils and fish oils. If you are allergic to fish or shellfish, check the label and be cautious with these products, even highly refined ones.
+Some products blend seed oils with fish oil. If you are allergic to fish or shellfish, read the label and take care with these products.
 
 ### Pregnancy and Nursing
 
@@ -233,7 +229,7 @@ Use these products cautiously during pregnancy and breastfeeding. Some studies o
 
 ### THC in Hemp Products
 
-Hemp seed and hemp seed oil may contain traces of delta-9-THC. In three brands of hemp seeds tested in Canada, where the limit is 10 μg of THC per gram, concentrations were almost always above the limit and as high as 1250% of it [40]. One volunteer who took cold-pressed hemp seed oil twice a day for 4 1/2 days (135 mL total) tested positive on a standard workplace urine drug test [41]. In a later study, none of the adults who took 0.45 mg of THC a day in hemp oil screened positive, and the authors judged the THC levels then typical in Canadian hemp products low enough to prevent confirmed positives [42].
+Hemp seed and hemp seed oil may contain traces of delta-9-THC. In three consumer brands of hemp seeds (Canada's limit is 10 μg of THC per gram), concentrations were almost always above the limit and as high as 1250% of it [40]. One volunteer who took cold-pressed hemp seed oil twice a day for 4 1/2 days (135 mL total) tested positive on a standard workplace urine drug test [41]. In a later study, none of the adults who took 0.45 mg of THC a day in hemp oil screened positive, and the authors judged the THC levels then typical in Canadian hemp products low enough to prevent confirmed positives [42].
 
 ## 6. Drug Interactions
 
@@ -249,7 +245,7 @@ If you take any medicine, talk with your health care provider before using flaxs
 
 ### Seizure Medications
 
-If you take anti-seizure medicine, ask your neurologist before taking GLA oils such as evening primrose or borage oil (see Seizure Risk with GLA).
+If you take anti-seizure medicine, see Seizure Risk with GLA.
 
 ## 7. Dietary Sources
 
@@ -366,3 +362,15 @@ In the blood pressure trial, people ate a variety of foods that contained 30 g o
 [58] Dove et al. "Oral evening primrose oil: its effect on length of pregnancy and selected intrapartum outcomes in low-risk nulliparous women." *J Nurse Midwifery*. 1999. PMID: [10380450](https://pubmed.ncbi.nlm.nih.gov/10380450/)
 
 [59] Kuhnt et al. "Dietary echium oil increases long-chain n-3 PUFAs, including docosapentaenoic acid, in blood fractions and alters biochemical markers for cardiovascular disease independently of age, sex, and metabolic syndrome." *J Nutr*. 2014. PMID: [24553695](https://pubmed.ncbi.nlm.nih.gov/24553695/)
+
+[60] Jamilian M, et al. "The effects of omega-3 fatty acids from flaxseed oil on genetic and metabolic profiles in patients with gestational diabetes mellitus: a randomized, double-blind, placebo-controlled trial - Expression of concern." *Br J Nutr*. 2022. doi: [10.1017/S0007114521004037](https://doi.org/10.1017/S0007114521004037) PMID: [34689847](https://pubmed.ncbi.nlm.nih.gov/34689847/)
+
+[61] Simon JA, et al. "The relation of alpha-linolenic acid to the risk of prostate cancer: a systematic review and meta-analysis." *Am J Clin Nutr*. 2009. doi: [10.3945/ajcn.2009.26736E](https://doi.org/10.3945/ajcn.2009.26736E) PMID: [19321563](https://pubmed.ncbi.nlm.nih.gov/19321563/)
+
+[62] Fu YQ, et al. "Effect of individual omega-3 fatty acids on the risk of prostate cancer: a systematic review and dose-response meta-analysis of prospective cohort studies." *J Epidemiol*. 2015. doi: [10.2188/jea.JE20140120](https://doi.org/10.2188/jea.JE20140120) PMID: [25787237](https://pubmed.ncbi.nlm.nih.gov/25787237/)
+
+[63] Pan A, et al. "Meta-analysis of the effects of flaxseed interventions on blood lipids." *Am J Clin Nutr*. 2009. doi: [10.3945/ajcn.2009.27469](https://doi.org/10.3945/ajcn.2009.27469) PMID: [19515737](https://pubmed.ncbi.nlm.nih.gov/19515737/)
+
+[64] Kumari J, et al. "Effectiveness of Evening Primrose and Vitamin E for Cyclical Mastalgia: A Prospective Study." *Cureus*. 2024. doi: [10.7759/cureus.58055](https://doi.org/10.7759/cureus.58055) PMID: [38752050](https://pubmed.ncbi.nlm.nih.gov/38752050/)
+
+[65] León F, et al. "Anaphylaxis to Linum." *Allergol Immunopathol (Madr)*. 2003. doi: [10.1016/s0301-0546(03)79163-0](https://doi.org/10.1016/s0301-0546(03)79163-0) PMID: [12573209](https://pubmed.ncbi.nlm.nih.gov/12573209/)
