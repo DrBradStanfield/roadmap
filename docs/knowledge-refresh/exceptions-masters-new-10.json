@@ -1,1 +1,458 @@
-[]
+[
+ {
+  "check": "AC2",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2002 pooled analysis of four trials of oral citicoline (500, 1,000 or 2,000 mg) given within 24 hours of a moderate...\"",
+  "reason": "AC2 choline ruling 17 emergency number \"111\"; ratified in decisions.md (Choline Ratified line) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2002 pooled analysis of four trials of oral citicoline (500, 1,000 or 2,000 mg) given within 24 hours of a moderate...\"",
+  "reason": "AC2 choline ruling 17 emergency number \"0\"; ratified in decisions.md (Choline Ratified line) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2002 pooled analysis of four trials of oral citicoline (500, 1,000 or 2,000 mg) given within 24 hours of a moderate...\"",
+  "reason": "AC2 choline ruling 17 emergency number \"911\"; ratified in decisions.md (Choline Ratified line) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2002 pooled analysis of four trials of oral citicoline (500, 1,000 or 2,000 mg) given within 24 hours of a moderate...\"",
+  "reason": "AC2 choline ruling 17 emergency number \"999\"; ratified in decisions.md (Choline Ratified line) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"6.7 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In the Rush Memory and Aging Project, 1,024 older adults with a mean age of about 81 were followed for a mean of 6.7 ...\"",
+  "reason": "AC2 choline tokeniser/unit case \"6.7 year\" ratified in decisions.md (Choline Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"10000 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"High-dose lecithin did not help in early trials. In 11 outpatients, lecithin 10 g three times daily for 3 months trip...\"",
+  "reason": "AC2 choline tokeniser/unit case \"10000 mg\" ratified in decisions.md (Choline Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"1500 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a 6-month trial in 76 people with asthma, a choline supplement of 1,500 mg twice daily lowered symptom and drug sc...\" | \"**For asthma.** Choline 500 mg or 1,000 mg three times daily [66]; 1,500 mg twice daily [67].\"",
+  "reason": "AC2 choline tokeniser/unit case \"1500 mg/day\" ratified in decisions.md (Choline Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"1.12\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 80,978 women and 39,434 men followed for mortality, higher phosphatidylcholine intake was linked to higher all-cau...\"",
+  "reason": "AC2 choline tokeniser/unit case \"1.12\" ratified in decisions.md (Choline Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"1.08\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 80,978 women and 39,434 men followed for mortality, higher phosphatidylcholine intake was linked to higher all-cau...\"",
+  "reason": "AC2 choline tokeniser/unit case \"1.08\" ratified in decisions.md (Choline Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"1.28\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 80,978 women and 39,434 men followed for mortality, higher phosphatidylcholine intake was linked to higher all-cau...\"",
+  "reason": "AC2 choline tokeniser/unit case \"1.28\" ratified in decisions.md (Choline Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chromium-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Chromium may lower blood sugar, so with insulin, metformin or other diabetes medicines it could raise the risk of h...\" | \"Swallowing a very large amount of chromium may cause serious poisoning, which is very unlikely with standard suppleme...\" | \"Chromium may increase insulin sensitivity [1][62]. Taking chromium concurrently with insulin could increase the risk ...\"",
+  "reason": "AC2 chromium ruling 17 emergency number \"111\"; ratified in decisions.md (Chromium Ratified line) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chromium-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Chromium may lower blood sugar, so with insulin, metformin or other diabetes medicines it could raise the risk of h...\" | \"Swallowing a very large amount of chromium may cause serious poisoning, which is very unlikely with standard suppleme...\" | \"Chromium may increase insulin sensitivity [1][62]. Taking chromium concurrently with insulin could increase the risk ...\"",
+  "reason": "AC2 chromium ruling 17 emergency number \"0\"; ratified in decisions.md (Chromium Ratified line) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chromium-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Chromium may lower blood sugar, so with insulin, metformin or other diabetes medicines it could raise the risk of h...\" | \"Swallowing a very large amount of chromium may cause serious poisoning, which is very unlikely with standard suppleme...\" | \"Chromium may increase insulin sensitivity [1][62]. Taking chromium concurrently with insulin could increase the risk ...\"",
+  "reason": "AC2 chromium ruling 17 emergency number \"911\"; ratified in decisions.md (Chromium Ratified line) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "chromium-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Chromium may lower blood sugar, so with insulin, metformin or other diabetes medicines it could raise the risk of h...\" | \"Swallowing a very large amount of chromium may cause serious poisoning, which is very unlikely with standard suppleme...\" | \"Chromium may increase insulin sensitivity [1][62]. Taking chromium concurrently with insulin could increase the risk ...\"",
+  "reason": "AC2 chromium ruling 17 emergency number \"999\"; ratified in decisions.md (Chromium Ratified line) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "quercetin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"84\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A placebo-controlled trial among 84 women with polycystic ovary syndrome (PCOS) gave 1 g of quercetin a day (two 500 ...\"",
+  "reason": "AC2 quercetin tokeniser/unit case \"84\" ratified in decisions.md (Quercetin Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[6] raw_quote shares no number with its body_line: During critical illness, the body's needs may exceed what it can make, which is why glutamine is ...",
+  "reason": "AC2 glutamine changed_tokens[6] \"shares no number\" tokeniser case ratified in decisions.md (Glutamine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[9] raw_quote shares no number with its body_line: Foods that contain protein supply glutamine. In the Nurses' Health Study, women ate an average of...",
+  "reason": "AC2 glutamine changed_tokens[9] \"shares no number\" tokeniser case ratified in decisions.md (Glutamine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[34] raw_quote shares no number with its body_line: Two thirds of patients in both groups also took hydroxyurea [44]. An earlier small study in adult...",
+  "reason": "AC2 glutamine changed_tokens[34] \"shares no number\" tokeniser case ratified in decisions.md (Glutamine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[52] raw_quote shares no number with its body_line: Glutamine is a nonessential amino acid, and food supplies it: women in the Nurses' Health Study a...",
+  "reason": "AC2 glutamine changed_tokens[52] \"shares no number\" tokeniser case ratified in decisions.md (Glutamine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[59] raw_quote shares no number with its body_line: Most reported side effects involve the gut. In healthy men, the highest single dose (0.9 g per kg...",
+  "reason": "AC2 glutamine changed_tokens[59] \"shares no number\" tokeniser case ratified in decisions.md (Glutamine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[65] raw_quote shares no number with its body_line: - **Plasma glutamine levels:** Normal plasma glutamine after an overnight fast is 500 to 750 micr...",
+  "reason": "AC2 glutamine changed_tokens[65] \"shares no number\" tokeniser case ratified in decisions.md (Glutamine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[66] raw_quote shares no number with its body_line: Glutamine is found in protein-rich foods; by one method, it makes up 4.8% of the protein in meat ...",
+  "reason": "AC2 glutamine changed_tokens[66] \"shares no number\" tokeniser case ratified in decisions.md (Glutamine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[68] raw_quote shares no number with its body_line: - **Average intake:** Women in the Nurses' Health Study ate an average of 6.84 g a day [15].",
+  "reason": "AC2 glutamine changed_tokens[68] \"shares no number\" tokeniser case ratified in decisions.md (Glutamine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[77] raw_quote shares no number with its body_line: **Exercise-induced permeability:** In a study of active men running for 60 minutes at 30 degrees ...",
+  "reason": "AC2 glutamine changed_tokens[77] \"shares no number\" tokeniser case ratified in decisions.md (Glutamine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[100] raw_quote shares no number with its body_line: On the label for prescription L-glutamine, dosed at 10 to 30 g a day by weight, the most common s...",
+  "reason": "AC2 glutamine changed_tokens[100] \"shares no number\" tokeniser case ratified in decisions.md (Glutamine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"500 umol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"During critical illness, the body's needs may exceed what it can make, which is why glutamine is called \"conditionall...\" | \"- **Plasma glutamine levels:** Normal plasma glutamine after an overnight fast is 500 to 750 micromol/L [32]. A low l...\"",
+  "reason": "AC2 glutamine tokeniser/unit case \"500 umol/L\" ratified in decisions.md (Glutamine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"750 umol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"During critical illness, the body's needs may exceed what it can make, which is why glutamine is called \"conditionall...\" | \"- **Plasma glutamine levels:** Normal plasma glutamine after an overnight fast is 500 to 750 micromol/L [32]. A low l...\"",
+  "reason": "AC2 glutamine tokeniser/unit case \"750 umol/L\" ratified in decisions.md (Glutamine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"6840 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Foods that contain protein supply glutamine. In the Nurses' Health Study, women ate an average of 6.84 g of glutamine...\"",
+  "reason": "AC2 glutamine tokeniser/unit case \"6840 mg\" ratified in decisions.md (Glutamine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"250 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Exercise-induced permeability:** In a study of active men running for 60 minutes at 30 degrees C, glutamine taken 2...\"",
+  "reason": "AC2 glutamine tokeniser/unit case \"250 mg/kg\" ratified in decisions.md (Glutamine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"47.2 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Two thirds of patients in both groups also took hydroxyurea [44]. An earlier small study in adults found that 30 g a ...\"",
+  "reason": "AC2 glutamine tokeniser/unit case \"47.2 %\" ratified in decisions.md (Glutamine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"62.1 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Two thirds of patients in both groups also took hydroxyurea [44]. An earlier small study in adults found that 30 g a ...\"",
+  "reason": "AC2 glutamine tokeniser case \"62.1 %\": same Niihara 1998 +/- raw quote (\"47.2 +/- 3.7% to 62.1 +/- 11.8%\") as the ratified \"47.2 +/- 3.7%\" case and changed_tokens[34]; ratified in decisions.md (Glutamine Ratified line) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"10.4 day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The only study here is in acute COVID-19, not long COVID. In a 2020 comparison of 30 hospital patients who took oral ...\"",
+  "reason": "AC2 glutamine tokeniser/unit case \"10.4 day\" ratified in decisions.md (Glutamine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"6840 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Glutamine is a nonessential amino acid, and food supplies it: women in the Nurses' Health Study averaged 6.84 g a day...\" | \"- **Average intake:** Women in the Nurses' Health Study ate an average of 6.84 g a day [15].\"",
+  "reason": "AC2 glutamine tokeniser/unit case \"6840 mg/day\" ratified in decisions.md (Glutamine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"15000 mg/dose\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Sickle cell disease (prescription) | 0.3 g per kilogram of body weight per dose, twice daily [44] | 48 weeks in the...\" | \"Doses of up to 0.65 g/kg body mass have been tolerated by patients without abnormal plasma ammonia levels [33]. The s...\"",
+  "reason": "AC2 glutamine tokeniser/unit case \"15000 mg/dose\" ratified in decisions.md (Glutamine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤30000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Sickle cell disease (prescription) | 0.3 g per kilogram of body weight per dose, twice daily [44] | 48 weeks in the...\"",
+  "reason": "AC2 glutamine tokeniser/unit case \"≤30000 mg/day\" ratified in decisions.md (Glutamine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"900 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Most reported side effects involve the gut. In healthy men, the highest single dose (0.9 g per kg of fat-free mass) c...\"",
+  "reason": "AC2 glutamine tokeniser/unit case \"900 mg/kg\" ratified in decisions.md (Glutamine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The body breaks glutamine down to ammonia [12]. In 238 people with cirrhosis, an oral glutamine challenge raised bloo...\"",
+  "reason": "AC2 glutamine ruling 17 emergency number \"111\"; ratified in decisions.md (Glutamine Ratified line) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The body breaks glutamine down to ammonia [12]. In 238 people with cirrhosis, an oral glutamine challenge raised bloo...\"",
+  "reason": "AC2 glutamine ruling 17 emergency number \"911\"; ratified in decisions.md (Glutamine Ratified line) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The body breaks glutamine down to ammonia [12]. In 238 people with cirrhosis, an oral glutamine challenge raised bloo...\"",
+  "reason": "AC2 glutamine ruling 17 emergency number \"999\"; ratified in decisions.md (Glutamine Ratified line) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"4.8 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Glutamine is found in protein-rich foods; by one method, it makes up 4.8% of the protein in meat [15].\"",
+  "reason": "AC2 glutamine tokeniser/unit case \"4.8 %\" ratified in decisions.md (Glutamine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"10 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Across the foods in one database, glutamine content ranged from 0.01 to 9.49 g/100 g of food [15].\"",
+  "reason": "AC2 glutamine tokeniser/unit case \"10 mg\" ratified in decisions.md (Glutamine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "acetyl-l-carnitine-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[29] raw_quote shares no number with its body_line: **Parvanova et al. 2018 (DIABASI trial):** In 229 adults with type 2 diabetes, high blood pressur...",
+  "reason": "AC2 acetyl-L-carnitine changed_tokens[29] \"shares no number\" tokeniser case ratified in decisions.md (Acetyl-l-carnitine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "acetyl-l-carnitine-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[31] raw_quote shares no number with its body_line: **Insulin sensitivity pilot study (Ruggenenti):** In the same pilot study, acetyl-L-carnitine rai...",
+  "reason": "AC2 acetyl-L-carnitine changed_tokens[31] \"shares no number\" tokeniser case ratified in decisions.md (Acetyl-l-carnitine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "acetyl-l-carnitine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"4.89 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Insulin sensitivity pilot study (Ruggenenti):** In the same pilot study, acetyl-L-carnitine raised the glucose disp...\"",
+  "reason": "AC2 acetyl-L-carnitine tokeniser/unit case \"4.89 mg/kg\" ratified in decisions.md (Acetyl-l-carnitine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "acetyl-l-carnitine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"6.72 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Insulin sensitivity pilot study (Ruggenenti):** In the same pilot study, acetyl-L-carnitine raised the glucose disp...\"",
+  "reason": "AC2 acetyl-L-carnitine tokeniser/unit case \"6.72 mg/kg\" ratified in decisions.md (Acetyl-l-carnitine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "acetyl-l-carnitine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"100\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Rolim et al. 2019 Cochrane Review:** This review included four trials (907 participants). In three placebo-controll...\"",
+  "reason": "AC2 acetyl-L-carnitine tokeniser/unit case \"100\" ratified in decisions.md (Acetyl-l-carnitine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "acetyl-l-carnitine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"65\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Leombruni et al. 2015:** In 65 women with fibromyalgia randomized to duloxetine 60 mg a day or ALCAR 500 mg three t...\" | \"| Ground beef, cooked | 3 ounces | 65-74 |\"",
+  "reason": "AC2 acetyl-L-carnitine tokeniser/unit case \"65\" ratified in decisions.md (Acetyl-l-carnitine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "acetyl-l-carnitine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3.8 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Malaguarnera et al. 2007:** In 66 centenarians who tired after slight activity, L-carnitine 2 g once daily increase...\"",
+  "reason": "AC2 acetyl-L-carnitine tokeniser/unit case \"3.8 kg\" ratified in decisions.md (Acetyl-l-carnitine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "acetyl-l-carnitine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"6\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Torrioli et al. 2008:** In 63 boys aged 6 to 13 with fragile X syndrome and attention deficit hyperactivity disorde...\" | \"## 6. Safety and Side Effects\"",
+  "reason": "AC2 acetyl-L-carnitine tokeniser/unit case \"6\" ratified in decisions.md (Acetyl-l-carnitine Ratified lines) (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Parkinson's Disease",
+  "reason": "AC4 choline heading \"### Parkinson's Disease\" removal, section gone and sources unresolvable (Choline Ratified line); ratified in decisions.md (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "quercetin-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### CYP2C8 Inhibition",
+  "reason": "AC4 quercetin heading '### CYP2C8 Inhibition' rename to \"### Amiodarone\" (Quercetin item 3); ratified in decisions.md (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "quercetin-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Warfarin: Multiple Interaction Mechanisms",
+  "reason": "AC4 quercetin heading '### Warfarin: Multiple Interaction Mechanisms' rename to \"Warfarin\" (Quercetin item 4); ratified in decisions.md (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### MSG Sensitivity",
+  "reason": "AC4 glutamine heading '### MSG Sensitivity' removal (Glutamine G2; ratified after fix round); ratified in decisions.md (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Higher-Dose Side Effects (30+ g/day)",
+  "reason": "AC4 glutamine heading '### Higher-Dose Side Effects (30+ g/day)' rename (Glutamine G1; Glutamine ratified after fix round); ratified in decisions.md (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Epilepsy Concerns",
+  "reason": "AC4 glutamine heading '### Epilepsy Concerns' removal (Glutamine G3; ratified after fix round); ratified in decisions.md (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "acetyl-l-carnitine-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Eye Health",
+  "reason": "AC4 acetyl-L-carnitine heading '### Eye Health' removal, Grokipedia-only section (Acetyl-L-carnitine Ratified line); ratified in decisions.md (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "glutamine-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host dailymed.nlm.nih.gov: [88] ENDARI (L-glutamine oral powder). Prescribing information, Emmaus Medical. DailyMed, 2025. [...",
+  "reason": "AC7 glutamine host dailymed.nlm.nih.gov for the Endari label reference; ratified in decisions.md (Glutamine Ratified line \"dailymed host\") (orchestrator 2026-10-26, masters-new-10).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ }
+]
