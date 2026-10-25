@@ -28,7 +28,6 @@ final class MyDataLayoutTests: XCTestCase {
         XCTAssertTrue(picked.contains(days[8]))
         XCTAssertFalse(picked.contains(days[9]))
         XCTAssertFalse(picked.contains(days[0]))
-        XCTAssertEqual(MetricChart.inView(days, scrolledTo: scrolled, window: nil), days)
     }
 
     /// US-25 AC17: a range opens on the newest value, not today.
@@ -95,22 +94,30 @@ final class MyDataLayoutTests: XCTestCase {
 
     private func day(_ text: String) -> Date { DayText.date(text)! }
 
-    func testOnlyRangesShorterThanTheValuesSpanAreOffered() {
-        // Values across three years, the newest months ago: every range fits inside the span.
+    /// US-25 AC17 (Brad 2026-10-25): no All. The picker offers W, M, 6M and Y, a year at
+    /// most, as Apple Health's; the page opens on the narrowest range holding every value,
+    /// else a year, and scrolls back across the rest.
+    func testThePickerStopsAtAYearAndOpensOnTheNarrowestRangeHoldingEveryValue() {
+        XCTAssertEqual(ChartRange.allCases, [.week, .month, .sixMonths, .year])
+        // Values across three years: a year, scrolled back for the rest.
         let spread = ["2023-10-01", "2025-06-01", "2026-06-01", "2026-09-01"].map(day)
-        XCTAssertEqual(ChartRange.offered(for: spread), [.week, .month, .sixMonths, .year, .all])
-        // Two days apart: every range would show the same as All.
-        let recent = ["2026-10-18", "2026-10-20"].map(day)
-        XCTAssertEqual(ChartRange.offered(for: recent), [.all])
-        XCTAssertEqual(ChartRange.offered(for: []), [.all])
-        // Nine months: a year would hold them all.
-        let dense = ["2026-01-01", "2026-09-30", "2026-10-19"].map(day)
-        XCTAssertEqual(ChartRange.offered(for: dense), [.week, .month, .sixMonths, .all])
+        XCTAssertEqual(ChartRange.opening(for: spread), .year)
+        // Nine months: only a year holds them.
+        XCTAssertEqual(ChartRange.opening(for: ["2026-01-01", "2026-09-30", "2026-10-19"].map(day)), .year)
+        // Seven weeks: six months.
+        XCTAssertEqual(ChartRange.opening(for: ["2026-09-01", "2026-10-19"].map(day)), .sixMonths)
+        // Two weeks: a month.
+        XCTAssertEqual(ChartRange.opening(for: ["2026-10-05", "2026-10-19"].map(day)), .month)
+        // Exactly a week, two days, one value, both halves of one blood pressure: a week.
+        XCTAssertEqual(ChartRange.opening(for: ["2026-10-15", "2026-10-21"].map(day)), .week)
+        XCTAssertEqual(ChartRange.opening(for: ["2026-10-18", "2026-10-20"].map(day)), .week)
+        XCTAssertEqual(ChartRange.opening(for: [day("2026-08-18")]), .week)
+        XCTAssertEqual(ChartRange.opening(for: ["2026-08-18", "2026-08-18"].map(day)), .week)
+        XCTAssertEqual(ChartRange.opening(for: []), .year)
     }
 
     func testTheWeekStartsSixDaysBeforeItsLastDay() {
         XCTAssertEqual(ChartRange.week.start(ending: day("2026-10-21")), day("2026-10-15"))
-        XCTAssertNil(ChartRange.all.start(ending: day("2026-10-21")))
     }
 
     func testScrubbingPicksTheNearestValue() {
@@ -118,17 +125,6 @@ final class MyDataLayoutTests: XCTestCase {
         XCTAssertEqual(ChartRange.nearest(to: day("2026-10-14"), in: dates), day("2026-10-10"))
         XCTAssertEqual(ChartRange.nearest(to: day("2026-12-01"), in: dates), day("2026-10-20"))
         XCTAssertNil(ChartRange.nearest(to: day("2026-10-14"), in: []))
-    }
-
-    /// Values spanning less than a week get a week around their middle, not an axis
-    /// labelled by the hour (AC17).
-    func testValuesWithinAWeekGetAWeekAroundThem() {
-        let week = day("2026-08-15")...day("2026-08-21")
-        XCTAssertEqual(ChartRange.atLeastAWeek([day("2026-08-18")]), week)
-        XCTAssertEqual(ChartRange.atLeastAWeek(["2026-08-18", "2026-08-18"].map(day)), week, "both halves of one blood pressure")
-        XCTAssertEqual(ChartRange.atLeastAWeek(["2026-08-18", "2026-08-20"].map(day)), day("2026-08-16")...day("2026-08-22"), "two days apart: a week around their middle")
-        XCTAssertNil(ChartRange.atLeastAWeek(["2026-08-18", "2026-09-01"].map(day)), "two weeks apart: the chart's own fit")
-        XCTAssertNil(ChartRange.atLeastAWeek([]))
     }
 
     /// US-25 AC17 (Brad 2026-10-23): each metric has its own graph colour, readable as a

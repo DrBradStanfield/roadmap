@@ -1,8 +1,11 @@
 // The iOS app's My data tab (US-25 AC4/AC5): what it shows, and every write
 // it makes. Each write is health-core's own function, the one the CLI and the
 // connector use, so the app follows the record's rules without copying them.
-// Values come in and go out in the user's units; the record stores SI.
+// Values come in and go out in the user's units; the record stores SI. Web
+// twins: the widget's InputPanel.tsx and BloodTestTimeline.tsx, writing through
+// RoadmapStore.
 import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import type { Plan } from '../../packages/health-core/src/plan';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 import { hasStampShape } from '../../packages/health-core/src/migrate';
 import { parseLocalisedNumber } from '../../packages/health-core/src/parseNumber';
@@ -14,15 +17,14 @@ import { medicationSchema, supplementSchema } from '../../packages/health-core/s
 import { customSupplementAdd, customSupplementMatch } from '../../packages/health-core/src/input-form';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { importDeviceSamples, type DeviceSample } from '../../packages/health-core/src/device-import';
-import { deviceWrites, type DeviceWrite } from '../../packages/health-core/src/device-export';
-import { applyFormEdit, formsOf, type FormEdit, type FormsView } from './my-data-forms';
+import { applyFormEdit, formsOf, planOf, type FormEdit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
 import {
   cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, getDisplayLabel, toCanonicalValue,
   type LpaUnit, type MetricType, type UnitSystem,
 } from '../../packages/health-core/src/units';
 import { applyPressure, BLOOD_PRESSURE, pressureHistory, type PressureEdit } from './blood-pressure';
-import { cellUnitFor, lpaUnitOf, SWITCHABLE, type UnitChoices } from './unit-choices';
+import { cellUnitFor, lpaUnitOf, SWITCHABLE, unitsOf, type UnitChoices } from './unit-choices';
 import { cellFromSI, cellLabel, cellRange, cellText, isLpaUnit, type CellUnit } from '../../packages/health-core/src/cell-unit';
 
 /** One row of Vitals or Blood tests: the plan's current value, if any, in the user's units. */
@@ -157,11 +159,9 @@ export function newRecord(now: string, deviceId: string, locale: string, timeZon
   return { ...file, profile: { ...file.profile, unitSystem: detectUnitSystem(locale, timeZone) } };
 }
 
-function unitsOf(file: RoadmapFile): UnitSystem {
-  return file.profile.unitSystem ?? 'si';
-}
-
-export function myData(file: RoadmapFile, now = new Date().toISOString(), choices: UnitChoices = {}): MyData & FormsView {
+/** `plan`: the record's plan for `now` and `choices` (null: it could not be made); a caller
+ *  that has it passes it, so the forms are not planned twice (entry.ts screenJson). */
+export function myData(file: RoadmapFile, now = new Date().toISOString(), choices: UnitChoices = {}, plan: Plan | null = planOf(file, now, choices)): MyData & FormsView {
   const system = unitsOf(file);
   const current = new Map(latestActivePerMetric(file.measurements).map((row) => [row.metricType, row]));
   const trend = trends(file, (metric, valueSI) => cellFromSI(metric as MetricType, valueSI, cellUnitFor(file, metric, choices)));
@@ -197,7 +197,7 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
     // PSA is asked for under prostate screening on the web, not with the blood tests.
     bloodTests: BLOOD_TEST_METRICS.filter((metric) => metric !== 'psa').map(row),
     psa: row('psa'),
-    ...formsOf(file, now, choices),
+    ...formsOf(file, now, choices, plan),
   };
 }
 
@@ -344,9 +344,4 @@ function trends(file: RoadmapFile, shown: (metric: string, valueSI: number) => n
     out.set(metric, newest.map((day) => shown(metric, days.get(day)!)));
   }
   return out;
-}
-
-/** What the app writes to Apple Health (US-25 AC14): the values a person entered, never its own imports. */
-export function healthWrites(file: RoadmapFile): DeviceWrite[] {
-  return deviceWrites(file, 'apple_health');
 }

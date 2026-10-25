@@ -1,3 +1,4 @@
+import SwiftUI
 import XCTest
 @testable import HealthRoadmap
 
@@ -65,20 +66,151 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(store.myData?.vitals.first?.latest?.value, "82.0")
     }
 
+    /// US-57 AC9: the cloud prompt counts the person's own saves: a My data edit, or a lab
+    /// report's values. An Apple Health import, a units choice, a refusal and an edit that
+    /// changed nothing count for nothing. (Onboarding's answers are left out by RootView.)
+    func testOnlyThePersonsOwnSavesAreCounted_US57() async throws {
+        let store = try store()
+        XCTAssertEqual(store.ownSaves, 0)
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
+        XCTAssertEqual(store.ownSaves, 1, "a My data edit counts")
+        _ = await store.apply(.add(metric: "systolic_bp", value: 400, day: "2026-10-20"))
+        XCTAssertEqual(store.ownSaves, 1, "a refusal does not")
+        await XCTAssertSaved(await store.applyNow(.add(metric: "waist", value: 90, day: "2026-10-20")))
+        XCTAssertEqual(store.ownSaves, 1, "an edit no sheet opened (Apple Health) does not")
+        await XCTAssertSaved(await store.apply(.units("conventional")))
+        XCTAssertEqual(store.ownSaves, 1, "a units choice does not")
+        let extraction = #"""
+        {"classification":"lab_report","reportDate":"2026-10-01",
+         "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],
+         "additionalValues":[], "refusedValues":[]}
+        """#
+        _ = try (await store.importLabs(extractionJSON: extraction, refs: ["v0"], reportDay: "2026-10-01")).get()
+        XCTAssertEqual(store.ownSaves, 2, "a saved lab report counts once")
+    }
+
+    /// Review R5: an edit the engine finds changes nothing is not a save.
+    func testAnEditThatChangesNothingIsNotCounted_US57() async throws {
+        let store = try store()
+        await XCTAssertSaved(await store.apply(.profile(sex: "male")))
+        XCTAssertEqual(store.ownSaves, 1)
+        let before = store.recordJSON
+        await XCTAssertSaved(await store.apply(.profile(sex: "male")))
+        XCTAssertEqual(store.recordJSON, before, "the engine wrote nothing")
+        XCTAssertEqual(store.ownSaves, 1, "so nothing is counted")
+    }
+
     /// A value page asks for its history on every redraw; the answer is cached per
     /// record, so a correction must show at once (US-25 AC9, the cache in RecordStore).
     func testTheValueHistoryFollowsACorrection() async throws {
         let store = try store()
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
-        let first = try XCTUnwrap(store.history(for: "weight"))
+        let firstHistory = await store.history(for: "weight")
+        let first = try XCTUnwrap(firstHistory)
         XCTAssertEqual(first.rows.map(\.value), ["80.0"])
-        XCTAssertEqual(store.history(for: "weight"), first, "asked again: the same answer")
+        XCTAssertEqual(store.shownHistory(for: "weight"), first, "kept for the page to draw")
+        let again = await store.history(for: "weight")
+        XCTAssertEqual(again, first, "asked again: the same answer")
         let id = try XCTUnwrap(first.rows.first?.id)
         await XCTAssertSaved(await store.apply(.correct(id: id, value: 82)))
-        let after = try XCTUnwrap(store.history(for: "weight"))
+        let afterHistory = await store.history(for: "weight")
+        let after = try XCTUnwrap(afterHistory)
         XCTAssertEqual(after.rows.first { $0.status == "active" }?.value, "82.0", "the correction shows, not the cached history")
         XCTAssertEqual(after.rows.count, 2)
-        XCTAssertNotNil(store.history(for: "waist"), "another metric is asked for afresh")
+        let waist = await store.history(for: "waist")
+        XCTAssertNotNil(waist, "another metric is asked for afresh")
+    }
+
+    /// The kept histories are keyed on the record's revision: one from an older revision is
+    /// dropped once another metric is read for the new one, and two asks for the same metric
+    /// and revision share one engine call's answer.
+    func testHistoriesFromOlderRevisionsAreDropped() async throws {
+        let store = try store()
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
+        _ = await store.history(for: "weight")
+        XCTAssertNotNil(store.shownChart(for: "weight"))
+        await XCTAssertSaved(await store.apply(.add(metric: "waist", value: 90, day: "2026-10-20")))
+        XCTAssertNotNil(store.shownChart(for: "weight"), "kept to draw until a newer one lands")
+        XCTAssertNil(store.shownHistory(for: "weight"), "but not current")
+        async let first = store.history(for: "waist")
+        async let second = store.history(for: "waist")
+        let (a, b) = await (first, second)
+        XCTAssertEqual(a, b)
+        XCTAssertNil(store.shownChart(for: "weight"), "the older revision's history was dropped")
+        XCTAssertEqual(store.shownChart(for: "waist")?.history, a)
+    }
+
+    /// Adversary R2, Codex (US-25 AC9, AC20): a history read for an older record or unit is
+    /// never current, and a correction's "Now" hint comes only from a history in the sheet's
+    /// own unit. Lp(a) at 100 nmol/L, the unit moves to mg/dL, a tap before the history is
+    /// read again: the hint is never "100 mg/dL".
+    func testAStaleHistoryNeverGivesACorrectionItsHint() async throws {
+        let store = try store()
+        await XCTAssertSaved(await store.setLpaUnit("nmol/L").value)
+        await XCTAssertSaved(await store.apply(.add(metric: "lpa", value: 100, day: "2026-10-19"), as: store.screen))
+        let read = await store.history(for: "lpa")
+        let value = try XCTUnwrap(read?.rows.first)
+        XCTAssertEqual(read?.unit, "nmol/L")
+        XCTAssertEqual(store.correctionHint(for: value.id, metric: "lpa", unit: "nmol/L", on: store.screen), value.value)
+
+        await XCTAssertSaved(await store.setLpaUnit("mg/dL").value)
+        XCTAssertNil(store.shownHistory(for: "lpa"), "the old unit's history is not current")
+        XCTAssertEqual(store.shownChart(for: "lpa")?.history, read, "still drawn, its taps held")
+        let seen = store.screen // the tap, before the page reads the history again
+        XCTAssertEqual(seen.lpaUnit, "mg/dL")
+        XCTAssertNil(store.correctionHint(for: value.id, metric: "lpa", unit: seen.lpaUnit, on: seen), "no hint rather than 100 mg/dL")
+
+        _ = await store.history(for: "lpa")
+        let hint = store.correctionHint(for: value.id, metric: "lpa", unit: seen.lpaUnit, on: seen)
+        XCTAssertNotNil(hint, "the fresh history, in mg/dL, gives it")
+        XCTAssertNotEqual(hint, value.value)
+        // A sheet still on the old unit's screen gets no hint from the mg/dL history either.
+        XCTAssertNil(store.correctionHint(for: value.id, metric: "lpa", unit: "nmol/L", on: seen.showing(lpaUnit: "nmol/L")))
+    }
+
+    /// Re-check N1 (US-25 AC9, AC20): the hint is in the sheet's own unit for every metric.
+    /// An 80 kg weight's correction is open, the record flips units, the history is read
+    /// again: no hint, never "176.4 kg".
+    func testACorrectionHintIsNeverInAnotherUnit() async throws {
+        let store = try store()
+        let (_, other) = otherUnits(store)
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-19")))
+        let first = await store.history(for: "weight")
+        let read = try XCTUnwrap(first)
+        let value = try XCTUnwrap(read.rows.first)
+        let seen = store.screen // the tap
+        XCTAssertEqual(store.correctionHint(for: value.id, metric: "weight", unit: read.unit, on: seen), value.value)
+
+        await XCTAssertSaved(await store.apply(.units(other)))
+        let again = await store.history(for: "weight")
+        let fresh = try XCTUnwrap(again)
+        XCTAssertNotEqual(fresh.unit, read.unit)
+        XCTAssertNil(store.correctionHint(for: value.id, metric: "weight", unit: read.unit, on: seen), "no hint in the other unit")
+        XCTAssertNotNil(store.correctionHint(for: value.id, metric: "weight", unit: fresh.unit, on: store.screen))
+    }
+
+    /// Re-check N2: the revision moves only when the record or the per-test units change,
+    /// so a page keyed on it never asks the engine again for nothing.
+    func testTheRevisionMovesOnlyOnAChange() async throws {
+        let store = try store()
+        let before = store.revision
+        await store.showPhone().value // the same file, read again
+        XCTAssertEqual(store.revision, before, "the same record")
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-19")))
+        XCTAssertGreaterThan(store.revision, before)
+    }
+
+    /// Re-check N4 (US-25 AC9): of two quick row taps only the latest opens anything,
+    /// and a tap whose history was still being read when an erase landed opens nothing.
+    func testOnlyTheLatestTapOpensAndNoneAfterAnErase() async throws {
+        let store = try store()
+        let first = store.tap()
+        let second = store.tap()
+        XCTAssertFalse(store.isLatest(first), "a later tap came")
+        XCTAssertTrue(store.isLatest(second))
+        guard case .erased = await store.erasePhone(historyJSON: nil, keepChat: { _, _ in true }) else { return XCTFail("not erased") }
+        XCTAssertFalse(store.isLatest(second), "an erase came")
+        XCTAssertTrue(store.isLatest(store.tap()))
     }
 
     func testThePlanFollowsTheStoredRecord() async throws {
@@ -90,10 +222,91 @@ final class RecordStoreTests: XCTestCase {
         await XCTAssertSaved(await store.apply(.profile(sex: "male", birthYear: 1975, birthMonth: 6, height: 178)))
         await XCTAssertSaved(await store.apply(.add(metric: "systolic_bp", value: 150, day: "2026-10-20")))
         await XCTAssertSaved(await store.apply(.add(metric: "diastolic_bp", value: 95, day: "2026-10-20")))
-        let record = store.recordJSON
-        let sections = try engine.blocking { try $0.sections(planJSON: $0.plan(recordJSON: record, now: .now, deviceId: "test")) }
+        guard case .planned(_, let sections, _) = store.plan else { return XCTFail("the store keeps the plan for the record it shows") }
         let ids = sections.flatMap(\.cards).flatMap(\.suggestions).map(\.id)
         XCTAssertTrue(ids.contains { $0.hasPrefix("bp-") }, "a 150/95 reading must reach the plan: \(ids)")
+    }
+
+    /// US-25 AC2: one edit is one engine call that draws both My data and the plan, and
+    /// the Plan tab reads the plan the store kept: the record is never planned twice.
+    func testOneEditDrawsMyDataAndThePlanInOneEngineCall() async throws {
+        let url = try XCTUnwrap(Bundle.main.url(forResource: "health-engine", withExtension: "js"))
+        let source = try String(contentsOf: url, encoding: .utf8) + """
+
+        globalThis.__doors = [];
+        HealthEngine = Object.fromEntries(Object.entries(HealthEngine).map(([name, door]) => [name,
+          typeof door === 'function' ? function () { __doors.push(name); return door.apply(this, arguments); } : door]));
+
+        """
+        let engine = try HealthEngine(source: source, sourceURL: url)
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        let doors = { try engine.blocking { try $0.evaluate("__doors.splice(0).join(' ')").toString() ?? "" } }
+        XCTAssertEqual(try doors(), "newRecordJson screenJson", "the launch draws both screens at once")
+        guard case .needsDetails = store.plan else { return XCTFail("an empty record: health-core's PlanError") }
+
+        await XCTAssertSaved(await store.apply(.profile(sex: "male", birthYear: 1975, birthMonth: 6, height: 178)))
+        XCTAssertEqual(try doors(), "applyEditJson screenJson")
+        guard case .planned = store.plan else { return XCTFail("the edit's one call planned the new record") }
+
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        window.rootViewController = UIHostingController(rootView: PlanView(store: store, showMyData: {}))
+        window.makeKeyAndVisible()
+        try await Task.sleep(for: .milliseconds(300))
+        window.isHidden = true
+        XCTAssertEqual(try doors(), "", "the Plan tab draws the stored plan and asks the engine nothing")
+    }
+
+    /// Codex R1, adversary R1: the plan reads the date (ages, screening due dates), so a return
+    /// to the foreground draws the same record again, at the time it returns.
+    func testAReturnRedrawsThePlanOfAnUnchangedRecord() async throws {
+        let store = try store()
+        let year = Calendar.current.component(.year, from: .now)
+        // 34 now and 35 a year on: colorectal screening starts at 35 (health-core suggestions.ts).
+        await XCTAssertSaved(await store.apply(.profile(sex: "male", birthYear: year - 34, birthMonth: 1, height: 178)))
+        XCTAssertFalse(suggestionIds(store.plan).contains("screening-colorectal"))
+        let record = store.recordJSON
+        await store.redraw(now: .now.addingTimeInterval(366 * 86_400)).value
+        XCTAssertEqual(store.recordJSON, record, "only the time moved")
+        XCTAssertTrue(suggestionIds(store.plan).contains("screening-colorectal"), "a birthday crossed the age gate: \(suggestionIds(store.plan))")
+    }
+
+    /// Codex R1: the engine's minor-to-adult switch falls at midday UTC on the 1st of the birth
+    /// month (health-core isKnownMinor judges the date at UTC-12), not at local midnight. A
+    /// return within one local day, either side of it, must redraw. 1 January at 11:30 and
+    /// 12:30 UTC is one calendar day in both test zones (UTC; Auckland on daylight time, +13).
+    func testAReturnWithinOneLocalDayCrossesTheMiddayUTCSwitchToAdult() async throws {
+        let store = try store()
+        let year = Calendar.current.component(.year, from: .now) + 1
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = TimeZone(identifier: "UTC")!
+        let before = try XCTUnwrap(utc.date(from: DateComponents(year: year, month: 1, day: 1, hour: 11, minute: 30)))
+        let after = before.addingTimeInterval(3_600)
+        XCTAssertTrue(Calendar.current.isDate(before, inSameDayAs: after), "the two returns fall on one local day")
+        await XCTAssertSaved(await store.apply(.profile(sex: "male", birthYear: year - 18, birthMonth: 1, height: 178)))
+
+        await store.redraw(now: before).value
+        XCTAssertEqual(suggestionIds(store.plan), ["adults-only"], "17 until midday UTC")
+        await store.redraw(now: after).value
+        XCTAssertFalse(suggestionIds(store.plan).contains("adults-only"), "18 after it: \(suggestionIds(store.plan))")
+    }
+
+    private func suggestionIds(_ plan: PlanState?) -> [String] {
+        guard case .planned(_, let sections, _) = plan else { return [] }
+        return sections.flatMap(\.cards).flatMap(\.suggestions).map(\.id)
+    }
+
+    /// Adversary R3: a record that cannot be read shows its problem on the Plan tab, as
+    /// My data does, never "Your plan needs a few details". Read from the screen's body:
+    /// unit tests have no accessibility tree to search.
+    func testThePlanTabShowsWhyARecordCannotBeOpened() throws {
+        try Data("not a record".utf8).write(to: file)
+        let store = try store()
+        let problem = try XCTUnwrap(store.problem)
+        var shown = ""
+        dump(PlanView(store: store, showMyData: {}).body, to: &shown)
+        XCTAssertTrue(shown.contains("Your record could not be opened"), shown)
+        XCTAssertTrue(shown.contains(String(reflecting: problem)), shown) // dump quotes and escapes it
+        XCTAssertFalse(shown.contains("needs a few details"), shown)
     }
 
     func testTheRecordIsKeptOutOfBackups() throws {
@@ -226,8 +439,9 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertNotNil((profile["fieldStamps"] as? [String: Any])?["lpaUnit"], "field-stamped, so it merges per field")
         XCTAssertEqual(store.myData?.bloodTests.first { $0.metric == "lpa" }?.unit, "mg/L")
         await XCTAssertSaved(await store.apply(.add(metric: "lpa", value: 500, day: "2026-10-20"), as: store.screen))
-        XCTAssertEqual(store.history(for: "lpa")?.unit, "mg/L")
-        XCTAssertEqual(store.history(for: "lpa")?.rows.first?.value, "500")
+        let lpaHistory = await store.history(for: "lpa")
+        XCTAssertEqual(lpaHistory?.unit, "mg/L")
+        XCTAssertEqual(lpaHistory?.rows.first?.value, "500")
         let record = try JSONSerialization.jsonObject(with: Data(store.recordJSON.utf8)) as? [String: Any]
         let lpa = (record?["measurements"] as? [[String: Any]])?.first { $0["metricType"] as? String == "lpa" }
         XCTAssertEqual(try XCTUnwrap(lpa?["value"] as? Double), 125, accuracy: 1e-9, "500 mg/L is 125 nmol/L")
@@ -244,7 +458,7 @@ final class RecordStoreTests: XCTestCase {
         let store = try store()
         let row = try XCTUnwrap(store.myData?.bloodTests.first { $0.metric == "lpa" })
         var seen = store.screen // the entry sheet opens, showing the default unit
-        let sheet = ValueEntrySheet(title: row.label, unit: row.unit, current: nil, asksForDay: true, read: store.number) { _, _ in .saved }
+        let sheet = ValueEntrySheet(title: row.label, unit: row.unit, current: nil, asksForDay: true) { _, _ in .saved }
             .lpaUnits(store, row) { seen = seen.showing(lpaUnit: $0) }
         let choose = try XCTUnwrap(sheet.chooseUnit)
         let refusal = await choose("mg/L")
@@ -271,7 +485,8 @@ final class RecordStoreTests: XCTestCase {
     func testACorrectionKeepsItsSheetWhenItsScreenMoves() async throws {
         let store = try store()
         await XCTAssertSaved(await store.apply(.add(metric: "lpa", value: 100, day: "2026-10-19")))
-        let value = try XCTUnwrap(store.history(for: "lpa")?.rows.first)
+        let lpaHistory = await store.history(for: "lpa")
+        let value = try XCTUnwrap(lpaHistory?.rows.first)
         let row = try XCTUnwrap(store.myData?.bloodTests.first { $0.metric == "lpa" })
         let seen = store.screen
         let before = MetricDetailView.Editing.correct(value, row, seen)
@@ -284,7 +499,8 @@ final class RecordStoreTests: XCTestCase {
     func testAnLpaValueTypedBeforeItsUnitChangedIsRefusedOnThePhone() async throws {
         let store = try store()
         await XCTAssertSaved(await store.apply(.add(metric: "lpa", value: 100, day: "2026-10-19")))
-        let rowId = try XCTUnwrap(store.history(for: "lpa")?.rows.first?.id)
+        let lpaHistory = await store.history(for: "lpa")
+        let rowId = try XCTUnwrap(lpaHistory?.rows.first?.id)
         let before = try XCTUnwrap(store.myData?.lpaUnit)
         let seen = store.screen // the sheet opens
         // A change the sheet did not make (applyNow, as an import would come in).

@@ -143,6 +143,34 @@ final class EngineUpdaterTests: XCTestCase {
         XCTAssertEqual(after.highWater, release.version)
     }
 
+    /// US-25 AC21 (Codex and adversary R1): the check's first pass reads the state,
+    /// stamps lastCheck and writes it back. A trial confirmed while that pass runs must
+    /// not be overwritten. `now()` is called inside the pass, so it pauses there: it
+    /// asks the main actor to confirm and waits. On main, the pass and the confirm are
+    /// serialized and the confirm runs after the pass.
+    func testATrialConfirmedDuringTheFirstPassIsKept() async throws {
+        let onTrial = fixture.version(daysAfterBundled: 1).version
+        var state = EngineFolder.State()
+        state.trying = onTrial
+        try folder.write(state)
+        let trial = EngineTrial(version: onTrial, folder: folder, bundled: fixture.bundled.facts.version)
+        let time = now
+        let paused = EngineUpdater(
+            folder: folder, bundled: fixture.bundled.facts, session: StubHTTP.session(configuration: EngineHTTP.configuration()),
+            base: base, keys: fixture.keys, appBuild: 5,
+            now: {
+                Task { @MainActor in trial.confirm() }
+                Thread.sleep(forTimeInterval: 0.3)
+                return time
+            })
+        let outcome = await paused.checkIfDue()
+        XCTAssertEqual(outcome, .staged(release.version))
+        XCTAssertTrue(trial.confirmed)
+        let after = try folder.readState(bundled: 0)
+        XCTAssertNil(after.trying)
+        XCTAssertEqual(after.proven, [onTrial], "the first pass overwrote the confirmed trial")
+    }
+
     func testTheFloorOnlyRises() async throws {
         let bundle = release.bundle
         let manifest = fixture.manifest(version: release.version, issued: ManifestCheck.versionDate(release.version)!, bundle: bundle) {

@@ -1,81 +1,51 @@
 import SwiftUI
 
 /// The plan screen (US-25 AC2, AC6): the user's own record, planned on the phone
-/// by the shared engine and laid out by the web's own `planSections`. It plans
-/// while on screen: on each return to the tab, and on every record change then.
+/// by the shared engine and laid out by the web's own `planSections`. The store keeps
+/// the plan from the same engine call as My data, once per record change and again on
+/// each return to the app, so this screen never asks the engine itself and always shows the record My
+/// data shows.
+/// The web twin is widget-src/src/components/ResultsPanel.tsx.
 struct PlanView: View {
-    private enum LoadState {
-        case loading
-        case loaded(tiles: [StatTile], sections: [PlanSection], planMs: Double)
-        /// The engine cannot plan this record yet, in its own words.
-        case cannotPlan(String)
-    }
-
-    let engine: HealthEngine
     let store: RecordStore
     /// Switches to the My data tab.
     let showMyData: () -> Void
-    @State private var state = LoadState.loading
-    /// Plans only while on screen: a tab once opened stays alive, and re-planning on
-    /// every My data edit behind it cost the main thread for nothing.
-    @State private var visible = false
 
     var body: some View {
-        // Read once per render, so the task runs once with the value its id names.
-        let planKey = visible ? PlanKey(record: store.recordJSON, units: store.unitChoices.json) : nil
         Group {
-            switch state {
-            case .loading:
-                ProgressView()
-            case .cannotPlan(let reason):
-                ContentUnavailableView {
-                    Label("Your plan needs a few details", systemImage: "person.text.rectangle")
-                } description: {
-                    Text(reason)
-                } actions: {
-                    Button(action: showMyData) { Text("Go to My data").onAccentLabel() }
-                        .buttonStyle(.borderedProminent)
-                }
-            case .loaded(let tiles, let sections, let planMs):
-                PlanList(tiles: tiles, sections: sections, planMs: planMs)
+            switch store.plan {
+            case .planned(let tiles, let sections, let ms):
+                PlanList(tiles: tiles, sections: sections, planMs: ms)
+            case .needsDetails:
+                // health-core's PlanError: its own words are written for connectors, so
+                // people get a plain sentence.
+                cannotPlan("Add your sex and height on My data, and your plan appears here.")
+            case .failed(let reason):
+                cannotPlan(reason)
+            case nil:
+                // The record cannot be read: its problem, in My data's words (adversary R3).
+                ContentUnavailableView("Your record could not be opened", systemImage: "exclamationmark.triangle", description: Text(store.problem ?? ""))
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemGroupedBackground))
-        .onAppear { visible = true }
-        .onDisappear {
-            visible = false
-            // Never show a plan from an older record on return, even for a frame.
-            state = .loading
-        }
-        .task(id: planKey) {
-            guard let planKey else { return }
-            let (next, planned) = await load(planKey)
-            // The record moved on while the engine worked: the newer task draws it.
-            guard !Task.isCancelled else { return }
-            state = next
-            // A downloaded engine on trial has planned the user's own record (US-25 AC18).
-            // Never when it threw: that is the failure the trial exists to catch (review R5).
-            if planned { engine.trial?.confirm() }
-        }
     }
 
-    /// The screen's state, and whether the engine planned the record: a plan, or
-    /// health-core's own PlanError (no height or sex). Any other throw is not.
-    /// What a plan is computed from: the record, and the per-test units its targets read in (AC17e).
-    private struct PlanKey: Equatable { let record: String; let units: String }
+    /// The privacy line's words, with the engine's own whole milliseconds: a plan faster
+    /// than its clock's tick reads 0, so "under 1 ms" (adversary R4).
+    static func workedOut(ms: Double) -> String {
+        ms < 1 ? "Worked out on this iPhone in under 1 ms."
+            : "Worked out on this iPhone in \(ms.formatted(.number.precision(.fractionLength(0)))) ms."
+    }
 
-    /// Off the main thread, on the engine's queue.
-    private func load(_ key: PlanKey) async -> (LoadState, planned: Bool) {
-        do {
-            let plan = try await engine.planSections(record: key.record, units: key.units, now: .now, deviceId: store.deviceId)
-            return (.loaded(tiles: plan.tiles, sections: plan.sections, planMs: plan.ms), true)
-        } catch HealthEngine.EngineError.callFailed(let why) where why.hasPrefix("PlanError: ") {
-            // health-core's one PlanError: no usable height or sex (plan.ts). Its own
-            // words are written for connectors, so people get a plain sentence.
-            return (.cannotPlan("Add your sex and height on My data, and your plan appears here."), true)
-        } catch {
-            return (.cannotPlan(error.localizedDescription), false)
+    private func cannotPlan(_ reason: String) -> some View {
+        ContentUnavailableView {
+            Label("Your plan needs a few details", systemImage: "person.text.rectangle")
+        } description: {
+            Text(reason)
+        } actions: {
+            Button(action: showMyData) { Text("Go to My data").onAccentLabel() }
+                .buttonStyle(.borderedProminent)
         }
     }
 }
@@ -88,43 +58,68 @@ private struct PlanList: View {
     let planMs: Double
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 28) {
-                // The web's Quick Stats, above the suggestions as there (US-25 AC22).
-                if !tiles.isEmpty { SummaryTiles(tiles: tiles) }
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 28) {
+                    // The web's Quick Stats, above the suggestions as there (US-25 AC22).
+                    if !tiles.isEmpty { SummaryTiles(tiles: tiles) }
 
-                ForEach(sections) { section in
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(section.title)
-                            .font(.title3.weight(.semibold))
-                            .padding(.horizontal, 4)
-                            .modifier(RiseIn())
-                        ForEach(section.cards) { PlanCardView(card: $0).modifier(RiseIn()) }
+                    ForEach(sections) { section in
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(section.title)
+                                .font(.title3.weight(.semibold))
+                                .padding(.horizontal, 4)
+                                .modifier(RiseIn())
+                            ForEach(section.cards) { card in
+                                // Tour tip 2 (US-57 AC6): the first Foundation step.
+                                if section.isFoundation, card.id == section.cards.first?.id {
+                                    PlanCardView(card: card).modifier(RiseIn())
+                                        .id(Self.foundationCard)
+                                        .tourTip(FoundationTip())
+                                } else {
+                                    PlanCardView(card: card).modifier(RiseIn())
+                                }
+                            }
+                        }
                     }
-                }
 
-                // Same words as the web's disclaimer (ResultsPanel.tsx, `health-disclaimer`).
-                Text("**Disclaimer:** This tool is for educational purposes only and is not a substitute for professional medical advice. Always consult with your healthcare provider before making any health decisions. Suggestions are based on general guidelines and may not apply to your individual situation.")
+                    // Same words as the web's disclaimer (ResultsPanel.tsx, `health-disclaimer`).
+                    Text("**Disclaimer:** This tool is for educational purposes only and is not a substitute for professional medical advice. Always consult with your healthcare provider before making any health decisions. Suggestions are based on general guidelines and may not apply to your individual situation.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 4)
+
+                    // Chat and lab upload send data (US-52 AC9, architecture.md D9), so the
+                    // line claims only where the plan was worked out, and how long the engine
+                    // took to plan it, in its own whole milliseconds (D2's plan budget).
+                    Label {
+                        Text(PlanView.workedOut(ms: planMs))
+                    } icon: {
+                        Image(systemName: "lock.shield")
+                    }
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                    .padding(.horizontal, 4)
-
-                // Chat and lab upload send data (US-52 AC9, architecture.md D9), so the
-                // line claims only where the plan was worked out.
-                Label {
-                    Text("Worked out on this iPhone in \(planMs.formatted(.number.precision(.fractionLength(1)))) ms.")
-                } icon: {
-                    Image(systemName: "lock.shield")
+                    .frame(maxWidth: .infinity)
                 }
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 32)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 32)
+            .task {
+                // Tip 2 is due once tip 1 closes: bring its card into view, or it waits off screen.
+                for await due in FoundationTip().shouldDisplayUpdates where due {
+                    withAnimation { proxy.scrollTo(Self.foundationCard, anchor: .center) }
+                }
+            }
+            // A plan with no tiles or no Foundation card cannot draw that tip: the tour
+            // passes it (AC4, AC6; review R4).
+            .tourStep(SnapshotTip(), hasNoAnchor: tiles.isEmpty)
+            .tourStep(FoundationTip(), hasNoAnchor: !sections.contains { $0.isFoundation && !$0.cards.isEmpty })
         }
     }
+
+    /// The scroll id of the Foundation section's first card.
+    private static let foundationCard = "tour.foundation"
 }
 
 /// A card rises in the first time any of it scrolls into view, then stays (Brad 2026-10-23).

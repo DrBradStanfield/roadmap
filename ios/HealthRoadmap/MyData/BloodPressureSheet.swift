@@ -1,37 +1,5 @@
 import SwiftUI
 
-/// Adds a value to one metric (US-25 AC5, AC17): systolic and diastolic side by
-/// side for blood pressure, one number otherwise.
-struct MetricEntrySheet: View {
-    let store: RecordStore
-    /// The row as it was tapped, and the screen it was read on: the label's unit and
-    /// the units a value is read in come from the same moment (Codex R2).
-    let row: MyData.Row
-    /// An Lp(a) unit chosen in the sheet moves it (US-25 AC20).
-    @State private var seen: RecordStore.Screen
-    let saved: (RecordStore.ApplyResult) -> RecordStore.ApplyResult
-
-    init(store: RecordStore, row: MyData.Row, seen: RecordStore.Screen, saved: @escaping (RecordStore.ApplyResult) -> RecordStore.ApplyResult) {
-        self.store = store
-        self.row = row
-        _seen = State(initialValue: seen)
-        self.saved = saved
-    }
-
-    var body: some View {
-        if row.metric == MyData.bloodPressure {
-            BloodPressureSheet(store: store, seen: seen, saved: saved)
-        } else {
-            ValueEntrySheet(title: row.label, unit: store.lpaUnit(for: row) ?? row.unit, current: nil, asksForDay: true, read: store.number) { value, day in
-                saved(await store.apply(.add(metric: row.metric, value: value, day: day), as: seen))
-            } replace: { existingId, value in
-                saved(await store.apply(.correct(id: existingId, value: value), as: seen))
-            }
-            .lpaUnits(store, row) { seen = seen.showing(lpaUnit: $0) }
-        }
-    }
-}
-
 /// One blood pressure: systolic and diastolic side by side, one day. The engine
 /// saves both halves or neither (`bloodPressure` in ios/engine/blood-pressure.ts).
 /// A day that already holds one asks first; replacing it corrects the half that
@@ -117,7 +85,7 @@ struct BloodPressureSheet: View {
 
     /// Both typed numbers, read by the web's rule, or nil until both are.
     private var pair: (systolic: Double, diastolic: Double)? {
-        guard let s = store.number(systolic), let d = store.number(diastolic) else { return nil }
+        guard let s = TypedNumber.read(systolic), let d = TypedNumber.read(diastolic) else { return nil }
         return (s, d)
     }
 
@@ -127,9 +95,12 @@ struct BloodPressureSheet: View {
         let edit = RecordEdit.bloodPressure(systolic: pair.systolic, diastolic: pair.diastolic, day: when, replace: replace, seenIds: seen)
         SheetSave.run($saving, { saved(await store.apply(edit, as: self.seen)) }) { result in
             if case .refused(_, .some) = result, !replace {
-                // The rows the prompt is about, read from the same record the engine just refused on.
-                held = store.history(for: MyData.bloodPressure)?.rows.first { $0.isActive && $0.day == when }?.pairIds ?? []
-                asking = true
+                // The rows the prompt is about, read from the record as it is now (off the main
+                // thread); a replace naming rows that moved since is refused (Codex R1).
+                Task {
+                    held = await store.history(for: MyData.bloodPressure)?.rows.first { $0.isActive && $0.day == when }?.pairIds ?? []
+                    asking = true
+                }
             } else {
                 SheetSave.close(result, dismiss, $message)
             }

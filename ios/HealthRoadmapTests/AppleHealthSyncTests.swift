@@ -191,6 +191,44 @@ final class AppleHealthSyncTests: XCTestCase {
         await first.value
     }
 
+    /// Adversary R1 (US-25 AC13): Apple wants the observer queries registered as the
+    /// process starts, before the app's parts exist. A delivery waits for the parts, then
+    /// imports, and only then returns (its completion tells iOS the work is done).
+    func testLaunchObservesHealthAtOnceAndADeliveryWaitsForTheParts() async throws {
+        let (store, engine) = try parts()
+        let health = FakeHealthStore()
+        let memory = HealthSyncMemory(defaults: defaults)
+        memory.connected = true
+        let handOver = PartsHandOver()
+        AppleHealthSync.observeAtLaunch(client: health, memory: memory) { await handOver.wait() }
+        XCTAssertEqual(health.observed, HealthKind.allCases, "registered before the parts are built")
+
+        health.pending[.weight] = [Self.morning]
+        let delivery = Task { await health.onChange?() }
+        while !handOver.asked { await Task.yield() }
+        XCTAssertTrue(try activeRows(store).isEmpty, "nothing imported before the parts")
+        handOver.give(sync(store, engine, health))
+        await delivery.value
+        XCTAssertEqual(try activeRows(store).count, 1, "the delivery returned after the import")
+    }
+
+    /// If the parts never come (the launch failed), a delivery returns at once.
+    func testADeliveryReturnsAtOnceWhenThePartsNeverCome() async throws {
+        let health = FakeHealthStore()
+        let memory = HealthSyncMemory(defaults: defaults)
+        memory.connected = true
+        AppleHealthSync.observeAtLaunch(client: health, memory: memory) { nil }
+        await health.onChange?()
+        XCTAssertTrue(health.observed.count == HealthKind.allCases.count)
+    }
+
+    /// Not connected: launch registers nothing (the connect does, later).
+    func testLaunchObservesNothingWhenNotConnected() {
+        let health = FakeHealthStore()
+        AppleHealthSync.observeAtLaunch(client: health, memory: HealthSyncMemory(defaults: defaults)) { nil }
+        XCTAssertTrue(health.observed.isEmpty)
+    }
+
     func testNothingIsWrittenWhenHealthRefusesSharing() async throws {
         let (store, engine) = try parts()
         let health = FakeHealthStore()
@@ -304,7 +342,12 @@ final class FakeHealthStore: HealthStoreClient {
         saved.append(write)
     }
 
-    func observe(_ kinds: [HealthKind], onChange: @escaping @MainActor () async -> Void) {}
+    private(set) var observed: [HealthKind] = []
+    private(set) var onChange: (@MainActor () async -> Void)?
+    func observe(_ kinds: [HealthKind], onChange: @escaping @MainActor () async -> Void) {
+        observed = kinds
+        self.onChange = onChange
+    }
 
     /// How many times the app asked Health to delete its own samples (US-25 AC16).
     private(set) var ownDeletes = 0
@@ -314,5 +357,20 @@ final class FakeHealthStore: HealthStoreClient {
         if deleteFails { throw HealthStoreError.locked }
         ownDeletes += 1
         saved = []
+    }
+}
+
+/// The app's parts, handed to a Health delivery when the test says so.
+@MainActor
+final class PartsHandOver {
+    private(set) var asked = false
+    private var waiting: CheckedContinuation<AppleHealthSync?, Never>?
+
+    func wait() async -> AppleHealthSync? {
+        await withCheckedContinuation { asked = true; waiting = $0 }
+    }
+
+    func give(_ sync: AppleHealthSync) {
+        waiting?.resume(returning: sync)
     }
 }

@@ -2,9 +2,10 @@ import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Where the report is (Dropbox, Google Drive, Files, Photos or the camera),
-/// then the file read on the phone, then consent before the first send, then
-/// each report sent and reviewed.
+/// "Add medical records" (US-52 AC7–AC13): where the report is (Dropbox, Google
+/// Drive, Files, Photos or the camera), then the file read on the phone, then consent
+/// before the first send, then each report sent and reviewed. The web twin is
+/// widget-src/src/components/UploadModal.tsx.
 struct LabUploadSheet: View {
     let engine: HealthEngine
     let store: RecordStore
@@ -78,7 +79,7 @@ struct LabUploadSheet: View {
         .fullScreenCover(isPresented: $scanning) {
             DocumentScanner { pages in
                 scanning = false
-                if !pages.isEmpty { start { await read { [try LabFileReader.pictures(pages, name: "Scanned report")] } } }
+                if !pages.isEmpty { start { await read { [try await LabFileReader.pictures(pages, name: "Scanned report")] } } }
             }
             .ignoresSafeArea()
         }
@@ -192,10 +193,8 @@ struct LabUploadSheet: View {
 
     private func read(photo item: PhotosPickerItem) async {
         await read {
-            guard let data = try await item.loadTransferable(type: Data.self), let image = UIImage(data: data) else {
-                throw LabFileReader.Failure.unreadable("The photo")
-            }
-            return [try LabFileReader.pictures([image], name: "Photo")]
+            guard let data = try await item.loadTransferable(type: Data.self) else { throw LabFileReader.Failure.unreadable("The photo") }
+            return [try await LabFileReader.photo(data)]
         }
     }
 
@@ -255,8 +254,7 @@ struct LabUploadSheet: View {
                 let extraction = try await extract(document)
                 results.append(LabResult(name: document.name, truncated: document.truncated, extractionJSON: extraction, failure: nil,
                                          original: document.original))
-            } catch let AppAttestClient.Failure.server(status, message) where status == 422 {
-                _ = message
+            } catch AppAttestClient.Failure.server(status: 422, message: _) {
                 results.append(LabResult(name: document.name, truncated: false, extractionJSON: nil, failure: "The AI could not read this file."))
             } catch {
                 results.append(LabResult(name: document.name, truncated: false, extractionJSON: nil, failure: error.localizedDescription))

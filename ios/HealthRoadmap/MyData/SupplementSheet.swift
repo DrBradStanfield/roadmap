@@ -7,7 +7,6 @@ struct SupplementSheet: View {
     let row: SupplementsView.Row
     /// The units health-core offers; the row's own unit stays pickable even if not listed.
     let units: [String]
-    let read: (String) -> Double?
     let save: (FormEdit) async -> RecordStore.ApplyResult
 
     @Environment(\.dismiss) private var dismiss
@@ -76,10 +75,10 @@ struct SupplementSheet: View {
     }
 
     /// An empty dose is "no dose"; anything else must read as a number.
-    private var doseReadable: Bool { dose.trimmingCharacters(in: .whitespaces).isEmpty || read(dose) != nil }
+    private var doseReadable: Bool { dose.trimmingCharacters(in: .whitespaces).isEmpty || TypedNumber.read(dose) != nil }
 
     private func saveDose() {
-        let value = dose.trimmingCharacters(in: .whitespaces).isEmpty ? nil : read(dose)
+        let value = dose.trimmingCharacters(in: .whitespaces).isEmpty ? nil : TypedNumber.read(dose)
         submit(.supplement(key: row.key, name: row.name, dose: value, unit: unit.isEmpty ? nil : unit, stopped: false))
     }
 
@@ -89,7 +88,7 @@ struct SupplementSheet: View {
 
     /// "5" for a whole dose, "2.5" otherwise. `Int(_:)` traps past its range, and the
     /// schema puts no upper bound on a dose, so only a modest whole number goes through it.
-    static func doseText(_ dose: Double) -> String {
+    nonisolated static func doseText(_ dose: Double) -> String {
         dose.rounded() == dose && abs(dose) < 1e15 ? String(Int(dose)) : String(dose)
     }
 }

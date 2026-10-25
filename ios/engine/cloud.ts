@@ -3,250 +3,29 @@
 // health-roadmap.json the website uses. Everything that decides what is
 // written is health-core's: RecordSession (save loop, re-read, merge on
 // conflict, erase guard), SyncManager, the REST adapters, the lift on first
-// connect and the copy-down on leaving. This file only builds the RecordHost
-// the phone stands behind, out of the natives Swift supplies.
-import { ROADMAP_FILE_NAME, StorageError, ConflictError, UNREACHABLE_HINT, type ReadResult, type StorageAdapter, type WriteResult } from '../../packages/health-core/src/adapter';
+// connect and the copy-down on leaving. This file builds the RecordHost the
+// phone stands behind (its stores: cloud-adapters.ts) and the session doors
+// Swift calls. Web twin: widget-src/src/storage/roadmap-store.ts, the web's
+// RecordSession owner. Lab files from Dropbox are lab-files.ts.
+import { StorageError } from '../../packages/health-core/src/adapter';
 import { ChatSession } from '../../packages/health-core/src/chat-session';
-import { DropboxAdapter, dropboxDownload, dropboxListTree, type DropboxTreeEntry } from '../../packages/health-core/src/dropbox-rest';
-import { DriveAdapter } from '../../packages/health-core/src/drive-rest';
-import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
-import { FOLDER_IMPORT_EXTENSIONS, isImportableEntryName } from '../../packages/health-core/src/lab-extraction';
 import { LiveRefresh } from '../../packages/health-core/src/live-refresh';
 import { SchemaTooNewError } from '../../packages/health-core/src/migrate';
 import type { RecordHost } from '../../packages/health-core/src/record-host';
 import { ERASE_UNREACHABLE, RecordSession, saveRecordInto } from '../../packages/health-core/src/record-session';
 import { copyCloudDown, liftDeviceCopy } from '../../packages/health-core/src/record-transfer';
-import { describeStorageFailure } from '../../packages/health-core/src/sync-manager';
-import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { labArchivePayload, saveDocuments, type DocumentPayload, type DocumentSaveIO, type DocumentSavePlan } from '../../packages/health-core/src/document-save';
 import { validDay } from '../../packages/health-core/src/record-edits';
-import { DOCUMENT_FOLDERS } from '../../packages/health-core/src/document-path';
+import { failed, PhoneCloudAdapter, PhoneFileAdapter, type CloudNatives, type Provider } from './cloud-adapters';
 import { eraseChatText } from './app-doors';
 import { labRows, labSaveSummary, type Extraction } from './lab-review';
-import { applyEdit, readRecord, type Edit } from './my-data';
-import { lpaUnitOf, readUnitChoices } from './unit-choices';
-
-export type Provider = 'dropbox' | 'google-drive';
-
-const LABELS: Record<Provider, string> = { dropbox: 'Dropbox', 'google-drive': 'Google Drive' };
-
-/** What Swift gives the sync (CloudSync.swift, EngineNatives.swift). */
-export interface CloudNatives {
-  /** A current access token. `force` after the provider refused the last one.
-   *  The token is the sentinel `native-token:<provider>`: Swift keeps the real one
-   *  and swaps it in on an allowed call only (EngineHTTP.swift, US-25 AC18).
-   *  On failure, `error` says why and `signIn` whether only signing in again
-   *  fixes it (a refresh token the provider refused) or a retry may (no network). */
-  accessToken(provider: Provider, force: boolean, done: (token: string | null, error: string | null, signIn: boolean) => void): void;
-  /** The phone's record file: `{"text": "..."}`, `{"text": null}` when there is
-   *  none, or `{"error": "..."}` when it cannot be read. */
-  phoneRead(): string;
-  /** Writes the phone's record file atomically; answers the error, or '' when it landed. */
-  phoneWrite(text: string): string;
-  phoneRemove(): void;
-  /** The marker that says the phone holds changes the cloud lacks (US-09 AC4), as a
-   *  generation: 0 when it is not set, and a higher number at every 'set'.
-   *  'clear-if:<n>' clears it only while it is still at generation n, so a session
-   *  never clears a marker set after it read the phone. Answers the generation after. */
-  pending(op: 'get' | 'set' | `clear-if:${number}`): number;
-  /** Tells Swift what happened in session `session`: 'saving', 'saved',
-   *  'synced', 'failed' or 'changed'. Swift drops news from any session but the
-   *  one it shows. Never a log: 'changed' carries the record, which Swift only shows. */
-  notify(event: 'saving' | 'saved' | 'synced' | 'failed' | 'changed', payload: string, session: number): void;
-}
+import { applyEdit, readRecord, type Edit, type EditOutcome } from './my-data';
+import { lpaUnitOf, readUnitChoices, unitsOf } from './unit-choices';
 
 declare const __native: CloudNatives;
 
-/** The provider refused the token, or the user must sign in again. */
-class SignInError extends StorageError {
-  constructor(message: string) {
-    super(message, undefined, undefined, 401);
-    this.name = 'SignInError';
-  }
-}
-
-function accessToken(provider: Provider, force: boolean): Promise<string> {
-  return new Promise((resolve, reject) => {
-    __native.accessToken(provider, force, (token, error, signIn) => {
-      if (token) resolve(token);
-      else if (signIn) reject(new SignInError(error ?? `${LABELS[provider]} needs you to sign in again.`));
-      else reject(new StorageError(error ?? `${LABELS[provider]} did not answer`, UNREACHABLE_HINT));
-    });
-  });
-}
-
-/**
- * The user's cloud, through health-core's own REST adapter, with a fresh
- * access token for each call (the phone refreshes with PKCE, in Swift). A
- * call the provider refuses with 401 runs once more on a forced refresh.
- * The adapters are the phone's own, so they file documents
- * (`{ documents: 'write' }`, US-52 AC13d); the record calls are unchanged.
- * A document ref is a folder path ('Letters/2026-01-01 Clinic letter.pdf')
- * for both providers, as `saveDocuments` builds it.
- */
-class PhoneCloudAdapter implements StorageAdapter {
-  readonly id: 'dropbox' | 'google-drive';
-  readonly label: string;
-  private current: { token: string; adapter: StorageAdapter } | null = null;
-  /** Drive's record copies, kept across token refreshes (US-10 AC4a). */
-  private readonly recordIds = new Set<string>();
-
-  constructor(private readonly provider: Provider, private readonly session: number) {
-    this.id = provider;
-    this.label = LABELS[provider];
-  }
-
-  async connect(): Promise<void> {}
-  isConnected(): boolean {
-    return true;
-  }
-  async disconnect(): Promise<void> {}
-
-  read(fileName: string, signal?: AbortSignal): Promise<ReadResult> {
-    return this.run((cloud) => cloud.read(fileName, signal));
-  }
-
-  async write(fileName: string, body: object, expectedVersion: string | null, signal?: AbortSignal): Promise<WriteResult> {
-    // Sync status is the record's: the chat file's writes say nothing (adversary R3).
-    const record = fileName === ROADMAP_FILE_NAME;
-    if (record) __native.notify('saving', '', this.session);
-    const written = await this.run((cloud) => cloud.write(fileName, body, expectedVersion, signal));
-    if (record) __native.notify('saved', '', this.session);
-    return written;
-  }
-
-  readDocument(ref: string, signal?: AbortSignal): Promise<Blob> {
-    return this.run((cloud) => cloud.readDocument(ref, signal));
-  }
-
-  writeDocument(ref: string, bytes: Blob): Promise<void> {
-    return this.run((cloud) => cloud.writeDocument(ref, bytes));
-  }
-
-  private run<T>(call: (cloud: StorageAdapter) => Promise<T>): Promise<T> {
-    return refreshOn401(async (force) => call(await this.adapter(force)));
-  }
-
-  /** One adapter per token, so Drive's file-id cache lives as long as the token. */
-  private async adapter(force: boolean): Promise<StorageAdapter> {
-    const token = await accessToken(this.provider, force);
-    if (this.current?.token !== token) {
-      const options = { documents: 'write' } as const;
-      // No oldest-first chat lookup: EngineHTTP.swift allows no orderBy (US-10 AC4a).
-      this.current = { token, adapter: this.provider === 'dropbox' ? new DropboxAdapter(token, options) : new DriveAdapter(token, options, false, this.recordIds) };
-    }
-    return this.current.adapter;
-  }
-}
-
-/** A call the provider refused with 401 runs once more on a forced token refresh. */
-async function refreshOn401<T>(call: (force: boolean) => Promise<T>): Promise<T> {
-  try {
-    return await call(false);
-  } catch (error) {
-    if (!(error instanceof StorageError) || error.status !== 401 || error instanceof SignInError) throw error;
-    return call(true);
-  }
-}
-
-/** A short, stable fingerprint of the file's text: the phone file's version. */
-function fingerprint(text: string): string {
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < text.length; i++) hash = Math.imul(hash ^ text.charCodeAt(i), 0x01000193);
-  return `${text.length}-${(hash >>> 0).toString(16)}`;
-}
-
-/**
- * The phone's own record file, as the device mirror: where a save the cloud
- * refused waits (US-09 AC4), and the copy the app opens with when the cloud
- * cannot be reached. Swift writes it atomically; JavaScriptCore runs on one
- * queue, so nothing writes it between a read here and the write after it.
- */
-class PhoneFileAdapter implements StorageAdapter {
-  readonly id = 'file' as const;
-  readonly label = 'This iPhone';
-
-  async connect(): Promise<void> {}
-  isConnected(): boolean {
-    return true;
-  }
-  async disconnect(): Promise<void> {}
-
-  /** The raw text, or null when there is no file. Throws when it cannot be read. */
-  text(): string | null {
-    const answer = JSON.parse(__native.phoneRead()) as { text?: string | null; error?: string };
-    if (answer.error !== undefined) throw new StorageError(answer.error);
-    return answer.text ?? null;
-  }
-
-  body(): unknown {
-    const text = this.text();
-    if (text === null) return null;
-    try {
-      return JSON.parse(text);
-    } catch (error) {
-      throw new StorageError('The record on this iPhone is not valid JSON.', undefined, error);
-    }
-  }
-
-  async read(fileName: string): Promise<ReadResult> {
-    if (fileName !== ROADMAP_FILE_NAME) return { body: null, version: null };
-    const body = this.body();
-    return { body, version: body === null ? null : fingerprint(this.text()!) };
-  }
-
-  async write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {
-    if (fileName !== ROADMAP_FILE_NAME) throw new StorageError(`This iPhone keeps only ${ROADMAP_FILE_NAME}.`);
-    const now = this.text();
-    if ((now === null ? null : fingerprint(now)) !== expectedVersion) throw new ConflictError();
-    return { version: this.writeText(JSON.stringify(body)) };
-  }
-
-  /** Writes the file now; answers its version, throws when the phone refused. */
-  writeText(text: string): string {
-    const error = __native.phoneWrite(text);
-    if (error) throw new StorageError(error);
-    return fingerprint(text);
-  }
-
-  /** Merge `file` into the phone's record now, before anything else runs: the
-   *  same merge saveRecordInto makes, without its awaits. Throws when the
-   *  phone's file cannot be read (it is never written over then) or written. */
-  mergeNow(file: RoadmapFile, ctx: { deviceId: string; now: string }): void {
-    const body = this.body();
-    this.writeText(JSON.stringify(body === null ? file : ROADMAP_DOC.merge(file, ROADMAP_DOC.migrate(body, ctx), ctx)));
-  }
-
-  async readDocument(): Promise<Blob> {
-    throw new StorageError('The iPhone keeps no documents yet.');
-  }
-  async writeDocument(): Promise<void> {
-    throw new StorageError('The iPhone keeps no documents yet.');
-  }
-}
-
 type CloudHost = Extract<RecordHost, { tier: 'cloud' }>;
-
-/** What went wrong, as one word Swift turns into plain words (SyncStatus.swift). */
-export function failureKind(error: unknown): 'sign-in' | 'too-new' | 'storage-full' | 'unreachable' {
-  if (error instanceof SignInError) return 'sign-in';
-  if (error instanceof StorageError && error.status === 401) return 'sign-in';
-  // A 403 is a refusal of access, except Drive's limits, read from the body's
-  // reason: a rate or daily limit passes (retry later), a full Drive needs space.
-  // Neither is fixed by signing in again.
-  if (error instanceof StorageError && error.status === 403) {
-    if (/ratelimitexceeded|dailylimitexceeded/i.test(error.message)) return 'unreachable';
-    if (/storagequotaexceeded/i.test(error.message)) return 'storage-full';
-    return 'sign-in';
-  }
-  if (error instanceof SchemaTooNewError) return 'too-new';
-  return 'unreachable';
-}
-
-function failed(provider: Provider, error: unknown): string {
-  return JSON.stringify({ kind: failureKind(error), detail: describeStorageFailure(error, `The record in ${LABELS[provider]}`).message });
-}
 
 function hostFor(provider: Provider, deviceId: string, phone: PhoneFileAdapter, id: number): CloudHost {
   // The marker generation this session's working copy holds: the one it saw as it
@@ -404,17 +183,20 @@ function dependsOnLpaUnit(edit: Edit, file: RoadmapFile): boolean {
   return edit.kind === 'correct' && file.measurements.some((row) => row.id === edit.id && row.metricType === 'lpa');
 }
 
-function refuse(reason: string, message: string): string {
-  return JSON.stringify({ ok: false, reason, message });
+type Refusal = Extract<EditOutcome, { ok: false }>;
+
+function refuse(reason: string, message: string): Refusal {
+  return { ok: false, reason, message };
 }
 
+const NOT_OPEN = 'The cloud record is not open.';
 const ERASED = 'Your record was erased on another device, so this was not saved.';
 
 /** Take `next` as the session's working copy: on the phone first, marked for the
  *  cloud, then `RecordSession.edit` with the erase the screen showed. A phone that
  *  cannot keep it refuses it, and nothing changes (US-09 AC4). Answers the
  *  refusal, or null when it was taken. */
-function commit(at: Open, next: RoadmapFile, erase: string, nowIso: string): string | null {
+function commit(at: Open, next: RoadmapFile, erase: string, nowIso: string): Refusal | null {
   at.host.mirror.pending.set();
   try {
     at.phone.mergeNow(next, { deviceId: at.host.deviceId(), now: nowIso });
@@ -435,13 +217,17 @@ function commit(at: Open, next: RoadmapFile, erase: string, nowIso: string): str
  * survives the app being closed (US-09 AC4).
  */
 export function cloudEdit(editJson: string, erase: string, shownUnits: string, nowIso: string, unitsJson?: string, shownLpaUnit?: string): string {
+  return JSON.stringify(editSession(JSON.parse(editJson) as Edit, erase, shownUnits, nowIso, unitsJson, shownLpaUnit));
+}
+
+/** cloudEdit's work, answering an object, so cloudLabImport adds its summary without a JSON round trip of the record. */
+function editSession(edit: Edit, erase: string, shownUnits: string, nowIso: string, unitsJson?: string, shownLpaUnit?: string) {
   const at = open;
-  if (!at) return refuse('not-open', 'The cloud record is not open.');
+  if (!at) return refuse('not-open', NOT_OPEN);
   const { session } = at;
-  const edit = JSON.parse(editJson) as Edit;
   // A number is read in the units the screen showed. If another device has
   // changed the units since, the same number would be stored in the wrong ones.
-  if (dependsOnUnits(edit) && shownUnits !== (session.file.profile.unitSystem ?? 'si')) {
+  if (dependsOnUnits(edit) && shownUnits !== unitsOf(session.file)) {
     return refuse('units-changed', 'Your units changed on another device, so this was not saved. Close this and enter the value again.');
   }
   // Lp(a)'s unit is the record's too (US-05 AC2): a number typed in the old one is never
@@ -454,13 +240,14 @@ export function cloudEdit(editJson: string, erase: string, shownUnits: string, n
   }
   // Read in the per-test units the sheet showed (AC17e), as the phone's own file is.
   const outcome = applyEdit(session.file, edit, nowIso, readUnitChoices(unitsJson));
-  if (!outcome.ok) return JSON.stringify(outcome);
+  if (!outcome.ok) return outcome;
   // An edit that changed nothing (an Apple Health batch already taken in) saves nothing.
-  if (outcome.file === session.file) return JSON.stringify({ ok: true, record: JSON.stringify(session.file), erase: session.eraseIdentity });
-  // On the phone first, marked for the cloud: only then is the edit taken.
-  const refusal = commit(at, outcome.file, erase, nowIso);
-  if (refusal) return refusal;
-  return JSON.stringify({ ok: true, record: JSON.stringify(session.file), erase: session.eraseIdentity });
+  // Any other goes on the phone first, marked for the cloud: only then is it taken.
+  if (outcome.file !== session.file) {
+    const refusal = commit(at, outcome.file, erase, nowIso);
+    if (refusal) return refusal;
+  }
+  return { ok: true as const, record: JSON.stringify(session.file), erase: session.eraseIdentity };
 }
 
 /**
@@ -471,12 +258,12 @@ export function cloudEdit(editJson: string, erase: string, shownUnits: string, n
  */
 export function cloudLabImport(extractionJson: string, refsJson: string, reportDay: string, erase: string, shownUnits: string, nowIso: string, unitsJson: string): string {
   const at = open;
-  if (!at) return refuse('not-open', 'The cloud record is not open.');
+  if (!at) return JSON.stringify(refuse('not-open', NOT_OPEN));
   const refs = JSON.parse(refsJson) as string[];
   const rows = labRows(JSON.parse(extractionJson) as Extraction, refs, reportDay, nowIso);
   if (!rows.ok) return JSON.stringify(rows);
   const summary = labSaveSummary(at.session.file, rows.rows, nowIso);
-  const outcome = JSON.parse(cloudEdit(JSON.stringify({ kind: 'labImport', extractionJson, refs, reportDay }), erase, shownUnits, nowIso, unitsJson)) as { ok: boolean };
+  const outcome = editSession({ kind: 'labImport', extractionJson, refs, reportDay }, erase, shownUnits, nowIso, unitsJson);
   return JSON.stringify(outcome.ok ? { ...outcome, summary } : outcome);
 }
 
@@ -515,18 +302,18 @@ let documentQueue: Promise<unknown> = Promise.resolve();
 export function documentSave(
   recordJson: string, extractionJson: string, choiceJson: string, original: ArrayBuffer | null, erase: string, nowIso: string, deviceId: string,
 ): Promise<string> {
-  const run = documentQueue.then(() => saveOneDocument(recordJson, extractionJson, choiceJson, original, erase, nowIso, deviceId));
+  const run = documentQueue.then(() => saveOneDocument(recordJson, extractionJson, choiceJson, original, erase, nowIso, deviceId)).then((answer) => JSON.stringify(answer));
   documentQueue = run.catch(() => {});
   return run;
 }
 
 async function saveOneDocument(
   recordJson: string, extractionJson: string, choiceJson: string, original: ArrayBuffer | null, erase: string, nowIso: string, deviceId: string,
-): Promise<string> {
+): Promise<object> {
   const choice = JSON.parse(choiceJson) as DocumentChoice;
   const extraction = JSON.parse(extractionJson) as Extraction;
   const at = erase ? open : null;
-  if (erase && !at) return refuse('not-open', 'The cloud record is not open.');
+  if (erase && !at) return refuse('not-open', NOT_OPEN);
   if (at?.session.refuses(erase)) return refuse('erased', ERASED);
   // The one gate for originals: kept only in the person's cloud, as on the web
   // (UploadModal strips them off-cloud).
@@ -534,7 +321,7 @@ async function saveOneDocument(
   const bytes = hash && original && original.byteLength > 0 ? new Uint8Array(original) : null;
   const file = hash ? bytes ?? new Uint8Array(0) : undefined;
   let plan: DocumentSavePlan | null = null;
-  const answer = (record: string) => JSON.stringify({
+  const answer = (record: string) => ({
     ok: true, record, ...(at ? { erase: at.session.eraseIdentity } : null),
     saved: plan?.saved.length ?? 0, unstored: plan?.unstored ?? 0,
     stored: hash ? !!plan?.saved.some((d) => !!d.fileRef) : null,
@@ -564,10 +351,7 @@ async function saveOneDocument(
   if (!at) {
     const current = readRecord(recordJson, nowIso, deviceId);
     plan = await saveDocuments(current, [payload], io);
-    // commit writes in place (push, `deleted`): on a copy, as the read record is shared (my-data.ts readRecord).
-    const next = { ...current, documents: current.documents.map((d) => ({ ...d })) };
-    plan.commit(next);
-    return answer(JSON.stringify(next));
+    return answer(JSON.stringify(committed(current, plan)));
   }
 
   plan = await saveDocuments(at.session.file, [payload], io);
@@ -575,12 +359,19 @@ async function saveOneDocument(
   if (open !== at) return refuse('not-open', 'The cloud record closed while this was saving, so it was not saved. Try again.');
   if (at.session.refuses(erase)) return refuse('erased', ERASED);
   if (plan.saved.length > 0) {
-    const next = JSON.parse(JSON.stringify(at.session.file)) as RoadmapFile;
-    plan.commit(next);
-    const refusal = commit(at, next, erase, nowIso);
+    const refusal = commit(at, committed(at.session.file, plan), erase, nowIso);
     if (refusal) return refusal;
   }
   return answer(JSON.stringify(at.session.file));
+}
+
+/** `file` with the plan's rows committed. The commit writes in place (it pushes rows
+ *  and flags `deleted`, documents only), so it runs on a copy of the documents: the
+ *  file given is a read record or the session's, both shared (my-data.ts readRecord). */
+function committed(file: RoadmapFile, plan: DocumentSavePlan): RoadmapFile {
+  const next = { ...file, documents: file.documents.map((d) => ({ ...d })) };
+  plan.commit(next);
+  return next;
 }
 
 /**
@@ -733,127 +524,4 @@ async function closeAt(at: Open, copyDown: boolean): Promise<string> {
   } catch {
     return 'unreachable';
   }
-}
-
-// Lab files for "+" (US-52 AC11, AC13c). The Dropbox app folder is where the
-// hosted connector reads lab files too (US-35 AC2), by the same name rule; the
-// phone also opens its subfolders. The token is the connected Dropbox's; no
-// record session needs to be open.
-
-type LabEntry = { id: string; name: string; size: number; modified: string; folder: string; path: string };
-
-/** A listing entry as the phone sees it: its parent folder, kept for the
- *  download, and its path below the folder that was listed (`listed`). */
-const labEntry = (listed: string) => (entry: DropboxTreeEntry): LabEntry => ({
-  id: entry.id, name: entry.name, size: entry.size, modified: entry.modified,
-  folder: entry.path.includes('/') ? entry.path.slice(0, entry.path.lastIndexOf('/')) : '',
-  path: listed ? entry.path.slice(listed.length + 1) : entry.path,
-});
-
-/** The app's own folders at the app folder's root, never the person's reports:
- *  the connector's parked imports (PENDING_FOLDER, app/lib/mcp-import.server.ts)
- *  and the stored originals' folders. Hidden from the root's listing and its
- *  whole-folder read, and refused by every door (review R7). */
-const APP_FOLDERS = new Set(['imports', ...Object.values(DOCUMENT_FOLDERS)].map((name) => name.toLowerCase()));
-const isAppFolder = (path: string) => APP_FOLDERS.has(path.split('/')[0].toLowerCase());
-
-/** A refusal in plain words, marked as one so Swift never reads it as a cloud
- *  failure's JSON, whatever the words start with (re-check R1). `gone`: the
- *  file is no longer where the listing put it. */
-function refused(words: string, gone = false): Error {
-  return new Error(JSON.stringify(gone ? { refused: words, gone } : { refused: words }));
-}
-
-/** Refuses a folder of the app's own (review R7). */
-function ownFolder(folder: string): void {
-  if (folder && isAppFolder(folder)) throw refused('That folder holds the app\'s own files, not reports to read.');
-}
-
-/** One folder's listing afresh, or the failure JSON. */
-async function listTree(folder: string, recursive: boolean): Promise<DropboxTreeEntry[]> {
-  try {
-    return await refreshOn401(async (force) => dropboxListTree(await accessToken('dropbox', force), folder, recursive));
-  } catch (error) {
-    throw new Error(failed('dropbox', error));
-  }
-}
-
-/** The lab files of one level's listing, newest first. The record and the app's
- *  own files are not lab files by name, so they never list. */
-const labFilesOf = (folder: string, entries: DropboxTreeEntry[]): LabEntry[] => entries
-  .filter((entry) => entry.kind === 'file' && isImportableEntryName(entry.name, FOLDER_IMPORT_EXTENSIONS))
-  .map(labEntry(folder))
-  .sort((a, b) => b.modified.localeCompare(a.modified));
-
-/** The files the last whole-folder listing offered, by id: that read downloads
- *  them without listing each folder again (review R2). Any other listing ends it. */
-let offered = new Map<string, LabEntry>();
-
-/** One folder of the Dropbox app folder (`''` its root), as JSON `{ folders:
- *  [{ name, path }], files: [{ id, name, size, modified, folder, path }],
- *  hidden: [name] }`: its subfolders by name (hidden and __MACOSX ones left out,
- *  as a ZIP's are, and at the root the app's own, named in `hidden`) and its lab
- *  files newest first. Rejects with the failure JSON, or `{ refused }` for a
- *  folder of the app's own. */
-export async function labFolderJson(folder: string): Promise<string> {
-  ownFolder(folder);
-  offered = new Map();
-  const entries = await listTree(folder, false);
-  const shown = entries.filter((entry) => entry.kind === 'folder' && !entry.name.startsWith('.') && entry.name.toLowerCase() !== '__macosx');
-  const byName = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
-  const own = (entry: DropboxTreeEntry) => folder === '' && isAppFolder(entry.path);
-  const folders = shown.filter((entry) => !own(entry)).map((entry) => ({ name: entry.name, path: entry.path })).sort((a, b) => byName(a.name, b.name));
-  const hidden = shown.filter(own).map((entry) => entry.name).sort(byName);
-  return JSON.stringify({ folders, files: labFilesOf(folder, entries), hidden });
-}
-
-/** Every lab file in one folder and the folders inside it, as JSON
- *  `[{ id, name, size, modified, folder, path }]` (`path` below that folder),
- *  judged by that path (so a hidden or __MACOSX folder's files are left out, as
- *  a ZIP's are, and at the root the app's own folders' files). The phone orders
- *  and caps them (LabFileReader.maxFolderFiles). Rejects with the failure JSON,
- *  or `{ refused }` for a folder of the app's own. */
-export async function labFolderFilesJson(folder: string): Promise<string> {
-  ownFolder(folder);
-  offered = new Map();
-  const files = (await listTree(folder, true))
-    .filter((entry) => entry.kind === 'file' && !(folder === '' && isAppFolder(entry.path)))
-    .map(labEntry(folder))
-    .filter((entry) => isImportableEntryName(entry.path, FOLDER_IMPORT_EXTENSIONS));
-  offered = new Map(files.map((file) => [file.id, file]));
-  return JSON.stringify(files);
-}
-
-/**
- * One file, by its id, only when a fresh listing offers it as a lab file
- * (review R3): the listing of the whole-folder read under way, or else a fresh
- * listing of its folder (`''` the root). An id from anywhere else, the
- * record's or the chat history's included, is refused before any download.
- * Answers the listing's name with the bytes, so the phone reads the file under
- * the name Dropbox gives it now. The web's size limit holds on the listing's
- * size and again on the bytes (review R5); an empty file is called empty
- * (re-check R2), and a listing with no size reads as 0. Refusals are
- * `{ refused }`, with `gone` when the file is no longer there; a cloud failure
- * is the failure JSON.
- */
-export async function labFile(id: string, folder: string): Promise<{ name: string; bytes: ArrayBuffer }> {
-  ownFolder(folder);
-  const kept = offered.get(id);
-  const entry = kept?.folder === folder ? kept : labFilesOf(folder, await listTree(folder, false)).find((file) => file.id === id);
-  if (!entry) throw refused('That file is not a lab file in the folder any more. Refresh the list and try again.', true);
-  const limit = (entry.name.toLowerCase().endsWith('.zip') ? IMPORT_LIMITS.zipMb : IMPORT_LIMITS.websiteFileMb) * 1024 * 1024;
-  const check = (size: number) => {
-    if (!(size > 0)) throw refused(`${entry.name} is empty.`);
-    if (size > limit) throw refused(`${entry.name} is larger than the website's limit (${IMPORT_LIMITS.websiteFileMb} MB a file, ${IMPORT_LIMITS.zipMb} MB a ZIP).`);
-  };
-  check(entry.size);
-  let bytes: Uint8Array<ArrayBuffer>;
-  try {
-    bytes = await refreshOn401(async (force) => dropboxDownload(await accessToken('dropbox', force), id));
-  } catch (error) {
-    if (error instanceof StorageError && error.status === 409) throw refused(`${entry.name} is not in the folder any more.`, true);
-    throw new Error(failed('dropbox', error));
-  }
-  check(bytes.byteLength);
-  return { name: entry.name, bytes: bytes.buffer };
 }

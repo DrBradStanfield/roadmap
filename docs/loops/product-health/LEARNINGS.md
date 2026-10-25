@@ -26,14 +26,9 @@ duplicates.
   in a durable way: the zero measured REACH, not demand — default-on + the
   typed lane (08-13/14) brought 18 enrolments in a week. A zero on an
   opt-in-shaped event indicts the surface before the feature.
-- **2026-08-16 [tooling]** Sentry per-issue event COUNTS are not reproducible
-  across pulls: the same two chat issues returned 86/24 (W32), then 1/1 in two
-  W33 pulls (identical under statsPeriod=14d and 90d), and summed `stats`
-  buckets returned 0 even for an issue with a real in-window event. Treat any
-  Sentry count as soft; trend on the stable fields (firstSeen/lastSeen,
-  status) and say so whenever a count drives a conclusion. (The W33 report's
-  first draft "explained" W32's figures as lifetime counts — the adversarial
-  review disproved that same-run; the true origin of 86/24 is unidentified.)
+- **2026-08-16 [tooling]** Sentry per-issue event COUNTS are not reproducible across pulls (86/24
+  in W32, then 1/1 twice in W33; summed `stats` buckets read 0 for a real event). Trend on
+  firstSeen/lastSeen and status; say so whenever a count drives a conclusion.
 - **2026-08-22 [tooling]** PostgREST silently caps any response at 1000 rows,
   and two identical UNORDERED queries can return *different* arbitrary
   1000-row subsets — an unordered fetch is never "all rows" past 1k. Always
@@ -181,3 +176,7 @@ duplicates.
   `cloud_connect_cancelled` counts only the provider's Cancel/Deny (redirect path); browser Back and
   GIS-popup cancels stay silent. Read the funnel per visitor, never starts minus outcomes (US-09 AC22).
   Baseline before the break: 29 of 86 Drive visitors reached no outcome (07-22..10-18).
+- **2026-10-25 [instrumentation]** `lab_unit_refused` drops any unit `isLabUnitWord` distrusts
+  (roadmap-data.ts:206), so the counter goes blind where it matters: W43 had 27 unit-less
+  blood-count refusals from 4 visitors (W42: 3). A rise means a blank unit or an unknown spelling;
+  probe with labUnitTaken first (a taken spelling never fires), never read it as noise.

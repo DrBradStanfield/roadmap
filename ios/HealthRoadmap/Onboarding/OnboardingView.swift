@@ -79,7 +79,7 @@ struct OnboardingView: View {
     @ViewBuilder private func page(_ step: OnboardingStep) -> some View {
         switch step {
         case .health:
-            Page(symbol: "heart.fill", tint: .pink, title: "Use your Apple Health data",
+            OnboardingPage(symbol: "heart.fill", tint: .pink, title: "Use your Apple Health data",
                  detail: "So you type less. What it reads goes only into your record, on this iPhone or in your own cloud. Values you add here are saved back to Apple Health.",
                  progress: nil, spread: true) {
                 HealthFillScene()
@@ -91,7 +91,7 @@ struct OnboardingView: View {
             }
         case .sex:
             // A tap is the answer: it saves and moves on, so the step has no Continue (Brad 2026-10-23).
-            Page(symbol: "person.fill", tint: .accentColor, title: "What is your sex?",
+            OnboardingPage(symbol: "person.fill", tint: .accentColor, title: "What is your sex?",
                  detail: "Your plan's targets and screenings depend on it.", progress: step, fromHealth: fromHealth.contains(.sex), message: message) {
                 HStack(spacing: 12) {
                     choice("Female", value: "female")
@@ -99,7 +99,7 @@ struct OnboardingView: View {
                 }
             }
         case .birth:
-            Page(symbol: "calendar", tint: .orange, title: "When were you born?",
+            OnboardingPage(symbol: "calendar", tint: .orange, title: "When were you born?",
                  detail: "Your age decides which checks you're due for, like bowel and breast cancer screening and bone density (DEXA) scans. We never ask for the day.",
                  progress: step, fromHealth: fromHealth.contains(.birth), message: message) {
                 HStack(spacing: 0) {
@@ -116,7 +116,7 @@ struct OnboardingView: View {
                 primary("Continue", id: "onboarding.continue") { save(.birth) }.disabled(!birthAnswered)
             }
         case .height:
-            Page(symbol: "ruler", tint: .teal, title: "How tall are you?",
+            OnboardingPage(symbol: "ruler", tint: .teal, title: "How tall are you?",
                  detail: "Height sets your healthy weight range.", progress: step, fromHealth: fromHealth.contains(.height), message: message) {
                 withUnits(.height) {
                     if answers.height.us {
@@ -128,18 +128,18 @@ struct OnboardingView: View {
                 }
             } actions: {
                 primary("Continue", id: "onboarding.continue") { save(.height) }
-                    .disabled(answers.height.value(read: store.number) == nil)
+                    .disabled(answers.height.value == nil)
             }
         case .weight:
             // Required (Brad 2026-10-23): weight shapes much of the plan, so there is no Skip.
-            Page(symbol: "scalemass.fill", tint: .indigo, title: "What do you weigh?",
+            OnboardingPage(symbol: "scalemass.fill", tint: .indigo, title: "What do you weigh?",
                  detail: "Weight shapes much of your plan.", progress: step, fromHealth: fromHealth.contains(.weight), message: message) {
                 withUnits(.weight) {
                     numberField(.weight)
                 }
             } actions: {
                 primary("Continue", id: "onboarding.continue") { save(.weight) }
-                    .disabled(answers.weight.value(read: store.number) == nil)
+                    .disabled(answers.weight.value == nil)
             }
         }
     }
@@ -236,12 +236,9 @@ struct OnboardingView: View {
     }
 
     private func primary(_ title: String, id: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title).font(.headline).frame(maxWidth: .infinity).padding(.vertical, 6).onAccentLabel()
-        }
-        .buttonStyle(.borderedProminent)
-        .controlSize(.large)
-        .accessibilityIdentifier(id)
+        Button(title, action: action)
+            .buttonStyle(.accent)
+            .accessibilityIdentifier(id)
     }
 
     private func secondary(_ title: String, id: String, action: @escaping () -> Void) -> some View {
@@ -271,7 +268,9 @@ struct OnboardingView: View {
         // Each typed screen starts in the record's units: the region default for a new record.
         answers.height.us = recordUnits(.height) == "conventional"
         answers.weight.us = recordUnits(.weight) == "conventional"
-        prefill(from: HealthCharacteristics.none)
+        await prefill(from: HealthCharacteristics.none)
+        // Gone while the engine filled the boxes: nothing to pin.
+        guard !Task.isCancelled, step == nil else { return }
         step = onlyMissing
             ? OnboardingSteps.next(after: .health, profile: data.profile, hasWeight: recordWeight != nil, onlyMissing: true) ?? .weight
             : OnboardingSteps.start(data.profile, healthAsked: healthAsked)
@@ -284,7 +283,6 @@ struct OnboardingView: View {
         let heightBefore = profile?.height
         let weightBefore = recordWeight
         await health.connect()
-        connecting = false
         healthAsked = true
         let given = health.characteristics()
         // Label what Apple Health filled in (AC4): what the record lacked and Health gave.
@@ -292,21 +290,24 @@ struct OnboardingView: View {
         if profile?.birthYear == nil, given.birthYear != nil { fromHealth.insert(.birth) }
         if heightBefore == nil, profile?.height != nil { fromHealth.insert(.height) }
         if weightBefore == nil, recordWeight != nil { fromHealth.insert(.weight) }
-        prefill(from: given)
+        await prefill(from: given)
+        connecting = false
         advance(from: .health)
     }
 
     /// Fills the answers from the record first, then from Apple Health, else wheels'
     /// sensible starts and empty boxes.
-    private func prefill(from health: HealthCharacteristics) {
+    private func prefill(from health: HealthCharacteristics) async {
         answers.sex = profile?.sex ?? health.sex ?? answers.sex
         if let year = profile?.birthYear ?? health.birthYear {
             answers.birthYear = year
             answers.birthMonth = profile?.birthMonth ?? health.birthMonth ?? answers.birthMonth
             birthAnswered = true
         }
-        if !answers.height.edited { answers.height.show(recorded(.height), recordUnits: recordUnits(.height), convert: store.convert) }
-        if !answers.weight.edited { answers.weight.show(recordWeight, recordUnits: recordUnits(.weight), convert: store.convert) }
+        for (step, path) in [(OnboardingStep.height, \Answers.height), (.weight, \Answers.weight)] where !answers[keyPath: path].edited {
+            let (recorded, recordUnits) = (recorded(step), recordUnits(step))
+            await update(path) { await $0.show(recorded, recordUnits: recordUnits, convert: store.convert) }
+        }
     }
 
     /// The record's height or weight, in `recordUnits(step)`.
@@ -316,39 +317,23 @@ struct OnboardingView: View {
 
     private var recordWeight: Double? { weightRow?.latest.flatMap { Double($0.value) } }
 
+    /// Saves an answer. The page waits (`saving`) while its value is read, converted by
+    /// the engine off the main thread, and written.
     private func save(_ step: OnboardingStep) {
         message = nil
-        let edit: RecordEdit?
-        switch step {
-        case .health:
-            return
-        case .sex:
-            guard let sex = answers.sex else { return }
-            edit = profile?.sex == sex ? nil : .profile(sex: sex)
-        case .birth:
-            edit = profile?.birthYear == answers.birthYear && profile?.birthMonth == answers.birthMonth
-                ? nil : .profile(birthYear: answers.birthYear, birthMonth: answers.birthMonth)
-        // A box the person left alone saves nothing, whatever its units show (AC6). A typed
-        // one that cannot be read or converted stays on its screen.
-        case .height:
-            let height = answers.height
-            guard height.edited else { edit = nil; break }
-            edit = height.us
-                ? height.feetInches.map { .feetInches(feet: $0.feet, inches: $0.inches) }
-                : savedValue(.height).map { .profile(height: $0) }
-            guard edit != nil else { return }
-        case .weight:
-            // A weight equal to the record's latest, typed or not, writes nothing (AC5).
-            guard answers.weight.edited, !answers.weight.repeats(recordWeight, recordUnits: recordUnits(.weight), read: store.number, convert: store.convert)
-            else { edit = nil; break }
-            edit = savedValue(.weight).map { .add(metric: "weight", value: $0, day: DayText.iso(.now)) }
-            guard edit != nil else { return }
-        }
-        guard let edit else { return settle(.saved, step) }
         saving = true
         Task {
+            defer { saving = false }
+            let edit: RecordEdit
+            switch await change(for: step) {
+            case .stay:
+                return
+            case .unchanged:
+                return settle(.saved, step)
+            case .edit(let made):
+                edit = made
+            }
             let result = await store.apply(edit)
-            saving = false
             // Today already holds a weight: ask before replacing it (AC5, US-25 AC5).
             if step == .weight, case .refused(_, let existingId?) = result {
                 replacing = existingId
@@ -358,10 +343,44 @@ struct OnboardingView: View {
         }
     }
 
+    private enum Change { case stay, unchanged, edit(RecordEdit) }
+
+    /// What an answer writes: nothing new (`unchanged`, the page moves on), an edit, or
+    /// nothing it can write yet (`stay`).
+    private func change(for step: OnboardingStep) async -> Change {
+        switch step {
+        case .health:
+            return .stay
+        case .sex:
+            guard let sex = answers.sex else { return .stay }
+            return profile?.sex == sex ? .unchanged : .edit(.profile(sex: sex))
+        case .birth:
+            return profile?.birthYear == answers.birthYear && profile?.birthMonth == answers.birthMonth
+                ? .unchanged : .edit(.profile(birthYear: answers.birthYear, birthMonth: answers.birthMonth))
+        // A box the person left alone saves nothing, whatever its units show (AC6). A typed
+        // one that cannot be read or converted stays on its screen.
+        case .height:
+            let height = answers.height
+            guard height.edited else { return .unchanged }
+            let edit: RecordEdit? = if height.us {
+                height.feetInches.map { .feetInches(feet: $0.feet, inches: $0.inches) }
+            } else {
+                await savedValue(.height).map { .profile(height: $0) }
+            }
+            return edit.map(Change.edit) ?? .stay
+        case .weight:
+            // A weight equal to the record's latest, typed or not, writes nothing (AC5).
+            guard answers.weight.edited,
+                  !(await answers.weight.repeats(recordWeight, recordUnits: recordUnits(.weight), convert: store.convert))
+            else { return .unchanged }
+            return await savedValue(.weight).map { .edit(.add(metric: "weight", value: $0, day: DayText.iso(.now))) } ?? .stay
+        }
+    }
+
     /// A typed answer in the units the engine's edit reads now, converted once; nil when
     /// the person typed nothing there.
-    private func savedValue(_ step: OnboardingStep) -> Double? {
-        answer(step).saved(recordUnits: recordUnits(step), read: store.number, convert: store.convert)
+    private func savedValue(_ step: OnboardingStep) async -> Double? {
+        await answer(step).saved(recordUnits: recordUnits(step), convert: store.convert)
     }
 
     /// A typed screen's unit switch, for entry only (AC6): the record's units stay as they
@@ -370,18 +389,34 @@ struct OnboardingView: View {
     private func chooseUnits(us: Bool, on step: OnboardingStep) {
         message = nil
         let path: WritableKeyPath<Answers, TypedAnswer> = step == .weight ? \.weight : \.height
-        answers[keyPath: path].switchUnits(toUS: us, recorded: recorded(step), recordUnits: recordUnits(step), read: store.number, convert: store.convert)
-        focus = firstField(step)
+        let (recorded, recordUnits) = (recorded(step), recordUnits(step))
+        // Counted in the tap: a quicker later tap wins over this one's conversion.
+        let tapped = answers[keyPath: path].tapped()
+        Task {
+            await update(path, from: tapped) { await $0.switchUnits(toUS: us, recorded: recorded, recordUnits: recordUnits, convert: store.convert) }
+            focus = firstField(step)
+        }
+    }
+
+    /// Changes a typed answer through the engine, off the main thread. Kept only if the
+    /// answer did not move while the engine ran (a keystroke or another switch): the box
+    /// never shows text in units it no longer holds. `start`: the box as a tap left it.
+    private func update(_ path: WritableKeyPath<Answers, TypedAnswer>, from start: TypedAnswer? = nil, _ change: (inout TypedAnswer) async -> Void) async {
+        let before = start ?? answers[keyPath: path]
+        var after = before
+        await change(&after)
+        answers[keyPath: path].land(after, from: before)
     }
 
     /// "Replace it": a FHIR correction of today's weight, never a removal.
     private func replaceWeight() {
-        guard let id = replacing, let weight = savedValue(.weight) else { return }
+        guard let id = replacing else { return }
         replacing = nil
         saving = true
         Task {
+            defer { saving = false }
+            guard let weight = await savedValue(.weight) else { return }
             let result = await store.apply(.correct(id: id, value: weight))
-            saving = false
             settle(result, .weight)
         }
     }
@@ -439,80 +474,4 @@ struct OnboardingView: View {
     }
 
     private enum Field: String { case height, feet, inches, weight }
-
-    // MARK: Layout
-
-    /// One onboarding screen: symbol, title, one line on why, the control, then the buttons.
-    fileprivate struct Page<Content: View, Actions: View>: View {
-        let symbol: String
-        let tint: Color
-        let title: String
-        let detail: String
-        let progress: OnboardingStep?
-        var fromHealth = false
-        var message: String?
-        /// Shares the screen's height between the heading and the content, so a short page
-        /// leaves no gap above its buttons (Brad 2026-10-23).
-        var spread = false
-        @ViewBuilder let content: () -> Content
-        @ViewBuilder let actions: () -> Actions
-
-        var body: some View {
-            VStack(spacing: 0) {
-                if let progress, let index = OnboardingStep.questions.firstIndex(of: progress) {
-                    ProgressView(value: Double(index + 1), total: Double(OnboardingStep.questions.count))
-                        .accessibilityLabel("Question \(index + 1) of \(OnboardingStep.questions.count)")
-                        .padding(.bottom, 12)
-                }
-                GeometryReader { screen in
-                ScrollView {
-                    VStack(spacing: 14) {
-                        if spread { Spacer(minLength: 0) }
-                        Image(systemName: symbol)
-                            .font(.system(size: 44))
-                            .foregroundStyle(tint)
-                            .padding(.top, 24)
-                            .accessibilityHidden(true)
-                        Text(title)
-                            .font(.title.bold())
-                            .multilineTextAlignment(.center)
-                            .accessibilityAddTraits(.isHeader)
-                        Text(detail)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                        if fromHealth {
-                            Label("From Apple Health", systemImage: "heart.fill")
-                                .font(.footnote)
-                                .foregroundStyle(.pink)
-                        }
-                        if spread { Spacer(minLength: 12).frame(maxHeight: 48) }
-                        content().padding(.top, spread ? 0 : 12)
-                        if spread { Spacer(minLength: 0) }
-                    }
-                    .frame(maxWidth: .infinity, minHeight: spread ? screen.size.height : nil)
-                }
-                .scrollBounceBehavior(.basedOnSize)
-                }
-                VStack(spacing: 6) {
-                    // The engine's own words for a refused answer (AC5).
-                    if let message {
-                        Text(message).font(.footnote).foregroundStyle(.red).multilineTextAlignment(.center)
-                    }
-                    actions()
-                }
-                .padding(.top, 12)
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 12)
-        }
-    }
-}
-
-extension OnboardingView.Page where Actions == EmptyView {
-    /// A page whose control is its answer (sex): no buttons.
-    init(symbol: String, tint: Color, title: String, detail: String, progress: OnboardingStep?, fromHealth: Bool, message: String?,
-         @ViewBuilder content: @escaping () -> Content) {
-        self.init(symbol: symbol, tint: tint, title: title, detail: detail, progress: progress, fromHealth: fromHealth, message: message,
-                  content: content, actions: { EmptyView() })
-    }
 }

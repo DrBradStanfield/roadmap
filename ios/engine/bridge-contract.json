@@ -45,14 +45,13 @@
     "labFile": { "args": ["id", "folder"], "returns": "{name, bytes} of a file the whole-folder read's listing or a fresh listing of its folder ('' the root) offers as a lab file, or throws {refused, gone?}; the app's own root folders are refused (US-52 AC11, AC13c)" },
     "labFolderFilesJson": { "args": ["folder"], "returns": "every lab file in a Dropbox app-folder folder and its subfolders, [{id, name, size, modified, folder, path}] (path below that folder), unordered; at the root not the app's own folders (US-52 AC13c)" },
     "labFolderJson": { "args": ["folder"], "returns": "{folders: [{name, path}], files: [{id, name, size, modified, folder, path}], hidden: [name]}: one Dropbox app-folder folder's subfolders by name and lab files newest first; at the root the app's own folders are named in hidden, not listed (US-52 AC10, AC13c)" },
-    "myDataJson": { "args": ["recordJson", "nowIso", "deviceId", "unitsJson"], "returns": "MyData JSON" },
     "newRecordJson": { "args": ["nowIso", "deviceId", "locale", "timeZone"], "returns": "record JSON" },
     "numberJson": { "args": ["text"], "returns": "number or null JSON" },
     "convertJson": { "args": ["metric", "value", "from", "to"], "returns": "{value, text, feetInches|null} JSON: a typed value in the other units by health-core's factors, for onboarding's entry-only unit switches (US-54 AC6)" },
     "planJson": { "args": ["recordJson", "nowIso", "deviceId", "unitsJson"], "returns": "Plan JSON" },
     "remindersJson": { "args": ["recordJson", "nowIso", "deviceId"], "returns": "PhoneReminders JSON" },
+    "screenJson": { "args": ["recordJson", "nowIso", "deviceId", "unitsJson"], "returns": "{myData: MyData, plan: {sections: [PlanSection], tiles: [StatTile], ms} or {error, planError}} JSON from one read and one computePlan: My data and the Plan tab's layout and summary tiles, the web's Quick Stats (US-25 AC2, AC22), each tile with its required `about` line (US-57 AC5); tiles [] when they cannot be drawn; ms the whole milliseconds from computePlan through the tiles and the layout; planError true for health-core's PlanError; throws when My data cannot be drawn" },
     "sectionsJson": { "args": ["planJson"], "returns": "[PlanSection] JSON" },
-    "statTilesJson": { "args": ["planJson", "unitsJson"], "returns": "[StatTile] JSON: the plan's summary tiles, the web's Quick Stats (health-core stat-tiles.ts, US-25 AC22)" },
     "fileNamesJson": { "args": ["filesJson"], "returns": "JSON array: each file's sourceFileName by health-core's rules (zipMemberName for {zip, path}, fileNameLine and the 255 cap for {name}), one call per read (US-52 AC13d)" },
     "settledJson": { "args": [], "returns": "the last settled async door's answer" }
   }

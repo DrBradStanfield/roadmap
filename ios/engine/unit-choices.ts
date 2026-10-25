@@ -29,9 +29,14 @@ export function readUnitChoices(json: string | undefined): UnitChoices {
     .filter(([metric, system]) => SWITCHABLE.has(metric) && (system === 'si' || system === 'conventional'))) as UnitChoices;
 }
 
+/** The record's units, the master switch: metric unless it says US. */
+export function unitsOf(file: RoadmapFile): UnitSystem {
+  return file.profile.unitSystem ?? 'si';
+}
+
 /** The units one metric shows and is typed in. */
 export function systemFor(file: RoadmapFile, metric: string, choices: UnitChoices = {}): UnitSystem {
-  return choices[metric as MetricType] ?? file.profile.unitSystem ?? 'si';
+  return choices[metric as MetricType] ?? unitsOf(file);
 }
 
 /** Lp(a)'s unit (US-05 AC2): the record's `profile.lpaUnit`, the web's three-unit control, so a

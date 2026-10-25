@@ -11,7 +11,7 @@ final class RequestLog: @unchecked Sendable {
 final class TokenPort: CloudPort {
     var token = "real-token"
     func accessToken(provider: String, force: Bool) async -> TokenAnswer { .token(token) }
-    func notify(_ event: String, _ payload: String, session: Int, order: Int) {}
+    func notify(_ news: HealthEngine.CloudNews, session: Int) {}
 }
 
 /// US-25 AC18: the fence around the engine's network (EngineHTTP). JavaScript gets a

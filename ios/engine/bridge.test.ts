@@ -35,12 +35,12 @@ describe('bridge contract (US-25 AC18)', () => {
   });
 
   it('the natives the engine calls are the contract natives', () => {
-    const used = [...members('shim.ts', 'Natives'), ...members('cloud.ts', 'CloudNatives')];
+    const used = [...members('shim.ts', 'Natives'), ...members('cloud-adapters.ts', 'CloudNatives')];
     expect(used.sort()).toEqual(Object.keys(contract.natives).sort());
   });
 
   it('the events the engine sends are the contract events', () => {
-    const source = readFileSync(join(__dirname, 'cloud.ts'), 'utf8');
+    const source = ['cloud.ts', 'cloud-adapters.ts'].map((file) => readFileSync(join(__dirname, file), 'utf8')).join('\n');
     const sent = new Set([...source.matchAll(/__native\.notify\('(\w+)'/g)].map((m) => m[1]));
     expect([...sent].sort()).toEqual([...contract.events].sort());
   });

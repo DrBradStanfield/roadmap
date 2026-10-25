@@ -10,8 +10,7 @@ import SwiftUI
 /// (Brad 2026-10-23). A value with history opens its
 /// page in the tab's navigation stack (MetricDetailView).
 struct MyDataView: View {
-    /// Which value the entry sheet is for.
-    /// What a tap opened, with the screen it was read on: the sheet's save is checked
+    /// Which value the entry sheet is for, with the screen it was read on: the sheet's save is checked
     /// against that, whatever lands before it appears (Codex R2).
     private enum Entry: Identifiable {
         case height(RecordStore.Screen)
@@ -61,7 +60,10 @@ struct MyDataView: View {
             if let data = store.myData {
                 List {
                     vitals(data)
-                    metrics(data.bloodTests) { SectionTitle.bloodTests() }
+                    metrics(data.bloodTests) {
+                        // Tour tip 3 (US-57 AC7); its action is the lab upload.
+                        SectionTitle.bloodTests().tourTip(BloodTestsTip()) { addingLabs = true }
+                    }
                     MedicationsSection(store: store, data: data, saved: saved)
                     ScreeningsSection(store: store, data: data, saved: saved, open: open)
                     SupplementsSection(store: store, supplements: data.supplements, saved: saved)
@@ -76,8 +78,6 @@ struct MyDataView: View {
                     }
                 }
                 .listStyle(.insetGrouped)
-                // A downloaded engine on trial has drawn the user's own record (US-25 AC18).
-                .onAppear { store.confirmEngineTrial() }
             } else {
                 ContentUnavailableView("Your record could not be opened", systemImage: "exclamationmark.triangle", description: Text(store.problem ?? ""))
             }
@@ -86,11 +86,7 @@ struct MyDataView: View {
             sheet(for: entry)
                 .presentationDetents([.medium, .large])
         }
-        .alert("Not saved", isPresented: Binding(get: { refusal != nil }, set: { if !$0 { refusal = nil } })) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(refusal ?? "")
-        }
+        .refusalAlert($refusal)
         .sensoryFeedback(.success, trigger: saves)
     }
 
@@ -154,7 +150,8 @@ struct MyDataView: View {
 
     private func metrics(_ rows: [MyData.Row], @ViewBuilder header: () -> some View) -> some View {
         Section {
-            ForEach(rows) { metric($0, column: rows) }
+            let column = ValueRow.Column(rows.map { ($0.latest?.value, $0.unit, nil) })
+            ForEach(rows) { metric($0, column: column) }
         } header: {
             header()
         }
@@ -183,24 +180,31 @@ struct MyDataView: View {
         }
     }
 
-    /// `column`: the section's rows, whose widest reading sets every row's value column.
-    private func metric(_ row: MyData.Row, card: Bool = false, column: [MyData.Row] = []) -> some View {
+    /// `column`: the section's widest reading, which sets every row's value column.
+    private func metric(_ row: MyData.Row, card: Bool = false, column: ValueRow.Column? = nil) -> some View {
         // A unit switch still landing would open a sheet on the old choices (AC17e).
         Button { open(row) } label: {
             ValueRow(label: row.label, value: row.latest?.value, unit: row.unit, day: row.latest?.day,
                      trend: row.trend ?? [], tint: MetricChart.colors(for: row.metric)[0], card: card,
-                     column: column.map { ($0.latest?.value, $0.unit) })
+                     column: column)
         }
         .tint(.primary)
         .disabled(store.unitSwitches > 0)
     }
 
-    /// A value with any history opens its page; one with none opens entry (AC9).
+    /// A value with any history opens its page; one with none opens entry (AC9). The
+    /// engine reads the history off the main thread; the screen is the tap's. Only the
+    /// latest tap, with no erase since, opens anything (re-check N4).
     private func open(_ row: MyData.Row) {
-        if MetricDetailView.opensHistory(store.history(for: row.metric)) {
-            detail = row
-        } else {
-            entry = .metric(row, store.screen)
+        let (seen, tap) = (store.screen, store.tap())
+        Task {
+            let history = await store.history(for: row.metric)
+            guard store.isLatest(tap) else { return }
+            if MetricDetailView.opensHistory(history) {
+                detail = row
+            } else {
+                entry = .metric(row, seen)
+            }
         }
     }
 
@@ -215,7 +219,7 @@ struct MyDataView: View {
             }
         case .height(let seen):
             let profile = store.myData?.profile
-            ValueEntrySheet(title: "Height", unit: profile?.heightUnit ?? "", current: profile?.height, asksForDay: false, read: store.number) { value, _ in
+            ValueEntrySheet(title: "Height", unit: profile?.heightUnit ?? "", current: profile?.height, asksForDay: false) { value, _ in
                 saved(await store.apply(.profile(height: value), as: seen))
             }
         case .metric(let row, let seen):
@@ -239,169 +243,5 @@ struct MyDataView: View {
     private func saved(_ result: RecordStore.ApplyResult) -> RecordStore.ApplyResult {
         if result == .saved { saves += 1 }
         return result
-    }
-}
-
-/// One row: the label, then the value and its unit, or "Add" when there is none.
-private struct ValueRow: View {
-    let label: String
-    let value: String?
-    let unit: String
-    /// YYYY-MM-DD, shown under the label.
-    let day: String?
-    /// A US height, shown as 5 ft 10 in in place of the value (AC17).
-    var feetInches: MyData.FeetInches?
-    /// The recent days, drawn small beside the value (AC17d).
-    var trend: [Double] = []
-    var tint: Color = .blue
-    /// Drawn as an Apple Health card: the plain name and day on top, the value large
-    /// below with a larger trend in the metric's colour beside it.
-    var card = false
-    /// The section's readings: the widest sets this row's value column, so values and
-    /// trends line up down the section however wide one value is (Brad 2026-10-23).
-    var column: [(value: String?, unit: String)] = []
-    @Environment(\.dynamicTypeSize) private var textSize
-    /// A compact row's trend, growing a little with the text.
-    @ScaledMetric(relativeTo: .body) private var trendWidth = 44.0
-    /// Counts the value's own changes: a new value in the same unit, not a units switch (review R3).
-    @State private var bounces = 0
-    @State private var shownUnit: String?
-
-    var body: some View {
-        Group {
-            if card, let value { cardBody(value) } else { rowBody }
-        }
-        .animation(.snappy, value: value)
-        .onChange(of: value) {
-            if shownUnit == nil || shownUnit == unit { bounces += 1 }
-            shownUnit = unit
-        }
-        .onAppear { shownUnit = unit }
-        .contentShape(Rectangle())
-    }
-
-    private func cardBody(_ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // Name over day at accessibility sizes, where one line would squeeze.
-            LabelValue.layout(textSize).callAsFunction {
-                Text(label).font(.subheadline.weight(.semibold))
-                Spacer()
-                HStack {
-                    if let day {
-                        Text(DayText.short(day)).font(.footnote).foregroundStyle(.secondary)
-                    }
-                    Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
-                        .accessibilityHidden(true)
-                }
-            }
-            HStack(alignment: .bottom) {
-                CardValue(value: value, unit: unit, bounces: bounces)
-                Spacer(minLength: 12)
-                if !textSize.isAccessibilitySize {
-                    Sparkline(points: trend, tint: tint, size: CGSize(width: 110, height: 40))
-                }
-            }
-        }
-        .padding(.vertical, 4)
-        .accessibilityElement(children: .combine)
-    }
-
-    private var rowBody: some View {
-        // Side by side: the trend, then the value over its unit, right-aligned in the section's
-        // column. At accessibility sizes, under the label and inline.
-        let stacked = !textSize.isAccessibilitySize
-        return LabelValue.layout(textSize).callAsFunction {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(label)
-                if let day {
-                    Text(DayText.short(day)).font(.caption).foregroundStyle(.secondary)
-                }
-            }
-            Spacer(minLength: 0)
-            HStack(alignment: stacked ? .center : .firstTextBaseline, spacing: 12) {
-                Sparkline(points: trend, tint: tint, size: stacked ? CGSize(width: trendWidth, height: trendWidth * 18 / 44) : CGSize(width: 44, height: 18))
-                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 2 }
-                ZStack(alignment: .trailing) {
-                    if stacked {
-                        ForEach(column.indices, id: \.self) { reading(column[$0].value, column[$0].unit, stacked: true).hidden().accessibilityHidden(true) }
-                    }
-                    reading(value, unit, feetInches: feetInches, stacked: stacked)
-                }
-            }
-        }
-    }
-
-    /// A value and its unit: the unit under it in a compact row, beside it otherwise; a US
-    /// height as feet and inches side by side; "Add" when there is none.
-    @ViewBuilder
-    private func reading(_ value: String?, _ unit: String, feetInches: MyData.FeetInches? = nil, stacked: Bool) -> some View {
-        if let value {
-            let parts = feetInches.map { [(String($0.feet), "ft"), (String($0.inches), "in")] } ?? [(value, unit)]
-            let under = stacked && feetInches == nil
-            let pair = under ? AnyLayout(VStackLayout(alignment: .trailing, spacing: 0)) : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 4))
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                ForEach(parts.indices, id: \.self) { index in
-                    pair {
-                        Text(parts[index].0)
-                            .font(.body.weight(.semibold))
-                            .monospacedDigit()
-                            .contentTransition(.numericText())
-                            .modifier(Bounce(trigger: bounces, anchor: .trailing))
-                        Text(parts[index].1).font(under ? .caption : .subheadline).foregroundStyle(.secondary)
-                    }
-                }
-            }
-        } else {
-            Text("Add").foregroundStyle(Color.accentColor)
-        }
-    }
-}
-
-/// A card's value, large, with its unit: My data's vitals cards and the plan's summary tiles.
-struct CardValue: View {
-    let value: String
-    /// Empty for a value with no unit (BMI).
-    let unit: String
-    /// Counts new values, for My data's bounce.
-    var bounces = 0
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 4) {
-            Text(value)
-                .font(.system(.title, design: .rounded).weight(.semibold))
-                .monospacedDigit()
-                .contentTransition(.numericText())
-                .modifier(Bounce(trigger: bounces, anchor: .leading))
-            if !unit.isEmpty {
-                Text(unit).font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
-            }
-        }
-    }
-}
-
-/// A small spring when a new value arrives, saved here or synced in (AC17d); not on a
-/// units switch. Still under Reduce Motion.
-private struct Bounce: ViewModifier {
-    let trigger: Int
-    let anchor: UnitPoint
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func body(content: Content) -> some View {
-        content.keyframeAnimator(initialValue: 1.0, trigger: trigger) { content, scale in
-            content.scaleEffect(reduceMotion ? 1 : scale, anchor: anchor)
-        } keyframes: { _ in
-            SpringKeyframe(1.15, duration: 0.15, spring: .snappy)
-            SpringKeyframe(1.0, spring: .bouncy)
-        }
-    }
-}
-
-/// A row's label and value: side by side, stacked at accessibility text sizes so
-/// neither is squeezed into a broken word. Used by My data and the metric page.
-enum LabelValue {
-    /// Side by side, the value centred on the row (Brad 2026-10-23): on the label's first
-    /// line, a value whose label has a day or a note under it sat high.
-    static func layout(_ size: DynamicTypeSize) -> AnyLayout {
-        size.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout(alignment: .center))
     }
 }

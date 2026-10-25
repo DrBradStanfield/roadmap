@@ -1,5 +1,35 @@
 [
   {
+    "title": "The Sulforaphane and Astaxanthin Story Is Changing",
+    "handle": "the-sulforaphane-and-astaxanthin-story-is-changing",
+    "url": "https://drstanfield.com/blogs/articles/the-sulforaphane-and-astaxanthin-story-is-changing",
+    "tags": [
+      "Supplements",
+      "Research",
+      "Diet"
+    ],
+    "keywords": [
+      "blood sugar",
+      "depression",
+      "diabetes",
+      "exercise",
+      "hba1c",
+      "insulin resistance",
+      "kidney",
+      "lifespan",
+      "metformin",
+      "prostate",
+      "psa",
+      "skin",
+      "uv",
+      "wrinkles"
+    ],
+    "publishedAt": "2026-10-24T23:24:26Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/sulforaphane-astaxanthin-human-trials",
+    "youtube": "https://www.youtube.com/watch?v=Gws23XhZViE",
+    "summary": "Sulforaphane or astaxanthin worth taking? Broccoli sprouts, NRF2, blood sugar trials, skin, mouse lifespan, detox."
+  },
+  {
     "title": "Lp(a) Cholesterol Study SHOCKS Cardiologists. Now What?",
     "handle": "lpa-cholesterol-study-shocks-cardiologists-now-what",
     "url": "https://drstanfield.com/blogs/articles/lpa-cholesterol-study-shocks-cardiologists-now-what",
@@ -5345,7 +5375,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/lycopene-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on lycopene: antioxidant, prostate cancer, heart health, blood pressure, skin UV protection, male infertility. Tomato oleoresin or synthetic forms, 6-25 mg/day by indication; always take with fat. Always discuss with your doctor."
+    "summary": "Reference on lycopene. Brad includes it in his micronutrient base, citing a meta-analysis in which supplements lowered systolic blood pressure; more dietary lycopene is linked with lower prostate cancer risk. Avoid in pregnancy unless advised. Talk to your doctor first if on blood thinners.",
+    "reviewed": "2026-10-23"
   },
   {
     "title": "Melatonin: Benefits, Forms, Dosing, and Side Effects",
@@ -5879,7 +5910,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/valerian-root-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on valerian root: sleep aid, anxiety, relaxation. Mixed evidence for insomnia (modest subjective benefit, weak objective data); not recommended for restless legs. Standardized extract 300-900 mg before bed. Avoid in pregnancy. Always discuss with your doctor."
+    "summary": "Reference on valerian root for sleep. Reviews find no clear evidence it treats insomnia, though some people rate their sleep better; several trials used 600 mg of the LI 156 extract. Talk to your doctor first if you take sedatives or drink alcohol, have liver disease, or are pregnant.",
+    "reviewed": "2026-10-23"
   },
   {
     "title": "Vitamin E: Benefits, Forms, Dosing, and Side Effects",
@@ -8394,7 +8426,8 @@
     "publishedAt": "2025-01-15T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/lysine-benefits-dosing-forms",
     "type": "reference",
-    "summary": "Reference on lysine (L-lysine): cold sore prevention, herpes, canker sores, calcium and iron absorption, anxiety, hair loss. Dosing 1-3 g/day for herpes. L-lysine HCl form is 80% actual lysine by weight. Always discuss with your doctor."
+    "summary": "An essential amino acid, lysine is sold mostly as L-lysine HCl for cold sores. Small trials from 1978 to 1987 gave mixed results, and a Cochrane review found no evidence it works. Stomach upset is the main side effect. Talk to your doctor first if you have kidney, heart or gallbladder disease.",
+    "reviewed": "2026-10-23"
   },
   {
     "title": "Pomegranate: Benefits, Forms, Dosing, and Side Effects",
@@ -9710,7 +9743,8 @@
     "publishedAt": "2024-08-23T00:51:25Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/d-mannose-uti-evidence",
     "type": "reference",
-    "summary": "Reference on D-mannose: UTI prevention, recurrent bladder infections. Women with frequent UTIs, especially postmenopausal. Powder or capsules, 1.5-2 g/day. Largest RCT (2024, n=598) showed no benefit vs. placebo; earlier uncontrolled studies positive. Generally well-tolerated; mild diarrhea reported. Always discuss with your doctor."
+    "summary": "D-mannose, a sugar, is sold to prevent repeat urinary tract infections. In the largest placebo-controlled trial, 2 g a day did not cut infections over 6 months; a Cochrane review found little evidence either way. It does not treat an active infection. Talk to your doctor first if you are pregnant.",
+    "reviewed": "2026-10-23"
   },
   {
     "title": "BREAKING! Reduce Dementia Risk By 45%",

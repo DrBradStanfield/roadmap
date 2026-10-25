@@ -1,6 +1,5 @@
 import Foundation
 import JavaScriptCore
-import os
 
 /// Runs health-core, the web's own engine, in JavaScriptCore (ios/architecture.md D2).
 /// JSON in, JSON out: the record goes in as text and the plan comes back as text,
@@ -79,66 +78,75 @@ actor HealthEngine {
         natives.phone = phone
     }
 
-    /// Runs `body` on the engine's queue and waits for it. A stopgap for callers not
-    /// yet moved off the main thread (stage 2); the engine queue never waits on main,
-    /// so this cannot deadlock. DEBUG counts the calls made from the main thread.
-    nonisolated func blocking<T>(_ body: (isolated HealthEngine) throws -> T) throws -> T {
-        try withoutActuallyEscaping(body) { body in
-            countBlocking()
-            // Run on the engine's executor, so the isolation `body` asks for holds.
-            let run = unsafeBitCast(body, to: ((HealthEngine) throws -> T).self)
-            return try queue.sync { try run(self) }
+    /// Runs `body` on the engine's queue and answers when it is done, never holding the caller.
+    func perform<T: Sendable>(_ body: @Sendable (isolated HealthEngine) throws -> T) rethrows -> T {
+        try body(self)
+    }
+
+    /// Puts `body` on the engine's queue without waiting. The queue runs in order, so it
+    /// runs before any engine call asked for after this one (CloudSync's attach at launch).
+    nonisolated func enqueue(_ body: @escaping @Sendable (isolated HealthEngine) -> Void) {
+        let run = unsafeBitCast(body, to: (@Sendable (HealthEngine) -> Void).self)
+        queue.async { run(self) }
+    }
+
+    /// What My data and the Plan tab show for a record, from one engine call (`screenJson`):
+    /// one read and one plan, so the two always show the same record (US-25 AC2). The plan
+    /// half carries how long the engine took to plan (D2's plan budget). A plan the engine
+    /// cannot make never blanks My data; tiles it cannot draw come back empty, never blanking
+    /// the plan. My data the engine cannot draw throws the whole call.
+    /// `units`: the phone's per-test units as JSON (UnitChoices, US-25 AC17e); "{}" for none.
+    func screen(recordJSON: String, now: Date, deviceId: String, units: String = "{}") throws -> Drawn {
+        let json = try call("screenJson", [recordJSON, now.formatted(Self.iso), deviceId, units])
+        let answer = try JSONDecoder().decode(Drawn.Answer.self, from: Data(json.utf8))
+        return Drawn(myData: answer.myData, plan: answer.plan.state)
+    }
+
+    /// One record as the screens show it: My data and the plan, from the same engine call.
+    struct Drawn: Sendable {
+        let myData: MyData
+        let plan: PlanState
+
+        fileprivate struct Answer: Decodable {
+            let myData: MyData
+            let plan: Plan
         }
-    }
 
-    /// `blocking` for a body that cannot throw.
-    nonisolated func blocking<T>(_ body: (isolated HealthEngine) -> T) -> T {
-        withoutActuallyEscaping(body) { body in
-            countBlocking()
-            let run = unsafeBitCast(body, to: ((HealthEngine) -> T).self)
-            return queue.sync { run(self) }
+        /// `{sections, tiles, ms}`, or `{error, planError}` when the record cannot be planned.
+        fileprivate struct Plan: Decodable {
+            let sections: [PlanSection]?
+            let tiles: [StatTile]
+            /// The engine's milliseconds from computePlan through the tiles and the layout.
+            let ms: Double
+            let error: String?
+            let planError: Bool
+            enum CodingKeys: CodingKey { case sections, tiles, ms, error, planError }
+            /// Sections decode strictly: sections Swift cannot read fail the plan, never My data.
+            /// A tile Swift cannot read leaves no tiles, never a blank plan.
+            init(from decoder: Decoder) throws {
+                let c = try decoder.container(keyedBy: CodingKeys.self)
+                tiles = (try? c.decode([StatTile].self, forKey: .tiles)) ?? []
+                ms = (try? c.decodeIfPresent(Double.self, forKey: .ms)) ?? 0
+                planError = (try? c.decodeIfPresent(Bool.self, forKey: .planError)) == true
+                do {
+                    (sections, error) = (try c.decodeIfPresent([PlanSection].self, forKey: .sections), try c.decodeIfPresent(String.self, forKey: .error))
+                } catch {
+                    (sections, self.error) = (nil, "the plan could not be read: \(error)")
+                }
+            }
+
+            var state: PlanState {
+                if let sections { return .planned(tiles: tiles, sections: sections, ms: ms) }
+                if planError { return .needsDetails }
+                return .failed(EngineError.callFailed(error ?? "no plan").localizedDescription)
+            }
         }
-    }
-
-    private nonisolated func countBlocking() {
-        #if DEBUG
-        if Thread.isMainThread { Self.mainThreadBlocks.withLock { $0 += 1 } }
-        #endif
-    }
-
-    #if DEBUG
-    /// How many `blocking` calls the main thread has made (EngineThreadTests).
-    nonisolated static let mainThreadBlocks = OSAllocatedUnfairLock(initialState: 0)
-    #endif
-
-    /// The plan's summary tiles and on-screen sections for a record, and how long the engine
-    /// took (D2's budget). A plan no longer wanted (the record moved on) is not started.
-    func planSections(record: String, units: String, now: Date, deviceId: String) throws -> (tiles: [StatTile], sections: [PlanSection], ms: Double) {
-        try Task.checkCancellation()
-        let clock = ContinuousClock()
-        let start = clock.now
-        let planJSON = try plan(recordJSON: record, now: now, deviceId: deviceId, units: units)
-        // A tile the engine cannot draw never blanks the plan below it (adversary R7).
-        let tiles = (try? statTiles(planJSON: planJSON, units: units)) ?? []
-        let sections = try sections(planJSON: planJSON)
-        let elapsed = clock.now - start
-        return (tiles, sections, Double(elapsed.components.seconds) * 1000 + Double(elapsed.components.attoseconds) / 1e15)
-    }
-
-    /// The summary tiles above the plan, the web's Quick Stats (US-25 AC22).
-    func statTiles(planJSON: String, units: String) throws -> [StatTile] {
-        try JSONDecoder().decode([StatTile].self, from: Data(call("statTilesJson", [planJSON, units]).utf8))
     }
 
     /// The plan for a record, as the engine's JSON.
     /// `units`: the phone's per-test units as JSON (UnitChoices, US-25 AC17e); "{}" for none.
     func plan(recordJSON: String, now: Date, deviceId: String, units: String = "{}") throws -> String {
         try call("planJson", [recordJSON, now.formatted(Self.iso), deviceId, units])
-    }
-
-    /// The plan's on-screen layout, from the same function the web uses.
-    func sections(planJSON: String) throws -> [PlanSection] {
-        try JSONDecoder().decode([PlanSection].self, from: Data(sectionsJSON(planJSON: planJSON).utf8))
     }
 
     /// The layout as the engine's JSON, for the parity test to compare byte for byte.
@@ -149,12 +157,6 @@ actor HealthEngine {
     /// A first-launch record, as JSON. Units follow the phone's region.
     func newRecord(now: Date, deviceId: String, locale: Locale = .current, timeZone: TimeZone = .current) throws -> String {
         try call("newRecordJson", [now.formatted(Self.iso), deviceId, Self.languageAndRegion(locale), timeZone.identifier])
-    }
-
-    /// What the My data tab shows for a record.
-    func myData(recordJSON: String, now: Date, deviceId: String, units: String = "{}") throws -> MyData {
-        let json = try call("myDataJson", [recordJSON, now.formatted(Self.iso), deviceId, units])
-        return try JSONDecoder().decode(MyData.self, from: Data(json.utf8))
     }
 
     /// Applies one edit with health-core's own write rules. The record passed in is not changed.
@@ -174,13 +176,6 @@ actor HealthEngine {
     func history(recordJSON: String, metric: String, now: Date, deviceId: String, units: String = "{}") throws -> MetricHistory {
         let json = try call("historyJson", [recordJSON, metric, now.formatted(Self.iso), deviceId, units])
         return try JSONDecoder().decode(MetricHistory.self, from: Data(json.utf8))
-    }
-
-    /// A typed number, read by the web's rule (health-core's `parseLocalisedNumber`):
-    /// either decimal mark, and nil for anything that is not a plain decimal.
-    func number(from text: String) throws -> Double? {
-        let json = try call("numberJson", [text])
-        return try JSONDecoder().decode(Double?.self, from: Data(json.utf8))
     }
 
     /// A typed value in the other units, by health-core's factors (`convertJson`): onboarding's
@@ -206,6 +201,22 @@ actor HealthEngine {
         return text
     }
 
+    /// Calls an async door whose Promise settles in the same call, then reads its answer
+    /// (`settledJson`) without awaiting. JavaScriptCore runs pending promise work before a
+    /// call returns, so the answer is there; "pending" would mean it was not.
+    func settled<T: Decodable>(_ type: T.Type, _ name: String, _ arguments: [Any]) throws -> T {
+        _ = try call(name, arguments)
+        let answer = try JSONDecoder().decode(Settled<T>.self, from: Data(call("settledJson", []).utf8))
+        guard answer.ok, let value = answer.value else { throw EngineError.callFailed(answer.message ?? "no answer") }
+        return value
+    }
+
+    private struct Settled<T: Decodable>: Decodable {
+        let ok: Bool
+        let value: T?
+        let message: String?
+    }
+
     /// Calls an engine function that returns a Promise of text, and waits for it.
     /// A rejection becomes `EngineError.callFailed` with the error's message.
     func callAsync(_ name: String, _ arguments: [Any]) async throws -> String {
@@ -223,8 +234,10 @@ actor HealthEngine {
         EngineNatives.arrayBuffer(data, in: context)
     }
 
-    /// Runs a script in the engine's context; tests use it to reach the shim directly.
+    /// Runs a script in the engine's context: the self-test reads the bundle's globals
+    /// with it, and tests reach the shim directly.
     func evaluate(_ script: String) throws -> JSValue {
+        checkJSThread()
         let result = context.evaluateScript(script)
         if let exception = context.exception {
             context.exception = nil
@@ -240,9 +253,7 @@ actor HealthEngine {
 
     /// Waits for a Promise (or takes a plain value) and answers what `read` makes of it.
     func settle<T: Sendable>(_ value: JSValue, read: @escaping (JSValue) -> T) async throws -> T {
-        #if DEBUG
-        dispatchPrecondition(condition: .onQueue(queue))
-        #endif
+        checkJSThread()
         return try await withCheckedThrowingContinuation { (done: CheckedContinuation<T, Error>) in
             let fulfilled: @convention(block) (JSValue) -> Void = { done.resume(returning: read($0)) }
             let rejected: @convention(block) (JSValue) -> Void = { error in
@@ -255,9 +266,7 @@ actor HealthEngine {
     }
 
     private func callValue(_ name: String, _ arguments: [Any]) throws -> JSValue {
-        #if DEBUG
-        dispatchPrecondition(condition: .onQueue(queue))
-        #endif
+        checkJSThread()
         guard let function = exports.objectForKeyedSubscript(name), !function.isUndefined else {
             throw EngineError.callFailed("HealthEngine.\(name) is not defined")
         }
@@ -267,6 +276,15 @@ actor HealthEngine {
             throw EngineError.callFailed(exception.toString())
         }
         return result ?? JSValue(undefinedIn: context)
+    }
+
+    /// Debug builds: JavaScript runs on the engine's queue and never on the main thread
+    /// (US-25 AC21b). A `queue.sync` from main would pass the first check but not the second.
+    private func checkJSThread() {
+        #if DEBUG
+        dispatchPrecondition(condition: .onQueue(queue))
+        dispatchPrecondition(condition: .notOnQueue(.main))
+        #endif
     }
 
     /// "en-US": the language and region only. The full identifier can end in a keyword

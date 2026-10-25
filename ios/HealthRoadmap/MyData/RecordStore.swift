@@ -6,7 +6,8 @@ import Observation
 /// Every change goes through the engine's write rules, then to disk, and only
 /// then to the screen. The engine and the disk run off the main thread; changes
 /// land one at a time, in the order they were asked for (`chain`).
-/// The web twin is widget-src/src/storage/roadmap-store.ts.
+/// How the file is read and written: RecordFile.swift. The web twin is
+/// widget-src/src/storage/roadmap-store.ts.
 @MainActor
 @Observable
 final class RecordStore {
@@ -17,9 +18,14 @@ final class RecordStore {
     }
 
     /// The record as stored, JSON text.
-    private(set) var recordJSON: String
+    private(set) var recordJSON: String { didSet { if recordJSON != oldValue { revision += 1 } } }
+    /// My data and the plan, from one engine call, so the two always show the same record
+    /// (US-25 AC2); nil while the record cannot be read.
+    private(set) var drawn: HealthEngine.Drawn?
     /// What My data shows; nil while the record cannot be read.
-    private(set) var myData: MyData?
+    var myData: MyData? { drawn?.myData }
+    /// What the Plan tab shows; nil while the record cannot be read.
+    var plan: PlanState? { drawn?.plan }
     /// Why the record cannot be read, if it cannot. The app then writes nothing.
     private(set) var problem: String?
     /// While a cloud record is open (US-25 AC11): the erase the screen shows. Every
@@ -40,7 +46,17 @@ final class RecordStore {
     /// so a view holding health data outside the record, the open chat, drops it.
     private(set) var erasures = 0
     /// Per-test units (US-25 AC17e): this phone's preference, as the web's are its browser's.
-    private(set) var unitChoices = UnitChoices.saved()
+    private(set) var unitChoices = UnitChoices.saved() { didSet { if unitChoices != oldValue { revision += 1 } } }
+    /// The person's own saves (US-57 AC9): a sheet's edit or a lab report's values that
+    /// changed the record, never an Apple Health import (`applyNow`) or a units choice.
+    /// The cloud prompt counts them.
+    private(set) var ownSaves = 0
+    /// Moves whenever the record or the per-test units change: a page keyed on it asks again.
+    private(set) var revision = 0
+    /// Where the record is kept.
+    let file: URL
+    let deviceId: String
+    private let engine: HealthEngine
 
     /// What the screen showed when an edit began: the erase it was at (nil on the
     /// phone's file) and its units. A sheet pins it as it opens (`pinsRecord`),
@@ -61,8 +77,10 @@ final class RecordStore {
     }
     private var pinned: Screen?
     private var pins = 0
-    /// The last change asked for: each waits for the one before (`chain`).
+    /// The last change asked for: each waits for the one before (`chain`). Released when
+    /// it finishes, so its result is not kept; nothing is left to wait for then.
     @ObservationIgnored private var tail: (@MainActor () async -> Void)?
+    @ObservationIgnored private var chained = 0
     /// The engine's stamp on the cloud record shown: one handed over earlier is stale.
     @ObservationIgnored private var shownOrder = 0
 
@@ -88,31 +106,23 @@ final class RecordStore {
         if pins == 0 { pinned = nil }
     }
 
-    private let engine: HealthEngine
-    /// A downloaded engine on trial (US-25 AC18).
-    var engineTrial: EngineTrial? { engine.trial }
+    // MARK: Opening
 
-    /// The trial's confirm path from My data (review N1): only when the engine drew the
-    /// user's record AND planned it (a plan, or health-core's PlanError), never when either threw.
-    func confirmEngineTrial() {
-        let (record, deviceId) = (recordJSON, deviceId)
-        guard let trial = engine.trial, myData != nil,
-              engine.blocking({ EngineTrial.planned($0, recordJSON: record, deviceId: deviceId) })
-        else { return }
-        trial.confirm()
+    /// The store, with the phone's file read and drawn by the engine first: at launch,
+    /// before the first screen, waited for once, off the main thread (US-25 AC21).
+    static func open(folder: URL, engine: HealthEngine, deviceId: String) async throws -> RecordStore {
+        let units = UnitChoices.saved().json
+        let loaded = try await engine.loadPhone(file(in: folder), deviceId: deviceId, units: units)
+        return RecordStore(folder: folder, engine: engine, deviceId: deviceId, loaded: loaded)
     }
-    /// Where the record is kept.
-    let file: URL
-    let deviceId: String
 
-    init(folder: URL, engine: HealthEngine, deviceId: String) throws {
+    /// `loaded`: the phone's file as the engine read it (`open`).
+    init(folder: URL, engine: HealthEngine, deviceId: String, loaded: PhoneLoad) {
         self.engine = engine
         self.deviceId = deviceId
-        file = folder.appending(path: "health-roadmap.json")
+        file = Self.file(in: folder)
         recordJSON = ""
-        // At launch, before the first screen: waited for once.
-        let (file, units) = (file, unitChoices.json)
-        show(try engine.blocking { try $0.loadPhone(file, deviceId: deviceId, units: units) })
+        show(loaded)
     }
 
     /// Runs `job` after every change asked for before it, so two quick edits land in
@@ -120,19 +130,47 @@ final class RecordStore {
     @discardableResult
     func chain<T: Sendable>(_ job: @escaping @MainActor () async -> T) -> Task<T, Never> {
         let previous = tail
+        chained += 1
+        let turn = chained
         let task = Task { @MainActor in
             await previous?()
-            return await job()
+            let result = await job()
+            if self.chained == turn { self.tail = nil }
+            return result
         }
         tail = { _ = await task.value }
         return task
     }
 
+    /// My data and the plan, from one engine call, together. A downloaded engine on trial
+    /// is proven once it has drawn the user's own record and planned it (a plan, or
+    /// health-core's PlanError), never when the plan threw: the failure the trial exists
+    /// to catch (US-25 AC18, review R5).
+    private func display(_ drawn: HealthEngine.Drawn?) {
+        self.drawn = drawn
+        if drawn?.plan.planned == true { engine.trial?.confirm() }
+    }
+
     /// Shows what the phone's file holds.
     private func show(_ loaded: PhoneLoad) {
         recordJSON = loaded.record
-        myData = loaded.myData
+        display(loaded.drawn)
         problem = loaded.problem
+    }
+
+    /// The same record drawn again at `now` (Codex R1): the plan reads the time (ages,
+    /// screening due dates, and minor status, which turns at midday UTC, not local midnight,
+    /// so no calendar-day check can stand in). Called each time the app becomes active and at
+    /// midnight while it is; a draw takes about a millisecond. In line with every change
+    /// (`chain`); nothing when no record is drawn.
+    @discardableResult
+    func redraw(now: Date = .now) -> Task<Void, Never> {
+        chain {
+            guard self.drawn != nil,
+                  let shown = try? await self.engine.screen(recordJSON: self.recordJSON, now: now, deviceId: self.deviceId, units: self.unitChoices.json)
+            else { return }
+            self.display(shown)
+        }
     }
 
     // MARK: Cloud (US-25 AC11)
@@ -156,19 +194,25 @@ final class RecordStore {
         }.value
     }
 
-    private func draw(_ view: HealthEngine.CloudView) async {
+    /// `choices`: the per-test units to draw it in, published with it (nil: those in force).
+    /// False when it was not drawn: nothing on screen moved, the units included.
+    @discardableResult
+    private func draw(_ view: HealthEngine.CloudView, in choices: UnitChoices? = nil) async -> Bool {
         // One the engine handed over before the record now shown is stale: the screen
         // keeps the newer one (a re-read that crossed an edit).
         if let order = view.order {
-            guard order > shownOrder else { return }
+            guard order > shownOrder else { return false }
             shownOrder = order
         }
-        guard let shown = try? await engine.myData(recordJSON: view.record, now: .now, deviceId: deviceId, units: unitChoices.json) else { return }
+        let choices = choices ?? unitChoices
+        guard let shown = try? await engine.screen(recordJSON: view.record, now: .now, deviceId: deviceId, units: choices.json) else { return false }
         recordJSON = view.record
-        myData = shown
+        display(shown)
+        publish(choices)
         problem = nil
         cloudErase = view.erase
         cloudSession = view.session
+        return true
     }
 
     /// Back to the phone's own file (Disconnect, or a cloud that could not open).
@@ -180,7 +224,7 @@ final class RecordStore {
             do {
                 self.show(try await self.engine.loadPhone(file, deviceId: deviceId, units: units))
             } catch {
-                self.myData = nil
+                self.display(nil)
                 self.problem = "Your record on this iPhone could not be opened. \(error.localizedDescription)"
             }
         }
@@ -200,25 +244,27 @@ final class RecordStore {
     /// "Delete all my data" on the phone's own file (DataEraser), as one step in line:
     /// the record is read, erased by the engine, the chat tombstones kept (`keepChat`,
     /// given the engine's tombstoned chat file), then the erase written and shown. An
-    /// edit asked for meanwhile lands after it, never under it (Codex R1).
-    func erasePhone(historyJSON: String?, keepChat: @escaping @MainActor (_ chatHistory: String?, _ engineErased: Bool) -> Bool) async -> PhoneErase {
+    /// edit asked for meanwhile lands after it, never under it (Codex R1). `keepChat` runs
+    /// on the engine's queue, where the chat history's own read-modify-writes run, so
+    /// neither lands between the other's read and write (ChatHistoryStore).
+    func erasePhone(historyJSON: String?, keepChat: @escaping @Sendable (_ chatHistory: String?, _ engineErased: Bool) -> Bool) async -> PhoneErase {
         await chain {
-            guard self.problem == nil, let record = try? self.phoneText() else { return .unreadable }
-            let result: HealthEngine.PhoneErase
-            do {
-                result = try await self.engine.eraseOnPhone(recordJSON: record, historyJSON: historyJSON, now: .now, deviceId: self.deviceId)
-            } catch {
-                return .unreadable
-            }
-            let chatErased = keepChat(result.chatHistory, result.chatErased)
+            guard self.problem == nil else { return .unreadable }
+            let (file, deviceId) = (self.file, self.deviceId)
+            // The file is read on the engine's queue, in the same step as the erase.
+            guard let result = try? await self.engine.perform({ engine -> HealthEngine.PhoneErase? in
+                guard let record = try? Self.phoneText(file) else { return nil }
+                return try engine.eraseOnPhone(recordJSON: record, historyJSON: historyJSON, now: .now, deviceId: deviceId)
+            }) else { return .unreadable }
+            let chatErased = await self.engine.perform { _ in keepChat(result.chatHistory, result.chatErased) }
             do {
                 // A fresh start: no per-test choice, published only once the erase is on disk (Codex R1).
                 // Marked and counted as any phone edit is: a connect in flight that lifted
                 // the pre-erase file opens again and merges the erase in, whose higher
                 // eraseEpoch wins (US-09 AC23).
-                let shown = try await self.engine.myDataAndWrite(result.record, units: UnitChoices().json, to: self.file, marking: self.marksPending, deviceId: self.deviceId)
+                let shown = try await self.engine.drawAndWrite(result.record, units: UnitChoices().json, to: self.file, marking: self.marksPending, deviceId: self.deviceId)
                 self.recordJSON = result.record
-                self.myData = shown
+                self.display(shown)
                 self.publish(UnitChoices())
                 self.problem = nil
                 self.erasures += 1
@@ -234,64 +280,91 @@ final class RecordStore {
     @discardableResult
     func showErased(_ view: HealthEngine.CloudView) -> Task<Void, Never> {
         chain {
-            self.publish(UnitChoices())
-            await self.draw(view)
+            // A fresh start: no per-test choice, published only with the erase drawn (adversary R4).
+            await self.draw(view, in: UnitChoices())
             self.erasures += 1
         }
     }
 
     /// The phone's file as text, nil when there is none.
-    func phoneText() throws -> String? {
+    nonisolated private static func phoneText(_ file: URL) throws -> String? {
         guard FileManager.default.fileExists(atPath: file.path(percentEncoded: false)) else { return nil }
         return try String(contentsOf: file, encoding: .utf8)
     }
 
-    /// The folder the app keeps the record in, made on first use and marked for iOS
-    /// to leave out of iCloud and computer backups (Brad 2026-10-21). The mark is on the folder, not the file: every save
-    /// replaces the file, and a mark on it would go with the old copy.
-    static func appFolder(in base: URL = .applicationSupportDirectory) throws -> URL {
-        var folder = base.appending(path: "Record", directoryHint: .isDirectory)
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        var values = URLResourceValues()
-        values.isExcludedFromBackup = true
-        try folder.setResourceValues(values)
-        return folder
+    /// Every value recorded for one metric (US-25 AC9), for the record and units shown now;
+    /// nil while the record cannot be read.
+    func history(for metric: String) async -> MetricHistory? {
+        await chart(for: metric)?.history
     }
 
-    /// This install's id, for the record's `meta.lastDeviceId`. Kept in the record's folder,
-    /// which backups leave out, so a phone restored from a backup gets a new id and never
-    /// writes a shared cloud record as the old phone (D5).
-    static func deviceId(in folder: URL) throws -> String {
-        let file = folder.appending(path: "device-id")
-        if let id = try? String(contentsOf: file, encoding: .utf8), id.hasPrefix("ios-") { return id }
-        let id = "ios-" + UUID().uuidString.lowercased()
-        try write(id, to: file)
-        return id
-    }
-
-    /// A typed number, read by the web's rule; nil if it is not a plain decimal.
-    func number(_ text: String) -> Double? {
-        (try? engine.blocking { try $0.number(from: text) }) ?? nil
-    }
-
-    /// A typed value in the other units ("si" or "conventional"), by the engine; nil if it cannot.
-    func convert(_ value: Double, metric: String, from: String, to: String) -> HealthEngine.Conversion? {
-        try? engine.blocking { try $0.convert(value, metric: metric, from: from, to: to) }
-    }
-
-    /// Every value recorded for one metric (US-25 AC9); nil while the record cannot be read.
-    func history(for metric: String) -> MetricHistory? {
+    /// The history and its chart's inputs, read by the engine once per `revision` and metric,
+    /// off the main thread: a second ask while that read runs (a page and the page above it)
+    /// joins it. Kept in `histories`, which a page draws; older revisions' are dropped.
+    func chart(for metric: String) async -> ChartData? {
         guard problem == nil else { return nil }
-        // A value page asks on every redraw (a sheet opening, a range picked): the engine
-        // runs once per record and metric. Not observed: a cache, not state.
-        let (units, record, deviceId) = (unitChoices.json, recordJSON, deviceId)
-        if let cached = historyCache, cached.record == record, cached.metric == metric, cached.units == units { return cached.history }
-        let history = try? engine.blocking { try $0.history(recordJSON: record, metric: metric, now: .now, deviceId: deviceId, units: units) }
-        historyCache = (recordJSON, metric, units, history)
-        return history
+        let revision = revision
+        if let kept = histories[metric], kept.revision == revision { return kept.chart }
+        if let read = reading[metric], read.revision == revision { return await read.task.value }
+        let (units, record, deviceId, engine) = (unitChoices.json, recordJSON, deviceId, engine)
+        let task = Task {
+            (try? await engine.history(recordJSON: record, metric: metric, now: .now, deviceId: deviceId, units: units)).map(ChartData.init)
+        }
+        reading[metric] = (revision, task)
+        let chart = await task.value
+        if reading[metric]?.revision == revision { reading[metric] = nil }
+        // The record moved on while the engine ran: a page asks again for the new one.
+        if revision == self.revision {
+            histories = histories.filter { $0.value.revision == revision }
+            histories[metric] = KeptHistory(revision: revision, chart: chart)
+        }
+        return chart
     }
 
-    @ObservationIgnored private var historyCache: (record: String, metric: String, units: String, history: MetricHistory?)?
+    /// The chart last read for `metric`, for a page to draw: it may trail the record by one
+    /// engine call, and the page's `.task(id: revision)` brings it up to date.
+    func shownChart(for metric: String) -> ChartData? {
+        problem == nil ? histories[metric]?.chart : nil
+    }
+
+    /// The history read for the record and units as they are now; nil while it trails them
+    /// (adversary R2). Only this one may open a correction: a page keeps drawing the older
+    /// one, its taps held, until the fresh one lands.
+    func shownHistory(for metric: String) -> MetricHistory? {
+        guard problem == nil, let kept = histories[metric], kept.revision == revision else { return nil }
+        return kept.chart?.history
+    }
+
+    /// A correction sheet's "Now" hint: the value as a current history shows it, only from a
+    /// history in `unit`, the one the sheet shows (and for Lp(a), its screen's). Nil until one
+    /// is read, never a number in another unit ("100 mg/dL" from 100 nmol/L, Codex R2;
+    /// "176.4 kg" once the record flips to lb, re-check N1).
+    func correctionHint(for id: String, metric: String, unit: String, on screen: Screen) -> String? {
+        guard let history = shownHistory(for: metric), history.unit == unit,
+              metric != "lpa" || history.unit == screen.lpaUnit else { return nil }
+        return history.rows.first { $0.id == id }?.value
+    }
+
+    /// A row tap (AC9): only the latest one, with no erase since, may open a page or a sheet
+    /// once its history is read (re-check N4). Taken in the tap.
+    struct Tap: Equatable {
+        fileprivate let tap: Int
+        fileprivate let erasures: Int
+    }
+    func tap() -> Tap {
+        taps += 1
+        return Tap(tap: taps, erasures: erasures)
+    }
+    func isLatest(_ tap: Tap) -> Bool { tap == Tap(tap: taps, erasures: erasures) }
+    @ObservationIgnored private var taps = 0
+
+    private struct KeptHistory {
+        let revision: Int
+        let chart: ChartData?
+    }
+    private var histories: [String: KeptHistory] = [:]
+    /// A history the engine is reading, for the revision it was asked at.
+    @ObservationIgnored private var reading: [String: (revision: Int, task: Task<ChartData?, Never>)] = [:]
 
     /// One edit, checked against the record the screen showed when it was asked for:
     /// the sheet's pin, taken now, before anything waits.
@@ -301,10 +374,14 @@ final class RecordStore {
         // The master units switch holds entry while it lands, as a per-test one does.
         let switching = Self.clearsChoices(edit)
         if switching { unitSwitches += 1 }
-        return await chain {
+        let (result, changed) = await chain {
             defer { if switching { self.unitSwitches -= 1 } }
-            return await self.apply(edit, as: seen)
+            let before = self.recordJSON
+            return (await self.applyInTurn(edit, as: seen), self.recordJSON != before)
         }.value
+        // An edit that changed nothing is not a save (review R5).
+        if changed, !switching { ownSaves += 1 }
+        return result
     }
 
     /// The units the row for `metric` shows: its per-test choice, else the record's (AC17e).
@@ -318,10 +395,10 @@ final class RecordStore {
     /// merge and the erase guard.
     /// Its turn in line decides "now": the screen is read when the edits before it have landed.
     func applyNow(_ edit: RecordEdit) async -> ApplyResult {
-        await chain { await self.apply(edit, as: self.screen) }.value
+        await chain { await self.applyInTurn(edit, as: self.screen) }.value
     }
 
-    private func apply(_ edit: RecordEdit, as seen: Screen) async -> ApplyResult {
+    private func applyInTurn(_ edit: RecordEdit, as seen: Screen) async -> ApplyResult {
         // An erase taken in, or sync turned on or off, since the sheet opened.
         // The sheet keeps refusing until it closes: it still shows the old record,
         // its unit and the typed number, so a second Save would store that number
@@ -354,7 +431,7 @@ final class RecordStore {
                 return .saved
             case .saved(let next, let shown):
                 recordJSON = next
-                myData = shown
+                display(shown)
                 publish(choices)
                 onEdit?()
                 return .saved
@@ -379,9 +456,9 @@ final class RecordStore {
             return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
         }
         if next == recordJSON { return .saved }
-        // The session has taken the edit: the choices follow it.
-        if Self.clearsChoices(edit) { publish(UnitChoices()) }
-        await draw(HealthEngine.CloudView(record: next, erase: nextErase, session: cloudSession ?? 0, order: outcome.order))
+        // The session has taken the edit: the choices follow it, once it is drawn (adversary R4).
+        await draw(HealthEngine.CloudView(record: next, erase: nextErase, session: cloudSession ?? 0, order: outcome.order),
+                   in: Self.clearsChoices(edit) ? UnitChoices() : nil)
         onEdit?()
         return .saved
     }
@@ -394,10 +471,15 @@ final class RecordStore {
     /// device brought in meanwhile as saved (Codex re-check R3).
     func importLabs(extractionJSON: String, refs: [String], reportDay: String) async -> Result<LabSaveSummary, LabRefusal> {
         let seen = pinned ?? screen
-        return await chain { await self.importLabs(extractionJSON: extractionJSON, refs: refs, reportDay: reportDay, as: seen) }.value
+        let (result, changed) = await chain {
+            let before = self.recordJSON
+            return (await self.importLabsInTurn(extractionJSON: extractionJSON, refs: refs, reportDay: reportDay, as: seen), self.recordJSON != before)
+        }.value
+        if changed, case .success = result { ownSaves += 1 }
+        return result
     }
 
-    private func importLabs(extractionJSON: String, refs: [String], reportDay: String, as seen: Screen) async -> Result<LabSaveSummary, LabRefusal> {
+    private func importLabsInTurn(extractionJSON: String, refs: [String], reportDay: String, as seen: Screen) async -> Result<LabSaveSummary, LabRefusal> {
         let edit = RecordEdit.labImport(extractionJSON: extractionJSON, refs: refs, reportDay: reportDay)
         do {
             let summary: Result<LabSaveSummary, LabRefusal>
@@ -412,7 +494,7 @@ final class RecordStore {
                 // else changes the record before this turn ends.
                 summary = try await engine.labSaveSummary(recordJSON: recordJSON, extractionJSON: extractionJSON, refs: refs, reportDay: reportDay, now: .now, deviceId: deviceId)
                 guard case .success = summary else { return summary }
-                result = await apply(edit, as: seen)
+                result = await applyInTurn(edit, as: seen)
             }
             if case .refused(let message, _) = result { return .failure(LabRefusal(message: message)) }
             return summary
@@ -438,10 +520,10 @@ final class RecordStore {
     /// On the phone: a text-only row (no original), written to the file as an edit is.
     func saveDocument(extractionJSON: String, choice: DocumentChoice, original: LabFileReader.Original?) async -> DocumentResult {
         let seen = pinned ?? screen
-        return await chain { await self.saveDocument(extractionJSON: extractionJSON, choice: choice, original: original, as: seen) }.value
+        return await chain { await self.saveDocumentInTurn(extractionJSON: extractionJSON, choice: choice, original: original, as: seen) }.value
     }
 
-    private func saveDocument(extractionJSON: String, choice: DocumentChoice, original: LabFileReader.Original?, as seen: Screen) async -> DocumentResult {
+    private func saveDocumentInTurn(extractionJSON: String, choice: DocumentChoice, original: LabFileReader.Original?, as seen: Screen) async -> DocumentResult {
         guard seen.erase == cloudErase else {
             return .refused("Your record changed while this was open, so this was not saved. Close this and try again.")
         }
@@ -481,23 +563,29 @@ final class RecordStore {
     func commitPhoneDocument(_ next: String, over before: String) async throws -> Bool {
         guard cloudErase == nil, recordJSON == before else { return false }
         if next != recordJSON {
-            let shown = try await engine.myDataAndWrite(next, units: unitChoices.json, to: file, marking: marksPending, deviceId: deviceId)
+            let shown = try await engine.drawAndWrite(next, units: unitChoices.json, to: file, marking: marksPending, deviceId: deviceId)
             recordJSON = next
-            myData = shown
+            display(shown)
             onEdit?()
         }
         return true
     }
 
+    /// A typed value in the other units ("si" or "conventional"), by the engine; nil if it
+    /// cannot. Onboarding's entry-only unit switches (US-54 AC6).
+    func convert(_ value: Double, metric: String, from: String, to: String) async -> HealthEngine.Conversion? {
+        try? await engine.convert(value, metric: metric, from: from, to: to)
+    }
+
     // MARK: Per-test units (US-25 AC17e)
 
-    /// One test to the other units, as the web's unit chip does. Back to the record's
-    /// units drops the choice; nothing is written to the record.
     /// Unit switches asked for and not yet landed, per-test or the master one. While one
     /// is pending, a sheet would pin the old units and label itself from the new row:
     /// entry waits (AC17e).
     private(set) var unitSwitches = 0
 
+    /// One test to the other units, as the web's unit chip does. Back to the record's
+    /// units drops the choice; nothing is written to the record.
     @discardableResult
     func switchUnits(for row: MyData.Row, to system: String) -> Task<Void, Never> {
         unitSwitches += 1
@@ -506,8 +594,8 @@ final class RecordStore {
             guard row.switchable == true, let data = self.myData else { return }
             let choices = self.unitChoices.setting(row.metric, to: system == data.unitSystem ? nil : system)
             // Drawn first: a choice the screen cannot show is not kept, so labels and reading agree.
-            guard let shown = try? await self.engine.myData(recordJSON: self.recordJSON, now: .now, deviceId: self.deviceId, units: choices.json) else { return }
-            self.myData = shown
+            guard let shown = try? await self.engine.screen(recordJSON: self.recordJSON, now: .now, deviceId: self.deviceId, units: choices.json) else { return }
+            self.display(shown)
             self.publish(choices)
         }
     }
@@ -528,7 +616,7 @@ final class RecordStore {
         unitSwitches += 1
         return chain {
             defer { self.unitSwitches -= 1 }
-            return await self.apply(.lpaUnit(unit), as: self.screen)
+            return await self.applyInTurn(.lpaUnit(unit), as: self.screen)
         }
     }
 
@@ -580,95 +668,5 @@ final class RecordStore {
         guard choices != unitChoices else { return }
         unitChoices = choices
         unitChoices.save()
-    }
-
-    /// Atomic, so a crash leaves the old record or the new one, never half of each.
-    /// Encrypted by data protection until the phone is first unlocked after a restart:
-    /// the strictest class (locked whenever the phone is) would fail when iOS
-    /// pre-launches the app before the user unlocks, and lock them out of their record.
-    nonisolated static func write(_ json: String, to file: URL) throws {
-        try Data(json.utf8).write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
-    }
-
-    /// The first record: written whole beside the file, then moved into place. The move
-    /// fails if a file is already there, so a first record never replaces one, and a
-    /// crash leaves no half-written record that would lock the app out of saving.
-    nonisolated static func create(_ json: String, at file: URL) throws {
-        let staged = file.deletingLastPathComponent().appending(path: ".\(UUID().uuidString).json")
-        try write(json, to: staged)
-        do {
-            try FileManager.default.moveItem(at: staged, to: file)
-        } catch {
-            try? FileManager.default.removeItem(at: staged)
-            throw error
-        }
-    }
-}
-
-/// What the phone's file holds, as RecordStore shows it.
-struct PhoneLoad: Sendable {
-    let record: String
-    let myData: MyData?
-    /// Why it cannot be read; the app then writes nothing.
-    let problem: String?
-}
-
-/// What one edit to the phone's file did.
-enum PhoneApply: Sendable {
-    case refused(EditOutcome)
-    /// The edit changed nothing, so nothing was written.
-    case unchanged
-    case saved(record: String, myData: MyData)
-}
-
-/// RecordStore's engine work and disk writes, on the engine's queue.
-extension HealthEngine {
-    /// Reads the phone's file, or starts a first record when there is none.
-    func loadPhone(_ file: URL, deviceId: String, units: String) throws -> PhoneLoad {
-        let record: String
-        // The plain path: `path()` percent-encodes, and "Application Support" has a space.
-        if FileManager.default.fileExists(atPath: file.path(percentEncoded: false)) {
-            do {
-                record = try String(contentsOf: file, encoding: .utf8)
-            } catch {
-                return PhoneLoad(record: "", myData: nil, problem: "Your saved record could not be opened, so nothing will be saved over it. \(error.localizedDescription)")
-            }
-        } else {
-            record = try newRecord(now: .now, deviceId: deviceId)
-            try RecordStore.create(record, at: file)
-        }
-        do {
-            return PhoneLoad(record: record, myData: try myData(recordJSON: record, now: .now, deviceId: deviceId, units: units), problem: nil)
-        } catch {
-            // A damaged file, or one a newer app wrote: keep it as it is for a later fix.
-            return PhoneLoad(record: record, myData: nil, problem: "Your saved record could not be read, so nothing will be saved over it. \(error.localizedDescription)")
-        }
-    }
-
-    /// My data for `record`, drawn first, then the record written: one that cannot be
-    /// drawn is never written. `marking`: set the pending marker before the write, in
-    /// this same step, so an app killed between the two never leaves an unmarked edit;
-    /// a refused write puts back the generation it found (none, or the earlier one an
-    /// opening session holds and can still clear).
-    func myDataAndWrite(_ record: String, units: String, to file: URL, marking: PhoneFiles?, deviceId: String) throws -> MyData {
-        let shown = try myData(recordJSON: record, now: .now, deviceId: deviceId, units: units)
-        let before = marking?.pending("get") ?? 0
-        let generation = marking?.pending("set") ?? 0
-        do {
-            try RecordStore.write(record, to: file)
-        } catch {
-            marking?.restore(before, ifStill: generation)
-            throw error
-        }
-        return shown
-    }
-
-    /// One edit to the phone's file: the engine's write rules, My data in `shownIn`
-    /// (the per-test units in force after it), then the atomic write.
-    func applyOnPhone(_ edit: RecordEdit, to record: String, units: String, shownIn: String, file: URL, marking: PhoneFiles?, deviceId: String) throws -> PhoneApply {
-        let outcome = try apply(edit, to: record, now: .now, deviceId: deviceId, units: units)
-        guard outcome.ok, let next = outcome.record else { return .refused(outcome) }
-        if next == record { return .unchanged }
-        return .saved(record: next, myData: try myDataAndWrite(next, units: shownIn, to: file, marking: marking, deviceId: deviceId))
     }
 }

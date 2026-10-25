@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { applyEdit, newRecord, readRecord, type Edit } from './my-data';
 import {
   applyEditJson, chatContextJson, documentSave, healthWritesJson, historyJson, labReviewJson, labSaveSummaryJson,
-  mergeJson, myDataJson, planJson, remindersJson,
+  mergeJson, planJson, remindersJson, screenJson,
 } from './entry';
 import { eraseOnPhone } from './erase';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
@@ -111,7 +111,8 @@ function readingDoors(text: string): Array<[string, () => string | Promise<strin
   return [
     ['plan', () => planJson(text, NOW, DEVICE)],
     ['plan, US units for LDL', () => planJson(text, NOW, DEVICE, '{"ldl":"conventional"}')],
-    ['myData', () => myDataJson(text, NOW, DEVICE)],
+    ['screen', () => screenJson(text, NOW, DEVICE)],
+    ['screen, US units for LDL', () => screenJson(text, NOW, DEVICE, '{"ldl":"conventional"}')],
     ['history weight', () => historyJson(text, 'weight', NOW, DEVICE)],
     ['history blood pressure', () => historyJson(text, 'blood_pressure', NOW, DEVICE)],
     ['healthWrites', () => healthWritesJson(text, NOW, DEVICE)],

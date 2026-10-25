@@ -98,7 +98,10 @@ final class HealthKitClient: HealthStoreClient {
         }
     }
 
+    /// Once per process: the launch registers first (`observeAtLaunch`), and the
+    /// sync's own `start` then keeps those queries rather than adding a second set.
     func observe(_ kinds: [HealthKind], onChange: @escaping @MainActor () async -> Void) {
+        guard observers.isEmpty else { return }
         for kind in kinds {
             let type = Self.sampleType(kind)
             // Background delivery wakes the app when Health gets data; it needs the

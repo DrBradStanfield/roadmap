@@ -2,15 +2,15 @@ import SwiftUI
 
 /// Chat with Dr Brad's assistant (US-52 AC5/AC6), native SwiftUI. The consent screen
 /// comes first; then each question streams its answer, with the status lines and the
-/// articles it drew on. Conversations are saved on the phone by health-core's rule.
-/// The web twin is widget-src/src/components/ChatSection.tsx. Ready to be a tab:
-/// `ChatView(engine:store:)`.
+/// articles it drew on. Conversations are saved on the phone by health-core's rule,
+/// through the app's one `ChatHistoryStore` (the eraser's too, AppParts).
+/// The web twin is widget-src/src/components/ChatSection.tsx.
 struct ChatView: View {
     let engine: HealthEngine
     let store: RecordStore
+    let history: ChatHistoryStore
 
     @State private var consented = AIConsent.chat.given
-    @State private var history: ChatHistoryStore?
     @State private var conversationId = UUID().uuidString.lowercased()
     @State private var lines: [ChatLine] = []
     @State private var draft = ""
@@ -32,21 +32,16 @@ struct ChatView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { if consented { toolbar } }
             .sheet(isPresented: $showingHistory) {
-                if let history { ChatHistoryList(history: history, open: open) }
+                ChatHistoryList(history: history, open: open)
             }
         }
         // "Delete all my data" erased the history: the conversation on screen goes too,
-        // and the next question starts a new one (US-25 AC13).
+        // and the next question starts a new one (US-25 AC13). The shared list was read
+        // again by the eraser (DataEraser), and History reads it again as it opens.
         .onChange(of: store.erasures) {
             lines = []
             error = nil
             conversationId = UUID().uuidString.lowercased()
-            history?.refresh()
-        }
-        .task {
-            if history == nil, let folder = try? RecordStore.appFolder() {
-                history = ChatHistoryStore(engine: engine, folder: folder, deviceId: store.deviceId)
-            }
         }
     }
 
@@ -123,7 +118,7 @@ struct ChatView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
-            Button("History") { history?.refresh(); showingHistory = true }
+            Button("History") { Task { await history.refresh() }; showingHistory = true }
                 .disabled(sending) // a turn in flight keeps its own conversation
         }
         ToolbarItem(placement: .topBarTrailing) {
@@ -143,16 +138,24 @@ struct ChatView: View {
     // MARK: Actions
 
     private func startNew() {
+        history.leave()
         conversationId = UUID().uuidString.lowercased()
         lines = []
         error = nil
     }
 
+    /// Shows a saved conversation once the engine has read it. An erase, a question sent,
+    /// New chat or another conversation opened meanwhile wins: the screen keeps what it shows.
     private func open(_ id: String) {
-        conversationId = id
-        lines = (history?.messages(id) ?? []).map { ChatLine(role: $0.role == "user" ? .user : .assistant, text: $0.content) }
-        error = nil
         showingHistory = false
+        let erasures = store.erasures
+        let loading = history.open(id)
+        Task {
+            guard let messages = await loading.value, store.erasures == erasures, !sending else { return }
+            conversationId = id
+            lines = messages.map { ChatLine(role: $0.role == "user" ? .user : .assistant, text: $0.content) }
+            error = nil
+        }
     }
 
     private func send() async {
@@ -188,7 +191,7 @@ struct ChatView: View {
                     // The final reply replaces what streamed (US-15 AC16).
                     lines[answerIndex].text = content ?? lines[answerIndex].text
                     finished = true
-                    history?.record(ChatExchange(conversationId: conversation, isNew: isNew, userText: question, assistantText: lines[answerIndex].text, isFallback: isFallback), askedAt: askedAt)
+                    await history.record(ChatExchange(conversationId: conversation, isNew: isNew, userText: question, assistantText: lines[answerIndex].text, isFallback: isFallback), askedAt: askedAt)
                 case .other: break
                 }
             }

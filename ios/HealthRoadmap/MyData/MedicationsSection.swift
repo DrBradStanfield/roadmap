@@ -21,7 +21,7 @@ struct MedicationsSection: View {
                 SectionTitle.medications()
             }
         } else {
-            FormSectionsList(sections: data.medications, months: data.months, read: store.number, title: SectionTitle.medications) { field, value in
+            FormSectionsList(sections: data.medications, months: data.months, title: SectionTitle.medications) { field, value in
                 saved(await store.apply(.form(.medicationField(field: field, value: value))))
             }
         }

@@ -43,4 +43,16 @@ final class DayTextTests: XCTestCase {
         XCTAssertTrue(DayText.short("2026-10-20").contains("20"), DayText.short("2026-10-20"))
         XCTAssertEqual(DayText.short("not a day"), "not a day")
     }
+
+    /// Noon of a stored day in a given zone: a lab review's date picker and a typed value
+    /// sent to Apple Health use it, so the day never shifts.
+    func testNoonIsTwelveOnThatDayInTheZone() throws {
+        let auckland = try XCTUnwrap(TimeZone(identifier: "Pacific/Auckland"))
+        XCTAssertEqual(DayText.noon("2026-10-21", timeZone: auckland), try Date("2026-10-20T23:00:00Z", strategy: .iso8601))
+        XCTAssertEqual(DayText.noon("2026-10-21", timeZone: .gmt), try Date("2026-10-21T12:00:00Z", strategy: .iso8601))
+        XCTAssertNil(DayText.noon("not a day"))
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = auckland
+        XCTAssertEqual(DayText.iso(try XCTUnwrap(DayText.noon("2026-04-05", timeZone: auckland)), calendar: calendar), "2026-04-05", "the day the clocks go back")
+    }
 }

@@ -1,4 +1,5 @@
 import StoreKit
+import UIKit
 import SwiftUI
 
 /// The tabs, in the web's mobile order (US-25 AC3): My data, My plan, then Chat (US-52).
@@ -12,9 +13,17 @@ struct RootView: View {
     let engine: HealthEngine
     let store: RecordStore
     let sync: CloudSync
+    let chat: ChatHistoryStore
     @State private var tab = Tab.data
     @State private var reviewPrompt = ReviewPrompt()
     @State private var analytics = Analytics()
+    /// The backup offer after the person's third save (US-57 AC8).
+    @State private var cloudPrompt = CloudPrompt()
+    @State private var offeringCloud = false
+    @State private var backingUp = false
+    @State private var showSync = false
+    /// The app's window: the cloud prompt waits while any sheet is up in it.
+    @State private var window: UIWindow?
     @Environment(\.requestReview) private var requestReview
     @Environment(\.scenePhase) private var scenePhase
     @Environment(ReminderScheduler.self) private var reminders
@@ -51,20 +60,46 @@ struct RootView: View {
             NavigationStack { MyDataView(engine: engine, store: store, sync: sync).firmTopEdge() }
                 .tabItem { Label("My data", systemImage: "list.bullet.clipboard") }
                 .tag(Tab.data)
-            titled("My plan") { PlanView(engine: engine, store: store, showMyData: { tab = .data }) }
+            titled("My plan") { PlanView(store: store, showMyData: { tab = .data }) }
                 .tabItem { Label("My plan", systemImage: "heart.text.square") }
                 .tag(Tab.plan)
             // ChatView keeps its own navigation stack and title.
-            ChatView(engine: engine, store: store)
+            ChatView(engine: engine, store: store, history: chat)
                 .tabItem { Label("Chat", systemImage: "bubble.left.and.text.bubble.right") }
                 .tag(Tab.chat)
         }
         .sensoryFeedback(.selection, trigger: tab)
+        .onChange(of: tab) { offerCloud() }
+        // A tour tip shows only on its own tab (TourTips.swift).
+        .onChange(of: tab, initial: true) { Tour.showing(tab == .plan ? .plan : tab == .data ? .data : .other) }
         // Clarity starts only once the whole window is masked (Analytics.swift, D9).
-        .background(WindowReader { analytics.start(in: $0, on: screenName) })
+        .background(WindowReader {
+            window = $0
+            analytics.start(in: $0, on: screenName)
+        })
         .onChange(of: screenName, initial: true) { analytics.screen(screenName) }
         // Edit sheets pin the record they opened on (MyData/RecordPin.swift).
         .environment(store)
+        .environment(\.analytics, analytics)
+        .onAppear { Tour.finished = { Task { await offerCloudSoon() } } }
+        .sheet(isPresented: $offeringCloud, onDismiss: cloudPromptClosed) {
+            CloudPromptView { backingUp = true }
+                .onAppear {
+                    // Shown, so never again (AC8); marked only once it is on screen.
+                    cloudPrompt.shown()
+                    analytics.event(.cloudPromptShown)
+                }
+        }
+        .sheet(isPresented: $showSync) { SyncView(sync: sync) }
+        .task(id: store.ownSaves) {
+            // The person's own saves after onboarding (AC9). Onboarding's answers are made
+            // under its cover; finishOnboarding passes over its last one (review R1).
+            guard onboarded, firstRun == nil else { return cloudPrompt.ignoreSaves(upTo: store.ownSaves) }
+            cloudPrompt.ownSaves(store.ownSaves)
+            // The third own save ends a tour still running, so it never blocks the prompt (R2b).
+            if cloudPrompt.endsTour { _ = Tour.end() }
+            await offerCloudSoon()
+        }
         .fullScreenCover(isPresented: Binding(get: { firstRun != nil }, set: { if !$0 { firstRun = nil } })) {
             firstRunCover
         }
@@ -75,14 +110,25 @@ struct RootView: View {
         .onChange(of: store.recordJSON) { reviewPrompt.recordChanged() }
         // Reminders refill on launch, on every record change and on return (US-25 AC9).
         .task(id: store.recordJSON) { await reminders.refresh() }
-        .onChange(of: scenePhase) { if scenePhase == .active { Task { await reminders.refresh() } } }
+        .onChange(of: scenePhase) {
+            guard scenePhase == .active else { return }
+            Task { await reminders.refresh() }
+            store.redraw() // the plan reads the time (Codex R1)
+        }
+        // Midnight with the app open: the same redraw.
+        .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged).receive(on: RunLoop.main)) { _ in
+            if scenePhase == .active { store.redraw() }
+        }
         .onChange(of: reminderTaps.planRequests, initial: true) { if reminderTaps.planRequests > 0 { tab = .plan } }
         .task(id: tab) {
             // A pause first, so the plan is on screen before iOS's rating sheet;
             // leaving the tab during it cancels the ask without using it up.
             guard tab == .plan else { return }
             try? await Task.sleep(for: .seconds(2))
-            if !Task.isCancelled, reviewPrompt.planOpened() { requestReview() }
+            // Never over the cloud prompt, a tour tip or any sheet (review R7): a later
+            // visit asks instead, since planOpened is not used up here.
+            guard !Task.isCancelled, !offeringCloud, quiet else { return }
+            if reviewPrompt.planOpened() { requestReview() }
         }
     }
 
@@ -183,6 +229,36 @@ struct RootView: View {
         takeCount()
         tab = .plan
         firstRun = nil
+        // Onboarding's answers, the last one included, are not the person's own saves (R1).
+        cloudPrompt.ignoreSaves(upTo: store.ownSaves)
+        // The tour continues on My plan, once ever (US-57 AC1).
+        if Tour.start() { analytics.event(.tourStarted) }
+    }
+
+    // MARK: Cloud prompt (US-57 AC8)
+
+    /// No sheet, popover or alert is up in the window.
+    private var quiet: Bool { window?.rootViewController?.presentedViewController == nil }
+
+    /// Offers the backup when it is due, at a quiet moment: no cover, no sheet up. A pause
+    /// first, so the sheet that saved, or the tip that closed, has gone. Nothing waits once
+    /// the prompt is spent.
+    private func offerCloudSoon() async {
+        guard !cloudPrompt.isSpent else { return }
+        try? await Task.sleep(for: .seconds(1))
+        if !Task.isCancelled { offerCloud() }
+    }
+
+    private func offerCloud() {
+        guard firstRun == nil, quiet, cloudPrompt.isDue(connected: sync.provider != nil) else { return }
+        offeringCloud = true
+    }
+
+    /// "Back up" opens Sync once the prompt has gone, so two sheets never overlap.
+    private func cloudPromptClosed() {
+        analytics.event(backingUp ? .cloudPromptBackUp : .cloudPromptNotNow)
+        if backingUp { showSync = true }
+        backingUp = false
     }
 
     private func titled(_ title: String, @ViewBuilder _ content: () -> some View) -> some View {

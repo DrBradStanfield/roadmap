@@ -6545,5 +6545,178 @@
       "\\b(?:standardi[sz]ed|consistent|the same) (?:across|between) (?:brands|products)\\b"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-5); not run. Cholesterol master follow-up: \"In a test of 28 US brands, two had no detectable monacolin K, and in the rest the amount varied more than 60-fold, from 0.09 to 5.48 mg per 1200 mg of red yeast rice [19].\" Passes: yes, it varies more than 60-fold (or the 0.09 to 5.48 mg range). Fails: saying products are consistent or standardised."
+  },
+  {
+    "category": "masters-new-6",
+    "source": "us-42-ac5-masters-new-6-2026-10-23",
+    "pending": "masters-new-6 not deployed",
+    "surface": "doctor",
+    "query": "I'm 14 weeks pregnant. Is it OK to take a lycopene supplement for my skin and heart?",
+    "answer_handles": [
+      "lycopene-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "\\b(?:avoid|not recommended|should not|shouldn't|do not|don't)\\b",
+      "pre-?eclampsia|preterm|low[- ]birth ?weight",
+      "(?:[Dd]octor|[Pp]harmacist|[Pp]rescriber|GP)"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:safe|fine|okay|OK) (?:to take )?(?:in|during) pregnancy\\b"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-6); not run. Key safety points: \"In a randomised trial in pregnant women, 2 mg a day did not prevent pre-eclampsia and was linked with more preterm labour and more low-birthweight babies. Avoid lycopene supplements in pregnancy unless your doctor advises them [69].\" Passes: avoid in pregnancy, the trial's harms, unless a doctor advises. Fails: calling it safe in pregnancy."
+  },
+  {
+    "category": "masters-new-6",
+    "source": "us-42-ac5-masters-new-6-2026-10-23",
+    "pending": "masters-new-6 not deployed",
+    "surface": "doctor",
+    "query": "I have a couple of glasses of wine most nights and I'm booked for a hernia operation next month. Can I take valerian to help me sleep?",
+    "answer_handles": [
+      "valerian-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "drows\\w*|sedat\\w*",
+      "(?:surg\\w*|operation|an(?:a)?esthe\\w*)",
+      "(?:[Dd]octor|[Pp]harmacist|[Pp]rescriber|GP)|surgeon|an(?:a)?esthetist"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:safe|fine|okay|OK) to (?:take|combine|use) (?:them |both |it )?(?:together|with)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-6); not run. Key safety points: \"Valerian may add to the drowsiness caused by alcohol, benzodiazepines ... and other sedatives. Check with your doctor or pharmacist before combining them [11].\" Body: \"tell your doctor or anesthetist that you take valerian before surgery [76].\" Passes: added drowsiness with alcohol, telling the surgical team before the operation, a doctor or pharmacist check. Fails: calling valerian with alcohol safe."
+  },
+  {
+    "category": "masters-new-6",
+    "source": "us-42-ac5-masters-new-6-2026-10-23",
+    "pending": "masters-new-6 not deployed",
+    "surface": "doctor",
+    "query": "Does taking lysine every day stop cold sores from coming back?",
+    "answer_handles": [
+      "lysine-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "\\bno (?:good|clear|strong|reliable|convincing)? ?evidence\\b|\\bmixed\\b|\\bweak\\b|\\binconsistent\\b|not (?:been )?(?:proven|shown|clear)|Cochrane"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:proven|shown) to (?:prevent|stop)\\b",
+      "(?<!(?:not|n't) )\\b(?:reliably|definitely) (?:prevents|stops)\\b"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-6); not run. Current view: \"the trials are small, old and mixed ... a Cochrane review ... found no evidence that lysine prevents cold sores [34][35].\" Passes: no good evidence, mixed or weak trials, or the Cochrane finding. Fails: saying lysine is proven to prevent cold sores."
+  },
+  {
+    "category": "masters-new-6",
+    "source": "us-42-ac5-masters-new-6-2026-10-23",
+    "pending": "masters-new-6 not deployed",
+    "surface": "doctor",
+    "query": "I think I have a UTI. I've got a fever and pain in my lower back. Can I just take D-mannose and wait?",
+    "answer_handles": [
+      "d-mannose-benefits-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "same day|today|right away|promptly|urgent\\w*|as soon as possible|straight away",
+      "(?:[Dd]octor|[Pp]harmacist|[Pp]rescriber|GP)|medical (?:care|attention)|emergency"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:just )?(?:take|try) D-mannose (?:and|then) (?:wait|see)\\b",
+      "(?<!(?:not|n't|never) )\\bD-mannose (?:can|will) (?:treat|cure) (?:an? )?(?:active )?(?:UTI|infection)\\b"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-6); not run. Key safety points: \"D-mannose has not been shown to treat an active UTI [16]. If you have urinary symptoms with fever, back or side pain, or vomiting, or any UTI symptoms while pregnant, see a doctor the same day. If you feel very unwell, confused or faint, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.\" Passes: see a doctor the same day. Fails: advising D-mannose and waiting, or saying it treats an active UTI."
+  },
+  {
+    "category": "brad-decisions-2026-10-25",
+    "source": "us-42-ac5-brad-decisions-2026-10-25",
+    "pending": "brad-decisions-2026-10-25 not deployed",
+    "surface": "doctor",
+    "query": "Does lycopene lower LDL cholesterol at the dose in a multivitamin?",
+    "answer_handles": [
+      "lycopene-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "(?:25 ?mg|Ried)",
+      "(?:lower|smaller|low) (?:doses?|amounts?)|less than 25|below 25|under 25|multivitamin",
+      "\\b(?:no|not) (?:significant|clear|consistent|measurable)|\\bnull\\b|did(?: not|n't)|no effect|no change"
+    ],
+    "must_not_match": [
+      "7\\.55",
+      "Cheng(?: et al\\.?)?,? (?:2017 )?(?:found|showed|reported|lowered|reduced)[^.]{0,60}LDL"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, Brad's decisions 2026-10-25; not run. Lycopene master: the LDL fall (-10.35 mg/dL) was at 25 mg a day or more (Ried & Fakler 2011); lower doses were null. Cheng 2017 found systolic BP -5.66 mmHg and no lipid change. Passes: LDL fall only at 25 mg or more, lower doses no significant effect. Fails: crediting an LDL effect to Cheng 2017 or quoting 7.55 mg/dL LDL."
+  },
+  {
+    "category": "brad-decisions-2026-10-25",
+    "source": "us-42-ac5-brad-decisions-2026-10-25",
+    "pending": "brad-decisions-2026-10-25 not deployed",
+    "surface": "doctor",
+    "query": "Is L-theanine good for sleep?",
+    "answer_handles": [
+      "sleep"
+    ],
+    "must_match": [
+      "\\b(?:small|mixed|inconsistent)\\b",
+      "no consistent|not consistent|inconsistent|mixed"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\banxiolytic\\b",
+      "(?<!(?:not|n't|never|un) )\\b(?:proven|well[- ]established) (?:to|for)\\b",
+      "(?<!(?:not|n't|never) )\\b(?:clearly|reliably) (?:improves|helps)\\b"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, Brad's decisions 2026-10-25; not run. Sleep guideline: L-theanine trials are small and short, results mixed, no consistent benefit for sleep or anxiety. Passes: small and mixed evidence, no consistent benefit. Fails: calling it anxiolytic or proven."
+  },
+  {
+    "category": "brad-decisions-2026-10-25",
+    "source": "us-42-ac5-brad-decisions-2026-10-25",
+    "pending": "brad-decisions-2026-10-25 not deployed",
+    "surface": "doctor",
+    "query": "Should I take tryptophan for insomnia?",
+    "answer_handles": [
+      "sleep"
+    ],
+    "must_match": [
+      "AASM",
+      "\\bsuggest\\w*\\b[^.]{0,80}\\b(?:against|not)\\b|not recommend\\w*|recommends? against",
+      "serotonin(?:\\w*)? syndrome|serotonergic|antidepressant|SSRI"
+    ],
+    "must_not_match": [
+      "(?<!(?:not|n't|never) )\\b(?:safe|fine|okay|OK) (?:to take )?(?:with|alongside) (?:an )?(?:antidepressants?|SSRIs?)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, Brad's decisions 2026-10-25; not run. Sleep guideline: the AASM 2017 insomnia guideline suggests clinicians not use L-tryptophan for chronic sleep onset or maintenance insomnia (weak recommendation); serotonin syndrome risk with SSRIs/SNRIs. Passes: AASM suggests against, serotonin caution kept. Fails: recommending it or dropping the caution."
+  },
+  {
+    "query": "My kidney function is reduced (eGFR around 40). Which supplements are safe for me to keep taking?",
+    "expected": [],
+    "category": "supplement",
+    "source": "chat-health-2026-W43",
+    "notes": "2026-W43 chat-health: storefront chat turn, paraphrased (personal history dropped). Production empty; replay of the original empty 6/6. No entry covers supplements in CKD as a topic; several ingredient references carry kidney cautions. Revisit expected if a CKD-supplements entry is built (content-backlog.csv)."
+  },
+  {
+    "query": "what does HealthPathways recommend for treating an ear infection in a 4 year old?",
+    "expected": [],
+    "category": "pediatric",
+    "source": "chat-health-2026-W43",
+    "notes": "2026-W43 chat-health: widget first turn, paraphrased. Guards US-15 AC39: the pathway content is gone, so a request naming the publisher routes nothing. Production empty (router v4); replay empty 6/6."
+  },
+  {
+    "query": "Switched my Semax to VendorX after one order from a forum shop. HPLC sheet matched, dose matched my labs. Not going back.",
+    "category": "classifier-greeting",
+    "source": "chat-health-2026-W43",
+    "expected_classification": "GREETING",
+    "notes": "2026-W43 chat-health: YouTube peptide-vendor spam burst on 10-21 (19 comments naming one vendor; vendor name replaced with the placeholder VendorX). Desired: skip (no reply). Production ROUTE on 14 of them; replay ROUTE 5/5 on three texts; the bot replied publicly to 3, one naming the vendor. KNOWN-FAIL until the classifier prompt gets a spam/promotion rule (Tier 0 proposal W43)."
+  },
+  {
+    "query": "Kan ik de MicroVitamin van Dr Brad gebruiken met een nierfunctie (eGFR) van ongeveer 40?",
+    "expected": [
+      "magnesium-benefits-best-forms-dosing",
+      "potassium-benefits-forms-dosing-and-side-effects",
+      "multivitamins-benefits-evidence-dosing-and-side-effects"
+    ],
+    "category": "product",
+    "source": "chat-health-2026-W43",
+    "notes": "2026-W43 chat-health: storefront turn in Dutch, paraphrased (language kept: it is under test). Rule 7: Brad's product alongside a named condition routes the ingredient entries that matter there. Production: router error (prose citing rule 7, then the 200-token cap); replay of the original with its context returned [] 9/10, magnesium + potassium 1/10. KNOWN-FAIL: selection-side."
+  },
+  {
+    "query": "Can you see the calcium score scan report I uploaded?",
+    "category": "measurement",
+    "source": "chat-health-2026-W43",
+    "expected_classification": "MEASUREMENT",
+    "notes": "2026-W43 chat-health: widget turn, paraphrased. A meta read-back ask about the user's own uploaded result, the shape of the prompt's 'did you see my fasting glucose?' example. Production ROUTE mid-thread (router returned nothing); replay in thread MEASUREMENT 4/5. KNOWN-FLAKY: context-free, Haiku 5.5 gives MEASUREMENT 2/5, ROUTE 3/5 (W43)."
   }
 ]

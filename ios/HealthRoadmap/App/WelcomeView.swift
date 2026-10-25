@@ -48,11 +48,8 @@ struct WelcomeView: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-            Button(action: getStarted) {
-                Text("Get started").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 6).onAccentLabel()
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            Button("Get started", action: getStarted)
+            .buttonStyle(.accent)
             .padding(.top, 16)
             .accessibilityIdentifier("welcome.start")
             if sync != nil {
@@ -72,7 +69,7 @@ struct WelcomeView: View {
         .sensoryFeedback(.impact(weight: .light), trigger: shown && !reduceMotion)
     }
 
-    /// The icon's idea in symbols: a road that ends at a heart.
+    /// The app icon's mark: a road that ends at a heart.
     private var hero: some View {
         LogoMark(bounce: shown && !reduceMotion)
             .accessibilityHidden(true)

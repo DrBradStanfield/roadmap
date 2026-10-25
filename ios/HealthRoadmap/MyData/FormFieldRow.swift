@@ -11,8 +11,6 @@ struct FormFieldRow: View {
     let months: ScreeningMonths
     /// Saves an answer ('' clears it) and says whether it was saved.
     let answer: (String) async -> RecordStore.ApplyResult
-    /// Reads a typed number by the web's rule.
-    let read: (String) -> Double?
     /// A dated value's current row (PSA), and how to open it.
     var measurement: MyData.Row?
     var openMeasurement: () -> Void = {}
@@ -72,7 +70,7 @@ struct FormFieldRow: View {
                 MonthPickerSheet(title: label, months: future ? months.future : months.past, future: future, current: value, save: answer)
                     .presentationDetents([.medium])
             case (.number, .number(_, let label, _, let value)):
-                ValueEntrySheet(title: label, unit: "", current: value.isEmpty ? nil : value, asksForDay: false, read: read) { number, _ in
+                ValueEntrySheet(title: label, unit: "", current: value.isEmpty ? nil : value, asksForDay: false) { number, _ in
                     // Sent as typed; the engine refuses what the question does not offer (a whole number in range).
                     await answer(SupplementSheet.doseText(number))
                 }
@@ -81,11 +79,7 @@ struct FormFieldRow: View {
                 EmptyView()
             }
         }
-        .alert("Not saved", isPresented: Binding(get: { refusal != nil }, set: { if !$0 { refusal = nil } })) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(refusal ?? "")
-        }
+        .refusalAlert($refusal)
     }
 
     /// A choice: the question, the recorded answer as a menu, and the hint beneath.

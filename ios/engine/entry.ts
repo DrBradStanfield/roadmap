@@ -1,14 +1,16 @@
 // The engine the iOS app runs in JavaScriptCore (ios/architecture.md D2).
 // The same health-core the web runs; this file only gives Swift a
 // string-in, string-out door, because JSON is the one shape both sides share.
+// Its door list is bridge-contract.json; bridge.test.ts holds the two together.
 import { mergeFiles } from '../../packages/health-core/src/merge';
-import { computePlan, type Plan } from '../../packages/health-core/src/plan';
+import { computePlan, PlanError, type Plan } from '../../packages/health-core/src/plan';
 import { CURRENT_SCHEMA_VERSION } from '../../packages/health-core/src/roadmap-file';
-import { planSections } from '../../packages/health-core/src/plan-sections';
-import { statTiles } from '../../packages/health-core/src/stat-tiles';
+import { planSections, type PlanSection } from '../../packages/health-core/src/plan-sections';
+import { statTiles, type StatTile } from '../../packages/health-core/src/stat-tiles';
 import { cmToFeetInches, formatDisplayValue, fromCanonicalValue, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from '../../packages/health-core/src/units';
 import { fileNameLine, MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/src/lab-extraction';
-import { applyEdit, healthWrites, myData, newRecord, readNumber, readRecord, type Edit } from './my-data';
+import { deviceWrites } from '../../packages/health-core/src/device-export';
+import { applyEdit, myData, newRecord, readNumber, readRecord, type Edit } from './my-data';
 import { metricHistory } from './my-data-forms';
 import { readUnitChoices } from './unit-choices';
 import { phoneReminders } from './reminders';
@@ -36,8 +38,11 @@ export function mergeJson(localJson: string, remoteJson: string, nowIso: string,
   return JSON.stringify(mergeFiles(readRecord(localJson, nowIso, deviceId), readRecord(remoteJson, nowIso, deviceId), ctx));
 }
 
-// Cloud sync (cloud.ts): every call but cloudEdit is async and answers a Promise.
-export { cloudClose, cloudEdit, cloudErase, cloudLabImport, cloudFlush, cloudHidden, cloudOpen, cloudRefresh, cloudVisible, documentSave, labFile, labFolderFilesJson, labFolderJson } from './cloud';
+// Cloud sync (cloud.ts): cloudOpen, cloudRefresh, cloudFlush, cloudClose, cloudErase and
+// documentSave answer a Promise; the rest answer at once.
+export { cloudClose, cloudEdit, cloudErase, cloudLabImport, cloudFlush, cloudHidden, cloudOpen, cloudRefresh, cloudVisible, documentSave } from './cloud';
+// Lab files from the Dropbox app folder (lab-files.ts), each async.
+export { labFile, labFolderFilesJson, labFolderJson } from './lab-files';
 // "Delete all my data" on the phone's own file (erase.ts); a cloud's is cloudErase.
 export { erasePhoneJson } from './erase';
 /** The `sourceFileName` of each file read, as JSON (US-52 AC13d): the document
@@ -62,13 +67,6 @@ export function sectionsJson(planJsonText: string): string {
   return JSON.stringify(planSections(plan.results.suggestions));
 }
 
-/** The summary tiles above the plan, as JSON: the web's Quick Stats (health-core
- *  stat-tiles.ts, US-25 AC22), in the phone's per-test units. */
-export function statTilesJson(planJsonText: string, unitsJson: string): string {
-  const plan = JSON.parse(planJsonText) as Plan;
-  return JSON.stringify(statTiles(plan.results, { unitSystem: plan.unitSystem, unitOverrides: readUnitChoices(unitsJson), sex: plan.inputs.sex }));
-}
-
 // The My data tab (my-data.ts). A record from disk is read as the plan's is,
 // migrated, so a record the web wrote in an older shape reads the same.
 
@@ -77,9 +75,35 @@ export function newRecordJson(nowIso: string, deviceId: string, locale: string, 
   return JSON.stringify(newRecord(nowIso, deviceId, locale, timeZone));
 }
 
-/** What the My data tab shows, as JSON. */
-export function myDataJson(recordJson: string, nowIso: string, deviceId: string, unitsJson?: string): string {
-  return JSON.stringify(myData(readRecord(recordJson, nowIso, deviceId), nowIso, readUnitChoices(unitsJson)));
+/** What the app shows for a record, as JSON: `{myData, plan}`, from one read and one
+ *  computePlan, so My data and the Plan tab always show the same record (US-25 AC2).
+ *  `plan` is `{sections, tiles, ms}`: the layout sectionsJson gives and the summary tiles
+ *  above it, the web's Quick Stats (health-core stat-tiles.ts, US-25 AC22), in the
+ *  phone's per-test units, and the milliseconds from computePlan through the tiles and the
+ *  layout (D2's plan budget; whole ms, the engine's only clock). A tile that cannot be drawn never
+ *  blanks the plan (adversary R7): no tiles instead. A record that cannot be planned gives
+ *  `{error, planError}`, `planError` true for health-core's PlanError (no usable height or
+ *  sex), and never blanks My data. My data that cannot be drawn throws the whole call. */
+export function screenJson(recordJson: string, nowIso: string, deviceId: string, unitsJson?: string): string {
+  const file = readRecord(recordJson, nowIso, deviceId);
+  const choices = readUnitChoices(unitsJson);
+  let plan: Plan | null = null;
+  let view: { sections: PlanSection[]; tiles: StatTile[]; ms: number } | { error: string; planError: boolean };
+  try {
+    const start = Date.now();
+    plan = computePlan(file, new Date(nowIso), choices);
+    let tiles: StatTile[] = [];
+    try {
+      tiles = statTiles(plan.results, { unitSystem: plan.unitSystem, unitOverrides: choices, sex: plan.inputs.sex });
+    } catch {
+      // tiles stay empty
+    }
+    const sections = planSections(plan.results.suggestions);
+    view = { sections, tiles, ms: Date.now() - start };
+  } catch (error) {
+    view = { error: String(error), planError: error instanceof PlanError };
+  }
+  return JSON.stringify({ myData: myData(file, nowIso, choices, plan), plan: view });
 }
 
 /** One edit, as JSON: `{ ok: true, record }` with the new record as text, or the refusal. */
@@ -109,9 +133,10 @@ export function convertJson(metric: string, value: number, from: string, to: str
   });
 }
 
-/** The values to write to Apple Health, as JSON (US-25 AC14, device-export.ts). */
+/** The values to write to Apple Health, as JSON (US-25 AC14, device-export.ts): the values
+ *  a person entered, never the app's own imports. */
 export function healthWritesJson(recordJson: string, nowIso: string, deviceId: string): string {
-  return JSON.stringify(healthWrites(readRecord(recordJson, nowIso, deviceId)));
+  return JSON.stringify(deviceWrites(readRecord(recordJson, nowIso, deviceId), 'apple_health'));
 }
 
 /** Every value recorded for one metric, newest first, as JSON (US-25 AC9). */

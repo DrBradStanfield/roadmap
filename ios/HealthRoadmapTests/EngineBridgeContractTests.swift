@@ -45,7 +45,8 @@ final class EngineBridgeContractTests: XCTestCase {
 
     func testCloudSyncHandlesEveryContractEvent() throws {
         let contract = try JSONDecoder().decode(Contract.self, from: contractBytes())
-        let source = try String(contentsOf: ios.appending(path: "HealthRoadmap/Sync/CloudSync.swift"), encoding: .utf8)
+        // Decoded on the engine's queue (`CloudNews`); CloudSync's switch over it is exhaustive.
+        let source = try String(contentsOf: ios.appending(path: "HealthRoadmap/Engine/HealthEngine+Cloud.swift"), encoding: .utf8)
         for event in contract.events { XCTAssertTrue(source.contains("case \"\(event)\""), event) }
     }
 

@@ -27,11 +27,7 @@ struct SyncView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
             }
-            .alert("Sync", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(message ?? "")
-            }
+            .messageAlert("Sync", $message)
             .animation(.snappy, value: sync.status)
         }
     }

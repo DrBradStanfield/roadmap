@@ -144,3 +144,71 @@ Health, and see my plan, without facing the full form.
   FHIR change.
 - Tests: the step model (what to ask, resume, skip), the prefill mapping from HealthKit
   (sex other, no birth day kept), and a UI pass on the simulator and the iPhone.
+
+## The tour (US-57, approved and built 2026-10-25)
+
+After the last question the person lands on My plan, and a three-tip tour starts. It uses
+Apple's TipKit, shows each tip once and can be skipped. Brad: "This tour mustn't go on and
+on", so each tip is one line. The story and its ACs are US-57.
+
+1. **The snapshot**, one tip for the whole row of tiles: "A snapshot of your health. Tap
+   any tile to learn more." Every tile opens its "what it is" line, for good.
+2. **The first Foundation card**: "Start here. Each step comes with the reason and the
+   evidence." My plan scrolls the card into view when the tip is due.
+3. **Blood tests, on My data**: "The more you add, the more personal your plan. A lab
+   report fills these in for you." Its action, "Add a lab report", opens the lab upload.
+
+Tips 1 and 2 offer "Skip tour" as plain text. The x moves on to the next tip, and so does
+a tap outside it (review R2a, 2026-10-25): TipKit only hides a popover then, and the tour
+must end. A screen that cannot draw a tip's anchor passes that step. The person's third
+own save ends a tour still running. At accessibility text sizes a tip scrolls.
+
+No cloud sign-up in the tour. One prompt after the person's third own save (a My data
+edit or a saved lab report, not onboarding's answers, Apple Health or a merge) offers a
+copy in their own Dropbox or Google Drive. It shows once, waits for no sheet or tip to
+be up, and opens the Sync sheet once it has gone. Onboarding's last answer lands in the
+same turn as onboarding ends, so `finishOnboarding` passes over it (review R1).
+
+### Code
+
+- `Onboarding/TourTips.swift`: the three tips, the tour's step (one TipKit parameter),
+  `TourStep` (the pure order: close moves on, skip ends), the `TourTip` protocol (each
+  tip's step and line), the `tourTip` modifier the anchors use and `tourStep(_:hasNoAnchor:)`
+  for a screen that cannot draw one (both send the fixed Clarity events), `TourTipStyle`
+  (its view leaving counts as closed; scrolls at large sizes; `AccentButtonStyle` from
+  Colors.swift), and `TourSetup` (`Tips.configure` at launch; `--ui-testing` hides the
+  tips, `--ui-testing --show-tips` starts them fresh).
+- Anchors: `SummaryTiles` (the grid, tip 1), `PlanView` (the first Foundation card,
+  tip 2), `MyDataView` (the Blood tests header, tip 3). `RootView.finishOnboarding`
+  starts the tour.
+- `Plan/TileExplainerSheet.swift`: a tile's line above its existing evidence. It
+  replaced `SummaryTiles`' `TileEvidenceSheet`.
+- `Onboarding/CloudPrompt.swift`: the third-save rule and `CloudPromptView`. Not named
+  `*Backup*`: `.gitignore`'s `*backup*` would hide it. `RecordStore.ownSaves` counts the
+  person's saves; `RootView` feeds them to the rule after onboarding and shows the sheet.
+
+### Tile lines
+
+The web had no plain "what it is" text for its tiles; a tap opened only the evidence
+(`STAT_CARD_EVIDENCE` and the `get*Evidence` builders in `evidence.ts`), which stays, under
+"The evidence". The ten new lines (Brad approved them as drafted, 2026-10-25) live in
+health-core as `STAT_TILE_ABOUT` beside `statTiles`, which sets each tile's `about`; the
+engine serves it through `screenJson`. The web may show them later. Rule: no threshold and
+no grading, so a line never disagrees with the status or evidence beneath and suits a
+known minor's tile, which now opens its line alone (US-07 AC6 holds: no evidence). Brad
+kept them outside the three-file sync (definitions, no rule). He also chose: ideal body
+weight says "a healthy weight" with no mortality link; eGFR has no "higher is better";
+protein keeps "more so after 40".
+
+| Tile key | "What it is" (in `STAT_TILE_ABOUT`) | Source in health_roadmap_algorithm.md / evidence.ts |
+|---|---|---|
+| `whtr` | Your waist measurement divided by your height. It shows how much weight you carry around your middle, which BMI cannot show. | § Waist-to-Height Ratio; `STAT_CARD_EVIDENCE.whtr` (central adiposity) |
+| `bmi` | Body mass index: your weight in kilograms divided by your height in metres, squared. It cannot tell muscle from fat, so your waist measurement can change how the plan reads it. | § BMI, § Composite Assessment (WHtR reclassifies 25 to 29.9) |
+| `ibw` | A healthy weight for your height and sex, from the Peterson formula (2016). The plan sets your protein target from it, not from your current weight. | § Ideal Body Weight; § Daily Protein Target |
+| `protein` | How much protein to eat each day, set from your ideal body weight. Enough protein helps you keep muscle, more so after 40. | § Daily Protein Target; `getProteinEvidence` |
+| `apoB` | Apolipoprotein B counts the particles in your blood that can build up in artery walls. The plan prefers it to the other cholesterol tests because it predicts heart risk most closely. | `STAT_CARD_EVIDENCE.apob`; `lipidMarkerFor` (ApoB, then non-HDL, then LDL) |
+| `nonHdl` | Your total cholesterol minus your HDL cholesterol: the cholesterol in every particle that can build up in artery walls. The plan uses it when there is no ApoB result. | § Non-HDL (`totalCholesterol - HDL`); `STAT_CARD_EVIDENCE['non-hdl']` |
+| `ldl` | The cholesterol carried by LDL particles, the main kind that builds up in artery walls. The plan uses it when there is no ApoB or non-HDL result. | `STAT_CARD_EVIDENCE.ldl`; `lipidMarkerFor` |
+| `egfr` | Estimated glomerular filtration rate: how well your kidneys filter your blood, worked out from a creatinine blood test, your age and your sex. | `STAT_CARD_EVIDENCE.egfr` (CKD-EPI 2021) |
+| `lpa` | Lipoprotein(a), a cholesterol particle whose level is set mostly by your genes. Diet and exercise change it little, so one test in a lifetime is usually enough. | `STAT_CARD_EVIDENCE.lpa` |
+| `hba1c` | Your average blood sugar over the last two to three months, from one blood test. | `STAT_CARD_EVIDENCE.hba1c` |

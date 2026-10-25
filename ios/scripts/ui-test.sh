@@ -13,6 +13,7 @@ ID=$(xcrun simctl list devices available | grep -F "    $DEVICE (" | head -1 | s
 xcodebuild build-for-testing -project HealthRoadmap.xcodeproj -scheme HealthRoadmap \
   -destination "id=$ID" -derivedDataPath "$DERIVED" -quiet
 TESTS=$(grep -h -o -E 'func (test[A-Za-z0-9_]+)\(' HealthRoadmapUITests/*.swift | sed -E 's/func (test[A-Za-z0-9_]+)\(/\1/')
+trap scripts/clean-test-clones.sh EXIT
 FAILED=0
 for TEST in $TESTS; do
   CLASS=$(grep -l "func $TEST(" HealthRoadmapUITests/*.swift | head -1 | xargs basename | sed 's/\.swift$//')

@@ -7,7 +7,6 @@ import SwiftUI
 struct FormSectionsList: View {
     let sections: [FormSection]
     let months: ScreeningMonths
-    let read: (String) -> Double?
     /// A card's title, drawn with its section's symbol.
     let title: (String) -> SectionTitle
     /// Saves one answer to the question with this key.
@@ -40,7 +39,7 @@ struct FormSectionsList: View {
                 .foregroundStyle(.secondary)
         }
         ForEach(group.fields) { field in
-            FormFieldRow(field: field, months: months, answer: { value in await answer(key(field), value) }, read: read,
+            FormFieldRow(field: field, months: months, answer: { value in await answer(key(field), value) },
                          measurement: metric(field).flatMap(measurement), openMeasurement: { metric(field).map(openMeasurement) })
         }
     }

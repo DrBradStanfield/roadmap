@@ -330,3 +330,52 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W42,sentry_new_issues,2,2,0,sentry,"70 (appendChild SyntaxError, not-ours) and 6Z (router timeout, triaged-ours, decision #157); 20 unresolved, userCount=0 on all (tenth week); top mover 6X 142 vs 2 (the 10-15 scanner burst, fix 32d597f deployed 10-17); counts soft; all 20 in sentry-fix ledger by numeric id"
 2026-W42,clarity_roadmap_visits_3d,124,110,13,clarity,"drstanfield 3,768 sessions/3d (-22%), bot-flagged 89.8% (W41 49%) while device/OS/referrer look human (mobile 57%, iOS 43%, google 58%) - an unexplained flag, maybe a definition change, not a confirmed flood; /pages/start rank 1 at 223 visits, /pages/roadmap rank 5 at 124; script errors 0.69% (8.14%); dead clicks 9.29%; microvitamin 2,118 (+30%), script errors 11.24% (11.08%), third reading, untraced"
 2026-W42,feedback_organic,6,0,,gmail+supabase+github,"6 = 3 feedback_submissions rows 10-12 (Lp(a) unit confusion with praise; lab PDFs unreadable; which ApoB/testosterone variant) + 1 follow-up email 10-15 from the ApoB submitter + 2 plan-email replies; Gmail holds form emails for the PDF and ApoB rows, Brad replied to both 10-12; the 10-15 follow-up has only an unsent gateway note (unread, starred); 2 replies to the plan-ready email: a lipid value at the wrong scale (fixed, user confirmed 10-15) and 10-17T12:24Z urine creatinine ratios read as serum creatinine feeding eGFR and protein targets (unread, unanswered); 1 outbound Brad reply on 10-15 to a question whose inbound sits outside this mailbox; 0 from-connector issues"
+2026-W43,product_events_total,1165,1166,0,supabase,"2331 rows paged = count=exact across both windows; every W42 row reproduced; first-ever name subscription_action_confirmed; new upload_outcome key unitsGuessed"
+2026-W43,results_viewed,530,628,-16,supabase,"339 visitors (W42 405), 284 first seen in window; daily UTC 10-18 61, 10-19 39, 10-20 52, 10-21 155, 10-22 72, 10-23 59, 10-24 80 (to 20:47Z); median 61/day, below W42's ~100 but twice W41; no referrer or page key"
+2026-W43,upload_started,17,17,0,supabase,"per tab; 4 starts without a save (one 10-17T21:31Z, three 10-18T20:49-20:52Z)"
+2026-W43,upload_saved,13,16,-19,supabase,per tab
+2026-W43,upload_extract_failed,1,1,0,supabase,10-20T13:44Z pairs with an openFailed outcome in the same second
+2026-W43,upload_outcome_runs,35,18,94,supabase,"17 visitors, one made 10 runs on 10-20; sums picked 51 = withValues 25 + documentOnly 20 + noValues 1 + openFailed 3 + tooLarge 2; truncated 1, valuesDropped 1, docx 1, unitsGuessed 1; limitError 0 (W42 25)"
+2026-W43,cloud_connect_started,12,35,-66,supabase,google-drive 11 / dropbox 1 / github 0
+2026-W43,cloud_connect_success,9,19,-53,supabase,"google-drive 8 / dropbox 1; Drive over 12 visitors: 6 straight success, 2 refused only, 2 refused then success, 2 abandoned"
+2026-W43,cloud_connect_refused,4,12,-67,supabase,"all google-drive; 4 of 12 Drive visitors (33%; W42 41%) refused at least once"
+2026-W43,cloud_connect_cancelled,0,0,,supabase,"NEW SERIES (US-09 AC22, 21709dcb 10-20): unverified zero; emit standalone/app.tsx:45-46, CI-built bundle unreadable"
+2026-W43,chat_opened,49,28,75,supabase,
+2026-W43,correction_made,48,47,2,supabase,
+2026-W43,lab_rows_viewed,34,33,3,supabase,
+2026-W43,lab_row_added,7,5,40,supabase,
+2026-W43,lab_unit_refused,62,44,41,supabase,"10 visitors, 23 key+unit labels; 29 rows UNIT STRIPPED (W42 3), first 10-20T06:49Z: 27 blood-count rows from 4 visitors (wbc, platelets, rbc, six differentials incl. immature_granulocytes) + 2 egfr from a fifth; the row omits any unit isLabUnitWord distrusts (roadmap-data.ts:206) and fires only when labUnitTaken is false (:205); a blank/'-' unit and 'x10(3)/uL' fail both checks ('x 10^9/L' is taken, so cannot fire; review R2); cause unproven"
+2026-W43,measurement_refused,0,0,,supabase,"plausible true zero (roadmap-data.ts:192-194); upload_outcome refused key also 0"
+2026-W43,medication_history_viewed,0,0,,supabase,"0 all-time, seventh carry; HistoryPanel.tsx:285; unverified"
+2026-W43,reminder_optin_events,35,56,-38,supabase,typed 28 / google-drive 6 / dropbox 1; 35 rows created in window (typed 27 / drive 7 / dropbox 1)
+2026-W43,reminder_optout_events,0,1,-100,supabase,true zero (reminders-v2.unsubscribe.tsx:60)
+2026-W43,reminder_optin_total,330,295,12,supabase,"typed 283 / google-drive 40 / dropbox 7; 325 live, 5 tombstoned"
+2026-W43,reminder_sent,1,0,,supabase,"10-23T08:07Z, count 5, google-drive; matches 5 nested last_sent dates 2026-10-23 (5 = 5); next due 11-01 x2, 11-05 x2"
+2026-W43,report_email_sent,35,56,-38,supabase,
+2026-W43,report_email_clicked,14,30,-53,supabase,"40% click:send EVENT ratio (uncohorted, constant visitor_id)"
+2026-W43,report_email_bounced,0,0,,supabase,true zero (api.resend-webhook.ts:89); 0 complained
+2026-W43,reminder_email_clicked,0,0,,supabase,"0 all-time (roadmap.open.tsx:36); 5 sends 10-23, plausible"
+2026-W43,email_landing_empty,5,11,-55,supabase,"4 visitors; 3 sit 1.8-3.8 s after a click, 2 at 5.7 s and 21.7 s; recovery 1 of 4"
+2026-W43,email_landing_link_copied,0,0,,supabase,plausible (email-landing.tsx:83 in the committed bundle)
+2026-W43,pdf_window_blocked,0,4,-100,supabase,plausible true zero (ResultsPanel.tsx:470); drop untraced
+2026-W43,chat_thinking_opened,0,0,,supabase,"plausible, unverified (ChatMessageBubble.tsx:25); 1 row ever"
+2026-W43,lpa_unit_selected,18,18,0,supabase,3.4% of results_viewed
+2026-W43,lpa_check_answered,0,0,,supabase,plausible true zero (BloodTestTimeline.tsx:631)
+2026-W43,chat_run_roadmap,0,0,,supabase,"unverified (api.chat.ts:618); offered only on typed values; 0 since first deploy"
+2026-W43,chat_profile_edit,0,0,,supabase,"NEW SERIES (US-16 AC2): unverified (HealthTool.tsx:1023, :1054)"
+2026-W43,subscription_action_confirmed,3,0,,supabase,"first rows ever: 10-17T21:00Z, 22:03Z, 23:04Z (server, null metadata), bracketing Brad's 'from the live pilot (18 Oct)' commits 8ee7f5df/f9f48f17/5c304ea0; none since; customer use unproven (review R3)"
+2026-W43,mcp_authorize_shown,3,3,0,supabase,"claude 10-20T09:22Z, claude 10-20T22:54Z (reviewer), chatgpt 10-23T14:01Z; no burst"
+2026-W43,mcp_authorize_refused,2,0,,supabase,"unknown-client x2 (10-18T23:49Z; 10-20T21:15Z cimd-redirect-refused)"
+2026-W43,mcp_consent_posted,2,1,100,supabase,
+2026-W43,mcp_connect,2,1,100,supabase,"non-reviewer 2; via=reviewer 1 excluded (10-20T22:54Z, after PR #202 Anthropic reviewer sign-in)"
+2026-W43,mcp_connect_failed,3,0,,supabase,"all no-cookie, 10-23T03:08-04:42Z"
+2026-W43,mcp_tool_call,182,22,727,supabase,"claude 165 (10-18T22:04Z to 10-20T23:00Z, 142 on 10-20 09-11Z), chatgpt 17 (10-23T14:03-14:37Z); add_measurement 127, read_record 17, add_lab_values 16, update_profile 8, get_plan 7, file_results 5, correct_value 2; 21 refused (allowance 14, unknown-unit 3, import 2, malformed 1, other 1); claude split: 5 on 10-18/19, 142 on 10-20 09-11Z after a non-reviewer claude/dropbox connect 09:23Z, 18 at 22-23Z beside the via=reviewer connect 22:54Z; the 142 unattributed (real user or Brad's test; review R6)"
+2026-W43,mcp_import,4,2,100,supabase,
+2026-W43,remote_change_applied,8,4,100,supabase,local 7 / cloud 1
+2026-W43,guide_opened,26,53,-51,supabase,header 26 / footer 0; 4.9% of results_viewed (W42 8.4%)
+2026-W43,chat_messages,175,128,37,supabase,"94 user / 81 assistant, all claude-sonnet-5-5, 0 fallback"
+2026-W43,chat_match_events,115,110,5,supabase,"youtube 59 / shopify 30 / widget 21 / discord 5; true misses 27/80 ROUTE = 34% (W42 20%): widget 6/15 (uploaded calcium score x3, a weight statement, HealthPathways x2), youtube 19/46 (10 promo comments for one peptide vendor 10-21), shopify 2/14, discord 0/5; router_error 1 (non-JSON prose at the 200-token cap, sentry-fix 6Z)"
+2026-W43,sentry_new_issues,6,2,200,sentry,"71 (AbortError /pages/roadmap, triaged-ours), 72 + 76 (scanners, wontfix), 73 (fixed 65a3b64d), 74 (fixed), 75 (wontfix); 19 unresolved, userCount 0 on all (eleventh week); movers 4E 257 (not-ours), 6X 152 (wontfix), 14 33 (not-ours); all ledgered; counts soft"
+2026-W43,clarity_roadmap_visits_3d,140,124,13,clarity,"drstanfield 5,494 sessions/3d (+46%), bot-flagged 20.9% (W42 89.8%); google 1,963 referrals; /pages/start 214 (rank 3), /pages/roadmap 140 (rank 6); script errors 11.16% (W42 0.69%), untraced; dead clicks 4.84%; microvitamin 2,280 (+8%), bot 23.5%, script errors 8.2% (11.24%)"
+2026-W43,feedback_organic,2,6,-67,gmail+supabase+github,"1 feedback_submissions row 10-23 (a medication note, no question; unanswered) + 1 reply 10-21 from the W42 urine-creatinine user to Brad's 10-20 answer (three clinical questions; unanswered ~3 days); 0 from-connector issues"
+2026-W43,ci_main_red,2,0,,github,"NEW SERIES: CI on main failed 10-24T17:16Z and 17:21Z (2adab025, 976fb315, docs-only): npm audit found 3 high advisories (body-parser GHSA-27r3-jxmh-p828, zod GHSA-mrhx-c7xc-m3w5, undici GHSA-xjj6-f33q-929c); green through ab535f04 10-23T17:19Z"

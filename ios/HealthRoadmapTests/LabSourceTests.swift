@@ -216,6 +216,29 @@ final class LabSourceTests: XCTestCase {
         _ = try await LabFileReader.decoded(LabSourceTests.pdf, name: "b.pdf")
         XCTAssertEqual(places.all, Array(repeating: "pool", count: 5), "three folder reports, a pick, a Dropbox file")
     }
+
+    /// US-25 AC21: a photo and a camera scan are resized on the shared pool too, never the
+    /// main thread (LabUploadSheet awaits them).
+    func testPhotosAndScansAreResizedOffTheMainThread() async throws {
+        let places = Places()
+        LabFileReader.decodingWatch = { places.add(Thread.isMainThread ? "main" : "pool") }
+        defer { LabFileReader.decodingWatch = nil }
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 2400, height: 3200)).image { context in
+            UIColor.gray.setFill(); context.fill(CGRect(x: 0, y: 0, width: 2400, height: 3200))
+        }
+        let photo = try await LabFileReader.photo(try XCTUnwrap(image.jpegData(compressionQuality: 0.9)))
+        _ = try await LabFileReader.pictures([image, image], name: "Scanned report")
+        XCTAssertEqual(places.all, ["pool", "pool"], "a photo, a scan")
+        XCTAssertEqual(photo.name, "Photo")
+        let page = try XCTUnwrap(UIImage(data: try XCTUnwrap(Data(base64Encoded: try XCTUnwrap(photo.pages.first).content))))
+        XCTAssertEqual(max(page.size.width, page.size.height), 2000, "the long side is resized to the web's 2,000")
+        do {
+            _ = try await LabFileReader.photo(Data("not a picture".utf8))
+            XCTFail("bytes that are no picture are refused")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, "The photo could not be opened.")
+        }
+    }
     private final class Places: @unchecked Sendable {
         private let lock = NSLock()
         private var seen: [String] = []
@@ -385,17 +408,18 @@ final class LabSourceTests: XCTestCase {
         XCTAssertFalse(LabFileReader.fits(name: "a.zip", bytes: 20 * 1024 * 1024 + 1))
     }
 
-    func testPhotosAndScansGoAsJpegPagesOfOneReportWithinTheWebsPageLimit() throws {
+    func testPhotosAndScansGoAsJpegPagesOfOneReportWithinTheWebsPageLimit() async throws {
         let image = UIGraphicsImageRenderer(size: CGSize(width: 40, height: 60)).image { context in
             UIColor.gray.setFill(); context.fill(CGRect(x: 0, y: 0, width: 40, height: 60))
         }
-        let photo = try LabFileReader.pictures([image], name: "Photo")
+        let photo = try await LabFileReader.pictures([image], name: "Photo")
         XCTAssertEqual(photo.pages.map(\.mimeType), ["image/jpeg"])
         XCTAssertFalse(photo.truncated)
-        let scan = try LabFileReader.pictures(Array(repeating: image, count: LabFileReader.maxPages + 2), name: "Scanned report")
+        let scan = try await LabFileReader.pictures(Array(repeating: image, count: LabFileReader.maxPages + 2), name: "Scanned report")
         XCTAssertEqual(scan.pages.count, LabFileReader.maxPages)
         XCTAssertTrue(scan.truncated)
-        XCTAssertThrowsError(try LabFileReader.pictures([], name: "Nothing"))
+        let nothing = try? await LabFileReader.pictures([], name: "Nothing")
+        XCTAssertNil(nothing, "no picture, no report")
     }
 
     /// US-52 AC13c: a picked folder gives every report in it and its folders, in name

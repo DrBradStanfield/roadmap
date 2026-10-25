@@ -323,8 +323,8 @@ final class CloudSyncTests: XCTestCase {
             Task {
                 try? await Task.sleep(for: .milliseconds(200)) // the open has resolved; session 1 is not shown yet
                 let view = String(decoding: try! JSONSerialization.data(withJSONObject: ["record": newsText, "erase": "e-news", "session": 1]), as: UTF8.self)
-                sync.notify("changed", view, session: 1, order: 1_000)
-                sync.notify("failed", #"{"kind":"unreachable","detail":"Dropbox could not be reached."}"#, session: 1, order: 1_001)
+                sync.notify(.init("changed", view, order: 1_000), session: 1)
+                sync.notify(.init("failed", #"{"kind":"unreachable","detail":"Dropbox could not be reached."}"#, order: 1_001), session: 1)
             }
         }
         await sync.start()
@@ -351,8 +351,8 @@ final class CloudSyncTests: XCTestCase {
             }
             Task {
                 try? await Task.sleep(for: .milliseconds(200)) // before the handover: held
-                sync.notify("failed", failure, session: 1, order: 1_000)
-                sync.notify("synced", "", session: 1, order: 1_001)
+                sync.notify(.init("failed", failure, order: 1_000), session: 1)
+                sync.notify(.init("synced", "", order: 1_001), session: 1)
             }
         }
         await sync.start()
@@ -374,7 +374,7 @@ final class CloudSyncTests: XCTestCase {
             }
             Task {
                 try? await Task.sleep(for: .milliseconds(550)) // shown, its draw still waiting
-                sync.notify("failed", failure, session: 1, order: 2_000)
+                sync.notify(.init("failed", failure, order: 2_000), session: 1)
             }
         }
         await sync.start()
@@ -415,6 +415,18 @@ final class CloudSyncTests: XCTestCase {
         meta["lamport"] = ((meta["lamport"] as? Int) ?? 0) + 10
         erased["meta"] = meta
         return erased
+    }
+
+    /// Waits until the store has drawn what `done` checks: re-checked on each change the
+    /// store makes, never on a fixed timing. Fails after `timeout` with no change.
+    private func drawn(_ store: RecordStore, timeout: TimeInterval = 5, _ done: @escaping @MainActor () -> Bool) async {
+        while !done() {
+            let changed = XCTestExpectation(description: "the store draws the cloud's news")
+            withObservationTracking { _ = store.revision; _ = store.myData } onChange: { changed.fulfill() }
+            if done() { return } // drawn between the check and the tracking
+            let waited = await XCTWaiter().fulfillment(of: [changed], timeout: timeout)
+            guard waited == .completed else { return XCTFail("the store never drew the cloud's news") }
+        }
     }
 
     private func signIn() -> OAuthClient.Authenticate {
@@ -486,6 +498,8 @@ final class CloudSyncTests: XCTestCase {
         let web = try await engine.apply(.lpaUnit("mg/L"), to: dropbox.file!.text, now: .now, deviceId: "web")
         dropbox.put(try JSONSerialization.jsonObject(with: Data(try XCTUnwrap(web.record).utf8)) as! [String: Any])
         await sync.syncNow()
+        // The re-read's news is drawn on the store's own chain, after syncNow returns.
+        await drawn(store) { store.myData?.lpaUnit == "mg/L" }
         XCTAssertEqual(store.myData?.lpaUnit, "mg/L")
         guard case .refused(let message, _) = await store.apply(.add(metric: "lpa", value: 50, day: "2026-10-02")) else {
             return XCTFail("50 typed as mg/dL must not be stored as 50 mg/L")

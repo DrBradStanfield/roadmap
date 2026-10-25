@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import vm from 'node:vm';
 import { build } from 'esbuild';
-import { dirname, join } from 'node:path';
+import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));

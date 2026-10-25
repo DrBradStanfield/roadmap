@@ -9,12 +9,13 @@ enum ServerConfig {
         if let override = ProcessInfo.processInfo.environment["HEALTH_ROADMAP_SERVER"], let url = URL(string: override) {
             return url
         }
-        #if targetEnvironment(simulator)
+        #endif
+        #if DEBUG && targetEnvironment(simulator)
         // The simulator talks to a server on this Mac (`npm run start`, port 3000).
         return URL(string: "http://127.0.0.1:3000")!
-        #endif
-        #endif
+        #else
         // PLACEHOLDER until Brad picks the host (D8 "Config"): the education Fly app.
         return URL(string: "https://health-tool-edu.fly.dev")!
+        #endif
     }
 }

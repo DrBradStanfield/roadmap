@@ -11,8 +11,6 @@ struct ValueEntrySheet: View {
     let current: String?
     /// Vitals and blood tests belong to a day; height does not.
     let asksForDay: Bool
-    /// Reads the typed text as a number by the web's rule (`RecordStore.number`).
-    let read: (String) -> Double?
     /// Saves a value for a day (YYYY-MM-DD).
     let save: (Double, String) async -> RecordStore.ApplyResult
     /// Replaces the value in a row with a correction.
@@ -90,7 +88,7 @@ struct ValueEntrySheet: View {
 
     /// The typed number: either decimal mark, and nothing that is not read in full,
     /// so "3.4" on a German phone is 3.4, never 3.
-    private var number: Double? { read(text) }
+    private var number: Double? { TypedNumber.read(text) }
 
     private func submit() {
         guard let number else { return }

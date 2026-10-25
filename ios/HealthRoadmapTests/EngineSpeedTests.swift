@@ -19,14 +19,12 @@ final class EngineSpeedTests: XCTestCase {
             let record = try padded(engine, years: years)
             let rows = (try JSONSerialization.jsonObject(with: Data(record.utf8)) as? [String: Any])?["measurements"] as? [Any]
             let label = "\(years)y \(rows?.count ?? 0) rows \(record.utf8.count / 1024) KB"
-            var plan = ""
             // A new device id each run misses the engine's parsed-record slot (my-data.ts keepRecord):
             // the cold read. The lines below repeat one text, so all but the first run are served from it.
             var run = 0
             print("ENGINE-SPEED \(label) plan cold \(try median { run += 1; _ = try engine.blocking { [now] in try $0.plan(recordJSON: record, now: now, deviceId: "cold\(run)") } }) ms")
-            print("ENGINE-SPEED \(label) plan \(try median { plan = try engine.blocking { [now] in try $0.plan(recordJSON: record, now: now, deviceId: "t") } }) ms")
-            print("ENGINE-SPEED \(label) sections \(try median { _ = try engine.blocking { try $0.sections(planJSON: plan) } }) ms")
-            print("ENGINE-SPEED \(label) myData \(try median { _ = try engine.blocking { [now] in try $0.myData(recordJSON: record, now: now, deviceId: "t") } }) ms")
+            print("ENGINE-SPEED \(label) plan \(try median { _ = try engine.blocking { [now] in try $0.plan(recordJSON: record, now: now, deviceId: "t") } }) ms")
+            print("ENGINE-SPEED \(label) screen \(try median { _ = try engine.blocking { [now] in try $0.screen(recordJSON: record, now: now, deviceId: "t") } }) ms")
             print("ENGINE-SPEED \(label) history \(try median { _ = try engine.blocking { [now] in try $0.history(recordJSON: record, metric: "weight", now: now, deviceId: "t") } }) ms")
             print("ENGINE-SPEED \(label) apply \(try median { XCTAssertTrue(try engine.blocking { [now] in try $0.apply(.add(metric: "weight", value: 70, day: DayText.iso(now)), to: record, now: now, deviceId: "t") }.ok) }) ms")
             print("ENGINE-SPEED \(label) merge \(try median { _ = try engine.blocking { [now] in try $0.call("mergeJson", [record, record, now.formatted(HealthEngine.iso), "t"]) } }) ms")

@@ -1,7 +1,8 @@
-// Draws the app icon from the welcome screen's logo (LogoMark, Brad 2026-10-23): the white
-// S-curve road and the red heart on the same green gradient, as a full-bleed square (iOS
-// masks the corners). It compiles the app's own LogoMark.swift, so icon and logo share one
-// drawing. No SF Symbols: their licence forbids them in app icons and logos (US-25 AC10).
+// Draws the app icon from the welcome screen's logo (LogoMark): the original icon's white road
+// with green lane dashes rising to a red heart on the green gradient (Brad 2026-10-25), as a
+// full-bleed square (iOS masks the corners). It compiles the app's own LogoMark.swift, so icon
+// and logo share one drawing. No SF Symbols, traced or not: their licence forbids them in app
+// icons and logos (US-25 AC10).
 // Run on the Mac, from the repo root (writes the 1024 px AppIcon PNG):
 //   swiftc -parse-as-library ios/HealthRoadmap/App/LogoMark.swift ios/scripts/make-icon.swift \
 //     -o "$TMPDIR/make-icon" && "$TMPDIR/make-icon"

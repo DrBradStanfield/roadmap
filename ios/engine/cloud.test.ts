@@ -35,6 +35,7 @@ class FakeDropbox {
   chatAnswers = true;
   online = true;
   delay = 0;
+  delayFor?: Server['delayFor'];
   /** False: uploads fail with a 500; reads still work. */
   uploadsWork = true;
   uploads = 0;
@@ -89,7 +90,7 @@ interface Engine {
   cloudOpen(provider: string, device: string, first: boolean, mergePhone?: boolean): Promise<string>;
   cloudLabImport(extraction: string, refs: string, reportDay: string, erase: string, units: string, now: string, unitsJson: string): string;
   labSaveSummaryJson(record: string, extraction: string, refs: string, reportDay: string, now: string, device: string): string;
-  cloudEdit(edit: string, erase: string, units: string, now: string, unitsJson?: string): string;
+  cloudEdit(edit: string, erase: string, units: string, now: string, unitsJson?: string, shownLpaUnit?: string): string;
   cloudVisible(): string;
   cloudFlush(): Promise<string>;
   cloudRefresh(): Promise<string>;
@@ -925,7 +926,7 @@ describe('lab files from the Dropbox app folder (US-52 AC11)', () => {
     const folder = new FakeLabFolder();
     const { engine } = await phone(folder);
     // A refusal is marked as one, so Swift never reads a name like "{scan}.pdf" as a failure's JSON (re-check R1).
-    const refusal = await engine.labFile('id:record', '').catch((error: Error) => JSON.parse(error.message) as { refused?: string });
+    const refusal = await engine.labFile('id:record', '').then(() => ({} as { refused?: string }), (error: Error) => JSON.parse(error.message) as { refused?: string });
     expect(refusal.refused).toContain('not a lab file in the folder');
     await expect(engine.labFile('id:backup', '')).rejects.toThrow('not a lab file in the folder');
     await expect(engine.labFile('id:chat-history', '')).rejects.toThrow('not a lab file in the folder');
@@ -958,7 +959,7 @@ describe('lab files from the Dropbox app folder (US-52 AC11)', () => {
     );
     folder.bodyFor = (id) => (id === 'id:hollow' ? '' : null);
     const { engine } = await phone(folder);
-    const empty = await engine.labFile('id:empty', '').catch((error: Error) => JSON.parse(error.message) as { refused?: string });
+    const empty = await engine.labFile('id:empty', '').then(() => ({} as { refused?: string }), (error: Error) => JSON.parse(error.message) as { refused?: string });
     expect(empty.refused).toBe('{scan}.pdf is empty.');
     expect(folder.downloads).toEqual([]);
     await expect(engine.labFile('id:hollow', '')).rejects.toThrow('Hollow.pdf is empty.');

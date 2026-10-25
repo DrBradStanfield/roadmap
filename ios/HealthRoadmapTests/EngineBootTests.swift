@@ -15,18 +15,18 @@ final class EngineBootTests: XCTestCase {
         folder = try EngineReleaseFixture.folder()
     }
 
-    private func boot(foreground: Bool = true) throws -> EngineBoot.Choice {
-        try EngineBoot(folder: folder, bundled: fixture.bundled, keys: fixture.keys, appBuild: 5, session: StubHTTP.session(), foreground: foreground).start()
+    private func boot(foreground: Bool = true) async throws -> EngineBoot.Choice {
+        try await EngineBoot(folder: folder, bundled: fixture.bundled, keys: fixture.keys, appBuild: 5, session: StubHTTP.session(), foreground: foreground).start()
     }
 
     private func version(_ choice: EngineBoot.Choice) throws -> Int? {
         try choice.engine.blocking { try $0.evaluate("HealthEngine.engineVersion").toNumber()?.intValue }
     }
 
-    func testAStagedEngineRunsAfterItsSelfTest() throws {
+    func testAStagedEngineRunsAfterItsSelfTest() async throws {
         let release = fixture.staged(daysAfterBundled: 2)
         try folder.stage(release)
-        let choice = try boot()
+        let choice = try await boot()
         XCTAssertEqual(choice.version, release.version)
         XCTAssertEqual(try version(choice), release.version)
         XCTAssertEqual(try folder.readState(bundled: 0).trying, release.version, "on trial until the user's record is shown")
@@ -37,44 +37,49 @@ final class EngineBootTests: XCTestCase {
         XCTAssertEqual(state.proven, [release.version])
     }
 
-    func testALaunchThatEndsBeforeTheRecordIsShownCountsAgainstTheEngine() throws {
+    func testALaunchThatEndsBeforeTheRecordIsShownCountsAgainstTheEngine() async throws {
         let release = fixture.staged(daysAfterBundled: 2)
         try folder.stage(release)
-        XCTAssertEqual(try boot().version, release.version) // never confirmed: a hang on the real record
-        XCTAssertNil(try boot().version)
+        let launch1 = try await boot()
+        XCTAssertEqual(launch1.version, release.version) // never confirmed: a hang on the real record
+        let launch2 = try await boot()
+        XCTAssertNil(launch2.version)
         XCTAssertEqual(try folder.readState(bundled: 0).bad, [release.version])
     }
 
-    func testABackgroundLaunchLeavesAnOpenTrialForTheNextForegroundOne() throws {
+    func testABackgroundLaunchLeavesAnOpenTrialForTheNextForegroundOne() async throws {
         let release = fixture.staged(daysAfterBundled: 2)
         try folder.stage(release)
-        _ = try boot()
-        XCTAssertNil(try boot(foreground: false).version, "not proven, so not run in the background")
+        _ = try await boot()
+        let launch3 = try await boot(foreground: false)
+        XCTAssertNil(launch3.version, "not proven, so not run in the background")
         XCTAssertEqual(try folder.readState(bundled: 0).trying, release.version)
         XCTAssertEqual(try folder.readState(bundled: 0).bad, [])
     }
 
-    func testMyDataConfirmsATrialThroughItsStore() throws {
+    /// The trial confirms in one place: the store, once it has drawn the user's own record
+    /// and its plan (here health-core's PlanError), whichever tab is open, and on any later
+    /// draw (a unit switch) had the first one failed.
+    func testTheStoreConfirmsATrialOnceItDrawsTheRecord() async throws {
         let release = fixture.staged(daysAfterBundled: 2)
         try folder.stage(release)
-        let choice = try boot()
+        let choice = try await boot()
+        XCTAssertNotNil(choice.engine.trial)
         let records = FileManager.default.temporaryDirectory.appending(path: "data trial \(UUID().uuidString)", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: records, withIntermediateDirectories: true)
         let store = try RecordStore(folder: records, engine: choice.engine, deviceId: "test")
         XCTAssertNotNil(store.myData, "the engine read the user's record")
-        XCTAssertTrue(store.engineTrial === choice.engine.trial)
-        store.confirmEngineTrial() // MyDataView's one call, on appear: My data, then a silent plan (PlanError here)
         XCTAssertNil(try folder.readState(bundled: 0).trying)
         XCTAssertEqual(try folder.readState(bundled: 0).proven, [release.version])
-        store.confirmEngineTrial() // idempotent: the plan confirming later changes nothing
-        XCTAssertEqual(try folder.readState(bundled: 0).proven, [release.version])
+        await XCTAssertSaved(await store.apply(.profile(sex: "male", birthYear: 1975, birthMonth: 6, height: 178)))
+        XCTAssertEqual(try folder.readState(bundled: 0).proven, [release.version], "a later draw changes nothing")
     }
 
     /// Review R5: a plan screen whose engine threw on the user's record never confirms.
     func testThePlanScreenNeverConfirmsAnEngineThatThrewOnTheRecord() async throws {
         let release = fixture.staged(daysAfterBundled: 2, throwsOnRealRecords: true)
         try folder.stage(release)
-        let choice = try boot()
+        let choice = try await boot()
         XCTAssertEqual(choice.version, release.version, "it passed its self-test")
         let records = FileManager.default.temporaryDirectory.appending(path: "plan throws \(UUID().uuidString)", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: records, withIntermediateDirectories: true)
@@ -82,17 +87,18 @@ final class EngineBootTests: XCTestCase {
         let shown = store.recordJSON
         XCTAssertThrowsError(try choice.engine.blocking { try $0.plan(recordJSON: shown, now: .now, deviceId: "test") })
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
-        window.rootViewController = UIHostingController(rootView: PlanView(engine: choice.engine, store: store, showMyData: {}))
+        window.rootViewController = UIHostingController(rootView: PlanView(store: store, showMyData: {}))
         window.makeKeyAndVisible()
         try await Task.sleep(for: .seconds(2))
         XCTAssertEqual(try folder.readState(bundled: 0).trying, release.version, "still on trial")
         XCTAssertEqual(try folder.readState(bundled: 0).proven, [])
         window.isHidden = true
-        XCTAssertNil(try boot().version, "the next launch counts it against the engine")
+        let launch4 = try await boot()
+        XCTAssertNil(launch4.version, "the next launch counts it against the engine")
     }
 
     /// Review R8: missing fields take defaults; a corrupt file is moved aside, not "locked".
-    func testAStateWithMissingFieldsDecodesWithDefaults() throws {
+    func testAStateWithMissingFieldsDecodesWithDefaults() async throws {
         try Data(#"{"highWater":7}"#.utf8).write(to: folder.url.appending(path: "state.json"))
         let state = try folder.readState(bundled: 0)
         XCTAssertEqual(state.highWater, 7)
@@ -104,7 +110,7 @@ final class EngineBootTests: XCTestCase {
         let release = fixture.staged(daysAfterBundled: 2)
         try folder.stage(release)
         try Data("{not json".utf8).write(to: folder.url.appending(path: "state.json"))
-        let choice = try boot()
+        let choice = try await boot()
         XCTAssertNil(choice.version, "a rebuilt state runs no download: every staged version is deleted")
         XCTAssertEqual(folder.stagedVersions(), [])
         let names = try FileManager.default.contentsOfDirectory(atPath: folder.url.path(percentEncoded: false))
@@ -123,59 +129,40 @@ final class EngineBootTests: XCTestCase {
         state.floor = newer // a release raised the floor above `revoked`
         try folder.write(state)
         try Data("{not json".utf8).write(to: folder.url.appending(path: "state.json"))
-        XCTAssertNil(try boot().version, "the revoked version never runs")
+        let launch5 = try await boot()
+        XCTAssertNil(launch5.version, "the revoked version never runs")
         let after = try folder.readState(bundled: 0)
         XCTAssertEqual(after.floor, newer)
         XCTAssertEqual(after.highWater, newer)
         XCTAssertEqual(folder.stagedVersions(), [])
     }
 
-    /// Review N1: My data's confirm also plans the record; an engine whose plan throws is never proven.
-    func testMyDataNeverConfirmsAnEngineWhosePlanThrows() throws {
+    /// Review N1: the store's confirm needs the record planned; an engine whose plan throws is never proven.
+    func testTheStoreNeverConfirmsAnEngineWhosePlanThrows() async throws {
         let release = fixture.staged(daysAfterBundled: 2, throwsOnRealRecords: true)
         try folder.stage(release)
-        let choice = try boot()
+        let choice = try await boot()
         let records = FileManager.default.temporaryDirectory.appending(path: "data throws \(UUID().uuidString)", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: records, withIntermediateDirectories: true)
         let store = try RecordStore(folder: records, engine: choice.engine, deviceId: "test")
         XCTAssertNotNil(store.myData, "My data drew the record")
-        store.confirmEngineTrial()
         XCTAssertEqual(try folder.readState(bundled: 0).trying, release.version, "still on trial")
         XCTAssertEqual(try folder.readState(bundled: 0).proven, [])
     }
 
-    func testThePlanScreenConfirmsATrialOnceThePlanRenders() async throws {
-        let release = fixture.staged(daysAfterBundled: 2)
-        try folder.stage(release)
-        let choice = try boot()
-        let records = FileManager.default.temporaryDirectory.appending(path: "plan trial \(UUID().uuidString)", directoryHint: .isDirectory)
-        try FileManager.default.createDirectory(at: records, withIntermediateDirectories: true)
-        let store = try RecordStore(folder: records, engine: choice.engine, deviceId: "test")
-        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
-        window.rootViewController = UIHostingController(rootView: PlanView(engine: choice.engine, store: store, showMyData: {}))
-        window.makeKeyAndVisible()
-        var waited = 0
-        while try folder.readState(bundled: 0).trying != nil, waited < 100 {
-            try await Task.sleep(for: .milliseconds(50))
-            waited += 1
-        }
-        XCTAssertNil(try folder.readState(bundled: 0).trying)
-        XCTAssertEqual(try folder.readState(bundled: 0).proven, [release.version])
-        window.isHidden = true
-    }
-
-    func testTheNewestOfTwoRuns() throws {
+    func testTheNewestOfTwoRuns() async throws {
         let older = fixture.staged(daysAfterBundled: 1)
         let newer = fixture.staged(daysAfterBundled: 2)
         try folder.stage(older)
         try folder.stage(newer)
-        XCTAssertEqual(try boot().version, newer.version)
+        let launch6 = try await boot()
+        XCTAssertEqual(launch6.version, newer.version)
     }
 
-    func testAFailedSelfTestFallsBackToTheBundledEngine() throws {
+    func testAFailedSelfTestFallsBackToTheBundledEngine() async throws {
         let release = fixture.staged(daysAfterBundled: 2, broken: true)
         try folder.stage(release)
-        let choice = try boot()
+        let choice = try await boot()
         XCTAssertNil(choice.version)
         XCTAssertEqual(try version(choice), fixture.bundled.facts.version)
         let state = try folder.readState(bundled: 0)
@@ -184,69 +171,75 @@ final class EngineBootTests: XCTestCase {
         XCTAssertEqual(folder.stagedVersions(), [], "a bad engine is deleted")
     }
 
-    func testAFailedNewerEngineFallsBackToTheLastGoodOne() throws {
+    func testAFailedNewerEngineFallsBackToTheLastGoodOne() async throws {
         let good = fixture.staged(daysAfterBundled: 1)
         let broken = fixture.staged(daysAfterBundled: 2, broken: true)
         try folder.stage(good)
         try folder.stage(broken)
-        XCTAssertEqual(try boot().version, good.version)
+        let launch7 = try await boot()
+        XCTAssertEqual(launch7.version, good.version)
     }
 
-    func testATrialThatNeverFinishedIsACrashAndFallsBack() throws {
+    func testATrialThatNeverFinishedIsACrashAndFallsBack() async throws {
         let release = fixture.staged(daysAfterBundled: 2)
         try folder.stage(release)
         var state = EngineFolder.State()
         state.trying = release.version // the last launch died during its trial
         try folder.write(state)
-        let choice = try boot()
+        let choice = try await boot()
         XCTAssertNil(choice.version)
         XCTAssertEqual(try folder.readState(bundled: 0).bad, [release.version])
         XCTAssertEqual(folder.stagedVersions(), [])
     }
 
-    func testATamperedFileOnDiskFallsBack() throws {
+    func testATamperedFileOnDiskFallsBack() async throws {
         let release = fixture.staged(daysAfterBundled: 2)
         var tampered = release.bundle
         tampered[tampered.count - 3] ^= 1
         try folder.stage(EngineFolder.Staged(version: release.version, bundle: tampered, manifest: release.manifest, signature: release.signature))
-        XCTAssertNil(try boot().version)
+        let launch8 = try await boot()
+        XCTAssertNil(launch8.version)
         XCTAssertEqual(try folder.readState(bundled: 0).bad, [release.version])
     }
 
-    func testAnEngineSignedByAKeyNoLongerPinnedIsRefused() throws {
+    func testAnEngineSignedByAKeyNoLongerPinnedIsRefused() async throws {
         try folder.stage(fixture.staged(daysAfterBundled: 2))
         let other = try EngineReleaseFixture()
-        let choice = try EngineBoot(folder: folder, bundled: fixture.bundled, keys: other.keys, appBuild: 5, session: StubHTTP.session(), foreground: true).start()
+        let choice = try await EngineBoot(folder: folder, bundled: fixture.bundled, keys: other.keys, appBuild: 5, session: StubHTTP.session(), foreground: true).start()
         XCTAssertNil(choice.version)
     }
 
-    func testABackgroundLaunchNeverTriesANewEngine() throws {
+    func testABackgroundLaunchNeverTriesANewEngine() async throws {
         let release = fixture.staged(daysAfterBundled: 2)
         try folder.stage(release)
-        XCTAssertNil(try boot(foreground: false).version)
+        let launch9 = try await boot(foreground: false)
+        XCTAssertNil(launch9.version)
         let state = try folder.readState(bundled: 0)
         XCTAssertNil(state.trying)
         XCTAssertEqual(state.bad, [])
         XCTAssertEqual(folder.stagedVersions(), [release.version], "kept for a foreground launch")
-        let trial = try boot(foreground: true)
+        let trial = try await boot(foreground: true)
         XCTAssertEqual(trial.version, release.version)
         trial.engine.trial?.confirm()
-        XCTAssertEqual(try boot(foreground: false).version, release.version, "proven now, so a background launch may run it")
+        let launch10 = try await boot(foreground: false)
+        XCTAssertEqual(launch10.version, release.version, "proven now, so a background launch may run it")
     }
 
-    func testAnUnreadableStateIsNotNowNeverBad() throws {
+    func testAnUnreadableStateIsNotNowNeverBad() async throws {
         let release = fixture.staged(daysAfterBundled: 2)
         try folder.stage(release)
         // A folder where the state file should be: reading it fails, as before first unlock.
         try FileManager.default.createDirectory(at: folder.url.appending(path: "state.json"), withIntermediateDirectories: true)
-        XCTAssertNil(try boot().version)
+        let launch11 = try await boot()
+        XCTAssertNil(launch11.version)
         XCTAssertEqual(folder.stagedVersions(), [release.version])
     }
 
-    func testAnAppUpdateWithANewerBundledEngineDeletesOlderDownloads() throws {
+    func testAnAppUpdateWithANewerBundledEngineDeletesOlderDownloads() async throws {
         let release = fixture.staged(daysAfterBundled: -1)
         try folder.stage(release)
-        XCTAssertNil(try boot().version)
+        let launch12 = try await boot()
+        XCTAssertNil(launch12.version)
         XCTAssertEqual(folder.stagedVersions(), [])
     }
 

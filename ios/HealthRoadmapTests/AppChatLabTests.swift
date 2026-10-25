@@ -45,6 +45,86 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertEqual(try engine.blocking { [now] in try $0.chatConversations(historyJSON: deleted, now: now, deviceId: "test") }, [])
     }
 
+    /// Codex (US-52 AC6): a conversation still loading when the person taps New chat, or
+    /// opens another, never replaces what the screen then shows.
+    @MainActor
+    func testALateConversationLoadIsDroppedOnceTheScreenMovesOn() async throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Chat Load \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let chat = ChatHistoryStore(engine: try HealthEngine(), folder: folder, deviceId: "test")
+        for id in ["c1", "c2"] {
+            await chat.record(ChatExchange(conversationId: id, isNew: true, userText: "Q \(id)", assistantText: "A.", isFallback: false), askedAt: ChatHistoryStore.erasures)
+        }
+
+        let opened = await chat.open("c1").value
+        XCTAssertEqual(opened?.first?.content, "Q c1", "nothing moved: the load lands")
+
+        let beforeNewChat = chat.open("c1")
+        chat.leave() // New chat
+        let dropped = await beforeNewChat.value
+        XCTAssertNil(dropped, "New chat wins")
+
+        let first = chat.open("c1")
+        let second = chat.open("c2")
+        let (late, latest) = await (first.value, second.value)
+        XCTAssertNil(late, "the later open wins")
+        XCTAssertEqual(latest?.first?.content, "Q c2")
+    }
+
+    /// US-52 AC6: the History sheet lists the conversations saved on the phone. The app's
+    /// one store starts empty at launch; opening History reads the file (ChatView's button).
+    @MainActor
+    func testTheHistorySheetListsSavedConversations() async throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Chat List \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let engine = try HealthEngine()
+        let earlier = ChatHistoryStore(engine: engine, folder: folder, deviceId: "test")
+        for id in ["c1", "c2"] {
+            await earlier.record(ChatExchange(conversationId: id, isNew: true, userText: "Q \(id)", assistantText: "A.", isFallback: false), askedAt: ChatHistoryStore.erasures)
+        }
+        let launched = ChatHistoryStore(engine: engine, folder: folder, deviceId: "test")
+        XCTAssertEqual(launched.conversations, [], "empty until read")
+        await launched.refresh() // History, as it opens
+        XCTAssertEqual(Set(launched.conversations.map(\.id)), ["c1", "c2"])
+    }
+
+    /// R9 (US-52 AC6): a swiped conversation leaves the list at once, before the engine
+    /// writes its tombstone, so its row never springs back; the list is read again after.
+    @MainActor
+    func testADeletedConversationLeavesTheListAtOnce() async throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Chat Delete \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let chat = ChatHistoryStore(engine: try HealthEngine(), folder: folder, deviceId: "test")
+        await chat.record(ChatExchange(conversationId: "c1", isNew: true, userText: "Q", assistantText: "A.", isFallback: false), askedAt: ChatHistoryStore.erasures)
+        XCTAssertEqual(chat.conversations.map(\.id), ["c1"])
+
+        let deleting = chat.delete("c1")
+        XCTAssertEqual(chat.conversations, [], "gone before the engine has written")
+        await deleting.value
+        XCTAssertEqual(chat.conversations, [], "and still gone once the list is read again")
+    }
+
+    /// Re-check N3 (US-52 AC6): a list read that runs before a swiped conversation's
+    /// tombstone is written (an earlier delete's refresh) never shows its row again.
+    @MainActor
+    func testAListReadBeforeADeleteLandsNeverShowsItsRow() async throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Chat Delete Twice \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let chat = ChatHistoryStore(engine: try HealthEngine(), folder: folder, deviceId: "test")
+        for id in ["c1", "c2"] {
+            await chat.record(ChatExchange(conversationId: id, isNew: true, userText: "Q \(id)", assistantText: "A.", isFallback: false), askedAt: ChatHistoryStore.erasures)
+        }
+        let deleting = chat.delete("c2")
+        await chat.refresh() // asked before the delete's write is on the engine's queue
+        XCTAssertEqual(chat.conversations.map(\.id), ["c1"], "c2 never comes back")
+        await deleting.value
+        XCTAssertEqual(chat.conversations.map(\.id), ["c1"])
+    }
+
     // MARK: AC5: the streamed answer
 
     func testTheStreamReaderKnowsTheWebsEvents() {
@@ -111,12 +191,13 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertNil(try engine.blocking { [now, extraction] in try $0.labReview(extractionJSON: extraction, now: now) }.document)
     }
 
-    func testAReadFileKeepsItsOriginalBytes() throws {
+    func testAReadFileKeepsItsOriginalBytes() async throws {
         let pdf = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 200, height: 200)).pdfData { $0.beginPage() }
         let document = try XCTUnwrap(LabFileReader.documents(from: pdf, name: "a.pdf").first)
         XCTAssertEqual(document.original?.verifiedData(), pdf)
         XCTAssertEqual(document.original?.mimeType, "application/pdf")
-        XCTAssertNil(try LabFileReader.pictures([UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { _ in }], name: "Photo").original)
+        let photo = try await LabFileReader.pictures([UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { _ in }], name: "Photo")
+        XCTAssertNil(photo.original)
     }
 
     /// A ZIP member's name is the web's zipMemberName, cap and hash included, so the
