@@ -20,10 +20,11 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 ## Key safety points
 
 - Bromelain may inhibit platelet aggregation, and papaya preparations have been reported to cause over-anticoagulation with warfarin. Check with your doctor before using bromelain or papain with warfarin, aspirin, clopidogrel or other blood thinners [72][97].
+- The acarbose and miglitol labels say enzyme products containing amylase or pancreatin may reduce the effect of these diabetes drugs and should not be taken at the same time [103][104].
 - Alpha-galactosidase partly blunted the blood-sugar-lowering effect of acarbose in people with type 2 diabetes [80]. If you take diabetes medicines, check with your doctor first.
 - Papain can cause allergic reactions, including a severe one after eating meat tenderizer, and people allergic to weeping fig latex may react to papain [67][68][92]. In a severe allergic reaction, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
-- In young children with cystic fibrosis, high daily doses of pancreatic enzymes were strongly linked to fibrosing colonopathy, a scarring of the bowel; daily doses should usually stay below 10,000 lipase units per kilogram [91].
-- Pancreatic extract can reduce folate absorption, and high doses raised uric acid in the urine of children with cystic fibrosis [74][94].
+- High doses of pancreatic enzymes are linked to fibrosing colonopathy, a scarring of the bowel seen mostly in children with cystic fibrosis [91][105]. The Creon label says not to exceed 2,500 lipase units per kilogram per meal or 10,000 per kilogram per day without further investigation [105].
+- Pancreatic extract can reduce folate absorption, and high doses can raise uric acid [74][94][105].
 - In a 12-week trial, more people stopped alpha-galactosidase than placebo, most often for abdominal pain and diarrhea [93].
 
 ## Brad's videos on this topic
@@ -76,7 +77,7 @@ Trials report enzyme doses as activity, not weight: for example lipase units for
 
 ### Label Reading: Activity vs. Weight
 
-Because trials dose enzymes by activity, compare the activity units on a label with the trial doses below rather than the weight in milligrams [13][52].
+Because trials dose enzymes by activity rather than weight, a label's activity units say more about its strength than the weight in milligrams [13][52].
 
 ### pH Stability and Enzyme Selection
 
@@ -110,7 +111,7 @@ Exocrine pancreatic insufficiency is a condition in which the pancreas fails to 
 
 **Pancreatic Enzyme Replacement Therapy (PERT):** Enzyme replacement together with dietary advice and support is the cornerstone of EPI treatment [90]. Enzymes come as enteric-coated minimicrospheres taken during meals, so that active lipase reaches the duodenum as food leaves the stomach [13][40].
 
-In a trial in people with EPI from chronic pancreatitis or pancreatectomy, pancrelipase at 72,000 lipase units per meal and 36,000 per snack improved fat and protein absorption more than placebo [99]. The usual dose is 40,000 to 50,000 lipase units per main meal and half that for a snack, matched to the meal's fat content; if symptoms persist, the dose can be doubled and an acid-reducing drug added [13]. In real-world studies, 40% reported average doses below this range, and lower doses still eased diarrhea but did not improve nutritional status [98].
+In a post hoc analysis of a 7-day trial in people with EPI from chronic pancreatitis or pancreatectomy, pancrelipase at 72,000 lipase units per meal and 36,000 per snack improved fat and protein absorption more than placebo [99]. The usual dose is 40,000 to 50,000 lipase units per main meal and half that for a snack, matched to the meal's fat content; if symptoms persist, the dose can be doubled, within the label maximum, and an acid-reducing drug added [13][105]. In 40% of the studies (10 of 25 observational studies), average doses were below this range, and lower doses still eased diarrhea but did not improve nutritional status [98].
 
 **Older dosing advice:** A 2003 review advised 25,000 to 40,000 units of porcine lipase per meal [30]; current guidance is higher [13].
 
@@ -130,7 +131,7 @@ Lactose intolerance results from insufficient lactase (beta-galactosidase) activ
 
 CSID is an inherited condition in which changes in the sucrase-isomaltase gene produce an enzyme that does not reach the gut surface or does not work, so sucrose is poorly digested [50]. Affected children have diarrhea, abdominal cramps, gas and bloating when they eat sucrose [51].
 
-**Treatment:** Sacrosidase is a liquid sucrase made from baker's yeast (Saccharomyces cerevisiae). In a randomized double-blind trial in 28 children, it lowered breath hydrogen after sucrose, and higher concentrations meant fewer stools and fewer symptoms on a normal diet [51]. Doses depended on body weight, with 2 mL for children over 15 kg [51].
+**Treatment:** Sacrosidase is a liquid sucrase made from baker's yeast (Saccharomyces cerevisiae). In a randomized double-blind trial in 28 children, it lowered breath hydrogen after sucrose, and higher concentrations meant fewer stools and fewer symptoms on a normal diet [51]. Doses depended on body weight [51]. The label dose is 8,500 IU (1 mL) with each meal or snack for people weighing 15 kg or less and 17,000 IU (2 mL) for those over 15 kg [106].
 
 ### Gas and Bloating from Fermentable Carbohydrates
 
@@ -161,7 +162,7 @@ Bromelain, the protease derived from pineapple stems and fruit, has both digesti
 
 **Digestive use:** Bromelain helps break down proteins and has been used alongside animal-derived enzymes [42].
 
-**Osteoarthritis pain:** In a 16-week pilot trial in 40 people with mild-to-moderate knee osteoarthritis, bromelain 500 mg a day eased symptoms about as much as diclofenac at 4 weeks, and symptom scores kept improving from baseline to 16 weeks [96]. Laboratory and animal studies show anti-inflammatory, anti-swelling and clot-dissolving effects, partly through the arachidonic acid pathway [57][72].
+**Osteoarthritis pain:** In a 16-week single-blind pilot trial in 40 people with mild-to-moderate knee osteoarthritis, bromelain 500 mg a day showed no difference from diclofenac at 4 weeks, though the authors called the comparison inconclusive; symptom scores at 16 weeks were better than at baseline [96]. Laboratory and animal studies show anti-inflammatory, anti-swelling and clot-dissolving effects, partly through the arachidonic acid pathway [57][72].
 
 **Key distinction:** Bromelain is absorbed from the gut while keeping its protein-digesting activity, which means it may act beyond the gut [17].
 
@@ -188,7 +189,7 @@ Live bacteria can supply enzymes too. Yogurt cultures carry their own lactase an
 | Alpha-galactosidase | Gas from beans/legumes | 300-1,200 GalU | With the meal | Di Stefano 2007 [52] |
 | Phytase | Iron absorption from phytate-rich flour | 20-320 phytase units per 100 g of flour | In the food | Troesch 2013 [27] |
 | Bromelain (systemic) | Knee osteoarthritis | 500 mg a day | Daily for 16 weeks | Kasemsuk 2016 [96] |
-| Sacrosidase | CSID | By body weight; 2 mL for children over 15 kg | As prescribed | Treem 1999 [51] |
+| Sacrosidase | CSID | 1 mL (8,500 IU) at 15 kg or less; 2 mL (17,000 IU) over 15 kg | With each meal or snack | Treem 1999 [51]; label [106] |
 
 ### General Dosing Principles
 
@@ -196,7 +197,7 @@ Live bacteria can supply enzymes too. Yogurt cultures carry their own lactase an
 
 **Dose-response relationship:** More enzyme helped in some trials, up to a limit. About 6,000 IU of lactase beat 3,000 IU with 20 g of lactose, but neither dose coped with 50 g [45], and alpha-galactosidase at 1,200 GalU reduced breath hydrogen where 300 GalU did not [52].
 
-**Individualization:** PERT doses follow the fat content of the meal and the response to treatment [13]. In young children with cystic fibrosis, the risk of fibrosing colonopathy rose steeply with high daily doses, which supports keeping the daily dose below 10,000 lipase units per kilogram for most patients [91].
+**Individualization:** PERT doses follow the fat content of the meal and the response to treatment [13]. The Creon label says not to exceed 2,500 lipase units per kilogram per meal, 10,000 per kilogram per day or 4,000 per gram of dietary fat per day in adults and children over 12 months without further investigation [105]. In young children with cystic fibrosis, the risk of fibrosing colonopathy rose steeply with high daily doses [91].
 
 ### Storage
 
@@ -206,7 +207,7 @@ Follow the storage directions on the product label.
 
 ### General Tolerability
 
-In a trial of prescription pancrelipase, side effects, including low and high blood sugar, were about as common as with placebo [99]. No side effects were reported in a 2-week trial of alpha-galactosidase in children [101].
+In a post hoc analysis of a 7-day trial of prescription pancrelipase, side effects, including low and high blood sugar, were about as common as with placebo [99]. No side effects were reported in a 2-week trial of alpha-galactosidase in children [101].
 
 ### Side Effects by Enzyme Type
 
@@ -216,6 +217,7 @@ In a trial of prescription pancrelipase, side effects, including low and high bl
 **Papain:**
 - Among 475 allergy-clinic patients with seasonal allergies, 5 had papain allergy confirmed by blinded challenge, with symptoms such as an itchy palate, itchy watery eyes, sneezing, runny nose, abdominal cramps, diarrhea and sweating [92]. A severe whole-body allergic reaction followed eating a papain meat tenderizer [67], and people allergic to weeping fig latex may cross-react with papain [68]. In a severe allergic reaction, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - Papaya preparations have been reported to cause over-anticoagulation in people taking warfarin [97].
+- Sucraid (sacrosidase) may contain small amounts of papain, and its label says not to use it if you are allergic to papain [106].
 
 **Bromelain:**
 - Bromelain may inhibit platelet aggregation, so taking it with blood thinners could raise bleeding risk [72].
@@ -224,17 +226,22 @@ In a trial of prescription pancrelipase, side effects, including low and high bl
 
 **Pancreatin and other porcine enzymes:**
 - Pancreatic extract reduced folate absorption in both healthy people and people with pancreatic insufficiency, so folate status should be monitored in people on long-term treatment [74].
-- If you are allergic to pork protein, do not take enzymes made from pig pancreas.
-- High doses of pancreatic extract raised uric acid in the urine of children with cystic fibrosis, and the authors advised using the lowest effective dose to protect the kidneys [94]. People with gout or kidney problems should ask their doctor before use.
+- If you have had an allergic reaction to pork proteins, tell your doctor: the Creon label advises monitoring for allergic reactions during treatment, and severe reactions, including anaphylaxis, have been reported with pancreatic enzyme products [105].
+- High doses of pancreatic extract raised uric acid in the urine of children with cystic fibrosis, and the authors advised using the lowest effective dose to protect the kidneys [94]. Pancreatic enzyme products contain purines that may raise blood uric acid, and the Creon label suggests considering uric acid tests in people with gout, kidney problems or high uric acid [105].
 - In people with EPI after chronic pancreatitis or pancreatectomy, low and high blood sugar were about as common with pancrelipase as with placebo [99].
-- **Fibrosing colonopathy:** This rare scarring of the colon has been reported in young children with cystic fibrosis taking high-strength pancreatic enzymes. Compared with 0 to 24,000 lipase units per kilogram per day, the relative risk was 10.9 (95% CI 1.6 to 71.8) at 24,001 to 50,000 units and 199.5 (95% CI 9.9 to 4026.0) above 50,000 units [91].
+- **Fibrosing colonopathy:** This rare, serious scarring of the colon has been reported after high doses of pancreatic enzymes, usually taken for a long time and mostly in children with cystic fibrosis [105]. Doses above 6,000 lipase units per kilogram per meal have been linked to narrowing of the colon in children under 12 [105]. Compared with 0 to 24,000 lipase units per kilogram per day, the relative risk was 10.9 (95% CI 1.6 to 71.8) at 24,001 to 50,000 units and 199.5 (95% CI 9.9 to 4026.0) above 50,000 units [91].
+
+**Sacrosidase:**
+- Do not use it if you are allergic to yeast, yeast products, glycerin (glycerol) or papain [106].
+- Severe allergic reactions, including wheezing, have been reported; in a trial, one child with a history of asthma developed wheezing [51][106]. Stop it and seek medical help if allergy symptoms appear [106].
+- It lets the body absorb the glucose and fructose from sucrose, so people with diabetes should monitor their blood glucose [106].
 
 **Alpha-galactosidase:**
 - More people stopped alpha-galactosidase than placebo in a 12-week trial in irritable bowel syndrome, most often for abdominal pain and diarrhea [93].
 
 ### Fat-Soluble Vitamin Deficiencies from Untreated EPI
 
-Untreated exocrine pancreatic insufficiency causes malabsorption and nutritional deficiencies, which lower quality of life and raise illness and death rates [90]. Complications include osteoporosis [13].
+Untreated exocrine pancreatic insufficiency causes malabsorption and nutritional deficiencies, which lower quality of life and raise illness and death rates [90]. These deficiencies usually involve protein, fat-soluble vitamins and other micronutrients, and are linked to weight loss, osteoporosis and sarcopenia (loss of muscle) [90]. Enzyme replacement plays a key role against osteoporosis by improving the absorption of fat-soluble vitamins, including vitamin D [90].
 
 ## 6. Drug Interactions
 
@@ -244,8 +251,8 @@ Some digestive enzymes interact with medicines. Check with your doctor or pharma
 
 | Enzyme | Drug Affected | Interaction | Clinical Significance |
 |--------|-------------|-------------|------|
-| Amylase / Pancreatin | Acarbose | Acarbose works by blocking carbohydrate digestion [80], so enzymes that digest starch may weaken it | Check with your doctor before combining |
-| Amylase / Pancreatin | Miglitol | Miglitol also blocks carbohydrate digestion, so starch-digesting enzymes may weaken it | Check with your doctor before combining |
+| Amylase / Pancreatin | Acarbose | Acarbose works by blocking carbohydrate digestion [80]; its label says enzyme products containing amylase or pancreatin may reduce its effect [103] | Should not be taken at the same time [103] |
+| Amylase / Pancreatin | Miglitol | Miglitol also blocks carbohydrate digestion; its label says enzyme products containing amylase or pancreatin may reduce its effect [104] | Should not be taken at the same time [104] |
 | Alpha-galactosidase | Acarbose | In a crossover trial in 37 people with type 2 diabetes, blood sugar after meals was higher with alpha-galactosidase plus acarbose than with acarbose alone, though still lower than with placebo [80] | Alpha-galactosidase may partly counteract acarbose |
 | DPP-IV (dipeptidyl peptidase IV) | DPP-4 inhibitors (gliptins) such as sitagliptin | Gliptins work by blocking the DPP-4 enzyme [81], so a supplement containing the enzyme could in theory interfere | Check with your doctor before combining |
 
@@ -271,7 +278,7 @@ Bromelain may increase the absorption of certain drugs [17][57][72]:
 
 ### Practical Guidance
 
-- **Diabetes medications:** Check with your doctor before combining amylase, pancreatin, alpha-galactosidase or DPP-IV enzyme supplements with acarbose, miglitol or gliptins [80].
+- **Diabetes medications:** Do not take amylase or pancreatin products at the same time as acarbose or miglitol [103][104]. Check with your doctor before combining alpha-galactosidase with acarbose [80], or DPP-IV enzyme supplements with gliptins, which work by blocking that enzyme [81].
 - **Blood thinners:** Use bromelain and papain with caution when taking anticoagulant or antiplatelet medicines, and tell your doctor before combining them [72][97].
 - **Chronic pancreatin use:** Have folate status monitored; supplementation may be needed [74].
 
@@ -421,3 +428,11 @@ Dietary enzyme sources alone are unlikely to compensate for clinically significa
 [101] Di Nardo G, Oliva S, Ferrari F, et al. "Efficacy and tolerability of alpha-galactosidase in treating gas-related symptoms in children: a randomized, double-blind, placebo controlled trial." *BMC Gastroenterol*. 2013;13:142. PMID: [24063420](https://pubmed.ncbi.nlm.nih.gov/24063420/)
 
 [102] Sandberg AS, Hulthen LR, Turk M. "Dietary Aspergillus niger phytase increases iron absorption in humans." *J Nutr*. 1996;126(2):476-480. PMID: [8632221](https://pubmed.ncbi.nlm.nih.gov/8632221/)
+
+[103] US National Library of Medicine, DailyMed. "PRECOSE (acarbose) tablet: prescribing information." Aphena Pharma Solutions, SPL version 1, 2014. https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=c85bc02a-bf18-4690-84b8-2c256bce5f9f
+
+[104] US National Library of Medicine, DailyMed. "Miglitol tablets: prescribing information." Westminster Pharmaceuticals, SPL version 2, 2021. https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=b8da2015-d254-2425-e053-2995a90acf0e
+
+[105] US National Library of Medicine, DailyMed. "CREON (pancrelipase) delayed-release capsules: prescribing information." AbbVie, SPL version 109, 2024. https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=073201aa-556d-4a70-918e-84e9616fd88d
+
+[106] US National Library of Medicine, DailyMed. "SUCRAID (sacrosidase) oral solution: prescribing information." QOL Medical, SPL version 21, 2025. https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=d613bb7f-c3f4-462e-81a2-da2347cc4b6b
