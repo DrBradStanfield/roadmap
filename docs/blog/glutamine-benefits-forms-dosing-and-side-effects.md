@@ -102,7 +102,7 @@ Glutamine has also been tested for gut barrier function in other settings.
 
 **NSAID-induced permeability:** In healthy volunteers given the NSAID indomethacin, glutamine taken as 3x7 g daily for 1 week beforehand did not prevent the rise in gut permeability. Several doses taken close in time to the NSAID did lower it [25].
 
-**Exercise-induced permeability:** In a study of active men running for 60 minutes at 30 degrees C, glutamine taken 2 hours before the run lowered a marker of gut permeability at doses from 0.25 g per kg of fat-free mass, with no effect on gut symptoms [26].
+**Exercise-induced permeability:** In a study of active men running for 60 minutes at 30 degrees C, glutamine taken 2 hours before the run likely lowered a marker of gut permeability at doses from 0.25 g per kg of fat-free mass, with no effect on gut symptoms [26].
 
 **Inflammatory bowel disease (IBD):** A 2016 Cochrane review found only two small trials (42 patients) of glutamine for active Crohn's disease. In one, 4/9 on a glutamine-enriched diet reached remission versus 5/9 on a standard diet (RR 0.80, 95% CI 0.31 to 2.04), and neither trial found a change in gut permeability [29]. The reviewers found the evidence too thin for firm conclusions [29].
 
@@ -144,7 +144,7 @@ Two thirds of patients in both groups also took hydroxyurea [44]. An earlier sma
 
 The evidence for glutamine in critically ill patients has changed over time.
 
-**Early positive evidence:** A 2002 review of 14 randomized trials found glutamine was associated with lower mortality (RR 0.78, 95% CI 0.58-1.04) and fewer infections, with the benefit mostly in high-dose, parenteral glutamine [47]. A 2014 review of 26 trials of parenteral glutamine found lower hospital mortality (RR 0.68, 95% CI 0.51, 0.90) [48].
+**Early positive evidence:** A 2002 review of 14 randomized trials found glutamine was associated with a non-significant trend toward lower mortality (RR 0.78, 95% CI 0.58 to 1.04) and fewer infections, with the benefit mostly in high-dose, parenteral glutamine [47]. A 2014 review of 26 trials of parenteral glutamine found lower hospital mortality (RR 0.68, 95% CI 0.51, 0.90) [48].
 
 **REDOXS trial (a cautionary result):** In 1223 critically ill adults with multiorgan failure, glutamine given intravenously and by tube showed a trend toward higher 28-day mortality (32.4% vs. 27.2%; adjusted odds ratio, 1.28; 95% confidence interval [CI], 1.00 to 1.64), and in-hospital and 6-month mortality were significantly higher [49]. The META-PLUS trial tested a feed enriched with several nutrients, including glutamine, and found no fewer infections and higher 6-month mortality in the medical subgroup (hazard ratio of 1.57 (95% CI, 1.03-2.39)) [50].
 
@@ -187,16 +187,16 @@ Glutamine is a nonessential amino acid, and food supplies it: women in the Nurse
 | IBS-D (post-infectious) | 5 g three times daily | 8 weeks | One randomized trial [24] |
 | NSAID-induced permeability | Several doses close in time to the NSAID | Acute use | Pre-treatment for a week did not work [25] |
 | Oral mucositis (chemotherapy) | 10 g three times daily | During chemoradiotherapy | Mixed results; oncologist supervision only [39][40] |
-| Sickle cell disease (prescription) | 0.3 g per kilogram of body weight per dose, twice daily [44] | 48 weeks in the trial [44] | FDA-approved [82] |
+| Sickle cell disease (prescription) | 0.3 g per kilogram of body weight per dose, twice daily [44] | 48 weeks in the trial [44] | FDA-approved [82]. The FDA label caps the dose at 5, 10 or 15 g per dose by weight, 30 g a day at most [88] |
 | Critical care (parenteral) | Hospital use only | During ICU stay | Higher mortality in multiorgan failure [49] |
 | Perioperative recovery | Hospital use only | Perioperative period | Shorter hospital stay in pooled trials [47] |
-| Exercise recovery/immune support | 6 g/day | 20 days in one study | Lower muscle damage markers [30] |
+| Exercise recovery (muscle damage) | 6 g/day | 20 days in one study | Lower muscle damage markers [30] |
 | General supplementation | No set dose | Variable | No clear evidence of benefit in well-nourished athletes [34] |
 
 ### Practical Dosing Notes
 
 - **Divide doses:** In a small trial, the highest single dose caused more mild gut symptoms than lower doses [23].
-- **Mix just before use:** Glutamine breaks down in solution, faster at room temperature than in the fridge [86].
+- **Mix just before use:** The prescription label says to mix the powder immediately before taking it [88]. Glutamine breaks down slowly in solution, faster at room temperature than in the fridge [86].
 
 ### Pediatric Dosing
 
@@ -214,29 +214,21 @@ Most reported side effects involve the gut. In healthy men, the highest single d
 
 In the sickle cell trial, low-grade nausea, noncardiac chest pain, fatigue and musculoskeletal pain were more common with L-glutamine than with placebo [44].
 
-### MSG Sensitivity
+### Side Effects at Higher Doses
 
-The body converts glutamine to glutamate [5], so people who are sensitive to MSG (monosodium glutamate) may also react to glutamine.
-
-### Higher-Dose Side Effects (30+ g/day)
-
-High daily doses have been linked to headache, dizziness and a dry mouth. A lower dose may help.
+On the label for prescription L-glutamine, which allows up to 30 g a day, the most common side effects (each in more than 10% of patients) were constipation, nausea, headache, abdominal pain, cough, pain in the arms or legs, back pain and chest pain; several were nearly as common on placebo [88].
 
 ### Kidney Injury
 
-Kidney injury from glutamine is rare but has been reported. A 2026 case report described acute kidney injury from tubular damage in a patient who used 18 g of L-glutamine on a daily basis [72]. The authors thought ammonia made in the kidney from glutamine was the most likely cause, and they advise cautious use of L-glutamine in elderly patients with reduced kidney function [72].
+Kidney injury from glutamine has been reported. A 2026 case report described acute kidney injury from tubular damage in a patient who used 18 g of L-glutamine on a daily basis [72]. The authors thought ammonia made in the kidney from glutamine was the most likely cause, and they advise cautious use of L-glutamine in elderly patients with reduced kidney function [72]. Prescription L-glutamine has not been studied in people with kidney or liver impairment, and its sickle cell trial excluded people with renal insufficiency or uncontrolled liver disease [88].
 
 ### Psychiatric Effects
 
 A 1984 case report, titled "L-glutamine and mania," raised concern for people with bipolar disorder [74]. If you have bipolar disorder, talk to your doctor before taking glutamine.
 
-### Epilepsy Concerns
-
-People with epilepsy should consult their neurologist before supplementing with glutamine.
-
 ### Hepatic Encephalopathy and Liver Disease
 
-The body breaks glutamine down to ammonia [12]. In 238 people with cirrhosis, an oral glutamine challenge raised blood ammonia, and a large rise predicted later hepatic encephalopathy [85]. People with liver disease should talk to their doctor before taking glutamine. If someone with liver disease becomes confused or very drowsy, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+The body breaks glutamine down to ammonia [12]. In 238 people with cirrhosis, an oral glutamine challenge raised blood ammonia, and a large rise predicted later hepatic encephalopathy [85]. People with liver disease should talk to their doctor before taking glutamine. If someone with liver disease becomes confused or very drowsy, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 ### Cancer Safety Considerations
 
@@ -244,11 +236,11 @@ As discussed under Cancer Metabolism above, glutamine supplementation raises con
 
 ### Safety in Pregnancy and Lactation
 
-Pregnant and breastfeeding women should talk to their doctor before taking glutamine.
+There are no data on prescription L-glutamine in pregnancy or breastfeeding, and its sickle cell trial excluded women who were pregnant or breastfeeding [88]. Pregnant and breastfeeding women should talk to their doctor before taking glutamine.
 
 ### Tolerability at High Doses
 
-Doses of up to 0.65 g/kg body mass have been tolerated by patients without abnormal plasma ammonia levels [33]. The sickle cell trial gave 0.3 g per kilogram of body weight per dose, twice daily, for 48 weeks [44].
+Doses of up to 0.65 g/kg body mass have been tolerated by patients without abnormal plasma ammonia levels [33]. The sickle cell trial gave 0.3 g per kilogram of body weight per dose, twice daily, for 48 weeks [44]. The FDA label sets 5, 10 or 15 g per dose by body weight, so 30 g a day at most [88].
 
 ## 6. Drug Interactions
 
@@ -398,4 +390,7 @@ In critical illness, the body may not make enough glutamine [4]. Glutamine in th
 
 [86] Khan K, Elia M. "Factors affecting the stability of L-glutamine in solution." *Clin Nutr*. 1991;10(4):186-192. PMID: 16839917. [https://pubmed.ncbi.nlm.nih.gov/16839917/](https://pubmed.ncbi.nlm.nih.gov/16839917/)
 
+
 [87] Déchelotte P, Darmaun D, Rongier M, et al. "Absorption and metabolic effects of enterally administered glutamine in humans." *Am J Physiol*. 1991;260(5 Pt 1):G677-G682. PMID: 1903599. [https://pubmed.ncbi.nlm.nih.gov/1903599/](https://pubmed.ncbi.nlm.nih.gov/1903599/)
+
+[88] ENDARI (L-glutamine oral powder). Prescribing information, Emmaus Medical. DailyMed, 2025. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=d5a783f4-12ef-4326-8faa-40018e45ba3b](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=d5a783f4-12ef-4326-8faa-40018e45ba3b)
