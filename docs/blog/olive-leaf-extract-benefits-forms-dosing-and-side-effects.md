@@ -6,7 +6,7 @@ publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["olive leaf", "olive leaf extract", "oleuropein", "hydroxytyrosol", "blood pressure", "hypertension", "cholesterol", "ldl", "triglycerides", "blood sugar", "hba1c", "diabetes", "insulin resistance", "cardiovascular", "antioxidant", "inflammation", "immune", "bone density", "osteoporosis", "olive oil", "quercetin", "heart health"]
-summary: "Reference on olive leaf extract (oleuropein), which differs from olive oil. Small, short trials suggest modest falls in blood pressure, LDL cholesterol and HbA1c; a knee pain trial found no overall benefit. Talk to your doctor first if you take blood pressure or diabetes medicines."
+summary: "Reference on olive leaf extract (oleuropein), not olive oil. Small, short trials suggest modest falls in blood pressure and LDL cholesterol; diabetes results are mixed, and a knee pain trial found no overall benefit. Talk to your doctor first if you take blood pressure or diabetes medicines."
 reviewed: "2026-10-26"
 sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33868820/","checked":"2026-10-26","fingerprint":"sha256:58ce54f3b0650e765007aa2ba7aa86e06ca2a06ca7a6b0606aa548790356a885"}]
 ---
