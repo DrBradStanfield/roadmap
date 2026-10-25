@@ -207,7 +207,7 @@ No dose is established. Doses that helped in trials include:
 **Cranberry capsules/supplements:**
 - One capsule of 500 mg a day of whole cranberry powder for 6 months [15]
 - A daily high-dose PAC product (Cysticlean 240 mg) for 12 months [25]
-- After gynaecological surgery, 2 cranberry juice capsules twice a day for 6 weeks [26], though NIH reads the surgery evidence as showing no benefit [4]
+- After gynaecological surgery, 2 cranberry juice capsules twice a day for 6 weeks [26], though NIH notes surgery studies have not found a benefit [4]
 - A meta-analysis found benefit only with a daily PAC intake of at least 36 mg [21]
 
 **For children:** Trials in children used cranberry juice or extract products [27][28]. Ask your child's doctor about dose.
@@ -245,7 +245,7 @@ Studies of cranberry and kidney stones conflict [59]:
 
 ### Sugar and Calorie Content
 
-Some cranberry products, such as sweetened dried cranberries, are sweetened [17][18]. If you have diabetes or are limiting sugar, check the label or choose a capsule.
+If you have diabetes or are limiting sugar, check the label or choose a capsule.
 
 ### Bladder Irritation
 
@@ -309,7 +309,7 @@ USDA FoodData Central lists the full nutrient profile of raw cranberries [65].
 
 - **Processing reduces bioactive content:** Commercially processed cranberry products held less polyphenol than fresh or home-prepared ones, and anthocyanins broke down more easily than PACs [18]. Freeze-drying caused no detectable loss [18].
 - **Juice type matters:** Not-from-concentrate juice held more than twice the PACs of juice from concentrate [18].
-- **Added sugar:** Sweetened dried cranberries are, as the name says, sweetened [17][18].
+- **Added sugar:** Sweetened dried cranberries were low in anthocyanins (7.9 mg/100 g) but kept considerable PACs (64.2 mg/100 g) [18].
 
 ## 8. References
 
