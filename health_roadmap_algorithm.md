@@ -2,6 +2,8 @@
 
 Single source of truth for all health calculations, clinical thresholds, medication cascades, screening logic, and suggestion rules. The code in `packages/health-core/src/` implements this algorithm. Clinical evidence (patient-facing reasons, guideline citations, DOI references) for each suggestion is defined in `packages/health-core/src/evidence.ts` and attached automatically by `generateSuggestions()`. The user-facing `roadmap_text.html` must stay consistent with this document and `evidence.ts`.
 
+`packages/health-core/src/metric-guides.ts` (`METRIC_GUIDES`, US-58) is display-only text, the "about this measure" guides in the iOS app: it may only restate thresholds and claims already in this document, `evidence.ts` and `roadmap_text.html`, plus standard prescribing facts Brad approved (side effects, how a drug works), and cites only `evidence.ts` references. A clinical change here that alters a guide's claim changes the guide too.
+
 All values are stored and compared in **SI canonical units**. Conversion to display units (conventional/US) happens only at the UI layer.
 
 ---

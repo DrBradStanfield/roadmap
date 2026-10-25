@@ -21,9 +21,10 @@ struct MedicationsSection: View {
                 SectionTitle.medications()
             }
         } else {
-            FormSectionsList(sections: data.medications, months: data.months, title: SectionTitle.medications) { field, value in
+            // Each drug question's info button opens its guide (US-58 AC5).
+            FormSectionsList(sections: data.medications, months: data.months, title: SectionTitle.medications, answer: { field, value in
                 saved(await store.apply(.form(.medicationField(field: field, value: value))))
-            }
+            }, guides: data.guides)
         }
     }
 }

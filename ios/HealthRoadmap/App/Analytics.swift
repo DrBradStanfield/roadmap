@@ -54,14 +54,17 @@ final class Analytics {
         if started { sdk.event(event.rawValue) }
     }
 
-    /// The only events Clarity ever gets (D9, Brad 2026-10-25): fixed words, never a value
-    /// and never a tile's name. AnalyticsMaskingTests pins the list.
+    /// The only events Clarity ever gets (D9, Brad 2026-10-25): fixed words, never a value,
+    /// a tile's name or a guide's. AnalyticsMaskingTests pins the list.
     enum Event: String, CaseIterable {
         case tourStarted = "Tour started"
         case tourTipClosed1 = "Tour tip closed 1", tourTipClosed2 = "Tour tip closed 2", tourTipClosed3 = "Tour tip closed 3"
         case tourSkipped1 = "Tour skipped 1", tourSkipped2 = "Tour skipped 2", tourSkipped3 = "Tour skipped 3"
         case tileExplainerOpened = "Tile explainer opened"
         case cloudPromptShown = "Cloud prompt shown", cloudPromptBackUp = "Cloud prompt back up", cloudPromptNotNow = "Cloud prompt not now"
+        /// A metric page's About section shown, or a medicine's guide opened from its info
+        /// button (US-58); never which one.
+        case guideSeen = "Guide seen", guideOpened = "Guide opened"
 
         /// A tour tip closed (its Next or Done, a tap outside it, leaving it, its action, or no anchor) or skipped.
         static func tip(_ step: TourStep, skipped: Bool) -> Event? {

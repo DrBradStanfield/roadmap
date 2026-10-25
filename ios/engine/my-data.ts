@@ -20,6 +20,7 @@ import { latestActivePerMetric } from '../../packages/health-core/src/measuremen
 import { importDeviceSamples, type DeviceSample } from '../../packages/health-core/src/device-import';
 import { applyFormEdit, formsOf, planOf, type FormEdit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
+import { METRIC_GUIDES, type MetricGuide } from '../../packages/health-core/src/metric-guides';
 import {
   cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, getDisplayLabel, toCanonicalValue,
   type LpaUnit, type MetricType, type UnitSystem,
@@ -61,6 +62,9 @@ export interface MyData {
   bloodTests: MyDataRow[];
   /** PSA, asked for under prostate screening (US-25 AC8). */
   psa: MyDataRow;
+  /** The "about this measure" guides (US-58), by metric or medication key: served here so a
+   *  correction ships over the air (D3). */
+  guides: Record<string, MetricGuide>;
 }
 
 /** Every change the tab can ask for. Numbers are in the user's units. */
@@ -196,6 +200,7 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
     // PSA is asked for under prostate screening on the web, not with the blood tests.
     bloodTests: BLOOD_TEST_METRICS.filter((metric) => metric !== 'psa').map(row),
     psa: row('psa'),
+    guides: METRIC_GUIDES,
     ...formsOf(file, now, choices, plan),
   };
 }

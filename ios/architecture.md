@@ -1050,10 +1050,10 @@ health tool (`data-clarity-mask` on `HealthTool.tsx`'s root). The app matches th
   never a navigation title, which can carry a supplement's name. Nothing is ever unmasked.
 - `AnalyticsMaskingTests` (US-25 AC19) fails if the window is not masked first, if any code
   unmasks, if a text input lacks its mask, or if any file but Analytics.swift calls Clarity.
-- **Custom events, exactly eleven fixed words (Brad 2026-10-25, US-57's usage signal):**
+- **Custom events, exactly thirteen fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58):**
   `Analytics.event` sends `ClaritySDK.sendCustomEvent` with a word from one enum,
   `Analytics.Event`: "Tour started", "Tour tip closed 1/2/3", "Tour skipped 1/2/3", "Tile
-  explainer opened", "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now".
+  explainer opened", "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened".
   Never a value, a tile's name or any other text; nothing before Clarity starts.
   `AnalyticsMaskingTests` pins the list, so a new word is a test change and a D9 change.
   Views reach the one `Analytics` through the environment (`\.analytics`, set by RootView).
@@ -1155,6 +1155,16 @@ updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.
 - **Two Charts traps:** a material background inside a chart annotation renders black, so
   the callout uses a solid system fill; and the newest axis label clips unless the marks
   use the `.aligned` preset.
+
+**Added 2026-10-26: "About this measure" guides (US-58).** Below Show All Data and Unit, a metric page shows
+"About {title}" (What it is, Why it matters, How to measure or prepare) and its Sources as links, as Apple Health
+does; each drug question on My data has an info button that opens the same sections in a sheet (`GuideSections`,
+`GuideSheet`). The text is health-core's `METRIC_GUIDES`, display-only clinical text bound by the three clinical
+files (health_roadmap_algorithm.md says so; `metric-guides.test.ts` checks every source and number). The engine
+serves it as `guides` on `screenJson`'s My data, so a correction ships over the air (D3). Route chosen over a new
+door or the history door: the drug questions live on My data, not on a metric page, and one field on the existing
+answer reaches both without touching the bridge contract (id unchanged, `4bb43ea735cb5a3d`). Cost: about 19 KB of
+static JSON on each draw. An older engine sends no `guides`; Swift reads it as optional and shows none. Swift reads the map leniently (`MetricGuides`): a malformed guide is left out and a malformed map reads as empty, so a bad over-the-air guide never blanks My data. Only https sources are links; any other scheme shows as text. A guide shows only on a page that has data: a metric with no value opens its entry sheet, not the page (Brad's call whether to change that).
 
 **Added 2026-10-22.** Number boxes refuse, as typed, what no value can be (`MyData/TypedNumber.swift`,
 US-25 AC17b): blood pressure 3 whole digits, values 5+3, doses 5+2; a refused change goes back to

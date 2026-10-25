@@ -42,6 +42,7 @@ final class AnalyticsMaskingTests: XCTestCase {
             "Tour skipped 1", "Tour skipped 2", "Tour skipped 3",
             "Tile explainer opened",
             "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now",
+            "Guide seen", "Guide opened", // US-58's usage signal: no metric or medicine name
         ])
         let sdk = FakeSDK()
         let analytics = Analytics(sdk: sdk, projectId: "abc", testing: false)

@@ -64,6 +64,57 @@ struct MyData: Decodable {
     let screeningNote: String?
     let supplements: SupplementsView
     let months: ScreeningMonths
+    /// The "about this measure" guides (US-58), by metric or medication key; nil from an older engine.
+    let guides: MetricGuides?
+}
+
+/// The guides by key, read leniently (US-58 AC3): a malformed guide is left out, and a
+/// malformed map reads as none, so a bad over-the-air guide never blanks My data.
+struct MetricGuides: Decodable {
+    private let byKey: [String: MetricGuide]
+
+    init(_ byKey: [String: MetricGuide]) { self.byKey = byKey }
+
+    init(from decoder: Decoder) throws {
+        guard let json = try? decoder.container(keyedBy: AnyKey.self) else { byKey = [:]; return }
+        var read: [String: MetricGuide] = [:]
+        for key in json.allKeys {
+            if let guide = try? json.decode(MetricGuide.self, forKey: key) { read[key.stringValue] = guide }
+        }
+        byKey = read
+    }
+
+    subscript(key: String) -> MetricGuide? { byKey[key] }
+    var keys: Set<String> { Set(byKey.keys) }
+
+    private struct AnyKey: CodingKey {
+        let stringValue: String
+        var intValue: Int? { nil }
+        init?(stringValue: String) { self.stringValue = stringValue }
+        init?(intValue: Int) { nil }
+    }
+}
+
+/// One "about this measure" guide (US-58): health-core's METRIC_GUIDES, served by the engine,
+/// so the words are never typed in Swift.
+struct MetricGuide: Decodable {
+    struct HowTo: Decodable {
+        /// "How to measure", "How to prepare" or "How it works and side effects".
+        let heading: String
+        let points: [String]
+    }
+
+    let title: String
+    let whatItIs: String
+    let whyItMatters: String
+    let howTo: HowTo
+    /// evidence.ts's own references, each a DOI or stable URL.
+    let sources: [Suggestion.Reference]
+
+    /// A source's link: https only (US-58 AC4); any other scheme shows as plain text.
+    static func link(_ source: Suggestion.Reference) -> URL? {
+        source.url.scheme?.lowercased() == "https" ? source.url : nil
+    }
 }
 
 /// One change the My data tab asks for (`Edit` in ios/engine/my-data.ts).
