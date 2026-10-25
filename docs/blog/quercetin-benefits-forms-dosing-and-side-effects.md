@@ -15,7 +15,7 @@ sources: [{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the
 
 ## Current view (reviewed 25 October 2026)
 
-Brad leaves quercetin and fisetin out of his recommendations until there is robust, published human data showing a benefit (Brad's current guidance, 31 Jul 2026). The Interventions Testing Program trialed fisetin and saw no healthspan, lifespan or senolytic activity, so in his opinion the preclinical work does not support quercetin or fisetin supplements (Brad's current guidance, 19 Feb 2026). The famous 2019 study of dasatinib plus quercetin, a senolytic combination, in diabetic kidney disease included just nine people and lasted three days, with no placebo group ([Brad, 1 Jul 2026](https://drstanfield.com/blogs/articles/the-anti-aging-supplement-everyone-took-never-worked)). In an Alzheimer's trial of the same combination, cognitive and neuroimaging endpoints did not significantly differ from baseline, and the lung-fibrosis studies only checked that the approach was tolerable and feasible ([Brad, 1 Jul 2026](https://drstanfield.com/blogs/articles/the-anti-aging-supplement-everyone-took-never-worked)). After years of headlines, there is still not a single trial showing these supplements deliver a real health benefit in humans, though he thinks a properly run human trial might one day surprise us ([Brad, 1 Jul 2026](https://drstanfield.com/blogs/articles/the-anti-aging-supplement-everyone-took-never-worked)).
+Brad leaves quercetin and fisetin out of his recommendations until there is robust, published human data showing a benefit (Brad's current guidance, 31 Jul 2026). The Interventions Testing Program trialed fisetin and saw no healthspan, lifespan or senolytic activity, so in his opinion the preclinical work does not support quercetin or fisetin supplements (Brad's current guidance, 19 Feb 2026). The famous 2019 study of dasatinib plus quercetin, a senolytic combination, in diabetic kidney disease included just nine people and lasted three days, with no placebo group ([Brad, 1 Jul 2026](https://drstanfield.com/blogs/articles/the-anti-aging-supplement-everyone-took-never-worked)). In an Alzheimer's trial of the same combination, cognitive and neuroimaging endpoints did not significantly differ from baseline, and the first lung-fibrosis study, of fourteen patients with no comparison group, was designed only to check whether the drugs were tolerable ([Brad, 1 Jul 2026](https://drstanfield.com/blogs/articles/the-anti-aging-supplement-everyone-took-never-worked)). After years of headlines, there is still not a single trial showing these supplements deliver a real health benefit in humans, though he thinks a properly run human trial might one day surprise us ([Brad, 1 Jul 2026](https://drstanfield.com/blogs/articles/the-anti-aging-supplement-everyone-took-never-worked)).
 
 ## Key safety points
 
@@ -45,7 +45,7 @@ Cell and animal studies point to anticancer, anti-inflammatory and antiviral act
 
 In people, the trials are mostly short and small, and they hint at modest effects on blood pressure, chronic prostatitis, rheumatoid arthritis and seasonal allergy symptoms. Quercetin has also attracted attention as a senolytic, a compound meant to clear senescent (aged, dysfunctional) cells, in small early trials combined with the cancer drug dasatinib [15][17]. Brad's view above concerns that use against ageing. The evidence for other uses is limited by small samples, short durations and inconsistent results.
 
-Plain quercetin is poorly absorbed: in rats, only 2.0% of an oral dose reached the blood [22]. In people with an ileostomy, 24 ± 9% of pure quercetin and 52 ± 15% of the quercetin glucosides in onions were absorbed from the small intestine [28]. This has driven development of enhanced-absorption formulations including Quercetin Phytosome (lecithin-bound), EMIQ (enzymatically modified isoquercitrin), and quercetin dihydrate, each with distinct pharmacokinetic profiles discussed in the Forms and Bioavailability section below.
+Plain quercetin is poorly absorbed: in rats, only 2.0% of an oral dose reached the blood [22]. In people with an ileostomy, 24 ± 9% of pure quercetin and 52 ± 15% of the quercetin glucosides in onions were absorbed from the small intestine [28]. This has driven development of formulations meant to improve absorption, including Quercetin Phytosome (lecithin-bound) and EMIQ (enzymatically modified isoquercitrin), discussed in the Forms and Bioavailability section below.
 
 ## 2. Forms and Bioavailability
 
@@ -53,7 +53,7 @@ Plain quercetin is poorly absorbed: in rats, only 2.0% of an oral dose reached t
 
 **Quercetin (free-form/aglycone):** The most basic supplement form. Fat helps: in a crossover study, 1095 mg of quercetin aglycone taken with a high-fat breakfast (15.4 g of fat) raised total blood quercetin (AUC) by 32% compared with a fat-free breakfast [88].
 
-**Quercetin dihydrate:** Each quercetin molecule carries two bound water molecules, so a given weight of the dihydrate holds slightly less quercetin than the same weight of plain quercetin. Absorption is likely similar to the aglycone.
+**Quercetin dihydrate:** Each quercetin molecule carries two bound water molecules, so a given weight of the dihydrate holds slightly less quercetin than the same weight of plain quercetin.
 
 **Rutin (quercetin-3-O-rutinoside):** A quercetin glycoside found in tea [20]. In six healthy men, a red onion soup providing 47 mg of quercetin led to similar urinary quercetin as a quercetin dihydrate tablet providing 544 mg [19]. Blood quercetin peaks hours later after rutin than after free quercetin, and absorption from rutin varies widely between people [20].
 
@@ -144,8 +144,6 @@ Two small open-label trials without a placebo tested it in outpatients with earl
 
 These trials were small, unblinded or without a placebo, so they cannot show whether quercetin helps with COVID-19.
 
-Quercetin can increase CYP3A activity [84]. CYP3A also clears nirmatrelvir, in the COVID-19 antiviral Paxlovid, so quercetin could in theory weaken it; no human study has checked.
-
 ### Memory and Cognition
 
 In a 26-week trial in 46 healthy overweight older adults, capsules providing 200 mg of resveratrol and 320 mg of quercetin a day improved word retention compared with placebo [56]. A later 26-week trial of 200 mg of resveratrol a day in 60 older adults found no significant effect on its main memory test [57]. These results cannot be credited to quercetin.
@@ -160,7 +158,7 @@ Quercetin, typically in combination with the cancer drug dasatinib, has attracte
 
 **Diabetic kidney disease:** A 2019 study of dasatinib plus quercetin included just nine people and lasted three days, with no placebo group ([Brad, 1 Jul 2026](https://drstanfield.com/blogs/articles/the-anti-aging-supplement-everyone-took-never-worked)).
 
-It is important to note that the senolytic research uses quercetin in combination with dasatinib, a prescription cancer drug, and these results cannot be extrapolated to quercetin supplementation alone. Brad's reading is that these were pilots that only checked safety and feasibility, and that no trial has yet shown a real health benefit in humans ([Brad, 1 Jul 2026](https://drstanfield.com/blogs/articles/the-anti-aging-supplement-everyone-took-never-worked)).
+The senolytic research uses quercetin in combination with dasatinib, a prescription cancer drug, and these results cannot be extrapolated to quercetin supplementation alone. Brad's reading is that these were pilots that only checked safety and feasibility, and that no trial has yet shown a real health benefit in humans ([Brad, 1 Jul 2026](https://drstanfield.com/blogs/articles/the-anti-aging-supplement-everyone-took-never-worked)).
 
 ### Fatty Liver Disease (MASLD)
 
@@ -184,7 +182,7 @@ In laboratory and animal studies, quercetin can slow cancer cell growth and prom
 
 In a phase I trial, quercetin given by intravenous infusion to people with cancer caused kidney toxicity at higher doses [64]. Tumor markers fell in two patients, a woman with ovarian cancer and a patient with hepatoma, a liver cancer [64].
 
-In a trial in 20 adults having high-dose chemotherapy for blood cancers, 250 mg capsules of quercetin taken twice a day for four weeks did not significantly reduce oral mucositis (a common chemotherapy side effect) compared with placebo [65].
+In a trial in 20 adults having high-dose chemotherapy for blood cancers, 250 mg capsules of quercetin taken twice a day for four weeks did not significantly reduce oral mucositis (a common chemotherapy side effect) compared with placebo, and mucositis was more severe in the quercetin group (mean severity 2.6 against 2), which the authors say may reflect poorer oral health in that group [65].
 
 ## 4. Recommended Dosing
 
@@ -218,7 +216,7 @@ Quercetin is not currently included in the MicroVitamin, MicroVitamin+ Powder, o
 
 ### Common Side Effects
 
-Adverse effects of supplemental quercetin have been rarely reported in human studies, and any such effects were mild [68]. Some people have mentioned mild nausea, headache or an upset stomach.
+Adverse effects of supplemental quercetin have been rarely reported in human studies, and any such effects were mild [68].
 
 ### Dose-Escalation Safety Data
 
@@ -226,13 +224,21 @@ In a one-week trial in people with COPD, a chronic lung disease, 500, 1000 or 20
 
 There are no adequate data to judge the safety of doses of 1000 mg or more taken for more than 12 weeks [68].
 
-### Blood Pressure
+### Long-Term Animal Toxicity
 
-Because quercetin may lower blood pressure a little [31], take care if your blood pressure runs low or you take medicine to lower it.
+In a 2-year feeding study, male rats given high doses of quercetin had more renal tubule adenomas, a type of kidney tumor; female rats showed no such effect [77]. Rats in the top dose group ate about 1,900 mg/kg of body weight a day, far above supplement doses [77].
 
 ### Kidney Concerns
 
 In animals, quercetin may make existing kidney damage worse [68]. Given intravenously in a cancer trial, quercetin caused kidney toxicity: 3 of 14 patients at 945 mg/m2 had clinically significant renal toxicity, and it was dose-limiting at 1700 mg/m2 [64]. People with kidney disease should talk to their doctor before taking it.
+
+### Blood Pressure
+
+Because quercetin may lower blood pressure a little [31], take care if your blood pressure runs low or you take medicine to lower it.
+
+### Thyroid Function
+
+In thyroid cells, quercetin reduced iodide uptake and the activity of thyroid-specific genes, and it lowered radioiodine uptake in rats; the authors call it a thyroid disruptor and advise caution with supplemental use [74]. Flavonoids may also reduce the thyroid hormone available to tissues by inhibiting deiodinase enzymes, and in thyroid tumor cells they can decrease radioiodine uptake, which could weaken radioiodine therapy [75]. If you have thyroid disease or are due for radioiodine treatment, ask your doctor first.
 
 ### Estrogenic Activity
 
@@ -240,74 +246,41 @@ In animal studies, quercetin may help tumors grow, especially estrogen-dependent
 
 ### Iron Absorption
 
-Quercetin binds iron. In rats, it reduced the release of iron from gut cells into the blood and lowered the iron exporter ferroportin [72]. In theory this could worsen iron deficiency, so take care if you are low in iron or prone to anemia.
-
-### Thyroid Function
-
-In thyroid cells, quercetin reduced iodide uptake and the activity of thyroid-specific genes, and it lowered radioiodine uptake in rats; the authors call it a thyroid disruptor and advise caution with supplemental use [74]. Flavonoids may also inhibit the deiodinase enzymes that activate thyroid hormone and may reduce radioiodine uptake, which could weaken radioiodine therapy [75]. If you have thyroid disease or are due for radioiodine treatment, ask your doctor first.
+Quercetin binds iron. In rats, it reduced the release of iron from gut cells into the blood and lowered the iron exporter ferroportin [72]. The authors suggest that polyphenol-rich diets might limit the rate of iron absorption from the gut, which could help people at risk of iron overload [72]. The same effect could work against people who are low in iron, so take care if you are prone to anemia.
 
 ### Alcohol Interaction
 
-Quercetin may slow the breakdown of alcohol. In the laboratory, quercetin-3-glucuronide, a common circulating quercetin metabolite, inhibited ALDH2, the enzyme that clears the alcohol by-product acetaldehyde (IC50 of 9.6 µM) [76]. White wine and other alcoholic drinks carry far less quercetin than red wine, and the researchers suggest this could explain red wine headaches; the idea still needs testing in people [76].
+Quercetin may slow the clearance of acetaldehyde, a by-product of alcohol [76]. In the laboratory, quercetin-3-glucuronide, a common circulating quercetin metabolite, inhibited ALDH2, the enzyme that breaks down acetaldehyde (IC50 of 9.6 µM) [76]. White wine and other alcoholic drinks carry far less quercetin than red wine, and the researchers suggest this could explain red wine headaches; the idea still needs testing in people [76].
 
 ### Pregnancy and Lactation
 
 Safety in pregnancy and breastfeeding has not been established, so check with your doctor before using quercetin supplements.
 
-### Long-Term Animal Toxicity
-
-In a 2-year feeding study, male rats given high doses of quercetin had more renal tubule adenomas, a type of kidney tumor; female rats showed no such effect [77]. Rats in the top dose group ate about 1,900 mg/kg of body weight a day, far above supplement doses [77].
-
 ## 6. Drug Interactions
 
 Quercetin can change how much of some drugs reaches the blood [68]. If you take prescription medicines, check with your doctor or pharmacist before starting.
+
+### Warfarin
+
+In laboratory tests, quercetin's main metabolites bound strongly to albumin, the blood protein that carries warfarin, and displaced warfarin from it; the authors warn that high quercetin doses could strongly interfere with warfarin therapy [89]. The same lab study found that quercetin and its metabolites inhibited CYP2C9, the enzyme that clears warfarin, weakly or not at all, and judged a CYP2C9 effect on warfarin very unlikely [89]. A human study points the other way for CYP2C9 in general: quercetin raised blood levels of diclofenac, apparently by inhibiting CYP2C9 [82]. If you take warfarin, check with your doctor before using quercetin.
 
 ### OATP1B1 Substrates (Increased Absorption)
 
 Quercetin may raise blood levels of drugs carried into the liver by the transporter OATP1B1. Sixteen healthy men had quercetin 500 mg or placebo once a day for 14 days, then one 40 mg pravastatin tablet; quercetin increased pravastatin exposure (AUC) by 24% and prolonged its half-life by 14% [78].
 
-Many statins are OATP1B1 substrates, and the transporter also handles repaglinide and fexofenadine [79]. Statins carried by OATP1B1 include atorvastatin (Lipitor), pitavastatin (Livalo) and rosuvastatin (Crestor).
+Many statins are OATP1B1 substrates, and the transporter also handles repaglinide and fexofenadine [79].
 
 ### CYP2C9 Inhibition (Increased Drug Effects)
 
 Quercetin inhibited the enzyme CYP2C9 in lab tests on human liver enzyme preparations [81]. In 12 healthy volunteers, a 10-day course of quercetin, 500 mg twice a day, raised blood levels of diclofenac (Voltaren, Flector), a CYP2C9 substrate, and the authors advise caution with drugs cleared by CYP2C9 [82].
 
-Other CYP2C9 substrates include:
-- Celecoxib (Celebrex)
-- Fluvastatin (Lescol)
-- Glipizide (Glucotrol)
-- Ibuprofen (Advil, Motrin)
-- Losartan (Cozaar)
-- Phenytoin (Dilantin)
-- Piroxicam (Feldene)
-- Tamoxifen (Nolvadex)
-- Warfarin (Coumadin)
+### Amiodarone
 
-### CYP2C8 Inhibition
-
-In rats, 14 days of quercetin before a dose of the heart-rhythm drug amiodarone (Cordarone, Pacerone) raised peak amiodarone levels by 45.52% [83]. The authors attribute the effect to quercetin blocking drug transporters and CYP enzymes, and suggest amiodarone doses may need adjusting [83]. Because small differences in amiodarone levels can matter, anyone on amiodarone should ask their doctor before using quercetin.
+In rats, 14 days of quercetin before a dose of the heart-rhythm drug amiodarone (Cordarone, Pacerone) raised peak amiodarone levels by 45.52% [83]. The authors attribute the effect to quercetin blocking drug transporters and CYP enzymes, and suggest amiodarone doses may need adjusting [83]. Amiodarone has a narrow therapeutic index, so small changes in its blood levels can matter [83]; anyone on it should ask their doctor before using quercetin.
 
 ### CYP3A Induction (Decreased Drug Effects)
 
-Quercetin can speed up CYP3A, an enzyme that clears many drugs, which could make those drugs weaker. Eighteen healthy men had quercetin 500 mg or placebo once a day for 13 days; quercetin lowered blood levels of one 7.5 mg midazolam tablet given on day 14 [84].
-
-Drugs cleared by CYP3A include:
-- **Statins:** atorvastatin (Lipitor), lovastatin (Mevacor, Altoprev), simvastatin (Zocor)
-- **Blood pressure drugs:** losartan (Cozaar), felodipine (Plendil), amlodipine (Norvasc)
-- **Anticoagulants:** apixaban (Eliquis), rivaroxaban (Xarelto)
-- **Calcium channel blockers:** diltiazem (Cardizem), nicardipine (Cardene IV), verapamil (Verelan)
-- **Sedatives/benzodiazepines:** diazepam (Valium), alprazolam (Xanax)
-- **Gastric reflux medications:** cisapride (Propulsid), omeprazole (Prilosec)
-- **Erectile dysfunction drugs:** tadalafil (Cialis), sildenafil (Viagra)
-- **Anti-nausea drugs:** ondansetron (Zofran)
-- **Anesthetics/antiarrhythmics:** lidocaine (Xylocaine)
-- **Pain medications:** fentanyl (Sublimaze)
-- **Immunosuppressants:** tacrolimus (FK-506, Protopic, Prograf, Hecoria)
-- **COVID-19 antiviral:** Paxlovid (nirmatrelvir plus ritonavir); in theory quercetin may weaken it; no human study has checked
-
-### Warfarin: Multiple Interaction Mechanisms
-
-In laboratory tests, quercetin's main metabolites bound strongly to albumin, the blood protein that carries warfarin, and displaced warfarin from it; the authors warn that high quercetin doses could strongly interfere with warfarin therapy [89]. The same study found little CYP2C9 inhibition by quercetin or its metabolites, so a CYP2C9 effect on warfarin appeared unlikely [89]. Patients on warfarin should exercise particular caution and consult their physician.
+Quercetin may speed up CYP3A, an enzyme that clears many drugs, which could make those drugs weaker. Eighteen healthy men had quercetin 500 mg or placebo once a day for 13 days; quercetin lowered blood levels of one 7.5 mg midazolam tablet given on day 14, and the effect was more prominent in men carrying the CYP3A5*1 gene variant [84]. In lab tests on human liver enzymes, by contrast, quercetin was a potent CYP3A4 inhibitor [81], so the direction of the effect in people is not settled.
 
 ### Chemotherapy Agents
 
