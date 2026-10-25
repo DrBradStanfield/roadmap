@@ -6,7 +6,7 @@ publishedAt: "2024-07-08T17:21:25Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["coconut oil", "mct oil", "medium chain triglycerides", "caprylic acid", "capric acid", "lauric acid", "weight loss", "obesity", "cholesterol", "ldl", "hdl", "triglycerides", "cardiovascular", "heart health", "cognitive", "brain health", "dementia", "alzheimer", "blood sugar", "insulin resistance", "diabetes", "blood pressure", "skin", "inflammation", "gut health", "olive oil", "saturated fat", "ketogenic", "intermittent fasting", "exercise", "muscle", "epilepsy", "sleep"]
-summary: "Brad lists coconut oil among the saturated fats that raise LDL cholesterol and favours swapping them for unsaturated fats. In trials, coconut oil raised LDL more than nontropical vegetable oils. Talk to your doctor first if you take a statin."
+summary: "Brad lists coconut oil among the saturated fats that can raise LDL cholesterol and favours swapping them for unsaturated fats. In trials, coconut oil raised LDL more than nontropical vegetable oils. Talk to your doctor first if you take a statin."
 reviewed: "2026-10-26"
 sources: [{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/how-to-prevent-a-heart-attack-for-5-45","checked":"2026-10-26","fingerprint":"publishedAt:2025-02-04T23:48:02Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/diet-strongly-suspected-best","checked":"2026-10-26","fingerprint":"publishedAt:2024-10-14T22:54:37Z"}]
 ---
@@ -15,7 +15,7 @@ sources: [{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/how
 
 ## Current view (reviewed 26 October 2026)
 
-Brad lists coconut oil with fatty meats, full-fat dairy and palm oil as foods high in saturated fat, which research has shown can raise LDL cholesterol ([Brad, 4 Feb 2025](https://drstanfield.com/blogs/articles/how-to-prevent-a-heart-attack-for-5-45)). He cites research in which reducing saturated fats from sources like fatty meats, butter and coconut oil, and replacing them with unsaturated fats from sources like extra-virgin olive oil and avocados, resulted in a 17% reduction in the risk of heart disease ([Brad, 14 Oct 2024](https://drstanfield.com/blogs/articles/diet-strongly-suspected-best)). He says saturated fat clearly boosts LDL levels, and a high intake of saturated and trans fats makes low LDL hard to maintain ([Brad, 4 Feb 2025](https://drstanfield.com/blogs/articles/how-to-prevent-a-heart-attack-for-5-45)). His plan uses extra-virgin olive oil as monounsaturated fat replacing butter or saturated fat, with a modest direct effect on LDL cholesterol (Brad's current guidance, 18 Mar 2026). Overall, he says the evidence suggests that we might want a diet that is high in protein, includes healthy unsaturated fats and is low in saturated fats ([Brad, 14 Oct 2024](https://drstanfield.com/blogs/articles/diet-strongly-suspected-best)).
+Brad lists coconut oil with fatty meats, full-fat dairy and palm oil as foods high in saturated fat, which research has shown can raise LDL cholesterol ([Brad, 4 Feb 2025](https://drstanfield.com/blogs/articles/how-to-prevent-a-heart-attack-for-5-45)). He cites research in which reducing saturated fats from sources like fatty meats, butter and coconut oil, and replacing them with unsaturated fats from sources like extra-virgin olive oil and avocados, resulted in a 17% reduction in the risk of heart disease ([Brad, 14 Oct 2024](https://drstanfield.com/blogs/articles/diet-strongly-suspected-best)). He says saturated fat clearly boosts LDL levels, and a high intake of saturated and trans fats makes low LDL hard to maintain ([Brad, 4 Feb 2025](https://drstanfield.com/blogs/articles/how-to-prevent-a-heart-attack-for-5-45)). When LDL or ApoB is above target, his plan suggests extra-virgin olive oil as monounsaturated fat replacing butter or saturated fat, with a modest direct effect on LDL cholesterol (Brad's current guidance, 18 Mar 2026). Overall, he says the evidence suggests that we might want a diet that is high in protein, includes healthy unsaturated fats and is low in saturated fats ([Brad, 14 Oct 2024](https://drstanfield.com/blogs/articles/diet-strongly-suspected-best)).
 
 ## Key safety points
 
@@ -24,7 +24,7 @@ Brad lists coconut oil with fatty meats, full-fat dairy and palm oil as foods hi
 - Never use homemade coconut milk as infant formula. A 5-month-old fed only homemade coconut milk formula developed fatty liver, which resolved when it was stopped [72].
 - Coconut allergy is rare, but anaphylaxis to coconut has been reported [68][71]. For trouble breathing or swelling of the face or throat, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - Coconut oil raises LDL cholesterol compared with nontropical vegetable oils [7]. Replacing saturated fat with unsaturated fats lowers LDL cholesterol [9].
-- Coconut fat did not help long-term blood sugar control and appeared to raise insulin resistance [29]. If you have diabetes, ask your doctor first.
+- Coconut fat does not seem to help long-term blood sugar control and appeared to raise insulin resistance [29]. If you have diabetes, ask your doctor first.
 - MCT oil can cause diarrhea, vomiting, bloating and cramps, more so at high doses [35][39][61]. Virgin coconut oil caused mild diarrhea in some people [60].
 
 ## Brad's videos on this topic
@@ -95,7 +95,7 @@ The brain's use of glucose falls in Alzheimer's disease, while its uptake of ket
 
 In diabetic rats, a coconut oil diet lowered total cholesterol and showed a trend toward better glucose tolerance [27], and in mice an MCT diet caused less weight and fat gain than a long-chain fat diet [28]. Human trials tell a different story.
 
-A meta-analysis of short-term meal studies and 11 long-term trials found that meals with coconut fat raised blood glucose slightly and lowered insulin after the meal [29]. Long-term coconut fat intake increased insulin resistance (HOMA-IR) and did not improve fasting glucose or insulin [29]. The authors concluded that the claim that coconut fat improves blood sugar control is disproved [29].
+A meta-analysis of short-term meal studies and 11 long-term trials found that meals with coconut fat raised blood glucose slightly and lowered insulin after the meal [29]. Long-term coconut fat intake increased insulin resistance (HOMA-IR), did not significantly change fasting glucose or insulin, and does not seem to help long-term blood sugar control [29]. The authors concluded that the claim that coconut fat improves blood sugar control is disproved [29].
 
 If you have diabetes, ask your doctor first.
 
@@ -214,7 +214,7 @@ In a double-blind trial in 150 people with dyslipidemia on atorvastatin 10 mg a 
 
 ### Insulin Resistance
 
-In a meta-analysis of 11 long-term trials, coconut fat did not help long-term blood sugar control and appeared to raise insulin resistance [29]. If you have diabetes, ask your doctor first.
+In a meta-analysis of 11 long-term trials, coconut fat does not seem to help long-term blood sugar control and appeared to raise insulin resistance [29]. If you have diabetes, ask your doctor first.
 
 ### Allergic Reactions
 
@@ -234,7 +234,7 @@ One possible interaction follows from trial evidence. If you take prescription m
 
 | Drug / Drug Class | Interaction | Evidence | Management |
 |----------|------------|:-:|----------|
-| Statins (e.g., atorvastatin) | Smaller falls in LDL cholesterol, total cholesterol and lipoprotein(a) | One 8-week randomized trial [66] | Avoid high intakes of coconut oil with a statin; if you use coconut oil, have your cholesterol checked |
+| Statins (e.g., atorvastatin) | Smaller falls in LDL cholesterol, total cholesterol and lipoprotein(a) | One 8-week randomized trial [66] | Ask your doctor; if you use coconut oil, have your cholesterol checked |
 
 ## 7. Dietary Sources
 
