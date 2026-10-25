@@ -15,7 +15,7 @@ sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/Probiotics-
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. Probiotic effects depend on the strain, so a result for one strain does not carry over to another, and expert bodies make no recommendation for or against probiotics in healthy people [138]. The firmest evidence is for specific uses: starting *L. rhamnosus* GG or *Saccharomyces boulardii* within 2 days of the first antibiotic dose may lower the risk of antibiotic-associated diarrhea in children and in adults aged 18 to 64 years, though not in adults over 65 years [44][138]. For irritable bowel syndrome, eczema and cholesterol, trials show modest benefits that vary by strain, dose and person [138]. Probiotics are unlikely to harm healthy people, but they have caused serious bloodstream infections in people who are critically ill or immunocompromised, and the FDA has warned that they may cause serious infection in preterm infants [122][124][138].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Probiotic effects depend on the strain, so a result for one strain does not carry over to another, and expert bodies make no recommendation for or against probiotics in healthy people [138]. The firmest evidence is for specific uses: *L. rhamnosus* GG or *Saccharomyces boulardii* may lower the risk of antibiotic-associated diarrhea in children and in adults aged 18 to 64 years, though not in adults over 65 years [44][138]. Starting a probiotic within 2 days of the first antibiotic dose appears to work better than starting later [138]. For irritable bowel syndrome, eczema and cholesterol, trials show modest benefits that vary by strain, dose and person [138]. Probiotics are unlikely to harm healthy people, but they have caused serious bloodstream infections in people who are critically ill or immunocompromised, and the FDA has warned that they may cause serious infection in preterm infants [122][124][138].
 
 ## Key safety points
 
@@ -152,7 +152,7 @@ Antibiotics disrupt the intestinal microbiome, reducing microbial diversity, whi
 
 **Guideline positions:** ESPGHAN (2023) recommends administering LGG or *S. boulardii* at 5 x 10^9 CFU/day or more starting simultaneously with antibiotics to prevent AAD in children with risk factors [51]. There is no evidence that using more than one probiotic strain provides additional benefit over effective single strains [2][45].
 
-**Timing and antibiotic interaction:** Some meta-analyses report that starting certain probiotics within 2 days of the first antibiotic dose helps reduce the risk of AAD [138]. One study found that a multi-strain probiotic given after a course of antibiotics slowed the return of the person's own gut bacteria [52].
+**Timing and antibiotic interaction:** Starting a probiotic within 2 days of the first antibiotic dose appears to work better than starting later [138]. One study found that a multi-strain probiotic given after a course of antibiotics slowed the return of the person's own gut bacteria [52].
 
 ### Atopic Dermatitis (Eczema)
 
@@ -306,7 +306,7 @@ Probiotic dosing is inherently strain-specific. There is no universal "optimal d
 
 ### General Dosing Principles
 
-- **Timing**: Bacterial probiotics may survive best when taken with food, ideally a meal with some fat, or shortly before it [18]. For AAD prevention, the evidence suggests starting LGG or *S. boulardii* within 2 days of the first antibiotic dose [138].
+- **Timing**: Bacterial probiotics may survive best when taken with food, ideally a meal with some fat, or shortly before it [18]. For AAD prevention, start the probiotic within 2 days of the first antibiotic dose [138].
 - **Duration**: For a specific condition, follow the duration used in trials of that strain.
 
 ### Product Selection Guidance
