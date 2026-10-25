@@ -19,10 +19,10 @@ Brad would avoid fat-burning supplements: they are mostly caffeine, and a few cu
 
 ## Key safety points
 
-- Chitosan may strengthen the effect of warfarin [239]. Garcinia was linked to serotonin toxicity in a person also taking two SSRI antidepressants [242][243]; for tremor, a racing heart, a high temperature, agitation or severe confusion, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [252].
 - Bitter orange, yohimbe and ephedra have been linked to heart attack, stroke and death [243]. For chest pain or signs of a stroke (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- Chitosan may strengthen the effect of warfarin [239]. Garcinia was linked to serotonin toxicity in a person also taking SSRI antidepressants [242][243]; for tremor, a racing heart, a high temperature, agitation or severe confusion, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [252].
 - Ephedra has been banned from US supplements since 2004 [234]. Products are often recalled for hidden drugs such as sibutramine, and some hold untested stimulants such as BMPEA or deterenol [243][247][248].
-- Reports tie green tea extract, garcinia and CLA to liver injury, including liver failure and hepatitis [118][135][243]. See your doctor for dark urine or yellow skin or eyes; if they come with confusion, unusual drowsiness, or easy bleeding or bruising, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- Reports tie green tea extract, garcinia and CLA to liver injury, including liver failure and hepatitis [118][135][243]. Stop the product and see your doctor the same day for dark urine or yellow skin or eyes; if they come with confusion, unusual drowsiness, or easy bleeding or bruising, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 - For healthy adults, up to 400 mg a day of caffeine is not considered a safety concern, but about 15 mg/kg can be toxic [243].
 
 ## Brad's videos on this topic
@@ -135,7 +135,7 @@ A 12-week RCT (n=63, BMI 24-35) found that 3.4 g/day CLA produced small but stat
 
 A systematic review and meta-analysis of 7 RCTs found that 2.4-6 g/day CLA for 6-12 months reduces body weight by 0.7 kg and body fat by 1.33 kg versus placebo [111]. The authors stated the "magnitude of these effects is small, and the clinical relevance is uncertain."
 
-A 2024 meta-analysis of 70 trials with 4,159 adults found a mean fat-mass drop of 0.44 kg, but no fat loss in the high-quality trials, and the authors judged the weight effect too small to matter clinically [250].
+A 2024 meta-analysis of 70 trials with 4,159 adults found a mean fat-mass drop of 0.44 kg, but no fat loss in the high-quality trials, and the authors noted that the weight effect may be too small to matter clinically [250].
 
 **Safety:** Most adverse effects are gastrointestinal: abdominal discomfort, constipation, diarrhea, loose stools, nausea, and dyspepsia [109][111][113]. Three case reports linked CLA to hepatitis, though products were not analyzed for contaminants [118-120]. CLA might decrease HDL cholesterol and increase lipoprotein(a) levels [109][110][116][121-124]. The t10,c12-CLA isomer has been reported to increase insulin resistance and glycemia in men with obesity and metabolic syndrome [110][124]. CLA might also increase markers of oxidative stress and decrease breastmilk fat levels [117].
 
@@ -181,7 +181,7 @@ A 2015 systematic review of 6 RCTs (n=293) concluded that 1.24-3.99 g/day glucom
 
 Glucomannan appears to have beneficial effects on blood lipids and glucose levels [139].
 
-**Safety:** Generally well tolerated. Minor adverse effects include belching, bloating, loose stools, flatulence, diarrhea, constipation, and abdominal discomfort [139][143][144][146]. Tablet forms of glucomannan were associated with 7 cases of esophageal obstruction in Australia in 1984-1985 [99]; powdered and capsule forms have not been associated with this effect [147]. Take care with glucomannan tablets [243]. May lower blood glucose levels and interact with diabetes medications [139][147].
+**Safety:** Generally well tolerated. Minor adverse effects include belching, bloating, loose stools, flatulence, diarrhea, constipation, and abdominal discomfort [139][143][144][146]. Tablet forms of glucomannan were associated with 7 cases of esophageal obstruction in Australia in 1984-1985 [99]; powdered and capsule forms have not been associated with this effect [147]. Take care with glucomannan tablets [243]. The FDA requires over-the-counter drug products made with glucomannan to warn that, taken without enough fluid, it can swell and block the throat or esophagus and may cause choking [253]. Take each dose with a full glass of water or other fluid, at least 8 ounces. Do not take it if you have trouble swallowing. If you get chest pain, vomiting, or trouble swallowing or breathing after a dose, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [253]. May lower blood glucose levels and interact with diabetes medications [139][147].
 
 ### Chitosan
 
@@ -205,11 +205,11 @@ Forskolin is a compound from the roots of Coleus forskohlii, proposed to promote
 
 An RCT of 30 men with overweight (BMI 26+) found that 500 mg/day Coleus forskohlii extract (10% forskolin, ForsLean) for 12 weeks did not reduce body weight but did significantly decrease mean body fat by about 4% versus about 1% for placebo, and raised bone mass and serum free testosterone [104].
 
-The same extract and dose in 19 women with overweight or obesity (BMI 25-35) for 12 weeks had no effect on body weight, appetite, or caloric intake [243]. Women taking the extract reported less hunger [106].
+The same extract and dose in 19 women with overweight or obesity (BMI 25-35) for 12 weeks had no effect on body weight, appetite, or caloric intake [243]. Those on the extract tended to report less hunger and fatigue [106].
 
 A third 12-week trial in 30 adults with overweight or obesity (BMI >25) on a hypocaloric diet found no reduction in body weight, though plasma insulin concentrations significantly decreased [107].
 
-**Dosing:** Trials gave 250 mg of a 10% forskolin extract before breakfast and dinner, 500 mg a day in total [106].
+**Dosing:** Trials gave an extract of Coleus forskohlii, 250 mg standardized for 10% forskolin, before breakfast and dinner, a total of 500 mg a day [104][106].
 
 **Safety:** In mice, Coleus forskohlii extract caused dose-dependent liver toxicity, but pure forskolin did not -- suggesting other plant compounds may be responsible [108]. In humans, forskolin may increase bowel movement frequency and cause loose stools [107]. Doses of 500 mg/day (10% forskolin) for 12 weeks have not produced serious adverse events [104][106][107]. Forskolin has not been tested in longer trials [243]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
@@ -407,19 +407,11 @@ An RCT of 66 women with overweight on a low-calorie diet found that 5-9 g/day be
 
 **Safety:** Well tolerated. Increased flatulence reported, but no changes in stool consistency or bloating [24].
 
-### Vitamin C
-
-In one 8-week trial in overweight women, adding 2 g/day of L-ascorbic acid (vitamin C) to 3 g/day of chitosan lowered BMI more than chitosan alone (-1.6 kg/m2 vs -1.0 kg/m2) [94].
-
-### Stimulant Laxatives (Aloe, Senna, Cascara)
+### Stimulant laxatives
 
 Stimulant laxatives cause fluid loss, not fat loss: most nutrients are absorbed in the small intestine, while the large bowel absorbs mainly water [249]. When the laxative is stopped, fluid retention can bring quick weight gain [249].
 
-**Safety:** Laxative misuse can cause electrolyte and acid-base changes that affect the kidneys and heart and may become life threatening [249]. If you feel faint or very weak, or your heartbeat feels irregular, after heavy laxative use, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
-
-### Diuretics (Dandelion, Asparagus, Uva Ursi)
-
-Caffeine, an ingredient in many weight-loss products, acts as a diuretic [42][43][44].
+**Safety:** Laxative misuse can cause electrolyte and acid-base changes that affect the kidneys and heart and may become life threatening [249]. If you feel very unwell after heavy laxative use, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 ### Ephedra (Ma Huang) -- Banned Ingredient
 
@@ -435,7 +427,7 @@ US regulators have detected beta-methylphenylethylamine (BMPEA), an amphetamine 
 
 ### Deterenol and Other Undeclared Stimulants
 
-Deterenol, also listed as isopropylnorsynephrine or isopropyloctopamine, is a prohibited stimulant, and weight-loss and sports supplements containing it have been linked to serious adverse events, including cardiac arrest [248]. In 17 brands labelled as containing it, a serving held 2.7 to 17 mg of deterenol, and many products also held other prohibited stimulants, with as many as 4 in one product; these mixtures have never been tested in humans [248]. For chest pain, fainting or a racing heartbeat after taking a stimulant supplement, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+Deterenol, also listed as isopropylnorsynephrine or isopropyloctopamine, is a prohibited stimulant, and weight-loss and sports supplements containing it have been linked to serious adverse events, including cardiac arrest [248]. In 17 brands labelled as containing it, a serving held 2.7 to 17 mg of deterenol, and many products also held other prohibited stimulants, with as many as 4 in one product; these mixtures have never been tested in humans [248]. For chest pain or signs of a stroke (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 ## 4. Summary of Evidence
 
@@ -479,9 +471,9 @@ Dosing recommendations apply only where sufficient evidence exists. For most wei
 | Chromium picolinate | 200-1,000 mcg/day | Effects on weight are minimal. |
 | CLA | 2.4-6 g/day | 50:50 mixture of c9,t11 and t10,c12 isomers. Effects small. |
 | L-Carnitine | 1.8-4 g/day | May require months for modest effects. |
-| Glucomannan | 1 g before each meal (3 g/day) | Tablets have caused esophageal obstruction. |
+| Glucomannan | 1 g before each meal (3 g/day) | Tablets have caused esophageal obstruction. Take each dose with a full glass (at least 8 ounces) of water. |
 | Chitosan | 2-3 g/day | Divide between largest meals. |
-| Forskolin | 250 mg extract (10% forskolin) twice daily | Use standardized Coleus forskohlii extract. |
+| Forskolin | 250 mg extract standardized for 10% forskolin, before breakfast and dinner | Use standardized Coleus forskohlii extract. |
 | White kidney bean | 445-3,000 mg/day | Before carbohydrate-rich meals. |
 | Pyruvate | 5-30 g/day | Large doses needed; GI effects common above 5 g. |
 
@@ -521,7 +513,7 @@ Consumers should be wary of products with claims that sound too good to be true,
 - **Diabetes:** Some ingredients (glucomannan, chromium) may affect blood sugar; monitor closely and adjust medications if necessary.
 - **Liver disease:** Avoid green tea extract, Garcinia cambogia, and yohimbe.
 - **Kidney disease:** African mango was associated with renal failure in a patient with CKD [21].
-- **Pregnancy/breastfeeding:** Most weight-loss supplements have not been studied in these populations and should be avoided. Caffeine should be limited to 200 mg/day during pregnancy [52].
+- **Pregnancy/breastfeeding:** Most weight-loss supplements have not been studied in these populations and should be avoided unless your doctor advises it. Caffeine should be limited to 200 mg/day during pregnancy [52].
 - **Children and adolescents:** Weight-loss supplements are not recommended. The American Academy of Pediatrics discourages caffeine consumption in this age group [54].
 
 ## 7. Drug Interactions
@@ -531,7 +523,7 @@ Weight-loss supplement ingredients can interact with numerous medications:
 | Ingredient | Interacting Drugs | Mechanism/Effect |
 |---|---|---|
 | Caffeine/stimulant blends | Other stimulants, decongestants, MAOIs | Additive cardiovascular stimulation; increased BP and HR |
-| Bitter orange/synephrine | Caffeine, decongestants, CYP3A4 substrates (cyclosporine, saquinavir) | Additive stimulant effects; inhibits CYP3A4 increasing drug levels [43] |
+| Bitter orange/synephrine | Caffeine, CYP3A4 substrates (cyclosporine, saquinavir) | Additive stimulant effects; inhibits CYP3A4 increasing drug levels [43] |
 | Glucomannan | Oral medications (general), diabetes drugs | Decreases absorption of many oral drugs; may lower blood glucose [139][147] |
 | Guar gum | Oral medications (general) | Decreases absorption of many oral drugs [147][179] |
 | Chitosan | Warfarin | May potentiate anticoagulant effects [239] |
@@ -1028,3 +1020,5 @@ None of the dietary supplement ingredients reviewed here produce weight loss com
 [251] Lee J, Chung M, Fu Z, et al. The effects of Irvingia gabonensis seed extract supplementation on anthropometric and cardiovascular outcomes: a systematic review and meta-analysis. J Am Coll Nutr 2020;39:388-96. [PubMed](https://pubmed.ncbi.nlm.nih.gov/31855111/)
 
 [252] Spadaro A, Scott KR, Koyfman A, et al. High risk and low prevalence diseases: serotonin syndrome. Am J Emerg Med 2022;61:90-7. [PubMed](https://pubmed.ncbi.nlm.nih.gov/36057215/)
+
+[253] US Food and Drug Administration. 21 CFR 201.319, "Water-soluble gums, hydrophilic gums, and hydrophilic mucilloids ... as active ingredients; required warnings and directions." [ecfr.gov](https://www.ecfr.gov/current/title-21/chapter-I/subchapter-C/part-201/subpart-G/section-201.319)
