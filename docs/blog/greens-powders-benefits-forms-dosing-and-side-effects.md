@@ -194,7 +194,7 @@ Some greens powders claim to promote clearer skin or reduce skin aging. The ingr
 
 No RCT has demonstrated that a greens powder supplement improves objective skin measures in humans.
 
-### 3.10 Cancer Risk Reduction
+### 3.10 Cancer Prevention Evidence
 
 Epidemiological data consistently show that higher fruit and vegetable consumption is associated with reduced cancer risk [34]. Greens powder ingredients contain various compounds with anti-cancer properties in laboratory settings:
 
