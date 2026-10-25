@@ -4512,7 +4512,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/amla-supplement-guide",
     "type": "reference",
-    "summary": "Reference on amla (Indian gooseberry): blood sugar, cholesterol, heart health, blood pressure. Adults with type 2 diabetes or high cholesterol. Powder 1-3g/day or extract 500-1000mg/day; caution with diabetes drugs. Always discuss with your doctor."
+    "summary": "Amla (Indian gooseberry) is an Ayurvedic fruit. Meta-analyses of small, short trials found lower LDL cholesterol and triglycerides, and lower blood sugar in one, but the trials varied widely. Amla reduced platelet clumping. Talk to your doctor first if you take blood thinners or diabetes medicines.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "B Vitamins: Benefits, Best Forms, Dosing, and Side Effects",
@@ -6318,7 +6319,8 @@
     "publishedAt": "2025-04-29T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/mangosteen-supplement-guide",
     "type": "reference",
-    "summary": "Reference on mangosteen: antioxidant, anti-inflammatory, acne, bad breath. Mostly preclinical evidence; two small RCTs only. Pericarp extract 200-400 mg/day. Avoid chronic high-dose juice (lactic acidosis risk). Always discuss with your doctor."
+    "summary": "Mangosteen rind xanthones are mostly studied in the lab. Small trials suggest gels may help gum disease and acne; extract trials in brain and mood conditions were mixed. Juice was linked to lactic acidosis in one case. Talk to your doctor first if you take blood thinners or diabetes medicines.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Manuka Honey: Benefits, Grading, Dosing, and Side Effects",
@@ -7233,7 +7235,8 @@
     "publishedAt": "2025-04-15T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/acai-berry-benefits-forms-dosing",
     "type": "reference",
-    "summary": "Reference on acai berry: antioxidant effects, modest anti-inflammatory benefits, possible HDL cholesterol support, exercise recovery. Evidence is limited; no proven weight loss effect. Frozen pulp or freeze-dried powder preferred over capsules (extreme quality variability). Caution with blood thinners, diabetes medications. Always discuss with your doctor."
+    "summary": "Small trials suggest acai pulp or juice may improve some antioxidant markers, but blood fats, blood sugar and weight did not reliably change. Raw acai from the Amazon can carry Chagas disease, and some supplements hold little acai. Talk to your doctor first if you take diabetes medicines.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Ashwagandha: Benefits, Forms, Dosing, and Side Effects",
@@ -10536,7 +10539,8 @@
     "publishedAt": "2024-04-15T13:42:51Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/bilberry-extract-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on bilberry: retinopathy, dry eye, blood sugar, vascular health. Best evidence for diabetic/hypertensive retinopathy. Look for 36% anthocyanoside extract. Caution with blood thinners and diabetes meds. Always discuss with your doctor."
+    "summary": "Bilberry is a European berry sold for eye health. It has not been clearly shown to help any condition: rigorous night vision trials were negative, and small dry eye, eye strain and blood sugar trials need confirming. Talk to your doctor first if you take blood thinners or diabetes medicines.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Baobab: Benefits, Forms, Dosing, and Side Effects",
@@ -10568,7 +10572,8 @@
     "publishedAt": "2024-03-27T03:38:34Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/baobab-powder-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on baobab: high fiber, gut health, blood sugar after meals, vitamin C, iron absorption. Adults wanting a fiber or nutrient boost. Powder 5-30 g/day; start low to avoid bloating. Caution in kidney disease. Always discuss with your doctor."
+    "summary": "Baobab pulp is about half fiber, with vitamin C and potassium. Single-meal trials found a smaller blood glucose rise after white bread or a glucose drink; a trial in children found no gain in iron status. Talk to your doctor first if you take diabetes medicines or have kidney disease.",
+    "reviewed": "2026-10-26"
   },
   {
     "title": "Astaxanthin: Benefits, Forms, Dosing, and Side Effects",
