@@ -6,7 +6,7 @@ publishedAt: "2025-05-20T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["saw palmetto", "prostate", "BPH", "beta-sitosterol", "psa", "prostate cancer", "pumpkin seed", "pygeum", "stinging nettle", "selenium", "zinc", "hair loss", "androgenetic alopecia", "finasteride", "testosterone", "dht", "urinary", "cholesterol", "ldl", "inflammation"]
-summary: "Saw palmetto alone probably does not help BPH symptoms; beta-sitosterol and pygeum helped in older trials; high-dose zinc was linked to advanced prostate cancer, and selenium of 140 μg/day or more to cancer death after diagnosis. Talk to your doctor first if you take blood thinners or are pregnant."
+summary: "Saw palmetto alone likely won't help BPH; beta-sitosterol and pygeum helped in older trials. Selenium did not prevent prostate cancer; ≥140 μg/day was tied to cancer death in men already diagnosed, high-dose zinc to advanced cancer. Ask your doctor first if you take blood thinners or are pregnant."
 reviewed: "2026-10-25"
 sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/saw-palmetto","checked":"2026-09-29","fingerprint":"sha256:3e32e6bfce236f97042954244674e09ef617722fdef67ff7e201aa1c3f43e4bf"}]
 ---
