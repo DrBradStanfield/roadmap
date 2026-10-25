@@ -20,10 +20,11 @@ Brad has not made a video on this topic; this is a summary of the evidence, not 
 ## Key safety points
 
 - CBD changes blood levels of other medicines. It raised levels of clobazam's active metabolite and some other seizure medicines, and warfarin doses were cut by 20 to 30% in two case reports [101][110][111][112]. If you take prescription medicines, check with your doctor or pharmacist before starting.
-- CBD can raise liver enzymes. In a trial of healthy adults taking 5 mg/kg a day, 8 people (5.6%) had levels over 3 times the upper limit of normal, against none on placebo [114]. Liver tests were higher in people also taking valproate [110].
+- CBD can raise liver enzymes. In a trial of healthy adults taking 5 mg/kg a day, 8 people (5.6%) had levels over 3 times the upper limit of normal, against none on placebo [114]. Liver tests were higher in people also taking valproate [110]. If you get yellow skin or eyes, dark urine or pain under the right ribs, stop over-the-counter CBD and see a doctor promptly [115].
+- CBD can cause sleepiness, and alcohol or other sedating medicines can add to it. Do not drive or use machinery until you know how it affects you [115][116].
 - In trials of prescription CBD, common side effects were diarrhea, sleepiness, vomiting, fever and loss of appetite [16][17].
 - In healthy men, one 600 mg dose cut resting systolic blood pressure by 6 mmHg and raised heart rate [84].
-- Over-the-counter CBD products may hold more or less CBD than the label says and may contain THC [2]. Daily THC intake from hemp oil has caused positive urine drug screens [91][92].
+- Over-the-counter CBD products may hold more or less CBD than the label says and may contain THC [2]. Hemp food oils with typical THC levels rarely caused a positive urine drug screen [91][92].
 
 ## Brad's videos on this topic
 
@@ -37,7 +38,7 @@ Cannabigerol (CBG) is a related cannabinoid that is also not psychoactive. Labor
 
 The FDA has not approved the cannabis plant for any medical use, but it has approved several drugs that contain single cannabinoids [2]:
 
-- **Epidiolex**: a purified form of CBD from cannabis, approved for seizures in Lennox-Gastaut syndrome or Dravet syndrome, two rare and severe forms of epilepsy
+- **Epidiolex**: a purified form of CBD from cannabis, approved for seizures in Lennox-Gastaut syndrome, Dravet syndrome or tuberous sclerosis complex in patients aged 1 year and older [115]
 - **Marinol and Syndros**: dronabinol (synthetic THC), for nausea and vomiting from cancer chemotherapy and for loss of appetite and weight loss in HIV/AIDS
 - **Cesamet**: nabilone (a synthetic substance similar to THC), for nausea and vomiting from cancer chemotherapy
 
@@ -89,7 +90,7 @@ This is the most well-established medical application of CBD, supported by the F
 
 **Lennox-Gastaut syndrome:** During a 14-week trial, 171 patients whose seizures had resisted at least two drugs took 20 mg/kg of oral CBD daily or placebo. Monthly drop seizures fell by a median of 43.9%, against 21.8% with placebo. Vomiting, fever, loss of appetite, diarrhoea and sleepiness were the common side effects (Thiele et al., *Lancet*, 2018) [17]. A second trial of 225 patients found that 10 mg per kilogram a day also worked (37.2% fewer drop seizures, against 17.2% with placebo); 14 patients on CBD (9%) had raised liver enzymes (Devinsky et al., *N Engl J Med*, 2018) [109].
 
-GW Pharmaceuticals, which makes Epidiolex, paid for both Lennox-Gastaut trials [17][109].
+GW Pharmaceuticals, which makes Epidiolex, paid for the Dravet trial and both Lennox-Gastaut trials [16][17][109].
 
 **Refractory epilepsy in children (commercially available CBD):** A review of 108 children with hard-to-treat epilepsy who used artisanal CBD oils found that 39% had their seizures cut by more than half, and 10% became seizure-free. The response with clobazam alone was similar. Increased alertness and better verbal interaction were reported in 14% of children on CBD alone (Porcari et al., *Epilepsy Behav*, 2018) [19].
 
@@ -211,7 +212,7 @@ Results have been mixed.
 
 ### Gastroparesis (Delayed Stomach Emptying)
 
-In a 4-week trial of 44 people with idiopathic or diabetic gastroparesis, prescription CBD (Epidiolex) taken twice daily and raised to 20 mg/kg a day reduced overall symptoms, vomiting episodes and inability to finish a normal meal compared to placebo. CBD slowed stomach emptying further. The most common side effects were diarrhea, fatigue, headache and nausea (Zheng et al., *Clin Gastroenterol Hepatol*, 2023) [66].
+In a 4-week trial of 44 people with idiopathic or diabetic gastroparesis, prescription CBD (Epidiolex) taken twice daily and raised to 20 mg/kg a day reduced overall symptoms, vomiting episodes and inability to finish a normal meal compared to placebo. Stomach emptying was slower with CBD than with placebo. The most common side effects were diarrhea, fatigue, headache and nausea (Zheng et al., *Clin Gastroenterol Hepatol*, 2023) [66].
 
 ### Multiple Sclerosis
 
@@ -283,7 +284,7 @@ There is no established dose of CBD as a supplement. The trials above used doses
 
 **Take with fat-containing food.** A high-fat meal raised the peak blood level of CBD about 14-fold and total exposure about 4-fold compared to fasting [9].
 
-**Timing:** In public-speaking studies, CBD was taken 90 minutes before the test [20][23].
+**Timing:** In one public-speaking study, CBD was taken 90 minutes before the test [20].
 
 **Read labels carefully.** Over-the-counter products may contain more or less CBD than stated and may contain THC [2]. Independent testers such as consumerlab.com and Labdoor publish product test results.
 
@@ -299,8 +300,9 @@ Prescription doses (10 mg or 20 mg per kilogram a day) carry greater risks [16][
 
 - **Gastrointestinal:** Decreased appetite, diarrhea, vomiting [16][17]
 - **Neurological:** Fatigue, somnolence [16][17]
-- **Hepatic:** Raised liver enzymes occurred in 9% of patients on 10 mg or 20 mg per kilogram a day in one trial [109], and liver tests were higher in people also taking valproate [110]. In 16 healthy adults taking 1,500 mg a day, 7 (44%) had ALT above the upper limit of normal and 5 (31%) had levels that exceeded 5 times the limit, starting within 2 to 4 weeks; some had symptoms of hepatitis [113]. In a placebo-controlled trial of 201 healthy adults, 5 mg/kg a day for 28 days raised liver enzymes over 3 times the upper limit in 8 people (5.6%), against none on placebo [114]. If you have liver disease, talk to your doctor before taking CBD.
-- **Hematologic:** A review of prescribing information listed anemia and infection among common adverse events [82]
+- **Hepatic:** Raised liver enzymes occurred in 9% of patients on 10 mg or 20 mg per kilogram a day in one trial [109], and liver tests were higher in people also taking valproate [110]. In 16 healthy adults taking 1,500 mg a day, 7 (44%) had ALT above the upper limit of normal and 5 (31%) had levels that exceeded 5 times the limit, starting within 2 to 4 weeks; some had symptoms of hepatitis [113]. This is the same trial as the caffeine study under Drug Interactions [102]. In a placebo-controlled trial of 201 healthy adults, 5 mg/kg a day for 28 days raised liver enzymes over 3 times the upper limit in 8 people (5.6%), against none on placebo [114]. If you get yellow skin or eyes, dark urine, or unexplained nausea, vomiting or pain under the right ribs while taking CBD, stop over-the-counter CBD and see a doctor promptly [115]. Do not stop prescription CBD without your doctor's advice, because stopping it suddenly can bring on more seizures [115]. People with moderate or severe liver disease need lower prescription doses [115], and a review advises caution with CBD in people with liver disease [82]. If you have liver disease, talk to your doctor before taking CBD.
+- **Hematologic:** In the prescription trials in Lennox-Gastaut and Dravet syndromes, 30% of people on CBD developed new anemia, against 13% on placebo [115]
+- **Mood:** Like other seizure medicines, prescription CBD can raise the risk of suicidal thoughts or behavior. Report new or worse depression, mood changes or thoughts of self-harm to a doctor right away [115]
 - **Weight loss:** In 26 children titrated to 25 mg/kg a day for a mean of 21 months, 80.8% had side effects, including reduced appetite (38.4%), diarrhea (34.6%) and weight loss (30.7%) that became clear only later in treatment (Sands et al., *CNS Drugs*, 2019) [83]
 - **Fever (pyrexia):** Commonly reported in epilepsy trials [16][17]
 
@@ -322,12 +324,12 @@ A case report described acute generalized exanthematous pustulosis, a widespread
 
 ### THC Content and Drug Testing
 
-THC in hemp oil can trigger a positive marijuana urine screen (50 ng/mL cutoff):
+THC in hemp food oils rarely triggers a positive marijuana urine screen (50 ng/mL cutoff):
 
-- In a controlled study, 7 adults took 0.39, 0.47, 7.5, and 14.8 mg THC/day as hemp oil or the drug Marinol. The two low doses caused positive screens in under 0.2% of urine samples, and the two high doses in 23 to 46% [91]
+- In a controlled study, 7 adults took 0.39, 0.47, 7.5, and 14.8 mg THC/day as hemp oil or the drug Marinol. The two low doses, typical of hemp oils, caused positive screens in under 0.2% of urine samples, and the two high doses in 23 to 46%. The authors found positive tests likely after Marinol [91]
 - In 15 adults taking hemp oil daily, no one screened positive at 0.45 mg of THC a day, and one urine sample screened positive at a daily dose of 0.6 mg [92]
 
-Some products sold as CBD may contain other forms of THC that can cause a high.
+Delta-8 THC, usually made from hemp-derived CBD, can cause a high like the THC in marijuana [118].
 
 ### Product Safety Concerns
 
@@ -335,9 +337,9 @@ Over-the-counter CBD products may contain more or less CBD than stated on labels
 
 ### Special Populations
 
-**Children:** Prescription CBD is approved for seizures in Lennox-Gastaut and Dravet syndromes in patients aged 2 years or older [111]. Talk to your child's doctor before giving any CBD product.
+**Children:** Prescription CBD is approved for seizures in Lennox-Gastaut syndrome, Dravet syndrome and tuberous sclerosis complex in patients aged 1 year and older [115]. Talk to your child's doctor before giving any CBD product.
 
-**Pregnancy:** Smoking cannabis during pregnancy has been linked to lower birth weight [2]. If you are pregnant or breastfeeding, talk to your doctor before using CBD.
+**Pregnancy:** Smoking cannabis during pregnancy has been linked to lower birth weight [2]. The FDA strongly advises against using CBD, THC or marijuana in any form during pregnancy or while breastfeeding [117].
 
 **Pets:** In dogs with osteoarthritis, CBD at 2 mg/kg every 12 hours for 4 weeks raised alkaline phosphatase, a liver enzyme [95]. In a 12-week study in healthy dogs and cats, one cat had a persistent rise in ALT [96].
 
@@ -355,15 +357,15 @@ Warfarin's effect may be strengthened by CBD, and INR (a measure of clotting tim
 
 ### Caffeine
 
-In healthy adults taking 750 mg CBD twice daily, total caffeine exposure rose by 95% and its half-life doubled from 5.4 to 10.9 hours. CBD inhibits CYP1A2, the enzyme that breaks down caffeine. Six of 16 people stopped because of raised liver enzymes (Thai et al., *Clin Pharmacol Drug Dev*, 2021) [102].
+In healthy adults taking 750 mg CBD twice daily, total caffeine exposure rose by 95% and its half-life doubled from 5.4 to 10.9 hours. CBD inhibits CYP1A2, the enzyme that breaks down caffeine. Six of 16 people stopped because of raised liver enzymes (Thai et al., *Clin Pharmacol Drug Dev*, 2021) [102]. This is the same trial as the liver study under Side Effects at High Doses [113].
 
 ### THC
 
-In 18 healthy adults, brownies with 20 mg of THC plus 640 mg of CBD raised THC blood levels and caused more anxiety, sedation and memory trouble, a faster heart rate, and worse scores on thinking and coordination tests than the same THC dose alone (Zamarripa et al., *JAMA Netw Open*, 2023) [103].
+In 18 healthy adults, brownies with 20 mg of THC plus 640 mg of CBD raised THC blood levels and caused more anxiety, sedation and memory trouble, a faster heart rate, and worse scores on thinking and coordination tests than the same THC dose alone (Zamarripa et al., *JAMA Netw Open*, 2023) [103]. In people who also use THC regularly, CBD may cause psychotic effects or problems with thinking [2].
 
 ### Sedatives and Sleep Aids
 
-CBD can cause sleepiness on its own [16][17]. With clobazam, sedation was more frequent in adults with higher levels of clobazam's active metabolite [110]. Taking CBD with other sedating medicines may add to drowsiness; check with your doctor or pharmacist first.
+CBD can cause sleepiness on its own [16][17]. With clobazam, sedation was more frequent in adults with higher levels of clobazam's active metabolite [110]. Alcohol and other medicines that slow brain activity, such as those for anxiety, panic, stress or sleep problems, can add to that sleepiness and raise the risk of injury [115][116]. Do not drive or use machinery until you know how CBD affects you [115].
 
 ### Levothyroxine
 
@@ -371,7 +373,7 @@ In 12 children taking a median dose of 12.2 (range 5.3 to 19.4) mg/kg of CBD a d
 
 ### Other Medications to Use with Caution
 
-Because CBD affects CYP3A4 and CYP2C19, and CYP1A2 at high doses [82][102], it may change levels of many common medicines, including some heart, psychiatric, statin, transplant and blood-thinning drugs. One analysis listed 57 prescription medicines with a narrow margin between a safe and a harmful dose that cannabinoids may affect [105]. Taking CBD with other medicines that can harm the liver may add to that risk.
+Because CBD affects CYP3A4 and CYP2C19, and CYP1A2 at high doses [82][102], it may change levels of many common medicines. A review lists statins, calcium channel blockers, antidepressants, antipsychotics, benzodiazepines, immunosuppressants, warfarin and clopidogrel [82]. The prescribing information adds tacrolimus, sirolimus, everolimus and digoxin, and warns that CBD may make clopidogrel work less well [115]. One analysis listed 57 prescription medicines with a narrow margin between a safe and a harmful dose that cannabinoids may affect [105]. A review advises caution when CBD is taken with other medicines that can harm the liver, such as some seizure medicines, antipsychotics and acetaminophen [82]. In the prescription trials, ALT rose above 3 times the upper limit of normal in 30% of people taking both valproate and clobazam, against 21% on valproate alone, 4% on clobazam alone and 3% on neither [115].
 
 In a study of a THC/CBD mouth spray, ketoconazole (400 mg) raised the peak CBD level by 89%, while rifampicin (600 mg) lowered it by 52% [106].
 
@@ -602,3 +604,11 @@ CBD is not an essential nutrient. It comes from the cannabis plant [2].
 [113] Watkins PB, Church RJ, Li J, et al. "Cannabidiol and Abnormal Liver Chemistries in Healthy Adults: Results of a Phase I Clinical Trial." *Clin Pharmacol Ther*. 2021;109(5):1224-1231. doi: [10.1002/cpt.2071](https://doi.org/10.1002/cpt.2071). PMID: [33022751](https://pubmed.ncbi.nlm.nih.gov/33022751/)
 
 [114] Florian J, Salcedo P, Burkhart K, et al. "Cannabidiol and Liver Enzyme Level Elevations in Healthy Adults: A Randomized Clinical Trial." *JAMA Intern Med*. 2025;185(9):1070-1078. doi: [10.1001/jamainternmed.2025.2366](https://doi.org/10.1001/jamainternmed.2025.2366). PMID: [40622698](https://pubmed.ncbi.nlm.nih.gov/40622698/)
+
+[115] U.S. National Library of Medicine, DailyMed. Epidiolex (cannabidiol) oral solution prescribing information (Jazz Pharmaceuticals), sections 1, 2.6, 5.1 to 5.3, 6.1, 7.2, 7.3, 7.4 and 17. Revised 5/2026. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=8bf27097-4870-43fb-94f0-f3d0871d1eec](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=8bf27097-4870-43fb-94f0-f3d0871d1eec)
+
+[116] U.S. Food and Drug Administration. "What You Need to Know (And What We're Working to Find Out) About Products Containing Cannabis or Cannabis-derived Compounds, Including CBD." Consumer update, current as of March 2020. [https://www.fda.gov/consumers/consumer-updates/what-you-need-know-and-what-were-working-find-out-about-products-containing-cannabis-or-cannabis](https://www.fda.gov/consumers/consumer-updates/what-you-need-know-and-what-were-working-find-out-about-products-containing-cannabis-or-cannabis)
+
+[117] U.S. Food and Drug Administration. "What You Should Know About Using Cannabis, Including CBD, When Pregnant or Breastfeeding." Consumer update, current as of October 2019. [https://www.fda.gov/consumers/consumer-updates/what-you-should-know-about-using-cannabis-including-cbd-when-pregnant-or-breastfeeding](https://www.fda.gov/consumers/consumer-updates/what-you-should-know-about-using-cannabis-including-cbd-when-pregnant-or-breastfeeding)
+
+[118] U.S. Food and Drug Administration. "5 Things to Know about Delta-8 Tetrahydrocannabinol (Delta-8 THC)." Consumer update, current as of May 2022. [https://www.fda.gov/consumers/consumer-updates/5-things-know-about-delta-8-tetrahydrocannabinol-delta-8-thc](https://www.fda.gov/consumers/consumer-updates/5-things-know-about-delta-8-tetrahydrocannabinol-delta-8-thc)
