@@ -14,7 +14,7 @@
  * response, which another site cannot read.
  */
 import { type ActionFunctionArgs } from 'react-router';
-import { z } from 'zod';
+import * as z from 'zod';
 import { authenticate } from '../shopify.server';
 import { getCustomerId } from '../lib/route-helpers.server';
 import { BODY_TOO_LARGE, parseSimpleRequestJson } from '../lib/local-first-route.server';

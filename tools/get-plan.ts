@@ -25,7 +25,7 @@
  */
 import { chmodSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { z } from 'zod';
+import * as z from 'zod';
 import { FileAdapter } from '../packages/health-core/src/file-adapter';
 import { FIELD_METRIC_MAP } from '../packages/health-core/src/mappings';
 import { updateProfile } from '../packages/health-core/src/mcp-tools';
@@ -48,6 +48,7 @@ import {
 import { createEmptyFile, BASE_SCHEMA_VERSION, type RoadmapFile } from '../packages/health-core/src/roadmap-file';
 import type { Suggestion } from '../packages/health-core/src/types';
 import { formatDisplayValue, getDisplayLabel, hasUnitChoice, UNIT_DEFS, type MetricType } from '../packages/health-core/src/units';
+import { zod3Message } from '../packages/health-core/src/validation';
 
 // ---------------------------------------------------------------------------
 // Load — the untrusted-bytes boundary
@@ -99,7 +100,7 @@ export function recordFromValues(raw: string, now = new Date()): RoadmapFile {
   } catch {
     throw new PlanError('The values are not valid JSON', VALUES_SHAPE);
   }
-  const parsed = valuesSpec.safeParse(json);
+  const parsed = valuesSpec.safeParse(json, { error: zod3Message });
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     throw new PlanError(`Values: ${oneLine([...issue.path, issue.message].join(' '))}`, VALUES_SHAPE);

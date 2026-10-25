@@ -1,6 +1,6 @@
 import { type ActionFunctionArgs } from "react-router";
 import * as Sentry from '@sentry/react-router';
-import { z } from 'zod';
+import * as z from 'zod';
 import { authenticate } from '../shopify.server';
 import { subscribeToKlaviyo } from '../lib/klaviyo.server';
 import { sendPlanReadyEmail } from '../lib/email.server';
@@ -35,7 +35,7 @@ const checkCaptureIpLimit = createRateLimiter(20, 60 * 60_000, 30 * 60_000); // 
 // server footprint: labels + due dates + the email. Optional so an old cached
 // widget bundle (email-only body) keeps working.
 const klaviyoCaptureSchema = z.object({
-  email: z.string().email().max(254),
+  email: z.email().max(254),
   schedule: scheduleSchema.optional(),
 });
 

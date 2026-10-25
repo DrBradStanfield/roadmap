@@ -1,9 +1,10 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
 import { data, useLoaderData, useSubmit, useNavigation } from "react-router";
 import { useState } from "react";
-import { z } from "zod";
+import * as z from "zod";
 
 import { authenticateAdmin } from "../lib/admin-shop.server";
+import { zod3Message } from "../../packages/health-core/src/validation";
 import {
   getABTests,
   getActiveABTests,
@@ -144,7 +145,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           name: formData.get('name'),
           target: formData.get('target'),
           variants: JSON.parse(formData.get('variants') as string || '[]'),
-        });
+        }, { error: zod3Message });
       } catch (e) {
         const msg = e instanceof z.ZodError ? e.issues[0]?.message : 'Invalid test data';
         return data({ success: false, error: msg });

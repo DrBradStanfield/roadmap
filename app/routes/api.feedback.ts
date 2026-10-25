@@ -1,6 +1,6 @@
 import { type ActionFunctionArgs } from "react-router";
 import * as Sentry from '@sentry/react-router';
-import { z } from 'zod';
+import * as z from 'zod';
 import { authenticate } from '../shopify.server';
 import { sendFeedbackEmail } from '../lib/email.server';
 import { recordFeedbackSubmission } from '../lib/product-events.server';
@@ -12,7 +12,7 @@ import { createRateLimiter } from '../lib/rate-limiter';
 const checkFeedbackRateLimit = createRateLimiter(3, 60 * 60_000, 10 * 60_000);
 
 const feedbackSchema = z.object({
-  email: z.string().email().max(200),
+  email: z.email().max(200),
   message: z.string().min(1).max(2000),
   // Honeypot: a filled field fails max(0), so the request is a 400 before any
   // insert or send. The trap is the schema — there is no second check below.

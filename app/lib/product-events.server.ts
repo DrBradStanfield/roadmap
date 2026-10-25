@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/react-router';
-import { z } from 'zod';
+import * as z from 'zod';
 // Deep relative import (not '@roadmap/health-core'): the Docker build runs
 // `npm ci` before COPY, so the workspace symlink never exists in the image —
 // same reason chat.server.ts / email.server.ts import health-core this way.
@@ -126,34 +126,34 @@ function checkEventKeys(
   if (!metadata) return;
   for (const [key, owners] of Object.entries(EVENT_KEY_OWNERS)) {
     if (metadata[key] !== undefined && !owners.includes(event.eventName)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['metadata', key], message: 'key is not one this event may carry' });
+      ctx.addIssue({ code: 'custom', path: ['metadata', key], message: 'key is not one this event may carry' });
     }
   }
   const only = EVENT_ONLY_KEYS[event.eventName];
   for (const key of Object.keys(metadata)) {
     if (only && !only.includes(key)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['metadata', key], message: 'key is not one this event may carry' });
+      ctx.addIssue({ code: 'custom', path: ['metadata', key], message: 'key is not one this event may carry' });
     }
   }
   // A metric beside an out-of-range refusal would say this visitor's value is past a bound.
   if (metadata.metric !== undefined && !(MEASUREMENT_REFUSALS_WITH_METRIC as readonly unknown[]).includes(metadata.refusal)) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['metadata', 'metric'], message: 'key is not one this event may carry' });
+    ctx.addIssue({ code: 'custom', path: ['metadata', 'metric'], message: 'key is not one this event may carry' });
   }
   // `unit` is any lab spelling on `lab_unit_refused`; here, only an Lp(a) unit.
   if (event.eventName === 'lpa_unit_selected' && metadata.unit !== undefined && !(LPA_UNITS as readonly unknown[]).includes(metadata.unit)) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['metadata', 'unit'], message: 'unit is not one this event may carry' });
+    ctx.addIssue({ code: 'custom', path: ['metadata', 'unit'], message: 'unit is not one this event may carry' });
   }
   const reason = metadata.reason;
   // A detail is only its own reason's word: none without one, and no other reason's.
   const details: readonly unknown[] = typeof reason === 'string' && Object.hasOwn(MCP_OAUTH_DETAILS, reason)
     ? MCP_OAUTH_DETAILS[reason as keyof typeof MCP_OAUTH_DETAILS] : [];
   if (metadata.detail !== undefined && !details.includes(metadata.detail)) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['metadata', 'detail'], message: 'detail is not one this reason may carry' });
+    ctx.addIssue({ code: 'custom', path: ['metadata', 'detail'], message: 'detail is not one this reason may carry' });
   }
   if (reason === undefined) return;
   const allowed: readonly string[] = EVENT_REASONS[event.eventName as keyof typeof EVENT_REASONS] ?? [];
   if (!allowed.includes(reason as string)) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['metadata', 'reason'], message: 'reason is not one this event may carry' });
+    ctx.addIssue({ code: 'custom', path: ['metadata', 'reason'], message: 'reason is not one this event may carry' });
   }
 }
 
@@ -161,7 +161,7 @@ function checkEventKeys(
  *  and the base both metadata lists extend. */
 const eventShellSchema = z.object({
   eventName: z.enum(PRODUCT_EVENT_NAMES),
-  visitorId: z.string().uuid(),
+  visitorId: z.guid(),
 });
 
 export const productEventSchema = eventShellSchema

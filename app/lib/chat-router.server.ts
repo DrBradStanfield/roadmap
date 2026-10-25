@@ -11,7 +11,7 @@
 import * as Sentry from '@sentry/react-router';
 import fs from 'fs';
 import path from 'path';
-import { z } from 'zod';
+import * as z from 'zod';
 import { callAnthropicWithUsage, type AnthropicUsage } from './anthropic.server';
 import { loadBlogIndex } from './blog-index.server';
 import { routerView, routerIndexBlock } from './router-view';

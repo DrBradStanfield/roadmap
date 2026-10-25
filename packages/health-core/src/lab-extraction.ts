@@ -13,7 +13,7 @@
  *    bundle: Brad accepted that 2026-06-10 — it is mechanical value
  *    extraction, not clinical IP (the algorithm doc never leaves the server).
  */
-import { z } from 'zod';
+import * as z from 'zod';
 import { reportedToCanonical, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from './units';
 import { foldName, LAB_CATALOG, LAB_GROUPS, normalizeLabUnit, PROMPT_DEFERRED_KEYS } from './lab-catalog';
 import { parseLocalisedNumber } from './parseNumber';
@@ -511,9 +511,9 @@ const coreValueRow = z.object({
   // Null, missing or blank is "no unit printed", as on an additional row.
   unit: z.string().nullish().transform(u => u?.trim() ?? ''),
   confidence: z.enum(['high', 'medium', 'low']),
-  question: z.string().nullish().transform(q => q ?? undefined),
+  question: z.string().nullish().transform(q => q ?? undefined).optional(),
   recordedAt: labDay,
-  printedMonth: z.unknown().transform(m => (typeof m === 'string' ? m.trim() : undefined)),
+  printedMonth: z.unknown().transform(m => (typeof m === 'string' ? m.trim() : undefined)).optional(),
 });
 
 const additionalValueRow = z.object({
@@ -523,7 +523,7 @@ const additionalValueRow = z.object({
   referenceLow: labBound,
   referenceHigh: labBound,
   recordedAt: labDay,
-  printedMonth: z.unknown().transform(m => (typeof m === 'string' ? m.trim() : undefined)),
+  printedMonth: z.unknown().transform(m => (typeof m === 'string' ? m.trim() : undefined)).optional(),
 });
 
 const unifiedResultSchema = z.object({
@@ -537,7 +537,7 @@ const unifiedResultSchema = z.object({
     documentDate: z.string().nullable(),
     contentMarkdown: z.string().default(''),
     summary: z.string().optional(),
-    metadata: z.record(z.unknown()).default({}),
+    metadata: z.record(z.string(), z.unknown()).default({}),
   }).nullable().default(null),
 });
 
