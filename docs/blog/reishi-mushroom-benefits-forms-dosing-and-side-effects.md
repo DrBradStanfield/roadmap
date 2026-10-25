@@ -15,15 +15,15 @@ sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/40510787/","ch
 
 ## Current evidence position
 
-Brad has not made a video on this topic; this is a summary of the evidence, not his view. A 2025 meta-analysis of 17 randomized trials in 971 people found small drops in body mass index, creatinine and heart rate with reishi, no effect on blood pressure, fasting glucose, blood lipids, inflammatory markers or liver enzymes, and very low certainty of evidence for every outcome [44]. Cochrane reviews found too little evidence to use reishi as a first-line cancer treatment, though it might be added to standard treatment, and found no support for using it to treat heart disease risk factors in type 2 diabetes [15][24]. Reishi is generally well tolerated in trials, but rare liver injury has been linked to it, including a fatal case after a switch to reishi powder [32][45]. Talk to your doctor before taking it if you take a blood thinner or diabetes medicines, or have liver disease or cancer [19][32][37][49].
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. A 2025 meta-analysis of 17 randomized trials in 971 people found small drops in body mass index, creatinine and heart rate and a rise in the antioxidant enzyme glutathione peroxidase with reishi, no effect on blood pressure, fasting glucose, blood lipids, inflammatory markers or liver enzymes, and very low certainty of evidence for every outcome [44]. Cochrane reviews found too little evidence to use reishi as a first-line cancer treatment, though it might be added to standard treatment, and found no support for using it to treat heart disease risk factors in type 2 diabetes [15][24]. Reishi is generally well tolerated in trials, but rare liver injury has been linked to it, including a fatal case after a switch to reishi powder [32][45]. Talk to your doctor before taking it if you take a blood thinner or diabetes medicines, or have liver disease or cancer [19][32][37][49].
 
 ## Key safety points
 
-- In a trial in healthy volunteers, 1.5 g a day did not affect clotting, but in an older study 1 g three times a day slowed platelet clumping in people with atherosclerotic disease [37][38]. If you take a blood thinner or antiplatelet medicine, ask your doctor first.
-- Rare liver injury has been linked to reishi, including fatal hepatitis after a switch to reishi powder, so ask your doctor first if you have liver disease [32][45]. If you get abdominal pain or feel very unwell while taking it, stop and see a doctor the same day, or for severe symptoms call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [46].
+- Rare liver injury has been linked to reishi, including fatal hepatitis after a switch to reishi powder, so ask your doctor first if you have liver disease [32][45]. If you get abdominal pain [46], yellow skin or eyes, or feel very unwell while taking it, stop and see a doctor the same day, or for severe symptoms call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- Reishi slowed platelet clumping in a small study of patients with atherosclerotic disease and in laboratory tests, though a trial in healthy volunteers found no effect on clotting [37][38][56]. If you take a blood thinner or anti-platelet medicine, ask your doctor first.
 - People who have had HMGCR immune-mediated necrotising myopathy should avoid mushroom supplements, including reishi: mushrooms naturally block the HMGCR enzyme, and mushroom supplements triggered a flare in a woman with the condition [41].
-- In people with gastrointestinal cancer, reishi spore powder raised the tumour marker CA72-4, which returned to normal after they stopped [19][53]. If you have cancer, tell your cancer team before taking reishi.
-- Reishi lowered blood glucose in a 2025 trial in type 2 diabetes [49]. If you take diabetes medicines, ask your doctor about closer glucose checks.
+- In people with gastrointestinal cancer, reishi spore powder raised the tumour marker CA72-4 [19][53], which returned to normal after they stopped [19]. If you have cancer, tell your cancer team before taking reishi.
+- Reishi lowered blood glucose in a 2025 trial in type 2 diabetes [49], though other trials found no effect [12][24]. If you take diabetes medicines, ask your doctor about closer glucose checks.
 - Side effects in trials were few and minor, such as nausea and insomnia [15].
 
 ## Brad's videos on this topic
@@ -39,7 +39,7 @@ Like other fungi, reishi has a fruiting body, the visible mushroom that releases
 Reishi contains polysaccharides, mainly beta-glucans, and triterpenes such as the ganoderic and lucidenic acids [4][6]. The two main groups are:
 
 - **Polysaccharides**, mostly beta-glucans. Mushroom polysaccharides have shown immune and antitumor effects in laboratory and animal studies [6][20].
-- **Triterpenes**, particularly the ganoderic acids. In laboratory studies they have shown antibacterial, antiviral, antitumor, antioxidant, cholesterol-lowering and anti-clotting activity [4].
+- **Triterpenes**, particularly the ganoderic acids. In laboratory studies they have shown antibacterial, antiviral, antitumor, antioxidant, cholesterol-lowering and anti-platelet activity [4].
 
 A hot-water extract of reishi fruiting bodies lowered blood sugar in mice [8], and a protein-bound polysaccharide from reishi blocked herpes viruses in cell culture [7]. Most findings like these come from cells and animals, and few have been confirmed in people.
 
@@ -67,7 +67,7 @@ In 12 healthy men given a single 3,000 mg dose of a reishi water extract, food s
 
 Reishi has been studied most for immune function in people with cancer, almost always in small trials.
 
-**Cochrane Review of Clinical Trials:** A Cochrane review of five randomized trials, updated in 2016, did not find enough evidence to justify reishi as a first-line cancer treatment, and it is uncertain whether reishi helps people live longer [15]. People given reishi with chemotherapy or radiotherapy were more likely to respond than those given chemotherapy or radiotherapy alone (RR 1.50; 95% CI 0.90 to 2.51, P = 0.02), and the authors judged that reishi could be an add-on to standard treatment [15]. The quality of the trials was generally poor [15].
+**Cochrane Review of Clinical Trials:** A Cochrane review of five randomized trials, updated in 2016, did not find enough evidence to justify reishi as a first-line cancer treatment, and it is uncertain whether reishi helps people live longer [15]. People given reishi with chemotherapy or radiotherapy were more likely to respond than those given chemotherapy or radiotherapy alone (RR 1.50; 95% CI 0.90 to 2.51, P = 0.02), though the review's figures conflict: the interval includes no effect. The authors judged that reishi could be an add-on to standard treatment [15]. The quality of the trials was generally poor [15].
 
 **Immune Function in Advanced Cancer (Uncontrolled):** In 34 people with advanced cancer, 1800 mg of Ganopoly three times daily before meals for 12 weeks raised blood levels of IL-2, IL-6 and interferon-gamma and natural killer cell activity, and lowered IL-1 and TNF-alpha, compared with their own starting values [10]. The study had no control group, and tumour response was still being assessed when it was published [10].
 
@@ -79,7 +79,7 @@ Reishi has been studied most for immune function in people with cancer, almost a
 
 **Tumor Marker Concern:** In 5 cases of gastrointestinal cancer, the tumour marker CA72-4 rose after patients took reishi spore powder twice a day for 1 or 2 months [19]. Levels returned to normal quickly when they stopped, and their symptoms did not change [19]. Three similar cases were reported separately, and in two of them the unexplained rise led to unnecessary tests [53]. People with cancer whose care is tracked with tumour markers should tell their team if they take reishi.
 
-**Context from Other Mushroom-Derived Compounds:** Some mushroom polysaccharides are used as drugs in Asia: lentinan (from shiitake), schizophyllan and PSK have become large market items in Japan [20]. In an analysis of 650 people from 5 trials in advanced gastric cancer, adding lentinan to chemotherapy prolonged survival (HR 0.80, 95% CI 0.68 to 0.95) [22], and a review of 38 trials from China found better response rates in lung cancer with lentinan plus chemotherapy [21]. Lentinan is an injected drug [21]; oral beta-glucan supplements may not act the same way.
+**Context from Other Mushroom-Derived Compounds:** Some mushroom polysaccharides are used as drugs in Asia: lentinan (from shiitake), schizophyllan and PSK have become large market items in Japan [20]. In an analysis of 650 people from 5 trials in advanced gastric cancer, adding lentinan to chemotherapy prolonged survival (HR 0.80, 95% CI 0.68 to 0.95) [22], and a review of 38 trials from China found better response rates in lung cancer with lentinan plus chemotherapy [21]. Lentinan injection is an approved drug in several Asian countries [21], and these trials tested lentinan, not reishi [21][22].
 
 **Preclinical Evidence Summary:** In cell and animal studies, reishi polysaccharides and triterpenes show antitumor and immune effects [4][6]. These results cannot be applied directly to supplement use in people.
 
@@ -92,8 +92,6 @@ Results on blood sugar are mixed.
 **Cochrane Review (Negative Overall Conclusion):** A 2015 Cochrane review of five trials with a total of 398 participants found no clear effect on HbA1c (WMD -0.10%; 95% CI -1.05% to 0.85%) or fasting glucose, and concluded that the evidence does not support reishi for treating heart disease risk factors in type 2 diabetes [24].
 
 **Type 2 Diabetes with Metabolic Syndrome (Negative):** In a double-blind trial, 84 people with type 2 diabetes and metabolic syndrome took 3 g/day of reishi, with or without *Cordyceps sinensis*, or placebo for 16 weeks [12]. Reishi had no effect on HbA1c, fasting glucose or any secondary outcome, and it did not raise the overall risk of side effects [12].
-
-**Oyster Mushroom and Beta-Glucans for Blood Sugar (Negative):** In a crossover trial in 22 adults with impaired glucose tolerance, adding 20 g of oyster mushroom powder (*Pleurotus ostreatus*), with 8.1 g of beta-glucans, to one meal did not change blood glucose, insulin, triglycerides or ghrelin in the 4 h after eating [25]. GLP-1, a gut hormone that boosts insulin release, was 17% higher, and hunger was 22% lower [25]. This study used oyster mushroom, not reishi.
 
 **Weighing the Evidence:** Two trials found some benefit, but the Cochrane review, the 16-week trial and the 2025 meta-analysis, which found no effect on fasting glucose, do not support reishi for blood sugar control [12][24][44].
 
@@ -117,7 +115,7 @@ Mushroom polysaccharides may act as prebiotics, feeding gut bacteria [34]. Gut b
 
 **In Vitro Evidence:** In a computer-controlled laboratory model of the colon, a mix of three mushrooms (reishi, maitake and oyster) was fed to gut bacteria from healthy adults for 72 h at three doses (0.5, 1.0 and 1.5 g/day) [36]. Butyrate-producing bacteria and butyrate rose with the dose, and at the highest dose butyrate roughly doubled compared with the control [36].
 
-**Limitations:** This was a laboratory model, not a trial in people, and it tested a blend rather than reishi alone. Trials in people would need to show whether the effect occurs after eating mushroom beta-glucans and whether it brings any benefit.
+**Limitations:** This was a laboratory model of the colon that tested a blend, not reishi alone, and the authors said the results warrant future mechanistic research [36].
 
 ### Anti-Inflammatory and Antioxidant Activity
 
@@ -127,7 +125,7 @@ No large trial has tested reishi as an anti-inflammatory or antioxidant treatmen
 
 ### Cardiovascular Health
 
-In laboratory and animal studies, reishi compounds blocked cholesterol production in liver cells and lowered cholesterol in hamsters and minipigs [39], and its triterpenes show anti-clotting and blood pressure-lowering activity [4]. Human trials have not confirmed heart benefits. The 2015 Cochrane review found no significant difference in blood pressure or triglycerides [24], the 16-week trial found no change in any outcome [12], and a crossover trial found no change in blood pressure [48]. The 2025 meta-analysis found no effect on blood pressure or the lipid profile [44].
+In laboratory and animal studies, reishi compounds blocked cholesterol production in liver cells and lowered cholesterol in hamsters and minipigs [39], and its triterpenes show anti-platelet and blood pressure-lowering activity [4]. Human trials have not confirmed heart benefits. The 2015 Cochrane review found no significant difference in blood pressure or triglycerides [24], the 16-week trial found no change in any outcome [12], and a crossover trial found no change in blood pressure [48]. The 2025 meta-analysis found no effect on blood pressure or the lipid profile [44].
 
 ### Antiviral and Antibacterial Activity
 
@@ -153,8 +151,6 @@ There is no established dose for reishi. Trials have used very different product
 
 **Extracts:** The Ganopoly trials used 1800 mg three times daily [10], and the colorectal adenoma trial used 1.5 g/day of a mycelium culture-medium extract [16].
 
-**Other preparations:** Trials ranged from 1.5 g daily for 4 wk [38] to 6 g per day for 6 weeks [9].
-
 **Enriched/specialized formulas:** Much lower doses may be used when the product is concentrated in specific compounds. The fatty liver trial used one 225 mg capsule a day of a formula enriched in triterpenoids and polysaccharide peptides [30].
 
 ### Important Dosing Considerations
@@ -163,17 +159,16 @@ There is no established dose for reishi. Trials have used very different product
 - In one small study, food slowed or reduced the absorption of two ganoderic acids [14]. What this means for any benefit is unknown.
 - Products differ widely in what they contain (see Section 2) [52]. A polysaccharide extract delivers a very different amount of active compounds than plain mushroom powder at the same weight.
 - In the trials in the Cochrane cancer review, reishi was generally well tolerated, with a few minor side effects and no major toxicity [15]. Long-term safety data are limited.
-- In healthy volunteers, 1.5 g daily for 4 wk did not affect clotting [38], but in patients with atherosclerotic disease, 1 g 3 times a day for 2 weeks slowed platelet clumping [37].
 
 ## 5. Safety and Side Effects
 
 ### Common Side Effects
 
-Side effects in trials have been mild. In the Cochrane cancer review, one trial recorded minimal side effects, including nausea and insomnia [15]. In the Cochrane review of heart disease risk factors, people taking reishi for four months were more likely to report an adverse event than those on placebo (RR 1.67 95% CI 0.86 to 3.24), but none were serious [24].
+Side effects in trials have been mild. In the Cochrane cancer review, one trial recorded minimal side effects, including nausea and insomnia [15]. In the Cochrane review of heart disease risk factors, people taking reishi for four months had slightly more adverse events than those on placebo, not statistically significant, none serious (RR 1.67 95% CI 0.86 to 3.24) [24].
 
 ### Blood-Thinning Effects
 
-Evidence on clotting is mixed. A water extract of reishi slowed platelet clumping in the test tube, and in 33 patients with atherosclerotic disease, 1 g 3 times a day for 2 weeks reduced platelet clumping [37]. In a laboratory screen of eight edible mushrooms, reishi extract also blocked platelet clumping but did not change clotting tests [56]. In a double-blind trial, 1.5 g a day for 4 wk did not change any clotting or platelet test in healthy volunteers (n = 20) compared with placebo (n = 20) [38]. Its triterpenes also show anti-clotting activity in laboratory studies [4]. If you take a blood thinner or an antiplatelet medicine, ask your doctor before using reishi (see Section 6: Drug Interactions). If you have surgery planned, tell your surgeon you take reishi, though the healthy-volunteer trial authors judged it unlikely to raise surgical bleeding risk in otherwise healthy people [38].
+Evidence on clotting is mixed. A water extract of reishi slowed platelet clumping in the test tube, and in 33 patients with atherosclerotic disease, 1 g 3 times a day for 2 weeks reduced platelet clumping [37]. In a laboratory screen of eight edible mushrooms, reishi extract also blocked platelet clumping, though it was toxic to platelets and white blood cells, and did not change clotting tests [56]. In a double-blind trial, 1.5 g a day for 4 wk did not change any clotting or platelet test in healthy volunteers (n = 20) compared with placebo (n = 20) [38]. Its triterpenes also show anti-platelet activity in laboratory studies [4]. If you take a blood thinner or an antiplatelet medicine, ask your doctor before using reishi (see Section 6: Drug Interactions). If you have surgery planned, tell your surgeon you take reishi, though the healthy-volunteer trial authors judged it unlikely to raise surgical bleeding risk in otherwise healthy people [38].
 
 ### Liver Toxicity
 
@@ -187,11 +182,11 @@ Reishi has been linked to a handful of liver injury reports, including a death. 
 
 **Case 4 (with alcohol):** A 47-year-old man developed acute hepatitis, with headache and abdominal pain, after taking reishi powder and alcohol; his symptoms and blood tests had returned to normal by two weeks [46].
 
-The cause of reishi-linked liver injury is not known. Because one case was fatal, people with liver disease or past drug-induced liver injury, or who take other medicines or alcohol that can affect the liver, should talk to their doctor before using reishi [32][46]. If you develop abdominal pain or feel very unwell while taking reishi, stop it and see a doctor the same day. For severe symptoms, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+The cause of reishi-linked liver injury is not known. Because one case was fatal, people with liver disease, or who take other medicines or alcohol that can affect the liver, should talk to their doctor before using reishi [32][46]. If you develop abdominal pain, yellow skin or eyes, or feel very unwell while taking reishi, stop it and see a doctor the same day. For severe symptoms, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 ### HMGCR Immune-Mediated Necrotizing Myopathy (HMGCR IMNM)
 
-Anyone who has had HMG-CoA reductase immune-mediated necrotizing myopathy (HMGCR IMNM) should stay away from mushroom supplements, reishi included, and from mushrooms in the diet, because they may set off a flare [41].
+Anyone who has had HMG-CoA reductase immune-mediated necrotizing myopathy (HMGCR IMNM) should stay away from mushroom supplements, including reishi [41].
 
 HMGCR IMNM is a rare autoimmune muscle disease thought to be triggered by statins, which block the enzyme HMG-CoA reductase (HMGCR) [41]. Mushrooms are natural HMGCR inhibitors [41], and reishi reduced HMGCR activity in the livers of hamsters [39].
 
@@ -199,7 +194,7 @@ In a published case, a woman in her 30s with HMGCR IMNM, who had never taken a s
 
 ### Interference with Diagnostic Testing
 
-In a small study in healthy volunteers, a beta-glucan supplement (not reishi) did not cause false-positive results on the 1,3-beta-D-glucan blood test, which helps diagnose invasive fungal infections [51]. If you are tested for a fungal infection, mention any supplements you take.
+In a small study in healthy volunteers, a beta-glucan supplement (not reishi) did not cause false-positive results on the 1,3-beta-D-glucan blood test, which helps diagnose invasive fungal infections [51].
 
 ### Pregnancy and Breastfeeding
 
@@ -209,7 +204,7 @@ There are insufficient data on the safety of reishi supplementation during pregn
 
 ### Anticoagulants and Antiplatelet Agents
 
-Reishi slowed platelet clumping in laboratory tests and in one small study of patients [37][56], though a trial in healthy volunteers found no effect on clotting at 1.5 g a day [38]. Its triterpenes also show anti-clotting activity in the laboratory [4]. People taking warfarin, heparin, aspirin, clopidogrel, or other anticoagulant/antiplatelet medications should consult their healthcare provider before using reishi.
+Reishi slowed platelet clumping in laboratory tests and in one small study of patients [37][56], though a trial in healthy volunteers found no effect on clotting at 1.5 g a day [38]. Its triterpenes also show anti-platelet activity in the laboratory [4]. People taking warfarin, heparin, aspirin, clopidogrel, or other anticoagulant/antiplatelet medications should consult their healthcare provider before using reishi.
 
 ### Antihypertensive Medications
 
@@ -217,7 +212,7 @@ A reishi water extract lowered blood pressure in hypertensive rats about as much
 
 ### Immunosuppressant Medications
 
-Reishi raised some immune markers, such as IL-2, interferon-gamma and natural killer cell activity, in people with advanced cancer [10]. In theory this could work against medicines that suppress the immune system, used to prevent transplant rejection or treat autoimmune conditions (e.g., cyclosporine, tacrolimus, corticosteroids, azathioprine). Patients on immunosuppressive therapy should avoid reishi unless specifically advised otherwise by their physician.
+Reishi raised some immune markers, such as IL-2, interferon-gamma and natural killer cell activity, in people with advanced cancer [10]. In theory this could work against medicines that suppress the immune system, used to prevent transplant rejection or treat autoimmune conditions (e.g., cyclosporine, tacrolimus, corticosteroids, azathioprine). If you take immunosuppressants, ask your doctor first.
 
 ### Chemotherapy Drugs
 
