@@ -68,7 +68,7 @@ Vaccenic acid in food adds to the body's supply of rumenic acid: in one feeding 
 
 CLA is marketed for fat loss. The effects in human trials are small and inconsistent.
 
-**Large-scale meta-analyses:** A 2024 meta-analysis of 70 randomized trials (4,159 adults) found that CLA lowered body mass by 0.35 kg (95% CI -0.54 to -0.15), fat mass by 0.44 kg (95% CI -0.66 to -0.23) and body fat percentage by 0.77% (95% CI -1.09 to -0.45), and raised fat-free mass by 0.27 kg (95% CI 0.09 to 0.45) [12]. In the high-quality trials, CLA did not change fat mass or body fat percentage, and the authors judged the weight effect too small to matter clinically [12].
+**Large-scale meta-analyses:** A 2024 meta-analysis of 70 randomized trials (4,159 adults) found that CLA lowered body mass by 0.35 kg (95% CI -0.54 to -0.15), fat mass by 0.44 kg (95% CI -0.66 to -0.23) and body fat percentage by 0.77% (95% CI -1.09 to -0.45), and raised fat-free mass by 0.27 kg (95% CI 0.09 to 0.45) [12]. In the high-quality trials, CLA did not change fat mass or body fat percentage, and the authors noted that the weight effect may be too small to matter clinically [12].
 
 **Long-term supplementation:** A 2007 meta-analysis of 18 trials found that, at a median dose of 3.2 g a day, CLA reduced fat mass by 0.09 kg a week more than placebo; the effect grew for up to 6 months and then leveled off by 2 years (Whigham et al., *Am J Clin Nutr*, 2007) [25]. A 2012 review of 7 trials lasting at least 6 months found 0.70 kg more weight loss (95% CI -1.09 to -0.32) and 1.33 kg more fat loss (95% CI -1.79 to -0.86) than placebo, and judged the clinical relevance uncertain (Onakpoya et al., *Eur J Nutr*, 2012) [11].
 
