@@ -42,6 +42,8 @@ final class Launch {
         MainThreadWatchdog.start()
         LaunchClock.mark("app init")
         #endif
+        // TipKit before any view asks for a tip (US-57 AC10).
+        TourSetup.configure()
         // Before launch finishes, so a tap that starts the app still reaches My plan.
         let reminderTaps = ReminderTaps()
         UNUserNotificationCenter.current().delegate = reminderTaps

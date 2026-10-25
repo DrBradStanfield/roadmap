@@ -52,6 +52,8 @@ final class Analytics {
     /// The only screen names Clarity ever gets.
     enum Screen: String {
         case welcome = "Welcome", onboarding = "Onboarding", myData = "My data", plan = "My plan", chat = "Chat"
+        /// A US-56 metric page: the screen only, never which metric or a value.
+        case appleHealthMetric = "Apple Health metric"
     }
 
     /// Under XCTest, or launched by the UI tests (a separate process without XCTest's variable).
