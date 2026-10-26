@@ -145,7 +145,7 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   must be checked against the merge that brings it back (eraseEpoch, LWW,
   marker timing); a guest view for a signed-in user is a fork, not a fallback,
   and our tests proved only the fallback.
-- `[gotcha][supabase]` 2026-09-24 — `SUPABASE_PRODUCT_HEALTH_KEY` is a Bearer
+- `[gotcha][supabase]` 2026-09-24, missed again 10-26 (LEARNINGS read only in part: read it WHOLE) — `SUPABASE_PRODUCT_HEALTH_KEY` is a Bearer
   JWT, not an API key: send `apikey: $SUPABASE_ANON_KEY` (a publishable key)
   + `Authorization: Bearer $SUPABASE_PRODUCT_HEALTH_KEY` (role
   `product_health_ro`, valid to 2027-08-07; the product-health charter has
