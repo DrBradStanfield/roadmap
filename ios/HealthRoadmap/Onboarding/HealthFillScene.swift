@@ -45,7 +45,7 @@ struct HealthFillScene: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
-        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(alignment: .topTrailing) {
             if lit {
                 Image(systemName: "checkmark.circle.fill")

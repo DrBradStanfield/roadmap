@@ -34,6 +34,8 @@ final class AppleHealthSync {
     private let engine: HealthEngine
     private let client: HealthStoreClient
     private let memory: HealthSyncMemory
+    /// US-56's cards, read as soon as the sheet is answered (`connect`).
+    private let live: LiveHealth?
     private var running = false
     private var again = false
     private var waiting: [CheckedContinuation<Void, Never>] = []
@@ -44,17 +46,28 @@ final class AppleHealthSync {
     private let reread: @MainActor () async -> Void
 
     init(store: RecordStore, engine: HealthEngine, client: HealthStoreClient, memory: HealthSyncMemory = HealthSyncMemory(),
-         reread: @escaping @MainActor () async -> Void = {}) {
+         live: LiveHealth? = nil, reread: @escaping @MainActor () async -> Void = {}) {
         self.store = store
         self.engine = engine
         self.client = client
         self.memory = memory
+        self.live = live
         self.reread = reread
         status = !client.isAvailable ? .unavailable : memory.connected ? .working : .notConnected
     }
 
-    /// True once the person connected Apple Health on this phone.
-    var connected: Bool { memory.connected }
+    /// True once the person connected Apple Health on this phone, a failed refresh included:
+    /// the erase names Apple Health and deletes its samples (US-25 AC16).
+    var everConnected: Bool { memory.connected }
+
+    /// Connected and not failed. Otherwise My data's Apple Health row offers Connect, the one
+    /// way in, so Vitals offers no Turn On (US-25 AC15, US-56 AC5).
+    var connected: Bool {
+        switch status {
+        case .notConnected, .failed, .unavailable: false
+        case .working, .upToDate, .waitingForUnlock: true
+        }
+    }
 
     /// Sex and birth month and year from Health, for onboarding (US-54 AC3).
     func characteristics() -> HealthCharacteristics {
@@ -76,7 +89,9 @@ final class AppleHealthSync {
         return true
     }
 
-    /// The "Connect Apple Health" row: Apple's permission sheet, then the first import.
+    /// The app's one Apple Health connect (US-56 AC4): Apple's permission sheet for
+    /// everything, then the first import. The cards read as soon as the sheet is answered,
+    /// beside the import, never after it (always read: the answer is new, N2).
     func connect() async {
         guard client.isAvailable else { return }
         do {
@@ -87,7 +102,9 @@ final class AppleHealthSync {
         }
         memory.connected = true
         start()
-        await refresh()
+        async let imported: Void = refresh()
+        await live?.refresh(force: true)
+        await imported
     }
 
     /// At launch and on connect: refresh when Health has new data (in the background

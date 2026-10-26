@@ -1,178 +1,228 @@
 import { describe, expect, it } from 'vitest';
-import { ROADMAP_FILE_NAME } from './adapter';
-import { MemoryAdapter, MemoryCloud } from './memory-adapter';
-import { mergeFiles, stampInstant } from './merge';
-import { hasStampShape, migrateFile } from './migrate';
-import { recordSync } from './roadmap-doc';
+import { migrateFile } from './migrate';
+import { mergeFiles } from './merge';
 import { createEmptyFile, createMeasurement, type FileDocument } from './roadmap-file';
+import { ROADMAP_FILE_NAME } from './adapter';
+import { MemoryAdapter } from './memory-adapter';
+import { recordSync } from './roadmap-doc';
 import { upsertMedication } from './state-edits';
 
-const BEFORE = '2026-06-01T00:00:00.000Z';
-const NOW = '2026-10-22T12:00:00.000Z';
-const FUTURE = '2026-12-01T00:00:00.000Z';
-const CTX = { deviceId: 'synthetic', now: NOW };
-const MED = { medicationKey: 'statin' as const, drugName: 'Synthetic', doseValue: 10, doseUnit: 'mg' };
-const base = () => upsertMedication(createEmptyFile({ ...CTX, now: BEFORE }), MED, BEFORE).file;
-const BAD = ['2026-99-01T00:00:00Z', '2026-06-01T99:00:00Z', '2026-06-01T00:00:00ZZZ', '2026-02-30T00:00:00Z'];
+const EARLY = '2026-09-03T00:00:00.000Z';
+const LATE = '2026-10-26T00:00:00.000Z';
+const VALID = '2026-08-01T00:00:00.000Z';
+const ROW = '2026-09-15T00:00:00.000Z';
+const BAD = '2026-99-01T00:00:00Z';
+const ctx = (now: string, deviceId = 'synthetic') => ({ now, deviceId });
+function rawFile() {
+  const raw = createEmptyFile(ctx(VALID));
+  raw.measurements = [createMeasurement({ id: 'synthetic-weight', metricType: 'weight', value: 70,
+    recordedAt: '2026-07-01', createdAt: ROW })];
+  raw.labValues = [{ id: 'synthetic-lab', metricName: 'ferritin', value: 85, unit: 'µg/L',
+    referenceLow: null, referenceHigh: null, recordedAt: '2026-07-01', createdAt: ROW,
+    source: 'manual', status: 'active', correctsId: null }];
+  return raw;
+}
 
-// US-10 AC8 / US-29 AC4: malformed metadata must not defeat the existing
-// sanitation anchor. Exercise the real edit and SyncManager persistence path.
-describe('malformed metadata clocks', () => {
-  it.each(BAD)('an offline medication edit survives an external malformed anchor %s', async (bad) => {
-    for (const field of ['createdAt', 'updatedAt'] as const) {
-      const original = base();
-      const adapter = new MemoryAdapter(new MemoryCloud());
-      const seeded = await adapter.write(ROADMAP_FILE_NAME, original, null);
-      const offline = await recordSync(adapter, 'offline', NOW).load();
-      const raw = structuredClone(original);
-      raw.meta[field] = bad;
-      raw.medications[0].updatedAt = FUTURE;
-      await adapter.write(ROADMAP_FILE_NAME, raw, seeded.version);
-      const sync = recordSync(adapter, 'editor', NOW);
-      const edited = upsertMedication(offline, { ...MED, doseValue: 20 }, NOW).file;
-      const loaded = await sync.load();
-      const saved = await sync.save(edited);
-      expect((await recordSync(adapter, 'fresh', NOW).load()).medications[0].doseValue).toBe(20);
-      expect(saved.file.medications[0].doseValue).toBe(20);
-      for (const [a, b] of [[loaded, edited], [edited, loaded]]) {
-        expect(mergeFiles(a, b, CTX).medications[0].doseValue).toBe(20);
-      }
-      expect(migrateFile(raw, CTX).meta[field]).toBe(NOW);
-    }
+// US-10 AC8a: metadata recovery is a function of the bytes, not the reader clock.
+describe('metadata clock recovery', () => {
+  it('recovers only known clocks, not timestamp-looking extension data', () => {
+    const raw = rawFile();
+    raw.meta.createdAt = raw.meta.updatedAt = BAD;
+    const extended = { ...raw, extension: { updatedAt: LATE },
+      measurements: raw.measurements.map((r) => ({ ...r, updatedAt: LATE })),
+      recommendationSnapshots: [{ date: '2026-07-01', updatedAt: LATE }] };
+    expect(migrateFile(extended, ctx(EARLY)).meta.updatedAt).toBe(ROW);
   });
 
-  it('a valid old anchor still lets the offline edit win after save and fresh read', async () => {
-    const original = base();
+
+  it.each([
+    ['2026-08-01', VALID],
+    ['2026-08-01t00:00:00z', VALID],
+    ['2026-08-01 02:00:00+02', VALID],
+    ['2026-08-01T02:00:00+02:00', VALID],
+    ['2026-08-01T14:00:00+14:00', VALID],
+    ['2026-08-01T00:00Z', '2026-08-01T00:00Z'],
+    ['2026-08-01T00:00:00.123456789Z', '2026-08-01T00:00:00.123456789Z'],
+    ['2099-01-01T00:00:00.000Z', '2099-01-01T00:00:00.000Z'],
+  ])('preserves accepted metadata granularity and future policy: %s', (stamp, expected) => {
+    const raw = rawFile();
+    raw.meta.createdAt = raw.meta.updatedAt = stamp;
+    const first = migrateFile(raw, ctx(EARLY));
+    expect(first.meta.createdAt).toBe(expected);
+    expect(first.meta.updatedAt).toBe(expected);
+    expect(migrateFile(raw, ctx(LATE))).toEqual(first);
+    expect(migrateFile(first, ctx(LATE))).toEqual(first);
+  });
+
+  it.each([BAD, '2026-08-01T99:00:00Z', '2026-08-01T00:00:00ZZZ',
+    '2026-02-30T00:00:00Z', '2026-08-01T00:00:00+15:00', '2026-08-01T00:00:00+23:00'])
+  ('rejects the same malformed grammar for metadata and mutable rows: %s', (bad) => {
+    const raw = upsertMedication(rawFile(), { medicationKey: 'statin', drugName: 'Synthetic', doseValue: null, doseUnit: null }, VALID).file;
+    raw.meta.updatedAt = bad;
+    raw.medications[0].updatedAt = bad;
+    const file = migrateFile(raw, ctx(EARLY));
+    expect(file.meta.updatedAt).toBe(VALID);
+    expect(file.medications[0].updatedAt).toBe('');
+  });
+
+  // Preserve the published PR's real medication/save controls, replacing its
+  // rejected assertion that malformed metadata should take the reader's now.
+  it.each([VALID, BAD])('an offline medication edit survives load/save/fresh read with anchor %s', async (anchor) => {
+    const med = { medicationKey: 'statin' as const, drugName: 'Synthetic', doseValue: 10, doseUnit: 'mg' };
+    const original = upsertMedication(rawFile(), med, VALID).file;
     const adapter = new MemoryAdapter();
     const seeded = await adapter.write(ROADMAP_FILE_NAME, original, null);
-    const offline = await recordSync(adapter, 'offline', NOW).load();
+    const offline = await recordSync(adapter, 'offline', LATE).load();
     const raw = structuredClone(original);
-    raw.medications[0].updatedAt = FUTURE;
+    raw.meta.updatedAt = anchor;
+    raw.medications[0].updatedAt = '2099-01-01T00:00:00.000Z';
     await adapter.write(ROADMAP_FILE_NAME, raw, seeded.version);
-    const edited = upsertMedication(offline, { ...MED, doseValue: 20 }, NOW).file;
-    const loaded = await recordSync(adapter, 'reader', NOW).load();
-    expect(loaded.meta.updatedAt).toBe(BEFORE);
-    expect(loaded.medications[0].updatedAt).toBe(BEFORE);
-    for (const [a, b] of [[loaded, edited], [edited, loaded]]) {
-      expect(mergeFiles(a, b, CTX).medications[0].doseValue).toBe(20);
-    }
-    await recordSync(adapter, 'editor', NOW).save(edited);
-    expect((await recordSync(adapter, 'fresh', NOW).load()).medications[0].doseValue).toBe(20);
+    const stored = await adapter.read(ROADMAP_FILE_NAME);
+    const sync = recordSync(adapter, 'editor', LATE);
+    const loaded = await sync.load();
+    expect(await adapter.read(ROADMAP_FILE_NAME)).toEqual(stored);
+    expect(loaded.meta.updatedAt).toBe(VALID);
+    expect(loaded.medications[0].updatedAt).toBe(VALID);
+    const edit = upsertMedication(offline, { ...med, doseValue: 20 }, LATE).file;
+    for (const [a, b] of [[loaded, edit], [edit, loaded]]) expect(mergeFiles(a, b, ctx(LATE)).medications[0].doseValue).toBe(20);
+    await sync.save(edit);
+    const fresh = await recordSync(adapter, 'fresh', LATE).load();
+    expect(fresh.medications[0].doseValue).toBe(20);
   });
 
-  it.each(BAD)('fallback for %s is read-only, repeat-stable, and matches the existing shapeless fallback', async (bad) => {
-    const raw = base();
-    raw.meta.createdAt = bad;
-    raw.meta.updatedAt = bad;
-    raw.medications[0].updatedAt = FUTURE;
-    const bytes = JSON.stringify(raw);
+  it('keeps a valid future medication clock and an edit made after reading it', async () => {
+    const future = '2099-01-01T00:00:00.000Z';
+    const med = { medicationKey: 'statin' as const, drugName: 'Synthetic', doseValue: 10, doseUnit: 'mg' };
+    const raw = upsertMedication(rawFile(), med, future).file;
+    const adapter = new MemoryAdapter();
+    await adapter.write(ROADMAP_FILE_NAME, raw, null);
+    const sync = recordSync(adapter, 'editor', LATE);
+    const loaded = await sync.load();
+    expect(loaded.meta.updatedAt).toBe(future);
+    expect(loaded.medications[0].updatedAt).toBe(future);
+    const edit = upsertMedication(loaded, { ...med, doseValue: 20 }, LATE).file;
+    for (const [a, b] of [[loaded, edit], [edit, loaded]]) expect(mergeFiles(a, b, ctx(LATE)).medications[0].doseValue).toBe(20);
+    await sync.save(edit);
+    expect((await recordSync(adapter, 'fresh', LATE).load()).medications[0].doseValue).toBe(20);
+  });
+
+  it('normalizes both malformed clocks read-only, then persists recovery on ordinary save', async () => {
+    const raw = rawFile();
+    raw.meta.createdAt = raw.meta.updatedAt = BAD;
     const adapter = new MemoryAdapter();
     await adapter.write(ROADMAP_FILE_NAME, raw, null);
     const stored = await adapter.read(ROADMAP_FILE_NAME);
-    const once = await recordSync(adapter, 'reader', NOW).load();
+    const sync = recordSync(adapter, 'synthetic', EARLY);
+    const loaded = await sync.load();
     expect(await adapter.read(ROADMAP_FILE_NAME)).toEqual(stored);
-    expect(JSON.stringify(raw)).toBe(bytes);
-    expect(once.meta.createdAt).toBe(NOW);
-    expect(once.meta.updatedAt).toBe(NOW);
-    expect(once.medications[0].updatedAt).toBe(NOW);
-    const later = { ...CTX, now: '2026-11-01T00:00:00.000Z' };
-    expect(migrateFile(once, later)).toEqual(once);
-    const shapeless = { ...raw, meta: { ...raw.meta, createdAt: '', updatedAt: '' } };
-    expect(migrateFile(raw, CTX)).toEqual(migrateFile(shapeless, CTX));
-    // Existing fallback is the reader's now, NOT a new deterministic repair.
-    // Two readers of the raw malformed bytes can clamp to different clocks;
-    // each normalized result is stable when subsequently read or persisted.
-    const other = migrateFile(raw, later);
-    expect(other.meta.updatedAt).toBe(later.now);
-    expect(other.medications[0].updatedAt).toBe(later.now);
-    expect(other).toEqual(migrateFile(shapeless, later));
-    expect(other).not.toEqual(once);
-    expect(migrateFile(other, CTX)).toEqual(other);
+    expect(loaded).toEqual(migrateFile(raw, ctx(LATE)));
+    const saved = await sync.save(loaded);
+    const fresh = await recordSync(adapter, 'synthetic', LATE).load();
+    expect(fresh).toEqual(saved.file);
+    expect(fresh.measurements).toEqual(raw.measurements);
+    expect(fresh.meta.createdAt).toBe(ROW);
+  });
+
+  it.each([VALID, BAD])('preserves document tombstones and listed erasure with metadata %s', async (anchor) => {
+    const doc: FileDocument = { id: 'synthetic-document', sourceFileName: 'Synthetic', title: 'Synthetic',
+      type: 'clinic_letter', date: '2026-07-01', fileRef: '', contentHash: '', mimeType: '',
+      extractedText: 'Synthetic', addedAt: ROW };
+    const live = rawFile(), dead = rawFile();
+    live.meta.createdAt = BAD;
+    live.meta.updatedAt = anchor;
+    live.documents = [doc];
+    dead.meta.updatedAt = LATE;
+    dead.documents = [{ ...doc, deleted: true }];
+    const a = migrateFile(live, ctx(EARLY)), b = migrateFile(dead, ctx(LATE));
+    for (const [x, y] of [[a, b], [b, a]]) {
+      const merged = mergeFiles(x, y, ctx(LATE));
+      expect(merged.documents).toEqual(dead.documents);
+      const adapter = new MemoryAdapter();
+      await recordSync(adapter, 'editor', LATE).save(merged);
+      expect((await recordSync(adapter, 'fresh', LATE).load()).documents).toEqual(dead.documents);
+    }
+    const erased = createEmptyFile(ctx(LATE));
+    erased.meta.eraseEpoch = 1;
+    erased.erasedRows = { fromEpoch: 1, ids: [live.measurements[0].id, doc.id] };
+    for (const [x, y] of [[a, erased], [erased, a]]) {
+      const merged = mergeFiles(x, y, ctx(LATE));
+      expect(merged.measurements).toEqual([]);
+      expect(merged.documents).toEqual([]);
+    }
+  });
+
+  // US-10 AC2: status absorption requires identical immutable content, even
+  // when a companion fallback is earlier than one revision's row clock.
+  it.each([VALID, BAD])('different metadata (%s) never revives a deleted measurement or lab', async (anchor) => {
+    const live = rawFile(), dead = rawFile();
+    live.meta.createdAt = BAD;
+    live.meta.updatedAt = anchor;
+    live.labValues = [{ id: 'synthetic-lab', metricName: 'ferritin', value: 85, unit: 'µg/L',
+      referenceLow: null, referenceHigh: null, recordedAt: '2026-07-01', createdAt: ROW,
+      source: 'manual', status: 'active', correctsId: null }];
+    dead.meta.updatedAt = LATE;
+    dead.measurements = live.measurements.map((r) => ({ ...r, status: 'entered-in-error' }));
+    dead.labValues = live.labValues.map((r) => ({ ...r, status: 'entered-in-error' }));
+    const a = migrateFile(live, ctx(EARLY)), b = migrateFile(dead, ctx(LATE));
+    expect(a.measurements[0].createdAt).toBe(ROW);
+    expect(a.labValues[0].createdAt).toBe(ROW);
+    for (const [x, y] of [[a, b], [b, a]]) {
+      const merged = mergeFiles(x, y, ctx(LATE));
+      expect(merged.measurements).toEqual(dead.measurements);
+      expect(merged.labValues).toEqual(dead.labValues);
+      expect(migrateFile(merged, ctx(EARLY)).measurements).toEqual(dead.measurements);
+      expect(migrateFile(merged, ctx(EARLY)).labValues).toEqual(dead.labValues);
+      const adapter = new MemoryAdapter();
+      await recordSync(adapter, 'editor', LATE).save(merged);
+      const fresh = await recordSync(adapter, 'fresh', LATE).load();
+      expect(fresh.measurements).toEqual(dead.measurements);
+      expect(fresh.labValues).toEqual(dead.labValues);
+    }
   });
 
   it.each([
-    ['2026-06-01T02:00:00+02:00', BEFORE],
-    ['2026-06-01T00:00:00.123456789Z', '2026-06-01T00:00:00.123456789Z'],
-    ['2026-06-01T00:00Z', '2026-06-01T00:00Z'],
-    [FUTURE, FUTURE],
-  ])('preserves valid metadata behavior for %s', (stamp, expected) => {
-    const raw = base();
-    raw.meta.createdAt = stamp;
-    raw.meta.updatedAt = stamp;
-    raw.medications[0].updatedAt = stamp;
-    const once = migrateFile(raw, CTX);
-    expect(once.meta.createdAt).toBe(expected);
-    expect(once.meta.updatedAt).toBe(expected);
-    expect(once.medications[0].updatedAt).toBe(stamp);
-    expect(migrateFile(raw, { ...CTX, now: FUTURE })).toEqual(once);
-    expect(migrateFile(once, { ...CTX, now: FUTURE })).toEqual(once);
+    { createdAt: BAD, updatedAt: BAD },
+    { createdAt: '', updatedAt: null },
+    {},
+  ])('recovers two unknown metadata clocks from the latest valid row clock: %j', (meta) => {
+    const raw = { ...rawFile(), meta: { ...meta, lastDeviceId: 'synthetic' } };
+    const bytes = JSON.stringify(raw);
+    const a = migrateFile(JSON.parse(bytes), ctx(EARLY));
+    const b = migrateFile(JSON.parse(bytes), ctx(LATE));
+    expect(a.meta.createdAt).toBe(ROW);
+    expect(a.meta.updatedAt).toBe(ROW);
+    expect(a).toEqual(b);
+    expect(migrateFile(a, ctx(LATE))).toEqual(a);
+    expect(migrateFile(JSON.parse(bytes), ctx(LATE, 'other-device'))).toEqual(a);
+    expect(a.measurements[0].createdAt).toBe(ROW);
+    for (const pair of [[a, b], [b, a]]) expect(mergeFiles(pair[0], pair[1], ctx(LATE)).measurements).toHaveLength(1);
   });
 
-  it('keeps the shape gate unchanged and invalid row clocks unknown', () => {
-    expect(hasStampShape(BAD[0])).toBe(true);
-    expect(hasStampShape('2026-06-01t00:00:00z')).toBe(false);
-    expect(hasStampShape('2026-06-01')).toBe(false);
-    expect(hasStampShape(42)).toBe(false);
-    const raw = base();
-    raw.meta.updatedAt = BAD[0];
-    raw.medications[0].updatedAt = BAD[1];
-    expect(migrateFile(raw, CTX).medications[0].updatedAt).toBe('');
-    expect(Number.isNaN(stampInstant(BAD[0]))).toBe(true);
+  it('uses the epoch for absent metadata without row clocks, not a reader clock', () => {
+    const raw = { schemaVersion: 1 };
+    const a = migrateFile(raw, ctx(EARLY));
+    expect(a.meta.createdAt).toBe('1970-01-01T00:00:00.000Z');
+    expect(a.meta.updatedAt).toBe('1970-01-01T00:00:00.000Z');
+    expect(migrateFile(raw, ctx(LATE))).toEqual(a);
+    expect(migrateFile(a, ctx(LATE))).toEqual(a);
   });
 
-  it('keeps valid self-consistent future clocks and protects an edit after reading them', async () => {
-    const raw = upsertMedication(base(), MED, FUTURE).file;
-    const adapter = new MemoryAdapter();
-    await adapter.write(ROADMAP_FILE_NAME, raw, null);
-    const sync = recordSync(adapter, 'editor', NOW);
-    const loaded = await sync.load();
-    expect(loaded.meta.updatedAt).toBe(FUTURE);
-    expect(loaded.medications[0].updatedAt).toBe(FUTURE);
-    const edit = upsertMedication(loaded, { ...MED, doseValue: 20 }, NOW).file;
-    for (const [a, b] of [[loaded, edit], [edit, loaded]]) {
-      expect(mergeFiles(a, b, CTX).medications[0].doseValue).toBe(20);
+  it.each(['createdAt', 'updatedAt'] as const)('recovers invalid %s from its valid companion at either reader time', (field) => {
+    const raw = rawFile();
+    raw.meta[field] = BAD;
+    const bytes = JSON.stringify(raw);
+    const first = migrateFile(JSON.parse(bytes), ctx(EARLY));
+    const second = migrateFile(JSON.parse(bytes), ctx(LATE));
+    expect(first.meta.createdAt).toBe(VALID);
+    expect(first.meta.updatedAt).toBe(VALID);
+    expect(first).toEqual(second);
+    expect(migrateFile(JSON.parse(bytes), ctx(LATE, 'other-device'))).toEqual(first);
+    expect(migrateFile(first, ctx(LATE))).toEqual(first);
+    for (const [a, b] of [[first, second], [second, first]]) {
+      expect(mergeFiles(a, b, ctx(LATE)).measurements).toHaveLength(1);
+      expect(mergeFiles(a, b, ctx(LATE)).measurements[0].id).toBe('synthetic-weight');
+      expect(mergeFiles(a, b, ctx(LATE)).labValues).toEqual(raw.labValues);
     }
-    await sync.save(edit);
-    expect((await recordSync(adapter, 'fresh', NOW).load()).medications[0].doseValue).toBe(20);
-  });
-
-  it.each([BEFORE, BAD[0]])('different metadata anchors (%s) never split a document or revive its deletion', async (anchor) => {
-    const doc: FileDocument = { id: 'synthetic-document', sourceFileName: 'Synthetic', title: 'Synthetic',
-      type: 'clinic_letter', date: '2026-06-01', fileRef: '', contentHash: '', mimeType: '',
-      extractedText: 'Synthetic note', addedAt: FUTURE };
-    const live = base(), dead = base();
-    live.meta.updatedAt = anchor;
-    dead.meta.updatedAt = NOW;
-    live.documents = [doc];
-    dead.documents = [{ ...doc, deleted: true }];
-    const a = migrateFile(live, CTX), b = migrateFile(dead, CTX);
-    expect(a.documents[0]).toEqual(doc);
-    expect(b.documents[0]).toEqual({ ...doc, deleted: true });
-    for (const [x, y] of [[a, b], [b, a]]) {
-      const merged = mergeFiles(x, y, CTX);
-      expect(merged.documents).toEqual([{ ...doc, deleted: true }]);
-      const adapter = new MemoryAdapter();
-      await recordSync(adapter, 'editor', NOW).save(merged);
-      expect((await recordSync(adapter, 'fresh', NOW).load()).documents).toEqual([{ ...doc, deleted: true }]);
-    }
-  });
-
-  it('keeps slot status absorption and listed erase behavior with a malformed anchor', () => {
-    const a = base(), b = base();
-    const row = createMeasurement({ id: 'synthetic-row', metricType: 'weight', value: 70,
-      recordedAt: '2026-06-01', createdAt: BEFORE });
-    a.meta.updatedAt = BAD[0];
-    a.measurements = [row];
-    b.measurements = [{ ...row, status: 'entered-in-error' }];
-    const x = migrateFile(a, CTX), y = migrateFile(b, CTX);
-    for (const [left, right] of [[x, y], [y, x]]) {
-      expect(mergeFiles(left, right, CTX).measurements).toEqual([{ ...row, status: 'entered-in-error' }]);
-    }
-    const erased = createEmptyFile(CTX);
-    erased.meta.eraseEpoch = 1;
-    erased.erasedRows = { fromEpoch: 1, ids: [row.id] };
-    for (const [left, right] of [[x, erased], [erased, x]]) {
-      expect(mergeFiles(left, right, CTX).measurements).toEqual([]);
-    }
+    expect(JSON.stringify(raw)).toBe(bytes);
   });
 });

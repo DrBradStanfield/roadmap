@@ -89,7 +89,7 @@ enum LiveMetric: String, CaseIterable, Identifiable {
         switch self {
         case .heartRate, .restingHeartRate: String(Int(value.rounded()))
         case .steps: Int(value.rounded()).formatted(.number.grouping(.automatic))
-        case .vo2Max: value.formatted(.number.precision(.fractionLength(1)))
+        case .vo2Max: Vo2MaxBands.shown(value).formatted(.number.precision(.fractionLength(1)))
         case .sleep: LiveMaths.duration(value).map { "\($0.number) \($0.unit)" }.joined(separator: " ")
         }
     }

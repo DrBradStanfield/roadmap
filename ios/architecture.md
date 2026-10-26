@@ -49,12 +49,13 @@ Why not a Swift rewrite:
   four files.
 - **Clinical fixes can ship over the air** (D3). Compiled Swift cannot.
 
-**One exception, planned: the VO2 max rating will be Swift (Brad 2026-10-23, US-56 AC8: "do it in
-Swift because this is apple centric").** It will copy Apple Health's cardio fitness level, show only
-in the iPhone app, and read a value that never enters the record, so the web will have no copy to
-drift from. It is still a clinical table: when US-56 is built it will be recorded in
-`health_roadmap_algorithm.md` with its source in `evidence.ts` (it is in neither yet), and a fix to
-it will ship through App Review, not over the air.
+**The VO2 max fitness bands stay in the engine too (US-56 AC8, Brad 2026-10-26).** The table is
+health-core's `vo2max-bands.ts` (FRIEND 2022 percentiles), recorded in `health_roadmap_algorithm.md`
+with its reference in `evidence.ts` and `roadmap_text.html`. The engine serves the person's row on
+My data (`vo2Bands`, from the profile's sex and `calculateAge`), as it serves the guides; Swift only
+applies the three cut-points to a value (`AppleHealthMetrics/Vo2MaxBands.swift`). No VO2 max enters
+the engine (US-56 AC1), and a fix ships over the air. A My data field, so no bridge change; an
+older engine sends none, and the app shows no bands.
 
 Speed, measured 2026-10-21 (Node 22, esbuild bundle, an Intel iMac, the sample record
 padded to 526 rows; `--jitless` stands in for an app's JavaScriptCore, which runs without a
@@ -71,7 +72,20 @@ blood pressure history quadratic, 17 s at ten years; fixed (one pass, same outpu
 of daily readings already costs a frame or more per call on the main thread. Brad wants
 engine work off the main thread (2026-10-22); stages 1 and 2 are built (below).
 
-**The parsed-record slot (2026-10-22, stage 1 of moving engine work off the main thread).** Every engine call took the record as text and parsed and migrated it; migration is most of a call's time (Node, ten years of rows: parse about 3 ms, migrate about 18 ms). `readRecord` (ios/engine/my-data.ts) now keeps one slot: the last text read, its device id and its parsed record, served again only for the identical text and device id, and only for a record whose meta carries both stamps, so the migration cannot have read `now` (health-core `hasStampShape`, the check `isoOr` uses). Only reads are kept, never a door's own output: a written record need not equal what its text reads back as, since migration clamps counters (Codex R1). The rule this binds every door, and every health-core function a door reaches, to: **a record from `readRecord` is read-only.** A function that writes in place gets a copy first (the phone document save copies before `saveDocuments`' commit). Under the tests the kept record is deep-frozen, so every engine test checks the rule on every branch it runs; never in the app. No bridge change.
+**A cold launch on an iPhone 15 Pro Max, 2026-10-26** (Release, Brad's 103 KB record, a cloud
+connected; five true cold launches, the app killed and no process left before each, each with a new
+pid and process start; temporary marks, removed). In ms from process start: app init 55 to 95;
+launch view on screen 80 to 111; the JSContext made in 2 ms, the 759 KB bundle evaluated in 27 to 34
+ms and the record drawn (`screenJson`) in 12 to 14 ms, all on the engine's queue; the parts handed to
+the UI at 149 to 182; **My data on screen at 184 to 226**; then the first render holds the main
+thread 105 to 121 ms, the only stall over 50 ms. Clarity's start takes about 1 ms and the update
+check, not due, 3 ms, both after the first frame. The cloud record opens 1.4 to 2.2 s after start and
+My data redraws once more. No downloaded engine was staged, so no self-test ran. The engine is
+not what a person waits for; what showed was the launch view's logo, about 100 ms between the system
+launch screen and My data, now a plain background (below, Launch). The simulator is no guide to
+launch time: there, pre-main alone is 1.4 to 3 s (docs/reference.md gotcha).
+
+**The parsed-record slot (2026-10-22, stage 1 of moving engine work off the main thread).** Every engine call took the record as text and parsed and migrated it; migration is most of a call's time (Node, ten years of rows: parse about 3 ms, migrate about 18 ms). `readRecord` (ios/engine/my-data.ts) now keeps one slot: the last text read, its device id and its parsed record, served again only for the identical text and device id. Metadata recovery uses a valid companion clock, or the latest valid stored row clock (epoch if none), never `now`; the slot no longer duplicates a metadata-shape predicate from migration. Only reads are kept, never a door's own output: a written record need not equal what its text reads back as, since migration clamps counters (Codex R1). The rule this binds every door, and every health-core function a door reaches, to: **a record from `readRecord` is read-only.** A function that writes in place gets a copy first (the phone document save copies before `saveDocuments`' commit). Under the tests the kept record is deep-frozen, so every engine test checks the rule on every branch it runs; never in the app. No bridge change.
 
 **The engine off the main thread (2026-10-22, stage 2; US-25 AC21).** Brad: "we want the main/UI thread to only be for UI elements."
 - `HealthEngine` is an actor whose executor is its own serial queue (`DispatchSerialQueue`, user-initiated). The JSContext is made on that queue and touched only there; DEBUG checks it in `callValue` and `settle`. Timers, URLSession answers and token answers land on that queue. Tokens come from the main actor and hop back with `queue.async`. The phone's file and the pending marker are plain files (`PhoneFiles`) read and written there. A phone edit made while a cloud is connected but not open sets the marker in the same engine step that writes it, before the write, so an app killed between the two never leaves an unmarked edit (a refused write puts back the generation it found, so a session holding it can still clear it), decided when its turn comes (an edit asked for before a first connect and landing after it is marked too).
@@ -89,9 +103,9 @@ engine work off the main thread (2026-10-22); stages 1 and 2 are built (below).
 - **One engine call draws both screens (2026-10-25, US-25 AC2; Brad: "one engine call that answers both My data and the plan").** Measured in the simulator with a temporary counter (removed): one edit on My data ran `applyEditJson` (a medication or screening answer plans inside it, in `applyFormEdit`; a value plans nothing), then `myDataJson`, whose medication and screening questions plan the record (`basisOf`, 1 computePlan), then `remindersJson` (none); opening My plan then ran `planViewJson`, a second computePlan of the same record and units, and every return to the tab ran it again, with no edit between. The door `screenJson` now reads the record once, plans it once and answers `{myData, plan}`: the plan half is `{sections, tiles, ms}`, or `{error, planError}` when the record cannot be planned, so a plan that throws never blanks My data and a tile that cannot be drawn never blanks the plan. My data that cannot be drawn still throws the whole call, on purpose: the store then shows the record's problem on both tabs (adversary R3), never a plan of a record My data cannot show. `ms` is the engine's own time from computePlan through the tiles and the layout (`planSections`), in whole milliseconds (JavaScriptCore has no finer clock), so the plan screen's "Worked out on this iPhone in N ms" is D2's plan budget, not My data's. `RecordStore` keeps one `drawn` from that call, set together with the record (`display`); `myData` and `plan` read it, so the two always show the same record revision. PlanView draws `store.plan` and never calls the engine. **Every return redraws (Codex R1):** the plan reads the time (ages, screening due dates, minor status), so `redraw` draws the same record again, in line (`chain`), each time the app becomes active, and at `.NSCalendarDayChanged` while active; between returns the tabs share the plan drawn. Not on a new calendar day only: health-core's minor-to-adult switch falls at midday UTC on the 1st of the birth month (`isKnownMinor` judges the date at UTC-12), so a calendar-day check missed it (RecordStoreTests `testAReturnWithinOneLocalDayCrossesTheMiddayUTCSwitchToAdult`). A draw takes about a millisecond. The trial confirms in `display`, from the same stored plan, so it needs no engine call either. After: one edit is `applyEditJson` then `screenJson` (one computePlan; a form answer's `applyFormEdit` plans once more inside `applyEditJson`), and the Plan tab adds none (RecordStoreTests `testOneEditDrawsMyDataAndThePlanInOneEngineCall`, engine `screen.test.ts`). `myDataJson`, `planViewJson`, `HealthEngine.planSections` and `EngineTrial.planned` went with it; the bridge id moved (D3), so a downloaded engine built before it is refused at its manifest check and the bundled engine runs. What still plans on its own: `historyJson` (a metric page and a value sheet, for the plan's `excluded` rows) and the self-test's `planJson`.
 - `blocking` is a test-target extension (`EngineTestDoors.swift`), so app code cannot call it at all: the compiler is the rule. It runs its body on the engine's queue through a cast of the isolated closure (not `assumeIsolated`, whose dispatch-queue check needs iOS 18's `checkIsolated`; the app supports iOS 17) with `queue.async`, the waiting thread held on a semaphore, so the body never runs on the main thread. `enqueue` is the app's one copy of the cast.
 - **Stages 3 and 4 (2026-10-23): nothing in the app waits on the engine.** `blocking` lives in the test target, so the app cannot call it; and wherever JavaScript runs (`callValue`, `settle`, `evaluate`), a DEBUG precondition checks it is on the engine's queue and not on the main queue, the real rule: no JavaScript on main. App code awaits an engine door or `perform` (a body run on the engine's actor). What moved:
-  - **Launch.** `Launch` (HealthRoadmapApp.swift) starts `AppParts.build` from the app's init, not a view, so a background launch builds too, and shows `LaunchView` (the welcome screen's `LogoMark` on the system background) until it is done. The file reads run `@concurrent`; `EngineBoot` is no longer main-actor: its checks, both engine loads and the quarantined self-test run off main, and only the trial mark (`EngineTrial`) is set on main, before the parts are handed out; `RecordStore.open` awaits the first `loadPhone`, once, before the first screen. The notification delegate is set synchronously in `Launch.init`. `CloudSync.init` queues the attach with `engine.enqueue`: the engine's queue runs in order, so the attach lands before any engine call asked for after it, and `marksPending` is set before any edit can be asked for. Health's observer may be set after the app became active, so the build ends with one refresh when it is. Measured (simulator, iPhone 18 Pro Max, two-year record): first frame 150 ms after init, all blocked, before; launch screen at 50 ms and the app at 165 ms after, main free between.
+  - **Launch.** `Launch` (HealthRoadmapApp.swift) starts `AppParts.build` from the app's init, not a view, so a background launch builds too, and shows `LaunchView` until it is done: My data's plain background, no mark, read as "Loading". The system launch screen has the same colour (`UILaunchScreen` > `UIColorName` = `LaunchBackground`, an asset equal to `systemGroupedBackground` in light and dark, normal and high contrast, set in `HealthRoadmap-Info.plist`, which the generated plist merges), and so does the welcome screen and the questions (`OnboardingView`); the first-run cover is presented without animation (`RootView.decideFirstRun`). So the opening never flashes: one background from the tap to My data, or to the welcome screen (Brad 2026-10-26; the logo showed for about 100 ms). The file reads run `@concurrent`; `EngineBoot` is no longer main-actor: its checks, both engine loads and the quarantined self-test run off main, and only the trial mark (`EngineTrial`) is set on main, before the parts are handed out; `RecordStore.open` awaits the first `loadPhone`, once, before the first screen. The notification delegate is set synchronously in `Launch.init`. `CloudSync.init` queues the attach with `engine.enqueue`: the engine's queue runs in order, so the attach lands before any engine call asked for after it, and `marksPending` is set before any edit can be asked for. Health's observer may be set after the app became active, so the build ends with one refresh when it is. Measured (simulator, iPhone 18 Pro Max, two-year record): first frame 150 ms after init, all blocked, before; launch screen at 50 ms and the app at 165 ms after, main free between.
   - **Typed numbers** are read in Swift, `TypedNumber.read`, the engine's `readNumber` rule (Arabic-Indic digits, JavaScript's trim, either mark, plain decimals only, -0 as 0); NumberReadingTests holds it to the engine's `numberJson` on 47 texts. The engine's door stays (tests only; no bridge change). It is in the binary: a change to health-core's number rule needs an app release (D3).
-  - **A value's history** is `RecordStore.history(for:) async`, read once per metric and record `revision` (a counter that moves with the record and the per-test units); a second ask for the same revision joins the read under way, so a page and the page above it make one engine call. The store keeps each answer with its chart inputs (`ChartData`: points, days, the first and last day and the range a page opens on, built once per history) and drops older revisions' as a newer one lands. A page draws `shownChart(for:)`, which may trail the record by one read, and asks again on `.task(id: store.revision)`; only `shownHistory(for:)`, the history read for the record and units as they are now, opens a correction, so Show All Data holds its taps while it trails (adversary R2). A correction's "Now" hint comes from that current history, and for Lp(a) only one read in the sheet's unit (`correctionHint`): never "100 mg/dL" from a 100 nmol/L row.
+  - **A value's history** is `RecordStore.chart(for:) async`, read once per metric and record `revision` (a counter that moves with the record and the per-test units); a second ask for the same revision joins the read under way, so a page and the page above it make one engine call. The store keeps each answer with its chart inputs (`ChartData`: points, days, the first and last day and the range a page opens on, built once per history) and drops older revisions' as a newer one lands. A page draws `shownChart(for:)`, which may trail the record by one read, and asks again on `.task(id: store.revision)`; only `shownHistory(for:)`, the history read for the record and units as they are now, opens a correction, so Show All Data holds its taps while it trails (adversary R2). A correction's "Now" hint comes from that current history, and for Lp(a) only one read in the sheet's unit (`correctionHint`): never "100 mg/dL" from a 100 nmol/L row.
   - **Onboarding's conversions** (`TypedAnswer`) await the engine; a unit switch's conversion lands only if the box did not move meanwhile, so a box never shows text in units it no longer holds. A trial's confirm needs no engine call: the store confirms as it draws.
   - **Chat history** (`ChatHistoryStore`) awaits the engine for its list, messages, saves and deletes; each save or delete reads, changes and writes in one engine step. The app has one store, made at launch (`AppParts`) and shared by Chat and the eraser: `DataEraser` reads its list again after an erase, and opening History reads it again, so Chat shows what is on disk without a refresh of its own. Both erases now write the chat tombstones on the engine's queue (the phone erase's `keepChat` runs through `perform`), so neither lands between a save's read and write.
   - **Cloud news** is decoded on the engine's queue (`CloudNews`) before it goes to main.
@@ -294,10 +308,23 @@ A signature means "the key holder approved this bundle", nothing more.
   environment (Brad the required reviewer, `main` only, the `ci` key) checks the same
   artifact again, repeats the main-moved check, refuses a floor below `main`'s, signs it
   with openssl, and commits only the new files (plus an unsigned `built-from` record), refusing to lower or replace a newer release on `main`. Neither of the
-  last two runs repo code. It runs once Brad pushes it from his own account (the
-  workflow-integrity tripwire disables workflow files pushed by anyone else) and sets
-  the secret; each release still needs his approval. Until then, releasing is the two
-  local steps.
+  last two runs repo code. It was pushed from Brad's account
+  (the workflow-integrity tripwire disables workflow files pushed by anyone else) on
+  2026-10-25, and the secret was set on 2026-10-26, so the CI path is live; each release
+  still needs his approval. **Open check:** the first Engine release after a Deploy on
+  `main` proves the secret is the pinned `ci` key (its sign job derives the public key
+  and compares it with `signing-keys.json`). If that check fails, Brad sets the secret
+  again; if no run starts on its own, he runs Actions › Engine release on `main`.
+- **Where the keys live (2026-10-26).** Three Ed25519 keys, public halves pinned in
+  `ios/engine/signing-keys.json` and `EngineRelease.swift`. **daily** `519a8365b02da897`:
+  the iMac's login Keychain (service `health-roadmap-engine-signing`, account `daily`),
+  the new Mac's Keychain if Brad added it, and Brad's Passwords app. **cold**
+  `9a415581b0a54dbd`: Passwords only. **ci** `d6a343128471bae8`: Passwords and the
+  GitHub secret `ENGINE_SIGNING_KEY` in the `engine-signing` environment (`main` only,
+  Brad the required reviewer). The key files in `~/.config/health-roadmap/` were deleted
+  with `rm -P` on 2026-10-22; `engine-keygen.mjs` and `signing-key-guard.test.ts` still
+  name those paths on purpose (keygen writes them; the guard checks only while they
+  exist). No agent has seen a private key.
 - **Revocation needs the repo public** (review R10). Phones read releases without a
   sign-in; if the repo goes private, no phone can fetch a release that raises the floor
   to kill a bad one. The fallback is an App Store update, whose newer bundled engine
@@ -684,17 +711,25 @@ dated noon of the day (the record holds days, not times); height is never writte
 (US-56, Brad 2026-10-23; replaces US-55):** heart rate, resting heart rate, sleep with Apple's
 stages, VO2 max and steps, read live from HealthKit each time they show and never stored, so the
 record, merge, website, chat and engine never see them. Display only; no heart rate variability.
-Access is asked later, from one card on My data, not in onboarding. Heart rate, resting heart rate
+Access is asked in onboarding's one Apple Health request, with D6's types (Brad 2026-10-26: "just
+do it in one step"; it replaced asking later from a card on My data). Heart rate, resting heart rate
 and sleep sit in Vitals under blood pressure; VO2 max and steps under a new Fitness heading.
-VO2 max will show Apple's cardio fitness level, worked out in Swift (the D2 exception above; its
-table is not yet in the clinical files).
+VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note under D2).
 
 **US-56, built 2026-10-25 (phases 1 and 2), on My data.** `HealthRoadmap/AppleHealthMetrics/`:
-- `LiveHealthStore` is the protocol; `LiveHealthKitStore` the only code touching HealthKit for these
-  five types, with its own `HKHealthStore` so its request never carries D6's six. It asks to read
-  exactly heart rate, resting heart rate, sleep analysis, VO2 max and step count, shares none, and
-  uses `statusForAuthorizationRequest` for the access card; a status check that throws keeps the
-  answer `LiveHealth` had, so the access card never flashes (adversary R4). Every call is
+- `LiveHealthStore` is the protocol; `LiveHealthKitStore` the only code reading HealthKit for these
+  five types, on its own `HKHealthStore`. It names exactly heart rate, resting heart rate, sleep
+  analysis, VO2 max and step count (`readTypes`), shares none, and never asks for them itself:
+  **one request (Brad 2026-10-26):** `HealthKitClient.requested` is the union of D6's types, sex and
+  date of birth, and `readTypes`, and `HealthKitClient.requestAuthorization` is the app's only Health
+  request (`LiveHealthStore` has no request at all; an advisory source scan allows only it and
+  the DEBUG seed). Both sets are `static let`, and all three share one `HKHealthStore.app`, as
+  Apple recommends. So onboarding's "Connect Apple Health", My data's Apple Health row and the
+  Turn On row all show one sheet; iOS lists only the types not yet asked, so a person connected
+  before 2026-10-26 sees just the five. `AppleHealthSync.connect()` is the one connect: it holds the
+  app's `LiveHealth` (given once, in `AppParts`), so the cards read as soon as the sheet is answered, beside the import. It uses
+  `statusForAuthorizationRequest` on the five for the Turn On row; a status check that throws keeps
+  the answer `LiveHealth` had, so the row never flashes (adversary R4). Every call is
   `@concurrent`: HealthKit and the maths run off the main thread. HealthKit's statistics collection
   queries do the daily and hourly maths, chosen by each metric's `aggregation` (`.sum` steps,
   `.range` heart rate's min, max and average, `.mean` the others); sleep is a category sample query.
@@ -728,13 +763,13 @@ table is not yet in the clinical files).
   R1). A second wake within about 2 s is the same one, and a refresh asked for under 2 s after a
   running read began is that read (E1); unchanged results are not written (E5).
 - Views: `LiveCardsSection` (one view for Vitals' and Fitness's cards, reading `LiveHealth` from the
-  environment), `LiveAccessCard`, `LiveCardView` (on `CardShell`, the card a vital's `ValueRow`
+  environment), `LiveCardView` (on `CardShell`, the card a vital's `ValueRow`
   draws too; both write the day as Apple Health's cards do: Today, Yesterday, then the short date,
   `DayText.when`), `LiveMetricPage` (D, W, M, 6M, Y; bars, low-to-high bars or points; read-only) and
   `SleepPage` (D's stages over the night, W/M/6M stacked nights with stage averages, its chart its
   own view, E3). Both pages share `LivePageFrame` (picker, empty line, footnote, read, range
   reset), `ScrollingChart` (axes, scroll, scrub, haptic, calendar) with `SelectionRule`, and
-  `PageHeadline`, which `MetricDetailView` uses too. Every metric page, MetricDetailView's included, takes `metricPageList` (inset grouped, inline title, an 8 pt top margin so the picker sits under the title; Brad 2026-10-25). After "Don't Allow" (or an empty Health) Vitals shows one Reconnect row (`LiveReconnectRow`, US-56 AC5b): the sheet again while due, else Settings; iOS 27's app page in Settings has no Health row, so the row names Settings › Apps › Health › Data Access & Devices. **A page always shows its card's reading
+  `PageHeadline`, which `MetricDetailView` uses too. Every metric page, MetricDetailView's included, takes `metricPageList` (inset grouped, inline title, an 8 pt top margin so the picker sits under the title; Brad 2026-10-25). While the sheet is still due for the five and Apple Health is connected (so only for someone connected before 2026-10-26) Vitals shows `LiveReconnectRow` with **Turn On** (US-56 AC5; the "Show from Apple Health" card is gone; not connected, My data's Apple Health row is the one way in), and after "Don't Allow" (or an empty Health) the same row with **Reconnect** (AC5b). Turn On runs `connect()` on the known answer; Reconnect checks the status afresh and runs it while the sheet is due, else opens Settings (`LiveReconnectRow.action`); iOS 27's app page in Settings has no Health row, so the row names Settings › Apps › Health › Data Access & Devices. **A page always shows its card's reading
   (Codex R2, adversary R7):** it reads 400 days (sleep 200) or back to the reading, opens with it in
   view (`LiveChartGeometry.opening`, the window's own length so a 31-day month still holds it),
   reads D's hours a day at a time as the scroll reaches a day (D scrolls a week back, or to the reading's day: a 400-day hourly domain took Swift Charts several seconds to lay out on the simulator), and reads the days only once the
@@ -753,10 +788,13 @@ table is not yet in the clinical files).
   sheet in iOS 27 answers by "Select All", "Continue", "All Recorded Data", "Allow"; a UI test can
   tap them only by screen point (the sheet reports its frames at a third of screen points).
 - Purpose string: the six "go only into your record"; the five are shown, not kept (AC10).
-- **AC8 not built, blocked on Brad.** Apple publishes only the Low rule (white paper, May 2021: lowest FRIEND quintile
-  for sex and decade at 20 to 59, Kaminsky 2015; below 18 mL/kg/min for men and 15 for women at 60
-  and over). The other levels must be read off Apple Health by hand, then go through the three-file
-  sync.
+- **AC8 built 2026-10-26 (Brad: "do it. we want the bands").** Apple publishes only the Low rule
+  (white paper, May 2021: lowest FRIEND quintile for sex and decade at 20 to 59, Kaminsky 2015;
+  below 18 mL/kg/min for men and 15 for women at 60 and over), so the page shows FRIEND 2022
+  percentile bands instead (Kaminsky 2022, Table 3, treadmill), which can differ from Apple's alert: Low
+  below P20, Below Average to P50, Above Average to P80, High from P80, ages 20 to 89. Shaded
+  behind the chart with a legend; the card names the newest reading's band. The copy never calls
+  them Apple's. Table and route: the bands note under D2.
 
 ### D7 · Reminders: on-device notifications only (Brad, 2026-10-21)
 
@@ -1412,8 +1450,8 @@ A new user answers sex, birth month and year, height and weight, one per screen,
    on a real iPhone (277 ms in a debug build in the simulator, 2026-10-23, the largest stall
    under an app screen).
 2. US-56: heart rate, resting heart rate, sleep, VO2 max and steps from Apple Health, read live (D6).
-   Built 2026-10-25 (D6), checked on seeded simulator data; left: AC8's table (Brad reads the levels
-   off Apple Health), and the side-by-side comparison on Brad's iPhone with a watch.
+   Built 2026-10-25 (D6), checked on seeded simulator data; AC8's bands built 2026-10-26; left: the
+   side-by-side comparison on Brad's iPhone with a watch.
 3. `APP_ATTEST_TEAM_ID` on the education server, so chat and lab upload work on a phone (D8).
 4. The Clarity masking check on a real recording (D9).
 5. Known gap: an erase arriving from another device while a sheet is open may wait for the next

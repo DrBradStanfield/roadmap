@@ -98,7 +98,7 @@ struct BloodPressureSheet: View {
                 // The rows the prompt is about, read from the record as it is now (off the main
                 // thread); a replace naming rows that moved since is refused (Codex R1).
                 Task {
-                    held = await store.history(for: MyData.bloodPressure)?.rows.first { $0.isActive && $0.day == when }?.pairIds ?? []
+                    held = await store.chart(for: MyData.bloodPressure)?.history.rows.first { $0.isActive && $0.day == when }?.pairIds ?? []
                     asking = true
                 }
             } else {

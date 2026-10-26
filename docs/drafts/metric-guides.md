@@ -12,6 +12,19 @@ Status: wired into the app as US-58, 2026-10-26 (`packages/health-core/src/metri
 5. Medication side effects: yes, a short list of the well-known ones per class, ending with "talk to your doctor".
 6. PCSK9 inhibitors: the question covers the antibody injections, inclisiran, and the new oral PCSK9 inhibitors; the entry names all three kinds.
 
+## Brad's decisions (2026-10-26)
+
+Brad, on the lines left out until he confirmed them: "do it". On the standard tips: "Approve all". On a metric with no readings: "Open a page with the guide".
+
+1. Restored. All but the inclisiran line are worded as drafted:
+   - Blood pressure: "Skip caffeine, exercise and smoking for 30 minutes before."; "Sit quietly for 5 minutes, back supported, feet flat, arm resting at heart level, cuff on bare skin."; "Take two readings a minute apart."
+   - PCSK9 inhibitors: the antibody injections are given "usually every 2 or 4 weeks" (as drafted). Inclisiran "an injection given twice a year once started" is the orchestrator's wording; Brad approved restoring the PCSK9 dosing schedules ("do it", 2026-10-26).
+   - Metformin: "In the Diabetes Prevention Program, metformin slowed the move from prediabetes to diabetes." and "It may blunt some of the benefits of exercise training."
+   - Ezetimibe: "In trials, this extra lowering reduced heart attacks and strokes."
+2. The standard measuring and preparation tips are approved as a category: how to weigh, measure a waist or height, when no fasting is needed, lab caveats, and the like. "Approve all" approved the tips already in the guides; it restored nothing.
+3. A metric with no readings opens its page: an Add button at the top, the guide below.
+4. Not put to Brad, so still left out: blood pressure's "vascular dementia" in Why it matters; HbA1c's "Red cells live for a few months, so" clause; metformin's "so its value is for people with prediabetes or diabetes".
+
 ## Proposed shape (a proposal only)
 
 - **Where the text lives.** A new data file in health-core, for example `packages/health-core/src/metric-guides.ts`, exporting `METRIC_GUIDES`. Each entry has `title`, `whatItIs`, `whyItMatters`, a `howTo` block (a heading plus 2 to 4 points) and `sources` as `SuggestionReference[]`, reusing the reference objects evidence.ts already defines. No new citations.

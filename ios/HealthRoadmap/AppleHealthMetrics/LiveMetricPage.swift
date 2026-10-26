@@ -6,11 +6,13 @@ import SwiftUI
 struct LiveHealthPage: View {
     let live: LiveHealth
     let metric: LiveMetric
+    /// The person's VO2 max bands, handed only to VO2 max's page (AC8); nil shows none.
+    var bands: Vo2MaxBands? = nil
 
     var body: some View {
         let reading = live.cards[metric]?.date
         Group {
-            if metric == .sleep { SleepPage(live: live, reading: reading) } else { LiveMetricPage(live: live, metric: metric, reading: reading) }
+            if metric == .sleep { SleepPage(live: live, reading: reading) } else { LiveMetricPage(live: live, metric: metric, reading: reading, bands: bands) }
         }
         // Clarity's fixed screen name "Apple Health metric" while a page shows (usage signal).
         .onAppear { live.pagesOpen += 1 }
@@ -22,13 +24,16 @@ struct LiveHealthPage: View {
 /// (AC7): the range picker (D, W, M, 6M, Y), the headline for what is in view, the chart,
 /// a scrub that shows the touched bar's value. Read-only: no "+", no list, no correction,
 /// no Unit menu. Heart rate draws each bar low to high; steps as bars; resting heart rate
-/// and VO2 max as points. No target band. Read from HealthKit each time it shows, on a
-/// return to the app and on unlock (AC2, Codex R1).
+/// and VO2 max as points. No target band; VO2 max shades its fitness bands behind the chart,
+/// with a legend under it (AC8). Read from HealthKit each time it shows, on a return to the
+/// app and on unlock (AC2, Codex R1).
 struct LiveMetricPage: View {
     let live: LiveHealth
     let metric: LiveMetric
     /// The card's reading: the page reads back to it and opens with it in view (Codex R2).
     let reading: Date?
+    /// VO2 max's fitness bands for the person's age and sex (AC8).
+    let bands: Vo2MaxBands?
     @State private var range: LiveRange
     @State private var days: [LivePoint] = []
     @State private var daysRead = false
@@ -44,10 +49,11 @@ struct LiveMetricPage: View {
     /// The day that was today when the page last read, so D follows midnight (N5).
     @State private var today: Date
 
-    init(live: LiveHealth, metric: LiveMetric, reading: Date?) {
+    init(live: LiveHealth, metric: LiveMetric, reading: Date?, bands: Vo2MaxBands? = nil) {
         self.live = live
         self.metric = metric
         self.reading = reading
+        self.bands = bands
         _range = State(initialValue: metric.opening)
         let first = metric.opening == .day ? LiveHealth.pageStart(reaching: reading, back: 7, now: live.now(), calendar: live.calendar) : reading
         let geometry = LiveChartGeometry(range: metric.opening, now: live.now(), calendar: live.calendar, first: first)
@@ -76,7 +82,7 @@ struct LiveMetricPage: View {
             PageHeadline(headline: headline(inView: inView, geometry: geometry))
             chart(geometry: geometry)
         } below: {
-            EmptyView()
+            if let bands { Vo2BandsLegend(bands: bands, tint: metric.tint).equatable() }
         }
     }
 
@@ -139,7 +145,25 @@ struct LiveMetricPage: View {
 
     private func chart(geometry: LiveChartGeometry) -> some View {
         let unit = range.bucket
+        let yDomain = bands?.yDomain(values: points.compactMap(\.value))
         return Chart {
+            // AC8: the bands behind the values, each from its lower bound to the next one's.
+            if let bands, let yDomain {
+                ForEach(Vo2MaxBand.allCases, id: \.self) { band in
+                    let shade = bands.shade(band, in: yDomain)
+                    RectangleMark(xStart: .value("Time", geometry.domain.lowerBound), xEnd: .value("Time", geometry.domain.upperBound),
+                                  yStart: .value(metric.unit, shade.lowerBound), yEnd: .value(metric.unit, shade.upperBound))
+                        .foregroundStyle(Self.shade(band, tint: metric.tint))
+                        .accessibilityHidden(true)
+                }
+                // A thin rule at each cut-point keeps the bands visible in dark mode (adversary R8).
+                ForEach(bands.cuts, id: \.self) { cut in
+                    RuleMark(y: .value(metric.unit, cut))
+                        .foregroundStyle(metric.tint.opacity(0.4))
+                        .lineStyle(StrokeStyle(lineWidth: 0.5))
+                        .accessibilityHidden(true)
+                }
+            }
             ForEach(points) { point in
                 let tint = metric.tint.opacity(selected == nil || selected == point ? 1 : 0.4)
                 switch metric.aggregation {
@@ -152,16 +176,28 @@ struct LiveMetricPage: View {
                         .clipShape(Capsule())
                         .foregroundStyle(tint)
                 case .mean:
-                    PointMark(x: .value("Time", point.start, unit: unit), y: .value(metric.unit, point.value ?? 0))
+                    // With bands, at the value's shown place, so the dot sits in the band it is placed in (AC8).
+                    PointMark(x: .value("Time", point.start, unit: unit), y: .value(metric.unit, bands == nil ? point.value ?? 0 : Vo2MaxBands.shown(point.value ?? 0)))
                         .symbolSize(selected == point ? 90 : 40)
                         .foregroundStyle(metric.tint)
                 }
             }
             if let selected { SelectionRule(date: selected.start, unit: unit) }
         }
-        .modifier(LiveYScale(metric: metric, points: points))
+        .modifier(LiveYScale(metric: metric, points: points, domain: yDomain))
         .modifier(ScrollingChart(geometry: geometry, items: points, date: \.start, scrolledTo: $scrolledTo, selected: $selected))
-        .accessibilityChartDescriptor(LiveChartDescriptor(metric: metric, points: points, geometry: geometry, from: scrolledTo))
+        .accessibilityChartDescriptor(LiveChartDescriptor(metric: metric, points: points, geometry: geometry, from: scrolledTo, bands: bands))
+    }
+
+    /// A band's shading: deeper for fitter, calm in both modes; its name is always in text.
+    static func shade(_ band: Vo2MaxBand, tint: Color) -> Color {
+        let opacity: Double = switch band {
+        case .low: 0.05
+        case .belowAverage: 0.11
+        case .aboveAverage: 0.18
+        case .high: 0.26
+        }
+        return tint.opacity(opacity)
     }
 
     /// Heart rate's bar: a single reading still shows as a short capsule, as Apple Health's dot.
@@ -284,9 +320,13 @@ struct SelectionRule: ChartContent {
 private struct LiveYScale: ViewModifier {
     let metric: LiveMetric
     let points: [LivePoint]
+    /// VO2 max's axis with its bands (AC8): every band and every value.
+    let domain: ClosedRange<Double>?
 
     func body(content: Content) -> some View {
-        if metric.aggregation == .range, let low = points.compactMap(\.low).min(), let high = points.compactMap(\.high).max() {
+        if let domain {
+            content.chartYScale(domain: domain)
+        } else if metric.aggregation == .range, let low = points.compactMap(\.low).min(), let high = points.compactMap(\.high).max() {
             content.chartYScale(domain: (low - 10).rounded(.down)...(high + 10).rounded(.up))
         } else {
             content.chartYScale(domain: .automatic(includesZero: metric.aggregation == .sum))
@@ -394,11 +434,18 @@ struct LiveChartDescriptor: AXChartDescriptorRepresentable {
     let metric: LiveMetric
     let points: [LivePoint]
     let calendar: Calendar
+    let bands: Vo2MaxBands?
 
-    init(metric: LiveMetric, points: [LivePoint], geometry: LiveChartGeometry, from start: Date) {
+    init(metric: LiveMetric, points: [LivePoint], geometry: LiveChartGeometry, from start: Date, bands: Vo2MaxBands? = nil) {
         self.metric = metric
         self.points = geometry.inView(points, by: \.start, from: start)
         calendar = geometry.calendar
+        self.bands = bands
+    }
+
+    /// AC8: "Fitness bands for women aged 40 to 49: High, 33.0 and above …; Low, below 19.7 …."
+    var summary: String? {
+        bands.map { bands in "Fitness bands for \(bands.title): " + Vo2MaxBand.allCases.reversed().map(bands.spoken).joined(separator: "; ") + "." }
     }
 
     func makeChartDescriptor() -> AXChartDescriptor {
@@ -416,6 +463,42 @@ struct LiveChartDescriptor: AXChartDescriptorRepresentable {
             ? [AXDataSeriesDescriptor(name: "Lowest", isContinuous: false, dataPoints: points.compactMap { p in p.low.map { AXDataPoint(x: p.start.timeIntervalSince1970, y: $0) } }),
                AXDataSeriesDescriptor(name: "Highest", isContinuous: false, dataPoints: points.compactMap { p in p.high.map { AXDataPoint(x: p.start.timeIntervalSince1970, y: $0) } })]
             : [AXDataSeriesDescriptor(name: metric.label, isContinuous: false, dataPoints: points.compactMap { p in p.value.map { AXDataPoint(x: p.start.timeIntervalSince1970, y: $0) } })]
-        return AXChartDescriptor(title: metric.label, summary: nil, xAxis: xAxis, yAxis: yAxis, additionalAxes: [], series: series)
+        return AXChartDescriptor(title: metric.label, summary: summary, xAxis: xAxis, yAxis: yAxis, additionalAxes: [], series: series)
+    }
+}
+
+/// AC8's legend: each band's name and range, High first as the chart reads top down, then
+/// the source and the caveat. Each row is one VoiceOver element. Equatable, so scrubbing the
+/// chart does not rebuild it.
+struct Vo2BandsLegend: View, Equatable {
+    let bands: Vo2MaxBands
+    let tint: Color
+    @Environment(\.dynamicTypeSize) private var textSize
+
+    nonisolated static func == (a: Self, b: Self) -> Bool { a.bands == b.bands && a.tint == b.tint }
+
+    var body: some View {
+        Section {
+            ForEach(Vo2MaxBand.allCases.reversed(), id: \.self) { band in
+                HStack(spacing: 10) {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(LiveMetricPage.shade(band, tint: tint))
+                        .strokeBorder(tint.opacity(0.45))
+                        .frame(width: 16, height: 16)
+                    let layout = LabelValue.layout(textSize)
+                    layout {
+                        Text(band.label)
+                        if !textSize.isAccessibilitySize { Spacer(minLength: 8) }
+                        Text(bands.range(band)).monospacedDigit().foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(bands.spoken(band))
+            }
+        } header: {
+            Text("Fitness bands for \(bands.title)")
+        } footer: {
+            Text("These bands compare your VO2 max with people of your age and sex in the FRIEND registry, cut at its 20th, 50th and 80th percentiles (Kaminsky 2022). Apple Watch estimates VO2 max; FRIEND's values come from lab treadmill tests.")
+        }
     }
 }

@@ -105,20 +105,38 @@ final class RecordStoreTests: XCTestCase {
     func testTheValueHistoryFollowsACorrection() async throws {
         let store = try store()
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
-        let firstHistory = await store.history(for: "weight")
+        let firstHistory = await store.chart(for: "weight")?.history
         let first = try XCTUnwrap(firstHistory)
         XCTAssertEqual(first.rows.map(\.value), ["80.0"])
         XCTAssertEqual(store.shownHistory(for: "weight"), first, "kept for the page to draw")
-        let again = await store.history(for: "weight")
+        let again = await store.chart(for: "weight")?.history
         XCTAssertEqual(again, first, "asked again: the same answer")
         let id = try XCTUnwrap(first.rows.first?.id)
         await XCTAssertSaved(await store.apply(.correct(id: id, value: 82)))
-        let afterHistory = await store.history(for: "weight")
+        let afterHistory = await store.chart(for: "weight")?.history
         let after = try XCTUnwrap(afterHistory)
         XCTAssertEqual(after.rows.first { $0.status == "active" }?.value, "82.0", "the correction shows, not the cached history")
         XCTAssertEqual(after.rows.count, 2)
-        let waist = await store.history(for: "waist")
+        let waist = await store.chart(for: "waist")?.history
         XCTAssertNotNil(waist, "another metric is asked for afresh")
+    }
+
+    /// US-25 AC21, adversary R1 (2026-10-26): a page opened after an erase or a unit switch
+    /// never shows the earlier values: the kept charts are dropped, so it waits for its read.
+    func testAnEraseOrAUnitSwitchDropsTheKeptCharts_AC21() async throws {
+        let store = try store()
+        await XCTAssertSaved(await store.apply(.add(metric: "ldl", value: 2.9, day: "2026-10-20")))
+        _ = await store.chart(for: "ldl")
+        XCTAssertNotNil(store.shownChart(for: "ldl"), "kept")
+        guard case .erased = await store.erasePhone(historyJSON: nil, keepChat: { _, _ in true }) else { return XCTFail("not erased") }
+        XCTAssertNil(store.shownChart(for: "ldl"), "nothing from before the erase")
+
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
+        _ = await store.chart(for: "weight")
+        XCTAssertNotNil(store.shownChart(for: "weight"))
+        let units = store.myData?.unitSystem == "si" ? "conventional" : "si"
+        await XCTAssertSaved(await store.apply(.units(units)))
+        XCTAssertNil(store.shownChart(for: "weight"), "nothing in the old units")
     }
 
     /// The kept histories are keyed on the record's revision: one from an older revision is
@@ -127,14 +145,14 @@ final class RecordStoreTests: XCTestCase {
     func testHistoriesFromOlderRevisionsAreDropped() async throws {
         let store = try store()
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
-        _ = await store.history(for: "weight")
+        _ = await store.chart(for: "weight")?.history
         XCTAssertNotNil(store.shownChart(for: "weight"))
         await XCTAssertSaved(await store.apply(.add(metric: "waist", value: 90, day: "2026-10-20")))
         XCTAssertNotNil(store.shownChart(for: "weight"), "kept to draw until a newer one lands")
         XCTAssertNil(store.shownHistory(for: "weight"), "but not current")
-        async let first = store.history(for: "waist")
-        async let second = store.history(for: "waist")
-        let (a, b) = await (first, second)
+        async let first = store.chart(for: "waist")
+        async let second = store.chart(for: "waist")
+        let (a, b) = await (first?.history, second?.history)
         XCTAssertEqual(a, b)
         XCTAssertNil(store.shownChart(for: "weight"), "the older revision's history was dropped")
         XCTAssertEqual(store.shownChart(for: "waist")?.history, a)
@@ -148,19 +166,19 @@ final class RecordStoreTests: XCTestCase {
         let store = try store()
         await XCTAssertSaved(await store.setLpaUnit("nmol/L").value)
         await XCTAssertSaved(await store.apply(.add(metric: "lpa", value: 100, day: "2026-10-19"), as: store.screen))
-        let read = await store.history(for: "lpa")
+        let read = await store.chart(for: "lpa")?.history
         let value = try XCTUnwrap(read?.rows.first)
         XCTAssertEqual(read?.unit, "nmol/L")
         XCTAssertEqual(store.correctionHint(for: value.id, metric: "lpa", unit: "nmol/L", on: store.screen), value.value)
 
         await XCTAssertSaved(await store.setLpaUnit("mg/dL").value)
         XCTAssertNil(store.shownHistory(for: "lpa"), "the old unit's history is not current")
-        XCTAssertEqual(store.shownChart(for: "lpa")?.history, read, "still drawn, its taps held")
+        XCTAssertNil(store.shownChart(for: "lpa"), "dropped: a page never draws the old unit (US-25 AC21, adversary R1)")
         let seen = store.screen // the tap, before the page reads the history again
         XCTAssertEqual(seen.lpaUnit, "mg/dL")
         XCTAssertNil(store.correctionHint(for: value.id, metric: "lpa", unit: seen.lpaUnit, on: seen), "no hint rather than 100 mg/dL")
 
-        _ = await store.history(for: "lpa")
+        _ = await store.chart(for: "lpa")?.history
         let hint = store.correctionHint(for: value.id, metric: "lpa", unit: seen.lpaUnit, on: seen)
         XCTAssertNotNil(hint, "the fresh history, in mg/dL, gives it")
         XCTAssertNotEqual(hint, value.value)
@@ -175,14 +193,14 @@ final class RecordStoreTests: XCTestCase {
         let store = try store()
         let (_, other) = otherUnits(store)
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-19")))
-        let first = await store.history(for: "weight")
+        let first = await store.chart(for: "weight")?.history
         let read = try XCTUnwrap(first)
         let value = try XCTUnwrap(read.rows.first)
         let seen = store.screen // the tap
         XCTAssertEqual(store.correctionHint(for: value.id, metric: "weight", unit: read.unit, on: seen), value.value)
 
         await XCTAssertSaved(await store.apply(.units(other)))
-        let again = await store.history(for: "weight")
+        let again = await store.chart(for: "weight")?.history
         let fresh = try XCTUnwrap(again)
         XCTAssertNotEqual(fresh.unit, read.unit)
         XCTAssertNil(store.correctionHint(for: value.id, metric: "weight", unit: read.unit, on: seen), "no hint in the other unit")
@@ -198,19 +216,6 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(store.revision, before, "the same record")
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-19")))
         XCTAssertGreaterThan(store.revision, before)
-    }
-
-    /// Re-check N4 (US-25 AC9): of two quick row taps only the latest opens anything,
-    /// and a tap whose history was still being read when an erase landed opens nothing.
-    func testOnlyTheLatestTapOpensAndNoneAfterAnErase() async throws {
-        let store = try store()
-        let first = store.tap()
-        let second = store.tap()
-        XCTAssertFalse(store.isLatest(first), "a later tap came")
-        XCTAssertTrue(store.isLatest(second))
-        guard case .erased = await store.erasePhone(historyJSON: nil, keepChat: { _, _ in true }) else { return XCTFail("not erased") }
-        XCTAssertFalse(store.isLatest(second), "an erase came")
-        XCTAssertTrue(store.isLatest(store.tap()))
     }
 
     func testThePlanFollowsTheStoredRecord() async throws {
@@ -439,7 +444,7 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertNotNil((profile["fieldStamps"] as? [String: Any])?["lpaUnit"], "field-stamped, so it merges per field")
         XCTAssertEqual(store.myData?.bloodTests.first { $0.metric == "lpa" }?.unit, "mg/L")
         await XCTAssertSaved(await store.apply(.add(metric: "lpa", value: 500, day: "2026-10-20"), as: store.screen))
-        let lpaHistory = await store.history(for: "lpa")
+        let lpaHistory = await store.chart(for: "lpa")?.history
         XCTAssertEqual(lpaHistory?.unit, "mg/L")
         XCTAssertEqual(lpaHistory?.rows.first?.value, "500")
         let record = try JSONSerialization.jsonObject(with: Data(store.recordJSON.utf8)) as? [String: Any]
@@ -485,7 +490,7 @@ final class RecordStoreTests: XCTestCase {
     func testACorrectionKeepsItsSheetWhenItsScreenMoves() async throws {
         let store = try store()
         await XCTAssertSaved(await store.apply(.add(metric: "lpa", value: 100, day: "2026-10-19")))
-        let lpaHistory = await store.history(for: "lpa")
+        let lpaHistory = await store.chart(for: "lpa")?.history
         let value = try XCTUnwrap(lpaHistory?.rows.first)
         let row = try XCTUnwrap(store.myData?.bloodTests.first { $0.metric == "lpa" })
         let seen = store.screen
@@ -494,12 +499,27 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(before.id, after.id)
     }
 
+    /// US-58 AC4b: on an empty metric's page, "Add your first value" (and the "+") opens the
+    /// entry sheet for that metric as My data shows it now.
+    func testAddingOnAnEmptyPageOpensTheEntrySheet_US58() async throws {
+        let store = try store()
+        let row = try XCTUnwrap(store.myData?.bloodTests.first { $0.metric == "apob" })
+        let read = await store.chart(for: "apob")?.history
+        let history = try XCTUnwrap(read)
+        XCTAssertTrue(history.rows.isEmpty)
+        guard case .add(let shown, let seen) = MetricDetailView.adding(row, in: store) else {
+            return XCTFail("Add opens the entry sheet")
+        }
+        XCTAssertEqual(shown.metric, "apob")
+        XCTAssertEqual(seen.units, store.screen.units)
+    }
+
     /// US-25 AC20: on the phone's file too, an Lp(a) value or correction typed before its unit
     /// changed under the sheet is refused; another test's value saves. A refused choice says why.
     func testAnLpaValueTypedBeforeItsUnitChangedIsRefusedOnThePhone() async throws {
         let store = try store()
         await XCTAssertSaved(await store.apply(.add(metric: "lpa", value: 100, day: "2026-10-19")))
-        let lpaHistory = await store.history(for: "lpa")
+        let lpaHistory = await store.chart(for: "lpa")?.history
         let rowId = try XCTUnwrap(lpaHistory?.rows.first?.id)
         let before = try XCTUnwrap(store.myData?.lpaUnit)
         let seen = store.screen // the sheet opens

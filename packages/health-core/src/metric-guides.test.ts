@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { METRIC_GUIDES } from './metric-guides';
-import { SUGGESTION_EVIDENCE, STAT_CARD_EVIDENCE, getBmiEvidence, getIbwEvidence, getProteinEvidence } from './evidence';
+import { GUIDE_REFERENCES, SUGGESTION_EVIDENCE, STAT_CARD_EVIDENCE, getBmiEvidence, getIbwEvidence, getProteinEvidence } from './evidence';
 import { BLOOD_TEST_METRICS, VITAL_METRICS } from './mappings';
 import { ESCALATION_KEY_OF, MEDICATION_KEYS } from './validation';
 
@@ -18,11 +18,12 @@ const FILES = {
   types: read('packages/health-core/src/types.ts'),
 };
 
-/** Brad's decisions on the draft (2026-10-25), the source of a `brad` entry below. */
+/** Brad's decisions on the draft (2026-10-25 and 2026-10-26), the source of a `brad` entry below. */
 const draft = read('docs/drafts/metric-guides.md');
-const bradStart = draft.indexOf("## Brad's decisions"), bradEnd = draft.indexOf('## Proposed shape');
+const bradStart = draft.indexOf("## Brad's decisions (2026-10-25)"), bradEnd = draft.indexOf('## Proposed shape');
 if (bradStart < 0 || bradEnd < bradStart) throw new Error("metric-guides.md lost its Brad's decisions or Proposed shape heading");
 const BRAD = draft.slice(bradStart, bradEnd);
+if (!BRAD.includes("## Brad's decisions (2026-10-26)")) throw new Error("metric-guides.md lost its Brad's decisions (2026-10-26) heading");
 
 /**
  * Every quantity a guide states, in digits or in words, with where it is already said:
@@ -33,7 +34,12 @@ const BRAD = draft.slice(bradStart, bradEnd);
 type Source = keyof typeof FILES | 'brad';
 const SOURCED: Record<string, Array<{ says: string; in: Source; as: string }>> = {
   waist: [{ says: 'below half your height', in: 'algorithm', as: 'normal WHtR (< 0.5)' }],
-  blood_pressure: [{ says: 'Every 2 to 4 weeks', in: 'html', as: 'once every 2-4 weeks' }],
+  blood_pressure: [
+    { says: 'for 30 minutes before', in: 'brad', as: 'smoking for 30 minutes before' },
+    { says: 'Sit quietly for 5 minutes', in: 'brad', as: 'Sit quietly for 5 minutes' },
+    { says: 'Take two readings a minute apart', in: 'brad', as: 'Take two readings a minute apart' },
+    { says: 'Every 2 to 4 weeks', in: 'html', as: 'once every 2-4 weeks' },
+  ],
   hba1c: [{ says: 'past 2 to 3 months', in: 'algorithm', as: 'HbA1c captures 2–3 months' }],
   creatinine: [{ says: 'CKD-EPI 2021', in: 'algorithm', as: 'CKD-EPI 2021' }],
   psa: [
@@ -56,6 +62,8 @@ const SOURCED: Record<string, Array<{ says: string; in: Source; as: string }>> =
   ],
   pcsk9i: [
     { says: 'They come in three kinds', in: 'brad', as: 'the entry names all three kinds' },
+    { says: 'usually every 2 or 4 weeks', in: 'brad', as: 'usually every 2 or 4 weeks' },
+    { says: 'twice a year once started', in: 'brad', as: 'twice a year once started' },
     { says: 'by a further 50 to 60%', in: 'evidence', as: 'additional 50–60%' },
     { says: 'by about 25 to 30%', in: 'evidence', as: 'approximately 25–30%' },
   ],
@@ -90,7 +98,7 @@ const textOf = (key: string) => {
 const EVIDENCE_REFS = [
   ...Object.values(SUGGESTION_EVIDENCE), ...Object.values(STAT_CARD_EVIDENCE),
   getIbwEvidence('male'), getBmiEvidence(27, 'male'), getProteinEvidence(70, 1.2),
-].flatMap((e) => e.references);
+].flatMap((e) => e.references).concat(GUIDE_REFERENCES);
 
 describe('METRIC_GUIDES (US-58)', () => {
   it('AC1: one guide per vital and blood test, blood pressure as one, height, and each medicine but the escalation answers', () => {
@@ -153,6 +161,15 @@ describe('METRIC_GUIDES (US-58)', () => {
 
   it('AC2: the audit sees quantities in words as well as digits', () => {
     expect(quantities('twice a year, every 2 weeks, half, a few months, one test')).toEqual([-1, 0.5, 1, 2, 2]);
+  });
+
+  it('AC2: the references added for the guides are roadmap_text.html\'s own, and each one is cited', () => {
+    for (const r of GUIDE_REFERENCES) {
+      const [author, year] = r.label.split(' ');
+      // roadmap_text.html's reference list: "<li>Author, A., et al., <em>Title.</em> Journal, Year."
+      expect(FILES.html, r.label).toMatch(new RegExp(`<li>${author}, [^\\n]*?, ${year}\\.`));
+      expect(Object.values(METRIC_GUIDES).some((g) => g.sources.includes(r)), r.label).toBe(true);
+    }
   });
 
   it('AC2: the algorithm names the guides as display-only text', () => {

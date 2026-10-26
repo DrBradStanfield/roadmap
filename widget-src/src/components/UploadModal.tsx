@@ -785,10 +785,9 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       setSavedDocCount(savedDocs.saved.length);
       setUnstoredCount(savedDocs.unstored ?? 0);
       setSavedLabCount(savedLabValues.saved.length);
-      // A save error is the only failure: it keeps the review open so a second
-      // Save retries that branch (US-12 AC6). A duplicate and a refused unit or number
-      // are settled outcomes — the data is already there, or the record will
-      // never take it — and neither is anything a retry could change.
+      // A save error keeps the review open for retry (US-12 AC6). Skipped
+      // values and refusals are settled outcomes, reported on the done screen;
+      // a skip does not establish that the reviewed value is already saved.
       const totalSaved = savedValues.saved.length + savedDocs.saved.length + savedLabValues.saved.length;
       const saveFailed = threw || saveErrors > 0;
 
@@ -957,12 +956,12 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               </p>
               {skippedMeasurements > 0 && (
                 <p className="upload-done-skipped">
-                  {skippedMeasurements} blood test value{skippedMeasurements !== 1 ? 's were' : ' was'} already saved at the same date.
+                  {skippedMeasurements} blood test value{skippedMeasurements !== 1 ? 's were' : ' was'} not added. Check your blood test table: a value was already recorded for that date, or changed during review.
                 </p>
               )}
               {skippedLabValues > 0 && (
                 <p className="upload-done-skipped">
-                  {skippedLabValues} additional lab value{skippedLabValues !== 1 ? 's were' : ' was'} already saved at the same date.
+                  {skippedLabValues} additional lab value{skippedLabValues !== 1 ? 's were' : ' was'} not added. Check your blood test table: a value was already recorded for that date, or changed during review.
                 </p>
               )}
               {refusalLines}

@@ -40,6 +40,13 @@ pressure, and adds them to your record. It writes the weight, waist and blood pr
 your record to Apple Health, except readings that came from Apple Health in the first place.
 It never writes height. It does not read blood tests or Health Records.
 
+When you connect Apple Health during setup, it also reads your sex and your date of birth.
+It saves your sex and the month and year you were born to your record straight away,
+without asking you to tap them, and never keeps the day. A last setup screen lists what came
+from Apple Health, so you can check and change it. If your newest weight in Apple Health is
+more than a year old, setup asks for today's weight instead, filled in with that one; keeping
+it saves it as today's Apple Health reading, so it is never written back to Apple Health.
+
 We never use Apple Health data for advertising or marketing. We never sell it or give it to
 a data broker. We never store it in iCloud. Apple Health keeps its own data under your
 Apple settings, as it does for every app.
@@ -50,10 +57,13 @@ summary of your record that each question carries (below). The app sends it nowh
 
 ### Heart rate, resting heart rate, sleep, VO2 max and steps
 
-These five are different. They are shown, never kept. The app asks to read them, in a
-separate Apple Health permission, only when you tap **Show from Apple Health** on My data, or
-**Reconnect** there after you said no. Once you have answered, iOS does not ask again, so
-Reconnect opens Settings, where you can turn them on. It
+These five are different. They are shown, never kept. The app asks to read them in the same
+Apple Health permission as everything else, all at once, when you connect Apple Health during
+setup, or later from **Connect Apple Health** in My data. If you connected before this was
+added, My data offers **Turn On**, which shows the same permission (iOS lists only what it
+has not asked you yet) and also brings in any new weight, height, waist and blood pressure
+readings, as connecting does. After you said no, it offers **Reconnect**. Once you have answered, iOS does not ask again, so Reconnect opens
+Settings, where you can turn them on. It
 reads them from Apple Health each time it shows a card or a chart of them, and holds them in
 memory only while the app is open. It never saves them: not in your record, not in a file,
 not in the app's settings. So they never reach your Dropbox or Google Drive, the chat's

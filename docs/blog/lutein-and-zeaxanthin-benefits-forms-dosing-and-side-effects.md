@@ -68,7 +68,7 @@ Meso-zeaxanthin is formed in the macula and is also sold as a supplement ingredi
 
 **Dose-response for macular pigment:** A 2021 meta-analysis of 46 studies (3,189 participants with healthy eyes) found that 5 to less than 20 mg a day of lutein and zeaxanthin raised macular pigment optical density (MPOD) by 0.04 units (95% CI 0.02 to 0.07), and 20 mg or more raised it by 0.11 units (95% CI 0.06 to 0.16), over 3 to 12 months. Intakes under 5 mg a day showed no significant change [19].
 
-Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) includes Lutein 10 mg, Zeaxanthin 2 mg and Lycopene 10 mg as part of its 26-ingredient evidence-based formula.
+Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) includes Lutein 10 mg and Zeaxanthin 2 mg (as Lutemax 2020), plus Lycopene 10 mg, in its 26-ingredient US formula (v8). The lutein and zeaxanthin amounts are the doses used in AREDS2 [22]. That trial enrolled people who already had intermediate AMD, or advanced AMD in one eye. In them, lutein and zeaxanthin could be an appropriate substitute for beta-carotene in the AREDS formula, but adding them on top gave no clear overall benefit [22]. AREDS2 was not a prevention trial in people without AMD. MicroVitamin is not the AREDS2 formula. It lacks the AREDS formula's high doses of zinc and vitamin C, plus copper, and contains no vitamin E. It is not meant to prevent or treat AMD. Australia (v8.5) and the UK and EU (v9, 25 ingredients) have the same lutein and zeaxanthin doses. Canada (v7) has 0.25 mg lutein, no zeaxanthin and 0.3 mg lycopene.
 
 ## 3. Evidence for Benefits
 

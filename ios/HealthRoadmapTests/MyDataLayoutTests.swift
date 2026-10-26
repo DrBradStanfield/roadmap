@@ -58,6 +58,17 @@ final class MyDataLayoutTests: XCTestCase {
         XCTAssertEqual(pressure.sources.first?.url.host(), "doi.org")
     }
 
+    /// US-58 AC4b (2026-10-26): every row opens its page; an empty metric's page has its guide
+    /// and no readings ("No data yet", "Add your first value").
+    func testAnEmptyMetricOpensAPageWithItsGuide_US58() throws {
+        let engine = try HealthEngine()
+        let empty = try record(engine)
+        let history = try engine.blocking { [now] in try $0.history(recordJSON: empty, metric: "apob", now: now, deviceId: "test") }
+        let shown = try engine.blocking { [now] in try $0.myData(recordJSON: empty, now: now, deviceId: "test") }
+        XCTAssertTrue(history.rows.isEmpty)
+        XCTAssertNotNil(shown.guides?["apob"])
+    }
+
     /// US-58 AC3: one malformed guide is left out, and a malformed map reads as none; My data still draws.
     func testABadGuideNeverBlanksMyData_US58() throws {
         let engine = try HealthEngine()

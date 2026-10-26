@@ -7,21 +7,15 @@ import SwiftUI
 ///
 /// No title bar (Brad 2026-10-22): lab upload and Sync sit on the Vitals line;
 /// the unit switch is a row in About you, near the end, since it is set once
-/// (Brad 2026-10-23). A value with history opens its
+/// (Brad 2026-10-23). A tap on a value opens its
 /// page in the tab's navigation stack (MetricDetailView).
 struct MyDataView: View {
     /// Which value the entry sheet is for, with the screen it was read on: the sheet's save is checked
     /// against that, whatever lands before it appears (Codex R2).
     private enum Entry: Identifiable {
         case height(RecordStore.Screen)
-        case metric(MyData.Row, RecordStore.Screen)
 
-        var id: String {
-            switch self {
-            case .height: "height"
-            case .metric(let row, _): row.metric
-            }
-        }
+        var id: String { "height" }
     }
 
     let engine: HealthEngine
@@ -61,7 +55,7 @@ struct MyDataView: View {
                 MetricDetailView(store: store, row: row, saved: saved)
             }
             .navigationDestination(item: $liveDetail) { metric in
-                if let live { LiveHealthPage(live: live, metric: metric) }
+                if let live { LiveHealthPage(live: live, metric: metric, bands: metric == .vo2Max ? store.myData?.vo2Bands?.value : nil) }
             }
             // Read from Health each time My data shows and on return to the app; nothing is kept (US-56 AC2).
             .task { await live?.refresh() }
@@ -77,9 +71,9 @@ struct MyDataView: View {
             if let data = store.myData {
                 List {
                     vitals(data)
-                    // Under blood pressure: the access card, then heart rate, resting heart rate and sleep (US-56 AC5, AC6).
+                    // Under blood pressure: heart rate, resting heart rate and sleep, or the Turn On or Reconnect row (US-56 AC5, AC6).
                     LiveCardsSection(metrics: LiveMetric.vitals) { liveDetail = $0 }
-                    LiveCardsSection(metrics: LiveMetric.fitness) { liveDetail = $0 }
+                    LiveCardsSection(metrics: LiveMetric.fitness, bands: data.vo2Bands?.value.map { [.vo2Max: $0] } ?? [:]) { liveDetail = $0 }
                     metrics(data.bloodTests) {
                         // Tour tip 3 (US-57 AC7); its action is the lab upload.
                         SectionTitle.bloodTests().tourTip(BloodTestsTip(), action: { addingLabs = true })
@@ -115,8 +109,8 @@ struct MyDataView: View {
     private func aboutYou(_ data: MyData) -> some View {
         Section {
             Picker("Sex", selection: binding(data.profile.sex ?? "") { .profile(sex: $0) }) {
-                Text("Female").tag("female")
-                Text("Male").tag("male")
+                Text(MyData.sexLabel("female")).tag("female")
+                Text(MyData.sexLabel("male")).tag("male")
             }
             .pickerStyle(.segmented)
             .disabled(picking)
@@ -212,20 +206,10 @@ struct MyDataView: View {
         .disabled(store.unitSwitches > 0)
     }
 
-    /// A value with any history opens its page; one with none opens entry (AC9). The
-    /// engine reads the history off the main thread; the screen is the tap's. Only the
-    /// latest tap, with no erase since, opens anything (re-check N4).
+    /// Every value opens its page (US-25 AC9, US-58 AC4b): every metric has a guide, and a page
+    /// with no readings says "No data yet" and offers "Add your first value".
     private func open(_ row: MyData.Row) {
-        let (seen, tap) = (store.screen, store.tap())
-        Task {
-            let history = await store.history(for: row.metric)
-            guard store.isLatest(tap) else { return }
-            if MetricDetailView.opensHistory(history) {
-                detail = row
-            } else {
-                entry = .metric(row, seen)
-            }
-        }
+        detail = row
     }
 
     // MARK: Entry
@@ -242,8 +226,6 @@ struct MyDataView: View {
             ValueEntrySheet(title: "Height", unit: profile?.heightUnit ?? "", current: profile?.height, asksForDay: false) { value, _ in
                 saved(await store.apply(.profile(height: value), as: seen))
             }
-        case .metric(let row, let seen):
-            MetricEntrySheet(store: store, row: row, seen: seen, saved: saved)
         }
     }
 

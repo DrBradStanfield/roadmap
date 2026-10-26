@@ -72,7 +72,8 @@ enum EngineSelfTest {
         }
     }
 
-    private static func rows(_ json: String, _ key: String) -> [[String: Any]]? {
+    /// A record's rows under `key`, as JSON objects; nil when the text is not a record.
+    static func rows(_ json: String, _ key: String) -> [[String: Any]]? {
         (try? JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])?[key] as? [[String: Any]]
     }
 }

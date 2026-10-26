@@ -18,16 +18,15 @@
  * The boundary is also where a SECOND WRITER is contained (see merge.ts's
  * threat model): the user hand-editing their own file, or an AI agent with
  * filesystem tools. Their clocks are sanitised here — counters to finite
- * in-range integers, row timestamps to no later than the file's own last write
- * — so a bad value cannot freeze an LWW record, demote the user's own fresh
- * entry, or make the eraseEpoch gate discard a whole side of the merge.
+ * in-range integers, mutable row timestamps to no later than the file's own
+ * last write — so a bad value cannot freeze an LWW record or make the eraseEpoch
+ * gate discard a whole side of the merge. Immutable measurement/lab `createdAt`
+ * and document `addedAt` are content identity and must never be clamped.
  *
- * The clamp anchor is `meta.updatedAt`, so IT is checked first: any string used
- * to sort below every row (`""`) would otherwise rewrite every clock in the
- * file at once. Accepted residual: an anchor that is ancient but well-formed
- * still rewinds the rows written after it. That is self-inflicted (the writer
- * edited its own meta), and content is preserved — only the ordering clocks
- * move.
+ * Metadata uses the row stamp grammar. One valid stamp recovers its companion;
+ * with neither valid, the latest valid stored row clock (or epoch) recovers both.
+ * Recovery never reads the reader's time. An ancient but valid anchor can still
+ * rewind mutable ordering clocks, but cannot fork immutable content identities.
  */
 import { canonicalLabRow, resolveLabCatalogEntry } from './lab-catalog';
 import { isCalendarDay, isClinicalDay } from './measurement-history';
@@ -82,21 +81,11 @@ export function asArray<T>(v: unknown): T[] {
  */
 export const MAX_COUNTER = 1e12;
 
-/**
- * A meta timestamp from an untrusted writer. The shape gate is unchanged;
- * a malformed instant takes the existing fallback, never a sanitation anchor.
- * Valid offset stamps are rewritten in UTC, while UTC precision is retained
- * (US-10 AC8). The fallback remains the reader's `now`, not a stable repair.
- */
-/** Whether a value has a stamp's prefix shape; not a complete validity check. */
-export function hasStampShape(value: unknown): value is string {
-  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value);
-}
-
+/** A metadata clock uses the same complete-stamp grammar as a row. Preserve
+ *  valid UTC precision; normalize other accepted spellings to UTC. */
 function isoOr(value: unknown, fallback: string): string {
-  if (!hasStampShape(value)) return fallback;
-  const at = stampInstant(value);
-  return Number.isNaN(at) ? fallback : /^[^a-z]*Z$/.test(value) ? value : new Date(at).toISOString();
+  if (!isStamp(value)) return fallback;
+  return /^[^a-z]*Z$/.test(value) ? value : new Date(stampInstant(value)).toISOString();
 }
 
 /** `a` is later than `b`: as instants when both parse, so an offset or a
@@ -121,6 +110,37 @@ const STAMP = /^\d{4}-\d{2}-\d{2}([Tt]\d{2}:\d{2}(:\d{2}(\.\d+)?)?([Zz]|[+-](0\d
 function isStamp(value: unknown): value is string {
   return typeof value === 'string' && STAMP.test(value) && isCalendarDay(value.slice(0, 10))
     && !Number.isNaN(stampInstant(value));
+}
+
+/** With no metadata clock, use the latest valid clock already in the record,
+ *  or the epoch when none exists. Never give damaged bytes the reader's time.
+ *  Only known clock fields participate; unknown extension data is not a clock. */
+function recoveredClock(raw: Record<string, unknown>): string {
+  const stamps: unknown[] = [];
+  for (const key of ['profile', 'screenings', 'reminderOptIn']) {
+    const row = raw[key];
+    if (!isObject(row)) continue;
+    stamps.push(row.updatedAt);
+    if (key !== 'reminderOptIn' && isObject(row.fieldStamps)) {
+      for (const stamp of Object.values(row.fieldStamps)) {
+        if (isObject(stamp)) stamps.push(stamp.updatedAt);
+      }
+    }
+  }
+  for (const [key, clock] of [
+    ['measurements', 'createdAt'], ['labValues', 'createdAt'], ['documents', 'addedAt'],
+    ['medications', 'updatedAt'], ['medicationHistory', 'updatedAt'],
+    ['supplements', 'updatedAt'], ['supplementHistory', 'updatedAt'], ['reminderPreferences', 'updatedAt'],
+  ]) {
+    for (const row of asArray(raw[key])) {
+      if (isObject(row)) stamps.push(row[clock]);
+    }
+  }
+  let latest = '1970-01-01T00:00:00.000Z';
+  for (const stamp of stamps) {
+    if (isStamp(stamp) && after(stamp, latest)) latest = new Date(stampInstant(stamp)).toISOString();
+  }
+  return latest;
 }
 
 /** A counter from an untrusted writer: finite, non-negative, integral, bounded. */
@@ -162,19 +182,6 @@ function sanitizeStamp<T>(row: T, anchor: string): T {
     ...(future ? { updatedAt: anchor } : null),
     ...(mistyped ? { updatedAt: '' } : null),
   } as T;
-}
-
-/**
- * Same, for an append-only row: `createdAt` picks the one `active` row per slot,
- * so a future date demotes every later genuine entry to 'entered-in-error'.
- * `recordedAt` is deliberately left alone — it is the clinical date of the
- * value, and moving it would move the row into a different day slot.
- * Document `addedAt` is also left alone: clamping it to each file's own
- * anchor splits one document's content identity and can revive a deletion.
- */
-function sanitizeCreatedAt<T>(row: T, anchor: string): T {
-  if (!isObject(row) || typeof row.createdAt !== 'string' || !after(row.createdAt, anchor)) return row;
-  return { ...row, createdAt: anchor } as T;
 }
 
 /** The printed row's id plus this suffix, so every device computes the SAME id
@@ -255,10 +262,11 @@ export function migrateFile(
   // which broke the "Delete All My Data" wholesale-win guarantee on every
   // read (a stale device's flush resurrected erased data; US-11 regression
   // tests in roadmap-store-data-safety.test.ts / sync-manager.test.ts).
+  const fallback = isStamp(rawMeta.createdAt) || isStamp(rawMeta.updatedAt) ? '' : recoveredClock(raw);
   const meta = {
     ...rawMeta,
-    createdAt: isoOr(rawMeta.createdAt, base.meta.createdAt),
-    updatedAt: isoOr(rawMeta.updatedAt, base.meta.updatedAt),
+    createdAt: isoOr(rawMeta.createdAt, isoOr(rawMeta.updatedAt, fallback)),
+    updatedAt: isoOr(rawMeta.updatedAt, isoOr(rawMeta.createdAt, fallback)),
     lastDeviceId: typeof rawMeta.lastDeviceId === 'string' ? rawMeta.lastDeviceId : base.meta.lastDeviceId,
     lamport: counterOf(rawMeta.lamport, base.meta.lamport),
     eraseEpoch: rawMeta.eraseEpoch === undefined
@@ -292,9 +300,10 @@ export function migrateFile(
   const stamped = <T>(rows: unknown): T[] => rowsOf<T>(rows).map((r) => sanitizeStamp(r, anchor));
   // US-29 AC4: omit malformed clinical days; never invent a date or move a
   // valid observation to another slot. Keep the original timestamp and zone.
+  // createdAt is immutable content identity, like document addedAt. Rewriting
+  // it against different file anchors forks rows and prevents deletion absorption.
   const dated = <T extends { recordedAt: string }>(rows: unknown): T[] => idRowsOf<T>(rows)
-    .filter((r) => isClinicalDay(r.recordedAt))
-    .map((r) => sanitizeCreatedAt(r, anchor));
+    .filter((r) => isClinicalDay(r.recordedAt));
   // Profile and screenings: the object's own stamp, and each field's (US-10
   // AC6). A field stamp that is not a stamp is dropped, so its field reads the
   // object's stamp; a map with none left is dropped whole. A missing or

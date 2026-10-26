@@ -279,7 +279,7 @@
 			buildSettings = {
 				DEVELOPMENT_TEAM = KAV75KMV2R;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.drstanfield.healthroadmap.uitests;
@@ -295,7 +295,7 @@
 			buildSettings = {
 				DEVELOPMENT_TEAM = KAV75KMV2R;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.drstanfield.healthroadmap.uitests;
@@ -361,7 +361,7 @@
 				DEVELOPMENT_TEAM = KAV75KMV2R;
 				CODE_SIGN_ENTITLEMENTS = HealthRoadmap.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Health Roadmap";
@@ -373,7 +373,7 @@
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Health Roadmap reads your sex, month and year of birth, weight, height, waist and blood pressure from Apple Health, so your record and your plan stay up to date without typing. It never keeps your day of birth. Those go only into your record, on this iPhone or in the Dropbox or Google Drive you connect. It also reads your heart rate, resting heart rate, sleep, VO2 max and steps, which it shows you and does not keep.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Health Roadmap saves the weight, waist and blood pressure you type into the app to Apple Health.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_FILE = "HealthRoadmap-Info.plist";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -393,7 +393,7 @@
 				DEVELOPMENT_TEAM = KAV75KMV2R;
 				CODE_SIGN_ENTITLEMENTS = HealthRoadmap.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Health Roadmap";
@@ -405,7 +405,7 @@
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Health Roadmap reads your sex, month and year of birth, weight, height, waist and blood pressure from Apple Health, so your record and your plan stay up to date without typing. It never keeps your day of birth. Those go only into your record, on this iPhone or in the Dropbox or Google Drive you connect. It also reads your heart rate, resting heart rate, sleep, VO2 max and steps, which it shows you and does not keep.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Health Roadmap saves the weight, waist and blood pressure you type into the app to Apple Health.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_FILE = "HealthRoadmap-Info.plist";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -425,7 +425,7 @@
 				DEVELOPMENT_TEAM = KAV75KMV2R;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.drstanfield.healthroadmap.tests;
@@ -442,7 +442,7 @@
 				DEVELOPMENT_TEAM = KAV75KMV2R;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.drstanfield.healthroadmap.tests;

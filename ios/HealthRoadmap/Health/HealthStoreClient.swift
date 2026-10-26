@@ -7,7 +7,8 @@ import Foundation
 protocol HealthStoreClient: AnyObject {
     /// False where the device has no Health database.
     var isAvailable: Bool { get }
-    /// Shows Apple's permission sheet for reading and writing the D6 kinds.
+    /// Shows Apple's permission sheet for reading and writing the D6 kinds, and reading
+    /// US-56's five: the app's only Health request (`HealthKitClient.requested`).
     func requestAuthorization() async throws
     /// Readings added since `anchor` (nil: all of them), our own writes left out.
     /// Deletions are not returned: the record is append-only (D6).

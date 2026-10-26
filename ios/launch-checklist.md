@@ -2,7 +2,7 @@
 artifact: https://claude.ai/artifact/NbkzYiX7CfGmpFFXJcY2E7
 ---
 
-# iPhone app: launch checklist (updated 2026-10-26)
+# iPhone app: launch checklist (updated 2026-10-27)
 
 Everything below is on `main` and pushed. The app runs in the simulator with every
 feature. What is left needs your accounts, a real iPhone, a deploy or a decision.
@@ -41,16 +41,16 @@ by the orchestrator, not a fresh reviewer.
 1. **Signing keys for engine updates** ([engine-updates.md](engine-updates.md)).
    - Done 2026-10-25: the workflow `.github/workflows/engine-release.yml` (added with
      your permission) and the GitHub environment `engine-signing`, limited to `main`,
-     with you as required reviewer. No secret is set yet.
-   - Left for you, in Terminal. The ci key into the environment's secret, then delete
-     its file:
-     `gh secret set ENGINE_SIGNING_KEY --env engine-signing < ~/.config/health-roadmap/engine-signing-key-CI-move-to-github-secret.txt && rm -P ~/.config/health-roadmap/engine-signing-key-CI-move-to-github-secret.txt`
-   - And the cold key into the Passwords app, then delete its file: copy the one line of
-     `~/.config/health-roadmap/engine-signing-key-COLD-move-to-1password.txt` into a new
-     entry "Health Roadmap engine signing key (cold)", save it, then
-     `rm -P ~/.config/health-roadmap/engine-signing-key-COLD-move-to-1password.txt`
-     (engine-updates.md has the steps).
-   - The daily key is in this Mac's Keychain. To release from another Mac, move it there
+     with you as required reviewer. Secret `ENGINE_SIGNING_KEY` set 2026-10-26.
+   - Done 2026-10-26: all three private keys are in your Passwords app (the key
+     files were deleted on 2026-10-22). You ran
+     `gh secret set ENGINE_SIGNING_KEY --env engine-signing`, with the ci line from
+     Passwords; `gh secret list --env engine-signing` lists it. The real
+     test is the first Engine release after a Deploy on main: if none starts on its own,
+     run Actions › Engine release › Run workflow on main.
+   - The daily key is in the iMac's login Keychain and in Passwords as "Health Roadmap engine
+     signing key (daily)" (and the new Mac's Keychain, if you added it). To
+     release from another Mac, move it there
      (engine-updates.md says how).
    - On every release prompt, click **Allow**, never **Always Allow**.
 2. **Apple enrolment: done 2026-10-25.** Team Dr Brad, Inc (KAV75KMV2R), account
@@ -73,18 +73,16 @@ by the orchestrator, not a fresh reviewer.
    Never set `APP_ATTEST_DEV_BYPASS` in production.
 6. **Privacy:** published again 2026-10-26 with the five Apple Health readings. Read the
    live page and its "Items still to verify" list (legal review, App Attest row retention).
-7. **App Store Connect (2026-10-26): ready except the build.** App record 6826824214:
-   listing, review notes and contact (Brad's number lives there, not here), version 0.1,
-   automatic release, free in 175 countries (no Mac, no Vision Pro), age rating 16+,
-   App Privacy published, five 6.3-inch screenshots (1206 × 2622, `app-store-shots.sh
-   "iPhone 18 Pro"`; the slot refuses 6.9-inch). The 0.1 archive is in Xcode's Organizer.
-   - **Upload (Brad):** Xcode › Window › Organizer › HealthRoadmap 0.1 › Distribute App ›
-     App Store Connect › Upload. `xcodebuild -exportArchive` from an agent shell fails:
-     it has no App Store Connect token for the team.
-   - **Then:** the version page's Build › pick build 1 › Add for Review › Submit.
-   - **Brad's legal calls:** declare whether the app is a regulated medical device (App
-     Information; needed for the US, UK and EU) and the EU trader status (Business ›
-     Digital Services Act). Without them the app is not sold in those regions.
+7. **App Store Connect (2026-10-27): ready except the upload.** App record 6826824214:
+   listing, review notes (updated for the one-step Apple Health), contact, version 0.1,
+   automatic release, free in 175 countries, age 16+, App Privacy published, five
+   6.3-inch screenshots of build 2, declared **not a regulated medical device**, EU trader
+   status declared by Brad. Build 2 (0.1) is archived in Xcode's Organizer
+   (`HealthRoadmap-0.1-build2`). The screen was locked overnight, so it is not uploaded.
+   - **Upload (Brad, 2 minutes):** Xcode › Window › Organizer › HealthRoadmap 0.1 (2) ›
+     Distribute App › App Store Connect › Upload. Or unlock the Mac and tell the
+     session, which can click through it (Xcode access is granted, clicks only).
+   - **Then:** the version page's Build › pick build 2 › Save › Add for Review › Submit.
 8. **Regulatory advice** on whether the app counts as a medical device in your markets.
 9. **Clinical call:** should the value pages show target bands (blood pressure goal,
    healthy waist, ideal weight)? The targets live only in the website's code today;

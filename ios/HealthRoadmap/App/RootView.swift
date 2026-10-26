@@ -37,6 +37,8 @@ struct RootView: View {
     @AppStorage("onboarded") private var onboarded = false
     /// Set when the first question screen is reached (OnboardingView).
     @AppStorage("onboardingHealthAsked") private var onboardingStarted = false
+    /// Which questions Apple Health answered, by name (US-54 AC3b); forgotten with the run.
+    @AppStorage("onboardingFromHealth") private var onboardingFromHealth = ""
     /// The questions began after "I already use Health Roadmap": a relaunch keeps asking
     /// only what the cloud record lacks (Codex re-check R1).
     @AppStorage("onboardingOnlyMissing") private var onlyMissingRun = false
@@ -103,6 +105,9 @@ struct RootView: View {
         }
         .fullScreenCover(isPresented: Binding(get: { firstRun != nil }, set: { if !$0 { firstRun = nil } })) {
             firstRunCover
+                // The launch screen's colour, so the opening and a relaunch mid-questions never flash (US-25 AC21b).
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(.systemGroupedBackground), ignoresSafeAreaEdges: .all)
         }
         .onAppear(perform: decideFirstRun)
         .onChange(of: eraser.startsOver) { startOver() }
@@ -209,9 +214,15 @@ struct RootView: View {
     private func decideFirstRun() {
         guard !decided else { return }
         decided = true
-        // A launch mid-questions resumes them instead (AC7); a skipped user lands in needsQuestions.
-        if welcomed, onboarded, erasedElsewhere { startOver(); return }
-        firstRun = !welcomed ? .welcome : needsQuestions ? .questions(onlyMissing: onlyMissingRun) : nil
+        // At launch the cover is simply there, never sliding up over an empty My data
+        // (US-25 AC21b, Brad 2026-10-26).
+        var now = Transaction()
+        now.disablesAnimations = true
+        withTransaction(now) {
+            // A launch mid-questions resumes them instead (AC7); a skipped user lands in needsQuestions.
+            if welcomed, onboarded, erasedElsewhere { startOver(); return }
+            firstRun = !welcomed ? .welcome : needsQuestions ? .questions(onlyMissing: onlyMissingRun) : nil
+        }
     }
 
     /// "Delete all my data" empties the record, so the questions come back (US-54 AC7,
@@ -220,6 +231,7 @@ struct RootView: View {
     private func startOver() {
         onboarded = false
         onboardingStarted = false
+        onboardingFromHealth = ""
         onlyMissingRun = false
         afterErase = true
         firstRun = .questions(onlyMissing: false)
@@ -227,6 +239,7 @@ struct RootView: View {
 
     private func finishOnboarding() {
         onboarded = true
+        onboardingFromHealth = ""
         afterErase = false
         takeCount()
         tab = .plan

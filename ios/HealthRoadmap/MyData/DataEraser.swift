@@ -53,7 +53,7 @@ final class DataEraser {
     }
 
     /// Whether the confirmation names Apple Health.
-    var appleHealthConnected: Bool { health?.connected ?? false }
+    var appleHealthConnected: Bool { health?.everConnected ?? false }
 
     func eraseAll() async -> Outcome {
         guard !erasing else { return .refused("An erase is already running.") }

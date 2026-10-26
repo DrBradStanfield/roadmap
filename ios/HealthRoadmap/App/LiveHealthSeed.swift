@@ -19,7 +19,7 @@ enum LiveHealthSeed {
 
     @concurrent
     private static func seed() async throws {
-        let store = HKHealthStore()
+        let store = HKHealthStore.app
         let types: Set<HKSampleType> = [HKQuantityType(.heartRate), HKQuantityType(.restingHeartRate), HKCategoryType(.sleepAnalysis),
                                         HKQuantityType(.vo2Max), HKQuantityType(.stepCount)]
         try await store.requestAuthorization(toShare: types, read: types)

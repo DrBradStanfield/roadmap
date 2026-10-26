@@ -137,6 +137,42 @@ final class AppleHealthSyncTests: XCTestCase {
         XCTAssertEqual(try activeRows(store).count, 1)
     }
 
+    /// US-54 AC3b (a), orchestrator 2026-10-26: Health's year-old weight, confirmed in
+    /// onboarding, is saved as today's Apple Health row, so it is never written back to Health.
+    func testAConfirmedStaleHealthWeightIsNeverWrittenBack_US54_AC3b() async throws {
+        let (store, engine) = try parts()
+        let health = FakeHealthStore()
+        health.pending[.weight] = [Self.morning]
+        let sync = sync(store, engine, health)
+        await sync.connect()
+        let now = Date(timeIntervalSince1970: 1_792_972_800)
+        await XCTAssertSaved(await store.apply(OnboardingSteps.confirmedWeight(kilograms: 80, now: now, timeZone: .gmt)))
+        let rows = try activeRows(store)
+        XCTAssertEqual(rows.count, 2, "the old reading and today's")
+        XCTAssertTrue(rows.allSatisfy { $0["source"] as? String == "apple_health" })
+        XCTAssertTrue(rows.contains { ($0["recordedAt"] as? String)?.hasPrefix("2026-10-26") == true }, "dated today")
+        await sync.refresh()
+        XCTAssertTrue(health.saved.isEmpty, "never written back to Health")
+    }
+
+    /// AC3b, re-check: the confirmed weight carries the row's SI value, not the rounded
+    /// display: Health's 72.57 kg stays 72.57 on a record shown in pounds.
+    func testAConfirmedStaleWeightKeepsItsKilograms_US54_AC3b() async throws {
+        let (store, engine) = try parts()
+        let health = FakeHealthStore()
+        health.pending[.weight] = [HealthSample(id: UUID(), metric: "weight", value: 72.57, at: Date(timeIntervalSince1970: 1_700_000_000), timeZone: .gmt)]
+        let sync = sync(store, engine, health)
+        await sync.connect()
+        await XCTAssertSaved(await store.apply(.units("conventional")))
+        let row = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" }?.latest)
+        XCTAssertNotEqual(row.value, "72.57", "shown in pounds")
+        let kg = try XCTUnwrap(OnboardingSteps.kilograms(rowId: row.id, recordJSON: store.recordJSON))
+        XCTAssertEqual(kg, 72.57, accuracy: 1e-9)
+        await XCTAssertSaved(await store.apply(OnboardingSteps.confirmedWeight(kilograms: kg, now: Date(timeIntervalSince1970: 1_792_972_800), timeZone: .gmt)))
+        let today = try XCTUnwrap(try activeRows(store).first { ($0["recordedAt"] as? String)?.hasPrefix("2026-10-26") == true })
+        XCTAssertEqual(today["value"] as? Double ?? 0, 72.57, accuracy: 1e-9)
+    }
+
     func testTypedValuesGoToHealthOncePerVersion() async throws {
         let (store, engine) = try parts()
         let health = FakeHealthStore()
@@ -316,6 +352,8 @@ final class FakeHealthStore: HealthStoreClient {
     private var served: [HealthKind: Int] = [:]
 
     let isAvailable = true
+    /// Runs before an import's read returns: a test holds the import here (US-56 AC4).
+    var hold: (@MainActor () async -> Void)?
 
     func requestAuthorization() async throws { authorized = true }
 
@@ -325,6 +363,7 @@ final class FakeHealthStore: HealthStoreClient {
         if locked { throw HealthStoreError.locked }
         // HealthKit answers later: another refresh can be asked for meanwhile.
         await Task.yield()
+        if let hold { await hold() }
         let batch = pending[kind] ?? []
         pending[kind] = nil
         served[kind, default: 0] += 1

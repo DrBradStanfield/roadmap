@@ -2,15 +2,14 @@ import Foundation
 import HealthKit
 
 /// What US-56 needs from HealthKit, behind a protocol so the tests run on a fake. Reads
-/// only: the app writes none of these types (AC2). Every call runs off the main thread.
+/// only: the app writes none of these types (AC2), and asks for them only in its one
+/// request (`HealthKitClient.requested`, AC4). Every call runs off the main thread.
 protocol LiveHealthStore: Sendable {
     /// False where the device has no Health database (an iPad without Health, AC13).
     var isAvailable: Bool { get }
     /// Whether Apple's sheet would still show for the five types (AC4). Throws when iOS
     /// cannot say (a locked phone, an error): the caller keeps what it knew (adversary R4).
     func needsRequest() async throws -> Bool
-    /// Shows Apple's sheet for reading exactly the five types (AC10).
-    func requestAccess() async throws
     /// One point per `component` (an hour or a day) from `start` to `end`, HealthKit's own
     /// statistics: steps summed; heart rate lowest, highest and average; resting heart rate
     /// and VO2 max averaged. Not sleep.
@@ -23,22 +22,19 @@ protocol LiveHealthStore: Sendable {
     func sleep(from start: Date, to end: Date) async throws -> [SleepSegment]
 }
 
-/// The real `LiveHealthStore`. Its own `HKHealthStore`, apart from `HealthKitClient`, so
-/// US-54's six types and this story's five never share a request (AC4). Its calendar
+/// The real `LiveHealthStore`, on the app's one `HKHealthStore.app`, read off the main thread. Its calendar
 /// anchors the statistics' days and hours: the same one `LiveHealth` buckets and labels
 /// with, following the phone's zone as it travels (adversary R2).
 final class LiveHealthKitStore: LiveHealthStore {
-    private let store = HKHealthStore()
+    private let store = HKHealthStore.app
     let calendar: Calendar
 
     init(calendar: Calendar = .autoupdatingCurrent) {
         self.calendar = calendar
     }
 
-    /// The five types, and nothing else (AC10).
-    static var readTypes: Set<HKObjectType> {
-        Set(LiveMetric.allCases.map(type(of:)))
-    }
+    /// The five types, and nothing else (AC10). `HealthKitClient.requested` asks for them.
+    static let readTypes: Set<HKObjectType> = Set(LiveMetric.allCases.map(type(of:)))
 
     static func type(of metric: LiveMetric) -> HKObjectType {
         switch metric {
@@ -55,11 +51,6 @@ final class LiveHealthKitStore: LiveHealthStore {
     @concurrent
     func needsRequest() async throws -> Bool {
         try await Self.locking { try await store.statusForAuthorizationRequest(toShare: [], read: Self.readTypes) } != .unnecessary
-    }
-
-    @concurrent
-    func requestAccess() async throws {
-        try await store.requestAuthorization(toShare: [], read: Self.readTypes)
     }
 
     @concurrent
