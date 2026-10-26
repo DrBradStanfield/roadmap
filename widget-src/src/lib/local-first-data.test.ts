@@ -182,6 +182,28 @@ describe('explicit local-first data path', () => {
     expect(trackProductEvent).toHaveBeenCalledWith('lab_unit_refused', { key: 'lymphocytes', unit: '%' });
   });
 
+  // US-21 AC11, AC22 · product-health W43: a blank unit and an untrusted
+  // spelling both reached the counter as a key alone, so a blank could not be
+  // told apart. A blank is now its own closed word; a bracketed power of ten
+  // the catalogue still refuses (RBC in ×10³) keeps its spelling.
+  it('US-21 AC22 — counts a blank unit as (blank) and keeps a bracketed power of ten', async () => {
+    vi.mocked(trackProductEvent).mockClear();
+
+    await data.bulkSaveLabValues([
+      { metricName: 'WBC', value: 6.2, unit: '', recordedAt: '2024-06-01T09:00:00.000Z' },
+      { metricName: 'Platelets', value: 250, unit: '  ', recordedAt: '2024-06-01T09:00:00.000Z' },
+      { metricName: 'RBC', value: 4.8, unit: 'x10(3)/uL', recordedAt: '2024-06-01T09:00:00.000Z' },
+      { metricName: 'Neutrophils', value: 3.1, unit: '-', recordedAt: '2024-06-01T09:00:00.000Z' },
+    ]);
+
+    expect(vi.mocked(trackProductEvent).mock.calls.map((call) => call[1])).toEqual([
+      { key: 'wbc', unit: '(blank)' },
+      { key: 'platelets', unit: '(blank)' },
+      { key: 'rbc', unit: 'x10(3)/uL' },
+      { key: 'neutrophils' },
+    ]);
+  });
+
   // US-21 phase 3, AC11 · a unit that holds a number a value could arrive as never
   // leaves the browser: the server would drop it, but it must not be sent. The
   // refusal is still counted, under its key alone.

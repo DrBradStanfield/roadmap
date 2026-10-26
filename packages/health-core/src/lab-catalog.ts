@@ -361,16 +361,18 @@ export function normalizeLabUnit(raw: string): string {
   // Greek small mu (U+03BC) → micro sign (U+00B5): LLM extraction emits
   // either; left unmapped they'd falsely flag mixedUnits against each other.
   u = u.replace(/μ/g, 'µ');
-  // Cell-count notation: optional x/×, "10", then e/^/*/** and digits.
-  u = u.replace(/(?:[x×]\s*)?10\s*(?:e|\^|\*{1,2})\s*(\d+)/i,
-    (_, d: string) => `×10${d.split('').map((c) => SUPERSCRIPT_DIGITS[c]).join('')}`);
+  // Cell-count notation: optional x/×, "10", then e/^/*/** and digits, the
+  // digits bracketed with or without one ("x10(3)", "10^(9)"), or already
+  // superscript ("x10³", "10³"; US-21 AC22).
+  u = u.replace(/(?:[x×]\s*)?10\s*(?:(?:e|\^|\*{1,2})\s*(\d+)|(?:\^|\*{1,2})?\(\s*(\d+)\s*\)|([⁰¹²³⁴⁵⁶⁷⁸⁹]+))/i,
+    (_, d?: string, b?: string, sup?: string) => `×10${sup ?? (d ?? b)!.split('').map((c) => SUPERSCRIPT_DIGITS[c]).join('')}`);
   // ASCII micro prefix: umol/ug/uiu/ukat/uu → µ… ("U/L" alone never matches).
   u = u.replace(/\bu(mol|g|iu|kat|u)\b/gi,
     (_, s: string) => `µ${MICRO_CASE[s.toLowerCase()] ?? s.toLowerCase()}`);
-  // The two spellings US analysers print for the same prefix: "mcg" is µg, and
-  // "uL"/"ul" is µL (the litre keeps its capital, so the /l rule below misses it).
+  // The spellings US analysers print for the same prefix: "mcg" is µg, and
+  // "uL"/"ul"/"mcL" is µL (the litre keeps its capital, so the /l rule below misses it).
   u = u.replace(/\bmcg\b/gi, 'µg');
-  u = u.replace(/\bul\b/gi, 'µL');
+  u = u.replace(/\b(?:ul|mcl)\b/gi, 'µL');
   // Lowercase litre after a slash; squared metre ("m2"/"m^2") in eGFR units.
   u = u.replace(/\/l\b/g, '/L');
   u = u.replace(/m\^?2\b/g, 'm²');
