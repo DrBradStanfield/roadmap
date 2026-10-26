@@ -71,6 +71,8 @@ One interesting component of this study was an ongoing measurement of fasting bl
 
 Another study in Lebanon involving 120 adolescent individuals who were given either one teaspoon, two teaspoons, or a tablespoon of apple cider vinegar in the morning before breakfast showed some amount of weight loss after three months.
 
+Correction (October 2026): the journal retracted this trial in September 2025, so its results should not be relied on.
+
 As for the specific mechanism by which this works, it seems to be the same mechanism described above: that apple cider vinegar, or more specifically acetic acid, inhibits the enzyme that breaks down carbohydrates into simple sugars.
 
 Simple sugars are very easy for the body to push into the blood, circulate around the body, and use for both energy and the production of fat for energy storage. Meanwhile, carbohydrates are more difficult for the body to use in this manner but can still be processed for energy more slowly. The result is that food is digested more slowly, providing you energy for longer and reducing your cravings for more food later. This reduction in hunger helps reduce the "calories in" side of the weight equation.
@@ -112,6 +114,6 @@ As with all supplements, just because I discuss them does not mean I recommend t
 2.  Operation Supplement Safety from USU: [https://www.opss.org/article/apple-cider-vinegar-dietary-supplements](https://www.opss.org/article/apple-cider-vinegar-dietary-supplements)
 3.  The effect of apple vinegar consumption on glycemic indices, blood pressure, oxidative stress, and homocysteine in patients with type 2 diabetes and dyslipidemia: A randomized controlled clinical trial: [https://pubmed.ncbi.nlm.nih.gov/31451249/](https://pubmed.ncbi.nlm.nih.gov/31451249/)
 4.  The effect of apple cider vinegar on lipid profiles and glycemic parameters: a systematic review and meta-analysis of randomized clinical trials: [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8243436/](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8243436/)
-5.  Apple cider vinegar for weight management in Lebanese adolescents and young adults with overweight and obesity: a randomized, double-blind, placebo-controlled study: [https://nutrition.bmj.com/content/early/2024/01/18/bmjnph-2023-000823](https://nutrition.bmj.com/content/early/2024/01/18/bmjnph-2023-000823)
+5.  Apple cider vinegar for weight management in Lebanese adolescents and young adults with overweight and obesity: a randomized, double-blind, placebo-controlled study (retracted by the journal in September 2025): [https://nutrition.bmj.com/content/early/2024/01/18/bmjnph-2023-000823](https://nutrition.bmj.com/content/early/2024/01/18/bmjnph-2023-000823)
 6.  Safety and side effects of apple vinegar intake and its effect on metabolic parameters and body weight: a systematic review: [https://pubmed.ncbi.nlm.nih.gov/32170375/](https://pubmed.ncbi.nlm.nih.gov/32170375/)
 7.  The Effects of Vinegar/Acetic Acid Intake on Appetite Measures and Energy Consumption: A Systematic Literature Review: [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9193460/](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9193460/)

@@ -119,7 +119,7 @@ A systematic review and meta-analysis of 11 RCTs (n=866) found that 137-1,000 mc
 
 **Safety:** Trivalent chromium appears to be well tolerated [243]. Adverse effects include watery stools, headache, weakness, nausea, vomiting, constipation, vertigo, and urticaria [99][100]. Chromium does not have an established UL because few serious adverse effects have been linked to dietary intakes [98].
 
-Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) includes 17.5 mcg of chromium in the glycinate form -- well within the Adequate Intake range of 20-35 mcg/day and designed to support normal trace mineral status rather than weight loss.
+Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) v9, sold in the UK and EU, includes 35 mcg of chromium as picolinate, the top of the Adequate Intake range of 20-35 mcg/day; Australia's v8.5 has the same 35 mcg. The US formula (v8) currently has 17.5 mcg as glycinate until it moves to v9, which we're aiming for around mid-November 2026, and Canada's v7 also has 17.5 mcg. The chromium is there to support normal trace mineral status, not weight loss.
 
 ### Conjugated Linoleic Acid (CLA)
 

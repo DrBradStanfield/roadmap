@@ -350,7 +350,7 @@ Chaga is not a typical food because it is hard and woody. Traditional consumptio
 
 ### What Supplements Cannot Replace
 
-A well-formulated multivitamin addresses nutritional gaps far more effectively than mushroom supplements. For comprehensive micronutrient coverage, see a dedicated evidence-based multivitamin rather than relying on functional mushroom products.
+Mushroom supplements are not a source of vitamins and minerals. For comprehensive micronutrient coverage, see a dedicated evidence-based multivitamin rather than relying on functional mushroom products.
 
 ## 8. References
 

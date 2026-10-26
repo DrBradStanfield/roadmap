@@ -1049,7 +1049,7 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'Sleep support',
-      description: 'An umbrella review of meta-analyses found melatonin reduces the time taken to fall asleep and improves sleep quality, with a good safety profile — useful as part of a good sleep-hygiene routine.',
+      description: 'An umbrella review of meta-analyses found melatonin may reduce the time taken to fall asleep and may improve sleep quality, with a good safety profile — useful as part of a good sleep-hygiene routine.',
       ingredients: [
         'Low-dose melatonin',
         'Glycine',

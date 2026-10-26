@@ -580,10 +580,11 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'supplement-sleep': {
-    reason: 'An umbrella review of meta-analyses confirms that melatonin supplementation effectively reduces sleep onset latency and improves sleep quality, with a good safety profile. This supports its use as part of a comprehensive sleep hygiene strategy.',
+    reason: 'An umbrella review of meta-analyses reports that melatonin supplementation may reduce sleep onset latency and improve sleep quality, with a good safety profile. A 2024 dose-response meta-analysis of 26 trials suggests that taking it about 3 hours before bedtime may work better than taking it 30 minutes before. This supports its use as part of a comprehensive sleep hygiene strategy.',
     guidelines: [],
     references: [
       { label: 'Low 2020 – Melatonin efficacy for insomnia (J Psychiatr Res)', url: 'https://doi.org/10.1016/j.jpsychires.2019.10.022' },
+      { label: 'Cruz-Sanabria 2024 – Melatonin timing and dose: dose-response meta-analysis (J Pineal Res)', url: 'https://doi.org/10.1111/jpi.12985' },
     ],
   },
 

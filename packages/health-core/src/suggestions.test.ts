@@ -3041,6 +3041,31 @@ describe('Evidence attachment', () => {
     expect(urls).toContain('https://doi.org/10.2903/j.efsa.2024.9100');
   });
 
+  it('US-07 AC1: sleep support hedges melatonin and times it 3 to 4 hours before sleep (Brad 2026-10-26)', () => {
+    const { inputs, results } = createTestData({}, { bmi: 22 });
+    const sleep = generateSuggestions(inputs, results, 'si').find(s => s.id === 'supplement-sleep')!;
+    expect(sleep.description).toContain('melatonin may reduce the time taken to fall asleep and may improve sleep quality');
+
+    const ev = SUGGESTION_EVIDENCE['supplement-sleep'];
+    expect(ev.reason).toContain('may reduce sleep onset latency');
+    expect(ev.reason).not.toContain('effectively reduces');
+    expect(ev.reason).toContain('about 3 hours before bedtime');
+    expect(ev.references.map(r => r.url)).toContain('https://doi.org/10.1111/jpi.12985');
+
+    const root = join(dirname(fileURLToPath(import.meta.url)), '../../..');
+    const text = readFileSync(join(root, 'roadmap_text.html'), 'utf8');
+    expect(text).toContain('Sleep support (3 to 4 hours before you want to fall asleep)');
+    expect(text).not.toContain('Sleep support (one hour before bed)');
+    expect(text).toContain('10.1111/jpi.12985');
+    expect(text).toContain('within 3-4 hours of waking');
+    expect(text).not.toContain('energy drinks past 9:30am');
+    const algo = readFileSync(join(root, 'health_roadmap_algorithm.md'), 'utf8');
+    expect(algo).toMatch(/`supplement-sleep`[^\n]*3 to 4 hours before the person wants to fall asleep[^\n]*Cruz-Sanabria 2024/);
+    const sleepGuide = readFileSync(join(root, 'docs/guideline/sleep.md'), 'utf8');
+    expect(sleepGuide).toContain('taken 3 to 4 hours before sleep');
+    expect(sleepGuide).toContain('Brad\'s cut-off is 3 to 4 hours after waking');
+  });
+
   it('US-07 AC1: omega-3 card and reason give VITACOG and the reverse FACIT finding, and the WHO 2026 note', () => {
     const { inputs, results } = createTestData({}, { bmi: 22 });
     const omega3 = generateSuggestions(inputs, results, 'si').find(s => s.id === 'supplement-omega3')!;

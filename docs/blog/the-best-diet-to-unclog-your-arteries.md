@@ -87,7 +87,7 @@ This suggests that a low-fat diet plus added fiber can help cardiac health witho
 
 ###  **Trial 3: PREDIMED Study**
 
-We come to the **PREDIMED** study, published in 2013. Researchers recruited individuals at high risk for heart disease and divided them into three groups:
+We come to the **PREDIMED** study. Its main results were first published in 2013, then retracted and republished in 2018 after problems were found with how some participants were randomised; the corrected results were similar. The artery findings below come from a PREDIMED sub-study. Researchers recruited individuals at high risk for heart disease and divided them into three groups:
 
 *   **Control****:** A low-fat diet.
 *   **Intervention Group 1****:** A Mediterranean diet supplemented with extra virgin olive oil (EVOO).
