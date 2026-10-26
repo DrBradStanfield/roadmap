@@ -40,7 +40,7 @@ Brad lays these out across the day, the way his patients live them [Brad, sleep 
 
 - **Same wake time every day,** weekends included. A fixed rise time anchors the body clock, and a steady wake time makes a steady bedtime easier.
 - **Morning daylight.** Open the curtains on waking and aim for at least 30 minutes of daylight, ideally early. Brad's estimate from the light studies is 30 to 60 minutes. Skip sunglasses for the first hour outdoors; protect the skin with clothing and sunscreen, which does not blunt the effect, since it works through the eyes.
-- **Caffeine early only.** Brad's cut-off is about 3 hours after waking [Brad, sleep schedule post]. Caffeine's half-life averages about 5 hours, so an afternoon coffee is still active at bedtime. In a randomised trial, 400 mg of caffeine taken 6 hours before bed still disturbed sleep measured at home, and the authors advise no substantial caffeine for at least 6 hours before bed [Drake 2013]. Brad sees no human evidence for the popular advice to wait 90 minutes after waking before the first coffee.
+- **Caffeine early only.** Brad's cut-off is 3 to 4 hours after waking (Brad, 26 October 2026; his sleep schedule post said about 3 hours [Brad, sleep schedule post]). Caffeine's half-life averages about 5 hours, so an afternoon coffee is still active at bedtime. In a randomised trial, 400 mg of caffeine taken 6 hours before bed still disturbed sleep measured at home, and the authors advise no substantial caffeine for at least 6 hours before bed [Drake 2013]. Brad sees no human evidence for the popular advice to wait 90 minutes after waking before the first coffee.
 
 ### Daytime: keep going
 
@@ -197,7 +197,7 @@ Safety, per NIH: short-term use appears safe for most people, but long-term safe
 
 **Brad's position: diverges from typical consumer products, aligns with the dose evidence.**
 
-Brad keeps melatonin to 1 mg or less, taken 2 to 4 hours before sleep [Brad, melatonin reference]. His Sleep product uses **0.8 mg of sustained-release melatonin** (Melotime®), well below the 3 to 5 mg of immediate-release melatonin in most products. (The V1 formula used 0.3 mg immediate-release; it was replaced in August 2026 and is quoted here only to explain what changed.) His reasoning, as products.md states it:
+Brad keeps melatonin to 1 mg or less [Brad, melatonin reference], taken 3 to 4 hours before sleep (Brad, 26 October 2026; earlier material said 2 to 4 hours). A 2024 meta-analysis of 26 trials found that a longer gap between the dose and bedtime predicted falling asleep faster, and its authors suggest about 3 hours [Cruz-Sanabria 2024]. His Sleep product uses **0.8 mg of sustained-release melatonin** (Melotime®), well below the 3 to 5 mg of immediate-release melatonin in most products. (The V1 formula used 0.3 mg immediate-release; it was replaced in August 2026 and is quoted here only to explain what changed.) His reasoning, as products.md states it:
 
 - The body makes roughly 10 to 80 mcg of melatonin a night (a range statement in Kor 2014, a secondary source). A study that tracked it in the blood found about 22 mcg a night in women and 36 mcg in men [Fourtillan 2001], and overnight urine tests in healthy adults find about 18 to 24 mcg of its breakdown product [Leger 2004].
 - In a study of 2 mg and 4 mg tablets, only about 15% of an oral dose reached the bloodstream [DeMuro 2000]. By that estimate 0.8 mg delivers about 120 mcg, against about 450 mcg for a 3 mg capsule. This is an estimate, not measured for Sleep. It is a few times what the body makes, so never describe it as restoring or replacing a natural level.
@@ -219,7 +219,7 @@ NIH sets the upper limit for magnesium from supplements and medicines at 350 mg 
 
 **What the evidence says.** Three small Japanese trials tested 3 g of glycine before bed. People rated their sleep better and fell asleep faster [Inagawa 2006; Yamadera 2007], and in 7 volunteers whose sleep was cut short, glycine reduced fatigue on the first day and sped reaction times on a vigilance test; the drop in sleepiness was a non-significant trend (p = 0.098), and on day 3 subjective ratings did not differ from placebo [Bannai 2012]. In one trial, overnight recordings showed people reached slow-wave sleep sooner, with no change in sleep architecture [Yamadera 2007]. No trial reported fewer night wakings. Glycine is a calming neuromodulator. In rats it lowered core body temperature, which the researchers suggest may be one way it helps sleep, because body temperature drops as sleep begins [Bannai & Kawai 2012]. Glycine is an amino acid found in food, and 3 g is a modest dose.
 
-**Brad's position.** Sleep contains 2,400 mg of glycine, close to the 3 g used in the trials. (V1 stated 2,500 mg; the V2 label counts the glycine carried in the magnesium chelate, and 2,400 mg is the most that fits in four capsules.) Brad cites the three trials for sleep quality and next-day tiredness and regards glycine as the best-supported ingredient in his sleep stack.
+**Brad's position.** Sleep contains 2,400 mg of glycine, close to the 3 g used in the trials. (V1 stated 2,500 mg; the V2 label counts the glycine carried in the magnesium chelate, and 2,400 mg is the most that fits in four capsules.) Brad cites the three trials for sleep quality and next-day tiredness: in small trials, 3 g improved rated sleep quality.
 
 ### L-theanine
 
@@ -240,7 +240,7 @@ It was well tolerated. No guideline covers it.
 - **Kava.** Little research for sleep, and it has been linked to liver injury that is sometimes serious or fatal [NCCIH, sleep disorders]. Avoid.
 - **Chamomile.** No conclusive trial evidence; allergy is possible in people sensitive to ragweed [NCCIH, sleep disorders].
 - **Tryptophan and 5-HTP.** Precursors of serotonin and melatonin, with very limited insomnia data [NCCIH, sleep disorders]. The AASM suggests clinicians not use L-tryptophan for chronic insomnia (weak recommendation) [Sateia 2017]. Tryptophan taken with medicines that affect serotonin may cause life-threatening serotonin toxicity [NCCIH, sleep disorders]. SSRI antidepressant labels list tryptophan among the drugs that raise the risk of serotonin syndrome [FDA, Zoloft]. Serotonin syndrome can be deadly: for tremor, a racing heart, a high temperature, agitation or severe confusion, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
-- **GABA.** Little evidence for sleep, and it is unclear how much oral GABA reaches the brain. No guideline covers it.
+- **GABA.** Little evidence for sleep. Oral GABA is absorbed [Li 2015], but it is unclear whether it crosses the blood-brain barrier [Boonstra 2015]. No guideline covers it.
 
 ### Sleep by Dr Brad
 
@@ -468,6 +468,7 @@ Guideline recommendations the Health Roadmap does not cover with a dedicated sug
 - Low TL et al. 2020. Melatonin and melatonin agonists in insomnia: umbrella review. J Psychiatr Res (DOI: 10.1016/j.jpsychires.2019.10.022; PMID 31715492)
 - Ferracioli-Oda E et al. 2013. Melatonin for primary sleep disorders: meta-analysis. PLoS One (DOI: 10.1371/journal.pone.0063773; PMID 23691095)
 - Zhdanova IV et al. 1996. Low oral doses of melatonin 2 to 4 hours before bedtime in young adults. Sleep (PMID 8843534)
+- Cruz-Sanabria F et al. 2024. Optimizing the time and dose of melatonin: dose-response meta-analysis of 26 RCTs. J Pineal Res (DOI: 10.1111/jpi.12985; PMID 38888087)
 - Zhdanova IV et al. 2001. Melatonin treatment for age-related insomnia. J Clin Endocrinol Metab (DOI: 10.1210/jcem.86.10.7901; PMID 11600532)
 - DeMuro RL et al. 2000. Absolute bioavailability of oral melatonin. J Clin Pharmacol (DOI: 10.1177/00912700022009422; PMID 10883420)
 - Fourtillan JB et al. 2001. Melatonin secretion in young and older adults. Am J Physiol Endocrinol Metab (DOI: 10.1152/ajpendo.2001.280.1.E11; PMID 11120654)
@@ -487,6 +488,10 @@ Guideline recommendations the Health Roadmap does not cover with a dedicated sug
 - Moulin M et al. 2024. L-theanine for 28 days in adults with moderate stress. Neurol Ther (DOI: 10.1007/s40120-024-00624-7; PMID 38758503)
 - Sarris J et al. 2019. L-theanine as adjunct in generalized anxiety disorder. J Psychiatr Res (DOI: 10.1016/j.jpsychires.2018.12.014; PMID 30580081)
 - Lyon MR et al. 2011. L-theanine and sleep in boys with ADHD. Altern Med Rev (PMID 22214254)
+
+**GABA**
+- Li J et al. 2015. Oral GABA in healthy volunteers: pharmacokinetics and pharmacodynamics. Front Pharmacol (DOI: 10.3389/fphar.2015.00260; PMID 26617516)
+- Boonstra E et al. 2015. GABA as a food supplement: effects on brain and behaviour. Front Psychol (DOI: 10.3389/fpsyg.2015.01520; PMID 26500584)
 
 **Brad's own material**
 - Brad, sleep schedule post: https://drstanfield.com/blogs/articles/sleep-schedule-wake-refreshed

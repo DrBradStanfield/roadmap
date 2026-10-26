@@ -700,7 +700,7 @@ When active, the generic `fiber` suggestion is suppressed (lipid-diet covers fib
 | Oats | Beta-glucan binds bile acids | 5–10% (3g/day beta-glucan ≈ 75g dry oats) |
 | Walnuts | Unsaturated fats, ALA omega-3 | 3–7% (~40g/day) |
 | Almonds | Unsaturated fats, plant sterols | 3–5% (~45g/day) |
-| Ground flaxseed | Soluble fibre + ALA omega-3 | 5–10% (~30g/day) |
+| Ground flaxseed | Soluble fibre + ALA omega-3 | About 4–5% for ground or whole seed (~30g/day): pooled whole-flaxseed trials lowered LDL by 0.16 mmol/L (Pan 2009), about 4–5% of a typical LDL; pooling all forms, including oil, gives less (4.2 mg/dL, Hadi 2020) |
 | Edamame | Soy protein replacing animal protein | 3–5% |
 | Extra-virgin olive oil | Monounsaturated fat replacing butter/saturated fat | Modest direct LDL effect |
 
@@ -718,6 +718,8 @@ Beans, lentils, chickpeas, and mixed vegetables — high in soluble fibre but al
 - Sabaté 2010 — Nut consumption and lipids (Arch Intern Med): [10.1001/archinternmed.2010.79](https://doi.org/10.1001/archinternmed.2010.79)
 - Wei 2009 — Psyllium and cholesterol (Eur J Clin Nutr): [10.1038/ejcn.2008.49](https://doi.org/10.1038/ejcn.2008.49)
 - Jovanovski 2018 — Psyllium, LDL, non-HDL and apoB meta-analysis (Am J Clin Nutr): [10.1093/ajcn/nqy115](https://doi.org/10.1093/ajcn/nqy115)
+- Pan 2009 — Flaxseed and blood lipids meta-analysis (Am J Clin Nutr): [10.3945/ajcn.2009.27469](https://doi.org/10.3945/ajcn.2009.27469)
+- Hadi 2020 — Flaxseed and lipid profile, 62 RCTs (Pharmacol Res): [10.1016/j.phrs.2019.104622](https://doi.org/10.1016/j.phrs.2019.104622)
 - FDA 21 CFR 101.81 — health claim: 7 g or more a day of soluble fibre from psyllium seed husk
 
 ---
@@ -1012,7 +1014,7 @@ naming/linking a branded product is advertising a therapeutic good).
 | `supplement-creatine` | Creatine | Creatine monohydrate, 3–5 g/day | Strength/lean mass (Kreider 2017). Cognition: that the memory evidence is clear and consistent is Dr Stanfield's judgement, not a trial finding; formal reviews are more mixed. Avgerinos 2018 (systematic review) and two meta-analyses (Prokopidis 2023; Xu 2024, 16 RCTs, 492 adults) reported better memory, but both meta-analyses pooled several non-independent tests per participant (Prokopidis authors' reply 2023; Citherlet 2026 commentary on Xu). The Prokopidis authors' reanalysis found no clear overall memory benefit (SMD 0.19, P = 0.15) except in older adults aged 66–76 (SMD 0.80). Xu 2024: no effect on overall cognition or executive function; GRADE certainty moderate for memory, low for attention and processing speed. EFSA 2024: cause-and-effect not established for any cognitive domain; a working-memory effect only at 20 g/day for 5–7 days, not at 2.2–14 g/day or 5 g/day for 6 weeks after a 5-day loading phase. Text only: the card is always shown and no rule or dose changed |
 | `supplement-collagen` | Collagen peptides | Hydrolyzed collagen peptides; may improve skin hydration and elasticity | Skin hydration/elasticity meta-analysis (Batool 2026) |
 | `supplement-omega3` | Omega-3 | EPA/DHA, up to 1 g/day combined | CV benefits (Bernasconi 2021). The cognitive benefit of B vitamins may depend on good omega-3 status: in one trial, VITACOG, B vitamins slowed brain atrophy only with good omega-3 status, which was measured, not randomised (Jernerén 2015, Oulhaj 2016). The Dutch FACIT trial found the reverse: 800 mcg/day folic acid improved global cognition and processing speed only with lower omega-3 (van Soest 2021; 791 adults aged 50–70 with raised homocysteine; post hoc). WHO 2026 guideline recommends against omega-3, B, E and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia without a diagnosed deficiency (strong recommendation, moderate certainty; stated reason: 'unexpected harmful effects that outweigh any potential benefits'); it validated its 2019 advice without reassessing supplements, did not consider the omega-3 analyses of VITACOG or FACIT, and does not address omega-3 for heart health. That everyone may reasonably consider up to 1 g/day is Dr Stanfield's judgement, not a trial finding: CV benefit may rise with dose, but so may atrial fibrillation risk: AF HR 1.49 in trials testing >1 g/day vs 1.12 at ≤1 g/day (Gencer 2021). The card asks people with AF or on a blood thinner to check with their doctor first. Text only: the card is always shown and no dose is recorded or checked |
-| `supplement-sleep` | Sleep support | Low-dose melatonin; glycine; magnesium glycinate | Melatonin (Low 2020) |
+| `supplement-sleep` | Sleep support | Low-dose melatonin; glycine; magnesium glycinate. Timing (3 to 4 hours before the person wants to fall asleep) appears in roadmap_text only; the card carries no timing | Melatonin may reduce sleep onset latency (Low 2020); a longer gap between dose and bedtime predicted faster sleep onset, and the authors suggest about 3 hours (Cruz-Sanabria 2024; pooled trials of other doses and forms, not 0.8 mg sustained-release) |
 
 ---
 

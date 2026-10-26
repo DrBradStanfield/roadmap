@@ -215,7 +215,7 @@ Chia seeds have no official Recommended Dietary Allowance (RDA). In 2019, a Euro
 - **Egg substitute:** Mix ground chia seeds with water and let the gel form before using it to bind baked goods.
 - **Smoothies and cereals:** Add chia seeds to smoothies, overnight oats, or cereals. When adding to dishes, include additional liquid to account for the seeds' water-absorbing properties.
 
-Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) includes 2.5 g of Psyllium Husk — another soluble fiber source — which provides complementary fiber and gut health benefits alongside chia seeds in the diet. Psyllium husk, like chia seed fiber, forms a gel in the digestive tract that supports digestive regularity and may help maintain healthy cholesterol levels.
+Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) also contains fiber. The US formula has 2.5 g of psyllium husk, a soluble fiber. The newer v9 formula, already shipping as Unflavored powder in Europe, swaps it for 5 g of acacia fiber.
 
 ### Storage
 

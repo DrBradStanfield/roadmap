@@ -86,7 +86,7 @@ The NIH fact sheet notes that no studies had compared absorption of the differen
 
 **For minimizing TMAO risk:** Phosphatidylcholine and eggs did not raise fasting TMAO in the 2021 trial [18]. If you have heart disease or high cardiovascular risk, talk to your doctor before taking high doses of choline bitartrate.
 
-Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) includes 181.5 mg of choline as choline bitartrate, providing a moderate dose intended to help close the widespread dietary gap in choline intake. At this level — well below the doses shown to significantly elevate TMAO in clinical studies — the form offers a practical way to contribute toward the Adequate Intake when combined with dietary choline from foods like eggs.
+Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) is moving from choline bitartrate to citicoline. The UK and EU capsules (v9) already contain 500 mg of CDP-choline (citicoline), and the US capsules are aiming to switch around mid-November 2026. Researchers have suggested that citicoline may be less likely to raise TMAO than other choline sources, though this has not been tested in a human trial [20]. Until the switch, the US capsules (v8) contain 181.5 mg of choline as choline bitartrate, as do the capsules sold outside the UK and EU and most MicroVitamin powder. That is lower than the doses tested in the TMAO studies above, such as 600 mg in the meal study [27]; we found no trial of lower doses. Either form can help close the dietary gap toward the Adequate Intake alongside choline from foods like eggs.
 
 ## 3. Evidence for Health Benefits
 

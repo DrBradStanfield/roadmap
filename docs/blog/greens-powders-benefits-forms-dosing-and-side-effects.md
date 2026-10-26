@@ -213,7 +213,7 @@ For individuals with low fruit and vegetable intake, the question arises whether
 - **Greens powders** aim to provide phytonutrients and antioxidants but have limited evidence of meaningful benefits, may suffer from poor bioavailability of certain compounds, and are not proven superior to multivitamins [1][3].
 - **Experts, including registered dietitians and the Cleveland Clinic, emphasize a food-first approach** and recommend that greens powders be viewed as an adjunct to, not a replacement for, diverse whole-food consumption [1][3].
 
-Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) takes a different approach from greens powders — rather than including dozens of plant ingredients at undisclosed doses, it provides 26 individually dosed, evidence-based vitamins and minerals at amounts supported by randomized controlled trials. For individuals looking to fill micronutrient gaps, a well-formulated multivitamin with transparent dosing offers greater dose certainty than a proprietary greens blend.
+Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) takes a different approach from greens powders. Rather than dozens of plant ingredients at undisclosed doses, it has 26 ingredients in the US v8 formula (25 in the UK and EU v9 formula), each with its dose listed on the label. For individuals looking to fill micronutrient gaps, a well-formulated multivitamin with transparent dosing offers greater dose certainty than a proprietary greens blend.
 
 ## 4. Recommended Dosing
 

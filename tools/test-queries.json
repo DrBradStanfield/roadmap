@@ -7730,9 +7730,9 @@
       "sleep"
     ],
     "must_match": [
-      "(?:within|about) (?:3|three) hours (?:of|after) (?:you )?wak|9:30"
+      "(?:3|[Tt]hree) ?(?:to|-|–) ?(?:4|four) hours (?:of|after) (?:you )?wak"
     ],
-    "notes": "US-15 AC39 (Codex R1 on the sleep rewrite), pre-registered 2026-10-26; not run. Brad's caffeine cut-off: about 3 hours after waking, by about 9:30 am. Passes: a cut-off about 3 hours after waking or by 9:30 am. Fails: no cut-off. The 90-minute must_not_match was dropped (sleep re-check S1): it false-failed on denials."
+    "notes": "US-15 AC39 (Codex R1 on the sleep rewrite), pre-registered 2026-10-26; not run. Brad's caffeine cut-off: 3 to 4 hours after waking (Brad 2026-10-26; the 9:30 am clock time was dropped). Passes: a cut-off 3 to 4 hours after waking. Fails: no cut-off. The 90-minute must_not_match was dropped (sleep re-check S1): it false-failed on denials."
   },
   {
     "category": "sleep-guideline-rewrite",

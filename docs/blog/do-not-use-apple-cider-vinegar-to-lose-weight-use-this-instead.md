@@ -68,13 +68,15 @@ Now let’s talk about apple cider vinegar’s effect on weight loss, as this is
 
 One notable study involved obese participants in Japan who consumed diluted apple cider vinegar twice a day. There were three groups: a control (placebo) group, a low-dose vinegar group, and a high-dose vinegar group. This study was carefully blinded: none of the participants or researchers knew who was receiving the real vinegar versus the control beverage.
 
-After three months, the low-dose vinegar group lost an average of 2.6 pounds. The high-dose vinegar group lost about 4.4 pounds \[2\]. While the study authors noted that the weight reduction wasn’t large, it was still noteworthy that there was a difference.
+After three months, the low-dose vinegar group lost an average of 2.6 pounds. The high-dose vinegar group lost about 4.2 pounds (1.9 kg) \[2\]. While the study authors noted that the weight reduction wasn’t large, it was still noteworthy that there was a difference.
 
 **Study in Lebanon**
 
 A more recent study involving overweight young people in Lebanon used a similar protocol. Participants were divided into groups that drank different amounts of diluted apple cider vinegar, while a placebo group drank water with a similar appearance and taste. After three months, those who consumed apple cider vinegar lost between 11 and 16 pounds on average, whereas the placebo group had no significant changes.
 
-Despite the larger effect in this second study, there remain reasons for caution—mainly the small number of participants and the unknown long-term effects.
+Correction (October 2026): the journal retracted this trial in September 2025, so its results should not be relied on.
+
+Because the second study was retracted, only the small Japanese trial remains, and it too calls for caution: it was small, and the long-term effects are unknown.
 
 When we look at all of these findings collectively, the picture is still incomplete. You might get a small benefit from apple cider vinegar if you’re trying to shed a few pounds, but the overall data set is too limited and inconsistent to make a strong recommendation. That’s why apple cider vinegar does not appear in standard obesity or diabetes guidelines as a reliable tool for weight management or blood sugar control.
 

@@ -65,7 +65,7 @@ Psyllium is also one of [the supplements I take daily](https://drstanfield.com/p
 
 ### Omega-3 Fatty Acids
 
-Omega-3 fatty acids are amino acids commonly found in fatty fish like mackerel, sardines, and salmon, as well as flaxseeds and chia seeds. They can also come from fish oil supplements, though in general, if you can get your nutrients from diet rather than from a supplement, you should.
+Omega-3 fatty acids are healthy fats commonly found in fatty fish like mackerel, sardines, and salmon, as well as flaxseeds and chia seeds. They can also come from fish oil supplements, though in general, if you can get your nutrients from diet rather than from a supplement, you should.
 
 [A large meta-analysis](https://www.ahajournals.org/doi/10.1161/JAHA.123.029512) from the American Heart Association found a near-linear decrease in triglyceride and LDL cholesterol as doses of omega-3s increased, suggesting a significant beneficial effect from omega-3s for heart health.
 

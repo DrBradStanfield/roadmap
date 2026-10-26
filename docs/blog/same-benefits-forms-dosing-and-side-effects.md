@@ -182,7 +182,7 @@ After SAMe donates its methyl group, the homocysteine left over is recycled to m
 - **Methylfolate + vitamin B12:** the enzyme methionine synthase needs folate and vitamin B12 to convert homocysteine back to methionine [50][51].
 - **Trimethylglycine (TMG/betaine):** betaine and choline provide methyl groups by a separate route, and betaine supplements lower homocysteine after a methionine load [31].
 
-Low folate, B12 or betaine can therefore limit SAMe production and raise homocysteine [31][50]. Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) includes TMG (500 mg), methylated folate (200 mcg), and methylated B12 (12 mcg) — all of which support the methylation cycle that produces and recycles SAMe.
+Low folate, B12 or betaine can therefore limit SAMe production and raise homocysteine [31][50]. Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) contains TMG (500 mg), methylated folate and methylated B12 (12 mcg). In version 9, the UK and EU label, shipping now, prints 400 mcg of 5-MTHF calcium, and the US v9 is set at 400 mcg DFE, aimed for around mid-November 2026. Until then, US customers get v8, with 200 mcg DFE.
 
 ## 5. Safety and Side Effects
 
