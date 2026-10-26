@@ -6699,7 +6699,7 @@
     "category": "classifier-greeting",
     "source": "chat-health-2026-W43",
     "expected_classification": "GREETING",
-    "notes": "2026-W43 chat-health: YouTube peptide-vendor spam burst on 10-21 (19 comments naming one vendor; vendor name replaced with the placeholder VendorX). Desired: skip (no reply). Production ROUTE on 14 of them; replay ROUTE 5/5 on three texts; the bot replied publicly to 3, one naming the vendor. KNOWN-FAIL until the classifier prompt gets a spam/promotion rule (Tier 0 proposal W43)."
+    "notes": "2026-W43 chat-health: YouTube peptide-vendor spam burst on 10-21 (19 comments naming one vendor; vendor name replaced with the placeholder VendorX). Desired: skip (no reply). Production ROUTE on 14 of them; replay ROUTE 5/5 on three texts; the bot replied publicly to 3, one naming the vendor. The spam rule (US-15 AC41, Brad 2026-10-26) targets it."
   },
   {
     "query": "Kan ik de MicroVitamin van Dr Brad gebruiken met een nierfunctie (eGFR) van ongeveer 40?",
@@ -7847,5 +7847,33 @@
       "(?<!(?:not|n't|never) )\\b(?:mangosteen )?(?:juice )?(?:is |it's )?(?:completely |perfectly )?(?:safe|harmless) for (?:everyone|anyone|daily use)"
     ],
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-26 (masters-new-17); not run. Key safety points: \"Severe lactic acidosis was reported in a person using mangosteen juice as a supplement [42]. Its general signs include nausea, vomiting, abdominal pain and fast or difficult breathing [82]. If these appear, call your local emergency number\". Passes: one case report; the emergency signs and the emergency number. Fails: saying the juice is safe for everyone."
+  },
+  {
+    "query": "My wife laughed when I bought another health book. Then I finished Hidden Cures by Jane Doe and cancelled three supplement subscriptions. She's not laughing now.",
+    "category": "classifier-greeting",
+    "source": "us-15-ac41-2026-10-26",
+    "expected_classification": "GREETING",
+    "notes": "US-15 AC41: the W43 book-promotion spam template (title and author replaced). Recommends what to read, asks nothing: GREETING, so the YouTube bot does not reply."
+  },
+  {
+    "query": "Magnesium glycinate from Thorne fixed my night cramps within a week.",
+    "category": "classifier-greeting",
+    "source": "us-15-ac41-2026-10-26",
+    "expected_classification": "ROUTE",
+    "notes": "US-15 AC41 guard: a personal health experience naming a brand is NOT spam. Must stay ROUTE so the bot can answer."
+  },
+  {
+    "query": "Is VendorX a legit place to buy BPC-157? Their HPLC sheets look good.",
+    "category": "classifier-greeting",
+    "source": "us-15-ac41-2026-10-26",
+    "expected_classification": "ROUTE",
+    "notes": "US-15 AC41 guard: a question about a seller is ROUTE, not spam (the BPC-157 post answers it)."
+  },
+  {
+    "query": "Read the 2024 Cochrane review on vitamin D and falls, it changes everything.",
+    "category": "classifier-greeting",
+    "source": "us-15-ac41-2026-10-26",
+    "expected_classification": "ROUTE",
+    "notes": "US-15 AC41 guard (adversary R8): a viewer citing a study as evidence is NOT spam and should get an answer. KNOWN-FAIL on the shipped prompt (GREETING 5/5, 2026-10-26): three rewordings that fixed it cost spam recall (18/20 → 6/20, 14/20, 9/20 majority) and made Haiku invent SPAM or PROMOTION labels. Brad decides whether to trade."
   }
 ]

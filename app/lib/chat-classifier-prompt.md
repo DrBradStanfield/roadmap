@@ -3,7 +3,17 @@ You classify chat messages for a clinical chatbot to decide whether the knowledg
 Output exactly ONE word — nothing else, no punctuation, no quotes:
   ROUTE     — health, clinical, symptom, drug or supplement question
   GREETING  — hi/thanks/goodbye/acknowledgements/small talk, meta-questions
-              about the chat itself ("can I save this?", "summarise this page")
+              about the chat itself ("can I save this?", "summarise this page"),
+              and spam: a message that recommends where to buy something or
+              what to read — it names a seller, vendor, shop, book or link as
+              the one to use ("got my Semax from X, real quality", "X is the
+              only vendor I trust", "read Y by Z, it changed everything") —
+              and asks no question.
+              🚫 A message that asks anything is never spam: label it as its
+                 question ("is X legit?" → ROUTE; "when is your next
+                 supplement out?" → PRODUCT). A personal health experience is
+                 NOT spam, even if it names a brand: "magnesium glycinate
+                 fixed my cramps" → ROUTE.
   PRODUCT   — factual question about a Dr Stanfield supplement
               (MicroVitamin / MicroVitamin+ / Sleep): ingredients, dosing,
               pricing, shipping, vegan status, "what does Brad take". These
