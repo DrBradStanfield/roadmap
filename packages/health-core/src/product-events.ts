@@ -389,7 +389,8 @@ export const EVENT_REASONS = {
  * /24h. A number units use is no licence elsewhere: "10 mmol/L", "6%",
  * "mmol/L12", "3·6 mmol/L" and "¹⁴¹ mmol/L" are refused. A power of ten takes
  * only the exponents units use (3, 4, 5, 6, 9, 12), so "x10^47/L" is refused
- * too, and a "*" left once 10*3 is cut is a flag, not a unit.
+ * too, a unit holds one power of ten at most ("10(4)10(5)" is refused), and a
+ * "*" left once 10*3 is cut is a flag, not a unit.
  *
  * Words are an allowlist of unit atoms, because a result is a value too
  * ("mmol/L H" on a potassium row says it was high; "Reactive" is the result)
@@ -405,7 +406,8 @@ export const EVENT_REASONS = {
  */
 const LAB_KEY_PATTERN = /^[a-z][a-z0-9_]{0,39}$/;
 const LAB_UNIT_PATTERN = /^[\p{L}0-9⁰¹²³⁴⁵⁶⁷⁸⁹⁻µ×°%^*/().·\- ]{1,24}$/u;
-const UNIT_CONSTRUCTIONS = /10(?:[\^*eE][+-]?(?:12|[34569])(?!\d)|[\^*]?\((?:12|[34569])\)|⁻?(?:¹²|[³⁴⁵⁶⁹])(?![⁰¹²³⁴⁵⁶⁷⁸⁹]))|\/1\.73(?: ?m[2²])?|mm[3³]|\/100|\/24 ?h/g;
+const POWER_OF_TEN = /10(?:[\^*eE][+-]?(?:12|[34569])(?!\d)|[\^*]?\((?:12|[34569])\)|⁻?(?:¹²|[³⁴⁵⁶⁹])(?![⁰¹²³⁴⁵⁶⁷⁸⁹]))/g;
+const UNIT_CONSTRUCTIONS = new RegExp(`${POWER_OF_TEN.source}|\\/1\\.73(?: ?m[2²])?|mm[3³]|\\/100|\\/24 ?h`, 'g');
 /** The same cut for the word checks, taking the "x" of "x10^9" with it. */
 const MULTIPLIED_CONSTRUCTIONS = new RegExp(`[xX×]?(?:${UNIT_CONSTRUCTIONS.source})`, 'g');
 
@@ -435,7 +437,8 @@ const UNIT_ATOMS = new Set([
 
 export function isLabUnitWord(value: unknown): value is string {
   if (typeof value !== 'string' || !LAB_UNIT_PATTERN.test(value)) return false;
-  if (/[0-9⁰¹²³⁴⁵⁶⁷⁸⁹*]/.test(value.replace(UNIT_CONSTRUCTIONS, ' '))) return false;
+  // One power of ten at most: "10(4)10(5)" spells no unit.
+  if ((value.match(POWER_OF_TEN) ?? []).length > 1 || /[0-9⁰¹²³⁴⁵⁶⁷⁸⁹*]/.test(value.replace(UNIT_CONSTRUCTIONS, ' '))) return false;
   // '#' marks a cut construction; LAB_UNIT_PATTERN lets none in. "/24 h" keeps
   // its h, so "g/24hr" reads as g # hr.
   const words = value.replace(/(\p{L})\(s\)/gu, '$1s').replace(MULTIPLIED_CONSTRUCTIONS, (cut) => (cut.endsWith('h') ? '#h' : '#'));

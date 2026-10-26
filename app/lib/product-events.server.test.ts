@@ -620,7 +620,8 @@ describe('the refused-unit counter', () => {
       expect(parseProductEvent({ eventName: 'lab_unit_refused', visitorId: VISITOR, metadata: { key: 'wbc', unit } }), unit)
         .toMatchObject({ metadata: { key: 'wbc', unit } });
     }
-    for (const unit of ['x10(47)/L', '10(8)/L', '10(3)(3)/uL', 'x10(3) 5/uL', '10(3)5/uL', 'x10((3))/uL', 'x103/uL']) {
+    // One power of ten per unit (adversary R3): two spell no unit.
+    for (const unit of ['x10(47)/L', '10(8)/L', '10(3)(3)/uL', 'x10(3) 5/uL', '10(3)5/uL', 'x10((3))/uL', 'x103/uL', '10(4)10(5)', '10^9 10^9/L', 'x10(3)x10^3/uL', '10(3)/10^9/L']) {
       expect(isLabUnitWord(unit), unit).toBe(false);
     }
   });
