@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll, beforeEach, afterAll } from 'vitest';
-import { isLabUnitWord, MCP_OAUTH_DETAILS, PRODUCT_EVENT_NAMES, SERVER_ONLY_EVENT_NAMES } from '../../packages/health-core/src/product-events';
+import { isLabUnitWord, LAB_UNIT_BLANK, MCP_OAUTH_DETAILS, PRODUCT_EVENT_NAMES, SERVER_ONLY_EVENT_NAMES } from '../../packages/health-core/src/product-events';
 import { acceptedLabUnits, CATALOG_UNITS, LAB_CATALOG } from '../../packages/health-core/src/lab-catalog';
 import { UNIT_DEFS } from '../../packages/health-core/src/units';
 import { parseProductEvent, productEventSchema, SERVER_VISITOR_ID } from './product-events.server';
@@ -610,6 +610,29 @@ describe('the refused-unit counter', () => {
     ])]);
     expect(spellings.size).toBeGreaterThan(40);
     expect([...spellings].filter((unit) => !isLabUnitWord(unit))).toEqual([]);
+  });
+
+  // US-21 AC11, AC22 (product-health W43): 27 blood counts lost their unit on
+  // the row, so the counter could not say which spelling to teach next.
+  it('US-21 AC11, AC22 — keeps a bracketed power of ten, only with an exponent units use', () => {
+    for (const unit of ['x10(3)/uL', '10(9)/L', 'X10(12)/L', '10^(9)/L', 'x10*(3)/uL', 'x10(6)/mcL', 'x10(3)/µL']) {
+      expect(isLabUnitWord(unit), unit).toBe(true);
+      expect(parseProductEvent({ eventName: 'lab_unit_refused', visitorId: VISITOR, metadata: { key: 'wbc', unit } }), unit)
+        .toMatchObject({ metadata: { key: 'wbc', unit } });
+    }
+    for (const unit of ['x10(47)/L', '10(8)/L', '10(3)(3)/uL', 'x10(3) 5/uL', '10(3)5/uL', 'x10((3))/uL', 'x103/uL']) {
+      expect(isLabUnitWord(unit), unit).toBe(false);
+    }
+  });
+
+  it('US-21 AC11, AC22 — a blank unit is its own closed word, never the empty string', () => {
+    expect(parseProductEvent({ eventName: 'lab_unit_refused', visitorId: VISITOR, metadata: { key: 'wbc', unit: LAB_UNIT_BLANK } }))
+      .toMatchObject({ metadata: { key: 'wbc', unit: LAB_UNIT_BLANK } });
+    for (const unit of ['', ' ', '(blank) 5', '(Blank)']) {
+      expect(parseProductEvent({ eventName: 'lab_unit_refused', visitorId: VISITOR, metadata: { key: 'wbc', unit } }), unit).toBeNull();
+    }
+    // Only the refused-unit counter carries it.
+    expect(parseProductEvent({ eventName: 'lpa_unit_selected', visitorId: VISITOR, metadata: { unit: LAB_UNIT_BLANK } })).toBeNull();
   });
 
   it('refuses a key that is not a catalogue word', () => {
