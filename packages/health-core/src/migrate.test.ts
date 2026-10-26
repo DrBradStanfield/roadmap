@@ -575,6 +575,28 @@ describe('US-21 phase 3 — legacy lab rows are corrected into SI at load', () =
     expect(stableStringify(migrateFile(fileWith(leftAlone), OPTS).labValues)).toBe(stableStringify(leftAlone));
   });
 
+  it('US-21 AC22 — legacy cells/mcL and reticulocyte x10(12)/L or 10¹²/L rows convert on load, once', () => {
+    const rows = [
+      labRow({ id: 'w1', metricName: 'WBC', value: 6200, unit: 'cells/mcL', referenceLow: 4000, referenceHigh: 11000 }),
+      labRow({ id: 'r1', metricName: 'Reticulocytes', value: 0.05, unit: 'x10(12)/L', referenceLow: 0.02, referenceHigh: 0.1 }),
+      labRow({ id: 'r2', metricName: 'Reticulocytes', value: 0.05, unit: '10¹²/L', referenceLow: 0.02, referenceHigh: 0.1, recordedAt: '2026-07-15' }),
+    ];
+    const out = migrateFile(fileWith(rows), OPTS);
+    expect(out.labValues).toHaveLength(6);
+    for (const id of ['w1', 'r1', 'r2']) expect(out.labValues.find((l) => l.id === id)).toMatchObject({ status: 'entered-in-error' });
+    expect(out.labValues.find((l) => l.id === 'w1#si')).toMatchObject({
+      value: 6.2, unit: '×10⁹/L', referenceLow: 4, referenceHigh: 11, status: 'active', correctsId: 'w1',
+    });
+    for (const id of ['r1', 'r2']) {
+      expect(out.labValues.find((l) => l.id === `${id}#si`), id).toMatchObject({
+        value: 50, unit: '×10⁹/L', referenceLow: 20, referenceHigh: 100, status: 'active', correctsId: id,
+      });
+    }
+    // The second load is a no-op: the #si rows are already canonical.
+    const twice = migrateFile(JSON.parse(JSON.stringify(out)), OPTS);
+    expect(stableStringify(twice.labValues)).toBe(stableStringify(out.labValues));
+  });
+
   it('US-21 phase 3 — a v1 copy merged with a migrated copy converges: no #dup ids, one active row per slot', () => {
     const v1 = migrateFile(fileWith([labRow({ id: 'l1' })]), OPTS);
     const other = migrateFile(fileWith([labRow({ id: 'l1' })]), { ...OPTS, deviceId: 'dev_b' });

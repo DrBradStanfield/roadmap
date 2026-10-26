@@ -180,3 +180,17 @@ duplicates.
   (roadmap-data.ts:206), so the counter goes blind where it matters: W43 had 27 unit-less
   blood-count refusals from 4 visitors (W42: 3). A rise means a blank unit or an unknown spelling;
   probe with labUnitTaken first (a taken spelling never fires), never read it as noise.
+- **2026-10-27 [instrumentation, W43 follow-up]** After the be7b1b58 deploy, `lab_unit_refused` sends
+  `(blank)` for a blank or missing unit and keeps bracketed powers of ten (`x10(3)/uL`): a unit-less
+  row now means an untrusted spelling only, never a blank. The 27 W43 rows' likely cause, bracketed
+  exponents, is folded into the catalogue (US-21 AC22), but it is a hypothesis: if count refusals with
+  `(blank)` appear, the extractor is blanking units; if bracketed units still appear, it's another test.
+- **2026-10-27 [W43 follow-up, main session]** Status of the W43 asks when W44 runs:
+  CI red: fixed 10-26 (zod 4.6.7 upgrade + body-parser/undici/fast-uri, 2be7879e/69b6b78b; deployed).
+  Nine stale "Deploying" issues: closed. Duplicate US-49: the subscription story is US-59 (US-57/58 were
+  taken; ef3b226f). Auto-ship exit-141: patch written for Brad (both `| head` pipes → jq slices);
+  workflow files are Brad-only, so check whether he applied it. #167: PR #158 merged 10-18, nothing
+  left to decide; awaiting Brad's close. Urine-creatinine user: her 10-21 reply holds one build need
+  (lab-printed eGFR when no serum creatinine: #166 option 6, plus a way to retire wrong rows without a
+  replacement, option 5) and two clinical questions for Brad (body-fat-aware weight target; lipid
+  targets without CAC/CIMT inputs); still unanswered: Brad's to reply. Referrer key: not picked up.

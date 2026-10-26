@@ -662,6 +662,74 @@ describe('US-21 AC16 — mm3 and mm³ fold to µL', () => {
 });
 
 // ---------------------------------------------------------------------------
+// US-21 AC22 — a power of ten in brackets or superscript, and mcL, are the
+// spellings the catalogue already takes.
+// ---------------------------------------------------------------------------
+// product-health W43 `lab_unit_refused`: from 2026-10-20, 27 blood counts from
+// 4 visitors were refused with no unit on the row, so the spelling failed both
+// the catalogue and the counter's unit check. "x10(3)/uL" (a bracketed
+// exponent) is the shape that does: the counter takes no digit outside a known
+// construction. A fold is spelling only: no factor changes, and a test that
+// refused the folded-to spelling still refuses it.
+describe('US-21 AC22 — bracketed and superscript powers of ten, and mcL, fold', () => {
+  const entryOf = (name: string) => resolveLabCatalogEntry(name)!;
+
+  it('US-21 AC22 — folds each spelling to the one the catalogue takes', () => {
+    const folds: Array<[string, string]> = [
+      ['x10(3)/uL', '×10³/µL'], ['X10(3)/UL', '×10³/µL'], ['x10(9)/L', '×10⁹/L'], ['x 10(9)/L', '×10⁹/L'],
+      ['10(9)/L', '×10⁹/L'], ['x10(12)/L', '×10¹²/L'], ['x10(6)/uL', '×10⁶/µL'], ['10(3)/uL', '×10³/µL'],
+      ['10^(9)/L', '×10⁹/L'], ['x10^(3)/uL', '×10³/µL'], ['x10*(3)/uL', '×10³/µL'],
+      ['x10³/µL', '×10³/µL'], ['× 10³/µL', '×10³/µL'], ['10³/µL', '×10³/µL'], ['x10⁹/L', '×10⁹/L'], ['x10¹²/L', '×10¹²/L'],
+      ['x10(3)/mcL', '×10³/µL'], ['x10E3/mcL', '×10³/µL'], ['10*3/mcL', '×10³/µL'], ['K/mcL', 'K/µL'],
+      ['Thousand/mcL', 'Thousand/µL'], ['cells/mcL', 'cells/µL'], ['x10(6)/mcL', '×10⁶/µL'], ['M/MCL', 'M/µL'],
+    ];
+    for (const [printed, folded] of folds) expect(normalizeLabUnit(printed), printed).toBe(folded);
+  });
+
+  it('US-21 AC22 — a folded spelling gets exactly the answer its folded-to spelling gets, on every test', () => {
+    const pairs: Array<[string, string]> = [
+      ['x10(3)/uL', '×10³/µL'], ['x10(9)/L', '×10⁹/L'], ['x10(12)/L', '×10¹²/L'], ['x10(6)/uL', '×10⁶/µL'],
+      ['10^(9)/L', '×10⁹/L'], ['x10³/µL', '×10³/µL'], ['10³/µL', '×10³/µL'], ['x10(3)/mcL', '×10³/µL'],
+      ['K/mcL', 'K/µL'], ['cells/mcL', 'cells/µL'],
+    ];
+    for (const entry of LAB_CATALOG) {
+      for (const [printed, folded] of pairs) {
+        expect(canonicalLabValue(entry, 7, printed), `${entry.key} ${printed}`).toEqual(canonicalLabValue(entry, 7, folded));
+      }
+    }
+  });
+
+  it('US-21 AC22 — the W43 blood counts save through the write path, on the existing factor', () => {
+    const stored = (name: string, value: number, unit: string, lo: number, hi: number) =>
+      canonicalLabRow(entryOf(name), { value, unit, referenceLow: lo, referenceHigh: hi });
+    for (const name of ['WBC', 'Neutrophils', 'Lymphocytes', 'Monocytes', 'Eosinophils', 'Basophils', 'Immature granulocytes']) {
+      expect(stored(name, 0.5, 'x10(3)/uL', 0.1, 1), name).toEqual({ stored: { value: 0.5, unit: '×10⁹/L', referenceLow: 0.1, referenceHigh: 1 }, factor: 1 });
+    }
+    expect(stored('Platelets', 250, 'x10(3)/mcL', 150, 400)).toEqual({ stored: { value: 250, unit: '×10⁹/L', referenceLow: 150, referenceHigh: 400 }, factor: 1 });
+    expect(stored('RBC', 4.8, 'x10(6)/uL', 4.5, 5.9)).toEqual({ stored: { value: 4.8, unit: '×10¹²/L', referenceLow: 4.5, referenceHigh: 5.9 }, factor: 1 });
+    expect(stored('WBC', 6.2, 'x10(9)/L', 4, 11)).toEqual({ stored: { value: 6.2, unit: '×10⁹/L', referenceLow: 4, referenceHigh: 11 }, factor: 1 });
+    // cells/mcL is cells/µL: AC15's ×0.001 and its whole-number guard.
+    expect(canonicalLabValue(entryOf('wbc'), 6200, 'cells/mcL')).toEqual({ value: 6.2, unit: '×10⁹/L', factor: 0.001 });
+    expect(canonicalLabValue(entryOf('wbc'), 6.2, 'cells/mcL')).toBeNull();
+    expect(labUnitTaken(entryOf('lymphocytes'), 'x10(3)/uL')).toBe(true);
+  });
+
+  it('US-21 AC22 — what is still ambiguous, or the wrong scale, stays refused', () => {
+    // A blank unit is never guessed for a catalogued test.
+    for (const unit of ['', ' ', '-']) expect(canonicalLabValue(entryOf('wbc'), 6.2, unit), JSON.stringify(unit)).toBeNull();
+    // A superscript flattened into plain digits ("x103/uL") reads as 103: not folded.
+    expect(normalizeLabUnit('x103/uL')).toBe('x103/µL');
+    expect(canonicalLabValue(entryOf('wbc'), 6.2, 'x103/uL')).toBeNull();
+    // The right notation on the wrong test is still the wrong scale.
+    expect(canonicalLabValue(entryOf('rbc'), 4.8, 'x10(3)/uL')).toBeNull();
+    expect(canonicalLabValue(entryOf('wbc'), 6.2, 'x10(6)/uL')).toBeNull();
+    expect(canonicalLabValue(entryOf('mcv'), 90, 'x10(3)/mcL')).toBeNull();
+    // mcL folds only as a whole token.
+    for (const unit of ['mmcL', 'mcLx', 'mcl2']) expect(normalizeLabUnit(unit), unit).toBe(unit);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // US-21 AC17 — every common blood test has a catalogue entry.
 // ---------------------------------------------------------------------------
 // Each test below landed in "Other tests" with its printed unit, so one test

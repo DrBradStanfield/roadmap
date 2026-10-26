@@ -32,10 +32,6 @@ import { callAnthropicWithUsage, type AnthropicUsage } from './anthropic.server'
 import { sanitizeForRouter } from './chat-router.server';
 import { CLASSIFIER_MAX_TOKENS, CLASSIFIER_MODEL, Classification, PROMPT_CACHE, modelParams, parseClassification } from '../../packages/health-core/src/models';
 
-// Bump when the classifier prompt or rules change so chat_match_events can
-// segment pre/post-change analytics.
-export const CLASSIFIER_VERSION = 1;
-
 // ---------------------------------------------------------------------------
 // Output types
 // ---------------------------------------------------------------------------

@@ -349,7 +349,7 @@ export { chatContextOf, buildChatContextJson, MINOR_CHAT_RULE, NO_PLAN_CHAT_RULE
 export { chatToolsFor, withRoadmapRound, type ChatTurnMessage } from './run-roadmap';
 
 // Product funnel events — anonymous behavioral counters (client tracker + server enum)
-export { PRODUCT_EVENT_NAMES, GUIDE_PLACEMENTS, LPA_CHECK_ANSWERS, REMOTE_CHANGE_BACKENDS, isLabUnitWord, type ProductEventName } from './product-events';
+export { PRODUCT_EVENT_NAMES, GUIDE_PLACEMENTS, LPA_CHECK_ANSWERS, REMOTE_CHANGE_BACKENDS, labUnitForEvent, type ProductEventName } from './product-events';
 
 // US-21 additional blood-test catalogue (phase-1 scaffold — units/groups/aliases)
 export {
