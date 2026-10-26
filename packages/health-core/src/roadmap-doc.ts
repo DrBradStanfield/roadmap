@@ -18,7 +18,7 @@ import { SyncManager, type DocumentSpec } from './sync-manager';
 
 /** The arrays a record keeps its rows in. Junk in any of them migrates to a
  *  blank record, so a write would replace real values with an empty file. */
-const ROW_ARRAYS = ['measurements', 'labValues', 'medications', 'supplements'] as const;
+const ROW_ARRAYS = ['measurements', 'labValues', 'medications', 'supplements', 'documents', 'medicationHistory', 'supplementHistory'] as const;
 
 /**
  * Refuse bytes that are not this record. An ABSENT file (null) is not a
