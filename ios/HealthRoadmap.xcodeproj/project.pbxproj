@@ -370,7 +370,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Health Roadmap uses the camera to scan a paper lab report. With your agreement, the pages are sent to Dr Brad's server and an AI service to be read.";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Health Roadmap reads your sex, month and year of birth, weight, height, waist and blood pressure from Apple Health, so your record and your plan stay up to date without typing. It never keeps your day of birth. Those go only into your record, on this iPhone or in the Dropbox or Google Drive you connect. It also reads your heart rate, resting heart rate, sleep, VO2 max and steps, which it shows you and does not keep.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Health Roadmap reads your sex, month and year of birth, weight, height, waist and blood pressure from Apple Health, so your record and your plan stay up to date without typing. It never keeps your day of birth. Those go only into your record, on this iPhone or in the Dropbox or Google Drive you connect. It also reads your heart rate, resting heart rate, sleep, VO2 max and steps, which it shows you and keeps only on this iPhone, never in your record.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Health Roadmap saves the weight, waist and blood pressure you type into the app to Apple Health.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_FILE = "HealthRoadmap-Info.plist";
@@ -402,7 +402,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Health Roadmap uses the camera to scan a paper lab report. With your agreement, the pages are sent to Dr Brad's server and an AI service to be read.";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Health Roadmap reads your sex, month and year of birth, weight, height, waist and blood pressure from Apple Health, so your record and your plan stay up to date without typing. It never keeps your day of birth. Those go only into your record, on this iPhone or in the Dropbox or Google Drive you connect. It also reads your heart rate, resting heart rate, sleep, VO2 max and steps, which it shows you and does not keep.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Health Roadmap reads your sex, month and year of birth, weight, height, waist and blood pressure from Apple Health, so your record and your plan stay up to date without typing. It never keeps your day of birth. Those go only into your record, on this iPhone or in the Dropbox or Google Drive you connect. It also reads your heart rate, resting heart rate, sleep, VO2 max and steps, which it shows you and keeps only on this iPhone, never in your record.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Health Roadmap saves the weight, waist and blood pressure you type into the app to Apple Health.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_FILE = "HealthRoadmap-Info.plist";

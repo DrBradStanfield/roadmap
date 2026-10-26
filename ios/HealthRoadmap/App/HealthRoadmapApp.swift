@@ -124,11 +124,12 @@ struct AppParts {
     /// Apple Health in and out (ios/architecture.md D6). Started at launch, so its
     /// observers are in place when iOS wakes the app for new Health data.
     let health: AppleHealthSync
-    /// US-56: heart rate, resting heart rate, sleep, VO2 max and steps, read live from Health and never kept.
+    /// US-56: heart rate, resting heart rate, sleep, VO2 max and steps, read from Health, the cards'
+    /// last readings kept on this iPhone so they draw at launch (AC2, AC15).
     /// One calendar, following the phone's zone, for the store's day anchor and the app's days (adversary R2).
     let live: LiveHealth = {
         let calendar = Calendar.autoupdatingCurrent
-        return LiveHealth(store: LiveHealthKitStore(calendar: calendar), calendar: calendar)
+        return LiveHealth(store: LiveHealthKitStore(calendar: calendar), calendar: calendar, kept: try? LiveHealth.keptFile())
     }()
     /// The chat history file: Chat's list and the eraser's tombstones, one store.
     let chat: ChatHistoryStore
@@ -163,7 +164,7 @@ struct AppParts {
         health = AppleHealthSync(store: store, engine: engine, client: client, live: live) { await sync.syncNow() }
         health.start()
         chat = ChatHistoryStore(engine: engine, folder: folder, deviceId: store.deviceId)
-        eraser = DataEraser(store: store, sync: sync, chat: chat, reminders: reminders, health: health)
+        eraser = DataEraser(store: store, sync: sync, chat: chat, reminders: reminders, health: health, live: live)
     }
 }
 

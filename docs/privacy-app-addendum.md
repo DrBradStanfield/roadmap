@@ -8,7 +8,9 @@ this page because the app uses Apple Health (App Store Review Guideline 5.1.3). 
 `app/lib/app-*.server.ts`, `app/routes/api.app.v1.*`, the app branch of
 `app/routes/api.chat.ts` (D9: no row) and the `app_attest_keys` section of
 `supabase/rls-policies.sql`. The engine update paragraph describes D3, which was being
-built that day: re-audit it when it merges.
+built that day: re-audit it when it merges. The section on heart rate, resting heart rate,
+sleep, VO2 max and steps was rewritten on 2026-10-27 from the code of the change that keeps
+the cards' readings on the phone (US-56 AC2, not yet committed; commit: to fill in).
 
 This policy covers the Health Roadmap iPhone app, made by DR BRAD, INC. It adds to our
 main [privacy policy](https://drstanfield.com/policies/privacy-policy). The website has its
@@ -57,20 +59,28 @@ summary of your record that each question carries (below). The app sends it nowh
 
 ### Heart rate, resting heart rate, sleep, VO2 max and steps
 
-These five are different. They are shown, never kept. The app asks to read them in the same
+These five are different. They never go into your record. The app asks to read them in the same
 Apple Health permission as everything else, all at once, when you connect Apple Health during
 setup, or later from **Connect Apple Health** in My data. If you connected before this was
 added, My data offers **Turn On**, which shows the same permission (iOS lists only what it
 has not asked you yet) and also brings in any new weight, height, waist and blood pressure
 readings, as connecting does. After you said no, it offers **Reconnect**. Once you have answered, iOS does not ask again, so Reconnect opens
 Settings, where you can turn them on. It
-reads them from Apple Health each time it shows a card or a chart of them, and holds them in
-memory only while the app is open. It never saves them: not in your record, not in a file,
-not in the app's settings. So they never reach your Dropbox or Google Drive, the chat's
-summary of your record, the Health Roadmap website or our server. The app sends them
-nowhere. Clarity learns only that one of these pages was opened, never which one or any
-value. The app writes none of them to Apple Health, so **Delete all my data** leaves them
-where they are: in Apple Health, under your Apple settings.
+reads them from Apple Health each time it shows a card or a chart of them. So the cards
+show at once when you open the app, it keeps what the cards draw in one small file on this
+iPhone only: the latest reading of each card, with its date, and the values behind its trend
+line (the past month's daily values, or the last seven readings when there are fewer). That
+file sits in the app's private storage, apart from your record, and is not backed up to
+iCloud or to a computer. When the phone has a passcode, it is encrypted until you first
+unlock the phone after a restart. A chart page's longer history and its hourly and nightly
+detail are read fresh each time and never kept. The readings never go into your record, the app's settings, your Dropbox or
+Google Drive, the chat's summary of your record, the Health Roadmap website or our server.
+The app sends them nowhere. If Apple Health gives nothing back, or iOS asks for permission
+again, the app deletes the file. Clarity learns only that one of these pages was opened,
+never which one or any value. **Delete all my data** deletes the file; while the app can
+still read Apple Health, it keeps a new one the next time it shows the cards. The app writes
+none of these five to Apple Health, so the readings themselves stay where they are: in Apple
+Health, under your Apple settings.
 
 ## Chat
 

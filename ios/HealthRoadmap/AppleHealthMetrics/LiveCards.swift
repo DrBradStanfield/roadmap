@@ -30,9 +30,9 @@ extension SectionTitle {
     static func fitness() -> Self { Self(title: "Fitness", symbol: "figure.run", tint: .orange) }
 }
 
-/// The footer under the new cards (AC6, AC4).
+/// The footer under the new cards (AC6, AC4; AC2 since Brad 2026-10-27).
 enum LiveFooter {
-    static let shownOnly = "From Apple Health. Shown here only: not saved to your record or the website."
+    static let shownOnly = "From Apple Health. Kept on this iPhone only, so the cards show at once: not in your record or on the website."
     /// The path as iOS 27 has it (checked on the simulator 2026-10-25: Health moved under Apps).
     static let access = "To change what Health Roadmap can read: Settings › Apps › Health › Data Access & Devices › Health Roadmap."
     /// The Turn On and Reconnect row's words (AC5, AC5b).

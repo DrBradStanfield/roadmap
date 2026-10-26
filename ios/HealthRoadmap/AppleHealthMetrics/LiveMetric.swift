@@ -1,10 +1,10 @@
 import Foundation
 
-/// The five Apple Health metrics the app shows and never keeps (US-56): read live from
-/// HealthKit each time they show, held in memory only while the app is open, never in
-/// the record, a cache file or UserDefaults, and never sent to telemetry or a log.
+/// The five Apple Health metrics the app shows (US-56): read from HealthKit each time they
+/// show, with only the cards' last readings kept on this iPhone (AC2, Brad 2026-10-27), never
+/// in the record or UserDefaults, and never sent to telemetry or a log.
 /// Display only (AC1): nothing here feeds the plan, the engine or the chat.
-enum LiveMetric: String, CaseIterable, Identifiable {
+enum LiveMetric: String, CaseIterable, Identifiable, Codable, CodingKeyRepresentable {
     case heartRate, restingHeartRate, sleep, vo2Max, steps
 
     var id: String { rawValue }
@@ -107,8 +107,8 @@ struct LivePoint: Equatable, Identifiable {
     var id: Date { start }
 }
 
-/// The latest reading of one metric, for its card.
-struct LiveCard: Equatable {
+/// The latest reading of one metric, for its card; Codable for the kept readings (AC2).
+struct LiveCard: Equatable, Codable {
     let value: Double
     /// When it was taken (heart rate) or the day or night it belongs to.
     let date: Date

@@ -714,7 +714,8 @@ preselected sex, birth month and year, height and weight, each labelled "From Ap
 Write-back checked on the simulator's own Health store: a typed 123/79 and 70 kg appeared in Health,
 dated noon of the day (the record holds days, not times); height is never written back. **Next
 (US-56, Brad 2026-10-23; replaces US-55):** heart rate, resting heart rate, sleep with Apple's
-stages, VO2 max and steps, read live from HealthKit each time they show and never stored, so the
+stages, VO2 max and steps, read live from HealthKit each time they show and never stored (since
+2026-10-27 the cards' last readings are kept on the phone, below), so the
 record, merge, website, chat and engine never see them. Display only; no heart rate variability.
 Access is asked in onboarding's one Apple Health request, with D6's types (Brad 2026-10-26: "just
 do it in one step"; it replaced asking later from a card on My data). Heart rate, resting heart rate
@@ -754,7 +755,27 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   is not readable, so the writer with the most staged time draws the stages; with none, every
   writer's "asleep" is joined; "In Bed" comes from all. Overlaps count once.
 - `LiveHealth` (`@Observable`, main actor; one per app in `AppParts`, in the environment) holds only
-  the access state and the cards, in memory. Each card starts from the metric's newest sample
+  the access state and the cards. **The cards' last readings are kept on the phone (US-56 AC2, AC15;
+  Brad 2026-10-27, option A).** Why: on a cold start My data drew the record, then 0.1 to 0.2 s later
+  the cards arrived under blood pressure and pushed the blood tests down; Brad: "I don't want us to
+  wait for anything." The cards (`[LiveMetric: LiveCard]` and a version) live in
+  `Application Support/Apple Health/last-readings.json` (`LiveHealth.keptFile`), a folder made by
+  `RecordStore.appFolder(named:)`, so it is left out of backups as the record's is, but apart from
+  it: sync, export and the chat summary read only the record, so they never see it. Written
+  atomically, `.completeFileProtectionUntilFirstUserAuthentication` (a launch after the first unlock
+  reads it). Read synchronously in `init` (a few hundred bytes), so the first frame has the cards;
+  a missing, damaged or other-version file is none. Kept cards count as access granted and read, so
+  `LiveCardsSection.shown` draws them, never Turn On or Reconnect, until the first read. A read that
+  changes the cards replaces the file (`keep`), one with none always deletes it (even a file the
+  launch could not read, adversary R3), a locked or cancelled read changes nothing, a sheet due
+  again deletes it, and `DataEraser` calls `forget()` (file gone, cards empty, nothing shown until
+  the next read). `forget()` bumps a generation: a refresh begun before it, and one queued during
+  it, keeps nothing (Codex R1, adversary R4). The file holds each card's trend values too (up to
+  30 daily values, or the last seven readings), so the trend line draws in the first frame. Pages' days, hours and nights are never kept. "Today",
+  times and the VO2 max band are worked out at draw time from the card's date and `now`. The app
+  has no Apple Health disconnect of its own (access is changed in Settings), so the erase and an
+  empty read are the only other reset paths. Rejected: UserDefaults (it is backed up and is the
+  app's settings), and drawing a placeholder per metric (it would show cards a person never had). Each card starts from the metric's newest sample
   however old (`LiveHealthStore.latest`), then reads the 30 days ending on it (sleep too, since
   2026-10-26); a fixed window back from today dropped a VO2 max from six weeks ago (Codex R2).
   The trend is the last 30 days' readings, or the last seven however old (US-56 AC14); only a
@@ -762,7 +783,8 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   (400 days before its window; sleep, the 200 nights a sleep page reads, or back to its first
   read's start when that is older), and a read-back that
   fails or finds nothing more keeps the first card.
-  No record row, file, UserDefaults value, log or telemetry (a source-scan test enforces it). A
+  No record row, UserDefaults value, log or telemetry, and no file but the kept cards (a source-scan
+  test enforces it). A
   locked phone's read keeps the cards. A return to the app (My data's `scenePhase`) or an unlock
   calls `wake()`, which bumps `wakes` and refreshes; an open page reads again on each wake (Codex
   R1). A second wake within about 2 s is the same one, and a refresh asked for under 2 s after a
@@ -792,7 +814,7 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   year of VO2 max. A sheet asked for during launch is dismissed by iOS, so it waits 4 s. Apple's
   sheet in iOS 27 answers by "Select All", "Continue", "All Recorded Data", "Allow"; a UI test can
   tap them only by screen point (the sheet reports its frames at a third of screen points).
-- Purpose string: the six "go only into your record"; the five are shown, not kept (AC10).
+- Purpose string: the six "go only into your record"; the five are kept only on this iPhone, never in the record (AC10, AC2 since 2026-10-27).
 - **AC8 built 2026-10-26 (Brad: "do it. we want the bands").** Apple publishes only the Low rule
   (white paper, May 2021: lowest FRIEND quintile for sex and decade at 20 to 59, Kaminsky 2015;
   below 18 mL/kg/min for men and 15 for women at 60 and over), so the page shows FRIEND 2022
@@ -1329,7 +1351,7 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled).
     the import and the writes; `HealthReading.swift` is what crosses to the engine;
     `HealthSyncMemory` the anchors; `AppleHealthSection` the row in My data.
   - `AppleHealthMetrics/`: US-56's live heart, sleep and fitness metrics, read from HealthKit
-    and never kept (D6, US-56 phase 1).
+    and never in the record; only the cards' last readings are kept, on the phone (D6, US-56 AC2).
   - `Plan/`: the plan screen, drawn from the plan the store keeps with My data (`screenJson`).
     `Plan.swift` is the slice of the engine's JSON the app reads, evidence included. The layout (sections, card order, grouped cards) is not
     Swift: it is health-core's `planSections` (packages/health-core/src/plan-sections.ts),

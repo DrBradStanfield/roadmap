@@ -37,13 +37,16 @@ final class DataEraser {
     private let chat: ChatHistoryStore
     private let reminders: ReminderScheduler?
     private let health: AppleHealthSync?
+    /// US-56's kept readings (AC2).
+    private let live: LiveHealth?
 
-    init(store: RecordStore, sync: CloudSync, chat: ChatHistoryStore, reminders: ReminderScheduler?, health: AppleHealthSync?) {
+    init(store: RecordStore, sync: CloudSync, chat: ChatHistoryStore, reminders: ReminderScheduler?, health: AppleHealthSync?, live: LiveHealth?) {
         self.store = store
         self.sync = sync
         self.chat = chat
         self.reminders = reminders
         self.health = health
+        self.live = live
     }
 
     /// The erase's words were dismissed: the questions start again on the empty record.
@@ -66,6 +69,7 @@ final class DataEraser {
         await chat.refresh()
         if case .refused = outcome { return outcome }
         awaitingDismissal = true
+        live?.forget()
         // After the record: an erase refused there must change nothing, and Health's
         // copies of typed values are only copies (D6).
         let healthErased = await health?.eraseOwnSamples() ?? true

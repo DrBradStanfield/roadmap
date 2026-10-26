@@ -28,8 +28,10 @@ the vitals, and you can upload a lab report from your phone, Dropbox or Google
 Drive. The app reads it and asks you to confirm each value before saving it.
 
 If you allow it, My data also shows your heart rate, resting heart rate, sleep, VO2
-max and steps from Apple Health, with a chart for each. They are shown from Apple
-Health and never kept: they stay out of your record and never leave your iPhone.
+max and steps from Apple Health, with a chart for each. They stay out of your record
+and never leave your iPhone.
+*(For the next version: 0.1 is in review with the old text, "They are shown from Apple
+Health and never kept: they stay out of your record and never leave your iPhone.")*
 
 Your plan shows what to discuss with your doctor: screening tests that are due,
 blood pressure and cholesterol targets, and medicines that guidelines suggest for
@@ -74,7 +76,9 @@ three together. Brad's rule (2026-10-22): over-declare rather than under-declare
   record, and they never leave the device (Apple counts data as collected only when it
   leaves the device).
 - **Health & Fitness > Fitness.** Not collected. The app reads steps from Apple Health and
-  shows them on the phone; they are never kept and never leave the device. It reads no
+  shows them on the phone, keeping only what its card draws there (the latest reading and
+  the past month's daily values behind its trend line), never in the record; they never
+  leave the device. It reads no
   workouts and no motion sensor data.
 - **User Content > Other User Content.** Collected. Chat questions and the conversation so
   far, and the pages of an uploaded lab report. Purpose: App Functionality only. Linked:
@@ -129,9 +133,13 @@ declares the three rows below; declare them as written.
   heart rate, sleep, VO2 max and steps. A person who skipped that connects from My
   data's Apple Health row, which shows the same sheet. A person who connected before this
   was added gets "Turn On" on My data, the same sheet again; after a refusal, "Reconnect"
-  opens Settings. These five are shown from Apple Health, never kept: the app reads them each
-  time a card or chart shows, holds them in memory while it is open, and never saves or
-  sends them. To see them on a device without a watch, add sample data in the Health
+  opens Settings. These five never go into the record: the app reads them each time a card
+  or chart shows, keeps only what the cards draw (each card's latest reading and the past month's
+  daily values behind its trend line) in one file on this iPhone (not backed up, deleted by
+  "Delete all my data") so the cards show at launch, and never sends them.
+  For the next version: 0.1 is in review with the old text ("These five are shown from
+  Apple Health, never kept: ... holds them in memory while it is open, and never saves or
+  sends them."). To see them on a device without a watch, add sample data in the Health
   app first.
 - Guideline 5.1.3: HealthKit data is not used for advertising or marketing, not sold,
   and not stored in iCloud by us. It reaches our server only inside the record summary

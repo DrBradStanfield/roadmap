@@ -467,7 +467,7 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertTrue(allow.waitForExistence(timeout: 5))
         XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Next, Apple asks for access. Turn everything on, then tap Allow.")).firstMatch.exists,
                       "the hint above the button says what Apple's sheet asks (Brad 2026-10-25)")
-        XCTAssertTrue(app.staticTexts["It also shows your heart rate, sleep, VO2 max and steps here, never kept."].exists,
+        XCTAssertTrue(app.staticTexts["It also shows your heart rate, sleep, VO2 max and steps here, never in your record."].exists,
                       "the page names US-56's five too (adversary R5)")
         snap(app, "health hint")
         allow.tap()

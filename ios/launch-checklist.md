@@ -86,7 +86,13 @@ by the orchestrator, not a fresh reviewer.
      invite goes out on approval. Test Information holds the beta description and contact.
    - **Next build:** an agent shell cannot upload (no App Store Connect token); the session
      clicks Organizer › Distribute App while the Mac is unlocked (full-screen control).
-   - **Then:** install build 3 on Brad's iPhone when it is plugged into this Mac.
+   - **Build 3 is on Brad's iPhone** (Release, 2026-10-27).
+   - **Build 4 (next):** the Apple Health cards keep their last readings on the phone, so My
+     data opens without the launch jump (US-56 AC2 and AC15, Brad 2026-10-27, checked on his
+     iPhone). Brad approved the new privacy wording (2026-10-27): publish the privacy page
+     (`node scripts/build-privacy-page.mjs app --publish`) **when build 4 is submitted, not
+     before**: the live page's "never saves them" stays true for build 3. Update the App Store
+     description and review notes from ios/app-store.md in the same submission.
 8. **Regulatory advice** on whether the app counts as a medical device in your markets.
 9. **Clinical call:** should the value pages show target bands (blood pressure goal,
    healthy waist, ideal weight)? The targets live only in the website's code today;

@@ -12,9 +12,9 @@ extension RecordStore {
     /// The folder the app keeps the record in, made on first use and marked for iOS
     /// to leave out of iCloud and computer backups (Brad 2026-10-21). The mark is on
     /// the folder, not the file: every save replaces the file, and a mark on it would
-    /// go with the old copy.
-    nonisolated static func appFolder(in base: URL = .applicationSupportDirectory) throws -> URL {
-        var folder = base.appending(path: "Record", directoryHint: .isDirectory)
+    /// go with the old copy. US-56's kept readings use it for their own folder.
+    nonisolated static func appFolder(in base: URL = .applicationSupportDirectory, named name: String = "Record") throws -> URL {
+        var folder = base.appending(path: name, directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         var values = URLResourceValues()
         values.isExcludedFromBackup = true

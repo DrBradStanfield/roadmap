@@ -56,8 +56,10 @@ flowchart TD
 2. **Apple Health.** The only page before Apple's sheet: "Use your Apple Health data",
    six tiles (sex, birth date, height, weight, waist, blood pressure) ticking in, a quiet
    line under them naming US-56's five ("It also shows your heart rate, sleep, VO2 max and
-   steps here, never kept."), one line
-   ("So you type less.") on where what is read goes and that added values are saved back.
+   steps here, never in your record."; "never kept" until 2026-10-27, US-56 AC2), one line
+   ("So you type less."; since 2026-10-27 it names the six, "Your sex, birth date, height,
+   weight, waist and blood pressure go only into your record", since US-56's five are kept
+   on the phone too) on where they go and that added values are saved back.
    Just above **Connect Apple Health**, the last thing read before the tap, a small callout
    in the accent green (not red, which read as something wrong; Brad 2026-10-25) gives
    Apple's two taps: "Next, Apple asks for access. Turn everything on, then tap **Allow**."

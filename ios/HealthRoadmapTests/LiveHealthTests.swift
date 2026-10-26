@@ -6,8 +6,8 @@ import XCTest
 
 /// US-56 on a fake store: the app asks for exactly its five types and draws each one
 /// (AC10), in the app's one Health request (AC4), shows the Turn On row until Apple's
-/// sheet is done (AC4, AC5), keeps nothing
-/// (AC1, AC2), keeps the cards through a locked phone (AC13), and shows nothing without
+/// sheet is done (AC4, AC5), keeps only the cards' last readings, in their own file
+/// (AC1, AC2, AC15), keeps the cards through a locked phone (AC13), and shows nothing without
 /// Health (AC13).
 @MainActor
 final class LiveHealthTests: XCTestCase {
@@ -53,7 +53,7 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertEqual(asking, ["HealthKitClient.swift", "LiveHealthSeed.swift"])
     }
 
-    /// "Never kept" rests on this: the record's types and the five live ones never overlap,
+    /// "Never in the record" rests on this: the record's types and the five live ones never overlap,
     /// so no live reading can be imported into the record or written to Health (AC1, AC10).
     func testTheRecordsTypesAndTheLiveTypesNeverOverlap_AC1_AC10() {
         let record = Set<HKObjectType>(HealthKind.allCases.flatMap(HealthKitClient.quantityTypes))
@@ -232,16 +232,213 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertEqual(live.cards[.sleep]?.value, 7 * 3600)
     }
 
-    func testNothingIsKept_AC1_AC2() async {
+    /// AC2 (Brad 2026-10-27): only the cards are kept, in their own file. No UserDefaults
+    /// value, and a page's days, hours and nights are never kept.
+    func testOnlyTheCardsAreKept_AC1_AC2() async throws {
         let before = Set(UserDefaults.standard.dictionaryRepresentation().keys)
+        let kept = try keptFile()
         let store = FakeLiveStore(due: false)
         store.fill(now: now)
-        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc)
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
         await live.refresh()
+        let file = try Data(contentsOf: kept)
         _ = try? await LiveHealth.readDays(store, .steps, reaching: nil, now: now, calendar: utc)
         _ = try? await LiveHealth.readHours(store, .steps, day: now, now: now, calendar: utc)
         _ = try? await LiveHealth.readNights(store, reaching: nil, now: now, calendar: utc)
         XCTAssertEqual(Set(UserDefaults.standard.dictionaryRepresentation().keys), before, "no UserDefaults value")
+        XCTAssertEqual(try Data(contentsOf: kept), file, "pages keep nothing")
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: kept.deletingLastPathComponent().path(percentEncoded: false)), [kept.lastPathComponent], "one file")
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: file) as? [String: Any])
+        XCTAssertEqual(Set(json.keys), ["version", "cards"], "the cards and a version, nothing identifying")
+    }
+
+    // MARK: The kept readings (AC2, AC15; Brad 2026-10-27, option A)
+
+    /// A kept-readings file in its own test folder, as AppParts makes it.
+    private func keptFile() throws -> URL {
+        let base = FileManager.default.temporaryDirectory.appending(path: "Live kept \(UUID().uuidString)")
+        addTeardownBlock { try? FileManager.default.removeItem(at: base) }
+        return try LiveHealth.keptFile(in: base)
+    }
+
+    /// AC15: at launch the cards draw from the kept readings before Health answers, so
+    /// nothing is inserted under blood pressure a moment later.
+    func testTheKeptCardsDrawBeforeAnyRead_AC15() async throws {
+        let kept = try keptFile()
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let first = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
+        await first.refresh()
+        let reads = store.reads
+        let later = now.addingTimeInterval(3 * 86_400)
+        let launch = LiveHealth(store: store, now: { later }, calendar: utc, kept: kept)
+        XCTAssertEqual(store.reads, reads, "nothing read yet")
+        XCTAssertEqual(launch.cards, first.cards, "the cards are there in the first frame")
+        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.vitals, connected: true, needsAccess: launch.needsAccess, hasRead: launch.hasRead, cards: launch.cards),
+                       .cards(LiveMetric.vitals), "the cards, never the Turn On or Reconnect row")
+        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.fitness, connected: true, needsAccess: launch.needsAccess, hasRead: launch.hasRead, cards: launch.cards),
+                       .cards(LiveMetric.fitness))
+        // The day is worked out when drawn: a card kept three days ago no longer says Today.
+        let card = try XCTUnwrap(launch.cards[.steps])
+        XCTAssertEqual(DayText.when(card.date, now: now, calendar: utc), "Today")
+        XCTAssertNotEqual(DayText.when(card.date, now: launch.now(), calendar: utc), "Today")
+        XCTAssertNotEqual(DayText.when(card.date, now: launch.now(), calendar: utc), "Yesterday")
+    }
+
+    /// AC2: a read that changes the cards replaces the kept ones.
+    func testAReadReplacesTheKeptCards_AC2() async throws {
+        let kept = try keptFile()
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
+        await live.refresh()
+        XCTAssertNotNil(LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept).cards[.steps])
+        store.empty = [.steps]
+        await live.refresh()
+        let next = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
+        XCTAssertNil(next.cards[.steps], "the next launch draws the new read")
+        XCTAssertEqual(next.cards, live.cards)
+    }
+
+    /// AC2: a read with nothing (access turned off in Settings, or an emptied Health) clears
+    /// the kept readings, so the next launch draws none.
+    func testAnEmptyReadClearsTheKeptCards_AC2() async throws {
+        let kept = try keptFile()
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
+        await live.refresh()
+        XCTAssertTrue(FileManager.default.fileExists(atPath: kept.path(percentEncoded: false)))
+        store.empty = Set(LiveMetric.allCases)
+        await live.refresh()
+        XCTAssertFalse(FileManager.default.fileExists(atPath: kept.path(percentEncoded: false)))
+        XCTAssertTrue(LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept).cards.isEmpty)
+    }
+
+    /// AC2, AC13, N1: a locked phone's or a cancelled read changes nothing kept.
+    func testALockedOrCancelledReadKeepsTheFile_AC2_AC13() async throws {
+        let kept = try keptFile()
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
+        await live.refresh()
+        let file = try Data(contentsOf: kept)
+        store.empty = Set(LiveMetric.allCases)
+        store.locked = true
+        await live.refresh()
+        XCTAssertEqual(try Data(contentsOf: kept), file, "locked: kept")
+        store.locked = false
+        store.delay = .seconds(10)
+        let refresh = Task { await live.refresh() }
+        try await Task.sleep(for: .milliseconds(50))
+        refresh.cancel()
+        await refresh.value
+        XCTAssertEqual(try Data(contentsOf: kept), file, "cancelled: kept")
+    }
+
+    /// AC2: access reset (Apple's sheet is due again) clears the kept readings and the cards.
+    func testAccessResetClearsTheKeptCards_AC2() async throws {
+        let kept = try keptFile()
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
+        await live.refresh()
+        store.due = true
+        await live.refresh()
+        XCTAssertTrue(live.cards.isEmpty)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: kept.path(percentEncoded: false)))
+    }
+
+    /// AC2: the file is encrypted until the first unlock (so it reads at launch) and left out
+    /// of iCloud and computer backups, apart from the record's folder.
+    func testTheKeptFileIsProtectedAndLeftOutOfBackups_AC2() async throws {
+        let kept = try keptFile()
+        let folder = kept.deletingLastPathComponent()
+        XCTAssertEqual(folder.lastPathComponent, "Apple Health")
+        XCTAssertNotEqual(folder, try RecordStore.appFolder(in: folder.deletingLastPathComponent()), "not the record's folder")
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
+        await live.refresh()
+        await live.refresh() // a second write replaces the file: the folder's mark holds
+        XCTAssertEqual(try folder.resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup, true)
+        // Device only: the simulator keeps no protection class (nil, checked 2026-10-27, adversary
+        // R8), so there the source scan pins the write's option (testTheLiveCodeKeepsAndSendsNothing_AC1_AC11).
+        #if !targetEnvironment(simulator)
+        let protection = try FileManager.default.attributesOfItem(atPath: kept.path(percentEncoded: false))[.protectionKey] as? FileProtectionType
+        XCTAssertEqual(protection, .completeUntilFirstUserAuthentication)
+        #endif
+    }
+
+    /// AC2: a damaged, unreadable or older-version file is no cache: no card, no row, no crash.
+    func testADamagedOrOldKeptFileIsIgnored_AC2() async throws {
+        let kept = try keptFile()
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        await LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept).refresh()
+        // Version 0 with real, non-empty cards (adversary R7): only the version makes it no cache.
+        var old = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: kept)) as? [String: Any])
+        XCTAssertFalse((old["cards"] as? [String: Any] ?? [:]).isEmpty)
+        old["version"] = 0
+        let version0 = try XCTUnwrap(String(data: JSONSerialization.data(withJSONObject: old), encoding: .utf8))
+        for text in ["not json", version0, #"{"version":1,"cards":{"pulse":{}}}"#] {
+            try Data(text.utf8).write(to: kept)
+            let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
+            XCTAssertTrue(live.cards.isEmpty, text)
+            XCTAssertNil(live.needsAccess, text)
+            XCTAssertFalse(live.hasRead, text)
+        }
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
+        await live.refresh()
+        XCTAssertFalse(LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept).cards.isEmpty, "the next read replaces it")
+    }
+
+    /// AC2, Codex R1, adversary R4: a read under way when "Delete all my data" runs lands
+    /// nowhere: no file, no cards, and a refresh asked for during it is dropped too.
+    func testAReadBegunBeforeForgetKeepsNothing_AC2() async throws {
+        let kept = try keptFile()
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
+        store.delay = .milliseconds(300)
+        let refresh = Task { await live.refresh() }
+        try await Task.sleep(for: .milliseconds(50))
+        await live.refresh(force: true) // queued as `again`
+        live.forget()
+        await refresh.value
+        XCTAssertTrue(live.cards.isEmpty, "no cards")
+        XCTAssertFalse(live.hasRead)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: kept.path(percentEncoded: false)), "no file")
+        store.delay = nil
+        await live.refresh()
+        XCTAssertFalse(live.cards.isEmpty, "a refresh begun after it reads as usual")
+    }
+
+    /// AC2, adversary R3: an empty read deletes a file the launch did not load (here written
+    /// after launch, as one the locked phone could not read would be).
+    func testAnEmptyReadDeletesAFileItDidNotLoad_AC2() async throws {
+        let kept = try keptFile()
+        let store = FakeLiveStore(due: false)
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
+        XCTAssertTrue(live.cards.isEmpty)
+        try Data("kept earlier".utf8).write(to: kept)
+        await live.refresh()
+        XCTAssertTrue(live.cards.isEmpty)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: kept.path(percentEncoded: false)))
+    }
+
+    /// AC2 (US-25 AC16): "Delete all my data" deletes the kept readings and empties the cards.
+    func testForgetDeletesTheKeptCards_AC2() async throws {
+        let kept = try keptFile()
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
+        await live.refresh()
+        live.forget()
+        XCTAssertTrue(live.cards.isEmpty)
+        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.vitals, connected: true, needsAccess: live.needsAccess, hasRead: live.hasRead, cards: live.cards), .nothing,
+                       "no Reconnect row until the next read")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: kept.path(percentEncoded: false)))
     }
 
     func testALockedPhoneKeepsWhatWasDrawn_AC13() async {
@@ -527,8 +724,9 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertEqual(LiveHealthKitStore.unit(.steps), .count())
     }
 
-    /// AC1, AC2, AC11: the new code holds no file, defaults, record, engine, log or telemetry
-    /// call, and nothing outside it but My data's wiring names it.
+    /// AC1, AC2, AC11: the new code holds no defaults, record, engine, log or telemetry call.
+    /// Only LiveHealth.swift touches a file, its kept readings' (Brad 2026-10-27), in a folder
+    /// made the record's way. Nothing outside it but My data's wiring names it.
     func testTheLiveCodeKeepsAndSendsNothing_AC1_AC11() throws {
         let app = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appending(path: "HealthRoadmap")
         guard FileManager.default.fileExists(atPath: app.path(percentEncoded: false)) else {
@@ -541,8 +739,18 @@ final class LiveHealthTests: XCTestCase {
             // Code only: comments may name what is not done.
             let text = try String(contentsOf: file, encoding: .utf8).split(separator: "\n")
                 .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }.joined(separator: "\n")
+            let keeps = file.lastPathComponent == "LiveHealth.swift"
+            // LiveHealth.swift's file calls, pinned exactly (adversary R9): one protected atomic
+            // write, one removal, both of the kept file, and the record's folder helper.
+            let allowed = ["try? data.write(to: kept, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])",
+                           "try? FileManager.default.removeItem(at: kept)",
+                           "RecordStore.appFolder(in: base, named: \"Apple Health\")"]
+            if keeps {
+                for call in allowed { XCTAssertEqual(text.components(separatedBy: call).count - 1, 1, call) }
+            }
+            let code = keeps ? allowed.reduce(text) { $0.replacingOccurrences(of: $1, with: "") } : text
             for banned in ["UserDefaults", "FileManager", "write(to", "RecordStore", "HealthEngine", "print(", "Logger", "os_log", "NSLog", "SentrySDK", "ClaritySDK", "save("] {
-                XCTAssertFalse(text.contains(banned), "\(file.lastPathComponent) uses \(banned)")
+                XCTAssertFalse(code.contains(banned), "\(file.lastPathComponent) uses \(banned)")
             }
         }
         let engine = try FileManager.default.contentsOfDirectory(at: app.appending(path: "Engine"), includingPropertiesForKeys: nil)
@@ -562,7 +770,7 @@ private final class Changed: @unchecked Sendable {
 }
 
 /// A HealthKit stand-in with a fortnight of each metric.
-private final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
+final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
     private let lock = NSLock()
     private var state = State()
     private struct State {
@@ -587,6 +795,7 @@ private final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
 
     private func with<T>(_ body: (inout State) throws -> T) rethrows -> T { lock.lock(); defer { lock.unlock() }; return try body(&state) }
 
+    var due: Bool { get { with { $0.due } } set { with { $0.due = newValue } } }
     var available: Bool { get { with { $0.available } } set { with { $0.available = newValue } } }
     var locked: Bool { get { with { $0.locked } } set { with { $0.locked = newValue } } }
     var empty: Set<LiveMetric> { get { with { $0.empty } } set { with { $0.empty = newValue } } }

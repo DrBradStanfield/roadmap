@@ -3,9 +3,10 @@ import Observation
 import UIKit
 
 /// US-56's state: whether to show the Turn On row or the cards, and the cards' latest
-/// readings. Held in memory while the app is open and nowhere else (AC2): no record row,
-/// no file, no UserDefaults. HealthKit is read off the main thread; only the results land
-/// here. Nothing is logged. One per app, in the environment (HealthRoadmapApp).
+/// readings. The cards' last readings are kept in one file on this iPhone, so they draw in
+/// the first frame at launch (AC2, AC15; Brad 2026-10-27): never a record row, UserDefaults
+/// or a page's days. HealthKit is read off the main thread; only the results land here.
+/// Nothing is logged. One per app, in the environment (HealthRoadmapApp).
 @MainActor
 @Observable
 final class LiveHealth {
@@ -32,13 +33,26 @@ final class LiveHealth {
     @ObservationIgnored private var again = false
     @ObservationIgnored private var lastWake: ContinuousClock.Instant?
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
+    /// The cards' last readings (AC2); nil keeps none.
+    @ObservationIgnored private let kept: URL?
+    /// Bumped by `forget()`: a read begun before it lands nowhere (Codex R1, adversary R4).
+    @ObservationIgnored private var generation = 0
 
-    init(store: any LiveHealthStore, now: @escaping @Sendable () -> Date = { .now }, calendar: Calendar = .autoupdatingCurrent) {
+    init(store: any LiveHealthStore, now: @escaping @Sendable () -> Date = { .now }, calendar: Calendar = .autoupdatingCurrent, kept: URL? = nil) {
         self.store = store
         self.now = now
         self.calendar = calendar
+        self.kept = kept
         available = store.isAvailable
         guard available else { return }
+        // Read here, so the first frame has the cards; the first read updates them (AC15).
+        // A file that is missing, damaged or another version is no file.
+        if let kept, let data = try? Data(contentsOf: kept), let file = try? JSONDecoder().decode(KeptCards.self, from: data),
+           file.version == KeptCards.current, !file.cards.isEmpty {
+            cards = file.cards
+            needsAccess = false
+            hasRead = true
+        }
         // A locked phone's read keeps what was drawn; the unlock reads again (AC13). A new day or
         // a new time zone reads again too, so "Today" and the days move (N5).
         observers = [UIApplication.protectedDataDidBecomeAvailableNotification, .NSCalendarDayChanged, .NSSystemTimeZoneDidChange].map { name in
@@ -72,18 +86,23 @@ final class LiveHealth {
         }
         started = .now
         defer { started = nil }
+        let begun = generation
         repeat {
             again = false
             // A check that fails keeps what was known, so the Turn On row never flashes (adversary R4).
             let due = (try? await store.needsRequest()) ?? needsAccess
-            guard !Task.isCancelled else { return }
+            // Erased meanwhile: this refresh, and any asked for during it, keep nothing (Codex R1).
+            guard !Task.isCancelled, begun == generation else { return }
             if needsAccess != due { needsAccess = due }
+            // Access reset: the sheet is due again, so the kept readings go (AC2).
+            if due == true { keep([:]) }
             guard due == false else { continue }
             do {
                 let read = try await Self.readCards(store, now: now(), calendar: calendar)
-                guard !Task.isCancelled else { return }
-                // Unchanged readings are not written, so nothing redraws (E5).
-                if cards != read { cards = read }
+                guard !Task.isCancelled, begun == generation else { return }
+                // Unchanged readings are not written, so nothing redraws (E5). An empty read always
+                // removes the file, even one the launch could not read (adversary R3).
+                if cards != read || read.isEmpty { keep(read) }
                 if !hasRead { hasRead = true }
             } catch HealthStoreError.locked {
                 // Locked: keep what the last read drew (AC13), and let the unlock's wake through (N2).
@@ -93,6 +112,39 @@ final class LiveHealth {
                 return
             }
         } while again
+    }
+
+    /// "Delete all my data" (AC2): the kept readings go, and nothing shows until the next read.
+    func forget() {
+        generation += 1
+        keep([:])
+        if hasRead { hasRead = false }
+    }
+
+    /// Draws the cards and keeps them for the next launch; none removes the file (AC2).
+    /// Atomic, readable after the first unlock (a launch reads it), in a folder backups skip.
+    private func keep(_ read: [LiveMetric: LiveCard]) {
+        if cards != read { cards = read }
+        guard let kept else { return }
+        if read.isEmpty {
+            try? FileManager.default.removeItem(at: kept)
+        } else if let data = try? JSONEncoder().encode(KeptCards(cards: read)) {
+            try? data.write(to: kept, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        }
+    }
+
+    /// The kept readings' file: its own folder in Application Support, made the record's way
+    /// and left out of iCloud and computer backups, but apart from the record, so no sync,
+    /// export or chat summary can reach it (AC2, Brad 2026-10-27).
+    nonisolated static func keptFile(in base: URL = .applicationSupportDirectory) throws -> URL {
+        try RecordStore.appFolder(in: base, named: "Apple Health").appending(path: "last-readings.json")
+    }
+
+    /// The kept file: the cards as drawn, and a version, nothing else.
+    private struct KeptCards: Codable {
+        static let current = 1
+        var version = current
+        let cards: [LiveMetric: LiveCard]
     }
 
     /// The cards' readings, off the main thread, each metric on its own: its newest sample

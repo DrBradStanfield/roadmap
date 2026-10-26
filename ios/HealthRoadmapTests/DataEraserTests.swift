@@ -56,7 +56,7 @@ final class DataEraserTests: XCTestCase {
             try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
         }
         let appleHealth = AppleHealthSync(store: store, engine: engine, client: health, memory: HealthSyncMemory(defaults: healthDefaults))
-        let eraser = DataEraser(store: store, sync: sync, chat: chat, reminders: reminders, health: appleHealth)
+        let eraser = DataEraser(store: store, sync: sync, chat: chat, reminders: reminders, health: appleHealth, live: nil)
         return App(store: store, sync: sync, chat: chat, reminders: reminders, eraser: eraser, health: appleHealth, engine: engine)
     }
 
@@ -316,6 +316,21 @@ final class DataEraserTests: XCTestCase {
         XCTAssertEqual(health.ownDeletes, 1, "the app's own samples are deleted from Health")
         XCTAssertNil(healthDefaults.dictionary(forKey: "appleHealth.written"), "and their written versions forgotten")
         XCTAssertFalse(words.contains("Apple Health could not"), words)
+    }
+
+    /// US-56 AC2 (Brad 2026-10-27): the erase deletes the kept Apple Health readings and empties the cards.
+    func testTheEraseDeletesTheKeptAppleHealthReadings_US56_AC2() async throws {
+        let app = try app(connected: false)
+        let kept = try LiveHealth.keptFile(in: folder)
+        let store = FakeLiveStore(due: false)
+        store.fill(now: .now)
+        let live = LiveHealth(store: store, calendar: Calendar(identifier: .gregorian), kept: kept)
+        await live.refresh()
+        XCTAssertFalse(live.cards.isEmpty)
+        let eraser = DataEraser(store: app.store, sync: app.sync, chat: app.chat, reminders: app.reminders, health: app.health, live: live)
+        guard case .erased = await eraser.eraseAll() else { return XCTFail("the erase was refused") }
+        XCTAssertTrue(live.cards.isEmpty)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: kept.path(percentEncoded: false)))
     }
 
     func testAnAppleHealthDeleteThatFailsIsSaidAndTheRecordIsStillErased() async throws {

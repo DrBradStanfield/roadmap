@@ -98,7 +98,7 @@ struct OnboardingView: View {
         switch step {
         case .health:
             OnboardingPage(symbol: "heart.fill", tint: .pink, title: "Use your Apple Health data",
-                 detail: "So you type less. What it reads goes only into your record, on this iPhone or in your own cloud. Values you add here are saved back to Apple Health.",
+                 detail: "So you type less. Your sex, birth date, height, weight, waist and blood pressure go only into your record, on this iPhone or in your own cloud. Values you add here are saved back to Apple Health.",
                  progress: nil, spread: true) {
                 VStack(spacing: 12) {
                     HealthFillScene()
@@ -538,7 +538,7 @@ struct OnboardingView: View {
     static let appleAsksNextWords = "Next, Apple asks for access. Turn everything on, then tap **Allow**."
     private static let months = Array(1...12)
     /// The five US-56 readings, named on the Apple Health page (adversary R5).
-    static let liveLine = "It also shows your heart rate, sleep, VO2 max and steps here, never kept."
+    static let liveLine = "It also shows your heart rate, sleep, VO2 max and steps here, never in your record."
     private static let birthYears = DayText.birthYears(now: .now)
 
     /// What each box takes as typed: whole feet, whole inches (centimetres and weight take `.value`).
