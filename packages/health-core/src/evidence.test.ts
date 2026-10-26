@@ -48,10 +48,24 @@ describe('VO2 max bands evidence (US-56 AC8)', () => {
     const e = STAT_CARD_EVIDENCE['vo2max'];
     expect(e.references).toEqual([
       { label: 'Kaminsky 2022 – Updated FRIEND reference standards for cardiorespiratory fitness (Mayo Clin Proc)', url: 'https://doi.org/10.1016/j.mayocp.2021.08.020' },
+      { label: 'Apple 2021 – Using Apple Watch to Estimate Cardio Fitness with VO2 max (white paper)', url: 'https://www.apple.com/healthcare/docs/site/Using_Apple_Watch_to_Estimate_Cardio_Fitness_with_VO2_max.pdf' },
     ]);
+    expect(e.reason).toContain('From age 60, Low uses Apple\'s Low Cardio Fitness alert line (below 18 mL/kg/min for men, 15 for women).');
+    expect(e.reason).toContain('at older ages Low is a functional line rather than a percentile');
+    expect(e.reason).not.toContain('Apple Health\'s line');
     expect(e.reason).toContain('20th, 50th and 80th percentiles');
     expect(e.reason).toContain('lab treadmill tests');
     expect(e.reason).not.toMatch(/Apple's (bands|levels|cut)/);
     expect(e.reason).not.toContain('—');
+  });
+});
+
+// US-07 AC1 (Brad 2026-10-27, option A): metformin's prevention claim cites the DPP trial
+// itself (Knowler 2002, NEJM 346(6):393-403, Crossref-checked); Lee 2021 stays for deaths.
+describe('metformin cites the Diabetes Prevention Program trial (US-07 AC1)', () => {
+  it('cites Knowler 2002 beside Lee 2021 and says about a third, less than lifestyle', () => {
+    const e = SUGGESTION_EVIDENCE['weight-med-metformin'];
+    expect(e.references.map(r => r.url)).toEqual(['https://doi.org/10.1056/NEJMoa012512', 'https://doi.org/10.2337/dc21-1046']);
+    expect(e.reason).toContain('reduced the move from prediabetes to diabetes by about a third versus placebo; lifestyle change did more');
   });
 });

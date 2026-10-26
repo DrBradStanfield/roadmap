@@ -21,7 +21,7 @@ import { importDeviceSamples, type DeviceSample } from '../../packages/health-co
 import { applyFormEdit, formsOf, planOf, type FormEdit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
 import { METRIC_GUIDES, type MetricGuide } from '../../packages/health-core/src/metric-guides';
-import { FRIEND_2022_TREADMILL, type Vo2MaxCutPoints } from '../../packages/health-core/src/vo2max-bands';
+import { APPLE_LOW_FROM_60, FRIEND_2022_TREADMILL, type Vo2MaxCutPoints } from '../../packages/health-core/src/vo2max-bands';
 import { calculateAge } from '../../packages/health-core/src/calculations';
 import {
   cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, getDisplayLabel, toCanonicalValue,
@@ -68,7 +68,8 @@ export interface MyData {
    *  correction ships over the air (D3). */
   guides: Record<string, MetricGuide>;
   /** The VO2 max bands' row for the person's sex and age today (US-56 AC8, FRIEND 2022); null
-   *  without both, under 20 or at 90 and over. Only the table comes out: no VO2 max goes in (AC1). */
+   *  without both, under 20 or at 90 and over. `p20` is the Low line: from 60, Apple's
+   *  (APPLE_LOW_FROM_60). Only the table comes out: no VO2 max goes in (AC1). */
   vo2Bands: (Vo2MaxCutPoints & { sex: 'male' | 'female' }) | null;
 }
 
@@ -215,7 +216,7 @@ function vo2BandsOf(sex: 'male' | 'female' | undefined, birthYear: number | unde
   if (!sex || birthYear === undefined) return null;
   const age = calculateAge(birthYear, birthMonth ?? 1, new Date(now));
   const row = FRIEND_2022_TREADMILL[sex].find((r) => age >= r.fromAge && age <= r.toAge);
-  return row ? { sex, ...row } : null;
+  return row ? { sex, ...row, p20: age >= 60 ? APPLE_LOW_FROM_60[sex] : row.p20 } : null;
 }
 
 export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: UnitChoices = {}): EditOutcome {

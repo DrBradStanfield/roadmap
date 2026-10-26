@@ -11,7 +11,7 @@ const contract = JSON.parse(readFileSync(join(__dirname, 'bridge-contract.json')
   natives: Record<string, string>;
   events: string[];
   values: Record<string, string>;
-  doors: Record<string, { args: string[] }>;
+  doors: Record<string, { args: string[]; returns?: string }>;
 };
 
 /** The member names of an exported interface, read from the source. */
@@ -43,5 +43,15 @@ describe('bridge contract (US-25 AC18)', () => {
     const source = ['cloud.ts', 'cloud-adapters.ts'].map((file) => readFileSync(join(__dirname, file), 'utf8')).join('\n');
     const sent = new Set([...source.matchAll(/__native\.notify\('(\w+)'/g)].map((m) => m[1]));
     expect([...sent].sort()).toEqual([...contract.events].sort());
+  });
+
+  // US-56 AC8 (adversary R1, Codex R1): from 60 the vo2Bands Low line (p20) can exceed p50
+  // (men 80 to 89), which an app built before it cannot draw. Naming the row and that meaning
+  // in the contract moves the bridge id, so such an app refuses an engine that serves it.
+  it('names the vo2Bands row and its Low line that can exceed p50', () => {
+    const returns = contract.doors.screenJson.returns ?? '';
+    expect(returns).toContain('myData.vo2Bands is the VO2 max bands row {sex, fromAge, toAge, p20, p50, p80} or null');
+    expect(returns).toContain('p20 is the Low line');
+    expect(returns).toContain('can exceed p50');
   });
 });

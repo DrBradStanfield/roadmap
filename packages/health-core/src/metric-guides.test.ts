@@ -67,6 +67,8 @@ const SOURCED: Record<string, Array<{ says: string; in: Source; as: string }>> =
     { says: 'by a further 50 to 60%', in: 'evidence', as: 'additional 50–60%' },
     { says: 'by about 25 to 30%', in: 'evidence', as: 'approximately 25–30%' },
   ],
+  // Knowler 2002 (DPP): 31% fewer cases with metformin, 58% with lifestyle (Brad 2026-10-27, option A).
+  metformin: [{ says: 'by about a third', in: 'evidence', as: 'by about a third versus placebo; lifestyle change did more' }],
 };
 
 /** Words that state no quantity of their own: names with a digit, and counts of what the sentence lists. */
