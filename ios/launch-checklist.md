@@ -41,11 +41,11 @@ by the orchestrator, not a fresh reviewer.
 1. **Signing keys for engine updates** ([engine-updates.md](engine-updates.md)).
    - Done 2026-10-25: the workflow `.github/workflows/engine-release.yml` (added with
      your permission) and the GitHub environment `engine-signing`, limited to `main`,
-     with you as required reviewer. No secret is set yet.
-   - Left for you, one step: all three private keys are in your Passwords app (the key
-     files were deleted on 2026-10-22). In Terminal run
-     `gh secret set ENGINE_SIGNING_KEY --env engine-signing`, paste the ci line from
-     Passwords when asked, then check with `gh secret list --env engine-signing`. The real
+     with you as required reviewer. Secret `ENGINE_SIGNING_KEY` set 2026-10-26.
+   - Done 2026-10-26: all three private keys are in your Passwords app (the key
+     files were deleted on 2026-10-22). You ran
+     `gh secret set ENGINE_SIGNING_KEY --env engine-signing`, with the ci line from
+     Passwords; `gh secret list --env engine-signing` lists it. The real
      test is the first Engine release after a Deploy on main: if none starts on its own,
      run Actions › Engine release › Run workflow on main.
    - The daily key is in the iMac's login Keychain and in Passwords as "Health Roadmap engine

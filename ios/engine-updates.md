@@ -64,7 +64,7 @@ keys: `ios/engine/signing-keys.json`, pinned in `EngineRelease.swift`.
 | cold | the Passwords app only | `9a415581b0a54dbd` |
 | ci | GitHub `engine-signing` environment secret only | `d6a343128471bae8` |
 
-**Do now (Brad): one step, in Terminal.** All three private keys are in the Passwords
+**Done 2026-10-26 (Brad), kept for a key change.** All three private keys are in the Passwords
 app (iCloud Keychain); the key files in `~/.config/health-roadmap/` were deleted with
 `rm -P` on 2026-10-22, on the iMac that made them. No agent has seen any key.
 
@@ -120,8 +120,8 @@ commits only the new files.
 
 - **The environment, set up 2026-10-25:** `engine-signing`, required reviewer
   DrBradStanfield, deployment branches: `main` only. Secret `ENGINE_SIGNING_KEY` = the
-  ci key's line (its own pinned key, so the daily key never leaves your Keychain); not
-  set yet. If the ci key leaks, remove it from the pins in an app update; the other two
+  ci key's line (its own pinned key, so the daily key never leaves your Keychain); set
+  2026-10-26. If the ci key leaks, remove it from the pins in an app update; the other two
   keep working.
 - **Which Deploys.** Only a Deploy dispatched on `main` (Actions, Deploy, Run
   workflow). A merged pull request's Deploy (event `pull_request`) never starts one;
