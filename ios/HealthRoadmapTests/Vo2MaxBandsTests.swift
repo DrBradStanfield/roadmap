@@ -72,6 +72,25 @@ final class Vo2MaxBandsTests: XCTestCase {
         XCTAssertNil(LiveChartDescriptor(metric: .vo2Max, points: [], geometry: geometry, from: geometry.windowStart).summary)
     }
 
+    /// Brad 2026-10-27: from 60 the Low line is Apple's. For men 80 to 89, 18 sits above FRIEND's
+    /// median of 17.6, so there is no Below Average: the legend and the shading leave it out.
+    func testAnEmptyBandIsLeftOut_AC8() {
+        let men80 = Vo2MaxBands(sex: "male", fromAge: 80, toAge: 89, p20: 18, p50: 17.6, p80: 21.4)
+        XCTAssertEqual(men80.present, [.low, .aboveAverage, .high])
+        XCTAssertEqual(men80.band(17.9), .low)
+        XCTAssertEqual(men80.band(18), .aboveAverage)
+        XCTAssertEqual(men80.band(21.3), .aboveAverage)
+        XCTAssertEqual(men80.band(21.4), .high)
+        XCTAssertEqual(men80.present.map { men80.range($0) }, ["Below 18.0", "18.0 to 21.3", "21.4 and above"])
+        let domain = men80.yDomain(values: [19])
+        XCTAssertEqual(men80.shade(.low, in: domain), domain.lowerBound...18)
+        XCTAssertEqual(men80.shade(.aboveAverage, in: domain), 18...21.4)
+        XCTAssertEqual(men80.cuts, [18, 21.4], "no rule at the hidden median")
+        XCTAssertEqual(women40.present, Vo2MaxBand.allCases, "a row with room shows all four")
+        let geometry = LiveChartGeometry(range: .sixMonths, now: .now, calendar: .current, first: nil)
+        XCTAssertFalse(LiveChartDescriptor(metric: .vo2Max, points: [], geometry: geometry, from: geometry.windowStart, bands: men80).summary?.contains("Below Average") ?? true)
+    }
+
     func testTheCardSaysTheBand_AC8() throws {
         let card = LiveCard(value: 38.4, date: try Date("2026-10-20T12:00:00Z", strategy: .iso8601), trend: [])
         XCTAssertEqual(LiveCardView.spoken(.vo2Max, card: card, when: "Tuesday", band: .aboveAverage),

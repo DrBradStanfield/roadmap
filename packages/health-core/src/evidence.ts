@@ -245,9 +245,10 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'weight-med-metformin': {
-    reason: 'Metformin has been used for decades to improve blood sugar control. The Diabetes Prevention Program (DPP) study showed that metformin reduced diabetes progression. Extended-release formulations cause fewer gastrointestinal side effects.',
+    reason: 'Metformin has been used for decades to improve blood sugar control. The Diabetes Prevention Program (DPP) trial showed that metformin reduced the move from prediabetes to diabetes by about a third versus placebo; lifestyle change did more. Extended-release formulations cause fewer gastrointestinal side effects.',
     guidelines: [],
     references: [
+      { label: 'Knowler 2002 – Diabetes Prevention Program: lifestyle or metformin & incidence of type 2 diabetes (NEJM)', url: 'https://doi.org/10.1056/NEJMoa012512' },
       { label: 'Lee 2021 – Metformin & mortality in Diabetes Prevention Program (Diabetes Care)', url: 'https://doi.org/10.2337/dc21-1046' },
     ],
   },
@@ -715,10 +716,11 @@ export const STAT_CARD_EVIDENCE: Record<string, SuggestionEvidence> = {
 
   // US-56 AC8: the iPhone app's VO2 max bands (display only; table in vo2max-bands.ts).
   'vo2max': {
-    reason: 'VO2 max is the most oxygen your body can use during hard exercise, a measure of cardiorespiratory fitness. The bands compare your value with people of your age and sex in the FRIEND registry, cut at its 20th, 50th and 80th percentiles: Low is below the 20th, Below Average up to the 50th, Above Average up to the 80th, and High from the 80th. Apple Watch estimates VO2 max from outdoor walks, runs and hikes; the FRIEND values come from lab treadmill tests.',
+    reason: 'VO2 max is the most oxygen your body can use during hard exercise, a measure of cardiorespiratory fitness. The bands compare your value with people of your age and sex in the FRIEND registry, cut at its 20th, 50th and 80th percentiles: Low is below the 20th, Below Average up to the 50th, Above Average up to the 80th, and High from the 80th. From age 60, Low uses Apple\'s Low Cardio Fitness alert line (below 18 mL/kg/min for men, 15 for women). Apple uses fixed lines from 60, which it ties to the fitness that independent living may need, so at older ages Low is a functional line rather than a percentile. Apple Watch estimates VO2 max from outdoor walks, runs and hikes; the FRIEND values come from lab treadmill tests.',
     guidelines: [],
     references: [
       { label: 'Kaminsky 2022 – Updated FRIEND reference standards for cardiorespiratory fitness (Mayo Clin Proc)', url: 'https://doi.org/10.1016/j.mayocp.2021.08.020' },
+      { label: 'Apple 2021 – Using Apple Watch to Estimate Cardio Fitness with VO2 max (white paper)', url: 'https://www.apple.com/healthcare/docs/site/Using_Apple_Watch_to_Estimate_Cardio_Fitness_with_VO2_max.pdf' },
     ],
   },
 };

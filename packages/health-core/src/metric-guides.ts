@@ -260,7 +260,7 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
   metformin: {
     title: 'Metformin',
     whatItIs: 'A daily tablet used for decades for type 2 diabetes. It comes as immediate release (IR) or extended release (XR).',
-    whyItMatters: 'In the Diabetes Prevention Program, metformin slowed the move from prediabetes to diabetes. In the long-term follow-up of the Diabetes Prevention Program, people at high risk of type 2 diabetes who took metformin were no less likely to die, including from heart disease or cancer, than those on placebo.',
+    whyItMatters: 'In the Diabetes Prevention Program, metformin slowed the move from prediabetes to diabetes by about a third versus placebo; lifestyle change did more. In the long-term follow-up of the Diabetes Prevention Program, people at high risk of type 2 diabetes who took metformin were no less likely to die, including from heart disease or cancer, than those on placebo.',
     howTo: { heading: WORKS, points: [
       'It lowers the sugar your liver releases and helps your body respond to insulin.',
       'Stomach upset and loose stools are common at first. The XR form may cause fewer.',
@@ -268,6 +268,6 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
       'It may blunt some of the benefits of exercise training.',
       TALK,
     ] },
-    sources: [ref('Lee 2021'), ref('Konopka 2019'), ref('Moreno-Cabanas 2022')],
+    sources: [ref('Knowler 2002'), ref('Lee 2021'), ref('Konopka 2019'), ref('Moreno-Cabanas 2022')],
   },
 };

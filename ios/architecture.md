@@ -54,8 +54,13 @@ health-core's `vo2max-bands.ts` (FRIEND 2022 percentiles), recorded in `health_r
 with its reference in `evidence.ts` and `roadmap_text.html`. The engine serves the person's row on
 My data (`vo2Bands`, from the profile's sex and `calculateAge`), as it serves the guides; Swift only
 applies the three cut-points to a value (`AppleHealthMetrics/Vo2MaxBands.swift`). No VO2 max enters
-the engine (US-56 AC1), and a fix ships over the air. A My data field, so no bridge change; an
-older engine sends none, and the app shows no bands.
+the engine (US-56 AC1), and a fix ships over the air. An older engine sends none, and the app
+shows no bands. **The row's meaning is in the bridge contract (2026-10-27, adversary R1, Codex
+R1):** from 60 its `p20`, the Low line, is Apple's Low Cardio Fitness alert line and can exceed
+`p50` (men 80 to 89), which an app built before it cannot draw. `screenJson`'s returns in
+`bridge-contract.json` name the row and that meaning, so the bridge id moved to
+`2d467ff50c66c42d` (D3) and an older app refuses any engine that serves it; `bridge.test.ts`
+fails if the contract stops naming it.
 
 Speed, measured 2026-10-21 (Node 22, esbuild bundle, an Intel iMac, the sample record
 padded to 526 rows; `--jitless` stands in for an app's JavaScriptCore, which runs without a

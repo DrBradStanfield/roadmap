@@ -3,9 +3,9 @@
  *
  * FRIEND 2022, Table 3, treadmill CPX with directly measured VO2peak, RER >= 1.0
  * (Kaminsky et al., Mayo Clin Proc 2022;97(2):285-293, doi:10.1016/j.mayocp.2021.08.020).
- * Low is below the 20th percentile, Below Average the 20th to below the 50th, Above
- * Average the 50th to below the 80th, High the 80th and above. Each band includes its
- * lower bound. Ages 20 to 89, by the table's decades.
+ * Low is below the 20th percentile (from 60, Apple's Low Cardio Fitness alert line, below), Below Average from there
+ * to below the 50th, Above Average the 50th to below the 80th, High the 80th and above.
+ * Each band includes its lower bound. Ages 20 to 89, by the table's decades.
  *
  * The table only: the iPhone app's engine serves the person's row on My data (`vo2Bands`,
  * ios/engine/my-data.ts), and the app applies its cut-points to a value (Vo2MaxBands.swift).
@@ -19,6 +19,13 @@ export interface Vo2MaxCutPoints {
   p50: number;
   p80: number;
 }
+
+/**
+ * From age 60, Low uses Apple's Low Cardio Fitness alert line (Brad 2026-10-27): "absolute VO2 max thresholds of
+ * 18 and 15 ml/kg/min are used for males and females" (Apple, "Using Apple Watch to Estimate
+ * Cardio Fitness with VO2 max", May 2021, p. 5). mL/kg/min.
+ */
+export const APPLE_LOW_FROM_60 = { male: 18, female: 15 } as const;
 
 export const FRIEND_2022_TREADMILL: Record<'male' | 'female', readonly Vo2MaxCutPoints[]> = {
   male: [

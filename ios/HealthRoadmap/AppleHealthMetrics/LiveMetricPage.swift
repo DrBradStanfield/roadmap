@@ -82,7 +82,16 @@ struct LiveMetricPage: View {
             PageHeadline(headline: headline(inView: inView, geometry: geometry))
             chart(geometry: geometry)
         } below: {
-            if let bands { Vo2BandsLegend(bands: bands, tint: metric.tint).equatable() }
+            // AC8's legend: High first, as the chart reads top down, then the source and the caveat.
+            if let bands {
+                Section {
+                    ForEach(bands.present.reversed(), id: \.self) { Vo2BandRow(band: $0, bands: bands, tint: metric.tint).equatable() }
+                } header: {
+                    Text("Fitness bands for \(bands.title)")
+                } footer: {
+                    Text("These bands compare your VO2 max with people of your age and sex in the FRIEND registry, cut at its 20th, 50th and 80th percentiles (Kaminsky 2022). From age 60, Low uses Apple's Low Cardio Fitness alert line (below 18 for men, 15 for women), which Apple ties to the fitness independent living may need. Apple Watch estimates VO2 max; FRIEND's values come from lab treadmill tests.")
+                }
+            }
         }
     }
 
@@ -149,7 +158,7 @@ struct LiveMetricPage: View {
         return Chart {
             // AC8: the bands behind the values, each from its lower bound to the next one's.
             if let bands, let yDomain {
-                ForEach(Vo2MaxBand.allCases, id: \.self) { band in
+                ForEach(bands.present, id: \.self) { band in
                     let shade = bands.shade(band, in: yDomain)
                     RectangleMark(xStart: .value("Time", geometry.domain.lowerBound), xEnd: .value("Time", geometry.domain.upperBound),
                                   yStart: .value(metric.unit, shade.lowerBound), yEnd: .value(metric.unit, shade.upperBound))
@@ -445,7 +454,7 @@ struct LiveChartDescriptor: AXChartDescriptorRepresentable {
 
     /// AC8: "Fitness bands for women aged 40 to 49: High, 33.0 and above …; Low, below 19.7 …."
     var summary: String? {
-        bands.map { bands in "Fitness bands for \(bands.title): " + Vo2MaxBand.allCases.reversed().map(bands.spoken).joined(separator: "; ") + "." }
+        bands.map { bands in "Fitness bands for \(bands.title): " + bands.present.reversed().map(bands.spoken).joined(separator: "; ") + "." }
     }
 
     func makeChartDescriptor() -> AXChartDescriptor {
@@ -467,38 +476,30 @@ struct LiveChartDescriptor: AXChartDescriptorRepresentable {
     }
 }
 
-/// AC8's legend: each band's name and range, High first as the chart reads top down, then
-/// the source and the caveat. Each row is one VoiceOver element. Equatable, so scrubbing the
-/// chart does not rebuild it.
-struct Vo2BandsLegend: View, Equatable {
+/// One row of AC8's legend: the band's swatch, name and range, one VoiceOver element.
+/// Equatable, so scrubbing the chart does not rebuild it.
+struct Vo2BandRow: View, Equatable {
+    let band: Vo2MaxBand
     let bands: Vo2MaxBands
     let tint: Color
     @Environment(\.dynamicTypeSize) private var textSize
 
-    nonisolated static func == (a: Self, b: Self) -> Bool { a.bands == b.bands && a.tint == b.tint }
+    nonisolated static func == (a: Self, b: Self) -> Bool { a.band == b.band && a.bands == b.bands && a.tint == b.tint }
 
     var body: some View {
-        Section {
-            ForEach(Vo2MaxBand.allCases.reversed(), id: \.self) { band in
-                HStack(spacing: 10) {
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(LiveMetricPage.shade(band, tint: tint))
-                        .strokeBorder(tint.opacity(0.45))
-                        .frame(width: 16, height: 16)
-                    let layout = LabelValue.layout(textSize)
-                    layout {
-                        Text(band.label)
-                        if !textSize.isAccessibilitySize { Spacer(minLength: 8) }
-                        Text(bands.range(band)).monospacedDigit().foregroundStyle(.secondary)
-                    }
-                }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(bands.spoken(band))
+        HStack(spacing: 10) {
+            RoundedRectangle(cornerRadius: 4)
+                .fill(LiveMetricPage.shade(band, tint: tint))
+                .strokeBorder(tint.opacity(0.45))
+                .frame(width: 16, height: 16)
+            let layout = LabelValue.layout(textSize)
+            layout {
+                Text(band.label)
+                if !textSize.isAccessibilitySize { Spacer(minLength: 8) }
+                Text(bands.range(band)).monospacedDigit().foregroundStyle(.secondary)
             }
-        } header: {
-            Text("Fitness bands for \(bands.title)")
-        } footer: {
-            Text("These bands compare your VO2 max with people of your age and sex in the FRIEND registry, cut at its 20th, 50th and 80th percentiles (Kaminsky 2022). Apple Watch estimates VO2 max; FRIEND's values come from lab treadmill tests.")
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(bands.spoken(band))
     }
 }

@@ -1,6 +1,7 @@
 import Foundation
 
-/// A VO2 max fitness band (US-56 AC8): FRIEND percentiles, not Apple's own cut-points.
+/// A VO2 max fitness band (US-56 AC8): FRIEND 2022 percentiles; from 60, Low uses Apple's Low
+/// Cardio Fitness alert line.
 enum Vo2MaxBand: CaseIterable {
     case low, belowAverage, aboveAverage, high
 
@@ -16,15 +17,16 @@ enum Vo2MaxBand: CaseIterable {
 
 /// The person's VO2 max bands (US-56 AC8, display only, AC1): their row of FRIEND 2022's
 /// treadmill table, served by the engine on My data (`vo2Bands`, ios/engine/my-data.ts) for
-/// their sex and age today. Low is below P20, Below Average to P50, Above Average to P80,
-/// High from P80; each band includes its lower bound. Only the table comes out of the
+/// their sex and age today. Low is below `p20`, the Low line (FRIEND's P20; from 60, Apple's
+/// Low Cardio Fitness alert line), Below Average to P50, Above Average to P80, High from P80; each band includes
+/// its lower bound, and a band with no room is left out. Only the table comes out of the
 /// engine: a VO2 max never goes in.
 struct Vo2MaxBands: Decodable, Equatable {
     /// "male" or "female"
     let sex: String
     let fromAge: Int
     let toAge: Int
-    /// mL/kg/min
+    /// The Low line, mL/kg/min: FRIEND's P20, or from 60 Apple's 18 (men) or 15 (women).
     let p20: Double
     let p50: Double
     let p80: Double
@@ -38,6 +40,25 @@ struct Vo2MaxBands: Decodable, Equatable {
         return shown < p20 ? .low : shown < p50 ? .belowAverage : shown < p80 ? .aboveAverage : .high
     }
 
+    /// A band's lower bound and the next one's (nil past either end): the Low line can sit above
+    /// P50 (men 80 to 89, Apple's 18 over FRIEND's 17.6), and then Below Average has no room.
+    private func bounds(_ band: Vo2MaxBand) -> (from: Double?, below: Double?) {
+        switch band {
+        case .low: (nil, p20)
+        case .belowAverage: (p20, p50)
+        case .aboveAverage: (max(p20, p50), p80)
+        case .high: (max(p20, p80), nil)
+        }
+    }
+
+    /// The bands with room, low to high: the legend and the shading leave out an empty one.
+    var present: [Vo2MaxBand] {
+        Vo2MaxBand.allCases.filter { band in
+            let (from, below) = bounds(band)
+            return from.flatMap { from in below.map { from < $0 } } ?? true
+        }
+    }
+
     /// "women aged 40 to 49", as the legend's heading ends.
     var title: String { "\(sex == "male" ? "men" : "women") aged \(fromAge) to \(toAge)" }
 
@@ -47,8 +68,8 @@ struct Vo2MaxBands: Decodable, Equatable {
         return switch band {
         case .low: "Below \(text(p20))"
         case .belowAverage: "\(text(p20)) to \(text(p50 - 0.1))"
-        case .aboveAverage: "\(text(p50)) to \(text(p80 - 0.1))"
-        case .high: "\(text(p80)) and above"
+        case .aboveAverage: "\(text(max(p20, p50))) to \(text(p80 - 0.1))"
+        case .high: "\(text(max(p20, p80))) and above"
         }
     }
 
@@ -58,8 +79,8 @@ struct Vo2MaxBands: Decodable, Equatable {
         return "\(band.label), \(range) \(LiveMetric.vo2Max.spokenUnit)"
     }
 
-    /// The three cut-points, where the chart draws its thin rules.
-    var cuts: [Double] { [p20, p50, p80] }
+    /// The cut-points between the bands shown, where the chart draws its thin rules.
+    var cuts: [Double] { present.dropFirst().compactMap { bounds($0).from } }
 
     /// The chart's value axis: every band and every value, with room above and below.
     func yDomain(values: [Double]) -> ClosedRange<Double> {
@@ -69,12 +90,8 @@ struct Vo2MaxBands: Decodable, Equatable {
 
     /// A band's shading on that axis: the outer two run to its ends.
     func shade(_ band: Vo2MaxBand, in domain: ClosedRange<Double>) -> ClosedRange<Double> {
-        switch band {
-        case .low: domain.lowerBound...p20
-        case .belowAverage: p20...p50
-        case .aboveAverage: p50...p80
-        case .high: p80...domain.upperBound
-        }
+        let (from, below) = bounds(band)
+        return (from ?? domain.lowerBound)...(below ?? domain.upperBound)
     }
 }
 
