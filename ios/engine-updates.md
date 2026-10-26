@@ -60,9 +60,9 @@ keys: `ios/engine/signing-keys.json`, pinned in `EngineRelease.swift`.
 
 | Key | Where | Fingerprint (SHA-256 of the public key, first 16 hex) |
 |---|---|---|
-| daily | login Keychain, service `health-roadmap-engine-signing`, account `daily`, trusted by no app | `519a8365b02da897` |
+| daily | the iMac's login Keychain (service `health-roadmap-engine-signing`, account `daily`), the new Mac's if added, and the Passwords app; trusted by no app | `519a8365b02da897` |
 | cold | the Passwords app only | `9a415581b0a54dbd` |
-| ci | GitHub `engine-signing` environment secret only | `d6a343128471bae8` |
+| ci | the GitHub `engine-signing` environment secret (set 2026-10-26) and the Passwords app | `d6a343128471bae8` |
 
 **Done 2026-10-26 (Brad), kept for a key change.** All three private keys are in the Passwords
 app (iCloud Keychain); the key files in `~/.config/health-roadmap/` were deleted with

@@ -294,10 +294,23 @@ A signature means "the key holder approved this bundle", nothing more.
   environment (Brad the required reviewer, `main` only, the `ci` key) checks the same
   artifact again, repeats the main-moved check, refuses a floor below `main`'s, signs it
   with openssl, and commits only the new files (plus an unsigned `built-from` record), refusing to lower or replace a newer release on `main`. Neither of the
-  last two runs repo code. It runs once Brad pushes it from his own account (the
-  workflow-integrity tripwire disables workflow files pushed by anyone else) and sets
-  the secret; each release still needs his approval. Until then, releasing is the two
-  local steps.
+  last two runs repo code. It was pushed from Brad's account
+  (the workflow-integrity tripwire disables workflow files pushed by anyone else) on
+  2026-10-25, and the secret was set on 2026-10-26, so the CI path is live; each release
+  still needs his approval. **Open check:** the first Engine release after a Deploy on
+  `main` proves the secret is the pinned `ci` key (its sign job derives the public key
+  and compares it with `signing-keys.json`). If that check fails, Brad sets the secret
+  again; if no run starts on its own, he runs Actions › Engine release on `main`.
+- **Where the keys live (2026-10-26).** Three Ed25519 keys, public halves pinned in
+  `ios/engine/signing-keys.json` and `EngineRelease.swift`. **daily** `519a8365b02da897`:
+  the iMac's login Keychain (service `health-roadmap-engine-signing`, account `daily`),
+  the new Mac's Keychain if Brad added it, and Brad's Passwords app. **cold**
+  `9a415581b0a54dbd`: Passwords only. **ci** `d6a343128471bae8`: Passwords and the
+  GitHub secret `ENGINE_SIGNING_KEY` in the `engine-signing` environment (`main` only,
+  Brad the required reviewer). The key files in `~/.config/health-roadmap/` were deleted
+  with `rm -P` on 2026-10-22; `engine-keygen.mjs` and `signing-key-guard.test.ts` still
+  name those paths on purpose (keygen writes them; the guard checks only while they
+  exist). No agent has seen a private key.
 - **Revocation needs the repo public** (review R10). Phones read releases without a
   sign-in; if the repo goes private, no phone can fetch a release that raises the floor
   to kill a bad one. The fallback is an App Store update, whose newer bundled engine
