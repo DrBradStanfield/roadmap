@@ -223,8 +223,8 @@ export function isNetworkOrTimeoutError(err: unknown): boolean {
  * Parse a provider body without ever quoting it back. Node's JSON.parse puts a
  * fragment of the offending body in its SyntaxError message, and lab-import
  * hands that error straight to console.error and Sentry — a malformed 200 can
- * carry the user's own lab text there. Same reason the !ok paths cancel the
- * body. SyntaxError is deliberate: classifyChatError still tags it 'parse'.
+ * carry the user's own lab text there. Same reason the !ok paths keep only the
+ * closed-list error type (US-15 AC40). SyntaxError is deliberate: classifyChatError still tags it 'parse'.
  * No `cause`, so nothing of the body survives serialisation either.
  */
 async function parseJsonBody(response: Response): Promise<any> {
@@ -274,6 +274,45 @@ async function readJson(response: Response): Promise<AnthropicResult> {
   return toResult((data.content as AnthropicContentBlock[]) ?? [], toUsage(data.usage), data.stop_reason ?? undefined, data.stop_details?.category);
 }
 
+/** Anthropic's error types, a closed set: the one part of an error body we keep. */
+const ANTHROPIC_ERROR_TYPES = new Set([
+  'invalid_request_error', 'authentication_error', 'billing_error', 'permission_error', 'not_found_error',
+  'request_too_large', 'rate_limit_error', 'api_error', 'timeout_error', 'overloaded_error',
+]);
+const ERROR_BODY_MAX_BYTES = 4096;
+
+/** A type off the closed list is 'other'; a missing one 'unknown'. Never the raw value. */
+function toErrorType(type: unknown): string {
+  if (typeof type !== 'string' || !type) return 'unknown';
+  return ANTHROPIC_ERROR_TYPES.has(type) ? type : 'other';
+}
+
+/**
+ * The error body's `error.type`, and nothing else from it (US-15 AC40): the
+ * message may echo uploaded or chat content. Reads at most 4 KB under the
+ * request's own timeout; past the cap, unparseable, or a failed read is
+ * 'unknown'. Never throws.
+ */
+async function readErrorType(response: Response): Promise<string> {
+  const reader = response.body?.getReader();
+  if (!reader) return 'unknown';
+  try {
+    const decoder = new TextDecoder();
+    let text = '';
+    let bytes = 0;
+    for (let chunk = await reader.read(); !chunk.done; chunk = await reader.read()) {
+      bytes += chunk.value.byteLength;
+      if (bytes > ERROR_BODY_MAX_BYTES) return 'unknown';
+      text += decoder.decode(chunk.value, { stream: true });
+    }
+    return toErrorType(JSON.parse(text + decoder.decode())?.error?.type);
+  } catch {
+    return 'unknown';
+  } finally {
+    reader.cancel().catch(() => {});
+  }
+}
+
 /**
  * How a read tells the retry loop it has started consuming a stream (after
  * which nothing is retried), and the abort it uses for its idle timeout.
@@ -282,7 +321,8 @@ interface ReadControl { began(): void; idle: AbortController }
 
 /**
  * The one POST to /v1/messages: auth headers, the overall timeout, body
- * discard on error, and the retry policy above. `read` turns a 200 into the
+ * discard on a retried error (only the type is read from a final one), and
+ * the retry policy above. `read` turns a 200 into the
  * result; a retryable network or timeout error is retried only while nothing
  * has been read (`began` not called).
  * `maxAttempts` below the default turns the inner retry off for a caller whose own deadline cannot absorb it (US-35 AC5).
@@ -307,19 +347,22 @@ async function fetchAnthropicRaw(
       });
 
       if (!response.ok) {
-        // Discard provider bodies: errors may echo uploaded or chat content.
-        await response.body?.cancel();
-
         if (RETRYABLE_STATUSES.has(response.status) && attempt < maxAttempts) {
+          // Discard provider bodies: errors may echo uploaded or chat content.
+          await response.body?.cancel();
           console.warn(`Anthropic API ${response.status} on attempt ${attempt}/${maxAttempts}, retrying after ${RETRY_DELAY_MS}ms`);
           await sleep(RETRY_DELAY_MS);
           continue;
         }
 
-        const err = new Error(`Anthropic API error (status ${response.status})`);
+        const errorType = await readErrorType(response);
+        const err = new Error(`Anthropic API error (status ${response.status}) (${errorType})`);
         console.error(err.message);
         if (!TRANSIENT_CAPACITY_STATUSES.has(response.status)) {
-          Sentry.captureException(err, { extra: { status: response.status, attempt } });
+          Sentry.captureException(err, {
+            tags: { anthropic_error_type: errorType },
+            extra: { status: response.status, attempt, errorType },
+          });
         }
         throw err;
       }
@@ -415,9 +458,8 @@ async function readEventStream(
         stopped = true;
         break;
       case 'error': {
-        // The type only, bounded: the message can echo the conversation.
-        const type = String(event.error?.type ?? '').replace(/[^a-z_]/g, '').slice(0, 40) || 'unknown';
-        throw new Error(`Anthropic stream error (${type})`);
+        // The type only, from the closed set: the message can echo the conversation.
+        throw new Error(`Anthropic stream error (${toErrorType(event.error?.type)})`);
       }
     }
   };
