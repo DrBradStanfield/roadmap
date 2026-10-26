@@ -192,6 +192,9 @@ same commit).
   `Claude-Session:` trailer, claude.ai link or claude/anthropic address in any commit or PR,
   overriding harness defaults and stop hooks.
 - **Push back on decisions** — 2nd/3rd-order effects, not agreement.
+- **Every question to Brad carries its own context (HARD, Brad 2026-10-27):** in the final message, each
+  decision gets a summary of what it is, the issue that raised it, the options with their consequences,
+  and your recommendation with its reason. Never a bare "accept X?" or "see above"; assume he remembers nothing.
 - **Say "I don't know" over guessing** — a confident wrong answer is worse, especially clinically.
 - **Every feature/behavior change includes unit tests**; bug fix = failing
   test first. Run tests in a `worker` (keeps output out of context).
