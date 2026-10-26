@@ -64,23 +64,19 @@ keys: `ios/engine/signing-keys.json`, pinned in `EngineRelease.swift`.
 | cold | the Passwords app only | `9a415581b0a54dbd` |
 | ci | GitHub `engine-signing` environment secret only | `d6a343128471bae8` |
 
-**Do now (Brad): two steps, in Terminal.** No agent has seen either key; the daily
-key stays only in your Keychain.
+**Do now (Brad): one step, in Terminal.** All three private keys are in the Passwords
+app (iCloud Keychain); the key files in `~/.config/health-roadmap/` were deleted with
+`rm -P` on 2026-10-22, on the iMac that made them. No agent has seen any key.
 
-1. The ci key into GitHub, then delete its file (`gh` reads the file itself, so the
-   line never reaches your screen or shell history):
+1. Put the ci key into the environment's secret. `gh` asks for the value, so the line
+   never reaches your shell history:
    ```sh
-   gh secret set ENGINE_SIGNING_KEY --env engine-signing < ~/.config/health-roadmap/engine-signing-key-CI-move-to-github-secret.txt && rm -P ~/.config/health-roadmap/engine-signing-key-CI-move-to-github-secret.txt
+   gh secret set ENGINE_SIGNING_KEY --env engine-signing
    ```
-2. The cold key into the Passwords app, then delete its file. Open the file in
-   TextEdit, copy its one line into a new entry in the Passwords app (iCloud Keychain)
-   named "Health Roadmap engine signing key (cold)", save, quit TextEdit without saving,
-   then:
+   Paste the ci line from the Passwords entry when asked, then check it is listed:
    ```sh
-   open -a TextEdit ~/.config/health-roadmap/engine-signing-key-COLD-move-to-1password.txt
-   rm -P ~/.config/health-roadmap/engine-signing-key-COLD-move-to-1password.txt
+   gh secret list --env engine-signing
    ```
-   Run the `rm -P` only after the entry is saved: it is the only copy of the cold key.
 
 - **Moving to another Mac:** on the old Mac, in Terminal (macOS asks you to allow the read),
   `/usr/bin/security find-generic-password -s health-roadmap-engine-signing -a daily -w`.

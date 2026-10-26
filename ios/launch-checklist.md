@@ -42,15 +42,12 @@ by the orchestrator, not a fresh reviewer.
    - Done 2026-10-25: the workflow `.github/workflows/engine-release.yml` (added with
      your permission) and the GitHub environment `engine-signing`, limited to `main`,
      with you as required reviewer. No secret is set yet.
-   - Left for you, in Terminal. The ci key into the environment's secret, then delete
-     its file:
-     `gh secret set ENGINE_SIGNING_KEY --env engine-signing < ~/.config/health-roadmap/engine-signing-key-CI-move-to-github-secret.txt && rm -P ~/.config/health-roadmap/engine-signing-key-CI-move-to-github-secret.txt`
-   - And the cold key into the Passwords app, then delete its file: copy the one line of
-     `~/.config/health-roadmap/engine-signing-key-COLD-move-to-1password.txt` into a new
-     entry "Health Roadmap engine signing key (cold)", save it, then
-     `rm -P ~/.config/health-roadmap/engine-signing-key-COLD-move-to-1password.txt`
-     (engine-updates.md has the steps).
-   - The daily key is in this Mac's Keychain. To release from another Mac, move it there
+   - Left for you, one step: all three private keys are in your Passwords app (the key
+     files were deleted on 2026-10-22). In Terminal run
+     `gh secret set ENGINE_SIGNING_KEY --env engine-signing`, paste the ci line from
+     Passwords when asked, then check with `gh secret list --env engine-signing`.
+   - The daily key is in the iMac's login Keychain (and the new Mac's, if you added it). To
+     release from another Mac, move it there
      (engine-updates.md says how).
    - On every release prompt, click **Allow**, never **Always Allow**.
 2. **Apple enrolment: done 2026-10-25.** Team Dr Brad, Inc (KAV75KMV2R), account
