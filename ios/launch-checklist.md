@@ -73,16 +73,22 @@ by the orchestrator, not a fresh reviewer.
    Never set `APP_ATTEST_DEV_BYPASS` in production.
 6. **Privacy:** published again 2026-10-26 with the five Apple Health readings. Read the
    live page and its "Items still to verify" list (legal review, App Attest row retention).
-7. **App Store Connect (2026-10-27): ready except the upload.** App record 6826824214:
-   listing, review notes (updated for the one-step Apple Health), contact, version 0.1,
-   automatic release, free in 175 countries, age 16+, App Privacy published, five
-   6.3-inch screenshots of build 2, declared **not a regulated medical device**, EU trader
-   status declared by Brad. Build 2 (0.1) is archived in Xcode's Organizer
-   (`HealthRoadmap-0.1-build2`). The screen was locked overnight, so it is not uploaded.
-   - **Upload (Brad, 2 minutes):** Xcode › Window › Organizer › HealthRoadmap 0.1 (2) ›
-     Distribute App › App Store Connect › Upload. Or unlock the Mac and tell the
-     session, which can click through it (Xcode access is granted, clicks only).
-   - **Then:** the version page's Build › pick build 2 › Save › Add for Review › Submit.
+7. **App Store Connect (2026-10-27): waiting for build 3.** App record 6826824214: listing,
+   review notes (one-step Apple Health), contact, version 0.1, automatic release, free in
+   175 countries, age 16+, App Privacy published, five 6.3-inch screenshots, declared **not
+   a regulated medical device**, EU trader status declared by Brad.
+   - Build 2 was uploaded by Brad (2026-10-27) and processed ("Ready to Submit"), but not
+     submitted: it has a VO2 legend layout slip, so Brad chose to wait for build 3.
+   - **Build 3** (in progress): the legend fix, Apple's Low line from age 60 for the VO2
+     bands, and the DPP 2002 citation for metformin's prevention claim. After its review:
+     commit, full tests, `CURRENT_PROJECT_VERSION = 3`, archive into Xcode's Organizer.
+   - **Upload:** Brad, from Xcode › Window › Organizer › HealthRoadmap 0.1 (3) › Distribute
+     App › App Store Connect › Upload; or the session clicks it through while the Mac is
+     unlocked (Xcode access granted, clicks only). An agent shell cannot upload: it has no
+     App Store Connect token.
+   - **Then:** wait for processing, version page › Build › pick build 3 › Save › Add for
+     Review › Submit. App Store Connect may need Brad to sign in again (sessions expire).
+   - **Then:** install build 3 on Brad's iPhone when it is plugged into this Mac.
 8. **Regulatory advice** on whether the app counts as a medical device in your markets.
 9. **Clinical call:** should the value pages show target bands (blood pressure goal,
    healthy waist, ideal weight)? The targets live only in the website's code today;
