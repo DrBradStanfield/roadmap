@@ -8,6 +8,10 @@ embedded = true
 [build]
 automatically_update_urls_on_dev = false
 
+[events]
+api_version = "unstable"
+subscription = []
+
 [webhooks]
 api_version = "2026-04"
 
