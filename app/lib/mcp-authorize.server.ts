@@ -28,7 +28,9 @@ import { packSealed } from './mcp-seal.server';
  * 3.1 KB, comfortably inside the 4096 bytes browsers allow. The next bucket up
  * puts it at ~5.8 KB, where the browser drops the cookie without a word and
  * the callback finds nothing. 1024 is twice what OpenAI sends and more than
- * Claude does, with the rest of the bucket left for a longer client id.
+ * Claude does. The character ceiling alone is not the byte budget: JSON
+ * escaping, UTF-8 and a long client id can still overflow it. checkAuthorize
+ * also sizes the complete consent cookie before accepting the state.
  */
 export const MAX_STATE_LENGTH = 1024;
 
@@ -110,6 +112,17 @@ export function checkAuthorize(params: URLSearchParams, client: McpClient): Auth
   if (!/^[A-Za-z0-9._~-]{43,128}$/.test(codeChallenge)) return fail('code-challenge');
   const clientState = params.get('state') ?? '';
   if (clientState.length > MAX_STATE_LENGTH) return fail('state-too-long');
+  const request: AuthorizeRequest = { client, redirectUri, codeChallenge, clientState };
+  // US-32 AC14: size the actual wire format, including the consent nonce and
+  // client-id prefix. No compression: nonce contents cannot change this size.
+  for (const provider of ['dropbox', 'google'] as const) {
+    const payload = statePayload(request, provider, Date.now(), 'n'.repeat(43));
+    // The next padding bucket already exceeds the browser's cookie budget.
+    if (Buffer.byteLength(JSON.stringify(payload), 'utf8') + 4 > 2048) return fail('state-too-long');
+    const sealed = packSealed('state', client.clientId, payload);
+    const cookie = `__Host-mcp-state=${sealed}; Secure; HttpOnly; SameSite=Lax; Path=/; Max-Age=${STATE_LIFETIME_SECONDS}`;
+    if (Buffer.byteLength(cookie, 'utf8') > 4096) return fail('state-too-long');
+  }
   // RFC 8707. The audience must be this server, or a token we mint here could
   // be replayed somewhere else — the confused-deputy the MCP spec warns about.
   // An empty `resource=` names no audience, so it is absent, not wrong: a
@@ -118,15 +131,7 @@ export function checkAuthorize(params: URLSearchParams, client: McpClient): Auth
   const resource = params.get('resource');
   const missed = resource ? resourceMiss(resource) : null;
   if (missed) return fail('resource', true, missed);
-  return {
-    ok: true,
-    request: {
-      client,
-      redirectUri,
-      codeChallenge,
-      clientState,
-    },
-  };
+  return { ok: true, request };
 }
 
 /**
@@ -134,17 +139,20 @@ export function checkAuthorize(params: URLSearchParams, client: McpClient): Auth
  * is minted when the user presses Connect, so a state blob obtained from the
  * consent page alone can never satisfy the callback.
  */
-export function sealState(request: AuthorizeRequest, provider: McpProvider, nowMs: number): string {
-  const payload: StatePayload = {
+function statePayload(request: AuthorizeRequest, provider: McpProvider, nowMs: number, nonce: string): StatePayload {
+  return {
     clientId: request.client.clientId,
     provider,
     redirectUri: request.redirectUri,
     codeChallenge: request.codeChallenge,
     clientState: request.clientState,
-    nonce: '',
+    nonce,
     exp: nowSeconds(nowMs) + STATE_LIFETIME_SECONDS,
   };
-  return packSealed('state', request.client.clientId, payload);
+}
+
+export function sealState(request: AuthorizeRequest, provider: McpProvider, nowMs: number): string {
+  return packSealed('state', request.client.clientId, statePayload(request, provider, nowMs, ''));
 }
 
 // ---------------------------------------------------------------------------
