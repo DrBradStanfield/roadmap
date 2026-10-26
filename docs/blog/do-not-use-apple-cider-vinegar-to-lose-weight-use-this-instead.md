@@ -76,7 +76,7 @@ A more recent study involving overweight young people in Lebanon used a similar 
 
 Correction (October 2026): the journal retracted this trial in September 2025, so its results should not be relied on.
 
-Because the second study was retracted, only the small Japanese trial remains, and it too calls for caution: it was small, and the long-term effects are unknown.
+Because the second study was retracted, only the small Japanese trial remains, and it too calls for caution—mainly the small number of participants and the unknown long-term effects.
 
 When we look at all of these findings collectively, the picture is still incomplete. You might get a small benefit from apple cider vinegar if you’re trying to shed a few pounds, but the overall data set is too limited and inconsistent to make a strong recommendation. That’s why apple cider vinegar does not appear in standard obesity or diabetes guidelines as a reliable tool for weight management or blood sugar control.
 
