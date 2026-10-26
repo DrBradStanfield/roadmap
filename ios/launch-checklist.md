@@ -45,8 +45,11 @@ by the orchestrator, not a fresh reviewer.
    - Left for you, one step: all three private keys are in your Passwords app (the key
      files were deleted on 2026-10-22). In Terminal run
      `gh secret set ENGINE_SIGNING_KEY --env engine-signing`, paste the ci line from
-     Passwords when asked, then check with `gh secret list --env engine-signing`.
-   - The daily key is in the iMac's login Keychain (and the new Mac's, if you added it). To
+     Passwords when asked, then check with `gh secret list --env engine-signing`. The real
+     test is the first Engine release after a Deploy on main: if none starts on its own,
+     run Actions › Engine release › Run workflow on main.
+   - The daily key is in the iMac's login Keychain and in Passwords as "Health Roadmap engine
+     signing key (daily)" (and the new Mac's Keychain, if you added it). To
      release from another Mac, move it there
      (engine-updates.md says how).
    - On every release prompt, click **Allow**, never **Always Allow**.
