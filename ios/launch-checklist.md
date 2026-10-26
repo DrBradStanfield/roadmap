@@ -41,16 +41,16 @@ by the orchestrator, not a fresh reviewer.
 1. **Signing keys for engine updates** ([engine-updates.md](engine-updates.md)).
    - Done 2026-10-25: the workflow `.github/workflows/engine-release.yml` (added with
      your permission) and the GitHub environment `engine-signing`, limited to `main`,
-     with you as required reviewer. No secret is set yet.
-   - Left for you, in Terminal. The ci key into the environment's secret, then delete
-     its file:
-     `gh secret set ENGINE_SIGNING_KEY --env engine-signing < ~/.config/health-roadmap/engine-signing-key-CI-move-to-github-secret.txt && rm -P ~/.config/health-roadmap/engine-signing-key-CI-move-to-github-secret.txt`
-   - And the cold key into the Passwords app, then delete its file: copy the one line of
-     `~/.config/health-roadmap/engine-signing-key-COLD-move-to-1password.txt` into a new
-     entry "Health Roadmap engine signing key (cold)", save it, then
-     `rm -P ~/.config/health-roadmap/engine-signing-key-COLD-move-to-1password.txt`
-     (engine-updates.md has the steps).
-   - The daily key is in this Mac's Keychain. To release from another Mac, move it there
+     with you as required reviewer. Secret `ENGINE_SIGNING_KEY` set 2026-10-26.
+   - Done 2026-10-26: all three private keys are in your Passwords app (the key
+     files were deleted on 2026-10-22). You ran
+     `gh secret set ENGINE_SIGNING_KEY --env engine-signing`, with the ci line from
+     Passwords; `gh secret list --env engine-signing` lists it. The real
+     test is the first Engine release after a Deploy on main: if none starts on its own,
+     run Actions › Engine release › Run workflow on main.
+   - The daily key is in the iMac's login Keychain and in Passwords as "Health Roadmap engine
+     signing key (daily)" (and the new Mac's Keychain, if you added it). To
+     release from another Mac, move it there
      (engine-updates.md says how).
    - On every release prompt, click **Allow**, never **Always Allow**.
 2. **Apple enrolment: done 2026-10-25.** Team Dr Brad, Inc (KAV75KMV2R), account

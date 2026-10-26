@@ -115,7 +115,7 @@ The authors give two explanations. Maybe the benefit needs a particular dose and
 
 There might be something to the NRF2 literature, but to me that’s more reasons to eat vegetables and food sources of astaxanthin, rather than a reason to buy these supplements. I don’t take either, after a careful review of the literature.
 
-On vegetables, Dr Patrick and I agree: eat plenty, and a wide variety [31][32]. Eat sprouts raw and chew them well, and on cooked broccoli, ground mustard seed may help some conversion [33]. Astaxanthin is the pigment in salmon, trout, shrimp and crab [22].
+On vegetables, Dr Patrick and I agree: eat plenty, and a wide variety [31][32]. Eat sprouts raw and chew them well, and on cooked broccoli, ground mustard seed may help some conversion [33]. If you’re pregnant, older or have a weakened immune system, cooked broccoli with ground mustard seed is the safer route [36]. Astaxanthin is the pigment in salmon, trout, shrimp and crab [22].
 
 We also want to be careful about taking too many antioxidants, because they can interfere with the response to exercise. Equally, for a select group, antioxidants used correctly may actually improve exercise performance [34][35].
 
@@ -123,11 +123,11 @@ We also want to be careful about taking too many antioxidants, because they can 
 
 These studies didn’t make it into the video, but they belong to the same story.
 
-In 2012, a team in Tehran gave 81 people with type 2 diabetes broccoli sprout powder or a placebo for four weeks. At the higher dose, insulin and a measure of insulin resistance fell, just reaching statistical significance [36].
+In 2012, a team in Tehran gave 81 people with type 2 diabetes broccoli sprout powder or a placebo for four weeks. At the higher dose, insulin and a measure of insulin resistance fell, just reaching statistical significance [37].
 
-Autism and mental health followed a similar path. A 2014 trial in 44 young men with autism reported big improvements in behaviour scores [37], but most later trials, including two larger ones, missed their main goals [38][39][40], and a 2025 pooled analysis found only a small improvement [41]. In a 2021 trial in depression after heart procedures, 30% responded on sulforaphane against under 7% on placebo [42]. But a 172-person trial in early schizophrenia found no benefit on its main thinking-skills score, though a couple of sub-scores improved [43].
+Autism and mental health followed a similar path. A 2014 trial in 44 young men with autism reported big improvements in behaviour scores [38], but most later trials, including two larger ones, missed their main goals [39][40][41], and a 2025 pooled analysis found only a small improvement [42]. In a 2021 trial in depression after heart procedures, 30% responded on sulforaphane against under 7% on placebo [43]. But a 172-person trial in early schizophrenia found no benefit on its main thinking-skills score, though a couple of sub-scores improved [44].
 
-Two trials of a drug-grade, stabilised sulforaphane measured whether people got better. In Dundee, during COVID, 133 people in hospital with pneumonia got the drug or a placebo. The 2024 report: stopped early for lack of benefit, with no difference in recovery, time in hospital or deaths at 28 days. A third of the people on sulforaphane stopped taking it, mostly because of gut side effects, against fewer than one in ten on placebo. LifeArc funded it, and the drug’s maker supplied the drug, the placebo and staff support. One author advises that company, which the paper declares as outside this work [44]. A second, smaller trial of the same drug, in 105 people after bleeding around the brain, didn’t reduce spasm in the large arteries or improve recovery [45].
+Two trials of a drug-grade, stabilised sulforaphane measured whether people got better. In Dundee, during COVID, 133 people in hospital with pneumonia got the drug or a placebo. The 2024 report: stopped early for lack of benefit, with no difference in recovery, time in hospital or deaths at 28 days. A third of the people on sulforaphane stopped taking it, mostly because of gut side effects, against fewer than one in ten on placebo. LifeArc funded it, and the drug’s maker supplied the drug, the placebo and staff support. One author advises that company, which the paper declares as outside this work [45]. A second, smaller trial of the same drug, in 105 people after bleeding around the brain, didn’t reduce spasm in the large arteries or improve recovery [46].
 
 For astaxanthin, the one randomised trial I could find that measured NRF2 in people was in 49 women with polycystic ovary syndrome going through IVF (in vitro fertilisation). NRF2-related genes rose in the cells around their eggs, and egg and embryo quality scores improved. Pregnancy rates didn’t change [23].
 
@@ -205,22 +205,24 @@ The same mouse-lifespan program had earlier tested Protandim, a plant mix sold t
 
 35. https://pmc.ncbi.nlm.nih.gov/articles/PMC12491480/
 
-36. https://pubmed.ncbi.nlm.nih.gov/22537070/
+36. https://www.cdc.gov/food-safety/foods/safer-food-choices.html
 
-37. https://www.pnas.org/doi/10.1073/pnas.1416940111
+37. https://pubmed.ncbi.nlm.nih.gov/22537070/
 
-38. https://pubmed.ncbi.nlm.nih.gov/34034808/
+38. https://www.pnas.org/doi/10.1073/pnas.1416940111
 
-39. https://pubmed.ncbi.nlm.nih.gov/36427174/
+39. https://pubmed.ncbi.nlm.nih.gov/34034808/
 
-40. https://pubmed.ncbi.nlm.nih.gov/36771424/
+40. https://pubmed.ncbi.nlm.nih.gov/36427174/
 
-41. https://pubmed.ncbi.nlm.nih.gov/40458076/
+41. https://pubmed.ncbi.nlm.nih.gov/36771424/
 
-42. https://pubmed.ncbi.nlm.nih.gov/34033171/
+42. https://pubmed.ncbi.nlm.nih.gov/40458076/
 
-43. https://pubmed.ncbi.nlm.nih.gov/39144775/
+43. https://pubmed.ncbi.nlm.nih.gov/34033171/
 
-44. https://pmc.ncbi.nlm.nih.gov/articles/PMC10926007/
+44. https://pubmed.ncbi.nlm.nih.gov/39144775/
 
-45. https://pubmed.ncbi.nlm.nih.gov/39028412/
+45. https://pmc.ncbi.nlm.nih.gov/articles/PMC10926007/
+
+46. https://pubmed.ncbi.nlm.nih.gov/39028412/
