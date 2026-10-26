@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/health-roadmap-file.schema.json",
   "title": "Health Roadmap record file",
-  "description": "The complete health record for one user: a single JSON document named health-roadmap.json, stored in the user's own cloud (Google Drive, Dropbox, GitHub, WebDAV) or in browser localStorage. Never on our server. Derived from packages/health-core/src/roadmap-file.ts at schemaVersion 2. Unknown properties are preserved on read and write (forward-compatibility rule 1 in migrate.ts), so every object here allows extra keys. Timestamps are ISO 8601 strings. `meta.createdAt`/`meta.updatedAt` are shape-checked on read (a malformed value is replaced with the load time); row timestamps are compared as strings and clamped, not format-validated — so this schema does not require a format. Agents: see docs/agent-access.md for the read/write rules.",
+  "description": "The complete health record for one user: a single JSON document named health-roadmap.json, stored in the user's own cloud (Google Drive, Dropbox, GitHub, WebDAV) or in browser localStorage. Never on our server. Derived from packages/health-core/src/roadmap-file.ts at schemaVersion 2. Unknown properties are preserved on read and write (forward-compatibility rule 1 in migrate.ts), so every object here allows extra keys. Timestamps are ISO 8601 strings. `meta.createdAt`/`meta.updatedAt` use the row stamp grammar on read: an invalid stamp takes its valid companion; if neither is valid, both take the latest valid known stored clock, with the Unix epoch as the floor/default. Mutable row and field `updatedAt` stamps are validated and clamped to the later normalized metadata stamp. Immutable measurement/lab `createdAt` and document `addedAt` are kept as written; a future clinical `createdAt` can take its day slot, so agents must never write one. This schema does not require a timestamp format. Agents: see docs/agent-access.md for the read/write rules.",
   "type": "object",
   "required": [
     "schemaVersion",
@@ -81,7 +81,7 @@
   "$defs": {
     "RoadmapFileMeta": {
       "type": "object",
-      "description": "Top-level sync state for the whole file. An agent writing the file sets `updatedAt` and nothing else here — `lamport`, `eraseEpoch`, `erasedAt` and `lastDeviceId` belong to the sync engine. Unrecognised keys added here are dropped by mergeFiles, which rebuilds meta from these six fields. `updatedAt` also anchors the clock clamp on read — a stale value rewinds rows written after it.",
+      "description": "Top-level sync state for the whole file. An agent writing the file sets `updatedAt` and nothing else here — `lamport`, `eraseEpoch`, `erasedAt` and `lastDeviceId` belong to the sync engine. Unrecognised keys added here are dropped by mergeFiles, which rebuilds meta from these six fields. The later normalized `createdAt`/`updatedAt` anchors mutable row and field `updatedAt` clamps on read. Immutable measurement/lab `createdAt` and document `addedAt` are not clamped.",
       "required": ["createdAt", "updatedAt", "lastDeviceId", "lamport"],
       "properties": {
         "createdAt": { "type": "string", "description": "ISO 8601 — earliest creation across devices." },

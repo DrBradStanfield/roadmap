@@ -667,9 +667,9 @@ function rowsSince(
 ): RoadmapFile | null {
   const kept: Record<string, unknown[]> = {};
   let wrote = false;
-  // The file's clock must stay at or ahead of every row in it: `migrate.ts`
-  // clamps a row that post-dates `meta.updatedAt` back to it, which would
-  // rewrite the very rows this is rescuing.
+  // Carry rescued clocks into the file's last-write anchor so migration
+  // does not rewind rescued mutable updatedAt stamps. Immutable createdAt
+  // and addedAt are preserved regardless of this anchor.
   let latest = winner.meta.updatedAt;
   for (const key of Object.keys(ROW_STAMPS) as StampedArray[]) {
     const stamp = ROW_STAMPS[key] as (row: unknown) => string;
@@ -723,10 +723,9 @@ export function mergeFiles(
   // survive is decided below.
   const localEpoch = local.meta.eraseEpoch ?? 0;
   const remoteEpoch = remote.meta.eraseEpoch ?? 0;
-  // The file's clock only ever moves forward. `migrate.ts` clamps every row
-  // timestamp to meta.updatedAt, so a device whose wall clock runs backwards
-  // would otherwise write a file whose own rows post-date its meta — and have
-  // the next load rewrite all of them.
+  // The file's clock only ever moves forward. Migration clamps mutable row
+  // and field updatedAt to the file's last write, so a lagging device must not
+  // rewind that anchor. Immutable createdAt/addedAt are never clamped.
   const updatedAt = [opts.now, local.meta.updatedAt, remote.meta.updatedAt].reduce(latestStamp);
   if (localEpoch !== remoteEpoch) {
     const localWins = localEpoch > remoteEpoch;

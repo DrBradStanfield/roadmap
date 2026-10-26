@@ -623,9 +623,9 @@ export class RecordSession {
         // device file may hold guest-era data this session never loaded (no
         // marker set), and an overwrite would destroy its only copy. The merge
         // preserves it — and lifts it up with the mirror on the next session.
-        // It migrates this copy first, and migrate clamps every row clock to
-        // meta.updatedAt: advance it, or an offline edit is rewound to the
-        // last successful sync and loses a slot contest it won.
+        // It migrates this copy first. Advance meta.updatedAt so mutable row
+        // and field updatedAt stamps are not rewound to the last successful
+        // sync. Immutable measurement/lab createdAt is kept as written.
         try {
           const ctx = this.ctx();
           if (ctx.now > this.current.meta.updatedAt) this.current.meta.updatedAt = ctx.now;

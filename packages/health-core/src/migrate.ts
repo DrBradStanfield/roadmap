@@ -284,9 +284,8 @@ export function migrateFile(
     if (ok) meta.erasedAt = new Date(at).toISOString();
     else delete meta.erasedAt;
   }
-  // The file's own last write — the anchor every row clock is clamped to. Every
-  // file at rest is merge output, and merge stamps meta.updatedAt last, so no
-  // legitimate row post-dates it.
+  // The file's own last write anchors mutable row and field updatedAt clamps.
+  // Immutable measurement/lab createdAt and document addedAt stay as written.
   const anchor = after(meta.createdAt, meta.updatedAt) ? meta.createdAt : meta.updatedAt;
   // Non-object entries are dropped, not passed through: every consumer reads
   // `.id` off a row, so one `null` in an array made every SAVE throw — the
