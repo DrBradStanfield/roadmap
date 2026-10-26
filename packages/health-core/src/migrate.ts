@@ -83,12 +83,12 @@ export function asArray<T>(v: unknown): T[] {
 export const MAX_COUNTER = 1e12;
 
 /**
- * A meta timestamp from an untrusted writer. Shape-checked, not range-checked,
- * and rewritten in UTC when it parses and is not already a UTC `Z` stamp: the merge takes the
- * later of two by instant, and one spelling keeps the file's clock and every
- * row clamped to it in step (US-10 AC8 review, R1).
+ * A meta timestamp from an untrusted writer. The shape gate is unchanged;
+ * a malformed instant takes the existing fallback, never a sanitation anchor.
+ * Valid offset stamps are rewritten in UTC, while UTC precision is retained
+ * (US-10 AC8). The fallback remains the reader's `now`, not a stable repair.
  */
-/** Whether a value has a stamp's shape, so `isoOr` keeps it rather than its fallback. */
+/** Whether a value has a stamp's prefix shape; not a complete validity check. */
 export function hasStampShape(value: unknown): value is string {
   return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value);
 }
@@ -96,7 +96,7 @@ export function hasStampShape(value: unknown): value is string {
 function isoOr(value: unknown, fallback: string): string {
   if (!hasStampShape(value)) return fallback;
   const at = stampInstant(value);
-  return Number.isNaN(at) || /^[^a-z]*Z$/.test(value) ? value : new Date(at).toISOString();
+  return Number.isNaN(at) ? fallback : /^[^a-z]*Z$/.test(value) ? value : new Date(at).toISOString();
 }
 
 /** `a` is later than `b`: as instants when both parse, so an offset or a

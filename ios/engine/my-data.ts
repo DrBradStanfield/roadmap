@@ -8,7 +8,7 @@ import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/sr
 import type { Plan } from '../../packages/health-core/src/plan';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 import { hasStampShape } from '../../packages/health-core/src/migrate';
-import { localDay } from '../../packages/health-core/src/merge';
+import { localDay, stampInstant } from '../../packages/health-core/src/merge';
 import { parseLocalisedNumber } from '../../packages/health-core/src/parseNumber';
 import { appendMeasurement, bulkAppendValues, correctValue, validDay } from '../../packages/health-core/src/record-edits';
 import { labRows, type Extraction } from './lab-review';
@@ -119,16 +119,18 @@ export function readRecord(text: string, now: string, deviceId: string): Roadmap
  * that text once, cold (Codex R1).
  * `deviceId` is in the key because the migration falls back to it for a missing
  * `meta.lastDeviceId`. `now` is not: the migration reads it only as the fallback
- * for a `meta.createdAt` or `meta.updatedAt` that does not start yyyy-mm-ddT
- * (migrate.ts isoOr), so a record whose two stamps both do migrates the same at
- * any `now`. Any other record is not kept.
+ * for metadata timestamps that lack the prefix shape or a complete valid
+ * instant (migrate.ts isoOr). Only a record with two usable stamps can be
+ * reused independently of `now`; fallback-dependent records are not kept.
  */
 let kept: { text: string; deviceId: string; file: RoadmapFile } | null = null;
 
-/** Whether the record's meta carries both stamps, so `now` cannot change its migration. */
+/** Whether both metadata stamps avoid the reader-time fallback during migration. */
 function nowFree(raw: object): boolean {
   const meta = (raw as { meta?: Record<string, unknown> }).meta;
-  return typeof meta === 'object' && meta !== null && hasStampShape(meta.createdAt) && hasStampShape(meta.updatedAt);
+  return typeof meta === 'object' && meta !== null
+    && hasStampShape(meta.createdAt) && Number.isFinite(stampInstant(meta.createdAt))
+    && hasStampShape(meta.updatedAt) && Number.isFinite(stampInstant(meta.updatedAt));
 }
 
 /** Under the tests the kept record is frozen, so every engine test checks the

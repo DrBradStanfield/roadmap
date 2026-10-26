@@ -223,12 +223,27 @@ describe('what the slot serves', () => {
     }
   });
 
-  it('the condition holds: a record whose two meta stamps start yyyy-mm-ddT migrates the same at any now', () => {
+  // US-10 AC8a: malformed metadata takes the reader-time fallback, so a warm
+  // native read must match a cold read at that time rather than reuse old now.
+  it.each(['2026-01-01Tjunk', '2026-02-30T00:00:00Z', '2026-99-01T00:00:00Z', '2026-01-01T00:00:00ZZZ'])('does not cache malformed metadata %s across reader times', (bad) => {
+    const { meta, ...rest } = JSON.parse(richText()) as RoadmapFile;
+    for (const field of ['createdAt', 'updatedAt'] as const) {
+      const raw = JSON.stringify({ ...rest, meta: { ...meta, [field]: bad } });
+      forget();
+      const first = readRecord(raw, NOW, DEVICE);
+      const second = readRecord(raw, LATER, DEVICE);
+      expect(first).toStrictEqual(cold(raw, NOW));
+      expect(second).toStrictEqual(cold(raw, LATER));
+      expect(second).not.toBe(first);
+      expect(second.meta[field]).toBe(LATER);
+    }
+  });
+
+  it('a record whose two meta stamps are complete valid instants migrates the same at any now', () => {
     const { meta, ...rest } = JSON.parse(richText()) as RoadmapFile;
     for (const [createdAt, updatedAt] of [
       ['2026-01-01T00:00:00Z', '2026-10-21T08:00:00.000Z'],
       ['2026-01-01T09:00:00+13:00', '2026-10-21T08:00:00.000+02:00'],
-      ['2026-01-01Tjunk', '2026-02-30T00:00:00Z'],
     ]) {
       const raw = JSON.stringify({ ...rest, meta: { ...meta, createdAt, updatedAt } });
       expect(cold(raw, '2020-01-01T00:00:00.000Z')).toStrictEqual(cold(raw, '2030-06-01T00:00:00.000Z'));
