@@ -180,7 +180,7 @@ duplicates.
   (roadmap-data.ts:206), so the counter goes blind where it matters: W43 had 27 unit-less
   blood-count refusals from 4 visitors (W42: 3). A rise means a blank unit or an unknown spelling;
   probe with labUnitTaken first (a taken spelling never fires), never read it as noise.
-- **2026-10-27 [instrumentation, W43 follow-up]** After the be7b1b58 deploy, `lab_unit_refused` sends
+- **2026-10-27 [instrumentation, W43 follow-up]** Once the widget ships (blocked 10-27 until Brad bumps the pinned Shopify CLI; the server got be7b1b58 via a fly-only deploy), `lab_unit_refused` sends
   `(blank)` for a blank or missing unit and keeps bracketed powers of ten (`x10(3)/uL`): a unit-less
   row now means an untrusted spelling only, never a blank. The 27 W43 rows' likely cause, bracketed
   exponents, is folded into the catalogue (US-21 AC22), but it is a hypothesis: if count refusals with
@@ -193,4 +193,4 @@ duplicates.
   left to decide; awaiting Brad's close. Urine-creatinine user: her 10-21 reply holds one build need
   (lab-printed eGFR when no serum creatinine: #166 option 6, plus a way to retire wrong rows without a
   replacement, option 5) and two clinical questions for Brad (body-fat-aware weight target; lipid
-  targets without CAC/CIMT inputs); still unanswered: Brad's to reply. Referrer key: not picked up.
+  targets without CAC/CIMT inputs); still unanswered: Brad's to reply. Referrer key: not picked up. Shopify extension deploys fail since 10-26 (Shopify's new server-side [events] check vs CLI 3.90.0): patch to pin 4.9.4 is with Brad; widget changes wait for it.
