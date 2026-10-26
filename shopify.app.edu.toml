@@ -6,9 +6,6 @@ client_id = "deb34fd962e5d868c1501ec10cd7888d"
 name = "Health Roadmap (Edu)"
 application_url = "https://health-tool-edu.fly.dev"
 embedded = true
-# Shopify now requires this list server-side (2026-10-26), even for apps that
-# use no app events: an empty list subscribes to nothing.
-events = []
 
 [build]
 automatically_update_urls_on_dev = false
