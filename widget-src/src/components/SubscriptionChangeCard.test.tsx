@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * US-49 AC8: the confirm card. Nothing changes until Confirm; the outcome is
+ * US-59 AC8: the confirm card. Nothing changes until Confirm; the outcome is
  * shown in plain words; the token is posted with a code-only reason.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
@@ -13,7 +13,7 @@ const cancel: SubscriptionCard = { ...skip, token: 'tok-cancel-S1-xxxxxxxxxxxxxx
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
-describe('US-49 AC8 — SubscriptionChangeCard', () => {
+describe('US-59 AC8 — SubscriptionChangeCard', () => {
   it('idle: the facts, Confirm and Not now; nothing happens until pressed', () => {
     const onConfirm = vi.fn(); const onDismiss = vi.fn();
     const { getByText, getByRole } = render(<SubscriptionChangeCard entry={{ card: skip, phase: 'idle' }} onConfirm={onConfirm} onDismiss={onDismiss} />);
@@ -40,7 +40,7 @@ describe('US-49 AC8 — SubscriptionChangeCard', () => {
   });
 });
 
-describe('US-49 AC8 — subscription-card helpers', () => {
+describe('US-59 AC8 — subscription-card helpers', () => {
   it('reads only a well-formed card', () => {
     expect(readSubscriptionCard(skip)).toEqual(skip);
     expect(readSubscriptionCard({ ...skip, action: 'monthly' })).toBeNull();

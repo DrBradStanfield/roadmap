@@ -20,7 +20,7 @@ import { postSync, postInputSync, subscribeSync, generateInstanceId } from '../l
 import { cutText, type ChatContextPayload, type ProposedEdit } from '@roadmap/health-core';
 import { confirmSubscriptionChange, type SubscriptionCard, type SubscriptionResult } from '../lib/subscription-card';
 
-/** A subscription change card under an answer (US-49): idle, sending, or closed with its outcome. */
+/** A subscription change card under an answer (US-59): idle, sending, or closed with its outcome. */
 export interface SubscriptionCardState {
   card: SubscriptionCard;
   phase: 'idle' | 'sending' | 'closed';
@@ -70,7 +70,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   // this session only (AC17/AC22). Never persisted: not in `messages` (so not synced
   // to other tabs or written to the user's cloud chat history) and never sent to the server.
   const [approachById, setApproachById] = useState<Record<string, ChatApproach>>({});
-  // US-49: subscription change cards, by assistant message id, this tab only
+  // US-59: subscription change cards, by assistant message id, this tab only
   // (like approachById: never persisted, synced or sent anywhere but the confirm).
   const [cardsById, setCardsById] = useState<Record<string, SubscriptionCardState>>({});
   const streamRef = useRef({ ...NO_PENDING, frame: 0 });
@@ -376,7 +376,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     }
   }, [instanceId, dropThread]);
 
-  /** The customer pressed Confirm (US-49): the one request that makes the change. */
+  /** The customer pressed Confirm (US-59): the one request that makes the change. */
   const cardsRef = useRef(cardsById);
   const setCards = useCallback((next: Record<string, SubscriptionCardState>) => { cardsRef.current = next; setCardsById(next); }, []);
   useEffect(() => { cardsRef.current = cardsById; }, [cardsById]);
@@ -386,7 +386,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     if (!entry || entry.phase !== 'idle') return;
     setCards({ ...cardsRef.current, [messageId]: { ...entry, phase: 'sending' } });
     const result = await confirmSubscriptionChange(entry.card);
-    // The usage signal is counted by the server's confirm route (US-49), on every bundle.
+    // The usage signal is counted by the server's confirm route (US-59), on every bundle.
     // 'busy' leaves the card open to try again; every other outcome closes it.
     setCards({ ...cardsRef.current, [messageId]: { ...entry, result, phase: result.code === 'busy' ? 'idle' : 'closed' } });
   }, [setCards]);

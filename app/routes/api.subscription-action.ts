@@ -1,6 +1,6 @@
 /**
  * POST /api/subscription-action { token, reason? } — the customer's own
- * confirm of a subscription change card (US-49). Commerce only: 404 unless
+ * confirm of a subscription change card (US-59). Commerce only: 404 unless
  * subscription actions are enabled (CHAT_SUBSCRIPTION_ACTIONS=on and
  * CHAT_SURFACE=brand, so never on the education app).
  *
@@ -57,7 +57,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const result = await postSubscriptionAction(request, parsed.data.token, parsed.data.reason ?? null);
   // Whatever happened, the next chat turn reads the subscriptions again.
   invalidateSubscriptions(customerId);
-  // The usage signal (US-49), counted here because only the server knows the store took it. Name only.
+  // The usage signal (US-59), counted here because only the server knows the store took it. Name only.
   if (result.status === 'done' || result.status === 'accepted') void recordServerEvent('subscription_action_confirmed');
   return Response.json({ success: result.status !== 'refused' && result.status !== 'unconfirmed', ...result });
 }

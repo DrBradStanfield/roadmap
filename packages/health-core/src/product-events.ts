@@ -37,7 +37,7 @@ export const PRODUCT_EVENT_NAMES = [
   // US-15 AC17: the "Show how I approached this" toggle was opened. Name only,
   // fired once per answer (the client throttle then keeps one per tab session).
   'chat_thinking_opened',
-  // US-49: a logged-in customer confirmed a subscription change card in the
+  // US-59: a logged-in customer confirmed a subscription change card in the
   // chat and the store accepted it. Recorded by the server's confirm route
   // (SERVER_ONLY), so it counts on every bundle that shows the card. Name
   // only: never the action, the subscription or the customer.

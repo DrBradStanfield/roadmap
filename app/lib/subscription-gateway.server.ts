@@ -1,5 +1,5 @@
 /**
- * Subscription changes in the website chat (US-49): the chatbot's thin door
+ * Subscription changes in the website chat (US-59): the chatbot's thin door
  * to the private customer-service gateway, which holds the Appstle key, every
  * eligibility rule, the write, its read-back and the decision log. Nothing here
  * changes a subscription: this file reads the customer's summary, offers the

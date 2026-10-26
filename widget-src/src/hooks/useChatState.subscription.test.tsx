@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * US-49 AC9: a reply's subscription card lives with that answer in this tab
+ * US-59 AC9: a reply's subscription card lives with that answer in this tab
  * only; Confirm sends once however often it is pressed; a busy store leaves
  * the card open. (The usage signal is the server's: api.subscription-action.)
  */
@@ -29,7 +29,7 @@ async function withCard() {
 
 beforeEach(() => { mocks.confirm.mockReset(); mocks.postSync.mockReset(); });
 
-describe('US-49 AC9 — subscription cards in useChatState', () => {
+describe('US-59 AC9 — subscription cards in useChatState', () => {
   it('the card sits with its answer, and is never synced to other tabs', async () => {
     const hook = await withCard();
     expect(hook.result.current.state.cardsById.m1).toEqual({ card, phase: 'idle' });

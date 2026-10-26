@@ -341,7 +341,7 @@ export function buildSystemBlocks(
     });
   }
 
-  // US-49: the logged-in customer's subscriptions and the rules for proposing a
+  // US-59: the logged-in customer's subscriptions and the rules for proposing a
   // change (brand surface, while enabled). Per request and uncached, like orders.
   if (opts?.subscriptionBlock) {
     blocks.push({ type: 'text', text: opts.subscriptionBlock });
@@ -457,11 +457,11 @@ export interface ChatCompletionResult {
   proposedEdits?: ProposedEdit[];
   /** Set when the turn ran run_roadmap (US-15 AC33): how many stated values it used and rejected. Counts only, never a value. */
   roadmapRun?: RoadmapRoundCounts;
-  /** A subscription change the model proposed (US-49); the route turns it into a confirm card or drops it. */
+  /** A subscription change the model proposed (US-59); the route turns it into a confirm card or drops it. */
   subscriptionProposal?: SubscriptionProposal;
 }
 
-/** Shown when the model proposed a subscription change with no prose; the card carries the detail (US-49). */
+/** Shown when the model proposed a subscription change with no prose; the card carries the detail (US-59). */
 export const SUBSCRIPTION_TOOL_ONLY_ACK = 'Here is the change for you to confirm.';
 
 /** What the web chat streams: the model's deltas, and a status line between a tool round's two calls. */
@@ -482,7 +482,7 @@ const SUBSCRIPTION_NOT_PROPOSED = 'Not proposed: no card shows for this call. On
 
 /**
  * The tool_result for propose_subscription_change called beside run_roadmap
- * (US-49 with US-15 AC33): the call that becomes the card (the reply's first
+ * (US-59 with US-15 AC33): the call that becomes the card (the reply's first
  * valid one, as parseSubscriptionProposal picks it) is proposed; any other is not.
  */
 const subscriptionToolResult: ToolResultFor = (b, blocks) => {
@@ -508,7 +508,7 @@ const subscriptionToolResult: ToolResultFor = (b, blocks) => {
  * second call is the api-error fallback, with no tool output in it, that keeps
  * the first call's usage and the round's counts.
  *
- * `opts.subscriptionTool` (US-49): the propose-only subscription tool, sent on
+ * `opts.subscriptionTool` (US-59): the propose-only subscription tool, sent on
  * every brand-surface turn while subscription actions are enabled, logged in or
  * not, so that surface keeps one cached prefix shape. In a run_roadmap round its
  * call gets its own tool_result, and the proposal is read from both calls' blocks.

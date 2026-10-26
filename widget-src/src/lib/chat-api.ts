@@ -44,7 +44,7 @@ export interface SendMessageResult {
   isFallback?: boolean;
   /** Form edits the model proposed via tool_use (pre-fill the form / update meds). */
   proposedEdits?: ProposedEdit[];
-  /** A subscription change for the customer to confirm (US-49; commerce, logged in). */
+  /** A subscription change for the customer to confirm (US-59; commerce, logged in). */
   subscriptionCard?: SubscriptionCard;
 }
 

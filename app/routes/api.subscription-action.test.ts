@@ -1,5 +1,5 @@
 /**
- * US-49 AC5: the customer's own confirm. Commerce only, app-proxy signed,
+ * US-59 AC5: the customer's own confirm. Commerce only, app-proxy signed,
  * logged in, JSON only, codes only, and the gateway makes the change.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -40,7 +40,7 @@ function post(body: unknown, { customer = `80${++n}`, type = 'application/json',
   return action({ request, params: {} } as unknown as Parameters<typeof action>[0]);
 }
 
-describe('US-49 AC5 — POST /api/subscription-action', () => {
+describe('US-59 AC5 — POST /api/subscription-action', () => {
   it('is not there at all on the education app (or with the switch off)', async () => {
     delete process.env.CHAT_SURFACE;
     expect((await post({ token: TOKEN })).status).toBe(404);

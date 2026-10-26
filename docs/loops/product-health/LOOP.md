@@ -96,7 +96,7 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   `chat_opened`, US-15 AC33); `chat_profile_edit` split by `field` (sex|heightCm) and
   `choice` (shown|saved|declined): the saved/shown ratio is the chat-proposed profile save's
   adoption, names only, never a value (US-16 AC2); `subscription_action_confirmed` (server, name only: a customer
-  confirmed a subscription change card in the microvitamin.com chat, US-49 subscriptions; a zero
+  confirmed a subscription change card in the microvitamin.com chat, US-59 subscriptions; a zero
   is by design while `CHAT_SUBSCRIPTION_ACTIONS` is off); `reminder_optin_v2` total by `provider`. Read `mcp_authorize_shown` with a
   clock: more than two rows a second from one client, with no
   `mcp_consent_posted` following, is a probe scanning the door, not people

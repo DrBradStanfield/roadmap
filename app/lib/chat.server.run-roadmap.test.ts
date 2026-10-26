@@ -201,11 +201,11 @@ describe('US-15 AC33: the run_roadmap round (streamed)', () => {
   });
 });
 
-// US-49 with US-15 AC33: on a surface with both the form tools and the
+// US-59 with US-15 AC33: on a surface with both the form tools and the
 // subscription tool, a reply can call run_roadmap and propose_subscription_change
 // together. The subscription call gets its own tool_result (not the form stub),
 // and the proposal in the first call survives the second.
-describe('US-49 + US-15 AC33: a run_roadmap round with the subscription tool', () => {
+describe('US-59 + US-15 AC33: a run_roadmap round with the subscription tool', () => {
   const SUB = { type: 'tool_use', id: 'toolu_sub', name: 'propose_subscription_change', input: { subscription: 'S1', action: 'pause' } };
   const digits = [{ role: 'user' as const, content: 'LDL 4.1 mmol/L, and pause my subscription' }];
   const opts = { subscriptionTool: true, guestInputs: PROFILE, profileEdits: true };

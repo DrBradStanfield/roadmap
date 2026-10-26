@@ -339,7 +339,7 @@ export interface ToolResultBlock { type: 'tool_result'; tool_use_id: string | un
 export interface ChatTurnMessage { role: 'user' | 'assistant'; content: string | ReadonlyArray<ChatContentBlock | ToolResultBlock> }
 /** What a round cost in values: counts only, for the usage signal. Never a value. */
 export interface RoadmapRoundCounts { applied: number; rejected: number }
-/** A transport's own tool_result for a tool health-core does not know (US-49's subscription tool); undefined for the rest. */
+/** A transport's own tool_result for a tool health-core does not know (US-59's subscription tool); undefined for the rest. */
 export type ToolResultFor = (b: ChatContentBlock, blocks: readonly ChatContentBlock[]) => string | undefined;
 
 /** Stub results for a form tool called beside run_roadmap: the client applies a valid one after the answer. */

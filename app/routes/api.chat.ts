@@ -438,7 +438,7 @@ async function chatAction(request: Request, app: boolean) {
     // message. See app/lib/chat-dedup.server.ts and claude_business docs/chat-architecture.md §
     // Consecutive-duplicate dedup. Shared with the Discord handler. The widget
     // dedups from its own file (chat-api.ts) — its rows here carry no timestamp.
-    // Never while subscription changes are on for a signed-in customer (US-49): a replayed reply would
+    // Never while subscription changes are on for a signed-in customer (US-59): a replayed reply would
     // say "press Confirm below" with no card (cards are never stored), so the turn runs again instead.
     const subscriptionTurn = subscriptionActionsEnabled() && !auth.isGuest;
     if (conversationId && !widget && !subscriptionTurn) {
@@ -493,7 +493,7 @@ async function chatAction(request: Request, app: boolean) {
       const ordersPromise = !auth.isGuest && auth.admin
         ? getCachedOrders(auth.admin, auth.customerId!)
         : Promise.resolve('');
-      // US-49: subscription changes, commerce surface only and only while
+      // US-59: subscription changes, commerce surface only and only while
       // enabled. The summary comes from the gateway, which checks Shopify's
       // signature on this very request; it never throws.
       const subscriptionsOn = subscriptionActionsEnabled();
@@ -605,7 +605,7 @@ async function chatAction(request: Request, app: boolean) {
           write(event);
         }
         : undefined;
-      // The subscription tool rides only while enabled (US-49), and never on a widget turn:
+      // The subscription tool rides only while enabled (US-59), and never on a widget turn:
       // that is always a guest, so it could only end in "I can't make that change here",
       // replacing a health answer. run_roadmap reads the widget's own record (US-15 AC33).
       const subscriptionTool = subscriptionsOn && !widget;
@@ -618,7 +618,7 @@ async function chatAction(request: Request, app: boolean) {
         void recordServerEvent('chat_run_roadmap', { count: completion.roadmapRun.applied, rejected: completion.roadmapRun.rejected });
       }
 
-      // US-49: a proposal becomes a confirm card only when the gateway's summary
+      // US-59: a proposal becomes a confirm card only when the gateway's summary
       // lists that subscription and action with a token. Otherwise the reply
       // must not leave the customer waiting for a card that never comes.
       const card = subscriptionCard(subscriptions, completion.subscriptionProposal ?? null);
@@ -789,7 +789,7 @@ async function chatAction(request: Request, app: boolean) {
           ...(completion.proposedEdits && completion.proposedEdits.length > 0
             ? { proposedEdits: completion.proposedEdits }
             : {}),
-          // US-49: the confirm card (the gateway's one-time token and plain facts). Omitted otherwise.
+          // US-59: the confirm card (the gateway's one-time token and plain facts). Omitted otherwise.
           ...(card ? { subscriptionCard: card } : {}),
           ...(auth.isGuest ? { sessionToken: auth.sessionToken, isGuest: true } : {}),
         },

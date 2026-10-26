@@ -1,5 +1,5 @@
 /**
- * US-49: the chatbot's door to the customer-service gateway for subscription
+ * US-59: the chatbot's door to the customer-service gateway for subscription
  * changes. Commerce only, signed both ways, propose-only, and no token ever in
  * the model's view. The gateway itself is stubbed (global fetch).
  */
@@ -38,7 +38,7 @@ afterEach(() => {
   invalidateSubscriptions('7001');
 });
 
-describe('US-49 AC1: commerce only, behind its own switch', () => {
+describe('US-59 AC1: commerce only, behind its own switch', () => {
   it('needs the switch, the brand surface, the gateway URL and the secret', () => {
     expect(subscriptionActionsEnabled()).toBe(true);
     delete process.env.CHAT_SURFACE;
@@ -52,7 +52,7 @@ describe('US-49 AC1: commerce only, behind its own switch', () => {
   });
 });
 
-describe('US-49 AC2: signed both ways', () => {
+describe('US-59 AC2: signed both ways', () => {
   it('signs method, path, timestamp, one-time value and body exactly as the gateway checks them', () => {
     // Vector from the gateway's own signer (customer-service-gateway src/chat/auth.js sign).
     const h = signGatewayRequest({ method: 'POST', path: '/chat/subscriptions', body: '{"proxy":{}}', secret: 's'.repeat(40), now: 1760000000000, nonce: 'abcdefabcdefabcdef' });
@@ -106,7 +106,7 @@ describe('US-49 AC2: signed both ways', () => {
   });
 });
 
-describe('US-49 AC3: the model sees facts and rules, never a token', () => {
+describe('US-59 AC3: the model sees facts and rules, never a token', () => {
   it('lists each subscription with what can be proposed, and the 3-or-6-month rule', () => {
     const block = formatSubscriptionBlock(summary);
     expect(block).not.toContain('tok-');
@@ -125,7 +125,7 @@ describe('US-49 AC3: the model sees facts and rules, never a token', () => {
   });
 });
 
-describe('US-49 AC4: a proposal becomes a card only for a listed subscription and an allowed action', () => {
+describe('US-59 AC4: a proposal becomes a card only for a listed subscription and an allowed action', () => {
   const use = (input: unknown) => [{ type: 'tool_use', name: PROPOSE_SUBSCRIPTION_CHANGE_TOOL.name, input }];
   it('parses one valid proposal; ignores junk; no reason on a skip', () => {
     expect(parseSubscriptionProposal(use({ subscription: 'S1', action: 'cancel', reason: 'too_expensive' }))).toEqual({ ref: 'S1', action: 'cancel', reason: 'too_expensive' });
@@ -145,7 +145,7 @@ describe('US-49 AC4: a proposal becomes a card only for a listed subscription an
   });
 });
 
-// US-49 AC10 (live pilot, 18 Oct): the rules the first pilot test showed were missing.
+// US-59 AC10 (live pilot, 18 Oct): the rules the first pilot test showed were missing.
 describe('formatSubscriptionBlock pilot rules (AC10)', () => {
   it('refuses other frequencies and earlier dates without the account link, never calls a card waiting, and drops the medical line', () => {
     const block = formatSubscriptionBlock({ enabled: true, subscriptions: [{ ref: 's1', product: 'MicroVitamin', every: '3 months', status: 'active', nextDate: '15 April 2027', actions: { pause: { ok: true }, skip: { ok: true, newDate: '15 July 2027' }, cancel: { ok: true } } } as any] });

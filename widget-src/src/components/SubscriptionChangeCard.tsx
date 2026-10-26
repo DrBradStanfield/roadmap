@@ -1,5 +1,5 @@
 /**
- * The confirm card for one subscription change (US-49). Nothing changes
+ * The confirm card for one subscription change (US-59). Nothing changes
  * until the customer presses Confirm; the card then shows the outcome in
  * plain words. Text only (no HTML from the server is rendered).
  */
