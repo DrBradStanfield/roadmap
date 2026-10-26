@@ -88,13 +88,11 @@ final class FormEditTests: XCTestCase {
         XCTAssertEqual(SupplementSheet.doseText(.infinity), "inf")
     }
 
-    /// Codex R3: a metric whose only rows are entered in error still opens its history, not a blank entry.
-    func testAMetricWithOnlyStruckRowsOpensItsHistory() throws {
-        let json = #"{"metric":"weight","label":"Weight","unit":"kg","excluded":false,"rows":[{"id":"a","value":"80.0","day":"2026-10-01","status":"entered-in-error","current":false,"correction":false}]}"#
-        let struck = try JSONDecoder().decode(MetricHistory.self, from: Data(json.utf8))
-        XCTAssertTrue(MetricDetailView.opensHistory(struck))
-        XCTAssertFalse(MetricDetailView.opensHistory(MetricHistory(metric: "weight", label: "Weight", unit: "kg", rows: [], excluded: false)))
-        XCTAssertFalse(MetricDetailView.opensHistory(nil))
+    /// US-58 AC4b: "No data yet" never flashes on a metric with readings while its chart is read.
+    func testNoDataYetShowsOnlyWithoutReadingsOrAfterTheRead_US58() {
+        XCTAssertTrue(MetricDetailView.saysEmpty(hasReadings: false, read: false), "nothing to read")
+        XCTAssertFalse(MetricDetailView.saysEmpty(hasReadings: true, read: false), "reading: the guide only")
+        XCTAssertTrue(MetricDetailView.saysEmpty(hasReadings: true, read: true), "the read came back empty or failed")
     }
 
     func testHistoryKeepsTheCorrectedValueStruckNotRemoved() throws {

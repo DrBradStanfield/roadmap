@@ -437,51 +437,66 @@ final class OnboardingUITests: XCTestCase {
         snap(app, "units unchanged")
     }
 
-    /// "Allow" shows Apple's Health sheet, which asks to read sex and date of birth (AC3).
-    /// The sheet runs in Apple's own process and reports its buttons' positions only
-    /// inside their rows, so a test cannot answer it; answering it is checked by hand.
+    /// The read switches Apple's sheet lists, scrolled through: it draws only the rows on screen.
+    @MainActor private func readSwitches(_ sheet: XCUIApplication) -> [String] {
+        var seen = Set<String>()
+        for _ in 0..<6 {
+            let before = seen.count
+            seen.formUnion(sheet.switches.allElementsBoundByIndex.map { $0.identifier }.filter { $0.hasPrefix("UIA.Health.Read.") })
+            if seen.count == before, before > 0 { break }
+            sheet.swipeUp()
+        }
+        return seen.map { $0.replacingOccurrences(of: "UIA.Health.Read.", with: "").replacingOccurrences(of: ".SwitchCell.Switch", with: "") }.sorted()
+    }
+
+    /// Everything the app reads, in one sheet (US-54 AC3, US-56 AC4, Brad 2026-10-26).
+    private let everything = ["BloodPressure", "CardioFitness", "DateofBirth", "HeartRate", "Height", "RestingHeartRate", "Sex", "Sleep", "Steps", "WaistCircumference", "Weight"]
+
+    /// "Connect Apple Health" shows Apple's Health sheet once, asking for everything the app
+    /// reads: onboarding's record types and US-56's five (AC3, US-56 AC4). The sheet runs in
+    /// Apple's own process and reports its buttons' positions only inside their rows, so a
+    /// test cannot answer it; answering it is checked by hand. On iOS 27 the sheet goes on
+    /// with its own Continue and a choice of how much history to share.
     @MainActor
-    func testAllowShowsAppleHealthAskingForSexAndBirthDate_AC3() throws {
+    func testAllowShowsOneSheetAskingForEverything_AC3_US56_AC4() throws {
         let app = launch()
         let start = app.buttons["welcome.start"]
         XCTAssertTrue(start.waitForExistence(timeout: 10))
         start.tap()
         let allow = app.buttons["onboarding.allow"]
         XCTAssertTrue(allow.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Next, Apple asks for access. Tap Turn On All, then Allow.")).firstMatch.exists,
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Next, Apple asks for access. Turn everything on, then tap Allow.")).firstMatch.exists,
                       "the hint above the button says what Apple's sheet asks (Brad 2026-10-25)")
+        XCTAssertTrue(app.staticTexts["It also shows your heart rate, sleep, VO2 max and steps here, never kept."].exists,
+                      "the page names US-56's five too (adversary R5)")
         snap(app, "health hint")
         allow.tap()
         let sheet = XCUIApplication(bundleIdentifier: "com.apple.HealthPrivacyService")
-        XCTAssertTrue(sheet.cells["UIA.Health.AuthSheet.AllCategoryButton"].waitForExistence(timeout: 10), "Apple's Health sheet appears")
-        XCTAssertTrue(sheet.switches["UIA.Health.Read.Sex.SwitchCell.Switch"].exists, "it asks to read sex")
-        XCTAssertTrue(sheet.switches["UIA.Health.Read.DateofBirth.SwitchCell.Switch"].exists, "and date of birth")
-        XCTAssertTrue(sheet.switches["UIA.Health.Read.Weight.SwitchCell.Switch"].exists, "and weight")
+        XCTAssertTrue(sheet.cells["UIA.Health.AuthSheet.AllCategoryButton"].waitForExistence(timeout: 20), "Apple's Health sheet appears")
         snap(app, "health sheet")
+        XCTAssertEqual(readSwitches(sheet), everything, "one sheet: the record's types and the five live ones")
     }
 
-    /// US-56 AC4, AC5: onboarding asked for nothing ("Not now"); My data's access card asks
-    /// Apple's sheet to read exactly the five live types, and none of onboarding's six.
-    /// Answering the sheet is checked by hand, as AC3's is.
+    /// US-56 AC4, AC5 (2026-10-26): no access card and no second way in. After onboarding's
+    /// "Not now", Vitals shows no Turn On row; My data's own "Connect Apple Health" row runs
+    /// the same one request, for everything.
     @MainActor
-    func testTheAccessCardAsksForOnlyTheFiveLiveTypes_US56_AC4() throws {
+    func testAfterNotNowMyDataConnectAsksForEverythingInOneSheet_US56_AC4_AC5() throws {
         let app = launch()
         try answerUpToWeight(app)
         answerWeight(app)
         XCTAssertTrue(app.tabBars.buttons["My data"].waitForExistence(timeout: 10))
         app.tabBars.buttons["My data"].tap()
-        let show = app.buttons["Show from Apple Health"]
-        XCTAssertTrue(scrollTo(show, in: app), "the access card shows in Vitals before access")
-        XCTAssertTrue(app.staticTexts["Heart, sleep and fitness"].exists)
-        snap(app, "us56 access card")
-        show.tap()
+        let connect = app.buttons["Connect Apple Health"]
+        XCTAssertTrue(scrollTo(connect, in: app), "My data's Apple Health row")
+        XCTAssertFalse(app.buttons["Turn On"].exists, "no Turn On row while not connected")
+        XCTAssertFalse(app.buttons["Show from Apple Health"].exists, "no access card")
+        snap(app, "us56 my data connect")
+        connect.tap()
         let sheet = XCUIApplication(bundleIdentifier: "com.apple.HealthPrivacyService")
-        XCTAssertTrue(sheet.cells["UIA.Health.AuthSheet.AllCategoryButton"].waitForExistence(timeout: 10), "Apple's Health sheet appears")
+        XCTAssertTrue(sheet.cells["UIA.Health.AuthSheet.AllCategoryButton"].waitForExistence(timeout: 20), "Apple's Health sheet appears")
         snap(app, "us56 health sheet")
-        let asked = sheet.switches.allElementsBoundByIndex.map(\.identifier).filter { $0.hasPrefix("UIA.Health.Read.") }.sorted()
-        XCTAssertEqual(asked, ["CardioFitness", "HeartRate", "RestingHeartRate", "Sleep", "Steps"].map { "UIA.Health.Read.\($0).SwitchCell.Switch" },
-                       "only the five live types are read")
-        XCTAssertTrue(sheet.switches.allElementsBoundByIndex.allSatisfy { !$0.identifier.hasPrefix("UIA.Health.Write.") }, "nothing is written")
+        XCTAssertEqual(readSwitches(sheet), everything, "the same single request")
     }
 
     /// "Delete all my data" brings the questions back, not the welcome screen (AC7).

@@ -21,6 +21,8 @@ import { importDeviceSamples, type DeviceSample } from '../../packages/health-co
 import { applyFormEdit, formsOf, planOf, type FormEdit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
 import { METRIC_GUIDES, type MetricGuide } from '../../packages/health-core/src/metric-guides';
+import { FRIEND_2022_TREADMILL, type Vo2MaxCutPoints } from '../../packages/health-core/src/vo2max-bands';
+import { calculateAge } from '../../packages/health-core/src/calculations';
 import {
   cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, getDisplayLabel, toCanonicalValue,
   type LpaUnit, type MetricType, type UnitSystem,
@@ -65,6 +67,9 @@ export interface MyData {
   /** The "about this measure" guides (US-58), by metric or medication key: served here so a
    *  correction ships over the air (D3). */
   guides: Record<string, MetricGuide>;
+  /** The VO2 max bands' row for the person's sex and age today (US-56 AC8, FRIEND 2022); null
+   *  without both, under 20 or at 90 and over. Only the table comes out: no VO2 max goes in (AC1). */
+  vo2Bands: (Vo2MaxCutPoints & { sex: 'male' | 'female' }) | null;
 }
 
 /** Every change the tab can ask for. Numbers are in the user's units. */
@@ -201,8 +206,16 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
     bloodTests: BLOOD_TEST_METRICS.filter((metric) => metric !== 'psa').map(row),
     psa: row('psa'),
     guides: METRIC_GUIDES,
+    vo2Bands: vo2BandsOf(sex, birthYear, birthMonth, now),
     ...formsOf(file, now, choices, plan),
   };
+}
+
+function vo2BandsOf(sex: 'male' | 'female' | undefined, birthYear: number | undefined, birthMonth: number | undefined, now: string): MyData['vo2Bands'] {
+  if (!sex || birthYear === undefined) return null;
+  const age = calculateAge(birthYear, birthMonth ?? 1, new Date(now));
+  const row = FRIEND_2022_TREADMILL[sex].find((r) => age >= r.fromAge && age <= r.toAge);
+  return row ? { sex, ...row } : null;
 }
 
 export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: UnitChoices = {}): EditOutcome {

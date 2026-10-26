@@ -17,7 +17,18 @@ struct OnboardingView: View {
     @AppStorage("onboardingHealthAsked") private var healthAsked = false
     @State private var step: OnboardingStep?
     @State private var answers = Answers()
+    /// The steps Apple Health filled in, by name only, kept so a relaunch keeps AC3b's guards
+    /// (adversary R2); cleared when the flow starts at Apple Health or finishes.
+    @AppStorage("onboardingFromHealth") private var fromHealthNames = ""
     @State private var fromHealth: Set<OnboardingStep> = []
+    /// What Apple Health supplied, not asked and listed on the last screen (AC3b): worked out
+    /// from the record when it or `fromHealth` changes, not on every draw.
+    @State private var supplied: Set<OnboardingStep> = []
+    /// Health gave a weight more than a year old (AC3b, guard a): Continue on it saves it as
+    /// today's. Once saved it is today's, so no longer stale (adversary R1).
+    private var staleWeight: Bool { fromHealth.contains(.weight) && !supplied.contains(.weight) }
+    /// A question opened from that list's Edit: answered, it returns to the list.
+    @State private var editing = false
     @State private var message: String?
     @State private var connecting = false
     /// Birth has an answer: from the record, from Apple Health, or a wheel the person
@@ -51,6 +62,10 @@ struct OnboardingView: View {
                     ProgressView()
                 }
             }
+            // The NavigationStack paints its own background over the cover's (RootView), so the
+            // launch screen's colour is set again inside it (US-25 AC21b).
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(.systemGroupedBackground), ignoresSafeAreaEdges: .all)
             .toolbar {
                 if let step, let back = previous(step) {
                     ToolbarItem(placement: .topBarLeading) {
@@ -63,6 +78,9 @@ struct OnboardingView: View {
         }
         .interactiveDismissDisabled()
         .task { await begin() }
+        // Kept by name only, so a relaunch keeps AC3b's guards (adversary R2).
+        .onChange(of: fromHealth) { fromHealthNames = OnboardingSteps.encode(fromHealth); noteSupplied() }
+        .onChange(of: store.revision) { noteSupplied() }
         // Pinned in begin(); a run that never began never pinned.
         .onDisappear { if step != nil { store.unpinScreen() } }
         .confirmationDialog("Today already has a weight", isPresented: Binding(get: { replacing != nil }, set: { if !$0 { replacing = nil } }), titleVisibility: .visible) {
@@ -82,20 +100,26 @@ struct OnboardingView: View {
             OnboardingPage(symbol: "heart.fill", tint: .pink, title: "Use your Apple Health data",
                  detail: "So you type less. What it reads goes only into your record, on this iPhone or in your own cloud. Values you add here are saved back to Apple Health.",
                  progress: nil, spread: true) {
-                HealthFillScene()
+                VStack(spacing: 12) {
+                    HealthFillScene()
+                    // US-56's five, named too (adversary R5): the sheet asks for them as well.
+                    Text(Self.liveLine).font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             } actions: {
                 appleAsksNext
                 primary(connecting ? "Connecting…" : "Connect Apple Health", id: "onboarding.allow") { Task { await allowHealth() } }
                     .disabled(connecting)
                 secondary("Not now", id: "onboarding.notNow") { healthAsked = true; advance(from: .health) }
+                    .disabled(connecting)
             }
         case .sex:
             // A tap is the answer: it saves and moves on, so the step has no Continue (Brad 2026-10-23).
             OnboardingPage(symbol: "person.fill", tint: .accentColor, title: "What is your sex?",
                  detail: "Your plan's targets and screenings depend on it.", progress: step, fromHealth: fromHealth.contains(.sex), message: message) {
                 HStack(spacing: 12) {
-                    choice("Female", value: "female")
-                    choice("Male", value: "male")
+                    choice(MyData.sexLabel("female"), value: "female")
+                    choice(MyData.sexLabel("male"), value: "male")
                 }
             }
         case .birth:
@@ -140,6 +164,30 @@ struct OnboardingView: View {
             } actions: {
                 primary("Continue", id: "onboarding.continue") { save(.weight) }
                     .disabled(answers.weight.value == nil)
+            }
+        case .review:
+            // One tap to accept what Apple Health gave, so a wrong entry is caught (AC3b, guard b).
+            OnboardingPage(symbol: "heart.fill", tint: .pink, title: "From Apple Health",
+                 detail: "Check these are right. Tap Edit to change one.", progress: nil) {
+                let lines = summaryLines
+                VStack(spacing: 0) {
+                    ForEach(lines, id: \.step) { line in
+                        if line.step != lines.first?.step { Divider() }
+                        // Stacked at accessibility sizes, so a long answer never squeezes Edit (adversary R7).
+                        LabelValue.layout(typeSize).callAsFunction {
+                            Text(line.text).font(.title3).accessibilityLabel(line.spoken)
+                            Spacer(minLength: 0)
+                            Button("Edit") { editing = true; go(line.step) }
+                                .accessibilityLabel("Edit \(line.step.name)")
+                                .accessibilityIdentifier("onboarding.edit.\(line.step)")
+                        }
+                        .padding(.vertical, 12)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            } actions: {
+                primary("Continue", id: "onboarding.continue") { advance(from: .review) }
             }
         }
     }
@@ -228,7 +276,7 @@ struct OnboardingView: View {
                 .font(.title3.weight(.semibold))
                 .frame(maxWidth: .infinity, minHeight: 64)
                 .foregroundStyle(selected ? Color.onAccent : Color.primary)
-                .background(selected ? Color.accentColor : Color(.secondarySystemFill), in: shape)
+                .background(selected ? Color.accentColor : Color(.secondarySystemGroupedBackground), in: shape)
                 .contentShape(shape)
         }
         .buttonStyle(.plain)
@@ -255,6 +303,7 @@ struct OnboardingView: View {
         guard step == nil else { return }
         // An unreadable record: My data says why, so never strand the person here (review R13).
         guard let data = store.myData else { finish(); return }
+        fromHealth = OnboardingSteps.decode(fromHealthNames)
         if onlyMissing { healthAsked = true }
         // A record from the cloud keeps its own units, also on a resumed run (Codex re-check R1),
         // as does one just erased, whose units the erase kept (US-25 AC16).
@@ -273,9 +322,10 @@ struct OnboardingView: View {
         await prefill(from: HealthCharacteristics.none)
         // Gone while the engine filled the boxes: nothing to pin.
         guard !Task.isCancelled, step == nil else { return }
+        noteSupplied()
         step = onlyMissing
             ? OnboardingSteps.next(after: .health, profile: data.profile, hasWeight: recordWeight != nil, onlyMissing: true) ?? .weight
-            : OnboardingSteps.start(data.profile, healthAsked: healthAsked)
+            : OnboardingSteps.start(data.profile, healthAsked: healthAsked, skip: supplied, weightDay: weightRow?.latest?.day)
         // Each answer is checked against the record its screen showed (US-25 AC11g).
         store.pinScreen()
     }
@@ -293,6 +343,12 @@ struct OnboardingView: View {
         if heightBefore == nil, profile?.height != nil { fromHealth.insert(.height) }
         if weightBefore == nil, recordWeight != nil { fromHealth.insert(.weight) }
         await prefill(from: given)
+        // Health's sex and birth are taken as given (AC3b), saved by the same edits a tap or
+        // Continue makes; one the engine refuses is asked. Height and weight came in with the connect.
+        // One edit for both; refused, both are asked (review E3).
+        if let profile, let edit = OnboardingSteps.healthEdit(given, profile: profile), await store.apply(edit) != .saved {
+            fromHealth.subtract([.sex, .birth])
+        }
         connecting = false
         advance(from: .health)
     }
@@ -309,6 +365,21 @@ struct OnboardingView: View {
         for (step, path) in [(OnboardingStep.height, \Answers.height), (.weight, \Answers.weight)] where !answers[keyPath: path].edited {
             let (recorded, recordUnits) = (recorded(step), recordUnits(step))
             await update(path) { await $0.show(recorded, recordUnits: recordUnits, convert: store.convert) }
+        }
+    }
+
+    /// Works `supplied` out again, from the record as it is now (AC3b).
+    private func noteSupplied() {
+        supplied = profile.map { OnboardingSteps.supplied(fromHealth: fromHealth, profile: $0, weightDay: weightRow?.latest?.day, now: .now) } ?? []
+    }
+
+    /// The summary's lines (AC3b): the record's answers now, so an edit shows; worked out once per draw.
+    private var summaryLines: [(step: OnboardingStep, text: String, spoken: String)] {
+        guard let profile else { return [] }
+        let weight = weightRow.flatMap { row in row.latest.map { (value: $0.value, unit: row.unit) } }
+        return OnboardingStep.questions.filter(supplied.contains).map {
+            let text = OnboardingSteps.summary($0, profile: profile, weight: weight) ?? ""
+            return ($0, text, OnboardingSteps.spoken($0, text: text, profile: profile))
         }
     }
 
@@ -351,7 +422,7 @@ struct OnboardingView: View {
     /// nothing it can write yet (`stay`).
     private func change(for step: OnboardingStep) async -> Change {
         switch step {
-        case .health:
+        case .health, .review:
             return .stay
         case .sex:
             guard let sex = answers.sex else { return .stay }
@@ -371,7 +442,13 @@ struct OnboardingView: View {
             }
             return edit.map(Change.edit) ?? .stay
         case .weight:
-            // A weight equal to the record's latest, typed or not, writes nothing (AC5).
+            // Health's year-old weight, left as it is, is confirmed as today's: an Apple Health
+            // row in the row's own kilograms, never the rounded display, never written back (AC3b).
+            if staleWeight, !answers.weight.edited {
+                guard let id = weightRow?.latest?.id, let kg = OnboardingSteps.kilograms(rowId: id, recordJSON: store.recordJSON) else { return .stay }
+                return .edit(OnboardingSteps.confirmedWeight(kilograms: kg, now: .now))
+            }
+            // Otherwise a weight equal to the record's latest, typed or not, writes nothing (AC5).
             guard answers.weight.edited,
                   !(await answers.weight.repeats(recordWeight, recordUnits: recordUnits(.weight), convert: store.convert))
             else { return .unchanged }
@@ -436,7 +513,10 @@ struct OnboardingView: View {
     }
 
     private func advance(from step: OnboardingStep) {
-        guard let profile, let next = OnboardingSteps.next(after: step, profile: profile, hasWeight: recordWeight != nil, onlyMissing: onlyMissing) else {
+        // An answer opened from the summary's Edit returns to it (AC3b).
+        if editing { return go(.review) }
+        noteSupplied()
+        guard let profile, let next = OnboardingSteps.next(after: step, profile: profile, hasWeight: recordWeight != nil, onlyMissing: onlyMissing, skip: supplied) else {
             finish()
             return
         }
@@ -445,18 +525,20 @@ struct OnboardingView: View {
 
     private func go(_ next: OnboardingStep) {
         message = nil
+        if next == .review { editing = false }
         store.repinScreen()
         withAnimation(.snappy) { step = next }
     }
 
     private func previous(_ step: OnboardingStep) -> OnboardingStep? {
-        let earlier = OnboardingStep.allCases.filter { $0 < step && !(onlyMissing && $0 == .health) }
-        return earlier.last
+        editing ? .review : OnboardingSteps.previous(before: step, onlyMissing: onlyMissing, skip: supplied)
     }
 
     /// Built once: the wheels redraw on every tick.
-    static let appleAsksNextWords = "Next, Apple asks for access. Tap **Turn On All**, then **Allow**."
+    static let appleAsksNextWords = "Next, Apple asks for access. Turn everything on, then tap **Allow**."
     private static let months = Array(1...12)
+    /// The five US-56 readings, named on the Apple Health page (adversary R5).
+    static let liveLine = "It also shows your heart rate, sleep, VO2 max and steps here, never kept."
     private static let birthYears = DayText.birthYears(now: .now)
 
     /// What each box takes as typed: whole feet, whole inches (centimetres and weight take `.value`).

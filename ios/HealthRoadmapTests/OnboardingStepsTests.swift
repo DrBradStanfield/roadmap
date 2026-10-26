@@ -205,8 +205,133 @@ final class OnboardingStepsTests: XCTestCase {
         }
     }
 
+    /// AC3b (Brad 2026-10-26): what Apple Health supplied is not asked again; the summary
+    /// comes last, and only when something was supplied.
+    func testHealthsAnswersAreNotAskedAgain_AC3b() {
+        let all: Set<OnboardingStep> = [.sex, .birth, .height, .weight]
+        XCTAssertEqual(OnboardingSteps.next(after: .health, profile: profile(), onlyMissing: false, skip: all), .review, "the sheet, then the summary")
+        XCTAssertNil(OnboardingSteps.next(after: .review, profile: profile(), onlyMissing: false, skip: all), "Continue opens My plan")
+        var step = OnboardingStep.health
+        var seen = [step]
+        while let next = OnboardingSteps.next(after: step, profile: profile(), onlyMissing: false, skip: [.sex, .height]) {
+            seen.append(next)
+            step = next
+        }
+        XCTAssertEqual(seen, [.health, .birth, .weight, .review], "only what Health did not give")
+    }
+
+    /// AC3b (a): a weight more than a year old is asked again; a newer one is supplied.
+    func testAWeightOlderThanAYearIsAskedAgain_AC3b() {
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = .gmt
+        let now = Date(timeIntervalSince1970: 1_792_972_800) // 2026-10-26
+        let health: Set<OnboardingStep> = [.sex, .weight]
+        let held = profile(sex: "female", height: "170")
+        XCTAssertEqual(OnboardingSteps.supplied(fromHealth: health, profile: held, weightDay: "2025-10-26", now: now, calendar: utc), health, "a year to the day is fresh")
+        XCTAssertEqual(OnboardingSteps.supplied(fromHealth: health, profile: held, weightDay: "2025-10-25", now: now, calendar: utc), [.sex], "older: asked again")
+        XCTAssertEqual(OnboardingSteps.supplied(fromHealth: health, profile: held, weightDay: nil, now: now, calendar: utc), [.sex])
+        XCTAssertEqual(OnboardingSteps.supplied(fromHealth: [.height], profile: held, weightDay: "2026-10-01", now: now, calendar: utc), [.height], "a weight Health did not give stays out")
+        XCTAssertEqual(OnboardingSteps.supplied(fromHealth: [.sex, .birth, .height], profile: profile(), weightDay: nil, now: now, calendar: utc), [],
+                       "only what the record holds: an erase since leaves nothing skipped")
+    }
+
+    /// AC3b, adversary R1 and Codex R2: once the stale weight is confirmed (today's row), it is
+    /// supplied, so Back from the summary skips it and an untouched Continue writes nothing.
+    func testBackToAConfirmedStaleWeightDoesNotLoop_AC3b() {
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = .gmt
+        let now = Date(timeIntervalSince1970: 1_792_972_800) // 2026-10-26
+        let held = profile(sex: "female", year: 1985, month: 3, height: "170")
+        let fromHealth: Set<OnboardingStep> = [.sex, .birth, .height, .weight]
+        let before = OnboardingSteps.supplied(fromHealth: fromHealth, profile: held, weightDay: "2024-01-01", now: now, calendar: utc)
+        XCTAssertFalse(before.contains(.weight), "stale: asked")
+        let after = OnboardingSteps.supplied(fromHealth: fromHealth, profile: held, weightDay: "2026-10-26", now: now, calendar: utc)
+        XCTAssertTrue(after.contains(.weight), "confirmed today: no longer stale")
+        XCTAssertEqual(OnboardingSteps.next(after: .weight, profile: held, hasWeight: true, onlyMissing: false, skip: after), .review)
+        XCTAssertEqual(OnboardingSteps.previous(before: .review, onlyMissing: false, skip: after), .health, "Back skips the confirmed weight")
+    }
+
+    /// AC3b, adversary R2: a relaunch keeps both guards. Which steps came from Health is kept
+    /// (step names only, no values); what is supplied is worked out again from the record.
+    func testARelaunchKeepsBothGuards_AC3b() {
+        let fromHealth: Set<OnboardingStep> = [.sex, .birth, .height, .weight]
+        XCTAssertEqual(OnboardingSteps.decode(OnboardingSteps.encode(fromHealth)), fromHealth)
+        XCTAssertEqual(OnboardingSteps.decode(""), [])
+        XCTAssertEqual(OnboardingSteps.decode("9,x,1"), [.sex], "unknown entries are dropped")
+        let held = profile(sex: "female", year: 1985, month: 3, height: "170")
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = .gmt
+        let now = Date(timeIntervalSince1970: 1_792_972_800) // 2026-10-26
+        XCTAssertEqual(OnboardingSteps.start(held, healthAsked: true, skip: fromHealth, weightDay: "2026-09-01", now: now, calendar: utc), .review,
+                       "everything from Health: the summary again")
+        XCTAssertEqual(OnboardingSteps.start(held, healthAsked: true, skip: [.sex, .birth, .height], weightDay: "2024-01-01", now: now, calendar: utc), .weight,
+                       "a stale weight: asked again")
+        XCTAssertEqual(OnboardingSteps.start(profile(sex: "female"), healthAsked: true, skip: [.sex]), .birth)
+    }
+
+    /// AC3b, Codex R1 (2026-10-26): sex, birth and height came from Health and the weight was
+    /// typed by hand; a relaunch then resumes at the summary, not the weight question again.
+    /// A weight more than a year old is still asked.
+    func testARelaunchAfterATypedWeightResumesAtTheSummary_AC3b() {
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = .gmt
+        let now = Date(timeIntervalSince1970: 1_792_972_800) // 2026-10-26
+        let held = profile(sex: "female", year: 1985, month: 3, height: "170")
+        let fromHealth: Set<OnboardingStep> = [.sex, .birth, .height]
+        let skip = OnboardingSteps.supplied(fromHealth: fromHealth, profile: held, weightDay: "2026-10-26", now: now, calendar: utc)
+        XCTAssertFalse(skip.contains(.weight), "typed, not from Health")
+        XCTAssertEqual(OnboardingSteps.start(held, healthAsked: true, skip: skip, weightDay: "2026-10-26", now: now, calendar: utc), .review)
+        XCTAssertEqual(OnboardingSteps.start(held, healthAsked: true, skip: skip, weightDay: "2025-01-01", now: now, calendar: utc), .weight, "stale: asked")
+        XCTAssertEqual(OnboardingSteps.start(held, healthAsked: true, skip: skip, weightDay: nil, now: now, calendar: utc), .weight)
+        XCTAssertEqual(OnboardingSteps.start(held, healthAsked: true, skip: [], weightDay: "2026-10-26", now: now, calendar: utc), .weight, "no Health: no summary")
+    }
+
+    /// AC3b, review E3/A4: Health's sex and birth go in one profile edit, only what the record lacks.
+    func testHealthsSexAndBirthAreOneEdit_AC3b() {
+        let given = HealthCharacteristics(sex: "female", birth: DateComponents(year: 1985, month: 3, day: 9))
+        XCTAssertEqual(OnboardingSteps.healthEdit(given, profile: profile()), .profile(sex: "female", birthYear: 1985, birthMonth: 3))
+        XCTAssertEqual(OnboardingSteps.healthEdit(given, profile: profile(sex: "male")), .profile(birthYear: 1985, birthMonth: 3), "the record's sex stays")
+        XCTAssertEqual(OnboardingSteps.healthEdit(HealthCharacteristics(sex: "other"), profile: profile()), nil, "nothing to save")
+        XCTAssertEqual(OnboardingSteps.healthEdit(given, profile: profile(sex: "male", year: 1970, month: 1)), nil)
+    }
+
+    /// AC3b, review: the summary's height reads as words to VoiceOver.
+    func testTheSummaryHeightIsSpokenInWords_AC3b() {
+        let us = MyData.Profile(sex: "male", birthYear: 1970, birthMonth: 12, height: "70", heightUnit: "in", feetInches: MyData.FeetInches(feet: 5, inches: 10))
+        XCTAssertEqual(OnboardingSteps.spoken(.height, text: "5 ft 10 in", profile: us), "Height, 5 feet 10 inches")
+        XCTAssertEqual(OnboardingSteps.spoken(.height, text: "170 cm", profile: profile(height: "170")), "Height, 170 cm")
+        XCTAssertEqual(OnboardingSteps.spoken(.sex, text: "Male", profile: us), "Sex, Male")
+        XCTAssertEqual(OnboardingSteps.spoken(.weight, text: "150 lb", profile: us), "Weight, 150 lb")
+        XCTAssertEqual(OnboardingStep.birth.name, "Birth month and year", "the Edit button's name too")
+        XCTAssertEqual(MyData.sexLabel("female"), "Female")
+    }
+
+    /// AC3b (b): each summary line in the record's own words and units.
+    func testTheSummaryLinesSayWhatHealthGave_AC3b() {
+        let metric = profile(sex: "female", year: 1985, month: 3, height: "170")
+        XCTAssertEqual(OnboardingSteps.summary(.sex, profile: metric, weight: nil), "Female")
+        XCTAssertEqual(OnboardingSteps.summary(.birth, profile: metric, weight: nil), "Born March 1985")
+        XCTAssertEqual(OnboardingSteps.summary(.height, profile: metric, weight: nil), "170 cm")
+        XCTAssertEqual(OnboardingSteps.summary(.weight, profile: metric, weight: (value: "68", unit: "kg")), "68 kg")
+        let us = MyData.Profile(sex: "male", birthYear: 1970, birthMonth: 12, height: "70", heightUnit: "in", feetInches: MyData.FeetInches(feet: 5, inches: 10))
+        XCTAssertEqual(OnboardingSteps.summary(.sex, profile: us, weight: nil), "Male")
+        XCTAssertEqual(OnboardingSteps.summary(.height, profile: us, weight: nil), "5 ft 10 in")
+        XCTAssertEqual(OnboardingSteps.summary(.weight, profile: us, weight: (value: "150", unit: "lb")), "150 lb")
+        XCTAssertNil(OnboardingSteps.summary(.weight, profile: us, weight: nil))
+    }
+
+    /// AC3b: Back skips the supplied steps; from the summary it reaches the last question asked.
+    func testBackSkipsWhatHealthSupplied_AC3b() {
+        XCTAssertEqual(OnboardingSteps.previous(before: .review, onlyMissing: false, skip: [.sex, .birth, .height, .weight]), .health)
+        XCTAssertEqual(OnboardingSteps.previous(before: .review, onlyMissing: false, skip: [.sex, .weight]), .height)
+        XCTAssertEqual(OnboardingSteps.previous(before: .height, onlyMissing: false, skip: [.birth]), .sex)
+        XCTAssertEqual(OnboardingSteps.previous(before: .sex, onlyMissing: false, skip: []), .health)
+        XCTAssertNil(OnboardingSteps.previous(before: .sex, onlyMissing: true, skip: []), "no Apple Health page after a cloud connect")
+    }
+
     /// Brad 2026-10-25: the hint above "Connect Apple Health", short and in plain words.
     func testTheAppleHealthHintSaysWhatToTap_AC3() {
-        XCTAssertEqual(OnboardingView.appleAsksNextWords, "Next, Apple asks for access. Tap **Turn On All**, then **Allow**.")
+        XCTAssertEqual(OnboardingView.appleAsksNextWords, "Next, Apple asks for access. Turn everything on, then tap **Allow**.",
+                       "version-neutral: iOS 27's sheet says Select All, older ones Turn On All (2026-10-26)")
     }
 }

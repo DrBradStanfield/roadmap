@@ -2,7 +2,7 @@ import Foundation
 import Observation
 import UIKit
 
-/// US-56's state: whether to show the access card or the cards, and the cards' latest
+/// US-56's state: whether to show the Turn On row or the cards, and the cards' latest
 /// readings. Held in memory while the app is open and nowhere else (AC2): no record row,
 /// no file, no UserDefaults. HealthKit is read off the main thread; only the results land
 /// here. Nothing is logged. One per app, in the environment (HealthRoadmapApp).
@@ -11,7 +11,7 @@ import UIKit
 final class LiveHealth {
     /// Health exists on this device. False on an iPad without Health: no card shows (AC13).
     let available: Bool
-    /// Apple's sheet would still show for the five types: My data shows the access card
+    /// Apple's sheet would still show for the five types: My data shows the Turn On row
     /// (AC4, AC5). Nil until the first check.
     private(set) var needsAccess: Bool?
     /// Each metric's latest reading; a metric with none is left out (AC6).
@@ -48,26 +48,6 @@ final class LiveHealth {
         }
     }
 
-    /// The access card's button (AC5): Apple's sheet for the five types, then the cards.
-    func requestAccess() async {
-        guard available else { return }
-        try? await store.requestAccess()
-        // The sheet's answer is new: always read after it, never folded into a running read (N2).
-        await refresh(force: true)
-    }
-
-    /// What the Reconnect button did (AC5b).
-    enum Reconnect { case asked, settings }
-
-    /// The Reconnect row's button (AC5b): Apple's sheet again while iOS would still show it.
-    /// Once it has been answered iOS never shows it again, so the caller opens Settings; the
-    /// return to the app reads again (`wake`).
-    func reconnect() async -> Reconnect {
-        guard (try? await store.needsRequest()) == true else { return .settings }
-        await requestAccess()
-        return .asked
-    }
-
     /// Back in the app, or unlocked: the cards and an open page read again (AC2, AC13,
     /// Codex R1). An unlock and a return land together, so a second one within about 2 s
     /// is the same wake (E1).
@@ -94,7 +74,7 @@ final class LiveHealth {
         defer { started = nil }
         repeat {
             again = false
-            // A check that fails keeps what was known, so the access card never flashes (adversary R4).
+            // A check that fails keeps what was known, so the Turn On row never flashes (adversary R4).
             let due = (try? await store.needsRequest()) ?? needsAccess
             guard !Task.isCancelled else { return }
             if needsAccess != due { needsAccess = due }

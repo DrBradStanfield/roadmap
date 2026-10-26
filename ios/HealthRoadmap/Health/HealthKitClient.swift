@@ -8,19 +8,26 @@ final class HealthKitClient: HealthStoreClient {
     /// Our writes carry this prefix in their sync identifier, so they are never read back.
     nonisolated static let syncPrefix = "healthroadmap:"
 
-    private let store = HKHealthStore()
+    private let store = HKHealthStore.app
     private var observers: [HKObserverQuery] = []
 
     var isAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
 
     func requestAuthorization() async throws {
-        // Sex and date of birth too, for onboarding to preselect (US-54 AC3).
-        let characteristics: Set<HKObjectType> = [HKCharacteristicType(.biologicalSex), HKCharacteristicType(.dateOfBirth)]
-        let read = Set<HKObjectType>(HealthKind.allCases.flatMap(Self.quantityTypes)).union(characteristics)
-        // Height is read, never written (see `save`), so the sheet does not ask to write it.
-        let share = Set(HealthKind.allCases.filter { $0 != .height }.flatMap(Self.quantityTypes))
+        let (share, read) = Self.requested
         try await store.requestAuthorization(toShare: share, read: read)
     }
+
+    /// Everything the app asks Apple Health for, in one request (Brad 2026-10-26: "just do it
+    /// in one step"): the D6 kinds, sex and date of birth for onboarding to preselect (US-54
+    /// AC3), and US-56's five live types, read only (AC4). iOS shows only the types not yet asked.
+    static let requested: (share: Set<HKSampleType>, read: Set<HKObjectType>) = {
+        let characteristics: Set<HKObjectType> = [HKCharacteristicType(.biologicalSex), HKCharacteristicType(.dateOfBirth)]
+        let read = Set<HKObjectType>(HealthKind.allCases.flatMap(quantityTypes)).union(characteristics).union(LiveHealthKitStore.readTypes)
+        // Height is read, never written (see `save`), so the sheet does not ask to write it.
+        let share = Set<HKSampleType>(HealthKind.allCases.filter { $0 != .height }.flatMap(quantityTypes))
+        return (share, read)
+    }()
 
     func samples(of kind: HealthKind, after anchor: Data?) async throws -> HealthBatch {
         let previous = anchor.flatMap { try? NSKeyedUnarchiver.unarchivedObject(ofClass: HKQueryAnchor.self, from: $0) }
@@ -132,7 +139,7 @@ final class HealthKitClient: HealthStoreClient {
 
     // MARK: HealthKit types
 
-    private static func identifier(_ kind: HealthKind) -> HKQuantityTypeIdentifier {
+    private nonisolated static func identifier(_ kind: HealthKind) -> HKQuantityTypeIdentifier {
         switch kind {
         case .weight: .bodyMass
         case .height: .height
@@ -151,7 +158,7 @@ final class HealthKitClient: HealthStoreClient {
 
     /// What permission is asked for: blood pressure is asked as its two halves,
     /// because iOS does not authorise correlation types.
-    private static func quantityTypes(_ kind: HealthKind) -> [HKQuantityType] {
+    nonisolated static func quantityTypes(_ kind: HealthKind) -> [HKQuantityType] {
         kind == .bloodPressure
             ? [HKQuantityType(.bloodPressureSystolic), HKQuantityType(.bloodPressureDiastolic)]
             : [HKQuantityType(identifier(kind))]
@@ -200,4 +207,10 @@ final class HealthKitClient: HealthStoreClient {
     private static func zone(of sample: HKSample) -> TimeZone {
         (sample.metadata?[HKMetadataKeyTimeZone] as? String).flatMap(TimeZone.init(identifier:)) ?? .current
     }
+}
+
+extension HKHealthStore {
+    /// The app's one Health store, as Apple recommends: `HealthKitClient`, `LiveHealthKitStore`
+    /// and the DEBUG seed share it.
+    static let app = HKHealthStore()
 }

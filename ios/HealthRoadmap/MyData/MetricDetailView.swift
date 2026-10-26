@@ -4,7 +4,8 @@ import SwiftUI
 /// Health's (Brad 2026-10-23: "just copy what Apple Health have done"): "+" at
 /// the top, the range picker, the latest value large with its day, a chart that
 /// opens on the newest value and scrolls back, then Show All Data and Unit, then
-/// "About" the metric and its sources (US-58).
+/// "About" the metric and its sources (US-58). A metric with no readings says "No data yet",
+/// offers "Add your first value", then shows its guide (AC4b).
 /// Tapping an active value in Show All Data corrects it: a new row, the old one
 /// kept and struck through as entered in error. There is no delete: the record
 /// is append-only (Brad 2026-09-24). The web twin is
@@ -22,6 +23,8 @@ struct MetricDetailView: View {
     /// The first day a scrolling range shows; set to end on the newest value as a range opens.
     @State private var scrolledTo = Date.distantPast
     @State private var editing: Editing?
+    /// The page's own read for this revision has come back (empty or failed included).
+    @State private var readRevision: Int?
     /// Why the Lp(a) unit menu's choice was not saved.
     @State private var lpaRefusal: String?
 
@@ -41,14 +44,14 @@ struct MetricDetailView: View {
         }
     }
 
-    /// The page once the record holds any row for the metric, active or not (Codex R3); else entry opens directly.
-    nonisolated static func opensHistory(_ history: MetricHistory?) -> Bool {
-        !(history?.rows.isEmpty ?? true)
+    /// What Add Data and the "+" open: the entry sheet for the metric as My data shows it now.
+    static func adding(_ row: MyData.Row, in store: RecordStore) -> Editing {
+        .add(live(row, in: store) ?? row, store.screen)
     }
 
     var body: some View {
         List {
-            if let chart = store.shownChart(for: row.metric) {
+            if let chart = store.shownChart(for: row.metric), !chart.history.rows.isEmpty {
                 chartSection(chart)
                 Section {
                     NavigationLink("Show All Data") {
@@ -56,19 +59,33 @@ struct MetricDetailView: View {
                     }
                     unitRow(chart.history)
                 }
-                // Apple Health's About section, then its sources (US-58 AC4).
-                if let guide = store.myData?.guides?[row.metric] {
-                    GuideSections(guide: guide)
+            } else if Self.saysEmpty(hasReadings: (Self.live(row, in: store) ?? row).latest != nil, read: readRevision == store.revision) {
+                // No readings, or a read that came back empty or failed (adversary R2; US-58 AC4b):
+                // adding one comes first, then the guide, so the page is never blank.
+                Section {
+                    Text("No data yet").foregroundStyle(.secondary)
+                    Button { editing = Self.adding(row, in: store) } label: {
+                        Label("Add your first value", systemImage: "plus.circle.fill")
+                    }
+                    .disabled(store.unitSwitches > 0)
                 }
             }
+            // Apple Health's About section, then its sources (US-58 AC4).
+            if let guide = store.myData?.guides?[row.metric] {
+                GuideSections(guide: guide)
+            }
         }
-        // What My data's tap already read draws at once; the engine answers the rest off
-        // the main thread, again whenever the record or its units move.
-        .task(id: store.revision) { _ = await store.chart(for: row.metric) }
+        // A chart kept for this revision draws at once; the engine reads the rest off the
+        // main thread, again whenever the record or its units move.
+        .task(id: store.revision) {
+            let revision = store.revision
+            _ = await store.chart(for: row.metric)
+            if !Task.isCancelled { readRevision = revision }
+        }
         .metricPageList(title: row.label)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button { editing = .add(Self.live(row, in: store) ?? row, store.screen) } label: {
+                Button { editing = Self.adding(row, in: store) } label: {
                     Label("Add Data", systemImage: "plus")
                 }
                 .disabled(store.unitSwitches > 0)
@@ -76,6 +93,13 @@ struct MetricDetailView: View {
         }
         .editingSheet($editing, store: store, saved: saved)
         .refusalAlert($lpaRefusal)
+    }
+
+    /// "No data yet" shows when My data has no reading for the metric, or once the page's read
+    /// came back with none; a metric with readings shows only its guide while the read runs,
+    /// so "No data yet" never flashes before its chart.
+    nonisolated static func saysEmpty(hasReadings: Bool, read: Bool) -> Bool {
+        !hasReadings || read
     }
 
     /// This metric's row in My data now, so a units switch shows at once.

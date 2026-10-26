@@ -46,7 +46,7 @@ final class EngineThreadTests: XCTestCase {
         let chat = ChatHistoryStore(engine: engine, folder: folder, deviceId: "test")
 
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
-        let history = await store.history(for: "weight")
+        let history = await store.chart(for: "weight")?.history
         XCTAssertEqual(history?.rows.map(\.value), ["80.0"])
         XCTAssertEqual(TypedNumber.read("3,4"), 3.4)
         let pounds = await store.convert(70, metric: "weight", from: "si", to: "conventional")

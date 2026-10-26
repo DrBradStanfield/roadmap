@@ -21,6 +21,9 @@ struct MyData: Decodable {
         var text: String { "\(feet) ft \(inches) in" }
     }
 
+    /// "female" or "male" as the screens write it.
+    static func sexLabel(_ sex: String) -> String { sex == "female" ? "Female" : "Male" }
+
     /// The Vitals row that pairs systolic and diastolic (ios/engine/blood-pressure.ts).
     static let bloodPressure = "blood_pressure"
 
@@ -66,6 +69,9 @@ struct MyData: Decodable {
     let months: ScreeningMonths
     /// The "about this measure" guides (US-58), by metric or medication key; nil from an older engine.
     let guides: MetricGuides?
+    /// The VO2 max bands' row for the person's sex and age today (US-56 AC8); nil from an older
+    /// engine, without sex or birth year, or outside 20 to 89. Read leniently.
+    let vo2Bands: Lenient<Vo2MaxBands>?
 }
 
 /// The guides by key, read leniently (US-58 AC3): a malformed guide is left out, and a

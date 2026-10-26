@@ -5,7 +5,8 @@ import XCTest
 @testable import HealthRoadmap
 
 /// US-56 on a fake store: the app asks for exactly its five types and draws each one
-/// (AC10), shows the access card until Apple's sheet is done (AC4, AC5), keeps nothing
+/// (AC10), in the app's one Health request (AC4), shows the Turn On row until Apple's
+/// sheet is done (AC4, AC5), keeps nothing
 /// (AC1, AC2), keeps the cards through a locked phone (AC13), and shows nothing without
 /// Health (AC13).
 @MainActor
@@ -26,17 +27,83 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertFalse(LiveHealthKitStore.readTypes.contains(HKQuantityType(.heartRateVariabilitySDNN)))
     }
 
-    func testTheAccessCardShowsUntilTheSheetIsDone_AC4() async {
+    /// AC4 (Brad 2026-10-26): one request for everything. Onboarding's connect asks for the
+    /// record's types, sex and date of birth, and the five live types together.
+    func testOneRequestAsksForEverything_US54_AC3_AC4() {
+        let (share, read) = HealthKitClient.requested
+        let record: Set<HKObjectType> = [
+            HKCharacteristicType(.biologicalSex), HKCharacteristicType(.dateOfBirth), HKQuantityType(.height), HKQuantityType(.bodyMass),
+            HKQuantityType(.waistCircumference), HKQuantityType(.bloodPressureSystolic), HKQuantityType(.bloodPressureDiastolic),
+        ]
+        XCTAssertEqual(read, record.union(LiveHealthKitStore.readTypes), "the six and the five, nothing else")
+        XCTAssertEqual(share, [HKQuantityType(.bodyMass), HKQuantityType(.waistCircumference), HKQuantityType(.bloodPressureSystolic), HKQuantityType(.bloodPressureDiastolic)],
+                       "height and the five are never written")
+    }
+
+    /// AC4, advisory: only `HealthKitClient` asks HealthKit for access (the DEBUG seed aside).
+    /// The guarantee is the type system (`LiveHealthStore` has no request); this scan only
+    /// flags a new call early.
+    func testOnlyHealthKitClientAsksForAccess_AC4() throws {
+        let app = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appending(path: "HealthRoadmap")
+        guard FileManager.default.fileExists(atPath: app.path(percentEncoded: false)) else {
+            throw XCTSkip("The app's sources are not on this device (a real iPhone); the simulator run checks them.")
+        }
+        let files = FileManager.default.enumerator(at: app, includingPropertiesForKeys: nil)?.compactMap { $0 as? URL }.filter { $0.pathExtension == "swift" } ?? []
+        let asking = try files.filter { try String(contentsOf: $0, encoding: .utf8).contains("requestAuthorization(toShare:") }.map(\.lastPathComponent).sorted()
+        XCTAssertEqual(asking, ["HealthKitClient.swift", "LiveHealthSeed.swift"])
+    }
+
+    /// "Never kept" rests on this: the record's types and the five live ones never overlap,
+    /// so no live reading can be imported into the record or written to Health (AC1, AC10).
+    func testTheRecordsTypesAndTheLiveTypesNeverOverlap_AC1_AC10() {
+        let record = Set<HKObjectType>(HealthKind.allCases.flatMap(HealthKitClient.quantityTypes))
+        XCTAssertTrue(record.isDisjoint(with: LiveHealthKitStore.readTypes))
+        XCTAssertTrue(Set<HKObjectType>(HealthKitClient.requested.share).isDisjoint(with: LiveHealthKitStore.readTypes))
+    }
+
+    /// AC4, AC5 (2026-10-26): before the five are asked nothing is read. Turn On shows only to
+    /// a person who connected Apple Health (before the one-step sheet); otherwise My data's
+    /// Apple Health row is the one way in. Its button acts on the known answer, no fresh check.
+    func testTurnOnShowsOnlyOnceConnectedUntilTheSheetIsDone_AC4_AC5() async {
         let store = FakeLiveStore(due: true)
         let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc)
         await live.refresh()
         XCTAssertEqual(live.needsAccess, true)
         XCTAssertTrue(live.cards.isEmpty)
         XCTAssertEqual(store.reads, 0, "nothing is read before access")
-        await live.requestAccess()
-        XCTAssertEqual(store.requests, 1, "the card's button runs the request")
-        XCTAssertEqual(live.needsAccess, false)
-        XCTAssertTrue(live.hasRead)
+        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.vitals, connected: true, needsAccess: live.needsAccess, hasRead: live.hasRead, cards: live.cards), .turnOn)
+        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.vitals, connected: false, needsAccess: live.needsAccess, hasRead: live.hasRead, cards: live.cards), .nothing,
+                       "not connected: My data's Apple Health row is the way in")
+        let action = await LiveReconnectRow.action(turnOn: true) { XCTFail("no fresh check for Turn On"); return false }
+        XCTAssertEqual(action, .connect)
+    }
+
+    /// AC4: the one connect reads the cards as soon as the sheet is answered, beside the import.
+    func testConnectReadsTheCards_AC4() async throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Live connect \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let suite = "LiveConnect-\(UUID().uuidString)"
+        defer { UserDefaults().removePersistentDomain(forName: suite) }
+        let engine = try HealthEngine()
+        let record = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        let health = FakeHealthStore()
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc)
+        let sync = AppleHealthSync(store: record, engine: engine, client: health, memory: HealthSyncMemory(defaults: UserDefaults(suiteName: suite)!), live: live)
+        // The import waits here until the cards are read (or about 2 s pass): read in sequence,
+        // after the import, they never would be.
+        var readWhileImporting = false
+        health.hold = {
+            health.hold = nil
+            for _ in 0..<200 where !live.hasRead { try? await Task.sleep(for: .milliseconds(10)) }
+            readWhileImporting = live.hasRead
+        }
+        await sync.connect()
+        XCTAssertTrue(sync.connected)
+        XCTAssertTrue(readWhileImporting, "the cards were read while the import was still pending")
+        XCTAssertFalse(live.cards.isEmpty)
     }
 
     func testEveryTypeAskedForIsDrawn_AC10_AC6() async {
@@ -197,10 +264,8 @@ final class LiveHealthTests: XCTestCase {
         store.available = false
         let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc)
         await live.refresh()
-        await live.requestAccess()
         XCTAssertFalse(live.available)
         XCTAssertNil(live.needsAccess)
-        XCTAssertEqual(store.requests, 0)
     }
 
     /// AC7, adversary R6: the page reads 400 days by day, and D one day by hour.
@@ -250,7 +315,7 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertEqual(LiveMaths.newestNight(nights, today: today)?.day, night, "and D opens on it")
     }
 
-    /// Adversary R4: a status check that throws keeps what was known; the access card does not flash.
+    /// Adversary R4: a status check that throws keeps what was known; the Turn On row does not flash.
     func testAStatusCheckThatThrowsKeepsTheCards_R4() async {
         let store = FakeLiveStore(due: false)
         store.fill(now: now)
@@ -259,11 +324,11 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertEqual(live.needsAccess, false)
         store.statusFails = true
         await live.refresh()
-        XCTAssertEqual(live.needsAccess, false, "no access card")
+        XCTAssertEqual(live.needsAccess, false, "no Turn On row")
         XCTAssertFalse(live.cards.isEmpty, "the cards stay")
         let fresh = LiveHealth(store: store, now: { [now] in now }, calendar: utc)
         await fresh.refresh()
-        XCTAssertNil(fresh.needsAccess, "unknown stays unknown: no access card")
+        XCTAssertNil(fresh.needsAccess, "unknown stays unknown: no Turn On row")
     }
 
     /// Adversary R2: one calendar, following the phone's zone, for LiveHealth and the store's anchor.
@@ -310,33 +375,31 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertFalse(changed.fired, "no write, no redraw")
     }
 
-    /// AC5b (Brad 2026-10-25): what each place shows. Before access, the access card in Vitals;
+    /// AC5b (Brad 2026-10-25): what each place shows. Before access, the Turn On row in Vitals;
     /// with readings, the cards; after "Don't Allow" (iOS answers a refusal with no data), one
     /// calm Reconnect row in Vitals, never an error or a greyed "no data" line; nothing while unknown.
     func testWhatEachPlaceShows_AC5b() {
         let card = LiveCard(value: 60, date: now, trend: [])
-        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.vitals, needsAccess: true, hasRead: false, cards: [:]), .access)
-        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.fitness, needsAccess: true, hasRead: false, cards: [:]), .nothing, "the access card is said once, in Vitals")
-        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.vitals, needsAccess: nil, hasRead: false, cards: [:]), .nothing, "unknown: nothing flashes")
-        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.vitals, needsAccess: false, hasRead: false, cards: [:]), .nothing, "not read yet")
-        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.vitals, needsAccess: false, hasRead: true, cards: [:]), .reconnect, "declined or empty: Reconnect")
-        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.fitness, needsAccess: false, hasRead: true, cards: [:]), .nothing)
-        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.vitals, needsAccess: false, hasRead: true, cards: [.sleep: card, .steps: card]), .cards([.sleep]))
-        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.vitals, needsAccess: false, hasRead: true, cards: [.steps: card]), .cards([]), "Fitness carries the readings and the footer")
-        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.fitness, needsAccess: false, hasRead: true, cards: [.steps: card]), .cards([.steps]))
+        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.vitals, connected: true, needsAccess: true, hasRead: false, cards: [:]), .turnOn)
+        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.fitness, connected: true, needsAccess: true, hasRead: false, cards: [:]), .nothing, "the Turn On row is said once, in Vitals")
+        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.vitals, connected: true, needsAccess: nil, hasRead: false, cards: [:]), .nothing, "unknown: nothing flashes")
+        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.vitals, connected: true, needsAccess: false, hasRead: false, cards: [:]), .nothing, "not read yet")
+        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.vitals, connected: true, needsAccess: false, hasRead: true, cards: [:]), .reconnect, "declined or empty: Reconnect")
+        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.fitness, connected: true, needsAccess: false, hasRead: true, cards: [:]), .nothing)
+        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.vitals, connected: true, needsAccess: false, hasRead: true, cards: [.sleep: card, .steps: card]), .cards([.sleep]))
+        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.vitals, connected: true, needsAccess: false, hasRead: true, cards: [.steps: card]), .cards([]), "Fitness carries the readings and the footer")
+        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.fitness, connected: true, needsAccess: false, hasRead: true, cards: [.steps: card]), .cards([.steps]))
     }
 
     /// AC5b: Reconnect asks again while Apple's sheet would still show; once it has been
     /// answered, iOS will not show it again, so the button opens Settings instead.
     func testReconnectAsksAgainOrOpensSettings_AC5b() async {
-        let store = FakeLiveStore(due: true)
-        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc)
-        let asked = await live.reconnect()
-        XCTAssertEqual(asked, .asked)
-        XCTAssertEqual(store.requests, 1, "the sheet again")
-        let settings = await live.reconnect()
-        XCTAssertEqual(settings, .settings, "answered: Settings")
-        XCTAssertEqual(store.requests, 1, "no second request")
+        let due = await LiveReconnectRow.action(turnOn: false) { true }
+        XCTAssertEqual(due, .connect, "the sheet again")
+        let answered = await LiveReconnectRow.action(turnOn: false) { false }
+        XCTAssertEqual(answered, .settings, "answered: Settings")
+        let unknown = await LiveReconnectRow.action(turnOn: false) { throw HKError(.errorDatabaseInaccessible) }
+        XCTAssertEqual(unknown, .settings, "iOS cannot say: Settings")
     }
 
     /// N1: a page read cancelled mid-flight throws, so the page never keeps it as "read,
@@ -376,7 +439,7 @@ final class LiveHealthTests: XCTestCase {
         first.cancel()
         await first.value
         XCTAssertFalse(fresh.hasRead, "nothing was read")
-        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.vitals, needsAccess: fresh.needsAccess, hasRead: fresh.hasRead, cards: fresh.cards), .nothing,
+        XCTAssertEqual(LiveCardsSection.shown(LiveMetric.vitals, connected: true, needsAccess: fresh.needsAccess, hasRead: fresh.hasRead, cards: fresh.cards), .nothing,
                        "no Reconnect row from a cancelled read")
     }
 
@@ -388,7 +451,7 @@ final class LiveHealthTests: XCTestCase {
         let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc)
         let running = Task { await live.refresh() }
         try await Task.sleep(for: .milliseconds(50))
-        await live.requestAccess()
+        await live.refresh(force: true)
         store.delay = nil
         await running.value
         XCTAssertEqual(store.latestCalls, 2 * LiveMetric.allCases.count, "two reads, not one")
@@ -473,7 +536,7 @@ final class LiveHealthTests: XCTestCase {
         }
         let live = try FileManager.default.contentsOfDirectory(at: app.appending(path: "AppleHealthMetrics"), includingPropertiesForKeys: nil)
             .filter { $0.pathExtension == "swift" }
-        XCTAssertEqual(live.count, 6)
+        XCTAssertEqual(live.count, 7, "Vo2MaxBands.swift is the seventh (US-56 AC8)")
         for file in live {
             // Code only: comments may name what is not done.
             let text = try String(contentsOf: file, encoding: .utf8).split(separator: "\n")
@@ -507,7 +570,6 @@ private final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
         var available = true
         var locked = false
         var empty: Set<LiveMetric> = []
-        var requests = 0
         var reads = 0
         var statusFails = false
         var delay: Duration?
@@ -528,7 +590,6 @@ private final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
     var available: Bool { get { with { $0.available } } set { with { $0.available = newValue } } }
     var locked: Bool { get { with { $0.locked } } set { with { $0.locked = newValue } } }
     var empty: Set<LiveMetric> { get { with { $0.empty } } set { with { $0.empty = newValue } } }
-    var requests: Int { with { $0.requests } }
     var reads: Int { with { $0.reads } }
     var statusFails: Bool { get { with { $0.statusFails } } set { with { $0.statusFails = newValue } } }
     /// Each read waits this long, cancellably, as a slow HealthKit query would.
@@ -571,7 +632,6 @@ private final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
         }
     }
 
-    func requestAccess() async throws { with { $0.requests += 1; $0.due = false } }
 
     func points(_ metric: LiveMetric, from start: Date, to end: Date, every component: Calendar.Component) async throws -> [LivePoint] {
         try await wait()

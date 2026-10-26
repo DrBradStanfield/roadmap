@@ -5,7 +5,8 @@
  * DISPLAY-ONLY CLINICAL TEXT. A guide may only restate thresholds and claims that
  * health_roadmap_algorithm.md, evidence.ts and roadmap_text.html already hold, plus the
  * standard prescribing facts Brad approved (side effects, how a drug works; Brad
- * 2026-10-25). Sources are evidence.ts's own references, never a new citation.
+ * 2026-10-25), the standard measuring and preparation tips he approved as a category,
+ * and the lines he restored (Brad 2026-10-26; docs/drafts/metric-guides.md). Sources are evidence.ts's own references, never a new citation.
  * metric-guides.test.ts holds both rules: every source resolves to an evidence.ts
  * reference, and every number is on its entry's list, found in the clinical files.
  *
@@ -13,7 +14,7 @@
  * and MEDICATION_KEYS without the two escalation answers. The iOS engine serves them on
  * My data (ios/engine/my-data.ts), so a correction ships over the air (ios/architecture.md D3).
  */
-import { SUGGESTION_EVIDENCE, STAT_CARD_EVIDENCE, getBmiEvidence, getIbwEvidence, type SuggestionReference } from './evidence';
+import { GUIDE_REFERENCES, SUGGESTION_EVIDENCE, STAT_CARD_EVIDENCE, getBmiEvidence, getIbwEvidence, type SuggestionReference } from './evidence';
 
 export interface MetricGuide {
   title: string;
@@ -26,7 +27,7 @@ export interface MetricGuide {
 
 const EVIDENCE_REFS = [
   ...Object.values(SUGGESTION_EVIDENCE), ...Object.values(STAT_CARD_EVIDENCE), getIbwEvidence('male'), getBmiEvidence(27, 'male'),
-].flatMap((e) => e.references);
+].flatMap((e) => e.references).concat(GUIDE_REFERENCES);
 
 /** evidence.ts's reference whose label starts so; throws on none, so a renamed one fails every test that loads this file. */
 function ref(labelStart: string): SuggestionReference {
@@ -72,7 +73,9 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
     whatItIs: 'The force of blood pushing on your artery walls, in mmHg. The top number (systolic) is the pressure as your heart beats. The bottom number (diastolic) is the pressure between beats.',
     whyItMatters: 'High blood pressure rarely causes symptoms. Over years it raises the risk of stroke, heart attack, and kidney damage. Trials show that lowering it reduces strokes and heart attacks.',
     howTo: { heading: MEASURE, points: [
-      'Use an upper-arm cuff.',
+      'Use an upper-arm cuff. Skip caffeine, exercise and smoking for 30 minutes before.',
+      'Sit quietly for 5 minutes, back supported, feet flat, arm resting at heart level, cuff on bare skin.',
+      'Take two readings a minute apart.',
       'Every 2 to 4 weeks is enough to see a trend.',
     ] },
     sources: [ref('Whelton 2017'), ref('SPRINT 2015')],
@@ -196,14 +199,14 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
   ezetimibe: {
     title: 'Ezetimibe',
     whatItIs: 'A daily 10 mg tablet that lowers LDL cholesterol. It is often added to a statin, and it also comes in combined pills.',
-    whyItMatters: 'Added to a statin, ezetimibe typically lowers LDL by a further 15 to 20%. Starting it early after a heart attack was linked with better outcomes than adding it later.',
+    whyItMatters: 'Added to a statin, ezetimibe typically lowers LDL by a further 15 to 20%. In trials, this extra lowering reduced heart attacks and strokes. Starting it early after a heart attack was linked with better outcomes than adding it later.',
     howTo: { heading: WORKS, points: [
       'It blocks the gut from absorbing cholesterol, a different route from statins.',
       'It is also sold combined with a statin, or with bempedoic acid.',
       'Most people notice no side effects. Mild stomach upset can happen.',
       TALK,
     ] },
-    sources: [ref('Leosdottir 2025'), ref('Lee 2026')],
+    sources: [ref('Cannon 2015'), ref('Leosdottir 2025'), ref('Lee 2026')],
   },
   bempedoic_acid: {
     title: 'Bempedoic acid',
@@ -219,7 +222,7 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
   },
   pcsk9i: {
     title: 'PCSK9 inhibitors',
-    whatItIs: 'Medicines that lower LDL cholesterol by acting on PCSK9, a protein made in the liver. They come in three kinds: antibody injections such as evolocumab and alirocumab, given under the skin; inclisiran, also an injection; and oral PCSK9 inhibitors, which are newer.',
+    whatItIs: 'Medicines that lower LDL cholesterol by acting on PCSK9, a protein made in the liver. They come in three kinds: antibody injections such as evolocumab and alirocumab, given under the skin, usually every 2 or 4 weeks; inclisiran, an injection given twice a year once started; and oral PCSK9 inhibitors, which are newer.',
     whyItMatters: 'Guidelines recommend the antibody injections (evolocumab, alirocumab) when cholesterol stays above target on the highest tolerated statin plus ezetimibe. They can lower LDL by a further 50 to 60%, and Lp(a) by about 25 to 30%.',
     howTo: { heading: WORKS, points: [
       'PCSK9 is a protein that breaks down the liver\'s LDL receptors. Blocking it, or stopping the liver making it as inclisiran does, leaves more receptors to clear LDL from the blood.',
@@ -239,7 +242,7 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
       'They are linked with a modestly higher risk of gallstones.',
       TALK,
     ] },
-    sources: [ref('Wilding 2021'), ref('Wilding 2022')],
+    sources: [ref('Wilding 2021'), ref('Wilding 2022'), ref('He 2022')],
   },
   sglt2i: {
     title: 'SGLT2 inhibitors',
@@ -257,13 +260,14 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
   metformin: {
     title: 'Metformin',
     whatItIs: 'A daily tablet used for decades for type 2 diabetes. It comes as immediate release (IR) or extended release (XR).',
-    whyItMatters: 'In the long-term follow-up of the Diabetes Prevention Program, people at high risk of type 2 diabetes who took metformin were no less likely to die, including from heart disease or cancer, than those on placebo.',
+    whyItMatters: 'In the Diabetes Prevention Program, metformin slowed the move from prediabetes to diabetes. In the long-term follow-up of the Diabetes Prevention Program, people at high risk of type 2 diabetes who took metformin were no less likely to die, including from heart disease or cancer, than those on placebo.',
     howTo: { heading: WORKS, points: [
       'It lowers the sugar your liver releases and helps your body respond to insulin.',
       'Stomach upset and loose stools are common at first. The XR form may cause fewer.',
       'Long-term use can lower vitamin B12.',
+      'It may blunt some of the benefits of exercise training.',
       TALK,
     ] },
-    sources: [ref('Lee 2021')],
+    sources: [ref('Lee 2021'), ref('Konopka 2019'), ref('Moreno-Cabanas 2022')],
   },
 };

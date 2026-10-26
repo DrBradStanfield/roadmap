@@ -2,7 +2,7 @@
 
 Single source of truth for all health calculations, clinical thresholds, medication cascades, screening logic, and suggestion rules. The code in `packages/health-core/src/` implements this algorithm. Clinical evidence (patient-facing reasons, guideline citations, DOI references) for each suggestion is defined in `packages/health-core/src/evidence.ts` and attached automatically by `generateSuggestions()`. The user-facing `roadmap_text.html` must stay consistent with this document and `evidence.ts`.
 
-`packages/health-core/src/metric-guides.ts` (`METRIC_GUIDES`, US-58) is display-only text, the "about this measure" guides in the iOS app: it may only restate thresholds and claims already in this document, `evidence.ts` and `roadmap_text.html`, plus standard prescribing facts Brad approved (side effects, how a drug works), and cites only `evidence.ts` references. A clinical change here that alters a guide's claim changes the guide too.
+`packages/health-core/src/metric-guides.ts` (`METRIC_GUIDES`, US-58) is display-only text, the "about this measure" guides in the iOS app: it may only restate thresholds and claims already in this document, `evidence.ts` and `roadmap_text.html`, plus standard prescribing facts Brad approved (side effects, how a drug works), the standard measuring and preparation tips he approved as a category on 2026-10-26, and the lines he restored that day (docs/drafts/metric-guides.md, "Brad's decisions (2026-10-26)"), and cites only `evidence.ts` references (its `GUIDE_REFERENCES` hold the roadmap_text.html citations no suggestion uses). A clinical change here that alters a guide's claim changes the guide too.
 
 All values are stored and compared in **SI canonical units**. Conversion to display units (conventional/US) happens only at the UI layer.
 
@@ -561,6 +561,31 @@ Used when medications are tracked and a lipid is at or above its target: the val
 | Non-HDL | < 1.6 mmol/L | < 62 mg/dL |
 
 ApoB source: Brad's target, extended from the Ez-PAVE LDL-C target trial (Lee 2026) and PESA (Ibanez 2021), and lower than the ESC/EAS 2019 goal of < 65 mg/dL for very high risk.
+
+### VO2 Max Fitness Bands (iPhone app, display only)
+
+US-56 AC8 (Brad 2026-10-26). The iPhone app's VO2 max page shades four bands behind its chart, and its card names the newest reading's band. Display only: no suggestion reads VO2 max, which never enters the record. Source: FRIEND 2022, Table 3, treadmill CPX with directly measured VO2peak, RER ≥ 1.0 (Kaminsky et al., Mayo Clin Proc 2022;97(2):285-293). Apple publishes only its Low rule (white paper, May 2021): for ages 20 to 59, the lowest fifth of FRIEND 2015 (Kaminsky 2015) by sex and decade; at 60 and over, fixed lines of 18 mL/kg/min for men and 15 for women. The bands here are FRIEND 2022 percentiles, not Apple's notification thresholds, so a Low Cardio Fitness alert from Apple and this page can differ, most at 60 and over.
+
+| Band | Rule |
+|------|------|
+| Low | below P20 |
+| Below Average | P20 to below P50 |
+| Above Average | P50 to below P80 |
+| High | P80 and above |
+
+Each band includes its lower bound. The app places the value as shown, rounded to one decimal. Ages 20 to 89; no band under 20, at 90 or over, or without sex and birth year in the record. Age follows the Age rule in section 1, and is the person's age today, also for older readings.
+
+| Age | Men P20 | Men P50 | Men P80 | Women P20 | Women P50 | Women P80 |
+|-----|---------|---------|---------|-----------|-----------|-----------|
+| 20–29 | 35.2 | 46.5 | 54.5 | 27.2 | 36.6 | 44.8 |
+| 30–39 | 29.8 | 39.7 | 50.0 | 21.9 | 28.3 | 37.0 |
+| 40–49 | 26.7 | 35.3 | 45.2 | 19.7 | 25.7 | 33.0 |
+| 50–59 | 22.2 | 29.2 | 38.3 | 18.5 | 22.9 | 28.4 |
+| 60–69 | 18.5 | 24.6 | 32.0 | 15.4 | 19.6 | 24.3 |
+| 70–79 | 15.9 | 20.6 | 25.9 | 14.0 | 17.2 | 20.8 |
+| 80–89 | 14.8 | 17.6 | 21.4 | 12.6 | 15.4 | 18.4 |
+
+Values in mL/kg/min. Code: the table is `packages/health-core/src/vo2max-bands.ts`; the app's engine serves the person's row on My data (`vo2Bands`, ios/engine/my-data.ts, by `calculateAge`), and the app applies its cut-points to a value (`Vo2MaxBands.swift`). Apple Watch estimates VO2 max from submaximal walks, runs and hikes; FRIEND's values come from maximal lab treadmill tests, so the comparison is approximate.
 
 ---
 

@@ -9,16 +9,15 @@ struct AppleHealthSection: View {
     var body: some View {
         if let health, health.status != .unavailable {
             Section {
-                switch health.status {
-                case .notConnected, .failed:
+                if health.connected {
+                    Label(text(health.status), systemImage: "heart.text.square")
+                        .foregroundStyle(.secondary)
+                } else {
                     Button {
                         Task { await health.connect() }
                     } label: {
                         Label("Connect Apple Health", systemImage: "heart.text.square")
                     }
-                default:
-                    Label(text(health.status), systemImage: "heart.text.square")
-                        .foregroundStyle(.secondary)
                 }
             } header: {
                 SectionTitle.appleHealth()

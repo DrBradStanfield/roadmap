@@ -124,10 +124,12 @@ declares the three rows below; declare them as written.
   and under every plan, and tells users to talk to their doctor. It does not diagnose,
   dose or measure anything with the phone's sensors.
 - Apple Health (guideline 2.5.1): the app imports Health values into the person's
-  record and writes typed values back. Separately, from My data ("Show from Apple
-  Health", or "Reconnect" after a refusal), it asks to read heart rate, resting heart
-  rate, sleep, VO2 max and steps; once the sheet has been answered, Reconnect opens
-  Settings instead. These five are shown from Apple Health, never kept: the app reads them each
+  record and writes typed values back. In the same single permission sheet, shown once
+  during onboarding ("Connect Apple Health"), it also asks to read heart rate, resting
+  heart rate, sleep, VO2 max and steps. A person who skipped that connects from My
+  data's Apple Health row, which shows the same sheet. A person who connected before this
+  was added gets "Turn On" on My data, the same sheet again; after a refusal, "Reconnect"
+  opens Settings. These five are shown from Apple Health, never kept: the app reads them each
   time a card or chart shows, holds them in memory while it is open, and never saves or
   sends them. To see them on a device without a watch, add sample data in the Health
   app first.

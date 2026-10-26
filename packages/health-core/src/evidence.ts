@@ -649,6 +649,19 @@ const REFS_WHTR: SuggestionReference[] = [
   { label: 'Ashwell 2005 – Six reasons to use waist-to-height ratio (Int J Food Sci Nutr)', url: 'https://doi.org/10.1080/09637480500195066' },
 ];
 
+/**
+ * References roadmap_text.html cites that no suggestion or card uses yet: the metric
+ * guides cite them (metric-guides.ts, US-58). Titles as roadmap_text.html gives them.
+ * Only Cannon's DOI is in roadmap_text.html; every DOI here was checked against
+ * Crossref (title, journal, first author, year) on 2026-10-26.
+ */
+export const GUIDE_REFERENCES: SuggestionReference[] = [
+  { label: 'Cannon 2015 – IMPROVE-IT: ezetimibe added to statin therapy after acute coronary syndromes (NEJM)', url: 'https://doi.org/10.1056/NEJMoa1410489' },
+  { label: 'He 2022 – GLP-1 receptor agonist use & risk of gallbladder and biliary diseases (JAMA Intern Med)', url: 'https://doi.org/10.1001/jamainternmed.2022.0338' },
+  { label: 'Konopka 2019 – Metformin inhibits mitochondrial adaptations to aerobic exercise training in older adults (Aging Cell)', url: 'https://doi.org/10.1111/acel.12880' },
+  { label: 'Moreno-Cabanas 2022 – Chronic metformin treatment & training adaptations with hyperglycemia (Obesity)', url: 'https://doi.org/10.1002/oby.23410' },
+];
+
 /** Static stat card evidence entries. */
 export const STAT_CARD_EVIDENCE: Record<string, SuggestionEvidence> = {
   'apob': {
@@ -696,6 +709,15 @@ export const STAT_CARD_EVIDENCE: Record<string, SuggestionEvidence> = {
     guidelines: ['ADA'],
     references: [
       { label: 'ADA – Standards of Medical Care in Diabetes', url: 'https://diabetesjournals.org/care/issue/47/Supplement_1' },
+    ],
+  },
+
+  // US-56 AC8: the iPhone app's VO2 max bands (display only; table in vo2max-bands.ts).
+  'vo2max': {
+    reason: 'VO2 max is the most oxygen your body can use during hard exercise, a measure of cardiorespiratory fitness. The bands compare your value with people of your age and sex in the FRIEND registry, cut at its 20th, 50th and 80th percentiles: Low is below the 20th, Below Average up to the 50th, Above Average up to the 80th, and High from the 80th. Apple Watch estimates VO2 max from outdoor walks, runs and hikes; the FRIEND values come from lab treadmill tests.',
+    guidelines: [],
+    references: [
+      { label: 'Kaminsky 2022 – Updated FRIEND reference standards for cardiorespiratory fitness (Mayo Clin Proc)', url: 'https://doi.org/10.1016/j.mayocp.2021.08.020' },
     ],
   },
 };

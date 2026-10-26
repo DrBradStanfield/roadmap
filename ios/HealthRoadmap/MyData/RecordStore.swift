@@ -44,9 +44,9 @@ final class RecordStore {
     @ObservationIgnored var marksPending: PhoneFiles?
     /// Moves each time "Delete all my data" erases the record here (US-25 AC16),
     /// so a view holding health data outside the record, the open chat, drops it.
-    private(set) var erasures = 0
+    private(set) var erasures = 0 { didSet { forgetCharts() } }
     /// Per-test units (US-25 AC17e): this phone's preference, as the web's are its browser's.
-    private(set) var unitChoices = UnitChoices.saved() { didSet { if unitChoices != oldValue { revision += 1 } } }
+    private(set) var unitChoices = UnitChoices.saved() { didSet { if unitChoices != oldValue { revision += 1; forgetCharts() } } }
     /// The person's own saves (US-57 AC9): a sheet's edit or a lab report's values that
     /// changed the record, never an Apple Health import (`applyNow`) or a units choice.
     /// The cloud prompt counts them.
@@ -292,12 +292,6 @@ final class RecordStore {
         return try String(contentsOf: file, encoding: .utf8)
     }
 
-    /// Every value recorded for one metric (US-25 AC9), for the record and units shown now;
-    /// nil while the record cannot be read.
-    func history(for metric: String) async -> MetricHistory? {
-        await chart(for: metric)?.history
-    }
-
     /// The history and its chart's inputs, read by the engine once per `revision` and metric,
     /// off the main thread: a second ask while that read runs (a page and the page above it)
     /// joins it. Kept in `histories`, which a page draws; older revisions' are dropped.
@@ -319,6 +313,13 @@ final class RecordStore {
             histories[metric] = KeptHistory(revision: revision, chart: chart)
         }
         return chart
+    }
+
+    /// Drops every kept chart and running read, on an erase or a unit change: a page opened
+    /// after it never shows the earlier values, only one read for now (US-25 AC21, adversary R1).
+    private func forgetCharts() {
+        histories = [:]
+        reading = [:]
     }
 
     /// The chart last read for `metric`, for a page to draw: it may trail the record by one
@@ -345,18 +346,6 @@ final class RecordStore {
         return history.rows.first { $0.id == id }?.value
     }
 
-    /// A row tap (AC9): only the latest one, with no erase since, may open a page or a sheet
-    /// once its history is read (re-check N4). Taken in the tap.
-    struct Tap: Equatable {
-        fileprivate let tap: Int
-        fileprivate let erasures: Int
-    }
-    func tap() -> Tap {
-        taps += 1
-        return Tap(tap: taps, erasures: erasures)
-    }
-    func isLatest(_ tap: Tap) -> Bool { tap == Tap(tap: taps, erasures: erasures) }
-    @ObservationIgnored private var taps = 0
 
     private struct KeptHistory {
         let revision: Int
@@ -381,6 +370,8 @@ final class RecordStore {
         }.value
         // An edit that changed nothing is not a save (review R5).
         if changed, !switching { ownSaves += 1 }
+        // A page opened after the master units switch never shows the old units (adversary R1).
+        if changed, switching { forgetCharts() }
         return result
     }
 
@@ -616,7 +607,9 @@ final class RecordStore {
         unitSwitches += 1
         return chain {
             defer { self.unitSwitches -= 1 }
-            return await self.applyInTurn(.lpaUnit(unit), as: self.screen)
+            let result = await self.applyInTurn(.lpaUnit(unit), as: self.screen)
+            if result == .saved { self.forgetCharts() }
+            return result
         }
     }
 

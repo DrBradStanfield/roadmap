@@ -160,7 +160,7 @@ struct AppParts {
             try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
         }
         let sync = self.sync
-        health = AppleHealthSync(store: store, engine: engine, client: client) { await sync.syncNow() }
+        health = AppleHealthSync(store: store, engine: engine, client: client, live: live) { await sync.syncNow() }
         health.start()
         chat = ChatHistoryStore(engine: engine, folder: folder, deviceId: store.deviceId)
         eraser = DataEraser(store: store, sync: sync, chat: chat, reminders: reminders, health: health)
@@ -182,14 +182,15 @@ private struct LaunchFiles: Sendable {
     }
 }
 
-/// What shows while the parts are built: the welcome screen's mark on its background,
-/// never a blank screen (US-25 AC21).
+/// What shows while the parts are built (about 100 ms on an iPhone 15 Pro Max): My data's
+/// plain background, also the system launch screen's colour (`LaunchBackground`), so
+/// nothing changes on screen until My data appears (US-25 AC21b, Brad 2026-10-26).
 struct LaunchView: View {
     var body: some View {
-        LogoMark()
-            .accessibilityHidden(true)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color(.systemBackground))
+        Color(.systemGroupedBackground)
+            .ignoresSafeArea()
+            .accessibilityElement()
+            .accessibilityLabel("Loading")
             #if DEBUG
             .onAppear { LaunchClock.mark("launch view shown") }
             #endif

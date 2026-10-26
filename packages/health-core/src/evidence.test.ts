@@ -40,3 +40,18 @@ describe('ApoB target attribution (US-07 AC1)', () => {
     expect(e.references.map(r => r.url)).toContain('https://doi.org/10.1056/NEJMoa2600283');
   });
 });
+
+// US-56 AC8: the VO2 max bands' reason and source, the FRIEND 2022 update (Crossref-checked
+// 2026-10-26: Kaminsky et al., Mayo Clin Proc 97(2):285-293).
+describe('VO2 max bands evidence (US-56 AC8)', () => {
+  it('cites FRIEND 2022 and states the percentile bands without claiming they are Apple\'s', () => {
+    const e = STAT_CARD_EVIDENCE['vo2max'];
+    expect(e.references).toEqual([
+      { label: 'Kaminsky 2022 – Updated FRIEND reference standards for cardiorespiratory fitness (Mayo Clin Proc)', url: 'https://doi.org/10.1016/j.mayocp.2021.08.020' },
+    ]);
+    expect(e.reason).toContain('20th, 50th and 80th percentiles');
+    expect(e.reason).toContain('lab treadmill tests');
+    expect(e.reason).not.toMatch(/Apple's (bands|levels|cut)/);
+    expect(e.reason).not.toContain('—');
+  });
+});

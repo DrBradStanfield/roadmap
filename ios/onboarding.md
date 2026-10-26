@@ -43,7 +43,9 @@ flowchart TD
   Q1[Sex] --> Q2[Birth month and year]
   Q2 --> Q3[Height]
   Q3 --> Q4[Weight]
-  Q4 --> P[My plan]
+  Q4 -->|nothing from Health| P[My plan]
+  Q4 -->|something from Health| R[From Apple Health: check, Edit, Continue]
+  R --> P
 ```
 
 1. **Welcome.** What the app does, that the record stays on the phone or in the person's
@@ -52,17 +54,30 @@ flowchart TD
    Health Roadmap**, which connects Dropbox or Google Drive and brings the existing
    record in, so a web user never types their details twice.
 2. **Apple Health.** The only page before Apple's sheet: "Use your Apple Health data",
-   six tiles (sex, birth date, height, weight, waist, blood pressure) ticking in, one line
+   six tiles (sex, birth date, height, weight, waist, blood pressure) ticking in, a quiet
+   line under them naming US-56's five ("It also shows your heart rate, sleep, VO2 max and
+   steps here, never kept."), one line
    ("So you type less.") on where what is read goes and that added values are saved back.
    Just above **Connect Apple Health**, the last thing read before the tap, a small callout
    in the accent green (not red, which read as something wrong; Brad 2026-10-25) gives
-   Apple's two taps: "Next, Apple asks for access. Tap **Turn On All**, then **Allow**."
+   Apple's two taps: "Next, Apple asks for access. Turn everything on, then tap **Allow**."
+   (Version-neutral since 2026-10-26: iOS 27's sheet says "Select All", older ones "Turn On All".)
    No switch of ours:
    Apple's sheet cannot be pre-switched. **Not now** goes on. Either way the next screens
-   come next.
+   come next. **One sheet (Brad 2026-10-26):** it also asks to read US-56's five (heart
+   rate, resting heart rate, sleep, VO2 max, steps), so Apple asks once.
+   **Health's answers are not asked again (US-54 AC3b, Brad 2026-10-26):** each question
+   Apple Health answered (sex, birth month and year, height, a weight from the last year)
+   is skipped; sex and birth are saved at once, height and weight came in with the
+   connect. A weight more than a year old is asked, filled in; Continue on it saves it as
+   today's Apple Health reading, never written back to Health. A relaunch keeps all this:
+   which steps came from Health is kept by name, and the rest is read from the record. The skipped answers are
+   listed on one last screen, "From Apple Health", each with **Edit**, and one
+   **Continue**. Health holding everything: the sheet, that screen, Continue, My plan.
 3. **Sex.** Female or Male, two large buttons. One line on why: the plan's targets and
    screenings depend on it. A tap saves and moves on; there is no Continue. A sex from
-   Apple Health shows selected and still takes that one tap.
+   Apple Health is not asked (AC3b): it is saved and listed on the summary; opened from
+   the summary's Edit, it shows selected and still takes that one tap.
 4. **Birth month and year.** Two wheels. One line on why: age decides which checks are
    due (bowel and breast cancer screening, bone density scans). We never ask for or keep
    the day.
