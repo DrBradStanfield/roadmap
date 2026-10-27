@@ -55,7 +55,6 @@ import {
   METFORMIN_OPTIONS,
   validateInputValue,
   isBirthYearClearlyInvalid,
-  commaQuestion,
   parseLocalisedNumber,
   dayOf,
   localDay,
@@ -221,6 +220,15 @@ export function InputPanel({
 }: InputPanelProps) {
   const [prefillExpanded, setPrefillExpanded] = useState(false);
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
+  // Number boxes holding text the browser could not read ("175,500" gives "" with
+  // validity.badInput): not a clear, so nothing is written or saved (US-02 AC7).
+  const [unreadable, setUnreadable] = useState<Record<string, boolean>>({});
+  /** Records whether the box can be read; false means leave the saved value alone. */
+  const readable = (field: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const bad = e.target.validity.badInput;
+    setUnreadable(prev => ({ ...prev, [field]: bad }));
+    return !bad;
+  };
   const hasAutoFocusedEmail = useRef(false);
   // One auto-advance instance per TARGET, so a new keystroke on any source
   // field cancels a pending advance to that target.
@@ -334,22 +342,12 @@ export function InputPanel({
   // PSA date picker state (for prostate section)
   const [psaDate, setPsaDate] = useState<DateValue>(getCurrentDateValue);
 
-  // Why a typed vital was refused, by field: shown under the box until it reads.
-  const [refused, setRefused] = useState<Record<string, string | undefined>>({});
-
-  /** A typed height or first weight/waist, read by the field's range (US-02
-   *  AC7) and saved in SI. An emptied box is a deliberate clear. Text the range
-   *  cannot read ("175,500" cm) is refused and asked about, and the value held
-   *  stays: a refusal never clears. Returns the number read, in the box's unit. */
-  const typeVital = (field: keyof HealthInputs, raw: string, unit?: UnitSystem): number | undefined => {
-    setRawInputs(prev => ({ ...prev, [field]: raw }));
-    const num = raw.trim() === '' ? undefined : parseLocalisedNumber(raw, range(field));
-    const why = raw.trim() !== '' && num === undefined ? commaQuestion(raw) ?? 'Enter a number' : undefined;
-    setRefused(prev => ({ ...prev, [field]: why }));
-    if (why) return undefined;
+  const parseAndConvert = (field: string, value: string): number | undefined => {
+    const num = parseLocalisedNumber(value);
+    if (num === undefined) return undefined;
     const metric = FIELD_METRIC_MAP[field];
-    updateField(field, num === undefined || !metric ? num : toCanonicalValue(metric, num, fieldUnit(field)), unit);
-    return num;
+    if (!metric) return num;
+    return toCanonicalValue(metric, num, fieldUnit(field));
   };
 
   const toDisplay = (field: string, siValue: number | undefined): string => {
@@ -542,21 +540,21 @@ export function InputPanel({
         )}
         <div className="longitudinal-input-row">
           <input
-            // type="text": a type="number" box hands "" for "75,5" (US-02 AC7).
-            type="text"
-            inputMode="decimal"
+            type="number"
             id={field}
             onWheel={blurOnWheel}
             value={rawInputs[field] !== undefined ? rawInputs[field] : toDisplay(field, inputs[field] as number | undefined)}
             onChange={(e) => {
-              const raw = e.target.value.replace(/[^0-9.,]/g, '');
+              const raw = e.target.value;
+              setRawInputs(prev => ({ ...prev, [field]: raw }));
+              if (!readable(field, e)) return;
               // Ignore browser auto-fill of 0 for empty fields (spinner click on empty input)
               if (raw === '0' && inputs[field] === undefined && rawInputs[field] === undefined) {
-                setRawInputs(prev => ({ ...prev, [field]: raw }));
                 return;
               }
-              const weightNum = typeVital(field, raw, fieldUnit(field));
+              updateField(field, parseAndConvert(field, raw), fieldUnit(field));
               if (field === 'weightKg' && !hasAutoFocusedEmail.current && onAutoFocusEmail) {
+                const weightNum = parseLocalisedNumber(raw);
                 if (weightNum !== undefined && /^\d{2,3}$/.test(raw) && weightNum >= r.min && weightNum <= r.max) {
                   advanceToEmail({
                     ambiguous: /^\d{2}$/.test(raw) && weightNum * 10 <= r.max,
@@ -569,8 +567,8 @@ export function InputPanel({
               }
             }}
             onBlur={() => {
-              // A refused text stays in the box beside its question.
-              if (!refused[field]) setRawInputs(prev => { const next = { ...prev }; delete next[field]; return next; });
+              if (unreadable[field]) return;
+              setRawInputs(prev => { const next = { ...prev }; delete next[field]; return next; });
               autoSaveOnBlur();
             }}
             onKeyDown={onNumericEnter}
@@ -578,14 +576,14 @@ export function InputPanel({
             step={step ? (fieldUnit(field) === 'si' ? step.si : step.conv) : undefined}
             min={r.min}
             max={r.max}
-            className={refused[field] ?? errors[field] ? 'error' : ''}
+            className={errors[field] ? 'error' : ''}
           />
           {autoSaveGate && inputs[field] !== undefined && (
             <CommitTickButton ariaLabel={`Save ${field}`} onClick={flushLongitudinalSave}/>
           )}
         </div>
-        {(refused[field] ?? errors[field]) && (
-          <span className="error-message">{refused[field] ?? errors[field]}</span>
+        {(unreadable[field] || errors[field]) && (
+          <span className="error-message">{unreadable[field] ? 'Enter a number' : errors[field]}</span>
         )}
         {(effectiveHint || (!isExpandedWithData && previousLabel)) && (
           <div className="field-meta">
@@ -830,16 +828,17 @@ export function InputPanel({
               </label>
               {unitSystem === 'si' ? (
                 <input
-                  // type="text": a type="number" box hands "" for "175,5" (US-02 AC7).
-                  type="text"
-                  inputMode="decimal"
+                  type="number"
                   id="heightCm"
                   onKeyDown={blockBadNumericKeys}
                   onWheel={blurOnWheel}
                   value={rawInputs['heightCm'] !== undefined ? rawInputs['heightCm'] : toDisplay('heightCm', inputs.heightCm)}
                   onChange={(e) => {
-                    const raw = e.target.value.replace(/[^0-9.,]/g, '');
-                    const heightNum = typeVital('heightCm', raw);
+                    const raw = e.target.value;
+                    setRawInputs(prev => ({ ...prev, heightCm: raw }));
+                    if (!readable('heightCm', e)) return;
+                    updateField('heightCm', parseAndConvert('heightCm', raw));
+                    const heightNum = parseLocalisedNumber(raw);
                     const heightRange = range('heightCm');
                     // Plausible height → move on to weight.
                     if (heightNum !== undefined && /^\d{2,3}$/.test(raw) && heightNum >= heightRange.min && heightNum <= heightRange.max && inputs.weightKg === undefined) {
@@ -849,12 +848,11 @@ export function InputPanel({
                       });
                     }
                   }}
-                  // A refused text stays in the box beside its question.
-                  onBlur={() => { if (!refused.heightCm) setRawInputs(prev => { const next = { ...prev }; delete next['heightCm']; return next; }); }}
+                  onBlur={() => { if (!unreadable.heightCm) setRawInputs(prev => { const next = { ...prev }; delete next['heightCm']; return next; }); }}
                   placeholder=""
                   min={range('heightCm').min}
                   max={range('heightCm').max}
-                  className={refused.heightCm ?? errors.heightCm ? 'error' : ''}
+                  className={errors.heightCm ? 'error' : ''}
                 />
               ) : (
                 <div className="height-fieldset">
@@ -915,8 +913,8 @@ export function InputPanel({
                   <span className="height-unit">in</span>
                 </div>
               )}
-              {(refused.heightCm ?? errors.heightCm) && (
-                <span className="error-message">{refused.heightCm ?? errors.heightCm}</span>
+              {((unreadable.heightCm && unitSystem === 'si') || errors.heightCm) && (
+                <span className="error-message">{unreadable.heightCm && unitSystem === 'si' ? 'Enter a number' : errors.heightCm}</span>
               )}
             </div>
           </div>
@@ -1657,12 +1655,13 @@ export function InputPanel({
                         onKeyDown={blockNonIntegerKeys}
                         onWheel={blurOnWheel}
                         value={scr.lungPackYears ?? ''}
-                        onChange={(e) => onScreeningChange('lung_pack_years', e.target.value)}
+                        onChange={(e) => { if (readable('lung_pack_years', e)) onScreeningChange('lung_pack_years', e.target.value); }}
                         placeholder=""
                         min="0"
                         max="200"
                         step="1"
                       />
+                      {unreadable.lung_pack_years && <span className="field-error">Enter a number</span>}
                       <span className="field-hint">{SCREENING_TEXT.packYearsHint}</span>
                     </div>
 
@@ -1732,6 +1731,7 @@ export function InputPanel({
                               onChange={(e) => {
                                 const val = e.target.value;
                                 setRawInputs(prev => ({ ...prev, psa: val }));
+                                if (!readable('psa', e)) return;
                                 if (val === '') {
                                   updateField('psa', undefined);
                                 } else {
@@ -1740,6 +1740,7 @@ export function InputPanel({
                                 }
                               }}
                               onBlur={() => {
+                                if (unreadable.psa) return;
                                 setRawInputs(prev => { const next = { ...prev }; delete next.psa; return next; });
                                 validateOnBlur('psa');
                                 autoSaveOnBlur();
@@ -1756,7 +1757,7 @@ export function InputPanel({
                               <CommitTickButton ariaLabel="Save PSA" onClick={flushLongitudinalSave}/>
                             )}
                           </div>
-                          {errors.psa && <span className="field-error">{errors.psa}</span>}
+                          {(unreadable.psa || errors.psa) && <span className="field-error">{unreadable.psa ? 'Enter a number' : errors.psa}</span>}
                           <div className="field-meta">
                             <span className="field-hint">{SCREENING_TEXT.psaHint}</span>
                             {psaPreviousLabel && (

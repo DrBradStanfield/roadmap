@@ -153,18 +153,20 @@ describe('stampProfile, setScreening, setReminderOptIn (US-10 AC6, US-17)', () =
   // US-02 AC7: a refused number never clears what is stored. "1,234" PSA
   // (0-10000), "abc", and pack-years "150,500" (only the decimal reading fits,
   // which is never chosen) leave the file as it was. So does a number outside
-  // the answer's range, grouped thousands included (Codex R2: "1,234,567"
-  // pack-years was stored).
-  it('refuses an unreadable, ambiguous or out-of-range number answer and keeps the stored one (US-02 AC7)', () => {
+  // grouped thousands outside the answer's range (Codex R2: "1,234,567"
+  // pack-years was stored). A plain number saves as before, in range or not:
+  // range errors are the form's to show.
+  it('refuses comma text it cannot read and keeps the stored answer; a plain number saves as before (US-02 AC7)', () => {
     const held = setScreening(empty(), 'prostate_psa_value', '2', T1);
-    for (const value of ['1,234', 'abc', '1,2,3', '10001', '-1']) {
+    for (const value of ['1,234', 'abc', '1,2,3']) {
       expect(setScreening(held, 'prostate_psa_value', value, T2)).toBe(held);
     }
-    for (const value of ['150,500', '1,234,567', '201']) {
+    for (const value of ['150,500', '1,234,567']) {
       expect(setScreening(held, 'lung_pack_years', value, T2)).toBe(held);
     }
     expect(setScreening(held, 'prostate_psa_value', '4,5', T2).screenings).toMatchObject({ prostatePsaValue: 4.5 });
-    expect(setScreening(held, 'lung_pack_years', '200', T2).screenings).toMatchObject({ lungPackYears: 200 });
+    expect(setScreening(held, 'lung_pack_years', '250', T2).screenings).toMatchObject({ lungPackYears: 250 });
+    expect(setScreening(held, 'prostate_psa_value', '10001', T2).screenings).toMatchObject({ prostatePsaValue: 10001 });
   });
 
   it('replaces the reminders opt-in with lamport one past the last, and the file clock', () => {
