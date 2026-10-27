@@ -62,7 +62,16 @@ private func fitted(_ path: Path, to rect: CGRect) -> Path {
 struct LogoRoad: Shape {
     static let road = sweep([0...1], r0: 15, r1: 2.8)
     /// Five dashes and a gap at a time, stopping short of the heart.
-    static let dashes = sweep((0..<5).map { CGFloat(2 * $0) / 11...CGFloat(2 * $0 + 1) / 11 } + [(10 / 11)...0.93], r0: 1.2, r1: 0.4)
+    /// Typed in steps: as one expression, Xcode 26.5's type-checker gave up on it.
+    static let dashes: Path = {
+        let lanes: [ClosedRange<CGFloat>] = (0..<5).map { (i: Int) -> ClosedRange<CGFloat> in
+            let start: CGFloat = CGFloat(2 * i) / 11
+            let end: CGFloat = CGFloat(2 * i + 1) / 11
+            return start...end
+        }
+        let last: ClosedRange<CGFloat> = (CGFloat(10) / 11)...0.93
+        return sweep(lanes + [last], r0: 1.2, r1: 0.4)
+    }()
     var drawn = road
 
     func path(in rect: CGRect) -> Path { fitted(drawn, to: rect) }
