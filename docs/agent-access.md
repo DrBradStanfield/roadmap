@@ -105,8 +105,9 @@ someone's medical history, or lose their data at the next device sync.
    different content. Never write a `#dup-` id yourself.
 6. **Leave `meta` alone, except `meta.updatedAt`, which you MUST set to now (ISO 8601),
    using the same clock as your rows' `createdAt`/`updatedAt`.** It is the anchor of the
-   clamp below: leave it stale and every row you just wrote is rewound to it on the next
-   load, and can lose its slot or its record to an older entry. Never touch
+   mutable-clock clamp below: leave it stale and current-state or field `updatedAt`
+   stamps can be rewound on load, letting an older entry win. Measurement/lab
+   `createdAt` is not rewound. Never touch
    `meta.lamport`, `meta.eraseEpoch`, `meta.erasedAt`, or `meta.lastDeviceId`, they are
    the sync engine's clocks. Garbage there is clamped, reset to 0 or dropped on read, and
    a reset `eraseEpoch` makes the next merge discard your copy's rows that an erase listed,
@@ -149,11 +150,13 @@ someone's medical history, or lose their data at the next device sync.
    plan grades it at or above, or one more decimal place when it grades it below.
    `get_plan`'s tool description in `mcp-tools.ts` should say this too; it stays frozen
    while OpenAI reviews the app, so add it once that review is done.
-9. **Timestamps are ISO 8601, and never in the future.** On every load the app clamps a
-   row's write-clocks, `createdAt` on measurements and lab values, `updatedAt`/`lamport`
-   on current-state rows and on each field stamp, to the file's own last write (the
-   later of `meta.createdAt` and `meta.updatedAt`), so a future stamp is rewound, not
-   rejected. `recordedAt` is never clamped: it is the clinical date, and a future one
+9. **Timestamps are ISO 8601, and never in the future.** Measurement/lab `createdAt`
+   and document `addedAt` are immutable content identity, so load keeps them as
+   written. A future measurement/lab `createdAt` can take its day slot; agents must
+   never write one. Load clamps mutable row and field `updatedAt` to the file's own
+   last write (the later of normalized `meta.createdAt` and `meta.updatedAt`);
+   Lamport counters are bounded separately. `recordedAt` is never clamped: it is
+   the clinical date, and a future one
    still puts a value on a day that has not happened, that mistake is yours to avoid.
    `recordedAt` may be `YYYY-MM-DD` or a full timestamp, only the day is used for
    slotting.
@@ -203,8 +206,8 @@ Validate your result against the schema before you write it back.
   not a licence to write sloppily. Rule 3 is yours to enforce.
 - **Malformed rows may be dropped, ignored, or have their clocks rewritten.** The app
   normalises an untrusted file on every read, a non-array where an array belongs becomes
-  an empty array, out-of-range counters and future write-stamps are clamped (see the
-  timestamps rule), and a row missing fields the UI needs simply will not render. Beyond
+  an empty array, out-of-range counters and mutable `updatedAt` stamps beyond the
+    file's last-write anchor are clamped (see the timestamps rule), and a row missing fields the UI needs simply will not render. Beyond
   those clamps it does not repair rows, and it does not warn. A measurement or lab row
   whose `recordedAt` does not start with a real calendar day (`YYYY-MM-DD`) is removed
   at the next sync.

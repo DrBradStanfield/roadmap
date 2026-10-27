@@ -38,7 +38,7 @@ function deepFreeze<T>(value: T): T {
   return value;
 }
 
-/** Empties the slot: a record with no meta is never kept. */
+/** Replaces the slot with a different text before the next read. */
 function forget(): void {
   readRecord(JSON.stringify({ schemaVersion: 1 }), NOW, DEVICE);
 }
@@ -210,20 +210,21 @@ describe('what the slot serves', () => {
     expect(readRecord(anonymous, NOW, 'b').meta.lastDeviceId).toBe('b');
   });
 
-  it('a record without both meta stamps is never kept: its migration reads `now`', () => {
-    const blank = JSON.stringify({ schemaVersion: 1 });
-    const first = readRecord(blank, NOW, DEVICE);
-    const second = readRecord(blank, LATER, DEVICE);
-    expect(second).not.toBe(first);
-    expect(second.meta.createdAt).toBe(LATER);
+  it('reuses deterministic recovery for missing or malformed metadata at either reader time', () => {
     const { meta, ...rest } = JSON.parse(richText()) as RoadmapFile;
-    for (const broken of [{ ...meta, createdAt: 'yesterday' }, { ...meta, updatedAt: 1760000000000 }, { ...meta, updatedAt: undefined }]) {
-      const half = JSON.stringify({ ...rest, meta: broken });
-      expect(readRecord(half, LATER, DEVICE)).not.toBe(readRecord(half, LATER, DEVICE));
+    for (const broken of [undefined, {}, { ...meta, createdAt: 'yesterday' },
+      { ...meta, updatedAt: 1760000000000 }, { ...meta, updatedAt: undefined },
+      { ...meta, createdAt: '2026-99-01T00:00:00Z', updatedAt: '2026-06-01T00:00:00+15:00' }]) {
+      const text = JSON.stringify({ ...rest, meta: broken });
+      const first = readRecord(text, NOW, DEVICE);
+      expect(first).toStrictEqual(cold(text, NOW));
+      expect(readRecord(text, LATER, DEVICE)).toBe(first);
+      expect(readRecord(text, LATER, DEVICE)).toStrictEqual(cold(text, LATER));
+      expect(readRecord(text, LATER, 'other')).toStrictEqual(cold(text, LATER, 'other'));
     }
   });
 
-  it('the condition holds: a record whose two meta stamps start yyyy-mm-ddT migrates the same at any now', () => {
+  it('valid clocks and deterministic recovery both give the cold answer at any now', () => {
     const { meta, ...rest } = JSON.parse(richText()) as RoadmapFile;
     for (const [createdAt, updatedAt] of [
       ['2026-01-01T00:00:00Z', '2026-10-21T08:00:00.000Z'],

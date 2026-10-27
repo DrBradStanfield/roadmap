@@ -218,10 +218,8 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
     expect(erasedAt('2028-02-29T00:00:00Z')).toBe('2028-02-29T00:00:00.000Z');
   });
 
-  // Codex re-check R1: the createdAt clamp compared strings. A pre-erase row
-  // stamped +13:00 sorts after the file clock as text, was clamped up to it,
-  // and then outlived the erase.
-  it('US-09 AC20: the createdAt clamp compares instants, so an offset row before the erase still goes', () => {
+  // US-09 AC20: immutable clocks keep their original instant for the erase gate.
+  it('US-09 AC20: an offset row before the erase still goes without rewriting createdAt', () => {
     const ctx = { deviceId: 'dev_x', now: '2026-05-10T01:00:00Z' };
     const before = { ...MEAS, id: 'plus13', createdAt: '2026-05-10T09:00:00+13:00' }; // 2026-05-09T20:00Z
     const stale = ROADMAP_DOC.migrate(rawFile({ meta: { ...META, updatedAt: '2026-05-10T01:00:00Z' }, measurements: [before] }), ctx);
@@ -229,10 +227,10 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
     const erased = ROADMAP_DOC.migrate(rawFile({ meta: { ...META, updatedAt: '2026-05-10T00:00:00Z', eraseEpoch: 1, erasedAt: '2026-05-10T00:00:00Z' } }), ctx);
     expect(mergeFiles(stale, erased, ctx).measurements).toEqual([]);
     expect(mergeFiles(erased, stale, ctx).measurements).toEqual([]);
-    // A row past the clock as an instant is still clamped.
+    // A row past the file clock also keeps its immutable identity.
     const ahead = { ...MEAS, id: 'ahead', createdAt: '2026-05-10T02:00:00Z' };
     expect(migrateFile(rawFile({ meta: { ...META, updatedAt: '2026-05-10T14:00:00+13:00' }, measurements: [ahead] }), ctx).measurements[0].createdAt)
-      .toBe('2026-05-10T01:00:00.000Z'); // the clock, rewritten in UTC (US-10 AC8 review, R1)
+      .toBe(ahead.createdAt);
   });
 
   // Defect 2 (cont.): a saturated meta.lamport breaks the file clock forever —
@@ -306,18 +304,17 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
     }
   });
 
-  // Defect 4: a future createdAt beats every later genuine entry in the slot,
-  // flipping the user's own fresh value to 'entered-in-error'.
-  it('clamps a future createdAt so a genuine later entry still wins its slot', () => {
+  // US-10 AC2: future immutable clocks must not split a deletion's identity.
+  // Residual: a forged future createdAt can still win its slot; migration may
+  // not rewrite content identity to solve that separate writer-policy problem.
+  it('preserves a future createdAt so its deletion still absorbs either merge order', () => {
     const forged = { ...MEAS, id: 'agent', value: 9.9, createdAt: '2099-01-01T00:00:00Z' };
     const f = migrateFile(rawFile({ measurements: [forged] }), OPTS);
-    expect(f.measurements[0].createdAt).toBe(META.updatedAt);
-
-    const mine = { ...MEAS, id: 'mine', value: 2.1, createdAt: '2026-06-02T09:00:00Z' };
-    const merged = mergeFiles({ ...f, measurements: [...f.measurements, mine] }, f, OPTS);
-    const actives = merged.measurements.filter((m) => m.status === 'active');
-    expect(actives).toHaveLength(1);
-    expect(actives[0].id).toBe('mine');
+    expect(f.measurements[0].createdAt).toBe(forged.createdAt);
+    const deleted = { ...forged, status: 'entered-in-error' as const };
+    const g = migrateFile(rawFile({ meta: { ...META, updatedAt: '2099-02-01T00:00:00Z' }, measurements: [deleted] }), OPTS);
+    expect(mergeFiles(f, g, OPTS).measurements).toEqual([deleted]);
+    expect(mergeFiles(g, f, OPTS).measurements).toEqual([deleted]);
   });
 
   // Adversarial review (2026-09-01): the anchor was any string. `updatedAt: ""`

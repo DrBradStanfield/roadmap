@@ -7,7 +7,6 @@
 import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import type { Plan } from '../../packages/health-core/src/plan';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
-import { hasStampShape } from '../../packages/health-core/src/migrate';
 import { localDay } from '../../packages/health-core/src/merge';
 import { parseLocalisedNumber } from '../../packages/health-core/src/parseNumber';
 import { appendMeasurement, bulkAppendValues, correctValue, validDay } from '../../packages/health-core/src/record-edits';
@@ -112,7 +111,7 @@ export function readRecord(text: string, now: string, deviceId: string): Roadmap
     throw new Error('This file is not a health record.');
   }
   const file = ROADMAP_DOC.migrate(raw, { deviceId, now });
-  kept = nowFree(raw) ? { text, deviceId, file: FREEZE_KEPT ? deepFreeze(file) : file } : null;
+  kept = { text, deviceId, file: FREEZE_KEPT ? deepFreeze(file) : file };
   return file;
 }
 
@@ -124,18 +123,10 @@ export function readRecord(text: string, now: string, deviceId: string): Roadmap
  * what its text reads back as (migration clamps counters), so the next call reads
  * that text once, cold (Codex R1).
  * `deviceId` is in the key because the migration falls back to it for a missing
- * `meta.lastDeviceId`. `now` is not: the migration reads it only as the fallback
- * for a `meta.createdAt` or `meta.updatedAt` that does not start yyyy-mm-ddT
- * (migrate.ts isoOr), so a record whose two stamps both do migrates the same at
- * any `now`. Any other record is not kept.
+ * `meta.lastDeviceId`. Metadata clock recovery is deterministic even when both
+ * stamps are missing or malformed, so migration never depends on `now`.
  */
 let kept: { text: string; deviceId: string; file: RoadmapFile } | null = null;
-
-/** Whether the record's meta carries both stamps, so `now` cannot change its migration. */
-function nowFree(raw: object): boolean {
-  const meta = (raw as { meta?: Record<string, unknown> }).meta;
-  return typeof meta === 'object' && meta !== null && hasStampShape(meta.createdAt) && hasStampShape(meta.updatedAt);
-}
 
 /** Under the tests the kept record is frozen, so every engine test checks the
  *  read-only rule on every branch it runs (adversary R1). Never in the app. */

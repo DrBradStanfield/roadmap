@@ -14,8 +14,8 @@
  *    flips the old row to `entered-in-error` (one-way) — rule 2;
  *  - a fresh UUID per row, never a reused id — rule 5;
  *  - `meta.updatedAt` set to the same clock stamped on the row, and no other
- *    `meta` field touched — rule 6 (leave it stale and `migrate.ts` rewinds the
- *    row you just wrote, and it can lose its slot);
+ *    `meta` field touched — rule 6 (advance the file clock without rewinding
+ *    the anchor for mutable row and field `updatedAt` clamps);
  *  - SI canonical values inside `healthInputSchema`'s range for measurements,
  *    and — since US-21 phase 3 — the catalogue's SI unit for a catalogued lab
  *    test, converted here from the spelling the lab printed, or refused when
@@ -250,9 +250,9 @@ export function measurementValueFault(metricType: string, value: number): EditRe
 /**
  * The file with this row appended and `meta.updatedAt` moved to the write
  * clock — rule 6. Forward ONLY, like `mergeFiles` (merge.ts): `meta.updatedAt`
- * is the anchor `migrate.ts` clamps every row's `createdAt` to, so a writer
- * whose clock runs behind the file would rewind every other row and hand the
- * slot tie-breaks to a UUID comparison. The row itself keeps the real `now`.
+ * contributes to the anchor for mutable row and field `updatedAt` clamps. A
+ * lagging writer must not rewind that anchor. Immutable measurement/lab
+ * `createdAt` is kept as written; the new row keeps the real `now`.
  */
 function withRow(file: RoadmapFile, key: 'measurements' | 'labValues', rows: Array<FileMeasurement | FileLabValue>, now: string): RoadmapFile {
   return stampUpdatedAt({ ...file, [key]: rows }, now);
@@ -261,9 +261,9 @@ function withRow(file: RoadmapFile, key: 'measurements' | 'labValues', rows: Arr
 /**
  * Rule 6 on its own, for a write that is not a row: `meta.updatedAt` moved to
  * the write clock, FORWARD only. `update_profile` (mcp-tools.ts) writes the
- * profile object rather than an array, and `migrate.ts` rewinds any stamp
- * newer than this anchor — so a profile write that skipped it would lose the
- * merge it just won.
+ * profile object rather than an array, and `migrate.ts` rewinds mutable
+ * `updatedAt` stamps newer than the file's last-write anchor. A profile write
+ * that skipped it would lose the merge it just won.
  */
 export function stampUpdatedAt(file: RoadmapFile, now: string): RoadmapFile {
   const updatedAt = latestStamp(file.meta.updatedAt, now);
