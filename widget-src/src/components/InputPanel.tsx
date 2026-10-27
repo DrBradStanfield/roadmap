@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type MutableRefObject } from 'react';
+import { Fragment, useState, useEffect, useRef, type MutableRefObject } from 'react';
 import { ColumnHeader } from './ColumnHeader';
 import { GuideLink } from './GuideLink';
 import { InfoTooltip } from './InfoTooltip';
@@ -9,7 +9,7 @@ import { isLabArchiveDocument } from '@roadmap/health-core';
 import type { CorrectFn, Refused, SaveTask } from '../lib/matrix-save';
 import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance, type Grading } from '../lib/blood-test-cell';
 import type { ApiDocument, ApiLabValue, ApiSupplement } from '../lib/api-types';
-import { loadFromLocalStorage } from '../lib/storage';
+import { DRAFTS_CLEARED_EVENT, loadFromLocalStorage } from '../lib/storage';
 
 /** Every surface opens metric history in the local lightbox. */
 const interceptHistory = (metric: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -1882,8 +1882,16 @@ export function InputPanel({
 
   // ── Supplements section (logged-in only) ��─
   const [supplementSearch, setSupplementSearch] = useState('');
+  const [supplementDoseDrafts, setSupplementDoseDrafts] = useState<Record<string, string | undefined>>({});
   const [showSupplementDropdown, setShowSupplementDropdown] = useState(false);
   const supplementDropdownRef = useRef<HTMLDivElement>(null);
+
+  // An erase clears off-file drafts too, including one under a later reused key.
+  useEffect(() => {
+    const drop = () => setSupplementDoseDrafts({});
+    window.addEventListener(DRAFTS_CLEARED_EVENT, drop);
+    return () => window.removeEventListener(DRAFTS_CLEARED_EVENT, drop);
+  }, []);
 
   useEffect(() => {
     if (!showSupplementDropdown) return;
@@ -1915,6 +1923,7 @@ export function InputPanel({
       && customSupplementMatch(trimmedSearch, supplements)?.status !== 'active';
 
     const addSupplement = (key: string, name: string, defaultDose?: number, defaultUnit?: string) => {
+      setSupplementDoseDrafts(prev => ({ ...prev, [key]: undefined }));
       onSupplementChange(key, name, defaultDose ?? null, defaultUnit ?? null);
       setSupplementSearch('');
       setShowSupplementDropdown(false);
@@ -1944,38 +1953,52 @@ export function InputPanel({
 
           {/* Active supplements list */}
           {activeSupplements.map(s => (
-            <div key={s.supplementKey} className="supplement-row">
-              <span className="supplement-name">{s.supplementName}</span>
-              <input
-                type="number"
-                className="supplement-dose"
-                placeholder="Dose"
-                min={0}
-                max={99999}
-                onKeyDown={blockBadNumericKeys}
-                value={s.doseValue ?? ''}
-                onChange={e => {
-                  const val = e.target.value ? parseLocalisedNumber(e.target.value) ?? null : null;
-                  onSupplementChange(s.supplementKey, s.supplementName, val, s.doseUnit);
-                }}
-              />
-              <select
-                className="supplement-unit"
-                value={s.doseUnit ?? ''}
-                onChange={e => onSupplementChange(s.supplementKey, s.supplementName, s.doseValue, e.target.value || null)}
-              >
-                <option value="">Unit</option>
-                {SUPPLEMENT_DOSE_UNITS.map(unit => <option key={unit} value={unit}>{unit}</option>)}
-              </select>
-              <button
-                type="button"
-                className="supplement-remove"
-                onClick={() => onSupplementDelete(s.supplementKey)}
-                title="Remove"
-              >
-                ×
-              </button>
-            </div>
+            <Fragment key={s.supplementKey}>
+              <div className="supplement-row">
+                <span className="supplement-name">{s.supplementName}</span>
+                <input
+                  type="number"
+                  className="supplement-dose"
+                  placeholder="Dose"
+                  min={Number.MIN_VALUE}
+                  max={99999}
+                  step="any"
+                  onKeyDown={blockBadNumericKeys}
+                  value={supplementDoseDrafts[s.supplementKey] ?? s.doseValue ?? ''}
+                  aria-invalid={supplementDoseDrafts[s.supplementKey] !== undefined || undefined}
+                  aria-describedby={supplementDoseDrafts[s.supplementKey] !== undefined ? `supplement-dose-error-${s.supplementKey}` : undefined}
+                  onChange={e => {
+                    const raw = e.target.value;
+                    const val = raw ? parseLocalisedNumber(raw) ?? null : null;
+                    // Autosave bypasses native form validation. Keep invalid drafts
+                    // out of the accepted row, including badInput's empty value.
+                    const invalid = e.target.validity.badInput || (raw !== '' && (val === null || val <= 0 || val > 99999));
+                    setSupplementDoseDrafts(prev => ({ ...prev, [s.supplementKey]: invalid ? raw : undefined }));
+                    if (invalid) return;
+                    onSupplementChange(s.supplementKey, s.supplementName, val, s.doseUnit);
+                  }}
+                />
+                <select
+                  className="supplement-unit"
+                  value={s.doseUnit ?? ''}
+                  onChange={e => onSupplementChange(s.supplementKey, s.supplementName, s.doseValue, e.target.value || null)}
+                >
+                  <option value="">Unit</option>
+                  {SUPPLEMENT_DOSE_UNITS.map(unit => <option key={unit} value={unit}>{unit}</option>)}
+                </select>
+                <button
+                  type="button"
+                  className="supplement-remove"
+                  onClick={() => onSupplementDelete(s.supplementKey)}
+                  title="Remove"
+                >
+                  ×
+                </button>
+              </div>
+              {supplementDoseDrafts[s.supplementKey] !== undefined && (
+                <span className="error-message" id={`supplement-dose-error-${s.supplementKey}`} role="alert">Enter a dose greater than 0 and no more than 99999. This dose was not saved.</span>
+              )}
+            </Fragment>
           ))}
 
           {/* Add other supplement */}
