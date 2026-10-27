@@ -2,7 +2,7 @@
 // new sha). Runs the real merge-step bash from auto-ship.yml under a fake `gh`
 // that answers from a scenario file, with `sleep` stubbed out.
 import { spawnSync } from "node:child_process";
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -10,8 +10,8 @@ import { describe, expect, it } from "vitest";
 const WORKFLOW = join(__dirname, "..", ".github", "workflows", "auto-ship.yml");
 
 // The step's `run: |` block is the last block in the file: dedent 10 spaces.
-function stepScript(): string {
-  const lines = readFileSync(WORKFLOW, "utf8").split("\n");
+function stepScript(yaml: string = readFileSync(WORKFLOW, "utf8")): string {
+  const lines = yaml.split("\n");
   const start = lines.findIndex((l) => l === "        run: |");
   expect(start).toBeGreaterThan(-1);
   return lines
@@ -25,7 +25,7 @@ const FAKE_GH = `#!/usr/bin/env bash
 echo "$*" >> "$LOG"
 q() { jq -r "$1" "$SCEN"; }
 case "$1" in
-  issue) [ "$2" = create ] && echo "https://x/issues/99"; exit 0;;
+  issue) if [ "$2" = create ]; then while [ $# -gt 0 ]; do [ "$1" = --body ] && printf '%s' "$2" > "$LOG.body"; shift; done; echo "https://x/issues/99"; fi; exit 0;;
   pr) exit 0;;
   workflow) [ "$2" = run ] && [ "$3" = deploy.yml ] && [ "$(q .failDeploy)" = true ] && exit 1; exit 0;;
 esac
@@ -35,8 +35,8 @@ upd=0; [ -f "$LOG.updated" ] && upd=1
 out() { if [ -n "$jqe" ]; then jq -r "$jqe"; else cat; fi; }
 case "$p" in
   pulls/7/update-branch) touch "$LOG.updated"; echo '{}';;
-  pulls/7/files) echo '[]' | out;;
-  pulls/7) jq -c --argjson u $upd '{state:"open",title:"t",body:"b",user:{login:"u"},labels:[],
+  pulls/7/files) jq -c '.prFiles // []' "$SCEN" | out;;
+  pulls/7) jq -c --argjson u $upd '{state:"open",title:"t",body:(.prBody // "b"),user:{login:"u"},labels:[],
     head:{ref:"claude/x",repo:{full_name:"o/r"},sha:(if $u==1 then .newSha else .head end)}}' "$SCEN" | out;;
   issues/7/comments*) jq -c '[{user:{type:"Bot",login:"github-actions[bot]"},body:("VERDICT: APPROVE "+.head)}]' "$SCEN" | out;;
   commits/main) jq -c '{sha:.main}' "$SCEN" | out;;
@@ -59,7 +59,7 @@ const base = {
   newCommit: { parents: ["aaaa", "bbbb"], verified: true, login: "web-flow" },
 };
 
-function run(over: Record<string, unknown>) {
+function run(over: Record<string, unknown>, script: string = stepScript()) {
   const dir = mkdtempSync(join(tmpdir(), "autoship-"));
   const bin = join(dir, "bin");
   const log = join(dir, "calls.log");
@@ -71,13 +71,14 @@ function run(over: Record<string, unknown>) {
   chmodSync(join(bin, "sleep"), 0o755);
   writeFileSync(log, "");
   writeFileSync(scen, JSON.stringify({ ...base, ...over }));
-  writeFileSync(join(dir, "step.sh"), stepScript());
+  writeFileSync(join(dir, "step.sh"), script);
   const r = spawnSync("bash", [join(dir, "step.sh")], {
     env: { PATH: `${bin}:${process.env.PATH}`, GH_TOKEN: "x", PR: "7", GITHUB_REPOSITORY: "o/r",
       GITHUB_SERVER_URL: "https://x", LOG: log, SCEN: scen },
     encoding: "utf8",
   });
-  return { code: r.status, calls: readFileSync(log, "utf8"), out: r.stdout + r.stderr };
+  const issueBody = existsSync(`${log}.body`) ? readFileSync(`${log}.body`, "utf8") : "";
+  return { code: r.status, calls: readFileSync(log, "utf8"), out: r.stdout + r.stderr, issueBody };
 }
 
 const merged = (c: string) => c.split("\n").filter((l) => l.startsWith("pr merge"));
@@ -136,5 +137,35 @@ describe("auto-ship claim 7 (US-46 AC5)", { timeout: 60_000 }, () => {
     const r = run({ behind: null });
     expect(merged(r.calls)).toEqual([]);
     expect(closed(r.calls)[0]).toContain("could not compare with main");
+  });
+  // US-46 AC6: the notification caps come from jq slices, not `| head`, so
+  // pipefail cannot kill the step with 141 when a big body or file list fills the pipe.
+  describe("notification truncation (US-46 AC6)", () => {
+    const long = "x".repeat(1000);
+    const scen = {
+      prBody: Array.from({ length: 200 }, (_, i) => `BODYLINE${i} ${long}`).join("\n"),
+      prFiles: Array.from({ length: 60 }, (_, i) => ({ filename: `FILE${i}-${long}`, additions: 1, deletions: 2 })),
+    };
+    const count = (text: string, tag: string) => text.split("\n").filter((l) => l.includes(tag)).length;
+
+    it("completes and the issue body holds exactly 20 body lines and 15 file lines", () => {
+      const r = run(scen);
+      expect(r.code).toBe(0);
+      expect(merged(r.calls)).toHaveLength(1);
+      expect(count(r.issueBody, "BODYLINE")).toBe(20);
+      expect(r.issueBody).toContain("BODYLINE19 ");
+      expect(r.issueBody).not.toContain("BODYLINE20 ");
+      expect(count(r.issueBody, "FILE")).toBe(15);
+      expect(r.issueBody).toContain("## Files (60 changed)");
+    });
+
+    it("the old `| head` form dies with 141 on the same input (the test has teeth)", () => {
+      const yaml = readFileSync(WORKFLOW, "utf8")
+        .replace(String.raw`pr_json | jq -r '(.body // "") | split("\n")[:20] | join("\n")')`, `pr_json | jq -r '.body // ""' | head -20)`)
+        .replace(String.raw`--jq '.[:15][] | "- \(.filename) (+\(.additions)/-\(.deletions))"')`, String.raw`--jq '.[] | "- \(.filename) (+\(.additions)/-\(.deletions))"' | head -15)`);
+      expect(yaml).toContain("| head -20)");
+      expect(yaml).toContain("| head -15)");
+      expect(run(scen, stepScript(yaml)).code).toBe(141);
+    });
   });
 });
