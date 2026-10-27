@@ -235,6 +235,62 @@ describe('build-master-html (US-50 AC9)', () => {
     expect(amb.unplaced.map((c: { reason: string }) => c.reason)).toEqual(['"Evidence > Blood Pressure" matches 2 master headings']);
   });
 
+  it('US-50 AC9: a roadmap-embed under a renamed subsection falls back to the end of its parent section', () => {
+    const live = '<h2>Evidence</h2><h3>Insomnia</h3><div class="roadmap-embed"></div>';
+    const r = buildMasterHtml(MASTER, { store: 'edu', liveHtml: live });
+    expect(r.unplaced).toEqual([]);
+    expect(r.fallbacks.map((c: { placed: string }) => c.placed)).toEqual(['end of "2. Evidence"']);
+    expect(r.html).toMatch(/No single form\.<\/p>\n<div class="roadmap-embed"><\/div>\n<h2 id="References">/);
+  });
+
+  it('US-50 AC9: a roadmap-embed whose subsection changed level falls back to the parent section', () => {
+    const r = buildMasterHtml(MASTER, { store: 'edu', liveHtml: '<h2>Evidence</h2><h4>Blood Pressure</h4><div class="roadmap-embed"></div>' });
+    expect(r.unplaced).toEqual([]);
+    expect(r.html).toMatch(/No single form\.<\/p>\n<div class="roadmap-embed"><\/div>\n<h2 id="References">/);
+    // A deeper surviving ancestor wins over the H2.
+    const deep = buildMasterHtml(MASTER.replace('### Sleep', '### Sleep\n\n#### Onset\n\nOnset text.\n\n#### Depth'), {
+      store: 'edu', liveHtml: '<h2>Evidence</h2><h3>Sleep</h3><h4>Latency</h4><div class="roadmap-embed"></div>',
+    });
+    expect(deep.fallbacks.map((c: { placed: string }) => c.placed)).toEqual(['end of "2. Evidence > Sleep"']);
+  });
+
+  it('US-50 AC9: a roadmap-embed before the first live heading goes after the table of contents', () => {
+    const r = buildMasterHtml(MASTER, { store: 'edu', liveHtml: '<div class="roadmap-embed"></div><h2>Overview</h2>' });
+    expect(r.unplaced).toEqual([]);
+    expect(r.html).toMatch(/<\/ul>\n<div class="roadmap-embed"><\/div>\n<h2 id="Current-view">/);
+  });
+
+  it('US-50 AC9: a roadmap-embed whose H2 is gone goes before References, and the CLI logs each fallback', () => {
+    const live = '<h2>Dosing</h2><h3>Timing</h3><div class="roadmap-embed"></div>';
+    const r = buildMasterHtml(MASTER, { store: 'edu', liveHtml: live });
+    expect(r.unplaced).toEqual([]);
+    expect(r.html).toMatch(/No single form\.<\/p>\n<div class="roadmap-embed"><\/div>\n<h2 id="References">/);
+    const dir = mkdtempSync(join(tmpdir(), 'master-'));
+    try {
+      writeFileSync(join(dir, 'magnesium-test.md'), MASTER);
+      writeFileSync(join(dir, 'live.html'), live);
+      const run = spawnSync('node', [SCRIPT, join(dir, 'magnesium-test.md'), '--store', 'edu', '--live', join(dir, 'live.html'), '--out', join(dir, 'o.html')], { encoding: 'utf8' });
+      expect(run.status).toBe(0);
+      expect(run.stderr).toContain('FALLBACK magnesium-test roadmap-embed: live "Dosing > Timing" -> before "References"');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('US-50 AC9: only roadmap-embed falls back; other markers and ambiguous ancestors still fail', () => {
+    for (const kind of ['cta-pf', 'cta-roadmap']) {
+      for (const live of [`<h2>Evidence</h2><h3>Insomnia</h3><div class="${kind}"></div>`, `<div class="${kind}"></div><h2>Overview</h2>`, `<h2>Dosing</h2><div class="${kind}"></div>`]) {
+        const r = buildMasterHtml(MASTER, { store: 'edu', liveHtml: live });
+        expect(r.unplaced.map((c: { kind: string }) => c.kind)).toEqual([kind]);
+        expect(r.fallbacks).toEqual([]);
+      }
+    }
+    // Two master sections named Evidence: the fallback ancestor is ambiguous, so it fails.
+    const twice = MASTER.replace('## 3. References', '## Evidence\n\nMore.\n\n## 3. References');
+    const amb = buildMasterHtml(twice, { store: 'edu', liveHtml: '<h2>Evidence</h2><h3>Insomnia</h3><div class="roadmap-embed"></div>' });
+    expect(amb.unplaced.map((c: { reason: string }) => c.reason)).toEqual(['the master has no heading "Evidence > Insomnia"; its ancestor "Evidence" matches 2 master headings']);
+  });
+
   it('US-50 AC9: indented list items render as a nested list', () => {
     const md = MASTER.replace('- first point\n- second point', '- **Results:**\n  - weight fell [7]\n  - lipids improved\n    continued line\n- **Limitations:** small\n1. not part of the list');
     const { html } = build(md, { store: 'edu' });

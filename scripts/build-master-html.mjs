@@ -21,6 +21,11 @@
 // build refuses to write when a marker cannot be placed, when the path matches
 // no master heading or more than one, or when a marker sits where it cannot be
 // read (inside a heading), so nothing is dropped silently.
+// One exception: `roadmap-embed` renders nothing on the current drstanfield.com
+// theme and is kept only as a position hint. When its exact path is gone it
+// goes to the end of the deepest master section matching a prefix of the path,
+// else before References; one before the first live heading goes after the
+// table of contents. Each such fallback is logged; an ambiguous match still fails.
 //
 // Commerce product callouts ("From the MicroVitamin range" cards) are NOT
 // carried: their live text holds old product claims. A commerce build takes
@@ -36,7 +41,7 @@
 // on-store /products/<h'> link, as the current commerce copies do.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
-import { dirname, resolve } from 'node:path';
+import { basename, dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -236,21 +241,45 @@ const samePath = (a, b) => a.length === b.length && a.every((h, i) => h.key === 
 
 /** Insert each carried block at the end of the one master section whose heading path matches its own. */
 export function placeCarried(blocks, carried) {
-  const out = blocks.map((b) => ({ ...b, after: [] }));
+  const out = blocks.map((b) => ({ ...b, before: [], after: [] }));
   const unplaced = [];
-  for (const c of carried) {
-    const hits = c.path ? out.flatMap((b, i) => (b.path && samePath(c.path, b.path) ? [i] : [])) : [];
-    if (hits.length !== 1) {
-      const reason = hits.length ? `"${pathText(c.path)}" matches ${hits.length} master headings` : `the master has no heading "${pathText(c.path)}"`;
-      unplaced.push({ ...c, reason });
-      continue;
-    }
-    const at = hits[0];
+  const fallbacks = [];
+  const find = (path) => out.flatMap((b, i) => (b.path && samePath(path, b.path) ? [i] : []));
+  const endOf = (at) => {
     let end = at;
     while (end + 1 < out.length && !(out[end + 1].level && out[end + 1].level <= out[at].level)) end++;
-    out[end].after.push(c.html);
+    return end;
+  };
+  for (const c of carried) {
+    const hits = c.path ? find(c.path) : [];
+    if (hits.length === 1) { out[endOf(hits[0])].after.push(c.html); continue; }
+    let reason = hits.length ? `"${pathText(c.path)}" matches ${hits.length} master headings` : `the master has no heading "${pathText(c.path)}"`;
+    // roadmap-embed renders nothing on the current theme; it is kept only as a position hint, so a lost heading falls back.
+    const fb = !hits.length && c.kind === 'roadmap-embed' ? fallbackPlace(out, c.path, find, endOf) : null;
+    if (fb?.at !== undefined) {
+      out[fb.at][fb.side].push(c.html);
+      fallbacks.push({ ...c, placed: fb.placed });
+      continue;
+    }
+    if (fb?.reason) reason += `; ${fb.reason}`;
+    unplaced.push({ ...c, reason });
   }
-  return { html: out.flatMap((b) => [b.html, ...b.after]).join('\n'), unplaced };
+  return { html: out.flatMap((b) => [...b.before, b.html, ...b.after]).join('\n'), unplaced, fallbacks };
+}
+
+/** Where a roadmap-embed goes when its exact heading path is gone: the deepest surviving ancestor, else before References. */
+function fallbackPlace(out, path, find, endOf) {
+  if (!path) {
+    const at = out.findIndex((b) => b.level);
+    return at === -1 ? { reason: 'the master has no heading' } : { at, side: 'before', placed: `after the table of contents, before "${out[at].text}"` };
+  }
+  for (let k = path.length - 1; k >= 1; k--) {
+    const hits = find(path.slice(0, k));
+    if (hits.length > 1) return { reason: `its ancestor "${pathText(path.slice(0, k))}" matches ${hits.length} master headings` };
+    if (hits.length === 1) return { at: endOf(hits[0]), side: 'after', placed: `end of "${pathText(out[hits[0]].path)}"` };
+  }
+  const refs = out.flatMap((b, i) => (b.level === 2 && b.key === 'references' ? [i] : []));
+  return refs.length === 1 ? { at: refs[0], side: 'before', placed: 'before "References"' } : { reason: `the master has ${refs.length} References headings` };
 }
 
 /** Table of contents from the H2s, as the live bodies open with one. */
@@ -283,8 +312,8 @@ export function buildMasterHtml(md, { store, liveHtml, callouts }) {
   } else if (callouts) {
     throw new Error('--callouts is for commerce builds only');
   }
-  const { html, unplaced } = placeCarried(blocks, carried);
-  return { meta, html: `${toc(blocks)}${html}\n`, carried, dropped, unplaced };
+  const { html, unplaced, fallbacks } = placeCarried(blocks, carried);
+  return { meta, html: `${toc(blocks)}${html}\n`, carried, dropped, unplaced, fallbacks };
 }
 
 function main(argv) {
@@ -309,8 +338,10 @@ function main(argv) {
     console.error(`ERROR: ${e.message}`);
     process.exit(1);
   }
-  const { meta, html, carried, dropped, unplaced } = result;
+  const { meta, html, carried, dropped, unplaced, fallbacks } = result;
   for (const c of carried) console.error(`carried ${c.kind} after "${pathText(c.path)}"`);
+  const handle = basename(mdPath, '.md');
+  for (const c of fallbacks) console.error(`FALLBACK ${handle} ${c.kind}: live "${pathText(c.path)}" -> ${c.placed}`);
   for (const c of dropped) console.error(`dropped ${c.kind}: the ${store} theme renders it as nothing`);
   if (unplaced.length) {
     for (const c of unplaced) console.error(`UNPLACED ${c.kind}: ${c.reason}`);
