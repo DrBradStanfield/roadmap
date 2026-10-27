@@ -144,6 +144,11 @@ someone's medical history, or lose their data at the next device sync.
    `get_plan` one keyed by its own `inputs` field names. `get_plan.inputs` is SI
    canonical; `currentValues` is the same values converted to the record's `unitSystem`,
    so read `inputs` when you are computing and `currentValues` when you are quoting.
+   `inputs.labEgfr` (mL/min/1.73m²) and `inputs.labEgfrDate` (YYYY-MM-DD) are set only
+   when the plan's eGFR is the lab's printed one (US-07 AC7): the latest active lab `egfr`
+   row, used when it is from the creatinine's day or later, or when no eGFR can be
+   calculated (no birth year, or a creatinine the plan excludes). They are derived, never
+   stored: write lab values, not these fields.
    One exception to "converted": LDL and ApoB, the lipids with a target line, print on
    the side of their line the plan grades them (US-07 AC5). A value within one display
    step of the line can differ from a plain conversion: one step up to the line when the

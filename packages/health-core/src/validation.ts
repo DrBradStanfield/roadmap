@@ -110,6 +110,13 @@ export const healthInputSchema = z.object({
     .min(40, 'Diastolic BP must be at least 40 mmHg')
     .max(150, 'Diastolic BP must be at most 150 mmHg')
     .optional(),
+  // US-07 AC7: the lab's printed eGFR, mL/min/1.73m², and its day.
+  labEgfr: z
+    .number()
+    .min(1, 'eGFR must be at least 1 mL/min/1.73m²')
+    .max(200, 'eGFR must be at most 200 mL/min/1.73m²')
+    .optional(),
+  labEgfrDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'eGFR date must be YYYY-MM-DD').optional(),
 });
 
 /**

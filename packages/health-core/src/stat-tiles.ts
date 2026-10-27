@@ -53,6 +53,9 @@ export const STAT_TILE_ABOUT: Record<StatTileKey, string> = {
   hba1c: 'Your average blood sugar over the last two to three months, from one blood test.',
 };
 
+/** The eGFR line when the number is the lab's own (US-07 AC7). */
+export const STAT_TILE_ABOUT_LAB_EGFR = 'Estimated glomerular filtration rate: how well your kidneys filter your blood, as printed on your lab report.';
+
 /** A known minor's BMI line in place of the adult one (US-07 AC6, Brad 2026-10-25). */
 export const STAT_TILE_ABOUT_MINOR_BMI = 'Body mass index: your weight in kilograms divided by your height in metres, squared. For under-18s the plan doesn\'t grade BMI, because children are compared with growth charts instead.';
 
@@ -164,7 +167,11 @@ export function statTiles(results: HealthResults, { unitSystem, unitOverrides, s
       status: reading(graded(getHba1cStatus(results.hba1c))), evidence: reading(STAT_CARD_EVIDENCE['hba1c']),
     });
   }
-  return tiles.map((t) => ({ ...t, about: !adult && t.key === 'bmi' ? STAT_TILE_ABOUT_MINOR_BMI : STAT_TILE_ABOUT[t.key] }));
+  return tiles.map((t) => ({
+    ...t,
+    about: !adult && t.key === 'bmi' ? STAT_TILE_ABOUT_MINOR_BMI
+      : t.key === 'egfr' && results.eGFRFromLab ? STAT_TILE_ABOUT_LAB_EGFR : STAT_TILE_ABOUT[t.key],
+  }));
 }
 
 /** A tile's value and unit as one line, as the web prints it: "72g/day", "60.0 kg", "25.2". */

@@ -11,7 +11,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act } from 'react';
 import { renderHook } from '@testing-library/react';
-import type { ApiMeasurement, ApiMedication, ApiScreening, ChatContextPayload } from '@roadmap/health-core';
+import { buildChatContextJson, type ApiMeasurement, type ApiMedication, type ApiScreening, type ChatContextPayload } from '@roadmap/health-core';
 import {
   clearLocalStorage, loadFromLocalStorage, loadGuestInputs, patchMirror, saveToLocalStorage, saveUnitPreference,
   MIRROR_CHANGED_EVENT, MIRROR_KEY,
@@ -222,5 +222,43 @@ describe('US-15 AC10: the mirror has one meaning and one signal', () => {
     expect(captured.embed?.muted).toBe(true);
     act(() => { window.dispatchEvent(new StorageEvent('storage', { key: MIRROR_KEY })); });
     expect(captured.embed?.muted).toBe(false);
+  });
+});
+
+describe('US-07 AC7: every chat reads the saved lab eGFR the plan reads', () => {
+  const LAB = { labEgfr: 40, labEgfrDate: '2026-09-01' };
+  /** Ruth-shaped: a misread creatinine (a urine ratio) saved on the lab eGFR's day. */
+  const seedRuth = () => saveToLocalStorage(PROFILE, [...SAVED, row('creatinine', 15)], [], [], undefined, LAB);
+  const eGFR = (payload: ChatContextPayload | null) => JSON.parse(buildChatContextJson(payload!)!).derivedValues.eGFR;
+
+  it('US-07 AC7: loadGuestInputs reads the lab eGFR on the creatinine\'s day', () => {
+    seedRuth();
+    expect(loadGuestInputs()).toMatchObject(LAB);
+    expect(eGFR(loadGuestInputs())).toBe(40);
+  });
+
+  it('US-07 AC7: a saved creatinine from a later day outdates the lab eGFR', () => {
+    saveToLocalStorage(PROFILE, [...SAVED, row('creatinine', 80)], [], [], undefined, { labEgfr: 40, labEgfrDate: '2026-07-01' });
+    expect(loadGuestInputs()).not.toHaveProperty('labEgfr');
+    expect(eGFR(loadGuestInputs())).toBeGreaterThan(80);
+  });
+
+  it('US-07 AC7: the chatbot embed and the blog chat bubble send the lab eGFR', async () => {
+    seedRuth();
+    await mountEntry('health-chatbot-embed-root', () => import('./chatbot-embed'));
+    expect(eGFR(contextNow(captured.embed?.guestInputs) as ChatContextPayload)).toBe(40);
+    await mountEntry('health-chat-root', () => import('./site-chat'));
+    await act(async () => { (document.querySelector('.chat-fab') as HTMLButtonElement).click(); });
+    expect(eGFR(contextNow(captured.section?.guestInputs) as ChatContextPayload)).toBe(40);
+  });
+
+  it('US-07 AC7: the mirror keeps the lab eGFR through a patch, and drops one the schema refuses', () => {
+    seedRuth();
+    patchMirror({ medications: [] });
+    expect(loadFromLocalStorage()?.labEgfr).toEqual(LAB);
+    saveToLocalStorage(PROFILE, SAVED, [], [], undefined, { labEgfr: 5000, labEgfrDate: '2026-09-01' });
+    expect(loadFromLocalStorage()?.labEgfr).toBeNull();
+    saveToLocalStorage(PROFILE, SAVED, [], [], undefined, { labEgfr: 40, labEgfrDate: 'soon' });
+    expect(loadFromLocalStorage()?.labEgfr).toBeNull();
   });
 });

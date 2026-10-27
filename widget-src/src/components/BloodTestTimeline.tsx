@@ -136,7 +136,7 @@ export interface BloodTestTimelineProps {
   onCorrectValue?: CorrectFn;
   // The draft values the plan and the chat may read, in SI; undefined leaves
   // the field to the record.
-  onDraftValue: (field: keyof HealthInputs, siValue: number | undefined) => void;
+  onDraftValue: (field: keyof HealthInputs, siValue: number | undefined, day?: string) => void;
   isSaving: boolean;
   /** Whom the hints and status colours grade for; null for a known minor,
    *  whose values show with neither (US-07 AC6). */
@@ -303,11 +303,12 @@ export function BloodTestTimeline({
   const scrollRef = useScrollToRightOnMount<HTMLDivElement>([columns.length]);
 
   // What the plan and the chat read of the draft (US-03 AC6, `lends`): a
-  // value the test can take, clear of clashes (`si`).
-  useDraftMirror(ROWS.map(({ metric, field }) => [
-    field,
-    lends(metric) ? cells.find(c => c.column === null && c.metric === metric)?.si ?? undefined : undefined,
-  ]), onDraftValue);
+  // value the test can take, clear of clashes (`si`), and the day it is dated
+  // (US-07 AC7: a creatinine's day decides which eGFR the plan reads).
+  useDraftMirror(ROWS.map(({ metric, field }) => {
+    const si = lends(metric) ? cells.find(c => c.column === null && c.metric === metric)?.si ?? undefined : undefined;
+    return [field, si, si === undefined ? undefined : draft.date];
+  }), onDraftValue);
 
   // An Lp(a) cell is stamped with the unit it is typed in (US-05 AC2).
   const unitStamp = (metric: MetricType) => (metric === 'lpa' ? lpaUnit : undefined);

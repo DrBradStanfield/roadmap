@@ -24,6 +24,9 @@ import {
   FIELD_METRIC_MAP,
   METRIC_TO_FIELD,
   localDay,
+  dayOf,
+  withLabEgfr,
+  labEgfrOf,
   toCanonicalValue,
   VITALS_INPUT_FIELDS,
   ESCALATION_KEY_OF,
@@ -59,6 +62,7 @@ import type { Swiper as SwiperType } from 'swiper';
 import 'swiper/css';
 import {
   saveToLocalStorage,
+  loadFromLocalStorage,
   patchMirror,
   clearLocalStorage,
   saveUnitPreference,
@@ -202,6 +206,8 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // AC6). It is kept apart from the form, which a re-read replaces, and only
   // handleDraftValue writes it, so each matrix knows what it lent.
   const [lent, setLent] = useState<Partial<HealthInputs>>({});
+  // The day each lent value is dated, when its draft has one (US-07 AC7).
+  const [lentDays, setLentDays] = useState<Partial<Record<keyof HealthInputs, string>>>({});
   const [previousMeasurements, setPreviousMeasurements] = useState<ApiMeasurement[]>([]);
   // Every active measurement, re-read after each save. The blood-test matrix
   // and the vitals matrix (StartingInfoVitals) each read their own metrics.
@@ -295,7 +301,13 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     const myGen = ++labValuesFetchGen.current;
     return loadLabValues().then(rows => {
       // Skip null (API error) so we don't blank cached history.
-      if (rows && myGen === labValuesFetchGen.current) setLabValueHistory(rows);
+      if (rows && myGen === labValuesFetchGen.current) {
+        setLabValueHistory(rows);
+        // A lab eGFR added by hand reaches the other chats too (US-07 AC7).
+        const labEgfr = labEgfrOf(rows);
+        const cached = loadFromLocalStorage();
+        if (cached && JSON.stringify(cached.labEgfr) !== JSON.stringify(labEgfr)) patchMirror({ labEgfr });
+      }
     }).catch(() => {});
   }, []);
   useEffect(() => {
@@ -339,7 +351,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     if (result) {
       setPreviousMeasurements(result.previousMeasurements);
       // The storefront chat embed reads this mirror; keep it in step too.
-      saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings);
+      saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, undefined, labEgfrOf(await loadLabValues() ?? []));
     }
     await Promise.all([refreshLabValues(), loadHistory()]);
     return result;
@@ -418,7 +430,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
         // doesn't block the first render).
         loadHistory();
         // Keep the legacy mirror available to the separate storefront chat embed.
-        saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings);
+        saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, undefined, labEgfrOf(await loadLabValues() ?? []));
       } else {
         // Nothing on record: a new visitor, or another device erased it. The
         // bubble and the embed must not keep sending the old copy (US-11).
@@ -441,6 +453,18 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     () => mergeLongitudinalInputs({ ...inputs, ...lent }, previousMeasurements),
     [inputs, lent, previousMeasurements],
   );
+
+  // What the plan and the chat read: the inputs with the lab's printed eGFR
+  // when it is newer than the creatinine or from its day (US-07 AC7). The
+  // creatinine's day: a draft's own; one typed with no day counts as today's
+  // (null); else the saved row's.
+  const labEgfr = useMemo(() => labEgfrOf(labValueHistory), [labValueHistory]);
+  const planInputs = useMemo(() => {
+    const saved = previousMeasurements.find((m) => m.metricType === 'creatinine');
+    const creatinineDay = lent.creatinine !== undefined ? lentDays.creatinine ?? null
+      : inputs.creatinine !== undefined || !saved ? null : dayOf(saved.recordedAt);
+    return withLabEgfr(effectiveInputs, creatinineDay, labEgfr, localDay(new Date()));
+  }, [inputs, lent, lentDays, previousMeasurements, effectiveInputs, labEgfr]);
 
   // Progressive disclosure: which stage of the form to show. The chatbot
   // embed reads the same rule.
@@ -703,13 +727,13 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
 
   // Calculate results using effective inputs (form + fallback to previous)
   const { results, isValid, validationErrors, planBasis } = useMemo(() => {
-    if (!effectiveInputs.heightCm || !effectiveInputs.sex) {
+    if (!planInputs.heightCm || !planInputs.sex) {
       return { results: null, isValid: false, validationErrors: null, planBasis: null };
     }
 
-    const validation = validateHealthInputs(effectiveInputs);
+    const validation = validateHealthInputs(planInputs);
 
-    let inputsForCalc = effectiveInputs;
+    let inputsForCalc = planInputs;
     let errors: Record<string, string> | null = null;
 
     if (!validation.success && validation.errors) {
@@ -721,7 +745,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       if (invalidFields.has('heightCm') || invalidFields.has('sex')) {
         return { results: null, isValid: false, validationErrors: errors, planBasis: null };
       }
-      const sanitized = { ...effectiveInputs };
+      const sanitized = { ...planInputs };
       for (const field of invalidFields) {
         (sanitized as Record<string, unknown>)[field] = undefined;
       }
@@ -748,7 +772,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       lipidMarker: medicines ? lipidMarkerFor(calcInputs, healthResults) : null,
     };
     return { results: healthResults, isValid: true, validationErrors: errors, planBasis };
-  }, [effectiveInputs, unitSystem, medications, screenings, metricUnitOverrides]);
+  }, [planInputs, unitSystem, medications, screenings, metricUnitOverrides]);
 
   useEffect(() => {
     setErrors(validationErrors ?? {});
@@ -854,11 +878,18 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // A matrix's draft value, as the plan and the chat read it (US-03 AC6);
   // undefined leaves the field to the record. One update per field, so
   // several sent at once all land.
-  const handleDraftValue = useCallback((field: keyof HealthInputs, value: number | undefined) => setLent(prev => {
-    const next = { ...prev, [field]: value };
-    if (value === undefined) delete next[field];
-    return next;
-  }), []);
+  const handleDraftValue = useCallback((field: keyof HealthInputs, value: number | undefined, day?: string) => {
+    setLent(prev => {
+      const next = { ...prev, [field]: value };
+      if (value === undefined) delete next[field];
+      return next;
+    });
+    setLentDays(prev => {
+      const next = { ...prev, [field]: day };
+      if (value === undefined || day === undefined) delete next[field];
+      return next;
+    });
+  }, []);
 
   const handleMedicationChange = useCallback((
     medicationKey: string,
@@ -1156,7 +1187,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // bubble and the chatbot embed: the plan's inputs and the dated history.
   const chatContextRef = useRef<() => ChatContextPayload | null>(() => null);
   chatContextRef.current = () => chatContextOf(
-    effectiveInputs, unitSystem, medications, screenings, [...bloodTestHistory, ...vitalsHistory],
+    planInputs, unitSystem, medications, screenings, [...bloodTestHistory, ...vitalsHistory],
   );
   const readChatContext = useCallback(() => chatContextRef.current(), []);
 

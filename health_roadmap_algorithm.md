@@ -92,6 +92,13 @@ Input: creatinine in umol/L. Internal conversion: `Cr_mg_dL = Cr_umol_L / 88.4`.
 
 Rounded to nearest integer (mL/min/1.73m^2).
 
+**Source (US-07 AC7, Brad 2026-10-27).** The plan reads one eGFR, chosen from two candidates by `withLabEgfr` (`plan.ts`):
+
+- (a) the eGFR above, calculated from the latest active creatinine and dated by that row;
+- (b) the latest active lab `egfr` row: the creatinine eGFR the lab printed, stored in mL/min/1.73m². `egfr_cystatin` and `egfr_combined` are never used.
+
+The newer by measurement day wins. On the same day the lab's eGFR wins: the lab worked it out from a real serum creatinine, and ours may come from a misread row. Only one exists: that one. Candidate (a) exists only when the plan can calculate it: a known birth year and a creatinine inside its input range (10–2650 µmol/L). Otherwise the lab eGFR stands, whatever the creatinine's day. Neither: no eGFR. A creatinine with no date (typed and not yet saved, or stated in the chat without a date) counts as today's, the day it would be saved with; an unsaved blood-test draft counts on the day it is dated. A creatinine is never worked back from an eGFR. The lab eGFR needs no age, and is rounded to the nearest integer. It drives the same rules as the calculated one: the CKD protein target, the potassium gate and the eGFR tile. A known minor's eGFR is withheld either way (section on adult readings). With a lab eGFR, creatinine is not a missing plan input.
+
 ### Non-HDL Cholesterol
 
 `totalCholesterol - HDL` (mmol/L), kept to 4 decimal places only to strip float noise (3.80 − 2.20 is 1.5999… in floating point). Every threshold compares it unrounded; it is rounded only for display (1 decimal place in mmol/L, whole mg/dL). So 1.56 is below the 1.6 target, and 190 mg/dL reaches the 190 mg/dL line. Beside its target (section 5), 1.56 shows as 1.56, not 1.6: see `formatGradedValue` there. BMI and waist-to-height, which are unitless, keep their rounded rule.

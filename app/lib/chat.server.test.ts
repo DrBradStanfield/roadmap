@@ -120,7 +120,7 @@ describe('buildSystemBlocks', () => {
     expect(NO_PLAN_CHAT_RULE).toMatch(/and no tool result this turn holds a plan/);
     expect(NO_PLAN_CHAT_RULE).not.toContain('run_roadmap');
     // Review R4: eGFR needs more than sex.
-    expect(NO_PLAN_CHAT_RULE).toMatch(/kidney function, as eGFR needs sex, age and creatinine/);
+    expect(NO_PLAN_CHAT_RULE).toMatch(/kidney function, as a calculated eGFR needs sex, age and creatinine/);
     expect(NO_PLAN_CHAT_RULE).not.toMatch(/\u2014/);
   });
 
