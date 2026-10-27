@@ -437,6 +437,70 @@ describe('build-master-html (US-50 AC9)', () => {
     expect(edu).toContain('exclude vitamin E from MicroVitamin');
   });
 
+  it('US-50 AC9: a sentence kept before a product link still loses its pointers and unlinked product sentences (Codex R1)', () => {
+    const P = '[MicroVitamin](https://drstanfield.com/products/microvitamin)';
+    const md = MASTER.replace('Magnesium matters, p < 0.05 [1].', `Zinc helps colds (see the Current view above). MicroVitamin has 8 mg. Trials vary [1]. Dr Brad Stanfield's ${P} adds more.`);
+    const text = build(md, { store: 'commerce' }).html.replace(/<[^>]+>/g, '');
+    expect(text).toContain('Zinc helps colds. Trials vary [1].');
+    expect(text).not.toMatch(/Current view|has 8 mg|adds more/);
+  });
+
+  it('US-50 AC9: product truncation works on whole paragraphs and list items, not physical lines (Codex R2)', () => {
+    const P = '[MicroVitamin](https://drstanfield.com/products/microvitamin)';
+    const md = MASTER.replace('Magnesium matters, p < 0.05 [1].', [
+      'Absorption differs by form [1].',
+      `Dr Brad Stanfield's ${P} uses taurate,`,
+      'a soft-wrapped line that belongs to the product sentence.',
+      '',
+      `Dr Brad Stanfield's ${P} has 126 mg`,
+      'on a wrapped line.',
+      '',
+      'Magnesium matters, p < 0.05 [1].',
+    ].join('\n')).replace('- second point', `- second point [2].\n  ${P} has it too,\n  in an indented continuation.`);
+    const c = build(md, { store: 'commerce' });
+    const text = c.html.replace(/<[^>]+>/g, '');
+    expect(text).not.toMatch(/uses taurate|soft-wrapped|126 mg|wrapped line|has it too|indented continuation/);
+    expect(c.html).toContain('<p>Absorption differs by form <sup class="master-cite">[<a href="#ref-1">1</a>]</sup>.</p>');
+    expect(c.html).toContain('<li>second point <sup class="master-cite">[<a href="#ref-2">2</a>]</sup>.</li>');
+    expect(c.stripped.filter((x: { kind: string }) => x.kind !== 'section').map((x: { kind: string }) => x.kind)).toEqual(['sentences', 'paragraph', 'sentences']);
+  });
+
+  it('US-50 AC9: a theme marker on a heading element itself refuses the build, never silently dropped (Codex R3)', () => {
+    for (const live of ['<h2 class="cta-pf">Overview</h2>', '<h3 class="roadmap-embed"><strong>Sleep</strong></h3>', '<h2>Evidence</h2><h3 data-x="a>b" class="x cta-roadmap">Sleep</h3>']) {
+      for (const store of ['edu', 'commerce']) expect(() => buildMasterHtml(MASTER, { store, liveHtml: live }), live).toThrow(/1 theme markers but only 0/);
+    }
+  });
+
+  it("US-50 AC9: commerce drops other pointers to the dropped section, such as \"Brad's view above\"", () => {
+    const md = MASTER.replace('Magnesium matters, p < 0.05 [1].', "Quercetin is studied as a senolytic [1]. Brad's view above concerns that use against ageing. Other uses are limited (see Brad's view below).");
+    const c = build(md, { store: 'commerce' });
+    const text = c.html.replace(/<[^>]+>/g, '');
+    expect(text).toContain('Quercetin is studied as a senolytic [1]. Other uses are limited.');
+    expect(text).not.toMatch(/Brad's view|concerns that use/);
+    expect(build(md, { store: 'edu' }).html).toContain("Brad's view above concerns");
+  });
+
+  it('US-50 AC9: a dropped product paragraph keeps its caveat sentences that name no product and stand alone', () => {
+    const P = '[MicroVitamin](https://drstanfield.com/products/microvitamin)';
+    const md = MASTER.replace('Magnesium matters, p < 0.05 [1].', [
+      `Dr Brad Stanfield's ${P} includes lutein 10 mg (v8). The amounts are the AREDS2 doses [22]. In them, adding lutein gave no clear benefit [22]. AREDS2 was not a prevention trial in people without AMD. MicroVitamin is not the AREDS2 formula. It is not meant to prevent or treat AMD. Canada (v7) has 0.25 mg.`,
+      '',
+      `Uptake varies [1]. Dr Brad Stanfield's ${P} has 17.5 mcg as glycinate. Brad chose glycinate because it is a chelate. Amino-acid forms absorb better for zinc, but this has not been tested for chromium.`,
+    ].join('\n'));
+    const c = build(md, { store: 'commerce' });
+    const text = c.html.replace(/<[^>]+>/g, '');
+    expect(c.html).toContain('<p>AREDS2 was not a prevention trial in people without AMD.</p>');
+    expect(text).toContain('Uptake varies [1]. Amino-acid forms absorb better for zinc, but this has not been tested for chromium.');
+    expect(text).not.toMatch(/lutein 10 mg|AREDS2 doses|In them|not the AREDS2 formula|not meant to prevent|0\.25 mg|17\.5 mcg|Brad chose/);
+    const kept = c.stripped.flatMap((x: { caveats?: string[] }) => x.caveats ?? []);
+    expect(kept).toEqual(['AREDS2 was not a prevention trial in people without AMD.', 'Amino-acid forms absorb better for zinc, but this has not been tested for chromium.']);
+  });
+
+  it('US-50 AC9: the table scrolls sideways on its own, not only through a theme wrapper rule another store may lack', () => {
+    const css = build(MASTER, { store: 'commerce' }).html.match(/<style>([\s\S]*?)<\/style>/)![1];
+    expect(css).toMatch(/\.master-table\{[^}]*overflow-x:auto/);
+  });
+
   it('US-50 AC9: code inside link text renders, and no placeholder leaks', () => {
     const { html } = build(MASTER.replace('Magnesium matters', 'See [the `tool` page](https://example.com/t) and `x`.'), { store: 'edu' });
     expect(html).toContain('<a href="https://example.com/t">the <code>tool</code> page</a> and <code>x</code>.');

@@ -21,7 +21,8 @@
 // `cta-pf` and drops the other two, which its theme renders as nothing. The
 // build refuses to write when a marker cannot be placed, when the path matches
 // no master heading or more than one, or when a marker sits where it cannot be
-// read (inside a heading), so nothing is dropped silently.
+// read (inside a heading, or on the heading element itself), so nothing is
+// dropped silently.
 // One exception: `roadmap-embed` renders nothing on the current drstanfield.com
 // theme and is kept only as a position hint. When its exact path is gone it
 // goes to the end of the deepest master section matching a prefix of the path,
@@ -156,7 +157,7 @@ export function renderBlocks(body, opts) {
       const sep = rows.length > 1 && /^\|?[\s:|-]+\|?$/.test(rows[1]) && rows[1].includes('-');
       const head = sep ? `<thead><tr>${splitRow(rows[0]).map((c) => `<th>${inline(c)}</th>`).join('')}</tr></thead>\n` : '';
       const bodyRows = (sep ? rows.slice(2) : rows).map((r) => `<tr>${splitRow(r).map((c) => `<td>${inline(c)}</td>`).join('')}</tr>`);
-      // The theme scrolls .rte-table-wrapper sideways, so a wide table never crushes its words on a phone.
+      // The wrapper scrolls sideways (MASTER_CSS), so a wide table never crushes its words on a phone.
       blocks.push({ html: `<div class="rte-table-wrapper master-table"><table>\n${head}<tbody>\n${bodyRows.join('\n')}\n</tbody>\n</table></div>` });
       continue;
     }
@@ -277,7 +278,8 @@ export function extractCarried(liveHtml, store) {
   let inHeading = 0;
   for (const t of tokenizeTags(liveHtml)) {
     const level = /^h([1-6])$/.exec(t.name)?.[1];
-    if (level && !t.close && !heading) { heading = { level: Number(level), from: t.end }; continue; }
+    // A marker on the heading element itself cannot be placed either (Codex R3).
+    if (level && !t.close && !heading) { heading = { level: Number(level), from: t.end }; inHeading += markersIn(t.attrs).length; continue; }
     if (level && t.close && heading && Number(level) === heading.level) {
       const text = textOf(liveHtml.slice(heading.from, t.start)).trim();
       path = pushPath(stack, { key: headingKey(text), level: heading.level, text });
@@ -355,9 +357,9 @@ function fallbackPlace(out, path, find, endOf) {
 
 // One scoped style block per article: every rule sits under a master-* class, so nothing else on the
 // page changes. Callout teal is the drstanfield.com theme's table-header accent (#00a38b). The theme forces td padding to 0 !important and breaks words anywhere in narrow cells;
-// the table wrapper scrolls sideways instead (theme base.css: .rte .rte-table-wrapper{overflow-x:auto}).
+// the table wrapper scrolls sideways instead, on its own rule: microvitamin.com's theme may lack drstanfield.com's .rte-table-wrapper one.
 const MASTER_CSS = `<style>
-.master-table{margin:1.5em 0;-webkit-overflow-scrolling:touch}
+.master-table{overflow-x:auto;margin:1.5em 0;-webkit-overflow-scrolling:touch}
 .master-table table{min-width:560px;margin:0}
 .master-table th,.master-table td{word-break:normal;overflow-wrap:normal;hyphens:manual;vertical-align:top;line-height:1.5;padding-top:.5em!important;padding-bottom:.5em!important}
 .master-table th:first-child,.master-table td:first-child{min-width:9em}
@@ -397,33 +399,51 @@ const handlesOf = (meta) => [meta.url, meta.commerceUrl].filter(Boolean).map((u)
 // Commerce drops Brad's personal voice and the master's own product promotion
 // (Brad 2026-10-27): the approved card does that job. A section goes, heading
 // and subsections, when its heading is the current-view, evidence-position or
-// videos section, or names a product. A paragraph or list item linking a
+// videos section, or names a product. A paragraph or list item (the whole
+// block, soft-wrapped lines and indented continuations included) linking a
 // drstanfield.com product page loses everything from the sentence holding that
-// link to its end, and goes whole when nothing comes before it.
+// link to its end, and goes whole when nothing comes before it. Caveat
+// sentences in the dropped part stay (see caveatsOf).
 const COMMERCE_DROP_HEADING = /^(?:current view\b|current evidence position\b|brad['\u2019]s videos on this topic$|product (?:mention|note)\b)|\bmicrovitamin\b|\bsleep by dr brad\b|\bdr brad stanfield['\u2019]s products?\b/i;
 const PRODUCT_LINK = /\[[^\]]*\]\(https?:\/\/(?:www\.)?drstanfield\.com\/products\/[a-z0-9-]+\/?\)/i;
 const SENTENCE_END = /[.!?](?:\*\*?|\))?\s+/g;
-// Pointers to the dropped Current view section, and unlinked product sentences, go too, so the
+// Pointers to the dropped sections, and unlinked product sentences, go too, so the
 // sentences left still read: "(see the Current view above)", "; Brad's view is in the Current view.",
-// a whole sentence naming it, and "...exclude vitamin E from MicroVitamin, his ... formulation."
+// a whole sentence naming it or "Brad's view above", and "...exclude vitamin E from MicroVitamin, his ... formulation."
 // A "Disclosure:" sentence stays: it tells the reader about Brad's interest.
-const POINTER_PAREN = /\s*\((?:see\s+)?(?:the\s+)?Current view(?:\s+(?:above|below))?\)/g;
+const VIEW = String.raw`Brad['\u2019]s (?:own )?view`;
+const POINTER_PAREN = new RegExp(String.raw`\s*\((?:see\s+)?(?:the\s+)?(?:Current view|${VIEW})(?:\s+(?:above|below))?\)`, 'g');
 // Inside a sentence a "." is fine when no space follows it (27.5 mg, 1.004).
 const IN = String.raw`(?:[^.!?]|[.!?](?!\s|$))*`;
 const POINTER_CLAUSE = new RegExp(String.raw`;\s*(?:[^;.!?]|[.!?](?!\s|$))*\bCurrent view\b(?:[^;.!?]|[.!?](?!\s|$))*([.!?])(?=\s|$)`, 'g');
-const DROP_SENTENCE = new RegExp(String.raw`(^|[.!?]\s+)(?!Disclosure:)${IN}\b(?:Current view|MicroVitamin)\b${IN}[.!?](?=\s|$)`, 'g');
-const dropPointers = (line) =>
-  line.replace(POINTER_PAREN, '').replace(POINTER_CLAUSE, '$1').replace(DROP_SENTENCE, (m, pre) => pre.trimEnd());
+const DROP_SENTENCE = new RegExp(String.raw`(^|[.!?]\s+)(?!Disclosure:)${IN}(?:\b(?:Current view|MicroVitamin)\b|${VIEW} (?:above|below)\b)${IN}[.!?](?=\s|$)`, 'g');
+const dropPointers = (text) =>
+  text.replace(POINTER_PAREN, '').replace(POINTER_CLAUSE, '$1').replace(DROP_SENTENCE, (m, pre) => pre.trimEnd());
+
+// A caveat that limits the evidence for a claim survives the product drop when it names no product and does not lean
+// on the dropped sentence before it: "AREDS2 was not a prevention trial in people without AMD." stays;
+// "It is not meant to prevent AMD." and "That is lower than the doses tested." go with the product text.
+const PRODUCT_WORD = /\bMicroVitamin|\bSleep by Dr Brad|\bBrad\b|drstanfield\.com\/products|\bcapsules?\b|\bpowder\b|\bscoops?\b|\bformula(?:tion)?s?\b|\bv\d|\bversion \d/i;
+const LIMITS = /\b(?:not|never) (?:been |yet )?(?:tested|shown|proven|studied|established|confirmed)\b|\bnot an? (?:[\w-]+ )*?(?:trial|study)\b|\bno (?:clear |good |human |direct |randomi[sz]ed )*(?:trials?|evidence|studies|benefit|data)\b|\b(?:unclear|uncertain|unknown|untested|limited evidence|though|although|however)\b/i;
+const LEANS_BACK = /^(?:\*\*)?(?:It|Its|They|Their|Them|This|That|These|Those|Either|Both|Neither|Each|Such|Here|Until|Instead|Also|So|In (?:them|it|this|that))\b/;
+const caveatsOf = (dropped) =>
+  dropped.split(/(?<=[.!?](?:\*\*?|\))?)\s+/).slice(1).map((x) => x.trim()).filter((x) => LIMITS.test(x) && !PRODUCT_WORD.test(x) && !LEANS_BACK.test(x));
+
+const ITEM = /^\s*(?:[-*]|\d+\.)\s+/;
+const MARK = /^\s*(?:[-*]|\d+\.)\s*/;
 
 /** The master body without the sections and product text commerce drops, and a list of what went. */
 export function stripForCommerce(body) {
   const kept = [];
   const stripped = [];
   const stack = [];
+  const lines = body.split('\n');
   let skip = 0;
-  for (const line of body.split('\n')) {
+  for (let i = 0; i < lines.length; ) {
+    const line = lines[i];
     const h = line.match(/^(#{1,6})\s+(.*)$/);
     if (h) {
+      i++;
       const level = Math.max(2, h[1].length);
       const text = h[2].trim();
       if (skip && level > skip) { stripped[stripped.length - 1].text.push(line); continue; }
@@ -437,22 +457,34 @@ export function stripForCommerce(body) {
       kept.push(line);
       continue;
     }
-    if (skip) { if (line.trim()) stripped[stripped.length - 1].text.push(line); continue; }
-    if (line.startsWith('|')) { kept.push(line); continue; }
-    const link = line.match(PRODUCT_LINK);
+    if (skip) { if (line.trim()) stripped[stripped.length - 1].text.push(line); i++; continue; }
+    if (!line.trim() || line.startsWith('|') || /^\s*(-{3,}|\*{3,})\s*$/.test(line)) { kept.push(line); i++; continue; }
+    // One block, read the way renderBlocks reads it: a list item with its indented continuations,
+    // a quote, or a paragraph up to the next blank line or block start (Codex R2).
+    const block = [lines[i++]];
+    if (ITEM.test(line)) while (i < lines.length && !ITEM.test(lines[i]) && /^\s+\S/.test(lines[i])) block.push(lines[i++]);
+    else if (line.startsWith('>')) while (i < lines.length && lines[i].startsWith('>')) block.push(lines[i++]);
+    else while (i < lines.length && lines[i].trim() && !/^(#{1,6}\s|\||>|[-*]\s|\d+\.\s)/.test(lines[i])) block.push(lines[i++]);
+    const text = block.join('\n');
+    const heading = stack.map((x) => x.text);
+    const link = text.match(PRODUCT_LINK);
     if (!link) {
-      const cleaned = dropPointers(line);
-      if (cleaned === line) { kept.push(line); continue; }
-      stripped.push({ kind: 'phrase', heading: stack.map((x) => x.text), text: [line] });
-      if (/\S/.test(cleaned.replace(/^\s*(?:[-*]|\d+\.)\s*/, ''))) kept.push(cleaned);
+      const cleaned = dropPointers(text);
+      if (cleaned === text) { kept.push(text); continue; }
+      stripped.push({ kind: 'phrase', heading, text: [text], kept: cleaned });
+      if (/\S/.test(cleaned.replace(MARK, ''))) kept.push(cleaned);
       continue;
     }
     let cut = 0;
-    for (const m of line.slice(0, link.index).matchAll(SENTENCE_END)) cut = m.index + m[0].length;
-    const rest = line.slice(0, cut).trimEnd();
-    const whole = !/\S/.test(rest.replace(/^\s*(?:[-*]|\d+\.)\s*/, ''));
-    stripped.push({ kind: whole ? 'paragraph' : 'sentences', heading: stack.map((x) => x.text), text: [line.slice(whole ? 0 : cut)] });
-    if (!whole) kept.push(rest);
+    for (const m of text.slice(0, link.index).matchAll(SENTENCE_END)) cut = m.index + m[0].length;
+    const whole = !/\S/.test(text.slice(0, cut).replace(MARK, ''));
+    const dropped = text.slice(whole ? 0 : cut);
+    const caveats = caveatsOf(dropped);
+    stripped.push({ kind: whole ? 'paragraph' : 'sentences', heading, text: [dropped], caveats });
+    // What stays before the product sentence, and any caveat after it, still loses its pointers (Codex R1).
+    const rest = [whole ? (text.match(MARK)?.[0] ?? '').trimEnd() : text.slice(0, cut).trimEnd(), ...caveats].filter(Boolean).join(' ');
+    const cleaned = dropPointers(rest);
+    if (/\S/.test(cleaned.replace(MARK, ''))) kept.push(cleaned);
   }
   return { body: kept.join('\n'), stripped: stripped.map((x) => ({ ...x, text: x.text.join('\n') })) };
 }
