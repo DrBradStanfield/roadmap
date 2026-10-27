@@ -797,13 +797,22 @@ describe('US-03 — the draft', () => {
     const onDraftValue = vi.fn();
     const m = matrix([], undefined, onDraftValue);
     typeInto(m.cell('LDL Cholesterol'), '3');
-    expect(onDraftValue).toHaveBeenLastCalledWith('ldlC', 3);
+    expect(onDraftValue).toHaveBeenLastCalledWith('ldlC', 3, TODAY);
 
     m.showHistory(history([['hdl', 1.4, TODAY]])); // another test
     expect(onDraftValue).not.toHaveBeenCalledWith('ldlC', undefined);
 
     m.showHistory(history([['hdl', 1.4, TODAY], ['ldl', 2.9, TODAY]])); // the draft's slot, filled elsewhere
     expect(onDraftValue).toHaveBeenLastCalledWith('ldlC', undefined);
+  });
+
+  it('US-07 AC7: the draft lends its value with the day it is dated, and lends it again when that day changes', () => {
+    const onDraftValue = vi.fn();
+    const m = matrix([], undefined, onDraftValue);
+    typeInto(m.cell('Creatinine'), '80');
+    expect(onDraftValue).toHaveBeenLastCalledWith('creatinine', 80, TODAY);
+    fireEvent.change(m.dateInput, { target: { value: '2026-07-01' } });
+    expect(onDraftValue).toHaveBeenLastCalledWith('creatinine', 80, '2026-07-01');
   });
 });
 

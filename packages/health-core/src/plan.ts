@@ -120,7 +120,7 @@ export function derivePlanInputs(file: RoadmapFile, now = new Date()): PlanInput
   return {
     inputs: withLabEgfr(
       measurementsToInputs(currentRows, fileProfileToApi(file.profile)),
-      creatinine ? dayOf(creatinine.recordedAt) : null, file.labValues, localDay(now),
+      creatinine ? dayOf(creatinine.recordedAt) : null, labEgfrOf(file.labValues), localDay(now),
     ),
     unitSystem: file.profile.unitSystem ?? 'si',
     medications: medicationsToInputs(file.medications),
@@ -129,29 +129,42 @@ export function derivePlanInputs(file: RoadmapFile, now = new Date()): PlanInput
   };
 }
 
-/** A lab row as `withLabEgfr` reads it: the file's rows and the widget's both fit. */
+/** A lab row as `labEgfrOf` reads it: the file's rows and the widget's both fit. */
 type LabRowLike = Pick<FileLabValue, 'id' | 'metricName' | 'value' | 'unit' | 'recordedAt'> & { createdAt?: string; status?: string };
 
+/** The lab's printed creatinine eGFR and its day: one candidate for the plan's eGFR (US-07 AC7). */
+export type LabEgfr = Required<Pick<HealthInputs, 'labEgfr' | 'labEgfrDate'>>;
+
 /**
- * US-07 AC7 (Brad 2026-10-27): the inputs with the lab's printed eGFR set when
- * it is the plan's eGFR, and cleared when it is not. The candidates are the
- * eGFR calculated from the creatinine the inputs hold, dated `creatinineDay`,
- * and the latest active lab `egfr` row (the creatinine eGFR: never cystatin C
- * or combined). The newer by day wins; on the same day the lab's does, since
- * ours may come from a misread creatinine. A creatinine with no date (typed,
- * not yet saved: `null`) is `today`'s, the day it would be saved with.
+ * US-07 AC7: the latest active lab `egfr` row (the creatinine eGFR: never
+ * cystatin C or combined), in the catalogue's unit and the schema's range;
+ * null when there is none.
  */
-export function withLabEgfr<T extends Partial<HealthInputs>>(
-  inputs: T, creatinineDay: string | null, labValues: readonly LabRowLike[], today: string,
-): T {
-  const { labEgfr: _value, labEgfrDate: _day, ...rest } = inputs;
+export function labEgfrOf(labValues: readonly LabRowLike[]): LabEgfr | null {
   const rows = labValues.filter((l) => labSlotKey(l.metricName) === 'egfr'
     && l.unit === resolveLabCatalogEntry(l.metricName)?.unit && 'labEgfr' in sanitizeInputs({ labEgfr: l.value }));
   const lab = latestActivePerMetric(rows.map((l) => ({ ...l, metricType: 'egfr' })))[0];
+  return lab ? { labEgfr: lab.value, labEgfrDate: dayOf(lab.recordedAt) } : null;
+}
+
+/**
+ * US-07 AC7 (Brad 2026-10-27): the inputs with the lab's printed eGFR set when
+ * it is the plan's eGFR, and cleared when it is not. The candidates are `lab`
+ * (labEgfrOf) and the eGFR calculated from the creatinine the inputs hold,
+ * dated `creatinineDay`. Only an eGFR the plan can calculate competes: a
+ * creatinine the schema keeps, and a birth year. The newer by day wins; on
+ * the same day the lab's does, since ours may come from a misread creatinine.
+ * A creatinine with no date (typed, not yet saved: `null`) is `today`'s, the
+ * day it would be saved with.
+ */
+export function withLabEgfr<T extends Partial<HealthInputs>>(
+  inputs: T, creatinineDay: string | null, lab: LabEgfr | null, today: string,
+): T {
+  const { labEgfr: _value, labEgfrDate: _day, ...rest } = inputs;
   if (!lab) return rest as T;
-  const labDay = dayOf(lab.recordedAt);
-  const crDay = inputs.creatinine === undefined || inputs.creatinine === null ? null : creatinineDay ?? today;
-  return crDay !== null && crDay > labDay ? rest as T : { ...rest, labEgfr: lab.value, labEgfrDate: labDay } as T;
+  const usable = sanitizeInputs({ creatinine: inputs.creatinine, birthYear: inputs.birthYear });
+  const crDay = usable.creatinine === undefined || usable.birthYear === undefined ? null : creatinineDay ?? today;
+  return crDay !== null && crDay > lab.labEgfrDate ? rest as T : { ...rest, ...lab } as T;
 }
 
 export interface PlanLab {

@@ -5,7 +5,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { createEmptyFile, createLabValue, createMeasurement, type RoadmapFile } from './roadmap-file';
-import { computePlan, planPayload, withLabEgfr } from './plan';
+import { computePlan, labEgfrOf, planPayload, withLabEgfr } from './plan';
 import { buildChatContextJson, chatContextOf } from './chat-context';
 import { calculateEGFR, missingPlanInputs } from './calculations';
 import { statTiles, STAT_TILE_ABOUT } from './stat-tiles';
@@ -122,6 +122,21 @@ describe('US-07 AC7: which eGFR the plan reads', () => {
     expect(plan(file).results.eGFR).toBe(40);
   });
 
+  it('US-07 AC7 review fix: a newer creatinine with no birth year cannot be calculated, so the lab eGFR stands', () => {
+    const file = fileWith({ creatinine: [{ value: 80, day: '2026-08-01' }], labs: [{ value: 40, day: '2026-07-01' }] });
+    file.profile.birthYear = null as unknown as number;
+    file.profile.birthMonth = null as unknown as number;
+    const p = plan(file);
+    expect(p.results.eGFR).toBe(40);
+    expect(p.results.proteinTarget).toBe(Math.round(p.results.idealBodyWeight * 1.0));
+  });
+
+  it('US-07 AC7 review fix: a newer creatinine the schema strips (out of range) does not compete; the lab eGFR stands', () => {
+    const p = plan(fileWith({ creatinine: [{ value: 5, day: '2026-08-01' }], labs: [{ value: 40, day: '2026-07-01' }] }));
+    expect(p.excluded).toContain('creatinine');
+    expect(p.results.eGFR).toBe(40);
+  });
+
   it('a known minor\'s lab eGFR is hidden as the calculated one is (AC6)', () => {
     const p = plan(fileWith({ birthYear: 2015, labs: [{ value: 40, day: '2026-07-01' }] }));
     expect(planPayload(p).profile.eGFR).toBeNull();
@@ -150,17 +165,24 @@ describe('US-07 AC7: withLabEgfr', () => {
     ({ id: `l${day}`, metricName: 'eGFR', value, unit: EGFR_UNIT, recordedAt: `${day}T00:00:00.000Z`, createdAt: `${day}T00:00:00.000Z`, ...extra });
 
   it('an undated creatinine (typed, not yet saved) counts as today: it beats an older lab eGFR', () => {
-    expect(withLabEgfr({ creatinine: 80 }, null, [lab(40, '2026-07-01')], '2026-09-01')).not.toHaveProperty('labEgfr');
+    expect(withLabEgfr({ creatinine: 80, birthYear: 1950 }, null, labEgfrOf([lab(40, '2026-07-01')]), '2026-09-01')).not.toHaveProperty('labEgfr');
   });
 
   it('an undated creatinine and a lab eGFR dated today: the lab wins', () => {
-    expect(withLabEgfr({ creatinine: 80 }, null, [lab(40, '2026-09-01')], '2026-09-01')).toMatchObject({ labEgfr: 40, labEgfrDate: '2026-09-01' });
+    expect(withLabEgfr({ creatinine: 80, birthYear: 1950 }, null, labEgfrOf([lab(40, '2026-09-01')]), '2026-09-01')).toMatchObject({ labEgfr: 40, labEgfrDate: '2026-09-01' });
   });
 
   it('drops a stale labEgfr it is handed when the creatinine is newer', () => {
-    const out = withLabEgfr({ creatinine: 80, labEgfr: 40, labEgfrDate: '2026-07-01' }, '2026-08-01', [lab(40, '2026-07-01')], '2026-09-01');
+    const out = withLabEgfr({ creatinine: 80, birthYear: 1950, labEgfr: 40, labEgfrDate: '2026-07-01' }, '2026-08-01', labEgfrOf([lab(40, '2026-07-01')]), '2026-09-01');
     expect(out).not.toHaveProperty('labEgfr');
     expect(out).not.toHaveProperty('labEgfrDate');
+  });
+
+  it('US-07 AC7 review fix: only a calculable creatinine competes (an age, and a value the schema keeps)', () => {
+    const older = labEgfrOf([lab(40, '2026-07-01')]);
+    expect(withLabEgfr({ creatinine: 80 }, '2026-08-01', older, '2026-09-01')).toMatchObject({ labEgfr: 40 });
+    expect(withLabEgfr({ creatinine: 5, birthYear: 1950 }, '2026-08-01', older, '2026-09-01')).toMatchObject({ labEgfr: 40 });
+    expect(withLabEgfr({ creatinine: 80, birthYear: 1950 }, '2026-08-01', older, '2026-09-01')).not.toHaveProperty('labEgfr');
   });
 });
 
@@ -198,5 +220,29 @@ describe('US-07 AC7: the chat reads the same eGFR', () => {
     const base = chatContextOf(inputs, 'si', [], [], f.measurements);
     const out = runRoadmap(base, { values: [{ field: 'creatinine', value: 90, unit: 'µmol/L', date: '2026-06-01' }] }, NOW);
     expect(JSON.parse(out.contextJson!).derivedValues.eGFR).toBe(40);
+  });
+
+  it('US-07 AC7 review fix: run_roadmap, a stated age lets the saved newer creatinine compete; the lab eGFR the client kept gives way', () => {
+    const f = fileWith({ creatinine: [{ value: 80, day: '2026-08-01' }], labs: [{ value: 40, day: '2026-07-01' }] });
+    f.profile.birthYear = null as unknown as number;
+    f.profile.birthMonth = null as unknown as number;
+    const { inputs } = plan(f);
+    expect(inputs.labEgfr).toBe(40);
+    const base = chatContextOf(inputs, 'si', [], [], f.measurements);
+    expect(JSON.parse(runRoadmap(base, {}, NOW).contextJson!).derivedValues.eGFR).toBe(40);
+    const out = runRoadmap(base, { age: 76 }, NOW);
+    expect(JSON.parse(out.contextJson!).derivedValues.eGFR).toBe(CALC_80);
+  });
+
+  it('US-07 AC7: run_roadmap keeps its conservatism: a newer stated creatinine with no age withholds the protein card and asks for the age', () => {
+    const f = fileWith({ labs: [{ value: 40, day: '2026-07-01' }] });
+    f.profile.birthYear = null as unknown as number;
+    f.profile.birthMonth = null as unknown as number;
+    const base = chatContextOf(plan(f).inputs, 'si', [], [], f.measurements);
+    const out = runRoadmap(base, { values: [{ field: 'creatinine', value: 80, unit: 'µmol/L' }] }, NOW);
+    const ctx = JSON.parse(out.contextJson!);
+    expect(ctx.derivedValues.eGFR).toBeUndefined();
+    expect(ctx.currentSuggestions.some((s: { id: string }) => s.id === 'protein-target')).toBe(false);
+    expect(out.rejected.map((r) => r.field)).toContain('age');
   });
 });

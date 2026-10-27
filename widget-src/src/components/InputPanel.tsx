@@ -143,7 +143,7 @@ interface InputPanelProps {
   // vitals and the additional lab rows.
   onCorrectValue?: CorrectFn;
   /** A matrix's draft value as the plan reads it (both matrices). */
-  onDraftValue: (field: keyof HealthInputs, value: number | undefined) => void;
+  onDraftValue: (field: keyof HealthInputs, value: number | undefined, day?: string) => void;
   medications: ApiMedication[];
   onMedicationChange: (medicationKey: string, drugName: string, doseValue: number | null, doseUnit: string | null) => void;
   screenings: ApiScreening[];
