@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/react';
-import { ERROR_CLASS_TAGS, EXPECTED_NETWORK_ERRORS, HTTP_STATUS_TAGS } from './error-diagnostics';
+import { CAUSE_CLASS_TAGS, ERROR_CLASS_TAGS, EXPECTED_NETWORK_ERRORS, HTTP_STATUS_TAGS } from './error-diagnostics';
 import { scrubSensitiveData, scrubBreadcrumbData, scrubUrl, scrubEventText, dropLongStrings } from '@roadmap/health-core';
 
 declare const __SENTRY_RELEASE__: string;
@@ -78,7 +78,7 @@ export function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
   // can quote what the review showed (its Replace label named the values until US-13 AC10).
   const strictFeature = ['upload', 'upload_review'].find(feature => feature === event.tags?.feature);
   if (strictArea || strictFeature) {
-    const { area, op, backend, branch, uploadErrorCode, cause, errorClass, httpStatus } = event.tags!;
+    const { area, op, backend, branch, uploadErrorCode, cause, errorClass, httpStatus, causeClass } = event.tags!;
     event.tags = {
       ...(strictArea ? { area } : { feature: strictFeature }),
       ...(['write-document', 'read-document', 'persist', 'log-off', 'copy-down', 'migrate-up', 'load'].includes(String(op)) ? { op } : {}),
@@ -88,6 +88,7 @@ export function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
       ...(['QuotaExceededError', 'SecurityError', 'TypeError', 'ReferenceError', 'other'].includes(String(cause)) ? { cause } : {}),
       ...(ERROR_CLASS_TAGS.includes(String(errorClass)) ? { errorClass } : {}),
       ...(HTTP_STATUS_TAGS.includes(String(httpStatus)) ? { httpStatus } : {}),
+      ...(CAUSE_CLASS_TAGS.includes(String(causeClass)) ? { causeClass } : {}),
     };
     if (event.message) event.message = 'Health record operation failed';
     if (event.exception?.values) event.exception.values = event.exception.values.map(value => ({

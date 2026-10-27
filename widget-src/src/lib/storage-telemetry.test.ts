@@ -3,11 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { eventFiltersIntegration, linkedErrorsIntegration, type Client, type Event } from '@sentry/core';
 import { webcrypto } from 'node:crypto';
 import { Blob as NodeBlob } from 'node:buffer';
-import { MemoryAdapter, StorageError } from '@roadmap/health-core';
+import { ConflictError, MemoryAdapter, StorageError } from '@roadmap/health-core';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage';
 import { Sentry, scrubEvent } from './sentry';
-import { EXPECTED_NETWORK_ERRORS, recordFailure, storageFailureClass } from './error-diagnostics';
+import { EXPECTED_NETWORK_ERRORS, recordFailure, storageCauseClass, storageFailureClass } from './error-diagnostics';
 
 // US-09 AC6: provider errors and request breadcrumbs may contain document
 // titles or results. Inspect complete outgoing SDK envelopes, not just extras.
@@ -88,7 +88,9 @@ describe('cloud-storage telemetry boundary', () => {
     await expect(store.flush()).rejects.toThrow('still on this device');
     await Sentry.flush();
     const [, items] = envelopes[0] as [unknown, Array<[unknown, { tags: Record<string, string> }]>];
-    expect(items[0][1].tags).toEqual({ area: 'cloud-sync', op: 'persist', backend: 'local', cause: 'QuotaExceededError' });
+    expect(items[0][1].tags).toEqual({
+      area: 'cloud-sync', op: 'persist', backend: 'local', cause: 'QuotaExceededError', errorClass: 'StorageError', causeClass: 'other',
+    });
     expect(JSON.stringify(envelopes)).not.toContain(marker);
   });
 
@@ -102,7 +104,7 @@ describe('cloud-storage telemetry boundary', () => {
     await expect(store.flush()).rejects.toThrow('still on this device');
     await Sentry.flush();
     const [, items] = envelopes[0] as [unknown, Array<[unknown, { tags: Record<string, string> }]>];
-    expect(items[0][1].tags).toEqual({ area: 'cloud-sync', op: 'persist', backend: 'memory' });
+    expect(items[0][1].tags).toEqual({ area: 'cloud-sync', op: 'persist', backend: 'memory', errorClass: 'other', causeClass: 'none' });
   });
 
   it.each([
@@ -114,6 +116,49 @@ describe('cloud-storage telemetry boundary', () => {
     [marker, 'other'],
   ])('names the failure class from a closed list: %s → %s', (error, expected) => {
     expect(storageFailureClass(error)).toBe(expected);
+  });
+
+  // US-09 AC28 (Sentry JAVASCRIPT-REMIX-77): cause=other pooled every device
+  // refusal the browser did not name. The persist capture now says which
+  // class of error it was and what a StorageError wrapped, each from a
+  // closed list, so a corrupt read, a conflict and an odd refusal read apart.
+  it.each([
+    [new StorageError(marker, undefined, new SyntaxError(marker)), 'SyntaxError'],
+    [new StorageError(marker, undefined, new ConflictError(marker)), 'ConflictError'],
+    [new StorageError(marker), 'none'],
+    [new StorageError(marker, undefined, new DOMException(marker, 'NS_ERROR_FILE_CORRUPTED')), 'other'],
+    [new StorageError(marker, undefined, marker), 'other'],
+    [new SyntaxError(marker), 'none'], // only a StorageError's own cause is read
+  ])('names the cause class from a closed list (US-09 AC28): %s → %s', (error, expected) => {
+    expect(storageCauseClass(error)).toBe(expected);
+  });
+
+  it.each([
+    [new StorageError(marker, undefined, new SyntaxError(marker)), 'SyntaxError'],
+    [new StorageError(marker, undefined, new ConflictError(marker)), 'ConflictError'],
+    [new StorageError(marker), 'none'],
+    [new StorageError(marker, undefined, new RangeError(marker)), 'other'],
+  ])('tags a persist failure with its error and cause class, never its text (US-09 AC28): %s → %s', async (error, causeClass) => {
+    class RefusingCloud extends MemoryAdapter {
+      async write(): Promise<never> { throw error; }
+    }
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const store = await RoadmapStore.create(new RefusingCloud());
+    store.addMeasurement('ldl', 4.5, '2024-06-01T09:00:00.000Z');
+    await expect(store.flush()).rejects.toThrow('still on this device');
+    await Sentry.flush();
+    const [, items] = envelopes[0] as [unknown, Array<[unknown, { tags: Record<string, string> }]>];
+    expect(items[0][1].tags).toEqual({ area: 'cloud-sync', op: 'persist', backend: 'memory', errorClass: 'StorageError', causeClass });
+    expect(JSON.stringify(envelopes)).not.toContain(marker);
+  });
+
+  it('keeps a closed cause class through the scrub and drops any other value (US-09 AC28)', () => {
+    for (const causeClass of ['SyntaxError', 'ConflictError', 'none', 'other']) {
+      const tags = { area: 'cloud-sync', op: 'persist', backend: 'local', errorClass: 'StorageError', causeClass };
+      expect(scrubEvent({ type: undefined, tags })!.tags).toEqual(tags);
+    }
+    const tags = { area: 'cloud-sync', op: 'persist', backend: 'local', causeClass: marker };
+    expect(scrubEvent({ type: undefined, tags })!.tags).toEqual({ area: 'cloud-sync', op: 'persist', backend: 'local' });
   });
 
   it('keeps the load operation of a startup fallback capture (US-09 AC13)', () => {

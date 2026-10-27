@@ -17,7 +17,7 @@ import {
 import { getDeviceId } from './device-id';
 import { clearOffFileHealthData, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
 import { Sentry } from '../lib/sentry';
-import { recordFailure, storageFailureClass } from '../lib/error-diagnostics';
+import { failureTags, recordFailure, storageCauseClass, storageFailureClass } from '../lib/error-diagnostics';
 
 /**
  * Set while the on-device copy may hold changes a cloud backend hasn't seen
@@ -122,7 +122,10 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
       console.warn('Cloud sync failed');
       if (at.repeat) return;
       Sentry.captureException(recordFailure(error, 'Cloud sync failed'), {
-        tags: { area: 'cloud-sync', op: at.op, backend: store.id, ...(at.cause ? { cause: at.cause } : {}) },
+        tags: {
+          area: 'cloud-sync', op: at.op, backend: store.id, ...(at.cause ? { cause: at.cause } : {}),
+          errorClass: failureTags(error).errorClass, causeClass: storageCauseClass(error),
+        },
       });
     },
   };
