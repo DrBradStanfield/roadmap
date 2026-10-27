@@ -1034,7 +1034,8 @@ function prepareFeedback(
   };
 }
 
-/** One wording for every transient GitHub failure (US-32 AC39): the agent can only retry. */
+/** The refusal when GitHub provably filed nothing (a 4xx, or no connection): the agent may retry later. A
+ *  failure that may have posted gets its own "may already be posted" wording (US-32 AC39, github-issues.server.ts). */
 export const FEEDBACK_UNAVAILABLE = 'Feedback could not be filed right now. Nothing was posted. Try again later.';
 
 /** A surface with no filer while the repository is hidden: permanent, so no "try again" (US-32 AC39). */
