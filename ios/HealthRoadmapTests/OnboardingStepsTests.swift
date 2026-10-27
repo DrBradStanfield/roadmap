@@ -329,6 +329,20 @@ final class OnboardingStepsTests: XCTestCase {
         XCTAssertNil(OnboardingSteps.previous(before: .sex, onlyMissing: true, skip: []), "no Apple Health page after a cloud connect")
     }
 
+    /// US-02 AC7: a weight's thousands reading is never in range and the decimal one is never
+    /// chosen, so "100,500" and "1,234" kg both wait, and the page asks: never silently disabled.
+    func testACommaWeightIsAskedAbout_US02AC7() {
+        var weight = TypedAnswer(metric: "weight")
+        weight.text = "100,500"
+        XCTAssertNil(weight.value)
+        XCTAssertEqual(weight.question, "Did you mean 100500 or 100.5?")
+        weight.text = "1,234"
+        XCTAssertNil(weight.value)
+        XCTAssertEqual(weight.question, "Did you mean 1234 or 1.234?")
+        weight.text = "82"
+        XCTAssertNil(weight.question)
+    }
+
     /// Brad 2026-10-25: the hint above "Connect Apple Health", short and in plain words.
     func testTheAppleHealthHintSaysWhatToTap_AC3() {
         XCTAssertEqual(OnboardingView.appleAsksNextWords, "Next, Apple asks for access. Turn everything on, then tap **Allow**.",

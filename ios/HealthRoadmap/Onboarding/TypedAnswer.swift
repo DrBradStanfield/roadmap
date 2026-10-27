@@ -53,6 +53,12 @@ struct TypedAnswer: Equatable {
         return feetInches.map { Double($0.feet * 12 + $0.inches) }
     }
 
+    /// What the page asks while a typed comma cannot be read ("100,500" kg), so Continue is
+    /// never disabled without a word (US-02 AC7). No range is needed: a height's or weight's
+    /// thousands reading ("1,000" and up) is never inside its range, so a comma there is
+    /// always asked about.
+    var question: String? { isHeight && us ? nil : TypedNumber.question(text) }
+
     /// Shows `recorded`, the record's value in `recordUnits`, in the box's own units;
     /// empty boxes when there is none.
     mutating func show(_ recorded: Double?, recordUnits: String, convert: Convert) async {

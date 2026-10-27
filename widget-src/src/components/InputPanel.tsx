@@ -220,6 +220,15 @@ export function InputPanel({
 }: InputPanelProps) {
   const [prefillExpanded, setPrefillExpanded] = useState(false);
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
+  // Number boxes holding text the browser could not read ("175,500" gives "" with
+  // validity.badInput): not a clear, so nothing is written or saved (US-02 AC7).
+  const [unreadable, setUnreadable] = useState<Record<string, boolean>>({});
+  /** Records whether the box can be read; false means leave the saved value alone. */
+  const readable = (field: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const bad = e.target.validity.badInput;
+    setUnreadable(prev => ({ ...prev, [field]: bad }));
+    return !bad;
+  };
   const hasAutoFocusedEmail = useRef(false);
   // One auto-advance instance per TARGET, so a new keystroke on any source
   // field cancels a pending advance to that target.
@@ -538,6 +547,7 @@ export function InputPanel({
             onChange={(e) => {
               const raw = e.target.value;
               setRawInputs(prev => ({ ...prev, [field]: raw }));
+              if (!readable(field, e)) return;
               // Ignore browser auto-fill of 0 for empty fields (spinner click on empty input)
               if (raw === '0' && inputs[field] === undefined && rawInputs[field] === undefined) {
                 return;
@@ -557,6 +567,7 @@ export function InputPanel({
               }
             }}
             onBlur={() => {
+              if (unreadable[field]) return;
               setRawInputs(prev => { const next = { ...prev }; delete next[field]; return next; });
               autoSaveOnBlur();
             }}
@@ -571,8 +582,8 @@ export function InputPanel({
             <CommitTickButton ariaLabel={`Save ${field}`} onClick={flushLongitudinalSave}/>
           )}
         </div>
-        {errors[field] && (
-          <span className="error-message">{errors[field]}</span>
+        {(unreadable[field] || errors[field]) && (
+          <span className="error-message">{unreadable[field] ? 'Enter a number' : errors[field]}</span>
         )}
         {(effectiveHint || (!isExpandedWithData && previousLabel)) && (
           <div className="field-meta">
@@ -825,6 +836,7 @@ export function InputPanel({
                   onChange={(e) => {
                     const raw = e.target.value;
                     setRawInputs(prev => ({ ...prev, heightCm: raw }));
+                    if (!readable('heightCm', e)) return;
                     updateField('heightCm', parseAndConvert('heightCm', raw));
                     const heightNum = parseLocalisedNumber(raw);
                     const heightRange = range('heightCm');
@@ -836,7 +848,7 @@ export function InputPanel({
                       });
                     }
                   }}
-                  onBlur={() => setRawInputs(prev => { const next = { ...prev }; delete next['heightCm']; return next; })}
+                  onBlur={() => { if (!unreadable.heightCm) setRawInputs(prev => { const next = { ...prev }; delete next['heightCm']; return next; }); }}
                   placeholder=""
                   min={range('heightCm').min}
                   max={range('heightCm').max}
@@ -901,8 +913,8 @@ export function InputPanel({
                   <span className="height-unit">in</span>
                 </div>
               )}
-              {errors.heightCm && (
-                <span className="error-message">{errors.heightCm}</span>
+              {((unreadable.heightCm && unitSystem === 'si') || errors.heightCm) && (
+                <span className="error-message">{unreadable.heightCm && unitSystem === 'si' ? 'Enter a number' : errors.heightCm}</span>
               )}
             </div>
           </div>
@@ -1643,12 +1655,13 @@ export function InputPanel({
                         onKeyDown={blockNonIntegerKeys}
                         onWheel={blurOnWheel}
                         value={scr.lungPackYears ?? ''}
-                        onChange={(e) => onScreeningChange('lung_pack_years', e.target.value)}
+                        onChange={(e) => { if (readable('lung_pack_years', e)) onScreeningChange('lung_pack_years', e.target.value); }}
                         placeholder=""
                         min="0"
                         max="200"
                         step="1"
                       />
+                      {unreadable.lung_pack_years && <span className="field-error">Enter a number</span>}
                       <span className="field-hint">{SCREENING_TEXT.packYearsHint}</span>
                     </div>
 
@@ -1718,6 +1731,7 @@ export function InputPanel({
                               onChange={(e) => {
                                 const val = e.target.value;
                                 setRawInputs(prev => ({ ...prev, psa: val }));
+                                if (!readable('psa', e)) return;
                                 if (val === '') {
                                   updateField('psa', undefined);
                                 } else {
@@ -1726,6 +1740,7 @@ export function InputPanel({
                                 }
                               }}
                               onBlur={() => {
+                                if (unreadable.psa) return;
                                 setRawInputs(prev => { const next = { ...prev }; delete next.psa; return next; });
                                 validateOnBlur('psa');
                                 autoSaveOnBlur();
@@ -1742,7 +1757,7 @@ export function InputPanel({
                               <CommitTickButton ariaLabel="Save PSA" onClick={flushLongitudinalSave}/>
                             )}
                           </div>
-                          {errors.psa && <span className="field-error">{errors.psa}</span>}
+                          {(unreadable.psa || errors.psa) && <span className="field-error">{unreadable.psa ? 'Enter a number' : errors.psa}</span>}
                           <div className="field-meta">
                             <span className="field-hint">{SCREENING_TEXT.psaHint}</span>
                             {psaPreviousLabel && (

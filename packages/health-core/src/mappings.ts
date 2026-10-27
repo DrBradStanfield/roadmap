@@ -291,6 +291,19 @@ const ENDOMETRIAL_BLEEDING = ['no', 'yes_reported', 'yes_need_to_report'] as con
 const DEXA_SCREENINGS = ['dexa_scan', 'not_yet_started'] as const;
 const DEXA_RESULTS = ['normal', 'osteopenia', 'osteoporosis', 'awaiting'] as const;
 
+/** The numeric screenings and their input ranges: pack-years as the form
+ *  bounds them, PSA as its measurement does. A "1,234" answer is read
+ *  against them (US-02 AC7). */
+export const SCREENING_RANGES = {
+  lung_pack_years: { min: 0, max: 200 },
+  prostate_psa_value: UNIT_DEFS.psa.validationRange.si,
+};
+
+/** A screening key's input range, or undefined for a text answer. */
+export function screeningRange(key: string): { min: number; max: number } | undefined {
+  return Object.prototype.hasOwnProperty.call(SCREENING_RANGES, key) ? SCREENING_RANGES[key as keyof typeof SCREENING_RANGES] : undefined;
+}
+
 /**
  * Convert API screening records into a ScreeningInputs object.
  */
@@ -349,7 +362,7 @@ export function screeningsToInputs(
         inputs.lungSmokingHistory = castEnum(s.value, SMOKING_HISTORIES);
         break;
       case 'lung_pack_years':
-        inputs.lungPackYears = parseLocalisedNumber(s.value);
+        inputs.lungPackYears = parseLocalisedNumber(s.value, SCREENING_RANGES.lung_pack_years);
         break;
       case 'lung_screening':
         inputs.lungScreening = castEnum(s.value, LUNG_SCREENINGS);
@@ -370,7 +383,7 @@ export function screeningsToInputs(
         inputs.prostateDiscussion = castEnum(s.value, PROSTATE_DISCUSSIONS);
         break;
       case 'prostate_psa_value':
-        inputs.prostatePsaValue = parseLocalisedNumber(s.value);
+        inputs.prostatePsaValue = parseLocalisedNumber(s.value, SCREENING_RANGES.prostate_psa_value);
         break;
       case 'prostate_last_date':
         inputs.prostateLastDate = screeningDate(s.value, true);

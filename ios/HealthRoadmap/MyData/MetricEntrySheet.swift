@@ -29,6 +29,7 @@ struct MetricEntrySheet: View {
                 saved(await store.apply(.correct(id: existingId, value: value), as: seen))
             }
             .lpaUnits(store, row) { seen = seen.showing(lpaUnit: $0) }
+            .reads(in: store.inputRange(for: row.metric, in: store.lpaUnit(for: row)))
         }
     }
 }

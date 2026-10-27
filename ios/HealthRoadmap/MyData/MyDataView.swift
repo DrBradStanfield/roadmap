@@ -226,6 +226,7 @@ struct MyDataView: View {
             ValueEntrySheet(title: "Height", unit: profile?.heightUnit ?? "", current: profile?.height, asksForDay: false) { value, _ in
                 saved(await store.apply(.profile(height: value), as: seen))
             }
+            .reads(in: store.inputRange(for: "height", in: seen.units))
         }
     }
 

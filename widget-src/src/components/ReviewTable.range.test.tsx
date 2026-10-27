@@ -227,3 +227,63 @@ describe('ReviewTable range errors before save', () => {
     ]);
   });
 });
+
+// US-13 AC12 / US-02 AC7: "1,234" in a review cell is read in the unit it was
+// typed in, or asked about, and an asked cell blocks Save.
+describe('ReviewTable: an ambiguous comma (US-13 AC12)', () => {
+  const review = (upload: FileResult[], unitSystem: 'si' | 'conventional') => {
+    const onSave = vi.fn();
+    const view = render(<ReviewTable grading={{}} results={upload}
+      history={{ measurements: [], labValues: [], documents: [] }} unitSystem={unitSystem}
+      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />);
+    const input = view.container.querySelector<HTMLInputElement>('.bt-cell-review input')!;
+    const save = view.container.querySelector<HTMLButtonElement>('.review-save-btn')!;
+    return { ...view, onSave, input, save };
+  };
+  const tg: FileResult[] = [{ ...files[0], values: [{ metric: 'triglycerides', valueSI: 1.5, displayValue: 1.5, displayUnit: 'mmol/L', confidence: 'high' }] }];
+
+  it('asks in mg/dL, where 1234 and 1.234 are both in range, and blocks Save', () => {
+    const r = review(tg, 'conventional');
+    fireEvent.change(r.input, { target: { value: '1,234' } });
+    expect(r.input.getAttribute('aria-invalid')).toBe('true');
+    expect(r.getByText('Did you mean 1234 or 1.234?')).toBeTruthy();
+    expect(r.save.disabled).toBe(true);
+    fireEvent.click(r.save);
+    expect(r.onSave).not.toHaveBeenCalled();
+  });
+
+  // Adversary R1: in mmol/L only 1.234 fits, a decimal reading, which is never chosen.
+  it('asks in SI too, where only the decimal reading is in range', () => {
+    const r = review(tg, 'si');
+    fireEvent.change(r.input, { target: { value: '1,234' } });
+    expect(r.input.getAttribute('aria-invalid')).toBe('true');
+    expect(r.save.disabled).toBe(true);
+  });
+
+  it('saves 1234 µmol/L creatinine, where the decimal reading is below the range', () => {
+    const r = review([{ ...files[0], values: [{ metric: 'creatinine', valueSI: 80, displayValue: 80, displayUnit: 'µmol/L', confidence: 'high' }] }], 'si');
+    fireEvent.change(r.input, { target: { value: '1,234' } });
+    expect(r.input.getAttribute('aria-invalid')).toBe('false');
+    fireEvent.click(r.save);
+    expect(r.onSave.mock.calls[0][0].values).toEqual([expect.objectContaining({ metric: 'creatinine', valueSI: 1234, source: 'lab_import_edited' })]);
+  });
+
+  it('asks on a lab row, which has no range, and blocks Save until it is retyped', () => {
+    const r = review([{ ...files[0], values: [], additionalValues: [{ name: 'Ferritin', value: 45, unit: 'µg/L' }] }], 'si');
+    fireEvent.change(r.input, { target: { value: '1,050' } });
+    expect(r.getByText('Did you mean 1050 or 1.05?')).toBeTruthy();
+    expect(r.save.disabled).toBe(true);
+    fireEvent.change(r.input, { target: { value: '1,05' } });
+    expect(r.save.disabled).toBe(false);
+    fireEvent.click(r.save);
+    expect(r.onSave.mock.calls[0][0].labValues).toEqual([expect.objectContaining({ value: 1.05 })]);
+  });
+
+  // Codex R2: a lab row has no range to check grouped thousands, so they block Save.
+  it('refuses "1,234,567" on a lab row and asks for it without commas', () => {
+    const r = review([{ ...files[0], values: [], additionalValues: [{ name: 'Ferritin', value: 45, unit: 'µg/L' }] }], 'si');
+    fireEvent.change(r.input, { target: { value: '1,234,567' } });
+    expect(r.getByText('Type the number without commas.')).toBeTruthy();
+    expect(r.save.disabled).toBe(true);
+  });
+});

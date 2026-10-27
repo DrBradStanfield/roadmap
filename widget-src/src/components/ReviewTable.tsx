@@ -5,6 +5,7 @@ import {
   healthInputSchema,
   METRIC_LABELS,
   METRIC_TO_FIELD,
+  commaQuestion,
   parseLocalisedNumber,
   BLOOD_TEST_METRICS,
   VITAL_METRICS,
@@ -28,7 +29,7 @@ import { pendingRowsFor, type RefusedLabValue } from '@roadmap/health-core';
 import { labUnitRefusalLine, labValueLabel } from '../lib/lab-value-labels';
 import { unarchivedOriginals } from '../lib/archive-payloads';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
-import { type CellUnit, type Grading, cellHint, cellLabel, cellText, cellToSI, validateTypedValue } from '../lib/blood-test-cell';
+import { type CellUnit, type Grading, cellHint, cellLabel, cellText, cellToSI, readTypedValue, validateTypedValue } from '../lib/blood-test-cell';
 import { useLpaUnit } from '../lib/lpa-unit';
 import { NumericInputCell } from './NumericInputCell';
 import { DraftDateCell } from './DraftDateCell';
@@ -808,18 +809,20 @@ export function ReviewTable({
    *  124.9 nmol/L shows "50.0" mg/dL → 125); once edited, the typed number in the
    *  unit it was typed in, so a toggle after typing never misconverts it. */
   const savedValue = (cell: EditableMatrixCell, editedStr: string): number | undefined => {
-    const parsed = parseLocalisedNumber(editedStr);
+    const metric = metricOf(cell);
+    const typedIn = metric && UNIT_DEFS[metric] ? touchedRef.current.get(editId(cell))?.display ?? units[metric] ?? unitSystem : undefined;
+    const parsed = metric && typedIn ? readTypedValue(metric, editedStr, typedIn) : parseLocalisedNumber(editedStr);
     if (parsed === undefined) return undefined;
     if (!isEditedText(cell, editedStr)) return cell.valueSI;
-    const metric = metricOf(cell);
-    if (!metric || !UNIT_DEFS[metric]) return parsed;
-    return cellToSI(metric, parsed, touchedRef.current.get(editId(cell))?.display ?? units[metric] ?? unitSystem);
+    return metric && typedIn ? cellToSI(metric, parsed, typedIn) : parsed;
   };
 
   // Validate the quantity we save, not a rounded rendering after a unit switch.
+  // A lab row has no range, so only an ambiguous comma is an error (US-13 AC12).
   const cellError = (cell: EditableMatrixCell, text: string): string | null => {
     const metric = metricOf(cell);
-    if (!text || !metric || !UNIT_DEFS[metric]) return null;
+    if (!text) return null;
+    if (!metric || !UNIT_DEFS[metric]) return commaQuestion(text);
     if (isEditedText(cell, text)) {
       return validateTypedValue(metric, text, touchedRef.current.get(editId(cell))?.display ?? units[metric] ?? unitSystem).error;
     }

@@ -20,6 +20,9 @@ struct ValueEntrySheet: View {
     /// record's unit and answers a refusal's words, nil when it was taken.
     var units: [String] = []
     var chooseUnit: ((String) async -> String?)?
+    /// The value's input range in `unit` (`RecordStore.inputRange`): a typed "1,234" is the
+    /// one reading inside it; nil (a form's question) asks which was meant (US-02 AC7).
+    var range: ClosedRange<Double>?
 
     @Environment(\.dismiss) private var dismiss
     @State private var text = ""
@@ -55,7 +58,7 @@ struct ValueEntrySheet: View {
                         .disabled(saving)
                     }
                 } footer: {
-                    if let message {
+                    if let message = message ?? TypedNumber.question(text, range: range) {
                         Text(message).foregroundStyle(.red)
                     } else if let current {
                         Text("Now \(current) \(unit)")
@@ -88,7 +91,7 @@ struct ValueEntrySheet: View {
 
     /// The typed number: either decimal mark, and nothing that is not read in full,
     /// so "3.4" on a German phone is 3.4, never 3.
-    private var number: Double? { TypedNumber.read(text) }
+    private var number: Double? { TypedNumber.read(text, range: range) }
 
     private func submit() {
         guard let number else { return }
@@ -104,6 +107,13 @@ struct ValueEntrySheet: View {
 }
 
 extension ValueEntrySheet {
+    /// Reads a typed "1,234" against `range`, the value's input range in the sheet's unit (US-02 AC7).
+    func reads(in range: ClosedRange<Double>?) -> ValueEntrySheet {
+        var sheet = self
+        sheet.range = range
+        return sheet
+    }
+
     /// Lp(a)'s unit picker in its sheets (US-25 AC20); any other row's sheet is as it was.
     /// `shows`: a unit chosen here is the sheet's from then on, so its screen carries it and
     /// a value typed there is read in the unit shown at Save.

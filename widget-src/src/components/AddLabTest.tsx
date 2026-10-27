@@ -6,7 +6,7 @@
 // the cell editor, never a second row (AC13).
 
 import { useState } from 'react';
-import { displayLabUnit, LAB_CATALOG, LAB_GROUPS, localDay, parseLocalisedNumber, slotKey } from '@roadmap/health-core';
+import { commaQuestion, displayLabUnit, LAB_CATALOG, LAB_GROUPS, localDay, parseLocalisedNumber, slotKey } from '@roadmap/health-core';
 import { UnitChip } from './UnitChip';
 import { SAVE_ERRORS } from './BloodTestTimeline';
 import { bulkSaveLabValues } from '../lib/roadmap-data';
@@ -43,7 +43,9 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect }: {
   }
 
   const entry = LAB_CATALOG.find(e => e.key === testKey);
+  // A catalogued test has no input range, so "1,050" is always asked about (US-02 AC7).
   const value = parseLocalisedNumber(valueStr);
+  const question = commaQuestion(valueStr);
   const metricName = entry ? entry.key : customName.trim();
   const unit = entry ? entry.unit : customUnit.trim();
   // parseLocalisedNumber only returns finite numbers or undefined. The date
@@ -179,7 +181,7 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect }: {
           onChange={e => { setDate(e.target.value); clearNotice(); }}
         />
       </div>
-      {notice && <div className="alr-add-notice">{notice}</div>}
+      {(notice ?? question) && <div className="alr-add-notice">{notice ?? question}</div>}
       <div className="alr-add-actions">
         <button type="button" className="alr-add-save" disabled={!canSave}
                 onClick={() => void (held ? replace(held) : save())}>

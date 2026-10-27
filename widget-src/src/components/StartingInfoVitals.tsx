@@ -41,6 +41,7 @@ import {
   blockBadNumericKeys,
   blockNonIntegerKeys,
   bpSysAdvance,
+  readTypedValue,
   validateTypedValue,
 } from '../lib/blood-test-cell';
 import { VITALS_DRAFT_KEY } from '../lib/storage';
@@ -251,7 +252,7 @@ export function vitalsCellsOf(
     if (!text) continue;
     const unit = unitFor(metric);
     const ok = !validateTypedValue(metric, text, unit).error;
-    cells.push({ keys: [metric], values: ok ? { [metric]: toCanonicalValue(metric, parseLocalisedNumber(text)!, unit) } : null });
+    cells.push({ keys: [metric], values: ok ? { [metric]: toCanonicalValue(metric, readTypedValue(metric, text, unit)!, unit) } : null });
   }
   const { sys = '', dia = '' } = typed;
   if (sys || dia) {
@@ -327,8 +328,8 @@ export function StartingInfoVitals({
   const typedUnit = (column: string | null, metric: 'weight' | 'waist') => unitOf([column, metric]) ?? unitFor(metric);
   const shownText = (column: string | null, metric: 'weight' | 'waist') => {
     const typed = (column === null ? draft.values : backfills[column])?.[metric] ?? '';
-    const n = parseLocalisedNumber(typed);
     const unit = typedUnit(column, metric);
+    const n = readTypedValue(metric, typed, unit);
     return unit === unitFor(metric) || n === undefined ? typed : formatDisplayValue(metric, toCanonicalValue(metric, n, unit), unitFor(metric));
   };
 
@@ -454,7 +455,7 @@ export function StartingInfoVitals({
     if (key === 'sys') return n != null && n >= BP_SYS_MIN && n <= BP_SYS_MAX ? n : undefined;
     if (key === 'dia') return n != null && n >= BP_DIA_MIN && n <= BP_DIA_MAX ? n : undefined;
     const unit = typedUnit(null, key);
-    return validateTypedValue(key, text, unit).error ? undefined : toCanonicalValue(key, n!, unit);
+    return validateTypedValue(key, text, unit).error ? undefined : toCanonicalValue(key, readTypedValue(key, text, unit)!, unit);
   };
   useDraftMirror((Object.keys(FIELD_OF) as VitalsKey[]).map(key => [FIELD_OF[key], standsIn(key)]), onDraftValue);
 

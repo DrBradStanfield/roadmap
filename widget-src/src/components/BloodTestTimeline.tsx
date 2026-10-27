@@ -37,6 +37,7 @@ import {
   cellText,
   cellToSI,
   formatLabValue,
+  readTypedValue,
   sameAsSaved,
   validateTypedValue,
   statusOf,
@@ -233,7 +234,7 @@ export function BloodTestTimeline({
   // unit, the same quantity in the field's unit.
   const shownText = (column: string | null, metric: MetricType, field: string, typed: string) => {
     const unit = typedUnit(column, metric, field);
-    const n = parseLocalisedNumber(typed);
+    const n = unit ? readTypedValue(metric, typed, unit) : undefined;
     return !unit || unit === fieldUnit(field) || n === undefined ? typed : cellText(metric, cellToSI(metric, n, unit), fieldUnit(field));
   };
 
@@ -287,7 +288,7 @@ export function BloodTestTimeline({
       if (!typed || (column !== null && !onScreen(column, metric))) return [];
       const unit = typedUnit(column, metric, field);
       const blocked = !!unreadable(column, metric, field, typed) || ((column ?? draft.date) === draft.date && clashes(metric));
-      return [{ column, date: column ?? draft.date, metric, unit: unit ?? fieldUnit(field), si: blocked ? null : cellToSI(metric, parseLocalisedNumber(typed)!, unit!) }];
+      return [{ column, date: column ?? draft.date, metric, unit: unit ?? fieldUnit(field), si: blocked ? null : cellToSI(metric, readTypedValue(metric, typed, unit!)!, unit!) }];
     });
   const cells = [...Object.entries(backfills).flatMap(([date, typed]) => cellsOf(date, typed)), ...cellsOf(null, draft.values)];
   const ready = cells.filter(c => c.si !== null);
@@ -906,7 +907,7 @@ export function ValueCell({
     // An emptied editor is a change of mind: it closes and writes nothing.
     if (typed.trim() === '') { cancel(); return; }
     if (unusable(typed)) return;
-    const parsed = parseLocalisedNumber(typed)!;
+    const parsed = (core ? readTypedValue(core.metric, typed, core.display) : parseLocalisedNumber(typed))!;
     const newValue = core ? cellToSI(core.metric, parsed, core.display) : parsed;
     if (sameAsSaved(parsed, initialDisplay, newValue, value)) { cancel(); return; }
     setSaving(true);

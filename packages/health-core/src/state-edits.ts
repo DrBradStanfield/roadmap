@@ -22,8 +22,9 @@
  */
 import { screeningFieldName } from './file-inputs';
 import { classifyMedicationChange, classifySupplementChange } from './history-change';
+import { screeningRange } from './mappings';
 import { laterStamp, stampFields } from './merge';
-import { parseLocalisedNumber } from './parseNumber';
+import { commaQuestion, parseLocalisedNumber } from './parseNumber';
 import { newId, stampUpdatedAt } from './record-edits';
 import type { FileMedication, FileReminderOptIn, FileScreenings, FileSupplement, HistoryChangeType, RoadmapFile, RoadmapProfile } from './roadmap-file';
 
@@ -126,18 +127,21 @@ export function stampProfile(file: RoadmapFile, changes: Partial<RoadmapProfile>
   return stampUpdatedAt({ ...file, profile: stampFields(file.profile, changes, now) }, now);
 }
 
-/** The screening answers stored as numbers; every other answer is text. */
-const NUMERIC_SCREENING_KEYS = new Set(['lung_pack_years', 'prostate_psa_value']);
-
 /**
- * Save one screening answer (US-06, US-10 AC6). A number answer that is blank
- * or unreadable is stored as null, which clears the field. Only this answer's
- * clock is stamped: unstamped it stays lamport 0 like an empty remote and the
- * merge can discard it, and with the whole object's stamp it would carry this
- * copy of every other answer.
+ * Save one screening answer (US-06, US-10 AC6). A number answer (one with a
+ * `screeningRange`) that is blank is stored as null, which clears the field.
+ * One that cannot be read ("1,234" PSA, US-02 AC7), or grouped thousands
+ * outside its range ("1,234,567" pack-years), is refused: the file comes back
+ * unchanged, so a refusal never clears what is stored. A plain number saves as
+ * typed, in range or not; range errors are the form's to show. Only this answer's clock is stamped: unstamped it
+ * stays lamport 0 like an empty remote and the merge can discard it, and with
+ * the whole object's stamp it would carry this copy of every other answer.
  */
 export function setScreening(file: RoadmapFile, screeningKey: string, value: string, now: string): RoadmapFile {
-  const parsed = NUMERIC_SCREENING_KEYS.has(screeningKey) ? parseLocalisedNumber(value) ?? null : value;
+  const range = screeningRange(screeningKey);
+  const parsed = !range ? value : value.trim() === '' ? null : parseLocalisedNumber(value, range);
+  const groupedOut = typeof parsed === 'number' && commaQuestion(value) !== null && (parsed < range!.min || parsed > range!.max);
+  if (parsed === undefined || groupedOut) return file;
   const answer = { [screeningFieldName(screeningKey)]: parsed } as Partial<FileScreenings>;
   return stampUpdatedAt({ ...file, screenings: stampFields(file.screenings, answer, now) }, now);
 }
