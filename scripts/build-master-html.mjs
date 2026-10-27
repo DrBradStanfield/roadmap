@@ -16,7 +16,8 @@
 // `cta-roadmap` or `cta-pf` (claude_business docs/blog-callout-cards.md; any
 // attribute order or quoting). Each is placed at the end of the master section
 // whose heading path (parent headings, the heading, its level) matches the one
-// it sat under in the live body. Edu carries all three; commerce carries
+// it sat under in the live body (tags read quote-aware, so a quoted ">" cannot
+// hide one). Edu carries all three; commerce carries
 // `cta-pf` and drops the other two, which its theme renders as nothing. The
 // build refuses to write when a marker cannot be placed, when the path matches
 // no master heading or more than one, or when a marker sits where it cannot be
@@ -32,7 +33,12 @@
 // --callouts <json>, the card text Brad approved, as a list of
 // { handle, heading: [parent heading..., heading], text, linkText, product }.
 // A commerce build whose live body has callouts fails without that file, or
-// when it approves fewer cards for the article than the live body has.
+// when it approves fewer cards for the article than the live body has. Live
+// cards are counted on the visible text, so markup inside the eyebrow cannot
+// hide one.
+//
+// Commerce also drops Brad's personal voice and the master's own product text
+// (Brad 2026-10-27; see stripForCommerce). Edu is unchanged.
 //
 // References are renumbered: the master's list replaces the old one, so an old
 // #ref-n bookmark can now point at a different source.
@@ -51,6 +57,7 @@ const COMMERCE_PRODUCTS = { microvitamin: 'microvitamin', 'microvitamin-powder':
 
 const MARKERS = { 'roadmap-embed': ['edu'], 'cta-roadmap': ['edu'], 'cta-pf': ['edu', 'commerce'] };
 const CALLOUT_EYEBROW = 'From the MicroVitamin range';
+const CALLOUT_TEXT = /from\s*the\s*microvitamin\s*range/gi;
 
 /** Split a master into its frontmatter fields and its body. */
 export function splitMaster(md) {
@@ -195,15 +202,63 @@ export function renderBlocks(body, opts) {
   return blocks;
 }
 
-const decode = (s) => s.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+const ENTITIES = { nbsp: ' ', amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
+const decode = (s) => s.replace(/&(?:#(\d+)|#x([0-9a-f]+)|([a-z]+));/gi, (m, dec, hex, name) => {
+  if (dec || hex) { const c = Number.parseInt(dec ?? hex, dec ? 10 : 16); return c === 160 ? ' ' : String.fromCodePoint(c); }
+  return ENTITIES[name.toLowerCase()] ?? m;
+});
 
-/** An element's class tokens, whatever the attribute order or quoting. */
-const classTokens = (attrs) => {
-  const m = attrs.match(/(?:^|\s)class\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/i);
-  return m ? (m[1] ?? m[2] ?? m[3]).split(/\s+/).filter(Boolean) : [];
+/**
+ * The live body's tags in order, read the way a browser reads them: a quoted
+ * attribute value may hold ">" or "class=", so a regex up to the first ">"
+ * could hide a marker (Codex R1). Comments are skipped; the first copy of a
+ * repeated attribute wins.
+ */
+export function tokenizeTags(html) {
+  const tags = [];
+  for (let i = html.indexOf('<'); i !== -1; i = html.indexOf('<', i)) {
+    if (html.startsWith('<!--', i)) { const e = html.indexOf('-->', i + 4); i = e === -1 ? html.length : e + 3; continue; }
+    const m = /^<(\/?)([a-z][a-z0-9-]*)/i.exec(html.slice(i, i + 40));
+    if (!m) { i++; continue; }
+    const attrs = {};
+    let j = i + m[0].length;
+    while (j < html.length && html[j] !== '>') {
+      if (/[\s/]/.test(html[j])) { j++; continue; }
+      const name = /^[^\s"'>/=]+|^["'=]/.exec(html.slice(j))[0];
+      j += name.length;
+      while (/\s/.test(html[j] ?? '')) j++;
+      let value = '';
+      if (html[j] === '=') {
+        j++;
+        while (/\s/.test(html[j] ?? '')) j++;
+        const q = html[j];
+        if (q === '"' || q === "'") {
+          const e = html.indexOf(q, j + 1);
+          value = html.slice(j + 1, e === -1 ? html.length : e);
+          j = e === -1 ? html.length : e + 1;
+        } else {
+          value = /^[^\s>]*/.exec(html.slice(j))[0];
+          j += value.length;
+        }
+      }
+      const key = name.toLowerCase();
+      if (!Object.hasOwn(attrs, key)) attrs[key] = decode(value);
+    }
+    tags.push({ close: !!m[1], name: m[2].toLowerCase(), attrs, start: i, end: Math.min(j + 1, html.length) });
+    i = j + 1;
+  }
+  return tags;
+}
+
+/** Visible text: tags removed (quote-aware), entities decoded. */
+const textOf = (html) => {
+  let text = '';
+  let at = 0;
+  for (const t of tokenizeTags(html)) { text += html.slice(at, t.start); at = t.end; }
+  return decode(text + html.slice(at));
 };
-const markersIn = (attrs) => classTokens(attrs).filter((t) => Object.hasOwn(MARKERS, t));
-const TAG = /<[a-z][a-z0-9-]*\b([^>]*)>/gi;
+
+const markersIn = (attrs) => (attrs.class ?? '').split(/\s+/).filter((t) => Object.hasOwn(MARKERS, t));
 
 /** Theme markers in the live body, each with the heading path it sat under: carried, or dropped for this store. */
 export function extractCarried(liveHtml, store) {
@@ -211,16 +266,25 @@ export function extractCarried(liveHtml, store) {
   const dropped = [];
   const stack = [];
   let path = null;
-  for (const m of liveHtml.matchAll(new RegExp(`<h([1-6])\\b[^>]*>([\\s\\S]*?)<\\/h\\1\\s*>|${TAG.source}`, 'gi'))) {
-    if (m[1]) {
-      path = pushPath(stack, { key: headingKey(m[2]), level: Number(m[1]), text: decode(m[2].replace(/<[^>]+>/g, '')).trim() });
+  let heading = null;
+  let inHeading = 0;
+  for (const t of tokenizeTags(liveHtml)) {
+    const level = /^h([1-6])$/.exec(t.name)?.[1];
+    if (level && !t.close && !heading) { heading = { level: Number(level), from: t.end }; continue; }
+    if (level && t.close && heading && Number(level) === heading.level) {
+      const text = textOf(liveHtml.slice(heading.from, t.start)).trim();
+      path = pushPath(stack, { key: headingKey(text), level: heading.level, text });
+      heading = null;
       continue;
     }
-    for (const kind of markersIn(m[3])) (MARKERS[kind].includes(store) ? carried : dropped).push({ kind, path, html: `<div class="${kind}"></div>` });
+    if (t.close) continue;
+    for (const kind of markersIn(t.attrs)) {
+      if (heading) inHeading++;
+      else (MARKERS[kind].includes(store) ? carried : dropped).push({ kind, path, html: `<div class="${kind}"></div>` });
+    }
   }
-  const total = [...liveHtml.matchAll(TAG)].reduce((n, m) => n + markersIn(m[1]).length, 0);
-  if (total !== carried.length + dropped.length) {
-    throw new Error(`the live body has ${total} theme markers but only ${carried.length + dropped.length} outside a heading, where they can be placed`);
+  if (inHeading) {
+    throw new Error(`the live body has ${carried.length + dropped.length + inHeading} theme markers but only ${carried.length + dropped.length} outside a heading, where they can be placed`);
   }
   return { carried, dropped };
 }
@@ -293,14 +357,61 @@ const toc = (blocks) => {
 /** The article handles a master's callouts may name: its drstanfield.com one and its microvitamin.com one. */
 const handlesOf = (meta) => [meta.url, meta.commerceUrl].filter(Boolean).map((u) => u.replace(/\/+$/, '').split('/').pop());
 
+// Commerce drops Brad's personal voice and the master's own product promotion
+// (Brad 2026-10-27): the approved card does that job. A section goes, heading
+// and subsections, when its heading is the current-view, evidence-position or
+// videos section, or names a product. A paragraph or list item linking a
+// drstanfield.com product page loses everything from the sentence holding that
+// link to its end, and goes whole when nothing comes before it.
+const COMMERCE_DROP_HEADING = /^(?:current view\b|current evidence position\b|brad['\u2019]s videos on this topic$|product (?:mention|note)\b)|\bmicrovitamin\b|\bsleep by dr brad\b|\bdr brad stanfield['\u2019]s products?\b/i;
+const PRODUCT_LINK = /\[[^\]]*\]\(https?:\/\/(?:www\.)?drstanfield\.com\/products\/[a-z0-9-]+\/?\)/i;
+const SENTENCE_END = /[.!?](?:\*\*?|\))?\s+/g;
+
+/** The master body without the sections and product text commerce drops, and a list of what went. */
+export function stripForCommerce(body) {
+  const kept = [];
+  const stripped = [];
+  const stack = [];
+  let skip = 0;
+  for (const line of body.split('\n')) {
+    const h = line.match(/^(#{1,6})\s+(.*)$/);
+    if (h) {
+      const level = Math.max(2, h[1].length);
+      const text = h[2].trim();
+      if (skip && level > skip) { stripped[stripped.length - 1].text.push(line); continue; }
+      skip = 0;
+      const path = pushPath(stack, { level, text });
+      if (COMMERCE_DROP_HEADING.test(text.replace(/^\s*\d+(?:\.\d+)*\.?\s+/, ''))) {
+        skip = level;
+        stripped.push({ kind: 'section', heading: path.map((x) => x.text), text: [] });
+        continue;
+      }
+      kept.push(line);
+      continue;
+    }
+    if (skip) { if (line.trim()) stripped[stripped.length - 1].text.push(line); continue; }
+    const link = !line.startsWith('|') && line.match(PRODUCT_LINK);
+    if (!link) { kept.push(line); continue; }
+    let cut = 0;
+    for (const m of line.slice(0, link.index).matchAll(SENTENCE_END)) cut = m.index + m[0].length;
+    const rest = line.slice(0, cut).trimEnd();
+    const whole = !/\S/.test(rest.replace(/^\s*(?:[-*]|\d+\.)\s*/, ''));
+    stripped.push({ kind: whole ? 'paragraph' : 'sentences', heading: stack.map((x) => x.text), text: [line.slice(whole ? 0 : cut)] });
+    if (!whole) kept.push(rest);
+  }
+  return { body: kept.join('\n'), stripped: stripped.map((x) => ({ ...x, text: x.text.join('\n') })) };
+}
+
 export function buildMasterHtml(md, { store, liveHtml, callouts }) {
   if (store !== 'edu' && store !== 'commerce') throw new Error('--store edu|commerce is required');
   if (typeof liveHtml !== 'string') throw new Error('--live <current body> is required: every theme marker in it must be carried');
-  const { meta, body } = splitMaster(md);
+  const { meta, body: master } = splitMaster(md);
+  const { body, stripped } = store === 'commerce' ? stripForCommerce(master) : { body: master, stripped: [] };
   const blocks = renderBlocks(body, { store });
   const { carried, dropped } = extractCarried(liveHtml, store);
   if (store === 'commerce') {
-    const live = liveHtml.split(CALLOUT_EYEBROW).length - 1;
+    // Counted on the visible text, so markup or an entity inside the eyebrow cannot hide a card (Codex R2).
+    const live = (textOf(liveHtml).match(CALLOUT_TEXT) ?? []).length;
     const handles = handlesOf(meta);
     if (live && !callouts) throw new Error(`the live body has ${live} product callout(s), whose old text is not carried: pass --callouts <json> with the card text Brad approved`);
     const approved = (callouts ?? []).filter((c) => handles.includes(c.handle));
@@ -313,7 +424,7 @@ export function buildMasterHtml(md, { store, liveHtml, callouts }) {
     throw new Error('--callouts is for commerce builds only');
   }
   const { html, unplaced, fallbacks } = placeCarried(blocks, carried);
-  return { meta, html: `${toc(blocks)}${html}\n`, carried, dropped, unplaced, fallbacks };
+  return { meta, html: `${toc(blocks)}${html}\n`, carried, dropped, unplaced, fallbacks, stripped };
 }
 
 function main(argv) {
@@ -338,7 +449,8 @@ function main(argv) {
     console.error(`ERROR: ${e.message}`);
     process.exit(1);
   }
-  const { meta, html, carried, dropped, unplaced, fallbacks } = result;
+  const { meta, html, carried, dropped, unplaced, fallbacks, stripped } = result;
+  for (const x of stripped) console.error(`stripped ${x.kind} under "${x.heading.join(' > ')}": ${x.text.slice(0, 80).replace(/\n/g, ' ')}`);
   for (const c of carried) console.error(`carried ${c.kind} after "${pathText(c.path)}"`);
   const handle = basename(mdPath, '.md');
   for (const c of fallbacks) console.error(`FALLBACK ${handle} ${c.kind}: live "${pathText(c.path)}" -> ${c.placed}`);

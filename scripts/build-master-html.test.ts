@@ -157,10 +157,76 @@ describe('build-master-html (US-50 AC9)', () => {
   });
 
   it('US-50 AC9: commerce points drstanfield.com product links at the on-store product; edu keeps them', () => {
-    expect(build(MASTER, { store: 'commerce' }).html).toContain('<a href="/products/microvitamin">MicroVitamin</a>');
-    expect(build(MASTER, { store: 'edu' }).html).toContain('<a href="https://drstanfield.com/products/microvitamin">MicroVitamin</a>');
-    const powder = MASTER.replace('products/microvitamin)', 'products/microvitamin-powder)');
+    // A table cell is the one place a product link survives the commerce product drop.
+    const md = MASTER.replace('| Citrate | Higher |', '| Citrate | Higher, see [MicroVitamin](https://drstanfield.com/products/microvitamin) |');
+    expect(build(md, { store: 'commerce' }).html).toContain('<a href="/products/microvitamin">MicroVitamin</a>');
+    expect(build(md, { store: 'edu' }).html).toContain('<a href="https://drstanfield.com/products/microvitamin">MicroVitamin</a>');
+    const powder = md.replaceAll('products/microvitamin)', 'products/microvitamin-powder)');
     expect(build(powder, { store: 'commerce' }).html).toContain('href="/products/microvitamin-plus"');
+  });
+
+  it("US-50 AC9: commerce drops Brad's current view, evidence position and videos sections; edu keeps them", () => {
+    const md = MASTER.replace('## 1. Overview', "## Key safety points\n\n- Check with your doctor.\n\n## Brad's videos on this topic\n\n- 1 Oct 2026, [A video](https://drstanfield.com/blogs/articles/a-video): Brad's take.\n\n### Older videos\n\n- older\n\n## 1. Overview");
+    const c = build(md, { store: 'commerce' });
+    expect(c.html).not.toMatch(/Current view|Brad favours|videos on this topic|A video|Older videos|older/);
+    expect(c.html).toContain('<li>Check with your doctor.</li>');
+    expect(c.html).toMatch(/^<h2>Table of Contents<\/h2>\n<ul>\n<li><a href="#Key-safety-points">/);
+    expect(c.stripped.map((x: { heading: string[] }) => x.heading.join(' > '))).toEqual(['Current view (reviewed 20 October 2026)', "Brad's videos on this topic"]);
+    const position = build(md.replace('## Current view (reviewed 20 October 2026)', '## Current evidence position'), { store: 'commerce' });
+    expect(position.html).not.toContain('Brad favours');
+    const edu = build(md, { store: 'edu' });
+    expect(edu.html).toContain('Brad favours');
+    expect(edu.html).toContain('Older videos');
+    expect(edu.stripped).toEqual([]);
+  });
+
+  it("US-50 AC9: commerce drops the master's own product paragraphs and product sections; the approved card does that job", () => {
+    const P = '[MicroVitamin](https://drstanfield.com/products/microvitamin)';
+    const md = MASTER.replace('Magnesium matters, p < 0.05 [1].', [
+      `Dr Brad Stanfield's ${P} includes 126 mg of magnesium. It is taken daily.`,
+      '',
+      `**Absorption differs by form.** One trial found higher uptake [1]. Dr Brad Stanfield's ${P} uses taurate. That is all.`,
+      '',
+      'Magnesium matters, p < 0.05 [1].',
+    ].join('\n')).replace('- second point', `- second point [2]. ${P} has it too.`)
+      .replace('### Sleep', `### Product Note: MicroVitamin\n\nIt has magnesium.\n\n#### Detail\n\nMore.\n\n### Magnesium in Dr Brad Stanfield's Products\n\nNot in Sleep.\n\n### Sleep`);
+    const c = build(md, { store: 'commerce' });
+    expect(c.html).not.toMatch(/126 mg|taken daily|uses taurate|That is all|has it too|Product Note|It has magnesium|Detail|More\.|Not in Sleep|products\//);
+    // Sentences before the product link stay, in a paragraph and in a list item.
+    expect(c.html).toContain('<p><strong>Absorption differs by form.</strong> One trial found higher uptake <a href="#ref-1">[1]</a>.</p>');
+    expect(c.html).toContain('<li>second point <a href="#ref-2">[2]</a>.</li>');
+    expect(c.html).toContain('<p>Magnesium matters, p &lt; 0.05 <a href="#ref-1">[1]</a>.</p>');
+    expect(c.html).toContain('<h3>Sleep</h3>');
+    expect(c.stripped.map((x: { kind: string }) => x.kind)).toEqual(['section', 'paragraph', 'sentences', 'sentences', 'section', 'section']);
+    expect(c.stripped[4].heading).toEqual(['2. Evidence', 'Product Note: MicroVitamin']);
+    const edu = build(md, { store: 'edu' });
+    expect(edu.html).toContain('includes 126 mg of magnesium');
+    expect(edu.html).toContain('<h3>Product Note: MicroVitamin</h3>');
+  });
+
+  it('US-50 AC9: a quoted attribute holding ">" or "class=" neither hides nor fakes a marker (Codex R1)', () => {
+    const live = [
+      '<h2>Overview</h2>',
+      '<div title="a > b" class="cta-pf"></div>',
+      `<p data-note='x>y class=cta-roadmap'>text</p>`,
+      '<!-- <div class="cta-roadmap"></div> -->',
+      '<h2 title="Evidence > Sleep">Evidence</h2><h3>Sleep</h3>',
+      '<span title=">" class=roadmap-embed></span>',
+    ].join('\n');
+    const r = buildMasterHtml(MASTER, { store: 'edu', liveHtml: live });
+    expect(r.carried.map((c: { kind: string; path: { text: string }[] }) => `${c.kind}@${c.path.map((h) => h.text).join('>')}`)).toEqual(['cta-pf@Overview', 'roadmap-embed@Evidence>Sleep']);
+    expect(r.unplaced).toEqual([]);
+    // A marker hidden behind a quoted ">" inside a heading still refuses the build.
+    expect(() => buildMasterHtml(MASTER, { store: 'edu', liveHtml: '<h2>Overview <span title="a>b" class="cta-pf"></span></h2>' })).toThrow(/1 theme markers but only 0/);
+  });
+
+  it('US-50 AC9: a live card is counted on its visible text, so markup or entities in the eyebrow still need approved text (Codex R2)', () => {
+    for (const eyebrow of ['From the MicroVitamin <strong>range</strong>', 'From the MicroVitamin&nbsp;range', 'From&#160;the <em>Micro</em>Vitamin&#x20;range', 'From the MicroVitamin\n  range']) {
+      const live = `<h2>Evidence</h2><h3>Blood Pressure</h3><div><p>${eyebrow}</p><p>Old claim.</p></div>`;
+      expect(() => buildMasterHtml(MASTER, { store: 'commerce', liveHtml: live }), eyebrow).toThrow(/1 product callout\(s\).*--callouts/);
+    }
+    // The phrase inside an attribute is not a card.
+    expect(buildMasterHtml(MASTER, { store: 'commerce', liveHtml: '<p title="From the MicroVitamin range">x</p>' }).unplaced).toEqual([]);
   });
 
   it('US-50 AC9: a carried block whose heading the master lacks is reported and fails the CLI', () => {
