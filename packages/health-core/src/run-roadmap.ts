@@ -292,6 +292,12 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   const payload: Record<string, unknown> = { ...base, ...overlay, ...birth };
   if (payload.birthMonth === undefined) delete payload.birthMonth;
   for (const f of unusable) delete payload[f];
+  // US-07 AC7: a stated creatinine, used or not, from after the lab eGFR's day outdates it.
+  const creatinineDay = stated.get('creatinine')?.date ?? blocked.get('creatinine');
+  if (creatinineDay !== undefined && !(creatinineDay <= String(base.labEgfrDate ?? ''))) {
+    delete payload.labEgfr;
+    delete payload.labEgfrDate;
+  }
   if (unusable.size > 0 && base.measurementHistory !== undefined) {
     const gone = new Set([...unusable].map(f => FIELD_TO_METRIC[f]));
     payload.measurementHistory = Object.fromEntries(Object.entries(history).filter(([metric]) => !gone.has(metric)));

@@ -689,7 +689,7 @@ export const STAT_CARD_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'egfr': {
-    reason: 'Estimated glomerular filtration rate (eGFR) measures kidney function using the CKD-EPI 2021 equation (race-free), based on creatinine, age, and sex. CKD staging: ≥70 Normal, 60-69 Low Normal, 45-59 Mildly Decreased (Stage 3a), 30-44 Moderately Decreased (Stage 3b), 15-29 Severely Decreased (Stage 4), <15 Kidney Failure (Stage 5). An eGFR below 60 sustained for 3+ months is consistent with chronic kidney disease.',
+    reason: 'Estimated glomerular filtration rate (eGFR) measures kidney function. The plan uses the eGFR printed on your lab report when it is from your latest test; otherwise it calculates one with the CKD-EPI 2021 equation (race-free) from your creatinine, age, and sex. CKD staging: ≥70 Normal, 60-69 Low Normal, 45-59 Mildly Decreased (Stage 3a), 30-44 Moderately Decreased (Stage 3b), 15-29 Severely Decreased (Stage 4), <15 Kidney Failure (Stage 5). An eGFR below 60 sustained for 3+ months is consistent with chronic kidney disease.',
     guidelines: ['KDIGO'],
     references: REFS_EGFR,
   },

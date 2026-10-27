@@ -19,7 +19,7 @@ import {
   type ApiMeasurement,
 } from './mappings';
 import { latestActivePerMetric } from './measurement-history';
-import { cmpStr, localDay } from './merge';
+import { cmpStr, dayOf, localDay } from './merge';
 import { refLineFor } from './reference-hints';
 import { computeReminderSchedule, type ReminderScheduleItem } from './reminder-schedule';
 import { BASE_SCHEMA_VERSION, type FileLabValue, type RoadmapFile } from './roadmap-file';
@@ -27,7 +27,7 @@ import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } f
 import {
   UNIT_DEFS, formatDisplayValue, formatGradedValue, getDisplayLabel, type MetricType, type UnitSystem,
 } from './units';
-import { getValidationErrors, validateHealthInputs } from './validation';
+import { getValidationErrors, sanitizeInputs, validateHealthInputs } from './validation';
 
 /** This project, named once. Every URL that points at the code derives from it. */
 export const REPO_SLUG = 'DrBradStanfield/roadmap';
@@ -113,16 +113,45 @@ export interface PlanInputs {
  * display-unit overrides are deliberately absent — those live in the browser's
  * localStorage, never in the record, so the CLI renders in `profile.unitSystem`.
  */
-export function derivePlanInputs(file: RoadmapFile): PlanInputs {
+export function derivePlanInputs(file: RoadmapFile, now = new Date()): PlanInputs {
   const active = file.measurements.filter((m) => m.status === 'active') as ApiMeasurement[];
   const currentRows = latestActivePerMetric(active);
+  const creatinine = currentRows.find((r) => r.metricType === 'creatinine');
   return {
-    inputs: measurementsToInputs(currentRows, fileProfileToApi(file.profile)),
+    inputs: withLabEgfr(
+      measurementsToInputs(currentRows, fileProfileToApi(file.profile)),
+      creatinine ? dayOf(creatinine.recordedAt) : null, file.labValues, localDay(now),
+    ),
     unitSystem: file.profile.unitSystem ?? 'si',
     medications: medicationsToInputs(file.medications),
     screenings: screeningsToInputs(fileScreeningRows(file.screenings)),
     currentRows,
   };
+}
+
+/** A lab row as `withLabEgfr` reads it: the file's rows and the widget's both fit. */
+type LabRowLike = Pick<FileLabValue, 'id' | 'metricName' | 'value' | 'unit' | 'recordedAt'> & { createdAt?: string; status?: string };
+
+/**
+ * US-07 AC7 (Brad 2026-10-27): the inputs with the lab's printed eGFR set when
+ * it is the plan's eGFR, and cleared when it is not. The candidates are the
+ * eGFR calculated from the creatinine the inputs hold, dated `creatinineDay`,
+ * and the latest active lab `egfr` row (the creatinine eGFR: never cystatin C
+ * or combined). The newer by day wins; on the same day the lab's does, since
+ * ours may come from a misread creatinine. A creatinine with no date (typed,
+ * not yet saved: `null`) is `today`'s, the day it would be saved with.
+ */
+export function withLabEgfr<T extends Partial<HealthInputs>>(
+  inputs: T, creatinineDay: string | null, labValues: readonly LabRowLike[], today: string,
+): T {
+  const { labEgfr: _value, labEgfrDate: _day, ...rest } = inputs;
+  const rows = labValues.filter((l) => labSlotKey(l.metricName) === 'egfr'
+    && l.unit === resolveLabCatalogEntry(l.metricName)?.unit && 'labEgfr' in sanitizeInputs({ labEgfr: l.value }));
+  const lab = latestActivePerMetric(rows.map((l) => ({ ...l, metricType: 'egfr' })))[0];
+  if (!lab) return rest as T;
+  const labDay = dayOf(lab.recordedAt);
+  const crDay = inputs.creatinine === undefined || inputs.creatinine === null ? null : creatinineDay ?? today;
+  return crDay !== null && crDay > labDay ? rest as T : { ...rest, labEgfr: lab.value, labEgfrDate: labDay } as T;
 }
 
 export interface PlanLab {
@@ -172,7 +201,7 @@ export interface Plan extends PlanInputs {
  * target reads in the unit the person chose for that test; absent, `unitSystem` throughout.
  */
 export function computePlan(file: RoadmapFile, now = new Date(), unitOverrides?: Partial<Record<MetricType, UnitSystem>>): Plan {
-  const derived = derivePlanInputs(file);
+  const derived = derivePlanInputs(file, now);
   let inputs = derived.inputs;
   let excluded: string[] = [];
 

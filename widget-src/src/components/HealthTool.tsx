@@ -24,6 +24,8 @@ import {
   FIELD_METRIC_MAP,
   METRIC_TO_FIELD,
   localDay,
+  dayOf,
+  withLabEgfr,
   toCanonicalValue,
   VITALS_INPUT_FIELDS,
   ESCALATION_KEY_OF,
@@ -442,6 +444,15 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     [inputs, lent, previousMeasurements],
   );
 
+  // What the plan and the chat read: the inputs with the lab's printed eGFR
+  // when it is newer than the creatinine or from its day (US-07 AC7). A
+  // creatinine still being typed has no row yet, so it counts as today's.
+  const planInputs = useMemo(() => {
+    const saved = { ...inputs, ...lent }.creatinine === undefined
+      ? previousMeasurements.find((m) => m.metricType === 'creatinine') : undefined;
+    return withLabEgfr(effectiveInputs, saved ? dayOf(saved.recordedAt) : null, labValueHistory, localDay(new Date()));
+  }, [inputs, lent, previousMeasurements, effectiveInputs, labValueHistory]);
+
   // Progressive disclosure: which stage of the form to show. The chatbot
   // embed reads the same rule.
   const formStage = useMemo(
@@ -703,13 +714,13 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
 
   // Calculate results using effective inputs (form + fallback to previous)
   const { results, isValid, validationErrors, planBasis } = useMemo(() => {
-    if (!effectiveInputs.heightCm || !effectiveInputs.sex) {
+    if (!planInputs.heightCm || !planInputs.sex) {
       return { results: null, isValid: false, validationErrors: null, planBasis: null };
     }
 
-    const validation = validateHealthInputs(effectiveInputs);
+    const validation = validateHealthInputs(planInputs);
 
-    let inputsForCalc = effectiveInputs;
+    let inputsForCalc = planInputs;
     let errors: Record<string, string> | null = null;
 
     if (!validation.success && validation.errors) {
@@ -721,7 +732,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       if (invalidFields.has('heightCm') || invalidFields.has('sex')) {
         return { results: null, isValid: false, validationErrors: errors, planBasis: null };
       }
-      const sanitized = { ...effectiveInputs };
+      const sanitized = { ...planInputs };
       for (const field of invalidFields) {
         (sanitized as Record<string, unknown>)[field] = undefined;
       }
@@ -748,7 +759,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       lipidMarker: medicines ? lipidMarkerFor(calcInputs, healthResults) : null,
     };
     return { results: healthResults, isValid: true, validationErrors: errors, planBasis };
-  }, [effectiveInputs, unitSystem, medications, screenings, metricUnitOverrides]);
+  }, [planInputs, unitSystem, medications, screenings, metricUnitOverrides]);
 
   useEffect(() => {
     setErrors(validationErrors ?? {});
@@ -1156,7 +1167,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // bubble and the chatbot embed: the plan's inputs and the dated history.
   const chatContextRef = useRef<() => ChatContextPayload | null>(() => null);
   chatContextRef.current = () => chatContextOf(
-    effectiveInputs, unitSystem, medications, screenings, [...bloodTestHistory, ...vitalsHistory],
+    planInputs, unitSystem, medications, screenings, [...bloodTestHistory, ...vitalsHistory],
   );
   const readChatContext = useCallback(() => chatContextRef.current(), []);
 

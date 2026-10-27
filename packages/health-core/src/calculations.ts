@@ -174,7 +174,7 @@ export function getProteinRate(eGFR?: number): number {
  * The inputs whose absence silently removes plan content: the four the whole
  * plan is computed from (sex, birth year, height, weight) and the five markers
  * that each gate a group of suggestions. Creatinine is one of them: without it
- * there is no eGFR, and no CKD adjustment to the protein target. Naming them is
+ * (or a lab eGFR) there is no eGFR, and no CKD adjustment to the protein target. Naming them is
  * the difference between a thin plan and a plan the assistant knows is thin
  * (US-32; the chat reads the same list, US-15 AC31).
  */
@@ -182,7 +182,9 @@ const GATING_INPUTS = ['sex', 'birthYear', 'heightCm', 'weightKg', 'waistCm', 's
 
 /** Those of them the inputs do not hold. Empty when nothing is missing. */
 export function missingPlanInputs(inputs: Partial<HealthInputs>): Array<(typeof GATING_INPUTS)[number]> {
-  return GATING_INPUTS.filter((field) => inputs[field] === undefined || inputs[field] === null);
+  // A lab eGFR stands in for creatinine (US-07 AC7).
+  const present = (v: unknown) => v !== undefined && v !== null;
+  return GATING_INPUTS.filter((field) => !present(inputs[field]) && !(field === 'creatinine' && present(inputs.labEgfr)));
 }
 
 /**
@@ -248,8 +250,11 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
   }
   if (knownMinorOf(inputs, now)) results.knownMinor = true;
 
-  // Calculate eGFR if creatinine + age + sex are available
-  if (inputs.creatinine !== undefined && results.age !== undefined) {
+  // US-07 AC7: the lab's printed eGFR when withLabEgfr chose it; else from creatinine + age + sex
+  if (inputs.labEgfr !== undefined) {
+    results.eGFR = Math.round(inputs.labEgfr);
+    results.eGFRFromLab = true;
+  } else if (inputs.creatinine !== undefined && results.age !== undefined) {
     results.eGFR = Math.round(calculateEGFR(inputs.creatinine, results.age, inputs.sex));
   }
 
