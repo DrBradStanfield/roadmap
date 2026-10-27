@@ -217,6 +217,15 @@ describe('readNumber (AC5, adversary R2)', () => {
     expect(readNumber('۸۰')).toBe(80);
     expect(readNumber('٣.٤')).toBe(3.4);
   });
+
+  // US-02 AC7: the phone's sheets have no range, so "1,234" (1234 or 1.234)
+  // reads as neither, and the sheet asks. Grouped thousands read whole.
+  it('reads "1,234" as neither 1234 nor 1.234, and "1,234,567" as thousands (US-02 AC7)', () => {
+    expect(readNumber('1,234')).toBeUndefined();
+    expect(readNumber('١,٢٣٤')).toBeUndefined();
+    expect(readNumber('0,123')).toBe(0.123);
+    expect(readNumber('1,234,567')).toBe(1234567);
+  });
 });
 
 describe('readRecord (AC4, adversary R4)', () => {

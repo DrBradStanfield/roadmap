@@ -55,7 +55,7 @@ struct ValueEntrySheet: View {
                         .disabled(saving)
                     }
                 } footer: {
-                    if let message {
+                    if let message = message ?? TypedNumber.question(text) {
                         Text(message).foregroundStyle(.red)
                     } else if let current {
                         Text("Now \(current) \(unit)")

@@ -17,6 +17,10 @@ final class NumberReadingTests: XCTestCase {
         "\u{0085}9", "\u{180E}1", "\u{200B}2",
         // Arabic-Indic and extended digits and the Arabic decimal mark; other scripts' digits are not read.
         "١٢٫٥", "۱۲٫۵", "١,٥", "٣", "５", "१२",
+        // US-02 AC7: one comma before exactly three digits reads two ways, so neither;
+        // two or more comma groups are thousands; a leading 0 or four digits is a decimal.
+        "1,234", "1,050", "-1,234", " 12,500 ", "١,٢٣٤", "0,123", "1234,567", "1,2345",
+        "1,234,567", "12,345,678", "1,23,456", "1234,567,890",
     ]
 
     func testSwiftReadsEveryTextAsTheEngineDoes() throws {
@@ -35,5 +39,15 @@ final class NumberReadingTests: XCTestCase {
         XCTAssertNil(TypedNumber.read("1e3"), "Number() would read it; a plain decimal rule does not")
         XCTAssertNil(TypedNumber.read(String(repeating: "9", count: 400)), "too large to be finite")
         XCTAssertEqual(TypedNumber.read("-0")?.sign, .plus, "the engine answers JSON, where -0 is 0")
+    }
+
+    /// US-02 AC7: "1,234" is 1234 or 1.234; the sheet has no range, so it asks.
+    func testAnAmbiguousCommaIsAskedAbout() {
+        XCTAssertNil(TypedNumber.read("1,234"))
+        XCTAssertEqual(TypedNumber.question("1,234"), "Did you mean 1234 or 1.234?")
+        XCTAssertEqual(TypedNumber.question("1,050"), "Did you mean 1050 or 1.05?")
+        XCTAssertNil(TypedNumber.question("1,2"))
+        XCTAssertNil(TypedNumber.question("1234"))
+        XCTAssertEqual(TypedNumber.read("1,234,567"), 1_234_567)
     }
 }

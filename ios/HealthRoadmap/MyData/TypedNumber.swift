@@ -50,21 +50,19 @@ extension TypedNumber {
     /// A typed number by the web's rule: the engine's `readNumber` (ios/engine/my-data.ts)
     /// over health-core's `parseLocalisedNumber`. Arabic-Indic digits and decimal mark
     /// become ASCII, JavaScript's `trim` runs, a comma is a decimal mark, and only a plain
-    /// decimal reads; anything else is nil. Pure Swift, so typing never waits on the engine
-    /// (US-25 AC21); NumberReadingTests holds it to the engine's own on the edge cases.
+    /// decimal reads; anything else is nil. One comma before exactly three digits ("1,234")
+    /// is 1234 or 1.234, and a sheet has no range to choose by, so it is nil and the sheet
+    /// asks (`question`); two or more comma groups are thousands (US-02 AC7). Pure Swift, so
+    /// typing never waits on the engine (US-25 AC21); NumberReadingTests holds it to the
+    /// engine's own on the edge cases.
     static func read(_ text: String) -> Double? {
-        var scalars = text.unicodeScalars.map { scalar -> Unicode.Scalar in
-            switch scalar.value {
-            case 0x0660...0x0669: Unicode.Scalar(scalar.value - 0x0660 + 0x30)!
-            case 0x06F0...0x06F9: Unicode.Scalar(scalar.value - 0x06F0 + 0x30)!
-            case 0x066B, 0x2C: "."
-            default: scalar
-            }
-        }[...]
-        while let first = scalars.first, isJavaScriptSpace(first) { scalars.removeFirst() }
-        while let last = scalars.last, isJavaScriptSpace(last) { scalars.removeLast() }
+        let typed = ascii(text)
+        if typed.wholeMatch(of: ambiguousComma) != nil { return nil }
+        let plain = typed.wholeMatch(of: groupedThousands) != nil
+            ? typed.replacingOccurrences(of: ",", with: "")
+            : typed.replacingOccurrences(of: ",", with: ".")
         // ^[+-]?(\d+(\.\d*)?|\.\d+)$, the ASCII digits only.
-        var rest = scalars
+        var rest = plain.unicodeScalars[...]
         if let sign = rest.first, sign == "+" || sign == "-" { rest.removeFirst() }
         let whole = rest.prefix { ("0"..."9").contains($0) }.count
         rest.removeFirst(whole)
@@ -75,9 +73,41 @@ extension TypedNumber {
             rest.removeFirst(decimals)
         }
         guard rest.isEmpty, whole + decimals > 0,
-              let number = Double(String(String.UnicodeScalarView(scalars))), number.isFinite else { return nil }
+              let number = Double(plain), number.isFinite else { return nil }
         // The engine answers in JSON, which writes -0 as 0.
         return number == 0 ? 0 : number
+    }
+
+    /// What to ask about a number `read` refused for its comma: "Did you mean 1234 or
+    /// 1.234?", as the web asks (health-core `commaQuestion`); nil otherwise.
+    static func question(_ text: String) -> String? {
+        let typed = ascii(text)
+        guard typed.wholeMatch(of: ambiguousComma) != nil else { return nil }
+        let parts = typed.split(separator: ",")
+        var decimals = String(parts[1])
+        while decimals.hasSuffix("0") { decimals.removeLast() }
+        let point = decimals.isEmpty ? String(parts[0]) : "\(parts[0]).\(decimals)"
+        return "Did you mean \(parts[0])\(parts[1]) or \(point)?"
+    }
+
+    /// 1-3 digits (no leading 0), a comma and exactly 3 digits; and two or more such groups.
+    private static var ambiguousComma: Regex<Substring> { /[+-]?[1-9][0-9]{0,2},[0-9]{3}/ }
+    private static var groupedThousands: Regex<Substring> { /[+-]?[1-9][0-9]{0,2}(?:,[0-9]{3}){2,}/ }
+
+    /// Arabic-Indic digits and the Arabic decimal mark as ASCII, then JavaScript's `trim`.
+    /// A comma is kept: `read` decides what it means.
+    private static func ascii(_ text: String) -> String {
+        var scalars = text.unicodeScalars.map { scalar -> Unicode.Scalar in
+            switch scalar.value {
+            case 0x0660...0x0669: Unicode.Scalar(scalar.value - 0x0660 + 0x30)!
+            case 0x06F0...0x06F9: Unicode.Scalar(scalar.value - 0x06F0 + 0x30)!
+            case 0x066B: "."
+            default: scalar
+            }
+        }[...]
+        while let first = scalars.first, isJavaScriptSpace(first) { scalars.removeFirst() }
+        while let last = scalars.last, isJavaScriptSpace(last) { scalars.removeLast() }
+        return String(String.UnicodeScalarView(scalars))
     }
 
     /// What JavaScript's `trim` removes: its WhiteSpace and LineTerminator.

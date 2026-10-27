@@ -54,12 +54,12 @@ import {
   STATIN_NAMES, EZETIMIBE_OPTIONS, BEMPEDOIC_ACID_OPTIONS, PCSK9I_OPTIONS,
   GLP1_NAMES, SGLT2I_NAMES, METFORMIN_OPTIONS,
 } from './types';
-import { UNIT_DEFS, type UnitSystem } from './units';
+import type { UnitSystem } from './units';
 import {
   healthInputSchema, sanitizeInputs, excludedInputFields, MEDICATION_KEYS, SCREENING_KEYS,
 } from './validation';
 import {
-  FIELD_UNITS, LONGITUDINAL_FIELDS, METRIC_TO_FIELD, medicationsToInputs, screeningsToInputs,
+  FIELD_UNITS, LONGITUDINAL_FIELDS, METRIC_TO_FIELD, medicationsToInputs, screeningRange, screeningsToInputs,
   type ApiMedication, type ApiScreening,
 } from './mappings';
 import {
@@ -291,12 +291,6 @@ function medicationRows(raw: unknown): MedicationRow[] {
   });
 }
 
-/** The numeric screenings and their ranges: pack-years as the form bounds
- *  them, PSA as its measurement does. */
-const SCREENING_RANGES: Record<string, { min: number; max: number }> = {
-  lung_pack_years: { min: 0, max: 200 },
-  prostate_psa_value: UNIT_DEFS.psa.validationRange.si,
-};
 /** Longest screening value: the longest option is 18 characters. */
 const MAX_SCREENING_VALUE = 32;
 
@@ -306,9 +300,9 @@ function screeningRows(raw: unknown): Array<Pick<ApiScreening, 'screeningKey' | 
     const { screeningKey, value } = fields(row);
     if (typeof screeningKey !== 'string' || !(SCREENING_KEYS as readonly string[]).includes(screeningKey)) return [];
     if (typeof value !== 'string' || value.length > MAX_SCREENING_VALUE) return [];
-    const range = own(SCREENING_RANGES, screeningKey) ? SCREENING_RANGES[screeningKey] : null;
+    const range = screeningRange(screeningKey);
     if (range) {
-      const n = parseLocalisedNumber(value) ?? NaN;
+      const n = parseLocalisedNumber(value, range) ?? NaN;
       if (!Number.isFinite(n) || n < range.min || n > range.max) return [];
     }
     return [{ screeningKey, value }];

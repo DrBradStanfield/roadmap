@@ -150,6 +150,19 @@ describe('stampProfile, setScreening, setReminderOptIn (US-10 AC6, US-17)', () =
     expect(Object.keys(setScreening(text, 'prostate_psa_value', '2', T2).screenings.fieldStamps ?? {}).sort()).toEqual(['colorectalMethod', 'prostatePsaValue']);
   });
 
+  // US-02 AC7: a refused number never clears what is stored. "1,234" PSA
+  // (0-10000: 1234 and 1.234 both fit) and "abc" leave the file as it was;
+  // pack-years "150,500" (0-200) can only be 150.5.
+  it('refuses an unreadable or ambiguous number answer and keeps the stored one (US-02 AC7)', () => {
+    const held = setScreening(empty(), 'prostate_psa_value', '2', T1);
+    for (const value of ['1,234', 'abc', '1,2,3']) {
+      expect(setScreening(held, 'prostate_psa_value', value, T2)).toBe(held);
+    }
+    expect(setScreening(held, 'prostate_psa_value', '4,5', T2).screenings).toMatchObject({ prostatePsaValue: 4.5 });
+    expect(setScreening(held, 'lung_pack_years', '150,500', T2).screenings).toMatchObject({ lungPackYears: 150.5 });
+    expect(setScreening(held, 'lung_pack_years', '1,234,567', T2).screenings).toMatchObject({ lungPackYears: 1234567 });
+  });
+
   it('replaces the reminders opt-in with lamport one past the last, and the file clock', () => {
     const fields = { status: 'active' as const, token: 't', email: 'a@b.c', provider: 'dropbox' as const };
     const first = setReminderOptIn(empty(), fields, T1);
