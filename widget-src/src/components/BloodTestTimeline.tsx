@@ -14,7 +14,6 @@ import {
   BLOOD_TEST_METRICS,
   METRIC_TO_FIELD,
   METRIC_LABELS,
-  parseLocalisedNumber,
   reportedToCanonical,
   UNIT_DEFS,
 } from '@roadmap/health-core';
@@ -38,6 +37,7 @@ import {
   cellToSI,
   formatLabValue,
   readTypedValue,
+  readNumericCell,
   sameAsSaved,
   validateTypedValue,
   statusOf,
@@ -896,9 +896,9 @@ export function ValueCell({
   useEffect(() => { if (saveError) say?.(saveError); }, [saveError]);
 
   // Text the editor cannot save: outside the metric's range, or no number.
-  const unusable = (text: string) => core
+  const unusable = (text: string) => text === initialDisplay ? false : core
     ? !!validateTypedValue(core.metric, text, core.display).error
-    : parseLocalisedNumber(text) === undefined;
+    : readNumericCell(text) === undefined;
 
   const submit = async () => {
     const opened = openedOn.current;
@@ -906,9 +906,9 @@ export function ValueCell({
     // The unit changed since the editor opened: the text is in the old one.
     if (shownIn.current !== openedIn.current) { cancel(); setSaveError(UNIT_CHANGED); return; }
     // An emptied editor is a change of mind: it closes and writes nothing.
-    if (typed.trim() === '') { cancel(); return; }
+    if (typed.trim() === '' || typed === initialDisplay) { cancel(); return; }
     if (unusable(typed)) return;
-    const parsed = (core ? readTypedValue(core.metric, typed, core.display) : parseLocalisedNumber(typed))!;
+    const parsed = (core ? readTypedValue(core.metric, typed, core.display) : readNumericCell(typed))!;
     const newValue = core ? cellToSI(core.metric, parsed, core.display) : parsed;
     if (sameAsSaved(parsed, initialDisplay, newValue, value)) { cancel(); return; }
     setSaving(true);
@@ -928,6 +928,7 @@ export function ValueCell({
         display={core?.display}
         grading={grading}
         value={typed}
+        validationResult={typed === initialDisplay ? null : undefined}
         onChange={v => { setSaveError(null); setTyped(v); }}
         externalError={saveError}
         wrapperClass={`bt-cell-input bt-cell-correcting${pinned ? ' bt-cell-pinned' : ''}`}

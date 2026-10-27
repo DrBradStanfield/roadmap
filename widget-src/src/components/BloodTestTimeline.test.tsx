@@ -34,6 +34,16 @@ function editor(props: Partial<Parameters<typeof ValueCell>[0]> = {}) {
 }
 
 describe('US-04 — the saved-value editor', () => {
+  it('US-02 AC4: an untouched stored negative is valid and closes without a correction', async () => {
+    const { view, input, onCorrect } = editor({ metric: undefined, display: undefined, value: -2 });
+    expect(input.value).toBe('-2');
+    expect(input.getAttribute('aria-invalid')).toBe('false');
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await wait(0);
+    expect(onCorrect).not.toHaveBeenCalled();
+    expect(view.container.querySelector('.bt-cell-correcting')).toBeNull();
+  });
+
   it('an emptied editor cancels on Enter and writes nothing', async () => {
     const { view, input, onCorrect } = editor();
     fireEvent.change(input, { target: { value: '' } });
@@ -127,6 +137,16 @@ describe('US-04 — the saved-value editor', () => {
     await wait(0);
     expect(onCorrect).not.toHaveBeenCalled();
     expect(view.getByText('Did you mean 1050 or 1.05?')).toBeTruthy();
+  });
+
+  // US-02 AC4: the free-form editor has no clinical range to catch a lost sign.
+  it.each(['+54', '-54', '1e1', '1\t2'])('does not correct a lab row from malformed text %j', async text => {
+    const { input, onCorrect } = editor({ metric: undefined, display: undefined, value: 45 });
+    fireEvent.change(input, { target: { value: text } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await wait(0);
+    expect(onCorrect).not.toHaveBeenCalled();
+    expect(input.getAttribute('aria-invalid')).toBe('true');
   });
 
   it('a lab value is corrected in the unit it is stored in, as typed', async () => {
@@ -644,6 +664,22 @@ const SAME_SLOT = 'This test already has a value on that day in another column.'
 
 describe('US-03 — the draft', () => {
   beforeEach(() => { localStorage.clear(); });
+
+  // US-02 AC4: unsupported syntax must not turn into another measurement.
+  it.each([
+    ['HbA1c', '-5'],
+    ['HbA1c', '1e1'],
+    ['Creatinine', '1\t2'],
+  ])('refuses malformed %s text %j without committing a different number', async (label, text) => {
+    const m = matrix();
+    const input = m.cell(label);
+    typeInto(input, text);
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await wait(0);
+    expect(m.onSaveBatch).not.toHaveBeenCalled();
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(input.value).toBe(text);
+  });
 
   it('is labelled as new, so it never repeats a saved column’s header', () => {
     const { header } = matrix(history([['ldl', 3.2, TODAY]]));

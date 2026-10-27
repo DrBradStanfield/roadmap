@@ -311,6 +311,36 @@ afterEach(async () => {
   vi.useRealTimers();
 });
 
+// US-02 AC4 / US-03 AC5: prove refusal at the real local record boundary.
+describe('malformed numeric drafts over the real record', () => {
+  it.each([
+    ['HbA1c', 'hba1c', '-5', '5,2 %', 5.2],
+    ['HbA1c', 'hba1c', '1e1', '5,2 %', 5.2],
+    ['Creatinine', 'creatinine', '1\t2', '1,2 mg/dL', 1.2],
+  ] as const)('never persists %s text %j as another measurement', async (label, metric, text, safe, expected) => {
+    await guest({ weight: 82 });
+    let view = render(<HealthTool />);
+    await shown(view.container, '.bt-timeline-title');
+    toggleChip(bloodMatrix(view.container), label); // SI -> conventional, as in the report
+    typeInto(draftInput(bloodMatrix(view.container), label), text);
+    typeInto(draftInput(bloodMatrix(view.container), 'LDL Cholesterol'), '3.2');
+    fireEvent.keyDown(draftInput(bloodMatrix(view.container), label), { key: 'Enter' });
+    await wait(600);
+    expect(await rowsOf(metric)).toEqual([]);
+    expect(await activeOn('ldl')).toEqual([[3.2, TODAY]]);
+    view.unmount();
+    view = render(<HealthTool />);
+    await shown(view.container, '.bt-timeline-title');
+    const input = draftInput(bloodMatrix(view.container), label);
+    expect(input.value).toBe(text);
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(await rowsOf(metric)).toEqual([]);
+    typeInto(input, safe);
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await waitFor(async () => expect(await activeOn(metric)).toEqual([[toCanonicalValue(metric, expected, 'conventional'), TODAY]]));
+  });
+});
+
 describe('the 2026-09-22 feedback: blood tests on the wrong day', () => {
   it('US-03 AC5: a value typed before its date is picked lands on the picked date', async () => {
     await guest({ weight: 82 });

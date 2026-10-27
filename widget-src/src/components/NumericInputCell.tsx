@@ -13,6 +13,10 @@ import {
   type CellUnit,
   type Grading,
   blockBadNumericKeys,
+  numericCellText,
+  hasNumericSyntax,
+  readNumericCell,
+  NUMERIC_SYNTAX_GUIDANCE,
   previewStatus,
   statusOf,
   validateTypedValue,
@@ -48,8 +52,8 @@ export interface NumericInputCellProps {
   /** Caller-supplied error (e.g. save failure) — takes precedence over
    *  the local validation error so retry feedback is visible inline. */
   externalError?: string | null;
-  /** Review's canonical validation: undefined uses local text validation;
-   *  null means valid, even when the rounded display exceeds a local bound. */
+  /** Canonical validation for an untouched stored/extracted value, or the
+   *  review's edited quantity. Undefined uses local text/range validation. */
   validationResult?: string | null;
   onFocus?: () => void;
   onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
@@ -68,11 +72,17 @@ export function NumericInputCell({
 }: NumericInputCellProps) {
   const errorId = useId();
   const validationError = validationResult !== undefined ? validationResult
-    : metric && display ? validateTypedValue(metric, value, display).error : commaQuestion(value);
+    : value !== '' && !hasNumericSyntax(value) ? NUMERIC_SYNTAX_GUIDANCE
+    : metric && display ? validateTypedValue(metric, value, display).error
+    : commaQuestion(value) ?? (value !== '' && readNumericCell(value) === undefined ? 'Enter a number' : null);
   const error = externalError ?? validationError;
   const status = !grading || error || !metric || !display
     ? null
     : valueSI !== undefined ? statusOf(metric, valueSI, grading) : previewStatus(metric, value, display, grading);
+  const insertText = (input: HTMLInputElement, text: string) => {
+    onChange(numericCellText(value.slice(0, input.selectionStart ?? value.length)
+      + text + value.slice(input.selectionEnd ?? value.length)));
+  };
   return (
     <div className={`bt-cell-value ${wrapperClass}`}>
       <input
@@ -88,9 +98,18 @@ export function NumericInputCell({
         // calculations and stretches the matrix scroll width.
         size={1}
         value={value}
-        // Strip characters the keystroke filter can't catch (paste, drag-drop,
-        // IME) — US-02 AC4. Keystroke filtering alone leaves paste wide open.
-        onChange={e => onChange(e.target.value.replace(/[^0-9.,]/g, ''))}
+        // Keep ambiguous syntax invalid instead of joining numeric tokens.
+        onChange={e => onChange(numericCellText(e.target.value))}
+        // Read before a text input removes spreadsheet line separators.
+        onPaste={e => {
+          e.preventDefault();
+          insertText(e.currentTarget, e.clipboardData.getData('text'));
+        }}
+        onDragOver={e => e.preventDefault()}
+        onDrop={e => {
+          e.preventDefault();
+          insertText(e.currentTarget, e.dataTransfer.getData('text'));
+        }}
         onKeyDown={onKeyDown}
         onFocus={onFocus}
         onBlur={onBlur}
