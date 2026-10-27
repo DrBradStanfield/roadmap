@@ -118,9 +118,9 @@ jobs:
           pr_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/pull/${PR}"
           title=$(pr_json | jq -r '.title')
           author=$(pr_json | jq -r '.user.login')
-          pr_body=$(pr_json | jq -r '.body // ""' | head -20)
+          pr_body=$(pr_json | jq -r '(.body // "") | split("\n")[:20] | join("\n")')
           files=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/files" \
-            --jq '.[] | "- \(.filename) (+\(.additions)/-\(.deletions))"' | head -15)
+            --jq '.[:15][] | "- \(.filename) (+\(.additions)/-\(.deletions))"')
           nfiles=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/files" --jq 'length')
           # The reviewer's verdict comment, minus the boilerplate header.
           review=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments?per_page=100" \

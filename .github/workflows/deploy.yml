@@ -277,21 +277,19 @@ jobs:
       # ---------- Shopify (both apps, same assets) ----------
       - name: Pin Shopify CLI
         if: github.event_name == 'pull_request' || inputs.surfaces != 'fly-only'
-        run: npm i -g @shopify/cli@3.90.0
+        run: npm i -g @shopify/cli@4.9.4
 
       - name: Deploy Shopify extensions — prod app (microvitamin)
         if: github.event_name == 'pull_request' || inputs.surfaces != 'fly-only'
         env:
           SHOPIFY_CLI_PARTNERS_TOKEN: ${{ secrets.SHOPIFY_CLI_PARTNERS_TOKEN_PROD }}
-          SHOPIFY_FLAG_FORCE: "1"
-        run: shopify app deploy --force --config shopify.app.toml
+        run: shopify app deploy --allow-updates --config shopify.app.toml
 
       - name: Deploy Shopify extensions — edu app (drstanfield)
         if: github.event_name == 'pull_request' || inputs.surfaces != 'fly-only'
         env:
           SHOPIFY_CLI_PARTNERS_TOKEN: ${{ secrets.SHOPIFY_CLI_PARTNERS_TOKEN_EDU }}
-          SHOPIFY_FLAG_FORCE: "1"
-        run: shopify app deploy --force --config shopify.app.edu.toml
+        run: shopify app deploy --allow-updates --config shopify.app.edu.toml
 
       # ---------- Fly (both apps; canary = a boot-crashing image never reaches serving machines) ----------
       # SHA-pinned (audit MED-4): @master on a secret-bearing job is a supply-
