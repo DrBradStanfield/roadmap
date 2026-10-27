@@ -95,6 +95,39 @@ describe('US-04 — the saved-value editor', () => {
     expect(onCorrect).toHaveBeenCalledWith('r1', toCanonicalValue('ldl', 100, 'conventional'));
   });
 
+  // US-02 AC7: "1,234" is read in the editor's unit, or asked about.
+  it('US-02 AC7: "1,234" in mg/dL triglycerides (both in range) asks and writes nothing', async () => {
+    const { view, input, onCorrect } = editor({ metric: 'triglycerides', display: 'conventional', value: 1.5 });
+    fireEvent.change(input, { target: { value: '1,234' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await wait(0);
+    expect(onCorrect).not.toHaveBeenCalled();
+    expect(view.getByText('Did you mean 1234 or 1.234?')).toBeTruthy();
+  });
+
+  it('US-02 AC7: "1,234" in mmol/L triglycerides is 1.234, and in µmol/L creatinine 1234', async () => {
+    const tg = editor({ metric: 'triglycerides', display: 'si', value: 1.5 });
+    fireEvent.change(tg.input, { target: { value: '1,234' } });
+    fireEvent.keyDown(tg.input, { key: 'Enter' });
+    await wait(0);
+    expect(tg.onCorrect).toHaveBeenCalledWith('r1', 1.234);
+    cleanup();
+    const cr = editor({ metric: 'creatinine', display: 'si', value: 80 });
+    fireEvent.change(cr.input, { target: { value: '1,234' } });
+    fireEvent.keyDown(cr.input, { key: 'Enter' });
+    await wait(0);
+    expect(cr.onCorrect).toHaveBeenCalledWith('r1', 1234);
+  });
+
+  it('US-02 AC7: a lab value has no range, so "1,050" asks and writes nothing', async () => {
+    const { view, input, onCorrect } = editor({ metric: undefined, display: undefined, value: 45 });
+    fireEvent.change(input, { target: { value: '1,050' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await wait(0);
+    expect(onCorrect).not.toHaveBeenCalled();
+    expect(view.getByText('Did you mean 1050 or 1.05?')).toBeTruthy();
+  });
+
   it('a lab value is corrected in the unit it is stored in, as typed', async () => {
     const { input, onCorrect } = editor({ metric: undefined, display: undefined, value: 45 });
     expect(input.value).toBe('45');
@@ -792,6 +825,18 @@ describe('US-03 AC5 — the matrix commits when you leave it', () => {
     await wait(0);
     expect(m.onSaveBatch).toHaveBeenCalledTimes(1);
     expectSent(m.onSaveBatch, 0, [{ date: TODAY, values: { ldl: 3.2 } }, { date: TODAY, values: { hdl: 1.4 } }]);
+  });
+
+  // US-02 AC7: in µmol/L, "1,234" creatinine can only be 1234; in mmol/L,
+  // "1,234" triglycerides can only be 1.234.
+  it('US-02 AC7: a draft "1,234" saves the one reading inside its range', async () => {
+    const m = matrix();
+    typeInto(m.cell('Creatinine'), '1,234');
+    typeInto(m.cell('Triglycerides'), '1,234');
+    press(m.elsewhere);
+    await wait(0);
+    expect(m.onSaveBatch).toHaveBeenCalledTimes(1);
+    expectSent(m.onSaveBatch, 0, [{ date: TODAY, values: { creatinine: 1234 } }, { date: TODAY, values: { triglycerides: 1.234 } }]);
   });
 
   it('a press outside the matrix commits, once', async () => {

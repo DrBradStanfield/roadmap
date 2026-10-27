@@ -3,6 +3,7 @@
 // components; everything here is data → data.
 
 import {
+  commaQuestion,
   parseLocalisedNumber,
   cellLabel,
   cellRange,
@@ -100,6 +101,12 @@ function closeTo(a: number, b: number): boolean {
   return Math.abs(a - b) <= 1e-9 * Math.max(Math.abs(a), Math.abs(b));
 }
 
+/** A typed number in the unit it was typed in: "1,234" is the one reading
+ *  inside the metric's input range there, else undefined (US-02 AC7). */
+export function readTypedValue(metric: MetricType, typed: string, display: CellUnit): number | undefined {
+  return parseLocalisedNumber(typed, cellRange(metric, display));
+}
+
 /** Validate a typed display-unit value against the metric's range. */
 export function validateTypedValue(
   metric: MetricType,
@@ -108,8 +115,8 @@ export function validateTypedValue(
 ): { error: string | null; range: { min: number; max: number } } {
   const range = cellRange(metric, display);
   if (typed === '') return { error: null, range };
-  const n = parseLocalisedNumber(typed);
-  if (n === undefined) return { error: 'Enter a number', range };
+  const n = parseLocalisedNumber(typed, range);
+  if (n === undefined) return { error: commaQuestion(typed) ?? 'Enter a number', range };
   // Include the display unit in min/max errors so a user who typed (e.g.)
   // a mg/dL number into an mmol/L field can see the unit mismatch instead
   // of a bare "Max 22.6".
@@ -178,7 +185,7 @@ export function statusOf(metric: MetricType, siValue: number, grading: Grading):
 export function previewStatus(
   metric: MetricType, typed: string, display: CellUnit, grading: Grading,
 ): Status {
-  const n = parseLocalisedNumber(typed);
+  const n = readTypedValue(metric, typed, display);
   if (n === undefined) return null;
   return statusOf(metric, cellToSI(metric, n, display), grading);
 }

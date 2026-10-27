@@ -173,6 +173,14 @@ describe('vitalsCellsOf', () => {
     expect(vitalsCellsOf({ sys: '128', dia: '8' }, si)).toEqual([{ keys: ['sys', 'dia'], values: null }]);
   });
 
+  // US-02 AC7: no weight or waist has both readings in range, so "100,500" kg
+  // is 100.5 and "1,234" kg (neither) cannot be saved.
+  it('reads "1,234"-shaped weights by the range, never saving one it cannot place', () => {
+    expect(vitalsCellsOf({ weight: '100,500' }, si)).toEqual([{ keys: ['weight'], values: { weight: 100.5 } }]);
+    expect(vitalsCellsOf({ weight: '1,234' }, si)).toEqual([{ keys: ['weight'], values: null }]);
+    expect(vitalsCellsOf({ weight: '1,234,567' }, si)).toEqual([{ keys: ['weight'], values: null }]);
+  });
+
   it('keeps a weight and a BP pair in one column as two cells', () => {
     expect(vitalsCellsOf({ weight: '82', sys: '128', dia: '82' }, si)).toEqual([
       { keys: ['weight'], values: { weight: 82 } },

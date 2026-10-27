@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type React from 'react';
 import { formatDisplayValue, fromCanonicalValue, parseLocalisedNumber, toCanonicalValue } from '@roadmap/health-core';
-import { cellHint, formatLabValue, previewStatus, sameAsSaved, statusOf, validateTypedValue } from './blood-test-cell';
+import { cellHint, formatLabValue, previewStatus, readTypedValue, sameAsSaved, statusOf, validateTypedValue } from './blood-test-cell';
 
 // ---------------------------------------------------------------------------
 // Bug: user typed a value in the Lp(a) text box, hit Enter, the value
@@ -232,5 +232,36 @@ describe('grading null — no adult grade or hint', () => {
     expect([statusOf('ldl', 4.2, {}), cellHint('ldl', 'si', {}) === null]).toEqual(['bad', false]);
     expect([statusOf('ldl', 4.2, null), previewStatus('ldl', '4.2', 'si', null), cellHint('ldl', 'si', null), cellHint('lpa', 'mg/dL', null)])
       .toEqual([null, null, null, null]);
+  });
+});
+
+// US-02 AC7: "1,234" is read in the unit it is typed in. One reading inside
+// that unit's input range is used; otherwise the cell asks.
+describe('an ambiguous comma in a typed cell (US-02 AC7)', () => {
+  const ASK = 'Did you mean 1234 or 1.234?';
+
+  it('asks when both readings are inside the range (triglycerides in mg/dL, 0-2000)', () => {
+    expect(validateTypedValue('triglycerides', '1,234', 'conventional').error).toBe(ASK);
+    expect(readTypedValue('triglycerides', '1,234', 'conventional')).toBeUndefined();
+    expect(previewStatus('triglycerides', '1,234', 'conventional', {})).toBeNull();
+  });
+
+  it('uses the one reading inside the range, and the unit decides which', () => {
+    expect(validateTypedValue('triglycerides', '1,234', 'si').error).toBeNull(); // 0-22.6 mmol/L
+    expect(readTypedValue('triglycerides', '1,234', 'si')).toBe(1.234);
+    expect(readTypedValue('creatinine', '1,234', 'si')).toBe(1234); // 10-2650 µmol/L
+    expect(readTypedValue('creatinine', '1,234', 'conventional')).toBe(1.234); // 0.1-30 mg/dL
+  });
+
+  it('asks when neither reading is inside the range', () => {
+    expect(validateTypedValue('weight', '1,234', 'si').error).toBe(ASK);
+  });
+
+  it('keeps unambiguous forms and range-checks grouped thousands', () => {
+    expect(readTypedValue('triglycerides', '1,2', 'conventional')).toBe(1.2);
+    expect(readTypedValue('triglycerides', '12,5', 'conventional')).toBe(12.5);
+    expect(readTypedValue('triglycerides', '1234', 'conventional')).toBe(1234);
+    expect(readTypedValue('triglycerides', '1.234', 'conventional')).toBe(1.234);
+    expect(validateTypedValue('triglycerides', '1,234,567', 'conventional').error).toBe('Max 2000 mg/dL');
   });
 });

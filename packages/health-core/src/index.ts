@@ -129,7 +129,7 @@ export {
   type DocumentType,
 } from './validation';
 
-export { parseLocalisedNumber } from './parseNumber';
+export { commaQuestion, parseLocalisedNumber } from './parseNumber';
 
 // Mappings (shared field↔metric conversions)
 export {
