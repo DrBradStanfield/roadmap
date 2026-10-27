@@ -707,10 +707,10 @@ describe('US-12 AC11: the prompt splits a printed blood pressure into its two co
 // US-07 AC7 made a lab eGFR drive the plan, so an eGFR printed ">60" must never
 // arrive as 60 (graded "Low Normal"). US-12 AC8 already drops a value string
 // that does not start with its number; the prompt now asks for exactly that.
-describe('US-12 AC8: a result printed with < or > is returned as printed, as a string, and dropped', () => {
+describe('US-07 AC7: an eGFR printed with < or > is returned as printed, as a string, and dropped', () => {
   it('both prompt modes carry the rule', () => {
     for (const mode of ['full', 'metadata'] as const) {
-      expect(unifiedSystemPrompt(mode)).toContain('A result printed with < or > (">60", "<5") is returned exactly as printed, as a string: never as its number.');
+      expect(unifiedSystemPrompt(mode)).toContain('An eGFR printed with < or > (">60", ">90") is returned exactly as printed, as a string: never as its number.');
     }
   });
   it('an eGFR returned as ">60" is dropped, never read as 60', () => {
