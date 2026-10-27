@@ -283,6 +283,7 @@ private struct EditingSheet: View {
                 saved(await store.apply(.correct(id: value.id, value: number), as: seen))
             }
             .lpaUnits(store, shown) { reopen(.correct(value, shown, seen.showing(lpaUnit: $0))) }
+            .reads(in: store.inputRange(for: shown.metric, in: store.lpaUnit(for: shown) == nil ? nil : unit))
         }
     }
 }

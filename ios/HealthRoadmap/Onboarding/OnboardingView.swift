@@ -141,7 +141,7 @@ struct OnboardingView: View {
             }
         case .height:
             OnboardingPage(symbol: "ruler", tint: .teal, title: "How tall are you?",
-                 detail: "Height sets your healthy weight range.", progress: step, fromHealth: fromHealth.contains(.height), message: message) {
+                 detail: "Height sets your healthy weight range.", progress: step, fromHealth: fromHealth.contains(.height), message: message ?? answers.height.question) {
                 withUnits(.height) {
                     if answers.height.us {
                         numberField(.feet)
@@ -157,7 +157,7 @@ struct OnboardingView: View {
         case .weight:
             // Required (Brad 2026-10-23): weight shapes much of the plan, so there is no Skip.
             OnboardingPage(symbol: "scalemass.fill", tint: .indigo, title: "What do you weigh?",
-                 detail: "Weight shapes much of your plan.", progress: step, fromHealth: fromHealth.contains(.weight), message: message) {
+                 detail: "Weight shapes much of your plan.", progress: step, fromHealth: fromHealth.contains(.weight), message: message ?? answers.weight.question) {
                 withUnits(.weight) {
                     numberField(.weight)
                 }
@@ -319,6 +319,10 @@ struct OnboardingView: View {
         // Each typed screen starts in the record's units: the region default for a new record.
         answers.height.us = recordUnits(.height) == "conventional"
         answers.weight.us = recordUnits(.weight) == "conventional"
+        for system in ["si", "conventional"] {
+            answers.height.ranges[system] = data.inputRange("height", system)
+            answers.weight.ranges[system] = data.inputRange("weight", system)
+        }
         await prefill(from: HealthCharacteristics.none)
         // Gone while the engine filled the boxes: nothing to pin.
         guard !Task.isCancelled, step == nil else { return }

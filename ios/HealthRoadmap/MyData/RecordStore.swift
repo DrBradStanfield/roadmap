@@ -380,6 +380,13 @@ final class RecordStore {
         unitChoices.system(for: metric, record: myData?.unitSystem ?? "si")
     }
 
+    /// The range a value typed for `metric` is read against: in `unit` (an Lp(a) unit or
+    /// "si"/"conventional") when given, else in the units the metric is shown in (US-02 AC7);
+    /// nil from an older engine.
+    func inputRange(for metric: String, in unit: String? = nil) -> ClosedRange<Double>? {
+        myData?.inputRange(metric, unit ?? units(for: metric))
+    }
+
     /// An edit no sheet opened, such as an Apple Health import (D6): checked against
     /// the record as it is now, never against a sheet's pin, so an open sheet cannot
     /// make it refuse. It still takes the same path: in the cloud, the session, the

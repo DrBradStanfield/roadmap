@@ -220,6 +220,17 @@ describe('readNumber (AC5, adversary R2)', () => {
 
   // US-02 AC7: the phone's sheets have no range, so "1,234" (1234 or 1.234)
   // reads as neither, and the sheet asks. Grouped thousands read whole.
+  // US-02 AC7: the input ranges a typed "1,234" is read against, by unit, so the
+  // phone picks the one reading in range as the web does. Input bounds, not targets.
+  it('My data carries each metric\'s input range by unit, Lp(a) in its own three (US-02 AC7)', () => {
+    const { inputRanges } = myData(newRecord(NOW, 'd', 'en-NZ', 'Pacific/Auckland'), NOW);
+    expect(inputRanges.weight).toEqual({ si: { min: 20, max: 300 }, conventional: { min: 44, max: 661 } });
+    expect(inputRanges.height.si).toEqual({ min: 50, max: 250 });
+    expect(inputRanges.triglycerides.conventional).toEqual({ min: 0, max: 2000 });
+    expect(Object.keys(inputRanges.lpa).sort()).toEqual(['conventional', 'mg/L', 'mg/dL', 'nmol/L', 'si']);
+    expect(inputRanges.lpa['mg/L']).toEqual({ min: 0, max: 3000 });
+  });
+
   it('reads "1,234" as neither 1234 nor 1.234, and "1,234,567" as thousands (US-02 AC7)', () => {
     expect(readNumber('1,234')).toBeUndefined();
     expect(readNumber('١,٢٣٤')).toBeUndefined();

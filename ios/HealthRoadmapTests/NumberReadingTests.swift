@@ -41,6 +41,30 @@ final class NumberReadingTests: XCTestCase {
         XCTAssertEqual(TypedNumber.read("-0")?.sign, .plus, "the engine answers JSON, where -0 is 0")
     }
 
+    /// US-02 AC7: with a range, an ambiguous comma is the one reading inside it, as health-core's
+    /// `parseLocalisedNumber(text, range)` says: each reading is the engine's own read of the
+    /// text with the comma dropped or made a point. Any other text reads as it does unranged.
+    func testSwiftReadsARangedTextAsTheEngineDoes() throws {
+        let engine = try HealthEngine()
+        let ranges: [ClosedRange<Double>] = [0...22.6, 0...2000, 10...2650, 20...300, 0.1...30, 0...3000]
+        for text in Self.texts + ["1,500", "100,500", "2,500", "-1,234"] {
+            for range in ranges {
+                var expected = try engine.blocking { try $0.number(from: text) }
+                if TypedNumber.question(text) != nil {
+                    let readings = try [text.replacingOccurrences(of: ",", with: ""), text.replacingOccurrences(of: ",", with: ".")]
+                        .compactMap { reading in try engine.blocking { try $0.number(from: reading) } }
+                        .filter { range.contains($0) }
+                    expected = readings.count == 1 ? readings[0] : nil
+                }
+                XCTAssertEqual(TypedNumber.read(text, range: range), expected, "\(text.debugDescription) in \(range)")
+            }
+        }
+        XCTAssertEqual(TypedNumber.read("1,234", range: 0...22.6), 1.234, "triglycerides in mmol/L")
+        XCTAssertEqual(TypedNumber.read("1,234", range: 10...2650), 1234, "creatinine in µmol/L")
+        XCTAssertNil(TypedNumber.read("1,234", range: 0...2000), "triglycerides in mg/dL: both fit")
+        XCTAssertNil(TypedNumber.question("1,234", range: 0...22.6), "nothing to ask once the range picks one")
+    }
+
     /// US-02 AC7: "1,234" is 1234 or 1.234; the sheet has no range, so it asks.
     func testAnAmbiguousCommaIsAskedAbout() {
         XCTAssertNil(TypedNumber.read("1,234"))

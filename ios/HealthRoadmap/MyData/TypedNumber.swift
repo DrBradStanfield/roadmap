@@ -51,13 +51,17 @@ extension TypedNumber {
     /// over health-core's `parseLocalisedNumber`. Arabic-Indic digits and decimal mark
     /// become ASCII, JavaScript's `trim` runs, a comma is a decimal mark, and only a plain
     /// decimal reads; anything else is nil. One comma before exactly three digits ("1,234")
-    /// is 1234 or 1.234, and a sheet has no range to choose by, so it is nil and the sheet
-    /// asks (`question`); two or more comma groups are thousands (US-02 AC7). Pure Swift, so
-    /// typing never waits on the engine (US-25 AC21); NumberReadingTests holds it to the
-    /// engine's own on the edge cases.
-    static func read(_ text: String) -> Double? {
+    /// is 1234 or 1.234: the one reading inside `range` (the field's input range in the unit
+    /// typed, `MyData.inputRange`), else nil, and the screen asks (`question`); two or more
+    /// comma groups are thousands (US-02 AC7). Pure Swift, so typing never waits on the
+    /// engine (US-25 AC21); NumberReadingTests holds it to the engine's own on the edge cases.
+    static func read(_ text: String, range: ClosedRange<Double>? = nil) -> Double? {
         let typed = ascii(text)
-        if typed.wholeMatch(of: ambiguousComma) != nil { return nil }
+        if typed.wholeMatch(of: ambiguousComma) != nil {
+            let fits = ["", "."].compactMap { Double(typed.replacingOccurrences(of: ",", with: $0)) }
+                .filter { range?.contains($0) ?? false }
+            return fits.count == 1 ? fits[0] : nil
+        }
         let plain = typed.wholeMatch(of: groupedThousands) != nil
             ? typed.replacingOccurrences(of: ",", with: "")
             : typed.replacingOccurrences(of: ",", with: ".")
@@ -79,10 +83,11 @@ extension TypedNumber {
     }
 
     /// What to ask about a number `read` refused for its comma: "Did you mean 1234 or
-    /// 1.234?", as the web asks (health-core `commaQuestion`); nil otherwise.
-    static func question(_ text: String) -> String? {
+    /// 1.234?", as the web asks (health-core `commaQuestion`); nil otherwise, also when
+    /// `range` picks one reading.
+    static func question(_ text: String, range: ClosedRange<Double>? = nil) -> String? {
         let typed = ascii(text)
-        guard typed.wholeMatch(of: ambiguousComma) != nil else { return nil }
+        guard typed.wholeMatch(of: ambiguousComma) != nil, read(text, range: range) == nil else { return nil }
         let parts = typed.split(separator: ",")
         var decimals = String(parts[1])
         while decimals.hasSuffix("0") { decimals.removeLast() }

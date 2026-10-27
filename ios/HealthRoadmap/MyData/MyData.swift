@@ -72,6 +72,19 @@ struct MyData: Decodable {
     /// The VO2 max bands' row for the person's sex and age today (US-56 AC8); nil from an older
     /// engine, without sex or birth year, or outside 20 to 89. Read leniently.
     let vo2Bands: Lenient<Vo2MaxBands>?
+    /// Each metric's input range by unit ("si", "conventional", Lp(a)'s own), what a typed
+    /// "1,234" is read against (US-02 AC7); nil from an older engine. Read leniently.
+    let inputRanges: Lenient<[String: [String: InputRange]]>?
+
+    struct InputRange: Decodable, Sendable {
+        let min: Double
+        let max: Double
+    }
+
+    /// The range a value typed for `metric` in `unit` is read against; nil when unknown.
+    func inputRange(_ metric: String, _ unit: String) -> ClosedRange<Double>? {
+        inputRanges?.value?[metric]?[unit].flatMap { $0.min <= $0.max ? $0.min...$0.max : nil }
+    }
 }
 
 /// The guides by key, read leniently (US-58 AC3): a malformed guide is left out, and a

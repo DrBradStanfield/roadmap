@@ -24,7 +24,7 @@ import { METRIC_GUIDES, type MetricGuide } from '../../packages/health-core/src/
 import { APPLE_LOW_FROM_60, FRIEND_2022_TREADMILL, type Vo2MaxCutPoints } from '../../packages/health-core/src/vo2max-bands';
 import { calculateAge } from '../../packages/health-core/src/calculations';
 import {
-  cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, getDisplayLabel, toCanonicalValue,
+  cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, getDisplayLabel, LPA_UNITS, toCanonicalValue, UNIT_DEFS,
   type LpaUnit, type MetricType, type UnitSystem,
 } from '../../packages/health-core/src/units';
 import { applyPressure, BLOOD_PRESSURE, pressureHistory, type PressureEdit } from './blood-pressure';
@@ -71,6 +71,9 @@ export interface MyData {
    *  without both, under 20 or at 90 and over. `p20` is the Low line: from 60, Apple's
    *  (APPLE_LOW_FROM_60). Only the table comes out: no VO2 max goes in (AC1). */
   vo2Bands: (Vo2MaxCutPoints & { sex: 'male' | 'female' }) | null;
+  /** Each metric's input range (`cellRange`) by unit: "si", "conventional", and Lp(a)'s own
+   *  three. What a typed "1,234" is read against (US-02 AC7); input bounds, not targets. */
+  inputRanges: Record<string, Record<string, { min: number; max: number }>>;
 }
 
 /** Every change the tab can ask for. Numbers are in the user's units. */
@@ -208,6 +211,9 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
     psa: row('psa'),
     guides: METRIC_GUIDES,
     vo2Bands: vo2BandsOf(sex, birthYear, birthMonth, now),
+    inputRanges: Object.fromEntries((Object.keys(UNIT_DEFS) as MetricType[]).map((metric) => [metric, Object.fromEntries(
+      [...(['si', 'conventional'] as const), ...(metric === 'lpa' ? LPA_UNITS : [])].map((unit) => [unit, cellRange(metric, unit)]),
+    )])),
     ...formsOf(file, now, choices, plan),
   };
 }
