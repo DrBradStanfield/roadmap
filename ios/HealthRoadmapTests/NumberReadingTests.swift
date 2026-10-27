@@ -41,28 +41,41 @@ final class NumberReadingTests: XCTestCase {
         XCTAssertEqual(TypedNumber.read("-0")?.sign, .plus, "the engine answers JSON, where -0 is 0")
     }
 
-    /// US-02 AC7: with a range, an ambiguous comma is the one reading inside it, as health-core's
-    /// `parseLocalisedNumber(text, range)` says: each reading is the engine's own read of the
-    /// text with the comma dropped or made a point. Any other text reads as it does unranged.
+    /// US-02 AC7: with a range, a typed comma reads as health-core's `parseLocalisedNumber(text,
+    /// range)` says. The expected value comes from the engine and `sharedRule` below, never from
+    /// Swift's own pattern (adversary R4): every text, unranged and under six ranges.
     func testSwiftReadsARangedTextAsTheEngineDoes() throws {
         let engine = try HealthEngine()
-        let ranges: [ClosedRange<Double>] = [0...22.6, 0...2000, 10...2650, 20...300, 0.1...30, 0...3000]
+        let ranges: [ClosedRange<Double>?] = [nil, 0...22.6, 0...2000, 10...2650, 20...300, 0.1...30, 0...3000]
         for text in Self.texts + ["1,500", "100,500", "2,500", "-1,234"] {
             for range in ranges {
-                var expected = try engine.blocking { try $0.number(from: text) }
-                if TypedNumber.question(text) != nil {
-                    let readings = try [text.replacingOccurrences(of: ",", with: ""), text.replacingOccurrences(of: ",", with: ".")]
-                        .compactMap { reading in try engine.blocking { try $0.number(from: reading) } }
-                        .filter { range.contains($0) }
-                    expected = readings.count == 1 ? readings[0] : nil
-                }
-                XCTAssertEqual(TypedNumber.read(text, range: range), expected, "\(text.debugDescription) in \(range)")
+                let expected = try Self.sharedRule(text, range, engine)
+                XCTAssertEqual(TypedNumber.read(text, range: range), expected, "\(text.debugDescription) in \(String(describing: range))")
             }
         }
-        XCTAssertEqual(TypedNumber.read("1,234", range: 0...22.6), 1.234, "triglycerides in mmol/L")
-        XCTAssertEqual(TypedNumber.read("1,234", range: 10...2650), 1234, "creatinine in µmol/L")
-        XCTAssertNil(TypedNumber.read("1,234", range: 0...2000), "triglycerides in mg/dL: both fit")
-        XCTAssertNil(TypedNumber.question("1,234", range: 0...22.6), "nothing to ask once the range picks one")
+        XCTAssertEqual(TypedNumber.read("1,234", range: 10...2650), 1234, "creatinine in µmol/L: 1.234 is below the range")
+        XCTAssertNil(TypedNumber.read("1,234", range: 0...22.6), "triglycerides in mmol/L: the decimal reading is never chosen")
+        XCTAssertNil(TypedNumber.read("2,500", range: 0...2000), "triglycerides in mg/dL: 2500 is over, 2.5 is never chosen")
+        XCTAssertNil(TypedNumber.read("1,234", range: 0...2000), "both fit")
+        XCTAssertNil(TypedNumber.question("1,234", range: 10...2650), "nothing to ask once the range reads it")
+    }
+
+    /// The rule, once, over the engine's own unranged readings: one comma before exactly three
+    /// digits (no leading 0) is thousands only inside `range` with the decimal reading below it;
+    /// two or more such groups are thousands only with a range; any other text is the engine's.
+    private static func sharedRule(_ text: String, _ range: ClosedRange<Double>?, _ engine: HealthEngine) throws -> Double? {
+        let read = { (t: String) throws -> Double? in try engine.blocking { try $0.number(from: t) } }
+        var body = Substring(text.trimmingCharacters(in: .whitespacesAndNewlines))
+        if body.first == "+" || body.first == "-" { body.removeFirst() }
+        let groups = body.split(separator: ",", omittingEmptySubsequences: false)
+        let grouped = groups.count >= 2 && (1...3).contains(groups[0].count) && groups[0].first.map { !"0٠۰".contains($0) } == true
+            && groups.allSatisfy { $0.allSatisfy(\.isNumber) } && groups.dropFirst().allSatisfy { $0.count == 3 }
+        guard grouped else { return try read(text) }
+        let thousands = try read(text.replacingOccurrences(of: ",", with: ""))
+        guard groups.count == 2 else { return range == nil ? nil : thousands }
+        guard let range, let thousands, let decimal = try read(text.replacingOccurrences(of: ",", with: ".")),
+              range.contains(thousands), decimal < range.lowerBound else { return nil }
+        return thousands
     }
 
     /// US-02 AC7: "1,234" is 1234 or 1.234; the sheet has no range, so it asks.
@@ -72,6 +85,8 @@ final class NumberReadingTests: XCTestCase {
         XCTAssertEqual(TypedNumber.question("1,050"), "Did you mean 1050 or 1.05?")
         XCTAssertNil(TypedNumber.question("1,2"))
         XCTAssertNil(TypedNumber.question("1234"))
-        XCTAssertEqual(TypedNumber.read("1,234,567"), 1_234_567)
+        XCTAssertNil(TypedNumber.read("1,234,567"), "no range to check grouped thousands")
+        XCTAssertEqual(TypedNumber.question("1,234,567"), "Type the number without commas.")
+        XCTAssertEqual(TypedNumber.read("1,234,567", range: 0...10), 1_234_567, "read, then the engine checks the range")
     }
 }

@@ -441,8 +441,8 @@ const NUMBER_TOKEN = /^\s*([+-]?[\d.,]+)/;
  * A minus sign printed as U+2212 ("−2.5") is a minus. 1-3 digits, a comma
  * and exactly 3 digits ("250,000", "1,050") is refused too: US thousands and
  * a European decimal read 1000x apart, and both pass the count guard. That
- * rule is `parseLocalisedNumber`'s (US-02 AC7), given no range here. Two
- * commas ("1,234,567"), which the form reads as thousands, are refused here.
+ * rule is `parseLocalisedNumber`'s (US-02 AC7), given no range here, which
+ * refuses grouped thousands ("1,234,567") as well.
  * Anything unreadable becomes null: the row drops, and a reference bound is
  * unknown. A dot in that place, or any text but a flag, is refused on a
  * count row only (see `refusedCountRow`).
@@ -452,7 +452,7 @@ function readModelNumber(v: unknown): unknown {
   const s = v.replace(/−/g, '-');
   const m = NUMBER_TOKEN.exec(s);
   const rest = s.slice(m?.[0].length).replace(/\s\([^()x×*^]*\)\s*$/u, '');
-  if (!m || /\p{N}/u.test(rest) || /,.*,/.test(m[1])) return null;
+  if (!m || /\p{N}/u.test(rest)) return null;
   return parseLocalisedNumber(m[1]) ?? null;
 }
 

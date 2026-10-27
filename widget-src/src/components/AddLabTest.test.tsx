@@ -266,6 +266,15 @@ describe('US-21 phase 2 — AddLabTest', () => {
     await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
     expect(bulkSaveLabValues).toHaveBeenCalledWith([expect.objectContaining({ metricName: 'ferritin', value: 1.05 })]);
   });
+
+  // Codex R2: no range checks grouped thousands here, so they are refused.
+  it('refuses "1,234,567" and asks for the number without commas', () => {
+    const { getByLabelText, getByRole, getByText } = openForm();
+    fireEvent.change(getByLabelText('Test'), { target: { value: 'ferritin' } });
+    fireEvent.change(getByLabelText('Value'), { target: { value: '1,234,567' } });
+    expect(getByText('Type the number without commas.')).toBeTruthy();
+    expect((getByRole('button', { name: /^save$/i }) as HTMLButtonElement).disabled).toBe(true);
+  });
 });
 
 describe('US-21 phase 2 — section shows the add button', () => {

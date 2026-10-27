@@ -44,10 +44,21 @@ describe('NumericInputCell: an ambiguous comma (US-02 AC7)', () => {
     expect(getByRole('textbox', { description: ASK }).getAttribute('aria-invalid')).toBe('true');
   });
 
-  it('accepts the one plausible reading in the other unit', () => {
-    const { getByRole, queryByText } = render(<NumericInputCell {...base} metric="triglycerides" display="si" value="1,234" />);
+  it('accepts thousands where the decimal reading is below the range (creatinine in µmol/L)', () => {
+    const { getByRole, queryByText } = render(<NumericInputCell {...base} metric="creatinine" display="si" value="1,234" />);
     expect(getByRole('textbox').getAttribute('aria-invalid')).toBe('false');
     expect(queryByText(ASK)).toBeNull();
+  });
+
+  // Adversary R1: the decimal reading is never chosen, even where only it fits.
+  it('asks where only the decimal reading is in range (triglycerides in mmol/L)', () => {
+    const { getByRole } = render(<NumericInputCell {...base} metric="triglycerides" display="si" value="1,234" />);
+    expect(getByRole('textbox', { description: ASK }).getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('refuses grouped thousands in a free-form cell, which has no range to check them', () => {
+    const { getByRole } = render(<NumericInputCell {...base} value="1,234,567" />);
+    expect(getByRole('textbox', { description: 'Type the number without commas.' }).getAttribute('aria-invalid')).toBe('true');
   });
 
   it('asks in a free-form cell, which has no range', () => {

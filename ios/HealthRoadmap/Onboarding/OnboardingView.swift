@@ -319,10 +319,6 @@ struct OnboardingView: View {
         // Each typed screen starts in the record's units: the region default for a new record.
         answers.height.us = recordUnits(.height) == "conventional"
         answers.weight.us = recordUnits(.weight) == "conventional"
-        for system in ["si", "conventional"] {
-            answers.height.ranges[system] = data.inputRange("height", system)
-            answers.weight.ranges[system] = data.inputRange("weight", system)
-        }
         await prefill(from: HealthCharacteristics.none)
         // Gone while the engine filled the boxes: nothing to pin.
         guard !Task.isCancelled, step == nil else { return }

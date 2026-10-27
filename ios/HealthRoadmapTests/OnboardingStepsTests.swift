@@ -329,14 +329,13 @@ final class OnboardingStepsTests: XCTestCase {
         XCTAssertNil(OnboardingSteps.previous(before: .sex, onlyMissing: true, skip: []), "no Apple Health page after a cloud connect")
     }
 
-    /// US-02 AC7: a typed "100,500" kg can only be 100.5 inside the weight's range, so it reads;
-    /// "1,234" kg fits neither, so Continue waits and the page asks, never silently disabled.
-    func testACommaWeightIsReadByItsRangeOrAskedAbout_US02AC7() {
+    /// US-02 AC7: a weight's thousands reading is never in range and the decimal one is never
+    /// chosen, so "100,500" and "1,234" kg both wait, and the page asks: never silently disabled.
+    func testACommaWeightIsAskedAbout_US02AC7() {
         var weight = TypedAnswer(metric: "weight")
-        weight.ranges = ["si": 20...300, "conventional": 44...661]
         weight.text = "100,500"
-        XCTAssertEqual(weight.value, 100.5)
-        XCTAssertNil(weight.question)
+        XCTAssertNil(weight.value)
+        XCTAssertEqual(weight.question, "Did you mean 100500 or 100.5?")
         weight.text = "1,234"
         XCTAssertNil(weight.value)
         XCTAssertEqual(weight.question, "Did you mean 1234 or 1.234?")

@@ -252,12 +252,20 @@ describe('ReviewTable: an ambiguous comma (US-13 AC12)', () => {
     expect(r.onSave).not.toHaveBeenCalled();
   });
 
-  it('saves 1.234 mmol/L in SI, where only that reading is in range', () => {
+  // Adversary R1: in mmol/L only 1.234 fits, a decimal reading, which is never chosen.
+  it('asks in SI too, where only the decimal reading is in range', () => {
     const r = review(tg, 'si');
+    fireEvent.change(r.input, { target: { value: '1,234' } });
+    expect(r.input.getAttribute('aria-invalid')).toBe('true');
+    expect(r.save.disabled).toBe(true);
+  });
+
+  it('saves 1234 µmol/L creatinine, where the decimal reading is below the range', () => {
+    const r = review([{ ...files[0], values: [{ metric: 'creatinine', valueSI: 80, displayValue: 80, displayUnit: 'µmol/L', confidence: 'high' }] }], 'si');
     fireEvent.change(r.input, { target: { value: '1,234' } });
     expect(r.input.getAttribute('aria-invalid')).toBe('false');
     fireEvent.click(r.save);
-    expect(r.onSave.mock.calls[0][0].values).toEqual([expect.objectContaining({ metric: 'triglycerides', valueSI: 1.234, source: 'lab_import_edited' })]);
+    expect(r.onSave.mock.calls[0][0].values).toEqual([expect.objectContaining({ metric: 'creatinine', valueSI: 1234, source: 'lab_import_edited' })]);
   });
 
   it('asks on a lab row, which has no range, and blocks Save until it is retyped', () => {
@@ -269,5 +277,13 @@ describe('ReviewTable: an ambiguous comma (US-13 AC12)', () => {
     expect(r.save.disabled).toBe(false);
     fireEvent.click(r.save);
     expect(r.onSave.mock.calls[0][0].labValues).toEqual([expect.objectContaining({ value: 1.05 })]);
+  });
+
+  // Codex R2: a lab row has no range to check grouped thousands, so they block Save.
+  it('refuses "1,234,567" on a lab row and asks for it without commas', () => {
+    const r = review([{ ...files[0], values: [], additionalValues: [{ name: 'Ferritin', value: 45, unit: 'µg/L' }] }], 'si');
+    fireEvent.change(r.input, { target: { value: '1,234,567' } });
+    expect(r.getByText('Type the number without commas.')).toBeTruthy();
+    expect(r.save.disabled).toBe(true);
   });
 });

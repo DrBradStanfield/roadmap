@@ -173,10 +173,11 @@ describe('vitalsCellsOf', () => {
     expect(vitalsCellsOf({ sys: '128', dia: '8' }, si)).toEqual([{ keys: ['sys', 'dia'], values: null }]);
   });
 
-  // US-02 AC7: no weight or waist has both readings in range, so "100,500" kg
-  // is 100.5 and "1,234" kg (neither) cannot be saved.
-  it('reads "1,234"-shaped weights by the range, never saving one it cannot place', () => {
-    expect(vitalsCellsOf({ weight: '100,500' }, si)).toEqual([{ keys: ['weight'], values: { weight: 100.5 } }]);
+  // US-02 AC7: a weight's thousands reading is never in range, so a "1,234"-shaped
+  // weight is never saved as typed: "100,500" kg fits only as 100.5, a decimal
+  // reading (never chosen), and "1,234" kg fits neither. Both ask.
+  it('never saves a "1,234"-shaped weight as typed', () => {
+    expect(vitalsCellsOf({ weight: '100,500' }, si)).toEqual([{ keys: ['weight'], values: null }]);
     expect(vitalsCellsOf({ weight: '1,234' }, si)).toEqual([{ keys: ['weight'], values: null }]);
     expect(vitalsCellsOf({ weight: '1,234,567' }, si)).toEqual([{ keys: ['weight'], values: null }]);
   });

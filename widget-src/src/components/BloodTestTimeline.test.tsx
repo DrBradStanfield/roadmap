@@ -105,12 +105,13 @@ describe('US-04 — the saved-value editor', () => {
     expect(view.getByText('Did you mean 1234 or 1.234?')).toBeTruthy();
   });
 
-  it('US-02 AC7: "1,234" in mmol/L triglycerides is 1.234, and in µmol/L creatinine 1234', async () => {
+  it('US-02 AC7: "1,234" in mmol/L triglycerides asks (the decimal reading is never chosen), and in µmol/L creatinine is 1234', async () => {
     const tg = editor({ metric: 'triglycerides', display: 'si', value: 1.5 });
     fireEvent.change(tg.input, { target: { value: '1,234' } });
     fireEvent.keyDown(tg.input, { key: 'Enter' });
     await wait(0);
-    expect(tg.onCorrect).toHaveBeenCalledWith('r1', 1.234);
+    expect(tg.onCorrect).not.toHaveBeenCalled();
+    expect(tg.view.getByText('Did you mean 1234 or 1.234?')).toBeTruthy();
     cleanup();
     const cr = editor({ metric: 'creatinine', display: 'si', value: 80 });
     fireEvent.change(cr.input, { target: { value: '1,234' } });
@@ -827,16 +828,19 @@ describe('US-03 AC5 — the matrix commits when you leave it', () => {
     expectSent(m.onSaveBatch, 0, [{ date: TODAY, values: { ldl: 3.2 } }, { date: TODAY, values: { hdl: 1.4 } }]);
   });
 
-  // US-02 AC7: in µmol/L, "1,234" creatinine can only be 1234; in mmol/L,
-  // "1,234" triglycerides can only be 1.234.
-  it('US-02 AC7: a draft "1,234" saves the one reading inside its range', async () => {
+  // US-02 AC7: in µmol/L, "1,234" creatinine can only be 1234 (1.234 is below
+  // the range); in mmol/L, "1,234" triglycerides fits only as 1.234, a decimal
+  // reading, which is never chosen: it stays in the draft, asking.
+  it('US-02 AC7: a draft "1,234" saves thousands below which the decimal reading falls, and asks otherwise', async () => {
     const m = matrix();
     typeInto(m.cell('Creatinine'), '1,234');
     typeInto(m.cell('Triglycerides'), '1,234');
     press(m.elsewhere);
     await wait(0);
     expect(m.onSaveBatch).toHaveBeenCalledTimes(1);
-    expectSent(m.onSaveBatch, 0, [{ date: TODAY, values: { creatinine: 1234 } }, { date: TODAY, values: { triglycerides: 1.234 } }]);
+    expectSent(m.onSaveBatch, 0, [{ date: TODAY, values: { creatinine: 1234 } }]);
+    expect(m.cell('Triglycerides').value).toBe('1,234');
+    expect(m.view.getByText('Did you mean 1234 or 1.234?')).toBeTruthy();
   });
 
   it('a press outside the matrix commits, once', async () => {

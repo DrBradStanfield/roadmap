@@ -246,11 +246,16 @@ describe('an ambiguous comma in a typed cell (US-02 AC7)', () => {
     expect(previewStatus('triglycerides', '1,234', 'conventional', {})).toBeNull();
   });
 
-  it('uses the one reading inside the range, and the unit decides which', () => {
-    expect(validateTypedValue('triglycerides', '1,234', 'si').error).toBeNull(); // 0-22.6 mmol/L
-    expect(readTypedValue('triglycerides', '1,234', 'si')).toBe(1.234);
+  // Adversary R1: only thousands are ever chosen, when the decimal reading is
+  // below the range; the decimal reading always asks, as 2,500 mg/dL did not.
+  it('reads thousands where the decimal reading is below the range, and asks for the decimal one', () => {
     expect(readTypedValue('creatinine', '1,234', 'si')).toBe(1234); // 10-2650 µmol/L
-    expect(readTypedValue('creatinine', '1,234', 'conventional')).toBe(1.234); // 0.1-30 mg/dL
+    expect(validateTypedValue('creatinine', '1,234', 'si').error).toBeNull();
+    expect(validateTypedValue('triglycerides', '1,234', 'si').error).toBe(ASK); // 0-22.6 mmol/L
+    expect(validateTypedValue('triglycerides', '2,500', 'conventional').error).toBe('Did you mean 2500 or 2.5?');
+    expect(validateTypedValue('lpa', '1,050', 'si').error).toBe('Did you mean 1050 or 1.05?');
+    expect(validateTypedValue('ldl', '1,234', 'conventional').error).toBe(ASK);
+    expect(readTypedValue('creatinine', '1,234', 'conventional')).toBeUndefined(); // 0.1-30 mg/dL
   });
 
   it('asks when neither reading is inside the range', () => {

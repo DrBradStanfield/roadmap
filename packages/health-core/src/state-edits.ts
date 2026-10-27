@@ -130,16 +130,16 @@ export function stampProfile(file: RoadmapFile, changes: Partial<RoadmapProfile>
 /**
  * Save one screening answer (US-06, US-10 AC6). A number answer (one with a
  * `screeningRange`) that is blank is stored as null, which clears the field.
- * One that cannot be read, or reads two ways inside its range ("1,234" PSA,
- * US-02 AC7), is refused: the file comes back unchanged, so a refusal never
- * clears what is stored. Only this answer's clock is stamped: unstamped it
+ * One that cannot be read ("1,234" PSA, US-02 AC7) or falls outside its range
+ * ("1,234,567" pack-years) is refused: the file comes back unchanged, so a
+ * refusal never clears what is stored. Only this answer's clock is stamped: unstamped it
  * stays lamport 0 like an empty remote and the merge can discard it, and with
  * the whole object's stamp it would carry this copy of every other answer.
  */
 export function setScreening(file: RoadmapFile, screeningKey: string, value: string, now: string): RoadmapFile {
   const range = screeningRange(screeningKey);
   const parsed = !range ? value : value.trim() === '' ? null : parseLocalisedNumber(value, range);
-  if (parsed === undefined) return file;
+  if (parsed === undefined || (typeof parsed === 'number' && (parsed < range!.min || parsed > range!.max))) return file;
   const answer = { [screeningFieldName(screeningKey)]: parsed } as Partial<FileScreenings>;
   return stampUpdatedAt({ ...file, screenings: stampFields(file.screenings, answer, now) }, now);
 }

@@ -231,11 +231,11 @@ describe('readNumber (AC5, adversary R2)', () => {
     expect(inputRanges.lpa['mg/L']).toEqual({ min: 0, max: 3000 });
   });
 
-  it('reads "1,234" as neither 1234 nor 1.234, and "1,234,567" as thousands (US-02 AC7)', () => {
+  it('reads "1,234" as neither 1234 nor 1.234, and "1,234,567" as nothing without a range (US-02 AC7)', () => {
     expect(readNumber('1,234')).toBeUndefined();
     expect(readNumber('١,٢٣٤')).toBeUndefined();
     expect(readNumber('0,123')).toBe(0.123);
-    expect(readNumber('1,234,567')).toBe(1234567);
+    expect(readNumber('1,234,567')).toBeUndefined();
   });
 });
 

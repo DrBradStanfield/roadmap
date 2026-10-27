@@ -49,18 +49,15 @@ struct TypedAnswer: Equatable {
 
     /// The box's number in its own units (a US height in inches), nil until it reads as one.
     var value: Double? {
-        guard isHeight, us else { return TypedNumber.read(text, range: range) }
+        guard isHeight, us else { return TypedNumber.read(text) }
         return feetInches.map { Double($0.feet * 12 + $0.inches) }
     }
 
-    /// The metric's input range by units, "si" and "conventional" (`MyData.inputRange`): a
-    /// typed "100,500" kg is the one reading inside it (US-02 AC7). Empty from an older engine.
-    var ranges: [String: ClosedRange<Double>] = [:]
-    private var range: ClosedRange<Double>? { ranges[Self.system(us)] }
-
-    /// What the page asks while a typed comma reads two ways or neither ("1,234" kg), so
-    /// Continue is never disabled without a word (US-02 AC7).
-    var question: String? { isHeight && us ? nil : TypedNumber.question(text, range: range) }
+    /// What the page asks while a typed comma cannot be read ("100,500" kg), so Continue is
+    /// never disabled without a word (US-02 AC7). No range is needed: a height's or weight's
+    /// thousands reading ("1,000" and up) is never inside its range, so a comma there is
+    /// always asked about.
+    var question: String? { isHeight && us ? nil : TypedNumber.question(text) }
 
     /// Shows `recorded`, the record's value in `recordUnits`, in the box's own units;
     /// empty boxes when there is none.

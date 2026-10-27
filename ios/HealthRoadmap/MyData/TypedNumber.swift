@@ -51,20 +51,22 @@ extension TypedNumber {
     /// over health-core's `parseLocalisedNumber`. Arabic-Indic digits and decimal mark
     /// become ASCII, JavaScript's `trim` runs, a comma is a decimal mark, and only a plain
     /// decimal reads; anything else is nil. One comma before exactly three digits ("1,234")
-    /// is 1234 or 1.234: the one reading inside `range` (the field's input range in the unit
-    /// typed, `MyData.inputRange`), else nil, and the screen asks (`question`); two or more
-    /// comma groups are thousands (US-02 AC7). Pure Swift, so typing never waits on the
-    /// engine (US-25 AC21); NumberReadingTests holds it to the engine's own on the edge cases.
+    /// is 1234 or 1.234: thousands only when they are inside `range` (the field's input range
+    /// in the unit typed, `MyData.inputRange`) and the decimal reading is below it; the decimal
+    /// reading is never chosen. Otherwise nil, and the screen asks (`question`). Two or more
+    /// comma groups are thousands, read only against a range (US-02 AC7). Pure Swift, so
+    /// typing never waits on the engine (US-25 AC21); NumberReadingTests holds it to the
+    /// engine's own on the edge cases.
     static func read(_ text: String, range: ClosedRange<Double>? = nil) -> Double? {
         let typed = ascii(text)
+        let thousands = Double(typed.replacingOccurrences(of: ",", with: ""))
         if typed.wholeMatch(of: ambiguousComma) != nil {
-            let fits = ["", "."].compactMap { Double(typed.replacingOccurrences(of: ",", with: $0)) }
-                .filter { range?.contains($0) ?? false }
-            return fits.count == 1 ? fits[0] : nil
+            guard let range, let thousands, let decimal = Double(typed.replacingOccurrences(of: ",", with: ".")),
+                  range.contains(thousands), decimal < range.lowerBound else { return nil }
+            return thousands
         }
-        let plain = typed.wholeMatch(of: groupedThousands) != nil
-            ? typed.replacingOccurrences(of: ",", with: "")
-            : typed.replacingOccurrences(of: ",", with: ".")
+        if typed.wholeMatch(of: groupedThousands) != nil { return range == nil ? nil : thousands }
+        let plain = typed.replacingOccurrences(of: ",", with: ".")
         // ^[+-]?(\d+(\.\d*)?|\.\d+)$, the ASCII digits only.
         var rest = plain.unicodeScalars[...]
         if let sign = rest.first, sign == "+" || sign == "-" { rest.removeFirst() }
@@ -82,12 +84,14 @@ extension TypedNumber {
         return number == 0 ? 0 : number
     }
 
-    /// What to ask about a number `read` refused for its comma: "Did you mean 1234 or
-    /// 1.234?", as the web asks (health-core `commaQuestion`); nil otherwise, also when
-    /// `range` picks one reading.
+    /// What to ask about a number `read` refused for its commas: "Did you mean 1234 or
+    /// 1.234?", or, for grouped thousands with no range, to type it plainly, as the web asks
+    /// (health-core `commaQuestion`); nil otherwise, also when `range` reads it.
     static func question(_ text: String, range: ClosedRange<Double>? = nil) -> String? {
         let typed = ascii(text)
-        guard typed.wholeMatch(of: ambiguousComma) != nil, read(text, range: range) == nil else { return nil }
+        guard read(text, range: range) == nil else { return nil }
+        if typed.wholeMatch(of: groupedThousands) != nil { return "Type the number without commas." }
+        guard typed.wholeMatch(of: ambiguousComma) != nil else { return nil }
         let parts = typed.split(separator: ",")
         var decimals = String(parts[1])
         while decimals.hasSuffix("0") { decimals.removeLast() }
