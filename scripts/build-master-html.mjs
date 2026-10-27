@@ -83,12 +83,15 @@ const anchorId = (s) => s.replace(/^\s*\d+\.\s+/, '').replace(/\s*\([^)]*\)\s*$/
 // A site-relative path, never a protocol-relative //host.
 const safeHref = (url) => /^(https?:\/\/|mailto:|\/(?!\/)|#)/i.test(url);
 
-// [1], [3][5], [3,5], [51-54]: each number, or a range's start, links its reference.
+// [1], [3][5], [3,5], [51-54]: each number, or a range's start, links its reference. A run of
+// adjacent brackets, [1][48][49], renders as one small group, [1, 48, 49], styled by MASTER_CSS.
 const CITE = /\[(\d+(?:\s*[-\u2013]\s*\d+)?(?:\s*,\s*\d+(?:\s*[-\u2013]\s*\d+)?)*)\]/g;
+const CITE_RUN = new RegExp(`(?:${CITE.source})+`, 'g');
 const linkCitations = (s) =>
-  s.replace(CITE, (m, inner) => (/,/.test(inner)
-    ? `[${inner.replace(/(\d+)(?:\s*[-\u2013]\s*\d+)?/g, (part, n) => `<a href="#ref-${n}">${part}</a>`)}]`
-    : `<a href="#ref-${inner.match(/\d+/)[0]}">${m}</a>`));
+  s.replace(CITE_RUN, (run) => {
+    const parts = [...run.matchAll(CITE)].flatMap((m) => m[1].split(/\s*,\s*/));
+    return `<sup class="master-cite">[${parts.map((part) => `<a href="#ref-${part.match(/\d+/)[0]}">${part}</a>`).join(', ')}]</sup>`;
+  });
 
 function makeInline({ store }) {
   const nonce = randomBytes(4).toString('hex');
@@ -153,7 +156,8 @@ export function renderBlocks(body, opts) {
       const sep = rows.length > 1 && /^\|?[\s:|-]+\|?$/.test(rows[1]) && rows[1].includes('-');
       const head = sep ? `<thead><tr>${splitRow(rows[0]).map((c) => `<th>${inline(c)}</th>`).join('')}</tr></thead>\n` : '';
       const bodyRows = (sep ? rows.slice(2) : rows).map((r) => `<tr>${splitRow(r).map((c) => `<td>${inline(c)}</td>`).join('')}</tr>`);
-      blocks.push({ html: `<table>\n${head}<tbody>\n${bodyRows.join('\n')}\n</tbody>\n</table>` });
+      // The theme scrolls .rte-table-wrapper sideways, so a wide table never crushes its words on a phone.
+      blocks.push({ html: `<div class="rte-table-wrapper master-table"><table>\n${head}<tbody>\n${bodyRows.join('\n')}\n</tbody>\n</table></div>` });
       continue;
     }
     const item = (l) => l.match(/^(\s*)([-*]|(\d+)\.)\s+(.*)$/);
@@ -196,8 +200,11 @@ export function renderBlocks(body, opts) {
     }
     const para = [];
     while (i < lines.length && lines[i].trim() && !/^(#{1,6}\s|\||>|[-*]\s|\d+\.\s)/.test(lines[i])) para.push(lines[i++].trim());
-    const ref = para[0].match(/^\[(\d+)\]/);
-    blocks.push({ html: `<p${ref ? refId(ref[1]) : ''}>${para.map(inline).join('<br>')}</p>` });
+    // A reference's own [n] label stays a plain bracket, not a citation group.
+    const ref = inRefs && para[0].match(/^\[(\d+)\]\s*/);
+    if (ref) para[0] = para[0].slice(ref[0].length);
+    const label = ref ? `<a href="#ref-${ref[1]}">[${ref[1]}]</a>${para[0] ? ' ' : ''}` : '';
+    blocks.push({ html: `<p${ref ? refId(ref[1]) : ''}>${label}${para.map(inline).join('<br>')}</p>` });
   }
   return blocks;
 }
@@ -346,6 +353,36 @@ function fallbackPlace(out, path, find, endOf) {
   return refs.length === 1 ? { at: refs[0], side: 'before', placed: 'before "References"' } : { reason: `the master has ${refs.length} References headings` };
 }
 
+// One scoped style block per article: every rule sits under a master-* class, so nothing else on the
+// page changes. Callout teal is the drstanfield.com theme's table-header accent (#00a38b). The theme forces td padding to 0 !important and breaks words anywhere in narrow cells;
+// the table wrapper scrolls sideways instead (theme base.css: .rte .rte-table-wrapper{overflow-x:auto}).
+const MASTER_CSS = `<style>
+.master-table{margin:1.5em 0;-webkit-overflow-scrolling:touch}
+.master-table table{min-width:560px;margin:0}
+.master-table th,.master-table td{word-break:normal;overflow-wrap:normal;hyphens:manual;vertical-align:top;line-height:1.5;padding-top:.5em!important;padding-bottom:.5em!important}
+.master-table th:first-child,.master-table td:first-child{min-width:9em}
+.master-callout{background:#f1f9f7;border:1px solid #d5ebe5;border-left:4px solid #00a38b;border-radius:10px;padding:1.2em 1.4em .5em;margin:2em 0}
+.master-callout h2{margin:0 0 .4em;font-size:1.75em}
+.master-refs li,.master-refs p{font-size:15px;line-height:1.55;margin:0 0 .6em}
+.master-refs a[href^="http"]{overflow-wrap:anywhere}
+.master-cite{font-size:.68em;line-height:0;vertical-align:super;font-weight:400;white-space:nowrap;opacity:.85}
+.master-cite a{text-decoration:none}
+</style>
+`;
+
+/** Wrap an H2 section (heading through its last block) in a styled div: the safety callout and the references. */
+const SECTION_CLASS = { 'key safety points': 'master-callout', references: 'master-refs' };
+function wrapSections(blocks) {
+  blocks.forEach((b, at) => {
+    const cls = b.level === 2 && SECTION_CLASS[b.key];
+    if (!cls) return;
+    let end = at;
+    while (end + 1 < blocks.length && !(blocks[end + 1].level <= 2)) end++;
+    b.html = `<div class="${cls}">\n${b.html}`;
+    blocks[end].html += '\n</div>';
+  });
+}
+
 /** Table of contents from the H2s, as the live bodies open with one. */
 const toc = (blocks) => {
   const h2 = blocks.filter((b) => b.level === 2);
@@ -366,6 +403,17 @@ const handlesOf = (meta) => [meta.url, meta.commerceUrl].filter(Boolean).map((u)
 const COMMERCE_DROP_HEADING = /^(?:current view\b|current evidence position\b|brad['\u2019]s videos on this topic$|product (?:mention|note)\b)|\bmicrovitamin\b|\bsleep by dr brad\b|\bdr brad stanfield['\u2019]s products?\b/i;
 const PRODUCT_LINK = /\[[^\]]*\]\(https?:\/\/(?:www\.)?drstanfield\.com\/products\/[a-z0-9-]+\/?\)/i;
 const SENTENCE_END = /[.!?](?:\*\*?|\))?\s+/g;
+// Pointers to the dropped Current view section, and unlinked product sentences, go too, so the
+// sentences left still read: "(see the Current view above)", "; Brad's view is in the Current view.",
+// a whole sentence naming it, and "...exclude vitamin E from MicroVitamin, his ... formulation."
+// A "Disclosure:" sentence stays: it tells the reader about Brad's interest.
+const POINTER_PAREN = /\s*\((?:see\s+)?(?:the\s+)?Current view(?:\s+(?:above|below))?\)/g;
+// Inside a sentence a "." is fine when no space follows it (27.5 mg, 1.004).
+const IN = String.raw`(?:[^.!?]|[.!?](?!\s|$))*`;
+const POINTER_CLAUSE = new RegExp(String.raw`;\s*(?:[^;.!?]|[.!?](?!\s|$))*\bCurrent view\b(?:[^;.!?]|[.!?](?!\s|$))*([.!?])(?=\s|$)`, 'g');
+const DROP_SENTENCE = new RegExp(String.raw`(^|[.!?]\s+)(?!Disclosure:)${IN}\b(?:Current view|MicroVitamin)\b${IN}[.!?](?=\s|$)`, 'g');
+const dropPointers = (line) =>
+  line.replace(POINTER_PAREN, '').replace(POINTER_CLAUSE, '$1').replace(DROP_SENTENCE, (m, pre) => pre.trimEnd());
 
 /** The master body without the sections and product text commerce drops, and a list of what went. */
 export function stripForCommerce(body) {
@@ -390,8 +438,15 @@ export function stripForCommerce(body) {
       continue;
     }
     if (skip) { if (line.trim()) stripped[stripped.length - 1].text.push(line); continue; }
-    const link = !line.startsWith('|') && line.match(PRODUCT_LINK);
-    if (!link) { kept.push(line); continue; }
+    if (line.startsWith('|')) { kept.push(line); continue; }
+    const link = line.match(PRODUCT_LINK);
+    if (!link) {
+      const cleaned = dropPointers(line);
+      if (cleaned === line) { kept.push(line); continue; }
+      stripped.push({ kind: 'phrase', heading: stack.map((x) => x.text), text: [line] });
+      if (/\S/.test(cleaned.replace(/^\s*(?:[-*]|\d+\.)\s*/, ''))) kept.push(cleaned);
+      continue;
+    }
     let cut = 0;
     for (const m of line.slice(0, link.index).matchAll(SENTENCE_END)) cut = m.index + m[0].length;
     const rest = line.slice(0, cut).trimEnd();
@@ -408,6 +463,7 @@ export function buildMasterHtml(md, { store, liveHtml, callouts }) {
   const { meta, body: master } = splitMaster(md);
   const { body, stripped } = store === 'commerce' ? stripForCommerce(master) : { body: master, stripped: [] };
   const blocks = renderBlocks(body, { store });
+  wrapSections(blocks);
   const { carried, dropped } = extractCarried(liveHtml, store);
   if (store === 'commerce') {
     // Counted on the visible text, so markup or an entity inside the eyebrow cannot hide a card (Codex R2).
@@ -424,7 +480,7 @@ export function buildMasterHtml(md, { store, liveHtml, callouts }) {
     throw new Error('--callouts is for commerce builds only');
   }
   const { html, unplaced, fallbacks } = placeCarried(blocks, carried);
-  return { meta, html: `${toc(blocks)}${html}\n`, carried, dropped, unplaced, fallbacks, stripped };
+  return { meta, html: `${MASTER_CSS}${toc(blocks)}${html}\n`, carried, dropped, unplaced, fallbacks, stripped };
 }
 
 function main(argv) {

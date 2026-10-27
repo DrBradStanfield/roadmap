@@ -90,13 +90,13 @@ describe('build-master-html (US-50 AC9)', () => {
     expect(html).toContain('<h3>Blood Pressure</h3>');
     expect(html).toContain('<ul>\n<li>first point</li>\n<li>second point</li>\n</ul>');
     expect(html).toContain('<thead><tr><th>Form</th><th>Absorption</th></tr></thead>');
-    expect(html).toContain('<tr><td>Oxide</td><td>Poor <a href="#ref-1">[1]</a></td></tr>');
-    expect(html).toContain('<strong>glycinate</strong> and <em>taurate</em> <a href="#ref-1">[1]</a><a href="#ref-2">[2]</a>');
+    expect(html).toContain('<tr><td>Oxide</td><td>Poor <sup class="master-cite">[<a href="#ref-1">1</a>]</sup></td></tr>');
+    expect(html).toContain('<strong>glycinate</strong> and <em>taurate</em> <sup class="master-cite">[<a href="#ref-1">1</a>, <a href="#ref-2">2</a>]</sup>');
     expect(html).toContain('<p><strong>Which form is best?</strong><br>No single form.</p>');
     expect(html).toMatch(/<p id="ref-1"><a href="#ref-1">\[1\]<\/a> Author A\. &quot;Title one\.&quot; doi: <a href="https:\/\/doi\.org\/10\.1\/abc\(17\)x">10\.1\/abc\(17\)x<\/a><\/p>/);
     expect(html).toContain('<p id="ref-2"><a href="#ref-2">[2]</a> Author B. Title two. <a href="https://pubmed.ncbi.nlm.nih.gov/123/">https://pubmed.ncbi.nlm.nih.gov/123/</a></p>');
     // A table of contents from the H2s, anchors in the live bodies' shape.
-    expect(html).toMatch(/^<h2>Table of Contents<\/h2>\n<ul>\n<li><a href="#Current-view">/);
+    expect(html).toMatch(/<\/style>\n<h2>Table of Contents<\/h2>\n<ul>\n<li><a href="#Current-view">/);
     expect(html).toContain('<li><a href="#References">References</a></li>');
   });
 
@@ -130,7 +130,7 @@ describe('build-master-html (US-50 AC9)', () => {
     expect(commerce.html).not.toContain('taurate &amp; more');
     expect(commerce.html).not.toContain('[9]');
     // After the Blood Pressure table, before the Sleep heading.
-    expect(commerce.html).toMatch(/<\/table>\n<div style="[^"]*">\n<p [^>]*>From the MicroVitamin range<\/p>\n<p style="margin:0;">Approved card text\. <a href="\/products\/microvitamin" target="_blank" rel="noopener">See MicroVitamin<\/a><\/p>\n<\/div>\n<h3>Sleep<\/h3>/);
+    expect(commerce.html).toMatch(/<\/table><\/div>\n<div style="[^"]*">\n<p [^>]*>From the MicroVitamin range<\/p>\n<p style="margin:0;">Approved card text\. <a href="\/products\/microvitamin" target="_blank" rel="noopener">See MicroVitamin<\/a><\/p>\n<\/div>\n<h3>Sleep<\/h3>/);
     // The master's own handle names it too; an approved card is escaped.
     const own = [{ ...approved[0], handle: 'magnesium-test', text: '<b>x</b>' }];
     expect(buildMasterHtml(MASTER, { store: 'commerce', liveHtml: LIVE, callouts: own }).html).toContain('&lt;b&gt;x&lt;/b&gt;');
@@ -150,7 +150,7 @@ describe('build-master-html (US-50 AC9)', () => {
   it('US-50 AC9: theme markers carry over per store (roadmap-embed edu only, cta-pf both)', () => {
     const edu = buildMasterHtml(MASTER, { store: 'edu', liveHtml: LIVE }).html;
     expect(edu).toMatch(/second point<\/li>\n<\/ul>\n<div class="roadmap-embed"><\/div>\n<h2 id="Evidence">/);
-    expect(edu).toMatch(/No single form\.<\/p>\n<div class="cta-pf"><\/div>\n<h2 id="References">/);
+    expect(edu).toMatch(/No single form\.<\/p>\n<div class="cta-pf"><\/div>\n<div class="master-refs">\n<h2 id="References">/);
     const commerce = buildMasterHtml(MASTER, { store: 'commerce', liveHtml: LIVE.replace(/<div style[\s\S]*?<\/div>/, '') }).html;
     expect(commerce).not.toContain('roadmap-embed');
     expect(commerce).toContain('<div class="cta-pf"></div>');
@@ -170,7 +170,7 @@ describe('build-master-html (US-50 AC9)', () => {
     const c = build(md, { store: 'commerce' });
     expect(c.html).not.toMatch(/Current view|Brad favours|videos on this topic|A video|Older videos|older/);
     expect(c.html).toContain('<li>Check with your doctor.</li>');
-    expect(c.html).toMatch(/^<h2>Table of Contents<\/h2>\n<ul>\n<li><a href="#Key-safety-points">/);
+    expect(c.html).toMatch(/<\/style>\n<h2>Table of Contents<\/h2>\n<ul>\n<li><a href="#Key-safety-points">/);
     expect(c.stripped.map((x: { heading: string[] }) => x.heading.join(' > '))).toEqual(['Current view (reviewed 20 October 2026)', "Brad's videos on this topic"]);
     const position = build(md.replace('## Current view (reviewed 20 October 2026)', '## Current evidence position'), { store: 'commerce' });
     expect(position.html).not.toContain('Brad favours');
@@ -193,9 +193,9 @@ describe('build-master-html (US-50 AC9)', () => {
     const c = build(md, { store: 'commerce' });
     expect(c.html).not.toMatch(/126 mg|taken daily|uses taurate|That is all|has it too|Product Note|It has magnesium|Detail|More\.|Not in Sleep|products\//);
     // Sentences before the product link stay, in a paragraph and in a list item.
-    expect(c.html).toContain('<p><strong>Absorption differs by form.</strong> One trial found higher uptake <a href="#ref-1">[1]</a>.</p>');
-    expect(c.html).toContain('<li>second point <a href="#ref-2">[2]</a>.</li>');
-    expect(c.html).toContain('<p>Magnesium matters, p &lt; 0.05 <a href="#ref-1">[1]</a>.</p>');
+    expect(c.html).toContain('<p><strong>Absorption differs by form.</strong> One trial found higher uptake <sup class="master-cite">[<a href="#ref-1">1</a>]</sup>.</p>');
+    expect(c.html).toContain('<li>second point <sup class="master-cite">[<a href="#ref-2">2</a>]</sup>.</li>');
+    expect(c.html).toContain('<p>Magnesium matters, p &lt; 0.05 <sup class="master-cite">[<a href="#ref-1">1</a>]</sup>.</p>');
     expect(c.html).toContain('<h3>Sleep</h3>');
     expect(c.stripped.map((x: { kind: string }) => x.kind)).toEqual(['section', 'paragraph', 'sentences', 'sentences', 'section', 'section']);
     expect(c.stripped[4].heading).toEqual(['2. Evidence', 'Product Note: MicroVitamin']);
@@ -277,7 +277,7 @@ describe('build-master-html (US-50 AC9)', () => {
     expect(r.carried.map((c: { kind: string }) => c.kind)).toEqual(['cta-pf', 'roadmap-embed', 'cta-roadmap']);
     expect(r.unplaced).toEqual([]);
     expect(r.html).toMatch(/second point<\/li>\n<\/ul>\n<div class="cta-pf"><\/div>\n<div class="roadmap-embed"><\/div>\n<h2 id="Evidence">/);
-    expect(r.html).toMatch(/No single form\.<\/p>\n<div class="cta-roadmap"><\/div>\n<h2 id="References">/);
+    expect(r.html).toMatch(/No single form\.<\/p>\n<div class="cta-roadmap"><\/div>\n<div class="master-refs">\n<h2 id="References">/);
     // Commerce drops the two its theme renders as nothing, and says so.
     const c = buildMasterHtml(MASTER, { store: 'commerce', liveHtml: live });
     expect(c.dropped.map((d: { kind: string }) => d.kind)).toEqual(['roadmap-embed', 'cta-roadmap']);
@@ -291,8 +291,8 @@ describe('build-master-html (US-50 AC9)', () => {
     const live = '<h2>Evidence</h2><h3>Blood Pressure</h3><div class="cta-pf"></div><h2>Safety</h2><h3>Blood Pressure</h3><div class="roadmap-embed"></div>';
     const { html, unplaced } = buildMasterHtml(md, { store: 'edu', liveHtml: live });
     expect(unplaced).toEqual([]);
-    expect(html).toMatch(/<\/table>\n<div class="cta-pf"><\/div>\n<h3>Sleep<\/h3>/);
-    expect(html).toMatch(/Low blood pressure note\.<\/p>\n<div class="roadmap-embed"><\/div>\n<h2 id="References">/);
+    expect(html).toMatch(/<\/table><\/div>\n<div class="cta-pf"><\/div>\n<h3>Sleep<\/h3>/);
+    expect(html).toMatch(/Low blood pressure note\.<\/p>\n<div class="roadmap-embed"><\/div>\n<div class="master-refs">\n<h2 id="References">/);
     // The same heading level matters: an h4 is not the master's ###.
     expect(buildMasterHtml(md, { store: 'edu', liveHtml: '<h2>Safety</h2><h4>Blood Pressure</h4><div class="cta-pf"></div>' }).unplaced).toHaveLength(1);
     // Two master headings with the same path: ambiguous, refused.
@@ -306,13 +306,13 @@ describe('build-master-html (US-50 AC9)', () => {
     const r = buildMasterHtml(MASTER, { store: 'edu', liveHtml: live });
     expect(r.unplaced).toEqual([]);
     expect(r.fallbacks.map((c: { placed: string }) => c.placed)).toEqual(['end of "2. Evidence"']);
-    expect(r.html).toMatch(/No single form\.<\/p>\n<div class="roadmap-embed"><\/div>\n<h2 id="References">/);
+    expect(r.html).toMatch(/No single form\.<\/p>\n<div class="roadmap-embed"><\/div>\n<div class="master-refs">\n<h2 id="References">/);
   });
 
   it('US-50 AC9: a roadmap-embed whose subsection changed level falls back to the parent section', () => {
     const r = buildMasterHtml(MASTER, { store: 'edu', liveHtml: '<h2>Evidence</h2><h4>Blood Pressure</h4><div class="roadmap-embed"></div>' });
     expect(r.unplaced).toEqual([]);
-    expect(r.html).toMatch(/No single form\.<\/p>\n<div class="roadmap-embed"><\/div>\n<h2 id="References">/);
+    expect(r.html).toMatch(/No single form\.<\/p>\n<div class="roadmap-embed"><\/div>\n<div class="master-refs">\n<h2 id="References">/);
     // A deeper surviving ancestor wins over the H2.
     const deep = buildMasterHtml(MASTER.replace('### Sleep', '### Sleep\n\n#### Onset\n\nOnset text.\n\n#### Depth'), {
       store: 'edu', liveHtml: '<h2>Evidence</h2><h3>Sleep</h3><h4>Latency</h4><div class="roadmap-embed"></div>',
@@ -330,7 +330,7 @@ describe('build-master-html (US-50 AC9)', () => {
     const live = '<h2>Dosing</h2><h3>Timing</h3><div class="roadmap-embed"></div>';
     const r = buildMasterHtml(MASTER, { store: 'edu', liveHtml: live });
     expect(r.unplaced).toEqual([]);
-    expect(r.html).toMatch(/No single form\.<\/p>\n<div class="roadmap-embed"><\/div>\n<h2 id="References">/);
+    expect(r.html).toMatch(/No single form\.<\/p>\n<div class="roadmap-embed"><\/div>\n<div class="master-refs">\n<h2 id="References">/);
     const dir = mkdtempSync(join(tmpdir(), 'master-'));
     try {
       writeFileSync(join(dir, 'magnesium-test.md'), MASTER);
@@ -360,7 +360,7 @@ describe('build-master-html (US-50 AC9)', () => {
   it('US-50 AC9: indented list items render as a nested list', () => {
     const md = MASTER.replace('- first point\n- second point', '- **Results:**\n  - weight fell [7]\n  - lipids improved\n    continued line\n- **Limitations:** small\n1. not part of the list');
     const { html } = build(md, { store: 'edu' });
-    expect(html).toContain('<ul>\n<li><strong>Results:</strong>\n<ul>\n<li>weight fell <a href="#ref-7">[7]</a></li>\n<li>lipids improved continued line</li>\n</ul>\n</li>\n<li><strong>Limitations:</strong> small</li>\n</ul>\n<ol>');
+    expect(html).toContain('<ul>\n<li><strong>Results:</strong>\n<ul>\n<li>weight fell <sup class="master-cite">[<a href="#ref-7">7</a>]</sup></li>\n<li>lipids improved continued line</li>\n</ul>\n</li>\n<li><strong>Limitations:</strong> small</li>\n</ul>\n<ol>');
   });
 
   it('US-50 AC9: a protocol-relative //host link is not a site path and is not linked', () => {
@@ -370,12 +370,71 @@ describe('build-master-html (US-50 AC9)', () => {
     expect(html).toContain('<a href="/pages/roadmap">ok</a>');
   });
 
-  it('US-50 AC9: grouped citations link each number, or a range to its start', () => {
-    const { html } = build(MASTER.replace('Magnesium matters', 'A [51-54], B [3,5], C [3, 6\u20138], D [3][5].'), { store: 'edu' });
-    expect(html).toContain('A <a href="#ref-51">[51-54]</a>');
-    expect(html).toContain('B [<a href="#ref-3">3</a>,<a href="#ref-5">5</a>]');
-    expect(html).toContain('C [<a href="#ref-3">3</a>, <a href="#ref-6">6\u20138</a>]');
-    expect(html).toContain('D <a href="#ref-3">[3]</a><a href="#ref-5">[5]</a>');
+  it('US-50 AC9: a citation run renders as one small group; each number, or a range, links its reference', () => {
+    const { html } = build(MASTER.replace('Magnesium matters', 'A [51-54], B [3,5], C [3, 6\u20138], D [1][48][49].'), { store: 'edu' });
+    const a = (n: number, t: string | number = n) => `<a href="#ref-${n}">${t}</a>`;
+    expect(html).toContain(`A <sup class="master-cite">[${a(51, '51-54')}]</sup>`);
+    expect(html).toContain(`B <sup class="master-cite">[${a(3)}, ${a(5)}]</sup>`);
+    expect(html).toContain(`C <sup class="master-cite">[${a(3)}, ${a(6, '6\u20138')}]</sup>`);
+    expect(html).toContain(`D <sup class="master-cite">[${a(1)}, ${a(48)}, ${a(49)}]</sup>.`);
+    // A reference's own [n] label is not a citation group.
+    expect(html).not.toMatch(/id="ref-\d+"><sup/);
+  });
+
+  it('US-50 AC9: tables scroll inside the theme wrapper, under one style block whose rules are all scoped to master classes', () => {
+    const { html } = build(MASTER, { store: 'edu' });
+    expect(html).toContain('<div class="rte-table-wrapper master-table"><table>\n<thead>');
+    expect(html).toContain('</table></div>');
+    expect(html.match(/<style>/g)).toHaveLength(1);
+    const css = html.match(/<style>([\s\S]*?)<\/style>/)![1];
+    const selectors = [...css.matchAll(/(^|\})\s*([^{}]+)\{/g)].flatMap((m) => m[2].split(','));
+    expect(selectors.length).toBeGreaterThan(5);
+    for (const sel of selectors) expect(sel.trim()).toMatch(/^\.master-[a-z]+(?:[\s:.[]|$)/);
+    // Mobile: the table keeps a readable width and scrolls; no letter-by-letter breaks; the theme's 0 padding is overridden.
+    expect(css).toMatch(/\.master-table table\{min-width:560px/);
+    expect(css).toMatch(/word-break:normal;overflow-wrap:normal/);
+    expect(css).toMatch(/padding-top:\.5em!important;padding-bottom:\.5em!important/);
+    expect(css).not.toMatch(/<\/?script|expression\(|url\(/i);
+  });
+
+  it('US-50 AC9: Key safety points render as a callout and References as a smaller list, each wrapping its whole section', () => {
+    const md = MASTER.replace('## 1. Overview', '## Key safety points\n\n- Check with your doctor.\n\n## 1. Overview');
+    for (const store of ['edu', 'commerce']) {
+      const { html } = build(md, { store });
+      expect(html).toContain('<div class="master-callout">\n<h2 id="Key-safety-points">Key safety points</h2>\n<ul>\n<li>Check with your doctor.</li>\n</ul>\n</div>\n<h2 id="Overview">');
+      expect(html).toMatch(/<div class="master-refs">\n<h2 id="References">3\. References<\/h2>[\s\S]*pubmed\.ncbi\.nlm\.nih\.gov\/123\/<\/a><\/p>\n<\/div>\n$/);
+    }
+  });
+
+  it('US-50 AC9: commerce drops pointers to the dropped Current view and unlinked product sentences, so what is left still reads; edu keeps them', () => {
+    const lines = [
+      'Brad uses zinc lozenges at above 75 mg per day (see the Current view above). These exceed the UL [1].',
+      '**Cold treatment:** Above 75 mg/day as lozenges (see the Current view). Not for long [1].',
+      'Brad does not recommend taking resveratrol (see Current view); the doses below describe the research.',
+      "These are trial and guideline figures. Brad's own view on how much is useful is in the Current view above.",
+      "These are doses used in trials, not recommendations; Brad's view is in the Current view.",
+      'Trials found no benefit [8]. This evidence profile has led Dr Brad Stanfield to deliberately exclude vitamin E from MicroVitamin, his evidence-based multivitamin formulation.',
+      '- **Selenium:** Antioxidant effects [26]. MicroVitamin provides 27.5 mcg of selenium. Food has 1.5 mcg too.',
+      'Choose tested products. Disclosure: MicroVitamin Capsules are tested by Labdoor.',
+    ];
+    const md = MASTER.replace('Magnesium matters, p < 0.05 [1].', lines.join('\n\n'));
+    const c = build(md, { store: 'commerce' });
+    const text = c.html.replace(/<[^>]+>/g, '');
+    expect(text).not.toMatch(/Current view|led Dr Brad|MicroVitamin provides/);
+    for (const kept of [
+      'Brad uses zinc lozenges at above 75 mg per day. These exceed the UL [1].',
+      'Cold treatment: Above 75 mg/day as lozenges. Not for long [1].',
+      'Brad does not recommend taking resveratrol; the doses below describe the research.',
+      'These are trial and guideline figures.\n',
+      'These are doses used in trials, not recommendations.\n',
+      'Trials found no benefit [8].\n',
+      'Selenium: Antioxidant effects [26]. Food has 1.5 mcg too.',
+      'Disclosure: MicroVitamin Capsules are tested by Labdoor.',
+    ]) expect(text).toContain(kept);
+    expect(c.stripped.filter((x: { kind: string }) => x.kind === 'phrase')).toHaveLength(7);
+    const edu = build(md, { store: 'edu' }).html;
+    expect(edu).toContain('(see the Current view above)');
+    expect(edu).toContain('exclude vitamin E from MicroVitamin');
   });
 
   it('US-50 AC9: code inside link text renders, and no placeholder leaks', () => {
