@@ -9,11 +9,12 @@
 import '../src/styles.css';
 import './standalone.css';
 import React from 'react';
+import { registerPageDeparture } from './page-departure';
 import { createRoot } from 'react-dom/client';
 import { HealthTool } from '../src/components/HealthTool';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { initSentry } from '../src/lib/sentry';
-import { initRoadmapStore, flushRoadmapStoreSync, setPreEraseHook } from '../src/lib/roadmap-data';
+import { initRoadmapStore, setPreEraseHook } from '../src/lib/roadmap-data';
 import { resolveAssistantName, setAssistantName, resolveSkipEmailGate, setSkipEmailGate } from '../src/lib/assistant-config';
 import { resolveMarketCountry, setMarketCountry } from '../src/lib/market-country';
 import { autoEnrolReminders, cancelRemindersForErase, pushReminderSchedule } from './reminders';
@@ -129,17 +130,7 @@ async function main() {
 
   // Persist before the tab goes away — visibilitychange(hidden) is the reliable
   // mobile signal; beforeunload covers desktop. Both call the synchronous flush.
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') {
-      flushRoadmapStoreSync();
-      // Session-end snapshot of the reminder schedule (keepalive survives the
-      // tab going away). No-op unless opted in.
-      void pushReminderSchedule(backend, true);
-    }
-  });
-  window.addEventListener('beforeunload', () => {
-    flushRoadmapStoreSync();
-  });
+  registerPageDeparture(() => { void pushReminderSchedule(backend, true); });
 
   // Keep the server's reminder schedule tracking the user's data (§10): one
   // push per visit — it also discovers email-link unsubscribes (404 → the
