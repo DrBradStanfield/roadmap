@@ -318,6 +318,30 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
     expect(Sentry.captureException).toHaveBeenCalledTimes(2);
   });
 
+  it('a refusal with a new cause class is reported, though the browser named neither (US-09 AC28)', async () => {
+    const [a] = await twoTabs();
+    const good = localStorage.getItem(FILE_KEY)!;
+    // Unreadable bytes: a StorageError wrapping a SyntaxError, cause=other.
+    localStorage.setItem(FILE_KEY, '{');
+    a.addMeasurement('hdl', 1.4, TODAY);
+    await a.flush().catch(() => {});
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+
+    // A write that never lands: a StorageError wrapping a lost update, also
+    // cause=other. Without its cause class in the key, the dedupe hid it.
+    localStorage.setItem(FILE_KEY, good);
+    const setItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key !== FILE_KEY) setItem.call(this, key, value);
+    });
+    await a.flush().catch(() => {});
+    expect(Sentry.captureException).toHaveBeenCalledTimes(2);
+
+    // The same lost update again is a repeat.
+    await a.flush().catch(() => {});
+    expect(Sentry.captureException).toHaveBeenCalledTimes(2);
+  });
+
   it('a conflict with another tab is retried on every hide, though an earlier one was too', async () => {
     const adapterA = new LocalStorageAdapter();
     const [a] = await twoTabs(adapterA);

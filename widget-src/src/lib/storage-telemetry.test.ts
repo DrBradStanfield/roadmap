@@ -6,6 +6,7 @@ import { Blob as NodeBlob } from 'node:buffer';
 import { ConflictError, MemoryAdapter, StorageError } from '@roadmap/health-core';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage';
+import { stopRoadmapLocalWrites } from '../storage/local-storage-adapter';
 import { Sentry, scrubEvent } from './sentry';
 import { EXPECTED_NETWORK_ERRORS, recordFailure, storageCauseClass, storageFailureClass } from './error-diagnostics';
 
@@ -150,6 +151,63 @@ describe('cloud-storage telemetry boundary', () => {
     const [, items] = envelopes[0] as [unknown, Array<[unknown, { tags: Record<string, string> }]>];
     expect(items[0][1].tags).toEqual({ area: 'cloud-sync', op: 'persist', backend: 'memory', errorClass: 'StorageError', causeClass });
     expect(JSON.stringify(envelopes)).not.toContain(marker);
+  });
+
+  // US-09 AC28, as the device tier really throws (backend=local, where 77
+  // fires). A failure after a write has landed is wrapped again by the save,
+  // so its cause is a StorageError and reads `other`; a lost-update storm
+  // keeps its last LostUpdateError (a ConflictError) as the cause.
+  describe('the device tier, end to end (US-09 AC28)', () => {
+    const FILE_KEY = 'health_roadmap_file_v2';
+    const setItem = Storage.prototype.setItem;
+    const getItem = Storage.prototype.getItem;
+
+    async function persistTags(arrange: (store: RoadmapStore) => Promise<void> | void): Promise<Record<string, string>> {
+      localStorage.clear();
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const store = await RoadmapStore.create(new LocalStorageAdapter());
+      store.addMeasurement('weight', 82, '2024-06-01T09:00:00.000Z');
+      await store.flush();
+      await arrange(store);
+      store.addMeasurement('ldl', 4.5, '2024-06-02T09:00:00.000Z');
+      await expect(store.flush()).rejects.toThrow();
+      await Sentry.flush();
+      expect(envelopes).toHaveLength(1);
+      const [, items] = envelopes[0] as [unknown, Array<[unknown, { tags: Record<string, string> }]>];
+      return items[0][1].tags;
+    }
+    const local = { area: 'cloud-sync', op: 'persist', backend: 'local', cause: 'other', errorClass: 'StorageError' };
+
+    it('a corrupt file read before the write reads SyntaxError', async () => {
+      expect(await persistTags(() => { localStorage.setItem(FILE_KEY, `{${marker}`); })).toEqual({ ...local, causeClass: 'SyntaxError' });
+    });
+
+    it('a corrupt read-back after the write landed reads other (wrapped again by the save)', async () => {
+      let armed = false;
+      let written = false;
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+        if (armed && key === FILE_KEY) written = true;
+        setItem.call(this, key, value);
+      });
+      vi.spyOn(Storage.prototype, 'getItem').mockImplementation(function (this: Storage, key: string) {
+        return written && key === FILE_KEY ? `{${marker}` : getItem.call(this, key);
+      });
+      expect(await persistTags(() => { armed = true; })).toEqual({ ...local, causeClass: 'other' });
+    });
+
+    it('a write that never lands (verify reads an older revision every time) reads ConflictError', async () => {
+      let frozen = false;
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+        if (!(frozen && key === FILE_KEY)) setItem.call(this, key, value);
+      });
+      expect(await persistTags(() => { frozen = true; })).toEqual({ ...local, causeClass: 'ConflictError' });
+    });
+
+    // Last on purpose: the logout latch is page-lifetime module state with no
+    // reset, so no device-tier save in this file may run after it.
+    it('a write refused for logout reads none', async () => {
+      expect(await persistTags(() => stopRoadmapLocalWrites())).toEqual({ ...local, causeClass: 'none' });
+    });
   });
 
   it('keeps a closed cause class through the scrub and drops any other value (US-09 AC28)', () => {
