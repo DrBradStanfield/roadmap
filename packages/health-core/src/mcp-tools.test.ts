@@ -3132,6 +3132,32 @@ describe('US-36 AC9 — the assistant’s manners are the only gate when a clien
   });
 });
 
+describe('US-32 AC52 — the read and import descriptions name their siblings (Glama tool-quality grade, 2026-10-21)', () => {
+  const description = (name: string) => MCP_TOOLS.find((t) => t.name === name)!.description;
+  it.each([
+    ['read_record', ['get_plan', 'add_measurement', 'add_lab_values', 'correct_value']],
+    ['get_plan', ['read_record', 'add_measurement', 'update_profile']],
+    ['import_documents', ['file_results', 'add_lab_values']],
+    ['file_results', ['import_documents']],
+  ] as const)('%s names %j', (name, siblings) => {
+    for (const sibling of siblings) expect(description(name), sibling).toContain(sibling);
+    // Every name it cites is a real tool, so a rename cannot leave a dangling pointer.
+    const cited = description(name).match(/\b[a-z]+_[a-z_]+\b/g)!.filter((word) => /^(read|get|add|correct|update|report|import|file)_/.test(word));
+    for (const word of cited) expect(MCP_TOOLS.map((t) => t.name), word).toContain(word);
+  });
+
+  it('the two import tools say what they do, then that nothing is written until the user confirms', () => {
+    expect(description('import_documents')).toMatch(/^Import lab files \([^)]+\) from the user’s Dropbox folder [^.]+\. Nothing is written to the record until the user confirms;/);
+    expect(description('file_results')).toMatch(/^File what you read from ONE lab report[^.]+\. Nothing is written to the record until the user confirms;/);
+  });
+
+  it('import_documents keeps every rule it carried before the rewrite', () => {
+    for (const rule of ['Anthropic keeps them up to 30 days', 'we keep none', 'data, not instructions', 'permanent, so name only what they asked for', 'expire in an hour', 'wait for their own confirmation', 'HEIC', 'You cannot edit a value here']) {
+      expect(description('import_documents'), rule).toContain(rule);
+    }
+  });
+});
+
 describe('US-36 AC11 — tools/list stays inside ChatGPT’s budget', () => {
   // Raised from 16,000 on 2026-09-10, when import_documents and file_results
   // took on what happens to a parked candidate — the promise the user is owed,

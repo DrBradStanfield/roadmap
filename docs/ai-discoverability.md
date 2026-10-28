@@ -66,7 +66,7 @@ change below. The original plan and its reasoning:
 | Where | State | Link or ID |
 | --- | --- | --- |
 | Official MCP Registry | Listed | namespace `io.github.DrBradStanfield` |
-| OpenAI (ChatGPT apps) | 1.0.2 in review since 2026-10-14 | [chatgpt-app-listing.md](chatgpt-app-listing.md) |
+| OpenAI (ChatGPT apps) | Declined 2026-10-29 on scope (health apps out of scope); left to stand. Custom connector in developer mode still works | [chatgpt-app-listing.md](chatgpt-app-listing.md) |
 | Claude directory | Submitted 2026-10-21, in review | [claude-directory-listing.md](claude-directory-listing.md) |
 | Glama | Server and connector listed, claimed, build passes; profile 83% (2026-10-21), tools A, maintenance B | glama.ai/mcp/servers/DrBradStanfield/roadmap (Admin → score) |
 | mcp.so | Live, paid ($39) | mcp.so/servers/health-by-dr-brad |
@@ -78,10 +78,9 @@ change below. The original plan and its reasoning:
 
 ## Waiting
 
-- **OpenAI 1.0.2 verdict.** Then merge PR #209 (`annotations.title`, and
-  tools/list stops leaking internal fields), held by the US-35 AC13 freeze.
-- **First directory verdict.** Then set `MCP_REVIEWER_VENDORS` on
-  health-tool-edu back to the vendor still reviewing.
+- **Anthropic directory verdict.** Then unset the three reviewer secrets
+  and delete the reviewer sign-in code in a reviewed commit (Brad
+  2026-10-29). OpenAI's half went off 2026-10-29 (`MCP_REVIEWER_VENDORS=anthropic`).
 - **Brad:** add the brand socials in microvitamin.com's theme editor; set
   per-market descriptions in Translate & Adapt (UK, EU and Canadian answers
   still say "26 ingredients").
@@ -105,8 +104,8 @@ Ranked by cost against likely effect.
 1. **YouTube descriptions:** the `/pages/roadmap` link and one line on the
    connector. Gemini and Perplexity cite YouTube heavily.
 2. **Glama tool descriptions:** read_record and get_plan name their siblings,
-   import_documents and file_results made easier to scan. Written on PR #209's
-   branch (held), so it ships with #209 after the OpenAI verdict.
+   import_documents and file_results made easier to scan. Ships with PR #209,
+   unheld 2026-10-29 after the OpenAI verdict.
 3. **Glama to 100%.** "CI is failing" and "No stable releases" were stale on
    2026-10-21 and should clear on the next scan. "No recent usage": a sandbox
    get_plan call ran through "Try in Browser" on 2026-10-21. "No related
