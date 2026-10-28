@@ -309,7 +309,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
               await message.channel.send({ content: chunk, allowedMentions: { parse: [] } });
             }
           } catch (sendErr) {
-            console.error('Discord: dedup re-send failed:', sendErr);
+            console.error('Discord: dedup re-send failed:', errorKind(sendErr));
           }
           dupFirst = false;
         }
@@ -394,7 +394,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
     });
   } catch (err) {
     if (typingInterval) clearInterval(typingInterval);
-    console.error('Discord handleMessage error:', err);
+    console.error('Discord handleMessage error:', errorKind(err));
     Sentry.captureException(err, { tags: { platform: PLATFORM_DISCORD } });
     await safeReply(message, 'Something went wrong on my end — please try again in a moment.');
   } finally {
@@ -405,6 +405,15 @@ async function handleMessage(message: GuildMessage): Promise<void> {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/** The error's name, Discord code and HTTP status, never the error itself
+ *  (US-09 AC6d): discord.js keeps the body it sent on `requestBody`, so
+ *  console.error(err) would put the reply, with any values and the asker's
+ *  mention, in the host log. */
+function errorKind(err: unknown): string {
+  const { name, code, status } = (err ?? {}) as { name?: unknown; code?: unknown; status?: unknown };
+  return [name, code, status].filter((v) => typeof v === 'string' || typeof v === 'number').join(' ') || 'unknown';
+}
 
 async function safeReply(message: GuildMessage, text: string): Promise<void> {
   try {
