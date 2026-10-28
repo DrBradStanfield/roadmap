@@ -11,7 +11,7 @@ Answers for each step of the submission form at **claude.ai/directory/manage →
 
 1. **Deploy PR #202.** Until it is live, Anthropic's reviewer sees no sign-in box and would have to log in to Dropbox, which is the challenge that got OpenAI's 1.0.1 rejected.
 2. **Decide the two add-tool labels (below).** The portal flags any tool that is neither read-only nor destructive.
-3. **Turn the box on for Anthropic** just before you submit: `fly secrets set MCP_REVIEWER_VENDORS=openai,anthropic -a health-tool-edu`. Until then real Claude users never see the reviewer box. After Anthropic's verdict, set it back to `openai` (or to `anthropic` if OpenAI's verdict came first).
+3. **Turn the box on for Anthropic** just before you submit: `fly secrets set MCP_REVIEWER_VENDORS=openai,anthropic -a health-tool-edu`. Until then real Claude users never see the reviewer box. OpenAI declined its review on scope 2026-10-29, so the value is now `anthropic` alone. After Anthropic's verdict, unset the three reviewer secrets and delete the reviewer code (Brad 2026-10-29; [chatgpt-app-listing.md](chatgpt-app-listing.md) says how to bring it back).
 4. **Do not mint new reviewer credentials.** OpenAI's 1.0.2 review uses the same ones. Running `--mint` or `--password` again ends OpenAI's reviewer sessions.
 
 ## The open decision: two tool labels
