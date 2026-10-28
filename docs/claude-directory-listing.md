@@ -9,10 +9,10 @@ Answers for each step of the submission form at **claude.ai/directory/manage →
 
 **Before you submit (in this order):**
 
-1. **Deploy PR #202.** Until it is live, Anthropic's reviewer sees no sign-in box and would have to log in to Dropbox, which is the challenge that got OpenAI's 1.0.1 rejected.
-2. **Merge the held annotation-title PR after OpenAI's 1.0.2 verdict, and deploy it.** The form flagged all nine tools "Missing title annotation" on 2026-10-21 (below).
-3. **Turn the box on for Anthropic** just before you submit: `fly secrets set MCP_REVIEWER_VENDORS=openai,anthropic -a health-tool-edu`. Until then real Claude users never see the reviewer box. After Anthropic's verdict, set it back to `openai` (or to `anthropic` if OpenAI's verdict came first).
-4. **Do not mint new reviewer credentials.** OpenAI's 1.0.2 review uses the same ones. Running `--mint` or `--password` again ends OpenAI's reviewer sessions.
+1. **Deploy PR #202.** Done. Without it Anthropic's reviewer would have to log in to Dropbox, the challenge that got OpenAI's 1.0.1 rejected.
+2. **Deploy the annotation-title change (PR #209).** Unheld 2026-10-29 after OpenAI declined 1.0.2 on scope. The form flagged all nine tools "Missing title annotation" on 2026-10-21 (below); refresh its tool sync after the deploy.
+3. **The box is on for Anthropic alone.** `MCP_REVIEWER_VENDORS` is `anthropic` since 2026-10-29: OpenAI's review is over, so ChatGPT and Codex users see no box. After Anthropic's verdict, unset the three reviewer secrets and delete the reviewer code (Brad 2026-10-29; [chatgpt-app-listing.md](chatgpt-app-listing.md) says how to bring it back).
+4. **Do not mint new reviewer credentials** while Anthropic's review is open. Running `--mint` or `--password` ends its reviewer sessions.
 
 ## The two add-tool labels (decided: unchanged)
 
@@ -21,7 +21,7 @@ Anthropic's checklist asks every tool for a title plus `readOnlyHint: true` or `
 - **Considered and declined: mark both destructive.** Claude would then ask before every add. It is the conservative reading, and it passes the check. ChatGPT reads the same labels, so its approval prompt changes too, and OpenAI's tool scan would differ from the 1.0.2 submission while it is in review.
 - **Chosen: leave them.** The portal flags them. A reviewer may accept the explanation in the form (append-only, refused on a duplicate day), or may ask for the change.
 
-Decision: submit with them unchanged and the explanation below. Flip them after OpenAI's verdict only if Anthropic asks.
+Decision: submit with them unchanged and the explanation below. Flip them only if Anthropic asks.
 
 ## 1. Connection
 
@@ -34,7 +34,7 @@ Checked live 2026-10-20: an unauthenticated request answers 401 with `WWW-Authen
 
 Synced from the server. Nine tools, each with a top-level title.
 
-On 2026-10-21 the form flagged all nine "Missing title annotation". We infer from that wording that it reads the title from each tool's `annotations` (MCP `ToolAnnotations.title`), not the top-level `title`; Anthropic's review criteria say only "Every tool must include a `title` and the applicable hint". `tools/list` now copies each display title into `annotations.title` (US-32 AC50). That change waits on the held branch `claude/mcp-annotation-title` until OpenAI's 1.0.2 verdict, because it changes the published tool list. Refresh the form's tool sync after it deploys.
+On 2026-10-21 the form flagged all nine "Missing title annotation". We infer from that wording that it reads the title from each tool's `annotations` (MCP `ToolAnnotations.title`), not the top-level `title`; Anthropic's review criteria say only "Every tool must include a `title` and the applicable hint". `tools/list` now copies each display title into `annotations.title` (US-32 AC50). It shipped with PR #209 on 2026-10-29. Refresh the form's tool sync after it deploys.
 
 | Tool | Read-only | Destructive |
 | --- | --- | --- |
