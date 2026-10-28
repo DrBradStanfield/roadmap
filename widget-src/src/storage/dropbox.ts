@@ -18,10 +18,10 @@
  * Brad supplies the app key (client id) via DropboxConfig; there is no secret.
  */
 import {
-  dropboxApiArg,
   dropboxDownload,
   dropboxListFolder,
   dropboxRead,
+  dropboxUploadDocument,
   dropboxWrite,
   DROPBOX_TOKEN_URL,
   ROADMAP_FILE_NAME,
@@ -39,7 +39,6 @@ const PKCE_KEY = 'health_roadmap_dropbox_pkce';
 
 const AUTHORIZE_URL = 'https://www.dropbox.com/oauth2/authorize';
 const TOKEN_URL = DROPBOX_TOKEN_URL;
-const UPLOAD_URL = 'https://content.dropboxapi.com/2/files/upload';
 const LIST_FOLDER_URL = 'https://api.dropboxapi.com/2/files/list_folder';
 const LIST_FOLDER_CONTINUE_URL = 'https://api.dropboxapi.com/2/files/list_folder/continue';
 /** The long-poll lives on its own host BECAUSE it holds the connection open —
@@ -184,17 +183,7 @@ export class DropboxAdapter implements StorageAdapter {
   }
 
   async writeDocument(ref: string, bytes: Blob): Promise<void> {
-    const arg = { path: `/${ref}`, mode: { '.tag': 'overwrite' }, autorename: false, mute: true };
-    const res = await fetch(UPLOAD_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${await this.accessToken()}`,
-        'Content-Type': 'application/octet-stream',
-        'Dropbox-API-Arg': dropboxApiArg(arg),
-      },
-      body: bytes,
-    });
-    if (!res.ok) throw new StorageError(`Dropbox document write failed (${res.status}).`, undefined, undefined, res.status);
+    return dropboxUploadDocument(await this.accessToken(), ref, bytes);
   }
 
   // --- change signal (US-34) -------------------------------------------------

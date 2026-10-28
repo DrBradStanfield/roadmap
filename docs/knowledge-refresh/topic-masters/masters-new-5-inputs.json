@@ -1,0 +1,131 @@
+[
+ {
+  "handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-red-yeast-rice-supplements-review-red-yeast-rice.md",
+  "cl_raw_sha256": "8d66e7057fac2d607ab7bf4dbc7df0eb655e2a5d3552431d98813eed60c3672b",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/red-yeast-rice-nih.md",
+  "nih_raw_sha256": "52624c652a73fb41137f6826495849f944f60147cfc6568a6c4ae03939e992e2",
+  "positions_candidates": [],
+  "positions_candidates_total": 0,
+  "posts": []
+ },
+ {
+  "handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-garlic-supplements-garlic.md",
+  "cl_raw_sha256": "fe5053305dec8624061d696c6e31b0f2e80dda8b88bbadf96911f2094132d5ab",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/garlic-nih.md",
+  "nih_raw_sha256": "4e7433f241a4fb954c70776f760ec33ede1c8f112fdaf21ca557ccda36b384b2",
+  "positions_candidates": [
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 393,
+    "text": "1. **Elimination (2-6 weeks):** Remove high-FODMAP foods — legumes, wheat, onion, garlic, dairy (lactose), stone fruits, apples, honey, artificial sweeteners (sorbitol, mannitol)"
+   }
+  ],
+  "positions_candidates_total": 1,
+  "posts": []
+ },
+ {
+  "handle": "ashwagandha-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-ashwagandha-supplements-ashwagandha.md",
+  "cl_raw_sha256": "c89466473aea894719685dab19f5c20fe5dc28210817cd8b6f144e3369f84b94",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/ashwagandha-nih.md",
+  "nih_raw_sha256": "4b3eace5a8488c2f6b9645ea6334f85356b012330da90c2ab6da63445469d0b2",
+  "positions_candidates": [
+   {
+    "file": "docs/products.md",
+    "line": 451,
+    "text": "- **Ashwagandha** — Brad didn't notice the anxiety effect personally; dropped to reduce pill burden. More of a personal choice than evidence-based."
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 833,
+    "text": "<p><strong>Ashwagandha:</strong></p>"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 834,
+    "text": "<p>There is some human evidence to suggest that Ashwagandha can improve anxiety levels, but the effect is inconsistent and the trials are small. It isn’t included here, on the grounds that the evidence doesn’t yet justify adding another pil"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 972,
+    "text": "<li>31<sup>st</sup> July 2026: Compliance rewrite. Removed the disease-protection promise from the Introduction. Reframed the Supplements section from a personal stack into an evidence summary, with the personal-use framing removed througho"
+   }
+  ],
+  "positions_candidates_total": 4,
+  "posts": [
+   {
+    "handle": "ashwagandha-supplement-fails-in-new-study",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/ashwagandha-supplement-fails-in-new-study.md",
+    "url": "https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study",
+    "publishedAt": "2025-10-15T20:07:54Z",
+    "title": "Ashwagandha Supplement Fails in New Study!",
+    "topic_mentions": 30,
+    "title_names_topic": true
+   }
+  ]
+ },
+ {
+  "handle": "l-theanine-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-l-theanine-supplements-review-l-theanine.md",
+  "cl_raw_sha256": "693263e7458c0b5de0a3a7eff65b1624271a2a2a6926e422466219835fba6698",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [
+   {
+    "file": "docs/guideline/sleep.md",
+    "line": 5,
+    "text": "keywords: [\"sleep\", \"insomnia\", \"sleep hygiene\", \"CBT-I\", \"cognitive behavioural therapy\", \"melatonin\", \"zopiclone\", \"zolpidem\", \"benzodiazepine\", \"DORA\", \"suvorexant\", \"lemborexant\", \"doxepin\", \"ramelteon\", \"trazodone\", \"magnesium glycinat"
+   },
+   {
+    "file": "docs/guideline/sleep.md",
+    "line": 334,
+    "text": "### L-theanine"
+   },
+   {
+    "file": "docs/guideline/sleep.md",
+    "line": 336,
+    "text": "**Evidence:** L-theanine (200–400 mg) is an amino acid found in green tea with anxiolytic properties. Several small trials suggest benefits for sleep quality, particularly in individuals with anxiety-related sleep difficulties. Promotes alp"
+   }
+  ],
+  "positions_candidates_total": 3,
+  "posts": [
+   {
+    "handle": "theanine-anti-aging-longevity",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/theanine-anti-aging-longevity.md",
+    "url": "https://drstanfield.com/blogs/articles/theanine-anti-aging-longevity",
+    "publishedAt": "2024-11-04T03:07:12Z",
+    "title": "Does Theanine Really Help with Anti-Aging and Longevity?",
+    "topic_mentions": 79,
+    "title_names_topic": true
+   }
+  ]
+ },
+ {
+  "handle": "l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-l-tryptophan-5-htp-tryptophan.md",
+  "cl_raw_sha256": "1e1562c62c38e6fc7f82f4aceb97c907492538dea4225281d2c0a004616dd067",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [
+   {
+    "file": "docs/guideline/sleep.md",
+    "line": 5,
+    "text": "keywords: [\"sleep\", \"insomnia\", \"sleep hygiene\", \"CBT-I\", \"cognitive behavioural therapy\", \"melatonin\", \"zopiclone\", \"zolpidem\", \"benzodiazepine\", \"DORA\", \"suvorexant\", \"lemborexant\", \"doxepin\", \"ramelteon\", \"trazodone\", \"magnesium glycinat"
+   },
+   {
+    "file": "docs/guideline/sleep.md",
+    "line": 348,
+    "text": "### Tryptophan / 5-HTP"
+   },
+   {
+    "file": "docs/guideline/sleep.md",
+    "line": 350,
+    "text": "**Evidence:** Tryptophan is a melatonin and serotonin precursor. Some studies show modest sleep-onset benefits at doses of 1–2 g. 5-HTP (5-hydroxytryptophan) may have similar effects. Interactions with serotonergic drugs (SSRIs, SNRIs) are "
+   }
+  ],
+  "positions_candidates_total": 3,
+  "posts": []
+ }
+]

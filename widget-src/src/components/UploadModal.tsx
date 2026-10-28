@@ -1,9 +1,9 @@
 import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota } from '../lib/upload-api';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { IMPORT_LIMITS, METRIC_LABELS, UNDATED_PREVIOUS, zipMemberName, type LabUnitRefusal, type MeasurementRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
+import { IMPORT_LIMITS, METRIC_LABELS, UNDATED_PREVIOUS, zipMemberName, type DocumentPayload, type LabUnitRefusal, type MeasurementRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
-import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode } from '../lib/roadmap-data';
+import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { LabImportResult, PageContent, UploadErrorCode, UploadHistory } from '../lib/api-types';
 import { labUnitRefusalLine, measurementRefusalLine } from '../lib/lab-value-labels';
@@ -11,7 +11,7 @@ import { useLpaUnit } from '../lib/lpa-unit';
 import type { Grading } from '../lib/blood-test-cell';
 import { ReviewTable, type FileResult, type DocumentToSave, type ReviewedValue, type ReviewedLabValue } from './ReviewTable';
 import { ErrorBoundary } from './ErrorBoundary';
-import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries, type ArchiveDocPayload } from '../lib/archive-payloads';
+import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries } from '../lib/archive-payloads';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
 import { recordFailure } from '../lib/error-diagnostics';
@@ -59,7 +59,8 @@ interface UploadModalProps {
   onComplete: () => void;
   onStart?: () => Promise<void>;
   onClose: () => void;
-  onScreeningUpdate?: (screeningKey: string, value: string) => void;
+  /** `erase`: the erase the page showed as the save began (US-16 AC2a). */
+  onScreeningUpdate?: (screeningKey: string, value: string, erase: string) => void;
   /** The plan's age, for the review's screening eligibility (US-06 AC5). */
   age?: number;
   sex?: 'male' | 'female';
@@ -293,6 +294,8 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   const [saveErrorCount, setSaveErrorCount] = useState(0);
   const [savedDocCount, setSavedDocCount] = useState(0);
   const [savedLabCount, setSavedLabCount] = useState(0);
+  // Originals the cloud would not store behind details it already holds (US-14 AC4).
+  const [unstoredCount, setUnstoredCount] = useState(0);
   // US-21 phase 3: lab rows the record would not store because it does not know
   // that unit for that test. Shown by name — a dropped value must never be silent.
   const [refusedLabUnits, setRefusedLabUnits] = useState<LabUnitRefusal[]>([]);
@@ -321,6 +324,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     setSaveErrorCount(0);
     setSavedDocCount(0);
     setSavedLabCount(0);
+    setUnstoredCount(0);
     setRefusedLabUnits([]);
     setRefusedMeasurements([]);
   }, []);
@@ -700,10 +704,11 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
 
   const handleCancel = () => { resetSession(); };
 
-  const handleSave = useCallback(async ({ values: selectedValues, documents, labValues }: {
+  const handleSave = useCallback(async ({ values: selectedValues, documents, labValues, reviewed }: {
     values: ReviewedValue[];
     documents: DocumentToSave[];
     labValues: ReviewedLabValue[];
+    reviewed: FileResult[];
   }) => {
     if (savingRef.current) return;
     savingRef.current = true;
@@ -712,6 +717,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     // The last save's refusals belong to it: never beside a new error.
     setRefusedLabUnits([]);
     setRefusedMeasurements([]);
+    const erase = getShownErase(); // the record this save was asked for
     try {
       // Save core measurements, additional lab values, and documents in parallel
       const measurements = selectedValues.map(v => ({
@@ -728,7 +734,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       }));
       // Blobs travel INSIDE the payload (attached at processing time, and only
       // when the backend can archive them) — no name-keyed re-join here.
-      const docPayloads: ArchiveDocPayload[] = documents.map(d => ({
+      const docPayloads: DocumentPayload<Blob>[] = documents.map(d => ({
         documentType: d.documentType,
         title: d.title,
         documentDate: d.documentDate,
@@ -738,9 +744,10 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         file: d.file,
       }));
       const covered = new Set(documents.map(d => d.sourceFileName));
-      docPayloads.push(...synthesizeLabArchiveEntries(results, covered));
-      // A letter the connector filed metadata-only: unselected here, still archived (US-35 AC8).
-      docPayloads.push(...connectorDocumentEntries(results, history.documents, covered));
+      docPayloads.push(...synthesizeLabArchiveEntries(reviewed, covered));
+      // A letter the connector filed metadata-only: unselected here, still archived
+      // (US-35 AC8), with the title and date the review shows (US-13 AC6).
+      docPayloads.push(...connectorDocumentEntries(reviewed, history.documents, covered));
       const labValuePayloads = labValues.map(lv => ({
         metricName: lv.name,
         value: lv.value,
@@ -764,7 +771,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       };
       const [savedValues, savedDocs, savedLabValues] = await Promise.all([
         measurements.length > 0 ? bulkSaveMeasurements(measurements).catch(failed('measurements', { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] }),
-        docPayloads.length > 0 ? bulkSaveDocuments(docPayloads).catch(failed('documents', { saved: [], errorCount: docPayloads.length })) : Promise.resolve({ saved: [], errorCount: 0 }),
+        docPayloads.length > 0 ? bulkSaveDocuments(docPayloads).catch(failed('documents', { saved: [], errorCount: docPayloads.length, unstored: 0 })) : Promise.resolve({ saved: [], errorCount: 0, unstored: 0 }),
         labValuePayloads.length > 0 ? bulkSaveLabValues(labValuePayloads).catch(failed('labValues', { saved: [], skippedDuplicates: 0, errorCount: labValuePayloads.length, refused: [] })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] }),
       ]);
 
@@ -776,18 +783,19 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       const saveErrors = savedValues.errorCount + savedLabValues.errorCount + savedDocs.errorCount;
       setSaveErrorCount(saveErrors);
       setSavedDocCount(savedDocs.saved.length);
+      setUnstoredCount(savedDocs.unstored ?? 0);
       setSavedLabCount(savedLabValues.saved.length);
-      // A save error is the only failure: it keeps the review open so a second
-      // Save retries that branch (US-12 AC6). A duplicate and a refused unit or number
-      // are settled outcomes — the data is already there, or the record will
-      // never take it — and neither is anything a retry could change.
+      // A save error keeps the review open for retry (US-12 AC6). Skipped
+      // values and refusals are settled outcomes, reported on the done screen;
+      // a skip does not establish that the reviewed value is already saved.
       const totalSaved = savedValues.saved.length + savedDocs.saved.length + savedLabValues.saved.length;
       const saveFailed = threw || saveErrors > 0;
 
-      // Update screening dates for documents with screening mappings
-      for (const doc of documents) {
+      // Update screening dates for documents with screening mappings, unless
+      // the record was erased while the save ran: the date belongs to it.
+      for (const doc of getEraseIdentity() === erase ? documents : []) {
         if (doc.screeningUpdate && onScreeningUpdate) {
-          onScreeningUpdate(doc.screeningUpdate.key, doc.screeningUpdate.date);
+          onScreeningUpdate(doc.screeningUpdate.key, doc.screeningUpdate.date, erase);
         }
       }
 
@@ -807,7 +815,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       savingRef.current = false;
       setIsSaving(false);
     }
-  }, [onComplete, onScreeningUpdate, results, history.documents]);
+  }, [onComplete, onScreeningUpdate, history.documents]);
 
   // One report can refuse the same test on several dates; the user needs it
   // named once. A note says what to look for instead, where there is one, and
@@ -944,19 +952,20 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
                 {savedDocCount > 0 && `${savedDocCount} document${savedDocCount !== 1 ? 's' : ''}`}
                 {savedCount === 0 && savedLabCount === 0 && savedDocCount === 0
                   && skippedMeasurements === 0 && skippedLabValues === 0 && saveErrorCount === 0
-                  && refusedLabUnits.length === 0 && refusedMeasurements.length === 0 && 'No items saved'}
+                  && unstoredCount === 0 && refusedLabUnits.length === 0 && refusedMeasurements.length === 0 && 'No items saved'}
               </p>
               {skippedMeasurements > 0 && (
                 <p className="upload-done-skipped">
-                  {skippedMeasurements} blood test value{skippedMeasurements !== 1 ? 's were' : ' was'} already saved at the same date.
+                  {skippedMeasurements} blood test value{skippedMeasurements !== 1 ? 's were' : ' was'} not added. Check your blood test table: a value was already recorded for that date, or changed during review.
                 </p>
               )}
               {skippedLabValues > 0 && (
                 <p className="upload-done-skipped">
-                  {skippedLabValues} additional lab value{skippedLabValues !== 1 ? 's were' : ' was'} already saved at the same date.
+                  {skippedLabValues} additional lab value{skippedLabValues !== 1 ? 's were' : ' was'} not added. Check your blood test table: a value was already recorded for that date, or changed during review.
                 </p>
               )}
               {refusalLines}
+              {unstoredCount > 0 && <p className="upload-done-skipped">The original file couldn't be stored; its details are saved.</p>}
               {saveErrorCount > 0 && (
                 <p className="upload-done-skipped">
                   {saveErrorCount} item{saveErrorCount !== 1 ? 's' : ''} could not be saved. Please try again.

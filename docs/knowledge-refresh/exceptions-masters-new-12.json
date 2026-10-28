@@ -1,0 +1,610 @@
+[
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"30 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In short trials, single or daily doses of 10 to 30 mg of lutein were well tolerated [10][37][38].\"",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.74\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Cohort studies link higher intake with lower risk of late AMD (pooled RR 0.74, 95% CI 0.57 to 0.97) but not early AMD...\" | \"A 2012 meta-analysis of six cohort studies found that the highest intake of lutein and zeaxanthin was linked to lower...\"",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.57\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Cohort studies link higher intake with lower risk of late AMD (pooled RR 0.74, 95% CI 0.57 to 0.97) but not early AMD...\" | \"A 2012 meta-analysis of six cohort studies found that the highest intake of lutein and zeaxanthin was linked to lower...\"",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≥20 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Dose-response for macular pigment:** A 2021 meta-analysis of 46 studies (3,189 participants with healthy eyes) foun...\" | \"In the 2021 meta-analysis, under 5 mg a day showed no significant change; 5 to less than 20 mg a day raised MPOD by 0...\"",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.51\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2012 meta-analysis of six cohort studies found that the highest intake of lutein and zeaxanthin was linked to lower...\"",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.78\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2012 meta-analysis of six cohort studies found that the highest intake of lutein and zeaxanthin was linked to lower...\"",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2037\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2012 meta-analysis of six cohort studies found that the highest intake of lutein and zeaxanthin was linked to lower...\"",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"55\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**AREDS (Age-Related Eye Disease Study):** This trial did not test lutein or zeaxanthin. It randomised 3,640 people a...\"",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"80\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**AREDS (Age-Related Eye Disease Study):** This trial did not test lutein or zeaxanthin. It randomised 3,640 people a...\"",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"5.3 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Adding omega-3 fatty acids** gave no benefit (HR 0.97, 98.7% CI 0.82 to 1.16) [22]. In the separate VITAL trial, ...\"",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"16 hour\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"After a single dose, serum lutein peaked at about 16 hours [18]. With daily 10 mg lutein plus 2 mg zeaxanthin, serum ...\"",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤30 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In AREDS2, 10 mg lutein with 2 mg zeaxanthin was taken for a median of 5 years [22], and 10-year follow-up found no s...\"",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"76\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a cohort of 77,126 people aged 50 to 76 who recalled their supplement use over the previous 10 years, more than 4 ...\"",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"0.97\": Cohort studies link higher intake with lower risk of late AMD (pooled RR 0.74, 95% CI 0.57 to 0.97) but not early AMD...",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"0.97\", \"0.68\", \"0.92\", \"0.96\", \"1.17\": A 2012 meta-analysis of six cohort studies found that the highest intake of lutein and zeaxanthin was linked to lower...",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"50\": AREDS2 (2013): This trial enrolled 4,203 people aged 50 to 85 at risk of advanced AMD. They were randomised to lutein...",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"36\": Obana et al. (2015): In 36 healthy Japanese adults taking one of two lutein products for up to 6 months, serum lutein...",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20 mg\", \"2 mg\": Akuffo et al. (2015): In 67 people with early AMD, three formulas were compared over 3 years: (1) 20 mg lutein + 0.86...",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"48\": Stringham et al. (2017): In 48 healthy young adults with at least 6 hours of daily screen time, 24 mg a day of lutein...",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2 mg\": In 115 healthy young adults, 10 mg lutein plus 2 mg zeaxanthin a day for 1 year raised macular pigment and improved p...",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20 mg\": A 2016 meta-analysis linked the highest compared with the lowest tertile of lutein intake or blood levels with lower ...",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20 mg\": Small studies found that 20 mg of saffron a day improved retinal flicker sensitivity in early AMD [51][52][53]; only ...",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2 mg\": After a single dose, serum lutein peaked at about 16 hours [18]. With daily 10 mg lutein plus 2 mg zeaxanthin, serum ...",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"50\": In a cohort of 77,126 people aged 50 to 76 who recalled their supplement use over the previous 10 years, more than 4 ...",
+  "reason": "AC2 lutein tokeniser case from the writer's fails-verbatim.txt list; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "milk-thistle-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Allergy is more likely if you react to ragweed, chrysanthemums, marigolds or daisies [4]. Anaphylaxis is rare [64]:...\" | \"If you get swelling of the face, lips or throat, or trouble breathing, call your local emergency number (111 in NZ, 0...\"",
+  "reason": "AC2 milk thistle ruling 17 emergency number \"111\"; ratified in decisions.md (Milk thistle Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "milk-thistle-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Allergy is more likely if you react to ragweed, chrysanthemums, marigolds or daisies [4]. Anaphylaxis is rare [64]:...\" | \"If you get swelling of the face, lips or throat, or trouble breathing, call your local emergency number (111 in NZ, 0...\"",
+  "reason": "AC2 milk thistle ruling 17 emergency number \"911\"; ratified in decisions.md (Milk thistle Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "milk-thistle-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Allergy is more likely if you react to ragweed, chrysanthemums, marigolds or daisies [4]. Anaphylaxis is rare [64]:...\" | \"If you get swelling of the face, lips or throat, or trouble breathing, call your local emergency number (111 in NZ, 0...\"",
+  "reason": "AC2 milk thistle ruling 17 emergency number \"999\"; ratified in decisions.md (Milk thistle Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "milk-thistle-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"18\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2007 Cochrane review of 18 randomized trials in 1,088 patients with alcoholic and/or hepatitis B or C liver disease...\"",
+  "reason": "AC2 milk thistle \"18\" spelled out in the raw; ratified in decisions.md (Milk thistle Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "milk-thistle-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"50\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a randomized double-blind pilot trial of 50 children with acute lymphoblastic leukemia and liver toxicity, milk th...\"",
+  "reason": "AC2 milk thistle \"50\" spelled out in the raw; ratified in decisions.md (Milk thistle Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "milk-thistle-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"80\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a double-blind trial, 80 women were randomized to placebo or 400 mg a day of milk thistle extract for 12 weeks [41...\"",
+  "reason": "AC2 milk thistle \"80\" spelled out in the raw; ratified in decisions.md (Milk thistle Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "phosphatidylserine-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[105] raw_quote shares no number with its body_line: **Kato-Kataoka et al. (2010)** randomised Japanese adults aged 50 to 69 with mild cognitive impai...",
+  "reason": "AC2 phosphatidylserine changed_tokens[105] dose/age-range tokeniser case; ratified in decisions.md (Phosphatidylserine ratified after fix round) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "phosphatidylserine-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[114] raw_quote shares no number with its body_line: Trials have used a wide range of doses. Memory trials gave 100 mg of cow-brain PS three times a d...",
+  "reason": "AC2 phosphatidylserine changed_tokens[114] dose/age-range tokeniser case; ratified in decisions.md (Phosphatidylserine ratified after fix round) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "phosphatidylserine-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[115] raw_quote shares no number with its body_line: Trials have used a wide range of doses. Memory trials gave 100 mg of cow-brain PS three times a d...",
+  "reason": "AC2 phosphatidylserine changed_tokens[115] dose/age-range tokeniser case; ratified in decisions.md (Phosphatidylserine ratified after fix round) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "phosphatidylserine-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[116] raw_quote shares no number with its body_line: Trials have used a wide range of doses. Memory trials gave 100 mg of cow-brain PS three times a d...",
+  "reason": "AC2 phosphatidylserine changed_tokens[116] dose/age-range tokeniser case; ratified in decisions.md (Phosphatidylserine ratified after fix round) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "phosphatidylserine-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[124] raw_quote shares no number with its body_line: Trials have used a wide range of doses. Memory trials gave 100 mg of cow-brain PS three times a d...",
+  "reason": "AC2 phosphatidylserine changed_tokens[124] dose/age-range tokeniser case; ratified in decisions.md (Phosphatidylserine ratified after fix round) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "phosphatidylserine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"69\": Kato-Kataoka et al. (2010) randomised Japanese adults aged 50 to 69 with mild cognitive impairment to 100 mg or 300 m...",
+  "reason": "AC2 phosphatidylserine \"69\" (\"50-69\"); ratified in decisions.md (Phosphatidylserine ratified after fix round) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "phosphatidylserine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"8\": Richter et al. (2010) gave PS-DHA for 6 weeks to 8 older volunteers with memory complaints, with no placebo group. De...",
+  "reason": "AC2 phosphatidylserine \"8\" (raw \"eight\"); ratified in decisions.md (Phosphatidylserine Ratified line; PS touch-up) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "huperzine-a-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Drugs of this kind were linked to more hospital visits for fainting and slow heart rate in older people with dement...\" | \"- Tea brewed by mistake from fir club moss (*Lycopodium selago*), which holds huperzine A, caused cholinergic poisoni...\" | \"If someone has these symptoms after taking huperzine A, or faints or has trouble breathing, call your local emergency...\"",
+  "reason": "AC2 huperzine a ruling 17 emergency number \"111\"; ratified in decisions.md (Huperzine A Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "huperzine-a-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Drugs of this kind were linked to more hospital visits for fainting and slow heart rate in older people with dement...\" | \"- Tea brewed by mistake from fir club moss (*Lycopodium selago*), which holds huperzine A, caused cholinergic poisoni...\" | \"If someone has these symptoms after taking huperzine A, or faints or has trouble breathing, call your local emergency...\"",
+  "reason": "AC2 huperzine a ruling 17 emergency number \"0\"; ratified in decisions.md (Huperzine A Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "huperzine-a-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Drugs of this kind were linked to more hospital visits for fainting and slow heart rate in older people with dement...\" | \"- Tea brewed by mistake from fir club moss (*Lycopodium selago*), which holds huperzine A, caused cholinergic poisoni...\" | \"If someone has these symptoms after taking huperzine A, or faints or has trouble breathing, call your local emergency...\"",
+  "reason": "AC2 huperzine a ruling 17 emergency number \"911\"; ratified in decisions.md (Huperzine A Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "huperzine-a-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Drugs of this kind were linked to more hospital visits for fainting and slow heart rate in older people with dement...\" | \"- Tea brewed by mistake from fir club moss (*Lycopodium selago*), which holds huperzine A, caused cholinergic poisoni...\" | \"If someone has these symptoms after taking huperzine A, or faints or has trouble breathing, call your local emergency...\"",
+  "reason": "AC2 huperzine a ruling 17 emergency number \"999\"; ratified in decisions.md (Huperzine A Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "huperzine-a-benefits-forms-dosing-and-side-effects",
+  "match": "token \"58.33 min\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Absorption:** In 12 healthy volunteers given a single 0.4 mg tablet, it appeared in the blood within 5-10 min and p...\"",
+  "reason": "AC2 huperzine A \"58.33 min\" tokeniser/number-word case; ratified in decisions.md (Huperzine A Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "huperzine-a-benefits-forms-dosing-and-side-effects",
+  "match": "token \"12.092 hour\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Elimination:** In healthy men, the half-life averaged 12.092 h [65]. In older adults given 0.1 mg, 35% of the dose ...\"",
+  "reason": "AC2 huperzine A \"12.092 hour\" tokeniser/number-word case; ratified in decisions.md (Huperzine A Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "huperzine-a-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≥4\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Chinese multicentre trial (n=202):** A 12-week placebo-controlled trial at 15 centres in China gave 202 people with...\"",
+  "reason": "AC2 huperzine A \"≥4\" tokeniser/number-word case; ratified in decisions.md (Huperzine A Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "huperzine-a-benefits-forms-dosing-and-side-effects",
+  "match": "token \"4\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**2009 Meta-Analysis (4 RCTs):** Four trials found that 300-500 microg daily for 8-24 weeks improved MMSE and daily l...\" | \"## 4. Recommended Dosing\"",
+  "reason": "AC2 huperzine A \"4\" tokeniser/number-word case; ratified in decisions.md (Huperzine A Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "huperzine-a-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"400 mcg\": Chinese multicentre trial (n=202): A 12-week placebo-controlled trial at 15 centres in China gave 202 people with mil...",
+  "reason": "AC2 huperzine A \"400 mcg\" tokeniser/number-word case; ratified in decisions.md (Huperzine A Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "gaba-benefits-dosing-and-side-effects",
+  "match": "token \"4\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In an old study, very large GABA doses (0.8 g/kg daily) reduced seizures in only 4 of 12 people with epilepsy [7].\" | \"**High-dose study:** In an old study, very large GABA doses (0.8 g/kg daily) reduced seizures in only 4 of 12 people ...\" | \"## 4. Recommended Dosing\"",
+  "reason": "AC2 GABA \"4\" tokeniser/number-word case; ratified in decisions.md (GABA Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "gaba-benefits-dosing-and-side-effects",
+  "match": "token \"12\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In an old study, very large GABA doses (0.8 g/kg daily) reduced seizures in only 4 of 12 people with epilepsy [7].\" | \"**High-dose study:** In an old study, very large GABA doses (0.8 g/kg daily) reduced seizures in only 4 of 12 people ...\"",
+  "reason": "AC2 GABA \"12\" tokeniser/number-word case; ratified in decisions.md (GABA Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "gaba-benefits-dosing-and-side-effects",
+  "match": "token \"13.4 min\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Fermented rice germ extract (300 mg GABA):** A trial gave 300 mg of GABA from a rice germ extract, or placebo, dail...\"",
+  "reason": "AC2 GABA \"13.4 min\" tokeniser/number-word case; ratified in decisions.md (GABA Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "gaba-benefits-dosing-and-side-effects",
+  "match": "token \"5.7 min\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Fermented rice germ extract (300 mg GABA):** A trial gave 300 mg of GABA from a rice germ extract, or placebo, dail...\"",
+  "reason": "AC2 GABA \"5.7 min\" tokeniser/number-word case; ratified in decisions.md (GABA Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "gaba-benefits-dosing-and-side-effects",
+  "match": "token \"79.4 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Fermented rice germ extract (300 mg GABA):** A trial gave 300 mg of GABA from a rice germ extract, or placebo, dail...\"",
+  "reason": "AC2 GABA \"79.4 %\" tokeniser/number-word case; ratified in decisions.md (GABA Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "gaba-benefits-dosing-and-side-effects",
+  "match": "token \"86.1 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Fermented rice germ extract (300 mg GABA):** A trial gave 300 mg of GABA from a rice germ extract, or placebo, dail...\"",
+  "reason": "AC2 GABA \"86.1 %\" tokeniser/number-word case; ratified in decisions.md (GABA Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "gaba-benefits-dosing-and-side-effects",
+  "match": "token \"17.4 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Fermented milk product:** In a single-blind trial in 39 mildly hypertensive patients, systolic blood pressure fell ...\"",
+  "reason": "AC2 GABA \"17.4 mmHg\" tokeniser/number-word case; ratified in decisions.md (GABA Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "gaba-benefits-dosing-and-side-effects",
+  "match": "token \"7.2 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Fermented milk product:** In a single-blind trial in 39 mildly hypertensive patients, systolic blood pressure fell ...\"",
+  "reason": "AC2 GABA \"7.2 mmHg\" tokeniser/number-word case; ratified in decisions.md (GABA Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "gaba-benefits-dosing-and-side-effects",
+  "match": "token \"20 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Chlorella supplement (20 mg GABA twice daily):** In a double-blind trial in 80 people with high-normal blood pressu...\" | \"| Blood pressure | 20 mg twice daily (GABA-rich chlorella) | 12 weeks | Preliminary [20] |\"",
+  "reason": "AC2 GABA \"20 mg/day\" tokeniser/number-word case; ratified in decisions.md (GABA Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "gaba-benefits-dosing-and-side-effects",
+  "match": "token \"≤1000 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2021 safety review found no serious adverse events with GABA at intakes up to 18 g a day for 4 days, or 120 mg a da...\"",
+  "reason": "AC2 GABA \"≤1000 mg/kg\" tokeniser/number-word case; ratified in decisions.md (GABA Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "gaba-benefits-dosing-and-side-effects",
+  "match": "token \"12500 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- High-dose oral GABA (12.5 mg/g, about 12.5 g/kg, far above supplement doses) given to pregnant mice before implanta...\"",
+  "reason": "AC2 GABA \"12500 mg/kg\" (abstract \"12.5 mg/g\"); ratified in decisions.md (Codex round 2 Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "gaba-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10000 mg/day\": Muscle mass with whey protein: In a trial in 21 healthy men doing resistance training twice a week, 100 mg of GABA wi...",
+  "reason": "AC2 GABA \"10000 mg/day\" tokeniser/number-word case; ratified in decisions.md (GABA Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Zeaxanthin: Natural vs. Synthetic",
+  "reason": "AC4 lutein removed heading (one of the seven); ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Supplement Odor",
+  "reason": "AC4 lutein removed heading (one of the seven); ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: #### Genetic Testing and AREDS Formulas",
+  "reason": "AC4 lutein removed heading (one of the seven); ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Presbyopia",
+  "reason": "AC4 lutein removed heading (one of the seven); ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Turmeric/Curcumin",
+  "reason": "AC4 lutein removed heading (one of the seven); ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Astaxanthin",
+  "reason": "AC4 lutein removed heading (one of the seven); ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Very Low Doses",
+  "reason": "AC4 lutein removed heading (one of the seven); ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "milk-thistle-benefits-best-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Testing Method Confusion (UV-VIS vs. HPLC)",
+  "reason": "AC4 milk thistle heading renamed to \"Testing Methods\"; ratified in decisions.md (Milk thistle item 5) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "phosphatidylserine-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: #### Animal Sources (High PS Content)",
+  "reason": "AC4 phosphatidylserine Souci food-table heading removed (unverifiable); ratified in decisions.md (Phosphatidylserine Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "phosphatidylserine-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: #### Plant Sources and Dairy (Lower PS Content)",
+  "reason": "AC4 phosphatidylserine Souci food-table heading removed (unverifiable); ratified in decisions.md (Phosphatidylserine Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "gaba-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Nutrients That Support Endogenous GABA Production",
+  "reason": "AC4 GABA heading renamed to \"Nutrients Involved in GABA Production\"; ratified in decisions.md (GABA touch-up committed 997dfb17) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Saffron (in Combination Products)",
+  "reason": "AC7 lutein product-section false positive \"### Saffron (in Combination Products)\"; ratified in decisions.md (Lutein Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "milk-thistle-benefits-best-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Breast Milk Production (Galactagogue)",
+  "reason": "AC7 milk thistle product-section false positive \"### Breast Milk Production (Galactagogue)\"; ratified in decisions.md (Milk thistle Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "phosphatidylserine-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host wayback.archive-it.org: [9] U.S. Food and Drug Administration. \"Phosphatidylserine and Cognitive Dysfunction and Dementia...",
+  "reason": "AC7 phosphatidylserine FDA archive host wayback.archive-it.org; ratified in decisions.md (Phosphatidylserine Ratified lines) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "phosphatidylserine-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host wayback.archive-it.org: [11] U.S. Food and Drug Administration. \"Letter Updating the Phosphatidylserine and Cognitive Fun...",
+  "reason": "AC7 phosphatidylserine FDA archive host wayback.archive-it.org; ratified in decisions.md (Phosphatidylserine Ratified lines) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "huperzine-a-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host dailymed.nlm.nih.gov: [77] ARICEPT (donepezil hydrochloride) tablets. Prescribing information, Eisai. DailyMed, 2021 (a...",
+  "reason": "AC7 huperzine A DailyMed host for the donepezil label; ratified in decisions.md (Huperzine A Ratified line) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "gaba-benefits-dosing-and-side-effects",
+  "match": "product section missing: ### Nutrients That Support Endogenous GABA Production",
+  "reason": "AC7 GABA product-section false positive (heading rename, not a Brad product section); ratified in decisions.md (GABA Ratified line; GABA touch-up committed 997dfb17) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "gaba-benefits-dosing-and-side-effects",
+  "match": "product section added: ### Nutrients Involved in GABA Production",
+  "reason": "AC7 GABA product-section false positive (heading rename, not a Brad product section); ratified in decisions.md (GABA Ratified line; GABA touch-up committed 997dfb17) (orchestrator 2026-10-26, masters-new-12).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ }
+]

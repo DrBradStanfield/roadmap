@@ -6,10 +6,33 @@ publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["weight loss", "obesity", "appetite", "metabolism", "fat burner", "caffeine", "green tea", "garcinia cambogia", "chromium", "fiber", "glucomannan", "chitosan", "carnitine", "conjugated linoleic acid", "forskolin", "raspberry ketone", "bitter orange", "synephrine", "ephedra", "calcium", "vitamin d", "probiotic", "prebiotic", "gut health", "microbiome", "blood sugar", "insulin resistance", "bmi", "intermittent fasting", "caloric restriction", "exercise"]
-summary: "Reference on weight loss supplements: appetite, fat burning, metabolism; ephedra/ECA stack harms and ban. For adults with overweight or obesity. Covers caffeine, green tea, CLA, chromium, garcinia cambogia, fiber; most show modest 1-2 kg benefit. Always discuss with your doctor."
+summary: "Most weight-loss supplements add little or no weight loss, and some cause harm: stimulant heart effects, liver injury, hidden drugs. Brad avoids fat burners and backs diet, exercise, sleep and, if suited, GLP-1 drugs. Talk to your doctor first if you take medicines or have heart or liver disease."
+reviewed: "2026-10-26"
+sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/WeightLoss-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:d7e4c6628de89807e9c519029e843d841dc0a1cd3caea44699ce5f3aa30ce990"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/we-are-witnessing-the-end-of-obesity","checked":"2026-10-26","fingerprint":"publishedAt:2026-10-06T03:22:05Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/weight-loss-in-new-retatrutide-study","checked":"2026-10-26","fingerprint":"publishedAt:2025-12-18T05:52:56Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/popular-supplements-try-avoid","checked":"2026-10-26","fingerprint":"publishedAt:2024-08-11T19:43:34Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/weight-loss-supplements-benefits-evidence-and-safety](https://drstanfield.com/blogs/articles/weight-loss-supplements-benefits-evidence-and-safety)*
+
+## Current view (reviewed 26 October 2026)
+
+Brad would avoid fat-burning supplements: they are mostly caffeine, and a few cups of coffee in the morning give you all the caffeine you need ([Brad, 11 Aug 2024](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid)). He calls supplements that claim to raise GLP-1 largely a waste of money, because the hormone does not last long in the body ([Brad, 18 Dec 2025](https://drstanfield.com/blogs/articles/weight-loss-in-new-retatrutide-study)). No weight-loss medicine replaces a good diet, regular exercise and good sleep ([Brad, 6 Oct 2026](https://drstanfield.com/blogs/articles/we-are-witnessing-the-end-of-obesity)). Brad's plan suggests that adults with a BMI of 30 or more, or from 25 with a raised marker, may benefit from discussing tirzepatide (preferred) or semaglutide with their doctor, alongside diet, exercise and sleep (Brad's current guidance, 28 Sep 2026). The common side effects of these medicines are in the gut, such as nausea, vomiting, and constipation or diarrhoea, so doctors start at a low dose, follow up closely and raise the dose slowly ([Brad, 6 Oct 2026](https://drstanfield.com/blogs/articles/we-are-witnessing-the-end-of-obesity)). In his view, the most important side effect of any weight-loss strategy is muscle loss, and the American Diabetes Association advises enough protein and muscle-strengthening exercise ([Brad, 6 Oct 2026](https://drstanfield.com/blogs/articles/we-are-witnessing-the-end-of-obesity)).
+
+## Key safety points
+
+- Bitter orange, yohimbe and ephedra have been linked to heart attack, stroke and death [243]. For chest pain or signs of a stroke (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- Chitosan may strengthen the effect of warfarin [239]. Garcinia was linked to serotonin toxicity in a person also taking SSRI antidepressants [242][243]; for tremor, a racing heart, a high temperature, agitation or severe confusion, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [252].
+- Ephedra has been banned from US supplements since 2004 [234]. Products are often recalled for hidden drugs such as sibutramine, and some hold untested stimulants such as BMPEA or deterenol [243][247][248].
+- Reports tie green tea extract, garcinia and CLA to liver injury, including liver failure and hepatitis [118][135][243]. Stop the product and see your doctor the same day for dark urine or yellow skin or eyes; if they come with confusion, unusual drowsiness, or easy bleeding or bruising, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- For healthy adults, up to 400 mg a day of caffeine is not considered a safety concern, but about 15 mg/kg can be toxic [243].
+
+## Brad's videos on this topic
+
+- 6 Oct 2026, [We Are Witnessing the End of Obesity](https://drstanfield.com/blogs/articles/we-are-witnessing-the-end-of-obesity): GLP-1 and related medicines now treat obesity well, but none replaces a good diet, exercise and sleep.
+- 18 Dec 2025, [28.7% Weight Loss in New Retatrutide Study](https://drstanfield.com/blogs/articles/weight-loss-in-new-retatrutide-study): retatrutide's early results were striking, tirzepatide stays the better-tolerated choice, and supplements that claim to raise GLP-1 are largely a waste of money. Superseded on retatrutide's trial results.
+- 28 Apr 2025, [Is the Berberine Hype Justified & Should You Take It?](https://drstanfield.com/blogs/articles/is-the-berberine-hype-justified-should-you-take-it): berberine, sold as "nature's Ozempic", gives only a small weight loss next to semaglutide, so Brad prescribes GLP-1 medicines instead.
+- 22 Feb 2025, [Should You Use Ozempic (GLP-1) Weight Loss Meds? Nuanced Answer](https://drstanfield.com/blogs/articles/should-you-use-ozempic-glp-1-weight-loss-meds-nuanced-answer): GLP-1 medicines are evidence-based for obesity with proper oversight, and muscle loss happens with any weight loss. Superseded on who may consider them.
+- 12 Feb 2025, [Do NOT Use Apple Cider Vinegar To Lose Weight (Use This Instead)](https://drstanfield.com/blogs/articles/do-not-use-apple-cider-vinegar-to-lose-weight-use-this-instead): the evidence for apple cider vinegar is too weak; diet, protein, exercise and, if needed, medicines work better. Superseded on timing: Brad's plan no longer waits for diet and exercise to be maximised before medicines.
+- 11 Aug 2024, [Which Popular Supplements Should You Actually Try to Avoid?](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid): avoid fat-burning supplements, which are mostly caffeine.
 
 ## 1. Overview
 
@@ -50,9 +73,9 @@ In another RCT, 47 adults with overweight (BMI 26-30) were randomized to a combi
 
 **Observational data:** A 12-year prospective study following 18,417 men and 39,740 women from the Nurses' Health Study and Health Professionals Follow-Up Study found that men who increased caffeine intake gained 0.43 kg less than those who decreased intake; for women, the difference was 0.35 kg [49]. A cross-sectional study of German adults found that successful weight-loss maintainers consumed significantly more caffeinated beverages (3.83 cups/day) than the general population (3.35 cups/day) [50].
 
-**Safety:** For healthy adults, FDA and the European Food Safety Authority (EFSA) state that up to 400 mg/day caffeine does not pose safety concerns [51][52]. The American Medical Association recommends a limit of 500 mg/day [53]. For reference, an 8-ounce cup of brewed coffee contains approximately 85-100 mg caffeine. EFSA has not set a safe level for children; the American Academy of Pediatrics discourages caffeine consumption in children and adolescents [51-54].
+**Safety:** For healthy adults, FDA and the European Food Safety Authority (EFSA) state that up to 400 mg/day caffeine does not pose safety concerns [51][52]. The American Medical Association recommends that adolescents have no more than 100 mg/day [243]. For reference, an 8-ounce cup of brewed coffee contains approximately 85-100 mg caffeine. FDA and EFSA have not set a safe level for children; the American Academy of Pediatrics discourages caffeine consumption in children and adolescents [51-54].
 
-Caffeine can cause sleep disturbances, nervousness, jitteriness, and shakiness. It becomes toxic at approximately 15 mg/kg body weight (about 1,000 mg for a 68 kg adult), causing nausea, vomiting, tachycardia, seizures, and cerebral edema [42]. Doses above 150 mg/kg (approximately 10,000 mg) can be fatal. Chronic use in large amounts can produce tolerance, habituation, and psychological dependence. An EFSA expert panel (2015) determined that single doses up to 200 mg (about 3 mg/kg) do not raise safety concerns, with a daily limit of 200 mg for pregnant or breastfeeding women [52]. A study of four popular stimulant supplements found all caused significant increases in blood pressure (8-12 mmHg systolic) and changes in heart rate or rhythm in healthy young men; common side effects included nausea, insomnia, and increased anxiety (Foster, Clin Pharmacol Ther 2013). According to a California Poison Control System analysis, 47% of calls reporting adverse effects from dietary supplements involved caffeine-containing products [55].
+Caffeine can cause sleep disturbances, nervousness, jitteriness, and shakiness. It becomes toxic at approximately 15 mg/kg body weight (about 1,000 mg for a 68 kg adult), causing nausea, vomiting, tachycardia, seizures, and cerebral edema [243]. Doses above 150 mg/kg (approximately 10,000 mg) can be fatal. Combining caffeine with other stimulants, such as bitter orange and ephedrine, can make these effects worse [243]. An EFSA expert panel (2015) determined that single doses up to 200 mg (about 3 mg/kg) do not raise safety concerns, with a daily limit of 200 mg for pregnant or breastfeeding women [52]. According to a California Poison Control System analysis, 47% of calls reporting adverse effects from dietary supplements involved caffeine-containing products [55].
 
 ### Green Tea and Green Tea Extract (Camellia sinensis)
 
@@ -68,13 +91,11 @@ A meta-analysis of 11 RCTs found that EGCG combined with caffeine for 12-13 week
 
 In 2010, EFSA concluded that "a cause and effect relationship has not been established between the consumption of catechins (including EGCG) from green tea and contribution to the maintenance or achievement of a normal body weight" [168].
 
-Studies suggest green tea extract providing 270-432 mg EGCG/day might help reduce weight in moderately obese patients, but the effects are small and unlikely to be clinically relevant.
-
 **Safety:** No adverse effects from green tea consumed as a beverage [156]. Green tea extract can cause constipation, abdominal discomfort, nausea, and increased blood pressure [164]. There is increasing evidence that green tea extract can cause liver damage [170]. An analysis of 1,021 postmenopausal women found that those consuming green tea extract (1,315 mg catechins including 843 mg EGCG) daily for 12 months had significantly increased liver enzymes compared with placebo, and some developed moderate or more severe liver function abnormalities [170]. At least 50 case reports of liver damage associated with green tea extracts (primarily ethanolic extracts) have been published since 2006 [43][172]. The U.S. Pharmacopeia reviewed 34 cases and concluded green tea products "probably" caused 7 cases and "possibly" caused 27 cases [173]. USP advises taking green tea extract with food to minimize risk. Toxicology studies in rodents show green tea extract causes nonneoplastic lesions in the nose, liver, and bone marrow, and high-dose catechins cause liver toxicity [169].
 
 ### Garcinia Cambogia (Hydroxycitric Acid / HCA)
 
-Garcinia cambogia is a fruit-bearing tree native to Asia, Africa, and the Polynesian islands [128]. Its rind contains hydroxycitric acid (HCA), which is proposed to inhibit lipogenesis (via inhibition of ATP citrate lyase), increase hepatic glycogen synthesis, suppress food intake, and reduce weight gain [6][15][109][128][129]. HCA represents up to 16% of the dried fruit weight and typically 50% of standardized extracts.
+Garcinia cambogia is a fruit-bearing tree native to Asia, Africa, and the Polynesian islands [128]. Its rind contains hydroxycitric acid (HCA), which is proposed to inhibit lipogenesis (via inhibition of ATP citrate lyase), increase hepatic glycogen synthesis, suppress food intake, and reduce weight gain [6][15][109][128][129].
 
 **Clinical evidence:**
 
@@ -83,8 +104,6 @@ In an RCT of 89 mildly overweight women (mean BMI 28.6), those receiving 2.4 g/d
 In a larger RCT of 135 men and women with overweight (BMI 27-38) receiving 3,000 mg/day Garcinia cambogia (1,500 mg HCA) for 12 weeks on a high-fiber, low-energy diet, both groups lost weight but the between-group difference was not statistically significant [132]. HCA had no effect on body fat loss.
 
 A 2011 meta-analysis of 12 RCTs (n=706) found that Garcinia cambogia (1,000-2,800 mg/day HCA) for 2-12 weeks reduced body weight by 0.88 kg versus placebo [130]. However, when only the two rigorously designed trials were considered, the effect was no longer statistically significant. The authors of a 2013 review reached similar conclusions, noting that efficacy "remains to be proven in larger-scale and longer-term clinical trials" [133].
-
-The typical dose used in studies contains 500 mg of HCA taken three to four times daily.
 
 **Safety:** Reported adverse effects are generally mild: headache, nausea, upper respiratory tract symptoms, and gastrointestinal symptoms [128][130][132]. Three case reports have linked Garcinia cambogia supplements to mania (possibly via serotonergic activity of HCA), with symptoms including grandiosity, irritability, pressured speech, and decreased need for sleep [134]. Ten cases of liver toxicity have been reported, including one death and two liver transplants, though most products also contained other botanical ingredients [43][135-137]. Long-term safety is unknown, as all clinical trials have been short.
 
@@ -98,11 +117,9 @@ A 2013 Cochrane Review analyzed 9 RCTs (n=622) of chromium picolinate (200-1,000
 
 A systematic review and meta-analysis of 11 RCTs (n=866) found that 137-1,000 mcg/day chromium for 8-26 weeks reduced body weight by 0.5 kg and body fat by 0.46%, effects described as of "uncertain" clinical relevance [99]. An earlier meta-analysis of 12 trials reported similar findings [102].
 
-Evidence suggests chromium can help some people control blood sugar levels, but its effects on weight loss and body composition are minimal.
+**Safety:** Trivalent chromium appears to be well tolerated [243]. Adverse effects include watery stools, headache, weakness, nausea, vomiting, constipation, vertigo, and urticaria [99][100]. Chromium does not have an established UL because few serious adverse effects have been linked to dietary intakes [98].
 
-**Safety:** Adverse effects include watery stools, headache, weakness, nausea, vomiting, constipation, vertigo, and urticaria [99][100]. The trivalent form is generally considered safe at 200 mcg/day or less; reports of toxicity have occurred at doses over 600 mcg. Chromium does not have an established UL because few serious adverse effects have been linked to dietary intakes [98]. Hexavalent chromium (chromium VI) is toxic and should not be found in supplements.
-
-Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) includes 17.5 mcg of chromium in the glycinate form -- well within the Adequate Intake range of 20-35 mcg/day and designed to support normal trace mineral status rather than weight loss.
+Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) v9, sold in the UK and EU, includes 35 mcg of chromium as picolinate, the top of the Adequate Intake range of 20-35 mcg/day; Australia's v8.5 has the same 35 mcg. The US formula (v8) currently has 17.5 mcg as glycinate until it moves to v9, which we're aiming for around mid-November 2026, and Canada's v7 also has 17.5 mcg. The chromium is there to support normal trace mineral status, not weight loss.
 
 ### Conjugated Linoleic Acid (CLA)
 
@@ -117,6 +134,8 @@ A crossover trial found 6.4 g/day CLA for 16 weeks significantly reduced BMI and
 A 12-week RCT (n=63, BMI 24-35) found that 3.4 g/day CLA produced small but statistically significant reductions in weight (0.69 kg) and body fat (0.49 kg) versus baseline [113]. However, 3.2 g/day CLA combined with aerobic exercise for 8 weeks did not reduce body fat in 28 young women with obesity [114].
 
 A systematic review and meta-analysis of 7 RCTs found that 2.4-6 g/day CLA for 6-12 months reduces body weight by 0.7 kg and body fat by 1.33 kg versus placebo [111]. The authors stated the "magnitude of these effects is small, and the clinical relevance is uncertain."
+
+A 2024 meta-analysis of 70 trials with 4,159 adults found a mean fat-mass drop of 0.44 kg, but no fat loss in the high-quality trials, and the authors noted that the weight effect may be too small to matter clinically [250].
 
 **Safety:** Most adverse effects are gastrointestinal: abdominal discomfort, constipation, diarrhea, loose stools, nausea, and dyspepsia [109][111][113]. Three case reports linked CLA to hepatitis, though products were not analyzed for contaminants [118-120]. CLA might decrease HDL cholesterol and increase lipoprotein(a) levels [109][110][116][121-124]. The t10,c12-CLA isomer has been reported to increase insulin resistance and glycemia in men with obesity and metabolic syndrome [110][124]. CLA might also increase markers of oxidative stress and decrease breastmilk fat levels [117].
 
@@ -134,7 +153,7 @@ An RCT in 80 healthy resistance-trained men found that a supplement containing b
 
 A 2012 review of 23 small studies (n=360 total) concluded synephrine increases resting metabolic rate and energy expenditure [30]. A 2011 systematic review of four weight-loss trials concluded that evidence for bitter orange/synephrine is "contradictory and weak" [34].
 
-**Safety:** Significant safety concerns exist. Reported adverse effects include chest pain, headache, anxiety, elevated heart rate, musculoskeletal complaints, ventricular fibrillation, ischemic stroke, myocardial infarction, and death [34][35]. However, many products contain multiple ingredients, making it difficult to isolate bitter orange's role. A single dose of 900 mg bitter orange (54 mg synephrine) significantly increased heart rate and blood pressure for up to 5 hours in 15 healthy adults [38]. Other compounds in the extract may contribute to cardiovascular effects (Hansen, Toxicol Appl Pharmacol 2012). Canada has approved up to 50 mg/day p-synephrine alone, or 40 mg/day when combined with up to 320 mg/day caffeine. Persons with hypertension, heart disease, or narrow-angle glaucoma should avoid bitter orange. Risks may be higher in products with boosted synephrine levels or when combined with other stimulants.
+**Safety:** Significant safety concerns exist. Reported adverse effects include chest pain, headache, anxiety, elevated heart rate, musculoskeletal complaints, ventricular fibrillation, ischemic stroke, myocardial infarction, and death [34][35]. However, many products contain multiple ingredients, making it difficult to isolate bitter orange's role. A single dose of 900 mg bitter orange (54 mg synephrine) significantly increased heart rate and blood pressure for up to 5 hours in 15 healthy adults [38]. Bitter orange could have an additive effect when taken with other stimulants such as caffeine, and it inhibits CYP3A4, which can raise blood levels of drugs such as cyclosporine and saquinavir [243]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Carnitine (L-Carnitine)
 
@@ -160,13 +179,13 @@ However, 3.9 g/day glucomannan for 4 weeks in 63 healthy men did not significant
 
 A 2015 systematic review of 6 RCTs (n=293) concluded that 1.24-3.99 g/day glucomannan for up to 12 weeks does not significantly affect body weight [144][145]. A 2014 meta-analysis of 8 trials (n=301) reached the same conclusion [146]. An older meta-analysis of 14 studies found a small but statistically significant weight loss (0.79 kg more than placebo) over approximately 5 weeks [139].
 
-Glucomannan appears to have beneficial effects on blood lipids and glucose levels [139], and most early studies suggest a short-term benefit at about 1 gram with each meal.
+Glucomannan appears to have beneficial effects on blood lipids and glucose levels [139].
 
-**Safety:** Generally well tolerated. Minor adverse effects include belching, bloating, loose stools, flatulence, diarrhea, constipation, and abdominal discomfort [139][143][144][146]. Tablet forms of glucomannan were associated with 7 cases of esophageal obstruction in Australia in 1984-1985 [99]; powdered and capsule forms have not been associated with this effect [147]. Must be taken with plenty of water to avoid getting stuck in the throat as it expands. May lower blood glucose levels and interact with diabetes medications [139][147].
+**Safety:** Generally well tolerated. Minor adverse effects include belching, bloating, loose stools, flatulence, diarrhea, constipation, and abdominal discomfort [139][143][144][146]. Tablet forms of glucomannan were associated with 7 cases of esophageal obstruction in Australia in 1984-1985 [99]; powdered and capsule forms have not been associated with this effect [147]. Take care with glucomannan tablets [243]. The FDA requires over-the-counter drug products made with glucomannan to warn that, taken without enough fluid, it can swell and block the throat or esophagus and may cause choking [253]. Take each dose with a full glass of water or other fluid, at least 8 ounces. Do not take it if you have trouble swallowing. If you get chest pain, vomiting, or trouble swallowing or breathing after a dose, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [253]. May lower blood glucose levels and interact with diabetes medications [139][147].
 
 ### Chitosan
 
-Chitosan is a polysaccharide derived from the exoskeletons of crustaceans, promoted as a "fat blocker" that binds dietary fat in the digestive tract to prevent absorption [16][41]. It may also decrease cholesterol absorption [16].
+Chitosan is a polysaccharide derived from the exoskeletons of crustaceans, sold on the claim that it binds dietary fat in the digestive tract to prevent absorption [16][41]. It may also decrease cholesterol absorption [16].
 
 **Clinical evidence:**
 
@@ -184,15 +203,15 @@ Forskolin is a compound from the roots of Coleus forskohlii, proposed to promote
 
 **Clinical evidence:**
 
-An RCT of 30 men with overweight (BMI 26+) found that 500 mg/day Coleus forskohlii extract (10% forskolin, Forslean by Sabinsa) for 12 weeks did not reduce body weight but did significantly decrease mean body fat by about 4% versus about 1% for placebo, and significantly increased lean body mass, bone mass, and free testosterone levels (Godard, Obes Res 2005) [104].
+An RCT of 30 men with overweight (BMI 26+) found that 500 mg/day Coleus forskohlii extract (10% forskolin, ForsLean) for 12 weeks did not reduce body weight but did significantly decrease mean body fat by about 4% versus about 1% for placebo, and raised bone mass and serum free testosterone [104].
 
-The same extract and dose in 19 women with overweight or obesity (BMI 25-35) for 12 weeks had no effect on body weight, appetite, caloric intake, or body composition, but did significantly reduce hunger (Henderson, J Int Soc Sports Nutr 2005) [106].
+The same extract and dose in 19 women with overweight or obesity (BMI 25-35) for 12 weeks had no effect on body weight, appetite, or caloric intake [243]. Those on the extract tended to report less hunger and fatigue [106].
 
 A third 12-week trial in 30 adults with overweight or obesity (BMI >25) on a hypocaloric diet found no reduction in body weight, though plasma insulin concentrations significantly decreased [107].
 
-**Dosing:** Clinical studies have used 250 mg of extract standardized to 10% forskolin (25 mg forskolin) taken twice daily, based on the branded Forslean extract. Some products provide a 20% extract at 125 mg, delivering the same amount of forskolin.
+**Dosing:** Trials gave an extract of Coleus forskohlii, 250 mg standardized for 10% forskolin, before breakfast and dinner, a total of 500 mg a day [104][106].
 
-**Safety:** In mice, Coleus forskohlii extract caused dose-dependent liver toxicity, but pure forskolin did not -- suggesting other plant compounds may be responsible [108]. In humans, forskolin may increase bowel movement frequency and cause loose stools [107]. Doses of 500 mg/day (10% forskolin) for 12 weeks have not produced serious adverse events [104][106][107]. Although no significant blood pressure changes were found in clinical studies, other evidence suggests forskolin may lower blood pressure or increase heart rate. People with low blood pressure, those on blood pressure medications, blood thinners (warfarin, clopidogrel), calcium channel blockers (nifedipine, diltiazem), or nitroglycerin should use forskolin only under physician supervision.
+**Safety:** In mice, Coleus forskohlii extract caused dose-dependent liver toxicity, but pure forskolin did not -- suggesting other plant compounds may be responsible [108]. In humans, forskolin may increase bowel movement frequency and cause loose stools [107]. Doses of 500 mg/day (10% forskolin) for 12 weeks have not produced serious adverse events [104][106][107]. Forskolin has not been tested in longer trials [243]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### White Kidney Bean Extract (Phaseolus vulgaris) -- "Starch Blocker"
 
@@ -206,7 +225,7 @@ A U.S. trial in 39 adults with obesity (BMI 30-43) found that 3,000 mg/day Phase
 
 A 12-week RCT (n=123, BMI 25-35) found that 3,000 mg/day Phaseolus vulgaris (IQP-PV-101) on a mildly hypocaloric diet produced significantly more weight loss (2.91 kg) and fat loss (2.23 kg) versus placebo (0.92 kg and 0.65 kg, respectively) [217].
 
-A 2011 review of 6 trials (n=247) concluded that 445-1,500 mg/day for 4-13 weeks significantly reduced body fat (1.86 kg vs. placebo) but did not significantly affect overall weight [211]. The authors noted poor trial quality. Extracts should be standardized to provide a defined amount of alpha-amylase inhibiting units (AAIU) per gram, such as 3,000 AAIU (Onakpoya, Br J Nutr 2011).
+A 2011 review of 6 trials (n=247) concluded that 445-1,500 mg/day for 4-13 weeks significantly reduced body fat (1.86 kg vs. placebo) but did not significantly affect overall weight [211]. The authors noted poor trial quality.
 
 **Safety:** Minor adverse effects: headaches, soft stools, flatulence, and constipation [211]. No serious adverse effects reported, but no trials have lasted longer than 13 weeks.
 
@@ -230,15 +249,13 @@ The most recent meta-analysis (19 RCTs, n=1,412) found probiotics or synbiotics 
 
 ### 7-Keto DHEA
 
-7-keto DHEA (7-keto dehydroepiandrosterone) is a metabolite of DHEA that, unlike DHEA itself, does not convert to androgen or estrogen hormones [CL]. It is proposed to increase resting metabolic rate in overweight people on calorie-restricted diets.
+7-keto DHEA (3-acetyl-7-oxo-dehydroepiandrosterone) is a DHEA derivative tested for raising resting metabolic rate in people who are dieting [244].
 
 **Clinical evidence:**
 
-A dose of 100 mg twice daily was effective for weight loss in overweight or obese subjects who exercised on a reduced-calorie diet; 7-keto DHEA subjects lost more weight than placebo (Kaiman, Cur Ther Res 2000). Similar results were found using 7-keto DHEA in combination with other ingredients including L-tyrosine, asparagus root extract, choline bitartrate, inositol, copper gluconate, manganese, and potassium iodide (Zenk, Cur Ther Res 2002). A study demonstrated that 7-keto DHEA increases resting metabolic rate in obese people on a calorie-restricted diet (Zenk, J Nutr Biochem 2007).
+In a crossover trial in which 40 of 45 overweight adults on a calorie-restricted diet completed all periods, resting metabolic rate fell by 3.9% during 7 days on placebo and rose by 1.4% during 7 days on 7-keto DHEA [244]. Weight loss was not the outcome, and each treatment period lasted only a week.
 
-However, these are short-term studies (1-8 weeks), small in size, and more research is needed.
-
-**Safety:** Not well studied in humans. Used safely at up to 200 mg/day with no serious side effects in limited studies of 1-8 weeks duration. One subject experienced decreased hemoglobin and hematocrit. Treatment may decrease diastolic blood pressure and thyroxine levels. Does not significantly affect sex hormone levels (Davidson, Clin Invest Med 2000). May increase triiodothyronine (T3) levels (Kaiman, Cur Ther Res 2000).
+**Safety:** In a placebo-controlled trial, 16 healthy men took 7-keto DHEA at rising doses, ending with 200 mg/d for 28 days; laboratory values, hormone levels, vital signs and minor adverse effects did not differ from placebo [245]. No serious adverse events were reported in the 7-day trial [244]. Longer-term safety is unknown.
 
 ### African Mango (Irvingia gabonensis)
 
@@ -248,21 +265,23 @@ The seed kernel extract of Irvingia gabonensis is proposed to inhibit adipogenes
 
 An RCT in Cameroon randomized 102 adults with overweight or obesity (BMI >25) to 300 mg/day IGOB131 (a proprietary extract, 150 mg 30-60 minutes before lunch and dinner) or placebo for 10 weeks [18]. Those receiving the extract had significantly lower body weight, body fat, and waist circumference at trial end.
 
-A 2013 systematic review of 3 trials reported that the extract causes statistically significant reductions in body weight and waist circumference [19]. However, the authors noted that trials used different methodologies, small samples, short durations, varying doses (300-3,150 mg/day), and were all conducted by the same research group. Additional independent trials are needed.
+A 2013 systematic review of 3 trials reported that the extract causes statistically significant reductions in body weight and waist circumference [19]. However, the authors noted that trials used different methodologies, small samples, short durations, varying doses (300-3,150 mg/day), and were all conducted by the same research group, and they judged the effect on weight unproven [19].
+
+A 2020 meta-analysis of 5 trials found pooled falls in weight, body fat and waist size, but only one trial had a low risk of bias, and it found no significant difference [251].
 
 **Safety:** Appears well tolerated. No adverse effects in rats at doses up to 2,500 mg/kg/day [20]. Mild human adverse effects: headache, difficulty sleeping, flatulence, and gas [19]. One case of renal failure was associated with African mango in a patient with pre-existing chronic kidney disease [21].
 
 ### Raspberry Ketone
 
-Raspberry ketone is the primary aroma compound in red raspberries. Found in very small amounts in the fruit (1 pound of raspberries provides about 1 mg of ketone); the ingredient in supplements is often synthetic due to lower cost. Animal and in vitro studies suggest it may reduce food intake, prevent weight gain, and promote fat breakdown [16][204][205]. Despite popularization on television as an effective fat burner, human evidence is essentially nonexistent.
+Raspberry ketone is the primary aroma compound in red raspberries and is used as a food flavouring [16]. Animal and in vitro studies suggest it might help prevent weight gain [16][205]. It has been promoted on television and online as a fat burner, but little evidence supports this [243].
 
 **Clinical evidence:**
 
-No studies of raspberry ketone alone exist in humans. In mice fed a high-fat diet, raspberry ketone prevented weight gain and promoted fat breakdown (Morimoto, Life Sci 2005). Fat breakdown was also shown in cell experiments (Park, Planta Med 2010).
+In mice fed a high-fat diet, raspberry ketone reduced food intake and body weight [205].
 
 The only human RCT (n=70, BMI >27) used a multi-ingredient product (METABO) containing 2,000 mg of a proprietary blend of raspberry ketone, caffeine, bitter orange, ginger, garlic, cayenne, L-theanine, and pepper extract along with B-vitamins and chromium [206]. After 8 weeks with calorie restriction (500 kcal/day deficit) and exercise (60 minutes, 3 days/week), METABO produced greater weight loss (1.9 kg vs. 0.4 kg). However, 25 of 70 participants dropped out, no intention-to-treat analysis was performed, and the effects of raspberry ketone alone cannot be determined.
 
-**Safety:** Safe as a food additive at trace levels. No safety studies at supplement doses of 100 mg or more per day. Due to lack of information about metabolic and other effects, people with pre-existing conditions (diabetes, high cholesterol, high blood pressure) should be monitored by a healthcare professional when using raspberry ketone.
+**Safety:** Typical diets provide only a few mg a day [243]. Supplements recommend between 100 and 1,400 mg per day, and toxicity data are limited to rat studies [204]. The METABO trial reported no serious adverse effects [206].
 
 ### Calcium
 
@@ -276,7 +295,7 @@ Supplementation with 1,500 mg/day calcium carbonate for 2 years in 340 adults wi
 
 A 2009 AHRQ evidence report concluded that clinical trial results do not support an effect of calcium supplementation on weight [70]. A 2015 meta-analysis of 41 RCTs found no benefit of calcium supplementation or increased dairy consumption for body weight or body fat [73]. A 2016 meta-analysis of 33 trials found no overall effect, although subgroup analyses showed some benefit in children, adolescents, adult men, premenopausal women, women over 60, and people with normal BMI [74].
 
-Increased calcium from dairy products (but not supplements) is associated with greater weight loss when dieting, possibly due to additional bioactive components in dairy that modulate appetite-regulating hormones [60][61][64-67].
+Dairy foods might contain components beyond calcium, such as protein, that affect appetite-regulating hormones and body weight [60][61][64-67].
 
 **Safety:** Safe at recommended intakes (1,000-1,200 mg/day for adults). The UL is 2,500 mg/day for ages 19-50 and 2,000 mg for adults 51+ [56]. High intake can cause constipation and may interfere with iron and zinc absorption. High intakes from supplements (not food) have been associated with increased kidney stone risk [56][75-77].
 
@@ -316,17 +335,17 @@ An RCT (n=26, BMI 25+) found 6 g/day pyruvate for 6 weeks with exercise and a 2,
 
 A systematic review of 6 RCTs (n=203) concluded pyruvate (5-30 g/day for 3-6 weeks) reduces body weight by 0.72 kg and body fat by 0.54 kg versus placebo, though all trials had weak methodological quality [201].
 
-**Safety:** Gas, bloating, diarrhea, and borborygmus at doses up to 30 g/day for 6 weeks. No serious adverse effects. Large doses (over 5 g/day) may cause abdominal discomfort. May increase LDL and decrease HDL cholesterol [201][202].
+**Safety:** Gas, bloating, diarrhea, and borborygmus at doses up to 30 g/day for 6 weeks. No serious adverse effects. May increase LDL and decrease HDL cholesterol [201][202].
 
 ### Caralluma fimbriata
 
-An extract from a cactus plant promoted as an appetite suppressant.
+An extract of an edible cactus, used by tribal Indians to suppress hunger [246].
 
 **Clinical evidence:**
 
-One 2-month RCT found 1 g/day suppressed appetite and reduced waist circumference, but did not significantly decrease body weight or body fat (Kuriyan, Appetite 2008). No other clinical trials available.
+In a 60-day trial in 50 overweight adults, 1 g a day of Caralluma extract reduced hunger and waist size compared with placebo, but changes in body weight, BMI and body fat did not differ significantly [246].
 
-**Safety:** No long-term safety studies.
+**Safety:** The trial lasted 60 days, so long-term safety is unknown [246].
 
 ### Fucoxanthin
 
@@ -346,7 +365,7 @@ A succulent plant from the Kalahari Desert, traditionally used by the San people
 
 An RCT of 49 healthy women (mean BMI 25) found that 2,220 mg/day Hoodia gordonii extract for 15 days had no significant effect on energy intake or body weight versus placebo [184].
 
-**Safety:** Significant increases in heart rate and blood pressure were reported [184]. Also raised bilirubin and alkaline phosphatase levels. Side effects include headache, dizziness, nausea, vomiting, and skin sensations. Past analyses found that only 30-60% of hoodia products contained adequate amounts of hoodia [186].
+**Safety:** Significant increases in heart rate and blood pressure were reported [184]. Also raised bilirubin and alkaline phosphatase levels. Side effects include headache, dizziness, nausea, and vomiting. In the past, some hoodia products contained little or no hoodia [185][186].
 
 ### Yohimbe (Pausinystalia yohimbe)
 
@@ -376,9 +395,7 @@ Green (unroasted) coffee beans contain higher levels of chlorogenic acid than ro
 
 A meta-analysis of 3 small trials found green coffee bean extract (180-200 mg/day for 4-12 weeks) produced a 2.47 kg mean weight loss versus placebo, but all trials were of poor methodological quality [151]. A separate trial claiming benefits was strongly criticized by the FTC for critical flaws in design; two of three study authors subsequently retracted the publication [153-155].
 
-Several small, short-term studies show modest weight loss (about 2 lbs per month more than placebo), and levels of chlorogenic acids in products may be important.
-
-**Safety:** Generally well tolerated. Adverse effects: headaches and urinary tract infections [151]. Contains caffeine. Long-term safety not established. May affect blood pressure and blood sugar levels.
+**Safety:** Generally well tolerated. Adverse effects: headaches and urinary tract infections [151]. Its caffeine can cause side effects, depending on the dose and whether it is combined with other stimulants [243]. Long-term safety not established.
 
 ### Beta-Glucans
 
@@ -390,23 +407,15 @@ An RCT of 66 women with overweight on a low-calorie diet found that 5-9 g/day be
 
 **Safety:** Well tolerated. Increased flatulence reported, but no changes in stool consistency or bloating [24].
 
-### Vitamin C
+### Stimulant laxatives
 
-Small studies suggest vitamin C supplementation may help with weight loss in significantly overweight individuals, but more research is needed. Vitamin C is safe, though high doses (1,000 mg) may cause diarrhea.
+Stimulant laxatives cause fluid loss, not fat loss: most nutrients are absorbed in the small intestine, while the large bowel absorbs mainly water [249]. When the laxative is stopped, fluid retention can bring quick weight gain [249].
 
-### Stimulant Laxatives (Aloe, Senna, Cascara)
-
-Products containing stimulant laxatives may cause temporary weight loss through water loss, but are not effective for sustained weight loss. By the time laxatives act in the large intestine, most nutrients and calories have already been absorbed in the small intestine.
-
-**Safety:** Chronic use can cause dehydration, electrolyte imbalance, kidney failure, and death. The State of California requires warning labels on these products.
-
-### Diuretics (Dandelion, Asparagus, Uva Ursi)
-
-Herbal diuretics may cause temporary water-weight loss but are not effective for fat loss. Well-controlled studies have not confirmed the diuretic effects of dandelion or asparagus. Most are considered non-toxic, but they may interact with medications and cause electrolyte loss.
+**Safety:** Laxative misuse can cause electrolyte and acid-base changes that affect the kidneys and heart and may become life threatening [249]. If you feel very unwell after heavy laxative use, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 ### Ephedra (Ma Huang) -- Banned Ingredient
 
-Ephedra contains the alkaloids ephedrine, pseudoephedrine, norephedrine, and norpseudoephedrine [226-228]. In the 1990s, ephedra -- frequently combined with caffeine -- was popular in weight-loss supplements.
+Ephedra contains the alkaloids ephedrine, pseudoephedrine, norephedrine, and norpseudoephedrine [226][228]. In the 1990s, ephedra -- frequently combined with caffeine -- was popular in weight-loss supplements.
 
 **Historical clinical evidence:** A meta-analysis of 20 clinical trials concluded that ephedrine and ephedra are modestly effective for short-term weight loss (6 months or less) [232]. Ephedrine stimulates the central nervous system, may increase thermogenesis, and acts as an appetite suppressant [229-231].
 
@@ -414,11 +423,11 @@ Ephedra contains the alkaloids ephedrine, pseudoephedrine, norephedrine, and nor
 
 ### Acacia rigidula and BMPEA Contamination
 
-Supplements listed as containing the plant extract Acacia rigidula have been found to contain beta-methylphenylethylamine (BMPEA), an amphetamine-like compound not approved for human use [Cohen, Drug Test Analysis 2015]. Animal studies suggest BMPEA could raise blood pressure and have effects similar to amphetamine-like substances. Multiple branded weight-loss products were identified as containing BMPEA.
+US regulators have detected beta-methylphenylethylamine (BMPEA), an amphetamine isomer whose efficacy and safety have never been studied in humans, in supplements labelled as containing the plant Acacia rigidula [247]. In a later analysis, 11 of 21 Acacia rigidula brands still contained it; at the maximum recommended daily servings, consumers would take a maximum of 93.7 mg of BMPEA per day [247].
 
 ### Deterenol and Other Undeclared Stimulants
 
-Deterenol (also called isopropylnorsynephrine) is a stimulant found in some weight-loss supplements that is not approved for human use in the U.S. It may be listed under names including isopropylnorsynephrine HCl, N-isopropylnorsynephrine HCl, and isopropyloctopamine. In human studies, doses of 2-5 mg/kg cause effects including flushing, anxiety, decreased diastolic blood pressure, and increased heart rate. At 5 mg/kg, it can cause inability to sit up, blurred vision, palpitations, weakness, and respiratory distress [Cohen, Clin Toxicol 2021]. An analysis of 17 brands found deterenol in doses up to 17 mg per serving and 69 mg per day.
+Deterenol, also listed as isopropylnorsynephrine or isopropyloctopamine, is a prohibited stimulant, and weight-loss and sports supplements containing it have been linked to serious adverse events, including cardiac arrest [248]. In 17 brands labelled as containing it, a serving held 2.7 to 17 mg of deterenol, and many products also held other prohibited stimulants, with as many as 4 in one product; these mixtures have never been tested in humans [248]. For chest pain or signs of a stroke (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 ## 4. Summary of Evidence
 
@@ -426,18 +435,18 @@ Deterenol (also called isopropylnorsynephrine) is a stimulant found in some weig
 |---|---|---|---|
 | Caffeine | Modest, short-term | Moderate (combination products) | Anxiety, insomnia, tachycardia at high doses |
 | Green tea/EGCG | ~1 kg over 12 weeks (with caffeine) | Moderate (Cochrane Review) | Liver damage (extract form) |
-| Garcinia cambogia (HCA) | ~0.88 kg over 2-12 weeks | Low (rigorous trials negative) | Rare mania, liver toxicity |
+| Garcinia cambogia (HCA) | ~0.88 kg over 2-12 weeks | Low (rigorous trials negative) | Rare mania, liver failure, serotonin toxicity with SSRIs |
 | Chromium | ~0.5-1.1 kg | Low (Cochrane Review) | Generally safe at recommended doses |
-| CLA | ~0.7 kg over 6-12 months | Moderate | May worsen lipid profiles, insulin resistance |
+| CLA | ~0.7 kg over 6-12 months; no fat loss in high-quality trials | Low to moderate | May worsen lipid profiles, insulin resistance; rare hepatitis |
 | Bitter orange/synephrine | Inconclusive | Low | Cardiovascular events reported |
 | L-Carnitine | ~1.33 kg | Low-Moderate | TMAO increase; generally safe |
 | Glucomannan | ~0.79 kg (older analysis); recent reviews negative | Mixed | Esophageal obstruction (tablets) |
 | Chitosan | ~1.7 kg (low-quality studies) | Low | Shellfish allergy; warfarin interaction |
-| Forskolin | No weight loss; may reduce body fat | Low (2 small trials) | May lower BP; hepatotoxicity in animal extract |
+| Forskolin | No weight loss; may reduce body fat | Low (2 small trials) | Loose stools; extract hepatotoxicity in mice |
 | White kidney bean | ~1.86 kg fat loss (variable) | Low-Moderate | Mild GI effects |
 | Probiotics | ~0.54-0.6 kg | Low-Moderate | Generally safe |
-| 7-Keto DHEA | Additional weight loss with calorie restriction | Low (short-term only) | Not well studied |
-| African mango | Possibly modest benefit | Low (single research group) | Renal failure in CKD patient |
+| 7-Keto DHEA | Raised resting metabolic rate in 7-day periods; weight effect unproven | Very Low (short-term only) | Not well studied |
+| African mango | Possibly modest benefit; unproven | Low (single research group, high risk of bias) | Renal failure in CKD patient |
 | Raspberry ketone | No human data for ingredient alone | Very Low | Unknown at supplement doses |
 | Calcium | No effect | High (multiple meta-analyses) | Kidney stones at high supplement doses |
 | Vitamin D | No effect | Moderate | Toxic at very high doses |
@@ -446,7 +455,7 @@ Deterenol (also called isopropylnorsynephrine) is a stimulant found in some weig
 | Hoodia | No effect | Very Low | BP and HR increases; liver concerns |
 | Yohimbe | Inconclusive | Very Low | Potentially dangerous; deaths reported |
 | Guar gum | No effect | Moderate (meta-analysis) | GI obstruction risk |
-| Green coffee bean | ~2.47 kg (poor-quality trials) | Very Low | Contains caffeine |
+| Green coffee bean | ~2.47 kg (poor-quality trials); key trial retracted | Very Low | Contains caffeine |
 | Beta-glucans | No effect | Moderate | Well tolerated |
 | Ephedra | Modest short-term effect | Moderate | BANNED -- stroke, heart attack, death |
 
@@ -457,17 +466,15 @@ Dosing recommendations apply only where sufficient evidence exists. For most wei
 | Ingredient | Studied Dose Range | Notes |
 |---|---|---|
 | Caffeine | 100-400 mg/day | Do not exceed 400 mg/day total from all sources. Start low, assess tolerance. 200 mg/day limit during pregnancy. |
-| Green tea catechins | 270-690 mg EGCG/day (with caffeine) | Take with food to reduce liver risk. Avoid on empty stomach. |
-| Garcinia cambogia (HCA) | 500 mg HCA, 3-4 times daily | 30-60 min before meals. Evidence of efficacy is weak. |
-| Chromium picolinate | 200-1,000 mcg/day | Effects on weight are minimal. Keep to 200 mcg/day for safety. |
+| Green tea catechins | 576-690 mg/day catechins (with caffeine) | Take with food to reduce liver risk. Avoid on empty stomach. |
+| Garcinia cambogia (HCA) | 1,000-2,800 mg/day HCA | Evidence of efficacy is weak. |
+| Chromium picolinate | 200-1,000 mcg/day | Effects on weight are minimal. |
 | CLA | 2.4-6 g/day | 50:50 mixture of c9,t11 and t10,c12 isomers. Effects small. |
-| Bitter orange (synephrine) | Up to 50 mg/day synephrine (alone) | 40 mg/day max with up to 320 mg/day caffeine (Canada limits). |
 | L-Carnitine | 1.8-4 g/day | May require months for modest effects. |
-| Glucomannan | 1 g before each meal (3 g/day) | Must be taken with ample water. |
+| Glucomannan | 1 g before each meal (3 g/day) | Tablets have caused esophageal obstruction. Take each dose with a full glass (at least 8 ounces) of water. |
 | Chitosan | 2-3 g/day | Divide between largest meals. |
-| Forskolin | 250 mg extract (10% forskolin) twice daily | Use standardized Coleus forskohlii extract. |
-| White kidney bean | 445-3,000 mg/day | Before carbohydrate-rich meals. Look for AAIU standardization. |
-| 7-Keto DHEA | 100 mg twice daily | Only studied short-term with calorie restriction + exercise. |
+| Forskolin | 250 mg extract standardized for 10% forskolin, before breakfast and dinner | Use standardized Coleus forskohlii extract. |
+| White kidney bean | 445-3,000 mg/day | Before carbohydrate-rich meals. |
 | Pyruvate | 5-30 g/day | Large doses needed; GI effects common above 5 g. |
 
 ## 6. Safety and Side Effects
@@ -482,11 +489,11 @@ For ingredients lacking convincing evidence of effectiveness, "even minor advers
 
 Several weight-loss ingredients carry risks of serious harm:
 
-- **Stimulants (caffeine, synephrine, ephedrine, yohimbine, BMPEA, deterenol):** Cardiovascular events including hypertension, tachycardia, arrhythmias, stroke, myocardial infarction, and death. Risk is highest with high doses, multiple stimulants combined, or use in individuals with cardiovascular disease [42][43][218][232].
+- **Stimulants (caffeine, synephrine, ephedrine, yohimbine, BMPEA, deterenol):** Cardiovascular events including hypertension, tachycardia, arrhythmias, stroke, myocardial infarction, and death. Risk is highest with high doses, multiple stimulants combined, or use in individuals with cardiovascular disease [42][43][218][232]. For chest pain or signs of a stroke (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 - **Green tea extract:** Liver damage, with at least 50 case reports since 2006. Risk may be higher with ethanolic extracts taken on an empty stomach [170][172][173].
-- **Garcinia cambogia:** Rare liver toxicity (10 reported cases including 1 death and 2 transplants) and mania [134-137].
+- **Garcinia cambogia:** Rare liver toxicity (10 reported cases including 1 death and 2 transplants) and mania [134-137]. Stop it and see your doctor for abdominal pain, dark urine, tiredness or yellow skin or eyes; if yellow skin or eyes come with confusion, unusual drowsiness, or easy bleeding or bruising, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 - **Yohimbe:** Potentially lethal. Associated with myocardial infarction, cardiac failure, and death at higher doses. 1,818 poison control reports in 12 years [222][223].
-- **Stimulant laxatives:** Chronic abuse can cause dehydration, electrolyte imbalance, kidney failure, and death.
+- **Stimulant laxatives:** Misuse can cause electrolyte and acid-base changes that affect the kidneys and heart and may become life threatening [249].
 - **Ephedra:** BANNED since 2004 due to stroke, heart attack, and death [234].
 
 ### Product Adulteration
@@ -506,7 +513,7 @@ Consumers should be wary of products with claims that sound too good to be true,
 - **Diabetes:** Some ingredients (glucomannan, chromium) may affect blood sugar; monitor closely and adjust medications if necessary.
 - **Liver disease:** Avoid green tea extract, Garcinia cambogia, and yohimbe.
 - **Kidney disease:** African mango was associated with renal failure in a patient with CKD [21].
-- **Pregnancy/breastfeeding:** Most weight-loss supplements have not been studied in these populations and should be avoided. Caffeine should be limited to 200 mg/day during pregnancy [52].
+- **Pregnancy/breastfeeding:** Most weight-loss supplements have not been studied in these populations and should be avoided unless your doctor advises it. Caffeine should be limited to 200 mg/day during pregnancy [52].
 - **Children and adolescents:** Weight-loss supplements are not recommended. The American Academy of Pediatrics discourages caffeine consumption in this age group [54].
 
 ## 7. Drug Interactions
@@ -515,14 +522,13 @@ Weight-loss supplement ingredients can interact with numerous medications:
 
 | Ingredient | Interacting Drugs | Mechanism/Effect |
 |---|---|---|
-| Caffeine/stimulant blends | Other stimulants, decongestants, MAOIs | Additive cardiovascular stimulation; increased BP and HR |
-| Bitter orange/synephrine | Caffeine, decongestants, CYP3A4 substrates (cyclosporine, saquinavir) | Additive stimulant effects; inhibits CYP3A4 increasing drug levels [43] |
+| Caffeine/stimulant blends | Other stimulants, MAOIs | Additive cardiovascular stimulation; increased BP and HR |
+| Bitter orange/synephrine | Caffeine, CYP3A4 substrates (cyclosporine, saquinavir) | Additive stimulant effects; inhibits CYP3A4 increasing drug levels [43] |
 | Glucomannan | Oral medications (general), diabetes drugs | Decreases absorption of many oral drugs; may lower blood glucose [139][147] |
 | Guar gum | Oral medications (general) | Decreases absorption of many oral drugs [147][179] |
 | Chitosan | Warfarin | May potentiate anticoagulant effects [239] |
 | Green tea | Chemotherapy agents, nadolol | Interferes with absorption and metabolism [240][241] |
 | Garcinia cambogia | SSRIs | Associated with serotonin toxicity in combination [242] |
-| Forskolin | BP medications, warfarin, clopidogrel, calcium channel blockers, nitroglycerin | May lower BP or increase HR; additive effects |
 | Chromium | Insulin, metformin, sulfonylureas | May enhance blood sugar-lowering effects |
 | Yohimbe | MAOIs, TCAs, antihypertensives | Hyperadrenergic effects; may cause hypertensive crisis with MAOIs |
 
@@ -535,8 +541,8 @@ The evidence is clear that dietary supplements alone are insufficient for meanin
 - **Healthy dietary pattern:** The 2020-2025 Dietary Guidelines for Americans recommends a pattern including vegetables, fruits, whole grains, lean proteins, and healthy fats while limiting added sugars, saturated fat, sodium, and alcohol.
 - **Caloric restriction:** A modest calorie reduction (500-750 kcal/day below needs) is the foundation of weight-loss programs.
 - **Regular physical activity:** Both aerobic exercise and resistance training support weight loss and, critically, weight-loss maintenance.
-- **Medical options:** For individuals with a high BMI and additional health risks, physicians may prescribe FDA-approved medications (e.g., GLP-1 receptor agonists, orlistat) or recommend bariatric surgery in addition to lifestyle modifications [7].
-- **Calcium from dairy foods:** Higher calcium from dairy products (but not supplements) is associated with greater weight loss during dieting, possibly due to additional bioactive components [60][61][64-67].
+- **Medical options:** For individuals with a high BMI and additional health risks, physicians may prescribe FDA-approved medications (e.g., GLP-1 receptor agonists, orlistat) or recommend bariatric surgery in addition to lifestyle modifications [7]. Guidelines consider these medicines at a BMI above 30, or above 27 with a weight-related condition, after 3 to 6 months of lifestyle change; Brad's plan raises tirzepatide or semaglutide from a BMI of 25 with a raised marker, with no waiting period (Brad's current guidance, 28 Sep 2026).
+- **Calcium from dairy foods:** Dairy foods might contain components beyond calcium, such as protein, that affect appetite and body weight [60][61][64-67].
 - **Green tea as a beverage:** Modest metabolic benefits from regular consumption without the liver risks associated with concentrated extracts.
 
 None of the dietary supplement ingredients reviewed here produce weight loss comparable to these established approaches. Even the most promising ingredients (caffeine, green tea catechins with caffeine) produce effects of approximately 1-2 kg over 12 weeks, and these effects may diminish with tolerance.
@@ -547,11 +553,11 @@ None of the dietary supplement ingredients reviewed here produce weight loss com
 
 [2] Ogden CL, Carroll MD, Kit BK, Flegal KM. "Prevalence of obesity and trends in body mass index among US children and adolescents, 1999-2010." *JAMA*. 2012;307:483-90. [PubMed](https://pubmed.ncbi.nlm.nih.gov/22253364/)
 
-[3] Lenz TL, Hamilton WR. "Supplemental products used for weight loss." *J Am Pharm Assoc*. 2004;44:59-67. [PubMed](https://pubmed.ncbi.nlm.nih.gov/14965154/)
+[3] Lenz TL, Hamilton WR. Supplemental products used for weight loss. J Am Pharm Assoc (2003) 2004;44:59-67. [PubMed](https://pubmed.ncbi.nlm.nih.gov/14965155/)
 
-[4] U.S. Department of Agriculture, U.S. Department of Health and Human Services. *Dietary Guidelines for Americans, 2010*. 7th ed. Washington, DC.
+[4] U.S. Department of Agriculture, U.S. Department of Health and Human Services. Dietary Guidelines for Americans, 2010. 7th ed. Washington, DC: U.S. Government Printing Office; 2010.
 
-[5] National Institute of Diabetes and Digestive and Kidney Diseases. "Keep Active and Eat Healthy to Improve Well-being and Feel Great." 2018.
+[5] National Institute of Diabetes and Digestive and Kidney Diseases. Keep Active and Eat Healthy to Improve Well-being and Feel Great. 2018.
 
 [6] Pittler MH, Ernst E. "Dietary supplements for body-weight reduction: a systematic review." *Am J Clin Nutr*. 2004;79:529-36. [PubMed](https://pubmed.ncbi.nlm.nih.gov/15051593/)
 
@@ -559,33 +565,31 @@ None of the dietary supplement ingredients reviewed here produce weight loss com
 
 [8] Blanck HM, Serdula MK, Gillespie C, et al. "Use of nonprescription dietary supplements for weight loss is common among Americans." *J Am Diet Assoc*. 2007;107:441-7. [PubMed](https://pubmed.ncbi.nlm.nih.gov/17324663/)
 
-[9] "A race of results." *Nutr Bus J*. 2016;21:1, 3-7.
-
-[10] Bailey RL, Gahche JJ, Miller PE, Thomas PR, Dwyer JT. "Why US adults use dietary supplements." *JAMA Intern Med*. 2013;173:355-61. [PubMed](https://pubmed.ncbi.nlm.nih.gov/23381623/)
+[9] A race of results. Nutr Bus J 2016;21:1, 3-7.
 
 [11] Sharpe PA, Granner ML, Conway JM, Ainsworth BE, Dobre M. "Availability of weight-loss supplements: Results of an audit of retail outlets in a southeastern city." *J Am Diet Assoc*. 2006;106:2045-51. [PubMed](https://pubmed.ncbi.nlm.nih.gov/17126636/)
 
-[12] U.S. General Accounting Office. "Dietary Supplements for Weight Loss: Limited Federal Oversight Has Focused More on Marketing than on Safety." 2002.
+[12] U.S. General Accounting Office (now the U.S. Government Accountability Office). Dietary Supplements for Weight Loss: Limited Federal Oversight Has Focused More on Marketing than on Safety. 2002.
 
-[13] U.S. Food and Drug Administration. "Questions and Answers on Dietary Supplements." 2019.
+[13] U.S. Food and Drug Administration. Questions and Answers on Dietary Supplements. 2019.
 
-[14] Astell KJ, Mathai ML, Su XQ. "Plant extracts with appetite suppressing properties for body weight control: a systematic review." *Complement Ther Med*. 2013;21:407-16. [PubMed](https://pubmed.ncbi.nlm.nih.gov/23876571/)
+[14] Astell KJ, Mathai ML, Su XQ. Plant extracts with appetite suppressing properties for body weight control: a systematic review of double blind randomized controlled clinical trials. Complement Ther Med 2013;21:407-16. [PubMed](https://pubmed.ncbi.nlm.nih.gov/23876572/)
 
 [15] Allison DB, Fontaine KR, Heshka S, et al. "Alternative treatments for weight loss: a critical review." *Crit Rev Food Sci Nutr*. 2001;41:1-28. [PubMed](https://pubmed.ncbi.nlm.nih.gov/11152041/)
 
-[16] Rios-Hoyo A, Gutierrez-Salmean G. "New dietary supplements for obesity: what we currently know." *Curr Obes Rep*. 2016;5:262-70. [PubMed](https://pubmed.ncbi.nlm.nih.gov/27053064/)
+[16] Rios-Hoyo A, Gutierrez-Salmean G. New dietary supplements for obesity: what we currently know. Curr Obes Rep 2016;5:262-70. [PubMed](https://pubmed.ncbi.nlm.nih.gov/27053066/)
 
-[17] Egras AM, Hamilton WR, Lenz TL, Monaghan MS. "An evidence-based review of fat modifying supplemental weight loss products." *J Obes*. 2011;2011. [PubMed](https://pubmed.ncbi.nlm.nih.gov/21773005/)
+[17] Egras AM, Hamilton WR, Lenz TL, et al. An evidence-based review of fat modifying supplemental weight loss products. J Obes 2011;2011. [PubMed](https://pubmed.ncbi.nlm.nih.gov/20847896/)
 
 [18] Ngondi JL, Etoundi BC, Nyangono CB, et al. "IGOB131, a novel seed extract of the West African plant Irvingia gabonensis, significantly reduces body weight." *Lipids Health Dis*. 2009;8:7. [PubMed](https://pubmed.ncbi.nlm.nih.gov/19254366/)
 
 [19] Onakpoya I, Davies L, Posadzki P, Ernst E. "The efficacy of Irvingia gabonensis supplementation in the management of overweight and obesity: a systematic review." *J Diet Suppl*. 2013;10:29-38. [PubMed](https://pubmed.ncbi.nlm.nih.gov/23419021/)
 
-[20] Kothari SC, Shivarudraiah P, et al. "Subchronic toxicity and mutagenicity/genotoxicity studies of Irvingia gabonensis extract (IGOB131)." *Food Chem Toxicol*. 2012;50:1468-79. [PubMed](https://pubmed.ncbi.nlm.nih.gov/22342631/)
+[20] Kothari SC, Shivarudraiah P, Venkataramaiah SB, et al. Subchronic toxicity and mutagenicity/genotoxicity studies of Irvingia gabonensis extract (IGOB131). Food Chem Toxicol 2012;50:1468-79. [PubMed](https://pubmed.ncbi.nlm.nih.gov/22386809/)
 
-[21] Ozkan G, Ulusoy S. "A case of renal failure developing in association with African mango consumption." *Int J Clin Exp Med*. 2015;8:6374-8. [PubMed](https://pubmed.ncbi.nlm.nih.gov/26131259/)
+[21] Ozkan G, Ulusoy S. A case of renal failure developing in association with African mango consumption. Int J Clin Exp Med 2015;8:6374-8. [PubMed](https://pubmed.ncbi.nlm.nih.gov/26131261/)
 
-[22] Aoe S, Ikenaga T, et al. "Effect of cooked white rice with high beta-glucan barley on appetite and energy intake." *Plant Foods Hum Nutr*. 2014;69:325-30. [PubMed](https://pubmed.ncbi.nlm.nih.gov/25267404/)
+[22] Aoe S, Ikenaga T, Noguchi H, et al. Effect of cooked white rice with high beta-glucan barley on appetite and energy intake in healthy Japanese subjects: a randomized controlled trial. Plant Foods Hum Nutr 2014;69:325-30. [PubMed](https://pubmed.ncbi.nlm.nih.gov/25139426/)
 
 [23] Beck EJ, Tapsell LC, et al. "Oat beta-glucan supplementation does not enhance the effectiveness of an energy-restricted diet in overweight women." *Br J Nutr*. 2010;103:1212-22. [PubMed](https://pubmed.ncbi.nlm.nih.gov/19930764/)
 
@@ -593,33 +597,27 @@ None of the dietary supplement ingredients reviewed here produce weight loss com
 
 [25] Haaz S, Fontaine KR, et al. "Citrus aurantium and synephrine alkaloids in the treatment of overweight and obesity: an update." *Obes Rev*. 2006;7:79-88. [PubMed](https://pubmed.ncbi.nlm.nih.gov/16436104/)
 
-[26] Seifert JG, et al. "Effect of acute administration of an herbal preparation on blood pressure and heart rate." *Int J Med Sci*. 2011;8:192-7. [PubMed](https://pubmed.ncbi.nlm.nih.gov/21369371/)
+[26] Seifert JG, Nelson A, Devonish J, et al. Effect of acute administration of an herbal preparation on blood pressure and heart rate in humans. Int J Med Sci 2011;8:192-7. [PubMed](https://pubmed.ncbi.nlm.nih.gov/21448304/)
 
 [27] Stohs SJ, Preuss HG, Shara M. "The safety of Citrus aurantium and its primary protoalkaloid p-synephrine." *Phytother Res*. 2011;25:1421-8. [PubMed](https://pubmed.ncbi.nlm.nih.gov/21480414/)
 
-[28] Roman MC, Betz JM, Hildreth J. "Determination of synephrine in bitter orange." *J AOAC Int*. 2007;90:68-81. [PubMed](https://pubmed.ncbi.nlm.nih.gov/17373439/)
+[28] Roman MC, Betz JM, Hildreth J. Determination of synephrine in bitter orange raw materials, extracts, and dietary supplements by liquid chromatography with ultraviolet detection: single-laboratory validation. J AOAC Int 2007;90:68-81. [PubMed](https://pubmed.ncbi.nlm.nih.gov/17373438/)
 
-[29] Dwyer JT, Allison DB, Coates PM. "Dietary supplements in weight reduction." *J Am Diet Assoc*. 2005;105:S80-6. [PubMed](https://pubmed.ncbi.nlm.nih.gov/15867900/)
+[29] Dwyer JT, Allison DB, Coates PM. Dietary supplements in weight reduction. J Am Diet Assoc 2005;105:S80-6. [PubMed](https://pubmed.ncbi.nlm.nih.gov/15867902/)
 
-[30] Stohs SJ, Preuss HG, Shara M. "A review of the human clinical studies involving Citrus aurantium extract." *Int J Med Sci*. 2012;9:527-38. [PubMed](https://pubmed.ncbi.nlm.nih.gov/23028337/)
+[30] Stohs SJ, Preuss HG, Shara M. A review of the human clinical studies involving *Citrus aurantium* (bitter orange) extract and its primary protoalkaloid p-synephrine. Int J Med Sci 2012;9:527-38. [PubMed](https://pubmed.ncbi.nlm.nih.gov/22991491/)
 
-[31] Colker CM, Kaiman DS, et al. "Effects of Citrus aurantium extract, caffeine, and St. John's Wort on body fat loss." *Curr Ther Res*. 1999;60:145-53.
+[31] Colker CM, Kaiman DS, Torina GC, et al. Effects of *Citrus aurantium* extract, caffeine, and St. John's Wort on body fat loss, lipid levels, and mood states in overweight healthy adults. Curr Ther Res 1999;60:145-53.
 
 [32] Bent S, Padula A, Neuhaus J. "Safety and efficacy of Citrus aurantium for weight loss." *Am J Cardiol*. 2004;94:1359-61. [PubMed](https://pubmed.ncbi.nlm.nih.gov/15541270/)
 
-[33] Greenway F, et al. "Dietary herbal supplements with phenylephrine for weight loss." *J Med Food*. 2006;9:572-8. [PubMed](https://pubmed.ncbi.nlm.nih.gov/17201646/)
+[33] Greenway F, de Jonge-Levitan L, Martin C, Roberts A, Grundy I, Parker C. Dietary herbal supplements with phenylephrine for weight loss. J Med Food 2006;9:572-8. [PubMed](https://pubmed.ncbi.nlm.nih.gov/17201647/)
 
-[34] Onakpoya I, Davies L, Ernst E. "Efficacy of herbal supplements containing Citrus aurantium and synephrine." *Focus Altern Complement Ther*. 2011;16:254-60.
+[34] Onakpoya I, Davies L, Ernst E. Efficacy of herbal supplements containing Citrus aurantium and synephrine alkaloids for the management of overweight and obesity: a systematic review. Focus Altern Complement Ther 2011;16:254-60.
 
-[35] Stohs SJ. "Assessment of the adverse event reports associated with Citrus aurantium." *J Funct Foods*. 2010;2:235-8.
+[35] Stohs SJ. Assessment of the adverse event reports associated with Citrus aurantium (bitter orange) from April 2004 to October 2009. Journal of Functional Foods 2010;2:235-8.
 
-[36] Kaats GR, Miller H, Preuss HG, Stohs SJ. "A 60-day safety study involving Citrus aurantium extract." *Food Chem Toxicol*. 2013;55:358-62. [PubMed](https://pubmed.ncbi.nlm.nih.gov/23354394/)
-
-[37] Haller CA, Benowitz NL, Jacob P 3rd. "Hemodynamic effects of ephedra-free weight-loss supplements." *Am J Med*. 2005;118:998-1003. [PubMed](https://pubmed.ncbi.nlm.nih.gov/16164886/)
-
-[38] Bui LT, Nguyen DT, Ambrose PJ. "Blood pressure and heart rate effects following a single dose of bitter orange." *Ann Pharmacother*. 2006;40:53-7. [PubMed](https://pubmed.ncbi.nlm.nih.gov/16352694/)
-
-[39] Hansen DK, et al. "Physiological effects following administration of Citrus aurantium for 28 days in rats." *Toxicol Appl Pharmacol*. 2012;261:236-47. [PubMed](https://pubmed.ncbi.nlm.nih.gov/22521607/)
+[38] Bui LT, Nguyen DT, Ambrose PJ. Blood pressure and heart rate effects following a single dose of bitter orange. Ann Pharmacother 2006;40:53-7. [PubMed](https://pubmed.ncbi.nlm.nih.gov/16317106/)
 
 [40] Jung YP, et al. "Effects of a pre-workout supplement with and without synephrine for 8 weeks in resistance-trained males." *J Int Soc Sports Nutr*. 2017;14:1. [PubMed](https://pubmed.ncbi.nlm.nih.gov/28096757/)
 
@@ -627,7 +625,7 @@ None of the dietary supplement ingredients reviewed here produce weight loss com
 
 [42] Yen M, Ewald MB. "Toxicity of weight loss agents." *J Med Toxicol*. 2012;8:145-52. [PubMed](https://pubmed.ncbi.nlm.nih.gov/22351299/)
 
-[43] American Herbal Products Association. *Botanical Safety Handbook*. 2nd ed. Boca Raton, FL: CRC Press; 2013.
+[43] American Herbal Products Association. Botanical Safety Handbook. 2nd ed. Boca Raton, Florida: CRC Press; 2013.
 
 [44] Harpaz E, et al. "The effect of caffeine on energy balance." *J Basic Clin Physiol Pharmacol*. 2017;28:1-10. [PubMed](https://pubmed.ncbi.nlm.nih.gov/27824614/)
 
@@ -637,17 +635,17 @@ None of the dietary supplement ingredients reviewed here produce weight loss com
 
 [47] Ohara T, et al. "Oral intake of a combination of glucosyl hesperidin and caffeine elicits an anti-obesity effect." *Nutr J*. 2016;15:6. [PubMed](https://pubmed.ncbi.nlm.nih.gov/26786000/)
 
-[48] Andersen T, Fogh J. "Weight loss and delayed gastric emptying following a South American herbal preparation." *J Hum Nutr Diet*. 2001;14:243-50. [PubMed](https://pubmed.ncbi.nlm.nih.gov/11475625/)
+[48] Andersen T, Fogh J. Weight loss and delayed gastric emptying following a South American herbal preparation in overweight patients. J Hum Nutr Diet 2001;14:243-50. [PubMed](https://pubmed.ncbi.nlm.nih.gov/11424516/)
 
 [49] Lopez-Garcia E, et al. "Changes in caffeine intake and long-term weight change in men and women." *Am J Clin Nutr*. 2006;83:674-80. [PubMed](https://pubmed.ncbi.nlm.nih.gov/16522916/)
 
-[50] Icken D, et al. "Caffeine intake is related to successful weight loss maintenance." *Eur J Clin Nutr*. 2016;70:532-4. [PubMed](https://pubmed.ncbi.nlm.nih.gov/26695408/)
+[50] Icken D, Feller S, Engeli S, et al. Caffeine intake is related to successful weight loss maintenance. Eur J Clin Nutr 2016;70:532-4. [PubMed](https://pubmed.ncbi.nlm.nih.gov/26554757/)
 
-[51] U.S. Food and Drug Administration. "Spilling the Beans: How Much Caffeine is Too Much?" 2018.
+[51] U.S. Food and Drug Administration. Spilling the Beans: How Much Caffeine is Too Much? 2018.
 
-[52] EFSA Panel on Dietetic Products, Nutrition and Allergies. "Scientific opinion on the safety of caffeine." *EFSA Journal*. 2015;13:4102-222.
+[52] EFSA Panel on Dietetic Products, Nutrition and Allergies (NDA). Scientific opinion on the safety of caffeine. EFSA Journal 2015;13:4102-222.
 
-[53] Torpy JM, Livingston EH. "JAMA patient page. Energy drinks." *JAMA*. 2013;309:297. [PubMed](https://pubmed.ncbi.nlm.nih.gov/23340644/)
+[53] Torpy JM, Livingston EH. JAMA patient page. Energy drinks. JAMA 2013;309:297. [PubMed](https://pubmed.ncbi.nlm.nih.gov/23330173/)
 
 [54] Committee on Nutrition and the Council on Sports Medicine and Fitness. "Sports drinks and energy drinks for children and adolescents." *Pediatrics*. 2011;127:1182-9. [PubMed](https://pubmed.ncbi.nlm.nih.gov/21624882/)
 
@@ -655,86 +653,370 @@ None of the dietary supplement ingredients reviewed here produce weight loss com
 
 [56] Committee to Review Dietary Reference Intakes for Vitamin D and Calcium, IOM. *Dietary Reference Intakes for Calcium and Vitamin D*. 2011. [PubMed](https://pubmed.ncbi.nlm.nih.gov/21796828/)
 
-[57-67] Calcium, dairy, and body weight studies (Davies 2000, Heaney 2003, Parikh 2003, Zemel 2000, Villarroel 2014, Christensen 2009, Jacobsen 2005, Heaney 2002, and others).
+[57] Davies KM, Heaney RP, Recker RR, et al. Calcium intake and body weight. J Clin Endocrinol Metab 2000;85:4635-8. [PubMed](https://pubmed.ncbi.nlm.nih.gov/11134120/)
 
-[68-77] Calcium supplementation trials and kidney stone risk studies.
+[58] Heaney RP. Normalizing calcium intake: projected population effects for body weight. J Nutr 2003;133:268S-70S. [PubMed](https://pubmed.ncbi.nlm.nih.gov/12514306/)
 
-[78] Whiting S, Derbyshire E, Tiwari BK. "Capsaicinoids and capsinoids: a potential role for weight management?" *Appetite*. 2012;59:341-8.
+[59] Parikh SJ, Yanovski JA. Calcium intake and adiposity. Am J Clin Nutr 2003;77:281-7. [PubMed](https://pubmed.ncbi.nlm.nih.gov/12540383/)
 
-[79-83] Capsaicinoid mechanism and efficacy studies (Urbina 2017 and others).
+[60] Zemel MB, Shi H, Greer B, et al. Regulation of adiposity by dietary calcium. FASEB J 2000;14:1132-8. [PubMed](https://pubmed.ncbi.nlm.nih.gov/10834935/)
 
-[84-91] Carnitine reviews, meta-analyses, and TMAO studies.
+[61] Villarroel P, Villalobos E, Reyes M, et al. Calcium, obesity, and the role of the calcium-sensing receptor. Nutr Rev 2014;72:627-37. [PubMed](https://pubmed.ncbi.nlm.nih.gov/25182976/)
 
-[92-97] Chitosan trials and Cochrane Review (Gades 2003, Pittler 2003, Jull 2008, and others).
+[64] Heaney RP, Davies KM, Barger-Lux MJ. Calcium and weight: clinical studies. J Am Coll Nutr 2002;21:152S-5S. [PubMed](https://pubmed.ncbi.nlm.nih.gov/11999544/)
 
-[98] Institute of Medicine. *Dietary Reference Intakes for Chromium*. 2001.
+[65] Shi H, Dirienzo D, Zemel MB. Effects of dietary calcium on adipocyte lipid metabolism and body weight regulation in energy-restricted aP2-agouti transgenic mice. FASEB J 2001;15:291-3. [PubMed](https://pubmed.ncbi.nlm.nih.gov/11156940/)
 
-[99] Onakpoya I, Posadzki P, Ernst E. "Chromium supplementation in overweight and obesity: a systematic review and meta-analysis." *Obes Rev*. 2013;14:496-507.
+[66] Zemel MB, Richards J, Mathis S, et al. Dairy augmentation of total and central fat loss in obese subjects. Int J Obes (Lond) 2005;29:391-7. [PubMed](https://pubmed.ncbi.nlm.nih.gov/15672113/)
 
-[100] Tian H, et al. "Chromium picolinate supplementation for overweight or obese adults." *Cochrane Database Syst Rev*. 2013;(11):CD010063.
+[67] Zemel MB, Thompson W, Milstead A, et al. Calcium and dairy acceleration of weight and fat loss during energy restriction in obese adults. Obes Res 2004;12:582-90. [PubMed](https://pubmed.ncbi.nlm.nih.gov/15090625/)
 
-[101-102] Additional chromium studies.
+[68] Soerensen KV, Thorning TK, Astrup A, et al. Effect of dairy calcium from cheese and milk on fecal fat excretion, blood lipids, and appetite in young men. Am J Clin Nutr 2014;99:984-91. [PubMed](https://pubmed.ncbi.nlm.nih.gov/24622806/)
 
-[103-108] Forskolin studies (Godard, Obes Res 2005; Henderson, J Int Soc Sports Nutr 2005; and others).
+[69] Yanovski JA, Parikh SJ, Yanoff LB, et al. Effects of calcium supplementation on body weight and adiposity in overweight and obese adults: a randomized trial. Ann Intern Med 2009;150:821-9, W145-6. [PubMed](https://pubmed.ncbi.nlm.nih.gov/19528561/)
 
-[109] Gaullier JM, et al. "Conjugated linoleic acid supplementation for 1 y reduces body fat mass in healthy overweight humans." *Am J Clin Nutr*. 2004;79:1118-25.
+[70] Chung M, Balk EM, Brendel M, et al. Vitamin D and calcium: a systematic review of health outcomes. Evid Rep Technol Assess (Full Rep) 2009:1-420. [PubMed](https://pubmed.ncbi.nlm.nih.gov/20629479/)
 
-[110-124] CLA studies, safety data, and lipid effects.
+[73] Booth AO, Huggins CE, Wattanapenpaiboon N, et al. Effect of increasing dietary calcium through supplements and dairy food on body weight and body composition: a meta-analysis of randomised controlled trials. Br J Nutr 2015;114:1013-25. [PubMed](https://pubmed.ncbi.nlm.nih.gov/26234296/)
 
-[125-127] Fucoxanthin studies (Abidov, Diabetes Obes Metab 2010).
+[74] Li P, Fan C, Lu Y, et al. Effects of calcium supplementation on body weight: a meta-analysis. Am J Clin Nutr 2016;104:1263-73. [PubMed](https://pubmed.ncbi.nlm.nih.gov/27733391/)
 
-[128-137] Garcinia cambogia trials, reviews, and safety reports (Onakpoya, J Obes 2011; Heymsfield, JAMA 1998; Semwal, Fitoterapia 2015).
+[75] Curhan GC, Willett WC, Rimm EB, et al. A prospective study of dietary calcium and other nutrients and the risk of symptomatic kidney stones. N Engl J Med 1993;328:833-8. [PubMed](https://pubmed.ncbi.nlm.nih.gov/8441427/)
 
-[138-147] Glucomannan studies and safety data.
+[76] Curhan GC, Willett WC, Speizer FE, et al. Comparison of dietary calcium with supplemental calcium and other nutrients as factors affecting the risk for kidney stones in women. Ann Intern Med 1997;126:497-504. [PubMed](https://pubmed.ncbi.nlm.nih.gov/9092314/)
 
-[148-155] Green coffee bean extract studies, meta-analysis, and FTC criticism.
+[77] Jackson RD, LaCroix AZ, Gass M, et al. Calcium plus vitamin D supplementation and the risk of fractures. N Engl J Med 2006;354:669-83. [PubMed](https://pubmed.ncbi.nlm.nih.gov/16481635/)
 
-[156-173] Green tea studies, Cochrane Review, EFSA opinion, and liver toxicity reports.
+[78] Whiting S, Derbyshire EJ, Tiwari B. Could capsaicinoids help to support weight management? A systematic review and meta-analysis of energy intake data. Appetite 2014;73:183-8. [PubMed](https://pubmed.ncbi.nlm.nih.gov/24246368/)
 
-[157] Hursel R, et al. "The effects of catechin rich teas and caffeine on energy expenditure and fat oxidation: a meta-analysis." *Obes Rev*. 2011;12:e573-81.
+[79] Janssens PL, Hursel R, Martens EA, et al. Acute effects of capsaicin on energy expenditure and fat oxidation in negative energy balance. PLoS One 2013;8:e67786. [PubMed](https://pubmed.ncbi.nlm.nih.gov/23844093/)
 
-[164] Jurgens TM, et al. "Green tea for weight loss and weight maintenance in overweight or obese adults." *Cochrane Database Syst Rev*. 2012;12:CD008650.
+[80] Janssens PL, Hursel R, Westerterp-Plantenga MS. Capsaicin increases sensation of fullness in energy balance, and decreases desire to eat after dinner in negative energy balance. Appetite 2014;77:44-9. [PubMed](https://pubmed.ncbi.nlm.nih.gov/24630935/)
 
-[165] Phung OJ, et al. "Effect of green tea catechins with or without caffeine on anthropometric measures: a systematic review and meta-analysis." *Am J Clin Nutr*. 2010;91:73-81.
+[81] Sharma SK, Vij AS, Sharma M. Mechanisms and clinical uses of capsaicin. Eur J Pharmacol 2013;720:55-62. [PubMed](https://pubmed.ncbi.nlm.nih.gov/24211679/)
 
-[167] Hursel R, Viechtbauer W, Westerterp-Plantenga MS. "The effects of green tea on weight loss and weight maintenance: a meta-analysis." *Int J Obes*. 2009;33:956-61.
+[82] van Avesaat M, Troost FJ, Westerterp-Plantenga MS, Helyes Z, Le Roux CW, Dekker J, et al. Capsaicin-induced satiety is associated with gastrointestinal distress but not with the release of satiety hormones. Am J Clin Nutr 2016;103:305-13. [PubMed](https://pubmed.ncbi.nlm.nih.gov/26718419/)
 
-[170] Dostal AM, et al. "Green tea extract and catechol-O-methyltransferase genotype modify the post-prandial thermogenic effect of green tea." *J Nutr*. 2016.
+[83] Urbina SL, Roberts MD, Kephart WC, et al. Effects of twelve weeks of capsaicinoid supplementation on body composition, appetite and self-reported caloric intake in overweight individuals. Appetite 2017;113:264-73. [PubMed](https://pubmed.ncbi.nlm.nih.gov/28235621/)
 
-[174] Pittler MH, Ernst E. "Guar gum for body weight reduction: meta-analysis of randomized trials." *Am J Med*. 2001;110:724-30.
+[84] Reuter SE, Evans AM. Carnitine and acylcarnitines: pharmacokinetic, pharmacological and clinical aspects. Clin Pharmacokinet 2012;51:553-72. [PubMed](https://pubmed.ncbi.nlm.nih.gov/22804748/)
 
-[175-179] Guar gum studies and safety data.
+[85] Pooyandjoo M, Nouhi M, Shab-Bidar S, et al. The effect of (L-)carnitine on weight loss in adults: a systematic review and meta-analysis of randomized controlled trials. Obes Rev 2016;17:970-6. [PubMed](https://pubmed.ncbi.nlm.nih.gov/27335245/)
 
-[180-186] Hoodia studies and product quality analyses.
+[86] Derosa G, Maffioli P, Ferrari I, et al. Orlistat and L-carnitine compared to orlistat alone on insulin resistance in obese diabetic patients. Endocr J 2010;57:777-86. [PubMed](https://pubmed.ncbi.nlm.nih.gov/20683173/)
 
-[187-199] Probiotic studies and safety data (Kadooka 2010, Sanchez 2014, and meta-analyses).
+[87] Derosa G, Cicero AF, Gaddi A, et al. The effect of L-carnitine on plasma lipoprotein(a) levels in hypercholesterolemic patients with type 2 diabetes mellitus. Clin Ther 2003;25:1429-39. [PubMed](https://pubmed.ncbi.nlm.nih.gov/12867219/)
 
-[200-203] Pyruvate clinical trials.
+[88] Preface: Carnitine: Lessons from One Hundred Years of Research. Annals of the New York Academy of Sciences 2004;1033:ix-xi.
 
-[204-206] Raspberry ketone studies.
+[89] Villani RG, Gannon J, Self M, et al. L-Carnitine supplementation combined with aerobic training does not promote weight loss in moderately obese women. Int J Sport Nutr Exerc Metab 2000;10:199-207. [PubMed](https://pubmed.ncbi.nlm.nih.gov/10861338/)
 
-[207-210] Vitamin D and body weight studies.
+[90] Rebouche CJ. Carnitine. In: Ross AC, Caballero B, Cousins RJ, Tucker KL, Ziegler TR, eds. Modern Nutrition in Health and Disease. 11th ed. Baltimore, MD: Lippincott Williams & Wilkins; 2014:440-6.
 
-[211] Onakpoya I, et al. "The efficacy of Phaseolus vulgaris as a weight-loss supplement: a systematic review." *Br J Nutr*. 2011;106:196-202.
+[91] Koeth RA, Levison BS, Culley MK, et al. gamma-Butyrobetaine is a proatherogenic intermediate in gut microbial metabolism of L-carnitine to TMAO. Cell Metab 2014;20:799-812. [PubMed](https://pubmed.ncbi.nlm.nih.gov/25440057/)
 
-[212-217] White kidney bean extract trials.
+[92] Gades MD, Stern JS. Chitosan supplementation and fat absorption in men and women. J Am Diet Assoc 2005;105:72-7. [PubMed](https://pubmed.ncbi.nlm.nih.gov/15635349/)
 
-[218-225] Yohimbe studies and safety data (Pittler, Cochrane 2003; and others).
+[93] Schiller R, Barrager E, Schauss A, et al. A randomized, double-blind, placebo-controlled study examining the effects of a rapidly soluble chitosan dietary supplement on weight loss and body composition in overweight and mildly obese individuals. J Am Nutraceutical Assoc 2001;4:42-9.
 
-[226-234] Ephedra studies, meta-analysis, and FDA ban (Shekelle, JAMA 2003; FDA 2004).
+[94] Jung EY, Jun SC, Chang UJ, et al. L-ascorbic acid addition to chitosan reduces body weight in overweight women. Int J Vitam Nutr Res 2014;84:5-11. [PubMed](https://pubmed.ncbi.nlm.nih.gov/25835230/)
 
-[235-236] FDA and FTC warnings on fraudulent weight-loss claims.
+[95] Pittler MH, Abbot NC, Harkness EF, et al. Randomized, double-blind trial of chitosan for body weight reduction. Eur J Clin Nutr 1999;53:379-81. [PubMed](https://pubmed.ncbi.nlm.nih.gov/10369493/)
 
-[237] FDA. "Tainted Weight Loss Products." Public database.
+[96] Jull AB, Ni Mhurchu C, Bennett DA, et al. Chitosan for overweight or obesity. Cochrane Database Syst Rev 2008:CD003892.
 
-[238] Harel Z, et al. "The frequency and characteristics of dietary supplement recalls in the United States." *JAMA Intern Med*. 2013;173:929-30.
+[97] Natural Medicines Comprehensive Database. Chitosan. 2013.
 
-[239] Chitosan-warfarin interaction data.
+[98] Institute of Medicine, Food and Nutrition Board. Dietary Reference Intakes for Vitamin A, Vitamin K, Arsenic, Boron, Chromium, Copper, Iodine, Iron, Manganese, Molybdenum, Nickel, Silicon, Vanadium, and Zinc. Washington, DC: National Academy Press; 2001.
 
-[240-241] Green tea-chemotherapy interaction studies.
+[99] Onakpoya I, Posadzki P, Ernst E. Chromium supplementation in overweight and obesity: a systematic review and meta-analysis of randomized clinical trials. Obes Rev 2013;14:496-507. [PubMed](https://pubmed.ncbi.nlm.nih.gov/23495911/)
 
-[242] Lopez AM, et al. "Serotonin toxicity associated with Garcinia cambogia." Case report.
+[100] Tian H, Guo X, Wang X, et al. Chromium picolinate supplementation for overweight or obese adults. Cochrane Database Syst Rev 2013;11:CD010063. [PubMed](https://pubmed.ncbi.nlm.nih.gov/24293292/)
 
-ConsumerLab. "Weight Loss Supplements Review." [https://www.consumerlab.com/reviews/weight-loss-supplements-7-keto-dhea/weightloss/](https://www.consumerlab.com/reviews/weight-loss-supplements-7-keto-dhea/weightloss/)
+[101] Anton SD, Morrison CD, Cefalu WT, et al. Effects of chromium picolinate on food intake and satiety. Diabetes Technol Ther 2008;10:405-12. [PubMed](https://pubmed.ncbi.nlm.nih.gov/18715218/)
 
-NIH Office of Dietary Supplements. "Dietary Supplements for Weight Loss -- Health Professional Fact Sheet." [https://ods.od.nih.gov/factsheets/WeightLoss-HealthProfessional/](https://ods.od.nih.gov/factsheets/WeightLoss-HealthProfessional/)
+[102] Pittler MH, Stevinson C, Ernst E. Chromium picolinate for reducing body weight: meta-analysis of randomized trials. Int J Obes Relat Metab Disord 2003;27:522-9. [PubMed](https://pubmed.ncbi.nlm.nih.gov/12664086/)
+
+[103] Astell KJ, Mathai ML, Su XQ. A review on botanical species and chemical compounds with appetite suppressing properties for body weight control. Plant Foods Hum Nutr 2013;68:213-21. [PubMed](https://pubmed.ncbi.nlm.nih.gov/23666454/)
+
+[104] Godard MP, Johnson BA, Richmond SR. Body composition and hormonal adaptations associated with forskolin consumption in overweight and obese men. Obes Res 2005;13:1335-43. [PubMed](https://pubmed.ncbi.nlm.nih.gov/16129715/)
+
+[106] Henderson S, Magu B, Rasmussen C, et al. Effects of Coleus forskohlii supplementation on body composition and hematological profiles in mildly overweight women. J Int Soc Sports Nutr 2005;2:54-62. [PubMed](https://pubmed.ncbi.nlm.nih.gov/18500958/)
+
+[107] Loftus HL, Astell KJ, Mathai ML, et al. Coleus forskohlii extract supplementation in conjunction with a hypocaloric diet reduces the risk factors of metabolic syndrome in overweight and obese subjects: a randomized controlled trial. Nutrients 2015;7:9508-22. [PubMed](https://pubmed.ncbi.nlm.nih.gov/26593941/)
+
+[108] Virgona N, Taki Y, Yamada S, et al. Dietary Coleus forskohlii extract generates dose-related hepatotoxicity in mice. J Appl Toxicol 2013;33:924-32. [PubMed](https://pubmed.ncbi.nlm.nih.gov/22729658/)
+
+[109] Gaullier JM, Halse J, Hoye K, et al. Conjugated linoleic acid supplementation for 1 y reduces body fat mass in healthy overweight humans. Am J Clin Nutr 2004;79:1118-25. [PubMed](https://pubmed.ncbi.nlm.nih.gov/15159244/)
+
+[110] Lehnen TE, da Silva MR, Camacho A, Marcadenti A, Lehnen AM. A review on effects of conjugated linoleic fatty acid (CLA) upon body composition and energetic metabolism. J Int Soc Sports Nutr 2015;12:36. [PubMed](https://pubmed.ncbi.nlm.nih.gov/26388708/)
+
+[111] Onakpoya IJ, Posadzki PP, Watson LK, et al. The efficacy of long-term conjugated linoleic acid (CLA) supplementation on body composition in overweight and obese individuals: a systematic review and meta-analysis of randomized clinical trials. Eur J Nutr 2012;51:127-34. [PubMed](https://pubmed.ncbi.nlm.nih.gov/21990002/)
+
+[112] Norris LE, Collene AL, Asp ML, et al. Comparison of dietary conjugated linoleic acid with safflower oil on body composition in obese postmenopausal women with type 2 diabetes mellitus. Am J Clin Nutr 2009;90:468-76. [PubMed](https://pubmed.ncbi.nlm.nih.gov/19535429/)
+
+[113] Chen SC, Lin YH, Huang HP, et al. Effect of conjugated linoleic acid supplementation on weight loss and body fat composition in a Chinese population. Nutrition 2012;28:559-65. [PubMed](https://pubmed.ncbi.nlm.nih.gov/22261578/)
+
+[114] Ribeiro AS, Pina FL, Dodero SR, et al. Effect of conjugated linoleic acid associated with aerobic exercise on body fat and lipid profile in obese women: a randomized, double-blinded, and placebo-controlled trial. Int J Sport Nutr Exerc Metab 2016;26:135-44. [PubMed](https://pubmed.ncbi.nlm.nih.gov/26402730/)
+
+[116] Steck SE, Chalecki AM, Miller P, et al. Conjugated linoleic acid supplementation for twelve weeks increases lean body mass in obese humans. J Nutr 2007;137:1188-93. [PubMed](https://pubmed.ncbi.nlm.nih.gov/17449580/)
+
+[117] Kim JH, Kim Y, Kim YJ, et al. Conjugated Linoleic Acid: Potential Health Benefits as a Functional Food Ingredient. Annu Rev Food Sci Technol 2016;7:221-44. [PubMed](https://pubmed.ncbi.nlm.nih.gov/26735796/)
+
+[118] Bilal M, Patel Y, Burkitt M, et al. Linoleic acid induced acute hepatitis: a case report and review of the literature. Case Reports Hepatol 2015;2015:807354. [PubMed](https://pubmed.ncbi.nlm.nih.gov/26240766/)
+
+[119] Nortadas R, Barata J. Fulminant hepatitis during self-medication with conjugated linoleic acid. Ann Hepatol 2012;11:265-7. [PubMed](https://pubmed.ncbi.nlm.nih.gov/22345346/)
+
+[120] Ramos R, Mascarenhas J, Duarte P, et al. Conjugated linoleic acid-induced toxic hepatitis: first case report. Dig Dis Sci 2009;54:1141-3. [PubMed](https://pubmed.ncbi.nlm.nih.gov/18720003/)
+
+[121] Salas-Salvado J, Marquez-Sandoval F, Bullo M. Conjugated linoleic acid intake in humans: a systematic review focusing on its effect on body composition, glucose, and lipid metabolism. Crit Rev Food Sci Nutr 2006;46:479-88. [PubMed](https://pubmed.ncbi.nlm.nih.gov/16864141/)
+
+[122] Terpstra AH. Effect of conjugated linoleic acid on body composition and plasma lipids in humans: an overview of the literature. Am J Clin Nutr 2004;79:352-61. [PubMed](https://pubmed.ncbi.nlm.nih.gov/14985207/)
+
+[123] Silveira MB, Carraro R, Monereo S, et al. Conjugated linoleic acid (CLA) and obesity. Public Health Nutr 2007;10:1181-6. [PubMed](https://pubmed.ncbi.nlm.nih.gov/17903328/)
+
+[124] Riserus U, Arner P, Brismar K, et al. Treatment with dietary trans10cis12 conjugated linoleic acid causes isomer-specific insulin resistance in obese men with the metabolic syndrome. Diabetes Care 2002;25:1516-21. [PubMed](https://pubmed.ncbi.nlm.nih.gov/12196420/)
+
+[125] Jeukendrup AE, Randell R. Fat burners: nutrition supplements that increase fat metabolism. Obes Rev 2011;12:841-51. [PubMed](https://pubmed.ncbi.nlm.nih.gov/21951331/)
+
+[126] Peng J, Yuan JP, Wu CF, et al. Fucoxanthin, a marine carotenoid present in brown seaweeds and diatoms: metabolism and bioactivities relevant to human health. Mar Drugs 2011;9:1806-28. [PubMed](https://pubmed.ncbi.nlm.nih.gov/22072997/)
+
+[127] Abidov M, Ramazanov Z, Seifulla R, et al. The effects of Xanthigen in the weight management of obese premenopausal women with non-alcoholic fatty liver disease and normal liver fat. Diabetes Obes Metab 2010;12:72-81. [PubMed](https://pubmed.ncbi.nlm.nih.gov/19840063/)
+
+[128] Marquez F, Babio N, Bullo M, et al. Evaluation of the safety and efficacy of hydroxycitric acid or Garcinia cambogia extracts in humans. Crit Rev Food Sci Nutr 2012;52:585-94. [PubMed](https://pubmed.ncbi.nlm.nih.gov/22530711/)
+
+[129] Saper RB, Eisenberg DM, Phillips RS. Common dietary supplements for weight loss. Am Fam Physician 2004;70:1731-8. [PubMed](https://pubmed.ncbi.nlm.nih.gov/15554492/)
+
+[130] Onakpoya I, Hung SK, Perry R, et al. The use of garcinia extract (hydroxycitric acid) as a weight loss supplement: a systematic review and meta-analysis of randomised clinical trials. J Obes 2011;2011:509038. [PubMed](https://pubmed.ncbi.nlm.nih.gov/21197150/)
+
+[131] Mattes RD, Bormann L. Effects of (-)-hydroxycitric acid on appetitive variables. Physiol Behav 2000;71:87-94. [PubMed](https://pubmed.ncbi.nlm.nih.gov/11134690/)
+
+[132] Heymsfield SB, Allison DB, Vasselli JR, et al. *Garcinia cambogia* (hydroxycitric acid) as a potential antiobesity agent: a randomized controlled trial. JAMA 1998;280:1596-600. [PubMed](https://pubmed.ncbi.nlm.nih.gov/9820262/)
+
+[133] Chuah LO, Ho WY, Beh BK, et al. Updates on antiobesity effect of *Garcinia Origin* (-)-HCA. Evid Based Complement Alternat Med 2013;2013:751658. [PubMed](https://pubmed.ncbi.nlm.nih.gov/23990846/)
+
+[134] Hendrickson BP, Shaikh N, Occhiogrosso M, et al. Mania induced by Garcinia cambogia: a case series. Prim Care Companion CNS Disord 2016;18. [PubMed](https://pubmed.ncbi.nlm.nih.gov/27486540/)
+
+[135] Lunsford KE, Bodzin AS, Reino DC, et al. Dangerous dietary supplements: Garcinia cambogia-associated hepatic failure requiring transplantation. World J Gastroenterol 2016;22:10071-6. [PubMed](https://pubmed.ncbi.nlm.nih.gov/28018115/)
+
+[136] Melendez-Rosado J, Snipelisky D, Matcha G, et al. Acute hepatitis induced by pure Garcinia cambogia. J Clin Gastroenterol 2015;49:449-50. [PubMed](https://pubmed.ncbi.nlm.nih.gov/25811114/)
+
+[137] Corey R, Werner KT, Singer A, et al. Acute liver failure associated with Garcinia cambogia use. Ann Hepatol 2016;15:123-6. [PubMed](https://pubmed.ncbi.nlm.nih.gov/26626648/)
+
+[138] Henry DA, Mitchell AS, Aylward J, et al. Glucomannan and risk of oesophageal obstruction. Br Med J (Clin Res Ed) 1986;292:591-2. [PubMed](https://pubmed.ncbi.nlm.nih.gov/3004635/)
+
+[139] Sood N, Baker WL, Coleman CI. Effect of glucomannan on plasma lipid and glucose concentrations, body weight, and blood pressure: systematic review and meta-analysis. Am J Clin Nutr 2008;88:1167-75. [PubMed](https://pubmed.ncbi.nlm.nih.gov/18842808/)
+
+[140] Vido L, Facchin P, Antonello I, et al. Childhood obesity treatment: double blinded trial on dietary fibres (glucomannan) versus placebo. Padiatr Padol 1993;28:133-6. [PubMed](https://pubmed.ncbi.nlm.nih.gov/8247594/)
+
+[141] Walsh DE, Yaghoubian V, Behforooz A. Effect of glucomannan on obese patients: a clinical study. Int J Obes 1984;8:289-93. [PubMed](https://pubmed.ncbi.nlm.nih.gov/6096282/)
+
+[142] Arvill A, Bodin L. Effect of short-term ingestion of konjac glucomannan on serum cholesterol in healthy men. Am J Clin Nutr 1995;61:585-9. [PubMed](https://pubmed.ncbi.nlm.nih.gov/7872224/)
+
+[143] Keithley JK, Swanson B, Mikolaitis SL, et al. Safety and efficacy of glucomannan for weight loss in overweight and moderately obese adults. J Obes 2013;2013:610908. [PubMed](https://pubmed.ncbi.nlm.nih.gov/24490058/)
+
+[144] Zalewski BM, Chmielewska A, Szajewska H. The effect of glucomannan on body weight in overweight or obese children and adults: A systematic review of randomized controlled trials. Nutrition 2015 31:437-442. [PubMed](https://pubmed.ncbi.nlm.nih.gov/25701331/)
+
+[145] Zalewski BM, Chmielewska A, Szajewska H, et al. Correction of data errors and reanalysis of "The effect of glucomannan on body weight in overweight or obese children and adults: A systematic review of randomized controlled trials". Nutrition 2015;31:1056-7. [PubMed](https://pubmed.ncbi.nlm.nih.gov/26059384/)
+
+[146] Onakpoya I, Posadzki P, Ernst E. The efficacy of glucomannan supplementation in overweight and obesity: a systematic review and meta-analysis of randomized clinical trials. J Am Coll Nutr 2014;33:70-8. [PubMed](https://pubmed.ncbi.nlm.nih.gov/24533610/)
+
+[147] Natural Medicines Comprehensive Database. Glucomannan. 2011.
+
+[148] Farah A, Monteiro M, Donangelo CM, et al. Chlorogenic acids from green coffee extract are highly bioavailable in humans. J Nutr 2008;138:2309-15. [PubMed](https://pubmed.ncbi.nlm.nih.gov/19022950/)
+
+[149] Choi BK, Park SB, Lee DR, et al. Green coffee bean extract improves obesity by decreasing body fat in high-fat diet-induced obese mice. Asian Pac J Trop Med 2016;9:635-43. [PubMed](https://pubmed.ncbi.nlm.nih.gov/27393090/)
+
+[150] Song SJ, Choi S, Park T. Decaffeinated green coffee bean extract attenuates diet-induced obesity and insulin resistance in mice. Evid Based Complement Alternat Med 2014;2014:718379. [PubMed](https://pubmed.ncbi.nlm.nih.gov/24817902/)
+
+[151] Onakpoya I, Terry R, Ernst E. The use of green coffee extract as a weight loss supplement: a systematic review and meta-analysis of randomised clinical trials. Gastroenterol Res Pract 2011;2011. [PubMed](https://pubmed.ncbi.nlm.nih.gov/20871849/)
+
+[153] Vinson JA, Burnham BR, Nagendran MV. RETRACTED: Randomized, double-blind, placebo-controlled, linear dose, crossover study to evaluate the efficacy and safety of a green coffee bean extract in overweight subjects. Diabetes Metab Syndr Obes 2012;5:21-7. [PubMed](https://pubmed.ncbi.nlm.nih.gov/22291473/)
+
+[154] Federal Trade Commission. FTC Charges Green Coffee Bean Sellers with Deceiving Consumers through Fake News Sites and Bogus Weigh Loss Claims. Federal Trade Commission, 2014.
+
+[155] United States District Court Middle District of Florida, Tampa Division. Case 8:14-cv-01155-SDM-TGW. 2014.
+
+[156] Grove KA, Lambert JD. Laboratory, epidemiological, and human intervention studies show that tea (*Camellia sinensis*) may be useful in the prevention of obesity. J Nutr 2010;140:446-53. [PubMed](https://pubmed.ncbi.nlm.nih.gov/20089791/)
+
+[157] Hursel R, Westerterp-Plantenga MS. Catechin- and caffeine-rich teas for control of body weight in humans. Am J Clin Nutr 2013;98:1682S-93S. [PubMed](https://pubmed.ncbi.nlm.nih.gov/24172301/)
+
+[158] Rains TM, Agarwal S, Maki KC. Antiobesity effects of green tea catechins: a mechanistic review. J Nutr Biochem 2011;22:1-7. [PubMed](https://pubmed.ncbi.nlm.nih.gov/21115335/)
+
+[159] Janssens PL, Hursel R, Westerterp-Plantenga MS. Nutraceuticals for body-weight management: The role of green tea catechins. Physiol Behav 2016;162:83-7. [PubMed](https://pubmed.ncbi.nlm.nih.gov/26836279/)
+
+[160] Turkozu D, Tek NA. A minireview of effects of green tea on energy expenditure. Crit Rev Food Sci Nutr 2017;57:254-8. [PubMed](https://pubmed.ncbi.nlm.nih.gov/26091183/)
+
+[161] Lochocka K, Bajerska J, Glapa A, et al. Green tea extract decreases starch digestion and absorption from a test meal in humans: a randomized, placebo-controlled crossover study. Sci Rep 2015;5:12015. [PubMed](https://pubmed.ncbi.nlm.nih.gov/26226166/)
+
+[162] Lonac MC, Richards JC, Schweder MM, et al. Influence of short-term consumption of the caffeine-free, epigallocatechin-3-gallate supplement, Teavigo, on resting metabolism and the thermic effect of feeding. Obesity (Silver Spring) 2011;19:298-304. [PubMed](https://pubmed.ncbi.nlm.nih.gov/20725062/)
+
+[163] Mielgo-Ayuso J, Barrenechea L, Alcorta P, et al. Effects of dietary supplementation with epigallocatechin-3-gallate on weight loss, energy homeostasis, cardiometabolic risk factors and liver function in obese women: randomised, double-blind, placebo-controlled clinical trial. Br J Nutr 2014;111:1263-71. [PubMed](https://pubmed.ncbi.nlm.nih.gov/24299662/)
+
+[164] Jurgens TM, Whelan AM, Killian L, et al. Green tea for weight loss and weight maintenance in overweight or obese adults. Cochrane Database Syst Rev 2012;12:CD008650. [PubMed](https://pubmed.ncbi.nlm.nih.gov/23235664/)
+
+[165] Phung OJ, Baker WL, Matthews LJ, et al. Effect of green tea catechins with or without caffeine on anthropometric measures: a systematic review and meta-analysis. Am J Clin Nutr 2010;91:73-81. [PubMed](https://pubmed.ncbi.nlm.nih.gov/19906797/)
+
+[166] Dostal AM, Samavat H, Espejo L, et al. Green tea extract and catechol-O-methyltransferase genotype modify fasting serum insulin and plasma adiponectin concentrations in a randomized controlled trial of overweight and obese postmenopausal women. J Nutr 2016;146:38-45. [PubMed](https://pubmed.ncbi.nlm.nih.gov/26581683/)
+
+[167] Hursel R, Viechtbauer W, Westerterp-Plantenga MS. The effects of green tea on weight loss and weight maintenance: a meta-analysis. Int J Obes (Lond) 2009;33:956-61. [PubMed](https://pubmed.ncbi.nlm.nih.gov/19597519/)
+
+[168] EFSA Panel on Dietetic Products, Nutrition and Allergies (NDA). Scientific opinion on the substantiation of health claims related to *Camellia sinensis* (L.) kuntze (tea), including catechins from green tea, and contribution to the maintenance or achievement of a normal body weight (ID 1107, 1112, 1544, 2716), increased beta-oxidation of fatty acids leading to a reduction in body fat mass (ID 1123, 1124, 3698), and maintenance of normal blood glucose concentrations (ID 1115, 1545) pursuant to Article 13(1) of Regulation (EC) No 1924/2006. EFSA Journal 2010;8:1791-812.
+
+[169] National Toxicology Program, National Institutes of Health. NTP technical report on the toxicology studies of green tea extract in F344/ntac rats and B6C3F1/N mice and toxicology and carcinogenesis studies of green tea extract in Wistar Han [Crl:WI(Han)] rats and B6C3F1/N mice (gavage studies). 2016.
+
+[170] Yu Z, Samavat H, Dostal AM, et al. Effect of green tea supplements on liver enzyme elevation: results from a randomized intervention study in the United States. Cancer Prev Res (Phila) 2017;10:571-9. [PubMed](https://pubmed.ncbi.nlm.nih.gov/28765194/)
+
+[172] Navarro VJ, Khan I, Bjornsson E, et al. Liver injury from herbal and dietary supplements. Hepatology 2017;65:363-73. [PubMed](https://pubmed.ncbi.nlm.nih.gov/27677775/)
+
+[173] Sarma DN, Barrett ML, Chavez ML, et al. Safety of green tea extracts : a systematic review by the US Pharmacopeia. Drug Saf 2008;31:469-84. [PubMed](https://pubmed.ncbi.nlm.nih.gov/18484782/)
+
+[174] Pittler MH, Ernst E. Guar gum for body weight reduction: meta-analysis of randomized trials. Am J Med 2001;110:724-30. [PubMed](https://pubmed.ncbi.nlm.nih.gov/11403757/)
+
+[175] Rao TP. Role of guar fiber in appetite control. Physiol Behav 2016;164:277-83. [PubMed](https://pubmed.ncbi.nlm.nih.gov/27317834/)
+
+[176] Dall'Alba V, Silva FM, Antonio JP, et al. Improvement of the metabolic syndrome profile by soluble fibre - guar gum - in patients with type 2 diabetes: a randomised clinical trial. Br J Nutr 2013;110:1601-10. [PubMed](https://pubmed.ncbi.nlm.nih.gov/23551992/)
+
+[177] Pittler MH, Schmidt K, Ernst E. Adverse events of herbal food supplements for body weight reduction: systematic review. Obes Rev 2005;6:93-111. [PubMed](https://pubmed.ncbi.nlm.nih.gov/15836459/)
+
+[178] Lewis JH. Esophageal and small bowel obstruction from guar gum-containing "diet pills": analysis of 26 cases reported to the Food and Drug Administration. Am J Gastroenterol 1992;87:1424-8. [PubMed](https://pubmed.ncbi.nlm.nih.gov/1329494/)
+
+[179] Natural Medicines Comprehensive Database. Guar Gum. 2011.
+
+[181] MacLean DB, Luo LG. Increased ATP content/production in the hypothalamus may be a signal for energy-sensing of satiety: studies of the anorectic mechanism of a plant steroidal glycoside. Brain Res 2004;1020:1-11. [PubMed](https://pubmed.ncbi.nlm.nih.gov/15312781/)
+
+[184] Blom WA, Abrahamse SL, Bradford R, et al. Effects of 15-d repeated consumption of *Hoodia gordonii* purified extract on safety, ad libitum energy intake, and body weight in healthy, overweight women: a randomized controlled trial. Am J Clin Nutr 2011;94:1171-81. [PubMed](https://pubmed.ncbi.nlm.nih.gov/21993434/)
+
+[185] National Center for Complementary and Alternative Medicine, National Institutes of Health. Herbs at a Glance: Hoodia. 2012.
+
+[186] Lee RA, Balick MJ. Indigenous use of Hoodia gordonii and appetite suppression. Explore (NY) 2007;3:404-6. [PubMed](https://pubmed.ncbi.nlm.nih.gov/17681262/)
+
+[187] Sender R, Fuchs S, Milo R. Revised Estimates for the Number of Human and Bacteria Cells in the Body. PLoS Biol 2016;14:e1002533. [PubMed](https://pubmed.ncbi.nlm.nih.gov/27541692/)
+
+[188] Moran CP, Shanahan F. Gut microbiota and obesity: role in aetiology and potential therapeutic target. Best Pract Res Clin Gastroenterol 2014;28:585-97. [PubMed](https://pubmed.ncbi.nlm.nih.gov/25194177/)
+
+[189] Davis CD. The gut microbiome and its role in obesity. Nutr Today 2016;51:167-74. [PubMed](https://pubmed.ncbi.nlm.nih.gov/27795585/)
+
+[191] Kadooka Y, Sato M, Ogawa A, et al. Effect of Lactobacillus gasseri SBT2055 in fermented milk on abdominal adiposity in adults in a randomised controlled trial. Br J Nutr 2013;110:1696-703. [PubMed](https://pubmed.ncbi.nlm.nih.gov/23614897/)
+
+[192] Sanchez M, Darimont C, Drapeau V, et al. Effect of Lactobacillus rhamnosus CGMCC1.3724 supplementation on weight loss and maintenance in obese men and women. Br J Nutr 2014;111:1507-19. [PubMed](https://pubmed.ncbi.nlm.nih.gov/24299712/)
+
+[193] Crovesy L, Ostrowski M, Ferreira D, et al. Effect of Lactobacillus on body weight and body fat in overweight subjects: a systematic review of randomized controlled clinical trials. Int J Obes (Lond) 2017;41:1607-14. [PubMed](https://pubmed.ncbi.nlm.nih.gov/28792488/)
+
+[194] Borgeraas H, Johnson LK, Skattebu J, et al. Effects of probiotics on body weight, body mass index, fat mass and fat percentage in subjects with overweight or obesity: a systematic review and meta-analysis of randomized controlled trials. Obes Rev 2018;19:219-32. [PubMed](https://pubmed.ncbi.nlm.nih.gov/29047207/)
+
+[195] Suzumura EA, Bersch-Ferreira AC, Torreglosa CR, da Silva JT, Coqueiro AY, Kuntz MGF, et al. Effects of oral supplementation with probiotics or synbiotics in overweight and obese adults: a systematic review and meta-analyses of randomized trials. Nutr Rev 2019. [PubMed](https://pubmed.ncbi.nlm.nih.gov/30924853/)
+
+[196] Dror T, Dickstein Y, Dubourg G, et al. Microbiota manipulation for weight change. Microb Pathog 2017;106:146-61. [PubMed](https://pubmed.ncbi.nlm.nih.gov/26792677/)
+
+[197] World Gastroenterology Organisation. Probiotics and prebiotics . 2017.
+
+[198] Didari T, Solki S, Mozaffari S, et al. A systematic review of the safety of probiotics. Expert Opin Drug Saf 2014;13:227-39. [PubMed](https://pubmed.ncbi.nlm.nih.gov/24405164/)
+
+[199] Borriello SP, Hammes WP, Holzapfel W, et al. Safety of probiotics that contain lactobacilli or bifidobacteria. Clin Infect Dis 2003;36:775-80. [PubMed](https://pubmed.ncbi.nlm.nih.gov/12627362/)
+
+[200] Kalman D, Colker CM, Wilets I, et al. The effects of pyruvate supplementation on body composition in overweight individuals. Nutrition 1999;15:337-40. [PubMed](https://pubmed.ncbi.nlm.nih.gov/10355844/)
+
+[201] Onakpoya I, Hunt K, Wider B, et al. Pyruvate supplementation for weight loss: a systematic review and meta-analysis of randomized clinical trials. Crit Rev Food Sci Nutr 2014;54:17-23. [PubMed](https://pubmed.ncbi.nlm.nih.gov/24188231/)
+
+[202] Koh-Banerjee PK, Ferreira MP, Greenwood M, et al. Effects of calcium pyruvate supplementation during training on body composition, exercise capacity, and metabolic responses to exercise. Nutrition 2005;21:312-9. [PubMed](https://pubmed.ncbi.nlm.nih.gov/15797672/)
+
+[203] Stanko RT, Tietze DL, Arch JE. Body composition, energy utilization, and nitrogen metabolism with a 4.25-MJ/d low-energy diet supplemented with pyruvate. Am J Clin Nutr 1992;56:630-5. [PubMed](https://pubmed.ncbi.nlm.nih.gov/1414961/)
+
+[204] Bredsdorff L, Wedebye EB, Nikolov NG, et al. Raspberry ketone in food supplements--High intake, few toxicity data--A cause for safety concern? Regul Toxicol Pharmacol 2015;73:196-200. [PubMed](https://pubmed.ncbi.nlm.nih.gov/26160596/)
+
+[205] Cotten BM, Diamond SA, Banh T, et al. Raspberry ketone fails to reduce adiposity beyond decreasing food intake in C57BL/6 mice fed a high-fat diet. Food Funct 2017;8:1512-8. [PubMed](https://pubmed.ncbi.nlm.nih.gov/28378858/)
+
+[206] Lopez HL, Ziegenfuss TN, Hofheins JE, et al. Eight weeks of supplementation with a multi-ingredient weight loss product enhances body composition, reduces hip and waist girth, and increases energy levels in overweight men and women. J Int Soc Sports Nutr 2013;10:22. [PubMed](https://pubmed.ncbi.nlm.nih.gov/23601452/)
+
+[207] Earthman CP, Beckman LM, Masodkar K, et al. The link between obesity and low circulating 25-hydroxyvitamin D concentrations: considerations and implications. Int J Obes (Lond) 2012;36:387-96. [PubMed](https://pubmed.ncbi.nlm.nih.gov/21694701/)
+
+[208] Mallard SR, Howe AS, Houghton LA. Vitamin D status and weight loss: a systematic review and meta-analysis of randomized and nonrandomized controlled weight-loss trials. Am J Clin Nutr 2016;104:1151-9. [PubMed](https://pubmed.ncbi.nlm.nih.gov/27604772/)
+
+[209] Caan B, Neuhouser M, Aragaki A, et al. Calcium plus vitamin D supplementation and the risk of postmenopausal weight gain. Arch Intern Med 2007;167:893-902. [PubMed](https://pubmed.ncbi.nlm.nih.gov/17502530/)
+
+[210] Pathak K, Soares MJ, Calton EK, et al. Vitamin D supplementation and body weight status: a systematic review and meta-analysis of randomized controlled trials. Obes Rev 2014;15:528-37. [PubMed](https://pubmed.ncbi.nlm.nih.gov/24528624/)
+
+[211] Onakpoya I, Aldaas S, Terry R, et al. The efficacy of *Phaseolus vulgaris* as a weight-loss supplement: a systematic review and meta-analysis of randomised clinical trials. Br J Nutr 2011;106:196-202. [PubMed](https://pubmed.ncbi.nlm.nih.gov/22844674/)
+
+[212] Udani J, Hardy M, Madsen DC. Blocking carbohydrate absorption and weight loss: a clinical trial using Phase 2 brand proprietary fractionated white bean extract. Altern Med Rev 2004;9:63-9. [PubMed](https://pubmed.ncbi.nlm.nih.gov/15005645/)
+
+[213] Obiro WC, Zhang T, Jiang B. The nutraceutical role of the Phaseolus vulgaris alpha-amylase inhibitor. Br J Nutr 2008;100:1-12. [PubMed](https://pubmed.ncbi.nlm.nih.gov/18331662/)
+
+[214] Fu C, Jiang Y, Guo J, et al. Natural products with anti-obesity effects and different mechanisms of action. J Agric Food Chem 2016;64:9571-85. [PubMed](https://pubmed.ncbi.nlm.nih.gov/27931098/)
+
+[215] Spadafranca A, Rinelli S, Riva A, et al. Phaseolus vulgaris extract affects glycometabolic and appetite control in healthy human subjects. Br J Nutr 2013;109:1789-95. [PubMed](https://pubmed.ncbi.nlm.nih.gov/23046862/)
+
+[216] Celleno L, Tolaini MV, D'Amore A, et al. A dietary supplement containing standardized *Phaseolus vulgaris* extract influences body composition of overweight men and women. Int J Med Sci 2007;4:45-52. [PubMed](https://pubmed.ncbi.nlm.nih.gov/17299581/)
+
+[217] Grube B, Chong WF, Chong PW, et al. Weight reduction and maintenance with IQP-PV-101: a 12-week randomized controlled study with a 24-week open label period. Obesity 2014;22:645-51. [PubMed](https://pubmed.ncbi.nlm.nih.gov/24006357/)
+
+[218] Betz JM. Yohimbe. In: Coates PM, Betz JM, Blackman MR, et al., eds. Encyclopedia of Dietary Supplements. 2nd ed. London and New York: Informa Healthcare; 2010:861-8.
+
+[219] Cimolai N, Cimolai T. Yohimbine use for physical enhancement and its potential toxicity. J Diet Suppl 2011;8:346-54. [PubMed](https://pubmed.ncbi.nlm.nih.gov/22432773/)
+
+[220] Kucio C, Jonderko K, Piskorska D. Does yohimbine act as a slimming drug? Isr J Med Sci 1991;27:550-6. [PubMed](https://pubmed.ncbi.nlm.nih.gov/1955308/)
+
+[221] Sax L. Yohimbine does not affect fat distribution in men. Int J Obes 1991;15:561-5. [PubMed](https://pubmed.ncbi.nlm.nih.gov/1960007/)
+
+[222] National Institutes of Health, National Center for Complementary and Alternative Medicine. Herbs at a Glance: Yohimbe. 2012.
+
+[223] Rao N, Spiller HA, Hodges NL, et al. An increase in dietary supplement exposures reported to US poison control centers. J Med Toxicol 2017. [PubMed](https://pubmed.ncbi.nlm.nih.gov/28741126/)
+
+[224] Cohen PA, Wang YH, Maller G, et al. Pharmaceutical quantities of yohimbine found in dietary supplements in the USA. Drug Test Anal 2016;8:357-69. [PubMed](https://pubmed.ncbi.nlm.nih.gov/26391406/)
+
+[225] Natural Medicines Comprehensive Database. Yohimbe. 2012.
+
+[226] Hu SY. Ephedra (ma-huang) in the new Chinese materia medica. Econ Bot 1969;23:346-51.
+
+[228] Leung AY, Foster S. Encyclopedia of Common Natural Ingredients Used in Foods, Drugs, and Cosmetics. New York: John Wiley; 1996.
+
+[229] Burnhanm TH, Novak KK, Bell WI, eds. Drug Facts and Comparisons. 57th ed. St. Louis, Missouri: Facts and Comparisons; 2003.
+
+[230] Hardman JG, Limbird LE, Gilman A, eds. Goodman and Gilman's The Pharmacological Basis of Disease. New York: McGraw-Hill; 2001.
+
+[231] Astrup A, Toubro S, Christensen NJ, et al. Pharmacology of thermogenic drugs. Am J Clin Nutr 1992;55:246S-8S. [PubMed](https://pubmed.ncbi.nlm.nih.gov/1345887/)
+
+[232] Shekelle PG, Hardy ML, Morton SC, et al. Efficacy and safety of ephedra and ephedrine for weight loss and athletic performance: a meta-analysis. JAMA 2003;289:1537-45. [PubMed](https://pubmed.ncbi.nlm.nih.gov/12672771/)
+
+[233] Haller CA, Benowitz NL. Adverse cardiovascular and central nervous system events associated with dietary supplements containing ephedra alkaloids. N Engl J Med 2000;343:1833-8. [PubMed](https://pubmed.ncbi.nlm.nih.gov/11117974/)
+
+[234] U.S. Food and Drug Administration. Final Rule Declaring Dietary Supplements Containing Ephedrine Alkaloids Adulterated Because They Present an Unreasonable Risk. 2004.
+
+[235] U.S. Food and Drug Administration. Beware of Products Promising Miracle Weight Loss. 2014.
+
+[236] Federal Trade Commission. The Truth Behind Weight Loss Ads. 2019.
+
+[237] U.S. Food and Drug Administration. Tainted Weight Loss Products. 2017.
+
+[238] Harel Z, Harel S, Wald R, et al. The frequency and characteristics of dietary supplement recalls in the United States. JAMA Intern Med 2013;173:926-8. [PubMed](https://pubmed.ncbi.nlm.nih.gov/23589151/)
+
+[239] Huang SS, Sung SH, Chiang CE. Chitosan potentiation of warfarin effect. Ann Pharmacother 2007;41:1912-4. [PubMed](https://pubmed.ncbi.nlm.nih.gov/17925502/)
+
+[240] Natural Medicines Comprehensive Database. Green Tea. 2014.
+
+[241] Shin SC, Choi JS. Effects of epigallocatechin gallate on the oral bioavailability and pharmacokinetics of tamoxifen and its main metabolite, 4-hydroxytamoxifen, in rats. Anticancer Drugs 2009;20:584-8. [PubMed](https://pubmed.ncbi.nlm.nih.gov/19491656/)
+
+[242] Lopez AM, Kornegay J, Hendrickson RG. Serotonin toxicity associated with *Garcinia cambogia* over-the-counter supplement. J Med Toxicol 2014;10:399-401. [PubMed](https://pubmed.ncbi.nlm.nih.gov/24699886/)
+
+[243] NIH Office of Dietary Supplements. "Dietary Supplements for Weight Loss: Fact Sheet for Health Professionals." [https://ods.od.nih.gov/factsheets/WeightLoss-HealthProfessional/](https://ods.od.nih.gov/factsheets/WeightLoss-HealthProfessional/)
+
+[244] Zenk JL, Frestedt JL, Kuskowski MA. HUM5007, a novel combination of thermogenic compounds, and 3-acetyl-7-oxo-dehydroepiandrosterone: each increases the resting metabolic rate of overweight adults. J Nutr Biochem 2007;18:629-34. [PubMed](https://pubmed.ncbi.nlm.nih.gov/17418559/)
+
+[245] Davidson M, Marwah A, Sawchuk RJ, et al. Safety and pharmacokinetic study with escalating doses of 3-acetyl-7-oxo-dehydroepiandrosterone in healthy male volunteers. Clin Invest Med 2000;23:300-10. [PubMed](https://pubmed.ncbi.nlm.nih.gov/11055323/)
+
+[246] Kuriyan R, Raj T, Srinivas SK, et al. Effect of Caralluma fimbriata extract on appetite, food intake and anthropometry in adult Indian men and women. Appetite 2007;48:338-44. [PubMed](https://pubmed.ncbi.nlm.nih.gov/17097761/)
+
+[247] Cohen PA, Bloszies C, Yee C, et al. An amphetamine isomer whose efficacy and safety in humans has never been studied, beta-methylphenylethylamine (BMPEA), is found in multiple dietary supplements. Drug Test Anal 2016;8:328-33. [PubMed](https://pubmed.ncbi.nlm.nih.gov/25847603/)
+
+[248] Cohen PA, Travis JC, Vanhee C, et al. Nine prohibited stimulants found in sports and weight loss supplements: deterenol, phenpromethamine (Vonedrine), oxilofrine, octodrine, beta-methylphenylethylamine (BMPEA), 1,3-dimethylamylamine (1,3-DMAA), 1,4-dimethylamylamine (1,4-DMAA), 1,3-dimethylbutylamine (1,3-DMBA) and higenamine. Clin Toxicol (Phila) 2021;59:975-81. [PubMed](https://pubmed.ncbi.nlm.nih.gov/33755516/)
+
+[249] Roerig JL, Steffen KJ, Mitchell JE, et al. Laxative abuse: epidemiology, diagnosis and management. Drugs 2010;70:1487-503. [PubMed](https://pubmed.ncbi.nlm.nih.gov/20687617/)
+
+[250] Asbaghi O, Shimi G, Hosseini Oskouie F, et al. The effects of conjugated linoleic acid supplementation on anthropometrics and body composition indices in adults: a systematic review and dose-response meta-analysis. Br J Nutr 2024;131:406-28. [PubMed](https://pubmed.ncbi.nlm.nih.gov/37671495/)
+
+[251] Lee J, Chung M, Fu Z, et al. The effects of Irvingia gabonensis seed extract supplementation on anthropometric and cardiovascular outcomes: a systematic review and meta-analysis. J Am Coll Nutr 2020;39:388-96. [PubMed](https://pubmed.ncbi.nlm.nih.gov/31855111/)
+
+[252] Spadaro A, Scott KR, Koyfman A, et al. High risk and low prevalence diseases: serotonin syndrome. Am J Emerg Med 2022;61:90-7. [PubMed](https://pubmed.ncbi.nlm.nih.gov/36057215/)
+
+[253] US Food and Drug Administration. 21 CFR 201.319, "Water-soluble gums, hydrophilic gums, and hydrophilic mucilloids ... as active ingredients; required warnings and directions." [ecfr.gov](https://www.ecfr.gov/current/title-21/chapter-I/subchapter-C/part-201/subpart-G/section-201.319)

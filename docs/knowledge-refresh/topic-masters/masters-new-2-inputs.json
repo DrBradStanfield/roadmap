@@ -1,0 +1,824 @@
+[
+ {
+  "handle": "calcium-benefits-best-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-bone-supplements-calcium-with-vitamin-d-k-magnesium-calcium.md",
+  "cl_raw_sha256": "bf11195d9bc743f0937de5742ed189ff776e723c545ccec2b617bbbb235c25ab",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/calcium-nih.md",
+  "nih_raw_sha256": "e0ad402c01ef3d4e26c5c5ea021bc393d5d7826e983d3c5aa55571c743b06cc8",
+  "positions_candidates": [
+   {
+    "file": "docs/products.md",
+    "line": 25,
+    "text": "- Bone Density: Encapsulated Vitamin K2 MK-7 90mcg (K2VITAL® DELTA), Encapsulated Vitamin D3 1,000IU (AlgeD3™), Boron 1mg. D3 supports calcium absorption and K2 activates osteocalcin to direct calcium to bone (Myneni & Mezey, *Oral Dis*, 20"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 27,
+    "text": "- Antioxidant: Vitamin C 45mg (Calcium Ascorbate)"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 54,
+    "text": "MicroVitamin (USA v8) costs $58.50/month on subscription ($65 one-time). Buying the same 26 v8 ingredients individually from quality brands like Double Wood, Bronson, Life Extension, NOW, and Pure Encapsulations would cost approximately $11"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 57,
+    "text": "Yes — the USA price changed with the v8 transition: from v7's $55 one-time / $49.50/mo subscription to v8's **$65 one-time / $58.50/mo subscription**. This was driven by the major ingredient upgrades in v8 (Lutein 0.25 → 10 mg + Zeaxanthin "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 157,
+    "text": "1. **Anderson et al., Am J Clin Nutr, 2000** — The paper has two analyses: a meta-analysis of 8 controlled cholesterol trials (10.2g/day), and a pooled safety analysis of 19 clinical studies (966 psyllium-exposed subjects, 5.1–20.4g/day, 6 "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 161,
+    "text": "3. **Heaney & Weaver, J Am Geriatr Soc, 1995** — Whether psyllium (Metamucil) affects calcium absorption at typical therapeutic doses. Finding: \"Psyllium in the form of Metamucil makes little practical difference to the availability of co-i"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 262,
+    "text": "**Supplement Facts (Makers Nutrition panel, authorised by Brad 2026-10-06; quote these values exactly).** Serving Size: Approx. 1 Scoop (15 g); Servings Per Container: 60. Per serving: Calories 45; Total Carbohydrate 11 g (4% Daily Value); "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 309,
+    "text": "| Bone density concerns | MicroVitamin or MicroVitamin+ Powder | K2 MK-7 90mcg (directs calcium to bones via osteocalcin activation) + D3 1,000IU (calcium absorption), both encapsulated in the USA, Australia and UK/EU (Canada v7: not encaps"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 387,
+    "text": "Calcium is intentionally excluded. When high-quality RCTs are isolated, calcium supplements show no significant reduction in fracture risk, while multiple large studies link them to increased cardiovascular risk. A meta-analysis of placebo-"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 499,
+    "text": "| Vitamin C | 45 mg ascorbic acid | 45 mg as **calcium ascorbate** | Form change; gentler on stomach. Dose unchanged |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 510,
+    "text": "| L-Leucine (flow agent) | L-leucine (US v7 label; EU v7 label: 165 mg, listed on the nutrient panel; UK/CA v7 not verified) | Unchanged | Manufacturing-only — not a bioactive ingredient. Already on the US labels before v8: v4 (\"Hypromellos"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 532,
+    "text": "| Vitamin C | 45 mg | **90 mg** | Doubled; still calcium ascorbate |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 547,
+    "text": "**v8.5 vs the v7 sold in Australia (AUST L 509250, Lavida).** The public changelog compares v8.5 with AU v7, not with US v8, and AU v7 was not the international v7. Per the AU v7 label (`multivitamin/Manufacturing Australia/la-vida/2 label "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 562,
+    "text": "| Vitamin C (Calcium Ascorbate) | 90 mg | 113% | US v8 45 mg |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 571,
+    "text": "| Vitamin B5 (Calcium Pantothenate) | 5 mg | 83% | US v8 3.75 mg |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 575,
+    "text": "| Folate (5-MTHF Calcium) | 400 mcg | 200% | US v8 200 mcg DFE. The label gives 400 mcg with no DFE basis; do not convert it |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 583,
+    "text": "**UK v7 → v9** (UK v7 label, per `claude_business/docs/brief-assets/v9-listing-images/v7-v9-diff.md`): removed choline bitartrate (181.5 mg), potassium (99 mg, chloride) and peppermint leaf extract (50 mg); added CDP-citicoline 500 mg and z"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 585,
+    "text": "**EU v7 → v9** (EU v7 label, BHI Biohealth International, Germany: `multivitamin/Manufacturing EU/BHI Biohealth International GmbH (Germany)/3 label/2 8588672_MircoVitamin_205x75_V8 copy.pdf`, marked v7): removed choline bitartrate (181 mg "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 587,
+    "text": "**UK/EU v9 vs the US v9 spec** (the v9 columns and Version 9 entry in the changelog below, formula file 16): the UK/EU label differs in magnesium (126 mg, not 150 mg), vitamin B1 form (thiamine HCl, not mononitrate), boron form (sodium bora"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 714,
+    "text": "Decreased niacin 35→16 mg (100% RDA); vitamin C ascorbic acid → calcium ascorbate (45 mg unchanged); D3 → encapsulated AlgeD3 and K2 → encapsulated K2VITAL DELTA (doses unchanged); copper 0.45→0.9 mg (50→100% RDA); iodine 112.5→75 mcg (75→5"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 771,
+    "text": "- Psyllium safety / no effect on vitamin & mineral status: Anderson et al., 2000 — https://doi.org/10.1093/ajcn/71.2.472 (see Results, \"Safety analyses\", page 477). ⚠️ **Verified against the full text 2026-10-14:** this paper is an 8-trial "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 773,
+    "text": "- Psyllium / no effect on calcium absorption: Heaney & Weaver, 1995 — https://pubmed.ncbi.nlm.nih.gov/7884114/"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 795,
+    "text": "- Calcium supplements and heart attack (meta-analysis of placebo-controlled trials, calcium without co-administered vitamin D): Bolland et al., *BMJ*, 2010;341:c3691 — https://doi.org/10.1136/bmj.c3691 · PMID 20671013. Patient-level data, 5"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 796,
+    "text": "- Calcium supplements and coronary artery calcification (observational, MESA cohort, 5,448 adults aged 45–84 free of diagnosed cardiovascular disease; repeat scan in 2,742 about 10 years later): Anderson et al., *J Am Heart Assoc*, 2016;5(1"
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 362,
+    "text": "| `calcium_corrected` | mmol/L | mg/dl | 0.2495 | calcium 40.078 g/mol |"
+   }
+  ],
+  "positions_candidates_total": 32,
+  "posts": [
+   {
+    "handle": "the-one-number-id-measure-to-avoid-a-heart-attack",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-one-number-id-measure-to-avoid-a-heart-attack.md",
+    "url": "https://drstanfield.com/blogs/articles/the-one-number-id-measure-to-avoid-a-heart-attack",
+    "publishedAt": "2026-10-11T21:59:44Z",
+    "title": "The One Number I'd Measure to Avoid a Heart Attack",
+    "topic_mentions": 6,
+    "title_names_topic": false
+   },
+   {
+    "handle": "soon-well-forget-what-heart-attacks-are",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/soon-well-forget-what-heart-attacks-are.md",
+    "url": "https://drstanfield.com/blogs/articles/soon-well-forget-what-heart-attacks-are",
+    "publishedAt": "2026-09-19T00:00:00Z",
+    "title": "Soon We'll Forget What Heart Attacks Are",
+    "topic_mentions": 4,
+    "title_names_topic": false
+   },
+   {
+    "handle": "why-arent-cardiologists-prescribing-vitamin-k2",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/why-arent-cardiologists-prescribing-vitamin-k2.md",
+    "url": "https://drstanfield.com/blogs/articles/why-arent-cardiologists-prescribing-vitamin-k2",
+    "publishedAt": "2026-09-03T20:14:01Z",
+    "title": "Why Aren't Cardiologists Prescribing Vitamin K2?",
+    "topic_mentions": 23,
+    "title_names_topic": false
+   },
+   {
+    "handle": "nasa-found-how-to-stop-osteoporosis",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/nasa-found-how-to-stop-osteoporosis.md",
+    "url": "https://drstanfield.com/blogs/articles/nasa-found-how-to-stop-osteoporosis",
+    "publishedAt": "2026-08-07T12:00:00Z",
+    "title": "NASA Found How To Stop Osteoporosis",
+    "topic_mentions": 18,
+    "title_names_topic": false
+   },
+   {
+    "handle": "does-vitamin-k2-actually-protect-your-heart-new-trial",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/does-vitamin-k2-actually-protect-your-heart-new-trial.md",
+    "url": "https://drstanfield.com/blogs/articles/does-vitamin-k2-actually-protect-your-heart-new-trial",
+    "publishedAt": "2026-06-29T12:00:00Z",
+    "title": "Does Vitamin K2 Actually Protect Your Heart? (New Trial)",
+    "topic_mentions": 33,
+    "title_names_topic": false
+   },
+   {
+    "handle": "new-vitamin-d-study-on-telomeres-and-aging",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/new-vitamin-d-study-on-telomeres-and-aging.md",
+    "url": "https://drstanfield.com/blogs/articles/new-vitamin-d-study-on-telomeres-and-aging",
+    "publishedAt": "2025-10-16T20:05:51Z",
+    "title": "New Vitamin D Study on Telomeres and Aging",
+    "topic_mentions": 4,
+    "title_names_topic": false
+   },
+   {
+    "handle": "5-supplements-that-actually-work",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/5-supplements-that-actually-work.md",
+    "url": "https://drstanfield.com/blogs/articles/5-supplements-that-actually-work",
+    "publishedAt": "2025-10-05T20:31:48Z",
+    "title": "5 Supplements That ACTUALLY Work",
+    "topic_mentions": 4,
+    "title_names_topic": false
+   },
+   {
+    "handle": "do-this-daily-to-stop-bone-loss-after-40",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/do-this-daily-to-stop-bone-loss-after-40.md",
+    "url": "https://drstanfield.com/blogs/articles/do-this-daily-to-stop-bone-loss-after-40",
+    "publishedAt": "2025-07-03T02:07:16Z",
+    "title": "Do This Daily to STOP Bone Loss After 40",
+    "topic_mentions": 11,
+    "title_names_topic": false
+   },
+   {
+    "handle": "this-incredibly-popular-supplement-damages-your-blood-vessels",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/this-incredibly-popular-supplement-damages-your-blood-vessels.md",
+    "url": "https://drstanfield.com/blogs/articles/this-incredibly-popular-supplement-damages-your-blood-vessels",
+    "publishedAt": "2025-05-15T23:18:01Z",
+    "title": "This Incredibly Popular Supplement DAMAGES Your Blood Vessels",
+    "topic_mentions": 54,
+    "title_names_topic": false
+   },
+   {
+    "handle": "lean-mass-hyper-responders-see-rapid-plaque-progression",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/lean-mass-hyper-responders-see-rapid-plaque-progression.md",
+    "url": "https://drstanfield.com/blogs/articles/lean-mass-hyper-responders-see-rapid-plaque-progression",
+    "publishedAt": "2025-04-16T22:47:20Z",
+    "title": "Lean Mass Hyper-Responders See Rapid Plaque Progression",
+    "topic_mentions": 4,
+    "title_names_topic": false
+   },
+   {
+    "handle": "best-diet-for-a-longer-healthier-life",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/best-diet-for-a-longer-healthier-life.md",
+    "url": "https://drstanfield.com/blogs/articles/best-diet-for-a-longer-healthier-life",
+    "publishedAt": "2025-03-11T22:57:23Z",
+    "title": "These 20 Studies Reveal The BEST Diet for a Longer, Healthier Life",
+    "topic_mentions": 4,
+    "title_names_topic": false
+   },
+   {
+    "handle": "the-1-top-remedy-for-dental-plaque",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-1-top-remedy-for-dental-plaque.md",
+    "url": "https://drstanfield.com/blogs/articles/the-1-top-remedy-for-dental-plaque",
+    "publishedAt": "2025-02-09T04:39:49Z",
+    "title": "The #1 Top Remedy for Dental Plaque",
+    "topic_mentions": 5,
+    "title_names_topic": false
+   },
+   {
+    "handle": "vitamin-k2-d3-together",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/vitamin-k2-d3-together.md",
+    "url": "https://drstanfield.com/blogs/articles/vitamin-k2-d3-together",
+    "publishedAt": "2024-11-25T20:42:35Z",
+    "title": "Should You Take Vitamin K2 and Vitamin D3 Together?",
+    "topic_mentions": 21,
+    "title_names_topic": false
+   },
+   {
+    "handle": "calcium-rich-foods-diet",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/calcium-rich-foods-diet.md",
+    "url": "https://drstanfield.com/blogs/articles/calcium-rich-foods-diet",
+    "publishedAt": "2024-10-14T21:25:53Z",
+    "title": "How to Include More Calcium-Rich Foods in Your Diet",
+    "topic_mentions": 100,
+    "title_names_topic": true
+   },
+   {
+    "handle": "popular-supplements-try-avoid",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/popular-supplements-try-avoid.md",
+    "url": "https://drstanfield.com/blogs/articles/popular-supplements-try-avoid",
+    "publishedAt": "2024-08-11T19:43:34Z",
+    "title": "Which Popular Supplements Should You Actually Try to Avoid?",
+    "topic_mentions": 21,
+    "title_names_topic": false
+   },
+   {
+    "handle": "vitamin-d3-k2-benefits-differences",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/vitamin-d3-k2-benefits-differences.md",
+    "url": "https://drstanfield.com/blogs/articles/vitamin-d3-k2-benefits-differences",
+    "publishedAt": "2024-06-20T20:21:11Z",
+    "title": "Vitamin D3 and K2: The Benefits, Differences, and Usage",
+    "topic_mentions": 11,
+    "title_names_topic": false
+   }
+  ]
+ },
+ {
+  "handle": "iron-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-iron-supplements-review-iron.md",
+  "cl_raw_sha256": "391aa5420538941778d13401d510c01e3e0ff3704796188622a8ea58c6527a3c",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/iron-nih.md",
+  "nih_raw_sha256": "2453aa5c612ddabf691d9f9f996e779f401b985282006ee4cde98695ac75fe22",
+  "positions_candidates": [
+   {
+    "file": "docs/products.md",
+    "line": 157,
+    "text": "1. **Anderson et al., Am J Clin Nutr, 2000** — The paper has two analyses: a meta-analysis of 8 controlled cholesterol trials (10.2g/day), and a pooled safety analysis of 19 clinical studies (966 psyllium-exposed subjects, 5.1–20.4g/day, 6 "
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 356,
+    "text": "| `ferritin` | µg/L | ng/ml | 1 | ng/mL and µg/L are the same number |"
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 357,
+    "text": "| `iron` | µmol/L | µg/dl | 0.179 | iron 55.845 g/mol |"
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 358,
+    "text": "| `tibc` | µmol/L | µg/dl | 0.179 | iron 55.845 g/mol |"
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 370,
+    "text": "| `uibc` | µmol/L | µg/dl | 0.179 | iron 55.845 g/mol |"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 99,
+    "text": "<em> Lean Meats:</em> Chicken, and lean cuts of beef or pork. They also provide important nutrients like iron and vitamin B12.</li>"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 551,
+    "text": "<p data-mce-fragment=\"1\"><em data-mce-fragment=\"1\">Ferritin: </em>While not routinely screened for every adult, it's essential for those at higher risk of iron deficiency. This includes premenopausal women, especially those with prior pregn"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 426,
+    "text": "- Nutritional deficiencies are common (iron, B12, vitamin D, zinc, folate)"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 435,
+    "text": "- Monitor for malabsorption — especially fat-soluble vitamins, B12 (ileal Crohn's), iron"
+   },
+   {
+    "file": "docs/guideline/sleep.md",
+    "line": 96,
+    "text": "- **Restless legs syndrome (RLS)**: uncomfortable, restless sensations in the legs at rest, worse in evenings. Screen with: \"Do your legs bother you at night?\" RLS is a clinical diagnosis; check iron stores."
+   }
+  ],
+  "positions_candidates_total": 10,
+  "posts": [
+   {
+    "handle": "this-incredibly-popular-supplement-damages-your-blood-vessels",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/this-incredibly-popular-supplement-damages-your-blood-vessels.md",
+    "url": "https://drstanfield.com/blogs/articles/this-incredibly-popular-supplement-damages-your-blood-vessels",
+    "publishedAt": "2025-05-15T23:18:01Z",
+    "title": "This Incredibly Popular Supplement DAMAGES Your Blood Vessels",
+    "topic_mentions": 18,
+    "title_names_topic": false
+   },
+   {
+    "handle": "best-diet-for-a-longer-healthier-life",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/best-diet-for-a-longer-healthier-life.md",
+    "url": "https://drstanfield.com/blogs/articles/best-diet-for-a-longer-healthier-life",
+    "publishedAt": "2025-03-11T22:57:23Z",
+    "title": "These 20 Studies Reveal The BEST Diet for a Longer, Healthier Life",
+    "topic_mentions": 4,
+    "title_names_topic": false
+   },
+   {
+    "handle": "trace-minerals-vitamins-fad",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/trace-minerals-vitamins-fad.md",
+    "url": "https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad",
+    "publishedAt": "2025-01-07T00:08:13Z",
+    "title": "Trace Minerals in Vitamins: What Are They and Is It a Fad?",
+    "topic_mentions": 21,
+    "title_names_topic": false
+   },
+   {
+    "handle": "iron-supplementation-good-health",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/iron-supplementation-good-health.md",
+    "url": "https://drstanfield.com/blogs/articles/iron-supplementation-good-health",
+    "publishedAt": "2024-09-26T14:30:01Z",
+    "title": "Iron Benefits: Is Iron Supplementation Good for Your Health?",
+    "topic_mentions": 117,
+    "title_names_topic": true
+   },
+   {
+    "handle": "popular-supplements-try-avoid",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/popular-supplements-try-avoid.md",
+    "url": "https://drstanfield.com/blogs/articles/popular-supplements-try-avoid",
+    "publishedAt": "2024-08-11T19:43:34Z",
+    "title": "Which Popular Supplements Should You Actually Try to Avoid?",
+    "topic_mentions": 20,
+    "title_names_topic": false
+   }
+  ]
+ },
+ {
+  "handle": "zinc-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-zinc-supplements-lozenges-review-zinc.md",
+  "cl_raw_sha256": "34a9bda1a9a2c986d497687d854dd801daa22a706c0d70af0440ed4fded3bc21",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/zinc-nih.md",
+  "nih_raw_sha256": "6bc632ff549b4c4a2f373373c21dc7fe0b14c501bbd924667b489c34ee433d7b",
+  "positions_candidates": [
+   {
+    "file": "docs/products.md",
+    "line": 26,
+    "text": "- Eye Health: Lutein 10mg + Zeaxanthin 2mg (encapsulated, Lutemax® 2020) — the macular pigments; they concentrate in the macula and filter short-wavelength light. RCTs of lutein and zeaxanthin supplementation significantly increase macular "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 28,
+    "text": "- Trace Minerals (glycinate / amino-acid chelates — Albion® for selenium, copper, chromium; iodine is potassium iodide, not a chelate; the +43% bioavailability figure is zinc bisglycinate vs zinc gluconate, Gandia 2007): Zinc 11mg, Selenium"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 57,
+    "text": "Yes — the USA price changed with the v8 transition: from v7's $55 one-time / $49.50/mo subscription to v8's **$65 one-time / $58.50/mo subscription**. This was driven by the major ingredient upgrades in v8 (Lutein 0.25 → 10 mg + Zeaxanthin "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 65,
+    "text": "Bioavailability refers to how much of a nutrient your body actually absorbs. MicroVitamin supplies zinc, selenium, copper, manganese and chromium as glycinate or amino-acid chelates rather than the cheaper oxide and gluconate forms common i"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 157,
+    "text": "1. **Anderson et al., Am J Clin Nutr, 2000** — The paper has two analyses: a meta-analysis of 8 controlled cholesterol trials (10.2g/day), and a pooled safety analysis of 19 clinical studies (966 psyllium-exposed subjects, 5.1–20.4g/day, 6 "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 504,
+    "text": "| Zinc | 8.25 mg glycinate (EU v7: 6.5 mg bisglycinate) | 11 mg glycinate (100% RDA) | Increased to RDA-aligned dose |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 543,
+    "text": "Unchanged from v8: Choline 181.5mg, Hyaluronic Acid 200mg (sodium hyaluronate), Nicotinamide 16mg, B12 12mcg (mecobalamin), D3 1,000IU (encapsulated AlgeD3™), K2 90mcg (encapsulated K2VITAL® MK-7), Zinc 11mg glycinate, Copper 0.9mg glycinat"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 547,
+    "text": "**v8.5 vs the v7 sold in Australia (AUST L 509250, Lavida).** The public changelog compares v8.5 with AU v7, not with US v8, and AU v7 was not the international v7. Per the AU v7 label (`multivitamin/Manufacturing Australia/la-vida/2 label "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 563,
+    "text": "| Zinc (Bisglycinate) | 11 mg | 110% | Same |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 583,
+    "text": "**UK v7 → v9** (UK v7 label, per `claude_business/docs/brief-assets/v9-listing-images/v7-v9-diff.md`): removed choline bitartrate (181.5 mg), potassium (99 mg, chloride) and peppermint leaf extract (50 mg); added CDP-citicoline 500 mg and z"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 585,
+    "text": "**EU v7 → v9** (EU v7 label, BHI Biohealth International, Germany: `multivitamin/Manufacturing EU/BHI Biohealth International GmbH (Germany)/3 label/2 8588672_MircoVitamin_205x75_V8 copy.pdf`, marked v7): removed choline bitartrate (181 mg "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 658,
+    "text": "| Zinc | v1–v3 5.5 mg citrate (50%) · v4 **8.25 mg (75%)** citrate · v5–v7 8.25 mg **glycinate** · v8–v9 **11 mg glycinate (100%)** |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 698,
+    "text": "Moved from tablets to capsules; B1, B2, B5, B6, biotin 50→75% RDA; B12 1.2→12 mcg (500% RDA); vitamin C 29.7 mg (33%) → 45 mg (50% RDA); vitamin D3 1000→2000 IU (25→50 mcg), vegetarian source; iodine 75→112.5 mcg (50→75% RDA); zinc 5.5→8.25"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 702,
+    "text": "Decreased vitamin D3 2000→1000 IU (50→25 mcg); decreased potassium 360→200 mg; decreased niacin 50→35 mg; zinc and boron citrate → glycinate. Formula file: `multivitamin/formulas/8 formula v5 US.xlsx`."
+   },
+   {
+    "file": "docs/products.md",
+    "line": 714,
+    "text": "Decreased niacin 35→16 mg (100% RDA); vitamin C ascorbic acid → calcium ascorbate (45 mg unchanged); D3 → encapsulated AlgeD3 and K2 → encapsulated K2VITAL DELTA (doses unchanged); copper 0.45→0.9 mg (50→100% RDA); iodine 112.5→75 mcg (75→5"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 742,
+    "text": "| Zinc citrate→glycinate | Version 6 | **Version 5** (file 8 notes say \"changed zinc form to glycinate\") |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 758,
+    "text": "- Zinc bisglycinate vs zinc gluconate absorption (+43%, single 15mg dose, 12 healthy women): Gandia et al., 2007 — https://pubmed.ncbi.nlm.nih.gov/18271278/"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 791,
+    "text": "- AREDS (AREDS Report No. 8): AREDS Research Group, *Arch Ophthalmol*, 2001;119(10):1417–1436 — https://doi.org/10.1001/archopht.119.10.1417 · PMID 11594942. 3,640 participants aged 55–80, average follow-up 6.3 years; daily antioxidants (vi"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 792,
+    "text": "- AREDS2 (5-year randomised trial): AREDS2 Research Group, *JAMA*, 2013;309(19):2005–2015 — https://doi.org/10.1001/jama.2013.4997 · PMID 23644932. 4,203 participants aged 50–85; lutein 10 mg + zeaxanthin 2 mg and/or DHA + EPA, or placebo, "
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 365,
+    "text": "| `zinc` | µmol/L | µg/dl | 0.153 | zinc 65.38 g/mol |"
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 995,
+    "text": "| `skin-sunscreen` | Daily broad-spectrum sunscreen | SPF 50+. **Conventional/US:** CeraVe Mineral (zinc oxide, titanium dioxide). **SI/non-US:** Beauty of Joseon SPF50+ (chemical filters). |"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 423,
+    "text": "<p><strong>Mineral Sunscreens:</strong> Zinc oxide and titanium dioxide sit on the skin surface and reflect UV — they do not absorb into the body. The FDA classifies both as Generally Recognized As Safe and Effective (GRASE). They are an ex"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 427,
+    "text": "<li><em>Mineral sunscreen:</em> If you don't have access to newer chemical filters, a 100% mineral sunscreen at SPF 50 is a solid choice. Look for one that contains both titanium dioxide and zinc oxide, with none of the 12 flagged ingredien"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 426,
+    "text": "- Nutritional deficiencies are common (iron, B12, vitamin D, zinc, folate)"
+   },
+   {
+    "file": "docs/guideline/diet.md",
+    "line": 444,
+    "text": "**Algorithm link:** The `lipid-diet` section's IBS/IBD-safe food list provides the safe starting point. Supplements (MicroVitamin) may help address micronutrient deficiencies common in IBD — particularly B12, vitamin D, zinc, and folate."
+   }
+  ],
+  "positions_candidates_total": 25,
+  "posts": [
+   {
+    "handle": "this-2-remedy-beats-every-cold-medicine",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/this-2-remedy-beats-every-cold-medicine.md",
+    "url": "https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine",
+    "publishedAt": "2026-04-16T12:00:00Z",
+    "title": "This $2 Remedy Beats Every Cold Medicine",
+    "topic_mentions": 29,
+    "title_names_topic": false
+   },
+   {
+    "handle": "ridiculously-cheap-ways-to-treat-skin-aging",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/ridiculously-cheap-ways-to-treat-skin-aging.md",
+    "url": "https://drstanfield.com/blogs/articles/ridiculously-cheap-ways-to-treat-skin-aging",
+    "publishedAt": "2026-03-10T23:22:17Z",
+    "title": "Ridiculously Cheap Ways to Treat Skin Aging",
+    "topic_mentions": 4,
+    "title_names_topic": false
+   },
+   {
+    "handle": "an-evidence-based-anti-aging-skincare-routine",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/an-evidence-based-anti-aging-skincare-routine.md",
+    "url": "https://drstanfield.com/blogs/articles/an-evidence-based-anti-aging-skincare-routine",
+    "publishedAt": "2025-09-07T21:16:10Z",
+    "title": "An Evidence-Based Anti-Aging Skincare Routine",
+    "topic_mentions": 4,
+    "title_names_topic": false
+   },
+   {
+    "handle": "the-world-s-1-anti-aging-cream-sunscreen-just-got-updated",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-world-s-1-anti-aging-cream-sunscreen-just-got-updated.md",
+    "url": "https://drstanfield.com/blogs/articles/the-world-s-1-anti-aging-cream-sunscreen-just-got-updated",
+    "publishedAt": "2025-04-07T02:37:28Z",
+    "title": "The World’s #1 Anti-Aging Cream (Sunscreen) Just Got Updated",
+    "topic_mentions": 5,
+    "title_names_topic": false
+   },
+   {
+    "handle": "zma-supplements-benefits-research",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/zma-supplements-benefits-research.md",
+    "url": "https://drstanfield.com/blogs/articles/zma-supplements-benefits-research",
+    "publishedAt": "2025-01-29T16:30:23Z",
+    "title": "ZMA Supplements: What Are the Benefits and Research?",
+    "topic_mentions": 28,
+    "title_names_topic": false
+   },
+   {
+    "handle": "trace-minerals-vitamins-fad",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/trace-minerals-vitamins-fad.md",
+    "url": "https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad",
+    "publishedAt": "2025-01-07T00:08:13Z",
+    "title": "Trace Minerals in Vitamins: What Are They and Is It a Fad?",
+    "topic_mentions": 12,
+    "title_names_topic": false
+   },
+   {
+    "handle": "supplements-best-skin-tightening",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/supplements-best-skin-tightening.md",
+    "url": "https://drstanfield.com/blogs/articles/supplements-best-skin-tightening",
+    "publishedAt": "2024-12-31T00:13:37Z",
+    "title": "Guide: Which Supplements Are Best for Skin Tightening?",
+    "topic_mentions": 5,
+    "title_names_topic": false
+   },
+   {
+    "handle": "reverse-signs-skin-aging",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/reverse-signs-skin-aging.md",
+    "url": "https://drstanfield.com/blogs/articles/reverse-signs-skin-aging",
+    "publishedAt": "2024-12-17T01:24:10Z",
+    "title": "How To Reverse the Signs of Skin Aging (Latest Protocol)",
+    "topic_mentions": 6,
+    "title_names_topic": false
+   },
+   {
+    "handle": "best-anti-wrinkle-cream",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/best-anti-wrinkle-cream.md",
+    "url": "https://drstanfield.com/blogs/articles/best-anti-wrinkle-cream",
+    "publishedAt": "2024-10-22T02:04:46Z",
+    "title": "The World's #1 Anti-Wrinkle Cream Is Ridiculously Cheap",
+    "topic_mentions": 8,
+    "title_names_topic": false
+   }
+  ]
+ },
+ {
+  "handle": "selenium-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-selenium-supplements-review-ratings-selenium.md",
+  "cl_raw_sha256": "1d8836adad57a68b9e57be145bfb6843539d74e824e822d9634adcbb97961df3",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/selenium-nih.md",
+  "nih_raw_sha256": "8088144e79f2281239cbd3e755fe25bd9ce5f3c2f0afaa1a5878ad58a108995b",
+  "positions_candidates": [
+   {
+    "file": "docs/products.md",
+    "line": 28,
+    "text": "- Trace Minerals (glycinate / amino-acid chelates — Albion® for selenium, copper, chromium; iodine is potassium iodide, not a chelate; the +43% bioavailability figure is zinc bisglycinate vs zinc gluconate, Gandia 2007): Zinc 11mg, Selenium"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 65,
+    "text": "Bioavailability refers to how much of a nutrient your body actually absorbs. MicroVitamin supplies zinc, selenium, copper, manganese and chromium as glycinate or amino-acid chelates rather than the cheaper oxide and gluconate forms common i"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 514,
+    "text": "**What stayed the same in v8:** Choline Bitartrate 181.5mg, TMG 500mg, Hyaluronic Acid 200mg, Magnesium Taurate 126mg, Methylated Folate 200mcg DFE, Methylated B12 12mcg, B1/B2/B5/B6/Biotin (75% RDA), Selenium 27.5mcg glycinate, Manganese 1"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 536,
+    "text": "| Selenium | 27.5 mcg glycinate | **55 mcg** (selenomethionine) | Dose and form change |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 547,
+    "text": "**v8.5 vs the v7 sold in Australia (AUST L 509250, Lavida).** The public changelog compares v8.5 with AU v7, not with US v8, and AU v7 was not the international v7. Per the AU v7 label (`multivitamin/Manufacturing Australia/la-vida/2 label "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 564,
+    "text": "| Selenium (Yeast) | 55 mcg | 100% | US v8 27.5 mcg glycinate |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 583,
+    "text": "**UK v7 → v9** (UK v7 label, per `claude_business/docs/brief-assets/v9-listing-images/v7-v9-diff.md`): removed choline bitartrate (181.5 mg), potassium (99 mg, chloride) and peppermint leaf extract (50 mg); added CDP-citicoline 500 mg and z"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 585,
+    "text": "**EU v7 → v9** (EU v7 label, BHI Biohealth International, Germany: `multivitamin/Manufacturing EU/BHI Biohealth International GmbH (Germany)/3 label/2 8588672_MircoVitamin_205x75_V8 copy.pdf`, marked v7): removed choline bitartrate (181 mg "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 587,
+    "text": "**UK/EU v9 vs the US v9 spec** (the v9 columns and Version 9 entry in the changelog below, formula file 16): the UK/EU label differs in magnesium (126 mg, not 150 mg), vitamin B1 form (thiamine HCl, not mononitrate), boron form (sodium bora"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 657,
+    "text": "| Selenium | v1–v2 — · v3–v5 41.25 mcg selenocysteine (75%) · v6 **27.5 mcg** selenocysteine (50%) · v7–v8 27.5 mcg **glycinate** · v9 **55 mcg glycinate (100%)** |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 686,
+    "text": "Initial formula. Tablets, serving size TBD (moved to 5/serving at v3). B-vitamins at 50% RDA, B12 at 1200 mcg, TMG at 1000 mg; no selenium, copper, manganese, chromium, boron, lutein, or lycopene. Formula file: `multivitamin/formulas/3 form"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 694,
+    "text": "Increased niacin 35→50 mg and switched niacin → nicotinamide; added selenium (41.25 mcg, 75% RDA, selenocysteine), copper (0.45 mg, 50% RDA, cupric sulfate), manganese (1.15 mg, 50% RDA, manganese citrate), chromium (17.5 mcg, 50% RDA, chro"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 706,
+    "text": "White TiO2-free capsules (USA); green chlorophyllin capsules (international); selenium 41.25 mcg (75%) → 27.5 mcg (50% RDA); potassium 200→99 mg (per website; spreadsheet shows drop from 360 to 99); added lutein 0.25 mg, lycopene 0.3 mg, pe"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 710,
+    "text": "B6 → P5P (pyridoxal-5-phosphate); selenium selenocysteine → selenium glycinate; copper cupric sulfate → copper bisglycinate; chromium picolinate → glycinate; peppermint leaf powder → peppermint leaf extract. Formula file: `multivitamin/form"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 718,
+    "text": "Australia-specific release; full detail, sources and files in Regional Formula Differences → v8.5. In short: keeps the full v8 ingredient set and v8-era choline bitartrate and potassium (unlike v9), raises B1, B2, B5, B6, biotin, folate, vi"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 722,
+    "text": "Shipped to the UK and EU from 2026-10 (made in the UK by G&G Food Supplies); not yet shipped in the USA. The UK/EU label differs from this US spec (Regional Formula Differences → \"UK/EU v9 vs the US v9 spec\"). US spec: B1, B2, B5, B6, bioti"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 731,
+    "text": "- **Powder v2** (aligns with capsule v7): same form changes as capsule v7 — B6 to P5P; chromium, selenium and copper to glycinate. File: `powder/formula/2 powder formula v2.xlsx`"
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 373,
+    "text": "| `selenium` | µmol/L | µg/l | 0.01266 | selenium 78.971 g/mol |"
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 374,
+    "text": "| `selenium` | µmol/L | ng/ml | 0.01266 | selenium 78.971 g/mol |"
+   }
+  ],
+  "positions_candidates_total": 19,
+  "posts": [
+   {
+    "handle": "trace-minerals-vitamins-fad",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/trace-minerals-vitamins-fad.md",
+    "url": "https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad",
+    "publishedAt": "2025-01-07T00:08:13Z",
+    "title": "Trace Minerals in Vitamins: What Are They and Is It a Fad?",
+    "topic_mentions": 11,
+    "title_names_topic": false
+   }
+  ]
+ },
+ {
+  "handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-kelp-supplements-review-kelp.md",
+  "cl_raw_sha256": "eedad250c7ede4e9c46c947857fdbe1bf3f5b52d9cc13677b59ee0af989a7658",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/kelp-nih.md",
+  "nih_raw_sha256": "d8ad8611cc7a6d2f46599888071e7160f478e207a012e21bdfb1de94e5f72acb",
+  "positions_candidates": [
+   {
+    "file": "docs/products.md",
+    "line": 28,
+    "text": "- Trace Minerals (glycinate / amino-acid chelates — Albion® for selenium, copper, chromium; iodine is potassium iodide, not a chelate; the +43% bioavailability figure is zinc bisglycinate vs zinc gluconate, Gandia 2007): Zinc 11mg, Selenium"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 403,
+    "text": "MicroVitamin addresses fatigue through nutrient gap correction, not stimulation: full B-complex (supports normal energy production), magnesium for cellular energy production (126mg in the USA, in an amino-acid chelate form called magnesium "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 503,
+    "text": "| Iodine | 112.5 mcg (EU v7: 100 mcg) | 75 mcg | Reduced (75% → 50% RDA) |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 537,
+    "text": "| Iodine | 75 mcg | **150 mcg** | Doubled (potassium iodide); 150 mcg = 100% AU RDI |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 547,
+    "text": "**v8.5 vs the v7 sold in Australia (AUST L 509250, Lavida).** The public changelog compares v8.5 with AU v7, not with US v8, and AU v7 was not the international v7. Per the AU v7 label (`multivitamin/Manufacturing Australia/la-vida/2 label "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 577,
+    "text": "| Iodine (Potassium Iodide) | 150 mcg | 100% | US v8 75 mcg |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 583,
+    "text": "**UK v7 → v9** (UK v7 label, per `claude_business/docs/brief-assets/v9-listing-images/v7-v9-diff.md`): removed choline bitartrate (181.5 mg), potassium (99 mg, chloride) and peppermint leaf extract (50 mg); added CDP-citicoline 500 mg and z"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 585,
+    "text": "**EU v7 → v9** (EU v7 label, BHI Biohealth International, Germany: `multivitamin/Manufacturing EU/BHI Biohealth International GmbH (Germany)/3 label/2 8588672_MircoVitamin_205x75_V8 copy.pdf`, marked v7): removed choline bitartrate (181 mg "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 653,
+    "text": "| Iodine | v1–v3 75 mcg (50%) · v4–v7 **112.5 mcg (75%)** · v8 **75 mcg (50%)** · v9 **150 mcg (100%)** |"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 698,
+    "text": "Moved from tablets to capsules; B1, B2, B5, B6, biotin 50→75% RDA; B12 1.2→12 mcg (500% RDA); vitamin C 29.7 mg (33%) → 45 mg (50% RDA); vitamin D3 1000→2000 IU (25→50 mcg), vegetarian source; iodine 75→112.5 mcg (50→75% RDA); zinc 5.5→8.25"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 714,
+    "text": "Decreased niacin 35→16 mg (100% RDA); vitamin C ascorbic acid → calcium ascorbate (45 mg unchanged); D3 → encapsulated AlgeD3 and K2 → encapsulated K2VITAL DELTA (doses unchanged); copper 0.45→0.9 mg (50→100% RDA); iodine 112.5→75 mcg (75→5"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 718,
+    "text": "Australia-specific release; full detail, sources and files in Regional Formula Differences → v8.5. In short: keeps the full v8 ingredient set and v8-era choline bitartrate and potassium (unlike v9), raises B1, B2, B5, B6, biotin, folate, vi"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 722,
+    "text": "Shipped to the UK and EU from 2026-10 (made in the UK by G&G Food Supplies); not yet shipped in the USA. The UK/EU label differs from this US spec (Regional Formula Differences → \"UK/EU v9 vs the US v9 spec\"). US spec: B1, B2, B5, B6, bioti"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 552,
+    "text": "<p data-mce-fragment=\"1\"><em data-mce-fragment=\"1\">Hypothyroidism: </em>Subclinical hypothyroidism is common, but most asymptomatic non-pregnant adults aren't routinely screened. However, individuals at increased risk for hypothyroidism, su"
+   }
+  ],
+  "positions_candidates_total": 14,
+  "posts": [
+   {
+    "handle": "our-iq-will-start-dropping-soon-new-evidence",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/our-iq-will-start-dropping-soon-new-evidence.md",
+    "url": "https://drstanfield.com/blogs/articles/our-iq-will-start-dropping-soon-new-evidence",
+    "publishedAt": "2026-08-27T20:16:10Z",
+    "title": "Our IQ Will Start Dropping Soon (new evidence)",
+    "topic_mentions": 50,
+    "title_names_topic": false
+   },
+   {
+    "handle": "trace-minerals-vitamins-fad",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/trace-minerals-vitamins-fad.md",
+    "url": "https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad",
+    "publishedAt": "2025-01-07T00:08:13Z",
+    "title": "Trace Minerals in Vitamins: What Are They and Is It a Fad?",
+    "topic_mentions": 17,
+    "title_names_topic": false
+   }
+  ]
+ }
+]

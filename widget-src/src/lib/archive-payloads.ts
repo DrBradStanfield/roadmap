@@ -7,52 +7,8 @@
  * Blobs are only attached to results when the backend can archive them
  * (getDocumentArchiveMode() === 'cloud'), so off-cloud this returns [].
  */
-import { LAB_ARCHIVE_TITLE } from '@roadmap/health-core';
+import { labArchivePayload, pendingRowsFor, type DocumentPayload, type ExistingDoc } from '@roadmap/health-core';
 import type { FileResult } from '../components/ReviewTable';
-import type { ApiDocument } from './api-types';
-
-export interface ArchiveDocPayload {
-  documentType: string;
-  title: string;
-  documentDate: string | null;
-  contentMd: string;
-  metadata: Record<string, unknown>;
-  sourceFileName: string | null;
-  file?: Blob;
-}
-
-/**
- * Metadata flag stamped on synthesized blood-test archive entries. These exist
- * ONLY to persist the original lab PDF to the user's cloud — the extracted
- * VALUES surface in the Blood Test Results table, so the synthesized entry must
- * never appear in the Documents list. Filtered out of the list via
- * isLabArchiveDocument(); see HealthRecordsSection. Real biopsy/histology
- * pathology reports carry markdown content + their own metadata and are NEVER
- * flagged, so they keep showing.
- */
-export const LAB_ARCHIVE_FLAG = 'labArchive';
-
-/**
- * True when a stored document is a synthesized blood-test archive entry (the
- * raw lab PDF kept purely for the user's cloud). Hidden from the Documents
- * list. Matches the explicit flag for new uploads AND a content signature for
- * legacy entries written before the flag existed: documentType
- * 'pathology_report' + title 'Blood test results' + empty contentMd (a real
- * pathology report always has extracted markdown).
- */
-export function isLabArchiveDocument(doc: {
-  documentType: string;
-  title: string;
-  contentMd: string;
-  metadata: Record<string, unknown>;
-}): boolean {
-  if (doc.metadata?.[LAB_ARCHIVE_FLAG] === true) return true;
-  return (
-    doc.documentType === 'pathology_report' &&
-    doc.title === LAB_ARCHIVE_TITLE &&
-    doc.contentMd.trim() === ''
-  );
-}
 
 /** 'sha256-<hex>' content fingerprint — names the blob + detects corruption. */
 export async function sha256Blob(blob: Blob): Promise<string> {
@@ -75,20 +31,22 @@ function isArchivableFile(r: FileResult, alreadyCovered: Set<string | null>): bo
   return !!r.document || r.values.length > 0 || r.additionalValues.length > 0;
 }
 
+
 /**
  * Unarchived lab originals remain saveable after their values become history
  * context (US-12 AC6). Unselected letters require a matching metadata-only
- * connector row (US-35 AC8), so deselecting a new letter still excludes it.
+ * shown-document row (the connector's, or a website save whose blob failed;
+ * US-35 AC8, US-14 AC4), so deselecting a new letter still excludes it, and a
+ * lab-archive row never stands in for one: the store replaces only its own kind.
  */
 export function unarchivedOriginals(
   results: FileResult[],
-  existing: ReadonlyArray<Pick<ApiDocument, 'contentHash' | 'fileRef'>>,
+  existing: ReadonlyArray<ExistingDoc>,
   alreadyCovered: Set<string | null>,
 ): FileResult[] {
-  const pending = new Set(existing.filter((d) => d.contentHash && !d.fileRef).map((d) => d.contentHash));
   const archived = new Set(existing.filter((d) => d.contentHash && d.fileRef).map((d) => d.contentHash));
   return results.filter((r) => isArchivableFile(r, alreadyCovered)
-    && !archived.has(r.contentHash) && (!r.document || pending.has(r.contentHash)));
+    && !archived.has(r.contentHash) && (!r.document || pendingRowsFor(existing, r.contentHash, false).length > 0));
 }
 
 /**
@@ -98,9 +56,9 @@ export function unarchivedOriginals(
  */
 export function connectorDocumentEntries(
   results: FileResult[],
-  existing: ReadonlyArray<Pick<ApiDocument, 'contentHash' | 'fileRef'>>,
+  existing: ReadonlyArray<ExistingDoc>,
   alreadyCovered: Set<string | null>,
-): ArchiveDocPayload[] {
+): DocumentPayload<Blob>[] {
   return unarchivedOriginals(results, existing, alreadyCovered)
     .filter((r) => r.document)
     .map((r) => ({
@@ -118,19 +76,11 @@ export function connectorDocumentEntries(
 export function synthesizeLabArchiveEntries(
   results: FileResult[],
   alreadyCovered: Set<string | null>,
-): ArchiveDocPayload[] {
-  const out: ArchiveDocPayload[] = [];
+): DocumentPayload<Blob>[] {
+  const out: DocumentPayload<Blob>[] = [];
   for (const r of results) {
     if (r.document || !isArchivableFile(r, alreadyCovered)) continue;
-    out.push({
-      documentType: 'pathology_report',
-      title: LAB_ARCHIVE_TITLE,
-      documentDate: r.reportDate,
-      contentMd: '',
-      metadata: { [LAB_ARCHIVE_FLAG]: true },
-      sourceFileName: r.fileName,
-      file: r.file,
-    });
+    out.push(labArchivePayload(r.fileName, r.reportDate, r.file));
   }
   return out;
 }

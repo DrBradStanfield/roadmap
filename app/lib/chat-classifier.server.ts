@@ -14,9 +14,9 @@
  * documented — which strengthens the case for the serial classifier.
  *
  * Design docs:
- *   - chat-architecture.md § Pre-router classifier (full spec)
- *   - chat-knowledge-map-v2.md § Pre-router classifier (the "why")
- *   - chat-overview.md Diagram 6 (the picture)
+ *   - claude_business docs/chat-architecture.md § Pre-router classifier (full spec)
+ *   - claude_business docs/chat-knowledge-map-v2.md § Pre-router classifier (the "why")
+ *   - claude_business docs/chat-overview.md Diagram 6 (the picture)
  *
  * Failure mode is fail-safe: any classifier error → router still fires
  * (matches today's behavior). The classifier can only OMIT a router call,
@@ -31,10 +31,6 @@ import * as Sentry from '@sentry/react-router';
 import { callAnthropicWithUsage, type AnthropicUsage } from './anthropic.server';
 import { sanitizeForRouter } from './chat-router.server';
 import { CLASSIFIER_MAX_TOKENS, CLASSIFIER_MODEL, Classification, PROMPT_CACHE, modelParams, parseClassification } from '../../packages/health-core/src/models';
-
-// Bump when the classifier prompt or rules change so chat_match_events can
-// segment pre/post-change analytics.
-export const CLASSIFIER_VERSION = 1;
 
 // ---------------------------------------------------------------------------
 // Output types

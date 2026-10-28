@@ -21,6 +21,8 @@
  *   - latestValues: the longitudinal fields that pass the input schema, or
  *     the newest history point, printed from numbers; units: each of those
  *     fields' SI unit, from FIELD_UNITS.
+ *   - labEgfr, labEgfrDate (US-07 AC7): the input schema (ranged number;
+ *     YYYY-MM-DD); the plan reads them, and only derivedValues.eGFR prints.
  *   - excludedFields: input-schema field names only, never their values.
  *   - measurementHistory: metric keys on METRIC_TO_FIELD, YYYY-MM-DD dates,
  *     values that pass their field's schema, HISTORY_CAP_PER_METRIC points a
@@ -54,12 +56,12 @@ import {
   STATIN_NAMES, EZETIMIBE_OPTIONS, BEMPEDOIC_ACID_OPTIONS, PCSK9I_OPTIONS,
   GLP1_NAMES, SGLT2I_NAMES, METFORMIN_OPTIONS,
 } from './types';
-import { UNIT_DEFS, type UnitSystem } from './units';
+import type { UnitSystem } from './units';
 import {
   healthInputSchema, sanitizeInputs, excludedInputFields, MEDICATION_KEYS, SCREENING_KEYS,
 } from './validation';
 import {
-  FIELD_UNITS, LONGITUDINAL_FIELDS, METRIC_TO_FIELD, medicationsToInputs, screeningsToInputs,
+  FIELD_UNITS, LONGITUDINAL_FIELDS, METRIC_TO_FIELD, medicationsToInputs, screeningRange, screeningsToInputs,
   type ApiMedication, type ApiScreening,
 } from './mappings';
 import {
@@ -125,7 +127,7 @@ export const NO_PLAN_CHAT_RULE =
   '`heightCm`, and no tool result this turn holds a plan, the roadmap has no plan yet. Use and mention the values ' +
   'they have saved, without grading them, ask them for the missing sex or height, and say in one plain sentence ' +
   'why: the roadmap needs height and sex to work out the plan ' +
-  '(BMI, waist-to-height ratio, the protein target from ideal body weight, and kidney function, as eGFR needs sex, ' +
+  '(BMI, waist-to-height ratio, the protein target from ideal body weight, and kidney function, as a calculated eGFR needs sex, ' +
   'age and creatinine), and with them it can run their plan. Once they state them, propose saving them with ' +
   '`propose_profile_edit` when you have that tool (they confirm before anything is saved); they can also enter ' +
   'them in the roadmap tool.';
@@ -291,12 +293,6 @@ function medicationRows(raw: unknown): MedicationRow[] {
   });
 }
 
-/** The numeric screenings and their ranges: pack-years as the form bounds
- *  them, PSA as its measurement does. */
-const SCREENING_RANGES: Record<string, { min: number; max: number }> = {
-  lung_pack_years: { min: 0, max: 200 },
-  prostate_psa_value: UNIT_DEFS.psa.validationRange.si,
-};
 /** Longest screening value: the longest option is 18 characters. */
 const MAX_SCREENING_VALUE = 32;
 
@@ -306,9 +302,9 @@ function screeningRows(raw: unknown): Array<Pick<ApiScreening, 'screeningKey' | 
     const { screeningKey, value } = fields(row);
     if (typeof screeningKey !== 'string' || !(SCREENING_KEYS as readonly string[]).includes(screeningKey)) return [];
     if (typeof value !== 'string' || value.length > MAX_SCREENING_VALUE) return [];
-    const range = own(SCREENING_RANGES, screeningKey) ? SCREENING_RANGES[screeningKey] : null;
+    const range = screeningRange(screeningKey);
     if (range) {
-      const n = parseLocalisedNumber(value) ?? NaN;
+      const n = parseLocalisedNumber(value, range) ?? NaN;
       if (!Number.isFinite(n) || n < range.min || n > range.max) return [];
     }
     return [{ screeningKey, value }];

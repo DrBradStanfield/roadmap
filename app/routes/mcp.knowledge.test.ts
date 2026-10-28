@@ -17,8 +17,10 @@ import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile } from '../../packages/health-core/src/roadmap-file';
 import { resetMcpMemory } from '../lib/mcp-grants.server';
 import { INSTRUCTIONS, mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
-import { callKnowledgeTool, cutEntry, isServed, KNOWLEDGE_NOTE, KNOWLEDGE_TOOLS, MAX_ARTICLE_CHARS, MAX_EXCERPT_CHARS, MAX_RESULTS, NOTICE, safetyBlocks } from '../lib/mcp-knowledge.server';
+import { callKnowledgeTool, cutEntry, isServed, KNOWLEDGE_NOTE, KNOWLEDGE_TOOLS, MAX_ARTICLE_CHARS, MAX_EXCERPT_CHARS, MAX_MASTER_EXCERPT_CHARS, MAX_RESULTS, NOTICE, safetyBlocks } from '../lib/mcp-knowledge.server';
 import { loadBlogIndex } from '../lib/blog-index.server';
+import { routerView } from '../lib/router-view';
+import { buildIndex, search } from '../../tools/search-knowledge';
 import { parseFrontmatter } from '../lib/frontmatter';
 import { recordServerEvent } from '../lib/product-events.server';
 import { action, loader } from './mcp.$';
@@ -219,7 +221,9 @@ describe('US-41 AC7 — search_knowledge: masters first, capped, the notice on e
   it('does not promote a master on the words every master shares, or on generic ones (adversary R4)', async () => {
     const access = await connect();
     const results = (await call(access, 'search_knowledge', { query: 'benefits of exercise' })).structuredContent!.results as Array<Record<string, any>>;
-    expect(results[0].master).toBe(false);
+    // 2026-10-25 (masters-new-7): was results[0].master === false, a 0.01 BM25 margin that flipped when df[benefit] went 74 -> 81; no master jumping the raw order is the real check.
+    const served = buildIndex(routerView(loadBlogIndex()).filter(isServed));
+    expect(results.map((r) => r.handle)).toEqual(search(served, 'benefits of exercise', MAX_RESULTS, MAX_RESULTS).map((h) => h.handle));
     const olive = (await call(access, 'search_knowledge', { query: 'olive oil heart' })).structuredContent!.results as Array<Record<string, any>>;
     expect(olive[0].handle).not.toBe(OMEGA3);
   });
@@ -228,10 +232,30 @@ describe('US-41 AC7 — search_knowledge: masters first, capped, the notice on e
     const answer = await call(await connect(), 'search_knowledge', { query: 'side effects dosing benefits vitamin' });
     const results = answer.structuredContent!.results as Array<Record<string, any>>;
     expect(results).toHaveLength(MAX_RESULTS);
-    for (const r of results) expect(r.excerpt.length).toBeLessThanOrEqual(MAX_EXCERPT_CHARS);
+    for (const r of results) expect(r.excerpt.length).toBeLessThanOrEqual(r.master ? MAX_MASTER_EXCERPT_CHARS : MAX_EXCERPT_CHARS);
     expect(answer.structuredContent!.notice).toBe(NOTICE);
     expect(answer.content[0].text.startsWith(`{"notice":${JSON.stringify(NOTICE)}`)).toBe(true);
-    expect(answer.content[0].text.length).toBeLessThan(MAX_RESULTS * (MAX_EXCERPT_CHARS + 1_500));
+    expect(answer.content[0].text.length).toBeLessThan(MAX_RESULTS * (Math.max(MAX_EXCERPT_CHARS, MAX_MASTER_EXCERPT_CHARS) + 1_500));
+  });
+
+  // US-50 AC13: the writer contract puts "who should not take it" last in the
+  // Current view, so a master's excerpt is the whole view, not cut at 1,500.
+  it('a master excerpt is its whole Current view, the closing caution included', async () => {
+    const results = (await call(await connect(), 'search_knowledge', { query: 'potassium supplements' })).structuredContent!.results as Array<Record<string, any>>;
+    expect(results[0]).toMatchObject({ handle: 'potassium-benefits-forms-dosing-and-side-effects', master: true });
+    expect(results[0].excerpt.length).toBeGreaterThan(MAX_EXCERPT_CHARS);
+    expect(results[0].excerpt).toMatch(/Talk to your doctor before taking added potassium if you have kidney disease, .*ACE inhibitor.*\(Brad's current guidance, 6 Oct 2026\)\.$/);
+  });
+
+  // US-50 AC13 (R5): the master excerpt cap must hold every served view whole, so none is cut silently.
+  it('every served master\'s Current view fits MAX_MASTER_EXCERPT_CHARS', () => {
+    const masters = loadBlogIndex().filter((e) => isServed(e) && e.type === 'reference' && e.reviewed);
+    expect(masters.length).toBeGreaterThanOrEqual(20);
+    for (const e of masters) {
+      const body = readFileSync(`docs/blog/${e.handle}.md`, 'utf-8').replace(/^---[\s\S]*?\n---\n/, '');
+      const view = body.split(/^(?=## )/m).find((sec) => /^## Current (view|evidence position)\b/.test(sec)) ?? '';
+      expect(view.trim().length, e.handle).toBeLessThanOrEqual(MAX_MASTER_EXCERPT_CHARS);
+    }
   });
 
   it('refuses a query that does not fit, in fixed words that never repeat it', async () => {
@@ -298,12 +322,12 @@ describe('US-41 AC9 — the user\'s AI pays: no network, no model, no record', (
     const specifiers = [...source.matchAll(/\bfrom\s+'([^']+)'/g)].map((m) => m[1]);
     expect(specifiers.sort()).toEqual([
       '../../packages/health-core/src/mcp-tools', // type-only
+      '../../packages/health-core/src/zod', // zod, jitless
       '../../tools/search-knowledge',
       './blog-index.server',
       './frontmatter',
       './matched-content',
       './router-view',
-      'zod',
     ]);
     expect(source).toMatch(/import type \{ McpToolDefinition, ToolAnswer \} from '\.\.\/\.\.\/packages\/health-core\/src\/mcp-tools'/);
     // ChatGPT's two `_meta` keys are the only place the word may appear.
@@ -356,13 +380,12 @@ describe('US-41 AC11 — only what is public under Brad\'s name: video articles 
   const notServed = index.filter((e) => !isServed(e));
 
   it('serves the two sets and nothing else', () => {
-    expect(notServed.filter((e) => e.type === 'pathway').length).toBeGreaterThan(700);
     expect(notServed.filter((e) => e.type === 'guideline').map((e) => e.handle).sort()).toEqual(['diet', 'exercise', 'sleep']);
-    expect(notServed.every((e) => e.type === 'pathway' || e.type === 'guideline' || (e.type === 'reference' && !e.reviewed))).toBe(true);
+    expect(notServed.every((e) => e.type === 'guideline' || (e.type === 'reference' && !e.reviewed))).toBe(true);
     expect(index.filter(isServed).every((e) => (e.type ?? 'article') === 'article' || (e.type === 'reference' && !!e.reviewed))).toBe(true);
   });
 
-  it('never returns a pathway, guideline or non-master reference, searched by each one\'s own title', () => {
+  it('never returns a guideline or non-master reference, searched by each one\'s own title', () => {
     const banned = new Set(notServed.map((e) => e.handle));
     for (const e of notServed) {
       const results = (callKnowledgeTool('search_knowledge', { query: e.title.slice(0, 200) }).structured as { results: Array<{ handle: string }> }).results;
@@ -370,7 +393,7 @@ describe('US-41 AC11 — only what is public under Brad\'s name: video articles 
     }
   });
 
-  it('refuses to read any pathway, guideline or non-master reference', () => {
+  it('refuses to read any guideline or non-master reference', () => {
     for (const e of notServed) {
       const answer = callKnowledgeTool('get_article', { handle: e.handle });
       expect(answer.isError, e.handle).toBe(true);

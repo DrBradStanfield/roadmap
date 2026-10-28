@@ -19,12 +19,13 @@ const fakes = vi.hoisted(() => {
     ref('tm-nad'),
     ref('tm-empty'),
     ref('tm-big', '2026-10-20'),
-    ref('tm-huge'),
+    ref('tm-huge', '2026-10-20'),
     ref('tm-master-long', '2026-10-20'),
     ref('tm-safe'), ref('tm-mid1'), ref('tm-mid2'), ref('tm-cited'), ref('tm-numbered'), ref('tm-malformed'), ref('tm-rule'), ref('tm-ix'), ref('tm-dup1'), ref('tm-dup2'),
     ref('tm-keyed'), ref('tm-keylong'), ref('tm-kp-head'), ref('tm-kp-tbw'), ref('tm-kp-rule'), ref('tm-kp-two'), ref('tm-kp-indent'), ref('tm-kp-summary'),
     ...Array.from({ length: 14 }, (_, i) => ref(`tm-stack-${i}`, '2026-10-20')),
     { title: 'An article', handle: 'tm-article', url: 'u', tags: [], publishedAt: '2025-01-01T00:00:00Z' },
+    { title: 'Collagen video', handle: 'tm-collagen-video', url: 'u', tags: [], publishedAt: '2025-01-01T00:00:00Z', topics: ['tm-collagen'] },
   ];
 });
 
@@ -49,9 +50,10 @@ vi.mock('./chat.server', async (orig) => ({
 
 import { runPipeline } from './youtube-bot.server';
 import { platformChatCompletion } from './platform-chat.server';
-import { currentViewSection, safetySections, masterViews, MASTER_VIEWS_HEADING, MAX_MASTER_VIEW_CHARS, MAX_KEY_POINTS_CHARS, BULLET_LINE } from './youtube-context';
+import { currentViewSection, safetySections, masterViews, reducedMaster, reducedDrops, MAX_VIEW_CHARS, MASTER_VIEWS_HEADING, MAX_MASTER_VIEW_CHARS, MAX_KEY_POINTS_CHARS, BULLET_LINE } from './youtube-context';
 import { MAX_KEY_POINTS_CHARS as CHECKER_MAX_KEY_POINTS_CHARS, BULLET_LINE as CHECKER_BULLET_LINE, keySafetyErrors } from '../../tools/knowledge-batch-check';
 import { getChatCompletion } from './chat.server';
+import { MAX_BLOG_CHARS } from './matched-content';
 import { routeQuery } from './chat-router.server';
 
 const VIEW = '## Current view (reviewed 20 October 2026)\n\nCollagen peptides may improve skin hydration [the-collagen-peptides-for-skin-story-is-changing].';
@@ -70,9 +72,12 @@ const files: Record<string, string> = {
   'tm-dup2': `---\ntitle: "Dup2"\n---\n\n## Current view (reviewed 20 October 2026)\n\nDup two.\n\n## Safety\n\n${'d'.repeat(MAX_MASTER_VIEW_CHARS * 0.6)}\n`,
   'tm-cited':`---\ntitle: "Cited"\n---\n\n## Current view (reviewed 20 October 2026)\n\nCited view [1].\n\n## 3. Evidence\n\nBenefit [1].\n\n## 5. Safety and Side Effects\n\nRare rash [2]. Liver note [3, 5]. Range [6–7]. A DOI link [10.1000/xyz].\n\n## 9. References\n\n[1] Ref one.\n\n[2] Ref two.\n\n[3] Ref three.\n\n[4] Ref four.\n\n[5] Ref five.\n\n[6] Ref six.\n\n[7] Ref seven.\n`,
   'tm-numbered': `---\ntitle: "Numbered"\n---\n\n## Current view (reviewed 20 October 2026)\n\nNumbered view.\n\n## 6. Drug Interactions\n\nWarfarin [2].\n\n## 8. References\n\n1. Ref A.\n2. Ref B.\n`,
-  'tm-huge': `---\ntitle: "Huge"\n---\n\n${'h'.repeat(110_000)}\n`,
+  // A master whose smallest form still nearly fills the cap: it loads that
+  // form and leaves no room even for tm-master-long reduced (US-50 AC13).
+  'tm-huge': `---\ntitle: "Huge"\n---\n\n## Current view (reviewed 20 October 2026)\n\nHuge view.\n\n## 5. Safety and Side Effects\n\n${'h'.repeat(MAX_BLOG_CHARS - 250)}\n`,
   'tm-master-long': `---\ntitle: "Long master"\n---\n\n## Current view (reviewed 20 October 2026)\n\nThe long master's view.\n\n## Evidence review\n\n${'r'.repeat(20_000)}\n`,
   'tm-article': `---\ntitle: "An article"\n---\n\n## Current view (reviewed 20 October 2026)\n\nNot a master.\n`,
+  'tm-collagen-video': `---\ntitle: "Collagen video"\n---\n\nThe old collagen video's text.\n`,
 };
 const KEY_POINTS = '## Key safety points\n\n- May interact with warfarin [1].\n- Not for pregnant people [2].\n- Mild bloating is common [1, 2].';
 files['tm-keyed'] = `---\ntitle: "Keyed"\n---\n\n## Current view (reviewed 20 October 2026)\n\nKeyed view.\n\n${KEY_POINTS}\n\n## 5. Safety and Side Effects\n\nFull safety text.\n\n## 6. Drug Interactions\n\nFull interactions text [3].\n\n## 9. References\n\n[1] Ref one.\n[2] Ref two.\n[3] Ref three.\n`;
@@ -128,27 +133,25 @@ describe('safetySections (US-50 AC6)', () => {
 // The six masters published on 2026-10-20: every one adds its view plus its
 // "Safety and Side Effects" and "Drug Interactions" sections, within the caps.
 describe('masterViews on the published masters (US-50 AC6)', () => {
-  const MASTERS = [
-    'collagen-benefits-best-forms-dosing-and-side-effects',
-    'vitamin-k-benefits-forms-dosing-and-side-effects',
+  // All six now carry Key safety points (masters-cleanup-1 to -4, 2026-10-22), so each
+  // adds its view and those points. The path for a master without key points is
+  // covered by the synthetic tm-safe, tm-ix and tm-cited pages below.
+  const KEYED = [
     'magnesium-benefits-best-forms-dosing',
-    'taurine-benefits-forms-dosing-and-side-effects',
     'creatine-benefits-best-forms-dosing-and-side-effects',
     'vitamin-c-benefits-forms-dosing-and-side-effects',
+    'taurine-benefits-forms-dosing-and-side-effects',
+    'vitamin-k-benefits-forms-dosing-and-side-effects',
+    'collagen-benefits-best-forms-dosing-and-side-effects',
   ];
-  it.each(MASTERS)('%s adds its view, then its interaction and safety sections', (handle) => {
+  it.each(KEYED)('%s adds its view and key safety points, not its whole safety sections (US-50 AC12)', (handle) => {
     const block = masterViews([handle], [])!;
     expect(block).not.toBeNull();
     const view = block.indexOf('### Current view (reviewed');
-    const safety = block.search(/^### \d+\. Safety and Side Effects$/m);
-    const interactions = block.search(/^### \d+\. Drug Interactions$/m);
     expect(view).toBeGreaterThan(-1);
-    expect(interactions).toBeGreaterThan(view);
-    expect(safety).toBeGreaterThan(interactions);
-    expect(block).not.toMatch(/^### \d+\. (?:References|Overview|Recommended Dosing)/m);
+    expect(block.indexOf('### Key safety points')).toBeGreaterThan(view);
+    expect(block).not.toMatch(/^### \d+\. (?:Safety and Side Effects|Drug Interactions|References)/m);
     expect(block).not.toContain("Brad's videos on this topic");
-    expect(block).toMatch(/^\[\d+\] .+/m); // a cited bibliography line came with the safety text
-    expect(block.length).toBeLessThanOrEqual(MAX_MASTER_VIEW_CHARS + MASTER_VIEWS_HEADING.length + 2);
   });
 
 });
@@ -401,7 +404,7 @@ describe('runPipeline: the reply-or-skip input (US-50 AC6)', () => {
     expect(platform).toContain('[reference — reviewed 2026-10-20]');
   });
 
-  it('a master the router picked but the cap skipped still adds its current view (H2, Codex R2)', async () => {
+  it('a master the router picked but the cap skipped, even reduced, still adds its current view (H2, Codex R2; US-50 AC13)', async () => {
     fakeFiles();
     vi.mocked(routeQuery).mockResolvedValueOnce({ handles: ['tm-huge', 'tm-master-long'], rawJson: null, usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 }, latencyMs: 1, cacheHit: false, error: null });
     await runPipeline(thread, { ...entry, topics: ['tm-master-long'] }, 'The video body.');
@@ -432,6 +435,49 @@ describe('runPipeline: the reply-or-skip input (US-50 AC6)', () => {
     const texts = systemOf();
     expect(texts.find(t => t.startsWith('## Referenced Blog Articles'))).toContain('Collagen peptides');
     expect(texts.join('\n')).not.toContain(`${MASTER_VIEWS_HEADING}\n\n[reference`);
+  });
+
+  // US-50 AC14: the router's picks go through the same master filter as the storefront chat.
+  const pick = (handles: string[]) => vi.mocked(routeQuery).mockResolvedValueOnce({ handles, rawJson: null, usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 }, latencyMs: 1, cacheHit: false, error: null });
+
+  it('an older post the router picks is replaced by its master, and the outcome says so (US-50 AC14)', async () => {
+    fakeFiles();
+    pick(['tm-collagen-video']);
+    const outcome = await runPipeline(thread, { ...entry, topics: [] }, 'The video body.');
+    const articles = systemOf().find(t => t.startsWith('## Referenced Blog Articles'))!;
+    expect(articles).toContain('Collagen peptides');
+    expect(articles).not.toContain("The old collagen video's text.");
+    expect(outcome.routerHandles).toEqual(['tm-collagen-video']);
+    expect(outcome.replaced).toEqual(['tm-collagen-video']);
+    expect(outcome.reduced ?? []).toEqual([]);
+  });
+
+  it('the video\'s own post stays when the router picks it, with its master beside it (US-50 AC14)', async () => {
+    fakeFiles();
+    pick(['tm-collagen-video']);
+    const outcome = await runPipeline(thread, { ...entry, handle: 'tm-collagen-video' }, 'The video body.');
+    const articles = systemOf().find(t => t.startsWith('## Referenced Blog Articles'))!;
+    expect(articles).toContain("The old collagen video's text.");
+    expect(articles).toContain('Collagen peptides');
+    expect(outcome.replaced).toEqual([]);
+  });
+
+  it('Discord: an older post the router picks is replaced by its master, and the result says so (US-50 AC14)', async () => {
+    fakeFiles();
+    pick(['tm-collagen-video']);
+    const result = await platformChatCompletion({ message: 'Is collagen worth it?', history: [] });
+    const articles = systemOf().find(t => t.startsWith('## Referenced Blog Articles'))!;
+    expect(articles).toContain('Collagen peptides');
+    expect(articles).not.toContain("The old collagen video's text.");
+    expect(result.replaced).toEqual(['tm-collagen-video']);
+  });
+
+  it('a comment giving the post\'s handle names it (US-50 AC14)', async () => {
+    fakeFiles();
+    pick(['tm-collagen-video']);
+    const outcome = await runPipeline({ ...thread, text: 'In drstanfield.com/blogs/articles/tm-collagen-video you said collagen works. Still true?' }, entry, 'The video body.');
+    expect(systemOf().find(t => t.startsWith('## Referenced Blog Articles'))).toContain("The old collagen video's text.");
+    expect(outcome.replaced).toEqual([]);
   });
 });
 
@@ -485,5 +531,46 @@ describe('youtube-comment-dryrun uses the router view (US-50 AC3)', () => {
     expect(src).toContain('.replace(/\\{\\{ENTRY_COUNT\\}\\}/g, String(ROUTER_VIEW.length))');
     expect(src).not.toContain('TYPE_ORDER');
     expect(src).not.toContain('# KB Index');
+  });
+});
+
+// US-50 AC13 (R6): the chat's reduced form applies masterViews' malformed-view
+// rule, so a view over MAX_VIEW_CHARS never reaches the model by that path either.
+describe('reducedMaster keeps the malformed-view check (US-50 AC13)', () => {
+  // reducedMaster leaves the logging to its caller: reducedDrops() names what
+  // was dropped, and loadMatchedContent logs it once, only when a reduced form loads.
+  it('drops a view over MAX_VIEW_CHARS and keeps the safety sections with their reference lines', () => {
+    const md = `---\ntitle: "X"\nreviewed: "2026-10-20"\n---\n\n## Current view (reviewed 20 October 2026)\n\n${'v'.repeat(MAX_VIEW_CHARS)}\n\n## 5. Safety and Side Effects\n\nSafe [1].\n\n## 8. References\n\n[1] A ref.\n`;
+    const reduced = reducedMaster(md)!;
+    expect(reduced).not.toContain('vvv');
+    expect(reduced).toContain('Safe [1].');
+    expect(reduced).toMatch(/^\[1\] A ref\.$/m);
+    expect(reducedDrops(md)).toEqual([`current view over ${MAX_VIEW_CHARS} characters`]);
+  });
+
+  // AC12's checks hold on this path too: key points over MAX_KEY_POINTS_CHARS,
+  // or with fewer than 3 bullets, are dropped and named; sound ones keep their markers.
+  const withPoints = (points: string) => `---\ntitle: "X"\nreviewed: "2026-10-20"\n---\n\n## Current view (reviewed 20 October 2026)\n\nView.\n\n## Key safety points\n\n${points}\n\n## 5. Safety and Side Effects\n\nSafe [1].\n\n## 8. References\n\n[1] A ref.\n`;
+  it('drops key safety points over MAX_KEY_POINTS_CHARS, and names it', () => {
+    const md = withPoints(`- a\n- b\n- ${'k'.repeat(MAX_KEY_POINTS_CHARS)}`);
+    const reduced = reducedMaster(md)!;
+    expect(reduced).not.toContain('Key safety points');
+    expect(reduced).toContain('Safe [1].');
+    expect(reducedDrops(md)).toEqual([`key safety points over ${MAX_KEY_POINTS_CHARS} characters`]);
+  });
+
+  it('drops key safety points with fewer than 3 bullets, and names it', () => {
+    const md = withPoints('- a [1]\n- b');
+    expect(reducedMaster(md)!).not.toContain('Key safety points');
+    expect(reducedDrops(md)).toEqual(['key safety points malformed']);
+  });
+
+  it('keeps sound key safety points, markers and reference lines included', () => {
+    const md = withPoints('- a [1]\n- b\n- c');
+    const reduced = reducedMaster(md)!;
+    expect(reduced).toContain('Key safety points');
+    expect(reduced).toContain('- a [1]');
+    expect(reduced).toMatch(/^\[1\] A ref\.$/m);
+    expect(reducedDrops(md)).toEqual([]);
   });
 });

@@ -26,6 +26,11 @@ export interface HealthInputs {
   lpa?: number;         // nmol/L (canonical; US units display mg/dL)
   systolicBp?: number;  // mmHg
   diastolicBp?: number; // mmHg
+  /** US-07 AC7: the lab's printed creatinine eGFR (mL/min/1.73m²) and its day,
+   *  set by `withLabEgfr` only when it is the plan's eGFR (newer than the
+   *  creatinine, or from the same day). */
+  labEgfr?: number;
+  labEgfrDate?: string; // YYYY-MM-DD
   // User preference (stored as 1=si, 2=conventional in DB)
   unitSystem?: 'si' | 'conventional';
 }
@@ -43,7 +48,9 @@ export interface HealthResults {
   nonHdlCholesterol?: number; // mmol/L (total cholesterol - HDL)
   apoB?: number;              // g/L (passthrough from inputs)
   ldlC?: number;              // mmol/L (passthrough from inputs)
-  eGFR?: number;              // mL/min/1.73m² (CKD-EPI 2021)
+  eGFR?: number;              // mL/min/1.73m² (CKD-EPI 2021, or the lab's own: US-07 AC7)
+  /** The eGFR is the lab's printed one, not calculated from creatinine. */
+  eGFRFromLab?: true;
   lpa?: number;               // nmol/L (passthrough from inputs)
   hba1c?: number;             // mmol/mol IFCC (passthrough from inputs)
   age?: number;

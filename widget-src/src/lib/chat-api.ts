@@ -12,6 +12,7 @@ import type { ChatHistoryStore } from '../storage/chat-history-store';
 // On local-first builds sendMessage tells the server to trust the
 // client-supplied context instead of looking for a DB record.
 import { LOCAL_FIRST } from './build-flags';
+import { getChatArticle } from './assistant-config';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -43,7 +44,7 @@ export interface SendMessageResult {
   isFallback?: boolean;
   /** Form edits the model proposed via tool_use (pre-fill the form / update meds). */
   proposedEdits?: ProposedEdit[];
-  /** A subscription change for the customer to confirm (US-49; commerce, logged in). */
+  /** A subscription change for the customer to confirm (US-59; commerce, logged in). */
   subscriptionCard?: SubscriptionCard;
 }
 
@@ -377,6 +378,7 @@ export async function sendMessage(
           ...(guestInputs ? { guestInputs } : {}),
           ...(LOCAL_FIRST ? { history: history.slice(-MAX_HISTORY_MESSAGES).map(({ role, content }) => ({ role, content })) } : {}),
           ...chatBodyParts(sessionToken),
+          ...(getChatArticle() ? { articleHandle: getChatArticle() } : {}),
           stream: true,
           // US-16 AC2: this build applies a profile edit, so the server may propose one.
           ...(canApplyEdits ? { canApplyEdits: true, canApplyProfileEdits: true } : {}),

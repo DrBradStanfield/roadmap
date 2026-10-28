@@ -17,7 +17,7 @@ searches the knowledge base:
 - **`get-plan.ts`**: the CLI that reads the record and prints the plan,
   offline, in prose, JSON or HTML.
 - **`search-knowledge.ts`**: the CLI that searches Dr Brad's articles,
-  references, guidelines and pathways (`search-knowledge "<query>"`) and
+  references and guidelines (`search-knowledge "<query>"`) and
   prints one entry (`--article <handle>`, the get-article command). Lexical,
   offline, no model; the tool writes the query nowhere. No MCP tool yet (US-41).
   `search-knowledge-eval.ts` measures its recall over the router fixtures.

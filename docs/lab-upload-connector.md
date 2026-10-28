@@ -93,7 +93,9 @@ Every file read lands as a `documents[]` row, metadata-only: `fileRef: ''`,
 `contentHash`, sniffed `mimeType`, `extractedText: ''`,
 `metadata.importedVia: 'connector'`. A lab report takes the website's own
 archive shape (`pathology_report` / "Blood test results", hidden from the
-Documents list). A row records the file, not acceptance: declining every value
+Documents list), flag included: `metadata: { labArchive: true, importedVia,
+client? }` since 2026-10-23. One builder writes every row: `documentRow`
+(`document-rows.ts`), shared with `saveDocuments`. A row records the file, not acceptance: declining every value
 still files it. The website archives the blob behind such a row the next time
 the same bytes are uploaded there ("Save 1 Original"; lab-upload.md §1).
 

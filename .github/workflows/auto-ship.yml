@@ -6,10 +6,16 @@
 # this workflow verifies (same-repo claude/* PR, 'test' check green on that
 # exact sha, verdict comment authored by a trusted bot login, no 'hold'
 # label) → opens the veto issue (native email to Brad) → waits 30 min →
-# re-verifies (sha unchanged, still open, no 'hold') → labels 'ship' →
-# merges → dispatches deploy.yml, which runs its own gate job (the
+# re-verifies (sha unchanged, still open, no 'hold') → if the branch is behind
+# main, merges main into it via the API and re-runs 'test' on the new head
+# (US-46 AC5; up to 3 rounds) → labels 'ship' → merges at that exact sha → dispatches deploy.yml, which runs its own gate job (the
 # 'production' environment itself has had no wait timer or reviewer since
-# 2026-09-02). Total path to production ≈ 35 min, two veto emails.
+# 2026-09-02). Total path to production ≈ 35 min, up to ~80 min when the
+# branch is behind main, two veto emails.
+#
+# Timing: ~12 min per test wait (10 min poll plus API latency) + 30 min veto
+# + 3 x (~1 min update + ~12 min test wait) = ~80 min worst case, hence
+# timeout-minutes 90.
 #
 # VETO = close the PR or add the 'hold' label, any time before merge.
 #
@@ -41,7 +47,7 @@ jobs:
   ship:
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - name: Verify, notify, wait 30 min, re-verify, merge, dispatch deploy
         env:
@@ -89,18 +95,21 @@ jobs:
             [ -n "${path}" ] || return 2
             [ "${path}" = ".github/workflows/ci.yml" ]
           }
-          st=pending
-          for _ in $(seq 40); do
-            runs=$(ci_test); blip=no
-            for suite in $(jq -r '.[] | select(.conclusion == "success") | .check_suite.id' <<<"${runs}"); do
-              rc=0; from_ci "${suite}" || rc=$?
-              [ "${rc}" -eq 0 ] && st=success && break
-              [ "${rc}" -eq 2 ] && blip=yes
+          wait_test() {
+            st=pending
+            for _ in $(seq 40); do
+              runs=$(ci_test); blip=no
+              for suite in $(jq -r '.[] | select(.conclusion == "success") | .check_suite.id' <<<"${runs}"); do
+                rc=0; from_ci "${suite}" || rc=$?
+                [ "${rc}" -eq 0 ] && st=success && break
+                [ "${rc}" -eq 2 ] && blip=yes
+              done
+              [ "${st}" = success ] && break
+              if [ "${blip}" = no ] && jq -e 'length > 0 and all(.conclusion != null)' <<<"${runs}" >/dev/null; then st=failed; break; fi
+              sleep 15
             done
-            [ "${st}" = success ] && break
-            if [ "${blip}" = no ] && jq -e 'length > 0 and all(.conclusion != null)' <<<"${runs}" >/dev/null; then st=failed; break; fi
-            sleep 15
-          done
+          }
+          wait_test
           [ "${st}" = success ] || { echo "'test' check ${st} on ${HEAD_SHA} — not shipping."; [ "${st}" = failed ] && exit 0; exit 1; }
 
           # Veto window: notify (native email via issue), wait 30 minutes.
@@ -109,9 +118,9 @@ jobs:
           pr_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/pull/${PR}"
           title=$(pr_json | jq -r '.title')
           author=$(pr_json | jq -r '.user.login')
-          pr_body=$(pr_json | jq -r '.body // ""' | head -20)
+          pr_body=$(pr_json | jq -r '(.body // "") | split("\n")[:20] | join("\n")')
           files=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/files" \
-            --jq '.[] | "- \(.filename) (+\(.additions)/-\(.deletions))"' | head -15)
+            --jq '.[:15][] | "- \(.filename) (+\(.additions)/-\(.deletions))"')
           nfiles=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/files" --jq 'length')
           # The reviewer's verdict comment, minus the boilerplate header.
           review=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments?per_page=100" \
@@ -144,6 +153,11 @@ jobs:
               "After merge, deploy.yml runs its gate job (the production environment itself has no wait timer)." \
               "Fleet dashboard: https://drbradstanfield.github.io/roadmap/fleet.html")" \
             | grep -oE '[0-9]+$')
+
+          # Any abort after this point (set -e, a failed gh call) closes the
+          # veto issue instead of leaving it claiming a merge is coming.
+          step="waiting out the veto window"; finished=""; merged=""
+          trap 'rc=$?; if [ "${rc}" -ne 0 ] && [ -z "${finished}" ]; then if [ -n "${merged}" ]; then msg="Merged ${HEAD_SHA}, but dispatching deploy.yml failed: run Deploy by hand."; else msg="NOT merged: aborted (${step})."; fi; gh issue close "${issue}" -R "${GITHUB_REPOSITORY}" --comment "${msg}" || true; fi' EXIT
           sleep 1800
 
           # Re-verify nothing changed during the window.
@@ -158,10 +172,65 @@ jobs:
             echo "Vetoed: ${veto}"; exit 0
           fi
 
+          # Claim 7: never merge checks that ran against an older main. If the
+          # head is behind main, merge main into it via the API, run 'test' on
+          # the NEW head sha, and only then merge. The reviewer's APPROVE stays
+          # pinned to the original sha: the new commit must be exactly that sha
+          # plus main (two parents), nothing else.
+          skip() {
+            finished=1
+            gh issue close "${issue}" -R "${GITHUB_REPOSITORY}" --comment "NOT merged: $1."
+            echo "Skipped: $1"; exit "${2:-0}"
+          }
+          api() { gh api "repos/${GITHUB_REPOSITORY}/$1" "${@:2}"; }
+          # Sets $behind; an empty or non-numeric answer is not "not behind".
+          behind() {
+            behind=$(api "compare/${main_sha}...${HEAD_SHA}" --jq '.behind_by' 2>/dev/null) || behind=""
+            case "${behind}" in ''|*[!0-9]*) skip "could not compare with main";; esac
+          }
+          for _ in 1 2 3; do
+            main_sha=$(api commits/main --jq '.sha')
+            behind; [ "${behind}" -gt 0 ] || break
+            step="updating the branch to main"
+            # GITHUB_TOKEN cannot write workflow files, so the update fails if main changed them.
+            [ "$(api "compare/${HEAD_SHA}...${main_sha}" --jq '[.files[].filename | startswith(".github/workflows/")] | any')" = false ] \
+              || skip "behind main and the update needs workflow-file changes; rebase by hand"
+            api "pulls/${PR}/update-branch" -X PUT -f expected_head_sha="${HEAD_SHA}" >/dev/null \
+              || skip "could not update the branch to current main (conflict or head moved)"
+            new_sha="${HEAD_SHA}"
+            for _ in $(seq 20); do
+              new_sha=$(pr_json | jq -r '.head.sha'); [ "${new_sha}" != "${HEAD_SHA}" ] && break; sleep 3
+            done
+            [ "${new_sha}" != "${HEAD_SHA}" ] || skip "branch update did not produce a new head"
+            api "commits/${new_sha}" --jq '[.parents[].sha] | sort' \
+              | jq -e --arg a "${HEAD_SHA}" --arg b "${main_sha}" '. == ([$a, $b] | sort)' >/dev/null \
+              || skip "branch changed during update"
+            # Also GitHub's own signed commit, not a push by someone with write access.
+            [ "$(api "commits/${new_sha}" --jq '.commit.verification.verified and .committer.login == "web-flow"')" = true ] \
+              || skip "branch changed during update"
+            HEAD_SHA="${new_sha}"
+            step="running 'test' on the updated head"
+            # Pushes made with GITHUB_TOKEN do not trigger workflows: run CI by hand.
+            gh workflow run ci.yml -R "${GITHUB_REPOSITORY}" --ref "${head_ref}"
+            wait_test
+            # US-46 AC3/AC4: failed = exit 0, still pending = red.
+            [ "${st}" = success ] || skip "'test' ${st} on ${HEAD_SHA} after updating to main" "$([ "${st}" = failed ] && echo 0 || echo 1)"
+            labels=$(pr_json | jq -r '[.labels[].name] | join(",")')
+            [ "$(pr_json | jq -r '.state')" = "open" ] || skip "PR closed while updating"
+            case ",${labels}," in *,hold,*) skip "'hold' label added while updating";; esac
+          done
+          main_sha=$(api commits/main --jq '.sha')
+          behind; [ "${behind}" -eq 0 ] \
+            || skip "main keeps moving; branch still behind after 3 updates"
+
+          step="merging"
           gh pr edit "${PR}" -R "${GITHUB_REPOSITORY}" --add-label ship || true
-          gh pr merge "${PR}" -R "${GITHUB_REPOSITORY}" --merge
+          gh pr merge "${PR}" -R "${GITHUB_REPOSITORY}" --merge --match-head-commit "${HEAD_SHA}"
+          merged=1
+          step="merged; dispatching deploy.yml (merge already happened)"
           # GITHUB_TOKEN-caused events don't trigger workflows, so dispatch
           # the deploy explicitly (its gate + environment window still apply).
           gh workflow run deploy.yml -R "${GITHUB_REPOSITORY}" --ref main -f surfaces=all
+          finished=1
           gh issue close "${issue}" -R "${GITHUB_REPOSITORY}" \
             --comment "Merged ${HEAD_SHA} and dispatched deploy.yml (its own 30-min window + veto email follows)."

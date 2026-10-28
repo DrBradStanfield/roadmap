@@ -6,7 +6,7 @@
  * two modules.
  */
 import { useState } from 'react';
-import { isStorageFailure } from '@roadmap/health-core';
+import { copyCloudDown, isStorageFailure, liftDeviceCopy } from '@roadmap/health-core';
 import {
   DropboxAdapter,
   DriveGrantRefusedError,
@@ -14,14 +14,12 @@ import {
   GitHubAdapter,
   WebDavAdapter,
   LocalStorageAdapter,
-  copyCloudDownToDevice,
   markSyncPending,
-  ROADMAP_FILE_NAME,
-  saveRoadmapFileInto,
   signalLogOff,
   type StorageAdapter,
 } from '../src/storage';
 import { beginRoadmapLogOff } from '../src/storage/roadmap-store';
+import { webRecordHost } from '../src/storage/web-record-host';
 import { dropboxConfig } from './dropbox-config';
 import { clearAutoEnrolBlock } from './reminders';
 import { googleDriveConfig } from './google-config';
@@ -108,24 +106,18 @@ export const PROVIDER_LABELS: Record<Exclude<Backend, 'local'>, string> = {
 };
 
 /**
- * Lift existing on-device data into a freshly-connected cloud (first connect).
- * A corrupt local file is skipped (unrecoverable anyway — never blocks the
- * connect); a CLOUD save failure propagates. App code calls the policy wrapper
- * `liftLocalInto` below; this throwing core stays exported for tests.
+ * Lift existing on-device data into a freshly-connected cloud (first connect),
+ * by health-core's lift (record-transfer.ts): a plain merge, so against an
+ * erased cloud file this device's rows survive because no erase listed them
+ * (US-09 AC23). A corrupt local file is skipped (unrecoverable anyway — never
+ * blocks the connect); a CLOUD save failure marks the device copy pending and
+ * propagates. App code calls the policy wrapper `liftLocalInto` below; this
+ * throwing core stays exported for tests.
  */
 export async function migrateLocalInto(adapter: StorageAdapter): Promise<void> {
-  let body: unknown;
-  try {
-    ({ body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME));
-  } catch (error) {
-    console.warn('On-device data unreadable — connecting without the lift');
-    return;
-  }
-  if (body == null) return;
-  // saveRoadmapFileInto merges with whatever is already in the cloud. Against
-  // an erased cloud file this device's rows survive because no erase listed
-  // them (US-09 AC23).
-  await saveRoadmapFileInto(adapter, body);
+  const host = webRecordHost(adapter);
+  if (host.tier !== 'cloud') return;
+  if ((await liftDeviceCopy(host)) === 'unreadable') console.warn('On-device data unreadable — connecting without the lift');
 }
 
 /**
@@ -134,7 +126,7 @@ export async function migrateLocalInto(adapter: StorageAdapter): Promise<void> {
  * itself — the guest-data lift never blocks it and never mislabels it as
  * "connection failed". A failed lift MUST still be observable (a silent lift
  * failure is exactly how the US-09 AC3 no-op shipped): Sentry + console, plus
- * the pending-mirror marker — RoadmapStore.create() (which runs right after)
+ * the pending-mirror marker the lift sets — RoadmapStore.create() (which runs right after)
  * and every later session then merge the on-device copy up automatically, and
  * the sync control shows "still waiting to sync" until the marker clears.
  */
@@ -147,7 +139,6 @@ export async function liftLocalInto(adapter: StorageAdapter, backend: Backend): 
     await migrateLocalInto(adapter);
   } catch (error) {
     console.warn('Guest-data lift on connect failed');
-    markSyncPending();
     Sentry.captureException(recordFailure(error, 'Cloud sync failed'), {
       tags: { area: 'cloud-sync', op: 'migrate-up', backend, ...failureTags(error) },
     });
@@ -329,7 +320,6 @@ export async function prepareSwitch(current: Backend): Promise<void> {
 
 /** The adapter-level copy-down (exported for tests; policy/catch stays above). */
 export async function copyDownFrom(adapter: StorageAdapter): Promise<void> {
-  const { body } = await adapter.read(ROADMAP_FILE_NAME);
-  if (body == null) return;
-  await copyCloudDownToDevice(body);
+  const host = webRecordHost(adapter);
+  if (host.tier === 'cloud') await copyCloudDown(host);
 }

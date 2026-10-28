@@ -7,378 +7,351 @@ type: "reference"
 tags: ["Supplements"]
 keywords: ["same", "s-adenosyl-methionine", "sam-e", "ademetionine", "depression", "anxiety", "osteoarthritis", "joint health", "liver", "fibromyalgia", "cognitive", "brain health", "inflammation", "betaine", "tmg", "folate", "vitamin b12", "homocysteine", "cardiovascular", "methylation", "serotonin", "dopamine", "glutathione", "parkinson"]
 product: "microvitamin"
-summary: "Reference on SAMe: depression, joint pain (osteoarthritis), liver health, fibromyalgia. Enteric-coated tosylate form; dosing 800-1,600 mg/day. Avoid in bipolar disorder; caution with antidepressants. Always discuss with your doctor."
+summary: "SAMe may help depression, but trial evidence is low quality. In osteoarthritis it eased pain about as well as NSAIDs in head-to-head trials, but pooled placebo trials were inconclusive. It can trigger mania. Talk to your doctor first if you have bipolar disorder or take an antidepressant."
+reviewed: "2026-10-26"
+sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/27727432/","checked":"2026-10-26","fingerprint":"sha256:3b229fad9512f6bc5eb97060ef2d122597ec1894f0518355b1f801e12e1d5894"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/same-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/same-benefits-forms-dosing-and-side-effects)*
 
+## Current evidence position
+
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. A 2016 Cochrane review of eight trials in 934 adults with major depression found that SAMe did about as well as imipramine or escitalopram and beat placebo as an add-on to an SSRI in one trial, but the evidence was low or very low quality and SAMe alone did not clearly beat placebo [2]; the add-on trial used 800 mg twice a day [11]. For knee or hip osteoarthritis, a 2009 Cochrane review of four small placebo-controlled trials was inconclusive and advised against routine use [20]. In alcoholic liver disease, a 2006 Cochrane review, since withdrawn as out of date, found no evidence for or against SAMe [27][48], and a 24-week trial of 1.2 g a day found it no better than placebo [49]. SAMe has triggered mania, including in people with bipolar disorder [45], and with antidepressants it was linked to one case of serotonin syndrome-like symptoms [12], so anyone with bipolar disorder or taking an antidepressant should talk to a doctor first.
+
+## Key safety points
+
+- With antidepressants, SAMe was linked to serotonin syndrome-like symptoms in a trial [12] and to a toxic interaction with clomipramine in a case report [39]. Do not stop or swap an antidepressant for SAMe without your doctor's advice. Serotonin syndrome can be deadly: for tremor, a racing heart, a high temperature, agitation or severe confusion, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department [40].
+- SAMe has set off mania or hypomania, including in people with bipolar disorder [2][45], and one volunteer had a mixed manic state with suicidal thoughts [33]. If you have bipolar disorder, take it only if your psychiatrist agrees. For suicidal thoughts, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- SAMe may decrease the effects of levodopa [53], and SAMe injected into rat brains caused Parkinson's-like movement problems [47]. If you have Parkinson's disease, ask your neurologist first.
+- In theory SAMe could promote Pneumocystis infection, so if you are immunocompromised, such as with HIV, ask your doctor first [53].
+- Stomach discomfort (19%) and diarrhoea (20%) were the most frequent side effects of SAMe in a 12-week trial [38]; in a small Parkinson's study, 2 of 13 people stopped because of increased anxiety [23].
+
+## Brad's videos on this topic
+
+None yet.
+
 ## 1. Overview
 
-S-Adenosyl-L-methionine (SAMe) is a naturally occurring compound found in virtually every cell in the body. It is synthesized endogenously from the essential amino acid methionine and adenosine triphosphate (ATP) in a reaction catalyzed by the enzyme methionine adenosyltransferase (MAT) [1][2]. SAMe serves as the principal methyl donor in the body, participating in over 100 methylation reactions that regulate gene expression, neurotransmitter synthesis, protein function, and lipid metabolism [1][2][3]. After donating its methyl group, SAMe is converted to S-adenosylhomocysteine (SAH), which is subsequently hydrolyzed to homocysteine [1][2].
+S-adenosyl-L-methionine (SAMe) is present in all living cells [1]. Cells make it from methionine in a reaction run by the enzyme methionine adenosyltransferase (MAT) [4]. SAMe is the starting point for three pathways: methylation, aminopropylation and transsulfuration [1]. As a methyl donor it acts on almost 100 different substrates, including DNA, RNA, proteins and lipids [51].
 
-SAMe participates in three critical metabolic pathways [1][2][3]:
+The three pathways work as follows:
 
-- **Transmethylation:** SAMe donates methyl groups to DNA, RNA, proteins, phospholipids, and small molecules including neurotransmitters. This is the most quantitatively significant pathway, accounting for the majority of SAMe utilization. Methylation of phospholipids is essential for cell membrane fluidity and receptor function. Methylation of neurotransmitter precursors contributes to the synthesis of dopamine, serotonin, norepinephrine, and melatonin.
-- **Transsulfuration:** After donating its methyl group, SAMe is converted through a series of steps to homocysteine, which can then be irreversibly converted to cysteine via the transsulfuration pathway. Cysteine is a precursor to glutathione, the body's principal intracellular antioxidant. This pathway requires vitamin B6 as a cofactor.
-- **Aminopropylation (polyamine synthesis):** SAMe serves as the aminopropyl donor for the synthesis of polyamines (spermidine and spermine), which are essential for cell growth, differentiation, and DNA stabilization.
+- **Transmethylation:** SAMe hands a methyl group to DNA, RNA, proteins, lipids and other molecules [51], including those involved in making brain chemical messengers [3].
+- **Transsulfuration:** through this route SAMe takes part in making glutathione, the main antioxidant inside cells [1][49].
+- **Aminopropylation (polyamine synthesis):** SAMe is the precursor for this route, which makes polyamines [1].
 
-The body's ability to synthesize SAMe depends on adequate supplies of methionine (from dietary protein), folate (as methylfolate, which regenerates methionine from homocysteine), and vitamin B12 (a cofactor for methionine synthase) [1][2]. Deficiencies of folate or B12 impair SAMe production, which may contribute to the neuropsychiatric symptoms seen in B-vitamin deficiency states [2][3].
+Making SAMe depends on methionine and on folate and vitamin B12, which recycle homocysteine back to methionine [50][51]. Betaine (TMG) and choline offer a second recycling route [31].
 
-SAMe levels decline with age and are reduced in several disease states. Cerebrospinal fluid SAMe levels are low in patients with depression, Alzheimer's disease, and HIV-related neurological disease [2][3]. Hepatic SAMe synthesis is impaired in chronic liver disease because the liver is the primary site of SAMe production [4]. These observations have driven interest in SAMe supplementation for depression, osteoarthritis, and liver conditions.
-
-SAMe was first described in 1952 by the Italian biochemist Giulio Cantoni [2]. It has been available as a prescription medication in Italy and other European countries since the 1970s — initially as an injectable formulation and later in oral form. In the United States, SAMe became available as an over-the-counter dietary supplement in 1999 following passage of the Dietary Supplement Health and Education Act [2][3]. It is one of the most extensively studied natural compounds for depression and osteoarthritis, with clinical research spanning more than four decades.
+SAMe is abundant in the liver [29], and every form of chronic liver injury lowers its production there [4]. SAMe was first described in 1952 [1], and clinical studies have covered depression, dementia, vacuolar myelopathy (a spinal cord disorder), liver disease and osteoarthritis [1]. It has been a prescription drug in Europe for depression and arthritis since 1975 and a supplement in the US since 1999 [35]. An evidence report for the US Agency for Healthcare Research and Quality (AHRQ) reviewed its use in depression, osteoarthritis and liver disease [37], and a 2017 review found promising but limited evidence for depression [42].
 
 ## 2. Forms and Bioavailability
 
 ### Chemical Forms and Stabilization
 
-SAMe is inherently unstable and susceptible to degradation when exposed to moisture, heat, and light [5][6]. To improve stability, SAMe is manufactured as a salt complex with various stabilizing compounds. The choice of stabilizing salt approximately doubles the molecular weight — meaning a tablet labeled as containing 400 mg of the SAMe salt complex delivers only about 200 mg of active SAMe [5][6].
-
-The most common stabilized forms include:
-
-| Salt Form | Notes |
-|-----------|-------|
-| SAMe tosylate (tosylate disulfate) | Most widely used form in US supplements and European clinical trials. The majority of depression and osteoarthritis research used this form [5][6]. |
-| SAMe disulfate ditosylate | A closely related variant of the tosylate form. Pharmacologically equivalent [5][6]. |
-| SAMe 1,4-butanedisulfonate (Actimet) | Used in some European pharmaceutical products. One in-vitro study found it did not stimulate brain cells compared to free-form SAMe (Travagli, Eur J Pharmacol 1994), though this was in isolated tissue, not in humans [5]. A clinical trial found 1,600 mg of the butanedisulfonate form (providing 800 mg active SAMe) improved depression symptoms comparably to 50 mg imipramine over 6 weeks (Delle Chiaie, Am J Clin Nutr 2002) [7]. |
-
-An accurate Supplement Facts label should list the amount of active SAMe separately from the salt complex weight. Most products in the US list the active SAMe amount (e.g., "SAMe 200 mg from 400 mg S-adenosyl-L-methionine disulfate tosylate"), but not all do. Consumers should look for the active SAMe amount when comparing products [5][6].
-
-There is no definitive evidence that one salt form is clinically superior to another [5][6]. Most clinical trials on osteoarthritis used the tosylate or disulfate tosylate form, and the major depression studies have used both the tosylate and butanedisulfonate forms with broadly comparable results [5][6][7].
+The two multicentre trials that compared SAMe with imipramine used SAMe 1,4-butanedisulfonate, by mouth in one and by injection in the other [7].
 
 ### Oral Bioavailability
 
-Oral bioavailability of SAMe is low, estimated at approximately 2-5% due to extensive first-pass metabolism in the gut wall and liver [2][3]. Despite this low bioavailability, oral SAMe supplementation at therapeutic doses (800-1,600 mg/day) has demonstrated clinical efficacy in multiple trials for depression and osteoarthritis, indicating that sufficient SAMe reaches target tissues [2][7][8].
-
-Peak plasma concentrations are reached approximately 3-5 hours after oral ingestion [2][3]. The half-life of orally administered SAMe is approximately 100 minutes [2].
-
-### Enteric Coating and Absorption
-
-Most SAMe supplements use enteric coating to protect the compound from degradation by stomach acid [5][6]. The enteric coating allows the tablet to pass through the stomach intact and dissolve in the more alkaline environment of the small intestine, where SAMe is absorbed. Enteric-coated products also reduce the likelihood of nausea and stomach upset, which are the most common side effects of SAMe supplementation [5][6].
-
-It is generally recommended that SAMe be taken on an empty stomach to maximize absorption, although this recommendation is not strongly supported by pharmacokinetic data [5]. If nausea occurs, taking SAMe with food or switching to an enteric-coated formulation may help [5][6].
-
-### Storage Considerations
-
-SAMe attracts moisture from the air (it is hygroscopic), making it very susceptible to degradation when exposed to humidity [5][6]. For this reason, SAMe is often sold in blister packaging in which each tablet is individually sealed. Products sold in bottles should be kept sealed, stored away from heat and moisture, and any desiccant pack included in the bottle should be retained [5]. A slight yellow color is normal — SAMe is inherently off-white to light yellow — and some manufacturers add colorants to adjust the appearance [5].
+SAMe taken by mouth is absorbed. In 15 healthy volunteers whose dose was built up over 5 days to 1,600 mg a day, blood SAMe levels rose significantly [33], and animal studies showed absorption from the gut [41].
 
 ## 3. Evidence for Health Benefits
 
 ### Depression
 
-SAMe is one of the most extensively studied natural therapies for major depressive disorder (MDD), with research dating back to the 1970s. The evidence suggests SAMe is as effective as older tricyclic antidepressants (TCAs) for treating depression, though it may be less effective than modern selective serotonin reuptake inhibitors (SSRIs) [2][7][8][9][10].
+Depression is the most studied use of SAMe. The 2016 Cochrane review included eight trials in 934 adults, comparing SAMe with placebo, imipramine, desipramine or escitalopram [2]. Low quality evidence showed SAMe and imipramine improved symptoms by similar amounts (SMD -0.04, 95% CI -0.34 to 0.27; 619 participants; 4 studies), and one trial found little difference from escitalopram [2]. As the only treatment, SAMe did not clearly beat placebo (SMD -0.54, 95% CI -1.54 to 0.46; 142 participants; 2 studies; very low quality evidence) [2]. The authors could not draw firm conclusions and called for large, high-quality trials [2]. A 2020 review of eight trials with 1,011 people found SAMe better than placebo in three of five comparisons and no different from imipramine or escitalopram in four [34].
 
-**Mechanism:** SAMe's antidepressant action is believed to operate through multiple pathways. As the principal methyl donor, SAMe is required for the synthesis and metabolism of monoamine neurotransmitters — serotonin, dopamine, and norepinephrine — that are central to mood regulation [2][3]. SAMe methylates phospholipids in neuronal cell membranes, increasing membrane fluidity and improving neurotransmitter receptor function [2][3]. It also supports the production of glutathione, which protects neurons from oxidative stress. Additionally, SAMe influences epigenetic gene regulation through DNA and histone methylation, mechanisms increasingly recognized as relevant to depression pathophysiology [2][3].
+Do not stop or swap a prescribed antidepressant for SAMe without your doctor's advice.
 
-**SAMe vs. tricyclic antidepressants:** Several RCTs have demonstrated that SAMe is comparable in efficacy to tricyclic antidepressants for treating major depression:
+**Mechanism:** SAMe is a methyl donor involved in making several brain chemical messengers, and it has been proposed to have antidepressant properties [3].
 
-- Delle Chiaie et al. (Am J Clin Nutr 2002) conducted a double-blind trial comparing 1,600 mg/day of SAMe (as the 1,4-butanedisulfonate form, providing 800 mg active SAMe) to 150 mg/day of imipramine for 6 weeks in patients with major depression. SAMe was as effective as imipramine in reducing Hamilton Depression Rating Scale (HAM-D) scores. Response rates were similar between the groups, and SAMe was significantly better tolerated — the dropout rate due to adverse effects was substantially lower in the SAMe group [7].
-- Salmaggi et al. (Psychother Psychosom 1993) compared oral SAMe 1,600 mg/day to imipramine 150 mg/day in a 6-week double-blind trial. Both treatments produced comparable improvements in depression scores, with SAMe showing a more favorable side effect profile [8].
-- Kagan et al. (Am J Psychiatry 1990) reported that SAMe at 1,600 mg/day was as effective as imipramine at 150 mg/day in treating major depression, with onset of antidepressant effect within 1-2 weeks [9].
+**SAMe vs. other antidepressants:** Older trials compared SAMe with the tricyclic imipramine, and a newer one with escitalopram:
 
-**Meta-analysis:** Bressa (Acta Neurol Scand Suppl 1994) conducted a meta-analysis of studies comparing SAMe to placebo and to tricyclic antidepressants. The analysis found a global effect size of 17% favoring SAMe over placebo, and confirmed that SAMe was comparable to TCAs in efficacy with a superior side effect profile [10].
+- Delle Chiaie et al. (Am J Clin Nutr 2002) ran two double-blind multicentre studies in major depression. In the first, 143 patients took 1,600 mg of oral SAMe a day and 138 took 150 mg of imipramine a day for 6 weeks; in the second, SAMe was given by injection for 4 weeks. Neither study found a difference in any efficacy measure, and adverse events were significantly fewer with SAMe [7].
+- Mischoulon et al. (J Clin Psychiatry 2014) compared SAMe 1,600 to 3,200 mg a day, escitalopram 10 to 20 mg a day and placebo for 12 weeks in 189 outpatients. All three groups improved by about 5 to 6 points, with no significant differences: response rates were 36% for SAMe, 34% for escitalopram and 30% for placebo [38].
 
-**SAMe as adjunctive therapy to SSRIs/SRIs:** One of the most clinically relevant applications of SAMe is as an add-on treatment for patients who do not respond adequately to standard antidepressant medications:
+**Placebo-controlled trials and pooled analyses:** Salmaggi et al. (Psychother Psychosom 1993) gave 80 depressed women aged 45 to 59, after menopause, SAMe 1,600 mg a day or placebo for 30 days; symptoms improved more with SAMe from day 10 [8]. Kagan et al. (Am J Psychiatry 1990) found oral SAMe effective with few side effects in 15 inpatients with major depression [9]. A 1994 meta-analysis by Bressa found a higher response rate than placebo, with a global effect size of 17% to 38% depending on how response was defined, and an effect comparable with tricyclic antidepressants [10].
 
-- Papakostas et al. (Am J Psychiatry 2010; clarified in Fleish, Am J Psychiatry 2010) conducted a randomized, double-blind, placebo-controlled trial in patients with major depressive disorder who had not responded to treatment with a serotonin reuptake inhibitor (SRI). Patients received 800 mg of SAMe twice daily (total 1,600 mg/day) or placebo in addition to their existing SRI for 6 weeks. The response rate was 46.1% in the SAMe group versus 35.8% in the placebo group, and the remission rate was 25.8% versus 11.7% — a significant difference. The study concluded that SAMe is an effective and safe adjunctive treatment for SRI non-responders [11].
+**SAMe as adjunctive therapy to SSRIs/SRIs:** One trial found a benefit from adding SAMe to a serotonin reuptake inhibitor:
 
-**Lower-dose adjunctive studies (mixed results):** Not all adjunctive trials have been positive, particularly at lower doses:
+- Papakostas et al. (Am J Psychiatry 2010) gave 73 people with major depression who had not responded to a serotonin reuptake inhibitor (SRI) SAMe (target 800 mg twice a day) or placebo for 6 weeks, alongside their usual SRI. Response rates were 36.1% with SAMe and 17.6% with placebo, and remission rates 25.8% and 11.7%. The authors called the results preliminary [11].
 
-- Sarris et al. (Eur Neuropsychopharmacol 2018) tested a lower daily dose of SAMe (800 mg total, plus 500 mcg folinic acid and 200 mcg vitamin B12, given in two divided doses) as an adjunct to antidepressant medication (SSRIs, SNRIs, NaRIs, tetracyclics, and 5-HT2c antagonists) in Australian men and women with major depressive disorder. At this lower dose, SAMe did not improve symptoms more than placebo. One suspected serotonergic reaction leading to hospitalization occurred in the SAMe group, though it resolved quickly and serotonin syndrome was not confirmed [12].
-- Sarris et al. (Psychopharmacology (Berl) 2019) studied the same dose of SAMe (800 mg/day with B vitamins) as monotherapy in 41 men and women (average age 44) with major depressive disorder who were not taking antidepressants. SAMe produced a slight but statistically significant improvement in symptoms only in those who began the study with the mildest form of depression. There was no significant improvement in those with moderate to severe depression. Seven participants in the SAMe group reported an unusual taste in the mouth, which was not reported in the placebo group [13].
+**Lower-dose trials (both negative):** Two trials gave 800 mg a day of SAMe with folinic acid and vitamin B12, one as an add-on and one as monotherapy, and neither clearly beat placebo:
 
-**Dose-response relationship:** The evidence suggests a dose-response pattern for SAMe's antidepressant effects. The most consistently positive results come from studies using 1,600 mg/day, the dose used in most successful monotherapy and adjunctive trials [7][8][9][11]. The 800 mg/day dose tested by Sarris et al. was not effective as an adjunct to antidepressants [12], suggesting that higher doses may be needed for reliable antidepressant activity.
+- Sarris et al. (Eur Neuropsychopharmacol 2018) added SAMe with folinic acid and vitamin B12, or placebo, to antidepressants for 8 weeks in 107 outpatients whose depression had not remitted. There was no significant difference between groups: response rates were 54.3% with the SAMe combination and 50.0% with placebo. SAMe was linked to one case of serotonin syndrome-like symptoms [12].
+- Sarris et al. (Psychopharmacology (Berl) 2020) gave 49 people with mild to moderate major depression, not taking antidepressants, SAMe with folinic acid and vitamin B12, or placebo, for 8 weeks. The combination reduced scores by 3.76 points more than placebo, but the difference was not significant (p = 0.13); an exploratory analysis found a benefit in those with milder depression (p = 0.045) [13].
 
-**Speed of onset:** Multiple studies note that SAMe may have a faster onset of antidepressant action compared to tricyclic antidepressants, with some patients showing improvement within 1-2 weeks [2][9].
+**Dose-response relationship:** The positive add-on trial used 800 mg twice a day [11]; the negative one used 800 mg a day with folinic acid and vitamin B12 [12]. A 2002 review noted that some people may need doses higher than 1,600 mg a day [3].
+
+**Speed of onset:** Kagan et al. described a rapid onset of action [9], and a 2002 review suggested SAMe may act faster than conventional antidepressants [3].
 
 ### Osteoarthritis
 
-SAMe has been studied for osteoarthritis of the knee, hip, hand, and spine, with evidence suggesting it may reduce pain and disability — though the quality of the evidence is mixed and any benefit over placebo may be small [5][14][15][16][17][18].
+Evidence for osteoarthritis is mixed. The 2009 Cochrane review by Rutjes et al. pooled four placebo-controlled trials with 656 patients with knee or hip osteoarthritis. The pain difference was small (SMD -0.17, 95% CI -0.34 to 0.01), about 0.4 cm on a 10 cm scale, and the trials were mainly small and of questionable quality; the review was inconclusive and advised against routine use [20].
 
-**Mechanism:** SAMe is involved in the synthesis of proteoglycans and glycosaminoglycans, which are essential structural components of cartilage [2][3]. In vitro and animal studies have shown that SAMe stimulates chondrocyte proteoglycan synthesis and may have anti-inflammatory properties [2]. SAMe also supports glutathione production, which may reduce oxidative stress in joint tissues [2][3].
+An earlier meta-analysis by Soeken et al. (J Fam Pract 2002) pooled 11 studies. SAMe reduced functional limitation more than placebo but not pain, based on only 2 studies, and seemed comparable with NSAIDs, with fewer adverse effects [21].
 
-**SAMe vs. NSAIDs (active comparator trials):** The strongest evidence for SAMe in osteoarthritis comes from trials comparing it to nonsteroidal anti-inflammatory drugs, in which SAMe (typically 1,200 mg/day) has performed comparably to conventional anti-inflammatory medications:
+**Mechanism:** SAMe has anti-inflammatory and pain-relieving effects [14]; animal studies showed anti-inflammatory activity when it was taken by mouth [41].
 
-- Kim et al. (Clin Ther 2009) compared SAMe 1,200 mg/day to nabumetone (a COX-2 preferential NSAID) in patients with knee osteoarthritis. After 8 weeks, both treatments produced similar improvements in pain and function, although SAMe took longer to reach maximum effect [14].
-- Najm et al. (BMC Musculoskelet Disord 2004) compared SAMe 1,200 mg/day to celecoxib 200 mg/day (a COX-2 selective NSAID) in a crossover trial of patients with knee osteoarthritis. At the end of the first month, celecoxib was superior, but by the end of the second month, SAMe and celecoxib were equally effective. This supports the clinical observation that SAMe has a slower onset of action but comparable long-term efficacy [15].
-- Muller-Fassbender et al. (Am J Med 1987) conducted one of the landmark early trials comparing SAMe 1,200 mg/day to ibuprofen 1,200 mg/day in 150 patients with osteoarthritis of the hip, knee, spine, and hand over 4 weeks. Both treatments produced equivalent reductions in pain and morning stiffness, but SAMe was significantly better tolerated — with fewer gastrointestinal side effects [16].
-- Caruso and Pietrogrande (Am J Med 1987) compared SAMe 1,200 mg/day to placebo in a large multicenter Italian trial of patients with osteoarthritis of the knee, hip, hand, and spine. SAMe was more effective than placebo at reducing pain [17].
-- Domljan et al. (Int J Clin Pharmacol Ther Toxicol 1989) found that a regimen of SAMe 1,200 mg/day for the first week followed by 800 mg/day thereafter was as effective as naproxen (Aleve) for the relief of knee pain [18].
+**SAMe vs. NSAIDs (active comparator trials):** Several trials compared SAMe with nonsteroidal anti-inflammatory drugs (NSAIDs):
 
-**SAMe vs. placebo (mixed results):** When compared directly to placebo (rather than active comparator drugs), the results have been less consistently positive:
+- Caruso and Pietrogrande (Am J Med 1987) enrolled 734 patients with hip, knee, spine or hand osteoarthritis. SAMe 1,200 mg a day relieved pain as well as naproxen 750 mg a day, both beat placebo (p less than 0.01), and SAMe was better tolerated than naproxen [17].
+- Kim et al. (Clin Ther 2009) randomised 134 Korean patients with knee osteoarthritis to SAMe 1,200 mg a day or nabumetone 1,000 mg a day for 8 weeks. Pain fell in both groups, with no significant difference in pain relief or tolerability [14].
+- Najm et al. (BMC Musculoskelet Disord 2004) compared SAMe 1,200 mg with celecoxib 200 mg in a 16-week crossover trial in 61 adults with knee osteoarthritis. Celecoxib reduced pain more in the first month, but by the second month the groups did not differ. The authors concluded SAMe has a slower onset of action but is as effective as celecoxib [15].
+- Domljan et al. (Int J Clin Pharmacol Ther Toxicol 1989) gave 20 patients with knee osteoarthritis SAMe 1,200 mg a day in week 1 and then 800 mg a day, or naproxen, and found no significant difference after 6 weeks [18].
 
-- The Caruso et al. study (Am J Med 1987) did show superiority over placebo for pain reduction in a multicenter trial [17].
-- Bradley et al. (J Rheumatol 1994) conducted a placebo-controlled trial that yielded less convincing results [19].
-- Rutjes et al. (Cochrane Database Syst Rev 2009) performed a Cochrane analysis of SAMe for osteoarthritis and concluded that SAMe did not significantly reduce pain and only slightly improved functional limitation, at best, among people with osteoarthritis. The authors noted that the quality of available studies was generally low [20].
-- Soeken et al. (J Fam Pract 2002) similarly found modest effects in a systematic review, noting that the evidence was limited by study quality [21].
+**SAMe vs. placebo (mixed results):** Single placebo-controlled trials have been less consistent:
 
-**Limitations:** SAMe is not likely to help with severe osteoarthritis where cartilage has deteriorated to the point of bone-on-bone contact [5]. The evidence base is strongest for mild to moderate osteoarthritis. The clinical advantage of SAMe over NSAIDs is its superior gastrointestinal tolerability — it does not carry the risk of gastric ulceration, bleeding, or cardiovascular events associated with long-term NSAID use [5][14][15][16].
+- Bradley et al. (J Rheumatol 1994) gave 81 patients with knee osteoarthritis 5 days of SAMe by injection followed by tablets, or placebo. SAMe reduced pain more than placebo at the site where patients had milder osteoarthritis, but not at the site where it was more severe [19].
 
-**Onset of action:** A consistent finding across trials is that SAMe has a slower onset of action than NSAIDs — typically requiring 2-5 weeks before noticeable pain relief, compared to days for NSAIDs. However, once established, the benefit tends to persist and may last longer after discontinuation [5][14][15].
+**Limitations:** The placebo-controlled evidence is small and of poor quality [20].
+
+**Onset of action:** SAMe took longer than celecoxib to work [15]. In the placebo-controlled trial that used injections first, benefit appeared as early as 14 days [19].
 
 ### Depression in Parkinson's Disease
 
-Depression is highly prevalent in Parkinson's disease, affecting 40-50% of patients. Treatment is complicated by the fact that Parkinson's disease involves depletion of dopamine, and many antidepressant medications can interact with dopaminergic therapies. SAMe has been investigated as an alternative approach in this population [22][23].
+SAMe has been tested for depression in people with Parkinson's disease.
 
-- Carrieri et al. (Curr Ther Res 1990) studied 21 people with Parkinson's disease and comorbid major depression. Patients received 400 mg of oral SAMe twice daily (800 mg/day total) while also receiving 200 mg of SAMe intramuscularly for 30 days. Depression symptoms improved significantly compared to placebo, although motor symptoms of Parkinson's disease were unchanged [22].
-- Di Rocco et al. (Mov Disord 2000) conducted an open-label study in 11 people with Parkinson's disease and depression. Patients received 800 to 3,600 mg of SAMe daily for 10 weeks. Depression symptoms (based on the Hamilton Depression Scale) improved by at least 50% in all but one patient. While there was no significant change in Parkinson's disease motor symptoms as measured by the Unified Parkinson's Disease Rating Scale (UPDRS), eight participants reported feeling increased "on" time (i.e., their Parkinson's symptoms felt better controlled by their medications), and five reported fewer and less severe dyskinesias (involuntary movements). The study was limited by the absence of a control group [23].
+- Di Rocco et al. (Mov Disord 2000) gave SAMe 800 to 3,600 mg a day for 10 weeks to 13 depressed patients with Parkinson's disease whose earlier antidepressants had not helped or were not tolerated. Of 11 who finished, 10 improved by at least 50% on the Hamilton Depression Scale. Two stopped because of increased anxiety [23].
 
-These results are promising but based on very small, methodologically limited studies. Importantly, there is a potential concern that SAMe might reduce the effectiveness of levodopa over time through its methylation activity (see Drug Interactions section), which requires careful monitoring [24].
+This was a small, uncontrolled study [23]. Levodopa uses up SAMe, and in rats SAMe injected into the brain caused Parkinson's-like movement problems [47].
 
 ### Fibromyalgia
 
-Fibromyalgia is a chronic pain condition characterized by widespread musculoskeletal pain, fatigue, and cognitive difficulties. SAMe has been investigated based on its potential effects on pain processing and neurotransmitter function [25].
+One small trial has tested SAMe for fibromyalgia [25].
 
-- Jacobsen et al. (Scand J Rheumatol 1991) conducted a double-blind, placebo-controlled trial in 44 people with fibromyalgia (average age 49), the majority of whom were women. Patients received 400 mg of SAMe twice daily (800 mg/day total) or placebo for six weeks. Compared to placebo, the SAMe group experienced slightly reduced pain at rest (0.5 point decrease on a 10-point visual analog scale versus a 0.6-point increase for the placebo group) and slightly less fatigue (1 point decrease on a 10-point scale versus 0.2 decrease for placebo). However, there was no significant improvement in tender point score, self-reported pain during physical activity, depression score, use of pain-relieving medications, or quality of sleep compared to placebo [25].
-
-The evidence for SAMe in fibromyalgia is limited to this small trial and suggests marginal benefit at best. The slight improvements in resting pain and fatigue did not translate to meaningful functional improvement.
+- Jacobsen et al. (Scand J Rheumatol 1991) gave 44 patients with primary fibromyalgia 800 mg of oral SAMe a day or placebo for six weeks. SAMe improved disease activity, recent pain, fatigue, morning stiffness and mood on one scale. Tender points, muscle strength and mood on the Beck Depression Inventory did not differ from placebo [25].
 
 ### Liver Disease
 
-The liver is the primary site of SAMe synthesis and the organ where the most SAMe is produced and consumed. In chronic liver disease, the activity of methionine adenosyltransferase (MAT) — the enzyme responsible for SAMe synthesis — is impaired, leading to depleted hepatic SAMe levels [2][4]. This has generated interest in SAMe supplementation for various liver conditions.
+Every form of chronic liver injury lowers SAMe production in the liver, and SAMe protected the liver in animal models [4].
 
-**Mechanism:** SAMe is critical for maintaining hepatic glutathione levels, the liver's primary antioxidant defense. It also participates in phospholipid methylation required for bile acid transport and cell membrane integrity. Depletion of SAMe in chronic liver disease may contribute to oxidative stress, impaired bile flow, and progression of liver injury [2][4].
+**Mechanism:** SAMe helps make glutathione, the main antioxidant inside cells [49], and restores glutathione stores in the liver [44].
 
-**Alcoholic liver disease:** SAMe has been most studied in the context of alcoholic liver disease, where alcohol directly inhibits MAT activity and depletes hepatic SAMe:
+**Alcoholic liver disease:** Trials in alcohol-related liver disease have mostly found no clear benefit:
 
-- Mato et al. (J Hepatol 1999) conducted a randomized, double-blind, placebo-controlled trial of 1,200 mg/day SAMe for 2 years in 123 patients with alcoholic liver cirrhosis. In the overall study population, SAMe did not significantly reduce mortality or liver transplantation rates. However, in a pre-specified subgroup analysis excluding the most severely ill patients (those with Child-Pugh Class C cirrhosis), SAMe treatment was associated with significantly reduced mortality (12% vs. 29% in the placebo group, p=0.046) and delayed time to liver transplantation. The authors concluded that SAMe may improve survival or delay liver transplantation in patients with alcoholic liver cirrhosis, particularly in earlier stages of disease [26].
-- A Cochrane review (Rambaldi and Gluud, Cochrane Database Syst Rev 2006) evaluated all available trials of SAMe for alcoholic liver disease and concluded that there was insufficient high-quality evidence to support or refute its use. The review noted that the available trials were small and at high risk of bias, and called for larger, well-designed trials [27].
+- Mato et al. (J Hepatol 1999) gave 123 patients with alcoholic cirrhosis SAMe 1,200 mg a day by mouth or placebo for 2 years. Death or liver transplant fell from 30% with placebo to 16% with SAMe, but the difference was not significant (p = 0.077). With the sickest (Child class C) patients excluded, the figures were 29% and 12% (p = 0.025) [26].
+- A Cochrane review (Rambaldi and Gluud, Cochrane Database Syst Rev 2006) of nine trials with 434 patients found no significant effect on death from any cause (RR 0.62, 95% CI 0.30 to 1.26) and could find no evidence supporting or refuting SAMe [27]. It was withdrawn in 2015 because it had not been updated [48].
+- Medici et al. (Alcohol Clin Exp Res 2011) gave 37 patients 1.2 g of SAMe a day or placebo for 24 weeks while they abstained from alcohol. SAMe was no more effective than placebo [49].
 
-**Intrahepatic cholestasis of pregnancy:** SAMe has been studied for cholestasis of pregnancy, a condition in which impaired bile flow causes severe itching (pruritus) and can pose risks to the fetus:
+**Intrahepatic cholestasis of pregnancy:** Cholestasis of pregnancy has been linked to adverse outcomes for mother and baby [28]:
 
-- Several early European trials found that intravenous and oral SAMe (800-1,600 mg/day) improved pruritus and liver function tests in pregnant women with intrahepatic cholestasis [2][4].
-- A Cochrane review (Burrows et al., Cochrane Database Syst Rev 2001) found that while SAMe appeared to reduce pruritus, the available studies were small and of variable quality, making definitive conclusions difficult [28].
+- An early Cochrane review found four SAMe-versus-placebo trials in 82 women; only one showed greater improvement in itching, bile salts and liver enzymes [28].
+- The 2020 update found insufficient evidence that SAMe is effective in cholestasis of pregnancy [43].
 
-**Metabolic dysfunction-associated steatotic liver disease (MASLD/NAFLD):** There is interest in SAMe for MASLD (formerly NAFLD) based on the observation that altered hepatic SAMe metabolism may contribute to disease progression from simple steatosis (fatty liver) to metabolic dysfunction-associated steatohepatitis (MASH, formerly NASH):
+**Nonalcoholic fatty liver disease (NAFLD):** Interest here comes from animal work:
 
-- Noureddin et al. (Exp Biol Med (Maywood) 2015) found that SAMe supplementation in an animal model of MASH helped protect against liver injury, reducing steatosis and inflammation [29].
-- However, preliminary unpublished research in Europe (Protocol No. M13-397) among people with NASH found that SAMe at doses of 1,000 mg, 1,500 mg, or 2,000 mg daily in two divided doses for six weeks did not improve liver enzyme levels or markers of fibrosis compared to baseline [5].
+- Noureddin et al. (Exp Biol Med (Maywood) 2015) reported that mice lacking enzymes of SAMe metabolism develop nonalcoholic steatohepatitis (NASH), the inflammatory form of fatty liver disease [29].
 
-The evidence for SAMe in liver disease is promising in some contexts (particularly alcoholic liver disease in milder stages) but remains insufficient to make strong clinical recommendations. Larger, better-designed trials are needed.
-
-### AIDS-Related Myelopathy
-
-SAMe has been investigated for HIV-associated myelopathy, a neurological complication of HIV infection. Cerebrospinal fluid SAMe levels are reduced in HIV-positive patients with neurological symptoms. Preliminary studies have suggested that SAMe supplementation may improve neurological function in this population, though the evidence base is limited to small, uncontrolled studies [2][3].
+A 2015 meta-analysis of 12 trials with 705 patients with chronic liver disease found some improvement in bilirubin and AST but not ALT, and judged SAMe of limited clinical value in certain liver diseases [44].
 
 ### ADHD in Adults
 
-SAMe has been explored as a treatment for attention deficit-hyperactivity disorder (ADHD) in adults based on its role in neurotransmitter synthesis, particularly dopamine [2][3]:
+SAMe has been tried in adult attention deficit-hyperactivity disorder (ADHD):
 
-- Arnold et al. (Eur Neuropsychopharmacol 2005) reported that while some patients showed improvement in ADHD symptoms with SAMe supplementation, the study was limited by small sample size and a high rate of side effects at the 1,600 mg/day dose, including drowsiness [30].
+- Shekim et al. (Psychopharmacol Bull 1990) reported that 6 of 8 men with ADHD improved in a 4-week open trial, with minimal, short-lived side effects [46].
 
-The evidence for SAMe in ADHD is preliminary and insufficient to support clinical use for this indication.
+It had no control group [46].
 
 ## 4. Recommended Dosing
 
 ### General Dosing Guidelines
 
-Recommended daily doses of SAMe range from 400 to 1,600 mg depending on the condition, its severity, and the individual's response [5][6]. All doses listed below refer to active SAMe content (not the weight of the salt complex). SAMe is typically taken in divided doses (e.g., 400 mg twice daily or 400 mg three times daily) [5][6].
+Trials have given SAMe by mouth at 800 to 1,600 mg a day for depression [7][11][12], and at 1,200 mg a day for osteoarthritis [14][17] and alcoholic liver disease [26]. A 2002 review cited doses of 200 to 1,600 mg a day for depression [3].
 
 ### Dosing by Condition
 
 | Condition | Daily Dose | Duration | Evidence Level |
 |-----------|:---:|:---:|:---:|
-| Depression (monotherapy) | 1,600 mg (in 2 divided doses) | 6+ weeks | Multiple RCTs; most consistent positive results at this dose [7][8][9] |
-| Depression (adjunctive to SSRI/SRI) | 1,600 mg (800 mg twice daily) | 6+ weeks | One well-designed RCT showing benefit at this dose [11]; 800 mg/day was NOT effective [12] |
-| Osteoarthritis | 1,200 mg (in 2-3 divided doses) | 4-12 weeks | Multiple active-comparator RCTs [14][15][16][17][18] |
-| Fibromyalgia | 800 mg (in 2 divided doses) | 6+ weeks | One small RCT; marginal benefit [25] |
-| Liver disease | 1,200-1,600 mg (in 2 divided doses) | Long-term | Limited RCT evidence; used primarily in alcoholic liver disease [26] |
-| Parkinson's disease depression | 800-3,600 mg/day | 10+ weeks | Very small studies only [22][23] |
+| Depression (monotherapy) | 1,600 mg | 30 days to 6 weeks | Comparable with imipramine in a multicentre trial [7]; better than placebo in one trial [8] |
+| Depression (adjunctive to SSRI/SRI) | 1,600 mg (800 mg twice daily) | 6 weeks | One small positive trial [11]; 800 mg/day with folinic acid and B12 did not beat placebo [12] |
+| Osteoarthritis | 1,200 mg | 8 to 16 weeks | Comparable with NSAIDs [14][15][17]; Cochrane review of placebo trials inconclusive [20] |
+| Fibromyalgia | 800 mg | 6 weeks | One small trial [25] |
+| Liver disease | 1,200 mg | 24 weeks to 2 years | No clear benefit: 2-year trial not significant overall [26]; none at 24 weeks [49] |
+| Parkinson's disease depression | 800-3,600 mg/day | 10 weeks | One small uncontrolled study [23] |
 
 ### Practical Dosing Advice
 
-**Starting dose:** It is common practice to start at a lower dose (200-400 mg/day) and increase gradually over 1-2 weeks to the target dose [5][6]. This approach can help minimize gastrointestinal side effects, particularly nausea.
+**Starting dose:** In one study the dose was built up over 5 days to 1,600 mg a day [33].
 
-**Timing:** SAMe is generally taken on an empty stomach (30-60 minutes before meals) to improve absorption [5]. Morning and early afternoon dosing are often recommended, as SAMe can be mildly stimulating in some individuals and may disrupt sleep if taken late in the day [5][6]. However, drowsiness has been reported at higher doses (1,600 mg/day) [30].
-
-**Time to benefit:** Improvements may take anywhere from a few days to five weeks to become noticeable [5]. For depression, some patients report improvement within 1-2 weeks, though full therapeutic effect typically requires 4-6 weeks [2][9]. For osteoarthritis, most studies show benefit emerging over 2-5 weeks, which is slower than NSAIDs [14][15].
-
-**B-vitamin co-supplementation:** Because SAMe metabolism generates homocysteine, and because B6, B12, and folate are required for homocysteine recycling back to methionine, supplementing with B vitamins is sometimes recommended alongside SAMe [5][31]. Short-term studies using SAMe at doses up to 1,600 mg/day have not shown increases in homocysteine levels (Thompson, J Altern Complement Med 2009; Goren, Pharmacotherapy 2004) [32][33]. However, ensuring adequate B-vitamin intake from diet or supplements is a reasonable precaution, particularly with long-term use [5][31].
+**Time to benefit:** In depressed women after menopause, SAMe beat placebo from day 10 [8]. In knee osteoarthritis, celecoxib worked faster in the first month and SAMe caught up by the second [15].
 
 ### Relationship to TMG, Folate, and B12
 
-SAMe is the product of a metabolic cycle in which methionine is activated by ATP. After SAMe donates its methyl group, the resulting homocysteine must be recycled back to methionine — a process that requires either [1][2][31]:
+After SAMe donates its methyl group, the homocysteine left over is recycled to methionine by one of two routes [31][51]:
 
-- **Methylfolate + vitamin B12:** Methionine synthase uses methylfolate as the methyl donor and B12 as a cofactor to convert homocysteine back to methionine.
-- **Trimethylglycine (TMG/betaine):** The enzyme betaine-homocysteine methyltransferase (BHMT) uses TMG as an alternative methyl donor to regenerate methionine from homocysteine, independent of folate and B12.
+- **Methylfolate + vitamin B12:** the enzyme methionine synthase needs folate and vitamin B12 to convert homocysteine back to methionine [50][51].
+- **Trimethylglycine (TMG/betaine):** betaine and choline provide methyl groups by a separate route, and betaine supplements lower homocysteine after a methionine load [31].
 
-This means that adequate folate, B12, and/or TMG are essential for maintaining SAMe levels and preventing homocysteine accumulation. TMG (betaine) supports SAMe production through the BHMT pathway and independently lowers homocysteine [31]. Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) includes TMG (500 mg), methylated folate (200 mcg), and methylated B12 (12 mcg) — all of which support the methylation cycle that produces and recycles SAMe.
+Low folate, B12 or betaine can therefore limit SAMe production and raise homocysteine [31][50]. Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) contains TMG (500 mg), methylated folate and methylated B12 (12 mcg). In version 9, the UK and EU label, shipping now, prints 400 mcg of 5-MTHF calcium, and the US v9 is set at 400 mcg DFE, aimed for around mid-November 2026. Until then, US customers get v8, with 200 mcg DFE.
 
 ## 5. Safety and Side Effects
 
 ### Common Side Effects
 
-SAMe is generally considered safe when taken in appropriate doses [5][6]. The most commonly reported adverse effects are:
+In trials, side effects of SAMe were mostly mild [34]. The most commonly reported are:
 
-- **Gastrointestinal:** Nausea and stomach upset are the most frequent side effects. These can often be mitigated by taking enteric-coated products, reducing the dose, taking SAMe with food, or taking smaller divided doses [5][6].
-- **Unusual taste in the mouth:** Reported by seven participants in one clinical trial (Sarris, Psychopharmacology (Berl) 2019) [13]. This side effect was not reported by anyone taking placebo.
-- **Drowsiness:** Higher doses of SAMe (1,600 mg/day) have been reported to cause drowsiness in some people (Arnold, Eur Neuropsychopharmacol 2005) [30].
-- **Anxiety or restlessness:** Some individuals report mild stimulation or anxiety, particularly during the initial dose-escalation period [2][6].
-- **Insomnia:** Because SAMe may have mild stimulant properties, it can occasionally interfere with sleep if taken late in the day [5][6].
+- **Gastrointestinal:** In a 12-week trial, stomach discomfort (19%) and diarrhoea (20%) led the side effects of SAMe [38]. A small Parkinson's study recorded mild nausea in one person and mild diarrhoea in two [23].
+- **Anxiety or restlessness:** Two of 13 people with Parkinson's disease stopped SAMe because of increased anxiety [23].
 
 ### Serious Concerns
 
-**Bipolar disorder:** Individuals with bipolar (manic/depressive) disorder should know that SAMe could trigger a manic episode (Cuomo, Ann Gen Psychiatry 2020) [34]. This is a risk shared with conventional antidepressants and is particularly concerning because SAMe is available over-the-counter without medical supervision. Patients with known or suspected bipolar disorder should not take SAMe without physician guidance.
+**Bipolar disorder:** SAMe can trigger mania. An open trial saw mania in two patients with bipolar disorder [45], one placebo-controlled trial saw it in a patient with no history of mania [9], and the Cochrane review recorded two reports of mania or hypomania among 441 people taking SAMe [2]. A healthy volunteer taking 1,600 mg a day developed a mixed manic state with suicidal thoughts within 2 weeks and recovered within 3 days of stopping [33]. People with known or suspected bipolar disorder should take SAMe only if their psychiatrist agrees.
 
-**Serotonergic reaction:** A suspected serotonergic reaction (symptoms including agitation, sweating, high body temperature, and diarrhea) leading to hospitalization was reported in one individual taking 800 mg of SAMe daily in addition to antidepressant medication. The reaction resolved quickly and was not confirmed as serotonin syndrome (Sarris, Eur Neuropsychopharmacol 2018) [12]. While isolated, this case underscores the importance of medical supervision when combining SAMe with serotonergic medications.
+**Serotonergic reaction:** In an 8-week trial of SAMe, given with folinic acid and vitamin B12, added to antidepressants, SAMe was linked to one case of serotonin syndrome-like symptoms [12]. A case report also described a toxic interaction between SAMe and the tricyclic antidepressant clomipramine [39]. Serotonin syndrome can be deadly; its features include tremor, overactive reflexes, a racing heart, a high temperature, agitation and delirium (severe confusion) [40]. If these appear, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
-**Potential formation of toxic metabolites:** Laboratory studies in mice and cell cultures suggest that excess SAMe supplementation can lead to the formation of adenine and methylthioadenosine, compounds that are potentially toxic at high concentrations. The researchers noted that excess SAMe can essentially reverse its normal role, disrupting rather than supporting methylation reactions. However, feeding mice SAMe in amounts proportionate to typical human supplementation doses did not adversely affect body weight or physical condition over one month, though it did lengthen normal circadian rhythms. The researchers called for tighter regulation of over-the-counter SAMe availability (Fukumoto, Commun Biol 2022) [35].
+**Potential formation of toxic metabolites:** In laboratory work, excess SAMe disrupted biological rhythms and was broken down to adenine and methylthioadenosine, which block methylation. The authors said the findings question the safety of SAMe as a supplement [35].
 
 ### Homocysteine Concerns
 
-Because SAMe is converted to homocysteine after donating its methyl group, there has been theoretical concern that SAMe supplementation could raise homocysteine levels — a risk factor for cardiovascular disease [5][31]. However, short-term studies with daily SAMe doses of up to 1,600 mg have not demonstrated increases in homocysteine levels (Thompson, J Altern Complement Med 2009; Goren, Pharmacotherapy 2004) [32][33]. The body normally eliminates homocysteine by converting it to glutathione (via the transsulfuration pathway, requiring B6) or recycling it back to methionine (requiring folate, B12, or TMG) [5][31]. As long as B-vitamin intake is adequate, homocysteine accumulation from SAMe supplementation appears unlikely with short-term use. Long-term data are more limited.
+SAMe turns into homocysteine after donating its methyl group, and raised homocysteine is a possible heart risk factor [32]. In a 4-week trial in 52 healthy volunteers, 800 mg a day did not change homocysteine, though liver enzyme ALT rose slightly at week 2 [32]. In 15 volunteers taking 1,600 mg a day for 4 weeks, no one's homocysteine rose [33]. Neither study lasted longer than 4 weeks.
 
 ### Who Should Avoid SAMe
 
-- Individuals with bipolar disorder (risk of manic episode) [34]
-- People taking MAO inhibitors (risk of serotonergic crisis) [5][6]
-- Those taking SSRIs, SNRIs, or tricyclic antidepressants without physician supervision [5][12]
-- Pregnant or breastfeeding women (insufficient safety data for supplementation at therapeutic doses, despite historical use for cholestasis of pregnancy under medical supervision) [5][6]
-- Individuals with Parkinson's disease taking levodopa (potential interaction — see Drug Interactions) [24]
+- People with bipolar disorder (risk of mania) [33][45]
+- People taking antidepressants, unless their doctor agrees [12][39][53]
+- Pregnant or breastfeeding women, unless their doctor agrees: its safety during pregnancy has not been established [53]
+- People who are immunocompromised, such as with HIV, unless their doctor agrees: in theory SAMe could promote Pneumocystis infection [53]
+- People with Parkinson's disease taking levodopa, without their neurologist's advice [47]
 
 ## 6. Drug Interactions
 
-SAMe's role as a methyl donor and its involvement in neurotransmitter synthesis create the potential for clinically significant drug interactions, particularly with medications that affect serotonin, dopamine, and methylation pathways.
+SAMe may interact with some medicines and supplements [53]. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Serotonergic Medications
 
 | Drug Class | Examples | Interaction | Clinical Advice |
 |-----------|---------|-------------|:---:|
-| SSRIs | Fluoxetine, sertraline, escitalopram, paroxetine | SAMe may enhance serotonergic activity, theoretically increasing the risk of serotonin syndrome. One suspected case reported [12]. At 1,600 mg/day, SAMe was effective and generally safe as an adjunct to SRIs in one well-designed trial [11]. | Use only under physician supervision [5][11][12] |
-| SNRIs | Venlafaxine, duloxetine | Similar serotonergic interaction potential as SSRIs | Use only under physician supervision [5] |
-| Tricyclic antidepressants | Imipramine, amitriptyline, nortriptyline | SAMe has similar mechanism to TCAs (both affect monoamine neurotransmission). Clinical trials directly compared SAMe to TCAs, not combined them. | Do not combine without physician supervision [5][7] |
-| MAO inhibitors | Phenelzine, tranylcypromine, selegiline | Potentially dangerous combination — risk of hypertensive crisis and serotonin syndrome due to simultaneous increases in monoamine levels | Do NOT combine [5][6] |
-| Triptans | Sumatriptan, rizatriptan | Theoretical additive serotonergic risk | Caution; consult physician [5] |
-| Tramadol | -- | Serotonergic analgesic; additive risk | Caution; consult physician [5] |
+| SSRIs | Fluoxetine, sertraline, escitalopram, paroxetine | Added to SRIs at 1,600 mg a day, SAMe was well tolerated in one trial [11]; at 800 mg a day with folinic acid and B12 it was linked to one case of serotonin syndrome-like symptoms [12] | Use only with your doctor's agreement |
+| Tricyclic antidepressants | Imipramine, amitriptyline, nortriptyline | Toxic interaction with clomipramine in a case report [39]. One trial added SAMe to imipramine and found a faster early response, though scores did not differ by day 14 [34] | Do not combine without your doctor's agreement |
 
 ### Dopaminergic Medications
 
-**Levodopa (for Parkinson's disease):** SAMe may help relieve the depression that commonly accompanies Parkinson's disease, but there is concern that SAMe could reduce the effectiveness of levodopa over time (Muller, Clin Neuropharmacol 2005) [24]. The theoretical mechanism involves SAMe methylating levodopa via catechol-O-methyltransferase (COMT), accelerating its breakdown. Patients on levodopa should use SAMe only under close neurological supervision.
+**Levodopa (for Parkinson's disease):** SAMe may decrease the effects of levodopa [53]. Levodopa reacts with SAMe and depletes it, and in rats excess SAMe in the brain caused Parkinson's-like movement problems, which levodopa blocked [47]. People taking levodopa should use SAMe only with their neurologist's advice.
 
 ### Other Interactions
 
-**Dextromethorphan (DXM):** Found in many over-the-counter cough medications. DXM has serotonergic properties, and combining it with SAMe could theoretically increase serotonergic risk [5].
-
-**Meperidine (pethidine):** This opioid analgesic has serotonergic properties. Combining with SAMe should be avoided [5].
-
-**Diabetes medications:** SAMe has been reported to lower blood sugar in some individuals. Those taking insulin or oral diabetes medications should monitor blood sugar more closely if starting SAMe [6].
+SAMe might interact with medicines and supplements that raise serotonin, such as antidepressants, L-tryptophan and St John's wort [53].
 
 ## 7. Dietary Sources
 
-SAMe is not obtained directly from food — it is synthesized in the body from the amino acid methionine in a reaction that also requires ATP [1][2]. However, the body's ability to produce SAMe depends on adequate dietary intake of three key nutrients:
+The body makes SAMe from methionine [4]. Its production depends on getting enough of several nutrients:
 
 ### Methionine
 
-Methionine is an essential amino acid that serves as the direct precursor for SAMe synthesis. It is found in protein-rich foods:
-
-| Food | Serving | Methionine (mg) |
-|------|---------|:-:|
-| Chicken breast | 3 oz (85g) | ~650 |
-| Salmon | 3 oz (85g) | ~600 |
-| Beef | 3 oz (85g) | ~550 |
-| Eggs | 2 large | ~500 |
-| Tofu, firm | 1/2 cup | ~200 |
-| Brazil nuts | 1 oz (28g) | ~290 |
-| Parmesan cheese | 1 oz (28g) | ~250 |
-| Lentils, cooked | 1 cup | ~145 |
-
-Source: USDA FoodData Central [36].
-
-The recommended daily intake of methionine (combined with cysteine) is approximately 19 mg/kg body weight in adults, or about 1,330 mg/day for a 70 kg person [36]. Most omnivorous diets easily meet this requirement. Vegans and vegetarians may have lower methionine intake but can meet requirements through legumes, grains, nuts, and seeds.
+Methionine is an essential amino acid [51] found in dietary protein.
 
 ### Folate (as Methylfolate)
 
-Folate is required to regenerate methionine from homocysteine, maintaining the methionine-SAMe cycle. Methyltetrahydrofolate (MTHF, methylfolate) is the active form that serves as the methyl donor in this reaction. Good dietary sources include leafy green vegetables (spinach, kale), legumes, asparagus, Brussels sprouts, avocado, and fortified cereals [1][2][31].
+Folate is needed to convert homocysteine to methionine in the making of SAMe [50]. It is found in vegetables (especially dark green leafy vegetables), fruits, nuts, beans, peas, seafood, eggs, dairy, meat, poultry and grains, and spinach, liver, asparagus and brussels sprouts are among the richest sources [50].
 
-The RDA for folate is 400 mcg DFE (dietary folate equivalents) for adults. Approximately 40% of the population carries MTHFR gene variants that reduce the conversion of dietary folate to its active methylfolate form, potentially impairing SAMe production [31]. Supplemental methylfolate (5-MTHF) bypasses this genetic bottleneck.
+The RDA for folate is 400 mcg DFE (dietary folate equivalents) for adults [50]. About 25% of Hispanics, 10% of Caucasians and Asians, and 1% of African Americans are homozygous for the 677C>T MTHFR variant, which leaves less active folate (5-MTHF) and reduces methylation potential [50].
 
 ### Vitamin B12
 
-Vitamin B12 is a cofactor for methionine synthase, the enzyme that converts homocysteine back to methionine using a methyl group from methylfolate. B12 deficiency impairs this recycling process, reducing SAMe production and leading to elevated homocysteine. Dietary sources include meat, fish, dairy, eggs, and fortified foods. The RDA is 2.4 mcg for adults [1][2][31].
+Vitamin B12 is a cofactor for methionine synthase, which converts homocysteine to methionine [51]. It is found in foods of animal origin and in some fortified plant foods such as breakfast cereals and nutritional yeasts [51]. Recommended intakes for adults range from 2.4 to 2.8 mcg [51].
 
 ### Vitamin B6
 
-Vitamin B6 (pyridoxine) is required for the transsulfuration pathway — the alternative route for homocysteine disposal that converts homocysteine to cysteine (and ultimately to glutathione) rather than recycling it to methionine. Adequate B6 ensures that homocysteine generated from SAMe metabolism can be efficiently cleared. Dietary sources include poultry, fish, potatoes, bananas, and fortified cereals [1][2].
+Vitamin B6 helps keep homocysteine at normal levels [52]. Rich sources include fish, beef liver and other organ meats, potatoes and other starchy vegetables, and non-citrus fruit [52].
 
 ### Practical Implications
 
-No food contains pre-formed SAMe in meaningful amounts. Supporting endogenous SAMe production requires:
-- Adequate protein intake (for methionine)
-- Adequate folate, B12, and B6 intake (for homocysteine recycling and disposal)
-- Adequate ATP production (general metabolic health)
+Supporting the body's own production of SAMe requires:
+- Enough protein (for methionine)
+- Enough folate, B12 and B6 (for recycling and clearing homocysteine)
 
-Individuals with low protein intake, B-vitamin deficiencies, or chronic liver disease (which impairs the MAT enzyme) may have suboptimal SAMe production and may be more likely to benefit from SAMe supplementation [2][4].
+Chronic liver disease lowers SAMe production in the liver [4].
 
 ## 8. References
 
-[1] Bottiglieri T. "S-Adenosyl-L-methionine (SAMe): from the bench to the bedside -- molecular basis of a pleiotrophic molecule." *Am J Clin Nutr*. 2002;76(5):1151S-1157S. [https://doi.org/10.1093/ajcn/76.5.1151S](https://doi.org/10.1093/ajcn/76.5.1151S)
+[1] Bottiglieri T. "S-Adenosyl-L-methionine (SAMe): from the bench to the bedside--molecular basis of a pleiotrophic molecule." *Am J Clin Nutr*. 2002;76(5):1151S-1157S. PMID: 12418493. [https://pubmed.ncbi.nlm.nih.gov/12418493/](https://pubmed.ncbi.nlm.nih.gov/12418493/)
 
-[2] Galizia I, Oldani L, Macritchie K, et al. "S-adenosyl methionine (SAMe) for depression in adults." *Cochrane Database Syst Rev*. 2016;10(10):CD011286. [https://doi.org/10.1002/14651858.CD011286.pub2](https://doi.org/10.1002/14651858.CD011286.pub2)
+[2] Galizia I, Oldani L, Macritchie K, et al. "S-adenosyl methionine (SAMe) for depression in adults." *Cochrane Database Syst Rev*. 2016;10(10):CD011286. PMID: 27727432. [https://pubmed.ncbi.nlm.nih.gov/27727432/](https://pubmed.ncbi.nlm.nih.gov/27727432/)
 
-[3] Mischoulon D, Fava M. "Role of S-adenosyl-L-methionine in the treatment of depression: a review of the evidence." *Am J Clin Nutr*. 2002;76(5):1158S-1161S. [https://doi.org/10.1093/ajcn/76.5.1158S](https://doi.org/10.1093/ajcn/76.5.1158S)
+[3] Mischoulon D, Fava M. "Role of S-adenosyl-L-methionine in the treatment of depression: a review of the evidence." *Am J Clin Nutr*. 2002;76(5):1158S-1161S. PMID: 12420702. [https://pubmed.ncbi.nlm.nih.gov/12420702/](https://pubmed.ncbi.nlm.nih.gov/12420702/)
 
-[4] Mato JM, Lu SC. "Role of S-adenosyl-L-methionine in liver health and injury." *Hepatology*. 2007;45(5):1306-1312. [https://doi.org/10.1002/hep.21650](https://doi.org/10.1002/hep.21650)
+[4] Mato JM, Lu SC. "Role of S-adenosyl-L-methionine in liver health and injury." *Hepatology*. 2007;45(5):1306-1312. PMID: 17464973. [https://pubmed.ncbi.nlm.nih.gov/17464973/](https://pubmed.ncbi.nlm.nih.gov/17464973/)
 
-[5] ConsumerLab. "SAMe Supplements Review." Accessed 2026. [https://www.consumerlab.com/reviews/sam-e-review-comparisons/same/](https://www.consumerlab.com/reviews/sam-e-review-comparisons/same/)
+[7] Delle Chiaie R, Pancheri P, Scapicchio P. "Efficacy and tolerability of oral and intramuscular S-adenosyl-L-methionine 1,4-butanedisulfonate (SAMe) in the treatment of major depression: comparison with imipramine in 2 multicenter studies." *Am J Clin Nutr*. 2002;76(5):1172S-1176S. PMID: 12418499. [https://pubmed.ncbi.nlm.nih.gov/12418499/](https://pubmed.ncbi.nlm.nih.gov/12418499/)
 
-[6] National Institutes of Health, National Center for Complementary and Integrative Health. "S-Adenosyl-L-Methionine (SAMe): In Depth." [https://www.nccih.nih.gov/health/s-adenosyl-l-methionine-same-in-depth](https://www.nccih.nih.gov/health/s-adenosyl-l-methionine-same-in-depth)
+[8] Salmaggi P, Bressa GM, Nicchia G, et al. "Double-blind, placebo-controlled study of S-adenosyl-L-methionine in depressed postmenopausal women." *Psychother Psychosom*. 1993;59(1):34-40. PMID: 8441793. [https://pubmed.ncbi.nlm.nih.gov/8441793/](https://pubmed.ncbi.nlm.nih.gov/8441793/)
 
-[7] Delle Chiaie R, Pancheri P, Scapicchio P. "Efficacy and tolerability of oral and intramuscular S-adenosyl-L-methionine 1,4-butanedisulfonate (SAMe) in the treatment of major depression: comparison with imipramine in 2 multicenter studies." *Am J Clin Nutr*. 2002;76(5):1172S-1176S. [https://doi.org/10.1093/ajcn/76.5.1172S](https://doi.org/10.1093/ajcn/76.5.1172S)
+[9] Kagan BL, Sultzer DL, Rosenlicht N, Gerner RH. "Oral S-adenosylmethionine in depression: a randomized, double-blind, placebo-controlled trial." *Am J Psychiatry*. 1990;147(5):591-595. PMID: 2183633. [https://pubmed.ncbi.nlm.nih.gov/2183633/](https://pubmed.ncbi.nlm.nih.gov/2183633/)
 
-[8] Salmaggi P, Bressa GM, Nicchia G, et al. "Double-blind, placebo-controlled study of S-adenosyl-L-methionine in depressed postmenopausal women." *Psychother Psychosom*. 1993;59(1):34-40. [https://doi.org/10.1159/000288642](https://doi.org/10.1159/000288642)
+[10] Bressa GM. "S-adenosyl-l-methionine (SAMe) as antidepressant: meta-analysis of clinical studies." *Acta Neurol Scand Suppl*. 1994;154:7-14. PMID: 7941964. [https://pubmed.ncbi.nlm.nih.gov/7941964/](https://pubmed.ncbi.nlm.nih.gov/7941964/)
 
-[9] Kagan BL, Sultzer DL, Rosenlicht N, Gerner RH. "Oral S-adenosylmethionine in depression: a randomized, double-blind, placebo-controlled trial." *Am J Psychiatry*. 1990;147(5):591-595. [https://doi.org/10.1176/ajp.147.5.591](https://doi.org/10.1176/ajp.147.5.591)
+[11] Papakostas GI, Mischoulon D, Shyu I, Alpert JE, Fava M. "S-adenosyl methionine (SAMe) augmentation of serotonin reuptake inhibitors for antidepressant nonresponders with major depressive disorder: a double-blind, randomized clinical trial." *Am J Psychiatry*. 2010;167(8):942-948. PMID: 20595412. [https://pubmed.ncbi.nlm.nih.gov/20595412/](https://pubmed.ncbi.nlm.nih.gov/20595412/)
 
-[10] Bressa GM. "S-adenosyl-l-methionine (SAMe) as antidepressant: meta-analysis of clinical studies." *Acta Neurol Scand Suppl*. 1994;154:7-14. [https://doi.org/10.1111/j.1600-0404.1994.tb05403.x](https://doi.org/10.1111/j.1600-0404.1994.tb05403.x)
+[12] Sarris J, Byrne GJ, Bousman C, et al. "Adjunctive S-adenosylmethionine (SAMe) in treating non-remittent major depressive disorder: An 8-week double-blind, randomized, controlled trial." *Eur Neuropsychopharmacol*. 2018;28(10):1126-1136. PMID: 30115553. [https://pubmed.ncbi.nlm.nih.gov/30115553/](https://pubmed.ncbi.nlm.nih.gov/30115553/)
 
-[11] Papakostas GI, Mischoulon D, Shyu I, Alpert JE, Fava M. "S-adenosyl methionine (SAMe) augmentation of serotonin reuptake inhibitors for antidepressant nonresponders with major depressive disorder: a double-blind, randomized clinical trial." *Am J Psychiatry*. 2010;167(8):942-948. [https://doi.org/10.1176/appi.ajp.2009.09081198](https://doi.org/10.1176/appi.ajp.2009.09081198)
+[13] Sarris J, Murphy J, Stough C, et al. "S-Adenosylmethionine (SAMe) monotherapy for depression: an 8-week double-blind, randomised, controlled trial." *Psychopharmacology (Berl)*. 2020;237(1):209-218. PMID: 31712971. [https://pubmed.ncbi.nlm.nih.gov/31712971/](https://pubmed.ncbi.nlm.nih.gov/31712971/)
 
-[12] Sarris J, Murphy J, Mischoulon D, et al. "Adjunctive Nutraceuticals for Depression: A Systematic Review and Meta-Analyses." *Eur Neuropsychopharmacol*. 2018. (Also: Sarris J, et al. "S-adenosyl methionine (SAMe) as adjunctive treatment for depression — results of a randomized, double-blind, placebo-controlled trial." *Eur Neuropsychopharmacol*. 2018.)
+[14] Kim J, Lee EY, Koh EM, et al. "Comparative clinical trial of S-adenosylmethionine versus nabumetone for the treatment of knee osteoarthritis: an 8-week, multicenter, randomized, double-blind, double-dummy, Phase IV study in Korean patients." *Clin Ther*. 2009;31(12):2860-2872. PMID: 20110025. [https://pubmed.ncbi.nlm.nih.gov/20110025/](https://pubmed.ncbi.nlm.nih.gov/20110025/)
 
-[13] Sarris J, et al. "S-adenosyl methionine (SAMe) monotherapy for depression: results of a randomized, double-blind, placebo-controlled trial." *Psychopharmacology (Berl)*. 2019.
+[15] Najm WI, Reinsch S, Hoehler F, Tobis JS, Harvey PW. "S-adenosyl methionine (SAMe) versus celecoxib for the treatment of osteoarthritis symptoms: a double-blind cross-over trial." *BMC Musculoskelet Disord*. 2004;5:6. PMID: 15102339. [https://pubmed.ncbi.nlm.nih.gov/15102339/](https://pubmed.ncbi.nlm.nih.gov/15102339/)
 
-[14] Kim J, Lee EY, Koh EM, et al. "Comparative clinical trial of S-adenosylmethionine versus nabumetone for the treatment of knee osteoarthritis: an 8-week, multicenter, randomized, double-blind, double-dummy, Phase IV study in Korean patients." *Clin Ther*. 2009;31(12):2860-2872. [https://doi.org/10.1016/j.clinthera.2009.12.016](https://doi.org/10.1016/j.clinthera.2009.12.016)
+[17] Caruso I, Pietrogrande V. "Italian double-blind multicenter study comparing S-adenosylmethionine, naproxen, and placebo in the treatment of degenerative joint disease." *Am J Med*. 1987;83(5A):66-71. PMID: 3318442. [https://pubmed.ncbi.nlm.nih.gov/3318442/](https://pubmed.ncbi.nlm.nih.gov/3318442/)
 
-[15] Najm WI, Reinsch S, Hoehler F, Tobis JS, Harvey PW. "S-adenosyl methionine (SAMe) versus celecoxib for the treatment of osteoarthritis symptoms: a double-blind cross-over trial." *BMC Musculoskelet Disord*. 2004;5:6. [https://doi.org/10.1186/1471-2474-5-6](https://doi.org/10.1186/1471-2474-5-6)
+[18] Domljan Z, et al. "A double-blind trial of ademetionine vs naproxen in activated gonarthrosis." *Int J Clin Pharmacol Ther Toxicol*. 1989;27(7):329-333. PMID: 2674027. [https://pubmed.ncbi.nlm.nih.gov/2674027/](https://pubmed.ncbi.nlm.nih.gov/2674027/)
 
-[16] Muller-Fassbender H. "Double-blind clinical trial of S-adenosylmethionine versus ibuprofen in the treatment of osteoarthritis." *Am J Med*. 1987;83(5A):81-83. [https://doi.org/10.1016/0002-9343(87)90857-8](https://doi.org/10.1016/0002-9343(87)90857-8)
+[19] Bradley JD, Flusser D, Katz BP, et al. "A randomized, double blind, placebo controlled trial of intravenous loading with S-adenosylmethionine (SAM) followed by oral SAM therapy in patients with knee osteoarthritis." *J Rheumatol*. 1994;21(5):905-911. PMID: 8064733. [https://pubmed.ncbi.nlm.nih.gov/8064733/](https://pubmed.ncbi.nlm.nih.gov/8064733/)
 
-[17] Caruso I, Pietrogrande V. "Italian double-blind multicenter study comparing S-adenosylmethionine, naproxen, and placebo in the treatment of degenerative joint disease." *Am J Med*. 1987;83(5A):66-71. [https://doi.org/10.1016/0002-9343(87)90854-2](https://doi.org/10.1016/0002-9343(87)90854-2)
+[20] Rutjes AWS, Nüesch E, Reichenbach S, Jüni P. "S-Adenosylmethionine for osteoarthritis of the knee or hip." *Cochrane Database Syst Rev*. 2009;(4):CD007321. PMID: 19821403. [https://pubmed.ncbi.nlm.nih.gov/19821403/](https://pubmed.ncbi.nlm.nih.gov/19821403/)
 
-[18] Domljan Z, et al. "A double-blind trial of ademetionine vs naproxen in activated gonarthrosis." *Int J Clin Pharmacol Ther Toxicol*. 1989;27(7):329-333.
+[21] Soeken KL, Lee WL, Bausell RB, Agelli M, Berman BM. "Safety and efficacy of S-adenosylmethionine (SAMe) for osteoarthritis." *J Fam Pract*. 2002;51(5):425-430. PMID: 12019049. [https://pubmed.ncbi.nlm.nih.gov/12019049/](https://pubmed.ncbi.nlm.nih.gov/12019049/)
 
-[19] Bradley JD, Flusser D, Katz BP, et al. "A randomized, double blind, placebo controlled trial of intravenous loading with S-adenosylmethionine (SAM) followed by oral SAM therapy in patients with knee osteoarthritis." *J Rheumatol*. 1994;21(5):905-911. PMID: [8064732](https://pubmed.ncbi.nlm.nih.gov/8064732/)
+[23] Di Rocco A, Rogers JD, Brown R, Werner P, Bhatt K. "S-adenosyl-methionine improves depression in patients with Parkinson's disease in an open-label clinical trial." *Mov Disord*. 2000;15(6):1225-1229. PMID: 11104210. [https://pubmed.ncbi.nlm.nih.gov/11104210/](https://pubmed.ncbi.nlm.nih.gov/11104210/)
 
-[20] Rutjes AWS, Nüesch E, Reichenbach S, Jüni P. "S-Adenosylmethionine for osteoarthritis of the knee or hip." *Cochrane Database Syst Rev*. 2009;(4):CD007321. [https://doi.org/10.1002/14651858.CD007321.pub2](https://doi.org/10.1002/14651858.CD007321.pub2)
+[25] Jacobsen S, Danneskiold-Samsoe B, Andersen RB. "Oral S-adenosylmethionine in primary fibromyalgia. Double-blind clinical evaluation." *Scand J Rheumatol*. 1991;20(4):294-302. PMID: 1925418. [https://pubmed.ncbi.nlm.nih.gov/1925418/](https://pubmed.ncbi.nlm.nih.gov/1925418/)
 
-[21] Soeken KL, Lee WL, Bausell RB, Agelli M, Berman BM. "Safety and efficacy of S-adenosylmethionine (SAMe) for osteoarthritis." *J Fam Pract*. 2002;51(5):425-430. PMID: [12019049](https://pubmed.ncbi.nlm.nih.gov/12019049/)
+[26] Mato JM, Cámara J, Fernández de Paz J, et al. "S-adenosylmethionine in alcoholic liver cirrhosis: a randomized, placebo-controlled, double-blind, multicenter clinical trial." *J Hepatol*. 1999;30(6):1081-1089. PMID: 10406187. [https://pubmed.ncbi.nlm.nih.gov/10406187/](https://pubmed.ncbi.nlm.nih.gov/10406187/)
 
-[22] Carrieri PB, Indaco A, Gentile S, et al. "S-adenosylmethionine treatment of depression in patients with Parkinson's disease: a double-blind, crossover study versus placebo." *Curr Ther Res*. 1990;48(1):154-160.
+[27] Rambaldi A, Gluud C. "S-adenosyl-L-methionine for alcoholic liver diseases." *Cochrane Database Syst Rev*. 2006;(2):CD002235. PMID: 16625556. [https://pubmed.ncbi.nlm.nih.gov/16625556/](https://pubmed.ncbi.nlm.nih.gov/16625556/)
 
-[23] Di Rocco A, Rogers JD, Brown R, Werner P, Bhatt K. "S-adenosyl-methionine improves depression in patients with Parkinson's disease in an open-label clinical trial." *Mov Disord*. 2000;15(6):1225-1229. [https://doi.org/10.1002/1531-8257(200011)15:6<1225::AID-MDS1025>3.0.CO;2-A](https://doi.org/10.1002/1531-8257(200011)15:6<1225::AID-MDS1025>3.0.CO;2-A)
+[28] Burrows RF, Clavisi O, Burrows E. "Interventions for treating cholestasis in pregnancy." *Cochrane Database Syst Rev*. 2001;(4):CD000493. PMID: 11687082. [https://pubmed.ncbi.nlm.nih.gov/11687082/](https://pubmed.ncbi.nlm.nih.gov/11687082/)
 
-[24] Muller T, et al. "Catechol-O-methyltransferase inhibition improves levodopa-associated strength increase in patients with Parkinson disease." *Clin Neuropharmacol*. 2005.
+[29] Noureddin M, Mato JM, Lu SC. "Nonalcoholic fatty liver disease: update on pathogenesis, diagnosis, treatment and the role of S-adenosylmethionine." *Exp Biol Med (Maywood)*. 2015;240(6):809-820. PMID: 25873078. [https://pubmed.ncbi.nlm.nih.gov/25873078/](https://pubmed.ncbi.nlm.nih.gov/25873078/)
 
-[25] Jacobsen S, Danneskiold-Samsoe B, Andersen RB. "Oral S-adenosylmethionine in primary fibromyalgia. Double-blind clinical evaluation." *Scand J Rheumatol*. 1991;20(4):294-302. [https://doi.org/10.3109/03009749109096803](https://doi.org/10.3109/03009749109096803)
+[31] Obeid R. "The metabolic burden of methyl donor deficiency with focus on the betaine homocysteine methyltransferase pathway." *Nutrients*. 2013;5(9):3481-3495. PMID: 24022817. [https://pubmed.ncbi.nlm.nih.gov/24022817/](https://pubmed.ncbi.nlm.nih.gov/24022817/)
 
-[26] Mato JM, Cámara J, Fernández de Paz J, et al. "S-adenosylmethionine in alcoholic liver cirrhosis: a randomized, placebo-controlled, double-blind, multicenter clinical trial." *J Hepatol*. 1999;30(6):1081-1089. [https://doi.org/10.1016/S0168-8278(99)80263-3](https://doi.org/10.1016/S0168-8278(99)80263-3)
+[32] Thompson MA, et al. "Dietary supplement S-adenosyl-L-methionine (AdoMet) effects on plasma homocysteine levels in healthy human subjects: a double-blind, placebo-controlled, randomized clinical trial." *J Altern Complement Med*. 2009;15(5):523-529. PMID: 19422296. [https://pubmed.ncbi.nlm.nih.gov/19422296/](https://pubmed.ncbi.nlm.nih.gov/19422296/)
 
-[27] Rambaldi A, Gluud C. "S-adenosyl-L-methionine for alcoholic liver diseases." *Cochrane Database Syst Rev*. 2006;(2):CD002235. [https://doi.org/10.1002/14651858.CD002235.pub2](https://doi.org/10.1002/14651858.CD002235.pub2)
+[33] Gören JL, Stoll AL, Damico KE, Sarmiento IA, Cohen BM. "Bioavailability and lack of toxicity of S-adenosyl-L-methionine (SAMe) in humans." *Pharmacotherapy*. 2004;24(11):1501-1507. PMID: 15537554. [https://pubmed.ncbi.nlm.nih.gov/15537554/](https://pubmed.ncbi.nlm.nih.gov/15537554/)
 
-[28] Burrows RF, Clavisi O, Burrows E. "Interventions for treating cholestasis in pregnancy." *Cochrane Database Syst Rev*. 2001;(4):CD000493. [https://doi.org/10.1002/14651858.CD000493](https://doi.org/10.1002/14651858.CD000493)
+[34] Cuomo A, et al. "S-Adenosylmethionine (SAMe) in major depressive disorder (MDD): a clinician-oriented systematic review." *Ann Gen Psychiatry*. 2020;19:50. PMID: 32939220. [https://pubmed.ncbi.nlm.nih.gov/32939220/](https://pubmed.ncbi.nlm.nih.gov/32939220/)
 
-[29] Noureddin M, Mato JM, Lu SC. "Nonalcoholic fatty liver disease: update on pathogenesis, diagnosis, treatment and the role of S-adenosylmethionine." *Exp Biol Med (Maywood)*. 2015;240(6):809-820. [https://doi.org/10.1177/1535370215579161](https://doi.org/10.1177/1535370215579161)
+[35] Fukumoto K, et al. "Excess S-adenosylmethionine inhibits methylation via catabolism to adenine." *Commun Biol*. 2022;5(1):313. PMID: 35383287. [https://pubmed.ncbi.nlm.nih.gov/35383287/](https://pubmed.ncbi.nlm.nih.gov/35383287/)
 
-[30] Arnold LE, et al. "S-adenosyl-L-methionine (SAMe) in adults with ADHD." *Eur Neuropsychopharmacol*. 2005.
+[37] Hardy ML, et al. "S-adenosyl-L-methionine for treatment of depression, osteoarthritis, and liver disease." *Evid Rep Technol Assess (Summ)*. 2003;(64):1-3. PMID: 12899148. [https://pubmed.ncbi.nlm.nih.gov/12899148/](https://pubmed.ncbi.nlm.nih.gov/12899148/)
 
-[31] Obeid R, et al. "Mechanisms of homocysteine metabolism and B-vitamin interactions." *Nutrients*. 2013.
+[38] Mischoulon D, et al. "A double-blind, randomized, placebo-controlled clinical trial of S-adenosyl-L-methionine (SAMe) versus escitalopram in major depressive disorder." *J Clin Psychiatry*. 2014;75(4):370-376. PMID: 24500245. [https://pubmed.ncbi.nlm.nih.gov/24500245/](https://pubmed.ncbi.nlm.nih.gov/24500245/)
 
-[32] Thompson MA, et al. "Effects of S-adenosyl-L-methionine on homocysteine levels." *J Altern Complement Med*. 2009.
+[39] Iruela LM, et al. "Toxic interaction of S-adenosylmethionine and clomipramine." *Am J Psychiatry*. 1993;150(3):522. PMID: 8434674. [https://pubmed.ncbi.nlm.nih.gov/8434674/](https://pubmed.ncbi.nlm.nih.gov/8434674/)
 
-[33] Goren JL, et al. "Bioavailability and lack of effect on homocysteine levels of oral SAMe in a double-blind, crossover study in healthy volunteers." *Pharmacotherapy*. 2004.
+[40] Spadaro A, Scott KR, Koyfman A, Long B. "High risk and low prevalence diseases: Serotonin syndrome." *Am J Emerg Med*. 2022;61:90-97. PMID: 36057215. [https://pubmed.ncbi.nlm.nih.gov/36057215/](https://pubmed.ncbi.nlm.nih.gov/36057215/)
 
-[34] Cuomo A, et al. "S-adenosylmethionine (SAMe) in major depressive disorder (MDD): a clinician-oriented systematic review." *Ann Gen Psychiatry*. 2020;19:50. [https://doi.org/10.1186/s12991-020-00298-z](https://doi.org/10.1186/s12991-020-00298-z)
+[41] Stramentinoli G. "Pharmacologic aspects of S-adenosylmethionine. Pharmacokinetics and pharmacodynamics." *Am J Med*. 1987;83(5A):35-42. PMID: 3318439. [https://pubmed.ncbi.nlm.nih.gov/3318439/](https://pubmed.ncbi.nlm.nih.gov/3318439/)
 
-[35] Fukumoto K, et al. "Excess S-adenosylmethionine inhibits methylation via catabolism to adenine." *Commun Biol*. 2022;5:313. [https://doi.org/10.1038/s42003-022-03280-5](https://doi.org/10.1038/s42003-022-03280-5)
+[42] Sharma A, Gerbarg P, Bottiglieri T, et al. "S-Adenosylmethionine (SAMe) for Neuropsychiatric Disorders: A Clinician-Oriented Review of Research." *J Clin Psychiatry*. 2017;78(6):e656-e667. PMID: 28682528. [https://pubmed.ncbi.nlm.nih.gov/28682528/](https://pubmed.ncbi.nlm.nih.gov/28682528/)
 
-[36] U.S. Department of Agriculture, FoodData Central. [https://fdc.nal.usda.gov/](https://fdc.nal.usda.gov/)
+[43] Walker KF, Chappell LC, Hague WM, Middleton P, Thornton JG. "Pharmacological interventions for treating intrahepatic cholestasis of pregnancy." *Cochrane Database Syst Rev*. 2020;7:CD000493. PMID: 32716060. [https://pubmed.ncbi.nlm.nih.gov/32716060/](https://pubmed.ncbi.nlm.nih.gov/32716060/)
+
+[44] Guo T, et al. "S-adenosyl-L-methionine for the treatment of chronic liver disease: a systematic review and meta-analysis." *PLoS One*. 2015;10(3):e0122124. PMID: 25774783. [https://pubmed.ncbi.nlm.nih.gov/25774783/](https://pubmed.ncbi.nlm.nih.gov/25774783/)
+
+[45] Lipinski JF, Cohen BM, Frankenburg F, et al. "Open trial of S-adenosylmethionine for treatment of depression." *Am J Psychiatry*. 1984;141(3):448-450. PMID: 6367496. [https://pubmed.ncbi.nlm.nih.gov/6367496/](https://pubmed.ncbi.nlm.nih.gov/6367496/)
+
+[46] Shekim WO, Antun F, Hanna GL, McCracken JT, Hess EB. "S-adenosyl-L-methionine (SAM) in adults with ADHD, RS: preliminary results from an open trial." *Psychopharmacol Bull*. 1990;26(2):249-253. PMID: 2236465. [https://pubmed.ncbi.nlm.nih.gov/2236465/](https://pubmed.ncbi.nlm.nih.gov/2236465/)
+
+[47] Charlton CG, Crowell B Jr. "Parkinson's disease-like effects of S-adenosyl-L-methionine: effects of L-dopa." *Pharmacol Biochem Behav*. 1992;43(2):423-431. PMID: 1359575. [https://pubmed.ncbi.nlm.nih.gov/1359575/](https://pubmed.ncbi.nlm.nih.gov/1359575/)
+
+[48] Rambaldi A, Gluud C. "WITHDRAWN: S-adenosyl-L-methionine for alcoholic liver diseases." *Cochrane Database Syst Rev*. 2015;(11):CD002235. PMID: 26560497. [https://pubmed.ncbi.nlm.nih.gov/26560497/](https://pubmed.ncbi.nlm.nih.gov/26560497/)
+
+[49] Medici V, Virata MC, Peerson JM, et al. "S-adenosyl-L-methionine treatment for alcoholic liver disease: a double-blinded, randomized, placebo-controlled trial." *Alcohol Clin Exp Res*. 2011;35(11):1960-1965. PMID: 22044287. [https://pubmed.ncbi.nlm.nih.gov/22044287/](https://pubmed.ncbi.nlm.nih.gov/22044287/)
+
+[50] National Institutes of Health, Office of Dietary Supplements. "Folate: Fact Sheet for Health Professionals." [https://ods.od.nih.gov/factsheets/Folate-HealthProfessional/](https://ods.od.nih.gov/factsheets/Folate-HealthProfessional/)
+
+[51] National Institutes of Health, Office of Dietary Supplements. "Vitamin B12: Fact Sheet for Health Professionals." [https://ods.od.nih.gov/factsheets/VitaminB12-HealthProfessional/](https://ods.od.nih.gov/factsheets/VitaminB12-HealthProfessional/)
+
+[52] National Institutes of Health, Office of Dietary Supplements. "Vitamin B6: Fact Sheet for Health Professionals." [https://ods.od.nih.gov/factsheets/VitaminB6-HealthProfessional/](https://ods.od.nih.gov/factsheets/VitaminB6-HealthProfessional/)
+
+[53] National Center for Complementary and Integrative Health. "S-Adenosyl-L-Methionine (SAMe): In Depth." Last updated January 2017. [https://www.nccih.nih.gov/health/sadenosyllmethionine-same-in-depth](https://www.nccih.nih.gov/health/sadenosyllmethionine-same-in-depth)

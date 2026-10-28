@@ -450,6 +450,21 @@ describe('screeningsToInputs', () => {
     expect(inputs.prostatePsaValue).toBe(4.5);
   });
 
+  // US-02 AC7: a stored string is read against the answer's input range, as
+  // typed text is. Pack-years "150,500" (0-200) fits only as 150.5, a decimal
+  // reading, which is never chosen; PSA "1,234" (0-10000) could be either. The
+  // plan reads neither and the rows are left as stored.
+  it('US-02 AC7: reads "1,234"-shaped answers by their range', () => {
+    const rows = [
+      { screeningKey: 'lung_pack_years', value: '150,500' },
+      { screeningKey: 'prostate_psa_value', value: '1,234' },
+    ];
+    const inputs = screeningsToInputs(rows);
+    expect(inputs.lungPackYears).toBeUndefined();
+    expect(inputs.prostatePsaValue).toBeUndefined();
+    expect(rows[1].value).toBe('1,234');
+  });
+
   it('converts endometrial screening fields', () => {
     const screenings: ApiScreening[] = [
       { id: '1', screeningKey: 'endometrial_discussion', value: 'discussed', updatedAt: '' },

@@ -9,7 +9,7 @@
 import { beforeAll, describe, it, expect, vi } from 'vitest';
 import Ajv2020 from 'ajv/dist/2020';
 import { isRefusalReason, MCP_REFUSAL_REASONS, MCP_TOOL_NAMES } from './product-events';
-import { z } from 'zod';
+import * as z from './zod';
 import {
   addLabValues,
   addLabValuesInput,
@@ -919,11 +919,13 @@ describe('US-10 AC6 — read_record leaves the merge’s field stamps out', () =
 
 /** A client obeys the schema; zod is what actually refuses. Drift is a lie. */
 /** The wrappers that carry no shape of their own, stripped. */
-function bare(schema: z.ZodTypeAny): z.ZodTypeAny {
+function bare(schema: z.ZodType): z.ZodType {
   let inner = schema;
-  while (inner instanceof z.ZodOptional || inner instanceof z.ZodNullable || inner instanceof z.ZodDefault) inner = inner._def.innerType;
+  while (inner instanceof z.ZodOptional || inner instanceof z.ZodNullable || inner instanceof z.ZodDefault) inner = inner.unwrap() as z.ZodType;
   return inner;
 }
+
+type Shape = Record<string, z.ZodType>;
 
 type ObjectSchema = { properties: Record<string, unknown>; required?: string[] };
 
@@ -933,7 +935,7 @@ type ObjectSchema = { properties: Record<string, unknown>; required?: string[] }
  * where a hand-written schema goes stale while every top-level key still
  * agrees (live 2026-09-06: `hint` and `sameDayAs` missing from import_documents).
  */
-function expectParity(shape: z.ZodRawShape, schema: ObjectSchema, where: string) {
+function expectParity(shape: Shape, schema: ObjectSchema, where: string) {
   expect(Object.keys(schema.properties).sort(), where).toEqual(Object.keys(shape).sort());
   expect([...(schema.required ?? [])].sort(), `${where} required`)
     .toEqual(Object.keys(shape).filter((key) => !shape[key].isOptional()).sort());
@@ -942,19 +944,19 @@ function expectParity(shape: z.ZodRawShape, schema: ObjectSchema, where: string)
     let json = schema.properties[key] as Record<string, unknown>;
     let path = `${where}.${key}`;
     if (zod instanceof z.ZodArray) {
-      zod = bare(zod.element);
+      zod = bare(zod.element as z.ZodType);
       json = json.items as Record<string, unknown>;
       path += '[]';
     }
     if (zod instanceof z.ZodObject && Object.keys(zod.shape).length > 0) {
       expect(json, path).toHaveProperty('properties');
-      expectParity(zod.shape, json as unknown as ObjectSchema, path);
+      expectParity(zod.shape as Shape, json as unknown as ObjectSchema, path);
     }
   }
 }
 
 describe('US-32 — the published JSON Schema and the zod gate say the same thing', () => {
-  const ZOD: Record<string, z.ZodObject<z.ZodRawShape>> = {
+  const ZOD: Record<string, z.ZodObject<Shape>> = {
     read_record: readRecordInput,
     get_plan: getPlanInput,
     add_measurement: addMeasurementInput,
@@ -973,7 +975,7 @@ describe('US-32 — the published JSON Schema and the zod gate say the same thin
   it('backs every published maxLength with a zod bound that actually refuses', () => {
     let checked = 0;
     for (const tool of MCP_TOOLS) {
-      const schemas: Array<[z.ZodRawShape, Record<string, unknown>]> = [[ZOD[tool.name].shape, tool.inputSchema.properties]];
+      const schemas: Array<[Shape, Record<string, unknown>]> = [[ZOD[tool.name].shape, tool.inputSchema.properties]];
       if (tool.name === 'add_lab_values' || tool.name === 'file_results') {
         const rowShape = tool.name === 'add_lab_values' ? labValueInput.shape : fileResultRow.shape;
         schemas.push([rowShape, (tool.inputSchema.properties.values as { items: { properties: Record<string, unknown> } }).items.properties]);
@@ -3449,5 +3451,28 @@ describe('US-21 AC21 — file_results names a ceiling refusal like every other r
       'Free Testosterone 200 nmol/L: Free testosterone in "nmol/L": Free testosterone above 10,000 pmol/L is not a measured value, ' +
         'so the printed unit is probably wrong (nmol/L vs pmol/L). Ask the person to check the report; do not re-send it in another unit on your own.',
     ]);
+  });
+});
+
+describe('US-32 — a malformed call is worded as it was before zod 4 (the agent contract)', () => {
+  // Each line is the text zod 3 produced, captured before the upgrade.
+  const WORDED: Array<[string, unknown, string]> = [
+    ['add_measurement', { metricType: 'weight', value: 'x', recordedAt: '2026-01-01' }, 'add_measurement: value — Expected number, received string'],
+    ['add_measurement', { metricType: 'weight', value: JSON.parse('1e999'), recordedAt: '2026-01-01' }, 'add_measurement: value — Number must be finite'],
+    ['add_measurement', { value: 80, recordedAt: '2026-01-01' }, 'add_measurement: metricType — Required'],
+    ['add_measurement', { metricType: '', value: 80, recordedAt: '2026-01-01' }, 'add_measurement: metricType — String must contain at least 1 character(s)'],
+    ['add_measurement', { metricType: 'weight', value: 80, recordedAt: '2026-01-01', extra: 1 }, "add_measurement: Unrecognized key(s) in object: 'extra'"],
+    ['add_measurement', 'x', 'add_measurement: Expected object, received string'],
+    ['add_lab_values', { values: [] }, 'add_lab_values: values — Array must contain at least 1 element(s)'],
+    ['update_profile', { sex: 'x' }, "update_profile: sex — Invalid enum value. Expected 'male' | 'female', received 'x'"],
+    ['update_profile', { sex: 1 }, "update_profile: sex — Expected 'male' | 'female', received number"],
+    ['update_profile', { birthYear: 1970.5 }, 'update_profile: birthYear — Expected integer, received float'],
+    ['import_documents', { fileNames: Array(21).fill('a.pdf') }, 'import_documents: fileNames — Array must contain at most 20 element(s)'],
+    ['file_results', { document: { title: 't', type: 'other', date: null, sha256: 'x' } }, 'file_results: document.sha256 — Invalid'],
+    ['get_plan', { extra: 1 }, "get_plan: Unrecognized key(s) in object: 'extra'"],
+  ];
+
+  it.each(WORDED)('%s %j', (name, args, text) => {
+    expect(callTool(name as 'add_measurement', args, { file: base(), now: NOW })).toEqual({ status: 'invalid-args', text });
   });
 });

@@ -1,4 +1,7 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { generateSuggestions, weightMedicationTrigger, lipidMarkerFor, joinWithAnd } from './suggestions';
 import { SUGGESTION_EVIDENCE } from './evidence';
 import { LIPID_TREATMENT_TARGETS, NON_HDL_THRESHOLDS, type UnitSystem } from './units';
@@ -2975,10 +2978,94 @@ describe('Evidence attachment', () => {
     expect(omega3.references!.map(r => r.url)).toContain('https://doi.org/10.1161/CIRCULATIONAHA.121.055654');
   });
 
+  // US-07 AC1 (amended 2026-10-22, orchestrator): the multivitamin card lists
+  // vitamin K2, so it carries an anticoagulant caveat in the omega-3 card's style;
+  // low-dose MK-7 lowered the INR on a vitamin K antagonist (Theuwissen 2013).
+  it('US-07 AC1: multivitamin card warns warfarin users about vitamin K2 and cites Theuwissen 2013', () => {
+    const { inputs, results } = createTestData({}, { bmi: 22 });
+    const base = generateSuggestions(inputs, results, 'si').find(s => s.id === 'supplement-micronutrient-base')!;
+    expect(base.ingredients).toContain('Vitamin D3 with K2');
+    expect(base.description).toContain('If you take warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR.');
+    const reason = SUGGESTION_EVIDENCE['supplement-micronutrient-base'].reason;
+    expect(reason).toContain('vitamin K antagonist');
+    // Review R2 (2026-10-22): the 45 mcg result and the authors' conclusion; no "below retail" framing.
+    expect(reason).toContain('45 mcg a day lowered the group\'s average INR by about 40%');
+    expect(reason).toContain('concluded that MK-7 supplements should be avoided');
+    expect(reason).not.toMatch(/retail/);
+    expect(base.references!.map(r => r.url)).toContain('https://doi.org/10.1111/jth.12203');
+  });
+
+  // US-07 AC1 (amended 2026-10-22, orchestrator): the psyllium dose is the trial and
+  // FDA basis, about 10 g/day of husk (7 g soluble fibre), not "7g/day" of husk
+  // (21 CFR 101.81; Jovanovski 2018, median ~10.2 g/day, LDL −0.33 mmol/L).
+  it('US-07 AC1: the algorithm gives psyllium as about 10 g/day of husk (7 g soluble fibre)', () => {
+    const md = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../health_roadmap_algorithm.md'), 'utf8');
+    const line = md.split('\n').find(l => l.startsWith('**Psyllium husk**'))!;
+    expect(line).toContain('about 10 g/day of husk, about 7 g of soluble fibre');
+    expect(line).not.toMatch(/\(7g\/day\)/);
+    expect(line).toContain('0.33 mmol/L');
+    expect(md).toContain('https://doi.org/10.1093/ajcn/nqy115');
+    // Review R1: the guideline's portfolio table, which the algorithm implements, agrees.
+    const diet = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../docs/guideline/diet.md'), 'utf8');
+    const row = diet.split('\n').find(l => l.startsWith('| Psyllium husk |'))!;
+    expect(row).toContain('about 10 g/day husk (≈7 g soluble fibre)');
+    expect(row).toContain('0.33 mmol/L');
+  });
+
   // US-07 AC1 (amended 2026-10-21, Brad): B vitamins' cognitive benefit may depend
   // on good omega-3 levels (VITACOG), but FACIT found the reverse (van Soest 2021);
   // the omega-3 card carries the WHO 2026 note, and the reason drops the unhedged
   // "important role in cognitive protection".
+  it('US-07 AC1: creatine card attributes the memory view to Dr Stanfield; reviews are mixed', () => {
+    const { inputs, results } = createTestData({}, { bmi: 22 });
+    const creatine = generateSuggestions(inputs, results, 'si').find(s => s.id === 'supplement-creatine')!;
+
+    expect(creatine.description).toContain('Dr Stanfield considers the memory evidence clear and consistent');
+    expect(creatine.description).toContain('formal reviews are more mixed, with the clearest benefit in older adults');
+    expect(creatine.description).not.toMatch(/consistently find/i);
+    expect(creatine.description).not.toMatch(/emerging evidence/i);
+    expect(creatine.description).not.toMatch(/women/i);
+    expect(creatine.description).not.toContain('—');
+
+    const reason = SUGGESTION_EVIDENCE['supplement-creatine'].reason;
+    expect(reason).toContain('his judgement, not a trial finding');
+    expect(reason).toContain('A systematic review (Avgerinos 2018)');
+    expect(reason).toContain('no clear overall memory benefit except in older adults');
+    expect(reason).toContain('no effect on overall cognition or executive function');
+    expect(reason).toContain('has not been established');
+    expect(reason).not.toMatch(/consistently find|largest|women/i);
+
+    const urls = creatine.references!.map(r => r.url);
+    expect(urls).toContain('https://doi.org/10.1093/nutrit/nuac064');
+    expect(urls).toContain('https://doi.org/10.1093/nutrit/nuac111');
+    expect(urls).toContain('https://doi.org/10.2903/j.efsa.2024.9100');
+  });
+
+  it('US-07 AC1: sleep support hedges melatonin and times it 3 to 4 hours before sleep (Brad 2026-10-26)', () => {
+    const { inputs, results } = createTestData({}, { bmi: 22 });
+    const sleep = generateSuggestions(inputs, results, 'si').find(s => s.id === 'supplement-sleep')!;
+    expect(sleep.description).toContain('melatonin may reduce the time taken to fall asleep and may improve sleep quality');
+
+    const ev = SUGGESTION_EVIDENCE['supplement-sleep'];
+    expect(ev.reason).toContain('may reduce sleep onset latency');
+    expect(ev.reason).not.toContain('effectively reduces');
+    expect(ev.reason).toContain('about 3 hours before bedtime');
+    expect(ev.references.map(r => r.url)).toContain('https://doi.org/10.1111/jpi.12985');
+
+    const root = join(dirname(fileURLToPath(import.meta.url)), '../../..');
+    const text = readFileSync(join(root, 'roadmap_text.html'), 'utf8');
+    expect(text).toContain('Sleep support (3 to 4 hours before you want to fall asleep)');
+    expect(text).not.toContain('Sleep support (one hour before bed)');
+    expect(text).toContain('10.1111/jpi.12985');
+    expect(text).toContain('within 3-4 hours of waking');
+    expect(text).not.toContain('energy drinks past 9:30am');
+    const algo = readFileSync(join(root, 'health_roadmap_algorithm.md'), 'utf8');
+    expect(algo).toMatch(/`supplement-sleep`[^\n]*3 to 4 hours before the person wants to fall asleep[^\n]*Cruz-Sanabria 2024/);
+    const sleepGuide = readFileSync(join(root, 'docs/guideline/sleep.md'), 'utf8');
+    expect(sleepGuide).toContain('taken 3 to 4 hours before sleep');
+    expect(sleepGuide).toContain('Brad\'s cut-off is 3 to 4 hours after waking');
+  });
+
   it('US-07 AC1: omega-3 card and reason give VITACOG and the reverse FACIT finding, and the WHO 2026 note', () => {
     const { inputs, results } = createTestData({}, { bmi: 22 });
     const omega3 = generateSuggestions(inputs, results, 'si').find(s => s.id === 'supplement-omega3')!;

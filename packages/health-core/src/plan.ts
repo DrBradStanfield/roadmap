@@ -19,7 +19,7 @@ import {
   type ApiMeasurement,
 } from './mappings';
 import { latestActivePerMetric } from './measurement-history';
-import { cmpStr, localDay } from './merge';
+import { cmpStr, dayOf, localDay } from './merge';
 import { refLineFor } from './reference-hints';
 import { computeReminderSchedule, type ReminderScheduleItem } from './reminder-schedule';
 import { BASE_SCHEMA_VERSION, type FileLabValue, type RoadmapFile } from './roadmap-file';
@@ -27,7 +27,7 @@ import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } f
 import {
   UNIT_DEFS, formatDisplayValue, formatGradedValue, getDisplayLabel, type MetricType, type UnitSystem,
 } from './units';
-import { getValidationErrors, validateHealthInputs } from './validation';
+import { getValidationErrors, sanitizeInputs, validateHealthInputs } from './validation';
 
 /** This project, named once. Every URL that points at the code derives from it. */
 export const REPO_SLUG = 'DrBradStanfield/roadmap';
@@ -113,16 +113,58 @@ export interface PlanInputs {
  * display-unit overrides are deliberately absent — those live in the browser's
  * localStorage, never in the record, so the CLI renders in `profile.unitSystem`.
  */
-export function derivePlanInputs(file: RoadmapFile): PlanInputs {
+export function derivePlanInputs(file: RoadmapFile, now = new Date()): PlanInputs {
   const active = file.measurements.filter((m) => m.status === 'active') as ApiMeasurement[];
   const currentRows = latestActivePerMetric(active);
+  const creatinine = currentRows.find((r) => r.metricType === 'creatinine');
   return {
-    inputs: measurementsToInputs(currentRows, fileProfileToApi(file.profile)),
+    inputs: withLabEgfr(
+      measurementsToInputs(currentRows, fileProfileToApi(file.profile)),
+      creatinine ? dayOf(creatinine.recordedAt) : null, labEgfrOf(file.labValues), localDay(now),
+    ),
     unitSystem: file.profile.unitSystem ?? 'si',
     medications: medicationsToInputs(file.medications),
     screenings: screeningsToInputs(fileScreeningRows(file.screenings)),
     currentRows,
   };
+}
+
+/** A lab row as `labEgfrOf` reads it: the file's rows and the widget's both fit. */
+type LabRowLike = Pick<FileLabValue, 'id' | 'metricName' | 'value' | 'unit' | 'recordedAt'> & { createdAt?: string; status?: string };
+
+/** The lab's printed creatinine eGFR and its day: one candidate for the plan's eGFR (US-07 AC7). */
+export type LabEgfr = Required<Pick<HealthInputs, 'labEgfr' | 'labEgfrDate'>>;
+
+/**
+ * US-07 AC7: the latest active lab `egfr` row (the creatinine eGFR: never
+ * cystatin C or combined), in the catalogue's unit and the schema's range;
+ * null when there is none.
+ */
+export function labEgfrOf(labValues: readonly LabRowLike[]): LabEgfr | null {
+  const rows = labValues.filter((l) => labSlotKey(l.metricName) === 'egfr'
+    && l.unit === resolveLabCatalogEntry(l.metricName)?.unit && 'labEgfr' in sanitizeInputs({ labEgfr: l.value }));
+  const lab = latestActivePerMetric(rows.map((l) => ({ ...l, metricType: 'egfr' })))[0];
+  return lab ? { labEgfr: lab.value, labEgfrDate: dayOf(lab.recordedAt) } : null;
+}
+
+/**
+ * US-07 AC7 (Brad 2026-10-27): the inputs with the lab's printed eGFR set when
+ * it is the plan's eGFR, and cleared when it is not. The candidates are `lab`
+ * (labEgfrOf) and the eGFR calculated from the creatinine the inputs hold,
+ * dated `creatinineDay`. Only an eGFR the plan can calculate competes: a
+ * creatinine the schema keeps, and a birth year. The newer by day wins; on
+ * the same day the lab's does, since ours may come from a misread creatinine.
+ * A creatinine with no date (typed, not yet saved: `null`) is `today`'s, the
+ * day it would be saved with.
+ */
+export function withLabEgfr<T extends Partial<HealthInputs>>(
+  inputs: T, creatinineDay: string | null, lab: LabEgfr | null, today: string,
+): T {
+  const { labEgfr: _value, labEgfrDate: _day, ...rest } = inputs;
+  if (!lab) return rest as T;
+  const usable = sanitizeInputs({ creatinine: inputs.creatinine, birthYear: inputs.birthYear });
+  const crDay = usable.creatinine === undefined || usable.birthYear === undefined ? null : creatinineDay ?? today;
+  return crDay !== null && crDay > lab.labEgfrDate ? rest as T : { ...rest, ...lab } as T;
 }
 
 export interface PlanLab {
@@ -168,9 +210,11 @@ export interface Plan extends PlanInputs {
 /**
  * The whole plan. Invalid fields are stripped before calculating (the widget
  * does the same), so one bad number costs its own suggestion, not the report.
+ * `unitOverrides`: per-metric display units, the web's per-field toggles (US-05), so a
+ * target reads in the unit the person chose for that test; absent, `unitSystem` throughout.
  */
-export function computePlan(file: RoadmapFile, now = new Date()): Plan {
-  const derived = derivePlanInputs(file);
+export function computePlan(file: RoadmapFile, now = new Date(), unitOverrides?: Partial<Record<MetricType, UnitSystem>>): Plan {
+  const derived = derivePlanInputs(file, now);
   let inputs = derived.inputs;
   let excluded: string[] = [];
 
@@ -196,7 +240,7 @@ export function computePlan(file: RoadmapFile, now = new Date()): Plan {
     excluded,
     generatedAt: now.toISOString(),
     today: localDay(now),
-    results: calculateHealthResults(inputs as HealthInputs, derived.unitSystem, derived.medications, derived.screenings, undefined, now),
+    results: calculateHealthResults(inputs as HealthInputs, derived.unitSystem, derived.medications, derived.screenings, unitOverrides, now),
     due: computeReminderSchedule(file, now),
     labs: derivePlanLabs(file),
   };

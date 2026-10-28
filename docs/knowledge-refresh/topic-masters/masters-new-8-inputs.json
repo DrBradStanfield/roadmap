@@ -1,0 +1,294 @@
+[
+ {
+  "handle": "menopause-supplements-benefits-evidence-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-soy-isoflavones-red-clover-black-cohosh-supplements-phytoestrogens.md",
+  "cl_raw_sha256": "350cb60bb381cc67ba75d38271ce430be5e5bf0f371190d2908eaa1fa8954df4",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/phytoestrogens-nih.md",
+  "nih_raw_sha256": "364c7be86c787d780d44fe200d74f52180b992ec05c296917aaac5ac590af9a8",
+  "positions_candidates": [
+   {
+    "file": "docs/products.md",
+    "line": 25,
+    "text": "- Bone Density: Encapsulated Vitamin K2 MK-7 90mcg (K2VITAL® DELTA), Encapsulated Vitamin D3 1,000IU (AlgeD3™), Boron 1mg. D3 supports calcium absorption and K2 activates osteocalcin to direct calcium to bone (Myneni & Mezey, *Oral Dis*, 20"
+   },
+   {
+    "file": "packages/health-core/src/evidence.ts",
+    "line": 514,
+    "text": "reason: 'Abnormal uterine bleeding — especially after menopause — can be an early sign of endometrial cancer. Prompt evaluation is important because endometrial cancer detected early has a very high cure rate.',"
+   },
+   {
+    "file": "packages/health-core/src/evidence.ts",
+    "line": 520,
+    "text": "reason: 'Women at menopause should be aware of the symptoms of endometrial cancer, particularly unexpected vaginal bleeding. The ACS recommends that women be informed about risks and symptoms at the onset of menopause.',"
+   },
+   {
+    "file": "packages/health-core/src/evidence.ts",
+    "line": 526,
+    "text": "reason: 'A DEXA scan measures bone mineral density and can detect osteoporosis before a fracture occurs. Early detection allows treatment with medications that reduce fracture risk. The USPSTF recommends screening for women aged 65+ and pos"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 551,
+    "text": "<p data-mce-fragment=\"1\"><em data-mce-fragment=\"1\">Ferritin: </em>While not routinely screened for every adult, it's essential for those at higher risk of iron deficiency. This includes premenopausal women, especially those with prior pregn"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 691,
+    "text": "<p data-mce-fragment=\"1\">There is no routine screening test for endometrial cancer. However, the American Cancer Society recommends that at menopause (typically around age 45+), all women should be informed about the risks and symptoms of e"
+   },
+   {
+    "file": "docs/guideline/exercise.md",
+    "line": 205,
+    "text": "**Brad's position:** Aligns. RT is a key non-pharmacological intervention for osteoporosis prevention, particularly important for postmenopausal women and older men. The algorithm's `screening-dexa` suggestion triggers bone density screenin"
+   },
+   {
+    "file": "docs/guideline/sleep.md",
+    "line": 390,
+    "text": "- Female sex (1.2–1.4× higher risk; worsens during pregnancy, peri- and postmenopause)"
+   }
+  ],
+  "positions_candidates_total": 8,
+  "posts": [
+   {
+    "handle": "nasa-found-how-to-stop-osteoporosis",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/nasa-found-how-to-stop-osteoporosis.md",
+    "url": "https://drstanfield.com/blogs/articles/nasa-found-how-to-stop-osteoporosis",
+    "publishedAt": "2026-08-07T12:00:00Z",
+    "title": "NASA Found How To Stop Osteoporosis",
+    "topic_mentions": 5,
+    "title_names_topic": false
+   },
+   {
+    "handle": "hrt-just-changed",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/hrt-just-changed.md",
+    "url": "https://drstanfield.com/blogs/articles/hrt-just-changed",
+    "publishedAt": "2026-01-16T00:00:34Z",
+    "title": "HRT Just Changed",
+    "topic_mentions": 17,
+    "title_names_topic": false
+   },
+   {
+    "handle": "do-this-daily-to-stop-bone-loss-after-40",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/do-this-daily-to-stop-bone-loss-after-40.md",
+    "url": "https://drstanfield.com/blogs/articles/do-this-daily-to-stop-bone-loss-after-40",
+    "publishedAt": "2025-07-03T02:07:16Z",
+    "title": "Do This Daily to STOP Bone Loss After 40",
+    "topic_mentions": 5,
+    "title_names_topic": false
+   },
+   {
+    "handle": "calcium-rich-foods-diet",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/calcium-rich-foods-diet.md",
+    "url": "https://drstanfield.com/blogs/articles/calcium-rich-foods-diet",
+    "publishedAt": "2024-10-14T21:25:53Z",
+    "title": "How to Include More Calcium-Rich Foods in Your Diet",
+    "topic_mentions": 4,
+    "title_names_topic": false
+   }
+  ]
+ },
+ {
+  "handle": "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-prostate-supplements-beta-sitosterol-phytosterols-saw-palmetto-sawpalmetto.md",
+  "cl_raw_sha256": "e3fec900233258ec3f03706195edfc7b5e2b36e5af368a07dc03e76a2c4152b8",
+  "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/sawpalmetto-nih.md",
+  "nih_raw_sha256": "3e32e6bfce236f97042954244674e09ef617722fdef67ff7e201aa1c3f43e4bf",
+  "positions_candidates": [
+   {
+    "file": "docs/products.md",
+    "line": 24,
+    "text": "- Heart Health & Antioxidant: Lycopene 10mg (encapsulated, LycoBeads®) — a tomato-derived carotenoid. A meta-analysis of 21 tomato and lycopene intervention trials found lycopene supplementation reduced systolic blood pressure by 5.66 mmHg "
+   },
+   {
+    "file": "docs/products.md",
+    "line": 42,
+    "text": "Clinical research has shown potential risks from high-dose supplementation of these fat-soluble vitamins. Vitamin A toxicity is well-documented and can cause liver damage, bone loss, and birth defects (Daley & Goyal, StatPearls, Vitamin A T"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 435,
+    "text": "- **Finasteride 1mg** — for male pattern baldness and prostate. A long-term placebo-controlled trial showed reduced prostate cancer rates (Thompson et al., NEJM, 2019). Brad sources it from Cost Plus Drugs (~$4.20/month)."
+   },
+   {
+    "file": "docs/products.md",
+    "line": 761,
+    "text": "- Vitamin E / SELECT trial (prostate cancer risk): Klein et al., **JAMA, 2011**;306(14):1549-1556 — https://doi.org/10.1001/jama.2011.1437 · PMID 21990298. Vitamin E 400 IU/d increased prostate cancer risk (HR 1.17, 99% CI 1.004-1.36, P=.00"
+   },
+   {
+    "file": "docs/products.md",
+    "line": 786,
+    "text": "- Lycopene and prostate cancer (42 studies): Rowles et al., Prostate Cancer Prostatic Dis, 2017 — https://doi.org/10.1038/pcan.2017.25"
+   },
+   {
+    "file": "packages/health-core/src/evidence.ts",
+    "line": 498,
+    "text": "'screening-prostate': {"
+   },
+   {
+    "file": "packages/health-core/src/evidence.ts",
+    "line": 499,
+    "text": "reason: 'Prostate cancer screening via PSA testing is a shared decision between patient and doctor. The benefits (early detection) must be weighed against the risks (overdiagnosis and overtreatment of slow-growing cancers). Long-term follow"
+   },
+   {
+    "file": "packages/health-core/src/evidence.ts",
+    "line": 503,
+    "text": "{ label: 'Goodman 2019 – Finasteride & prostate cancer mortality (NEJM)', url: 'https://doi.org/10.1056/NEJMc1809961' },"
+   },
+   {
+    "file": "packages/health-core/src/evidence.ts",
+    "line": 507,
+    "text": "'screening-prostate-elevated': {"
+   },
+   {
+    "file": "packages/health-core/src/evidence.ts",
+    "line": 508,
+    "text": "reason: 'A PSA above 4.0 ng/mL is above the typical reference range, but elevated PSA can have multiple causes including benign prostatic hyperplasia (BPH), infection, or prostate cancer. Further evaluation by your doctor is needed to deter"
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 429,
+    "text": "AC20 adds the comma, bracket and \"absolute\" spellings US, AU and NZ reports print for tests already catalogued (\"Bilirubin, Total\", \"ALT (SGPT)\", \"Neutrophils (Absolute)\"). There is no punctuation fold: each spelling is listed. \"Urea Nitrog"
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 918,
+    "text": "| Prostate | 45+ | Male | Shared decision |"
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 933,
+    "text": "| `will_screen` (prostate PSA) | 12 |"
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 971,
+    "text": "### Prostate-Specific"
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 973,
+    "text": "- PSA > 4.0 ng/mL -> `screening-prostate-elevated` (attention)"
+   },
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 1049,
+    "text": "| screening (90 days) | `screening_colorectal`, `screening_breast`, `screening_cervical`, `screening_lung`, `screening_prostate`, `screening_dexa` | 90 days |"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 679,
+    "text": "<h3 data-mce-fragment=\"1\"><strong data-mce-fragment=\"1\">Prostate Cancer:</strong></h3>"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 683,
+    "text": "<li data-mce-fragment=\"1\">Men at high risk (e.g., those with a family history of prostate cancer or African American men) should discuss the potential benefits and risks of screening with their healthcare provider.</li>"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 687,
+    "text": "<li data-mce-fragment=\"1\">Discuss the potential benefits and risks of prostate cancer screening with your healthcare provider.</li>"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 792,
+    "text": "<li>Finasteride is a molecule that blocks the conversion of Testosterone to Dihydrotestosterone, and is used in clinical medicine to reduce male pattern baldness and shrink the size of the prostate.</li>"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 793,
+    "text": "<li>A long-term, placebo-controlled trial reported lower prostate cancer rates in the finasteride group, and a trend toward reduced mortality.[75] </li>"
+   },
+   {
+    "file": "roadmap_text.html",
+    "line": 916,
+    "text": "<li>Goodman, P.J., et al., <em>Long-Term Effects of Finasteride on Prostate Cancer Mortality.</em> N Engl J Med, 2019. <strong>380</strong>(4): p. 393-394.</li>"
+   }
+  ],
+  "positions_candidates_total": 22,
+  "posts": [
+   {
+    "handle": "the-sulforaphane-and-astaxanthin-story-is-changing",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-sulforaphane-and-astaxanthin-story-is-changing.md",
+    "url": "https://drstanfield.com/blogs/articles/the-sulforaphane-and-astaxanthin-story-is-changing",
+    "publishedAt": "2026-10-24T23:24:26Z",
+    "title": "The Sulforaphane and Astaxanthin Story Is Changing",
+    "topic_mentions": 4,
+    "title_names_topic": false
+   },
+   {
+    "handle": "jeremy-clarkson-says-to-lie-to-your-doctor",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/jeremy-clarkson-says-to-lie-to-your-doctor.md",
+    "url": "https://drstanfield.com/blogs/articles/jeremy-clarkson-says-to-lie-to-your-doctor",
+    "publishedAt": "2026-07-22T21:24:12Z",
+    "title": "Jeremy Clarkson says to Lie to Your Doctor",
+    "topic_mentions": 17,
+    "title_names_topic": false
+   },
+   {
+    "handle": "cancer-tests-you-need-right-now",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/cancer-tests-you-need-right-now.md",
+    "url": "https://drstanfield.com/blogs/articles/cancer-tests-you-need-right-now",
+    "publishedAt": "2026-01-16T22:43:52Z",
+    "title": "Cancer Tests You Need Right Now",
+    "topic_mentions": 6,
+    "title_names_topic": false
+   },
+   {
+    "handle": "medications-potentially-improve-longevity",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/medications-potentially-improve-longevity.md",
+    "url": "https://drstanfield.com/blogs/articles/medications-potentially-improve-longevity",
+    "publishedAt": "2024-07-18T23:19:00Z",
+    "title": "Which Medications Can Potentially Improve Your Longevity?",
+    "topic_mentions": 29,
+    "title_names_topic": false
+   }
+  ]
+ },
+ {
+  "handle": "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-enhancement-supplements-yohimbe-goat-weed-arginine-enhancement.md",
+  "cl_raw_sha256": "79bffe6247123dacf45e7a7e225a6ad2f1bdc874697a767e25278c5e4bd002e0",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [],
+  "positions_candidates_total": 0,
+  "posts": [
+   {
+    "handle": "men-over-50-read-this-before-using-trt-testosterone-therapy",
+    "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/men-over-50-read-this-before-using-trt-testosterone-therapy.md",
+    "url": "https://drstanfield.com/blogs/articles/men-over-50-read-this-before-using-trt-testosterone-therapy",
+    "publishedAt": "2025-03-02T16:40:02Z",
+    "title": "Men Over 50, Read THIS Before Using TRT/Testosterone Therapy",
+    "topic_mentions": 5,
+    "title_names_topic": false
+   }
+  ]
+ },
+ {
+  "handle": "dhea-benefits-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-dhea-supplements-dhea.md",
+  "cl_raw_sha256": "ce6c6d7a40cea31ba015cc57228e2df552710a44e8eb522a98ce99da234be9e2",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [
+   {
+    "file": "health_roadmap_algorithm.md",
+    "line": 332,
+    "text": "| `dhea_s` | µmol/L | µg/dl | 0.02714 | DHEA sulfate 368.49 g/mol |"
+   }
+  ],
+  "positions_candidates_total": 1,
+  "posts": []
+ },
+ {
+  "handle": "maca-benefits-forms-dosing-and-side-effects",
+  "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-maca-supplement-review-maca.md",
+  "cl_raw_sha256": "be613863010f31495d1d31b53f63308573bbc41441cf1cc2e0fcc4425ad21b40",
+  "nih_raw": null,
+  "nih_raw_sha256": null,
+  "positions_candidates": [],
+  "positions_candidates_total": 0,
+  "posts": []
+ }
+]

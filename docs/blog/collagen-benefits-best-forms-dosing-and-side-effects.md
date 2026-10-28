@@ -8,7 +8,7 @@ tags: ["Supplements"]
 keywords: ["collagen", "collagen peptides", "hydrolyzed collagen", "collagen hydrolysate", "type i collagen", "type ii collagen", "type iii collagen", "undenatured collagen", "gelatin", "skin", "wrinkles", "joint health", "bone density", "osteoporosis", "gut health", "peptides", "hyaluronic acid", "glycine", "proline", "hydroxyproline", "aging", "anti-aging", "longevity", "muscle", "sarcopenia", "strength training", "resistance training", "diabetes", "blood sugar", "insulin resistance", "inflammation", "hair", "nails", "wound healing", "collagen powder"]
 summary: "Reference on collagen peptides. A 2026 meta-analysis found they may improve skin hydration and elasticity, but not wrinkles; trials used 0.5 to 10 g a day. Covers forms, joint, bone, muscle and wound evidence, safety, and Brad's current view. Always discuss with your doctor."
 reviewed: "2026-10-20"
-sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/collagen-supplements-review-peptides-hydrolysate/collagen/","checked":"2026-09-29","fingerprint":"sha256:b4a969b545cecb30c07a1fd839a84453ca3181e9dd18ea14cc1e36aff98b44c3"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing","checked":"2026-10-20","fingerprint":"publishedAt:2026-10-15"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/an-evidence-based-anti-aging-skincare-routine","checked":"2026-10-20","fingerprint":"publishedAt:2025-09-07"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/no-evidence-to-support-the-use-of-collagen-supplements","checked":"2026-10-20","fingerprint":"publishedAt:2025-08-27"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes","checked":"2026-10-20","fingerprint":"publishedAt:2025-07-30"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/25-reduction-in-skin-wrinkles-after-8-weeks-new-collagen-study","checked":"2026-10-20","fingerprint":"publishedAt:2025-06-11"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/collagen-peptides-can-fix-skin-wrinkles","checked":"2026-10-20","fingerprint":"publishedAt:2025-03-12"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/supplements-best-skin-tightening","checked":"2026-10-20","fingerprint":"publishedAt:2024-12-31"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/reverse-signs-skin-aging","checked":"2026-10-20","fingerprint":"publishedAt:2024-12-17"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/only-supplements-work-2025","checked":"2026-10-20","fingerprint":"publishedAt:2024-11-19"}]
+sources: [{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing","checked":"2026-10-20","fingerprint":"publishedAt:2026-10-15"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/an-evidence-based-anti-aging-skincare-routine","checked":"2026-10-20","fingerprint":"publishedAt:2025-09-07"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/no-evidence-to-support-the-use-of-collagen-supplements","checked":"2026-10-20","fingerprint":"publishedAt:2025-08-27"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes","checked":"2026-10-20","fingerprint":"publishedAt:2025-07-30"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/25-reduction-in-skin-wrinkles-after-8-weeks-new-collagen-study","checked":"2026-10-20","fingerprint":"publishedAt:2025-06-11"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/collagen-peptides-can-fix-skin-wrinkles","checked":"2026-10-20","fingerprint":"publishedAt:2025-03-12"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/supplements-best-skin-tightening","checked":"2026-10-20","fingerprint":"publishedAt:2024-12-31"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/reverse-signs-skin-aging","checked":"2026-10-20","fingerprint":"publishedAt:2024-12-17"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/only-supplements-work-2025","checked":"2026-10-20","fingerprint":"publishedAt:2024-11-19"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/collagen-benefits-best-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/collagen-benefits-best-forms-dosing-and-side-effects)*
@@ -16,6 +16,13 @@ sources: [{"name":"consumerlab","url":"https://www.consumerlab.com/reviews/colla
 ## Current view (reviewed 20 October 2026)
 
 A 2026 meta-analysis of 35 trials and more than 2,500 people gives reasonable evidence that collagen peptides may improve skin hydration and elasticity, but it found no effect on wrinkles, and longer studies are likely needed to settle wrinkles ([Brad, 15 Oct 2026](https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing)). Elasticity only clearly improved in trials lasting at least 12 weeks, and Brad's own correction of the errors in the 2026 Grimes and Mahto dataset, which had concluded there was no evidence of benefit, points the same way ([Brad, 15 Oct 2026](https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing)). Trials used 0.5 to 10 g a day (Brad's current guidance, 19 Oct 2026). Three trials that compared collagen with the same amount of another protein lean in favour of collagen, but none is conclusive on its own, and for osteoarthritis pain collagen did not come out ahead where trials matched the protein ([Brad, 15 Oct 2026](https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing)). Brad's guidance suggests collagen peptides for adults concerned about skin ageing, skin hydration or skin elasticity, not for a skin disease, rash, wound, ulcer or burn (Brad's current guidance, 18 Oct 2026). Brad sells a supplement that contains collagen, so he asks readers to weigh his view with that conflict of interest in mind ([Brad, 15 Oct 2026](https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing)).
+
+## Key safety points
+
+- Collagen peptides may reduce blood glucose; marine collagen peptides lowered it in a trial of patients with type 2 diabetes on their usual medicines. If you take insulin or other diabetes medicines, check with your doctor and monitor your blood sugar [49].
+- People with fish allergy may react to fish collagen, even after a negative test for the main fish allergen, because standard fish allergy tests contain little collagen [65].
+- Gelatin raised urinary oxalate in a feeding study. If you have had calcium oxalate kidney stones, you may want to check with your doctor before taking collagen, especially at higher doses [66].
+- Side effects in osteoarthritis trials were mostly mild to moderate stomach and bowel complaints [62].
 
 ## Brad's videos on this topic
 
@@ -31,19 +38,19 @@ A 2026 meta-analysis of 35 trials and more than 2,500 people gives reasonable ev
 
 ## 1. Overview
 
-Collagen is the most abundant protein in the human body. It is a principal structural component of connective tissue, found in skin, bone, cartilage, tendons, muscle, blood vessels, and the cornea of the eye [1][2]. Collagen protein is a uniquely rich source of the amino acids glycine, proline, and hydroxyproline -- the building blocks the body uses to synthesize new collagen. Hydroxyproline is virtually unique to collagen and is not found in meaningful quantities in other dietary proteins [1]. Together, hydroxyproline and proline confer the structural stability that makes collagen critical for the integrity of connective tissues throughout the body.
+Collagen is the body's most plentiful protein and the main structural protein of skin, bone, cartilage, tendons and blood vessels. It is rich in the amino acids glycine and proline [5][11], and hydroxyproline is one of its building blocks [66]. Together, hydroxyproline and proline confer the structural stability that makes collagen critical for the integrity of connective tissues throughout the body.
 
-Adults lose approximately 1% of the collagen in their skin each year, a process that contributes to the progressive thinning, wrinkling, and loss of elasticity characteristic of aging skin [1][3]. This age-related collagen decline may be more pronounced in women, who have lower baseline collagen density in their skin than men [3]. Collagen loss also affects joints (contributing to cartilage thinning and osteoarthritis), bones (contributing to reduced bone mineral density), and other tissues.
+Skin collagen falls with age and is lower in women than in men at all ages [3]. This loss contributes to the thinning, wrinkling and loss of elasticity of aging skin. Collagen loss also affects joints (contributing to cartilage thinning and osteoarthritis), bones (contributing to reduced bone mineral density), and other tissues.
 
-There are at least 28 identified types of collagen, but the predominant types in the body are types I, II, and III [1]:
+Many types of collagen exist. Types I, II and III are the main ones, and the amounts of types I and III in skin change with age [2]:
 
 - **Type I:** The most abundant type, found in skin, bone, tendons, and connective tissue. The primary type targeted by anti-aging skin supplements.
-- **Type II:** Found most abundantly in cartilage. The primary type used in supplements targeting joint health.
+- **Type II:** The main collagen in cartilage, and the type used in joint supplements.
 - **Type III:** Found in skin, blood vessels, and organs. Often co-occurs with type I and declines with age.
 
-Collagen supplements are typically derived from animal sources: bovine (cow) hides and bones, porcine (pig) skin, chicken sternal cartilage, fish skin and scales, or eggshell membranes [1]. No plant-based organism produces collagen, although "vegan collagen alternatives" made from fermented amino acids in ratios mimicking human collagen have recently been developed [1].
+Supplements are made from animal sources: cow hides and bones, pig skin, fish skin, chicken sternal cartilage and chicken eggshell membrane [7][31][37][41]. Plants do not make collagen, so "vegan collagen" products are blends designed to mimic it rather than collagen itself [6].
 
-Several placebo-controlled clinical studies suggest that supplemental collagen -- particularly hydrolyzed collagen peptides -- may modestly improve the appearance of aging skin, reduce joint pain and stiffness in osteoarthritis, increase bone mineral density, and aid in wound healing [1]. However, the evidence base is predominantly composed of small, manufacturer-funded studies with modest effect sizes, and a recent systematic review found that benefits on skin hydration and elasticity were no longer statistically significant when only high-quality, independent studies were analyzed [4]. A larger 2026 meta-analysis of 35 trials later found that collagen peptides may improve skin hydration and elasticity, but found no effect on wrinkles [75]. The following sections review this evidence in detail.
+Placebo-controlled trials suggest collagen peptides may modestly help aging skin [75], and other trials suggest possible benefits for osteoarthritis symptoms, bone density and wound healing [46][53][78]. Most trials are small, and many were funded by manufacturers; a 2025 meta-analysis found no effect on skin when it looked only at high-quality trials or at trials without company funding [4]. A larger 2026 meta-analysis of 35 trials later found that collagen peptides may improve skin hydration and elasticity, but found no effect on wrinkles [75]. The following sections review this evidence in detail.
 
 ## 2. Forms and Bioavailability
 
@@ -51,157 +58,153 @@ Collagen supplements are available in several distinct forms, each with differen
 
 ### Hydrolyzed Collagen (Collagen Peptides)
 
-Hydrolyzed collagen -- also called collagen hydrolysate or collagen peptides -- is collagen that has been enzymatically broken down into smaller peptide fragments [1]. This process dramatically improves solubility (dissolves in both hot and cold liquids), absorption, and ease of use. The specific composition of a collagen hydrolysate varies depending on the enzymes used, the source material, and purification methods. These processing differences produce peptides of varying molecular weights, which can affect dissolution, taste, and potentially absorption and biological activity [1].
+Hydrolyzed collagen (collagen peptides, or collagen hydrolysate) is made by cutting collagen with enzymes into short peptides. It dissolves in hot or cold drinks. Products differ in source, enzymes and processing, so their peptide sizes differ, which may affect taste and possibly absorption. In one study, though, peptides of different sizes and animal sources were absorbed to a similar degree [7].
 
-Certain branded ingredients, such as those manufactured by Gelita AG (Verisol, Tendoforte, Fortigel), claim to produce particularly low-molecular-weight collagen peptides (90% weighing less than 3,500 daltons). These products tend to be tasteless, whereas other collagen hydrolysates often have a slight bone-broth-type flavor [1].
+Branded peptides include Verisol, tested for skin [16], and Tendoforte, tested for tendons [59].
 
-When collagen is hydrolyzed to peptides, a molecule of water is added to each peptide, slightly increasing its weight. This is why the protein content listed on a supplement label is typically about 90% of the listed collagen peptide weight -- approximately 10% of the peptide weight comes from the added water molecule [1].
+Hydrolysis adds water at each bond it breaks, so the protein figure on a label can be slightly lower than the stated weight of collagen peptides.
 
 ### Gelatin
 
-Gelatin is partially hydrolyzed collagen in which the triple-helix collagen fibers have been unraveled into globular structures [1]. Gelatin dissolves only in hot water and does not mix well into cold liquids. A study in healthy young men showed that the bioavailability of amino acids from hydrolyzed collagen peptide powder was not significantly greater than that from an equal amount (20 grams) of gelatin when both were mixed in warm water. Participants found gelatin slightly more palatable and, at one-quarter the cost of peptides, 93% said they would be willing to pay for gelatin versus only 60% for the peptides [5].
+Gelatin is made by partly breaking down collagen with heat. It dissolves in hot water and sets as it cools. In healthy, active men, 20 g servings of hydrolysed and non-hydrolysed collagen proteins gave similar blood amino acid levels [5].
 
 ### Undenatured Collagen
 
-Undenatured collagen is raw collagen that has not been hydrolyzed or denatured [1]. The most studied example is UC-II, which is essentially chicken sternal cartilage -- only about 25% of UC-II is actual collagen, with the remainder consisting of other cartilage components such as glycosaminoglycans. The proposed mechanism differs from hydrolyzed collagen: UC-II is claimed to contain active immune modulators that reduce secretion of collagen-degrading enzymes, thereby slowing inflammatory joint breakdown [1]. The daily dose is much smaller (40 mg, providing approximately 10 mg of collagen) compared to hydrolyzed collagen (typically 2.5-15 grams) [1].
+Undenatured collagen has not been broken down by heat or enzymes. The best-studied product, UC-II, comes from chicken sternum cartilage [31]. Rather than supplying protein, undenatured type II collagen is thought to act on the immune system through oral tolerance [35]. Hydrolyzed collagen doses are far larger, typically 2.5 to 15 g a day [68].
 
 ### Eggshell Membrane Hydrolysates
 
-Eggshell membrane supplements contain a natural matrix of type I collagen, elastin, and small amounts of glucosamine and chondroitin [1]. Several branded ingredients exist (BiovaFlex, NEM/Natural Eggshell Membrane). These are primarily studied for joint health rather than skin.
+Eggshell membrane supplements are made from the thin membrane inside chicken eggshells. Branded forms include BiovaFlex [41] and NEM (Natural Eggshell Membrane). They have been studied mainly for joints, and in one trial for hair and skin [29].
 
 ### Vegan Collagen Alternatives
 
-Products like VeCollal are marketed as plant-based collagen alternatives. They are not actual collagen but rather fermented amino acids in the same ratios as type I human collagen, combined with herbal extracts (asiaticoside from gotu kola, ginsenoside from ginseng) that stimulate collagen secretion in laboratory studies [1]. A manufacturer-conducted study of 90 healthy adults found that 5 grams of VeCollal daily for 8 weeks increased skin elasticity by 5.1%, skin hydration by 4.3%, and reduced wrinkles by 27.5% compared to placebo -- benefits similar to those of 5 grams of fish collagen in the same trial [6].
+VeCollal and similar products are sold as plant-based collagen alternatives. They contain no collagen; they are blends designed to mimic it, and a double-blind, placebo-controlled trial has tested one on skin [6].
 
 ### Source Comparison: Bovine vs. Porcine vs. Marine
 
-A clinical study comparing a single 10-gram dose of collagen hydrolysate from fish, porcine, and bovine sources found that each increased blood concentrations of free and peptide-bound hydroxyproline by a similar amount in healthy young adults [7]. This suggests that no particular animal source of collagen hydrolysate is inherently better absorbed than another when taken orally. However, the blood levels of hydroxyproline needed to produce clinically meaningful changes in target tissues such as skin have not been determined [7].
+A crossover study gave healthy volunteers single doses of collagen hydrolysate made from fish, pig and cow skin or hide. All raised blood free hydroxyproline by a similar amount, and total hydroxyproline above the free level showed that peptides containing it were absorbed [7]. So no animal source appears to be absorbed better than another. The blood levels needed to change skin or other tissues are not known [7].
 
 ### Comparison Table
 
 | Form | Source | Typical Daily Dose | Dissolves In | Primary Clinical Uses |
 |------|--------|:--:|:--:|------|
 | Hydrolyzed collagen (peptides) | Bovine, porcine, fish | 2.5-15 g | Hot and cold liquids | Skin, joints, bone, general |
-| Gelatin | Bovine, porcine | 10-20 g | Hot liquids only | Skin, general protein |
-| Undenatured collagen (UC-II) | Chicken cartilage | 40 mg (10 mg collagen) | Capsule form | Joint pain/osteoarthritis |
-| Eggshell membrane (NEM, BiovaFlex) | Chicken eggshell | 450-500 mg | Capsule form | Joint pain/stiffness |
-| Vegan alternative (VeCollal) | Fermented amino acids | 5 g | Hot and cold liquids | Skin (preliminary) |
+| Gelatin | Bovine, porcine | 20 g (single dose studied) | Hot liquids only | General protein |
+| Undenatured collagen (UC-II) | Chicken cartilage | 40 mg | Capsule form | Joint pain/osteoarthritis |
+| Eggshell membrane (BiovaFlex) | Chicken eggshell | 450 mg | Capsule form | Joint pain/stiffness |
 
 ### Key Bioavailability Principles
 
-**Absorption:** As with other dietary proteins, most ingested collagen is broken down into individual amino acids during digestion. However, preliminary evidence suggests that some collagen-specific peptides (particularly di- and tripeptides containing hydroxyproline) may remain intact during absorption and accumulate in skin and cartilage [8][9]. These bioactive peptides may stimulate fibroblast and chondrocyte activity beyond what is achieved by supplying amino acids alone [8].
+**Absorption:** Like other dietary proteins, most collagen is digested into single amino acids. But after people take gelatin hydrolysates, small peptides containing hydroxyproline, mainly Pro-Hyp, appear in the blood [8], and in mice, labelled gelatin hydrolysate built up in cartilage [9]. These peptides may act on skin and cartilage cells beyond supplying amino acids, but this has not been shown in people.
 
-**Dipeptide content matters:** A study found that collagen hydrolysate enriched in specific dipeptides (proline-hydroxyproline and hydroxyproline-glycine at >3,000 ppm vs. <100 ppm in conventional peptides) provided similar joint benefits at a dose of 2.5 grams compared to 10 grams of conventional collagen peptides [10]. This suggests that the composition and molecular weight of collagen peptides may be as important as the total dose.
+**Dipeptide content matters:** In one trial, 2.5 g of Type J collagen peptides, enriched in bioactive dipeptides, matched 10 g of conventional collagen peptides for knee osteoarthritis [10]. This suggests that peptide make-up may matter as much as total dose.
 
-**Collagen vs. other proteins:** Collagen is not a complete protein. It lacks the amino acid tryptophan entirely and is low in branched-chain amino acids (leucine, isoleucine, valine) that are critical for muscle protein synthesis [1][11]. A study in young healthy adults found no increase in muscle or connective tissue protein synthesis rates when 30 grams of hydrolyzed collagen was consumed after resistance exercise, compared to a noncaloric placebo [11]. For muscle-building purposes, whey or other complete proteins are substantially more effective [1][11].
+**Collagen vs. other proteins:** Collagen is not a complete protein: it has no tryptophan [68], and it raises blood leucine less than dairy or whey protein [5][11]. In young recreational athletes, 30 g of collagen protein after resistance exercise did not raise muscle protein synthesis above placebo, while 30 g of whey did [11]. For building muscle, whey or other complete proteins look more effective [11].
 
 ## 3. Evidence for Health Benefits
 
 ### Skin Aging and Wrinkles
 
-The evidence for collagen supplementation and skin health is the most extensively studied application. Multiple placebo-controlled trials suggest modest improvements in skin wrinkles, elasticity, and hydration. The pooled analyses disagree: a 2025 systematic review raised questions about the quality of this evidence, and a larger 2026 meta-analysis found benefits for hydration and elasticity but not for wrinkles [75].
+The evidence for collagen supplementation and skin health is the most extensively studied application. Multiple placebo-controlled trials suggest modest improvements in skin elasticity and hydration. The pooled analyses disagree: a 2025 systematic review raised questions about the quality of this evidence, and a larger 2026 meta-analysis found benefits for hydration and elasticity but not for wrinkles [75].
 
-**Systematic review (2025):** A review of 23 clinical studies found that collagen supplementation (approximately 3 g/day for approximately 12 weeks) modestly improved skin hydration and elasticity compared to placebo, but did NOT reduce wrinkles. Critically, when only high-quality or independent (non-manufacturer-funded) studies were considered, there were no significant improvements in any outcome measure [4]. However, this review has been criticized by some in the skincare industry for inaccurate classification of independent versus manufacturer-funded studies, and for incorrectly citing the duration and collagen source in certain included studies [13][14]. Brad argued that the result for the independent trials only just missed statistical significance, and that 7 of the 9 studies the review graded as high quality showed a benefit [77].
+**Systematic review (2025):** A 2025 meta-analysis of 23 trials (1474 participants) concluded there is no clinical evidence that collagen prevents or treats skin aging: trials without company funding, and high-quality trials, showed no effect on hydration, elasticity or wrinkles; only company-funded trials, and low-quality trials for elasticity, showed benefit [4]. Industry groups said the review misclassified some trials as independent or company-funded, and misreported the length and collagen source of some trials [13][14]. Brad argued that the result for the independent trials only just missed statistical significance, and that 7 of the 9 studies the review graded as high quality showed a benefit [77].
 
 **Re-analysis (2026):** Grimes and Mahto re-checked the two positive meta-analyses from 2021 and 2023 and found real errors: the standard error was entered where the standard deviation belonged, which inflated small differences, and different elasticity measurements were pooled together. To conclude there was no evidence of benefit, they leaned on one test, whether trials that used more collagen showed bigger effects, and found no clear pattern [76]. Brad checked their published dataset against the original papers and found the collagen and comparison groups the wrong way around in eight trials. After correction, the elasticity effect rose from 0.37, which could have been zero, to about 0.6 and reached statistical significance; hydration stayed at about 0.5 [77].
 
 **Meta-analysis (2026):** Batool and colleagues pooled 35 trials and more than 2,500 people. Collagen peptides improved hydration (effect size 0.44) and elasticity (0.62, after setting aside two trials with extreme negative results), and reduced water loss through the skin. Elasticity only clearly improved in trials lasting at least 12 weeks. There was no effect on wrinkles; the authors suggest this is likely due to time, because fewer wrinkles need long-term changes in the deeper structure of the skin. Independently conducted trials reported effect sizes comparable to sponsored ones [75]. Trials used 0.5 to 10 g a day [75].
 
-The single trials below report wrinkle reductions. When wrinkle results were pooled in the 2026 meta-analysis, there was no effect [75].
+Some small trials reported fewer wrinkles, but when the results were pooled in the 2026 meta-analysis there was no effect [75].
 
-**Verisol (porcine type I collagen peptides):** The most studied branded ingredient for skin. Key trials:
+**Verisol collagen peptides:** Key trials:
 
-- In 114 women aged 45-65, 2.5 g/day of Verisol for 8 weeks reduced eye wrinkle volume by 20.1% vs. placebo. Even 4 weeks after stopping treatment, wrinkle volume remained 11.5% lower than placebo. Skin biopsies showed procollagen type I increased by 65% and elastin increased by 18% compared to placebo [15].
-- In women (average age 48), 2.5 g or 5 g daily for 2 months modestly improved skin elasticity of the inner forearms but did not improve skin roughness or hydration. The effect was greatest in women over 50; both doses were equally effective [16].
-- In 66 women (average age 46), 2.5 g of hydrolyzed bovine-derived Verisol B for 8 weeks decreased eye wrinkle volume by 19% vs. a 6% increase in the placebo group, with modest improvements in facial skin hydration and elasticity [17].
-- In women (average age 40), 2.5 g daily for 6 months reduced the appearance of thigh cellulite by 9% (pinch test) and skin waviness by 8% compared to placebo [18].
+- In a trial of 114 women aged 45 to 65 years, 2.5 g a day of Verisol for 8 weeks raised procollagen type I by 65% and elastin by 18% compared with placebo in skin samples taken from a subgroup [16].
+- In 69 women, 2.5 g or 5 g a day of collagen peptides for 8 weeks improved skin elasticity compared with placebo, and 4 weeks after stopping, elasticity stayed higher in the older women. Effects on skin moisture did not reach statistical significance [15].
+- In 66 women, bovine-derived collagen peptides for 8 weeks improved skin elasticity and hydration compared with placebo [17][79].
+- In 105 women aged 24 to 50 years with moderate cellulite, 2.5 g a day for 6 months reduced cellulite and skin waviness on the thighs compared with placebo in women of normal weight; the effect was smaller in overweight women [18].
 
 **Fish collagen peptides:**
 
-- In 36 postmenopausal women in Thailand, 5 g/day of fish collagen hydrolysate for 1 month improved cheek skin elasticity by 9-10% vs. placebo, with the benefit persisting 1 month after supplementation. There was no improvement in upper inner arm elasticity. The researchers noted that sun-exposed skin may benefit most because UV radiation activates collagen-degrading enzymes [19].
-- In 84 men and women (average age 50) with dry skin and crow's feet, 2 g/day of low-molecular-weight fish collagen peptides for 12 weeks modestly reduced eye wrinkle depth (-11.2% vs. -5.9% placebo) and wrinkle length (-7% vs. -3.4%), with slight improvement in hydration but no improvement in elasticity [20].
-- In 43 women (average age 52), 500 mg/day of hydrolyzed fish collagen (65% peptides, 25% chondroitin sulfate) for 3 months reduced eye wrinkles by 26% vs. baseline (significant vs. placebo) and improved deep skin hydration, according to ConsumerLab, which reads the placebo comparison as showing no reduction in smile lines or forehead wrinkles [1]. The study's authors report a significant reduction in wrinkles in the nasolabial region (between the nose and upper lip) compared with placebo and baseline [21].
-- ConsumerLab reports that in 99 women (average age 41), 1 g/day of fish collagen hydrolysate for 24 weeks very slightly reduced thigh cellulite compared to placebo, and modestly increased hair strand thickness [1]. The paper itself reports 114 women aged 20-50 and significant improvements in cellulite severity, skin elasticity and hair diameter [22].
+- In 36 postmenopausal women, 5 g a day of marine collagen hydrolysate for 4 weeks improved skin elasticity on the sun-exposed cheeks compared with placebo, and the difference remained 4 weeks after stopping [19].
+- In 46 women aged 45 to 59 years, hydrolyzed fish cartilage taken for 90 days increased dermis echogenicity compared with placebo and baseline [21].
+- In 114 women aged 20 to 50 with thigh cellulite and thinning hair, 1 g a day of low-molecular-weight fish collagen peptides for 24 weeks improved cellulite severity, skin roughness and skin elasticity compared with placebo at weeks 12 and 24, and increased hair diameter at week 24 [22].
 
 **BioCell Collagen (type II, chicken sternal cartilage):**
 
-- In 113 women (average age 50), two capsules daily (providing 600 mg hydrolyzed type II collagen, 200 mg chondroitin sulfate, and 100 mg hyaluronic acid) for 3 months increased facial skin collagen content by 12% vs. a 12% decrease in the placebo group. Self-reported improvement in facial lines/wrinkles was 8%. No significant difference in skin moisture between groups [23]. However, an earlier non-placebo-controlled study using the same dose did not find increased skin collagen after 3 months [24].
+- In 113 women aged 39 to 59 who completed the trial, BioCell Collagen (500 mg twice daily; hydrolyzed type II collagen with chondroitin sulfate and hyaluronic acid) raised skin elasticity and skin collagen content by 12% compared with placebo. Skin-surface water content did not differ between groups [23]. However, an earlier open-label pilot study of 1 g a day in 26 women found a rise in skin collagen at 6 weeks that was no longer significant by the study's end [24].
 
 **Collagen tripeptides:**
 
-- In a small study of men and women in Japan, 3 g/day of collagen tripeptides for 3 months modestly improved skin hydration and elasticity vs. placebo. The addition of 500 mg vitamin C did not enhance these effects [25].
+- In a small trial of healthy volunteers, 3 g a day of a collagen tripeptide supplement raised skin hydration and elasticity more than no supplement. Extra vitamin C (500 mg) did not increase the effect [25].
 
-**Collagen with MSM:** A study of 107 women (average age 52) found that adding 1.5 g MSM (methylsulfonylmethane) to fish collagen (5 or 10 g) plus 80 mg vitamin C for 3 months improved skin roughness by 14% vs. 7.8% for collagen plus vitamin C alone. MSM did not add benefit for wrinkle reduction. Both collagen doses (with or without MSM) reduced wrinkle volume by 17-20% and depth by 18-20% vs. placebo [26].
+**Collagen with MSM:** A 12-week double-blind, placebo-controlled trial compared three supplements containing collagen, with or without MSM (methylsulfonylmethane), on dermis density and other skin measures [26].
 
-**Negative finding -- collagen plus moisturizer:** In 85 East Asian women (ages 43-65), 5 g/day of porcine collagen peptides (Peptan P) for 12 weeks did NOT significantly improve skin elasticity, wrinkle depth, or perceived skin beauty when participants were already using a daily moisturizer. Skin density increased by 6.3% and moisture by 8.4% vs. placebo, but the researchers attributed the overall lack of benefit to the strong placebo response from the moisturizer itself [27].
+**Collagen plus face cream:** In 85 East Asian women aged 43 to 65 years who all used the same face cream, 5 g a day of collagen peptides for 84 days improved dermis density and skin moisture compared with placebo. Elasticity and perceived beauty improved within 28 days with collagen, but the placebo group reached the same gains only by day 84 [27].
 
-**Skin in older adults:** A study of 39 elderly individuals (average age 80) in a rehabilitative facility found that a collagen supplement (10 g peptides plus vitamins) for 2 months increased forearm skin hydration by 18% and elasticity by 10% compared to a non-supplemented control group. The researchers suggested this could help protect against skin tears and pressure sores in hospitalized elderly patients, though no placebo was used [28].
+**Skin in older adults:** In 39 hospital inpatients aged 65 or older, an oral nutrition supplement containing 10 g of collagen peptides a day raised skin hydration scores from 43.7 to 51.7 in the collagen group and improved skin elasticity from baseline. The study had a control group but was open-label, with no placebo. The researchers suggest such supplements may help prevent skin tears in older adults [28].
 
 ### Hair and Nails
 
 Evidence for collagen's effects on hair and nails is limited and mixed.
 
-**Hair:** A study of 86 men and women (average age 53) found that 450 mg/day of chicken eggshell membrane hydrolysate for 3 months modestly increased hair density measured by computer analysis, but did not increase hair growth or decrease hair breakage compared to placebo, and did not improve nails or skin, according to ConsumerLab's reading of the placebo comparison [1]. The authors of this company-funded study report significant improvements in hair thickness, hair breakage, hair growth and facial skin appearance, with no improvement in nails [29]. A separate study found 1 g/day of fish collagen for 24 weeks increased hair strand diameter significantly compared to placebo, the authors report [22].
+**Hair:** In 88 healthy middle-aged adults, 450 mg a day of hydrolyzed eggshell membrane for 12 weeks increased hair density more than placebo (P = .0404 at week 12), but hair growth and hair breakage did not improve significantly compared with placebo [29]. Some self-rated facial skin measures favoured eggshell membrane over placebo; nails did not improve [29]. A separate trial found that 1 g a day of fish collagen peptides for 24 weeks increased hair diameter compared with placebo [22].
 
-**Nails:** A study of women taking 2.5 g/day of Verisol collagen peptides for 24 weeks reported that nail growth increased by 12% and broken nail frequency decreased by 42% compared to pre-supplementation. However, this study had no placebo control, making the findings uncertain [30].
+**Nails:** In an open-label study, 25 people with brittle nails took 2.5 g a day of Verisol collagen peptides for 24 weeks; their nails grew 12% faster and broke 42% less often than before treatment, but with no placebo group the findings are uncertain [30].
 
 ### Joint Pain and Osteoarthritis
 
-Collagen supplementation for at least 3-6 months may modestly reduce joint stiffness and/or pain according to multiple studies using various forms. Results have been inconsistent, and several studies have shown no benefit. A 2026 umbrella review of 16 meta-analyses covering 113 trials found a modest reduction in osteoarthritis pain, but almost all of those trials compared collagen with a placebo that had no protein. In the CHAMP trial, which matched the protein, knee pain improved no more with collagen than with milk protein [77][78].
+Joint-pain trials of several collagen forms have given mixed results, and some found no benefit. An earlier systematic review of eight trials found too little evidence to recommend collagen hydrolysate for osteoarthritis, and rated the evidence moderate to very low in quality [62]. A 2026 umbrella review of 16 meta-analyses covering 113 trials found a modest reduction in osteoarthritis pain, but almost all of those trials compared collagen with a placebo that had no protein. In the CHAMP trial, which matched the protein, knee pain improved no more with collagen than with milk protein [77][78].
 
 **Undenatured collagen (UC-II):**
 
-- In 55 people with joint discomfort after physical activity (no arthritis or rest pain), 40 mg/day of UC-II for 4 months improved average knee extension but did not reduce pain compared to placebo [31].
-- In people with knee osteoarthritis, 40 mg/day of UC-II for 3 months improved pain, stiffness, and physical function while glucosamine (1,500 mg) plus chondroitin (1,200 mg) did not [32].
-- A 6-month placebo-controlled study found that UC-II reduced average pain scores by 24 points vs. 17 points for placebo, and stiffness by 23.8 points vs. 17.8 for placebo. Glucosamine/chondroitin was intermediate (19.2 and 19.4 points respectively). There were no improvements in knee flexion [33].
-- In 68 adults (average age 64) with mild-moderate knee osteoarthritis, 20 mg of UC-II plus 480 mg hydrolyzed collagen for 12 weeks did NOT significantly improve pain, stiffness, swelling, or quality of life compared to placebo. The conflicting results may be due to the lower UC-II dose (20 vs. 40 mg), the combination with hydrolyzed collagen, or the shorter duration [34].
+- In 55 healthy people with knee discomfort only during exercise (no arthritis and no pain at rest), 40 mg a day of UC-II for 120 days improved knee extension compared with placebo. The UC-II group also exercised longer before joint discomfort began, compared with their own baseline [31].
+- In knee osteoarthritis, 90 days of UC-II reduced WOMAC scores by 33% and pain scores by 40%, compared with 14% and 15.4% with glucosamine plus chondroitin [32].
+- In a 180-day knee osteoarthritis trial, 40 mg a day of UC-II reduced total WOMAC scores more than placebo and more than glucosamine (1,500 mg) plus chondroitin (1,200 mg), with gains in pain, stiffness and function scores [33].
+- In 68 people with knee osteoarthritis, tablets combining UC-II with hydrolysed collagen over 12 weeks did not improve pain, function, rescue medicine use or satisfaction more than placebo; both groups improved over time [34].
 
 **Other undenatured type II collagen:**
 
-- A Japanese study of NEXT-II (3.2 mg collagen per 40 mg capsule) in older adults with knee discomfort showed that 1 capsule daily for 12 weeks improved knee bending by approximately 11 degrees vs. 6 degrees for placebo. Knee pain upon waking decreased by 14.13 points (on 100-point scale) vs. an increase of 11.33 points for placebo. Low back pain also improved [35].
+- In a Japanese trial in healthy adults, 3.2 mg a day of undenatured type II collagen (NEXT-II) for 12 weeks improved knee flexion, knee and lower back discomfort, and walking and stair-climbing tests compared with placebo [35].
 
 **Hydrolyzed collagen (collagen peptides) for joints:**
 
-- 1,200 mg/day of collagen hydrolysate (Genacol) for 6 months reduced pain in 51.6% of participants vs. 36.5% of placebo -- a statistically significant difference. After only 3 months, the difference was not yet significant [36].
-- 5,000 mg of collagen hydrolysate twice daily for 13 weeks significantly improved osteoarthritis symptoms vs. placebo [37].
+- In 200 people at least 50 years old with joint pain, 1,200 mg a day of collagen hydrolysate for 6 months led to a clinically meaningful pain improvement in 51.6% of participants, versus 36.5% with placebo. At 3 months, the difference was not yet significant [36].
+- Collagen peptides from pork skin or bovine bone, taken for 13 weeks, reduced WOMAC, pain and quality-of-life scores more than placebo in patients with knee osteoarthritis [37].
 - 10 g/day of collagen hydrolysate for 13 weeks showed greater benefit than glucosamine sulfate for osteoarthritis, though this study lacked a placebo control [38].
-- 2.5 g/day of hydrolyzed chicken collagen type II for 2 months modestly reduced joint stiffness but did NOT reduce pain or improve activity levels compared to placebo, and overall WOMAC scores were not significantly improved, according to ConsumerLab's reading [1]. The authors of this company-funded study report significantly greater reductions in joint discomfort than placebo in the WOMAC stiffness and physical activity domains and in the overall WOMAC score [39].
-- A manufacturer-conducted study of Type J bovine collagen (enriched in bioactive dipeptides) found that 2.5 g/day for 3 months reduced osteoarthritis severity by 26.30 points (0-96 scale) vs. 5.67 for placebo and reduced the collagen degradation marker CTX-II by 22.8% vs. 3.1%. Higher doses (5 g and 10 g) showed greater benefits. Improvements with 2.5 g of Type J collagen were similar to 10 g of conventional collagen peptides [10].
-- 10 g/day of collagen peptides (Peptan B2000) for 3 months did NOT reduce knee pain or improve knee function, nor did it reduce inflammation or cartilage breakdown markers compared to placebo in 167 people with self-reported knee pain [40].
+- In adults aged 40 to 65 with joint discomfort, a hydrolyzed chicken type II collagen supplement reduced WOMAC stiffness, physical activity and overall scores more than placebo; at week 4 the overall score fell 36.9% versus 14.3% [39].
+- In a five-arm trial of 100 people with knee osteoarthritis, Type J bovine collagen peptides (enriched in bioactive dipeptides) at 2.5, 5 or 10 g for 90 days, and conventional collagen peptides at 10 g, were all beneficial; 2.5 g of Type J matched 10 g of conventional peptides [10].
+- In 167 people with self-reported knee pain, taking 10 g a day of collagen peptides for 12 weeks eased knee pain and improved function no more than placebo did, and left inflammation, cartilage and bone markers unchanged [40].
 
 **Eggshell membrane supplements for joints:**
 
-- 450 mg/day of BiovaFlex eggshell membrane hydrolysate was no more effective than placebo overall for knee pain, stiffness, or function. A subgroup analysis suggested benefit only in those with the greatest walking difficulty at baseline [41].
-- 500 mg/day of NEM (Natural Eggshell Membrane) for 1 month modestly improved knee function, reduced pain and stiffness, but did not improve flexion or reduce pain medication use vs. placebo in 161 people with knee osteoarthritis [42].
-- 500 mg/day of NEM for 12 weeks decreased knee pain by 3.14 points (0-20 scale) vs. placebo and improved physical function, but had no effect on joint spacing [43].
-- A combination of NEM (500 mg) with 1,500 mg fish oil concentrate given once daily to 85 healthy adults showed that after 1 week, participants reported 29% less post-exercise joint pain and 47% less joint pain at 12 hours compared to placebo, along with 40% less stiffness. However, these differences did not persist through week 2, likely due to placebo group improvements. After 2 weeks, the supplement group showed a 12% reduction in a urinary marker of cartilage degradation vs. a 5% increase in the placebo group [73].
-- 500 mg of eggshell membrane extract for 8 weeks reduced pain by 3.52 points (0-10 scale) vs. placebo in people with moderate-to-severe knee osteoarthritis. A lower dose of 300 mg was not effective [44].
-- 600 mg/day of non-hydrolyzed eggshell membrane for 12 weeks decreased self-reported knee pain, stiffness, and difficulty with physical function by 12.80 points (0-96 scale) vs. 4.00 for placebo. However, there were no significant improvements on alternative questionnaires or physical testing [45].
+- In 88 adults with knee osteoarthritis, 450 mg a day of BiovaFlex eggshell membrane for 12 weeks gave no significant gains over placebo in WOMAC scores, walking distance or range of motion in the main analysis. An analysis of change from baseline suggested benefit, greatest in those who walked worst at the start [41].
+- Two further randomized, double-blind, placebo-controlled trials tested NEM in knee osteoarthritis, one a multicentre crossover study in grade 2 or 3 disease [42][43].
+- A study in healthy adults tested NEM combined with fish oil (Move3) on exercise-induced joint pain, stiffness and cartilage turnover [73].
+- In a trial comparing two doses of eggshell membrane with placebo in knee pain, pain fell in all groups but most with the higher dose, which also increased quadriceps strength [44].
+- A 2026 randomized, double-blind, placebo-controlled trial tested eggshell membrane for joint symptoms and function in osteoarthritis [45].
 
 ### Bone Health
 
-**Bone mineral density:** In 131 postmenopausal women (average age 64) with reduced bone mineral density, 5 g/day of collagen peptides (Fortibone by Gelita AG) for 12 months increased bone mineral density in the spine and femoral neck by 3.0% and 6.7% respectively, compared to decreases of -1.3% and -1.0% in the placebo group. Participants in both groups were encouraged to take calcium (500-800 mg) and vitamin D (400-800 IU) daily, though compliance was not monitored [46].
+**Bone mineral density:** In a trial of 131 postmenopausal women with age-related bone loss (average age 64), 5 g a day of specific collagen peptides for 12 months increased bone mineral density at both the spine and the femoral neck compared with placebo, and shifted bone markers toward more bone formation and less breakdown [46].
 
-**4-year follow-up:** A follow-up of 31 women from the above study showed that continuing 5 g/day of Fortibone for 4 years improved spine and neck bone mineral density by approximately 7%, and none experienced a fracture. However, this follow-up did not include a control group, limiting the strength of conclusions [47].
+**4-year follow-up:** In an open-label follow-up, 31 of these women took the collagen peptides for a total of 4 years, and their spine bone mineral density rose by a clinically relevant amount, with similar results at the femoral neck. With no control group, the evidence is weaker [47].
 
 ### Diabetes and Blood Sugar
 
-Small studies suggest that fish collagen peptides may lower blood sugar and improve insulin resistance in people with type 2 diabetes.
+One trial suggests that marine collagen peptides may improve blood sugar control and insulin sensitivity in type 2 diabetes [49].
 
-- In 61 people with type 2 diabetes, 5 g/day of fish collagen peptide for 3 months lowered fasting blood glucose by 78 mg/dL, reduced HbA1c from 8.1% to 5.9%, and reduced insulin resistance (HOMA-IR) from 7.9 to 4.7. A lower dose of 2.5 g/day did NOT improve these outcomes [1].
-- In 100 people with type 2 diabetes, 6.5 g of fish collagen peptides twice daily along with diabetes medication for 3 months reduced fasting blood glucose by 26 mg/dL, HbA1c by 0.48%, and fasting insulin by 0.24 mU/L compared to a control group [49].
+- Among patients with type 2 diabetes and high blood pressure, all on their usual medicines, marine collagen peptides twice daily for 3 months lowered fasting blood glucose and HbA1c and raised insulin sensitivity compared with a placebo group [49].
 
-The proposed mechanism involves collagen peptides blocking the enzyme dipeptidyl peptidase 4 (DPP-4), similar to the mechanism of prescription DPP-4 inhibitor diabetes medications, which lower blood sugar by increasing post-meal insulin levels [50].
+The proposed mechanism: in laboratory tests, a collagen tripeptide (Gly-Pro-Hyp) moderately blocks the enzyme dipeptidyl peptidase 4 (DPP-4) [50], the target of DPP-4 inhibitor diabetes medicines.
 
 ### Muscle Mass and Strength
 
 The evidence for collagen's effects on muscle is limited to specific populations and weaker than for other protein sources.
 
-- In older men (average age 72) with sarcopenia participating in strength training 3 days/week for 3 months, those who consumed 15 g/day of collagen peptides (BODYBALANCE by Gelita AG) had significantly greater increases in lean muscle mass and muscle strength compared to placebo [51].
-- In recreationally active men (average age 47), 30 g/day of hydrolyzed collagen for 12 weeks during lower-limb resistance training did NOT significantly improve strength or muscle thickness compared to placebo plus resistance training. Patellar tendon size did increase (+6.8 vs. +1.2 mm2), but this was not accompanied by improvements in strength or power [52].
-- A study in young healthy adults found NO increase in muscle protein synthesis or connective tissue protein synthesis when 30 g of hydrolyzed collagen was consumed after resistance exercise compared to a noncaloric placebo [11].
+- In men with sarcopenia (average age 72) doing 12 weeks of resistance training 3 times a week, 15 g a day of collagen peptides increased fat-free mass and leg strength more than placebo [51].
+- In 20 active middle-aged men (average age 47) doing twice-weekly leg resistance training for 12 weeks, 30 g a day of hydrolyzed collagen gave no extra gains in strength or muscle size over placebo. Patellar tendon size grew more with collagen (+6.8 vs. +1.2 mm2), as did tendon stiffness, without extra gains in strength [52].
+- In 45 young recreational athletes, 30 g of collagen protein after resistance exercise did not raise muscle protein synthesis or muscle connective protein synthesis above placebo [11].
 
-**Bottom line:** For muscle building, collagen is inferior to complete proteins such as whey, which contain the branched-chain amino acids (especially leucine) required for muscle protein synthesis [1][11]. Collagen may have a niche role in older adults with sarcopenia when combined with resistance training, but this requires further confirmation.
+**Bottom line:** For muscle building, collagen is inferior to complete proteins such as whey, which contain the branched-chain amino acids (especially leucine) required for muscle protein synthesis [11]. Collagen may have a niche role in older adults with sarcopenia when combined with resistance training, but this requires further confirmation.
 
 ### Tendon, Ligament, and Wound Healing
 
@@ -209,28 +212,28 @@ Several small, mostly manufacturer-funded studies suggest collagen may aid in he
 
 **Pressure ulcers:**
 
-- In 71 long-term care residents, 0.5 g of concentrated hydrolyzed collagen 3 times daily for 8 weeks improved pressure ulcer healing by 5.56 points (17-point scale) vs. 2.85 points for placebo [53].
-- In 112 people with pressure ulcers, 5 g of hydrolyzed collagen twice daily for 16 weeks resulted in modestly better healing vs. placebo [54].
-- In 51 people with pressure ulcers, a beverage containing 10 g of collagen peptide daily for 4 weeks improved healing by 5.5 points (66-point scale) vs. 2.0 for control and 2.6 for arginine supplementation [55].
+- In 71 long-term care residents with pressure ulcers, a concentrated, fortified collagen protein hydrolysate supplement 3 times daily for 8 weeks gave about twice the rate of ulcer healing seen with placebo [53].
+- Among 112 patients with pressure ulcers who completed a 16-week trial, 10 g a day of collagen hydrolysate in two doses improved healing scores more than placebo; the product richer in Pro-Hyp and Hyp-Gly peptides also shrank wound area more [54].
+- A multicentre randomized controlled study tested nutritional supplements containing collagen peptides for pressure ulcer healing [55].
 
-**Burns:** In 31 men with 20-30% body surface burns, 9 g of hydrolyzed collagen 4 times daily for 4 weeks resulted in 100% complete wound healing vs. 40% in the control group receiving similar calories without collagen [56].
+**Burns:** In a pilot trial of 31 men whose burns covered 20-30% of the body, a hydrolyzed collagen-based supplement for 4 weeks sped wound healing compared with a supplement of equal calories (HR 3.7, 95% CI 1.434 to 9.519) [56].
 
-**Laser skin recovery:** In 8 healthy women undergoing laser skin resurfacing, 3 g/day of collagen peptide starting 2 weeks before and continuing 2 weeks after the procedure accelerated recovery of skin redness, hydration, and elasticity compared to an unsupplemented control [57].
+**Laser skin recovery:** In a pilot study of 8 healthy volunteers having fractional laser treatment, those who took 3 g a day of collagen peptide for 4 weeks had faster fading of redness, a quicker return of skin hydration and better skin elasticity than controls [57].
 
 **Tendon and ligament injuries:**
 
-- In 50 competitive athletes with chronic ankle instability, 5 g/day of hydrolyzed collagen (Tendoforte) during 6 months of home-based exercises improved subjective ankle function by 5.28 points (30-point scale) vs. no significant improvement with placebo. During a 3-month follow-up, the collagen group reported fewer sprains and improved stability [58].
-- In 20 people with chronic Achilles tendinopathy, 2.5 g of hydrolyzed collagen (Tendoforte) twice daily before calf-strengthening exercises for 3 months enabled 6 of 10 people to return to running vs. 3 of 10 in the placebo group [59].
+- In 50 athletes with chronic ankle instability, 5 g a day of specific collagen peptides improved self-rated ankle stability compared with placebo, and over a 3-month follow-up they had fewer ankle injuries. Ankle stiffness measured with a device did not differ [58].
+- In a crossover pilot study of 20 patients with long-standing Achilles tendinopathy doing twice-daily calf-strengthening exercises, VISA-A scores rose 12.6 points in the first 3 months with specific collagen peptides (Tendoforte) versus 5.3 points with placebo [59].
 
-**Dental/gum health:** In 39 adults, 5 g/day of hydrolyzed collagen (Verisol B) for 90 days following dental plaque removal reduced gum bleeding (3.0% vs. 9.4% of gum sites in placebo) and lowered gingival index scores compared to placebo [60].
+**Dental/gum health:** In 39 adults who had plaque removed by a professional, a daily collagen peptide supplement until day 90 left fewer gum sites bleeding than placebo (3.0% vs. 9.4%) and lowered gingival index scores [60].
 
 ### Fatigue
 
-In 62 otherwise healthy adults (average age 46) who reported being easily fatigued, 5 g of fish collagen peptide twice daily for 8 weeks improved fatigue scores on the Profile of Mood States (POMS) from above the general population average (52.2) to below it (47.0), while the placebo group remained elevated (51.5). The collagen group also improved on vigor-activity scores, but not on other mood states such as depression, anxiety, or hostility [61].
+In healthy but easily fatigued adults, 10 g a day of collagen peptides for 8 weeks lowered fatigue scores on the Profile of Mood States compared with placebo (T-score 47.0 vs. 51.5) and raised vigor scores (53.9 vs. 47.3) [61].
 
 ### Hyaluronic Acid (a Common Collagen Co-Ingredient)
 
-Supplements for skin frequently combine collagen with hyaluronic acid, another component of skin that helps maintain hydration. A study of 40 healthy men and women (average age 43) found that 120 mg/day of hyaluronic acid for 12 weeks modestly reduced the visibility of crow's feet wrinkles and slightly reduced facial skin moisture loss compared to placebo. Skin elasticity results were inconsistent between two different testing instruments [74].
+Skin supplements often pair collagen with hyaluronic acid, which helps skin hold water. In 40 healthy Asian adults aged 35 to 64 years, 120 mg a day of hyaluronic acid for 12 weeks improved wrinkles, skin water content, water loss and elasticity compared with placebo [74].
 
 ## 4. Recommended Dosing
 
@@ -241,25 +244,21 @@ Supplements for skin frequently combine collagen with hyaluronic acid, another c
 | Skin hydration/elasticity | Hydrolyzed collagen peptides | 0.5-10 g (range used in trials) | 12 weeks or more for elasticity |
 | Cellulite reduction | Hydrolyzed collagen (Verisol) | 2.5 g | 3-6 months |
 | Joint pain (osteoarthritis) | Hydrolyzed collagen peptides | 5-10 g | 3-6 months |
-| Joint pain (osteoarthritis) | UC-II (undenatured type II) | 40 mg (~10 mg collagen) | 3-6 months |
-| Joint pain | Eggshell membrane (NEM) | 500 mg | 4-12 weeks |
+| Joint pain (osteoarthritis) | UC-II (undenatured type II) | 40 mg | 3-6 months |
 | Bone mineral density | Hydrolyzed collagen (Fortibone) | 5 g | 12 months+ |
 | Muscle mass (elderly with sarcopenia) | Hydrolyzed collagen peptides | 15 g | 3 months (with resistance training) |
 | Tendon/ligament recovery | Hydrolyzed collagen (Tendoforte) | 5 g | 3-6 months |
-| Blood sugar support (type 2 diabetes) | Fish collagen peptides | 5-13 g | 3 months |
-| Wound healing (pressure ulcers) | Hydrolyzed collagen | 1.5-10 g | 4-16 weeks |
+| Wound healing (pressure ulcers) | Hydrolyzed collagen | 10 g | 16 weeks |
 
 ### Practical Dosing Notes
 
-**Skin:** Even doses as low as 0.5 grams may provide some benefit for skin, but the best evidence is with 2.5 grams of well-characterized collagen peptides (e.g., Verisol). Doses of 5 grams do not appear to provide additional benefit over 2.5 grams for skin outcomes [1][16]. Trials in the 2026 meta-analysis used 0.5 to 10 g a day, and elasticity only clearly improved in trials lasting at least 12 weeks [75].
+**Skin:** In one trial, 2.5 g or 5 g a day of collagen peptides improved skin elasticity [15]. Trials in the 2026 meta-analysis used 0.5 to 10 g a day, and elasticity only clearly improved in trials lasting at least 12 weeks [75].
 
-**Joints:** Hydrolyzed collagen for joint pain typically requires 5-10 grams daily. UC-II (undenatured collagen) uses a much smaller dose of 40 mg. These two approaches work through different mechanisms and should not be directly compared on a weight basis. Benefits for joint pain may take 3 months to become apparent and may require up to 6 months for the full effect [1][36].
+**Joints:** Hydrolyzed collagen trials for joint pain used doses from 1,200 mg to 10 g [36][38]. UC-II (undenatured collagen) uses a much smaller dose of 40 mg. These two approaches work through different mechanisms and should not be directly compared on a weight basis. Benefits for joint pain may take 6 months to appear: in one trial, the gain over placebo was significant at 6 months but not at 3 months [36].
 
-**Timing:** Most studies administered collagen either in the morning before breakfast or divided between morning and evening. For tendon and ligament applications, some protocols specifically recommend taking collagen 30-60 minutes before exercise [59].
+**Timing:** Trials gave collagen at various times of day; in one tendon trial it was paired with a twice-daily calf-strengthening programme [59].
 
-**Mixing:** Hydrolyzed collagen can be mixed into hot or cold beverages. There is no evidence that coffee temperature degrades collagen peptides [1]. One study specifically instructed participants not to mix collagen with milk, though the reason is unclear [17].
-
-**Liquid vs. powder:** Liquid collagen products typically provide less collagen per serving and cost 3-6 times more per gram than collagen powders. They may also contain added sweeteners [1]. Collagen powders are generally the most cost-effective delivery method.
+**Mixing:** Hydrolyzed collagen dissolves in hot or cold drinks.
 
 **Product mention:** Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) contains 12.5 g of collagen peptides per daily scoop, combined with 200 mg of hyaluronic acid.
 
@@ -271,75 +270,68 @@ Collagen is found naturally in animal-based foods, particularly those containing
 
 | Food | Collagen Content | Notes |
 |------|:--:|------|
-| Bone broth | 5-15 g per cup (varies widely) | Made by simmering animal bones; content varies by preparation time and source |
+| Bone broth | Varies widely (not standardised) | Made by simmering animal bones; content varies by preparation time and source |
 | Chicken skin | High (not quantified) | Type I and III collagen |
 | Pork skin (chicharrones) | High (not quantified) | Dense collagen source |
 | Fish skin | Moderate-High | Source of type I collagen; consumed in many Asian cuisines |
 | Beef tendon | High (not quantified) | Very dense connective tissue |
-| Gelatin desserts | ~6-10 g per serving | Partially hydrolyzed collagen |
+| Gelatin desserts | Not quantified | Partially hydrolyzed collagen |
 | Organ meats (tripe) | Moderate | Stomach lining is rich in collagen |
 
 ### Nutrients That Support Collagen Synthesis
 
 While consuming collagen directly provides the specific amino acids used to build collagen, several nutrients serve as essential cofactors for the body's own collagen production:
 
-- **Vitamin C:** Required for the hydroxylation of proline to form hydroxyproline, the amino acid that gives collagen its structural stability. Severe vitamin C deficiency (scurvy) results in impaired collagen synthesis, leading to bleeding gums, poor wound healing, and skin fragility. However, adding 500 mg of vitamin C to collagen supplementation was not shown to enhance skin benefits in one clinical study [25]. Unless vitamin C intake is truly deficient, additional supplementation is unlikely to improve collagen-specific outcomes [1].
+- **Vitamin C:** Required for the hydroxylation of proline to form hydroxyproline, the amino acid that gives collagen its structural stability. Severe vitamin C deficiency (scurvy) results in impaired collagen synthesis, leading to bleeding gums, poor wound healing, and skin fragility. However, in one trial, 500 mg of vitamin C taken with 3 g of collagen peptides gave no further gain in skin hydration or elasticity [25].
 - **Proline and glycine:** These amino acids are abundant in collagen itself, as well as in meat, dairy, and eggs.
 - **Copper:** A trace mineral required for the enzyme lysyl oxidase, which cross-links collagen fibers.
 - **Zinc:** Involved in collagen synthesis and wound healing.
 
 ### Collagen Boosters and Builders
 
-"Collagen booster" or "collagen builder" supplements typically contain vitamin C, proline, lysine, and sometimes herbal extracts, but do NOT contain actual collagen [1]. These products are designed to supply ingredients the body can use to make collagen. However, the typical diet already provides adequate amounts of these nutrients, making the value proposition questionable. For example, one such product provides 75 mg of lysine (a normal diet provides approximately 1,000 mg daily) and 50 mg of proline (a normal diet provides approximately 5,000 mg) [1].
-
-**Silicon** (as plant-based silica) is sometimes included in collagen formulas. While it may play a role in collagen production in bone, it is not an essential mineral and has not been demonstrated to improve collagen in the skin [1].
+Products sold as collagen boosters or builders contain nutrients the body uses to make collagen, such as vitamin C, rather than collagen itself.
 
 ## 6. Safety and Side Effects
 
 ### Common Side Effects
 
-Collagen supplements are generally well tolerated [62]. The most commonly reported side effects are mild and include:
+In osteoarthritis trials, side effects of collagen products were mostly mild to moderate stomach and bowel complaints [62]. Reported effects include:
 
-- **Gastrointestinal symptoms:** Mild GI discomfort, bloating, or altered taste
-- **Other reported effects:** Headache, dizziness, insomnia, lack of appetite, itchy or pustular skin rash, and canker sores [63]
+- **Gastrointestinal symptoms:** Mild to moderate stomach or bowel complaints [62]
+- **Other effects:** In rheumatoid arthritis trials of oral type II collagen at very small doses, one (20 to 2,500 µg a day) found no treatment-related side effects [64], and another (0.1 mg a day) found fewer and milder side effects than with methotrexate, with stomach and bowel symptoms common in both groups [63]. Stop taking collagen and talk to your doctor if you develop a rash or another new symptom.
 
 ### Liver Effects
 
-Rarely, elevated liver enzymes have been reported with cartilage-derived type II collagen supplements [63]. At least one consumer report described elevated liver enzymes after starting collagen peptides (Fortibone), which normalized after discontinuation. However, no published case reports have established a causal link between collagen peptides and liver injury [1].
+If you have liver disease, ask your doctor before starting.
 
 ### Allergic Reactions
 
-- **Fish collagen allergy:** Some individuals may be allergic to fish collagen even if they test negative for the typical fish allergen parvalbumin. People with shellfish allergy (specifically tropomyosin sensitivity) may also react to fish collagen. Fish collagen is not currently included in standard diagnostic allergy testing [65].
-- **Egg allergy:** People with egg allergies should avoid eggshell membrane-based collagen products [1].
-- **Sulfite sensitivity:** Some collagen products (e.g., NeoCell) may contain trace amounts of naturally occurring sulfite residue [1].
+- **Fish collagen allergy:** In 101 people with fish allergy, 21% were sensitised to fish collagen, and some of them had no antibodies to parvalbumin, the main fish allergen, for some fish species [65]. Standard fish allergy tests contain little collagen, so people with fish allergy may react to fish collagen even after a negative test [65].
+- **Egg allergy:** Eggshell membrane products come from eggs, so people with egg allergy should avoid them.
 
 ### Kidney Stone Risk
 
-Collagen contains the amino acid hydroxyproline, which is converted in the body to glyoxylate, a precursor of oxalate. A study of 10 healthy adults showed that consuming 30 grams of gelatin daily for 5 days increased urinary oxalate excretion by 43% compared to whey protein. A smaller dose of 2 grams did not significantly increase urinary oxalate [66]. People with a history of calcium oxalate kidney stones may want to avoid very high doses of collagen (>10-15 g/day), though typical supplemental doses of 2.5-10 grams have not been associated with kidney stone formation.
+Hydroxyproline, an amino acid in collagen, may be turned into glyoxylate, which is thought to be the main source of oxalate [66]. On controlled diets, urinary oxalate was 43% higher with 30 g of gelatin than with 30 g of whey protein, and single gelatin loads of 5 and 10 g changed urinary oxalate while loads of 1 and 2 g did not [66]. People who have had calcium oxalate kidney stones may want to check with their doctor before taking collagen, especially at higher doses.
 
 ### Blood Sugar Effects
 
-Because collagen peptides may lower blood sugar through DPP-4 inhibition, they should be used with caution in people taking blood sugar-lowering medications (insulin, metformin, glyburide), especially at doses above 2.5 g/day [1][49].
+Collagen peptides may reduce blood glucose, as marine collagen peptides did in a trial of patients with type 2 diabetes on their usual medicines [49]. If you take blood sugar-lowering medicines (insulin, metformin, glyburide), check with your doctor and monitor your blood sugar when you start collagen.
 
 ### Tryptophan Depletion
 
-Collagen lacks the amino acid tryptophan, a precursor to serotonin. Consuming very large quantities of collagen without adequate intake of other protein sources could theoretically deplete tryptophan and affect mood, particularly in people treated for depression [67]. However, this effect is unlikely at typical supplemental doses (2.5-15 g/day) because this would not meaningfully alter the amino acid balance of a normal diet [68].
+Collagen has no tryptophan [68], an amino acid the body uses to make serotonin. Eating very large amounts of collagen in place of other protein could, in theory, lower tryptophan and affect mood, especially in people treated for depression, since rapid tryptophan depletion can reverse the effect of antidepressants [67]. This is unlikely at usual doses: a diet can take 36% of its protein as collagen peptides and still meet amino acid needs, and the 2.5 to 15 g a day used in trials is below that level [68].
 
 ### BSE/Prion Concern
 
-There is a theoretical concern that bovine collagen could be contaminated with the prion responsible for bovine spongiform encephalopathy (BSE or "mad cow disease"). This risk is considered extremely low because: (1) gelatin and collagen are derived from hides and connective tissue, not high-risk brain and spinal tissue; (2) the FDA requires that collagen be sourced from cattle inspected and passed for human consumption; and (3) the processing of gelatin significantly reduces any prion levels that might be present [69].
+There is a theoretical risk that bovine collagen could carry the prion that causes bovine spongiform encephalopathy (BSE, or "mad cow disease"). The risk is thought to be very low, because collagen and gelatin come from hides and connective tissue rather than brain or spinal cord, and US rules bar those high-risk cattle tissues from food and cosmetics [69].
 
 ### Breast Cancer Concern
 
-Concern has been raised about whether collagen supplementation could increase breast cancer recurrence risk, based on the observation that high collagen levels are found in recurrent breast tumors [70]. However, no clinical research has demonstrated that consuming collagen supplements promotes cancer or cancer recurrence. The concern is based on tissue-level observations and mouse studies, not on evidence from supplementation studies in humans.
-
-### Calcium Myth
-
-Some websites claim collagen increases blood calcium levels, but this is not supported by clinical evidence. Although laboratory and animal studies showed collagen can bind to and increase calcium absorption, there is no evidence that collagen supplementation causes hypercalcemia in humans. Collagen supplements contain only about 20-30 mg of calcium per serving, well below the 1,000-1,200 mg daily requirement [1].
+Concern has been raised about whether collagen supplementation could increase breast cancer recurrence risk, based on the observation that high collagen levels are found in recurrent breast tumors [70]. However, no clinical study has shown that taking collagen supplements promotes cancer or its return. The concern is based on tissue-level observations and mouse studies, not on evidence from supplementation studies in humans.
 
 ### Interference with Laboratory Tests
 
-Collagen, gelatin, or collagen-rich foods should be avoided for at least 24 hours before blood or urine tests measuring hydroxyproline, a marker used to monitor bone resorption and Paget disease [1][71]. Collagen consumption does NOT affect newer bone turnover markers (CTX, NTX, s-PINP, DPD) used to monitor osteoporosis treatment, though CTX testing requires overnight fasting regardless [72].
+Collagen and gelatin contain hydroxyproline, and gelatin raises blood hydroxyproline [66], so they may affect tests of hydroxyproline, an older marker of bone breakdown used in Paget disease [71]. If you are having a hydroxyproline test, ask your doctor whether to avoid collagen and gelatin beforehand.
 
 ## 7. Drug Interactions
 
@@ -347,11 +339,7 @@ Collagen supplements have relatively few documented drug interactions compared t
 
 ### Blood Sugar-Lowering Medications
 
-Collagen peptides may lower blood sugar through DPP-4 inhibition. Combined use with insulin, metformin, sulfonylureas (glyburide, glipizide), or other antidiabetic medications could theoretically increase the risk of hypoglycemia, particularly at collagen doses above 2.5 g/day [1][49][50]. Blood sugar should be monitored if collagen is added to an existing diabetes medication regimen.
-
-### Calcium-Containing Medications
-
-Although some websites claim collagen increases calcium absorption and could cause hypercalcemia, this has not been demonstrated in clinical studies [1]. Collagen supplements contain minimal calcium (20-30 mg per serving), well below the daily requirement of 1,000-1,200 mg [1].
+Collagen peptides may reduce blood glucose, possibly through DPP-4 inhibition [49][50]. Combined use with insulin, metformin, sulfonylureas (glyburide, glipizide), or other antidiabetic medications could, in theory, increase the risk of hypoglycemia. Blood sugar should be monitored if collagen is added to an existing diabetes medication regimen.
 
 ### Other Considerations
 
@@ -360,32 +348,30 @@ No clinically significant drug interactions with collagen have been documented i
 ## 8. Frequently Asked Questions
 
 **Does collagen actually work for wrinkles?**
-Not on current pooled evidence. Multiple placebo-controlled trials show 7-20% improvement in wrinkle volume with daily collagen peptide supplementation for 4-12 weeks, and the most-studied regimen is 2.5 g/day of Verisol-type collagen peptides for at least 8 weeks [15]. However, a systematic review of 23 studies found that when only high-quality, independent studies were analyzed, the benefits were no longer statistically significant [4], and a 2026 meta-analysis of 35 trials found no effect on wrinkles, while finding benefits for hydration and elasticity [75]. Longer studies are likely needed to settle whether collagen peptides improve wrinkles [77].
+Not on current pooled evidence. A 2025 meta-analysis of 23 trials concluded there is no clinical evidence that collagen prevents or treats skin aging; trials without company funding, and high-quality trials, showed no effect [4]. A 2026 meta-analysis of 35 trials found no effect on wrinkles, while finding benefits for hydration and elasticity [75]. Longer studies are likely needed to settle whether collagen peptides improve wrinkles [77].
 
 **Is collagen powder better than collagen pills?**
-Neither form is inherently superior. The key consideration is dose: most clinical studies used 2.5-10 grams of collagen daily. Collagen pills typically provide 1-5 grams per serving, which may require multiple capsules, while powders easily deliver 5-15 grams per scoop. Powders are also generally more cost-effective per gram [1].
+Neither form is better in itself. What matters is the dose: skin trials used 0.5 to 10 g a day [75], which may take several capsules but fits in one scoop of powder.
 
 **Is marine (fish) collagen better than bovine collagen?**
 A head-to-head comparison found no significant difference in absorption between fish, porcine, and bovine collagen hydrolysates [7]. The best-studied branded ingredient for skin (Verisol) was originally porcine-derived. Marine collagen is preferred by some for religious, dietary, or allergen reasons, but there is no strong evidence that one source is clinically superior to another.
 
 **Does bone broth provide enough collagen?**
-Bone broth contains collagen, but the amount varies widely (5-15 g per cup) depending on preparation time, temperature, and source bones. A well-prepared bone broth may provide a meaningful dose, but it is difficult to standardize and quantify. Bone broth also provides other nutrients, making it a reasonable food source but less reliable than a standardized supplement for achieving specific clinical doses [1].
+Bone broth contains collagen, but the amount per serving varies with the bones and how they are cooked, and bone broth has not been tested in the skin or joint trials described above.
 
 **Can I take collagen and whey protein together?**
-Yes. They serve complementary purposes: whey provides branched-chain amino acids (especially leucine) for muscle protein synthesis, while collagen provides the specific amino acids (glycine, proline, hydroxyproline) used in connective tissue maintenance. Collagen is not an effective substitute for whey or other complete proteins for muscle building [1][11].
+Yes. They serve complementary purposes: whey provides branched-chain amino acids (especially leucine) for muscle protein synthesis, while collagen provides the specific amino acids (glycine, proline, hydroxyproline) used in connective tissue maintenance. Collagen is not an effective substitute for whey or other complete proteins for muscle building [11].
 
 **Does vitamin C improve collagen supplement effectiveness?**
-Vitamin C is essential for the body's own collagen synthesis, but clinical evidence does not support taking additional vitamin C with collagen supplements. A study found that adding 500 mg of vitamin C to collagen peptides did not enhance skin benefits [25]. Unless you are deficient in vitamin C, supplemental vitamin C is unlikely to improve collagen outcomes [1].
+Vitamin C is essential for the body's own collagen synthesis, but clinical evidence does not support taking additional vitamin C with collagen supplements. In one trial, 500 mg of vitamin C taken with 3 g of collagen peptides gave no further gain in skin hydration or elasticity [25].
 
 **How long do the benefits last after stopping collagen?**
-Limited data exists on this question. One study found that skin wrinkle improvements persisted for at least 4 weeks after stopping collagen supplementation [15]. For bone density, a 4-year study showed continued benefits with ongoing supplementation, but no data exists on what happens after stopping [47].
+Limited data exists on this question. One study found that skin elasticity stayed higher in older women 4 weeks after stopping [15]. For bone density, a 4-year study showed continued benefits with ongoing supplementation, but no data exists on what happens after stopping [47].
 
 **Is collagen safe during pregnancy?**
 There are no clinical studies evaluating collagen supplementation specifically during pregnancy. While collagen is a naturally occurring protein found in food, pregnant women should consult their healthcare provider before starting any supplement.
 
 ## 9. References
-
-[1] ConsumerLab. "Collagen Supplements Review." Accessed 2025. [https://www.consumerlab.com/reviews/collagen-supplements-review-peptides-hydrolysate/collagen/](https://www.consumerlab.com/reviews/collagen-supplements-review-peptides-hydrolysate/collagen/)
 
 [2] Cheng W, Yan-hua R, Fang-gang N, Guo-an Z. "The content and ratio of type I and III collagen in skin differ with age and injury." *African J Biotechnol*. 2011;10(13):2524-2529. [https://academicjournals.org/journal/AJB/article-abstract/D84A6BD34177](https://academicjournals.org/journal/AJB/article-abstract/D84A6BD34177)
 
@@ -422,7 +408,6 @@ There are no clinical studies evaluating collagen supplementation specifically d
 
 [19] Sangsuwan W et al. "Four-weeks daily intake of oral collagen hydrolysate results in improved skin elasticity, especially in sun-exposed areas: a randomized, double-blind, placebo-controlled trial." *J Dermatolog Treat*. 2020. doi: [10.1080/09546634.2020.1725412](https://doi.org/10.1080/09546634.2020.1725412)
 
-[20] Kim J et al. "Oral Supplementation of Low-Molecular-Weight Collagen Peptides Reduces Skin Wrinkles and Improves Biophysical Properties of Skin: A Randomized, Double-Blinded, Placebo-Controlled Study." *J Med Food*. 2022;25(12):1146-1154. doi: [10.1089/jmf.2022.k.0097](https://doi.org/10.1089/jmf.2022.k.0097)
 
 [21] Maia Campos PMBG et al. "Oral Supplementation with Hydrolyzed Fish Cartilage Improves the Morphological and Structural Characteristics of the Skin: A Double-Blind, Placebo-Controlled Clinical Study." *Molecules*. 2021;26(16):4880. doi: [10.3390/molecules26164880](https://doi.org/10.3390/molecules26164880). PMID: [34443468](https://pubmed.ncbi.nlm.nih.gov/34443468/)
 
@@ -508,7 +493,7 @@ There are no clinical studies evaluating collagen supplementation specifically d
 
 [63] Zhang LL et al. "A randomized, double-blind, multicenter, controlled clinical trial of chicken type II collagen in patients with rheumatoid arthritis." *Arthritis Rheum (Arthritis Care Res)*. 2008;59(7):905-910. doi: [10.1002/art.23824](https://doi.org/10.1002/art.23824). PMID: [18576295](https://pubmed.ncbi.nlm.nih.gov/18576295/)
 
-[64] Barnett ML et al. "Treatment of rheumatoid arthritis with oral type II collagen." *Arthritis Rheum*. 1998;41(2):290-297. doi: [10.1002/1529-0131(199802)41:2<290::AID-ART13>3.0.CO;2-R](https://doi.org/10.1002/1529-0131(199802)41:2<290::AID-ART13>3.0.CO;2-R) PMID: [9485087](https://pubmed.ncbi.nlm.nih.gov/9485087/)
+[64] Barnett ML et al. "Treatment of rheumatoid arthritis with oral type II collagen." *Arthritis Rheum*. 1998;41(2):290-297. PMID: [9485087](https://pubmed.ncbi.nlm.nih.gov/9485087/)
 
 [65] Kalic T et al. "Collagen -- An Important Fish Allergen for Improved Diagnosis." *J Allergy Clin Immunol*. 2020;8(9):3084-3092. doi: [10.1016/j.jaip.2020.04.063](https://doi.org/10.1016/j.jaip.2020.04.063)
 
@@ -524,8 +509,6 @@ There are no clinical studies evaluating collagen supplementation specifically d
 
 [71] Eastell R, Hannon RA. "Biochemical Markers of Bone Turnover." In: *Treatment of the Postmenopausal Woman*. Elsevier; 2007:337-349. doi: [10.1016/B978-012369443-0/50034-X](https://doi.org/10.1016/B978-012369443-0/50034-X)
 
-[72] Seibel MJ. "Biochemical markers of bone turnover. Part I: Biochemistry and variability." *Clin Biochem Rev*. 2005;26(4):97-122. PMID: [16648882](https://pubmed.ncbi.nlm.nih.gov/16648882/)
-
 [73] Ruff KJ et al. "Eggshell Membrane+Fish Oil Combination (Move3) Reduces Exercise-Induced Joint Pain, Stiffness and Cartilage Turnover in Healthy Adults." *Int J Phys Med Rehabil*. 2020;8:551. [https://www.longdom.org/open-access/eggshell-membranefish-oil-combination-move3-reduces-exerciseinduced-joint-pain-stiffness-and-cartilage-turnover-in-healthy-adults--53885.html](https://www.longdom.org/open-access/eggshell-membranefish-oil-combination-move3-reduces-exerciseinduced-joint-pain-stiffness-and-cartilage-turnover-in-healthy-adults--53885.html)
 
 [74] Hsu TF et al. "Oral Hyaluronan Relieves Wrinkles and Improves Dry Skin." *Nutrients*. 2021;13(7):2220. doi: [10.3390/nu13072220](https://doi.org/10.3390/nu13072220)
@@ -537,3 +520,5 @@ There are no clinical studies evaluating collagen supplementation specifically d
 [77] Stanfield B. "The Collagen Peptides for Skin Story is Changing." 15 October 2026. [https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing](https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing)
 
 [78] Ravindran R et al. "Collagen Supplementation for Skin and Musculoskeletal Health: An Umbrella Review of Meta-Analyses on Elasticity, Hydration, and Structural Outcomes." *Aesthet Surg J Open Forum*. 2026;8:ojag018. doi: [10.1093/asjof/ojag018](https://doi.org/10.1093/asjof/ojag018). PMID: [41809116](https://pubmed.ncbi.nlm.nih.gov/41809116/)
+
+[79] Stanfield B. "25% Reduction in Skin Wrinkles After 8 Weeks (New Collagen Study)." 11 June 2025. [https://drstanfield.com/blogs/articles/25-reduction-in-skin-wrinkles-after-8-weeks-new-collagen-study](https://drstanfield.com/blogs/articles/25-reduction-in-skin-wrinkles-after-8-weeks-new-collagen-study)

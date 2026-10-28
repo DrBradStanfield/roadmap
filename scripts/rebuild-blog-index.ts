@@ -1,12 +1,12 @@
 /**
  * Rebuilds docs/blog/index.json from .md file frontmatter.
  *
- * Scans `docs/blog/`, `docs/guideline/`, `docs/pathway/` — extracts YAML
+ * Scans `docs/blog/` and `docs/guideline/` — extracts YAML
  * frontmatter from every `.md` and writes a single sorted `index.json`
  * (publishedAt descending, undated entries at the end).
  *
  * Use this when:
- *   - You've added a batch of pathway / guideline .md files
+ *   - You've added a batch of guideline .md files
  *   - You've edited frontmatter (title, keywords, summary, tags) on existing posts
  *   - You suspect drift between .md files and index.json (e.g., an orphaned .md
  *     the chatbot router can't see)
@@ -20,7 +20,7 @@
  *
  * History: deleted in c024c08 (Apr 2026, "clean up scripts") — turned out
  * not to be obsolete; restored May 2026 after the aspirin orphan revealed
- * the gap. See docs/chat-architecture.md → "Source of truth: .md frontmatter".
+ * the gap. See claude_business docs/chat-architecture.md → "Source of truth: .md frontmatter".
  */
 
 import fs from 'fs';
@@ -46,7 +46,7 @@ interface IndexEntry {
   tags: string[];
   keywords: string[];
   publishedAt: string;
-  type?: 'reference' | 'article' | 'guideline' | 'pathway';
+  type?: 'reference' | 'article' | 'guideline';
   youtube?: string;
   product?: 'microvitamin' | 'microvitamin-plus' | 'sleep';
   summary?: string;
@@ -62,7 +62,6 @@ interface IndexEntry {
 const CONTENT_DIRS = [
   path.join(process.cwd(), 'docs/blog'),
   path.join(process.cwd(), 'docs/guideline'),
-  path.join(process.cwd(), 'docs/pathway'),
 ];
 
 /** One index entry from a file's frontmatter. Exported for tests. */
@@ -83,7 +82,7 @@ export function indexEntry(handle: string, fm: Record<string, any>): IndexEntry 
   if (fm.summary) entry.summary = fm.summary;
   // Topic masters (US-50 AC2). A malformed value is left out, so it hides nothing.
   if (Array.isArray(fm.topics) && fm.topics.every((t: unknown) => typeof t === 'string')) entry.topics = fm.topics;
-  // Only an article may leave the router's view; a master, pathway or guideline never does.
+  // Only an article may leave the router's view; a master or guideline never does.
   if (fm.router === 'hidden' && (fm.type ?? 'article') === 'article') entry.router = 'hidden';
   else if (fm.router !== undefined) console.warn(`  ⚠ ${handle}: router: ${fm.router} refused (only "hidden", on an article)`);
   if (typeof fm.reviewed === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fm.reviewed)) entry.reviewed = fm.reviewed;
@@ -92,7 +91,7 @@ export function indexEntry(handle: string, fm: Record<string, any>): IndexEntry 
 
 function main() {
   const index: IndexEntry[] = [];
-  const stats = { blog: 0, guideline: 0, pathway: 0, skipped: 0 };
+  const stats = { blog: 0, guideline: 0, skipped: 0 };
 
   for (const dir of CONTENT_DIRS) {
     if (!fs.existsSync(dir)) continue;
@@ -114,14 +113,14 @@ function main() {
     }
   }
 
-  // Sort by publishedAt descending (newest first). Pathways/guidelines without
+  // Sort by publishedAt descending (newest first). Guidelines without
   // an explicit publishedAt sort to the bottom — they're matched by keyword, not
   // by recency, so order doesn't affect routing.
   index.sort((a, b) => (b.publishedAt || '').localeCompare(a.publishedAt || ''));
 
   fs.writeFileSync(INDEX_PATH, JSON.stringify(index, null, 2) + '\n');
   console.log(`\nWrote ${index.length} entries to ${INDEX_PATH}`);
-  console.log(`  ${stats.blog} blog + ${stats.guideline} guideline + ${stats.pathway} pathway`);
+  console.log(`  ${stats.blog} blog + ${stats.guideline} guideline`);
   if (stats.skipped) console.log(`  ⚠ Skipped ${stats.skipped} files with no/invalid frontmatter`);
 }
 

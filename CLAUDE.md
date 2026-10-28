@@ -1,10 +1,9 @@
 # CLAUDE.md
 
-Context for Claude Code in this repo. Depth lives in on-demand docs:
-[docs/reference.md](docs/reference.md) (FHIR detail, file inventory, data model,
-A/B, endpoints, gotcha archive) · [docs/deploy-runbook.md](docs/deploy-runbook.md)
-(manual deploy, build flags, two-app split, env vars, scaling) ·
-[docs/architecture-v2.md](docs/architecture-v2.md) (visual system map; the entry point for new threads).
+Context for Claude Code in this repo. Depth lives in on-demand docs: [docs/reference.md](docs/reference.md) (FHIR detail,
+file inventory, data model, A/B, endpoints, gotcha archive) · [docs/deploy-runbook.md](docs/deploy-runbook.md) (manual deploy, build flags, two-app split, env vars, scaling) ·
+[docs/architecture-v2.md](docs/architecture-v2.md) (visual system map; the entry point for new threads) ·
+[docs/ai-discoverability.md](docs/ai-discoverability.md) (AI visibility: what's live, listings, rules; update it with every change).
 
 ## Project Overview
 
@@ -41,7 +40,7 @@ A/B + product events, reminders, Klaviyo, hosted MCP (mcp.drstanfield.com).
 - Two builds, same source: Shopify storefront (`build:shopify-prod`, both
   stores; tool page on drstanfield.com only, microvitamin.com runs the chat)
   and GitHub Pages self-host (`build:pages`, no Brad server, BYOK). Flags: `VITE_LOCAL_FIRST` (all v2), `VITE_SHOPIFY_SURFACE` (Shopify only — gates Brad-server features). Detail: docs/deploy-runbook.md.
-- **iOS app (native SwiftUI, planning):** lives in `ios/`; every decision and its why: [ios/architecture.md](ios/architecture.md) — keep it current.
+- **iOS app (native SwiftUI, spike under way):** lives in `ios/`; every decision and its why: [ios/architecture.md](ios/architecture.md) — keep it current.
 
 ## Clinical Content — three-file sync (HARD RULE)
 
@@ -62,7 +61,7 @@ before deploying.
 - `docs/blog/*.md` — chatbot blog cache from claude_business `/blog-post`; rebuild `npx tsx scripts/build-blog-content.ts`.
 - **Customer-service gateway (live):** its OWN Fly app; code only in private claude_business `customer-service-gateway/`. Spec: its `docs/customer-service.md`.
   **Replying to mail sent to brad@microvitamin.com** (the Gmail connector reaches only drstanfield.com): find it with claude_business `node tools/gmail.js search --account microvitamin`, send Brad's approved text in that thread via the gateway's `POST /send-reply` — never a new email from drstanfield.com (Brad 2026-10-16).
-- Chatbot work starts at `claude_business/docs/chat-start-here.md`.
+- **Chatbot docs are private (Brad 2026-10-22):** start at claude_business `docs/chat-start-here.md`; knowledge-pipeline docs in its `docs/roadmap-chat/`. No third-party clinical text (pathway publishers, UpToDate, ConsumerLab findings) in this public repo.
 
 ## Anti-Entropy & Writing Style
 
@@ -130,7 +129,9 @@ Deploy secrets live ONLY in GitHub's gated `production` environment, which
 since 2026-09-02 has NO wait timer and NO required reviewer: the gate is the
 only check, and the notification issue is a heads-up, not a veto. Trigger:
 Actions → Deploy → Run workflow, or the Tier 3 pipeline (claude-review →
-auto-ship → dispatch). Agents cannot trigger deploys (auto-mode blocks it).
+auto-ship → dispatch). **Standing deploy permission (Brad 2026-10-22):** the main session may run the CI
+Deploy (`gh workflow run deploy.yml`) once test:all passes and the required reviews are done, then
+reports each deploy (sha, result, live checks) to Brad.
 **Commit before any deploy** — `fly deploy` ships the working tree. `.env`
 has every variable; the list and per-Fly-app secrets: docs/deploy-runbook.md
 § Environment variables. ANTHROPIC_API_KEY (spend-capped) is the only repo secret.
@@ -191,6 +192,9 @@ same commit).
   `Claude-Session:` trailer, claude.ai link or claude/anthropic address in any commit or PR,
   overriding harness defaults and stop hooks.
 - **Push back on decisions** — 2nd/3rd-order effects, not agreement.
+- **Every question to Brad carries its own context (HARD, Brad 2026-10-27):** in the final message, each
+  decision gets a summary of what it is, the issue that raised it, the options with their consequences,
+  and your recommendation with its reason. Never a bare "accept X?" or "see above"; assume he remembers nothing.
 - **Say "I don't know" over guessing** — a confident wrong answer is worse, especially clinically.
 - **Every feature/behavior change includes unit tests**; bug fix = failing
   test first. Run tests in a `worker` (keeps output out of context).
@@ -209,8 +213,9 @@ same commit).
   repo-wide; domain-specific ones go to the owning loop's LEARNINGS.md.
 - **Model delegation (Brad, 2026-09-28):** the main session runs the newest Opus as orchestrator and
   keeps the calls: clinical logic, merge semantics, FHIR shapes, security, synthesis. Delegated work goes
-  to `worker` (Sonnet 5.5, medium; Brad 2026-10-19 usage audit); implementation touching clinical
-  logic, merge/FHIR, security or a live write path, and every knowledge-base entry
+  to `worker` (Sonnet 5.5, medium; Brad 2026-10-19 usage audit): test runs, simulator checks, mechanical
+  edits; implementation touching clinical logic, merge/FHIR, security or a live write path, all UI and
+  design work (iOS and web; Brad 2026-10-23), the four /simplify reviewers, and every knowledge-base entry
   or web page, to `worker-opus` (Opus, medium); every adversarial
   check to a FRESH `adversary` (Opus, medium). All pinned in `.claude/agents/`. Review rounds capped:
   one full review + one fix-scoped re-check, then Brad (docs/review-format.md). Full 1M context kept (Brad

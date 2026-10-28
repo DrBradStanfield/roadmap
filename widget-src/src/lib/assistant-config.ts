@@ -58,6 +58,25 @@ export function getChatSurface(): ChatSurface {
 }
 
 /**
+ * US-50 AC14: the blog post the site chat is open on, the last segment of a
+ * /blogs/<blog>/<handle> path, else null. Sent as `articleHandle`, so the
+ * server keeps that post beside its topic master. Same pattern as above.
+ */
+let chatArticle: string | null = null;
+
+export function resolveChatArticle(pathname: string): string | null {
+  return pathname.match(/\/blogs\/[^/]+\/([a-z0-9-]+)\/?$/)?.[1] ?? null;
+}
+
+export function setChatArticle(handle: string | null): void {
+  chatArticle = handle;
+}
+
+export function getChatArticle(): string | null {
+  return chatArticle;
+}
+
+/**
  * US-44: skip the email box before "Save as PDF". Read from the tool root's
  * `data-skip-email-gate`, set by the app block's `skip_email_gate` checkbox
  * (on only for the /pages/start funnel page). Only the literal "true" turns it

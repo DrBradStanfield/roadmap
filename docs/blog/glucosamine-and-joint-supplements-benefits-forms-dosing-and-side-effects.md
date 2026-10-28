@@ -6,577 +6,523 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["glucosamine", "chondroitin", "chondroitin sulfate", "MSM", "methylsulfonylmethane", "boswellia", "boswellic acid", "AKBA", "collagen", "hyaluronic acid", "joint health", "osteoarthritis", "knee pain", "cartilage", "inflammation", "curcumin", "turmeric", "N-acetyl-glucosamine", "NAG", "joint supplements", "glucosamine sulfate", "glucosamine hydrochloride"]
-summary: "Reference on joint supplements: glucosamine, chondroitin, MSM, boswellia, collagen, and curcumin for osteoarthritis and joint pain. For adults with knee or hand pain. Forms, dosing, evidence quality, and safety. Always discuss with your doctor."
+summary: "Reference on glucosamine, chondroitin, boswellia and related joint supplements. Knee osteoarthritis trials are inconsistent, and the ACR and OARSI guidelines advise against both; chondroitin may help hand osteoarthritis. Talk to your doctor first if you take warfarin or other blood thinners."
+reviewed: "2026-10-23"
+sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/glucosamine-and-chondroitin-for-osteoarthritis-what-you-need-to-know","checked":"2026-10-23","fingerprint":"sha256:e808b50ce11097c8022a4dc0254f62bce7cea177c0bb5dc38122a662044f1e9e"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects)*
 
+## Current evidence position
+
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Knee osteoarthritis studies of glucosamine and chondroitin disagree with each other, and it is still uncertain whether they help symptoms; in the large GAIT trial, neither supplement, alone or combined, reduced knee pain more than placebo overall [2][70]. Trials used 1,500 mg a day of glucosamine (as glucosamine sulfate or glucosamine hydrochloride) and 800 to 1,200 mg a day of chondroitin sulfate [2][11][70][71]. The American College of Rheumatology and OARSI guidelines recommend against both for knee osteoarthritis, although the ACR guideline conditionally recommends chondroitin for hand osteoarthritis [70]. No major safety problems have turned up in large studies [70], although one large observational study linked glucosamine use to higher heart disease risk [87]; glucosamine may also raise blood glucose in some people, both have been linked to bleeding in people taking warfarin, and little is known about their safety in pregnancy or breastfeeding [70].
+
+## Key safety points
+
+- Glucosamine and chondroitin have been linked to a raised INR and to bleeding or bruising in people taking warfarin. If you take warfarin, tell your doctor before you start so your INR can be checked [70][80].
+- Chondroitin-glucosamine products, and turmeric, have been linked to bleeding in people taking anticoagulants. Tell your doctor if you take any blood thinner [81].
+- Glucosamine may raise blood glucose in some people, although a trial in type 2 diabetes found no change in HbA1c. If you have diabetes, check with your doctor and monitor your blood sugar [70][84].
+- In a randomised trial, more people taking glucosamine had a clinically significant rise in eye pressure, more often in older people. If you have glaucoma or high eye pressure, ask your doctor first [54].
+- Much glucosamine is made from shrimp shells. People with shrimp allergy tolerated shrimp-derived glucosamine in a small challenge study, but if you have a shellfish allergy, check with your doctor first [82].
+- A case report linked a glucosamine-chondroitin supplement to worsening asthma. If your asthma gets worse after starting one, stop it and see your doctor [57].
+- Little is known about the safety of glucosamine and chondroitin in pregnancy or breastfeeding, so talk to your doctor first if you are pregnant or breastfeeding [70].
+
+## Brad's videos on this topic
+
+None yet.
+
 ## 1. Overview
 
-Joint supplements are among the most widely used dietary supplements worldwide, with glucosamine and chondroitin alone taken by millions of adults for osteoarthritis and general joint health. Osteoarthritis — the progressive deterioration of cartilage between joint bones — affects over 32 million adults in the United States alone, and the promise of slowing this process without the side effects of long-term NSAID use drives much of the supplement market [1].
+Osteoarthritis is a joint disease in which cartilage and other joint tissues break down, and more than 32 million adults in the United States have it. In a 2017 US survey, chondroitin, with or without glucosamine, was the supplement most used by people aged 35 and older with osteoarthritis [70].
 
-The most common joint supplement ingredients include glucosamine, chondroitin sulfate, MSM (methylsulfonylmethane), boswellia extract, collagen, hyaluronic acid, and turmeric/curcumin. Each has a distinct mechanism of action, level of evidence, and appropriate clinical context. The evidence is mixed overall: some ingredients show modest benefits for specific conditions (e.g., chondroitin for hand osteoarthritis, boswellia for knee pain), while others have failed to outperform placebo in well-designed trials [1][2][3].
+Other common joint supplement ingredients include MSM (methylsulfonylmethane), boswellia extract, collagen, hyaluronic acid and turmeric (curcumin). The evidence differs by ingredient and by joint. Chondroitin has some trial support for hand osteoarthritis, and small trials of boswellia report less knee pain, while trials of glucosamine and chondroitin for the knee have given inconsistent results, and a network meta-analysis of the large trials found no clinically important benefit [19][22][70][74].
 
-Glucosamine is thought to promote the formation and repair of cartilage. Chondroitin is believed to promote water retention and elasticity in cartilage and inhibit enzymes that break down cartilage. One emerging mechanism suggests that glucosamine and chondroitin may work partly by altering the gut microbiome toward bacteria that produce short-chain fatty acids such as butyrate, which acts as an anti-inflammatory agent. This was demonstrated in a small placebo-controlled study of 10 subjects taking glucosamine hydrochloride (1,500 mg) and chondroitin sulfate (1,200 mg) daily for two weeks [65].
+Glucosamine is a building block for the glycosaminoglycans that make up cartilage, and chondroitin is a part of cartilage that helps it resist compression [70]. In a small crossover pilot trial in 10 healthy adults, 14 days of glucosamine and chondroitin changed the mix of gut bacteria compared with placebo, which may matter for how they work [65].
 
-This article synthesizes the clinical evidence for each major joint supplement ingredient, covering forms, bioavailability, dosing, safety, and drug interactions.
+This article reviews the clinical evidence for each major joint supplement ingredient: forms, dosing, safety and drug interactions.
 
 **Key terminology:**
-- **WOMAC** (Western Ontario and McMaster Universities Osteoarthritis Index): A standardized questionnaire measuring pain, stiffness, and physical function in osteoarthritis. Scores range from 0 to 96 (higher = worse).
-- **VAS** (Visual Analog Scale): A pain measurement tool where patients mark pain intensity on a 0-100 scale.
-- **Joint space narrowing (JSN)**: Measured on X-ray, JSN indicates cartilage loss and disease progression. Smaller narrowing over time indicates slower disease progression.
-- **SYSADOA** (Symptomatic Slow-Acting Drugs for Osteoarthritis): A European classification for supplements like chondroitin that may provide gradual symptom relief.
+- **WOMAC** (Western Ontario and McMaster Universities Osteoarthritis Index): a questionnaire that scores osteoarthritis pain, stiffness and day-to-day function. Higher scores mean worse symptoms.
+- **VAS** (visual analogue scale): a line on which patients mark how bad their pain is.
+- **Joint space narrowing (JSN)**: loss of the gap between bones on an X-ray, a sign of cartilage loss. Less narrowing over time means slower progression.
+- **SYSADOA** (symptomatic slow-acting drugs for osteoarthritis): a drug class that includes glucosamine sulfate and chondroitin sulfate [79].
 
 ## 2. Forms and Bioavailability
 
 ### Glucosamine
 
-Glucosamine occurs naturally in the body and is a building block for glycosaminoglycans, key structural components of cartilage. Supplemental glucosamine is typically derived from the shells of shrimp or crabs, though a corn-derived (non-shellfish) source is also available [1].
+Glucosamine is sold as glucosamine sulfate or glucosamine hydrochloride, alone or with chondroitin; in some countries certain preparations are prescription drugs [70]. Shrimp shells are a major source of the glucosamine sold for human use [82].
 
-**Chemical forms:**
-
-| Form | Free Glucosamine per 1,500 mg | Notes |
-|------|:-:|------|
-| Glucosamine hydrochloride (HCl) | 1,246 mg | Highest free glucosamine content per gram. Used in the NIH-funded GAIT study. Most common in combination products with chondroitin [1]. |
-| Glucosamine sulfate 2-KCl | 888 mg | Potassium chloride salt. Used in most European studies where glucosamine alone showed benefit. Considered the preferred sulfate form [1]. |
-| Glucosamine sulfate 2-NaCl | 938 mg | Sodium chloride salt. Contains additional sodium — may be a concern for those on sodium-restricted diets [1]. |
-| N-acetyl-glucosamine (NAG) | Variable | A distinct form used primarily for inflammatory bowel disease and joint collagen production. Not interchangeable with standard glucosamine [1]. |
-
-There is no conclusive evidence that one glucosamine form is superior to another. However, most positive studies of glucosamine alone (particularly for slowing cartilage loss) have used glucosamine sulfate, while glucosamine hydrochloride has been used more often in combination products with chondroitin [1]. The LEGS study in Australia, which found reduced joint space narrowing with the glucosamine-chondroitin combination, used glucosamine sulfate [1]. If a label states only "glucosamine sulfate" without specifying the salt, it could be either form. People watching their salt intake should look specifically for products stating glucosamine sulfate 2-KCl [1].
+An analysis of 25 trials found that trials of one prescription glucosamine sulfate product reported more pain relief than trials of other products, but low-risk-of-bias trials of that product showed only a small effect [70][75]. NCCIH notes that this pattern may reflect real product differences or bias, as most of those trials were older, at high risk of bias and company-funded [70]. The long Australian LEGS trial used glucosamine sulfate, and the US GAIT trial used glucosamine hydrochloride [70][71].
 
 ### Chondroitin Sulfate
 
-Chondroitin sulfate is a sulfated glycosaminoglycan composed of repeating disaccharide units of glucuronic acid and N-acetyl-galactosamine. It is a major structural component of articular cartilage, where it provides resilience and resistance to compression by attracting and retaining water — up to 30 times its own weight [3][4].
+Chondroitin sulfate chains attach to aggrecan, the main proteoglycan in cartilage, which forms the water-holding gel that lets cartilage bear load [4].
 
-**Sources:**
-- **Bovine trachea** — most common traditional source (up to 3-4% chondroitin sulfate by weight)
-- **Porcine cartilage** — widely used, particularly in pharmaceutical-grade European products
-- **Shark cartilage** — marine source
-- **Chicken cartilage** — avian source
-- **Vegan/fermented** — Mythocondro (produced by fermentation of E. coli, with sulfate chemically added) and algae-derived chondroitin-like mucopolysaccharides [1][3]
-
-**Bioavailability:** Oral bioavailability ranges from 10-20%, with peak plasma concentrations at 2-4 hours post-dose. Approximately 10% of absorbed chondroitin remains intact, while 90% circulates as depolymerized derivatives. Steady-state concentrations in cartilage are reached after 3-4 days of repeated dosing. The elimination half-life is approximately 4.7-5.2 hours, though some metabolites may persist for up to 15 hours [3].
-
-**Purity matters:** Chondroitin sulfate purity ranges from about 80% to 95%. The GAIT study used 95%-pure chondroitin sulfate from Bioberica. Pharmaceutical-grade products (e.g., Chondrosulf by IBSA) used in European trials are also typically 95% pure. Lower-purity products may contain contaminants including dermatan sulfate and keratan sulfate, which can affect efficacy [1][3]. FDA testing has found supplement potency ranging from 0% to 115% of labeled amounts, with some market analyses suggesting up to 50% of products have significant quality issues [3].
-
-**Molecular weight:** Ranges from 14-70 kDa depending on source and processing. Laboratory studies suggest shorter-chain molecules may be better absorbed, though longer chains may be digested to shorter units in the gut. The clinical significance of molecular weight differences is not well established [1][3].
-
-**Label reading:** Chondroitin is typically sold as chondroitin sulfate, often in a sodium salt form. Labels may state "sodium chondroitin sulfate" or "chondroitin sulfate sodium" — these are complete chemical names and the active ingredient is the same. Labels listing "1,200 mg of chondroitin sulfate (as sodium chondroitin sulfate)" provide 1,200 mg of chondroitin sulfate. Labels listing "1,200 mg of sodium chondroitin sulfate" provide approximately 1,140 mg of chondroitin sulfate, as the sodium contributes about 5% of the total weight [1].
+In a 2019 meta-analysis of 18 trials, the effect on pain varied widely between trials. Limited to low-risk-of-bias trials, a pharmaceutical-grade product (IBSA) reduced pain more than other preparations, which showed no clear effect [76]. Product choice may therefore matter.
 
 ### MSM (Methylsulfonylmethane)
 
-MSM occurs naturally in the body but is produced synthetically for supplements. It contributes sulfur to the body, which is used to synthesize certain amino acids and proteins. MSM also acts as an antioxidant. High-quality MSM is an odorless white crystalline powder; improperly manufactured MSM can be contaminated with DMSO, detectable by a faint sulfur or garlic smell [1].
+MSM is a sulfur-based supplement promoted for pain and inflammation [29]. Few controlled trials have tested it.
 
 ### Boswellia (Indian Frankincense)
 
-Boswellia serrata gum resin contains boswellic acids with anti-inflammatory properties. The most potent component is AKBA (3-O-acetyl-11-keto-beta-boswellic acid), a potent inhibitor of 5-lipoxygenase (5-LOX), a key enzyme in leukotriene biosynthesis. Boswellia extracts also inhibit matrix metalloproteinases (MMP-3s), enzymes that break down cartilage, collagen, and connective tissues [1][66][7].
+Boswellia serrata gum resin contains boswellic acids. One of them, AKBA (3-O-acetyl-11-keto-beta-boswellic acid), inhibits 5-lipoxygenase, an enzyme that makes inflammatory leukotrienes [7][67]. In lab and animal studies, boswellia extract blocked the production of matrix metalloproteinases such as MMP-3, which degrade cartilage, and an extract with 30% AKBA worked better than one with 3% [66].
 
-**Key standardized extracts:**
+**Branded extracts tested in trials:**
 
-| Extract | AKBA Content | Manufacturer | Notes |
-|---------|:-:|---|------|
-| 5-Loxin | 30% AKBA | Sabinsa | High AKBA concentration. Note: "5-Loxin Advanced" is only 20% AKBA despite its name [1] |
-| AprèsFlex / Aflapin | 20% AKBA | PLT Health / Laila Nutraceuticals | Enriched with non-volatile resin oils for enhanced absorption [1] |
-| Boswellin | Variable | Sabinsa | Contains total boswellic acids including AKBA [1] |
-| Boswellin Super | 30% AKBA | Sabinsa | Standardized to 30% AKBA plus 7.5% beta-boswellic acid, 3.5% 3-O-acetyl-beta-boswellic acid, 1.5% 11-keto-beta-boswellic acid [1] |
+| Extract | AKBA Content | Notes |
+|---------|:-:|------|
+| 5-Loxin | 30% AKBA | Tested at 100 and 250 mg a day [7] |
+| AprèsFlex / Aflapin | 20% AKBA | Tested at 100 mg a day [24] |
+| Boswellin | AKBA with beta-boswellic acid | Tested for 120 days [22] |
+| Boswellin Super | 30% AKBA | Tested at 150 and 300 mg twice a day [23] |
 
-Boswellia resin should contain at least 1% boswellic acids, while extracts are expected to contain at least 6% [1].
-
-**Absorption:** Boswellic acids including AKBA are fat-soluble and poorly absorbed with water alone. Absorption may double or more when taken with a fatty meal [5][6]. Formulations containing oils (such as Aflapin) or using liposomes/phytosomes may also enhance absorption [7][8]. Piperine (black pepper extract, sold as Bioperine) is sometimes added to supplements claiming enhanced boswellic acid absorption, but no published studies demonstrate this effect [1].
+**Absorption:** Boswellic acids are absorbed far better with food. Taking an extract with a high-fat meal raised blood levels of several boswellic acids several-fold compared with fasting [5].
 
 ### Collagen
 
-Collagen supplements for joint health typically contain type II collagen, the most abundant collagen in cartilage. Two main forms exist:
+Collagen for joints comes in two main forms. Undenatured type II collagen (UC-II), from chicken sternum cartilage, is taken in small doses: 40 mg a day in one knee osteoarthritis trial [85]. Hydrolyzed collagen peptides are taken in gram doses, such as 10 g a day in a trial in healthy, active adults with knee pain [86].
 
-- **Undenatured (native) type II collagen** (e.g., UC-II, NT2): Taken at 40 mg/day (providing ~10 mg collagen) on an empty stomach. Works via oral tolerance — a mechanism where small amounts of intact collagen train the immune system to reduce autoimmune-mediated cartilage destruction [1].
-- **Hydrolyzed collagen** (collagen peptides): Broken down into smaller peptides for absorption. Used at higher doses (typically 5-12.5 g/day). Provides amino acids (glycine, proline, hydroxyproline) as building blocks for collagen synthesis [1].
-
-Collagen supplementation for at least three to six months may, at best, modestly reduce joint stiffness and/or pain according to several preliminary studies using various forms including undenatured collagen, hydrolyzed collagen, and eggshell membrane hydrolysates. Some studies have shown no benefit [1].
+Results are mixed. UC-II reduced WOMAC scores more than placebo and more than glucosamine plus chondroitin in a 180-day trial [85], but in 167 healthy, physically active adults with self-reported knee pain, 10 g a day of collagen peptides for 12 weeks eased knee pain no more than placebo [86]. Trials of collagen peptides for joints are mixed overall, and the collagen reference covers them.
 
 ### Hyaluronic Acid
 
-Hyaluronic acid is a natural component of cartilage and synovial fluid (the fluid around joints). Approximately 1 in 7 people with newly diagnosed knee osteoarthritis in the U.S. are prescribed hyaluronic acid injections [69]. However, a meta-analysis of 169 clinical trials involving more than 21,000 people showed that hyaluronic acid injections do **not** reduce pain or improve knee function by clinically meaningful amounts, and increased the risk of serious adverse events (hospitalization, disability, life-threatening events, or death) by about 50% compared to placebo [9].
+Hyaluronic acid is a natural part of cartilage and joint fluid. For injections into the knee (viscosupplementation), a meta-analysis of 169 trials with 21,163 participants found that injections reduced knee pain by less than a clinically important amount and raised the risk of serious adverse events compared with placebo (relative risk 1.49, 95% confidence interval 1.12 to 1.98) [9].
 
-Oral hyaluronic acid is also sometimes used for joint health, but evidence is mixed. Effective doses in clinical studies range from 80-200 mg/day [1]. Supplements are extracted from roosters' combs or produced from bacteria [1].
+Hyaluronic acid is also taken by mouth for joints. Three small trials of oral products, described under Evidence for Benefits, gave mixed results [37][39][40].
 
 ### Turmeric / Curcumin
 
-Curcuminoids and other compounds in turmeric provide an anti-inflammatory effect that may provide modest benefit in rheumatoid arthritis and osteoarthritis, although no better than anti-inflammatory medicines. The typical daily dose ranges from 500 to 2,000 mg of curcuminoids from turmeric extracts. Products that have shown benefit are typically formulated for enhanced absorption, as curcuminoids are otherwise not well absorbed unless taken with a meal containing fats [1].
+Turmeric appears here only in combination with boswellia [27]. The turmeric and curcumin reference covers it on its own.
 
 ## 3. Evidence for Benefits
 
-### Knee Osteoarthritis — Glucosamine and Chondroitin
+### Knee Osteoarthritis: Glucosamine and Chondroitin
 
 #### The GAIT Study (NIH-Funded)
 
-The Glucosamine/Chondroitin Arthritis Intervention Trial (GAIT) was a landmark double-blind, randomized, placebo-controlled multicenter trial that enrolled 1,583 patients with knee osteoarthritis. Participants received glucosamine hydrochloride (1,500 mg/day), chondroitin sulfate (1,200 mg/day), the combination, celecoxib (200 mg/day), or placebo for 24 weeks [2].
+The Glucosamine/chondroitin Arthritis Intervention Trial (GAIT) was a double-blind trial in 1,583 people with knee osteoarthritis. Participants took 1,500 mg of glucosamine daily, 1,200 mg of chondroitin sulfate daily, both, 200 mg of celecoxib daily, or placebo for 24 weeks [2].
 
 **Key findings:**
-- Overall, neither glucosamine alone, chondroitin alone, nor the combination significantly reduced pain compared to placebo in the intent-to-treat population (combination response rate: 65.4% vs. placebo: 60.1%, P=0.30)
-- In a predefined subgroup of 572 participants with **moderate-to-severe baseline pain** (WOMAC pain score ≥400 out of 1,000), the combination achieved a clinically meaningful response (≥20% pain reduction) in 79.2% versus 54.3% for placebo (P=0.002)
-- The combination did not reduce X-ray joint space narrowing [2]
-- Follow-up data through 2010 confirmed sustained symptomatic benefits in the moderate-to-severe pain subgroup [3]
+- Overall, neither glucosamine, chondroitin nor the combination reduced knee pain by 20% more often than placebo. The placebo response rate was 60.1%, and the combination's was 6.5 percentage points higher (P=0.09) [2].
+- In an exploratory analysis of people with moderate-to-severe pain at the start, the combination worked more often than placebo (79.2% vs 54.3%, P=0.002) [2].
+- In 572 GAIT participants followed for 2 years, no treatment slowed joint space loss more than placebo [72].
+- Over 2 years in 662 participants, no treatment improved pain or function by a clinically important amount compared with placebo [73].
 
-**Limitation:** The study used glucosamine hydrochloride, not glucosamine sulfate, which may explain the overall null result, as most positive single-ingredient glucosamine studies used the sulfate form [1].
+**Limitation:** GAIT used glucosamine hydrochloride [70]. Some argue that glucosamine sulfate works better, but a pooled analysis of independent trials found no benefit for either type [77].
 
 #### The LEGS Study (Australia)
 
-The Long-term Evaluation of Glucosamine Sulfate (LEGS) study used glucosamine sulfate (1,500 mg/day) and chondroitin sulfate (800 mg/day), focusing primarily on patients with early disease and mild pain [1].
+The Long-term Evaluation of Glucosamine Sulfate (LEGS) trial gave 605 people with chronic knee pain 1,500 mg of glucosamine sulfate, 800 mg of chondroitin sulfate, both, or placebo once a day for 2 years [71].
 
 **Key findings:**
-- All groups receiving glucosamine and/or chondroitin reported pain reduction, but the reduction was **not significantly greater** than placebo
-- The combination of glucosamine and chondroitin reduced joint space narrowing to **half** the amount seen in the placebo group — a statistically significant finding
-- Neither glucosamine nor chondroitin alone significantly reduced joint space narrowing
-- The combination appeared important, and glucosamine sulfate may be more effective than glucosamine hydrochloride for slowing disease progression [1]
+- Knee pain fell in all four groups, with no difference between them [71].
+- The combination reduced 2-year joint space narrowing compared with placebo (mean difference 0.10 mm, 95% CI 0.002 to 0.20 mm) [71].
+- Neither supplement alone had a significant effect on joint structure [71].
+- This structural result conflicts with GAIT, which found no effect on joint space [70][72].
+
+Older, product-specific long trials found structural benefits. In 212 people with knee osteoarthritis, those given glucosamine sulfate, 1,500 mg once a day for 3 years, had no significant joint space loss, while the placebo group lost joint space [49]. Two 2-year trials of 800 mg a day of chondroitin sulfate, in 622 and 300 people, found less joint space loss than with placebo [89][90]. Neither LEGS nor GAIT found a structural benefit from chondroitin alone [70].
 
 #### The MOVES Trial
 
-A multicenter, double-blind, randomized non-inferiority trial (n=606) with Kellgren-Lawrence grade II-III knee OA compared pharmaceutical-grade chondroitin sulfate (800 mg/day) plus glucosamine hydrochloride (1,500 mg/day) to celecoxib (200 mg/day) over six months. The combination was non-inferior to celecoxib, with similar reductions in pain (-33.0 vs. -29.5 WOMAC points) and improvements in function. Rescue medication use was lower with the combination (31%) than placebo (48%) [10].
+The MOVES trial randomised 606 people with knee osteoarthritis and moderate-to-severe pain to 400 mg of chondroitin sulfate plus 500 mg of glucosamine hydrochloride three times a day, or 200 mg of celecoxib a day, for 6 months. WOMAC pain fell by 50.1% with the combination and 50.2% with celecoxib, which met the trial's test of non-inferiority. The trial had no placebo group [10].
 
 #### Chondroitin Sulfate vs. Celecoxib
 
-A 6-month European study found that 800 mg of pharmaceutical-grade chondroitin sulfate (95% pure, Chondrosulf, IBSA) was similar to 200 mg of celecoxib in reducing pain and improving function in mild to moderate knee osteoarthritis. On a pain scale of 0-100, pain fell by 42.6 points with chondroitin, 39.6 points with celecoxib, and 33.3 points with placebo. The improvement with chondroitin took longer (6 months vs. 3 months for celecoxib), and all treatments demonstrated excellent safety profiles. The researchers suggested that chondroitin sulfate should be considered a first-line treatment due to its safety advantages over NSAIDs [11].
-
-A 2024 multicenter randomized trial confirmed that 800 mg/day pharmaceutical-grade chondroitin sulfate is non-inferior to celecoxib for reducing pain and improving function over 6 months in symptomatic knee OA [3].
+In a 6-month European trial of 604 people with knee osteoarthritis (CONCEPT), 800 mg a day of pharmaceutical-grade chondroitin sulfate and 200 mg a day of celecoxib both reduced pain more than placebo. On a visual analogue scale, pain fell by 42.6 mm with chondroitin, 39.5 mm with celecoxib and 33.3 mm with placebo, and safety was good in all groups. The authors suggested this chondroitin formulation be considered a first-line treatment [11].
 
 #### Vegan Chondroitin
 
-A small study among overweight adults (average age 62) with mild to moderate knee osteoarthritis found that 600 mg of non-animal-derived chondroitin sulfate (Mythocondro, produced by fermentation of a specific E. coli strain, with sulfate chemically added) taken once daily for three months modestly improved knee function, mobility, and pain compared to placebo. Certain markers of inflammation (CRP and erythrocyte sedimentation rate) also decreased [12].
+In a pilot trial in 60 overweight adults with knee osteoarthritis, 600 mg a day of non-animal chondroitin sulfate for 12 weeks improved knee function and pain scores and lowered the inflammation markers CRP and ESR compared with placebo [12].
 
 #### Long-term Observational Data
 
-A 6-year study of people with knee osteoarthritis (without total cartilage loss) who reported using glucosamine and chondroitin found no effect on pain reduction but a slight (1%) reduction in cartilage volume loss, particularly in the lateral compartment of the knee [13].
+In 6 years of follow-up from the Osteoarthritis Initiative, people who used glucosamine and chondroitin lost less cartilage volume on MRI, mostly on the outer (lateral) side of the knee, with the effect seen after 2 or more years of use [13]. This was an observational analysis, not a randomised trial.
 
 #### Negative Trials
 
-- A 6-month study of 164 patients with moderate to severe knee OA pain, using 1,500 mg glucosamine sulfate with 1,200 mg chondroitin sulfate daily, failed to demonstrate superiority over placebo in reducing pain or improving function [14].
-- A 6-month study of glucosamine hydrochloride (1,500 mg daily as a beverage) in patients with mild to moderate knee pain found it did not decrease pain, reduce worsening of cartilage damage, or improve bone marrow lesions compared to placebo. It also did not decrease urinary markers of cartilage destruction. The authors noted that longer-term studies using glucosamine sulfate, rather than glucosamine hydrochloride, have shown benefit [15].
+- In a 6-month trial in 164 people with moderate-to-severe knee pain, 1,200 mg of chondroitin sulfate plus 1,500 mg of glucosamine sulfate once a day did no better than placebo. In the main analysis, pain fell less with the supplement than with placebo [14].
+- In 201 people with mild-to-moderate knee pain, 24 weeks of 1,500 mg of glucosamine hydrochloride in a drink did not reduce cartilage damage on MRI or a urine marker of cartilage breakdown [15].
+- In 80 people with knee osteoarthritis, 1,500 mg a day of glucosamine sulfate for 6 months relieved pain no better than placebo [50].
 
 #### Cochrane Reviews and Meta-Analyses
 
-A 2015 Cochrane review concluded that chondroitin "may improve pain slightly in the short-term (less than 6 months)" and in 6 out of 100 people it may improve pain by 20%. Additionally, chondroitin "slightly slows down narrowing of the joint space" and people taking it reported fewer adverse effects than those taking placebo [16]. A 2007 review of large-scale studies concluded that chondroitin alone did not provide benefit for knee or hip osteoarthritis [17].
+A 2015 Cochrane review of 43 trials found that chondroitin, alone or with glucosamine, reduced pain more than placebo in short studies, by about 8 points on a 0 to 100 scale. A 20% reduction in knee pain was reached by 53 in 100 people on chondroitin and 47 in 100 on placebo. Joint space loss was slightly less with chondroitin, and serious adverse events were less common. Most trials were of low quality, and the differences held up in some sensitivity analyses but not in others [16].
 
-A 2010 Cochrane systematic review of 10 RCTs (~3,800 participants) found low-quality evidence for small but statistically significant pain relief (standardized mean difference -0.18, about 5-6 mm on a 0-100 mm VAS) with chondroitin, though the clinical relevance of this small effect is questionable. Benefits for function and stiffness were inconsistent. There was moderate evidence of a small effect on joint space narrowing (mean difference -0.14 mm). However, high risk of bias was present in many trials, particularly industry-sponsored ones. A 2022 update confirmed no clinically relevant benefits for pain or joint structure in high-quality trials [3].
-
-Meta-analyses through 2020 found that chondroitin (800-1,200 mg/day) slightly reduces joint space narrowing (mean difference 0.07 mm/year) with effects consistent across 6-24 months, but limited by heterogeneity and bias. Meta-analyses report 20-30% improvements in WOMAC pain scores after 6-12 months, outperforming placebo by 6-10 points on a 0-100 scale, with a number needed to treat (NNT) of 5 for meaningful relief [3].
+A 2007 meta-analysis of 20 trials found that the large, well-run trials showed minimal or no benefit from chondroitin for knee or hip osteoarthritis [17]. A 2010 network meta-analysis of 10 large trials found that glucosamine, chondroitin and the combination did not reduce joint pain by a clinically important amount or slow joint space narrowing, and trials funded by industry showed larger effects than independent ones [74]. A 2018 analysis of 29 studies found that glucosamine or chondroitin alone reduced pain but the combination did not, with inconsistent results between studies [70].
 
 #### Guideline Positions
 
-The American College of Rheumatology/Arthritis Foundation (2020) advises **against** glucosamine supplementation for knee, hip, or hand osteoarthritis and against chondroitin for knee and hip osteoarthritis, citing concerns about evidence quality (most positive studies were company-funded; studies with least bias risk found no benefit). However, it noted that one trial suggests benefit with chondroitin sulfate for hand osteoarthritis [18].
+The 2019 American College of Rheumatology and Arthritis Foundation guideline strongly recommends against glucosamine, alone or with chondroitin, and against chondroitin for knee osteoarthritis [70]. It conditionally recommends chondroitin sulfate for hand osteoarthritis [18]. The 2019 OARSI guideline also strongly recommends against both for knee osteoarthritis [70].
 
-The European League Against Rheumatism (EULAR) classified pharmaceutical-grade chondroitin sulfate as a SYSADOA with evidence level 1A [3]. OARSI (2019) gave a conditional recommendation for chondroitin in patients with moderate to severe pain and no comorbidities [3]. The FDA in 2004 denied petitions for qualified health claims linking glucosamine and/or chondroitin to a reduced risk of osteoarthritis [3].
+Other groups disagree. The 2021 American Academy of Orthopaedic Surgeons guideline lists glucosamine and chondroitin among supplements that may help mild-to-moderate knee osteoarthritis, while cautioning that the evidence is inconsistent. A 2019 ESCEO statement strongly recommends prescription crystalline glucosamine sulfate and discourages other glucosamine formulations. It also strongly recommends prescription chondroitin sulfate and says it should be distinguished from other chondroitin products [70].
 
 ### Hand Osteoarthritis
 
-A 6-month study of chondroitin sulfate (800 mg once daily) versus placebo in patients with hand osteoarthritis showed a significantly greater decrease in hand pain and improvement in hand function among those taking chondroitin sulfate. The duration of morning stiffness was also slightly reduced. These benefits were not noticeable until after 3 months of treatment. There was no significant difference in grip strength or analgesic use. The chondroitin tested was 95%-pure, fish-origin Chondrosulf (IBSA) [19].
+In a 6-month trial in 162 people with hand osteoarthritis, 800 mg of chondroitin sulfate once a day reduced hand pain and improved hand function more than placebo. Morning stiffness was also shorter. Grip strength and paracetamol (acetaminophen) use did not differ [19].
 
-A separate study found that patients with hand and knee osteoarthritis given 1,500 mg of glucosamine sulfate daily for their knees also showed, after 3 months, significantly greater decrease in hand pain and improvement in hand function compared to patients not receiving glucosamine. The glucosamine group chose to use lower amounts of anti-inflammatory medications. Weaknesses included retrospective design, lack of placebo, and unblinded treatment [20].
+In a retrospective study of 108 people with knee and hand osteoarthritis, those who took 1,500 mg of glucosamine sulfate once a day with usual care had less hand pain and better hand function at 3 and 6 months than those on usual care alone, and used fewer pain medicines. The study was not randomised and had no placebo [20].
 
 ### Lower Back Pain
 
-A well-controlled study of glucosamine sulfate (1,500 mg/day) versus placebo for lower back pain caused by osteoarthritis found that both groups improved, but there was no significant difference between them, suggesting glucosamine is **not effective** for lower back pain [21].
+In a 6-month trial in 250 people with chronic low back pain and lumbar osteoarthritis, 1,500 mg of glucosamine a day did not reduce pain-related disability more than placebo, at 6 months or at 1 year [21].
 
 ### Hip Osteoarthritis
 
-The evidence for glucosamine and chondroitin in hip osteoarthritis is weak. The ACR/Arthritis Foundation advises against supplementation for hip OA [18]. The 2007 Cochrane meta-analysis found no benefit for hip osteoarthritis [17].
+Evidence for the hip is limited. In a 2-year trial in 222 people with hip osteoarthritis, 1,500 mg of glucosamine sulfate a day was no better than placebo for pain, function or joint space narrowing [78]. The 2017 American Academy of Orthopaedic Surgeons hip guideline concluded that the evidence does not support glucosamine sulfate for hip osteoarthritis [70].
 
 ### Boswellia for Knee Osteoarthritis
 
-Multiple studies have demonstrated benefit, though most involve company funding:
+Several small trials, most of branded extracts, report benefit:
 
-**Boswellin extract (Sabinsa):** A study of 48 patients found that Boswellia extract (87.3 mg total boswellic acids including 53.27 mg AKBA per tablet, taken twice daily) for four months reduced knee pain, stiffness, and improved function versus placebo. X-ray imaging showed significant increase in knee joint space and decrease in bone spurs in the Boswellia group, while placebo showed decreased joint space. No serious adverse events were reported [22].
+**Boswellin extract (Sabinsa):** In 48 people with knee osteoarthritis, a Boswellia serrata extract for 120 days eased pain and stiffness and improved function compared with placebo. X-rays showed a wider knee joint gap and fewer bone spurs, and the trial reported no serious adverse events [22].
 
-**Boswellin Super (150 mg twice daily):** A study of 89 patients with mild to moderate degenerative hypertrophy knee osteoarthritis found significant decreases in self-reported pain (21 points on VAS 0-100) and stiffness (27 points on WOMAC 0-96) versus no decrease in VAS and only 8.9-point decrease in WOMAC for placebo over three months. Walking distance also modestly increased. Forty-two percent of extract users showed improvement in joint spacing and decrease in osteophytes versus 13% of placebo. A higher dose (300 mg twice daily) resulted in similar improvements. Several study authors were Sabinsa employees, though the company did not directly fund the study [23].
+**Boswellin Super (150 mg twice daily):** In 105 people with knee osteoarthritis, 150 mg or 300 mg twice a day for 90 days lowered VAS pain scores from baseline by 45.3% and 61.9% respectively. Pain eased within 5 days, and no significant adverse events were recorded [23].
 
-**AprèsFlex/Aflapin (100 mg daily):** A study of 67 adults (average age 51) with mild to moderate knee osteoarthritis found that 50 mg twice daily (100 mg total, providing 20 mg AKBA daily) for one month reduced knee pain, stiffness, and functional limitation by 50%, 65%, and 46%, respectively, versus placebo, as measured by WOMAC. Blood markers of inflammation (TNF-alpha and hsCRP) also modestly decreased. The study was funded by Laila Nutraceuticals [24].
+**AprèsFlex/Aflapin (100 mg daily):** In 70 people with knee osteoarthritis, 100 mg a day for 30 days reduced WOMAC pain from baseline by 44.4%, stiffness by 66.3% and function scores by 44.4%. Pain scores improved within 5 days, and inflammation markers in the blood fell [24].
 
-A subsequent 6-month study (n=73, average age 48) by the same research group showed the same dose taken once daily in the morning after breakfast reduced pain, stiffness, and functional limitations by 70%, 72%, and 71% respectively versus baseline (vs. 26%, 16%, and 18% for placebo). Boswellia also increased 6-minute walk distance by 69.1 meters and reduced stair-climbing time by 3.43 seconds versus placebo. Joint spacing and cartilage thickness slightly improved while the placebo group showed significant worsening [25].
+In a 90-day trial in 60 people, 100 mg a day of either 5-Loxin or Aflapin improved pain and physical function compared with placebo, and Aflapin improved them within 7 days [52]. In an earlier 90-day trial, 5-Loxin at 100 or 250 mg a day improved pain and function, and the higher dose did so within 7 days [7].
 
-**Generic Boswellia extract (40% total boswellic acids, 2% AKBA):** Given at 333 mg three times daily for 8 weeks, all patients receiving the extract reported decreased knee pain, increased knee flexion, and increased walking distance. Frequency of knee joint swelling also decreased [26].
+**Generic Boswellia extract:** In a crossover trial in 30 people with knee osteoarthritis, all those taking the extract for 8 weeks reported less knee pain, better knee bending and longer walking distance. X-rays did not change [26].
 
-**Boswellia-curcumin combination:** Capsules containing 350 mg curcuminoids and 140 mg boswellic acid, taken three times daily, were modestly effective in reducing knee OA pain and slightly more effective than curcumin alone for physical function [27].
+**Boswellia-curcumin combination:** In 201 people with osteoarthritis, capsules with 350 mg of curcuminoids and 150 mg of boswellic acid three times a day for 12 weeks improved WOMAC pain and physical performance compared with placebo. Curcumin alone improved only physical performance [27].
 
-**Negative trial (hand osteoarthritis):** A study of 106 adults (average age 66) with moderate to severe hand osteoarthritis found that a combination of 250 mg Boswellia extract, 100 mg pine bark extract, 1,500 mg MSM, and 168 mg curcumin daily for 12 weeks did **not** significantly reduce hand pain compared to placebo. Both groups showed significant pain reductions from baseline, indicating a large placebo effect. The supplement also did not reduce work or activity impairment, or improve function or quality of life [28].
-
-**Other boswellia uses:** Preliminary studies suggest possible benefit in asthma, Crohn's disease, and cancer. Boswellia resin (300-350 mg three times daily for 6 weeks) has been shown to be as effective as, if not more effective than, the drug sulfasalazine for ulcerative colitis symptoms [67][68]. Studies in rheumatoid arthritis have yielded mixed results [1].
+**Other boswellia uses:** In small trials in people with ulcerative colitis or chronic colitis, boswellia gum resin (350 mg three times a day, or 900 mg a day, for 6 weeks) brought remission at rates similar to or higher than the drug sulfasalazine [67][68].
 
 ### MSM for Joint Pain and Other Conditions
 
-The evidence for MSM remains limited:
-
-- A placebo-controlled study of half-marathon competitors found that MSM (3,000 mg/day for 21 days before and 2 days after the race) led to less muscle and joint pain post-race, but the reductions were **not statistically significant** and MSM did not reduce biological markers of oxidative stress or muscle damage [29].
-- A study among 63 women (ages 35-59) found that 1,000 mg or 3,000 mg MSM daily for 4 months improved nail shine and hair shine/volume compared to baseline. However, the study lacked a placebo group, which is needed to prove benefit. The higher dose worked faster (improvements at 4 weeks vs. 8 weeks) [30].
-- MSM eye drops marketed for dry eye are **not legally marketed** in the U.S. A brand was recalled in 2023 for bacterial and fungal contamination [1].
+Evidence for MSM is limited. In 22 half-marathon runners, 3 g a day of MSM for 21 days before the race and for 2 days afterward reduced muscle and joint pain by a clinically but not statistically significant amount. It did not reduce markers of oxidative stress or muscle damage [29].
 
 ### N-Acetyl-Glucosamine (NAG)
 
 #### Inflammatory Bowel Disease
 
-NAG is naturally produced in the body and helps maintain and repair the mucus lining of the gastrointestinal tract. In Crohn's disease and ulcerative colitis, the body's ability to produce NAG may be reduced [31].
+NAG is an amino sugar that the body builds into glycosaminoglycans and glycoproteins [32].
 
-- A study in children with severe treatment-resistant Crohn's or ulcerative colitis found 8 of 12 children receiving NAG powder (3-6 g/day in three divided doses) had clinical improvement; 4 had no improvement and required surgery [32].
-- Adults with IBD given 6 g/day of NAG powder in three divided doses reported improvements in abdominal pain (58.8% of patients, average symptom score decreased 49%), diarrhea (64.7%, score decreased 47%), and nausea (41.2%, score decreased 55%) [33].
-- Health Canada allows the claim "Helps promote a healthy intestinal lining in people with symptoms associated with inflammatory bowel disease" for products providing 3,000 mg NAG and 600 mg vitamin C daily [1].
-- No published clinical studies exist for NAG and irritable bowel syndrome (IBS), though one is underway (NCT02504060) [1].
+- In 12 children with severe, treatment-resistant inflammatory bowel disease, 3 to 6 g a day of oral NAG added to treatment led to clear improvement in 8, while 4 needed surgery. This was an uncontrolled pilot study [32].
 
 #### Joint Health
 
-- A placebo-controlled study found that 500 mg NAG daily slowed the breakdown and increased the production of type II collagen in healthy adults (average age 48) without arthritis [34].
-- A study of older adults in Japan with knee pain and stiffness found that NAG (100 mg) plus chondroitin sulfate (180 mg) daily for five months modestly improved function during household activities but did not improve leisure-time physical activity or reduce pain versus placebo [35].
+- In 11 men and 39 women in Japan with knee pain or stiffness, 100 mg of NAG and 180 mg of chondroitin sulfate daily for 24 weeks improved self-reported knee function and household activity compared with placebo, but not pain or physical performance [35].
 
-### Hyaluronic Acid — Oral Supplementation
+### Hyaluronic Acid: Oral Supplementation
 
-**Injections — negative meta-analysis:** Despite widespread clinical use, a meta-analysis of 169 trials (n > 21,000) found that hyaluronic acid injections do **not** reduce pain or improve function by clinically meaningful amounts and increased serious adverse events by ~50% versus placebo [9].
+**Injections:** See the meta-analysis under Forms: injections gave no clinically important pain relief and raised serious adverse events [9].
 
-**Oral supplementation — mixed evidence:**
-- Two studies of branded hyaluronic acid (Hyabest, Kewpie Co.) suggest that 200 mg/day for up to two months may improve pain and stiffness in people with **severe** knee OA pain but appears no more effective than placebo for mild to moderate pain or when taken for longer periods [36][37].
-- A study of 31 healthy adults with knee pain (without OA) found that 111 mg/day for 12 weeks did not significantly improve physical function (ability to stand or balance on one leg) but seemed to lessen self-reported knee pain, stiffness, and discomfort (e.g., descending stairs, walking long distances) versus placebo [38].
-- A formula combining hyaluronic acid and collagen (Hyal-Joint, Bioiberica) failed to show benefit versus placebo in knee OA [39].
-- However, 80 mg/day of hyaluronic acid (Oralvisc, Bioiberica) for 3 months significantly reduced pain, stiffness, and blood markers of inflammation in overweight/obese people with knee OA versus placebo. Those taking hyaluronic acid also had a significant decrease in leptin levels (a hormone elevated in obesity) [40].
+**Oral supplementation, mixed evidence:**
+- In 60 people with knee osteoarthritis doing daily thigh-strengthening exercise, 200 mg a day of hyaluronic acid for 12 months: symptoms improved in both groups, with a trend favouring hyaluronic acid, and people aged 70 or younger scored significantly better than placebo at 2 and 4 months [37].
+- In a pilot trial in 20 people, 80 mg a day of a chicken-comb extract containing 60% hyaluronic acid (Hyal-Joint) for 8 weeks did not reduce WOMAC pain more than placebo [39].
+- In 40 overweight people with knee osteoarthritis, an oral hyaluronic acid preparation (Oralvisc) for 3 months improved pain and function, and most inflammatory markers and leptin fell in the treatment group [40].
 
-**Practical note:** If trying oral hyaluronic acid, use amounts from clinical studies (80-200 mg/day). Many joint supplements add only a few milligrams per serving — well below clinically studied amounts. Some contain proprietary blends with hyaluronic acid where the actual amount cannot be determined [1].
-
-Dr Brad Stanfield's [MicroVitamin Capsules](https://drstanfield.com/products/microvitamin) include 200 mg of hyaluronic acid — a dose within the clinically studied range for joint and skin support. The [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) includes 200 mg of hyaluronic acid plus 12.5 g of collagen peptides in a single daily scoop.
+Dr Brad Stanfield's [MicroVitamin Capsules](https://drstanfield.com/products/microvitamin) include 200 mg of hyaluronic acid — a dose within the clinically studied range for skin support. The [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) includes 200 mg of hyaluronic acid plus 12.5 g of collagen peptides in a single daily scoop.
 
 ### Cardiovascular Associations
 
-There is mixed observational evidence regarding glucosamine/chondroitin and cardiovascular outcomes. No clinical trials have been conducted — all evidence is from population studies.
+All the evidence here comes from observational studies, which cannot show that glucosamine causes the differences seen.
 
-**Potentially beneficial associations:**
-- A study of Washington state residents (ages 50-76) found glucosamine and chondroitin use were each associated with 17% lower mortality over 5 years, while no such association was found for 13 different vitamins and minerals, fish oil, fiber, or several herbal supplements. The authors proposed the benefit may relate to anti-inflammatory properties. Further analysis revealed that glucosamine without chondroitin was associated with an even greater (22%) mortality reduction. Glucosamine was also associated with a 41% reduction in respiratory disease mortality [41][42].
-- A UK Biobank study (~500,000 adults) found self-reported glucosamine use associated with 15% lower cardiovascular disease risk, 22% lower mortality, 18% lower coronary heart disease risk (37% lower in current smokers), and 9% lower stroke risk over ~7 years. Although dose and type of glucosamine were not collected, glucosamine is a prescription medication in the UK and most products are glucosamine sulfate [43].
-- The same UK data found regular glucosamine use associated with 17% lower type 2 diabetes risk, even after adjusting for common risk factors [44].
+**Associations with lower risk:**
+- In a cohort of 77,719 Washington State residents aged 50 to 76, high use of glucosamine (hazard ratio 0.83, 95% CI 0.72 to 0.97) and of chondroitin (HR 0.83, 95% CI 0.69 to 1.00) was linked to lower total mortality over about 5 years, while none of the vitamin or mineral supplements was [41]. In longer follow-up, current glucosamine use was linked to lower total mortality (HR 0.82, 95% CI 0.75 to 0.90) and lower deaths from respiratory disease (HR 0.59, 95% CI 0.41 to 0.83) [42].
+- In 466,039 UK Biobank participants followed for a median of 7 years, glucosamine use was linked to fewer cardiovascular events (HR 0.85, 95% CI 0.80 to 0.90), cardiovascular deaths (HR 0.78, 95% CI 0.70 to 0.87), coronary heart disease (HR 0.82, 95% CI 0.76 to 0.88) and strokes (HR 0.91, 95% CI 0.83 to 1.00) [43].
+- In the same cohort, glucosamine use was linked to a lower risk of type 2 diabetes (HR 0.83, 95% CI 0.78 to 0.89) [44].
 
-**Potentially harmful associations:**
-- A large Chinese observational study found glucosamine supplementation associated with a **12% increased risk** of coronary heart disease and 10% increased risk of overall cardiovascular disease among people with osteoarthritis. Risk was greatest in those with highest adherence (68% increased risk with high adherence, 26% with partial adherence; no increased risk with low adherence). The analysis did not adjust for OA severity, obesity, or physical activity level [45].
+**Associations with higher risk:**
+- In Beijing insurance-claims data on 685,778 people newly diagnosed with osteoarthritis, followed for a median of 6.13 years, glucosamine use was linked to more cardiovascular disease (HR 1.10, 95% CI 1.08 to 1.11) and coronary heart disease (HR 1.12, 95% CI 1.09 to 1.15), but not to stroke (HR 1.03, 95% CI 0.99 to 1.06). Risk rose with adherence and was highest in the adherent group (HR 1.68, 95% CI 1.59 to 1.78) [87].
 
-**Safety meta-analysis:** A 2023 systematic review of RCTs concluded that glucosamine sulfate, chondroitin sulfate, and their combination exhibit a good safety profile with no significant increase in adverse cardiovascular events [3].
+**Safety meta-analysis:** A 2019 meta-analysis of placebo-controlled trials found that glucosamine sulfate and chondroitin sulfate did not raise the odds of any type of adverse event, including cardiac and vascular events [79].
 
 ### Cancer
 
-A study following 20,541 new users of glucosamine and matched non-users for ~8 years found that glucosamine use was **not associated** with increased or decreased risk of lung, colorectal, breast, or prostate cancer [46]. Some earlier studies had suggested a lower risk of lung cancer and colorectal cancer among glucosamine users, but these studies may have been skewed by "survivor bias" — including people who had already been taking glucosamine prior to the studies, thereby selecting for individuals who may have "survived" potential negative effects [47].
-
-Additionally, chondroitin sulfate is a component of versican, a substance that appears to support the spread of prostate cancer. However, chondroitin sulfate itself has not been shown to promote cancer [58][59].
+In a UK study of 20,541 people with osteoarthritis who started glucosamine and 20,541 matched non-users, followed for about 8 years, glucosamine did not lower cancer risk (HR 0.97, 95% CI 0.91 to 1.02). Results for lung, colorectal, breast and prostate cancer were similar. The authors concluded that earlier studies linking glucosamine to less cancer were distorted by selection bias [46].
 
 ### Depression
 
-Glucosamine does not appear to have an antidepressant effect. A study of 20 people with major depression (no placebo control) found only 20% reported symptom reduction — worse than the typical 37% placebo response in depression trials. Glucosamine was given as 1 g daily for one week followed by 2 g daily for 3 weeks [48].
-
-Depression and depressive mood has been reported as a side effect by a small percentage (6% or less) of people taking glucosamine sulfate (1,500 mg daily) for osteoarthritis in clinical trials, but the frequency was not significantly different from placebo groups [49][50].
+Glucosamine seems not to treat depression. In an open-label pilot study of 20 people with major depression, glucosamine (1 g a day for 1 week, then 2 g a day for 3 weeks) produced a response in only 4 people (20%) [48].
 
 ### Exercise as a Complement
 
-A study of 206 adults with knee osteoarthritis found that following a 24-week, self-administered exercise and physical activity program resulted in clinically important pain reductions in 72.1% of participants and function improvements in 68%. The program — developed by physiotherapists at the University of Melbourne and available free at https://mykneeexercise.org.au/ — consists of three phases of exercise (each ~2 months), with demonstrated exercises and weekly motivational messages [51].
+In a trial of 206 adults with knee osteoarthritis, a free, self-directed web-based strengthening and activity program supported by text messages improved pain and function at 24 weeks. A meaningful improvement in pain was reached by 72.1% of the program group versus 42.0% of controls, and in function by 68% versus 40.8% [51]. Losing weight and increasing physical activity also help people manage osteoarthritis symptoms [70].
 
 ## 4. Recommended Dosing
 
 ### Glucosamine
 
-- **Standard dose:** 1,500 mg/day of glucosamine sulfate or glucosamine hydrochloride
-- **Divided dosing:** Traditionally taken as 500 mg three times daily or 750 mg twice daily
-- **Single daily dose:** 1,500 mg once daily has been used successfully in the LEGS study with glucosamine sulfate [1]
+- **Trial dose:** 1,500 mg a day of glucosamine sulfate or glucosamine hydrochloride [2][70][71]
+- **Split dosing:** GAIT gave 500 mg three times a day [72]
+- **Once daily:** 1,500 mg of glucosamine sulfate once a day was used in LEGS and in a 3-year trial [49][71]
 
 ### Chondroitin Sulfate
 
-- **Standard dose:** 800-1,200 mg/day of chondroitin sulfate
-- **Divided dosing:** 400 mg three times daily or 600 mg twice daily
-- **Single daily dose:** 800 mg once daily has shown benefit in hand OA and in the chondroitin vs. celecoxib trial (taken each evening with water) [1][11][19]
-- **Combination dose:** When used with glucosamine, typical doses are 1,500 mg glucosamine + 800-1,200 mg chondroitin daily [1]
+- **Trial dose:** 800 to 1,200 mg a day of chondroitin sulfate [2][11][71]
+- **Split dosing:** GAIT gave 400 mg three times a day [72]
+- **Once daily:** 800 mg once a day was used in the hand osteoarthritis trial and in LEGS [19][71]
+- **Combination dose:** MOVES gave 400 mg of chondroitin sulfate plus 500 mg of glucosamine hydrochloride three times a day [10]
 
 ### Boswellia
 
-- **AprèsFlex/Aflapin (20% AKBA):** 50 mg twice daily or 100 mg once daily — shown effective within 1 month [24][25]
-- **5-Loxin (30% AKBA):** 100-250 mg daily, with initial benefit from the higher dose seen within 7 days [7][52]
-- **Boswellin Super (30% AKBA):** 150 mg twice daily [23]
-- **Generic extract (40% total boswellic acids):** 333 mg three times daily (1,000 mg/day) [26]
-- **Take with a fatty meal** to enhance absorption of fat-soluble boswellic acids [5][6]
-- The dose is typically divided in half and taken twice daily [1]
+- **AprèsFlex/Aflapin (20% AKBA):** 100 mg a day [24][52]
+- **5-Loxin (30% AKBA):** 100 or 250 mg a day [7]
+- **Boswellin Super (30% AKBA):** 150 or 300 mg twice a day [23]
+- **Take with a fatty meal** to absorb more of the boswellic acids [5]
 
 ### MSM
 
-- **Typical dose:** 2,000 mg/day (2 g)
-- **Range:** 500 mg to 3,000 mg/day, with some recommendations up to 8 g/day
-- **Few well-controlled studies exist**, making optimal dose determination difficult [1]
+- **Studied dose:** 3 g a day in the half-marathon trial [29]
+- **Few well-controlled studies exist**, so the best dose is unknown.
 
 ### N-Acetyl-Glucosamine (NAG)
 
-- **IBD:** 3,000-6,000 mg/day in three divided doses [32][33]
-- **Joint collagen support:** 500 mg/day [34]
+- **IBD:** 3 to 6 g a day in children, in an uncontrolled pilot study [32]
+- **Knee pain:** 100 mg of NAG and 180 mg of chondroitin sulfate daily [35]
 
 ### Collagen (for Joint Health)
 
-- **Undenatured type II collagen (UC-II, NT2):** 40 mg/day (providing ~10 mg collagen), taken on an empty stomach at bedtime [1]
-- **Hydrolyzed collagen peptides:** 5,000-12,500 mg/day
+- **Undenatured type II collagen (UC-II):** 40 mg a day [85]
+- **Hydrolyzed collagen peptides:** 10 g a day in a trial in healthy, active adults with knee pain, which found no benefit [86]; other trials are mixed (see the collagen reference)
 
 ### Hyaluronic Acid (Oral)
 
-- **Dose range:** 80-200 mg/day based on clinical studies [1][36][40]
-- **Duration:** At least 2-3 months for potential benefit
+- **Trial doses:** 200 mg a day of hyaluronic acid in one trial [37], and 80 mg a day of a chicken-comb extract containing 60% hyaluronic acid in another [39]
 
 ### Practical Guidance
 
-- Benefits from glucosamine and chondroitin may take **several weeks to 3 months** to appear [1]
-- If no positive response within 3 months, continuing or increasing the dose is not indicated [1]
-- Once benefit is established, dose reduction may be possible: those under 200 lbs could try 1,000 mg glucosamine + 800 mg chondroitin; those under 115 lbs could try 500 mg glucosamine + 400 mg chondroitin. Return to full dose if symptoms recur [1]
-- Those over 200 lbs should stay on the full dosage [1]
-- These supplements are **unlikely to help** those with severe osteoarthritis where cartilage has completely worn away [1]
-- Weight loss and switching from high-impact to low-impact exercise are also strongly advised for osteoarthritis management [1]
+- Losing weight and increasing physical activity help manage osteoarthritis symptoms [70]
+- If you take warfarin or other blood thinners, have diabetes, glaucoma, asthma or a shellfish allergy, or are pregnant or breastfeeding, talk to your doctor before starting (see Key safety points)
 
 ### How to Read a Supplement Label
 
-The weight of the glucosamine compound and the weight of free glucosamine differ significantly:
-- 1,500 mg glucosamine HCl = 1,246 mg free glucosamine
-- 1,500 mg glucosamine sulfate 2-KCl = 888 mg free glucosamine
-- 1,500 mg glucosamine sulfate 2-NaCl = 938 mg free glucosamine
-
-Despite the hydrochloride form providing more free glucosamine, 1,500 mg/day of either form appears effective [1].
-
-For chondroitin: 1,200 mg of chondroitin sulfate from the sodium salt form will contribute about 60 mg/day of sodium. To reduce sodium intake, consider products with the calcium salt form, which adds about 191 mg of calcium/day instead [1].
+Check which salt the label names. Trials of glucosamine sulfate and of glucosamine hydrochloride both used 1,500 mg a day [2][70][71]. For chondroitin, compare the dose with the 800 to 1,200 mg a day used in trials [2][11][71].
 
 ## 5. Safety and Side Effects
 
 ### Glucosamine
 
-- **Common side effects:** Gastrointestinal discomfort, drowsiness, skin reactions, and headache [2]
-- **Blood sugar:** Despite being an amino sugar, human studies have not found evidence of increased blood sugar. One study found 1,500 mg glucosamine sulfate for 3 years slightly **lowered** fasting blood sugar in older adults with knee OA [49]. A large UK study found glucosamine use associated with **decreased** diabetes risk [44]
-- **Shellfish allergy:** Glucosamine from shrimp/crab shells may cause reactions in shellfish-allergic individuals. Vegetable-based glucosamine (branded as Regenasure or GreenGrown) is available [1]
-- **Intraocular pressure (glaucoma risk):** In people with open-angle glaucoma or ocular hypertension, eye pressure measurements were ~18% higher while taking glucosamine and returned to pre-supplement levels when discontinued [53]. In people **without** glaucoma, a 9% increase was observed; clinically significant risk (≥2 mmHg rise) was 2.7 times greater in the glucosamine group, with average age of affected individuals being 66 [54]. However, a Thai study of 88 people without glaucoma found no increase after 6 months of use [55]
-- **Liver toxicity:** Rare case reports in two older women with chronic hepatitis C whose liver enzymes elevated on glucosamine and normalized upon discontinuation. Prudent to discontinue if liver enzyme alterations occur; those with chronic hepatitis C may want to avoid glucosamine [56]
+- **Common side effects:** In GAIT, adverse events were mild, infrequent and similar across groups [2]. A meta-analysis found that glucosamine sulfate did not raise the odds of any type of adverse event compared with placebo [79].
+- **Blood sugar:** NCCIH notes that glucosamine may raise blood glucose in some people [70]. A review of trials lasting up to 3 years, including people with type 2 diabetes or prediabetes, found no rise in fasting blood glucose [83], and in a 90-day trial in people with type 2 diabetes, glucosamine with chondroitin did not change HbA1c [84]. In UK Biobank, glucosamine use was linked to a lower risk of type 2 diabetes [44].
+- **Shellfish allergy:** Shrimp shells are a major source of glucosamine. In 15 people with confirmed shrimp allergy, 1,500 mg of shrimp-derived glucosamine caused no reactions [82]. This was one small study of specific products, so people with shellfish allergy should still check with their doctor.
+- **Intraocular pressure (glaucoma risk):** A 2013 report raised the possibility that glucosamine supplements raise eye pressure [53]. In a randomised trial in 88 people with osteoarthritis, 34.1% of those taking glucosamine sulfate and 12.5% of those taking placebo had a clinically significant rise (at least 2 mm Hg) after 3 months, and the rise was more common in older people [54]. Another trial in 42 people with normal eye pressure found no rise with 1,500 mg a day of glucosamine sulfate for 6 months [55].
+- **Liver:** Among 151 people with chronic liver disease, 2 had a rise in liver enzymes linked to glucosamine. The authors advise considering glucosamine or chondroitin when liver tests worsen without another explanation [56].
 
 ### Chondroitin Sulfate
 
-- **Common side effects:** Occasional stomach upset, generally mild (less than 5% incidence). No significant hematologic effects observed in clinical trials [1][3]
-- **Bleeding risk:** Structurally similar to heparin; may enhance anticoagulant effects. Reports of increased INR and bleeding risk in warfarin users. Notify healthcare providers of dose and changes [1][3]
-- **Asthma exacerbation:** Worsening asthma symptoms reported in a 52-year-old woman taking glucosamine/chondroitin, persisting for three weeks despite increased asthma medication, resolving within 24 hours of stopping supplementation. People with asthma have elevated antibodies to chondroitin sulfate in their airways [57]
-- **Prostate cancer concern:** Chondroitin sulfate is a component of versican, which supports prostate cancer spread, but chondroitin sulfate itself has not been shown to promote cancer [58][59]
-- **Sodium content:** 1,200 mg chondroitin sulfate from sodium salt forms contributes ~60 mg sodium/day. Calcium salt alternatives available [1]
-- **Manganese in combination products:** Some glucosamine-chondroitin products contain manganese exceeding the recommended 2.3 mg/day for men and 1.8 mg/day for women. Prolonged intake above 11 mg/day carries risk of neurological side effects. Acceptable during short-term initial therapy but should not be exceeded long-term [1]
-- **Pregnancy:** Category C — limited safety data; generally recommended to avoid [3]
-- **Rare liver effects:** Transient liver enzyme elevations reported rarely in long-term use, particularly with pre-existing liver conditions [3]
+- **Common side effects:** In the Cochrane review, chondroitin did not cause more adverse events than placebo, and serious adverse events were less common [16].
+- **Bleeding risk:** Glucosamine and chondroitin have been linked to more bleeding in people taking warfarin [70]. A review of supplements and bleeding found that chondroitin-glucosamine was associated with bleeding risk in people taking anticoagulants [81]. If you take a blood thinner, talk to your doctor first.
+- **Asthma exacerbation:** A case report described asthma made worse by a glucosamine-chondroitin supplement, and the authors noted a biological link between both substances and airway secretions in asthma [57]. If your asthma gets worse after starting one, stop it and see your doctor.
+- **Pregnancy:** Little is known about the safety of glucosamine and chondroitin in pregnancy or breastfeeding, so talk to your doctor first [70].
 
 ### MSM
 
-- **Generally safe** at recommended doses
-- **Common side effects:** Occasional nausea, diarrhea, or headache [1]
-- **Aspirin-like effect:** Avoid with blood-thinning drugs unless medically supervised [1]
-- **Not evaluated** in children or pregnant/breastfeeding women [1]
+- **Few safety studies** exist. In a 16-week trial in people with osteoarthritis and back pain, 6 g a day of MSM did not change blood counts, platelets, liver or kidney tests, weight or blood pressure compared with placebo [91].
+- If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Boswellia
 
-- **Generally well-tolerated** at clinical doses
-- **Reported side effects:** Diarrhea, heartburn, nausea, abdominal pain — generally not severe enough to cause discontinuation. Headache, itching, and foot swelling have also been reported [7]
-- **Allergic contact dermatitis:** One confirmed case of blistering rash from topical application (confirmed by allergen patch test) [60]
+- **Generally well tolerated** in trials. Safety blood tests were almost unchanged compared with placebo [7], and minor stomach and bowel side effects were reported [26].
+- **Allergic contact dermatitis:** A case report described allergic contact dermatitis from a cream containing Boswellia serrata extract [60].
 
 ### Collagen
 
-- **Generally well-tolerated**
-- **Mild side effects:** GI symptoms, headache, dizziness, rash
-- **Allergen risk:** Avoid products derived from sources to which you are allergic (e.g., fish collagen if fish-allergic) [1]
+- **Generally well tolerated:** safety outcomes did not differ from placebo in the UC-II trial [85].
+- **Allergen risk:** People with fish allergy may react to fish collagen: in 101 people with fish allergy, 21 had allergic antibodies to it [92]. Avoid collagen from a source you are allergic to.
 
 ### Hyaluronic Acid (Oral)
 
-- **Generally safe** when taken as a supplement
-- One study participant stopped due to developing a rash
-- **Injections carry higher risk:** Rare anaphylaxis reported; the meta-analysis found ~50% increased serious adverse events versus placebo injections [9]
+- Oral trials have been small, so safety data are limited.
+- If you have active cancer or have had cancer, talk to your doctor before taking hyaluronic acid. It acts on receptors involved in cell growth, a theoretical concern; no direct harm has been shown in humans.
+- **Injections carry more risk:** the viscosupplementation meta-analysis found more serious adverse events with injections than with placebo (relative risk 1.49) [9].
 
 ### Turmeric / Curcumin
 
-- **Generally safe** but GI side effects may occur at higher doses
-- Potential problems for people with gallbladder disease, kidney stones, or those taking blood-thinning or blood-sugar-lowering medications
-- Rare liver injury reported
-- Bioavailability enhancers (e.g., piperine) can potentially affect numerous other drugs [1]
+- Turmeric has been linked to bleeding in people taking anticoagulants [81].
+- Liver damage has been reported in some people taking highly bioavailable curcumin products. If you notice fatigue, nausea, poor appetite, dark urine or yellowing of the skin or eyes, stop the product and talk to your doctor [93].
+- Turmeric supplements may be unsafe in pregnancy [93]. The turmeric and curcumin reference covers its safety.
 
 ### White Willow Bark
 
-Sometimes added to joint health formulas. Contains salicin, a precursor to salicylic acid (the active metabolite of aspirin), acting as both COX-1 and COX-2 inhibitor [61]. Side effects include headache and dizziness [62]. Contraindicated in people sensitive or allergic to salicylates — allergic reactions including rash, itchiness, and asthma have been reported, and in rare cases, anaphylaxis [63][64].
+Sometimes added to joint formulas. It contains salicin, which the body converts to salicylate, the active form of aspirin. In a low back pain trial, willow bark extract providing 240 mg of salicin a day worked about as well as the drug rofecoxib, with similar adverse events [62]. People allergic to aspirin or other salicylates should avoid it; anaphylaxis has been reported [88]. If you have signs of a severe allergic reaction after taking it, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 ## 6. Drug Interactions
 
 | Supplement | Interacting Drug | Effect | Recommendation |
 |-----------|-----------------|--------|---------------|
-| Glucosamine | Warfarin (Coumadin) | May increase INR and bleeding risk | Monitor INR closely; inform healthcare provider of dose changes [1] |
-| Chondroitin | Warfarin, heparin | Structural similarity to heparin; may potentiate anticoagulant effects | INR monitoring recommended; inform healthcare provider [1][3] |
-| Chondroitin | Aspirin / antiplatelet agents | May amplify bleeding risk | Use with caution [3] |
-| Chondroitin | NSAIDs | May reduce required NSAID dosage; additive GI effects possible | Monitor GI symptoms [3] |
-| MSM | Blood-thinning drugs | Aspirin-like effect | Avoid unless medically supervised [1] |
-| Boswellia | CYP-metabolized drugs | Limited data on interactions | No major interactions established; take with fatty meal for absorption [1] |
-| Turmeric/Curcumin | Blood-thinning drugs | May increase bleeding risk | Use with caution [1] |
-| Turmeric/Curcumin | Blood-sugar-lowering drugs | May enhance hypoglycemic effect | Monitor blood sugar [1] |
-| White willow bark | Aspirin, salicylates | Additive salicylate effects | Contraindicated in salicylate-sensitive individuals [61][62] |
+| Glucosamine | Warfarin (Coumadin) | Reports of raised INR and bleeding or bruising | Tell your doctor; have your INR checked [80] |
+| Chondroitin (with glucosamine) | Warfarin and other anticoagulants | Linked to bleeding risk | Talk to your doctor first [70][81] |
+| Turmeric/Curcumin | Anticoagulants | Linked to bleeding risk | Talk to your doctor first [81] |
+| White willow bark | Aspirin, salicylates | Adds to salicylate intake | Avoid if allergic to aspirin or salicylates [88] |
+| MSM, boswellia | Prescription medicines | Little interaction data | Check with your doctor or pharmacist |
 
-**General advice:** Before starting any joint supplement, consult a physician to confirm your diagnosis. This is particularly important with hip pain, which may be caused by rheumatoid arthritis, infection, damaged blood supply, gout, or other diseases for which treatment with these supplements would be inappropriate [1].
+**General advice:** If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ## 7. Dietary Sources
 
 ### Glucosamine
 
-Glucosamine is not typically obtained from food in meaningful supplemental amounts. It is produced endogenously in the body from glucose and the amino acid glutamine. The shells of shrimp, crab, and lobster are the richest natural sources and are the starting material for most glucosamine supplements [1].
+Glucosamine is a building block of cartilage [70]. Shrimp shells are a major source of the glucosamine in supplements [82].
 
 ### Chondroitin Sulfate
 
-Chondroitin sulfate is found naturally in animal cartilage — bovine trachea, porcine cartilage, shark cartilage, and chicken keel cartilage. It is not present in significant quantities in common dietary foods. Bone broth contains small amounts of glycosaminoglycans including chondroitin sulfate, though the amounts are highly variable and unlikely to reach therapeutic doses [3]. Global production is dominated by China, accounting for approximately 80% of the market (over 6,000 tons annually) [3].
+Chondroitin is a component of cartilage [70].
 
 ### Sulfur (Relevant to MSM)
 
-MSM provides sulfur to the body. Dietary sulfur sources include:
-- **Cruciferous vegetables:** Broccoli, Brussels sprouts, cabbage, cauliflower
-- **Allium vegetables:** Garlic, onions, leeks
-- **Protein-rich foods:** Eggs, meat, poultry, fish (contain sulfur-containing amino acids methionine and cysteine)
+MSM is a sulfur-based supplement [29].
 
 ### Boswellic Acids
 
-Not found in common foods. Obtained exclusively from the gum resin of Boswellia serrata (Indian frankincense tree) [1].
+Not found in common foods. They come from Boswellia serrata gum resin [67].
 
 ### Collagen
 
-- **Bone broth** — contains variable amounts of collagen
-- **Meat, poultry, fish** — contain collagen in connective tissues and skin
-- **Gelatin** — denatured collagen used in cooking
-- **Amino acid precursors** (glycine, proline, vitamin C) support endogenous collagen production
+The collagen reference covers its food sources.
 
 ### Hyaluronic Acid
 
-- **Bone broth** — contains hyaluronic acid from connective tissues
-- **Root vegetables** — small amounts
-- Endogenous production is supported by adequate vitamin C, magnesium, and zinc
-- Supplements are extracted from roosters' combs or produced from bacteria [1]
+- Some supplements are extracted from chicken combs [39]
 
 ## 8. References
 
-[1] ConsumerLab. "Glucosamine, Chondroitin, MSM, and Boswellia Supplements Review." Accessed 2025. [https://www.consumerlab.com/reviews/review-glucosamine-chondroitin-msm-boswellia-supplements/jointsupplements/](https://www.consumerlab.com/reviews/review-glucosamine-chondroitin-msm-boswellia-supplements/jointsupplements/)
+[2] Clegg DO et al. "Glucosamine, chondroitin sulfate, and the two in combination for painful knee osteoarthritis." *N Engl J Med*. 2006;354(8):795-808. doi: [10.1056/NEJMoa052771](https://doi.org/10.1056/NEJMoa052771). PMID: [16495392](https://pubmed.ncbi.nlm.nih.gov/16495392/)
 
-[2] Clegg DO, Reda DJ, Harris CL, et al. "Glucosamine, chondroitin sulfate, and the two in combination for painful knee osteoarthritis." *N Engl J Med*. 2006;354(8):795-808. doi: [10.1056/NEJMoa052771](https://doi.org/10.1056/NEJMoa052771)
+[4] Kiani C et al. "Structure and function of aggrecan." *Cell Res*. 2002;12(1):19-32. doi: [10.1038/sj.cr.7290106](https://doi.org/10.1038/sj.cr.7290106). PMID: [11942407](https://pubmed.ncbi.nlm.nih.gov/11942407/)
 
-[3] Grokipedia. "Chondroitin sulfate." [https://grokipedia.com/page/Chondroitin](https://grokipedia.com/page/Chondroitin). Data from: Singh JA et al., Cochrane Library 2015; GAIT (Clegg 2006); MOVES (Hochberg 2016); EULAR 2003; OARSI 2019; ACR 2020.
+[5] Sterk V et al. "Effect of food intake on the bioavailability of boswellic acids from a herbal preparation in healthy volunteers." *Planta Med*. 2004;70(12):1155-60. doi: [10.1055/s-2004-835844](https://doi.org/10.1055/s-2004-835844). PMID: [15643550](https://pubmed.ncbi.nlm.nih.gov/15643550/)
 
-[4] Kiani C, Chen L, Wu YJ, Yee AJ, Yang BB. "Structure and function of aggrecan." *Cell Res*. 2002;12(1):19-32. doi: [10.1038/sj.cr.7290106](https://doi.org/10.1038/sj.cr.7290106)
+[7] Sengupta K et al. "A double blind, randomized, placebo controlled study of the efficacy and safety of 5-Loxin for treatment of osteoarthritis of the knee." *Arthritis Res Ther*. 2008;10(4):R85. doi: [10.1186/ar2461](https://doi.org/10.1186/ar2461). PMID: [18667054](https://pubmed.ncbi.nlm.nih.gov/18667054/)
 
-[5] Sterk V, Buchele B, Simmet T. "Effect of food intake on the bioavailability of boswellic acids from a herbal preparation in healthy volunteers." *Planta Med*. 2004;70(12):1155-1160. doi: [10.1055/s-2004-835844](https://doi.org/10.1055/s-2004-835844)
+[9] Pereira TV et al. "Viscosupplementation for knee osteoarthritis: systematic review and meta-analysis." *BMJ*. 2022;378:e069722. doi: [10.1136/bmj-2022-069722](https://doi.org/10.1136/bmj-2022-069722). PMID: [36333100](https://pubmed.ncbi.nlm.nih.gov/36333100/)
 
-[6] Skarke C, et al. "Pharmacokinetics of boswellic acids in healthy volunteers." *J Clin Pharmacol*. 2012;52(10):1546-1559. doi: [10.1177/0091270011422811](https://doi.org/10.1177/0091270011422811)
+[10] Hochberg MC et al. "Combined chondroitin sulfate and glucosamine for painful knee osteoarthritis: a multicentre, randomised, double-blind, non-inferiority trial versus celecoxib." *Ann Rheum Dis*. 2016;75(1):37-44. doi: [10.1136/annrheumdis-2014-206792](https://doi.org/10.1136/annrheumdis-2014-206792). PMID: [25589511](https://pubmed.ncbi.nlm.nih.gov/25589511/)
 
-[7] Sengupta K, Alluri KV, Satish AR, et al. "A double blind, randomized, placebo controlled study of the efficacy and safety of 5-Loxin for treatment of osteoarthritis of the knee." *Arthritis Res Ther*. 2008;10(4):R85. doi: [10.1186/ar2461](https://doi.org/10.1186/ar2461)
+[11] Reginster JY et al. "Pharmaceutical-grade Chondroitin sulfate is as effective as celecoxib and superior to placebo in symptomatic knee osteoarthritis: the ChONdroitin versus CElecoxib versus Placebo Trial (CONCEPT)." *Ann Rheum Dis*. 2017;76(9):1537-1543. doi: [10.1136/annrheumdis-2016-210860](https://doi.org/10.1136/annrheumdis-2016-210860). PMID: [28533290](https://pubmed.ncbi.nlm.nih.gov/28533290/)
 
-[8] Husch J, et al. "Enhanced absorption of boswellic acids by a lecithin delivery form (Phytosome) of Boswellia extract." *Fitoterapia*. 2013;87:89-98. doi: [10.1016/j.fitote.2013.03.007](https://doi.org/10.1016/j.fitote.2013.03.007)
+[12] Rondanelli M et al. "Effectiveness of Non-Animal Chondroitin Sulfate Supplementation in the Treatment of Moderate Knee Osteoarthritis in a Group of Overweight Subjects: A Randomized, Double-Blind, Placebo-Controlled Pilot Study." *Nutrients*. 2019;11(9). doi: [10.3390/nu11092027](https://doi.org/10.3390/nu11092027). PMID: [31470599](https://pubmed.ncbi.nlm.nih.gov/31470599/)
 
-[9] Pereira TV, et al. "Viscosupplementation for knee osteoarthritis: systematic review and meta-analysis." *BMJ*. 2022;378:e069722. doi: [10.1136/bmj-2022-069722](https://doi.org/10.1136/bmj-2022-069722)
+[13] Raynauld JP et al. "Long-Term Effects of Glucosamine and Chondroitin Sulfate on the Progression of Structural Changes in Knee Osteoarthritis: Six-Year Followup Data From the Osteoarthritis Initiative." *Arthritis Care Res (Hoboken)*. 2016;68(10):1560-6. doi: [10.1002/acr.22866](https://doi.org/10.1002/acr.22866). PMID: [26881338](https://pubmed.ncbi.nlm.nih.gov/26881338/)
 
-[10] Hochberg MC, Martel-Pelletier J, Monfort J, et al. "Combined chondroitin sulfate and glucosamine for painful knee osteoarthritis: a multicentre, randomised, double-blind, non-inferiority trial versus celecoxib." *Ann Rheum Dis*. 2016;75(1):37-44. doi: [10.1136/annrheumdis-2014-206792](https://doi.org/10.1136/annrheumdis-2014-206792)
+[14] Roman-Blas JA et al. "Combined Treatment With Chondroitin Sulfate and Glucosamine Sulfate Shows No Superiority Over Placebo for Reduction of Joint Pain and Functional Impairment in Patients With Knee Osteoarthritis: A Six-Month Multicenter, Randomized, Double-Blind, Placebo-Controlled Clinical Trial." *Arthritis Rheumatol*. 2017;69(1):77-85. doi: [10.1002/art.39819](https://doi.org/10.1002/art.39819). PMID: [27477804](https://pubmed.ncbi.nlm.nih.gov/27477804/)
 
-[11] Reginster JY, et al. "Pharmaceutical-grade Chondroitin sulfate is as effective as celecoxib and superior to placebo in symptomatic knee osteoarthritis." *Ann Rheum Dis*. 2017;76(9):1537-1543. doi: [10.1136/annrheumdis-2016-210860](https://doi.org/10.1136/annrheumdis-2016-210860)
+[15] Kwoh CK et al. "Effect of oral glucosamine on joint structure in individuals with chronic knee pain: a randomized, placebo-controlled clinical trial." *Arthritis Rheumatol*. 2014;66(4):930-9. doi: [10.1002/art.38314](https://doi.org/10.1002/art.38314). PMID: [24616448](https://pubmed.ncbi.nlm.nih.gov/24616448/)
 
-[12] Rondenelli F, et al. "Effects of non-animal derived chondroitin sulfate supplementation on knee osteoarthritis." *Nutrients*. 2019;11(5):1091. doi: [10.3390/nu11051091](https://doi.org/10.3390/nu11051091)
+[16] Singh JA et al. "Chondroitin for osteoarthritis." *Cochrane Database Syst Rev*. 2015;1(1):CD005614. doi: [10.1002/14651858.CD005614.pub2](https://doi.org/10.1002/14651858.CD005614.pub2). PMID: [25629804](https://pubmed.ncbi.nlm.nih.gov/25629804/)
 
-[13] Raynauld JP, et al. "Long-term effects of glucosamine and chondroitin sulfate on the progression of structural changes in knee osteoarthritis." *Arthritis Care Res (Hoboken)*. 2016;68(10):1560-1566. doi: [10.1002/acr.22866](https://doi.org/10.1002/acr.22866)
+[17] Reichenbach S et al. "Meta-analysis: chondroitin for osteoarthritis of the knee or hip." *Ann Intern Med*. 2007;146(8):580-90. doi: [10.7326/0003-4819-146-8-200704170-00009](https://doi.org/10.7326/0003-4819-146-8-200704170-00009). PMID: [17438317](https://pubmed.ncbi.nlm.nih.gov/17438317/)
 
-[14] Herrero-Beaumont G, et al. "Glucosamine sulfate with chondroitin sulfate in patients with knee osteoarthritis." OARSI abstract, *Osteoarthritis Cartilage*. 2016.
+[18] Kolasinski SL et al. "2019 American College of Rheumatology/Arthritis Foundation Guideline for the Management of Osteoarthritis of the Hand, Hip, and Knee." *Arthritis Rheumatol*. 2020;72(2):220-233. doi: [10.1002/art.41142](https://doi.org/10.1002/art.41142). PMID: [31908163](https://pubmed.ncbi.nlm.nih.gov/31908163/)
 
-[15] Kwoh CK, et al. "Effect of oral glucosamine on joint structure in individuals with chronic knee pain." *Arthritis Rheum*. 2014;66(4):930-939. doi: [10.1002/art.38314](https://doi.org/10.1002/art.38314)
+[19] Gabay C et al. "Symptomatic effects of chondroitin 4 and chondroitin 6 sulfate on hand osteoarthritis: a randomized, double-blind, placebo-controlled clinical trial at a single center." *Arthritis Rheum*. 2011;63(11):3383-91. doi: [10.1002/art.30574](https://doi.org/10.1002/art.30574). PMID: [21898340](https://pubmed.ncbi.nlm.nih.gov/21898340/)
 
-[16] Singh JA, et al. "Chondroitin for osteoarthritis." *Cochrane Database Syst Rev*. 2015;(1):CD005614. doi: [10.1002/14651858.CD005614.pub2](https://doi.org/10.1002/14651858.CD005614.pub2)
+[20] Tenti S et al. "A retrospective observational study of glucosamine sulfate in addition to conventional therapy in hand osteoarthritis patients compared to conventional treatment alone." *Aging Clin Exp Res*. 2020;32(6):1161-1172. doi: [10.1007/s40520-019-01305-4](https://doi.org/10.1007/s40520-019-01305-4). PMID: [31429006](https://pubmed.ncbi.nlm.nih.gov/31429006/)
 
-[17] Reichenbach S, et al. "Meta-analysis: chondroitin for osteoarthritis of the knee or hip." *Ann Intern Med*. 2007;146(8):580-590. doi: [10.7326/0003-4819-146-8-200704170-00009](https://doi.org/10.7326/0003-4819-146-8-200704170-00009)
+[21] Wilkens P et al. "Effect of glucosamine on pain-related disability in patients with chronic low back pain and degenerative lumbar osteoarthritis: a randomized controlled trial." *JAMA*. 2010;304(1):45-52. doi: [10.1001/jama.2010.893](https://doi.org/10.1001/jama.2010.893). PMID: [20606148](https://pubmed.ncbi.nlm.nih.gov/20606148/)
 
-[18] Kolasinski SL, et al. "2019 American College of Rheumatology/Arthritis Foundation Guideline for the Management of Osteoarthritis of the Hand, Hip, and Knee." *Arthritis Rheumatol*. 2020;72(2):220-233. doi: [10.1002/art.41142](https://doi.org/10.1002/art.41142)
+[22] Majeed M et al. "A pilot, randomized, double-blind, placebo-controlled trial to assess the safety and efficacy of a novel Boswellia serrata extract in the management of osteoarthritis of the knee." *Phytother Res*. 2019;33(5):1457-1468. doi: [10.1002/ptr.6338](https://doi.org/10.1002/ptr.6338). PMID: [30838706](https://pubmed.ncbi.nlm.nih.gov/30838706/)
 
-[19] Gabay C, et al. "Symptomatic effects of chondroitin 4 and chondroitin 6 sulfate on hand osteoarthritis." *Arthritis Rheum*. 2011;63(11):3383-3391. doi: [10.1002/art.30574](https://doi.org/10.1002/art.30574)
+[23] Majeed A et al. "A standardized Boswellia serrata extract shows improvements in knee osteoarthritis within five days-a double-blind, randomized, three-arm, parallel-group, multi-center, placebo-controlled trial." *Front Pharmacol*. 2024;15:1428440. doi: [10.3389/fphar.2024.1428440](https://doi.org/10.3389/fphar.2024.1428440). PMID: [39092235](https://pubmed.ncbi.nlm.nih.gov/39092235/)
 
-[20] Tenti S, et al. "Effects of glucosamine sulfate supplementation on hand osteoarthritis in patients treated for knee osteoarthritis." *Aging Clin Exp Res*. 2019;31(11):1613-1619. doi: [10.1007/s40520-019-01151-0](https://doi.org/10.1007/s40520-019-01151-0)
+[24] Karlapudi V et al. "Efficacy and Safety of Aflapin®, a Novel Boswellia Serrata Extract, in the Treatment of Osteoarthritis of the Knee: A Short-Term 30-Day Randomized, Double-Blind, Placebo-Controlled Clinical Study." *J Am Nutr Assoc*. 2023;42(2):159-168. doi: [10.1080/07315724.2021.2014370](https://doi.org/10.1080/07315724.2021.2014370). PMID: [35512759](https://pubmed.ncbi.nlm.nih.gov/35512759/)
 
-[21] Wilkens P, et al. "Effect of glucosamine on pain-related disability in patients with chronic low back pain and degenerative lumbar osteoarthritis." *JAMA*. 2010;304(1):45-52. doi: [10.1001/jama.2010.893](https://doi.org/10.1001/jama.2010.893)
+[26] Kimmatkar N et al. "Efficacy and tolerability of Boswellia serrata extract in treatment of osteoarthritis of knee--a randomized double blind placebo controlled trial." *Phytomedicine*. 2003;10(1):3-7. doi: [10.1078/094471103321648593](https://doi.org/10.1078/094471103321648593). PMID: [12622457](https://pubmed.ncbi.nlm.nih.gov/12622457/)
 
-[22] Majeed M, et al. "A pilot, randomized, double-blind, placebo-controlled trial to assess the safety and efficacy of a novel Boswellia serrata extract in the management of osteoarthritis of the knee." *Phytother Res*. 2019;33(5):1457-1468. doi: [10.1002/ptr.6338](https://doi.org/10.1002/ptr.6338)
+[27] Haroyan A et al. "Efficacy and safety of curcumin and its combination with boswellic acid in osteoarthritis: a comparative, randomized, double-blind, placebo-controlled study." *BMC Complement Altern Med*. 2018;18(1):7. doi: [10.1186/s12906-017-2062-z](https://doi.org/10.1186/s12906-017-2062-z). PMID: [29316908](https://pubmed.ncbi.nlm.nih.gov/29316908/)
 
-[23] Majeed M, et al. "Efficacy of Boswellin Super in the Management of Degenerative Hypertrophy Osteoarthritis of the Knee." *Front Pharmacol*. 2024;15:1349189. doi: [10.3389/fphar.2024.1349189](https://doi.org/10.3389/fphar.2024.1349189)
+[29] Withee ED et al. "Effects of Methylsulfonylmethane (MSM) on exercise-induced oxidative stress, muscle damage, and pain following a half-marathon: a double-blind, randomized, placebo-controlled trial." *J Int Soc Sports Nutr*. 2017;14:24. doi: [10.1186/s12970-017-0181-z](https://doi.org/10.1186/s12970-017-0181-z). PMID: [28736511](https://pubmed.ncbi.nlm.nih.gov/28736511/)
 
-[24] Karlapudi V, et al. "A Placebo-Controlled Double-Blind Study Demonstrates the Clinical Efficacy of a Novel Herbal Formulation for Relieving Joint Discomfort in Human Subjects with Osteoarthritis of Knee." *J Am Nutr Assoc*. 2023;42(4):396-406. doi: [10.1080/07315724.2022.2053418](https://doi.org/10.1080/07315724.2022.2053418)
+[32] Salvatore S et al. "A pilot study of N-acetyl glucosamine, a nutritional substrate for glycosaminoglycan synthesis, in paediatric chronic inflammatory bowel disease." *Aliment Pharmacol Ther*. 2000;14(12):1567-79. doi: [10.1046/j.1365-2036.2000.00883.x](https://doi.org/10.1046/j.1365-2036.2000.00883.x). PMID: [11121904](https://pubmed.ncbi.nlm.nih.gov/11121904/)
 
-[25] Kumar D, et al. "Evaluation of the Efficacy of AprèsFlex in the Management of Osteoarthritis of Knee." *J Am Nutr Assoc*. 2024. doi: [10.1080/27697061.2024.2316135](https://doi.org/10.1080/27697061.2024.2316135)
+[35] Tsuji T et al. "Effects of N-acetyl glucosamine and chondroitin sulfate supplementation on knee pain and self-reported knee function in middle-aged and older Japanese adults: a randomized, double-blind, placebo-controlled trial." *Aging Clin Exp Res*. 2016;28(2):197-205. doi: [10.1007/s40520-015-0412-6](https://doi.org/10.1007/s40520-015-0412-6). PMID: [26178634](https://pubmed.ncbi.nlm.nih.gov/26178634/)
 
-[26] Kimmatkar N, et al. "Efficacy and tolerability of Boswellia serrata extract in treatment of osteoarthritis of knee." *Phytomedicine*. 2003;10(1):3-7. doi: [10.1078/094471103321648593](https://doi.org/10.1078/094471103321648593)
+[37] Tashiro T et al. "Oral administration of polymer hyaluronic acid alleviates symptoms of knee osteoarthritis: a double-blind, placebo-controlled study over a 12-month period." *ScientificWorldJournal*. 2012;2012:167928. doi: [10.1100/2012/167928](https://doi.org/10.1100/2012/167928). PMID: [23226979](https://pubmed.ncbi.nlm.nih.gov/23226979/)
 
-[27] Haroyan A, et al. "Efficacy and safety of curcumin and its combination with boswellic acid in osteoarthritis: a comparative, randomized, double-blind, placebo-controlled study." *BMC Complement Altern Med*. 2018;18(1):7. doi: [10.1186/s12906-017-2062-z](https://doi.org/10.1186/s12906-017-2062-z)
+[39] Kalman DS et al. "Effect of a natural extract of chicken combs with a high content of hyaluronic acid (Hyal-Joint) on pain relief and quality of life in subjects with knee osteoarthritis: a pilot randomized double-blind placebo-controlled trial." *Nutr J*. 2008;7:3. doi: [10.1186/1475-2891-7-3](https://doi.org/10.1186/1475-2891-7-3). PMID: [18208600](https://pubmed.ncbi.nlm.nih.gov/18208600/)
 
-[28] Liu Y, et al. "Effect of a Combination Botanical Supplement on Hand Osteoarthritis Pain." *Arthritis Rheumatol*. 2024;76(Suppl 9). doi: [10.1002/art.42993](https://doi.org/10.1002/art.42993)
+[40] Nelson FR et al. "The effects of an oral preparation containing hyaluronic acid (Oralvisc®) on obese knee osteoarthritis patients determined by pain, function, bradykinin, leptin, inflammatory cytokines, and heavy water analyses." *Rheumatol Int*. 2015;35(1):43-52. doi: [10.1007/s00296-014-3047-6](https://doi.org/10.1007/s00296-014-3047-6). PMID: [24899570](https://pubmed.ncbi.nlm.nih.gov/24899570/)
 
-[29] Withee ED, et al. "Effects of Methylsulfonylmethane (MSM) on exercise-induced oxidative stress, muscle damage, and pain following a half-marathon." *J Int Soc Sports Nutr*. 2017;14:24. doi: [10.1186/s12970-017-0181-z](https://doi.org/10.1186/s12970-017-0181-z)
+[41] Pocobelli G et al. "Total mortality risk in relation to use of less-common dietary supplements." *Am J Clin Nutr*. 2010;91(6):1791-800. doi: [10.3945/ajcn.2009.28639](https://doi.org/10.3945/ajcn.2009.28639). PMID: [20410091](https://pubmed.ncbi.nlm.nih.gov/20410091/)
 
-[30] Muizzuddin N, et al. "Effect of MSM supplementation on hair and nail health." *Nat Med J*. 2019.
+[42] Bell GA et al. "Use of glucosamine and chondroitin in relation to mortality." *Eur J Epidemiol*. 2012;27(8):593-603. doi: [10.1007/s10654-012-9714-6](https://doi.org/10.1007/s10654-012-9714-6). PMID: [22828954](https://pubmed.ncbi.nlm.nih.gov/22828954/)
 
-[31] Goodman MJ, et al. "N-acetylglucosamine and the mucus barrier." *Gut*. 1997;40(5):687-688. doi: [10.1136/gut.40.5.687](https://doi.org/10.1136/gut.40.5.687)
+[43] Ma H et al. "Association of habitual glucosamine use with risk of cardiovascular disease: prospective study in UK Biobank." *BMJ*. 2019;365:l1628. doi: [10.1136/bmj.l1628](https://doi.org/10.1136/bmj.l1628). PMID: [31088786](https://pubmed.ncbi.nlm.nih.gov/31088786/)
 
-[32] Salvatore S, et al. "A pilot study of N-acetyl glucosamine, a nutritional substrate for glycosaminoglycan synthesis, in paediatric chronic inflammatory bowel disease." *Aliment Pharmacol Ther*. 2000;14(12):1567-1579. doi: [10.1046/j.1365-2036.2000.00883.x](https://doi.org/10.1046/j.1365-2036.2000.00883.x)
+[44] Ma H et al. "Glucosamine Use, Inflammation, and Genetic Susceptibility, and Incidence of Type 2 Diabetes: A Prospective Study in UK Biobank." *Diabetes Care*. 2020;43(4):719-725. doi: [10.2337/dc19-1836](https://doi.org/10.2337/dc19-1836). PMID: [31988063](https://pubmed.ncbi.nlm.nih.gov/31988063/)
 
-[33] Zhu M, et al. "N-Acetyl Glucosamine for Treatment of Inflammatory Bowel Disease." *Nat Med J*. 2015.
+[46] Suissa K et al. "Glucosamine and Cancer Incidence in Osteoarthritis: A Prevalent New-User Cohort Design." *Arthritis Care Res (Hoboken)*. 2024;76(11):1493-1500. doi: [10.1002/acr.25399](https://doi.org/10.1002/acr.25399). PMID: [38973352](https://pubmed.ncbi.nlm.nih.gov/38973352/)
 
-[34] Tomonaga A, et al. "N-Acetyl Glucosamine Stimulates the Production of Type II Collagen in Healthy Adults." *Exp Ther Med*. 2016;12(6):4029-4033. doi: [10.3892/etm.2016.3869](https://doi.org/10.3892/etm.2016.3869)
+[48] Kumar PNS et al. "A pilot, open-label investigation of the efficacy of glucosamine for the treatment of major depression." *Asian J Psychiatr*. 2020;52:102113. doi: [10.1016/j.ajp.2020.102113](https://doi.org/10.1016/j.ajp.2020.102113). PMID: [32388446](https://pubmed.ncbi.nlm.nih.gov/32388446/)
 
-[35] Tsuji T, et al. "Efficacy and safety of glucosamine and chondroitin in older Japanese adults with knee pain." *Aging Clin Exp Res*. 2016;28(2):197-205. doi: [10.1007/s40520-015-0414-7](https://doi.org/10.1007/s40520-015-0414-7)
+[49] Reginster JY et al. "Long-term effects of glucosamine sulphate on osteoarthritis progression: a randomised, placebo-controlled clinical trial." *Lancet*. 2001;357(9252):251-6. doi: [10.1016/S0140-6736(00)03610-2](https://doi.org/10.1016/S0140-6736(00)03610-2). PMID: [11214126](https://pubmed.ncbi.nlm.nih.gov/11214126/)
 
-[36] Sato T, et al. "Clinical effects of hyaluronic acid diet for dry skin and wrinkle." *J New Rem Clin*. 2009.
+[50] Hughes R et al. "A randomized, double-blind, placebo-controlled trial of glucosamine sulphate as an analgesic in osteoarthritis of the knee." *Rheumatology (Oxford)*. 2002;41(3):279-84. doi: [10.1093/rheumatology/41.3.279](https://doi.org/10.1093/rheumatology/41.3.279). PMID: [11934964](https://pubmed.ncbi.nlm.nih.gov/11934964/)
 
-[37] Tashiro T, et al. "Oral administration of polymer hyaluronic acid alleviates symptoms of knee osteoarthritis." *Sci World J*. 2012;2012:167928. doi: [10.1100/2012/167928](https://doi.org/10.1100/2012/167928)
+[51] Nelligan RK et al. "Effects of a Self-directed Web-Based Strengthening Exercise and Physical Activity Program Supported by Automated Text Messages for People With Knee Osteoarthritis: A Randomized Clinical Trial." *JAMA Intern Med*. 2021;181(6):776-785. doi: [10.1001/jamainternmed.2021.0991](https://doi.org/10.1001/jamainternmed.2021.0991). PMID: [33843948](https://pubmed.ncbi.nlm.nih.gov/33843948/)
 
-[38] Sugiyama M, et al. "Effects of oral hyaluronic acid on knee function in healthy adults with knee discomfort." *Exp Ther Med*. 2023;26(3):463. doi: [10.3892/etm.2023.12162](https://doi.org/10.3892/etm.2023.12162)
+[52] Sengupta K et al. "Comparative efficacy and tolerability of 5-Loxin and AflapinAgainst osteoarthritis of the knee: a double blind, randomized, placebo controlled clinical study." *Int J Med Sci*. 2010;7(6):366-77. doi: [10.7150/ijms.7.366](https://doi.org/10.7150/ijms.7.366). PMID: [21060724](https://pubmed.ncbi.nlm.nih.gov/21060724/)
 
-[39] Kalman DS, et al. "Effect of a natural extract of chicken combs with a high content of hyaluronic acid (Hyal-Joint) on pain relief and quality of life in subjects with knee osteoarthritis." *Nutr J*. 2008;7:3. doi: [10.1186/1475-2891-7-3](https://doi.org/10.1186/1475-2891-7-3)
+[53] Murphy RK et al. "Oral glucosamine supplements as a possible ocular hypertensive agent." *JAMA Ophthalmol*. 2013;131(7):955-7. doi: [10.1001/jamaophthalmol.2013.227](https://doi.org/10.1001/jamaophthalmol.2013.227). PMID: [23702812](https://pubmed.ncbi.nlm.nih.gov/23702812/)
 
-[40] Nelson FR, et al. "The effects of an oral preparation containing hyaluronic acid (Oralvisc) on obese knee osteoarthritis patients." *Rheumatol Int*. 2015;35(1):43-52. doi: [10.1007/s00296-014-3077-2](https://doi.org/10.1007/s00296-014-3077-2)
+[54] Esfandiari H et al. "Effect of glucosamine on intraocular pressure: a randomized clinical trial." *Eye (Lond)*. 2017;31(3):389-394. doi: [10.1038/eye.2016.221](https://doi.org/10.1038/eye.2016.221). PMID: [27768119](https://pubmed.ncbi.nlm.nih.gov/27768119/)
 
-[41] Pocobelli G, et al. "Use of supplements of multivitamins, vitamin C, and vitamin E in relation to mortality." *Am J Clin Nutr*. 2010;91(1):255. doi: [10.3945/ajcn.2009.28129](https://doi.org/10.3945/ajcn.2009.28129)
+[55] Yuenyongviwat V et al. "Effect of glucosamine sulfate on intraocular pressure in patients with knee osteoarthritis: A prospective randomized controlled trial." *J Fr Ophtalmol*. 2019;42(7):711-715. doi: [10.1016/j.jfo.2019.03.005](https://doi.org/10.1016/j.jfo.2019.03.005). PMID: [31104873](https://pubmed.ncbi.nlm.nih.gov/31104873/)
 
-[42] Bell GA, et al. "Use of glucosamine and chondroitin in relation to mortality." *Eur J Epidemiol*. 2012;27(8):593-603. doi: [10.1007/s10654-012-9714-6](https://doi.org/10.1007/s10654-012-9714-6)
+[56] Cerda C et al. "Hepatotoxicity associated with glucosamine and chondroitin sulfate in patients with chronic liver disease." *World J Gastroenterol*. 2013;19(32):5381-4. doi: [10.3748/wjg.v19.i32.5381](https://doi.org/10.3748/wjg.v19.i32.5381). PMID: [23983444](https://pubmed.ncbi.nlm.nih.gov/23983444/)
 
-[43] Ma H, et al. "Association of habitual glucosamine use with risk of cardiovascular disease: prospective study in UK Biobank." *BMJ*. 2019;365:l1628. doi: [10.1136/bmj.l1628](https://doi.org/10.1136/bmj.l1628)
+[57] Tallia AF et al. "Asthma exacerbation associated with glucosamine-chondroitin supplement." *J Am Board Fam Pract*. 2002;15(6):481-4. PMID: [12463294](https://pubmed.ncbi.nlm.nih.gov/12463294/)
 
-[44] Ma H, et al. "Habitual glucosamine use, risk of incident type 2 diabetes, and related metabolic traits." *Diabetes Care*. 2020;43(9):e116-e118.
+[60] Acebo E et al. "Allergic contact dermatitis from Boswellia serrata extract in a naturopathic cream." *Contact Dermatitis*. 2004;51(2):91-2. doi: [10.1111/j.0105-1873.2004.0396d.x](https://doi.org/10.1111/j.0105-1873.2004.0396d.x). PMID: [15373853](https://pubmed.ncbi.nlm.nih.gov/15373853/)
 
-[45] Yu D, et al. "Association of Glucosamine Supplementation With Cardiovascular Disease in Chinese Adults With Osteoarthritis." *Nutrients*. 2022;14(5):1020. doi: [10.3390/nu14051020](https://doi.org/10.3390/nu14051020)
+[62] Chrubasik S et al. "Treatment of low back pain with a herbal or synthetic anti-rheumatic: a randomized controlled study. Willow bark extract for low back pain." *Rheumatology (Oxford)*. 2001;40(12):1388-93. doi: [10.1093/rheumatology/40.12.1388](https://doi.org/10.1093/rheumatology/40.12.1388). PMID: [11752510](https://pubmed.ncbi.nlm.nih.gov/11752510/)
 
-[46] Suissa S, et al. "Glucosamine use and risk of lung, colorectal, breast, and prostate cancer." *Arthritis Care Res (Hoboken)*. 2024;76(1):96-104. doi: [10.1002/acr.25241](https://doi.org/10.1002/acr.25241)
+[65] Navarro SL et al. "Modulation of Gut Microbiota by Glucosamine and Chondroitin in a Randomized, Double-Blind Pilot Trial in Humans." *Microorganisms*. 2019;7(12). doi: [10.3390/microorganisms7120610](https://doi.org/10.3390/microorganisms7120610). PMID: [31771179](https://pubmed.ncbi.nlm.nih.gov/31771179/)
 
-[47] Suissa S, et al. "Glucosamine and cancer: survivor bias in observational studies." *Pharmacoepidemiol Drug Saf*. 2022;31(10):1059-1062. doi: [10.1002/pds.5526](https://doi.org/10.1002/pds.5526)
+[66] Roy S et al. "Regulation of vascular responses to inflammation: inducible matrix metalloproteinase-3 expression in human microvascular endothelial cells is sensitive to antiinflammatory Boswellia." *Antioxid Redox Signal*. 2006;8(3-4):653-60. doi: [10.1089/ars.2006.8.653](https://doi.org/10.1089/ars.2006.8.653). PMID: [16677108](https://pubmed.ncbi.nlm.nih.gov/16677108/)
 
-[48] Kumar A, et al. "Clinical efficacy of glucosamine sulfate in major depressive disorder." *Asian J Psychiatry*. 2020;47:101878. doi: [10.1016/j.ajp.2019.101878](https://doi.org/10.1016/j.ajp.2019.101878)
+[67] Gupta I et al. "Effects of Boswellia serrata gum resin in patients with ulcerative colitis." *Eur J Med Res*. 1997;2(1):37-43. PMID: [9049593](https://pubmed.ncbi.nlm.nih.gov/9049593/)
 
-[49] Reginster JY, et al. "Long-term effects of glucosamine sulphate on osteoarthritis progression: a randomised, placebo-controlled clinical trial." *Lancet*. 2001;357(9252):251-256. doi: [10.1016/S0140-6736(00)03610-2](https://doi.org/10.1016/S0140-6736(00)03610-2)
+[68] Gupta I et al. "Effects of gum resin of Boswellia serrata in patients with chronic colitis." *Planta Med*. 2001;67(5):391-5. doi: [10.1055/s-2001-15802](https://doi.org/10.1055/s-2001-15802). PMID: [11488449](https://pubmed.ncbi.nlm.nih.gov/11488449/)
 
-[50] Hughes R, et al. "A randomized, double-blind, placebo-controlled trial of glucosamine sulphate as an analgesic in osteoarthritis of the knee." *Rheumatology*. 2002;41(3):279-284. doi: [10.1093/rheumatology/41.3.279](https://doi.org/10.1093/rheumatology/41.3.279)
+[70] National Center for Complementary and Integrative Health. "Glucosamine and Chondroitin for Osteoarthritis: What You Need To Know." Last updated October 2023. [https://www.nccih.nih.gov/health/glucosamine-and-chondroitin-for-osteoarthritis-what-you-need-to-know](https://www.nccih.nih.gov/health/glucosamine-and-chondroitin-for-osteoarthritis-what-you-need-to-know)
 
-[51] Nelligan RK, et al. "Effects of a Self-Directed Web-Based Strengthening Exercise and Physical Activity Program for Knee Osteoarthritis." *JAMA Intern Med*. 2021;181(4):530-538. doi: [10.1001/jamainternalmedicine.2020.8033](https://doi.org/10.1001/jamainternalmedicine.2020.8033)
+[71] Fransen M et al. "Glucosamine and chondroitin for knee osteoarthritis: a double-blind randomised placebo-controlled clinical trial evaluating single and combination regimens." *Ann Rheum Dis*. 2015;74(5):851-8. doi: [10.1136/annrheumdis-2013-203954](https://doi.org/10.1136/annrheumdis-2013-203954). PMID: [24395557](https://pubmed.ncbi.nlm.nih.gov/24395557/)
 
-[52] Sengupta K, et al. "Comparative Efficacy and Tolerability of 5-Loxin and Aflapin Against Osteoarthritis of the Knee." *Int J Med Sci*. 2010;7(6):366-377. doi: [10.7150/ijms.7.366](https://doi.org/10.7150/ijms.7.366)
+[72] Sawitzke AD et al. "The effect of glucosamine and/or chondroitin sulfate on the progression of knee osteoarthritis: a report from the glucosamine/chondroitin arthritis intervention trial." *Arthritis Rheum*. 2008;58(10):3183-91. doi: [10.1002/art.23973](https://doi.org/10.1002/art.23973). PMID: [18821708](https://pubmed.ncbi.nlm.nih.gov/18821708/)
 
-[53] Murphy RK, et al. "Glucosamine and glaucoma: A potential association." *JAMA Ophthalmol*. 2013;131(6):753-757. doi: [10.1001/jamaophthalmol.2013.227](https://doi.org/10.1001/jamaophthalmol.2013.227)
+[73] Sawitzke AD et al. "Clinical efficacy and safety of glucosamine, chondroitin sulphate, their combination, celecoxib or placebo taken to treat osteoarthritis of the knee: 2-year results from GAIT." *Ann Rheum Dis*. 2010;69(8):1459-64. doi: [10.1136/ard.2009.120469](https://doi.org/10.1136/ard.2009.120469). PMID: [20525840](https://pubmed.ncbi.nlm.nih.gov/20525840/)
 
-[54] Esfandiari H, et al. "Effect of glucosamine on intraocular pressure: a randomized clinical trial." *Eye (Lond)*. 2017;31(3):389-394. doi: [10.1038/eye.2016.221](https://doi.org/10.1038/eye.2016.221)
+[74] Wandel S et al. "Effects of glucosamine, chondroitin, or placebo in patients with osteoarthritis of hip or knee: network meta-analysis." *BMJ*. 2010;341:c4675. doi: [10.1136/bmj.c4675](https://doi.org/10.1136/bmj.c4675). PMID: [20847017](https://pubmed.ncbi.nlm.nih.gov/20847017/)
 
-[55] Yuenyongviwat V, et al. "Effect of glucosamine sulfate on intraocular pressure." *J Fr Ophtalmol*. 2019;42(9):e379-e384. doi: [10.1016/j.jfo.2019.03.035](https://doi.org/10.1016/j.jfo.2019.03.035)
+[75] Eriksen P et al. "Risk of bias and brand explain the observed inconsistency in trials on glucosamine for symptomatic relief of osteoarthritis: a meta-analysis of placebo-controlled trials." *Arthritis Care Res (Hoboken)*. 2014;66(12):1844-55. doi: [10.1002/acr.22376](https://doi.org/10.1002/acr.22376). PMID: [24905534](https://pubmed.ncbi.nlm.nih.gov/24905534/)
 
-[56] Cerda C, et al. "Hepatotoxicity associated with glucosamine and chondroitin sulfate in patients with chronic liver disease." *World J Gastroenterol*. 2013;19(32):5381-5384. doi: [10.3748/wjg.v19.i32.5381](https://doi.org/10.3748/wjg.v19.i32.5381)
+[76] Honvo G et al. "Efficacy of Chondroitin Sulfate in Patients with Knee Osteoarthritis: A Comprehensive Meta-Analysis Exploring Inconsistencies in Randomized, Placebo-Controlled Trials." *Adv Ther*. 2019;36(5):1085-1099. doi: [10.1007/s12325-019-00921-w](https://doi.org/10.1007/s12325-019-00921-w). PMID: [30879253](https://pubmed.ncbi.nlm.nih.gov/30879253/)
 
-[57] Tallia AF, et al. "Chondroitin sulfate and asthma exacerbation." *J Am Board Fam Pract*. 2002;15(6):481-484.
+[77] Runhaar J et al. "Subgroup analyses of the effectiveness of oral glucosamine for knee and hip osteoarthritis: a systematic review and individual patient data meta-analysis from the OA trial bank." *Ann Rheum Dis*. 2017;76(11):1862-1869. doi: [10.1136/annrheumdis-2017-211149](https://doi.org/10.1136/annrheumdis-2017-211149). PMID: [28754801](https://pubmed.ncbi.nlm.nih.gov/28754801/)
 
-[58] Sakko AJ, et al. "Versican accumulation in human prostatic fibroblast cultures is enhanced by prostate cancer cell-derived transforming growth factor beta 1." *Cancer Res*. 2003;63(18):5755-5760.
+[78] Rozendaal RM et al. "Effect of glucosamine sulfate on hip osteoarthritis: a randomized trial." *Ann Intern Med*. 2008;148(4):268-77. doi: [10.7326/0003-4819-148-4-200802190-00005](https://doi.org/10.7326/0003-4819-148-4-200802190-00005). PMID: [18283204](https://pubmed.ncbi.nlm.nih.gov/18283204/)
 
-[59] Brasky TM, et al. "Glucosamine and chondroitin use in relation to prostate cancer risk in the VITamins And Lifestyle (VITAL) cohort." *Nutr Cancer*. 2011;63(4):573-582. doi: [10.1080/01635581.2011.553020](https://doi.org/10.1080/01635581.2011.553020)
+[79] Honvo G et al. "Safety of Symptomatic Slow-Acting Drugs for Osteoarthritis: Outcomes of a Systematic Review and Meta-Analysis." *Drugs Aging*. 2019;36(Suppl 1):65-99. doi: [10.1007/s40266-019-00662-z](https://doi.org/10.1007/s40266-019-00662-z). PMID: [31073924](https://pubmed.ncbi.nlm.nih.gov/31073924/)
 
-[60] Acebo E, et al. "Allergic contact dermatitis from Boswellia serrata extract in a naturopathic cream." *Contact Dermatitis*. 2004;51(5-6):297-298. doi: [10.1111/j.0105-1873.2004.0459j.x](https://doi.org/10.1111/j.0105-1873.2004.0459j.x)
+[80] Knudsen JF et al. "Potential glucosamine-warfarin interaction resulting in increased international normalized ratio: case report and review of the literature and MedWatch database." *Pharmacotherapy*. 2008;28(4):540-8. doi: [10.1592/phco.28.4.540](https://doi.org/10.1592/phco.28.4.540). PMID: [18363538](https://pubmed.ncbi.nlm.nih.gov/18363538/)
 
-[61] Wu KK, et al. "Aspirin and salicylate: an old drug remedy with a new twist." *Circulation*. 2000;102(17):2022-2023.
+[81] Hatfield J et al. "Dietary supplements and bleeding." *Proc (Bayl Univ Med Cent)*. 2022;35(6):802-807. doi: [10.1080/08998280.2022.2121575](https://doi.org/10.1080/08998280.2022.2121575). PMID: [36304597](https://pubmed.ncbi.nlm.nih.gov/36304597/)
 
-[62] Chrubasik S, et al. "Treatment of low back pain exacerbations with willow bark extract." *Rheumatology (Oxford)*. 2001;40(12):1388-1393. doi: [10.1093/rheumatology/40.12.1388](https://doi.org/10.1093/rheumatology/40.12.1388)
+[82] Villacis J et al. "Do shrimp-allergic individuals tolerate shrimp-derived glucosamine?" *Clin Exp Allergy*. 2006;36(11):1457-61. doi: [10.1111/j.1365-2222.2006.02590.x](https://doi.org/10.1111/j.1365-2222.2006.02590.x). PMID: [17083356](https://pubmed.ncbi.nlm.nih.gov/17083356/)
 
-[63] Boullata JI, et al. "Natural health product interactions with medication." *Ann Pharmacother*. 2003;37(9):1287-1296. doi: [10.1345/aph.1C371](https://doi.org/10.1345/aph.1C371)
+[83] Simon RR et al. "A comprehensive review of oral glucosamine use and effects on glucose metabolism in normal and diabetic individuals." *Diabetes Metab Res Rev*. 2011;27(1):14-27. doi: [10.1002/dmrr.1150](https://doi.org/10.1002/dmrr.1150). PMID: [21218504](https://pubmed.ncbi.nlm.nih.gov/21218504/)
 
-[64] Narat B, et al. "Anaphylaxis to white willow bark." *N Am J Med Sci*. 2013;5(5):332-333.
+[84] Scroggie DA et al. "The effect of glucosamine-chondroitin supplementation on glycosylated hemoglobin levels in patients with type 2 diabetes mellitus: a placebo-controlled, double-blinded, randomized clinical trial." *Arch Intern Med*. 2003;163(13):1587-90. doi: [10.1001/archinte.163.13.1587](https://doi.org/10.1001/archinte.163.13.1587). PMID: [12860582](https://pubmed.ncbi.nlm.nih.gov/12860582/)
 
-[65] Navarro SL, et al. "Modulation of gut microbiota by glucosamine and chondroitin: a randomized, double-blind pilot study." *Microorganisms*. 2019;7(12):610. doi: [10.3390/microorganisms7120610](https://doi.org/10.3390/microorganisms7120610)
+[85] Lugo JP et al. "Efficacy and tolerability of an undenatured type II collagen supplement in modulating knee osteoarthritis symptoms: a multicenter randomized, double-blind, placebo-controlled study." *Nutr J*. 2016;15:14. doi: [10.1186/s12937-016-0130-8](https://doi.org/10.1186/s12937-016-0130-8). PMID: [26822714](https://pubmed.ncbi.nlm.nih.gov/26822714/)
 
-[66] Roy S, et al. "Regulation of vascular responses to inflammation: inducible matrix metalloproteinase-3 expression in human microvascular endothelial cells is sensitive to antiinflammatory Boswellia." *Antioxid Redox Signal*. 2006;8(5-6):653-660. doi: [10.1089/ars.2006.8.653](https://doi.org/10.1089/ars.2006.8.653)
+[86] Bongers CCWG et al. "Effectiveness of collagen supplementation on pain scores in healthy individuals with self-reported knee pain: a randomized controlled trial." *Appl Physiol Nutr Metab*. 2020;45(7):793-800. doi: [10.1139/apnm-2019-0654](https://doi.org/10.1139/apnm-2019-0654). PMID: [31990581](https://pubmed.ncbi.nlm.nih.gov/31990581/)
 
-[67] Gupta I, et al. "Effects of Boswellia serrata gum resin in patients with ulcerative colitis." *Eur J Med Res*. 1997;2(1):37-43.
+[87] Yu H et al. "Glucosamine Use Is Associated with a Higher Risk of Cardiovascular Diseases in Patients with Osteoarthritis: Results from a Large Study in 685,778 Subjects." *Nutrients*. 2022;14(18):3694. doi: [10.3390/nu14183694](https://doi.org/10.3390/nu14183694). PMID: [36145069](https://pubmed.ncbi.nlm.nih.gov/36145069/)
 
-[68] Gupta I, et al. "Effects of gum resin of Boswellia serrata in patients with chronic colitis." *Planta Med*. 2001;67(5):391-395. doi: [10.1055/s-2001-15802](https://doi.org/10.1055/s-2001-15802)
+[88] Boullata JI et al. "Anaphylactic reaction to a dietary supplement containing willow bark." *Ann Pharmacother*. 2003;37(6):832-5. doi: [10.1345/aph.1D027](https://doi.org/10.1345/aph.1D027). PMID: [12773073](https://pubmed.ncbi.nlm.nih.gov/12773073/)
 
-[69] Dysart SH, et al. "Prescribing patterns for viscosupplementation among US adults with newly diagnosed knee osteoarthritis." *Am Health Drug Benefits*. 2021;14(3):105-111.
+[89] Kahan A et al. "Long-term effects of chondroitins 4 and 6 sulfate on knee osteoarthritis: the study on osteoarthritis progression prevention, a two-year, randomized, double-blind, placebo-controlled trial." *Arthritis Rheum*. 2009;60(2):524-33. doi: [10.1002/art.24255](https://doi.org/10.1002/art.24255). PMID: [19180484](https://pubmed.ncbi.nlm.nih.gov/19180484/)
+
+[90] Michel BA et al. "Chondroitins 4 and 6 sulfate in osteoarthritis of the knee: a randomized, controlled trial." *Arthritis Rheum*. 2005;52(3):779-86. doi: [10.1002/art.20867](https://doi.org/10.1002/art.20867). PMID: [15751094](https://pubmed.ncbi.nlm.nih.gov/15751094/)
+
+[91] Crawford P et al. "Methylsulfonylmethane for treatment of low back pain: A safety analysis of a randomized, controlled trial." *Complement Ther Med*. 2019;45:85-88. doi: [10.1016/j.ctim.2019.05.022](https://doi.org/10.1016/j.ctim.2019.05.022). PMID: [31331587](https://pubmed.ncbi.nlm.nih.gov/31331587/)
+
+[92] Kalic T et al. "Collagen-An Important Fish Allergen for Improved Diagnosis." *J Allergy Clin Immunol Pract*. 2020;8(9):3084-3092.e10. doi: [10.1016/j.jaip.2020.04.063](https://doi.org/10.1016/j.jaip.2020.04.063). PMID: [32389794](https://pubmed.ncbi.nlm.nih.gov/32389794/)
+
+[93] National Center for Complementary and Integrative Health. "Turmeric." Last updated April 2025. [https://www.nccih.nih.gov/health/turmeric](https://www.nccih.nih.gov/health/turmeric)

@@ -12,7 +12,8 @@
  * Nothing here reads the clock, the filesystem or the network.
  */
 import { deadlineSignal } from './adapter';
-import { dayOf, daysBetween, stampFields } from './merge';
+import { dayOf, daysBetween } from './merge';
+import { stampProfile } from './state-edits';
 import { displayLabUnit, foldLpa, LAB_CATALOG, type LabCatalogEntry, labSlotKey, metricNameWords, resolveLabCatalogEntry } from './lab-catalog';
 import { ISO_DATE, latestActivePerMetric } from './measurement-history';
 import {
@@ -50,8 +51,9 @@ import { CANONICAL_UNITS, formatDisplayValue, getDisplayLabel, getDisplayRange, 
 import { DROPBOX_APP_FOLDER, IMPORT_ACCEPTED_TYPES, IMPORT_FILE_REASONS, IMPORT_REFUSALS, importHint } from './import-hints';
 import { type McpImportRoute, type McpRefusalReason } from './product-events';
 import { LAB_ARCHIVE_TITLE } from './document-path';
-import { DOCUMENT_TYPES, type DocumentType, healthInputSchema, METRIC_TYPES } from './validation';
-import { z } from 'zod';
+import { documentRow, labArchiveFields, type DocumentFields } from './document-rows';
+import { DOCUMENT_TYPES, type DocumentType, healthInputSchema, METRIC_TYPES, zod3Message } from './validation';
+import * as z from './zod';
 
 /**
  * Rows one `add_lab_values` call may write. A lab panel is the case this tool
@@ -139,7 +141,7 @@ export const getPlanInput = z.object({}).strict();
 
 export const addMeasurementInput = z.object({
   metricType: z.string().min(1).max(MAX_NAME_LENGTH),
-  value: z.number().finite(),
+  value: z.number(),
   unit: z.string().min(1).max(MAX_NAME_LENGTH).optional(),
   recordedAt: DAY,
 }).strict();
@@ -147,10 +149,10 @@ export const addMeasurementInput = z.object({
 /** One row of a panel. Exported so the parity test can read the nested shape. */
 export const labValueInput = z.object({
   metricName: z.string().min(1).max(MAX_NAME_LENGTH),
-  value: z.number().finite(),
+  value: z.number(),
   unit: z.string().min(1).max(MAX_NAME_LENGTH),
-  referenceLow: z.number().finite().nullable().optional(),
-  referenceHigh: z.number().finite().nullable().optional(),
+  referenceLow: z.number().nullable().optional(),
+  referenceHigh: z.number().nullable().optional(),
   recordedAt: DAY,
 }).strict();
 
@@ -185,9 +187,9 @@ const APPROVAL = z.string().max(MAX_APPROVAL_LENGTH).optional();
 
 export const correctValueInput = z.object({
   id: z.string().min(1).max(MAX_ID_LENGTH),
-  newValue: z.number().finite(),
+  newValue: z.number(),
   unit: z.string().min(1).max(MAX_NAME_LENGTH).optional(),
-  expectedValue: z.number().finite().optional(),
+  expectedValue: z.number().optional(),
   confirm: CONFIRM,
   approval: APPROVAL,
 }).strict();
@@ -211,12 +213,12 @@ export const updateProfileInput = z.object({
   sex: z.enum(['male', 'female']).optional(),
   birthYear: z.number().int().optional(),
   birthMonth: z.number().int().optional(),
-  heightCm: z.number().finite().optional(),
+  heightCm: z.number().optional(),
   expected: z.object({
     sex: z.enum(['male', 'female']).nullable().optional(),
     birthYear: z.number().int().nullable().optional(),
     birthMonth: z.number().int().nullable().optional(),
-    heightCm: z.number().finite().nullable().optional(),
+    heightCm: z.number().nullable().optional(),
   }).strict().optional(),
   confirm: CONFIRM,
   approval: APPROVAL,
@@ -266,10 +268,10 @@ export type ImportCommit = z.infer<typeof importCommitInput>;
 export const fileResultRow = z.object({
   metric: z.string().min(1).max(MAX_NAME_LENGTH),
   printedName: z.string().min(1).max(MAX_NAME_LENGTH),
-  value: z.number().finite(),
+  value: z.number(),
   unit: z.string().min(1).max(MAX_NAME_LENGTH),
-  referenceLow: z.number().finite().nullable().optional(),
-  referenceHigh: z.number().finite().nullable().optional(),
+  referenceLow: z.number().nullable().optional(),
+  referenceHigh: z.number().nullable().optional(),
   recordedAt: DAY.optional(),
 }).strict();
 
@@ -311,10 +313,10 @@ export type FileResultsSource = FileResultsRequest & Required<Pick<FileResultsRe
  * elsewhere (the file schema, `renderJson`), and restating them here would be a
  * second definition to keep in sync, which is how a schema starts lying.
  */
-const LOOSE = z.record(z.unknown());
+const LOOSE = z.record(z.string(), z.unknown());
 const ROWS = z.array(LOOSE);
 /** A value row as `read_record` hands it out: the record's own fields, plus `current` (US-32 AC41). */
-const VALUE_ROWS = z.array(z.object({ current: z.boolean() }).passthrough());
+const VALUE_ROWS = z.array(z.looseObject({ current: z.boolean() }));
 
 /**
  * US-37: what a Dropbox read adds when the folder holds files the record
@@ -328,7 +330,7 @@ export const folderNudgeOutput = z.object({
 }).strict();
 
 /** The record as `readRecord` filters it — the file's own keys, minus its bookkeeping (US-32 AC41). */
-export const readRecordOutput = z.object({
+export const readRecordOutput = z.looseObject({
   schemaVersion: z.number(),
   units: LOOSE,
   profile: LOOSE,
@@ -341,7 +343,7 @@ export const readRecordOutput = z.object({
   labValues: VALUE_ROWS,
   documents: ROWS,
   folder: folderNudgeOutput.optional(),
-}).passthrough();
+});
 
 /** The plan, in the shape `planPayload` builds and `get-plan.ts --json` prints. */
 export const getPlanOutput = z.object({
@@ -757,7 +759,7 @@ export function updateProfile(
   // The app's own ranges, with the app's own words: a connector cannot write
   // what a person sitting at the form could not type.
   for (const field of named) {
-    const parsed = healthInputSchema.shape[field].safeParse(request[field]);
+    const parsed = healthInputSchema.shape[field].safeParse(request[field], { error: zod3Message });
     if (!parsed.success) {
       return { status: 'rejected', text: `${field}: ${oneLine(parsed.error.issues[0]?.message ?? 'out of range')}. Nothing was written.` };
     }
@@ -781,12 +783,11 @@ export function updateProfile(
   // The app's own write rule: the changed fields alone take a new stamp, one
   // past the copy it read. Jumping to the FILE's clock instead would make every
   // connector write beat a concurrent one made in the app, whenever it was
-  // made; tied lamports fall through to wall-clock time, which is the honest
+  // made. The merge reads wall-clock time first (US-10 AC8), the honest
   // answer to "who wrote last".
-  const profile = stampFields(stored, Object.fromEntries(changed.map((field) => [field, request[field]])) as Partial<RoadmapProfile>, now);
   return {
     status: 'ok',
-    file: stampUpdatedAt({ ...file, profile }, now),
+    file: stampProfile(file, Object.fromEntries(changed.map((field) => [field, request[field]])) as Partial<RoadmapProfile>, now),
     text: changed.map((field) => `${field}: ${stored[field] ?? 'not set'} → ${request[field]}`).join('\n'),
     data: {
       changed: changed.map((field) => ({ field, from: stored[field] ?? null, to: request[field] as string | number })),
@@ -1033,7 +1034,8 @@ function prepareFeedback(
   };
 }
 
-/** One wording for every transient GitHub failure (US-32 AC39): the agent can only retry. */
+/** The refusal when GitHub provably filed nothing (a 4xx, or no connection): the agent may retry later. A
+ *  failure that may have posted gets its own "may already be posted" wording (US-32 AC39, github-issues.server.ts). */
 export const FEEDBACK_UNAVAILABLE = 'Feedback could not be filed right now. Nothing was posted. Try again later.';
 
 /** A surface with no filer while the repository is hidden: permanent, so no "try again" (US-32 AC39). */
@@ -1771,11 +1773,15 @@ export function importDocumentsCommit(
     : { importedVia: 'connector' };
   const docs: FileDocument[] = payload.documents
     .filter((d) => !isAlreadyImported(file, d.sourceFileName, d.contentHash, d.date))
-    .map((d) => ({
-      id: crypto.randomUUID(), title: d.title, type: d.type, date: d.date,
-      fileRef: '', contentHash: d.contentHash, mimeType: d.mimeType, extractedText: '', addedAt: now,
-      metadata, sourceFileName: d.sourceFileName,
-    }));
+    .map((d) => {
+      // A lab report's row is the website's and the iPhone's hidden archive row
+      // (`labArchive: true`), told apart at commit by the signature the extract
+      // gave it, so a receipt parked before this rule commits the same way.
+      const fields: DocumentFields = d.type === 'pathology_report' && d.title === LAB_ARCHIVE_TITLE
+        ? labArchiveFields(d.sourceFileName, d.date)
+        : { documentType: d.type, title: d.title, documentDate: d.date, contentMd: '', metadata: {}, sourceFileName: d.sourceFileName };
+      return documentRow({ ...fields, metadata: { ...fields.metadata, ...metadata } }, { id: crypto.randomUUID(), contentHash: d.contentHash, mimeType: d.mimeType, addedAt: now });
+    });
   const base = { phase: 'committed' as const, route: payload.route, files: [], candidates: [], documents: [], unrecognized: [], remaining: [] };
   if (chosen.size === 0 && docs.length === 0) {
     return {
@@ -2760,7 +2766,7 @@ const IMPORTS = new Map(MCP_TOOLS.flatMap((tool) => (tool.imports ? [[tool.name,
 
 /** The one argument gate: every path a call takes parses here, so a malformed call is worded once. */
 function parseArgs<N extends ToolName>(name: N, args: unknown): { ok: true; data: z.infer<(typeof INPUTS)[N]> } | { ok: false; path: string; text: string } {
-  const parsed = INPUTS[name].safeParse(args ?? {});
+  const parsed = INPUTS[name].safeParse(args ?? {}, { error: zod3Message });
   if (parsed.success) return { ok: true, data: parsed.data as z.infer<(typeof INPUTS)[N]> };
   const issue = parsed.error.issues[0];
   return { ok: false, path: String(issue.path[0] ?? ''), text: `${name}: ${[issue.path.join('.'), issue.message].filter(Boolean).join(' — ')}` };

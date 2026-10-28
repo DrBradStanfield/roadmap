@@ -249,6 +249,32 @@ describe('US-21 phase 2 — AddLabTest', () => {
     fireEvent.change(getByLabelText('Value'), { target: { value: '30' } });
     expect(save.disabled).toBe(false);
   });
+
+  // US-02 AC7: a catalogued test has no input range, so "1,050" (1050 or
+  // 1.05) is asked about and never saved; "1,05" is a decimal comma.
+  it('asks about "1,050" and saves nothing until it is retyped', async () => {
+    const { getByLabelText, getByRole, getByText, onAdded } = openForm();
+    const save = getByRole('button', { name: /^save$/i }) as HTMLButtonElement;
+    fireEvent.change(getByLabelText('Test'), { target: { value: 'ferritin' } });
+    fireEvent.change(getByLabelText('Value'), { target: { value: '1,050' } });
+    expect(getByText('Did you mean 1050 or 1.05?')).toBeTruthy();
+    expect(save.disabled).toBe(true);
+    fireEvent.click(save);
+    expect(bulkSaveLabValues).not.toHaveBeenCalled();
+    fireEvent.change(getByLabelText('Value'), { target: { value: '1,05' } });
+    fireEvent.click(save);
+    await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
+    expect(bulkSaveLabValues).toHaveBeenCalledWith([expect.objectContaining({ metricName: 'ferritin', value: 1.05 })]);
+  });
+
+  // Codex R2: no range checks grouped thousands here, so they are refused.
+  it('refuses "1,234,567" and asks for the number without commas', () => {
+    const { getByLabelText, getByRole, getByText } = openForm();
+    fireEvent.change(getByLabelText('Test'), { target: { value: 'ferritin' } });
+    fireEvent.change(getByLabelText('Value'), { target: { value: '1,234,567' } });
+    expect(getByText('Type the number without commas.')).toBeTruthy();
+    expect((getByRole('button', { name: /^save$/i }) as HTMLButtonElement).disabled).toBe(true);
+  });
 });
 
 describe('US-21 phase 2 — section shows the add button', () => {

@@ -13,11 +13,13 @@ import { evaluate, half, loadSnapshot, recallFixtures, skipCounts, snapshotOf } 
 import { BEST, VARIANTS } from './search-knowledge';
 
 // Measured 2026-09-29 on the 254-fixture snapshot: top-3 204 (80.3%), top-8
-// 218 (85.8%). The floors need 199 and 214, so 5 and 4 fixtures of headroom:
+// 218 (85.8%). Re-frozen 2026-10-22 when the pathways left (US-15 AC39): 72
+// fixtures, top-3 29 (40.3%), top-8 40 (55.6%); the pathway fixtures had carried
+// the old floors. The floors need 27 and 38, so 2 fixtures of headroom each:
 // room for a neutral ranker change, not for fixture drift, which the snapshot
 // removes.
-const FLOOR_TOP3 = 0.78;
-const FLOOR_TOP8 = 0.84;
+const FLOOR_TOP3 = 0.37;
+const FLOOR_TOP8 = 0.52;
 
 describe('US-41 AC5 — recall floor over the router fixtures', () => {
   it('scores only fixtures that name at least one expected handle', () => {
@@ -91,7 +93,7 @@ describe('US-41 AC5 — recall floor over the router fixtures', () => {
 
   it(`keeps the best variant at or above top-3 ${FLOOR_TOP3} and top-8 ${FLOOR_TOP8}, with no forbidden handle in any top 8`, () => {
     const fixtures = loadSnapshot();
-    expect(recallFixtures(fixtures)).toHaveLength(254);
+    expect(recallFixtures(fixtures)).toHaveLength(72);
     const result = evaluate(fixtures, loadBlogIndex(), BEST);
     expect(result.top3 / result.n).toBeGreaterThanOrEqual(FLOOR_TOP3);
     expect(result.top8 / result.n).toBeGreaterThanOrEqual(FLOOR_TOP8);

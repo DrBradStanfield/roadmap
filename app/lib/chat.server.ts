@@ -108,7 +108,6 @@ function buildKnowledgeOverview(): string {
   const blogCount = BLOG_INDEX.filter(a => !a.type || a.type === 'article').length;
   const refCount = BLOG_INDEX.filter(a => a.type === 'reference').length;
   const guidelines = BLOG_INDEX.filter(a => a.type === 'guideline');
-  const pathwayCount = BLOG_INDEX.filter(a => a.type === 'pathway').length;
 
   const guidelineLines = guidelines.map(g => {
     let line = `- ${g.title}`;
@@ -119,24 +118,6 @@ function buildKnowledgeOverview(): string {
     return line;
   }).join('\n');
 
-  // Load pathway categories if available
-  let pathwaySection = '';
-  if (pathwayCount > 0) {
-    try {
-      const catRaw = fs.readFileSync(path.join(process.cwd(), 'docs/pathway/categories.json'), 'utf-8');
-      const categories: Record<string, string[]> = JSON.parse(catRaw);
-      const catLines = Object.entries(categories)
-        .sort((a, b) => b[1].length - a[1].length)
-        .map(([cat, names]) => {
-          const examples = names.slice(0, 5).join(', ');
-          return `- ${cat} (${names.length}): ${examples}${names.length > 5 ? '...' : ''}`;
-        });
-      pathwaySection = `### Clinical Pathways (${pathwayCount} conditions)\nEvidence-based clinical pathways from Auckland Region HealthPathways, organized by specialty:\n${catLines.join('\n')}`;
-    } catch {
-      pathwaySection = `### Clinical Pathways (${pathwayCount} conditions)\nEvidence-based pathways covering cardiovascular, respiratory, endocrine, GI, dermatology, musculoskeletal, neurology, haematology, infectious disease, and more. Source: Auckland Region HealthPathways.`;
-    }
-  }
-
   return `## Knowledge Base
 
 You have access to a health knowledge base with ${BLOG_INDEX.length} entries. When the user asks about a topic, a retrieval step loads relevant content if available. You do not need to search or request content — if it's relevant, it will appear below.
@@ -146,8 +127,6 @@ ${blogCount} video-based articles and ${refCount} supplement reference articles 
 
 ### Clinical Guidelines
 ${guidelineLines}
-
-${pathwaySection}
 
 If matched content appears below, use it to inform your answer. If no content is loaded for a topic, answer from the algorithm, evidence, and product knowledge above.`;
 }
@@ -199,7 +178,7 @@ const SYSTEM_PROMPT_WITH_ALGORITHM = CHAT_SYSTEM_PROMPT + ALGORITHM_DOC;
 // byte-identical across surfaces so its Anthropic prompt cache is shared; the
 // posture block is small and uncached. DOCTOR is the strict default (used by
 // drstanfield.com web, Discord, and YouTube); BRAND loosens it for the
-// microvitamin.com store. See docs/chat-architecture.md → "Surface posture".
+// microvitamin.com store. See claude_business docs/chat-architecture.md → "Surface posture".
 // ---------------------------------------------------------------------------
 
 function loadPosture(file: string): string {
@@ -295,14 +274,14 @@ export function matchDocumentTitle(
 /**
  * The router's handles as answer context (loadMatchedContent in
  * matched-content.ts), plus a Sentry warning for a handle with no file.
- * `titled` limits the titles named, never the content. Null when nothing loaded.
+ * Null when nothing loaded.
  */
-export function loadMatchedArticlesFromHandles(handles: string[], titled = handles): { content: string; titles: string[]; skipped: string[] } | null {
+export function loadMatchedArticlesFromHandles(handles: string[]): { content: string; titles: string[]; skipped: string[]; reduced: string[] } | null {
   for (const handle of handles) {
     if (!loadBlogArticle(handle)) Sentry.captureMessage(`Router picked handle with no content: ${handle}`, { level: 'warning' });
   }
-  const { content, titles, skipped } = loadMatchedContent(handles, titled);
-  return content ? { content, titles, skipped } : null;
+  const { content, ...rest } = loadMatchedContent(handles);
+  return content ? { content, ...rest } : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -362,7 +341,7 @@ export function buildSystemBlocks(
     });
   }
 
-  // US-49: the logged-in customer's subscriptions and the rules for proposing a
+  // US-59: the logged-in customer's subscriptions and the rules for proposing a
   // change (brand surface, while enabled). Per request and uncached, like orders.
   if (opts?.subscriptionBlock) {
     blocks.push({ type: 'text', text: opts.subscriptionBlock });
@@ -478,11 +457,11 @@ export interface ChatCompletionResult {
   proposedEdits?: ProposedEdit[];
   /** Set when the turn ran run_roadmap (US-15 AC33): how many stated values it used and rejected. Counts only, never a value. */
   roadmapRun?: RoadmapRoundCounts;
-  /** A subscription change the model proposed (US-49); the route turns it into a confirm card or drops it. */
+  /** A subscription change the model proposed (US-59); the route turns it into a confirm card or drops it. */
   subscriptionProposal?: SubscriptionProposal;
 }
 
-/** Shown when the model proposed a subscription change with no prose; the card carries the detail (US-49). */
+/** Shown when the model proposed a subscription change with no prose; the card carries the detail (US-59). */
 export const SUBSCRIPTION_TOOL_ONLY_ACK = 'Here is the change for you to confirm.';
 
 /** What the web chat streams: the model's deltas, and a status line between a tool round's two calls. */
@@ -503,7 +482,7 @@ const SUBSCRIPTION_NOT_PROPOSED = 'Not proposed: no card shows for this call. On
 
 /**
  * The tool_result for propose_subscription_change called beside run_roadmap
- * (US-49 with US-15 AC33): the call that becomes the card (the reply's first
+ * (US-59 with US-15 AC33): the call that becomes the card (the reply's first
  * valid one, as parseSubscriptionProposal picks it) is proposed; any other is not.
  */
 const subscriptionToolResult: ToolResultFor = (b, blocks) => {
@@ -529,7 +508,7 @@ const subscriptionToolResult: ToolResultFor = (b, blocks) => {
  * second call is the api-error fallback, with no tool output in it, that keeps
  * the first call's usage and the round's counts.
  *
- * `opts.subscriptionTool` (US-49): the propose-only subscription tool, sent on
+ * `opts.subscriptionTool` (US-59): the propose-only subscription tool, sent on
  * every brand-surface turn while subscription actions are enabled, logged in or
  * not, so that surface keeps one cached prefix shape. In a run_roadmap round its
  * call gets its own tool_result, and the proposal is read from both calls' blocks.

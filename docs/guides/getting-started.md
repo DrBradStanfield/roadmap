@@ -2,13 +2,13 @@
 title: "An open-source health record you can connect to your AI"
 description: "The code is public and MIT licensed. Your record is one file in your own cloud, so the website, the command line and an AI with file access can all read it."
 slug: "ai-health-record"
-updated: "2026-10-20"
+updated: "2026-10-22"
 stories: ["US-29", "US-30", "US-31", "US-32", "US-38"]
 ---
 
 The code behind this tool is public, under the MIT licence, at [github.com/DrBradStanfield/roadmap](https://github.com/DrBradStanfield/roadmap). Anyone can read it and run it.
 
-Your record is one file, `health-roadmap.json`, sitting in your own Dropbox, Google Drive or GitHub. There is no account to create and no key to fetch, because there is nothing on our side to log in to. If this site vanished tomorrow your file would still be plain JSON that any tool can read.
+Your record is one file, `health-roadmap.json`, sitting in your own Dropbox, Google Drive or GitHub. [Find your health record file](/blogs/guides/find-your-record) shows the exact folder and how to open or back it up. There is no account to create and no key to fetch, because there is nothing on our side to log in to. If this site vanished tomorrow your file would still be plain JSON that any tool can read.
 
 We published the format of that file and the rules for changing it safely. Because they are published, three things work besides the website: the command line, ChatGPT or Claude on the web, and an AI running on your own computer.
 
@@ -113,7 +113,7 @@ You need an AI that can open files on your computer. [Claude Code](https://claud
 
 Your cloud folder has to be synced to disk, so the file is really there. Dropbox does this by default, though a file set to online-only needs "Make available offline" first. For Google Drive, mark the folder "Available offline", or Drive streams the file instead of storing it.
 
-If you have never connected a cloud provider, there is no file on disk at all: the tool is holding your record in your browser. Connect a provider, or export the file from the app, before pointing an AI at it.
+If you have never connected a cloud provider, your record lives only in your browser and there is no file on disk, so connect Dropbox or Google Drive in the tool first, which copies your record into a file there.
 
 Then paste the setup prompt below into that AI and answer its questions.
 

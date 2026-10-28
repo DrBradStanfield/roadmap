@@ -6,10 +6,28 @@ publishedAt: "2024-12-30T12:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["greens powder", "spirulina", "chlorella", "wheatgrass", "barley grass", "antioxidant", "gut health", "microbiome", "probiotic", "prebiotic", "fiber", "vitamin a", "vitamin c", "vitamin k", "iron", "blood pressure", "inflammation", "immune function", "oxidative stress", "energy", "cholesterol", "heart health", "cardiovascular", "diabetes", "blood sugar", "weight loss", "aging", "longevity", "skin"]
-summary: "Reference on greens powders (super greens, AG1 etc.): what they contain, evidence quality (mostly weak observational), whether they replace vegetables, nutrient bioavailability, cost-benefit vs whole food, and Brad's clinical take (whole foods preferred). Always discuss with your doctor."
+summary: "Reference on greens powders (super greens, AG1 etc.): what they contain, why most evidence comes from single ingredients such as spirulina and chlorella, contamination and liver concerns, and whole foods first. Talk to your doctor first if you take warfarin or have an autoimmune or liver disease."
+reviewed: "2026-10-25"
+sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22081614/","checked":"2026-10-25","fingerprint":"sha256:e39f276c931fccdaa05f528214325a14c86b947ea317f6f497f971f4b7336267"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/15217524/","checked":"2026-10-25","fingerprint":"sha256:160e7cef6fea44840d559d85c2ef84f0fc148e89f084c615980d708741687726"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/greens-powders-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/greens-powders-benefits-forms-dosing-and-side-effects)*
+
+## Current evidence position
+
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Direct trials of greens powders are limited: in a 12-week randomised trial of 105 women, a greens powder (greens+) gave marginally higher vitality scores than placebo, and the authors called the findings positive but not conclusive [46]. A 2011 systematic review found that commercial fruit and vegetable concentrates raised blood levels of beta-carotene, vitamins C and E, and folate, and called for larger randomised trials [40]. Most of the trial evidence covers single ingredients, such as spirulina, which lowered total and LDL cholesterol in a meta-analysis of 7 randomised trials [21]. Some ingredients carry risks: vitamin K from greens can change how warfarin works, and immune-stimulating algae such as spirulina and Aphanizomenon flos-aquae have been linked with the onset or flare of autoimmune disease [54][66].
+
+## Key safety points
+
+- If you take warfarin or a similar anticoagulant, sudden changes in vitamin K intake can strengthen or weaken its effect, and leafy greens, alfalfa and chlorella supply vitamin K. Talk to your doctor before starting a greens powder [16][66][68].
+- Spirulina, Aphanizomenon flos-aquae, chlorella and alfalfa can boost immune activity, and they are linked to the onset or flare of autoimmune diseases such as dermatomyositis and lupus. If you have an autoimmune disease, ask your doctor first [17][30][52][54][65].
+- Some powders add green tea extract or ashwagandha in undisclosed amounts, and both have been linked to liver injury; with green tea, the most serious cases involved multi-ingredient products. If you have liver disease, ask your doctor first [36][37].
+- Aphanizomenon flos-aquae products have tested positive for microcystins, and one study found cyanotoxins above tolerable daily intake values in 8 of 18 algae supplements. Avoid products that list Aphanizomenon flos-aquae [9][33].
+- Concentrated spinach, beet or rhubarb powders add oxalate, which may promote kidney stones. If you have had kidney stones, check the label [10].
+
+## Brad's videos on this topic
+
+None yet.
 
 ## 1. Overview
 
@@ -17,7 +35,7 @@ Greens powders — also called super greens or green superfood powders — are d
 
 The category has grown rapidly. Global sales of superfood powder supplements surpassed $1 billion by the late 2010s, driven by consumer interest in plant-based nutrition, convenience, and wellness optimization [4]. Most commercial formulations contain 25-40 ingredients spanning leafy greens (spinach, kale), cereal grasses (wheatgrass, barley grass), algae (spirulina, chlorella), antioxidant-rich fruits (blueberry, acai), probiotics, prebiotics, digestive enzymes, and adaptogenic herbs [1][2][3].
 
-Despite their popularity, several important caveats apply. First, unlike pharmaceutical drugs, greens powders are classified as dietary supplements under the Dietary Supplement Health and Education Act (DSHEA) of 1994, meaning they do not require pre-market FDA approval for safety or efficacy [5][6]. Manufacturers self-certify, and the FDA can only act against adulterated or mislabeled products after they reach the market. Second, processing (drying, juicing, extraction) preserves many bioactive compounds but substantially reduces fiber content compared with whole fruits and vegetables [1][3]. Third, proprietary blends are common — ingredients are listed in descending order of weight but without specific quantities, making it difficult for consumers to assess whether any individual ingredient is present at a clinically meaningful dose [7]. Fourth, contamination with heavy metals (lead, cadmium, arsenic, mercury) is a documented concern, as plants — particularly algae — can bioaccumulate these from soil and water [7][8][9].
+Despite their popularity, several important caveats apply. First, unlike pharmaceutical drugs, greens powders are classified as dietary supplements under the Dietary Supplement Health and Education Act (DSHEA) of 1994, meaning they do not require pre-market FDA approval for safety or efficacy [5][6]. Manufacturers self-certify, and the FDA can only act against adulterated or mislabeled products after they reach the market. Second, processing (drying, juicing, extraction) preserves many bioactive compounds but substantially reduces fiber content compared with whole fruits and vegetables [1][3]. Third, proprietary blends are common: ingredients appear in descending order of weight but without amounts, so you cannot tell whether any one ingredient is present at a dose shown to work. Fourth, contamination is a documented concern, and tests have found toxins in some algae supplements [9][33].
 
 The research base on greens powders specifically is limited. Most clinical evidence comes from studies on individual ingredients (spirulina, chlorella, wheatgrass) or on broader fruit-and-vegetable concentrate supplements rather than multi-ingredient greens blends. This article synthesizes the available evidence on the key ingredients found in greens powders, their demonstrated and claimed benefits, recommended dosing, safety concerns, and drug interactions.
 
@@ -27,17 +45,17 @@ Greens powders are not a single compound but a category encompassing dozens of p
 
 ### 2.1 Leafy Greens
 
-**Spinach (Spinacia oleracea):** Rich in vitamins A, C, K, folate, iron, and calcium. However, spinach is also high in oxalates, which bind calcium and iron, reducing their bioavailability [10]. In powdered form, the fiber is largely removed but oxalates persist. One concern for people with a history of kidney stones is that concentrated spinach powder may deliver a meaningful oxalate load [3].
+**Spinach (Spinacia oleracea):** Rich in vitamins A, C, K, folate, iron, and calcium. However, spinach is also high in oxalates, which bind calcium and iron, reducing their bioavailability [10]. In powdered form, the fiber is largely removed but oxalates persist. If you have had kidney stones, note that concentrated spinach powder may deliver a meaningful oxalate load [3].
 
 **Kale (Brassica oleracea var. acephala):** Provides vitamins A, C, K, and minerals including calcium (which, unlike spinach, has relatively low oxalate interference and thus better calcium bioavailability). Kale also contains sulforaphane precursors (glucosinolates), which have demonstrated anti-cancer properties in cell and animal studies, though clinical evidence in humans remains preliminary [11].
 
 ### 2.2 Cereal Grasses
 
-**Wheatgrass (Triticum aestivum, young shoots):** Wheatgrass was popularized as a "superfood" supplement in the 1930s by agricultural chemist Charles F. Schnabel, who discovered its nutritional benefits through poultry experiments [12]. It is rich in chlorophyll, vitamins A, C, and E, iron, calcium, and amino acids. Proponents claim detoxification and alkalizing benefits, though human clinical evidence is sparse. A small pilot study in patients with ulcerative colitis (n=23) found that 100 mL of wheatgrass juice daily for one month significantly reduced disease activity and rectal bleeding compared to placebo [13]. However, this was a single, small trial and has not been replicated in larger populations.
+**Wheatgrass (Triticum aestivum, young shoots):** Wheatgrass was popularized as a "superfood" supplement in the 1930s by agricultural chemist Charles F. Schnabel, who discovered its nutritional benefits through poultry experiments [12]. It is rich in chlorophyll, vitamins A, C, and E, iron, calcium, and amino acids. Proponents claim detoxification and alkalizing benefits, though human clinical evidence is sparse. A small randomized, double-blind trial in patients with active distal ulcerative colitis (n=23) found that 100 mL of wheatgrass juice daily for one month significantly reduced disease activity and rectal bleeding compared to placebo [13]. However, this was a single, small trial and has not been replicated in larger populations.
 
 **Barley grass (Hordeum vulgare, young leaves):** Contains a similar nutrient profile to wheatgrass — vitamins, minerals, chlorophyll, and the antioxidant enzyme superoxide dismutase (SOD). Animal studies suggest barley grass extract may reduce cholesterol and improve antioxidant status, but rigorous human clinical trials are lacking [14]. Both wheatgrass and barley grass are marketed for "alkalizing" properties, a claim that lacks clinical substantiation since the body tightly regulates blood pH regardless of dietary acid-base load [15].
 
-**Alfalfa (Medicago sativa):** A common ingredient valued for its broad mineral content. Alfalfa is a significant source of vitamin K, with one cup of sprouts providing approximately 10 mcg — about 10% of the Adequate Intake for adults [7][16]. This is clinically relevant for people taking warfarin (see Drug Interactions). Alfalfa also contains l-canavanine, a non-protein amino acid that may trigger immune reactions in susceptible individuals (see Safety section) [7][17].
+**Alfalfa (Medicago sativa):** A common ingredient valued for its broad mineral content. Alfalfa contains vitamin K: one cup of raw sprouts has approximately 10 mcg [16]. That matters for people taking warfarin (see Drug Interactions). Alfalfa also contains L-canavanine, an amino acid that resembles L-arginine and has been linked with lupus-like autoimmunity (see Safety section) [17].
 
 ### 2.3 Algae: Spirulina and Chlorella
 
@@ -45,25 +63,25 @@ Greens powders are not a single compound but a category encompassing dozens of p
 
 Clinical evidence for spirulina is more robust than for most greens powder ingredients:
 
-- **Blood lipids:** A meta-analysis of 7 RCTs found that spirulina supplementation significantly reduced total cholesterol (mean reduction ~47 mg/dL), LDL cholesterol (~41 mg/dL), and triglycerides (~44 mg/dL), while increasing HDL cholesterol (~6 mg/dL) [21]. Most trials used 1-8 g/day for 2-12 weeks. Individual study quality was generally moderate.
-- **Blood pressure:** Spirulina supplementation has demonstrated modest blood pressure reductions in several small trials. A 12-week RCT in 36 men and women found that 4.5 g/day of spirulina reduced systolic blood pressure by approximately 10 mmHg and diastolic by approximately 8 mmHg compared to placebo [22]. The mechanism may involve enhancement of nitric oxide production and antioxidant activity [19].
-- **Blood glucose:** A randomized trial in 25 patients with type 2 diabetes found that 2 g/day of spirulina for 2 months significantly reduced fasting blood glucose and HbA1c compared to control [23]. Another study of 37 diabetic patients treated with 8 g/day for 12 weeks reported significant reductions in inflammatory markers (IL-6, TNF-alpha) alongside glycemic improvements [24].
-- **Allergic rhinitis:** An RCT of 127 patients with allergic rhinitis found that 2 g/day of spirulina for 6 months significantly reduced nasal symptoms (discharge, sneezing, congestion, itching) compared to placebo [25]. The mechanism is thought to involve modulation of inflammatory cytokines and inhibition of histamine release from mast cells.
-- **Antioxidant and anti-inflammatory effects:** Multiple small studies have reported reductions in oxidative stress markers (malondialdehyde, lipid peroxides) and inflammatory cytokines following spirulina supplementation at doses of 1-8 g/day [19][24].
-- **Anemia in the elderly:** A 12-week study in 40 older adults found that 3 g/day of spirulina increased hemoglobin and improved immune function markers [26].
+- **Blood lipids:** A meta-analysis of 7 RCTs found that spirulina supplementation significantly reduced total cholesterol (mean reduction ~47 mg/dL), LDL cholesterol (~41 mg/dL), and triglycerides (~44 mg/dL), while increasing HDL cholesterol (~6 mg/dL) [21]. The effect did not depend on the dose given.
+- **Blood pressure:** In an uncontrolled 6-week study of 36 adults, 4.5 g/day of Spirulina maxima lowered systolic and diastolic blood pressure from baseline in both men and women [22]. With no placebo group, the result is preliminary.
+- **Blood glucose:** A randomized trial in 25 patients with type 2 diabetes found that 2 g/day of spirulina for 2 months gave an appreciable fall in fasting blood glucose and a significant fall in HbA1c [23]. Another randomized trial in 37 patients with type 2 diabetes found that 8 g/day for 12 weeks lowered plasma triglycerides and malondialdehyde, a marker of oxidative stress [24].
+- **Allergic rhinitis:** In a double-blind, placebo-controlled trial, spirulina improved nasal discharge, sneezing, nasal congestion and itching compared with placebo [25]. The mechanism may involve blocking histamine release from mast cells [18].
+- **Antioxidant and anti-inflammatory effects:** Intervention studies support an antioxidant effect, including lower malondialdehyde in the 8 g/day diabetes trial [19][24].
+- **Anemia in older adults:** In an uncontrolled 12-week study, 40 adults aged 50 or older took spirulina; among those who finished, mean corpuscular hemoglobin rose steadily and most had higher white cell counts and IDO activity, a marker of immune function [26].
 
 **Chlorella (Chlorella vulgaris):** A single-celled green microalga with a high chlorophyll content. Chlorella contains protein (50-60% dry weight), vitamins (B12, C, iron), and a unique component called Chlorella Growth Factor (CGF), a nucleotide-peptide complex [27]. Unlike spirulina, chlorella has a rigid cell wall that must be cracked during processing to make nutrients bioavailable [27].
 
 Clinical evidence for chlorella:
 
-- **Blood pressure:** An RCT of 80 patients with mild-to-moderate hypertension found that 1.5 g/day of chlorella extract for 12 weeks significantly reduced systolic and diastolic blood pressure compared to placebo [28].
+- **Blood pressure:** In the authors' small double-blind trials, which included 33 people with hypertension, 10 g of chlorella tablets and 100 mL of chlorella extract each day for 2 or 3 months may have lowered high blood pressure [28].
 - **Blood lipids:** A study of 63 mildly hypercholesterolemic adults found that 5 g/day of chlorella for 4 weeks significantly reduced total cholesterol and triglycerides [29].
 - **Immune function:** A randomized trial in 51 healthy participants found that 5 g/day of chlorella for 8 weeks increased natural killer cell activity and levels of interferon-gamma, suggesting immune enhancement [30]. However, this immune-stimulating property raises concerns for people with autoimmune diseases (see Safety).
 - **Heavy metal detoxification:** Animal studies have shown that chlorella can bind heavy metals (mercury, lead, cadmium) in the gut, potentially reducing their absorption [27]. However, human evidence for clinically meaningful "detox" effects is limited, and the claim is frequently overstated in marketing materials.
-- **Hepatitis C:** A study of patients with hepatitis C given approximately 8-9.5 g of chlorella daily (from Sun Chlorella A tablets and Wakasa Gold liquid extract) for 12 weeks found decreased ALT levels (a marker of liver inflammation), signifying reduced hepatic inflammation [31]. However, GI side effects were common, and one patient dropped out due to constipation.
-- **Fibromyalgia:** A study using the same chlorella products in fibromyalgia patients found that most participants reported increased diarrhea and abdominal cramping [32]. These GI effects are a common limitation of chlorella supplementation.
+- **Hepatitis C:** In an uncontrolled 12-week study of 18 adults with chronic hepatitis C, chlorella was well tolerated and most patients had lower ALT, a liver enzyme [31].
+- **Fibromyalgia:** In a pilot study where patients took 10 g of Sun Chlorella tablets and 100 mL of Wakasa Gold liquid each day for 2 months, tender-point pain scores fell, though five of the eighteen patients who finished felt their symptoms had worsened [32].
 
-**Aphanizomenon flos-aquae (Aph. flos-aquae):** A type of cyanobacterium (formerly called blue-green algae) typically harvested from Klamath Lake in Oregon. This ingredient is included in some greens powders but carries significant contamination risks. A. flos-aquae is frequently contaminated with microcystin toxin — a potential human carcinogen with acute hepatotoxic effects. A study of supplements purchased in Canada found that 3 out of 4 A. flos-aquae products exceeded the microcystin toxin limit proposed by the World Health Organization (2.4 mcg/day for a 60 kg adult), with the worst product containing 16.4 mcg per daily dose [33]. A German study in 2010 found microcystin in every supplement containing A. flos-aquae sourced from Oregon [7]. Given these contamination risks, consumers should be cautious about products containing A. flos-aquae as an ingredient.
+**Aphanizomenon flos-aquae (Aph. flos-aquae):** A cyanobacterium (once classed as a blue-green alga) included in some greens powders. In a German market study of algae supplements, only the Aph. flos-aquae products tested positive for microcystins, and the authors called the sale of these products for human consumption "highly questionable" [9]. A 2017 study found cyanotoxins above tolerable daily intake values in 8 of 18 products containing spirulina or Aph. flos-aquae [33]. Given these findings, be cautious with products that list Aph. flos-aquae.
 
 ### 2.4 Antioxidant Fruits and Berries
 
@@ -71,7 +89,7 @@ Many greens powders incorporate freeze-dried or spray-dried fruit powders from b
 
 ### 2.5 Probiotics, Prebiotics, and Digestive Enzymes
 
-**Probiotics:** Many formulations include strains such as Lactobacillus rhamnosus, L. acidophilus, and Bifidobacterium lactis, with claimed colony-forming unit (CFU) counts ranging from 1 billion to 10 billion per serving. However, probiotic organisms are sensitive to heat, light, and moisture. Getting probiotics from a powder in a container that is repeatedly opened and closed may lead to a loss of viability of the organisms [7]. A separate, individually enclosed probiotic (e.g., capsule) may be a more reliable delivery system.
+**Probiotics:** Many formulations include strains such as Lactobacillus rhamnosus, L. acidophilus, and Bifidobacterium lactis, with claimed colony-forming unit (CFU) counts ranging from 1 billion to 10 billion per serving.
 
 **Prebiotics:** Fibers like inulin, rice bran, and apple fiber are sometimes added to nourish beneficial gut bacteria. Doses in greens powders are generally modest (1-3 g) compared with the 5-10 g/day typically used in prebiotic clinical trials.
 
@@ -82,9 +100,7 @@ Many greens powders incorporate freeze-dried or spray-dried fruit powders from b
 Some greens powders include ashwagandha, rhodiola, reishi mushroom, green tea extract, or other botanical ingredients. These are present in highly variable amounts, and their efficacy depends on achieving clinically studied doses — which proprietary blends make impossible to verify. Of particular safety note:
 
 - **Green tea extract** at concentrated doses has been associated with hepatotoxicity in case reports [36].
-- **Ashwagandha** has been linked with liver injury in a small number of published cases [37].
-
-Products like AG1, which contain undisclosed amounts of green tea extract and ashwagandha, have been the subject of 118 FDA adverse event reports during 2023-2024, more than 30 of which involved elevated liver enzymes and symptoms of liver injury, according to a report in The New Zealand Herald [7]. The FDA has not confirmed causation, but the signal warrants caution for individuals with liver disease or those at risk.
+- **Ashwagandha** has caused liver injury in a few published case reports [37].
 
 ### 2.7 Bioavailability Considerations
 
@@ -100,22 +116,22 @@ A fundamental limitation of greens powders is that processing can alter the bioa
 
 ### 3.1 Antioxidant and Oxidative Stress Reduction
 
-The most consistent evidence for greens powder ingredients comes from their antioxidant properties. A study of a fruit and vegetable concentrate supplement in 2011 (published in Molecular Nutrition and Food Research) found that supplementation significantly increased serum levels of antioxidant provitamins and vitamins in participants [40]. A 2022 randomized trial published in Nutrients showed that a fruit and vegetable supplement modulated gut microbiota and improved antioxidant capacity in healthy adults after 8 weeks [41].
+The most consistent evidence for greens powder ingredients comes from their antioxidant properties. A 2011 systematic review of commercial fruit and vegetable concentrates found that daily use raised blood levels of beta-carotene, vitamins C and E, and folate [40]. In a 2022 randomized trial of 30 healthy adults, a fruit and vegetable supplement raised folic acid levels, but its small rise in antioxidant capacity was not statistically significant [41].
 
-Spirulina in particular has demonstrated significant antioxidant effects. The phycocyanin pigment unique to spirulina inhibits NADPH oxidase and scavenges reactive oxygen species [19]. Multiple clinical studies have shown reductions in malondialdehyde (a marker of lipid peroxidation) and other oxidative stress markers following spirulina supplementation at 1-8 g/day [19][24].
+Spirulina in particular has demonstrated significant antioxidant effects. The phycocyanin pigment unique to spirulina inhibits NADPH oxidase and scavenges reactive oxygen species [19]. Intervention studies support an antioxidant effect, and the 8 g/day diabetes trial lowered malondialdehyde, a marker of lipid peroxidation [19][24].
 
-Chlorella has also shown antioxidant properties, though fewer human trials exist. A study in heavy smokers (n=38) found that 6.3 g/day of chlorella for 6 weeks significantly increased plasma levels of vitamin C, alpha-tocopherol, and total antioxidant status, while reducing DNA damage as measured by the comet assay [42].
+Chlorella has also shown antioxidant properties, though fewer human trials exist. A randomized trial in 52 smokers found that 6.3 g/day of chlorella for 6 weeks raised plasma vitamin C (44.4%) and alpha-tocopherol (15.7%); DNA damage fell, but it also fell with placebo [42].
 
-However, a key limitation is that most greens powder blends include spirulina and chlorella in undisclosed amounts that may be far below the 1-8 g/day doses used in clinical trials. Without label transparency, consumers cannot determine whether the antioxidant effect of the whole product is clinically meaningful or merely a marketing claim.
+However, a key limitation is that most greens powder blends include spirulina and chlorella in undisclosed amounts that may be far below the 2-8 g/day doses used in clinical trials. Without label transparency, consumers cannot determine whether the antioxidant effect of the whole product is clinically meaningful or merely a marketing claim.
 
 ### 3.2 Blood Pressure
 
 Several greens powder ingredients have evidence for modest blood pressure reduction:
 
-- **Spirulina:** A 12-week RCT in 36 participants found that 4.5 g/day reduced systolic blood pressure by approximately 10 mmHg and diastolic by approximately 8 mmHg [22]. The mechanism likely involves enhanced nitric oxide production.
-- **Chlorella:** An RCT of 80 hypertensive patients found that 1.5 g/day of chlorella extract for 12 weeks significantly reduced blood pressure [28].
+- **Spirulina:** In an uncontrolled 6-week study of 36 adults, 4.5 g/day lowered systolic and diastolic blood pressure from baseline [22].
+- **Chlorella:** Small trials in people with hypertension suggest chlorella may reduce high blood pressure [28].
 - **Potassium and calcium** from leafy greens may contribute to blood pressure regulation through the well-established DASH diet mechanisms [43].
-- **Beetroot/nitrate-containing ingredients:** Some greens blends include beetroot powder, which is a source of dietary nitrate. A Cochrane meta-analysis found that beetroot juice supplementation reduced systolic blood pressure by approximately 3.55 mmHg [44]. However, the nitrate content of beetroot in a mixed greens powder is likely much lower than the doses used in these trials (typically 300-500 mL of concentrated juice).
+- **Beetroot/nitrate-containing ingredients:** Some greens blends include beetroot powder, which is a source of dietary nitrate. A 2013 meta-analysis of short crossover trials found that inorganic nitrate and beetroot juice lowered systolic blood pressure by 4.4 mm Hg [44]. However, the nitrate content of beetroot in a mixed greens powder is likely much lower than the doses used in these trials.
 
 ### 3.3 Blood Lipids and Cardiovascular Health
 
@@ -125,7 +141,7 @@ However, these results are from studies using specific, known doses of individua
 
 ### 3.4 Blood Sugar and Metabolic Health
 
-Spirulina has shown promise for glycemic control. The trial of 2 g/day in 25 type 2 diabetic patients found significant reductions in fasting glucose and HbA1c [23]. Another trial using 8 g/day for 12 weeks reported improved glycemic markers alongside reduced inflammatory cytokines [24].
+Spirulina has shown promise for glycemic control. The trial of 2 g/day in 25 type 2 diabetic patients found an appreciable fall in fasting glucose and a significant fall in HbA1c [23]. Another trial using 8 g/day for 12 weeks lowered triglycerides and malondialdehyde [24].
 
 These effects are biologically plausible given spirulina's high protein content, chromium content, and phycocyanin's anti-inflammatory properties. However, the clinical significance of these findings is uncertain when spirulina is present as one of 25-40 ingredients in an undisclosed proprietary blend.
 
@@ -133,26 +149,26 @@ These effects are biologically plausible given spirulina's high protein content,
 
 Several greens powder ingredients have demonstrated immune-modulating effects:
 
-- **Spirulina:** Laboratory and clinical studies have shown that spirulina can enhance natural killer cell activity, increase interferon production, and stimulate inflammatory cytokines [7][19]. An RCT of 127 allergic rhinitis patients found that 2 g/day for 6 months significantly reduced nasal symptoms [25].
+- **Spirulina:** Spirulina supplements appear to boost innate immunity, including natural killer cell activity [19]. A placebo-controlled trial found that spirulina eased allergic rhinitis symptoms [25].
 - **Chlorella:** The 8-week RCT of 51 healthy participants found increased NK cell activity and interferon-gamma with 5 g/day [30].
 - **Vitamin C** from leafy greens and added fortification supports immune cell function [45].
-- **Probiotics** in some formulations may support gut-associated immune tissue, though viability concerns in powder form apply [7].
+- **Probiotics** in some formulations may support gut-associated immune tissue.
 
-Importantly, this immune stimulation is a double-edged sword. For people with autoimmune diseases, enhanced immune activation can trigger or worsen symptoms (see Safety section) [7][17].
+Importantly, this immune stimulation is a double-edged sword. For people with autoimmune diseases, enhanced immune activation can trigger or worsen symptoms (see Safety section) [17][54].
 
 ### 3.6 Gut Health
 
 Greens powders are commonly marketed for gut health benefits through multiple mechanisms:
 
 - **Prebiotic fibers** (inulin, acacia fiber, apple fiber) feed beneficial bacteria, though doses in most greens powders (1-3 g) are below the 5-10 g/day typically studied.
-- **Probiotics** may support microbial diversity, but viability in an open powder container is questionable [7].
+- **Probiotics** may support microbial diversity.
 - **Digestive enzymes** may theoretically improve nutrient breakdown, though evidence of meaningful benefit in healthy individuals is limited [35].
 
-The 2022 Nutrients trial found that a fruit and vegetable supplement modulated gut microbiota composition after 8 weeks, increasing the abundance of beneficial bacterial genera [41]. However, this was a single study using a specific product formulation, and results may not generalize to all greens powders.
+The 2022 trial found that a fruit and vegetable supplement shifted some gut bacteria, with less Ruminococcus and slightly more Faecalibacterium, though overall diversity did not change [41]. However, this was a single study using a specific product formulation, and results may not generalize to all greens powders.
 
 ### 3.7 Energy and Vitality
 
-A 2004 RCT published in the Journal of the American Dietetic Association found that a greens powder supplement increased self-reported vitality and energy over 4 weeks, though results were described as "not conclusive" [46]. The energy-boosting claims are also attributed to:
+A 2004 randomized trial of 105 women found that a greens powder (greens+) taken for 12 weeks gave marginally higher vitality scores than placebo and significantly higher energy scores; the authors called the findings positive but not conclusive [46]. The energy-boosting claims are also attributed to:
 
 - **Green tea extract:** Contains caffeine (typically 25-50 mg per serving) and L-theanine, which together may promote alertness without jitteriness.
 - **B vitamins:** Many greens powders are fortified with B vitamins, which play essential roles in cellular energy metabolism.
@@ -165,7 +181,7 @@ However, for individuals with adequate nutrient status, there is no evidence tha
 Greens powders are frequently marketed for "detox" benefits, particularly via chlorophyll-rich ingredients like wheatgrass and chlorella. The scientific basis for these claims is limited:
 
 - **Chlorella** can bind certain heavy metals in the gut in animal models, potentially reducing absorption [27]. However, human evidence for clinically meaningful metal chelation is weak.
-- **Chlorophyll** has shown modest ability to reduce absorption of aflatoxin (a carcinogenic mold toxin) in a small human trial [48], but this does not constitute broad "detoxification."
+- **Chlorophyll** has shown modest ability to reduce absorption of aflatoxin (a carcinogenic mold toxin) in a human trial [48], but this does not constitute broad "detoxification."
 - The human body has its own highly effective detoxification systems (liver, kidneys, GI tract). There is no clinical evidence that greens powders enhance these endogenous systems in healthy individuals.
 
 ### 3.9 Skin Health
@@ -178,7 +194,7 @@ Some greens powders claim to promote clearer skin or reduce skin aging. The ingr
 
 No RCT has demonstrated that a greens powder supplement improves objective skin measures in humans.
 
-### 3.10 Cancer Risk Reduction
+### 3.10 Cancer Prevention Evidence
 
 Epidemiological data consistently show that higher fruit and vegetable consumption is associated with reduced cancer risk [34]. Greens powder ingredients contain various compounds with anti-cancer properties in laboratory settings:
 
@@ -197,7 +213,7 @@ For individuals with low fruit and vegetable intake, the question arises whether
 - **Greens powders** aim to provide phytonutrients and antioxidants but have limited evidence of meaningful benefits, may suffer from poor bioavailability of certain compounds, and are not proven superior to multivitamins [1][3].
 - **Experts, including registered dietitians and the Cleveland Clinic, emphasize a food-first approach** and recommend that greens powders be viewed as an adjunct to, not a replacement for, diverse whole-food consumption [1][3].
 
-Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) takes a different approach from greens powders — rather than including dozens of plant ingredients at undisclosed doses, it provides 25 individually dosed, evidence-based vitamins and minerals at amounts supported by randomized controlled trials. For individuals looking to fill micronutrient gaps, a well-formulated multivitamin with transparent dosing offers greater dose certainty than a proprietary greens blend.
+Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) takes a different approach from greens powders. Rather than dozens of plant ingredients at undisclosed doses, it has 26 ingredients in the US v8 formula (25 in the UK and EU v9 formula), each with its dose listed on the label. For individuals looking to fill micronutrient gaps, a well-formulated multivitamin with transparent dosing offers greater dose certainty than a proprietary greens blend.
 
 ## 4. Recommended Dosing
 
@@ -205,32 +221,30 @@ Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin
 
 Most commercial greens powders recommend 1-2 scoops per day, equivalent to approximately 5-10 grams of powder. This is typically mixed with 8-12 ounces of water, juice, or a smoothie. Many users and manufacturers suggest morning intake to align with daily routines [1][2].
 
-**Timing relative to exercise:** There is no strict consensus. Some sources suggest 30-60 minutes before workouts for potential energy and endurance benefits from nitrates and antioxidants, while others recommend post-workout for recovery. Consistency of daily intake matters more than precise timing [50][51].
-
 ### 4.2 Dosing for Individual Ingredients
 
 Because greens powders contain variable amounts of each ingredient, it is useful to understand the doses of key components that have been studied clinically:
 
 | Ingredient | Studied Dose | Duration | Primary Outcome |
 |---|---|---|---|
-| Spirulina | 1-8 g/day | 2-12 weeks | Blood lipids, blood pressure, glycemic control, allergic rhinitis |
-| Chlorella | 1.5-9.5 g/day | 4-12 weeks | Blood pressure, blood lipids, immune function, liver enzymes |
+| Spirulina | 2-8 g/day | 2-12 weeks | Blood lipids, blood pressure, glycemic control, allergic rhinitis |
+| Chlorella | 5 g/day | 4-8 weeks | Blood lipids, immune function |
 | Wheatgrass juice | 100 mL/day | 4 weeks | Ulcerative colitis symptom reduction |
-| Beetroot (nitrate) | 300-500 mL juice | Acute and chronic | Blood pressure reduction |
+| Beetroot (nitrate) | Juice or nitrate salts | 2 hours to 15 days | Blood pressure reduction |
 | Probiotics | 1-10 billion CFU/day | 4-12 weeks | Gut microbiome composition |
 
-These doses are often far higher than what a single serving of a multi-ingredient greens powder provides. For example, if a 10-gram scoop contains 25 ingredients, each ingredient may average only 400 mg — well below the 1-8 g used in spirulina trials. This is the fundamental dosing problem with greens powders: many ingredients may be present at subtherapeutic "fairy-dusted" levels [7].
+These doses are often far higher than what a single serving of a multi-ingredient greens powder provides, so many ingredients may be present at doses too small to matter.
 
 ### 4.3 Practical Recommendations
 
-- **Read labels carefully.** Ingredients are listed in descending order by weight. An ingredient not among the first listed may be present in a trivially small amount [7].
-- **If you want a specific active ingredient at a studied dose, consider a standalone supplement.** This provides dose certainty and, if third-party tested, quality assurance [7].
-- **Start with a half serving** to assess GI tolerance, particularly if the product contains fiber, probiotics, or chlorella, which commonly cause initial bloating or digestive upset [7][31][32].
-- **Store properly.** Keep in a cool, dry place away from light and moisture. Seal tightly after each use to preserve probiotic viability and prevent clumping [1].
+- **Read labels carefully.** Ingredients appear in descending order by weight, so one near the end of the list may be present in only a tiny amount.
+- **If you want a specific ingredient at a studied dose, a single-ingredient supplement makes the dose clear.**
+- **Start with a half serving** to judge how your gut copes, especially if the product contains fiber, probiotics, or chlorella.
+- **Store properly.** Keep the container sealed, cool, dry and out of light to prevent clumping [1].
 
 ### 4.4 How to Improve Palatability
 
-Spirulina and chlorella in particular have a somewhat unpleasant, savory taste. It is recommended that these powders (or greens blends containing them) be mixed into more flavorful beverages or foods — such as juices, smoothies, shakes, or yogurts — rather than plain water [7]. Additional strategies include adding banana or berries for sweetness, citrus juice for brightness, or ginger and cinnamon to mask earthy notes [1].
+Spirulina and chlorella taste strongly savory, so many people mix them, or greens blends that contain them, into juice, smoothies or yogurt rather than water. Additional strategies include adding banana or berries for sweetness, citrus juice for brightness, or ginger and cinnamon to mask earthy notes [1].
 
 ## 5. Safety and Side Effects
 
@@ -239,36 +253,36 @@ Spirulina and chlorella in particular have a somewhat unpleasant, savory taste. 
 Digestive upset is the most commonly reported side effect of greens powders, including:
 
 - **Bloating and gas:** Often attributed to high fiber content, probiotics, or the introduction of new plant compounds to the gut. Usually resolves within 1-2 weeks of consistent use [1][3].
-- **Diarrhea and abdominal cramping:** Chlorella in particular has been associated with GI effects. In a 12-week study of hepatitis C patients given 8-9.5 g/day of chlorella, GI symptoms were the main side effect, though they generally resolved within the first two weeks [31]. A study in fibromyalgia patients using the same chlorella products found that most participants reported increased diarrhea and abdominal cramping [32].
-- **Constipation:** Reported in some chlorella users. One patient in the hepatitis C study dropped out due to constipation [31].
-- **Nausea and vomiting:** Some consumers have reported vomiting after using chlorella products [7].
+- **Diarrhea:** In an uncontrolled 12-week study of chlorella in adults with hepatitis C, a few patients had mild diarrhea in the first week, though most tolerated it well [31].
+- **Constipation:** In the same study, constipation was the other main side effect: four of the 13 patients with a previous history of constipation said it got worse. It was mild to moderate and settled within two weeks, though one person stopped because of it [31].
 
 ### 5.2 Liver Injury
 
-The U.S. FDA received 118 reports during 2023 and 2024 of adverse events possibly linked to AG1 (formerly Athletic Greens), a popular greens powder, more than 30 of which involved elevated liver enzymes and symptoms of liver injury [7]. While these reports cannot prove cause-and-effect, AG1 contains undisclosed amounts of ingredients that have independently been linked with liver injury, including:
+Some greens powders contain undisclosed amounts of ingredients linked to liver injury. Ingredients or products with reported liver concerns include:
 
-- **Green tea extract:** At concentrated doses, catechins (particularly EGCG) can cause hepatotoxicity. The likely mechanism involves mitochondrial toxicity and oxidative stress at high doses [36].
-- **Ashwagandha (Withania somnifera):** Case reports and a 2023 systematic review documented at least 12 cases of liver injury associated with ashwagandha supplements, with onset typically 1-12 weeks after initiation [37].
+- **Green tea extract:** A 2015 review found nineteen cases of liver injury linked to green tea products. Cases with green tea alone all resolved, but four of the twelve linked to multi-ingredient products needed a liver transplant [36].
+- **Ashwagandha (Withania somnifera):** A case series of five patients described jaundice and liver injury 2 to 12 weeks after starting ashwagandha supplements; none developed liver failure [37].
+- **AG1:** An analysis of US FDA adverse event reports from 2004 to 2025 found preliminary signals of raised liver enzymes for AG1 in 2023-2025, which the authors called flags for further investigation rather than confirmed risks [67].
 
-It may be prudent for people with a history of liver disease, or those at risk, to use caution if taking greens powder products containing undisclosed amounts of these ingredients [7].
+The 2015 review judged green tea mixed with other ingredients a major safety concern and advised against supplements that contain complex mixtures [36]. If you have liver disease, ask your doctor before taking a greens powder.
 
 ### 5.3 Autoimmune Disease
 
-Common ingredients in greens supplements — including spirulina, Aph. flos-aquae, chlorella, and alfalfa — have demonstrated immune-stimulating effects in laboratory studies and have been reported to trigger or worsen symptoms in people with certain autoimmune diseases [7][17][52]:
+Spirulina, Aph. flos-aquae, chlorella and alfalfa, all common in greens supplements, can stimulate the immune system in laboratory studies, and they have been linked with the onset or worsening of autoimmune disease [52][54][65]:
 
-- **Spirulina** has been shown to stimulate inflammatory cytokines in blood cells of people with dermatomyositis, an autoimmune disease causing muscle inflammation and skin rash [53]. Use of supplements containing spirulina and/or Aph. flos-aquae has been associated with onset and worsening of dermatomyositis symptoms [54][55].
-- **Alfalfa** sprouts contain l-canavanine, a non-protein amino acid that may compete with L-arginine for certain enzymes, producing structurally aberrant proteins that may trigger immune reactions. Reactivation of systemic lupus erythematosus (SLE) in people with latent SLE, and onset of lupus-like symptoms in people without a history of lupus — including muscle pain and rash — have been reported in people taking alfalfa tablets (8-24 tablets daily for weeks or months) that were shown to contain l-canavanine [17].
-- **Chlorella** has been shown to increase natural killer cell activity and interferon-gamma production [30], which may be beneficial for healthy individuals but harmful for those with autoimmune conditions.
+- **Spirulina** raised production of inflammatory cytokines (interferon beta, TNF-alpha and interferon gamma) in blood cells taken from patients with dermatomyositis, an autoimmune condition that inflames the skin and muscles [53]. In one case report, a woman took a supplement containing Aph. flos-aquae and spirulina days before both the onset and a severe flare of dermatomyositis [54]. A Japanese case report described inflammatory muscle disease with a widespread rash after spirulina supplements [55].
+- **Alfalfa** contains L-canavanine, which can take the place of L-arginine when the body builds proteins, and the result is faulty proteins. Lupus-like autoimmunity was first reported in a volunteer eating alfalfa seed, and a few cases of lupus starting or flaring on alfalfa tablets have been reported, though the link remains controversial [17].
+- **Chlorella** raised natural killer cell activity and interferon-gamma in a trial of healthy adults [30], which could be harmful for people with autoimmune conditions.
 
-People with autoimmune diseases should consult with a physician before taking greens supplements containing any of these ingredients [7].
+Immune-stimulating supplements may worsen existing autoimmune disease or trigger it in people predisposed to it [54]. If you have an autoimmune disease, talk to your doctor before taking a greens supplement that contains any of these ingredients.
 
 ### 5.4 Heavy Metal and Toxin Contamination
 
-**Spirulina contamination:** Although spirulina has generally been found safe, all algae can accumulate heavy metals such as lead and mercury from their environment [7][8]. An analysis of 25 spirulina supplements from various countries found none exceeded daily intake levels for nickel, zinc, mercury, platinum, manganese, or magnesium, though the supplements were notably not tested for lead or arsenic [8]. In independent testing, lead contamination has been identified in some spirulina products [7].
+**Spirulina contamination:** An analysis of 25 spirulina products sold worldwide found nickel, zinc, mercury, platinum, magnesium and manganese all below recommended daily intake levels; lead and arsenic were not measured [8].
 
-**BMAA concern:** The environmental neurotoxin beta-methylamino-L-alanine (BMAA) can be produced by cyanobacteria. Chronic exposure to BMAA can lead to dementia due to the formation of neurofibrillary tangles and amyloid deposits in the brain [56]. However, small studies of dietary supplements containing spirulina have not detected BMAA, including samples from two raw material suppliers and four green drink supplements [57]. Spirulina is considered safe by the USP, which requires that products not exceed limits for heavy metals and microcystin toxin [57][58].
+**BMAA concern:** Some cyanobacteria can make the neurotoxin beta-methylamino-L-alanine (BMAA) [57]. In vervet monkeys, chronic dietary BMAA caused brain changes seen in Alzheimer's disease, namely neurofibrillary tangles and amyloid deposits [56]. A study of ten spirulina samples (six pure samples from two suppliers, plus four multi-ingredient products) found no detectable BMAA [57].
 
-**Aph. flos-aquae contamination:** This ingredient carries the highest contamination risk of any common greens powder component. As detailed in Section 2.3, multiple studies have found dangerous levels of microcystin toxin in Aph. flos-aquae supplements, frequently exceeding WHO safety limits [33][7]. Given that microcystin is a potential carcinogen and acute liver toxin, products containing this ingredient pose a risk that may outweigh any purported benefits.
+**Aph. flos-aquae contamination:** Of the algae tested in the German study, only Aph. flos-aquae products contained microcystins, and the authors noted that consumers have reported adverse health effects after taking cyanobacterial products [9]. The 2017 study found cyanotoxins above tolerable daily intake values in 8 of 18 algae products (Section 2.3) [33]. Products containing this ingredient may pose a risk that outweighs any purported benefit. In one case report, a chlorella supplement contaminated with a microcystin was linked, along with turmeric and chemotherapy, to acute toxic hepatitis; the authors thought a turmeric-chemotherapy interaction the likely cause [69].
 
 **Bacterial contamination:** In 2025, a Salmonella outbreak linked to moringa leaf powder and super greens supplements sold at Sam's Club sickened at least 11 people [59]. In January 2026, Superfoods Inc. (dba Live it Up) issued a voluntary nationwide recall of all Live It Up Super Greens powders due to possible Salmonella contamination, linked to a multistate outbreak resulting in 45 reported illnesses and 12 hospitalizations across 21 states [60][61]. These events underscore the importance of selecting products from manufacturers with rigorous quality control and third-party testing.
 
@@ -282,7 +296,7 @@ A typical serving of greens powder may provide 20-50% of the daily value for vit
 
 ### 5.6 Kidney Stone Risk
 
-Greens powders containing concentrated spinach, beet, or rhubarb powder may deliver significant oxalate loads. High oxalate intake is a well-established risk factor for calcium oxalate kidney stones, the most common type [10]. Individuals with a history of kidney stones should review ingredient lists carefully and consider avoiding high-oxalate greens formulations.
+Greens powders containing concentrated spinach, beet, or rhubarb powder may deliver significant oxalate loads. Extra dietary oxalate may promote kidney stones [10]. Individuals with a history of kidney stones should review ingredient lists carefully and consider avoiding high-oxalate greens formulations.
 
 ### 5.7 Pregnancy and Breastfeeding
 
@@ -292,23 +306,23 @@ Safety data for greens powders in pregnancy and breastfeeding are extremely limi
 - Potential heavy metal exposure from algae-derived ingredients.
 - Immune-stimulating ingredients that may theoretically affect maternal-fetal immune tolerance.
 
-Pregnant and breastfeeding individuals should consult a healthcare provider before using any greens powder supplement [1][7].
+Pregnant and breastfeeding individuals should consult a healthcare provider before using any greens powder supplement [1].
 
 ## 6. Drug Interactions
 
 ### 6.1 Vitamin K and Warfarin
 
-This is the most clinically significant drug interaction associated with greens powders. Alfalfa, kale, spinach, and other green leafy ingredients are sources of vitamin K, which directly antagonizes the anticoagulant effect of warfarin (Coumadin) [7][16].
+This is the most clinically significant drug interaction associated with greens powders. Alfalfa, kale, spinach, and other green leafy ingredients are sources of vitamin K [16]. Chlorella is rich in vitamin K too, and in one case report warfarin worked less well after a patient started taking it [68]. Warfarin (Coumadin) works against vitamin K, so sudden changes in vitamin K intake can strengthen or weaken its anticoagulant effect [66].
 
-A single serving of some greens products may provide close to half or more of the Adequate Intake for vitamin K. For example, certain commercial greens blends have been found to contain 40-70 mcg of vitamin K per serving [7]. People taking warfarin who need to limit or maintain consistent vitamin K intake should consult their physician before taking any greens supplement [7].
+Check the label for vitamin K. If you take warfarin, talk to your doctor before starting any greens supplement, and keep your vitamin K intake consistent [66].
 
 ### 6.2 Immunosuppressants
 
-The immune-stimulating properties of spirulina, chlorella, and alfalfa may theoretically counteract the effects of immunosuppressant medications used in organ transplant recipients or autoimmune disease management. While no specific clinical interaction studies exist, the biological plausibility is strong enough to warrant caution [7][17].
+The immune-stimulating properties of spirulina, chlorella, and alfalfa may theoretically counteract the effects of immunosuppressant medications used in organ transplant recipients or autoimmune disease management. While no specific clinical interaction studies exist, the biological plausibility is strong enough to warrant caution [17][54].
 
 ### 6.3 Diabetes Medications
 
-Spirulina and chlorella have both demonstrated blood-glucose-lowering effects in clinical trials [23][24][28]. Individuals taking insulin, sulfonylureas, or other hypoglycemic medications who add a greens powder containing meaningful doses of these algae should monitor blood glucose closely for potential additive hypoglycemic effects.
+Spirulina and chlorella have both demonstrated blood-glucose-lowering effects [23][27]. Individuals taking insulin, sulfonylureas, or other hypoglycemic medications who add a greens powder containing meaningful doses of these algae should monitor blood glucose closely for potential additive hypoglycemic effects.
 
 ### 6.4 Antihypertensive Medications
 
@@ -324,7 +338,7 @@ Greens powders high in calcium, oxalates, or polyphenols (such as green tea extr
 
 ## 7. Dietary Sources: Whole Food Alternatives
 
-The nutrients found in greens powders are available — often in more bioavailable forms and with added fiber — from whole foods. For individuals seeking the benefits attributed to greens powders, increasing intake of the following whole foods may be a more effective and evidence-based approach:
+The nutrients found in greens powders are available, often in more bioavailable forms and with added fiber, from whole foods. For individuals seeking the benefits attributed to greens powders, increasing intake of the following whole foods may be a more effective and evidence-based approach:
 
 ### Leafy Greens
 
@@ -367,7 +381,7 @@ The nutrients found in greens powders are available — often in more bioavailab
 
 ### Practical Notes
 
-- **Five servings of fruits and vegetables per day** (approximately 400g) is associated with significant reductions in all-cause mortality, cardiovascular disease, and cancer risk in large meta-analyses [34].
+- **Eating more fruit and vegetables** is linked with lower risk of heart disease, stroke, cancer and early death in a large meta-analysis, and risk kept falling up to 800 g/day for all outcomes except cancer (600 g/day) [34].
 - **Variety matters.** Different colored vegetables and fruits provide different phytonutrient profiles. Eating a wide range is more beneficial than concentrating on any single "superfood."
 - **Cooking can improve bioavailability** of some nutrients (e.g., lycopene in tomatoes, beta-carotene in carrots) while reducing others (e.g., vitamin C). A mix of raw and cooked produce is optimal.
 - **Fiber from whole foods** provides benefits that greens powders cannot replicate — including satiety, blood sugar regulation, cholesterol binding, and gut microbiome nourishment [1][3].
@@ -386,11 +400,9 @@ The nutrients found in greens powders are available — often in more bioavailab
 
 [6] U.S. Food and Drug Administration. "Dietary Supplements." [https://www.fda.gov/food/dietary-supplements](https://www.fda.gov/food/dietary-supplements)
 
-[7] ConsumerLab. "Greens and Whole Foods Powders and Supplements Review." [https://www.consumerlab.com/reviews/greens-whole-foods-powders-supplements/greens/](https://www.consumerlab.com/reviews/greens-whole-foods-powders-supplements/greens/)
+[8] Al-Dhabi NA. "Heavy metal analysis in commercial Spirulina products for human consumption." *Saudi J Biol Sci*. 2013;20(4):383-389. doi: [10.1016/j.sjbs.2013.04.006](https://doi.org/10.1016/j.sjbs.2013.04.006). PMID: [24235875](https://pubmed.ncbi.nlm.nih.gov/24235875/)
 
-[8] Al-Dhabi NA. "Heavy metal analysis in commercial Spirulina products for safety." *Saudi J Biol Sci*. 2013;20(4):383-389. doi: [10.1016/j.sjbs.2013.04.006](https://doi.org/10.1016/j.sjbs.2013.04.006)
-
-[9] Heussner AH et al. "Toxicological and ecotoxicological aspects of algae." *Tox Appl Pharmacol*. 2012;264(3):440-450. doi: [10.1016/j.taap.2012.08.006](https://doi.org/10.1016/j.taap.2012.08.006)
+[9] Heussner AH et al. "Toxin content and cytotoxicity of algal dietary supplements." *Toxicol Appl Pharmacol*. 2012;265(2):263-271. doi: [10.1016/j.taap.2012.10.005](https://doi.org/10.1016/j.taap.2012.10.005). PMID: [23064102](https://pubmed.ncbi.nlm.nih.gov/23064102/)
 
 [10] Noonan SC, Savage GP. "Oxalate content of foods and its effect on humans." *Asia Pac J Clin Nutr*. 1999;8(1):64-74. PMID: [24393738](https://pubmed.ncbi.nlm.nih.gov/24393738/)
 
@@ -436,15 +448,15 @@ The nutrients found in greens powders are available — often in more bioavailab
 
 [31] Azocar J, Diaz A. "Efficacy and safety of Chlorella supplementation in adults with chronic hepatitis C virus infection." *World J Gastroenterol*. 2013;19(7):1085-1090. doi: [10.3748/wjg.v19.i7.1085](https://doi.org/10.3748/wjg.v19.i7.1085)
 
-[32] Merchant RE, Andre CA, Wise CM. "Nutritional supplementation with Chlorella pyrenoidosa for patients with fibromyalgia syndrome." *Phytother Res*. 2000;14(3):167-173. doi: [10.1002/(SICI)1099-1573(200005)14:3<167::AID-PTR580>3.0.CO;2-V](https://doi.org/10.1002/(SICI)1099-1573(200005)14:3<167::AID-PTR580>3.0.CO;2-V)
+[32] Merchant RE, Andre CA, Wise CM. "Nutritional supplementation with Chlorella pyrenoidosa for patients with fibromyalgia syndrome: a pilot study." *Phytother Res*. 2000;14(3):167-173. PMID: [10815009](https://pubmed.ncbi.nlm.nih.gov/10815009/)
 
-[33] Roy-Lachapelle A et al. "Detection of Cyanotoxins in Algae Dietary Supplements." *Toxins*. 2017;9(3):76. doi: [10.3390/toxins9030076](https://doi.org/10.3390/toxins9030076)
+[33] Roy-Lachapelle A et al. "Detection of Cyanotoxins in Algae Dietary Supplements." *Toxins*. 2017;9(3):76. doi: [10.3390/toxins9030076](https://doi.org/10.3390/toxins9030076). PMID: [28245621](https://pubmed.ncbi.nlm.nih.gov/28245621/)
 
 [34] Aune D et al. "Fruit and vegetable intake and the risk of cardiovascular disease, total cancer and all-cause mortality." *Int J Epidemiol*. 2017;46(3):1029-1056. doi: [10.1093/ije/dyw319](https://doi.org/10.1093/ije/dyw319)
 
 [35] Ianiro G et al. "Digestive Enzyme Supplementation in Gastrointestinal Diseases." *Curr Drug Metab*. 2016;17(2):187-193. doi: [10.2174/138920021702160114150137](https://doi.org/10.2174/138920021702160114150137)
 
-[36] Mazzanti G et al. "Hepatotoxicity of green tea: an update." *Arch Toxicol*. 2015;89(8):1175-1191. doi: [10.1007/s00204-015-1521-x](https://doi.org/10.1007/s00204-015-1521-x)
+[36] Mazzanti G et al. "Hepatotoxicity of green tea: an update." *Arch Toxicol*. 2015;89(8):1175-1191. doi: [10.1007/s00204-015-1521-x](https://doi.org/10.1007/s00204-015-1521-x). PMID: [25975988](https://pubmed.ncbi.nlm.nih.gov/25975988/)
 
 [37] Bjornsson HK et al. "Ashwagandha-induced liver injury: A case series from Iceland and the US Drug-Induced Liver Injury Network." *Liver Int*. 2020;40(4):825-829. doi: [10.1111/liv.14393](https://doi.org/10.1111/liv.14393)
 
@@ -452,19 +464,19 @@ The nutrients found in greens powders are available — often in more bioavailab
 
 [39] Sablani SS et al. "Drying of fruits and vegetables: Retention of nutritional/functional quality." *Dry Technol*. 2006;24(2):123-135.
 
-[40] Lamprecht M et al. "Several indicators of oxidative stress, immunity, and illness improved in trained men consuming an encapsulated juice powder concentrate." *Mol Nutr Food Res*. 2011;55(12):1754. PMID: [22081614](https://pubmed.ncbi.nlm.nih.gov/22081614/)
+[40] Esfahani A et al. "Health effects of mixed fruit and vegetable concentrates: a systematic review of the clinical interventions." *J Am Coll Nutr*. 2011;30(5):285-294. PMID: [22081614](https://pubmed.ncbi.nlm.nih.gov/22081614/)
 
-[41] De Angelis M et al. "Effect of a Fruit and Vegetable Supplement on Gut Microbiota and Antioxidant Status in Healthy Adults." *Nutrients*. 2022;14(19):4116. PMID: [36211488](https://pubmed.ncbi.nlm.nih.gov/36211488/)
+[41] Lakshmanan AP et al. "Modulation of gut microbiota: The effects of a fruits and vegetables supplement." *Front Nutr*. 2022;9:930883. PMID: [36211488](https://pubmed.ncbi.nlm.nih.gov/36211488/)
 
 [42] Lee SH et al. "Six-week supplementation with Chlorella has favorable impact on antioxidant status in Korean male smokers." *Nutrition*. 2010;26(2):175-183. doi: [10.1016/j.nut.2009.03.010](https://doi.org/10.1016/j.nut.2009.03.010)
 
 [43] Appel LJ et al. "A clinical trial of the effects of dietary patterns on blood pressure." *N Engl J Med*. 1997;336(16):1117-1124. doi: [10.1056/NEJM199704173361601](https://doi.org/10.1056/NEJM199704173361601)
 
-[44] Bondonno CP et al. "Effects of dietary nitrate from beetroot juice on blood pressure: A systematic review and dose-response meta-analysis." *J Nutr*. 2023;153(7):1912-1926.
+[44] Siervo M et al. "Inorganic nitrate and beetroot juice supplementation reduces blood pressure in adults: a systematic review and meta-analysis." *J Nutr*. 2013;143(6):818-826. doi: [10.3945/jn.112.170233](https://doi.org/10.3945/jn.112.170233). PMID: [23596162](https://pubmed.ncbi.nlm.nih.gov/23596162/)
 
 [45] NIH Office of Dietary Supplements. "Vitamin C -- Health Professional Fact Sheet." [https://ods.od.nih.gov/factsheets/VitaminC-HealthProfessional/](https://ods.od.nih.gov/factsheets/VitaminC-HealthProfessional/)
 
-[46] Zhang J et al. "Efficacy of a fruit and vegetable-based supplement on subjective well-being." *J Am Diet Assoc*. 2004;104(10):1561. PMID: [15217524](https://pubmed.ncbi.nlm.nih.gov/15217524/)
+[46] Boon H et al. "Effects of greens+: a randomized, controlled trial." *Can J Diet Pract Res*. 2004;65(2):66-71. PMID: [15217524](https://pubmed.ncbi.nlm.nih.gov/15217524/)
 
 [47] NIH Office of Dietary Supplements. "Iron -- Health Professional Fact Sheet." [https://ods.od.nih.gov/factsheets/Iron-HealthProfessional/](https://ods.od.nih.gov/factsheets/Iron-HealthProfessional/)
 
@@ -472,23 +484,17 @@ The nutrients found in greens powders are available — often in more bioavailab
 
 [49] Stahl W, Sies H. "Beta-Carotene and other carotenoids in protection from sunlight." *Am J Clin Nutr*. 2012;96(5):1179S-1184S. doi: [10.3945/ajcn.112.034819](https://doi.org/10.3945/ajcn.112.034819)
 
-[50] Grokipedia. "Greens Powder." [https://grokipedia.com/page/greens_powder](https://grokipedia.com/page/greens_powder)
+[52] Pugh N et al. "Isolation of three high molecular weight polysaccharide preparations with potent immunostimulatory activity from Spirulina platensis, Aphanizomenon flos-aquae and Chlorella pyrenoidosa." *Planta Med*. 2001;67(8):737-742. doi: [10.1055/s-2001-18358](https://doi.org/10.1055/s-2001-18358)
 
-[51] Multiple sources on greens powder timing. See Grokipedia [50] for compiled guidance.
-
-[52] Pugh ND et al. "Immune activating properties of Aphanizomenon flos-aquae." *Planta Med*. 2001;67(8):737-742. doi: [10.1055/s-2001-18358](https://doi.org/10.1055/s-2001-18358)
-
-[53] Bax CE et al. "Spirulina enhances dermatomyositis-associated inflammatory cytokine production." *iScience*. 2023;26(1):105826. doi: [10.1016/j.isci.2022.105826](https://doi.org/10.1016/j.isci.2022.105826)
+[53] Bax CE et al. "Herbal supplement Spirulina stimulates inflammatory cytokine production in patients with dermatomyositis in vitro." *iScience*. 2023;26(11):108355. doi: [10.1016/j.isci.2023.108355](https://doi.org/10.1016/j.isci.2023.108355). PMID: [38026219](https://pubmed.ncbi.nlm.nih.gov/38026219/)
 
 [54] Lee AN, Werth VP. "Activation of autoimmunity following use of immunostimulatory herbal supplements." *Arch Dermatol*. 2004;140(6):723-727. doi: [10.1001/archderm.140.6.723](https://doi.org/10.1001/archderm.140.6.723)
 
-[55] Konno T et al. "A case of dermatomyositis associated with spirulina-containing health food." *Rinsho Shinkeigaku*. 2011;51(5):330-333.
+[55] Konno T et al. "A case of inflammatory myopathy with widely skin rash following use of supplements containing Spirulina." *Rinsho Shinkeigaku*. 2011;51(5):330-333. doi: [10.5692/clinicalneurol.51.330](https://doi.org/10.5692/clinicalneurol.51.330). PMID: [21706829](https://pubmed.ncbi.nlm.nih.gov/21706829/)
 
-[56] Cox PA et al. "Diverse taxa of cyanobacteria produce beta-N-methylamino-L-alanine, a neurotoxic amino acid." *Proc R Soc B*. 2016;283:20162027. doi: [10.1098/rspb.2016.0027](https://doi.org/10.1098/rspb.2016.0027)
+[56] Cox PA et al. "Dietary exposure to an environmental toxin triggers neurofibrillary tangles and amyloid deposits in the brain." *Proc Biol Sci*. 2016;283(1823):20152397. doi: [10.1098/rspb.2015.2397](https://doi.org/10.1098/rspb.2015.2397). PMID: [26791617](https://pubmed.ncbi.nlm.nih.gov/26791617/)
 
 [57] McCarron P et al. "Analysis of beta-N-methylamino-L-alanine (BMAA) in spirulina-containing supplements by liquid chromatography-tandem mass spectrometry." *Aquat Biosyst*. 2014;10:5. doi: [10.1186/2046-9063-10-5](https://doi.org/10.1186/2046-9063-10-5)
-
-[58] United States Pharmacopeia (USP). "Spirulina Monograph." USP 2013.
 
 [59] U.S. Centers for Disease Control and Prevention. "Salmonella Outbreak Linked to Supplements." October 2025. [https://www.cdc.gov/salmonella/outbreaks/supplement-10-25/index.html](https://www.cdc.gov/salmonella/outbreaks/supplement-10-25/index.html)
 
@@ -498,6 +504,12 @@ The nutrients found in greens powders are available — often in more bioavailab
 
 [62] NIH Office of Dietary Supplements. "Vitamin A -- Health Professional Fact Sheet." [https://ods.od.nih.gov/factsheets/VitaminA-HealthProfessional/](https://ods.od.nih.gov/factsheets/VitaminA-HealthProfessional/)
 
-[63] NSF International. "Supplement and Vitamin Certification." [https://www.nsf.org/consumer-resources/articles/supplement-vitamin-certification](https://www.nsf.org/consumer-resources/articles/supplement-vitamin-certification)
+[65] Bax CE et al. "Environmental triggers of dermatomyositis: a narrative review." *Ann Transl Med*. 2021;9(5):434. doi: [10.21037/atm-20-3719](https://doi.org/10.21037/atm-20-3719). PMID: [33842655](https://pubmed.ncbi.nlm.nih.gov/33842655/)
 
-[64] United States Pharmacopeia. "Dietary Supplements Verification Program." [https://www.usp.org/verification-services/dietary-supplements-verification-program](https://www.usp.org/verification-services/dietary-supplements-verification-program)
+[66] NIH Office of Dietary Supplements. "Vitamin K -- Health Professional Fact Sheet." [https://ods.od.nih.gov/factsheets/VitaminK-HealthProfessional/](https://ods.od.nih.gov/factsheets/VitaminK-HealthProfessional/)
+
+[67] Farquhar H. "Disproportionality analysis of dietary supplement adverse events in the FDA CAERS database, 2004-2025." *Food Chem Toxicol*. 2026;215:116225. doi: [10.1016/j.fct.2026.116225](https://doi.org/10.1016/j.fct.2026.116225). PMID: [42323077](https://pubmed.ncbi.nlm.nih.gov/42323077/)
+
+[68] Ohkawa S et al. "Warfarin therapy and chlorella." *Rinsho Shinkeigaku*. 1995;35(7):806-807. PMID: [8777808](https://pubmed.ncbi.nlm.nih.gov/8777808/)
+
+[69] Costa ML et al. "Hepatotoxicity induced by paclitaxel interaction with turmeric in association with a microcystin from a contaminated dietary supplement." *Toxicon*. 2018;150:207-211. doi: [10.1016/j.toxicon.2018.05.022](https://doi.org/10.1016/j.toxicon.2018.05.022). PMID: [29857089](https://pubmed.ncbi.nlm.nih.gov/29857089/)

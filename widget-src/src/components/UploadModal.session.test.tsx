@@ -11,7 +11,7 @@ import { trackProductEvent } from '../lib/server-api';
 import type { UploadHistory } from '../lib/api-types';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn() }));
+vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), attachOriginals: vi.fn(async results => results), synthesizeLabArchiveEntries: vi.fn(() => []) }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
@@ -30,9 +30,9 @@ const archivedLetter = { id: 'd1', documentType: 'clinic_letter', title: letter.
 const onComplete = vi.fn();
 const extractFromPdf = vi.fn();
 /** `archived`: what a completed save leaves in the reloaded history. */
-function Harness({ onStart, archived, completedHistory }: { onStart?: () => Promise<void>; archived?: typeof archivedLetter; completedHistory?: UploadHistory }) {
+function Harness({ onStart, archived, completedHistory, initialHistory = emptyHistory }: { onStart?: () => Promise<void>; archived?: typeof archivedLetter; completedHistory?: UploadHistory; initialHistory?: UploadHistory }) {
   const [open, setOpen] = useState(true);
-  const [history, setHistory] = useState(emptyHistory);
+  const [history, setHistory] = useState(initialHistory);
   return <><button onClick={() => setOpen(true)}>Upload records</button><UploadModal
     open={open} onOpen={() => setOpen(true)} onClose={() => setOpen(false)}
     unitSystem="si" grading={{}} history={history} onStart={onStart}
@@ -341,5 +341,44 @@ describe('US-12 AC4–6 upload session ownership', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     const line = await screen.findByText('Platelets: the value and its printed range are on different scales, so the row was not stored.');
     expect(line.textContent).not.toContain('whole number');
+  });
+});
+
+// US-14 AC4: an original the cloud would not store, behind a row it already
+// holds, is settled, never a silent checkmark.
+it('US-14 AC4: the done screen says when an original could not be stored', async () => {
+  vi.mocked(bulkSaveDocuments).mockResolvedValue({ saved: [], errorCount: 0, unstored: 1 });
+  vi.mocked(synthesizeLabArchiveEntries).mockReturnValue([{ documentType: 'pathology_report', title: 'Blood test results', documentDate: null, contentMd: '', metadata: {}, sourceFileName: 'test.pdf' }]);
+  render(<Harness />); await ready();
+  fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+  expect(await screen.findByText("The original file couldn't be stored; its details are saved.")).toBeTruthy();
+});
+
+// Based on Austin Bell's PR #152 (robertaustinbell).
+describe('US-13 AC6: the archive-only path files what the review shows', () => {
+  it('an unselected connector letter carries the reviewed title and date, not the extracted ones', async () => {
+    vi.mocked(attachOriginals).mockImplementationOnce(async results => results.map(r => ({ ...r, contentHash: 'sha256-synthetic' })));
+    vi.mocked(labImport).mockResolvedValue({ result: { classification: 'clinic_letter', reportDate: null, values: [], additionalValues: [], document: letter } } as Awaited<ReturnType<typeof labImport>>);
+    const connectorRow = { id: 'c1', documentType: 'clinic_letter', title: 'Connector title', documentDate: letter.documentDate, contentMd: '',
+      metadata: { importedVia: 'connector' }, sourceFileName: 'test.pdf', contentHash: 'sha256-synthetic', fileRef: null, createdAt: '2024-06-02T00:00:00Z' };
+    render(<Harness initialHistory={{ ...emptyHistory, documents: [connectorRow] }} />); selectFile();
+    // The card starts from the row it replaces (US-14 AC4).
+    fireEvent.change(await screen.findByDisplayValue('Connector title'), { target: { value: 'Reviewed letter' } });
+    fireEvent.change(screen.getByLabelText('Document date'), { target: { value: '2024-07-12' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save 1 Original' }));
+    await waitFor(() => expect(bulkSaveDocuments).toHaveBeenCalledOnce());
+    expect(vi.mocked(bulkSaveDocuments).mock.calls[0][0]).toEqual([expect.objectContaining({
+      title: 'Reviewed letter', documentDate: '2024-07-12', sourceFileName: 'test.pdf' })]);
+  });
+
+  it('a corrected column date reaches the lab-archive row', async () => {
+    const actual = await vi.importActual<typeof import('../lib/archive-payloads')>('../lib/archive-payloads');
+    vi.mocked(synthesizeLabArchiveEntries).mockImplementationOnce(actual.synthesizeLabArchiveEntries);
+    render(<Harness />); await ready();
+    fireEvent.change(screen.getByLabelText('Choose column date'), { target: { value: '2024-06-15' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await waitFor(() => expect(bulkSaveDocuments).toHaveBeenCalledOnce());
+    expect(vi.mocked(bulkSaveDocuments).mock.calls[0][0]).toEqual([expect.objectContaining({
+      title: 'Blood test results', documentDate: '2024-06-15', sourceFileName: 'test.pdf' })]);
   });
 });

@@ -110,13 +110,13 @@ Iron is one of the most well-known trace minerals, which means it might surprise
 
 The trick is that dietary iron comes in heme and non-heme forms, which is essentially the difference between iron from animal sources and iron from plant sources. This means vegetarians and vegans typically need twice as much iron in their diet as omnivores because non-heme iron is much more poorly absorbed. If you're interested in learning more, [I have an entire guide on iron intake and supplementation here](https://drstanfield.com/blogs/articles/iron-supplementation-good-health).
 
-Throughout life, your iron needs are around 8-10 mcg per day, though pregnant women need closer to 27 mcg.
+Throughout life, your iron needs are around 8-10 mg per day (18 mg for women aged 19 to 50), though pregnant women need closer to 27 mg.
 
 ### Manganese
 
 Manganese – not to be confused with magnesium – is used in metabolism and to protect cells from damage. It's also part of bone health, blood clotting, and immune system function. Deficiency means weak bones, skin rashes, mood changes, and other symptoms, but like most trace mineral deficiencies, is very rare in the developed world due to fortified foods.
 
-The recommended daily intake for manganese is only 0.6 mcg for infants, but doubles to 1.2 mcg for children, and rises to around 2 mcg for adults.
+The recommended daily intake for manganese is only 0.6 mg for infants, but doubles to 1.2 mg for children, and rises to around 2 mg for adults.
 
 ### Molybdenum
 
@@ -136,11 +136,11 @@ The recommended intake of selenium ranges from 15 mcg at birth to 55 mcg for adu
 
 Zinc is also a well-known trace mineral and is used in immune system function, DNA production, and protein synthesis. It's also required for childhood development and wound healing.
 
-The recommended daily intake is 8-11 mcg for adults.
+The recommended daily intake is 8-11 mg for adults.
 
 ### Ultratrace Minerals and Boron
 
-There are also a set of minerals called ultratrace minerals. This category has significant overlap with the nonessential minerals, and includes minerals like silicon, nickel, boron, cadmium, and lithium. The general recommended daily intake of these minerals is zero, because they can be toxic in extremely small amounts, but some studies have been looking into whether or not they may be beneficial despite that.
+There are also a set of minerals called ultratrace minerals. This category has significant overlap with the nonessential minerals, and includes minerals like silicon, nickel, boron, cadmium, and lithium. No recommended daily intake has been set for these minerals, and some of them, like cadmium, can be toxic in extremely small amounts, but some studies have been looking into whether or not they may be beneficial despite that.
 
 A primary example of this is Boron. Numerous studies over the last few years have been demonstrating the potential benefits of boron in our diets, including functions such as:
 
@@ -152,7 +152,7 @@ A primary example of this is Boron. Numerous studies over the last few years hav
 *   Improving immune system function.
 *   Improving the function of steroid hormones, including estrogen, testosterone, and vitamin D.
 
-So, why is boron not classified as an essential mineral? While we've seen studies that seem to demonstrate benefits to consuming small amounts (usually less than a single microgram) of boron, science has not yet identified the specific enzymatic or molecular pathways the element uses. As such, governing bodies like the Food and Nutrition Board and the World Health Organization have not determined a recommended intake. MicroVitamin contains 1mg of Boron per serving.
+So, why is boron not classified as an essential mineral? While we've seen studies that seem to demonstrate benefits to consuming small amounts (usually a few milligrams a day, such as 3 mg) of boron, science has not yet identified the specific enzymatic or molecular pathways the element uses. As such, governing bodies like the Food and Nutrition Board and the World Health Organization have not determined a recommended intake. MicroVitamin contains 1mg of Boron per serving.
 
 ## Why Are Trace Minerals Added to Vitamins?
 

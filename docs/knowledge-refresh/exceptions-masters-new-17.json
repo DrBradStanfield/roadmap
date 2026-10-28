@@ -1,0 +1,826 @@
+[
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Amla reduced platelet clumping in two small trials, and in 10 diabetic patients it prolonged bleeding time, alone a...\" | \"**Antiplatelet effects and bleeding risk:** In overweight adults, 12 weeks of amla extract reduced platelet clumping ...\" | \"**Blood sugar lowering:** Amla lowered blood sugar in trials [6][8][17]. That could add to the effect of diabetes med...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Amla review, Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Amla reduced platelet clumping in two small trials, and in 10 diabetic patients it prolonged bleeding time, alone a...\" | \"**Antiplatelet effects and bleeding risk:** In overweight adults, 12 weeks of amla extract reduced platelet clumping ...\" | \"**Blood sugar lowering:** Amla lowered blood sugar in trials [6][8][17]. That could add to the effect of diabetes med...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Amla review, Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Amla reduced platelet clumping in two small trials, and in 10 diabetic patients it prolonged bleeding time, alone a...\" | \"**Antiplatelet effects and bleeding risk:** In overweight adults, 12 weeks of amla extract reduced platelet clumping ...\" | \"**Blood sugar lowering:** Amla lowered blood sugar in trials [6][8][17]. That could add to the effect of diabetes med...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Amla review, Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Amla reduced platelet clumping in two small trials, and in 10 diabetic patients it prolonged bleeding time, alone a...\" | \"**Antiplatelet effects and bleeding risk:** In overweight adults, 12 weeks of amla extract reduced platelet clumping ...\" | \"**Blood sugar lowering:** Amla lowered blood sugar in trials [6][8][17]. That could add to the effect of diabetes med...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Amla review, Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤2000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Fruit extract:** concentrated and standardised to marker compounds, tested at doses from 250 mg twice daily up to...\"",
+  "reason": "AC2 tokeniser case ≤2000 mg/day; ratified in decisions.md (Amla review Ratified line (writer tokeniser candidates) and Amla fix entry Ratified line (no-entry 500 mg, 250 mg)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1500 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2023 meta-analysis pooled nine randomized trials (535 participants) using 500 to 1,500 mg of amla a day for 14 to 8...\"",
+  "reason": "AC2 tokeniser case 1500 mg; ratified in decisions.md (Amla review Ratified line (writer tokeniser candidates) and Amla fix entry Ratified line (no-entry 500 mg, 250 mg)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1000 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Amla extract versus metformin (open-label):** Patients with newly found type 2 diabetes and abnormal blood lipids t...\" | \"| Amla fruit extract (10% beta-glucogallin) | 1 g or 2 g a day | 90 days | Newly diagnosed type 2 diabetes | Majeed 2...\" | \"- **Extracts:** most trials gave 250 mg or 500 mg twice daily for 12 weeks [4][7][19][20][21]; one gave 1 g or 2 g a ...\"",
+  "reason": "AC2 tokeniser case 1000 mg; ratified in decisions.md (Amla review Ratified line (writer tokeniser candidates) and Amla fix entry Ratified line (no-entry 500 mg, 250 mg)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "token \"21 day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Amla fruit powder | 1, 2 or 3 g a day | 21 days | Blood sugar (normal and type 2 diabetes) | Akhtar 2011 [6] |\"",
+  "reason": "AC2 tokeniser case 21 day; ratified in decisions.md (Amla review Ratified line (writer tokeniser candidates) and Amla fix entry Ratified line (no-entry 500 mg, 250 mg)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"500 mg\": A 2023 meta-analysis pooled nine randomized trials (535 participants) using 500 to 1,500 mg of amla a day for 14 to 8...",
+  "reason": "AC2 no-entry tokeniser case \"500 mg\"; ratified in decisions.md (Amla review Ratified line (writer tokeniser candidates) and Amla fix entry Ratified line (no-entry 500 mg, 250 mg)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"500 mg/day\": Amla extract for dyslipidemia (placebo-controlled): In 98 patients with dyslipidemia, amla extract (500 mg twice dail...",
+  "reason": "AC2 no-entry tokeniser case \"500 mg/day\"; ratified in decisions.md (Amla review Ratified line (writer tokeniser candidates) and Amla fix entry Ratified line (no-entry 500 mg, 250 mg)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"250 mg\": Amla extract in metabolic syndrome (placebo-controlled): In 59 people with metabolic syndrome, an aqueous extract at ...",
+  "reason": "AC2 no-entry tokeniser case \"250 mg\"; ratified in decisions.md (Amla review Ratified line (writer tokeniser candidates) and Amla fix entry Ratified line (no-entry 500 mg, 250 mg)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1\", \"500 mg/day\": Amla extract in overweight adults (no control group): Overweight or class 1 obese adults took CAPROS extract, 500 mg ...",
+  "reason": "AC2 no-entry tokeniser case \"1\", \"500 mg/day\"; ratified in decisions.md (Amla review Ratified line (writer tokeniser candidates) and Amla fix entry Ratified line (no-entry 500 mg, 250 mg)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"250 mg\": Amla extract versus atorvastatin and placebo: In type 2 diabetes, an aqueous extract given at 250 mg or 500 mg twice ...",
+  "reason": "AC2 no-entry tokeniser case \"250 mg\"; ratified in decisions.md (Amla review Ratified line (writer tokeniser candidates) and Amla fix entry Ratified line (no-entry 500 mg, 250 mg)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"500 mg/day\": Amla extract versus metformin (open-label): Patients with newly found type 2 diabetes and abnormal blood lipids took ...",
+  "reason": "AC2 no-entry tokeniser case \"500 mg/day\"; ratified in decisions.md (Amla review Ratified line (writer tokeniser candidates) and Amla fix entry Ratified line (no-entry 500 mg, 250 mg)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"60\": Amla syrup for female hair loss (placebo-controlled): A trial randomized 60 women with female-pattern hair loss (fema...",
+  "reason": "AC2 no-entry tokeniser case \"60\"; ratified in decisions.md (Amla review Ratified line (writer tokeniser candidates) and Amla fix entry Ratified line (no-entry 500 mg, 250 mg)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"12 week\": Physician and patient satisfaction scores were higher with amla at 12 weeks",
+  "reason": "AC2 no-entry tokeniser case \"12 week\"; ratified in decisions.md (Amla review Ratified line (writer tokeniser candidates) and Amla fix entry Ratified line (no-entry 500 mg, 250 mg)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"250 mg\": Aqueous extract (hydrolysable tannins) | 250 mg or 500 mg twice daily | 12 weeks | Type 2 diabetes | Usharani 2013 [1...",
+  "reason": "AC2 no-entry tokeniser case \"250 mg\"; ratified in decisions.md (Amla review Ratified line (writer tokeniser candidates) and Amla fix entry Ratified line (no-entry 500 mg, 250 mg)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"500 mg/day\": Amla capsule | 500 mg a day | 42 days | High cholesterol | Gopa 2012 [9] |",
+  "reason": "AC2 no-entry tokeniser case \"500 mg/day\"; ratified in decisions.md (Amla review Ratified line (writer tokeniser candidates) and Amla fix entry Ratified line (no-entry 500 mg, 250 mg)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"500 mg/day\": Amla extract | 500 mg twice daily | 12 weeks | Dyslipidemia | Upadya 2019 [7] |",
+  "reason": "AC2 no-entry tokeniser case \"500 mg/day\"; ratified in decisions.md (Amla review Ratified line (writer tokeniser candidates) and Amla fix entry Ratified line (no-entry 500 mg, 250 mg)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"250 mg\": Standardised aqueous extract | 250 mg or 500 mg twice daily | 12 weeks | Metabolic syndrome | Usharani 2019 [20] |",
+  "reason": "AC2 no-entry tokeniser case \"250 mg\"; ratified in decisions.md (Amla review Ratified line (writer tokeniser candidates) and Amla fix entry Ratified line (no-entry 500 mg, 250 mg)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"500 mg/day\": Amla extract (CAPROS) | 500 mg twice daily | 12 weeks | Overweight adults | Khanna 2015 [4] |",
+  "reason": "AC2 no-entry tokeniser case \"500 mg/day\"; ratified in decisions.md (Amla review Ratified line (writer tokeniser candidates) and Amla fix entry Ratified line (no-entry 500 mg, 250 mg)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"500 mg/day\": Amla extract | 500 mg twice daily, added to usual medicines | 12 weeks | Hypertension (no effect on blood pressure) |...",
+  "reason": "AC2 no-entry tokeniser case \"500 mg/day\"; ratified in decisions.md (Amla review Ratified line (writer tokeniser candidates) and Amla fix entry Ratified line (no-entry 500 mg, 250 mg)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"500 mg/day\": Amla tablets | two 500 mg tablets twice daily after meals | 4 weeks | Non-erosive reflux disease | Karkon Varnosfader...",
+  "reason": "AC2 no-entry tokeniser case \"500 mg/day\"; ratified in decisions.md (Amla review Ratified line (writer tokeniser candidates) and Amla fix entry Ratified line (no-entry 500 mg, 250 mg)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"250 mg\": Extracts: most trials gave 250 mg or 500 mg twice daily for 12 weeks [4][7][19][20][21]; one gave 1 g or 2 g a day fo...",
+  "reason": "AC2 no-entry tokeniser case \"250 mg\"; ratified in decisions.md (Amla review Ratified line (writer tokeniser candidates) and Amla fix entry Ratified line (no-entry 500 mg, 250 mg)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Baobab lowered the rise in blood glucose in single-meal trials [10][39], so it could add to the effect of diabetes ...\" | \"- Anaphylaxis to baobab fruit has been reported [47]. For trouble breathing or swelling of the face or throat, call y...\" | \"Anaphylaxis to baobab fruit has been described in a published case report [47]. For trouble breathing or swelling of ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Baobab review, Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Baobab lowered the rise in blood glucose in single-meal trials [10][39], so it could add to the effect of diabetes ...\" | \"- Anaphylaxis to baobab fruit has been reported [47]. For trouble breathing or swelling of the face or throat, call y...\" | \"Anaphylaxis to baobab fruit has been described in a published case report [47]. For trouble breathing or swelling of ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Baobab review, Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Baobab lowered the rise in blood glucose in single-meal trials [10][39], so it could add to the effect of diabetes ...\" | \"- Anaphylaxis to baobab fruit has been reported [47]. For trouble breathing or swelling of the face or throat, call y...\" | \"Anaphylaxis to baobab fruit has been described in a published case report [47]. For trouble breathing or swelling of ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Baobab review, Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Baobab lowered the rise in blood glucose in single-meal trials [10][39], so it could add to the effect of diabetes ...\" | \"- Anaphylaxis to baobab fruit has been reported [47]. For trouble breathing or swelling of the face or throat, call y...\" | \"Anaphylaxis to baobab fruit has been described in a published case report [47]. For trouble breathing or swelling of ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Baobab review, Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "token \"173.2\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Vitamin C (mg) | 173.2 | 53.2 | 8.7 | 9.7 |\"",
+  "reason": "AC2 tokeniser case 173.2; ratified in decisions.md (Baobab review Ratified line (FDC table tokens)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "token \"53.2\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Vitamin C (mg) | 173.2 | 53.2 | 8.7 | 9.7 |\"",
+  "reason": "AC2 tokeniser case 53.2; ratified in decisions.md (Baobab review Ratified line (FDC table tokens)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "token \"8.7\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Vitamin C (mg) | 173.2 | 53.2 | 8.7 | 9.7 |\"",
+  "reason": "AC2 tokeniser case 8.7; ratified in decisions.md (Baobab review Ratified line (FDC table tokens)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "token \"9.7\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Vitamin C (mg) | 173.2 | 53.2 | 8.7 | 9.7 |\"",
+  "reason": "AC2 tokeniser case 9.7; ratified in decisions.md (Baobab review Ratified line (FDC table tokens)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "token \"342\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Calcium (mg) | 342 | 40 | 5 | 6 |\"",
+  "reason": "AC2 tokeniser case 342; ratified in decisions.md (Baobab review Ratified line (FDC table tokens)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "token \"40\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Calcium (mg) | 342 | 40 | 5 | 6 |\"",
+  "reason": "AC2 tokeniser case 40; ratified in decisions.md (Baobab review Ratified line (FDC table tokens)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2189\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Potassium (mg) | 2189 | 181 | 358 | 77 |\"",
+  "reason": "AC2 tokeniser case 2189; ratified in decisions.md (Baobab review Ratified line (FDC table tokens)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "token \"8.42\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Iron (mg) | 8.42 | 0.1 | 0.26 | 0.28 |\"",
+  "reason": "AC2 tokeniser case 8.42; ratified in decisions.md (Baobab review Ratified line (FDC table tokens)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.26\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Iron (mg) | 8.42 | 0.1 | 0.26 | 0.28 |\"",
+  "reason": "AC2 tokeniser case 0.26; ratified in decisions.md (Baobab review Ratified line (FDC table tokens)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.28\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Iron (mg) | 8.42 | 0.1 | 0.26 | 0.28 |\"",
+  "reason": "AC2 tokeniser case 0.28; ratified in decisions.md (Baobab review Ratified line (FDC table tokens)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "token \"44.5\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Total Fiber (g) | 44.5 | 2.4 | 2.6 | 2.4 |\"",
+  "reason": "AC2 tokeniser case 44.5; ratified in decisions.md (Baobab review Ratified line (FDC table tokens)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "bilberry-benefits-forms-dosing-and-side-effects",
+  "match": "token \"470 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Trials have used concentrated extracts. A type 2 diabetes study used a standardized extract with 36% anthocyanins, an...\" | \"**Human evidence:** In 8 men with type 2 diabetes managed by diet and lifestyle, a single 0.47 g capsule of standardi...\" | \"| Blood sugar after a meal (type 2 diabetes) | Single 0.47 g capsule (36% anthocyanins) | One dose | Lower glucose an...\"",
+  "reason": "AC2 tokeniser case 470 mg; ratified in decisions.md (Bilberry review Ratified line (tokeniser cases)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "bilberry-benefits-forms-dosing-and-side-effects",
+  "match": "token \"202.34 mcg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Matrix effects:** The rest of the extract may matter. In rats, Mirtoselect produced a larger plasma anthocyanoside ...\"",
+  "reason": "AC2 tokeniser case 202.34 mcg; ratified in decisions.md (Bilberry review Ratified line (tokeniser cases)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "bilberry-benefits-forms-dosing-and-side-effects",
+  "match": "token \"130.93 mcg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Matrix effects:** The rest of the extract may matter. In rats, Mirtoselect produced a larger plasma anthocyanoside ...\"",
+  "reason": "AC2 tokeniser case 130.93 mcg; ratified in decisions.md (Bilberry review Ratified line (tokeniser cases)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "bilberry-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.03\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Human evidence:** In 8 men with type 2 diabetes managed by diet and lifestyle, a single 0.47 g capsule of standardi...\"",
+  "reason": "AC2 tokeniser case 0.03; ratified in decisions.md (Bilberry review Ratified line (tokeniser cases)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "bilberry-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Allergic reactions:** Possible. For trouble breathing, swelling of the face or throat, or fainting, call your loc...\" | \"People with diabetes, or on blood sugar-lowering medicines, should talk to their doctor before taking bilberry and ch...\" | \"Bilberry is one of several herbs reported to have antiplatelet activity, and with NSAIDs, particularly aspirin, such ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Bilberry review, Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "bilberry-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Allergic reactions:** Possible. For trouble breathing, swelling of the face or throat, or fainting, call your loc...\" | \"People with diabetes, or on blood sugar-lowering medicines, should talk to their doctor before taking bilberry and ch...\" | \"Bilberry is one of several herbs reported to have antiplatelet activity, and with NSAIDs, particularly aspirin, such ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Bilberry review, Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "bilberry-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Allergic reactions:** Possible. For trouble breathing, swelling of the face or throat, or fainting, call your loc...\" | \"People with diabetes, or on blood sugar-lowering medicines, should talk to their doctor before taking bilberry and ch...\" | \"Bilberry is one of several herbs reported to have antiplatelet activity, and with NSAIDs, particularly aspirin, such ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Bilberry review, Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "bilberry-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Allergic reactions:** Possible. For trouble breathing, swelling of the face or throat, or fainting, call your loc...\" | \"People with diabetes, or on blood sugar-lowering medicines, should talk to their doctor before taking bilberry and ch...\" | \"Bilberry is one of several herbs reported to have antiplatelet activity, and with NSAIDs, particularly aspirin, such ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Bilberry review, Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "bilberry-benefits-forms-dosing-and-side-effects",
+  "match": "token \"75.5 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Drug absorption:** In cells, bilberry extract blocked a gut transporter (OATP-B) that carries some medicines by 7...\"",
+  "reason": "AC2 tokeniser case 75.5 %; ratified in decisions.md (Bilberry review Ratified line (tokeniser cases)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "bilberry-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"0.003\": Human evidence: In 8 men with type 2 diabetes managed by diet and lifestyle, a single 0.47 g capsule of standardized ...",
+  "reason": "AC2 no-entry tokeniser case \"0.003\"; ratified in decisions.md (Bilberry review Ratified line (tokeniser cases)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "acai-berry-benefits-forms-dosing-and-side-effects",
+  "match": "token \"21\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. An integrative review found...\" | \"**Phase II clinical trial, prostate cancer (n=21):** In a Simon 2-stage phase II trial, 21 men with biochemically rec...\" | \"- 1 of 21 patients had a PSA response\"",
+  "reason": "AC2 tokeniser case 21; ratified in decisions.md (Acai review Ratified line (spelled numbers, no-entry 20 x6)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "acai-berry-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Raw acai pulp or juice from the Brazilian Amazon has caused outbreaks of Chagas disease, which can be fatal [39][40...\" | \"- Some products sold as acai hold little or none, or carry unlisted ingredients [9]. One was linked to muscle breakdo...\" | \"Acai comes from a palm (the Arecaceae family) [3]. Avoid acai if it has caused you an allergic reaction. If your lips...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Acai-Berry review, Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "acai-berry-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Raw acai pulp or juice from the Brazilian Amazon has caused outbreaks of Chagas disease, which can be fatal [39][40...\" | \"- Some products sold as acai hold little or none, or carry unlisted ingredients [9]. One was linked to muscle breakdo...\" | \"Acai comes from a palm (the Arecaceae family) [3]. Avoid acai if it has caused you an allergic reaction. If your lips...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Acai-Berry review, Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "acai-berry-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Raw acai pulp or juice from the Brazilian Amazon has caused outbreaks of Chagas disease, which can be fatal [39][40...\" | \"- Some products sold as acai hold little or none, or carry unlisted ingredients [9]. One was linked to muscle breakdo...\" | \"Acai comes from a palm (the Arecaceae family) [3]. Avoid acai if it has caused you an allergic reaction. If your lips...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Acai-Berry review, Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "acai-berry-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Raw acai pulp or juice from the Brazilian Amazon has caused outbreaks of Chagas disease, which can be fatal [39][40...\" | \"- Some products sold as acai hold little or none, or carry unlisted ingredients [9]. One was linked to muscle breakdo...\" | \"Acai comes from a palm (the Arecaceae family) [3]. Avoid acai if it has caused you an allergic reaction. If your lips...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Acai-Berry review, Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "acai-berry-benefits-forms-dosing-and-side-effects",
+  "match": "token \"11\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In 2006, Pará state reported 178 cases of acute Chagas disease; 11 occurred in Barcarena, where studies linked them...\"",
+  "reason": "AC2 tokeniser case 11; ratified in decisions.md (Acai review Ratified line (spelled numbers, no-entry 20 x6)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "acai-berry-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20\": Brad has not made a video on this topic; this is a summary of the evidence, not his view. An integrative review found...",
+  "reason": "AC2 no-entry tokeniser case \"20\"; ratified in decisions.md (Acai review Ratified line (spelled numbers, no-entry 20 x6)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "acai-berry-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20\": Capsules and liquids | Over half of 20 products tested held little or no acai, or enough water to dilute it heavily [...",
+  "reason": "AC2 no-entry tokeniser case \"20\"; ratified in decisions.md (Acai review Ratified line (spelled numbers, no-entry 20 x6)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "acai-berry-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20\": For supplement capsules: Be cautious. Over half of 20 acai supplements tested held little or no acai fruit or were he...",
+  "reason": "AC2 no-entry tokeniser case \"20\"; ratified in decisions.md (Acai review Ratified line (spelled numbers, no-entry 20 x6)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "acai-berry-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20\": Acai content varies widely between supplements. In a study of 20 acai products, over half held little or no acai frui...",
+  "reason": "AC2 no-entry tokeniser case \"20\"; ratified in decisions.md (Acai review Ratified line (spelled numbers, no-entry 20 x6)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "acai-berry-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20\": Over half of 20 acai supplements tested held little or no acai or were heavily diluted, and two contained unlisted in...",
+  "reason": "AC2 no-entry tokeniser case \"20\"; ratified in decisions.md (Acai review Ratified line (spelled numbers, no-entry 20 x6)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "acai-berry-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20\": Many are not. Over half of 20 acai supplements tested held little acai or were heavily diluted, and two contained unl...",
+  "reason": "AC2 no-entry tokeniser case \"20\"; ratified in decisions.md (Acai review Ratified line (spelled numbers, no-entry 20 x6)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Severe lactic acidosis was reported in a person using mangosteen juice as a supplement [42]. Its general signs incl...\" | \"A 2008 case report described severe lactic acidosis associated with mangosteen juice used as a dietary supplement [42...\" | \"3. **Monitor blood glucose** if combining mangosteen supplements with diabetes medicines [70][72]. If someone with di...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Mangosteen review, Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Severe lactic acidosis was reported in a person using mangosteen juice as a supplement [42]. Its general signs incl...\" | \"A 2008 case report described severe lactic acidosis associated with mangosteen juice used as a dietary supplement [42...\" | \"3. **Monitor blood glucose** if combining mangosteen supplements with diabetes medicines [70][72]. If someone with di...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Mangosteen review, Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Severe lactic acidosis was reported in a person using mangosteen juice as a supplement [42]. Its general signs incl...\" | \"A 2008 case report described severe lactic acidosis associated with mangosteen juice used as a dietary supplement [42...\" | \"3. **Monitor blood glucose** if combining mangosteen supplements with diabetes medicines [70][72]. If someone with di...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Mangosteen review, Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Severe lactic acidosis was reported in a person using mangosteen juice as a supplement [42]. Its general signs incl...\" | \"A 2008 case report described severe lactic acidosis associated with mangosteen juice used as a dietary supplement [42...\" | \"3. **Monitor blood glucose** if combining mangosteen supplements with diabetes medicines [70][72]. If someone with di...\"",
+  "reason": "AC2 ruling 17 emergency numbers (111, 0, 911, 999) in the emergency line; ratified in decisions.md (Mangosteen review, Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20\": Facial skin texture (clinical evidence): In a split-face study, 20 women aged 35 to 65 with facial wrinkles applied a...",
+  "reason": "AC2 no-entry tokeniser case \"20\"; ratified in decisions.md (Mangosteen review Ratified line (no-entry 20 x3, no-entry 42)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20\": The sample size was very small (n=20) [36]",
+  "reason": "AC2 no-entry tokeniser case \"20\"; ratified in decisions.md (Mangosteen review Ratified line (no-entry 20 x3, no-entry 42)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"42\": Laboratory and animal evidence: A 2025 systematic review of 40 studies found that mangosteen extract and xanthones co...",
+  "reason": "AC2 no-entry tokeniser case \"42\"; ratified in decisions.md (Mangosteen review Ratified line (no-entry 20 x3, no-entry 42)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC2",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20\": Facial skin texture | One clinical trial (n=20) [36] | Small trial with combination cream | Cannot attribute to mango...",
+  "reason": "AC2 no-entry tokeniser case \"20\"; ratified in decisions.md (Mangosteen review Ratified line (no-entry 20 x3, no-entry 42)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Vitamin C Content in Supplements",
+  "reason": "AC4 heading removed or renamed (### Vitamin C Content in Supplements); ratified in decisions.md (amla writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Storage",
+  "reason": "AC4 heading removed or renamed (### Storage); ratified in decisions.md (amla writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Eye Health (Macular Degeneration and Cataract)",
+  "reason": "AC4 heading removed or renamed (### Eye Health (Macular Degeneration and Cataract)); ratified in decisions.md (amla writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "amla-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Availability",
+  "reason": "AC4 heading removed or renamed (### Availability); ratified in decisions.md (amla writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### As a Food Ingredient (FDA/EU Guidance)",
+  "reason": "AC4 heading removed or renamed (### As a Food Ingredient (FDA/EU Guidance)); ratified in decisions.md (baobab writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Fiber Comparison (per typical serving)",
+  "reason": "AC4 heading removed or renamed (### Fiber Comparison (per typical serving)); ratified in decisions.md (baobab writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Vitamin C Comparison (per typical serving)",
+  "reason": "AC4 heading removed or renamed (### Vitamin C Comparison (per typical serving)); ratified in decisions.md (baobab writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "acai-berry-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Nutritional Profile (Freeze-Dried Pulp per 100 g)",
+  "reason": "AC4 heading removed or renamed (### Nutritional Profile (Freeze-Dried Pulp per 100 g)); ratified in decisions.md (acai-berry writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Analytical Methods and Quality Control",
+  "reason": "AC4 heading removed or renamed (### Analytical Methods and Quality Control); ratified in decisions.md (mangosteen writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Diabetes and Blood Sugar (Preclinical)",
+  "reason": "AC4 heading removed or renamed (### Diabetes and Blood Sugar (Preclinical)); ratified in decisions.md (mangosteen writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Neuroprotection and Alzheimer's Disease (Preclinical)",
+  "reason": "AC4 heading removed or renamed (### Neuroprotection and Alzheimer's Disease (Preclinical)); ratified in decisions.md (mangosteen writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Obesity and Weight Management (Preclinical)",
+  "reason": "AC4 heading removed or renamed (### Obesity and Weight Management (Preclinical)); ratified in decisions.md (mangosteen writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Immunomodulatory Effects (Preclinical)",
+  "reason": "AC4 heading removed or renamed (### Immunomodulatory Effects (Preclinical)); ratified in decisions.md (mangosteen writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Standardization Considerations",
+  "reason": "AC4 heading removed or renamed (### Standardization Considerations); ratified in decisions.md (mangosteen writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### General Safety of Fresh Fruit",
+  "reason": "AC4 heading removed or renamed (### General Safety of Fresh Fruit); ratified in decisions.md (mangosteen writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Safety of Rind, Bark, Leaves, and Root",
+  "reason": "AC4 heading removed or renamed (### Safety of Rind, Bark, Leaves, and Root); ratified in decisions.md (mangosteen writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Caloric and Sugar Content of Juice Products",
+  "reason": "AC4 heading removed or renamed (### Caloric and Sugar Content of Juice Products); ratified in decisions.md (mangosteen writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Regulatory Status",
+  "reason": "AC4 heading removed or renamed (### Regulatory Status); ratified in decisions.md (mangosteen writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Nutritional Profile of Fresh Mangosteen Fruit",
+  "reason": "AC4 heading removed or renamed (### Nutritional Profile of Fresh Mangosteen Fruit); ratified in decisions.md (mangosteen writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Glycemic Index",
+  "reason": "AC4 heading removed or renamed (### Glycemic Index); ratified in decisions.md (mangosteen writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Nutrient Variability",
+  "reason": "AC4 heading removed or renamed (### Nutrient Variability); ratified in decisions.md (mangosteen writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Availability and Seasonality",
+  "reason": "AC4 heading removed or renamed (### Availability and Seasonality); ratified in decisions.md (mangosteen writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC4",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Culinary Uses",
+  "reason": "AC4 heading removed or renamed (### Culinary Uses); ratified in decisions.md (mangosteen writer/review/fix/recheck entries) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host eur-lex.europa.eu: [7] European Commission. \"Commission Decision 2008/575/EC of 27 June 2008 authorising the placing...",
+  "reason": "AC7 regulator/composition source host eur-lex.europa.eu; ratified in decisions.md (Baobab review Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host hfpappexternal.fda.gov: [8] U.S. Food and Drug Administration. \"GRAS Notice Inventory: GRN No. 273, Baobab (Adansonia dig...",
+  "reason": "AC7 regulator/composition source host hfpappexternal.fda.gov; ratified in decisions.md (Baobab review Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host fdc.nal.usda.gov: [50] U.S. Department of Agriculture. FoodData Central, SR Legacy, FDC ID 167806: Baobab powder. [...",
+  "reason": "AC7 regulator/composition source host fdc.nal.usda.gov; ratified in decisions.md (Baobab review Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host fdc.nal.usda.gov: [51] U.S. Department of Agriculture. FoodData Central, SR Legacy, FDC ID 169097: Oranges, raw, al...",
+  "reason": "AC7 regulator/composition source host fdc.nal.usda.gov; ratified in decisions.md (Baobab review Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host fdc.nal.usda.gov: [52] U.S. Department of Agriculture. FoodData Central, SR Legacy, FDC ID 173944: Bananas, raw. [h...",
+  "reason": "AC7 regulator/composition source host fdc.nal.usda.gov; ratified in decisions.md (Baobab review Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host fdc.nal.usda.gov: [53] U.S. Department of Agriculture. FoodData Central, SR Legacy, FDC ID 171711: Blueberries, raw...",
+  "reason": "AC7 regulator/composition source host fdc.nal.usda.gov; ratified in decisions.md (Baobab review Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "baobab-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host wayback.archive-it.org: [56] PhytoTrade Africa. \"GRAS Notice GRN 273: Baobab dried fruit pulp.\" Submitted to the U.S. Foo...",
+  "reason": "AC7 regulator/composition source host wayback.archive-it.org; ratified in decisions.md (Baobab review Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "acai-berry-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host ftc.gov: [54] Federal Trade Commission. \"FTC Seeks to Halt 10 Operators of Fake News Sites from Making Dec...",
+  "reason": "AC7 regulator/composition source host ftc.gov; ratified in decisions.md (Acai fix entry Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "acai-berry-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host ftc.gov: [55] Federal Trade Commission. \"Internet Marketers of Acai Berry Weight-Loss Pills and 'Colon Cle...",
+  "reason": "AC7 regulator/composition source host ftc.gov; ratified in decisions.md (Acai fix entry Ratified line) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "acai-berry-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Adulterated Products",
+  "reason": "AC7 product-heading false positive; ratified in decisions.md (Acai review Ratified line (AC7 Adulterated Products)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ },
+ {
+  "check": "AC7",
+  "handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+  "match": "product section missing: ### Caloric and Sugar Content of Juice Products",
+  "reason": "AC7 product-heading false positive; ratified in decisions.md (Mangosteen fix entry Ratified line (F2 removal)) (orchestrator 2026-10-26, masters-new-17).",
+  "by": "orchestrator",
+  "date": "2026-10-26"
+ }
+]

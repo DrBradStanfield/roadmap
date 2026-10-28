@@ -530,7 +530,7 @@ export function generateSuggestions(
       if (results.bmi !== undefined) {
         const lpaWhr = results.waistToHeightRatio;
         const onTarget = results.bmi < 25 || (results.bmi < 30 && lpaWhr !== undefined && !isWaistToHeightElevated(lpaWhr));
-        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} BMI: ${results.bmi} \u2014 target <25`);
+        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} BMI: ${results.bmi} \u2014 target <25, or <30 with a healthy waist-to-height ratio`);
       }
 
       // HbA1c
@@ -1012,7 +1012,7 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'Micronutrient base',
-      description: 'A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO\'s 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials.',
+      description: 'A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO\'s 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials. If you take warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR.',
       ingredients: [
         'Methylated B-complex',
         'Vitamin D3 with K2',
@@ -1028,7 +1028,7 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'Creatine',
-      description: 'One of the most-studied supplements: a meta-analysis found creatine (3–5 g/day) significantly increases muscle strength and lean mass with resistance training, with emerging evidence for cognitive benefits.',
+      description: 'One of the most-studied supplements: a meta-analysis found creatine (3–5 g/day) significantly increases muscle strength and lean mass with resistance training. Dr Stanfield considers the memory evidence clear and consistent; formal reviews are more mixed, with the clearest benefit in older adults.',
     },
     {
       id: 'supplement-collagen',
@@ -1049,7 +1049,7 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'Sleep support',
-      description: 'An umbrella review of meta-analyses found melatonin reduces the time taken to fall asleep and improves sleep quality, with a good safety profile — useful as part of a good sleep-hygiene routine.',
+      description: 'An umbrella review of meta-analyses found melatonin may reduce the time taken to fall asleep and may improve sleep quality, with a good safety profile — useful as part of a good sleep-hygiene routine.',
       ingredients: [
         'Low-dose melatonin',
         'Glycine',

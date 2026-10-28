@@ -37,6 +37,7 @@ import {
   cellText,
   cellToSI,
   formatLabValue,
+  readTypedValue,
   sameAsSaved,
   validateTypedValue,
   statusOf,
@@ -135,7 +136,7 @@ export interface BloodTestTimelineProps {
   onCorrectValue?: CorrectFn;
   // The draft values the plan and the chat may read, in SI; undefined leaves
   // the field to the record.
-  onDraftValue: (field: keyof HealthInputs, siValue: number | undefined) => void;
+  onDraftValue: (field: keyof HealthInputs, siValue: number | undefined, day?: string) => void;
   isSaving: boolean;
   /** Whom the hints and status colours grade for; null for a known minor,
    *  whose values show with neither (US-07 AC6). */
@@ -233,7 +234,7 @@ export function BloodTestTimeline({
   // unit, the same quantity in the field's unit.
   const shownText = (column: string | null, metric: MetricType, field: string, typed: string) => {
     const unit = typedUnit(column, metric, field);
-    const n = parseLocalisedNumber(typed);
+    const n = unit ? readTypedValue(metric, typed, unit) : undefined;
     return !unit || unit === fieldUnit(field) || n === undefined ? typed : cellText(metric, cellToSI(metric, n, unit), fieldUnit(field));
   };
 
@@ -287,7 +288,7 @@ export function BloodTestTimeline({
       if (!typed || (column !== null && !onScreen(column, metric))) return [];
       const unit = typedUnit(column, metric, field);
       const blocked = !!unreadable(column, metric, field, typed) || ((column ?? draft.date) === draft.date && clashes(metric));
-      return [{ column, date: column ?? draft.date, metric, unit: unit ?? fieldUnit(field), si: blocked ? null : cellToSI(metric, parseLocalisedNumber(typed)!, unit!) }];
+      return [{ column, date: column ?? draft.date, metric, unit: unit ?? fieldUnit(field), si: blocked ? null : cellToSI(metric, readTypedValue(metric, typed, unit!)!, unit!) }];
     });
   const cells = [...Object.entries(backfills).flatMap(([date, typed]) => cellsOf(date, typed)), ...cellsOf(null, draft.values)];
   const ready = cells.filter(c => c.si !== null);
@@ -302,11 +303,12 @@ export function BloodTestTimeline({
   const scrollRef = useScrollToRightOnMount<HTMLDivElement>([columns.length]);
 
   // What the plan and the chat read of the draft (US-03 AC6, `lends`): a
-  // value the test can take, clear of clashes (`si`).
-  useDraftMirror(ROWS.map(({ metric, field }) => [
-    field,
-    lends(metric) ? cells.find(c => c.column === null && c.metric === metric)?.si ?? undefined : undefined,
-  ]), onDraftValue);
+  // value the test can take, clear of clashes (`si`), and the day it is dated
+  // (US-07 AC7: a creatinine's day decides which eGFR the plan reads).
+  useDraftMirror(ROWS.map(({ metric, field }) => {
+    const si = lends(metric) ? cells.find(c => c.column === null && c.metric === metric)?.si ?? undefined : undefined;
+    return [field, si, si === undefined ? undefined : draft.date];
+  }), onDraftValue);
 
   // An Lp(a) cell is stamped with the unit it is typed in (US-05 AC2).
   const unitStamp = (metric: MetricType) => (metric === 'lpa' ? lpaUnit : undefined);
@@ -906,7 +908,7 @@ export function ValueCell({
     // An emptied editor is a change of mind: it closes and writes nothing.
     if (typed.trim() === '') { cancel(); return; }
     if (unusable(typed)) return;
-    const parsed = parseLocalisedNumber(typed)!;
+    const parsed = (core ? readTypedValue(core.metric, typed, core.display) : parseLocalisedNumber(typed))!;
     const newValue = core ? cellToSI(core.metric, parsed, core.display) : parsed;
     if (sameAsSaved(parsed, initialDisplay, newValue, value)) { cancel(); return; }
     setSaving(true);

@@ -90,8 +90,9 @@ function sectionOf(body: string, heading: RegExp): string | null {
 
 /** A master's "Current view" or "Current evidence position" section, demoted
  *  one level to sit under MASTER_VIEWS_HEADING. Null when the master has neither. */
+const VIEW_HEADING = /^## (?:Current view\b|Current evidence position\b).*$/m;
 export function currentViewSection(md: string): string | null {
-  const section = sectionOf(stripFrontmatter(md), /^## (?:Current view\b|Current evidence position\b).*$/m);
+  const section = sectionOf(stripFrontmatter(md), VIEW_HEADING);
   return section && `#${section}`;
 }
 
@@ -101,6 +102,7 @@ export function currentViewSection(md: string): string | null {
 const SAFETY_HEADING = /^## .*\b(?:safety|side effects?|cautions?|interactions?|contraindications?|who should not)\b/i;
 const INTERACTIONS_HEADING = /^#+ .*\binteractions?\b/i;
 const KEY_POINTS_HEADING = /^## Key safety points[ \t]*$/m;
+const DOSING_HEADING = /^## (?:\d+\. )?Recommended Dosing\b.*$/m;
 
 /** A master's bibliography from its References section, marker number to
  *  line: "[n] text" and "n. text" lines both come back as "[n] text". */
@@ -139,11 +141,13 @@ function withCitations(section: string, refs: Map<number, string>): string {
 export function safetySections(md: string): string[] {
   const body = stripFrontmatter(md);
   const refs = bibliography(body);
-  return body.split(/^(?=## )/m)
-    .filter(s => SAFETY_HEADING.test(s) && !KEY_POINTS_HEADING.test(s))
-    .sort((a, b) => Number(INTERACTIONS_HEADING.test(b)) - Number(INTERACTIONS_HEADING.test(a)))
-    .map(s => withCitations(s, refs));
+  return safetyBodies(body).map(s => withCitations(s, refs));
 }
+
+/** safetySections() before demotion and citations. */
+const safetyBodies = (body: string): string[] => body.split(/^(?=## )/m)
+  .filter(s => SAFETY_HEADING.test(s) && !KEY_POINTS_HEADING.test(s))
+  .sort((a, b) => Number(INTERACTIONS_HEADING.test(b)) - Number(INTERACTIONS_HEADING.test(a)));
 
 /** A master's "Key safety points" section (US-50 AC12), demoted, with its [n]
  *  markers stripped and no reference lines (a marker with no line is noise in
@@ -156,6 +160,39 @@ function keySafetyPoints(md: string): { text: string | null; dropped?: string } 
   if (section.length > MAX_KEY_POINTS_CHARS) return { text: null, dropped: `over ${MAX_KEY_POINTS_CHARS} characters` };
   if (section.split('\n').filter(l => BULLET_LINE.test(l)).length < 3) return { text: null, dropped: 'malformed' };
   return { text: demote(section).replace(/ ?\[\d+(?:\s*[,–-]\s*\d+)*\]/g, '') };
+}
+
+/**
+ * A master cut to what must reach the answer model when the whole page would
+ * pass the chat's content cap (US-50 AC13): its current view (unless over
+ * MAX_VIEW_CHARS), key safety points (unless malformed as in AC12), every
+ * safety section and, with `dosing`, its Recommended Dosing section (where the
+ * upper limits live), demoted, then the reference line of every [n] they cite.
+ * reducedDrops() names what a malformed view or key points cost, for the
+ * caller to log, as masterViews does. The markers stay, unlike YouTube's key points: each has its line
+ * here. Null when it has none of them.
+ */
+export function reducedMaster(md: string, dosing = false): string | null {
+  const body = stripFrontmatter(md);
+  const view = sectionOf(body, VIEW_HEADING);
+  const parts = [
+    view && view.length < MAX_VIEW_CHARS ? view : null,
+    keySafetyPoints(md).text ? sectionOf(body, KEY_POINTS_HEADING) : null,
+    ...safetyBodies(body),
+    dosing ? sectionOf(body, DOSING_HEADING) : null,
+  ].filter((p): p is string => !!p);
+  return parts.length > 0 ? withCitations(parts.join('\n\n'), bibliography(body)) : null;
+}
+
+/** What reducedMaster() leaves out as malformed: a view of MAX_VIEW_CHARS or
+ *  more, key safety points failing AC12's checks. Empty when nothing. */
+export function reducedDrops(md: string): string[] {
+  const view = sectionOf(stripFrontmatter(md), VIEW_HEADING);
+  const points = keySafetyPoints(md);
+  return [
+    ...(view && view.length >= MAX_VIEW_CHARS ? [`current view over ${MAX_VIEW_CHARS} characters`] : []),
+    ...(points.dropped ? [`key safety points ${points.dropped}`] : []),
+  ];
 }
 
 /**

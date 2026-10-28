@@ -28,11 +28,15 @@ import {
   ConflictError,
   driveCreateFile,
   driveCreateFolder,
+  driveDownloadDocument,
   driveDownloadJson,
+  driveEnsureSubfolder,
   driveFileVersion,
   driveFindFileId,
   driveFindFolder,
   driveUpdateIfVersion,
+  driveUploadDocument,
+  readDriveRecord,
   splitDocumentRef,
   DRIVE_API,
   DRIVE_FOLDER_NAME,
@@ -43,6 +47,7 @@ import {
   type ReadResult,
   type StorageAdapter,
   type WriteResult,
+  writeDriveRecord,
 } from '@roadmap/health-core';
 import { getJson, setJson, safeRemoveItem } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
@@ -214,6 +219,8 @@ export class GoogleDriveAdapter implements StorageAdapter {
   private lastIdToken: string | null = null;
   /** At-most-once-per-session guard for the cosmetic folder migration. */
   private folderCheckDone = false;
+  /** The record's copies as last found or made, winner first (US-10 AC4a). */
+  private readonly recordIds = new Set<string>();
 
   constructor(private readonly config: GoogleDriveConfig) {
     this.stored = getJson<Stored>(CONFIG_KEY);
@@ -227,6 +234,10 @@ export class GoogleDriveAdapter implements StorageAdapter {
       };
       setJson(CONFIG_KEY, this.stored);
     }
+    // The record id this browser saved last: a reload inside Drive's search
+    // lag still finds the record, and never creates a second one (US-10 AC4a).
+    const cached = this.cachedFileId(ROADMAP_FILE_NAME);
+    if (cached) this.recordIds.add(cached);
   }
 
   isConnected(): boolean {
@@ -406,12 +417,17 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   // --- file ops -------------------------------------------------------------
 
-  async read(fileName: string): Promise<ReadResult> {
-    const fileId = this.cachedFileId(fileName) ?? (await this.findFileId(fileName));
+  async read(fileName: string, signal?: AbortSignal): Promise<ReadResult> {
+    if (fileName === ROADMAP_FILE_NAME) {
+      const result = await readDriveRecord(await this.getToken(), this.recordIds, signal);
+      this.rememberRecord();
+      return result;
+    }
+    // Search first, oldest copy first, so every device reads the same copy of
+    // a duplicated file; the cached id only covers a search that lags a create.
+    const fileId = (await this.findFileId(fileName)) ?? this.cachedFileId(fileName);
     if (!fileId) return { body: null, version: null };
     this.rememberFileId(fileName, fileId);
-    // Cosmetic, never blocks the read: adopt pre-folder files into the app folder.
-    void this.ensureInFolderOnce(fileId);
     // Version BEFORE bytes: a writer landing mid-download then conflicts at
     // write time instead of handing us their version on our stale bytes.
     const token = await this.getToken();
@@ -419,48 +435,48 @@ export class GoogleDriveAdapter implements StorageAdapter {
     return { body: await driveDownloadJson(token, fileId), version };
   }
 
-  async write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {
+  async write(fileName: string, body: object, expectedVersion: string | null, signal?: AbortSignal): Promise<WriteResult> {
+    if (fileName === ROADMAP_FILE_NAME) {
+      const { fileId, ...result } = await writeDriveRecord(await this.getToken(), body, expectedVersion, () => this.ensureFolderId(), this.recordIds, signal);
+      this.rememberRecord();
+      // Cosmetic, never blocks the save, and never on a read (reads do not
+      // mutate Drive): adopt the copy just written, never an unreadable one,
+      // into the app folder.
+      void this.ensureInFolderOnce(fileId);
+      return result;
+    }
     const json = JSON.stringify(body);
     const fileId = this.cachedFileId(fileName) ?? (await this.findFileId(fileName));
     if (fileId) {
       const version = await driveUpdateIfVersion(await this.getToken(), fileId, json, expectedVersion);
       this.rememberFileId(fileName, fileId);
+      // Cosmetic, never blocks the save, and never on a read: adopt a
+      // pre-folder file into the app folder.
+      void this.ensureInFolderOnce(fileId);
       return { version };
     }
     // The file that was read has since been deleted: re-reading turns that
     // into a decision, so never silently re-create it here.
     if (expectedVersion !== null) throw new ConflictError(`${this.label} no longer holds that file`);
     // First write — create the file (multipart: metadata + content).
-    const res = await this.createMultipart(fileName, 'application/json', json);
+    const res = await driveCreateFile(await this.getToken(), fileName, 'application/json', json, await this.ensureFolderId());
     if (!res.ok) throw new StorageError(`Google Drive create failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
     const created = await jsonBody<{ id?: string; version?: string }>(res);
     if (!created.id) throw new StorageError('Google Drive create returned no file id.');
     this.rememberFileId(fileName, created.id);
-    return { version: String(created.version ?? '') };
+    return { version: JSON.stringify([created.id, String(created.version ?? '')]) };
   }
 
   async readDocument(ref: string): Promise<Blob> {
     const { folder, name } = splitDocumentRef(ref);
     const parentId = folder ? await this.ensureSubfolderId(folder) : await this.ensureFolderId();
-    const id = await this.findFileId(name, parentId);
-    if (!id) throw new StorageError(`Google Drive document not found.`);
-    const res = await fetch(`${DRIVE_API}/files/${id}?alt=media`, { headers: await this.authHeaders() });
-    if (!res.ok) throw new StorageError(`Google Drive document read failed (${res.status}).`, undefined, undefined, res.status);
-    return res.blob();
+    return driveDownloadDocument(await this.getToken(), name, parentId);
   }
 
   async writeDocument(ref: string, bytes: Blob): Promise<void> {
     const { folder, name } = splitDocumentRef(ref);
     const parentId = folder ? await this.ensureSubfolderId(folder) : await this.ensureFolderId();
-    const type = bytes.type || 'application/octet-stream';
-    // Create directly — no pre-write existence lookup (it halved every upload's
-    // round trips for a case that can't happen: refs are unique by construction,
-    // collision-suffixed against the file's refs + content-hash deduped). The
-    // one exception — retrying after an interrupted save left an orphan blob —
-    // produces a same-named duplicate with identical bytes, which Drive allows
-    // and readDocument resolves by name; accepted orphan semantics (§5.3).
-    const res = await this.createMultipart(name, type, bytes, parentId);
-    if (!res.ok) throw new StorageError(`Google Drive document create failed (${res.status}).`, undefined, undefined, res.status);
+    return driveUploadDocument(await this.getToken(), name, bytes, parentId);
   }
 
   // --- change signal (US-34) -------------------------------------------------
@@ -487,8 +503,10 @@ export class GoogleDriveAdapter implements StorageAdapter {
           const url = `${DRIVE_API}/changes?pageToken=${encodeURIComponent(token)}&pageSize=100`
             + '&fields=newStartPageToken,nextPageToken,changes(fileId)';
           const page: DriveChangesPage = await jsonBody(await this.changesRequest(url, signal));
-          const fileId = this.cachedFileId(fileName);
-          if (page.changes?.some((c) => !fileId || c.fileId === fileId) && !signal.aborted) onChange();
+          // The record's copies as the last read or write found them, never
+          // only a cached id, which may name a losing copy (US-10 AC4a).
+          const ours = [...(fileName === ROADMAP_FILE_NAME ? this.recordIds : []), this.cachedFileId(fileName)].filter(Boolean);
+          if (page.changes?.some((c) => !ours.length || ours.includes(c.fileId)) && !signal.aborted) onChange();
           // `nextPageToken` means more pages of the SAME batch: take it and
           // read again on the next beat rather than looping the pages here,
           // because the answer is already "something changed".
@@ -532,6 +550,12 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   private cachedFileId(fileName: string): string | undefined {
     return this.stored?.fileIds?.[fileName];
+  }
+
+  /** Cache the record's winner for the next page load. */
+  private rememberRecord(): void {
+    const [winner] = this.recordIds;
+    if (winner) this.rememberFileId(ROADMAP_FILE_NAME, winner);
   }
 
   private rememberFileId(fileName: string, fileId: string): void {
@@ -593,9 +617,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     const cached = this.stored?.subfolders?.[folderName];
     if (cached) return cached;
     const parentId = await this.ensureFolderId();
-    const id =
-      (await driveFindFolder(await this.getToken(), [folderName], parentId))?.id ??
-      (await driveCreateFolder(await this.getToken(), folderName, parentId));
+    const id = await driveEnsureSubfolder(await this.getToken(), folderName, parentId);
     this.stored = {
       ...(this.stored ?? {}),
       subfolders: { ...(this.stored?.subfolders ?? {}), [folderName]: id },
@@ -627,24 +649,8 @@ export class GoogleDriveAdapter implements StorageAdapter {
     }
   }
 
-  /** Create a new Drive file inside the app folder (metadata + content, one multipart POST). */
-  private async createMultipart(
-    name: string,
-    contentType: string,
-    content: Blob | string,
-    parentId?: string,
-  ): Promise<Response> {
-    return driveCreateFile(
-      await this.getToken(),
-      name,
-      contentType,
-      content,
-      parentId ?? (await this.ensureFolderId()),
-    );
-  }
-
-  private async findFileId(name: string, parentId?: string): Promise<string | undefined> {
-    return driveFindFileId(await this.getToken(), name, parentId);
+  private async findFileId(name: string): Promise<string | undefined> {
+    return driveFindFileId(await this.getToken(), name, undefined, undefined, true);
   }
 
   private async authHeaders(): Promise<Record<string, string>> {

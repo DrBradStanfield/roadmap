@@ -37,7 +37,7 @@ export const PRODUCT_EVENT_NAMES = [
   // US-15 AC17: the "Show how I approached this" toggle was opened. Name only,
   // fired once per answer (the client throttle then keeps one per tab session).
   'chat_thinking_opened',
-  // US-49: a logged-in customer confirmed a subscription change card in the
+  // US-59: a logged-in customer confirmed a subscription change card in the
   // chat and the store accepted it. Recorded by the server's confirm route
   // (SERVER_ONLY), so it counts on every bundle that shows the card. Name
   // only: never the action, the subscription or the customer.
@@ -385,11 +385,12 @@ export const EVENT_REASONS = {
  * Digits are structural. The only digits are ASCII and the superscripts (no
  * "１４１", "Ⅴ" or "½"), and once the few constructions units are spelled with
  * are cut out, no digit may remain. Those are a power of ten (10^9, 10E9,
- * 10*3, ×10⁹), eGFR's /1.73 m², a cubic millimetre (mm3, mm³), /100 WBC and
+ * 10*3, ×10⁹, 10(3), 10^(9)), eGFR's /1.73 m², a cubic millimetre (mm3, mm³), /100 WBC and
  * /24h. A number units use is no licence elsewhere: "10 mmol/L", "6%",
  * "mmol/L12", "3·6 mmol/L" and "¹⁴¹ mmol/L" are refused. A power of ten takes
  * only the exponents units use (3, 4, 5, 6, 9, 12), so "x10^47/L" is refused
- * too, and a "*" left once 10*3 is cut is a flag, not a unit.
+ * too, a unit holds one power of ten at most ("10(4)10(5)" is refused), and a
+ * "*" left once 10*3 is cut is a flag, not a unit.
  *
  * Words are an allowlist of unit atoms, because a result is a value too
  * ("mmol/L H" on a potassium row says it was high; "Reactive" is the result)
@@ -405,7 +406,8 @@ export const EVENT_REASONS = {
  */
 const LAB_KEY_PATTERN = /^[a-z][a-z0-9_]{0,39}$/;
 const LAB_UNIT_PATTERN = /^[\p{L}0-9⁰¹²³⁴⁵⁶⁷⁸⁹⁻µ×°%^*/().·\- ]{1,24}$/u;
-const UNIT_CONSTRUCTIONS = /10(?:[\^*eE][+-]?(?:12|[34569])(?!\d)|⁻?(?:¹²|[³⁴⁵⁶⁹])(?![⁰¹²³⁴⁵⁶⁷⁸⁹]))|\/1\.73(?: ?m[2²])?|mm[3³]|\/100|\/24 ?h/g;
+const POWER_OF_TEN = /10(?:[\^*eE][+-]?(?:12|[34569])(?!\d)|[\^*]?\((?:12|[34569])\)|⁻?(?:¹²|[³⁴⁵⁶⁹])(?![⁰¹²³⁴⁵⁶⁷⁸⁹]))/g;
+const UNIT_CONSTRUCTIONS = new RegExp(`${POWER_OF_TEN.source}|\\/1\\.73(?: ?m[2²])?|mm[3³]|\\/100|\\/24 ?h`, 'g');
 /** The same cut for the word checks, taking the "x" of "x10^9" with it. */
 const MULTIPLIED_CONSTRUCTIONS = new RegExp(`[xX×]?(?:${UNIT_CONSTRUCTIONS.source})`, 'g');
 
@@ -435,7 +437,8 @@ const UNIT_ATOMS = new Set([
 
 export function isLabUnitWord(value: unknown): value is string {
   if (typeof value !== 'string' || !LAB_UNIT_PATTERN.test(value)) return false;
-  if (/[0-9⁰¹²³⁴⁵⁶⁷⁸⁹*]/.test(value.replace(UNIT_CONSTRUCTIONS, ' '))) return false;
+  // One power of ten at most: "10(4)10(5)" spells no unit.
+  if ((value.match(POWER_OF_TEN) ?? []).length > 1 || /[0-9⁰¹²³⁴⁵⁶⁷⁸⁹*]/.test(value.replace(UNIT_CONSTRUCTIONS, ' '))) return false;
   // '#' marks a cut construction; LAB_UNIT_PATTERN lets none in. "/24 h" keeps
   // its h, so "g/24hr" reads as g # hr.
   const words = value.replace(/(\p{L})\(s\)/gu, '$1s').replace(MULTIPLIED_CONSTRUCTIONS, (cut) => (cut.endsWith('h') ? '#h' : '#'));
@@ -444,6 +447,18 @@ export function isLabUnitWord(value: unknown): value is string {
     && !words.split(/[\s()]+/).some((token) => /^[-+]|[-+]$/.test(token))
     && !words.split(/[\s(),;:.\-+*!?·]+/).some((token) => /^\p{L}$/u.test(token))
     && (runs.length > 0 || /[%#]/.test(words));
+}
+
+/** The `unit` a `lab_unit_refused` row carries when none was printed (US-21
+ *  AC22): a closed word, so a blank reads apart from a spelling the check
+ *  above refused, which the row leaves out. */
+export const LAB_UNIT_BLANK = '(blank)';
+
+/** The unit a `lab_unit_refused` row carries: the spelling when it is a unit
+ *  word, LAB_UNIT_BLANK when none was printed, else none. */
+export function labUnitForEvent(unit: unknown): string | undefined {
+  if (unit == null || (typeof unit === 'string' && !unit.trim())) return LAB_UNIT_BLANK;
+  return isLabUnitWord(unit) ? unit : undefined;
 }
 
 export function isLabKeyWord(value: unknown): value is string {

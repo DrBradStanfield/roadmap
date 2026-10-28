@@ -1,5 +1,5 @@
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
-import { z } from 'zod';
+import * as z from '../../packages/health-core/src/zod';
 import { createRateLimiter } from '../lib/rate-limiter';
 import { ALLOWED_ORIGINS, BODY_TOO_LARGE, corsHeaders, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
 
@@ -31,7 +31,10 @@ const bodySchema = z.union([
     grantType: z.literal('code'),
     code: z.string().min(1).max(2048),
     codeVerifier: z.string().min(1).max(256),
-    redirectUri: z.string().url().max(512),
+    // The URL parser alone, as zod 3's url() was: zod 4's z.url() trims and rewrites
+    // its input. Not URL.canParse, which in Node 22.19 starts refusing IDN hosts after
+    // a few thousand calls (the optimised path); new URL does not.
+    redirectUri: z.string().max(512).refine((uri) => { try { return !!new URL(uri); } catch { return false; } }),
   }),
   z.object({
     grantType: z.literal('refresh'),

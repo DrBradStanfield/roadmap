@@ -1,0 +1,634 @@
+[
+  {
+    "check": "AC2",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[166] raw_quote shares no number with its body_line: - **Trial doses:** 200 mg a day of hyaluronic acid in one trial [37], and 80 mg a day of a chicke...",
+    "reason": "AC2 tokeniser and unit case, thin or narrow no-break spaces (orchestrator 2026-10-23, masters-new-3): Tashiro 2012 (PMID 23226979) writes \"given 200&#x2009;mg of HA once a day\"; the quote stops at the thin space.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[167] raw_quote shares no number with its body_line: - **Few safety studies** exist. In a 16-week trial in people with osteoarthritis and back pain, 6...",
+    "reason": "AC2 tokeniser and unit case, thin or narrow no-break spaces (orchestrator 2026-10-23, masters-new-3): Crawford 2019 (PMID 31331587) writes \"the safety of taking 6&#x2009;g daily of MSM\"; the quote stops at the thin space.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "token \"21163\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Hyaluronic acid is a natural part of cartilage and joint fluid. For injections into the knee (viscosupplementation), ...\"",
+    "reason": "AC2 tokeniser and unit case, thin or narrow no-break spaces (orchestrator 2026-10-23, masters-new-3): Pereira 2022 (PMID 36333100) writes \"21&#x2009;163 randomised participants\"; same figure.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "token \"43\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2015 Cochrane review of 43 trials found that chondroitin, alone or with glucosamine, reduced pain more than placebo...\"",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-3): Singh 2015 Cochrane (PMID 25629804) writes \"Forty-three randomized controlled trials\"; the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "token \"22\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Evidence for MSM is limited. In 22 half-marathon runners, 3 g a day of MSM for 21 days before the race and for 2 days...\"",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-3): Withee 2017 (PMID 28736511) writes \"Twenty-two healthy females (n = 17) and males (n = 5)\"; the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "token \"70 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In 60 people with knee osteoarthritis doing daily thigh-strengthening exercise, 200 mg a day of hyaluronic acid for...\"",
+    "reason": "AC2 tokeniser and unit case, \"or less\" read as a comparator (orchestrator 2026-10-23, masters-new-3): Tashiro 2012 (PMID 23226979) writes \"subjects aged 70 years or less\"; the body says \"aged 70 or younger\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "token \"5 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In a cohort of 77,719 Washington State residents aged 50 to 76, high use of glucosamine (hazard ratio 0.83, 95% CI ...\"",
+    "reason": "AC2 tokeniser and unit case, \"mo\"/\"y\" units (orchestrator 2026-10-23, masters-new-3): Pocobelli 2010 (PMID 20410091) writes \"followed for mortality for an average of 5 y\"; the body says \"about 5 years\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "token \"466039\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In 466,039 UK Biobank participants followed for a median of 7 years, glucosamine use was linked to fewer cardiovasc...\"",
+    "reason": "AC2 tokeniser and unit case, thin or narrow no-break spaces (orchestrator 2026-10-23, masters-new-3): Ma 2019 (PMID 31088786) writes \"466&#x2009;039 participants\"; same figure.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Sometimes added to joint formulas. It contains salicin, which the body converts to salicylate, the active form of asp...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-3): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Sometimes added to joint formulas. It contains salicin, which the body converts to salicylate, the active form of asp...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-3): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Sometimes added to joint formulas. It contains salicin, which the body converts to salicylate, the active form of asp...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-3): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"60\": In a 90-day trial in 60 people, 100 mg a day of either 5-Loxin or Aflapin improved pain and physical function compare...",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-3): Vishal 2011 (PMID 21060724) writes \"Sixty OA subjects were included\"; the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"8\", \"4\": In 12 children with severe, treatment-resistant inflammatory bowel disease, 3 to 6 g a day of oral NAG added to treat...",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-3): Salvatore 2000 (PMID 11121904) writes \"Eight of the children given oral GlcNAc showed clear improvement, while four required resection\"; the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"60\": In 60 people with knee osteoarthritis doing daily thigh-strengthening exercise, 200 mg a day of hyaluronic acid for 1...",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-3): Tashiro 2012 (PMID 23226979) writes \"Sixty osteoarthritic subjects\"; the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "alpha-lipoic-acid-benefits-forms-dosing-and-side-effects",
+    "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Rarely, it triggers insulin autoimmune syndrome: low blood sugar episodes began 30 to 120 days into 600 mg a day an...\" | \"- An older woman who took 6 g by mistake needed a ventilator [35]. A teenager who took at least 6 g died [50]. After ...\" | \"**Overdose toxicity:** An elderly woman who took 6 g by mistake was confused 3 hours later, with nausea, vomiting and...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-3): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "alpha-lipoic-acid-benefits-forms-dosing-and-side-effects",
+    "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Rarely, it triggers insulin autoimmune syndrome: low blood sugar episodes began 30 to 120 days into 600 mg a day an...\" | \"- An older woman who took 6 g by mistake needed a ventilator [35]. A teenager who took at least 6 g died [50]. After ...\" | \"**Overdose toxicity:** An elderly woman who took 6 g by mistake was confused 3 hours later, with nausea, vomiting and...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-3): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "alpha-lipoic-acid-benefits-forms-dosing-and-side-effects",
+    "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Rarely, it triggers insulin autoimmune syndrome: low blood sugar episodes began 30 to 120 days into 600 mg a day an...\" | \"- An older woman who took 6 g by mistake needed a ventilator [35]. A teenager who took at least 6 g died [50]. After ...\" | \"**Overdose toxicity:** An elderly woman who took 6 g by mistake was confused 3 hours later, with nausea, vomiting and...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-3): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "alpha-lipoic-acid-benefits-forms-dosing-and-side-effects",
+    "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Rarely, it triggers insulin autoimmune syndrome: low blood sugar episodes began 30 to 120 days into 600 mg a day an...\" | \"- An older woman who took 6 g by mistake needed a ventilator [35]. A teenager who took at least 6 g died [50]. After ...\" | \"**Overdose toxicity:** An elderly woman who took 6 g by mistake was confused 3 hours later, with nausea, vomiting and...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-3): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "alpha-lipoic-acid-benefits-forms-dosing-and-side-effects",
+    "match": "token \"33\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Topical application:** In a 12-week trial in 33 women, each woman used a cream with 5% alpha-lipoic acid on one hal...\"",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-3): Beitner 2003 (PMID 14616378) writes \"Thirty-three women\"; the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+    "match": "token \"2.968 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Fat helps the body absorb astaxanthin. When healthy men took one 40 mg dose, three lipid-based formulations gave 1.7 ...\"",
+    "reason": "AC2 tokeniser and unit case, \"+/-\" (orchestrator 2026-10-23, masters-new-3): Okada 2009 (PMID 19734684) writes \"2,968 + or - 959 microg h/l\"; same figure.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+    "match": "token \"25\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Mineral interactions:** In a lab digestion model, calcium, magnesium and zinc lowered the bioaccessibility of other...\"",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-3): the calcium and carotenoid trial (PMID 28651681) writes \"twenty-five healthy, non-obese men\"; the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+    "match": "token \"24\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Synthesis:** A 2026 meta-analysis of 24 trials found that astaxanthin lowered creatine kinase after exercise (SMD =...\"",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-3): the 2026 meta-analysis (PMID 42197030) writes \"Twenty-four RCTs were included\"; the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+    "match": "token \"23\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Ito et al., 2018:** In a 10-week placebo-controlled trial in 23 healthy Japanese adults, 4 mg of astaxanthin a day ...\"",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-3): Ito 2018 (PMID 29941810) writes \"Twenty-three healthy Japanese participants\"; the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+    "match": "token \"40\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Sekikawa et al., 2023:** In a randomized, placebo-controlled trial in 60 healthy adults, 9 mg/day of astaxanthin fo...\" | \"| Eye fatigue / visual acuity | 9 mg/day | 6 weeks | Dominant eye only, in people 40 or older [27] |\"",
+    "reason": "AC2 tokeniser and unit case, \"≥\" read as a comparator (orchestrator 2026-10-23, masters-new-3): Sekikawa 2023 (PMID 36777084) writes \"participants aged &#x2265;40 years\" and \"<40 years\"; the body says \"aged 40 or older\" and \"younger than 40\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+    "match": "token \"14 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The European Food Safety Authority concluded in 2020 that 8 mg a day from supplements, on top of astaxanthin from fis...\"",
+    "reason": "AC2 tokeniser and unit case, \"<\" read as a comparator, no-break space (orchestrator 2026-10-23, masters-new-3): EFSA 2020 (PMID 32874213) writes \"14 to <&#xa0;18 years old adolescents\"; the body says \"aged 14 to under 18 years\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+    "match": "token \"8 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Blood pressure and diabetes medicines:** In 44 adults with type 2 diabetes, 8 mg of astaxanthin a day for 8 weeks...\"",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-3): Mashhadi 2018 (PMID 29384321) writes \"Eight milligrams of AST supplementation\"; the body says 8 mg.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"8 mg/day\": In one trial in adults with type 2 diabetes, 8 mg a day lowered systolic blood pressure and fructosamine, a blood sug...",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-3): Mashhadi 2018 (PMID 29384321) writes \"Eight milligrams of AST supplementation ... once daily\"; the body says 8 mg a day.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"14\": Positive: cycling time trial (Earnest, 2011): 21 competitive cyclists were randomized to 4 mg/d of astaxanthin or pla...",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-3): Earnest 2011 (PMID 21984399) writes \"Fourteen participants successfully completed the trial\"; the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"32\": Positive: muscle damage markers (Djordjevic, 2012): In 32 elite young male footballers given astaxanthin or placebo f...",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-3): Djordjevic 2012 (PMID 22828460) writes \"Thirty-two male elite soccer players\"; the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"35\": In a trial in 35 healthy adults, 6 mg a day for 8 weeks caused no clinically important changes in blood pressure, blo...",
+    "reason": "AC2 tokeniser and unit case, spelled numbers (orchestrator 2026-10-23, masters-new-3): Spiller 2003 (PMID 12804020) writes \"Thirty-five healthy adults\"; the body writes the digits.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "coq10-benefits-best-forms-dosing-and-side-effects",
+    "match": "changed_tokens[126] raw_quote shares no number with its body_line: - Doses of 1,200 and 2,400 mg a day were well tolerated for up to 16 months in a large trial, and...",
+    "reason": "AC2 tokeniser and unit case, \"up to\" read as a comparator (orchestrator 2026-10-23, masters-new-3): QE3 (Beal 2014) writes \"observed for 16 months\"; the body says \"for up to 16 months\", which the tokeniser reads as \"≤16 month\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "coq10-benefits-best-forms-dosing-and-side-effects",
+    "match": "changed_tokens[142] raw_quote shares no number with its body_line: A 2008 safety review found that CoQ10 has low toxicity and does not cause serious adverse effects...",
+    "reason": "AC2 tokeniser and unit case, \"up to\" read as a comparator (orchestrator 2026-10-23, masters-new-3): QE3 (Beal 2014) writes \"observed for 16 months\"; the body says \"for up to 16 months\", which the tokeniser reads as \"≤16 month\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "coq10-benefits-best-forms-dosing-and-side-effects",
+    "match": "token \"≤16 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Doses of 1,200 and 2,400 mg a day were well tolerated for up to 16 months in a large trial, and a safety review put...\" | \"A 2008 safety review found that CoQ10 has low toxicity and does not cause serious adverse effects in humans, and it p...\"",
+    "reason": "AC2 tokeniser and unit case, \"up to\" read as a comparator (orchestrator 2026-10-23, masters-new-3): QE3 (Beal 2014) writes \"observed for 16 months\"; the body says \"for up to 16 months\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "coq10-benefits-best-forms-dosing-and-side-effects",
+    "match": "token \"4.03 ng/dL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Heart surgery:** In 50 older people having aortic valve replacement, ubiquinol 400 mg a day from 7 days before to 5...\"",
+    "reason": "AC2 tokeniser and unit case, bracketed CIs (orchestrator 2026-10-23, masters-new-3): the aortic valve trial (PMID 32741773) writes \"placebo, 4.03 [2.45-6.63] ng/dL\"; the unit follows the bracketed range.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "coq10-benefits-best-forms-dosing-and-side-effects",
+    "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"CoQ10 lowered fasting glucose in pooled trials [38], and NCCIH warns it may interact with insulin [3]. After 3 months...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-3): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "coq10-benefits-best-forms-dosing-and-side-effects",
+    "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"CoQ10 lowered fasting glucose in pooled trials [38], and NCCIH warns it may interact with insulin [3]. After 3 months...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-3): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "coq10-benefits-best-forms-dosing-and-side-effects",
+    "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"CoQ10 lowered fasting glucose in pooled trials [38], and NCCIH warns it may interact with insulin [3]. After 3 months...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-3): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "boron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Swallowing boric acid or borax can cause vomiting, diarrhea, rash, seizures and collapse [2]. Very high doses of bo...\" | \"In a review of 784 boric acid ingestions at two regional poison centers, 88.3% of patients had no symptoms and none d...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-3): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "boron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Swallowing boric acid or borax can cause vomiting, diarrhea, rash, seizures and collapse [2]. Very high doses of bo...\" | \"In a review of 784 boric acid ingestions at two regional poison centers, 88.3% of patients had no symptoms and none d...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-3): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "boron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Swallowing boric acid or borax can cause vomiting, diarrhea, rash, seizures and collapse [2]. Very high doses of bo...\" | \"In a review of 784 boric acid ingestions at two regional poison centers, 88.3% of patients had no symptoms and none d...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-3): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "boron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Swallowing boric acid or borax can cause vomiting, diarrhea, rash, seizures and collapse [2]. Very high doses of bo...\" | \"In a review of 784 boric acid ingestions at two regional poison centers, 88.3% of patients had no symptoms and none d...\"",
+    "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-3): local emergency numbers (111 NZ, 000 Australia, 911 US, 999 UK) are standing safety text, not study figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "boron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"51.9 pmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Estrogen changes:** Estradiol rose with 3 mg a day in postmenopausal women [16] and with 10 mg a day for 4 weeks in...\"",
+    "reason": "AC2 tokeniser and unit case, \"+/-\" (orchestrator 2026-10-23, masters-new-3): Naghii and Samman 1997 (PMID 9197924) writes \"51.9 +/- 21.4 to 73.9 +/- 22.2 pmol/L\"; same figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "boron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"73.9 pmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Estrogen changes:** Estradiol rose with 3 mg a day in postmenopausal women [16] and with 10 mg a day for 4 weeks in...\"",
+    "reason": "AC2 tokeniser and unit case, \"+/-\" (orchestrator 2026-10-23, masters-new-3): Naghii and Samman 1997 (PMID 9197924) writes \"51.9 +/- 21.4 to 73.9 +/- 22.2 pmol/L\"; same figures.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "boron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"2.23 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In an analysis of 66 foods eaten in Australia, the main sources of boron were nuts, dried fruits, legumes, and fresh ...\"",
+    "reason": "AC2 tokeniser and unit case, \"+/-\" (orchestrator 2026-10-23, masters-new-3): Naghii 1996 (PMID 8951740) writes \"2.23 +/- 1.23 mg/day\"; same figure.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "boron-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"10 mg/day\": Boron changed sex hormone levels in small studies: estradiol and testosterone rose in postmenopausal women [16], and ...",
+    "reason": "AC2 tokeniser and unit case, \"1500mg\" glued units and \"mg B/d\" (orchestrator 2026-10-23, masters-new-3): Naghii 2011 (PMID 21129941) writes \"a capsule of 10mg boron every day\", and Naghii and Samman 1997 (PMID 9197924) writes \"10 mg B/d\"; the body says 10 mg a day.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "boron-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"10 mg/day\": Estrogen changes: Estradiol rose with 3 mg a day in postmenopausal women [16] and with 10 mg a day for 4 weeks in hea...",
+    "reason": "AC2 tokeniser and unit case, \"1500mg\" glued units and \"mg B/d\" (orchestrator 2026-10-23, masters-new-3): Naghii 2011 (PMID 21129941) writes \"a capsule of 10mg boron every day\", and Naghii and Samman 1997 (PMID 9197924) writes \"10 mg B/d\"; the body says 10 mg a day.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "boron-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"10 mg/day\": Synthesis: Boron's effects on steroid hormones are inconsistent across studies and appear to depend on dose, duration...",
+    "reason": "AC2 tokeniser and unit case, \"1500mg\" glued units and \"mg B/d\" (orchestrator 2026-10-23, masters-new-3): Naghii 2011 (PMID 21129941) writes \"a capsule of 10mg boron every day\", and Naghii and Samman 1997 (PMID 9197924) writes \"10 mg B/d\"; the body says 10 mg a day.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "boron-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"10 mg/day\": Proinflammatory cytokines: In the 2011 study in 8 healthy men, 10 mg/day of boron lowered all three inflammatory mark...",
+    "reason": "AC2 tokeniser and unit case, \"1500mg\" glued units and \"mg B/d\" (orchestrator 2026-10-23, masters-new-3): Naghii 2011 (PMID 21129941) writes \"a capsule of 10mg boron every day\", and Naghii and Samman 1997 (PMID 9197924) writes \"10 mg B/d\"; the body says 10 mg a day.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "boron-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"10 mg/day\": Testosterone/hormones (men) | 10 mg/day | Not specified | 1 week | Free testosterone up, SHBG and estradiol down [5] |",
+    "reason": "AC2 tokeniser and unit case, \"1500mg\" glued units and \"mg B/d\" (orchestrator 2026-10-23, masters-new-3): Naghii 2011 (PMID 21129941) writes \"a capsule of 10mg boron every day\", and Naghii and Samman 1997 (PMID 9197924) writes \"10 mg B/d\"; the body says 10 mg a day.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "boron-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"10 mg/day\": Boron raised estradiol in postmenopausal women taking 3 mg a day [16] and in healthy men taking 10 mg a day for 4 wee...",
+    "reason": "AC2 tokeniser and unit case, \"1500mg\" glued units and \"mg B/d\" (orchestrator 2026-10-23, masters-new-3): Naghii 2011 (PMID 21129941) writes \"a capsule of 10mg boron every day\", and Naghii and Samman 1997 (PMID 9197924) writes \"10 mg B/d\"; the body says 10 mg a day.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "boron-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"14\": Children: ULs are lower for children (3 mg for ages 1–3, 6 mg for ages 4–8, 11 mg for ages 9–13, 17 mg for ages 14–18...",
+    "reason": "AC2 tokeniser and unit case, NIH table ranges (orchestrator 2026-10-23, masters-new-3): the NIH ODS boron table writes \"14–18 years ... 17 mg\"; the body says \"17 mg for ages 14–18\".",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Knee Osteoarthritis — Glucosamine and Chondroitin",
+    "reason": "AC4 heading removal or rename listed in the fixer's report (orchestrator 2026-10-23, masters-new-3): \"Knee Osteoarthritis — Glucosamine and Chondroitin\" renamed with a colon in place of the em dash (glucosamine addendum-1).",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Hyaluronic Acid — Oral Supplementation",
+    "reason": "AC4 heading removal or rename listed in the fixer's report (orchestrator 2026-10-23, masters-new-3): \"Hyaluronic Acid — Oral Supplementation\" renamed with a colon in place of the em dash (glucosamine addendum-1).",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "alpha-lipoic-acid-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Effect of Food on Absorption",
+    "reason": "AC4 heading removal or rename listed in the fixer's report (orchestrator 2026-10-23, masters-new-3): \"Effect of Food on Absorption\" removed (section gone; ALA addendum-1).",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "alpha-lipoic-acid-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Mercury and Amalgam Fillings",
+    "reason": "AC4 heading removal or rename listed in the fixer's report (orchestrator 2026-10-23, masters-new-3): \"Mercury and Amalgam Fillings\" removed (section gone; ALA addendum-1).",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "coq10-benefits-best-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Natural vs. Synthetic CoQ10",
+    "reason": "AC4 heading removal or rename listed in the fixer's report (orchestrator 2026-10-23, masters-new-3): \"Natural vs. Synthetic CoQ10\" removed (ConsumerLab-only section; CoQ10 report notes).",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "coq10-benefits-best-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Cancer -- Mixed Evidence and Caution",
+    "reason": "AC4 heading removal or rename listed in the fixer's report (orchestrator 2026-10-23, masters-new-3): \"Cancer -- Mixed Evidence and Caution\" renamed \"Cancer: Mixed Evidence and Caution\" (dash fix; CoQ10 addendum-1).",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "coq10-benefits-best-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Other Doses Used in Clinical Studies",
+    "reason": "AC4 heading removal or rename listed in the fixer's report (orchestrator 2026-10-23, masters-new-3): \"Other Doses Used in Clinical Studies\" removed (ConsumerLab-only section; CoQ10 report notes).",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "coq10-benefits-best-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Children",
+    "reason": "AC4 heading removal or rename listed in the fixer's report (orchestrator 2026-10-23, masters-new-3): \"Children\" removed (ConsumerLab-only section; CoQ10 report notes).",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "coq10-benefits-best-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Thyroid Medications",
+    "reason": "AC4 heading removal or rename listed in the fixer's report (orchestrator 2026-10-23, masters-new-3): \"Thyroid Medications\" renamed \"Thyroid conditions\" (CoQ10 addendum-1, orchestrator decision).",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "boron-benefits-forms-dosing-and-side-effects",
+    "match": "heading missing from new body: ### Top Food Sources (Per 100 g)",
+    "reason": "AC4 heading removal or rename listed in the fixer's report (orchestrator 2026-10-23, masters-new-3): \"Top Food Sources (Per 100 g)\" renamed \"Australian Food Analysis\" (boron addendum-1, orchestrator decision).",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC7",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "reference line has unknown host nccih.nih.gov: [70] National Center for Complementary and Integrative Health. \"Glucosamine and Chondroitin for O...",
+    "reason": "AC7 nccih.nih.gov host (orchestrator 2026-10-23, masters-new-3): the US National Center for Complementary and Integrative Health, an official NIH source.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC7",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "reference line has unknown host nccih.nih.gov: [93] National Center for Complementary and Integrative Health. \"Turmeric.\" Last updated April 202...",
+    "reason": "AC7 nccih.nih.gov host (orchestrator 2026-10-23, masters-new-3): the US National Center for Complementary and Integrative Health, an official NIH source.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC7",
+    "handle": "boron-benefits-forms-dosing-and-side-effects",
+    "match": "product section changed: ### Reproductive and Developmental Toxicity",
+    "reason": "AC7 product-regex false positive (orchestrator 2026-10-23, masters-new-3): \"Reproductive\" matched the product pattern; \"Reproductive and Developmental Toxicity\" is a clinical safety section.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[130] raw_quote: its numbers are not whole tokens in the raw: - **Intraocular pressure (glaucoma risk):** A 2013 report raised the possibility that glucosamine...",
+    "reason": "Checker artefact (orchestrator 2026-10-23, masters-new-3): glucosamine changed_tokens[130] and its \"≥2\": the source text is run together (\"methodsIn\"), a tokeniser artefact.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "token \"35 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Osteoarthritis is a joint disease in which cartilage and other joint tissues break down, and more than 32 million adu...\"",
+    "reason": "Checker artefact (orchestrator 2026-10-23, masters-new-3): \"aged 35\" vs \"age 35\": same fact, inflection only.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "token \"100 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| 5-Loxin | 30% AKBA | Tested at 100 and 250 mg a day [7] |\" | \"| AprèsFlex / Aflapin | 20% AKBA | Tested at 100 mg a day [24] |\" | \"**AprèsFlex/Aflapin (100 mg daily):** In 70 people with knee osteoarthritis, 100 mg a day for 30 days reduced WOMAC p...\"",
+    "reason": "Checker artefact (orchestrator 2026-10-23, masters-new-3): list-unit case: Boswellin Super \"150 or 300 mg\" and 5-Loxin \"100 or 250 mg\" (source \"100 mg (n = 25) ... daily\"): the source lists the dose arms; the master's doses match them.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "token \"250 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| 5-Loxin | 30% AKBA | Tested at 100 and 250 mg a day [7] |\" | \"In a 90-day trial in 60 people, 100 mg a day of either 5-Loxin or Aflapin improved pain and physical function compare...\" | \"- **5-Loxin (30% AKBA):** 100 or 250 mg a day [7]\"",
+    "reason": "Checker artefact (orchestrator 2026-10-23, masters-new-3): list-unit case: Boswellin Super \"150 or 300 mg\" and 5-Loxin \"100 or 250 mg\" (source \"100 mg (n = 25) ... daily\"): the source lists the dose arms; the master's doses match them.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "token \"150\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Boswellin Super (30% AKBA):** 150 or 300 mg twice a day [23]\"",
+    "reason": "Checker artefact (orchestrator 2026-10-23, masters-new-3): list-unit case: Boswellin Super \"150 or 300 mg\" and 5-Loxin \"100 or 250 mg\" (source \"100 mg (n = 25) ... daily\"): the source lists the dose arms; the master's doses match them.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "token \"≥2\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Intraocular pressure (glaucoma risk):** A 2013 report raised the possibility that glucosamine supplements raise e...\"",
+    "reason": "Checker artefact (orchestrator 2026-10-23, masters-new-3): glucosamine changed_tokens[130] and its \"≥2\": the source text is run together (\"methodsIn\"), a tokeniser artefact.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"12 week\": In a pilot trial in 60 overweight adults with knee osteoarthritis, 600 mg a day of non-animal chondroitin sulfate for...",
+    "reason": "Checker artefact (orchestrator 2026-10-23, masters-new-3): the chondroitin sulfate pilot \"12 weeks\" is present in the raw source; the report entry was missing.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "alpha-lipoic-acid-benefits-forms-dosing-and-side-effects",
+    "match": "changed_tokens[119] raw_quote shares no number with its body_line: - An older woman who took 6 g by mistake needed a ventilator [35]. A teenager who took at least 6...",
+    "reason": "Checker artefact (orchestrator 2026-10-23, masters-new-3): ALA [119] \"at least 6 g\": the source says at least ten 600 mg tablets; 10 x 600 mg = 6 g, plain arithmetic.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "boron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"1.3 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Vegetarians** tend to have higher boron intakes than non-vegetarians because boron is plentiful in plant foods [2...\"",
+    "reason": "Checker artefact (orchestrator 2026-10-23, masters-new-3): boron unit-list tokeniser case (0.83/1.02/1.3 mg/day list units; \"/2000 kcal\"): the values match the source.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "boron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"1.02 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Vegetarians** tend to have higher boron intakes than non-vegetarians because boron is plentiful in plant foods [2...\"",
+    "reason": "Checker artefact (orchestrator 2026-10-23, masters-new-3): boron unit-list tokeniser case (0.83/1.02/1.3 mg/day list units; \"/2000 kcal\"): the values match the source.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "boron-benefits-forms-dosing-and-side-effects",
+    "match": "token \"0.83 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Vegetarians** tend to have higher boron intakes than non-vegetarians because boron is plentiful in plant foods [2...\"",
+    "reason": "Checker artefact (orchestrator 2026-10-23, masters-new-3): boron unit-list tokeniser case (0.83/1.02/1.3 mg/day list units; \"/2000 kcal\"): the values match the source.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "boron-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"2000\": Depletion-repletion studies, brain wave activity: Penland and colleagues ran three studies in healthy older men and w...",
+    "reason": "Checker artefact (orchestrator 2026-10-23, masters-new-3): boron unit-list tokeniser case (0.83/1.02/1.3 mg/day list units; \"/2000 kcal\"): the values match the source.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC2",
+    "handle": "boron-benefits-forms-dosing-and-side-effects",
+    "match": "body line has no entry quoting \"2000\": Cognitive (depletion-repletion) | ~3.25 mg/2,000 kcal | Dietary | Not stated | Low intake worsened brain wave and tas...",
+    "reason": "Checker artefact (orchestrator 2026-10-23, masters-new-3): boron unit-list tokeniser case (0.83/1.02/1.3 mg/day list units; \"/2000 kcal\"): the values match the source.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "sentence removed and not in deleted_sentences: MSM provides sulfur to the body.",
+    "reason": "Checker artefact (orchestrator 2026-10-23, masters-new-3): two MSM sulfur sentences filed as one deleted_sentences entry; the deletion is ratified.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  },
+  {
+    "check": "AC4",
+    "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+    "match": "sentence removed and not in deleted_sentences: Dietary sulfur sources include:",
+    "reason": "Checker artefact (orchestrator 2026-10-23, masters-new-3): two MSM sulfur sentences filed as one deleted_sentences entry; the deletion is ratified.",
+    "by": "orchestrator",
+    "date": "2026-10-23"
+  }
+]

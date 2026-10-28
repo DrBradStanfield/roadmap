@@ -6,253 +6,251 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["olive oil", "extra virgin olive oil", "evoo", "oleic acid", "polyphenols", "hydroxytyrosol", "oleocanthal", "mediterranean diet", "cardiovascular", "heart health", "cholesterol", "ldl", "hdl", "blood pressure", "hypertension", "triglycerides", "diabetes", "insulin resistance", "blood sugar", "hba1c", "weight loss", "obesity", "inflammation", "depression", "cognitive", "brain health", "dementia", "alzheimer", "cancer", "breast cancer", "colon cancer", "prostate", "bone density", "osteoporosis", "testosterone", "fatty liver", "atherosclerosis", "stroke", "aging", "longevity", "healthspan", "anti-aging", "gut health", "antioxidant", "vitamin e", "vitamin k", "seed oil"]
-summary: "Reference on extra virgin olive oil: heart health, blood sugar, brain health, inflammation. Most studied at 2-4 tablespoons/day replacing saturated fat. Polyphenol-rich EVOO preferred over refined oil. Always discuss with your doctor."
+summary: "Brad counts extra-virgin olive oil as a healthy fat to use in place of butter and other saturated fat. In PREDIMED, a Mediterranean diet with it cut heart attacks and strokes. It is calorie-dense. Talk to your doctor first if you take blood pressure or diabetes medicines."
+reviewed: "2026-10-26"
+sources: [{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/shrink-the-fat-around-your-heart","checked":"2026-10-26","fingerprint":"publishedAt:2026-07-16T08:00:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-truth-about-seed-oil-toxicity","checked":"2026-10-26","fingerprint":"publishedAt:2026-05-18T12:00:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/coronary-heart-disease-is-almost-eliminated","checked":"2026-10-26","fingerprint":"publishedAt:2026-02-08T19:17:34Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/harvard-says-this-is-the-healthiest-way-to-eat","checked":"2026-10-26","fingerprint":"publishedAt:2025-08-14T19:50:15Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-food-pyramids-replacement-is-a-huge-upgrade","checked":"2026-10-26","fingerprint":"publishedAt:2025-06-12T23:08:09Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-best-diet-to-unclog-your-arteries","checked":"2026-10-26","fingerprint":"publishedAt:2025-02-15T00:14:11Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/seed-oils-toxic-inflammatory","checked":"2026-10-26","fingerprint":"publishedAt:2024-09-29T01:35:00Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/extra-virgin-olive-oil-benefits-dosing-and-side-effects](https://drstanfield.com/blogs/articles/extra-virgin-olive-oil-benefits-dosing-and-side-effects)*
 
+## Current view (reviewed 26 October 2026)
+
+Brad counts extra-virgin olive oil among the healthy fats, alongside avocado, that belong on a whole-food plate ([Brad, 16 Jul 2026](https://drstanfield.com/blogs/articles/shrink-the-fat-around-your-heart)). He points to the PREDIMED study, where people on a Mediterranean diet with olive oil had a 31% lower risk of heart attack or stroke than those on a low-fat diet ([Brad, 14 Aug 2025](https://drstanfield.com/blogs/articles/harvard-says-this-is-the-healthiest-way-to-eat)). He also cites a meta-analysis in which higher olive oil consumption reduced heart disease risk by 15% and all-cause mortality by 17% ([Brad, 8 Feb 2026](https://drstanfield.com/blogs/articles/coronary-heart-disease-is-almost-eliminated)). When LDL or ApoB is above target, his plan suggests extra-virgin olive oil as monounsaturated fat replacing butter or saturated fat, with a modest direct effect on LDL cholesterol (Brad's current guidance, 18 Mar 2026). He treats olive oil's fat-burning angle as a promising idea, not a proven lever, because it rests on one small trial of total body fat ([Brad, 16 Jul 2026](https://drstanfield.com/blogs/articles/shrink-the-fat-around-your-heart)). In a PREDIMED ultrasound substudy, the olive oil group showed no significant change in neck artery wall thickness, while the nuts group saw a decrease ([Brad, 15 Feb 2025](https://drstanfield.com/blogs/articles/the-best-diet-to-unclog-your-arteries)).
+
+## Key safety points
+
+- Olive oil may add to blood pressure medicines. In a small trial in people with high blood pressure, the daily drug dose fell 48% on an extra-virgin olive oil diet [20]. If you take blood pressure medicines, ask your doctor before a large change in intake.
+- Olive oil lowered HbA1c and fasting glucose in people with type 2 diabetes [37]. If you take insulin or other glucose-lowering medicines, ask your doctor whether you need closer glucose checks.
+- Olive oil is pure fat, about 120 kcal per tablespoon [5]. Use it to replace butter or other saturated fat, not on top of your usual fat intake [31].
+- Added on top of your usual diet, large amounts did not lower LDL, and LDL rose slightly in two small trials [25][33]; the LDL benefit comes from replacing saturated fat [21].
+
+## Brad's videos on this topic
+
+- 16 Jul 2026, [Shrink the Fat Around Your Heart](https://drstanfield.com/blogs/articles/shrink-the-fat-around-your-heart): extra-virgin olive oil is one of the healthy fats for a whole-food plate; its fat-burning effect is a promising idea from one small trial, not a proven lever.
+- 18 May 2026, [The Truth About Seed Oil Toxicity](https://drstanfield.com/blogs/articles/the-truth-about-seed-oil-toxicity): olive oil is not a seed oil; it comes from the olive fruit and is mostly monounsaturated fat.
+- 8 Feb 2026, [Coronary Heart Disease is Almost ELIMINATED](https://drstanfield.com/blogs/articles/coronary-heart-disease-is-almost-eliminated): favour unsaturated fats such as extra-virgin olive oil over saturated fat; a meta-analysis linked higher olive oil intake to less heart disease and lower mortality.
+- 14 Aug 2025, [Harvard Says THIS Is the Healthiest Way to Eat](https://drstanfield.com/blogs/articles/harvard-says-this-is-the-healthiest-way-to-eat): healthy oils such as olive oil belong on the plate; PREDIMED showed fewer heart attacks and strokes on a Mediterranean diet with olive oil.
+- 12 Jun 2025, [The Food Pyramid's Replacement is a HUGE Upgrade](https://drstanfield.com/blogs/articles/the-food-pyramids-replacement-is-a-huge-upgrade): cook with healthy oils, favouring olive oil, and keep saturated and trans fats low.
+- 15 Feb 2025, [The Best Diet to Unclog Your Arteries](https://drstanfield.com/blogs/articles/the-best-diet-to-unclog-your-arteries): embrace unsaturated fats such as extra-virgin olive oil; in a PREDIMED substudy the olive oil arm showed no change in artery wall thickness, while the nuts arm improved.
+- 29 Sep 2024, [Are Seed Oils Toxic and Inflammatory?](https://drstanfield.com/blogs/articles/seed-oils-toxic-inflammatory): olive oil is not a seed oil and is mostly monounsaturated fat.
+
 ## 1. Overview
 
-Extra virgin olive oil (EVOO) is the highest-quality grade of olive oil, obtained directly from olives solely by mechanical means — pressing, crushing, or centrifugation — without the use of chemicals, solvents, or excessive heat [1][2]. According to the International Olive Council (IOC) and USDA standards, EVOO must have a free acidity of no more than 0.8% (expressed as oleic acid), zero sensory defects, and detectable fruitiness [1][3]. It is the only olive oil grade that is entirely unprocessed, defect-free, and suitable for raw consumption while retaining its full complement of bioactive compounds.
+Extra virgin olive oil (EVOO) is the top grade of olive oil, obtained from olives only by mechanical means, without chemical solvents or refining [2]. Under International Olive Council (IOC) and EU standards, it must have a free acidity of no more than 0.8% (as oleic acid), no sensory defects and some fruitiness [2][3].
 
-Olive oil is approximately 98-99% fat by weight. The fat profile is dominated by monounsaturated fatty acids, particularly oleic acid, which constitutes roughly 70-80% of total fatty acids [1][4]. Saturated fats (primarily palmitic acid) make up about 10-15%, while polyunsaturated fats (mainly linoleic acid) are present in smaller quantities, generally less than 15% [4]. A standard tablespoon (approximately 14 grams) provides about 120 kilocalories, with 10 grams of monounsaturated fat, 2 grams of saturated fat, and 1.5 grams of polyunsaturated fat [5].
+A standard tablespoon (approximately 14 grams) provides about 120 kilocalories, with 10 grams of monounsaturated fat, 2 grams of saturated fat, and 1.5 grams of polyunsaturated fat [5]. Most of the monounsaturated fat is oleic acid.
 
-Beyond its fat composition, EVOO contains a small but biologically significant fraction of minor compounds. These include polyphenols — particularly hydroxytyrosol, oleuropein, ligstroside, and oleocanthal — which act as antioxidants and anti-inflammatory agents [1][6]. Polyphenol concentrations typically range from 100 to 500 mg/kg, though oils from early-harvest or specific cultivars can reach 800 mg/kg or higher [1][7][8]. Oils with polyphenol concentrations of 400 mg/kg or above may be notably bitter [1]. EVOO is also a source of vitamin E (primarily alpha-tocopherol, 14-20 mg per 100 g), vitamin K (approximately 60 mcg per 100 g), and squalene (2,000-7,000 ppm), a natural antioxidant [4][5].
-
-The polyphenols oleuropein and ligstroside are responsible for the characteristic pungency and bitterness of high-quality extra virgin olive oils [9]. Oleocanthal, another key polyphenol, produces a distinctive throat-stinging sensation and has attracted research interest for its anti-inflammatory properties [10]. The health claims associated with olive oil relate both to its monounsaturated fat content (oleic acid replacing saturated fats) and to these polyphenol compounds, which appear to confer benefits beyond those attributable to the fat profile alone.
-
-Olive oil production is concentrated in Mediterranean countries. Spain is the world's largest producer (approximately 765,000 metric tons in 2023/24), followed by Italy (approximately 300,000 metric tons) and Greece (approximately 180,000 metric tons) [4]. California and Australia are emerging as smaller but growing production regions. The Mediterranean diet, in which EVOO serves as the principal dietary fat source (typically 40-60 mL per day across meals), was inscribed by UNESCO as an Intangible Cultural Heritage of Humanity in 2010 [4][11].
+EVOO also contains polyphenols, including oleuropein, hydroxytyrosol and oleocanthal, which have shown anti-inflammatory activity in laboratory and animal studies [46]. Oleocanthal causes the throat sting of newly pressed oil [10]. Common (refined) olive oil lacks these polyphenols [18]. Olive oil's possible health effects may come both from its monounsaturated fat and from these polyphenols [18][46].
 
 ## 2. Grades and Quality
 
 ### Olive Oil Grading
 
-Not all olive oils are equivalent. The grade determines the oil's processing history, chemical composition, sensory profile, and nutritional value. The following table summarizes key differences based on IOC and EU standards [1][3][4]:
+The grade reflects how the oil was made and what it contains. The table summarizes the main grades under IOC and EU standards [2][3]:
 
 | Grade | Free Acidity (% oleic acid) | Sensory Characteristics | Production Method | Typical Use |
 |-------|:-:|---|---|---|
 | Extra Virgin | ≤ 0.8 | No defects; fruitiness > 0 | Mechanical extraction only, no chemicals or refining | Dressings, drizzling, finishing |
 | Virgin | ≤ 2.0 | Low-level defects allowed; fruitiness > 0 | Mechanical extraction only | General cooking |
 | Refined | ≤ 0.3 | Neutral; defects removed by refining | Virgin oil refined chemically or with heat | Blending base |
-| Lampante Virgin | > 3.3 | Significant defects | Mechanical extraction; unsuitable for direct consumption | Requires refining before use |
+| Lampante Virgin | Above the virgin limit | Significant defects | Mechanical extraction; unsuitable for direct consumption | Requires refining before use |
 
-The critical distinction is that EVOO is the only grade that has not been chemically processed or refined. Refined olive oils have had their defects neutralized through chemical treatment, which also strips out most polyphenols and other bioactive compounds [1][3]. "Regular" olive oil (sometimes labeled "pure" or simply "olive oil") is typically a blend of refined and virgin olive oils and lacks the polyphenol content of EVOO.
+Refining removes defects but also the polyphenols: common olive oil, a blend sold as "olive oil" or "pure" olive oil, lacks the polyphenols of EVOO [18].
 
 ### Key Quality Indicators
 
-**Polyphenol content** varies widely depending on olive cultivar, harvest timing, extraction conditions, and storage. Early-harvest olives (green, unripe) yield oils with higher polyphenol concentrations but lower yields, while later harvests produce fruitier but less phenol-rich oils [4][7]. Under EU Regulation 432/2012, olive oils containing at least 250 mg/kg of polyphenols (including hydroxytyrosol and its derivatives) may carry the authorized health claim: "Olive oil polyphenols contribute to the protection of blood lipids from oxidative stress" when consuming 20 g (about 1.5 tablespoons) daily [4].
+An EU-authorised health claim states that olive oil polyphenols contribute to the protection of blood lipids from oxidative stress, based on an EFSA opinion [27].
 
-**Sensory attributes** include fruitiness (reminiscent of fresh olives, green apple, tomato leaf, or almond), bitterness (a slightly astringent sensation on the tongue), and pungency (a peppery or throat-irritating sensation). These positive attributes are assessed by trained panels using a 0-10 intensity scale [4][12]. A mild peppery or bitter sensation in the throat often indicates higher polyphenol levels, particularly oleocanthal [4][10].
-
-**Flavor profiles** range from mild and smooth (buttery, nutty, delicate — typical of Arbequina cultivar) to robust and intense (grassy, peppery, bitter — typical of Frantoio or Picual cultivars). Both mild and robust profiles can meet extra virgin standards; the variation reflects terroir, variety, and harvest timing, not quality differences [4][12].
+Trained panels score fruitiness, bitterness and pungency under the IOC sensory method [12]. A stinging feeling at the back of the throat comes from oleocanthal [10].
 
 ### Identifying Quality EVOO
 
-Several steps help identify authentic, high-quality extra virgin olive oil [1][4]:
-
-- **Look for certification seals.** Quality seal programs include the USDA Quality Monitoring Program, the North American Olive Oil Association (NAOOA), the California Olive Oil Council (COOC), and the Extra Virgin Alliance (EVA). The USDA and NAOOA require more tests that help rule out adulteration with cheaper oils. COOC and EVA require tests for diacylglycerols (DAGs) and pyropheophytin (PPP), which correlate with freshness and defect levels [1].
-- **Choose oils with a harvest date.** UC Davis researchers advise buying oil within 15 months of its harvest date. The harvest date is not the same as the "Best By" date, which is arbitrary [1].
-- **Select dark glass or tin packaging.** These protect the oil from light-induced oxidation. A one-year study found that total phenols decreased only 10-15% when stored in dark glass kept in darkness, versus 52-65% in plastic bottles exposed to light [1][13].
-- **Prefer single-origin or single-estate oils.** Labels specifying region, estate, or mill indicate greater traceability. Vague labels like "Packed in Italy" (with olives from elsewhere) may indicate blending [4].
-- **Look for PDO/PGI certification.** Protected Designation of Origin ensures oils from designated areas maintain consistent quality tied to local terroir [4].
+Store oil away from heat. In a one-year study of Arbequina EVOO, oil kept at 30 or 40 °C in darkness built up more oxidised compounds than oil kept at 23 °C, in light or dark (Caipo, Foods 2021) [71].
 
 ### Unreliable Quality Indicators
 
-The following are NOT considered reliable methods for assessing olive oil quality or detecting adulteration [1]:
-
-- **The "Fridge Test."** UC Davis researchers refrigerated a variety of oils and reported that after 2.5 days, none (including extra virgin olive oil) had solidified. After 7 days, some samples containing at least 50% EVOO began congealing, but none had solidified.
-- **Color.** EVOO ranges from pale yellow to green; color reveals little about quality. Sensory experts use blue glasses during tasting so color does not influence assessment.
-- **Taste alone.** While taste is part of IOC and USDA standards (with positive attributes including fruity, bitter, and pungent), the association between taste and chemical markers of adulteration or oxidation is not always strong — chemical analysis is still required for confirmation.
+The grade is set by laboratory tests and a trained tasting panel under IOC and EU rules, not by colour or home tests [2][3][12].
 
 ### Adulteration and Fraud
 
-Olive oil fraud is a significant global issue. A 2010 UC Davis study found that 69% of labeled imported EVOO in the US failed authenticity tests [4][14]. Common frauds include mislabeling lower-grade oils as extra virgin, blending with cheaper seed oils, and advanced adulteration techniques that evade basic detection [4][14]. Isotope testing, which analyzes stable isotope ratios to verify geographical origin and detect adulteration, provides a more reliable traceability tool [4].
+A 2010 UC Davis report found that many imported oils labelled extra virgin in the US failed IOC and USDA standards [14].
 
 ## 3. Evidence for Health Benefits
 
 ### Mortality (All-Cause and Cause-Specific)
 
-An analysis of data from two large, long-term US studies (the Nurses' Health Study and the Health Professionals Follow-up Study) that followed a total of 92,000 men and women for 28 years found that consuming at least half a tablespoon (7 grams) of olive oil per day was associated with [15]:
+Two long-term US cohorts, the Nurses' Health Study (60,582 women) and the Health Professionals Follow-up Study (31,801 men), were followed for 28 years. The highest intake group used more than 0.5 tablespoon (7 g) of olive oil a day [15].
 
-- 19% lower risk of cardiovascular death
-- 17% lower risk of death from cancer
-- 29% lower risk of death from neurodegenerative diseases (Alzheimer's and Parkinson's disease)
-- 18% lower risk of death from respiratory disease
+Compared with never or rarely using olive oil, the highest intake group had these hazard ratios [15]:
 
-The researchers estimated that replacing each 10 grams of margarine, butter, mayonnaise, or dairy fat with an equivalent amount of olive oil was associated with a 13% to 20% lower risk of death from any cause — although a similar benefit was seen when replacing these fats with other plant-based oils (corn, safflower, soybean, canola) (Guasch-Ferre, J Am Coll Cardiol 2022) [15].
+- Death from any cause: HR 0.81 (95% CI 0.78 to 0.84)
+- Cardiovascular death: HR 0.81 (95% CI 0.75 to 0.87)
+- Cancer death: HR 0.83 (95% CI 0.78 to 0.89)
+- Death from neurodegenerative disease: HR 0.71 (95% CI 0.64 to 0.78)
+- Death from respiratory disease: HR 0.82 (95% CI 0.72 to 0.93)
+
+In substitution models, replacing 10 g a day of margarine, butter, mayonnaise and dairy fat with olive oil was linked to 8%-34% lower risk of total and cause-specific death, but olive oil showed no advantage over other vegetable oils combined (Guasch-Ferre, J Am Coll Cardiol 2022) [15].
 
 ### Cardiovascular Disease
 
 The evidence linking olive oil consumption to cardiovascular benefit comes from both interventional and observational research.
 
-**The PREDIMED Trial:** The largest and most influential study is the PREDIMED trial (Prevencion con Dieta Mediterranea), a large-scale randomized controlled trial conducted from 2003 to 2011 involving over 7,000 men and women at high risk for cardiovascular disease in Spain. Participants assigned to a Mediterranean diet supplemented with extra virgin olive oil (approximately 4 tablespoons or 50 mL per day) or mixed nuts (30 grams per day) had a 30% lower risk of heart attack, stroke, or cardiovascular death after about five years compared to a control group counseled to follow a low-fat diet. The study was retracted due to a randomization error at one site but was reanalyzed and republished with the main conclusions intact (Estruch, N Engl J Med 2013; Estruch, N Engl J Med 2018) [16][17]. Importantly, additional analysis found that decreased cardiovascular disease risk was associated with higher intake of extra virgin olive oil specifically, but not with common (refined/pomace) olive oil that lacks polyphenols (Perez de Rojas, Am Heart J 2026) [18].
+**The PREDIMED Trial:** The largest trial is PREDIMED, which assigned 7447 people in Spain, aged 55 to 80 years and at high cardiovascular risk, to a Mediterranean diet with free extra-virgin olive oil, a Mediterranean diet with mixed nuts, or advice to reduce dietary fat. After a median 4.8 years, the hazard ratio for heart attack, stroke or cardiovascular death was 0.69 (95% CI 0.53 to 0.91) with extra-virgin olive oil and 0.72 (95% CI 0.54 to 0.95) with nuts, compared with the low-fat advice. The first report was withdrawn after protocol deviations, such as household members enrolled without randomisation; the 2018 republication reanalysed the data and reached the same conclusion (Estruch, N Engl J Med 2018) [17]. In a later PREDIMED analysis of 7102 people, the top third of extra-virgin olive oil intake (mean 49.2 g a day) had a lower risk of a broad set of cardiovascular events (HR 0.75, 95% CI 0.60 to 0.94), while common olive oil was not significantly linked to risk once extra-virgin intake was accounted for (de Rojas, Am Heart J 2026) [18].
 
-**Blood Pressure:** A 3-month study in obese older adults in Boston found that substituting 25 mL (about 5 teaspoons) of extra virgin olive oil daily for other cooking oils reduced systolic blood pressure by 6 mmHg on average and tended to increase HDL cholesterol. Increased oleic acid levels in blood were associated with improved immune function (IL-2 production) (Rozati, Nutr Metab (Lond) 2015) [19]. A small 6-month study among men and women with mild to moderate hypertension found that consuming several tablespoons of olive oil daily (4 tablespoons for men, 3 for women) with a slight reduction in saturated fat intake enabled participants to reduce their dosage of blood pressure medication by 48% compared to those consuming safflower oil instead (Ferrara, JAMA Int Med 2000) [20].
+**Blood Pressure:** In 41 overweight or obese adults aged 65 or older, replacing the usual cooking oils with EVOO for 3 months lowered systolic blood pressure and tended to raise HDL cholesterol compared with a corn oil, soybean oil and butter mix (Rozati, Nutr Metab (Lond) 2015) [19]. In a 6-month crossover trial in 23 people with high blood pressure, the daily antihypertensive drug dose fell 48% on an extra-virgin olive oil diet, against 4% on a sunflower oil diet, and 8 people on the olive oil diet needed no drugs (Ferrara, Arch Intern Med 2000) [20].
 
-**Cholesterol and Atherosclerosis:** A study among 14 people with atherogenic dyslipidemia (elevated triglycerides, reduced HDL) showed that replacing approximately 20.5 grams per day of saturated fatty acids with monounsaturated fatty acids from olive oil for 4 weeks led to a 7% reduction in LDL cholesterol and a similar decrease in apolipoprotein B (apoB) — a marker that more accurately predicts heart attack risk than LDL alone. The mechanism involved increased clearance of apoB from the blood (Desjardins, Am J Clin Nutr 2024) [21]. The fundamental importance of apoB is that its deposition into the inner wall of arteries is the fundamental cause of atherosclerosis (Sniderman, JAMA Cardiol 2022; Marston, JAMA Cardiol 2022) [22][23].
+**Cholesterol and Atherosclerosis:** In 18 adults with insulin-resistant dyslipidemia, replacing saturated fat from lard with monounsaturated fat from olive oil for 4 weeks lowered LDL cholesterol by 7.0%, partly by speeding the clearance of LDL apolipoprotein B (Desjardins, Am J Clin Nutr 2024) [21].
 
-**Polyphenol-Dependent Effects on Cholesterol:** An analysis of 26 clinical trials found that consuming olive oil with moderate to higher polyphenol content (150-800 mg/kg) decreased total cholesterol by 4.47 mg/dL and oxidized LDL by 0.44 mmol/L, and increased HDL cholesterol by 2.27 mg/dL, compared to low-polyphenol olive oil (0-132 mg/kg). There was no effect on triglycerides or overall LDL. The most common daily dose was 25 mL (about 2 tablespoons), and studies lasted 3 weeks to 3 months (George, Crit Rev Food Sci Nutr 2018) [24]. However, a subsequent Australian study in which 43 healthy adults consumed 60 mL daily of olive oil that was either high (320 mg/kg) or low (86 mg/kg) in polyphenols for 3 weeks showed that both oils slightly increased HDL but the higher polyphenol oil also slightly increased LDL, which is not considered desirable (Sarapis, Brit J Nutr 2022) [25].
+**Polyphenol-Dependent Effects on Cholesterol:** A meta-analysis of 26 trials found that high-polyphenol olive oil lowered total cholesterol by 4.5 mg/dL and oxidised LDL, and raised HDL cholesterol by 2.37 mg/dL, compared with low-polyphenol olive oil (George, Crit Rev Food Sci Nutr 2019) [24]. In a later Australian crossover trial, 50 healthy adults took 60 ml a day of olive oil high (320 mg/kg) or low (86 mg/kg) in polyphenols for 3 weeks; both raised HDL, but the high-polyphenol oil also raised LDL by 0.14 mmol/l, with no significant difference between the two oils (Sarapis, Br J Nutr 2023) [25].
 
-In 2025, the European Food Safety Authority (EFSA) concluded that there is insufficient evidence to prove that olive oil polyphenols help maintain normal HDL cholesterol levels, citing mixed results and lack of a known mechanism. The EFSA also noted uncertainty about whether any beneficial effects on HDL would be sustained beyond 8 weeks (EFSA 2025) [26].
+**Hydroxytyrosol and LDL Oxidation:** In a 1-month crossover trial in 30 people with chronic coronary artery disease, olive oil capsules enriched with hydroxytyrosol (4 a day, 2.5 mg each) improved measures of arterial and microvascular function from baseline, while placebo capsules did not, and blood pressure did not change (Ikonomidis, Eur J Clin Invest 2023) [6]. EFSA judged that polyphenols in olive oil protect LDL particles from oxidative damage, and set the condition that 5 mg of hydroxytyrosol and its derivatives (such as the oleuropein complex and tyrosol) are eaten daily in olive oil (EFSA Journal 2011) [27].
 
-**Hydroxytyrosol and LDL Oxidation:** One of the key polyphenols in olive oil is hydroxytyrosol, which reduces LDL oxidation and may help prevent atherosclerosis progression. The EFSA has confirmed that a minimum of 5 mg of hydroxytyrosol daily can protect LDL particles from oxidation (EFSA Journal 2011) [27]. A clinical study in Greece involving 30 people with coronary artery disease who took capsules providing 5 mg of hydroxytyrosol twice daily for one month suggested improvements in arterial function, although the study failed to indicate whether changes were statistically significant compared to placebo, and there was no effect on blood pressure. The study was originally planned for 3 months but was shortened to 1 month without explanation (Ikonomidis, Eur J Clin Invest 2023) [6].
+**Atherosclerosis Progression:** In the CORDIOPREV trial, 939 people with coronary heart disease followed a Mediterranean diet rich in extra-virgin olive oil or a low-fat diet. Carotid wall thickness fell on the Mediterranean diet at 5 and 7 years, and plaque height fell more than on the low-fat diet, which did not change wall thickness (Jimenez-Torres, Stroke 2021) [28]. In a PREDIMED substudy of 164 people followed for 2.4 years, wall thickness and plaque did not change on the olive oil diet, while they regressed on the nuts diet compared with control (Sala-Vila, Arterioscler Thromb Vasc Biol 2014) [73].
 
-**Atherosclerosis Progression:** Long-term consumption of a Mediterranean diet including at least 4 tablespoons of EVOO daily decreased the progression of atherosclerosis in men and women (average age 60) with coronary heart disease in a 7-year study in Spain. Participants on the Mediterranean diet had a modest but statistically significant decrease in carotid artery plaque thickness (a predictor of heart attack and stroke), while those on a low-fat diet had no decrease. However, neither diet decreased the number of carotid plaques (Jimenez-Torres, Stroke 2021) [28].
+**Observational Evidence:** In a Spanish case-control study of 171 people with a first heart attack, the top fifth of olive oil intake (median 54 g a day) had lower odds of a first heart attack (OR 0.18, 95% CI 0.06 to 0.63) (Fernandez-Jarne, Int J Epidemiol 2002) [29]. In the Greek ATTICA study, 2020 adults without heart disease were followed for a mean 8.41 years; exclusive olive oil use was linked to lower cardiovascular risk than no olive oil (relative risk 0.07, 95% CI 0.01 to 0.66) (Kouli, Eur J Nutr 2019) [30]. A meta-analysis of 13 prospective cohorts found that higher olive oil intake was linked to lower risk of cardiovascular disease (RR 0.85, 95% CI 0.77 to 0.93) and all-cause mortality (RR 0.83, 95% CI 0.77 to 0.90), with little added benefit beyond about 20 g a day (Xia, Front Nutr 2022) [74].
 
-**Observational Evidence:** A study of men and women found that the risk of heart attack was 82% lower for those who regularly consumed about 4 tablespoons of olive oil per day compared to those consuming less than half a tablespoon per day (Fernandez-Jarne, Int J Epidemiol 2002) [29]. A Greek study following over 2,000 men and women without pre-existing cardiovascular disease for an average of 8 years found that those who exclusively used olive oil as their dietary fat had a 93% lower risk of cardiovascular events compared to non-consumers. There was no risk reduction among those using a mixture of olive and other oils (Kouli, Eur J Nutr 2017) [30].
+**FDA Qualified Health Claim:** Under a 2004 FDA qualified health claim, eating about 23 g (2 tablespoons) of olive oil each day may lower coronary heart disease risk, though the evidence is weak and inconclusive; the oil must take the place of saturated fat without raising total calories (FDA 2004) [31].
 
-**FDA Qualified Health Claim:** The FDA allows pure olive oil products to claim: "Limited and not conclusive scientific evidence suggests that eating about 2 tablespoons (23 grams) of olive oil daily may reduce the risk of coronary heart disease due to the monounsaturated fat in olive oil. To achieve this possible benefit, olive oil is to replace a similar amount of saturated fat and not increase the total number of calories you eat in a day" (FDA 2004) [31].
-
-**Important Caveat — High Intake May Not Be Better:** A study among 40 people at risk for atherosclerosis showed that limiting EVOO to less than 1 teaspoon daily while following a strict whole food, plant-based diet improved cholesterol levels more than consuming the same diet with 4 tablespoons of EVOO daily. Low EVOO consumption led to greater reductions in total cholesterol (-33.9 vs. -19.0 mg/dL), LDL cholesterol (-25.5 vs. -16.7 mg/dL), and a greater increase in HDL cholesterol (+10.5 vs. -5.0 mg/dL). However, the low-EVOO group consumed dietary fat primarily from avocados, nuts, seeds, and olives, which contain fiber and phytochemicals that may have contributed to improvements (Krenek, J Am Heart Assoc 2024) [32]. Similarly, a study in 27 healthy women found that consuming 45 mL of EVOO daily for 8 weeks significantly increased LDL cholesterol by 5.13 mg/dL compared to sunflower seed oil, with no significant reductions in blood pressure, blood sugar, HbA1c, or triglycerides (Morris, Pregnancy Hypertens 2026) [33].
+**Important Caveat: High Intake May Not Be Better:** In a crossover trial in 40 adults at risk of cardiovascular disease, a whole-food, plant-based diet with 4 tablespoons of EVOO a day was compared with the same diet with less than 1 teaspoon. Both lowered LDL cholesterol; after the first period LDL fell by 25.5 mg/dL on the low-oil diet and 16.7 mg/dL on the high-oil diet, a difference that was not significant, and adding EVOO after the low-oil phase raised LDL again (Krenek, J Am Heart Assoc 2024) [32]. In 27 healthy young women, 40 g a day of EVOO for 8 weeks lowered fasting insulin but raised LDL cholesterol by 5.1 mg/dL on EVOO, with no difference in blood pressure (Morris, Pregnancy Hypertens 2026) [33].
 
 ### Insulin Control, Blood Sugar, and Diabetes
 
-When used to replace saturated fat, consuming modest amounts of extra virgin olive oil may improve insulin sensitivity and blood sugar regulation in healthy adults. The evidence spans prediabetes, established type 2 diabetes, and type 1 diabetes.
+Swapping saturated fat for modest amounts of EVOO may help insulin sensitivity and blood sugar control. Trials cover prediabetes, type 2 diabetes and type 1 diabetes.
 
-**Mechanism:** Compared to saturated fats, oleic acid (in which olive oil is rich) improves insulin sensitivity and lowers blood sugar levels in healthy people and in those with high triglyceride levels (Bermudez, Food Funct 2014) [34]. A small study showed that EVOO consumed with bread increased insulin and GLP-1 (a hormone that enhances insulin secretion and satiety) at 30 and 15 minutes post-meal respectively, compared to regular olive oil or sunflower oil. EVOO also led to lower triglyceride levels and lower ghrelin (hunger hormone) at 3 hours (Garcia-Serrano, Mol Nutr Food Res 2021) [35].
+**Mechanism:** In a small study of 6 people without obesity and 6 with severe obesity, 25 mL of EVOO raised GLP-1 (a gut hormone that increases insulin release) and insulin, and lowered the hunger hormone ghrelin and blood triglycerides after the dose more than common olive oil or sunflower oil. This held in the people without obesity and in those with severe obesity after gastric bypass; before surgery the response was markedly altered (Garcia-Serrano, Mol Nutr Food Res 2021) [35].
 
-**Prediabetes:** A study among 7 people with prediabetes found that including 10 grams (3/4 tablespoon) of EVOO in a meal resulted in blood sugar levels rising less than half as much 2 hours later compared to a meal without olive oil; insulin levels rose about twice as much, and triglycerides remained stable rather than rising. The researchers noted that adding a small amount of EVOO to a meal "may represent a simple, cheap, and safe approach to limit the deleterious effects of post-prandial hyperglycemia" (Carnevale, Clin Nutr 2017) [36].
+**Prediabetes:** In 30 people with impaired fasting glucose, a meal with 10 g of EVOO lowered blood glucose and triglycerides after the meal, and raised insulin and GLP-1, compared with the same meal without it (Carnevale, Clin Nutr 2017) [36].
 
-**Diabetes Prevention:** A review of 33 observational studies and clinical trials found that consuming 15 to 20 grams (about 1.5 to 2 tablespoons) daily of olive oil (all types) reduced the risk of developing type 2 diabetes by 13%. Consuming more did not further reduce the risk. Among people who already had type 2 diabetes, olive oil was associated with decreases in fasting blood sugar (average -0.44 mmol/L) and HbA1c compared to low-fat diets, but was no better than consuming fish oil or diets rich in polyunsaturated fats (Schwingshackl, Nutr Diabetes 2017) [37].
+**Diabetes Prevention:** A meta-analysis of four cohort studies and 29 trials found that the highest olive oil intake was linked to a lower risk of type 2 diabetes than the lowest (RR 0.84, 95% CI 0.77 to 0.92). In people with type 2 diabetes, olive oil lowered HbA1c by 0.27% and fasting glucose by 0.44 mmol/l more than control diets (Schwingshackl, Nutr Diabetes 2017) [37].
 
-**Delaying Diabetes Medication:** An analysis of over 3,000 men and women with type 2 diabetes from the PREDIMED study found that those who consumed a Mediterranean diet enriched with EVOO (4 tablespoons per day) were 22% less likely to start glucose-lowering medication after 3 years, and 11% less likely to start insulin treatment after 5 years, compared to those on a low-fat diet. The Mediterranean diet enriched with mixed nuts did not significantly delay medication initiation (Basterra-Gortari, Diabetes Care 2019) [38].
+**Delaying Diabetes Medication:** In 3,230 PREDIMED participants with type 2 diabetes, the Mediterranean diet with extra-virgin olive oil lowered the chance of starting a first glucose-lowering drug over a median 3.2 years (HR 0.78, 95% CI 0.62 to 0.98) compared with the low-fat plan. It did not significantly lower the need for insulin (HR 0.87, 95% CI 0.68 to 1.11), and the nuts diet had no significant effect on either (Basterra-Gortari, Diabetes Care 2019) [38].
 
-**Type 1 Diabetes:** A study among 13 people with type 1 diabetes on insulin pumps found that adding 37 grams (about 2.75 tablespoons) of EVOO to a high-glycemic meal resulted in blood glucose levels just half those seen when butter was substituted for the olive oil over the next 3 hours. Reducing the amount to just 10 grams produced results similar to butter initially, though glucose levels normalized faster with olive oil. There was no significant benefit with a low-glycemic meal (Bozzetto, Diabetes Care 2016) [39].
+**Type 1 Diabetes:** In 13 insulin-pump users with type 1 diabetes, EVOO added to a high-glycaemic-index meal lowered the rise in blood glucose over the first 3 hours compared with the same meal low in fat or made with butter. There was no difference with low-glycemic meals (Bozzetto, Diabetes Care 2016) [39].
 
-**Oleocanthal and Blood Sugar:** A study among 91 obese men and women with prediabetes showed that replacing dietary fats with high-polyphenol EVOO (particularly high in oleocanthal — 508 mg/kg total polyphenols, 328 mg/kg oleocanthal) for 1 month significantly decreased some blood markers of inflammation and improved antioxidant status compared to regular olive oil. Participants who consumed the EVOO also had slightly greater decreases in body weight (2 lbs vs. 1.4 lbs) and fasting blood sugar (-3.69 vs. -2.05 mg/dL), although differences between groups did not reach statistical significance (Ruiz-Garcia, Clin Nutr 2023) [40].
+**Oleocanthal and Blood Sugar:** In a crossover trial in 91 adults with obesity and prediabetes, using an EVOO rich in oleocanthal and oleacein for all cooking for 1 month lowered interferon-gamma, an inflammation marker, and raised antioxidant status compared with common olive oil. Weight, BMI and blood glucose fell after the EVOO but not after common olive oil (Ruiz-Garcia, Clin Nutr 2023) [40].
 
 ### Weight Loss and Body Composition
 
-Substituting EVOO for soybean oil while dieting resulted in greater fat loss in a study of overweight and obese women in Brazil. The women consumed an energy-restricted diet including 25 mL (about 2 tablespoons) of either soybean oil or EVOO. After 9 weeks, women in the olive oil group lost significantly more fat (5.3 lbs vs. 2.9 lbs). The olive oil group also lost more total weight (6.1 lbs vs. 3.7 lbs), but this difference was not statistically significant. Diastolic blood pressure decreased only in the olive oil group (by 5 mmHg) (Candido, Eur J Nutr 2017) [41].
+In a 9-week trial, 41 women with excess body fat ate a calorie-restricted diet with a daily breakfast containing 25 mL of soybean oil or EVOO. Fat loss was greater with EVOO (2.4 kg against 1.3 kg), and diastolic blood pressure fell by 5.1 mmHg with EVOO but not with soybean oil (Candido, Eur J Nutr 2018) [41].
 
-Consuming olive oil as part of a Mediterranean diet or in place of other oils has been linked with a modest decrease in BMI but not waist circumference among people with fatty liver disease (Tsamos, Nutrients 2024) [42].
+In a meta-analysis of seven trials in people with fatty liver disease, olive oil lowered BMI modestly but not waist circumference (Tsamos, Nutrients 2024) [42].
 
-Results from the PREDIMED trial demonstrate that Mediterranean diets rich in EVOO prevent weight gain and may promote slight reductions in central adiposity, even without strict calorie restriction [4][16].
-
-**Mechanistic Note:** Olive oil is a calorie-dense fat (about 120 kcal per tablespoon). It should replace less healthy fats rather than be added on top of normal fat intake. A study in mice found that a high-fat diet rich in oleic acid stimulated increases in fat cell (adipocyte) production, with oleic acid identified as the molecular signal for this increase (Wing, Cell Rep 2025) [43].
+**Mechanistic Note:** Olive oil is a calorie-dense fat (about 120 kcal per tablespoon) [5]. It should replace less healthy fats rather than be added on top of normal fat intake. In mice and in human fat precursor cells, oleic acid drove the formation of new fat cells (Wing, Cell Rep 2025) [43].
 
 ### Fatty Liver Disease (MASLD/NAFLD)
 
-An analysis of a subset of 100 people from the PREDIMED study found that over 3 years, those consuming a Mediterranean diet enriched with EVOO (4 tablespoons per day) had a much lower incidence of metabolic dysfunction-associated steatotic liver disease (MASLD) — 8.8% compared to 33.3% in both the mixed nuts group and the low-fat diet group. The researchers attributed the lower incidence to improved insulin sensitivity with EVOO consumption (Pinto, J Nutr 2019) [44].
+In a PREDIMED subgroup of 100 older adults, fatty liver was present after 3 years in 8.8% on the Mediterranean diet with EVOO, against 33.3% on the nuts diet and 33.3% on the control diet. Weight and blood glucose control did not differ between groups (Pinto, J Nutr 2019) [44].
 
-Additionally, an analysis of 7 RCTs (lasting 2-5 months) among people with MASLD found that consuming olive oil (up to about 20 grams or 1.5 tablespoons per day) as part of a Mediterranean diet modestly reduced BMI by 0.57 kg/m2 compared to control groups. However, olive oil did not reduce waist circumference or liver enzyme levels (ALT or AST) (Tsamos, Nutrients 2024) [42].
+A meta-analysis of seven trials with 515 people with fatty liver disease found that olive oil lowered BMI by 0.57 kg/m2 compared with control diets, with no effect on waist circumference or the liver enzymes ALT and AST (Tsamos, Nutrients 2024) [42].
 
-### Bone Fracture Risk
+### Bone Fracture Prevention Evidence
 
-An analysis among older men and women (ages 55-80) at high cardiovascular risk from the PREDIMED study found that those who consumed the most EVOO (about 4 tablespoons per day) had a 51% lower risk of osteoporosis-related fractures compared to those who consumed the least (about 1.5 tablespoons per day) after adjusting for potential confounders, during a 5-year study and 9-year follow-up. No reduction in fracture risk was associated with other types of olive oil (refined or pomace), leading the researchers to suggest the benefit may be related to the higher polyphenol content of EVOO (Garcia-Gavilan, Clin Nutr 2017) [45].
+In 870 PREDIMED participants aged 55 to 80 years, followed for a median 8.9 years, the top third of extra-virgin olive oil intake had fewer osteoporosis-related fractures than the bottom third (HR 0.49, 95% CI 0.29 to 0.81). Total and common olive oil intake were not linked to fracture risk (Garcia-Gavilan, Clin Nutr 2018) [45].
 
 ### Pain and Inflammation
 
-Freshly pressed EVOO contains oleocanthal, which has been shown in laboratory experiments to have an anti-inflammatory effect similar to ibuprofen through the inhibition of COX-1 and COX-2 enzymes (Beauchamp, Nature 2005) [10]. However, the practical significance for pain relief is limited: it has been calculated that even 3.5 tablespoons of EVOO might only have 10% of the effect of a standard dose of ibuprofen (Parkinson, Int J Mol Sci 2014) [46]. The concentration of oleocanthal in EVOO produces a stinging sensation similar to ibuprofen and provides anti-inflammatory effects equivalent to about 10% of a standard adult ibuprofen dose when consuming 50 mL of oil [4][10].
+In laboratory tests, oleocanthal from newly pressed EVOO blocked the same cyclooxygenase (COX) enzymes as ibuprofen, with a similar potency and profile (Beauchamp, Nature 2005) [10]. Whether the amounts in food relieve pain is unknown.
 
-The study by Ruiz-Garcia et al. (discussed above under Blood Sugar) showed that high-polyphenol, high-oleocanthal EVOO significantly decreased some blood markers of inflammation (IFN-gamma and CXCL1) and improved total antioxidant status compared to regular olive oil, but the study did not evaluate effects on physical symptoms such as joint or muscle pain (Ruiz-Garcia, Clin Nutr 2023) [40].
+The Ruiz-Garcia trial (see Blood Sugar above) found lower interferon-gamma and higher antioxidant status with an oleocanthal-rich EVOO, but it did not measure joint or muscle pain (Ruiz-Garcia, Clin Nutr 2023) [40].
 
 ### Depression
 
-A study among 56 men and women (average age 40) diagnosed with major depression (most receiving therapy and/or antidepressant medication) who had poor-quality diets investigated the effects of a Mediterranean diet with olive oil on depression. Those who consumed a Mediterranean diet including 3 tablespoons of olive oil per day for 3 months had significant decreases in depression symptoms. After 3 months, 32% of those on the Mediterranean diet no longer met criteria for depression (average 11-point decrease in depression symptoms), compared to just 8% of controls who participated in a social support group but maintained their typical diet (average 4-point decrease) (Jacka, BMC Medicine 2017) [47].
+In a double-blind trial, 73 patients with major depression took 25 mL a day of EVOO or sunflower oil for 52 days. On a clinician-rated depression scale, scores fell more with EVOO than with sunflower oil, and the results suggested a benefit in severe depression but not in mild to moderate depression (Foshati, J Acad Nutr Diet 2022) [75].
+
+Olive oil has also been tested for depression as part of whole-diet changes. In the SMILES trial, 67 adults with moderate to severe depression were enrolled; after 12 weeks, 32.3% in a dietary improvement programme reached remission, against 8.0% in a social support control group (Jacka, BMC Medicine 2017) [47].
 
 ### Cancer
 
-Some, but not all, observational studies have found an association between olive oil consumption and lower risk of certain cancers. However, more research is needed to distinguish between the benefits of olive oil itself, specific types of olive oil, and the Mediterranean diet that incorporates olive oil.
+Observational studies give mixed results on olive oil and cancer. They cannot separate olive oil itself from the grade of oil or from the wider Mediterranean diet.
 
-**Overall Cancer Mortality:** The large US cohort study (92,000 people, 28 years of follow-up) found that consuming at least half a tablespoon of olive oil per day was associated with a 17% lower risk of death from cancer (Guasch-Ferre, J Am Coll Cardiol 2022) [15].
+**Overall Cancer Mortality:** In the two US cohorts above, the highest olive oil intake was linked to lower cancer mortality (HR 0.83, 95% CI 0.78 to 0.89) (Guasch-Ferre, J Am Coll Cardiol 2022) [15].
 
-**Breast Cancer:** A study of postmenopausal women in Spain found that a Mediterranean diet supplemented with EVOO (1 liter per week for each woman and her family) for about 5 years was associated with lower breast cancer risk (1.1 cases per 1,000 women) compared to women advised to follow a low-fat diet (2.9 cases per 1,000 women) (Toledo, JAMA Int Med 2015) [48]. However, a review of 10 observational studies among 81,436 women found no significant association between olive oil intake and breast cancer risk when the broader evidence was pooled (Sealy, Brit J Nutr 2020) [49].
+**Breast Cancer:** In 4152 PREDIMED women aged 60 to 80 years, breast cancer rates per 1000 person-years were 1.1 on the Mediterranean diet with extra-virgin olive oil and 2.9 on the control diet (HR 0.32, 95% CI 0.13 to 0.79), but the finding rests on only 35 cases (Toledo, JAMA Intern Med 2015) [48]. A meta-analysis of ten observational studies found no significant link between olive oil intake and breast cancer (OR 0.76, 95% CI 0.54 to 1.06 in case-control studies) (Sealy, Br J Nutr 2021) [49].
 
-**Prostate Cancer:** A study in Spain found that close adherence to a Mediterranean diet consisting of olive oil, fruits, vegetables, fish, and legumes was associated with approximately one-third lower risk of aggressive prostate cancer compared to poor adherence. Neither a "Prudent" diet (high in vegetables, fruits, low-fat dairy) nor a "Western" diet showed similar risk reduction (Castello, J Urol 2017) [50].
+**Prostate Cancer:** In a Spanish case-control study of 754 men with prostate cancer and 1,277 controls, high adherence to a Mediterranean pattern rich in fish, legumes and olive oil was linked to lower risk of more aggressive tumours (RR 0.66, 95% CI 0.46 to 0.96, third versus first quartile). Prudent and Western patterns showed no such link (Castello, J Urol 2018) [50].
 
-**Colorectal Cancer:** Observational studies have found an association between higher olive oil intake and reduced colorectal cancer risk. It has been proposed that olive oil might slow the transformation of healthy intestinal tissue to cancerous tissue, although this remains only a theory (Stoneham, J Epidemiol Community Health 2000; Pampaloni, Nutr Cancer 2014; Braga, Cancer 1998) [51][52][53].
+**Colorectal Cancer:** A study across 28 countries found olive oil consumption negatively linked to colorectal cancer rates, and its authors proposed that olive oil may change bile acids in the colon, which remains a hypothesis (Stoneham, J Epidemiol Community Health 2000) [51]. In an Italian case-control study, the top third of olive oil intake had lower odds of colorectal cancer (OR 0.83, 95% CI 0.70 to 0.99), but the link weakened after allowing for vegetable intake (Braga, Cancer 1998) [53].
 
-**Meta-Analyses:** A systematic review and meta-analysis of observational studies involving over 17,000 cancer patients and 28,000 controls found that higher olive oil intake was linked to reduced prevalence of various cancers, including breast and digestive types [4][54]. Another meta-analysis confirmed associations with lower risks of cardiovascular disease, type 2 diabetes, and all-cause mortality, attributing benefits to polyphenols and monounsaturated fats [4][55].
+**Meta-Analyses:** A meta-analysis of 19 case-control studies with 13,800 cancer patients and 23,340 controls found that the highest olive oil intake was linked to lower odds of any cancer, including breast and digestive cancers (Psaltopoulou, Lipids Health Dis 2011) [54].
 
 ### Cognitive Function and Dementia
 
-**Mild Cognitive Impairment:** A study (funded by an olive oil company) in Greece among 50 older people (average age 70) with mild cognitive impairment (MCI) found that consuming 50 mL (about 3.5 tablespoons) of EVOO with medium polyphenol content (271 mg/kg) daily while on a Mediterranean diet for 12 months reduced cognitive impairment scores by 5 points out of 70, compared to only a 0.3-point decrease in controls following a Mediterranean diet alone. Interestingly, participants using a higher-polyphenol oil (975 mg/kg) experienced a smaller though still significant reduction (3 points). However, neither group showed clinically meaningful change in Mini-Mental State Examination (MMSE) scores. Most olive oil group participants were APOE4 carriers, a risk factor for Alzheimer's disease (Tsolaki, J Alzheimers Dis 2020) [56]. Additional analyses from the same study showed significant decreases in blood markers of Alzheimer's disease risk (amyloid-beta, tau, p-tau) down to levels approaching those in non-cognitively impaired adults (Tzekaki, Exp Gerontol 2021) [57].
+**Mild Cognitive Impairment:** In the Greek MICOIL trial, people with mild cognitive impairment took 50 mL a day of high-phenolic or moderate-phenolic EVOO, or followed a Mediterranean diet alone, for 12 months. The high-phenolic group did better than both other groups in almost all cognitive domains, and the moderate-phenolic group did better than diet alone (Tsolaki, J Alzheimers Dis 2020) [56]. In 84 participants from the same trial, Alzheimer's blood markers (amyloid-beta, tau and p-tau) of those given EVOO returned to levels seen in cognitively healthy people (Tzekaki, Exp Gerontol 2021) [57].
 
-**Polyphenols vs. Monounsaturated Fat:** A study (not industry-funded) in New York among 25 older people (average age 67) with MCI showed that 30 mL of high-polyphenol EVOO (1,200 mg/kg total polyphenols, including 621 mg/kg oleocanthal) daily for 6 months did not significantly improve most measures of cognitive function compared to refined olive oil with no polyphenols. Both groups showed improvements in certain measures of memory and learning. The researchers speculated that cognitive benefits of olive oil may relate to its monounsaturated fat content rather than phenolic compounds. However, the EVOO group did show improved blood-brain barrier integrity and functional brain connectivity on imaging (Kaddoumi, Nutrients 2022) [58].
+**Polyphenols vs. Monounsaturated Fat:** In a US trial, 25 people with mild cognitive impairment completed 6 months of EVOO or refined olive oil. Both oils improved clinical dementia ratings and lowered blood amyloid ratios, but only EVOO reduced blood-brain barrier leakiness and improved brain connectivity on imaging (Kaddoumi, Nutrients 2022) [58].
 
-**Dementia Mortality:** A large cohort analysis reported that consuming more than 7 g of olive oil daily was associated with a 28% lower risk of dementia-related death [4][59]. A 2023 systematic review of RCTs concluded that olive oil intake enhances cognitive performance and reduces the risk of cognitive impairment, with effects particularly noted in Mediterranean diet contexts [4][60].
+**Dementia Mortality:** In the two US cohorts, at least 7 g a day of olive oil was linked to a 28% lower risk of dementia-related death (HR 0.72, 95% CI 0.64 to 0.81) compared with never or rarely using it (Tessier, JAMA Netw Open 2024) [59]. A 2023 systematic review of 11 studies found that olive oil intake was linked to better cognitive performance over time, and called for larger studies (Fazlollahi, Front Nutr 2023) [60].
 
 ### Testosterone
 
-Laboratory evidence suggests olive oil may increase testosterone levels by influencing enzymes involved in testosterone production (Hurtado de Catalfo, Lipids 2009) [61]. One small study in healthy young men in Morocco found that 25 mL (about 2 tablespoons) of EVOO daily for 3 weeks increased blood testosterone levels by approximately 17%. However, the study lacked a placebo control, and for 2 weeks prior to receiving olive oil, the men had consumed butter daily (Derouiche, Nat Prod Commun 2013) [62].
+In 60 healthy young Moroccan men who ate butter for 2 weeks and then EVOO or argan oil for 3 weeks, testosterone rose by 17.4% after EVOO. There was no placebo group (Derouiche, Nat Prod Commun 2013) [62].
 
 ### Acid Reflux
 
-Evidence is limited. Seven adults with severe bile reflux after gastrectomy experienced greatly reduced symptoms (burning and vomiting) when taking a tablespoon of olive oil after meals (Karamanolis, Eur J Gastroenterol Hepatol 2006) [63]. No placebo-controlled studies exist. People with reflux symptoms are generally advised to limit dietary fat, though this appears mainly related to saturated fat intake (Hungin, Eur J Gastroenterol Hepatol 2024) [64].
+Evidence is limited to a short 2006 report on olive oil for reflux symptoms after stomach removal surgery (gastrectomy) [63].
 
 ## 4. Recommended Dosing
 
 ### General Dietary Recommendation
 
-The FDA-qualified health claim specifies approximately 2 tablespoons (23 grams) of olive oil daily, used to replace a similar amount of saturated fat [31]. The PREDIMED trial used approximately 4 tablespoons (50 mL) per day of EVOO [16][17].
+The FDA claim rests on about 23 g (2 tablespoons) a day, eaten in place of saturated fat [31]. In PREDIMED, the top third of extra-virgin olive oil intake averaged 49.2 g a day [18].
 
 ### Dosing by Indication
 
 | Indication | Daily Amount | Evidence Level |
 |-----------|:-:|:-:|
-| Cardiovascular risk reduction | 2-4 tablespoons (23-50 mL) EVOO, replacing saturated fat | RCTs (PREDIMED) + large observational studies |
-| LDL oxidation protection (hydroxytyrosol) | ≥ 5 mg hydroxytyrosol daily (approximately 1-2 tablespoons of polyphenol-rich EVOO) | EFSA-authorized health claim |
-| Blood pressure support | 2-4 tablespoons (25-60 mL) EVOO | Small RCTs |
-| Diabetes prevention | 1.5-2 tablespoons (15-20 g) any olive oil | Review of 33 studies |
-| Blood sugar control (with meals) | 0.75-2.75 tablespoons (10-37 g) EVOO with meals | Small RCTs |
-| Fatty liver disease prevention | 3-4 tablespoons as part of Mediterranean diet | Sub-study of PREDIMED |
-| Weight management | 2 tablespoons (25 mL) EVOO, as fat replacement on calorie-restricted diet | Small RCT |
+| Cardiovascular risk reduction | About 2 tablespoons, replacing saturated fat [31]; top PREDIMED intake averaged 49.2 g a day [18] | RCTs (PREDIMED) + large observational studies |
+| LDL oxidation protection (hydroxytyrosol) | 5 mg hydroxytyrosol and its derivatives daily, in olive oil [27] | EFSA-authorized health claim |
+| Blood pressure and weight management | 25 mL EVOO within a calorie-restricted diet [41] | Small RCT |
+| Blood sugar control (with meals) | 10 g EVOO in a meal [36] | Small RCT |
+| Fatty liver (association only) | Mediterranean diet with free EVOO [44] | Sub-study of PREDIMED |
 
 ### Practical Considerations
 
-- **Dose-response evidence** suggests cardiovascular and mortality benefits are most pronounced at intakes up to approximately 20 g/day (about 1.5 tablespoons), with diminishing returns beyond this level [4].
+- **Dose-response evidence** suggests the cardiovascular and mortality links level off above about 20 g a day [74].
 - **Replace, don't add.** Olive oil should substitute for less healthy fats (butter, margarine, mayonnaise), not be added on top of existing fat intake. At 120 kcal per tablespoon, excess consumption contributes to weight gain.
-- **EVOO vs. regular olive oil matters.** Several studies found benefits specific to extra virgin olive oil that were not seen with refined or pomace olive oil, suggesting that polyphenol content contributes to benefits beyond those of oleic acid alone [18][24][45].
-- **Polyphenol content varies widely.** To maximize polyphenol intake, choose EVOO with at least 250 mg/kg total polyphenols (per the EU health claim standard), which typically means selecting early-harvest, single-origin oils from cultivars known for high phenol content (e.g., Koroneiki, Picual, Coratina) [4][7].
+- **EVOO vs. regular olive oil matters.** Several studies found benefits specific to extra virgin olive oil that were not seen with common (refined) olive oil [18][45], and high-polyphenol oil beat low-polyphenol oil on some markers [24], suggesting that polyphenol content contributes to benefits beyond those of oleic acid alone.
 
 ## 5. Safety and Side Effects
 
 ### General Safety
 
-Consumption of olive oil in the diet is generally considered safe and well-tolerated [1][4]. The primary concern is caloric density rather than toxicity — olive oil is a fat and contributes approximately 120 kcal per tablespoon.
+The main concern with olive oil is energy rather than toxicity: as a pure fat, it provides about 120 kcal per tablespoon [5].
 
 ### Polycyclic Aromatic Hydrocarbons (PAHs)
 
-In 2023, the European Commission set maximum allowable levels of PAHs (polycyclic aromatic hydrocarbons) in dietary oils and fats. Certain PAHs are believed to cause cancer. However, studies evaluating PAH concentrations in olive oils from China and various European countries found that nearly all oils met European standards (Liu, Foods 2023; Bertoz, Foods 2021) [65][66]. Testing of 148 olive oils by the Canadian Food Inspection Agency (2019-2020) concluded that although most olive oils contained PAHs, all would still be considered safe for human consumption [67].
+PAHs are cancer-causing contaminants that can reach vegetable oils from the air or poor processing [66]. In a Chinese survey of 139 vegetable oils, olive oil had the lowest mean PAH level (0.39 μg/kg), and the authors found no health concern from dietary exposure (Liu, Foods 2023) [65].
 
 ### Cooking and Polyphenol Degradation
 
-Temperature and cooking time modify the chemical profile of olive oil. Polyphenols and vitamin E become "almost depleted after a short heating period" (Santos, Food Res Int 2013) [68]. A study found that sauteing for 30 minutes reduced polyphenols by 40% at moderate temperature (248 deg F / 120 deg C) and by 75% at high temperature (338 deg F / 170 deg C). Temperature was more important than cooking time in determining polyphenol loss (Lozano-Castellon, Antioxidants 2020) [69].
+In a home sautéing test, EVOO polyphenols fell by 40% at 120 °C and 75% at 170 °C compared with raw oil. Temperature mattered more than cooking time, and the cooked oil still met the EU health claim criteria (Lozano-Castellon, Antioxidants 2020) [69].
 
-To minimize polyphenol loss, keep heat as low as possible and add olive oil in the later stages of cooking rather than at the beginning [1][69].
-
-Despite polyphenol degradation, EVOO demonstrates good oxidative stability during cooking due to its monounsaturated fat dominance and remaining antioxidants, often producing fewer harmful compounds than seed oils like canola despite a moderate smoke point (approximately 177-210 deg C / 350-410 deg F) [4][70].
+Lower heat keeps more polyphenols [69].
 
 ### Storage and Shelf Life
 
-EVOO should be stored in a cool (14-18 deg C), dark location in dark glass or tin containers [1][4][13]. Polyphenol levels decrease over time: storing in dark glass kept in darkness loses only 10-15% of total phenols over one year, versus 52-65% loss in plastic bottles exposed to light [13]. Storage at room temperature (73 deg F) results in only slight oxidation over one year, while storage at higher temperatures (86-104 deg F) dramatically accelerates oxidation (Caipo, Foods 2021) [71].
+In a one-year study, EVOO stored at 23 °C, in light or dark, kept more unoxidised phenols than oil stored at 30 or 40 °C (Caipo, Foods 2021) [71].
 
-Refrigeration is generally not necessary for an unopened bottle that will be used within one year. However, for storage beyond one year, refrigeration helps preserve quality, freshness, and taste (Lazarou, J Sci Food Agric 2024) [72]. Refrigeration may cause temporary congealing, but the oil liquefies within minutes at room temperature. Repeatedly taking olive oil in and out of the refrigerator may stress the oil [1].
-
-Shelf life is typically 18-24 months from harvest date when stored properly. Unfiltered EVOO has a shorter shelf life due to sediments and residual moisture that can accelerate oxidation [4].
+In a 24-month study of Greek Kolovi EVOO, storage at 4 °C better preserved acidity, fruitiness and polyphenols than room temperature, especially after 1 year. The authors recommend refrigerating EVOO for up to 18 months (Lazarou, J Sci Food Agric 2024) [72].
 
 ### Special Populations
 
-- **Infants:** EVOO is safe and beneficial when introduced around 6 months of age as part of complementary feeding, providing healthy monounsaturated fats for brain development along with vitamins E and K [4].
-- **Children and pregnant individuals:** Should limit added oils to align with overall dietary fat guidelines (20-35% of total calories from fats) per EFSA and WHO recommendations [4].
+The trials on this page enrolled adults, so they do not show effects in infants, children or pregnancy. In those groups, ask your doctor or dietitian about dietary fat.
 
 ## 6. Drug Interactions
 
-Olive oil may potentially enhance the effects of the following medications and should be used with caution in patients taking them [1]:
+Olive oil may add to the effects of the following medications:
 
 | Drug Class | Examples | Interaction |
 |-----------|---------|-------------|
-| Diabetes medications | Insulin, glimepiride (Amaryl) | Olive oil may improve insulin sensitivity and lower blood sugar, potentially enhancing the effects of glucose-lowering medications |
-| Blood pressure medications | Diltiazem (Cardizem), amlodipine (Norvasc) | Olive oil may lower blood pressure, potentially adding to the effects of antihypertensive drugs |
+| Diabetes medications | Insulin and other glucose-lowering medicines | Olive oil lowered HbA1c and fasting glucose in type 2 diabetes [37] and lowered blood glucose after meals [36], which may add to these medicines |
+| Blood pressure medications | Antihypertensive medicines | An extra-virgin olive oil diet cut the daily antihypertensive dose in people with high blood pressure [20], which may add to these medicines |
 
-These interactions are generally modest and are related to olive oil's beneficial effects on blood sugar and blood pressure. They do not represent contraindications but rather situations requiring awareness, particularly when olive oil consumption changes significantly.
-
-No significant adverse drug interactions have been reported in the clinical literature. The pharmacological effects of olive oil are food-level effects, not drug-level effects.
+They do not represent contraindications but rather situations requiring awareness, particularly when olive oil consumption changes significantly. If you take these medicines, ask your doctor before a large change in intake.
 
 ## 7. Dietary Sources
 
-Olive oil is itself a dietary source — it is not a nutrient obtained from other foods. The relevant consideration is the quality and type of olive oil consumed.
+Olive oil is a food in its own right, not a nutrient found in other foods, so what matters is its grade and quality.
 
 ### Nutritional Composition Per Tablespoon (14 g)
 
@@ -260,7 +258,7 @@ Olive oil is itself a dietary source — it is not a nutrient obtained from othe
 |----------|:-:|
 | Calories | 120 kcal |
 | Total Fat | 14 g |
-| Monounsaturated Fat (oleic acid) | 10 g (~73% of total fat) |
+| Monounsaturated Fat (oleic acid) | 10 g |
 | Saturated Fat | 2 g |
 | Polyunsaturated Fat | 1.5 g |
 | Vitamin E (alpha-tocopherol) | ~2 mg (13% DV) |
@@ -272,175 +270,129 @@ Olive oil is itself a dietary source — it is not a nutrient obtained from othe
 
 ### Polyphenol Content by Oil Type
 
-| Oil Type | Approximate Polyphenol Content |
-|----------|:-:|
-| Extra Virgin Olive Oil (typical) | 100-500 mg/kg |
-| High-polyphenol EVOO (early harvest, specific cultivars) | 500-1,000+ mg/kg |
-| Virgin Olive Oil | 50-200 mg/kg |
-| Refined Olive Oil | Negligible (removed by refining) |
-| "Regular" / "Pure" Olive Oil (blend of refined + virgin) | Low |
+EVOO carries polyphenols that common, refined olive oil lacks [18]. Levels vary between oils, and labels rarely state them.
 
 ### Cultivars and Flavor Profiles
 
-| Cultivar | Origin | Flavor Profile | Polyphenol Level |
-|----------|--------|----------------|:-:|
-| Arbequina | Catalonia, Spain | Mild, buttery, nutty, almond notes | Lower |
-| Koroneiki | Peloponnese, Greece | Intense, herbaceous, peppery | Higher |
-| Picual | Andalusia, Spain | Robust, bitter, spicy, high stability | Higher |
-| Frantoio | Tuscany, Italy | Balanced, herbaceous, artichoke notes | Moderate-High |
-| Coratina | Puglia, Italy | Very pungent, bitter, high in polyphenols | Higher |
+The studies on this page tested single cultivars, such as Hojiblanca, Arbequina and Kolovi, so their results may not apply to every oil [69][71][72].
 
 ### Incorporating EVOO Into the Diet
 
 - **Drizzling** over salads, vegetables, soups, and bread preserves the full polyphenol content
-- **Low-temperature sauteing** (below 248 deg F / 120 deg C) retains approximately 60% of polyphenols [69]
+- **Lower-heat sautéing** keeps more polyphenols than high heat [69]
 - **As a replacement** for butter, margarine, mayonnaise, or other saturated fats in cooking
-- **In the later stages of cooking** — adding after turning down the heat minimizes polyphenol loss
-- **In vinaigrettes and marinades** — a classic ratio of 3:1 oil to vinegar maximizes flavor and nutrient delivery
 - **With meals** rather than on an empty stomach, particularly for blood sugar benefits [36]
 
 ## 8. References
-
-[1] ConsumerLab. "Extra Virgin Olive Oil Review." Accessed 2025. [https://www.consumerlab.com/reviews/extra-virgin-olive-oil-review/evoo/](https://www.consumerlab.com/reviews/extra-virgin-olive-oil-review/evoo/)
 
 [2] International Olive Council. "Trade Standard Applying to Olive Oils and Olive-Pomace Oils." COI/T.15/NC No. 3/Rev. 16. [https://www.internationaloliveoil.org/](https://www.internationaloliveoil.org/)
 
 [3] European Commission. "Olive oil — Agriculture and rural development." Commission Delegated Regulation (EU) 2022/2104. [https://agriculture.ec.europa.eu/farming/crop-productions/olive-oil_en](https://agriculture.ec.europa.eu/farming/crop-productions/olive-oil_en)
 
-[4] Grokipedia. "Extra virgin olive oil." [https://grokipedia.com/page/Extra_virgin_olive_oil](https://grokipedia.com/page/Extra_virgin_olive_oil)
-
 [5] U.S. Department of Agriculture, FoodData Central. "Oil, olive, salad or cooking." [https://fdc.nal.usda.gov/](https://fdc.nal.usda.gov/)
 
-[6] Ikonomidis I, et al. "Effects of hydroxytyrosol on arterial function in coronary artery disease." *Eur J Clin Invest*. 2023. doi: [10.1111/eci.13971](https://doi.org/10.1111/eci.13971)
+[6] Ikonomidis I, Katogiannis K, Chania C, et al. "Association of hydroxytyrosol enriched olive oil with vascular function in chronic coronary disease." *Eur J Clin Invest*. 2023;53(7):e13983. PMID: 36912212. doi: [10.1111/eci.13983](https://doi.org/10.1111/eci.13983)
 
-[7] Romero C, et al. "In vitro activity of olive oil polyphenols against Helicobacter pylori." *J Agric Food Chem*. 2007;55(3):680-686.
-
-[8] Garcia A, et al. "Phenolic content of commercial olive oils." *Eur Food Res Technol*. 2003;216(6):520-525.
-
-[9] Gutierrez-Rosales F, et al. "Determination of the main aglycon polyphenols in olive oil." *J Agric Food Chem*. 2003;51(21):6021-6025.
-
-[10] Beauchamp GK, Keast RS, Morel D, et al. "Phytochemistry: ibuprofen-like activity in extra-virgin olive oil." *Nature*. 2005;437(7055):45-46. doi: [10.1038/437045a](https://doi.org/10.1038/437045a)
-
-[11] UNESCO. "Mediterranean diet — Intangible Cultural Heritage of Humanity." 2010. [https://ich.unesco.org/en/RL/mediterranean-diet-00884](https://ich.unesco.org/en/RL/mediterranean-diet-00884)
+[10] Beauchamp GK, Keast RS, Morel D, et al. "Phytochemistry: ibuprofen-like activity in extra-virgin olive oil." *Nature*. 2005;437(7055):45-46. PMID: 16136122. doi: [10.1038/437045a](https://doi.org/10.1038/437045a)
 
 [12] International Olive Council. "Sensory Evaluation of Virgin Olive Oil: Method for the Organoleptic Assessment." COI/T.20/Doc. No 15/Rev. 10. [https://www.internationaloliveoil.org/](https://www.internationaloliveoil.org/)
 
-[13] Torre-Robles A, et al. "Phenolic compounds and antioxidant activity of virgin olive oil stored in different conditions." *J Am Oil Chem Soc*. 2019. doi: [10.1002/aocs.12274](https://doi.org/10.1002/aocs.12274)
-
 [14] Frankel EN, et al. "Tests indicate that imported 'extra virgin' olive oil often fails international and USDA standards." UC Davis Olive Center Report. 2010. [https://olivecenter.ucdavis.edu/](https://olivecenter.ucdavis.edu/)
 
-[15] Guasch-Ferre M, Li Y, Willett WC, et al. "Consumption of Olive Oil and Risk of Total and Cause-Specific Mortality Among U.S. Adults." *J Am Coll Cardiol*. 2022;79(2):101-112. doi: [10.1016/j.jacc.2021.10.041](https://doi.org/10.1016/j.jacc.2021.10.041)
+[15] Guasch-Ferre M, Li Y, Willett WC, et al. "Consumption of Olive Oil and Risk of Total and Cause-Specific Mortality Among U.S. Adults." *J Am Coll Cardiol*. 2022;79(2):101-112. PMID: 35027106. doi: [10.1016/j.jacc.2021.10.041](https://doi.org/10.1016/j.jacc.2021.10.041)
 
-[16] Estruch R, Ros E, Salas-Salvado J, et al. "Primary Prevention of Cardiovascular Disease with a Mediterranean Diet." *N Engl J Med*. 2013;368(14):1279-1290. doi: [10.1056/NEJMoa1200303](https://doi.org/10.1056/NEJMoa1200303)
+[17] Estruch R, Ros E, Salas-Salvado J, et al. "Primary Prevention of Cardiovascular Disease with a Mediterranean Diet Supplemented with Extra-Virgin Olive Oil or Nuts." *N Engl J Med*. 2018;378(25):e34. PMID: 29897866. doi: [10.1056/NEJMoa1800389](https://doi.org/10.1056/NEJMoa1800389) (Corrected and republished; replaces the retracted 2013 report.)
 
-[17] Estruch R, Ros E, Salas-Salvado J, et al. "Primary Prevention of Cardiovascular Disease with a Mediterranean Diet Supplemented with Extra-Virgin Olive Oil or Nuts." *N Engl J Med*. 2018;378(25):e34. doi: [10.1056/NEJMoa1800389](https://doi.org/10.1056/NEJMoa1800389)
+[18] de Rojas JP, Toledo E, Estruch R, et al. "Extra-virgin olive oil and additional cardiovascular outcomes in the PREDIMED Trial: An outcome-wide perspective." *Am Heart J*. 2026;291:175-185. PMID: 40907633. doi: [10.1016/j.ahj.2025.08.021](https://doi.org/10.1016/j.ahj.2025.08.021)
 
-[18] Perez de Rojas J, et al. "Extra virgin olive oil intake and cardiovascular disease risk in the PREDIMED trial." *Am Heart J*. 2026.
+[19] Rozati M, et al. "Cardio-metabolic and immunological impacts of extra virgin olive oil consumption in overweight and obese older adults: a randomized controlled trial." *Nutr Metab (Lond)*. 2015;12:28. PMID: 26251666. doi: [10.1186/s12986-015-0022-5](https://doi.org/10.1186/s12986-015-0022-5)
 
-[19] Rozati M, et al. "Cardio-metabolic and immunological impacts of extra virgin olive oil consumption in overweight and obese older adults." *Nutr Metab (Lond)*. 2015;12:28. doi: [10.1186/s12986-015-0022-5](https://doi.org/10.1186/s12986-015-0022-5)
+[20] Ferrara LA, et al. "Olive oil and reduced need for antihypertensive medications." *Arch Intern Med*. 2000;160(6):837-842. PMID: 10737284. doi: [10.1001/archinte.160.6.837](https://doi.org/10.1001/archinte.160.6.837)
 
-[20] Ferrara LA, et al. "Olive oil and reduced need for antihypertensive medications." *Arch Intern Med*. 2000;160(6):837-842. doi: [10.1001/archinte.160.6.837](https://doi.org/10.1001/archinte.160.6.837)
+[21] Desjardins LC, Brière F, Tremblay AJ, et al. "Substitution of dietary monounsaturated fatty acids from olive oil for saturated fatty acids from lard increases low-density lipoprotein apolipoprotein B-100 fractional catabolic rate in subjects with dyslipidemia associated with insulin resistance: a randomized controlled trial." *Am J Clin Nutr*. 2024;119(5):1270-1279. PMID: 38518848. doi: [10.1016/j.ajcnut.2024.03.015](https://doi.org/10.1016/j.ajcnut.2024.03.015)
 
-[21] Desjardins C, et al. "Replacing saturated with unsaturated fats from olive oil: effects on apolipoprotein B metabolism." *Am J Clin Nutr*. 2024. doi: [10.1016/j.ajcnut.2024.01.001](https://doi.org/10.1016/j.ajcnut.2024.01.001)
+[24] George ES, Marshall S, Mayr HL, et al. "The effect of high-polyphenol extra virgin olive oil on cardiovascular risk factors: A systematic review and meta-analysis." *Crit Rev Food Sci Nutr*. 2019;59(17):2772-2795. PMID: 29708409. doi: [10.1080/10408398.2018.1470491](https://doi.org/10.1080/10408398.2018.1470491)
 
-[22] Sniderman AD, et al. "ApoB vs LDL Cholesterol for Estimating Cardiovascular Risk." *JAMA Cardiol*. 2022;7(12):1227-1234. doi: [10.1001/jamacardio.2022.3899](https://doi.org/10.1001/jamacardio.2022.3899)
+[25] Sarapis K, George ES, Marx W, et al. "Extra virgin olive oil improves HDL lipid fraction but not HDL-mediated cholesterol efflux capacity: a double-blind, randomised, controlled, cross-over study (OLIVAUS)." *Br J Nutr*. 2023;130(4):641-650. PMID: 36377535. doi: [10.1017/S0007114522003634](https://doi.org/10.1017/S0007114522003634)
 
-[23] Marston NA, et al. "Association Between Triglyceride Lowering and Reduction of Cardiovascular Risk." *JAMA Cardiol*. 2022.
+[27] European Food Safety Authority (EFSA). "Scientific Opinion on the substantiation of health claims related to polyphenols in olive and protection of LDL particles from oxidative damage (ID 1333, 1638, 1639, 1696, 2865), maintenance of normal blood HDL cholesterol concentrations (ID 1639), maintenance of normal blood pressure (ID 3781), 'anti-inflammatory properties' (ID 1882), 'contributes to the upper respiratory tract health' (ID 3468), 'can help to maintain a normal function of gastrointestinal tract' (3779), and 'contributes to body defences against external agents' (ID 3467) pursuant to Article 13(1) of Regulation (EC) No 1924/2006." *EFSA Journal*. 2011;9(4):2033. doi: [10.2903/j.efsa.2011.2033](https://doi.org/10.2903/j.efsa.2011.2033)
 
-[24] George ES, et al. "A Mediterranean Diet Model in Australia: The Effect of Olive Oil Phenolics on Lipid Profiles." *Crit Rev Food Sci Nutr*. 2019;59(13):2089-2109. doi: [10.1080/10408398.2018.1436511](https://doi.org/10.1080/10408398.2018.1436511)
+[28] Jimenez-Torres J, Alcalá-Diaz JF, Torres-Peña JD, et al. "Mediterranean Diet Reduces Atherosclerosis Progression in Coronary Heart Disease: An Analysis of the CORDIOPREV Randomized Controlled Trial." *Stroke*. 2021;52(11):3440-3449. PMID: 34372670. doi: [10.1161/STROKEAHA.120.033214](https://doi.org/10.1161/STROKEAHA.120.033214) (An erratum has been published.)
 
-[25] Sarapis K, et al. "Effects of high-polyphenol versus low-polyphenol extra virgin olive oil on lipid profile and lipid oxidation." *Brit J Nutr*. 2022. doi: [10.1017/S0007114521002233](https://doi.org/10.1017/S0007114521002233)
+[29] Fernandez-Jarne E, et al. "Risk of first non-fatal myocardial infarction negatively associated with olive oil consumption: a case-control study in Spain." *Int J Epidemiol*. 2002;31(2):474-480. PMID: 11980820. doi: [10.1093/intjepid/31.2.474](https://doi.org/10.1093/intjepid/31.2.474)
 
-[26] European Food Safety Authority (EFSA). "Scientific opinion on olive oil polyphenols and HDL cholesterol." *EFSA Journal*. 2025.
-
-[27] European Food Safety Authority (EFSA). "Scientific Opinion on the substantiation of health claims related to polyphenols in olive oil and protection of LDL particles from oxidative damage." *EFSA Journal*. 2011;9(4):2033. doi: [10.2903/j.efsa.2011.2033](https://doi.org/10.2903/j.efsa.2011.2033)
-
-[28] Jimenez-Torres J, et al. "Mediterranean diet reduces progression of subclinical atherosclerosis." *Stroke*. 2021;52(10):3440-3449. doi: [10.1161/STROKEAHA.121.034717](https://doi.org/10.1161/STROKEAHA.121.034717)
-
-[29] Fernandez-Jarne E, et al. "Risk of first non-fatal myocardial infarction negatively associated with olive oil consumption." *Int J Epidemiol*. 2002;31(2):474-480. doi: [10.1093/ije/31.2.474](https://doi.org/10.1093/ije/31.2.474)
-
-[30] Kouli GM, et al. "Olive oil consumption and 10-year cardiovascular disease incidence." *Eur J Nutr*. 2017;56(1):135-145. doi: [10.1007/s00394-015-1063-9](https://doi.org/10.1007/s00394-015-1063-9)
+[30] Kouli GM, Panagiotakos DB, Kyrou I, et al. "Olive oil consumption and 10-year (2002-2012) cardiovascular disease incidence: the ATTICA study." *Eur J Nutr*. 2019;58(1):131-138. PMID: 29124386. doi: [10.1007/s00394-017-1577-x](https://doi.org/10.1007/s00394-017-1577-x)
 
 [31] U.S. Food and Drug Administration. "Qualified Health Claim for Monounsaturated Fatty Acids from Olive Oil and Reduced Risk of Coronary Heart Disease." FDA Docket No. 2003Q-0559. 2004.
 
-[32] Krenek AC, et al. "Effects of a whole food, plant-based diet with and without extra virgin olive oil on cardiovascular risk factors." *J Am Heart Assoc*. 2024. doi: [10.1161/JAHA.123.033291](https://doi.org/10.1161/JAHA.123.033291)
+[32] Krenek AM, Mathews A, Guo J, et al. "Recipe for Heart Health: A Randomized Crossover Trial on Cardiometabolic Effects of Extra Virgin Olive Oil Within a Whole-Food Plant-Based Vegan Diet." *J Am Heart Assoc*. 2024;13(15):e035034. PMID: 39045758. doi: [10.1161/JAHA.124.035034](https://doi.org/10.1161/JAHA.124.035034)
 
-[33] Morris ME, et al. "Effects of extra virgin olive oil on cardiovascular risk markers in healthy women." *Pregnancy Hypertens*. 2026.
+[33] Morris EA, McBride CA, Roberts L, et al. "Cardiovascular effects of extra virgin olive oil in healthy reproductive-aged women: a randomized controlled trial." *Pregnancy Hypertens*. 2026;43:101411. PMID: 41520410. doi: [10.1016/j.preghy.2025.101411](https://doi.org/10.1016/j.preghy.2025.101411)
 
-[34] Bermudez B, et al. "Oleic acid in health and disease." *Food Funct*. 2014;5(2):227-232.
+[35] Garcia-Serrano S, Ho-Plagaro A, Santiago-Fernandez C, et al. "An Isolated Dose of Extra-Virgin Olive Oil Produces a Better Postprandial Gut Hormone Response, Lipidic, and Anti-Inflammatory Profile that Sunflower Oil: Effect of Morbid Obesity." *Mol Nutr Food Res*. 2021;65(22):e2100071. PMID: 34476896. doi: [10.1002/mnfr.202100071](https://doi.org/10.1002/mnfr.202100071)
 
-[35] Garcia-Serrano AM, et al. "Postprandial response to virgin olive oil vs other edible oils." *Mol Nutr Food Res*. 2021. doi: [10.1002/mnfr.202001065](https://doi.org/10.1002/mnfr.202001065)
+[36] Carnevale R, Loffredo L, Del Ben M, et al. "Extra virgin olive oil improves post-prandial glycemic and lipid profile in patients with impaired fasting glucose." *Clin Nutr*. 2017;36(3):782-787. PMID: 27289163. doi: [10.1016/j.clnu.2016.05.016](https://doi.org/10.1016/j.clnu.2016.05.016)
 
-[36] Carnevale R, et al. "Extra virgin olive oil blunt post-prandial oxidative stress via NOX2 down-regulation." *Clin Nutr*. 2017;36(2):510-516. doi: [10.1016/j.clnu.2016.01.009](https://doi.org/10.1016/j.clnu.2016.01.009)
+[37] Schwingshackl L, et al. "Olive oil in the prevention and management of type 2 diabetes mellitus: a systematic review and meta-analysis of cohort studies and intervention trials." *Nutr Diabetes*. 2017;7(4):e262. PMID: 28394365. doi: [10.1038/nutd.2017.12](https://doi.org/10.1038/nutd.2017.12)
 
-[37] Schwingshackl L, et al. "Olive oil in the prevention and management of type 2 diabetes mellitus." *Nutr Diabetes*. 2017;7(4):e262. doi: [10.1038/nutd.2017.12](https://doi.org/10.1038/nutd.2017.12)
+[38] Basterra-Gortari FJ, Ruiz-Canela M, Martínez-González MA, et al. "Effects of a Mediterranean Eating Plan on the Need for Glucose-Lowering Medications in Participants With Type 2 Diabetes: A Subgroup Analysis of the PREDIMED Trial." *Diabetes Care*. 2019;42(8):1390-1397. PMID: 31182491. doi: [10.2337/dc18-2475](https://doi.org/10.2337/dc18-2475)
 
-[38] Basterra-Gortari FJ, et al. "Mediterranean diet enriched with extra-virgin olive oil or nuts and incident type 2 diabetes medication." *Diabetes Care*. 2019;42(8):1502-1509. doi: [10.2337/dc18-2348](https://doi.org/10.2337/dc18-2348)
+[39] Bozzetto L, et al. "Extra-Virgin Olive Oil Reduces Glycemic Response to a High-Glycemic Index Meal in Patients With Type 1 Diabetes: A Randomized Controlled Trial." *Diabetes Care*. 2016;39(4):518-524. PMID: 26861923. doi: [10.2337/dc15-2189](https://doi.org/10.2337/dc15-2189)
 
-[39] Bozzetto L, et al. "Extra-virgin olive oil reduces glycemic response to a high-glycemic index meal in patients with type 1 diabetes." *Diabetes Care*. 2016;39(4):518-524. doi: [10.2337/dc15-2189](https://doi.org/10.2337/dc15-2189)
+[40] Ruiz-García I, Ortíz-Flores R, Badía R, et al. "Rich oleocanthal and oleacein extra virgin olive oil and inflammatory and antioxidant status in people with obesity and prediabetes. The APRIL study: A randomised, controlled crossover study." *Clin Nutr*. 2023;42(8):1389-1398. PMID: 37421852. doi: [10.1016/j.clnu.2023.06.027](https://doi.org/10.1016/j.clnu.2023.06.027)
 
-[40] Ruiz-Garcia I, et al. "Effects of an extra virgin olive oil enriched in oleocanthal on inflammation and blood glucose in obese adults with prediabetes." *Clin Nutr*. 2023;42(6):1006-1017. doi: [10.1016/j.clnu.2023.04.012](https://doi.org/10.1016/j.clnu.2023.04.012)
+[41] Galvão Cândido F, Xavier Valente F, da Silva LE, et al. "Consumption of extra virgin olive oil improves body composition and blood pressure in women with excess body fat: a randomized, double-blinded, placebo-controlled clinical trial." *Eur J Nutr*. 2018;57(7):2445-2455. PMID: 28808791. doi: [10.1007/s00394-017-1517-9](https://doi.org/10.1007/s00394-017-1517-9)
 
-[41] Candido FG, et al. "Consumption of extra virgin olive oil improves body composition in women with excess body fat." *Eur J Nutr*. 2018;57(7):2445-2455. doi: [10.1007/s00394-017-1517-9](https://doi.org/10.1007/s00394-017-1517-9)
+[42] Tsamos G, Kalopitas G, Evripidou K, et al. "The Effects of Olive Oil Consumption on Biochemical Parameters and Body Mass Index of People with Nonalcoholic Fatty Liver Disease: A Systematic Review and Meta-Analysis of Randomized Controlled Trials." *Nutrients*. 2024;16(6):857. PMID: 38542768. doi: [10.3390/nu16060857](https://doi.org/10.3390/nu16060857)
 
-[42] Tsamos G, et al. "Olive oil and Mediterranean diet in NAFLD/MASLD: a systematic review." *Nutrients*. 2024. doi: [10.3390/nu16030396](https://doi.org/10.3390/nu16030396)
+[43] Wing A, Jeffery E, Church CD, et al. "Dietary oleic acid drives obesogenic adipogenesis via modulation of LXRα signaling." *Cell Rep*. 2025;44(4):115527. PMID: 40208790. doi: [10.1016/j.celrep.2025.115527](https://doi.org/10.1016/j.celrep.2025.115527)
 
-[43] Wing C, et al. "Oleic acid drives adipocyte precursor expansion in a high-fat diet." *Cell Rep*. 2025.
+[44] Pintó X, Fanlo-Maresma M, Corbella E, et al. "A Mediterranean Diet Rich in Extra-Virgin Olive Oil Is Associated with a Reduced Prevalence of Nonalcoholic Fatty Liver Disease in Older Individuals at High Cardiovascular Risk." *J Nutr*. 2019;149(11):1920-1929. PMID: 31334554. doi: [10.1093/jn/nxz147](https://doi.org/10.1093/jn/nxz147)
 
-[44] Pinto X, et al. "Mediterranean diet enriched with extra virgin olive oil decreases incidence of NAFLD." *J Nutr*. 2019;149(11):2020-2028. doi: [10.1093/jn/nxz174](https://doi.org/10.1093/jn/nxz174)
+[45] Garcia-Gavilan JF, et al. "Extra virgin olive oil consumption reduces the risk of osteoporotic fractures in the PREDIMED trial." *Clin Nutr*. 2018;37(1):329-335. PMID: 28143667. doi: [10.1016/j.clnu.2016.12.030](https://doi.org/10.1016/j.clnu.2016.12.030)
 
-[45] Garcia-Gavilan JF, et al. "Extra virgin olive oil consumption reduces the risk of osteoporotic fractures in the PREDIMED trial." *Clin Nutr*. 2018;37(1):329-335. doi: [10.1016/j.clnu.2016.12.030](https://doi.org/10.1016/j.clnu.2016.12.030)
+[46] Parkinson L, Cicerale S. "The Health Benefiting Mechanisms of Virgin Olive Oil Phenolic Compounds." *Molecules*. 2016;21(12):1734. PMID: 27999296. doi: [10.3390/molecules21121734](https://doi.org/10.3390/molecules21121734)
 
-[46] Parkinson L, Cicerale S. "The Health Benefiting Mechanisms of Virgin Olive Oil Phenolic Compounds." *Molecules*. 2016;21(12):1734. doi: [10.3390/molecules21121734](https://doi.org/10.3390/molecules21121734)
+[47] Jacka FN, O'Neil A, Opie R, et al. "A randomised controlled trial of dietary improvement for adults with major depression (the 'SMILES' trial)." *BMC Medicine*. 2017;15(1):23. PMID: 28137247. doi: [10.1186/s12916-017-0791-y](https://doi.org/10.1186/s12916-017-0791-y) (An erratum has been published.)
 
-[47] Jacka FN, O'Neil A, Opie R, et al. "A randomised controlled trial of dietary improvement for adults with major depression (the 'SMILES' trial)." *BMC Medicine*. 2017;15(1):23. doi: [10.1186/s12916-017-0791-y](https://doi.org/10.1186/s12916-017-0791-y)
+[48] Toledo E, Salas-Salvado J, Donat-Vargas C, et al. "Mediterranean Diet and Invasive Breast Cancer Risk Among Women at High Cardiovascular Risk in the PREDIMED Trial." *JAMA Intern Med*. 2015;175(11):1752-1760. PMID: 26365989. doi: [10.1001/jamainternmed.2015.4838](https://doi.org/10.1001/jamainternmed.2015.4838) (An erratum has been published.)
 
-[48] Toledo E, Salas-Salvado J, Donat-Vargas C, et al. "Mediterranean Diet and Invasive Breast Cancer Risk Among Women at High Cardiovascular Risk in the PREDIMED Trial." *JAMA Intern Med*. 2015;175(11):1752-1760. doi: [10.1001/jamainternmed.2015.4838](https://doi.org/10.1001/jamainternmed.2015.4838)
+[49] Sealy N, Hankinson SE, Houghton SC. "Olive oil and risk of breast cancer: a systematic review and dose-response meta-analysis of observational studies." *Br J Nutr*. 2021;125(10):1148-1156. PMID: 32883373. doi: [10.1017/S0007114520003499](https://doi.org/10.1017/S0007114520003499)
 
-[49] Sealy N, et al. "Olive oil and breast cancer risk: a systematic review and meta-analysis." *Brit J Nutr*. 2021;126(7):1091-1100. doi: [10.1017/S0007114520004899](https://doi.org/10.1017/S0007114520004899)
+[50] Castelló A, Boldo E, Amiano P, et al. "Mediterranean Dietary Pattern is Associated with Low Risk of Aggressive Prostate Cancer: MCC-Spain Study." *J Urol*. 2018;199(2):430-437. PMID: 28842246. doi: [10.1016/j.juro.2017.08.087](https://doi.org/10.1016/j.juro.2017.08.087)
 
-[50] Castello A, et al. "Mediterranean dietary pattern is associated with low risk of aggressive prostate cancer." *J Urol*. 2018;199(2):430-437. doi: [10.1016/j.juro.2017.08.087](https://doi.org/10.1016/j.juro.2017.08.087)
+[51] Stoneham M, et al. "Olive oil, diet and colorectal cancer: an ecological study and a hypothesis." *J Epidemiol Community Health*. 2000;54(10):756-760. PMID: 10990479. doi: [10.1136/jech.54.10.756](https://doi.org/10.1136/jech.54.10.756)
 
-[51] Stoneham M, et al. "Olive oil, diet and colorectal cancer: an ecological study and a hypothesis." *J Epidemiol Community Health*. 2000;54(10):756-760. doi: [10.1136/jech.54.10.756](https://doi.org/10.1136/jech.54.10.756)
+[53] Braga C, et al. "Olive oil, other seasoning fats, and the risk of colorectal carcinoma." *Cancer*. 1998;82(3):448-453. PMID: 9452260.
 
-[52] Pampaloni B, et al. "In vitro effects of polyphenols on colorectal cancer cells." *Nutr Cancer*. 2014;66(7):1228-1236. doi: [10.1080/01635581.2014.951734](https://doi.org/10.1080/01635581.2014.951734)
+[54] Psaltopoulou T, Kosti RI, Haidopoulos D, et al. "Olive oil intake is inversely related to cancer prevalence: a systematic review and a meta-analysis of 13,800 patients and 23,340 controls in 19 observational studies." *Lipids Health Dis*. 2011;10:127. PMID: 21801436. doi: [10.1186/1476-511X-10-127](https://doi.org/10.1186/1476-511X-10-127)
 
-[53] Braga C, et al. "Olive oil, other seasoning fats, and the risk of colorectal carcinoma." *Cancer*. 1998;82(3):448-453.
+[56] Tsolaki M, Lazarou E, Kozori M, et al. "A Randomized Clinical Trial of Greek High Phenolic Early Harvest Extra Virgin Olive Oil in Mild Cognitive Impairment: The MICOIL Pilot Study." *J Alzheimers Dis*. 2020;78(2):801-817. PMID: 33044178. doi: [10.3233/JAD-200405](https://doi.org/10.3233/JAD-200405)
 
-[54] Psaltopoulou T, et al. "Olive oil intake and cancer risk: A systematic review and meta-analysis." *PLoS One*. 2011;6(4):e18441.
+[57] Tzekaki EE, Tsolaki M, Pantazaki AA, et al. "The pleiotropic beneficial intervention of olive oil intake on the Alzheimer's disease onset via fibrinolytic system." *Exp Gerontol*. 2021;150:111344. PMID: 33836262. doi: [10.1016/j.exger.2021.111344](https://doi.org/10.1016/j.exger.2021.111344)
 
-[55] Schwingshackl L, Hoffmann G. "Monounsaturated fatty acids, olive oil and health status." *Curr Pharm Des*. 2011;17(8):797-811.
+[58] Kaddoumi A, et al. "Extra-Virgin Olive Oil Enhances the Blood-Brain Barrier Function in Mild Cognitive Impairment: A Randomized Controlled Trial." *Nutrients*. 2022;14(23):5102. PMID: 36501136. doi: [10.3390/nu14235102](https://doi.org/10.3390/nu14235102)
 
-[56] Tsolaki M, et al. "Greek high-phenolic early-harvest extra virgin olive oil supplementation attenuates cognitive impairment in elderly with MCI." *J Alzheimers Dis*. 2020;78(2):801-817. doi: [10.3233/JAD-200405](https://doi.org/10.3233/JAD-200405)
+[59] Tessier AJ, et al. "Consumption of Olive Oil and Diet Quality and Risk of Dementia-Related Death." *JAMA Netw Open*. 2024;7(5):e2410021. PMID: 38709531. doi: [10.1001/jamanetworkopen.2024.10021](https://doi.org/10.1001/jamanetworkopen.2024.10021) (An erratum has been published.)
 
-[57] Tzekaki EE, et al. "Extra virgin olive oil consumption down-regulates amyloid-beta and tau biomarkers in MCI." *Exp Gerontol*. 2021;154:111516. doi: [10.1016/j.exger.2021.111516](https://doi.org/10.1016/j.exger.2021.111516)
+[60] Fazlollahi A, Motlagh Asghari K, Aslan C, et al. "The effects of olive oil consumption on cognitive performance: a systematic review." *Front Nutr*. 2023;10:1218538. PMID: 37885446. doi: [10.3389/fnut.2023.1218538](https://doi.org/10.3389/fnut.2023.1218538)
 
-[58] Kaddoumi A, et al. "Extra-virgin olive oil enhances the blood-brain barrier function in mild cognitive impairment." *Nutrients*. 2022;14(23):5102. doi: [10.3390/nu14235102](https://doi.org/10.3390/nu14235102)
+[62] Derouiche A, et al. "Effect of argan and olive oil consumption on the hormonal profile of androgens among healthy adult Moroccan men." *Nat Prod Commun*. 2013;8(1):51-53. PMID: 23472458.
 
-[59] Tessier AJ, et al. "Consumption of Olive Oil and Diet Quality and Risk of Dementia-Related Death." *JAMA Netw Open*. 2024;7(5):e2410021.
+[63] Karamanolis G, Polymeros D, Triantafyllou K, et al. "Olive oil for symptomatic relief of duodeno-gastro-oesophageal reflux after gastrectomy." *Eur J Gastroenterol Hepatol*. 2006;18(11):1239. PMID: 17033448. doi: [10.1097/01.meg.0000236880.90848.9b](https://doi.org/10.1097/01.meg.0000236880.90848.9b)
 
-[60] Gardener SL, et al. "The effects of olive oil consumption on cognitive performance." *Nutr Rev*. 2023. doi: [10.1093/nutrit/nuad011](https://doi.org/10.1093/nutrit/nuad011)
+[65] Liu Q, Wu P, Zhou P, et al. "Levels and Health Risk Assessment of Polycyclic Aromatic Hydrocarbons in Vegetable Oils and Frying Oils by Using the Margin of Exposure (MOE) and the Incremental Lifetime Cancer Risk (ILCR) Approach in China." *Foods*. 2023;12(4):811. PMID: 36832888. doi: [10.3390/foods12040811](https://doi.org/10.3390/foods12040811)
 
-[61] Hurtado de Catalfo GE, et al. "Lipid composition and testosterone production of rat Leydig cells." *Lipids*. 2009;44(6):557-566.
+[66] Bertoz V, Purcaro G, Conchione C, et al. "A Review on the Occurrence and Analytical Determination of PAHs in Olive Oils." *Foods*. 2021;10(2):324. PMID: 33546477. doi: [10.3390/foods10020324](https://doi.org/10.3390/foods10020324)
 
-[62] Derouiche A, et al. "Effect of argan and olive oil consumption on the hormonal profile of androgens among healthy adult Moroccan men." *Nat Prod Commun*. 2013;8(10):1479-1480.
+[69] Lozano-Castellón J, Vallverdú-Queralt A, Rinaldi de Alvarenga JF, et al. "Domestic Sautéing with EVOO: Change in the Phenolic Profile." *Antioxidants (Basel)*. 2020;9(1):77. PMID: 31963124. doi: [10.3390/antiox9010077](https://doi.org/10.3390/antiox9010077)
 
-[63] Karamanolis G, et al. "Olive oil for bile reflux after gastrectomy." *Eur J Gastroenterol Hepatol*. 2006;18(2):193-196.
+[71] Caipo L, Sandoval A, Sepúlveda B, et al. "Effect of Storage Conditions on the Quality of Arbequina Extra Virgin Olive Oil and the Impact on the Composition of Flavor-Related Compounds (Phenols and Volatiles)." *Foods*. 2021;10(9):2161. PMID: 34574270. doi: [10.3390/foods10092161](https://doi.org/10.3390/foods10092161)
 
-[64] Hungin AP, et al. "Systematic review: dietary fat and gastroesophageal reflux disease." *Eur J Gastroenterol Hepatol*. 2024.
+[72] Lazarou K, Tsagkaris AS, Drakopoulou S, et al. "Long-term stability of extra virgin olive oil: effects of filtration and refrigeration storage on the Kolovi variety." *J Sci Food Agric*. 2024;104(15):9673-9683. PMID: 39118447. doi: [10.1002/jsfa.13792](https://doi.org/10.1002/jsfa.13792)
 
-[65] Liu Y, et al. "Polycyclic aromatic hydrocarbons in edible oils." *Foods*. 2023. doi: [10.3390/foods12020377](https://doi.org/10.3390/foods12020377)
+[73] Sala-Vila A, Romero-Mamani ES, Gilabert R, et al. "Changes in ultrasound-assessed carotid intima-media thickness and plaque with a Mediterranean diet: a substudy of the PREDIMED trial." *Arterioscler Thromb Vasc Biol*. 2014;34(2):439-445. PMID: 24285581. doi: [10.1161/ATVBAHA.113.302327](https://doi.org/10.1161/ATVBAHA.113.302327)
 
-[66] Bertoz V, et al. "Polycyclic aromatic hydrocarbons in olive oils from European countries." *Foods*. 2021. doi: [10.3390/foods10020324](https://doi.org/10.3390/foods10020324)
+[74] Xia M, Zhong Y, Peng Y, et al. "Olive oil consumption and risk of cardiovascular disease and all-cause mortality: A meta-analysis of prospective cohort studies." *Front Nutr*. 2022;9:1041203. PMID: 36330142. doi: [10.3389/fnut.2022.1041203](https://doi.org/10.3389/fnut.2022.1041203)
 
-[67] Canadian Food Inspection Agency. "Polycyclic Aromatic Hydrocarbons in Olive Oil." 2023.
-
-[68] Santos CSP, et al. "Influence of cooking methods on olive oil: a review." *Food Res Int*. 2013;54(1):396-405. doi: [10.1016/j.foodres.2013.07.021](https://doi.org/10.1016/j.foodres.2013.07.021)
-
-[69] Lozano-Castellon J, et al. "Cooking Methods and Polyphenols in Extra Virgin Olive Oil." *Antioxidants*. 2020;9(10):995. doi: [10.3390/antiox9100995](https://doi.org/10.3390/antiox9100995)
-
-[70] De Alzaa F, et al. "An evaluation of the chemical and physical changes in different commercial oils during heating." *Acta Sci Nutr Health*. 2018;2(6):2-11.
-
-[71] Caipo L, et al. "Effect of storage temperature on the quality of extra virgin olive oil." *Foods*. 2021;10(1):61. doi: [10.3390/foods10010061](https://doi.org/10.3390/foods10010061)
-
-[72] Lazarou C, et al. "Long-term storage of extra virgin olive oil: effects of temperature and packaging." *J Sci Food Agric*. 2024. doi: [10.1002/jsfa.13302](https://doi.org/10.1002/jsfa.13302)
+[75] Foshati S, Ghanizadeh A, Akhlaghi M. "Extra-Virgin Olive Oil Improves Depression Symptoms Without Affecting Salivary Cortisol and Brain-Derived Neurotrophic Factor in Patients With Major Depression: A Double-Blind Randomized Controlled Trial." *J Acad Nutr Diet*. 2022;122(2):284-297.e1. PMID: 34358723. doi: [10.1016/j.jand.2021.07.016](https://doi.org/10.1016/j.jand.2021.07.016)

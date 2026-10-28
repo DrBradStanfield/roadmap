@@ -17,3 +17,32 @@ ref,kind,origin,opened_utc,loop_replied_utc,brad_replied_utc,status,note
 #162,pr,external,2026-10-16T23:31Z,,,escalated,"storage/sync class: retire replaced live-refresh readers safely (roadmap-store.ts, roadmap-data.ts); Brad's review"
 #163,pr,external,2026-10-16T23:32Z,,,escalated,"FHIR row-write class: validate bulk measurements before changing slots (record-edits.ts, mcp-tools.ts, roadmap-store.ts); agent-contract code, Brad's review"
 #164,pr,external,2026-10-16T23:32Z,,,escalated,"storage class: keeps the archived original's contentHash, a dedup key (roadmap-store.ts); Brad's review; re-triaged after the run's review"
+#152,pr,external,2026-10-16T00:24Z,,2026-10-19T22:18:39Z,closed,W43 update: held then folded into a combined redesign on main; credited; closed with comment (reviewed document dates on saves)
+#153,pr,external,2026-10-16T00:24Z,,2026-10-19T22:18:42Z,closed,"W43 update: held, then closed; main had fixed the core bug and kept most of its tests (ReviewTable date changes)"
+#154,pr,external,2026-10-16T00:24Z,,2026-10-18T23:50:23Z,closed,W43 update: merged as is by Brad (block saves with invalid selected core values)
+#155,pr,external,2026-10-16T00:58Z,,2026-10-18T23:50:25Z,closed,W43 update: merged by Brad (batch results stay with their own files)
+#158,pr,external,2026-10-16T18:35Z,,2026-10-18T21:16:53Z,closed,"W43 update: security class; closed by Brad with no public comment, follow-up shipped by Brad as his own PR; private escalation exists (issue #167, open); SECURITY.md pointer draft was never posted"
+#159,pr,external,2026-10-16T18:35Z,,2026-10-18T21:11:54Z,closed,"W43 update: privacy class; closed by Brad with no public comment, follow-up shipped as his own PR"
+#160,pr,external,2026-10-16T23:31Z,,2026-10-18T21:21:50Z,closed,"W43 update: privacy class; closed by Brad with no public comment, follow-up shipped as his own PR"
+#161,pr,external,2026-10-16T23:31Z,,2026-10-19T22:18:44Z,closed,"W43 update: held, then closed by Brad; depends on a pending-marker design that was replaced"
+#162,pr,external,2026-10-16T23:31Z,,2026-10-19T21:21:32Z,closed,W43 update: closed by Brad with thanks; path production never takes
+#163,pr,external,2026-10-16T23:32Z,,2026-10-19T22:57:29Z,closed,W43 update: merged by Brad with changes (bulk measurements validated like the form)
+#164,pr,external,2026-10-16T23:32Z,,2026-10-19T22:18:41Z,closed,W43 update: held then folded into the combined redesign on main; credited; closed with comment
+#146,pr,external,2026-10-14T01:48Z,,2026-10-15T23:10:33Z,closed,W43 update: closed by Brad 10-20 after the erase design changed; first response unchanged
+#185,pr,external,2026-10-19T01:46Z,,2026-10-19T21:53:58Z,closed,"new, repeat contributor: restore offline boot fallback for GitHub/WebDAV storage; merged by Brad (storage class)"
+#186,pr,external,2026-10-19T01:46Z,,2026-10-19T21:53:59Z,closed,new: encode document paths for GitHub/WebDAV; merged by Brad with changes (storage class)
+#191,pr,external,2026-10-19T23:56Z,,2026-10-20T20:31:25Z,closed,new: block late local writes after log-off; closed by Brad with no comment at close (storage/erase class)
+#192,pr,external,2026-10-19T23:56Z,,2026-10-20T07:37:32Z,closed,new: keep the calendar month of date-only reminder values; merged by Brad
+#193,pr,external,2026-10-19T23:56Z,,2026-10-20T07:37:42Z,closed,new: clear matrix drafts on cloud log-off; merged by Brad
+#194,pr,external,2026-10-19T23:56Z,,2026-10-20T19:35:14Z,closed,"new: fence stale local chat history after erase; merged by Brad, no comment (erase/storage class)"
+#203,pr,external,2026-10-20T13:21Z,,2026-10-20T19:35:14Z,closed,"new: lab-import batch cleanup server-only, share safe polls; merged by Brad, no comment"
+#204,pr,external,2026-10-20T15:14Z,,2026-10-20T20:11:52Z,closed,new: omit malformed stored clinical dates on migrate; merged by Brad after Codex and adversary review (FHIR/record class)
+#207,pr,external,2026-10-20T20:26Z,,2026-10-21T01:28:03Z,closed,"new: bundle on chat ownership, account-link proof and more; security class (auth); split into six parts and merged by Brad"
+#218,pr,external,2026-10-22T01:29Z,,2026-10-22T02:38:30Z,closed,"new: reconcile duplicate Drive records; merge/sync class; reviewed in three rounds, finished and merged by Brad"
+#219,pr,external,2026-10-22T01:29Z,,2026-10-22T02:38:31Z,closed,"new: keep custom supplement additions distinct; reviewed, finished and merged by Brad"
+#220,pr,external,2026-10-22T01:29Z,,2026-10-22T02:38:32Z,closed,"new: retry incomplete complaint cleanup (email webhook); change requested, then merged by Brad"
+#221,pr,external,2026-10-22T01:29Z,,2026-10-22T02:43:50Z,closed,"new: use latest retained Discord context; merged by Brad, no comment"
+#222,pr,external,2026-10-22T01:29Z,,2026-10-22T02:38:34Z,triaged,"new: reserve feedback quotas before provider I/O; agent-contract class; open, on Brad's hold awaiting the connector review verdict; reviewed in two rounds"
+#223,pr,external,2026-10-22T01:30Z,,2026-10-22T02:43:50Z,closed,"new: keep unsubscribe links in empty-schedule confirmations; merged by Brad, no comment"
+#224,pr,external,2026-10-22T01:30Z,,2026-10-22T02:43:50Z,closed,"new: match checklist copy to its rule (clinical-adjacent copy, three-file check is Brad's); merged by Brad, no comment"
+#229,pr,external,2026-10-22T17:44Z,,2026-10-23T00:23:49Z,closed,"new: persist cleared profile fields through autosave; merged by Brad, no comment"

@@ -75,7 +75,7 @@ The fifth supplement out of nine that I would avoid is Iron. I'm including this 
 
 If you've measured your blood iron levels and have found low iron, then an iron supplement is fine. However, if you haven't taken a test and you're just blindly supplementing with iron, you're likely doing more harm than good. We know from studies that iron can impair zinc absorption, and people can develop gastritis and gastric lesions from iron supplements.
 
-Plus, an interesting study just came out that involved over 50,000 people. What they found is that people who had higher levels of iron seemed to have lower life expectancy.
+Plus, an interesting study just came out that used genetic data from nearly 49,000 people, plus the lifespans of about a million parents. What they found is that people who had higher levels of iron seemed to have lower life expectancy.
 
 ## #6: Calcium
 

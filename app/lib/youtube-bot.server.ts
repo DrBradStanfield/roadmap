@@ -22,7 +22,7 @@
  *   FLY_APP_NAME set, OR YOUTUBE_BOT_FORCE_START=true   (avoids local-dev double-runs)
  *
  * See:
- *   docs/chat-architecture.md § YouTube comment replier
+ *   claude_business docs/chat-architecture.md § YouTube comment replier
  *   tools/youtube-comment-dryrun.ts (preview tool, same pipeline)
  */
 import * as Sentry from '@sentry/react-router';
@@ -30,7 +30,8 @@ import { supabaseAdmin } from './supabase.server';
 import { classifyMessage, shouldFireRouter } from './chat-classifier.server';
 import { routeQuery, sanitizeForRouter, ROUTER_VERSION, type RouterResult } from './chat-router.server';
 import { cutText } from '../../packages/health-core/src/chat-history';
-import { findBlogByVideoId, type BlogIndexEntry } from './blog-index.server';
+import { findBlogByVideoId, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
+import { preferMasters } from './router-view';
 import { loadBlogArticle } from './matched-content';
 import { stripFrontmatter } from './frontmatter';
 import { YOUTUBE_PROMPT_TEMPLATE, buildYouTubePlatformContext, loadedHandles } from './youtube-context';
@@ -56,6 +57,7 @@ const DAILY_REPLY_CAP = 50;           // hard ceiling on posts per day
 const PER_VIDEO_REPLY_CAP = 10;       // ceiling per video lifetime
 const COMMENT_MAX_AGE_DAYS = 7;       // ignore comments older than this
 const MIN_WORDS = 5;                  // ≥5 words to be considered substantive
+const CRISIS = /\b(die|suicid\w*|kill (myself|me)|chest pain|can'?t breathe|cannot breathe|overdos\w*)\b/i;
 
 // Multi-turn (follow-up) config — see § Follow-up replies below.
 const FOLLOWUP_MIN_WORDS = 3;             // follow-ups are naturally shorter ("does it cause blindness?")
@@ -185,6 +187,8 @@ interface YouTubeThread {
   authorChannelId: string | null;
   text: string;
   publishedAt: string;
+  /** commentThreads snippet.canReply; absent on follow-up pseudo-threads. */
+  canReply?: boolean;
 }
 
 async function listRecentThreads(token: string): Promise<YouTubeThread[]> {
@@ -206,6 +210,7 @@ async function listRecentThreads(token: string): Promise<YouTubeThread[]> {
     items?: Array<{
       snippet: {
         videoId: string;
+        canReply?: boolean;
         topLevelComment: {
           id: string;
           snippet: {
@@ -228,6 +233,7 @@ async function listRecentThreads(token: string): Promise<YouTubeThread[]> {
       authorChannelId: top.snippet.authorChannelId?.value ?? null,
       text: top.snippet.textOriginal,
       publishedAt: top.snippet.publishedAt,
+      canReply: item.snippet.canReply,
     };
   });
 }
@@ -350,6 +356,11 @@ async function postReply(token: string, parentCommentId: string, text: string): 
   }
   const data = await res.json() as { id: string };
   return data.id;
+}
+
+/** The 400 YouTube sends when the thread cannot take replies (canReply false). */
+export function isNotReplyableError(err: unknown): boolean {
+  return err instanceof Error && err.message.includes('YouTube post failed: 400') && err.message.includes('Not all comments can be replied to');
 }
 
 // ---------------------------------------------------------------------------
@@ -609,6 +620,8 @@ export async function persistYouTubeTurn(p: {
         postedYoutubeId: p.postedYoutubeId,
         posted: outcome.posted,
         skipReason: outcome.skipReason ?? null,
+        ...(outcome.replaced?.length ? { replaced: outcome.replaced } : {}),
+        ...(outcome.reduced?.length ? { reduced: outcome.reduced } : {}),
       },
       matched_handles: outcome.routerHandles ?? [],
       router_version: ROUTER_VERSION,
@@ -674,10 +687,12 @@ function loadVideoBody(videoId: string): { entry: BlogIndexEntry; body: string }
   return { entry, body: stripFrontmatter(fullContent) };
 }
 
-function filterThread(thread: YouTubeThread): FilterResult {
+export function filterThread(thread: YouTubeThread): FilterResult {
+  if (thread.canReply === false) return { pass: false, reason: 'cannot reply' };
   if (!thread.text || !thread.text.trim()) return { pass: false, reason: 'empty' };
   const words = wordCount(thread.text);
-  if (words < MIN_WORDS) return { pass: false, reason: `too short (${words} words)` };
+  // A short crisis or emergency comment still gets the chat's emergency reply (US-15 AC39 review N5).
+  if (words < MIN_WORDS && !CRISIS.test(thread.text)) return { pass: false, reason: `too short (${words} words)` };
 
   // Don't reply to Brad's own comments
   if (thread.authorChannelId && CHANNEL_ID && thread.authorChannelId === CHANNEL_ID) {
@@ -810,6 +825,9 @@ interface PipelineOutcome {
   skipReason?: string;
   classification?: string;
   routerHandles?: string[];
+  /** US-50 AC14: router picks replaced by their masters, and masters loaded reduced. */
+  replaced?: string[];
+  reduced?: string[];
   replyText?: string;
   /**
    * Telemetry for persistYouTubeTurn(). Previously all of this was computed and
@@ -881,10 +899,14 @@ export async function runPipeline(
     routerHandles = routerResult.handles;
   }
 
-  const matched = loadMatchedArticlesFromHandles(routerHandles);
+  // US-50 AC14: an older post gives way to its topic masters, unless it is
+  // this video's own post or the comment gives its URL or handle.
+  const index = loadBlogIndex();
+  const routed = routerResult ? preferMasters(routerHandles, index, thread.text, { keep: [entry.handle] }) : { handles: [], replaced: [] };
+  const matched = loadMatchedArticlesFromHandles(routed.handles);
   const blogArticles = matched?.content ?? null;
   // Master views skip only masters that actually loaded, not ones the cap skipped (US-50 AC6).
-  const platformContext = buildYouTubePlatformContext(thread.videoId, entry, body, loadedHandles(routerHandles, matched), isFollowUp);
+  const platformContext = buildYouTubePlatformContext(thread.videoId, entry, body, loadedHandles(routed.handles, matched), isFollowUp);
   // YouTube is a doctor-family surface (Brad's public channel) → strict doctor posture.
   const systemBlocks = buildSystemBlocks(platformContext, { surfaceContext: DOCTOR_POSTURE, blogArticles });
   const conversationMessages = buildConversationMessages(history, thread.text);
@@ -895,6 +917,8 @@ export async function runPipeline(
   return {
     classification: classifierResult.classification,
     routerHandles,
+    replaced: routed.replaced,
+    reduced: matched?.reduced,
     routerResult,
     routerSkipped,
     usage: completion.usage,
@@ -1009,7 +1033,7 @@ async function processFollowUps(
     try {
       postedId = await postReply(token, threadId, replyText);
     } catch (err) {
-      logTickError(err);
+      if (!isNotReplyableError(err)) logTickError(err);
       skipped++;
       continue;
     }
@@ -1133,7 +1157,7 @@ async function tick(): Promise<void> {
     try {
       postedId = await postReply(token, thread.topLevelCommentId, outcome.replyText!);
     } catch (err) {
-      logTickError(err);
+      if (!isNotReplyableError(err)) logTickError(err);
       // Row stays as posted=FALSE — won't retry, but post failure is visible
       // via the audit. Could become retry-able later via a status column.
       skippedThisTick++;

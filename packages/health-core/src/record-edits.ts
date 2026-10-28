@@ -14,8 +14,8 @@
  *    flips the old row to `entered-in-error` (one-way) — rule 2;
  *  - a fresh UUID per row, never a reused id — rule 5;
  *  - `meta.updatedAt` set to the same clock stamped on the row, and no other
- *    `meta` field touched — rule 6 (leave it stale and `migrate.ts` rewinds the
- *    row you just wrote, and it can lose its slot);
+ *    `meta` field touched — rule 6 (advance the file clock without rewinding
+ *    the anchor for mutable row and field `updatedAt` clamps);
  *  - SI canonical values inside `healthInputSchema`'s range for measurements,
  *    and — since US-21 phase 3 — the catalogue's SI unit for a catalogued lab
  *    test, converted here from the spelling the lab printed, or refused when
@@ -34,7 +34,7 @@ import {
 } from './lab-catalog';
 import { METRIC_TO_FIELD } from './mappings';
 import { resolveCoreMetricName } from './lab-extraction';
-import { dayOf, localDay } from './merge';
+import { dayOf, latestStamp, localDay } from './merge';
 import { isCalendarDay, isClinicalDay } from './measurement-history';
 import { createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
@@ -156,8 +156,8 @@ function sameValue(a: number, b: number): boolean {
   return Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
-/** Rule 5 — a fresh UUID per row, always. */
-function newId(): string {
+/** Rule 5 — a fresh UUID per row, always. Shared with state-edits.ts. */
+export function newId(): string {
   return crypto.randomUUID();
 }
 
@@ -237,8 +237,8 @@ function checkMeasurementValue(metricType: string, value: number): EditRejection
   return fault?.reason === 'out-of-range' ? { ...fault, message: `${fault.message} (got ${value})` } : fault;
 }
 
-/** Rule 8's refusal without the number, for a bulk refusal (US-35 AC17). */
-function measurementValueFault(metricType: string, value: number): EditRejection | null {
+/** Rule 8's refusal without the number, for a bulk refusal (US-35 AC17) and a device import (device-import.ts). */
+export function measurementValueFault(metricType: string, value: number): EditRejection | null {
   if (!Number.isFinite(value)) return reject('invalid-value', 'A value must be a finite number');
   const shape = healthInputSchema.shape as Record<string, { safeParse: (v: unknown) => { success: boolean; error?: { issues: Array<{ message: string }> } } }>;
   const field = METRIC_TO_FIELD[metricType];
@@ -250,9 +250,9 @@ function measurementValueFault(metricType: string, value: number): EditRejection
 /**
  * The file with this row appended and `meta.updatedAt` moved to the write
  * clock — rule 6. Forward ONLY, like `mergeFiles` (merge.ts): `meta.updatedAt`
- * is the anchor `migrate.ts` clamps every row's `createdAt` to, so a writer
- * whose clock runs behind the file would rewind every other row and hand the
- * slot tie-breaks to a UUID comparison. The row itself keeps the real `now`.
+ * contributes to the anchor for mutable row and field `updatedAt` clamps. A
+ * lagging writer must not rewind that anchor. Immutable measurement/lab
+ * `createdAt` is kept as written; the new row keeps the real `now`.
  */
 function withRow(file: RoadmapFile, key: 'measurements' | 'labValues', rows: Array<FileMeasurement | FileLabValue>, now: string): RoadmapFile {
   return stampUpdatedAt({ ...file, [key]: rows }, now);
@@ -261,12 +261,13 @@ function withRow(file: RoadmapFile, key: 'measurements' | 'labValues', rows: Arr
 /**
  * Rule 6 on its own, for a write that is not a row: `meta.updatedAt` moved to
  * the write clock, FORWARD only. `update_profile` (mcp-tools.ts) writes the
- * profile object rather than an array, and `migrate.ts` rewinds any stamp
- * newer than this anchor — so a profile write that skipped it would lose the
- * merge it just won.
+ * profile object rather than an array, and `migrate.ts` rewinds mutable
+ * `updatedAt` stamps newer than the file's last-write anchor. A profile write
+ * that skipped it would lose the merge it just won.
  */
 export function stampUpdatedAt(file: RoadmapFile, now: string): RoadmapFile {
-  return now > file.meta.updatedAt ? { ...file, meta: { ...file.meta, updatedAt: now } } : file;
+  const updatedAt = latestStamp(file.meta.updatedAt, now);
+  return updatedAt === file.meta.updatedAt ? file : { ...file, meta: { ...file.meta, updatedAt } };
 }
 
 export type SlotKind = 'measurement' | 'lab';
@@ -355,13 +356,27 @@ export function appendMeasurement(file: RoadmapFile, request: AppendMeasurementR
   if (invalid) return invalid;
   const recordedAt = resolveRecordedAt(request.recordedAt, request);
   if (typeof recordedAt !== 'string') return recordedAt;
+  return placeMeasurement(file, { metricType, value, recordedAt, now, source: request.source });
+}
 
+/**
+ * Rule 3 and the row, for a value already checked: refuse a slot an active
+ * row holds, else append a fresh row (rule 5) and move the file clock (rule
+ * 6). `appendMeasurement` reaches it after its own checks (metric, unit,
+ * range, a past day). The web form reaches it directly, after only its
+ * clinical-day check, so its rows keep the timestamp it stores and no range
+ * refusal it never had (D4b, 2026-10-21): the slot rule is the one both share.
+ */
+export function placeMeasurement(
+  file: RoadmapFile,
+  request: { metricType: string; value: number; recordedAt: string; now: string; source?: MeasurementSource },
+): EditResult<FileMeasurement> {
+  const { metricType, value, recordedAt, now, source } = request;
   const taken = findActiveInSlot(file, 'measurement', metricType, recordedAt);
   if (taken) {
     return reject('slot-occupied', `${metricType} already has a value on ${dayOf(recordedAt)}`, taken);
   }
-
-  const row = createMeasurement({ id: newId(), metricType, value, recordedAt, createdAt: now, ...(request.source ? { source: request.source } : null) });
+  const row = createMeasurement({ id: newId(), metricType, value, recordedAt, createdAt: now, ...(source ? { source } : null) });
   return { ok: true, file: withRow(file, 'measurements', [...file.measurements, row], now), row };
 }
 

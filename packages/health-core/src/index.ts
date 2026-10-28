@@ -88,6 +88,7 @@ export {
 export { generateSuggestions, LIPID_DIET_ADVICE, lipidMarkerFor, lipidTargetSentence, medicinesShown, weightMedicationTrigger, weightMedIntro } from './suggestions';
 export type { LipidMarker, WeightMedicationTrigger } from './suggestions';
 export { weightCascade, lipidCascade } from './medication-cascades';
+export { planSections, type PlanSection, type PlanCard, type PlanSectionKey } from './plan-sections';
 
 // Validation
 export {
@@ -128,7 +129,7 @@ export {
   type DocumentType,
 } from './validation';
 
-export { parseLocalisedNumber } from './parseNumber';
+export { commaQuestion, parseLocalisedNumber } from './parseNumber';
 
 // Mappings (shared field↔metric conversions)
 export {
@@ -242,6 +243,7 @@ export { STAT_CARD_EVIDENCE, getIbwEvidence, getProteinEvidence, getBmiEvidence 
 // Reference-range hints (blood-test matrix + legacy form labels)
 export type { RefHint, SexedRefHint } from './reference-hints';
 export { REFERENCE_HINTS, refHintFor, refLineFor, lpaRefHint } from './reference-hints';
+export { type CellUnit, isLpaUnit, recordLpaUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel, cellRange } from './cell-unit';
 
 // Sentry PII/PHI scrubbing
 export {
@@ -260,7 +262,6 @@ export {
   CURRENT_SCHEMA_VERSION,
   createEmptyFile,
   createMeasurement,
-  stableStringify,
   type RoadmapFile,
   type RoadmapFileMeta,
   type RoadmapProfile,
@@ -277,8 +278,21 @@ export {
   type HistoryChangeType,
 } from './roadmap-file';
 export { fileProfileToApi, fileScreeningRows, screeningFieldName } from './file-inputs';
-export { mergeFiles, stampFields, CLOCK_KEYS, mergeErasedRows, rowRootIds, stampInstant, dayOf, localDay, type MergeOptions } from './merge';
-export { classifyMedicationChange, classifySupplementChange, isTakingDrug } from './history-change';
+export { mergeFiles, rowRootIds, dayOf, localDay, type MergeOptions } from './merge';
+export { buildErasedFile, type EraseInputs } from './erase';
+export {
+  RecordSession,
+  ERASE_UNREACHABLE,
+  saveRecordInto,
+  type EraseResult,
+  type EraseSteps,
+} from './record-session';
+export type { RecordHost } from './record-host';
+export { LiveRefresh, type LiveRefreshOptions } from './live-refresh';
+export { liftDeviceCopy, copyCloudDown } from './record-transfer';
+export { ChatSession, type ChatConversationSummary } from './chat-session';
+export { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertSupplement } from './state-edits';
+export { isTakingDrug } from './history-change';
 export { migrateFile, SchemaTooNewError, RecordShapeError } from './migrate';
 
 // v2 reminder schedule (client-computed; the server is a dumb scheduler — §10)
@@ -300,6 +314,21 @@ export {
   splitDocumentRef,
 } from './document-path';
 
+// Saving reviewed documents — one rule for the web and the iPhone app
+export {
+  documentView,
+  isLabArchiveDocument,
+  labArchivePayload,
+  pendingRowsFor,
+  saveDocuments,
+  type DocumentPayload,
+  type DocumentSaveIO,
+  type DocumentSavePlan,
+  type DocumentView,
+  type ExistingDoc,
+} from './document-save';
+export { LAB_ARCHIVE_FLAG } from './document-rows';
+
 // v2 measurement recency — dated chat history + newest-active-row resolution
 export {
   buildMeasurementHistory,
@@ -320,7 +349,7 @@ export { chatContextOf, buildChatContextJson, MINOR_CHAT_RULE, NO_PLAN_CHAT_RULE
 export { chatToolsFor, withRoadmapRound, type ChatTurnMessage } from './run-roadmap';
 
 // Product funnel events — anonymous behavioral counters (client tracker + server enum)
-export { PRODUCT_EVENT_NAMES, GUIDE_PLACEMENTS, LPA_CHECK_ANSWERS, REMOTE_CHANGE_BACKENDS, isLabUnitWord, type ProductEventName } from './product-events';
+export { PRODUCT_EVENT_NAMES, GUIDE_PLACEMENTS, LPA_CHECK_ANSWERS, REMOTE_CHANGE_BACKENDS, labUnitForEvent, type ProductEventName } from './product-events';
 
 // US-21 additional blood-test catalogue (phase-1 scaffold — units/groups/aliases)
 export {
@@ -369,6 +398,7 @@ export {
   sleepUntilAborted,
   type StorageAdapter,
   type StorageBackendId,
+  type DocumentAccess,
   type ReadResult,
   type WriteResult,
 } from './adapter';
@@ -382,18 +412,24 @@ export {
 } from './sync-manager';
 export { ROADMAP_DOC } from './roadmap-doc';
 export { MemoryAdapter, MemoryCloud } from './memory-adapter';
-export { dropboxApiArg, dropboxDownload, dropboxListFolder, dropboxRead, dropboxWrite, DropboxAdapter, DROPBOX_TOKEN_URL } from './dropbox-rest';
+export { runStorageSelfTest, type SelfTestResult } from './storage-self-test';
+export { dropboxApiArg, dropboxDownload, dropboxListFolder, dropboxRead, dropboxUploadDocument, dropboxWrite, DropboxAdapter, DROPBOX_TOKEN_URL } from './dropbox-rest';
 // Google Drive v3 as plain fetch calls: the folder/file discovery the browser
 // adapter and the hosted MCP server MUST agree on, plus the server's adapter.
 export {
   DriveAdapter,
   driveCreateFile,
   driveCreateFolder,
+  driveDownloadDocument,
   driveDownloadJson,
+  driveEnsureSubfolder,
   driveFileVersion,
   driveFindFileId,
   driveFindFolder,
   driveUpdateIfVersion,
+  driveUploadDocument,
+  readDriveRecord,
+  writeDriveRecord,
   DRIVE_API,
   DRIVE_FOLDER_NAME,
   DRIVE_LEGACY_FOLDER_NAME,
@@ -404,6 +440,18 @@ export {
 } from './drive-rest';
 
 // US-35: the slot rule and the bulk save the website and the connector share.
-export { bulkAppendValues, correctValue, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type MeasurementRefusal, type SlotState } from './record-edits';
+export { bulkAppendValues, correctValue, placeMeasurement, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type MeasurementRefusal, type SlotState } from './record-edits';
 export { fileNameLine, inflateCapped, isImportableEntryName, zipMemberName, UNDATED_PREVIOUS, type RefusedLabValue } from './lab-extraction';
 export { IMPORT_LIMITS } from './import-hints';
+export {
+  MEDICATION_TEXT, SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, SUPPLEMENT_TEXT, SUPPLEMENT_DOSE_UNITS,
+  optionsShowing, escalationOptions, doseOptions, medicationForm, medicationWrites, screeningForm, screeningWrites,
+  screeningMonths, readScreening, followupName, followupDateLabel, anyScreeningEligible, dexaEligible, customSupplementAdd, customSupplementMatch,
+  type FormOption, type FormField, type FormGroup, type FormSection, type MedicationBasis,
+} from './input-form';
+
+// US-07 AC7: the lab's printed eGFR, when it is the plan's.
+export { labEgfrOf, withLabEgfr, type LabEgfr } from './plan';
+
+// US-25 AC22: the plan's summary tiles, the web's Quick Stats and the phone's My plan tiles.
+export { statTiles, statTileText, type StatTile, type StatTileOptions, type StatTileStatus, type StatTone } from './stat-tiles';

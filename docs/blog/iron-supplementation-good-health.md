@@ -115,7 +115,7 @@ Iron comes from the food we eat. Heme iron comes from animal sources, primarily 
 
 Common sources of dietary iron include:
 
-*   Beef, with 33 mg per 3 ounces.
+*   Beef, with 2 mg per 3 ounces.
 *   White beans, with 8 mg per serving.
 *   Lentils, with 3 mg per serving.
 *   Spinach, with 3 mg per serving.

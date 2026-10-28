@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseLocalisedNumber } from './parseNumber';
+import { commaQuestion, parseLocalisedNumber } from './parseNumber';
 
 describe('parseLocalisedNumber', () => {
   // Period (US/UK/AU locales)
@@ -13,7 +13,7 @@ describe('parseLocalisedNumber', () => {
   it('parses comma decimals', () => {
     expect(parseLocalisedNumber('0,5')).toBe(0.5);
     expect(parseLocalisedNumber('130,0')).toBe(130);
-    expect(parseLocalisedNumber('2,844')).toBe(2.844);
+    expect(parseLocalisedNumber('2,84')).toBe(2.84);
   });
 
   // Integers
@@ -63,17 +63,71 @@ describe('parseLocalisedNumber', () => {
     expect(parseLocalisedNumber(',5')).toBe(0.5);
   });
 
-  // Multiple separators — we just replace all commas with periods. With
-  // multiple periods this becomes invalid, returning undefined. We don't
-  // try to interpret thousands separators because lab values never need them.
-  it('returns undefined for multi-separator input (no thousands interpretation)', () => {
+  // A comma and a dot together is still refused.
+  it('returns undefined for a comma and a dot together', () => {
     expect(parseLocalisedNumber('1,234.56')).toBeUndefined();
-    expect(parseLocalisedNumber('1,234,567')).toBeUndefined();
+    expect(parseLocalisedNumber('1.234,56')).toBeUndefined();
   });
 
   // Negative decimals in both locales
   it('parses negative decimals in both locales', () => {
     expect(parseLocalisedNumber('-0.5')).toBe(-0.5);
     expect(parseLocalisedNumber('-0,5')).toBe(-0.5);
+  });
+});
+
+// US-02 AC7 (Brad 2026-10-27): "1,234" is US thousands (1234) or a European
+// decimal comma (1.234). Only a range can pick thousands; without one it is refused.
+describe('parseLocalisedNumber: an ambiguous comma (US-02 AC7)', () => {
+  it('refuses 1-3 digits, a comma and exactly 3 digits when no range is given', () => {
+    for (const s of ['1,234', '1,050', '250,000', '-1,234', ' 12,500 ']) {
+      expect(parseLocalisedNumber(s)).toBeUndefined();
+    }
+  });
+
+  // Adversary R1: a range from 0 let the decimal reading through, so 2,500 mg/dL
+  // triglycerides saved as 2.5. Only the thousands reading is ever chosen, and only
+  // when the decimal one is below the range.
+  it('reads thousands only when they are in range and the decimal reading is below it', () => {
+    expect(parseLocalisedNumber('1,234', { min: 10, max: 2650 })).toBe(1234); // creatinine µmol/L
+    expect(parseLocalisedNumber('-1,234', { min: -2000, max: -10 })).toBeUndefined();
+  });
+
+  it('never chooses the decimal reading: asks when only it, both, or neither fit', () => {
+    expect(parseLocalisedNumber('1,234', { min: 0, max: 22.6 })).toBeUndefined(); // triglycerides mmol/L
+    expect(parseLocalisedNumber('2,500', { min: 0, max: 2000 })).toBeUndefined(); // triglycerides mg/dL
+    expect(parseLocalisedNumber('1,050', { min: 0, max: 750 })).toBeUndefined(); // Lp(a) nmol/L
+    expect(parseLocalisedNumber('1,234', { min: 0, max: 500 })).toBeUndefined(); // LDL mg/dL
+    expect(parseLocalisedNumber('1,234', { min: 0, max: 2000 })).toBeUndefined();
+    expect(parseLocalisedNumber('1,234', { min: 20, max: 300 })).toBeUndefined();
+  });
+
+  it('leaves the unambiguous forms as they were', () => {
+    expect(parseLocalisedNumber('1,2')).toBe(1.2);
+    expect(parseLocalisedNumber('4,5')).toBe(4.5);
+    expect(parseLocalisedNumber('0,85')).toBe(0.85);
+    expect(parseLocalisedNumber('12,5')).toBe(12.5);
+    expect(parseLocalisedNumber('0,123')).toBe(0.123); // a leading 0 is never a thousands group
+    expect(parseLocalisedNumber('1234,567')).toBe(1234.567); // four digits before: a decimal
+    expect(parseLocalisedNumber('1,2345')).toBe(1.2345);
+    expect(parseLocalisedNumber('1234')).toBe(1234);
+    expect(parseLocalisedNumber('1.234')).toBe(1.234);
+  });
+
+  // Codex R2: grouped thousands are read only where a range will check them;
+  // with none (a lab row), they are refused and the user types the number plainly.
+  it('reads two or more comma groups as thousands only against a range', () => {
+    expect(parseLocalisedNumber('1,234,567')).toBeUndefined();
+    expect(parseLocalisedNumber('12,345,678', { min: 0, max: 10 })).toBe(12345678);
+    expect(parseLocalisedNumber('1,23,456')).toBeUndefined();
+    expect(parseLocalisedNumber('1234,567,890')).toBeUndefined();
+  });
+
+  it('asks which reading was meant, in plain words', () => {
+    expect(commaQuestion('1,234')).toBe('Did you mean 1234 or 1.234?');
+    expect(commaQuestion('1,050')).toBe('Did you mean 1050 or 1.05?');
+    expect(commaQuestion('1,234,567')).toBe('Type the number without commas.');
+    expect(commaQuestion('1,2')).toBeNull();
+    expect(commaQuestion('1234')).toBeNull();
   });
 });

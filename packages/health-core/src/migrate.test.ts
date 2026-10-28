@@ -1,11 +1,33 @@
 import { describe, it, expect, vi } from 'vitest';
 import { migrateFile, SchemaTooNewError } from './migrate';
-import { mergeFiles } from './merge';
+import { mergeFiles, stampInstant } from './merge';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { labSlotKey } from './lab-catalog';
 import { BASE_SCHEMA_VERSION, CURRENT_SCHEMA_VERSION, createEmptyFile, createMeasurement, stableStringify, type FileLabValue, type FileMeasurement } from './roadmap-file';
 
 const OPTS = { deviceId: 'dev_x', now: '2026-06-08T00:00:00Z' };
+
+/** Row stamps that are not a time (US-23 AC6a): garbage, impossible dates, a
+ *  real day with a broken time, offset or trailing junk, mistyped values. */
+const INVALID_STAMPS: unknown[] = [
+  'not-a-date', 'zzzz', '2026-02-30', '2026-02-30T00:00:00Z', '', null, 1780000000000,
+  '2099-01-01T99:00:00Z', '2026-05-01 junk', '2026-05-01Tjunk', '2026-05-01T10:60:00Z',
+  '2026-05-01T10:00:00+99:00', '2026-05-01T10:00:00+13', '2026-05-01T10:00:00Zjunk',
+  '2025-01-15 03:00:00+99', '2025-01-15  03:00:00Z', '2025-01-15 junk+00',
+  // A space-separated time with no zone: the merge would read it in the machine's zone.
+  '2025-01-15 03:00:00', '2025-01-15 03:00',
+];
+/** Every shape a real writer emits, all before the fixtures' anchor: toISOString,
+ *  a date-only day, offsets (+13:00, compact +0530), fractional seconds,
+ *  lowercase t/z, a zone-less time, which the merge reads as UTC, and
+ *  Postgres's text style (a space for the T, an hour-only offset). */
+const VALID_STAMPS = [
+  '2026-05-01T10:00:00.000Z', '2026-05-01', '2026-05-01T10:00:00+13:00', '2026-05-01T10:00:00-08:00',
+  '2026-05-01T10:00:00+0530', '2026-05-01T10:00:00.123456Z', '2026-05-01t10:00:00z',
+  '2026-05-01T10:00:00', '2026-05-01T10:00Z',
+  // Postgres text style, which files imported from v1 may hold.
+  '2025-01-15 03:00:00+00', '2025-01-15 03:00:00.123+13', '2025-01-15 03:00:00+05:30', '2025-01-15 03:00:00Z',
+];
 
 describe('migrateFile', () => {
   it('returns a fresh empty file for null / non-object input', () => {
@@ -196,10 +218,8 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
     expect(erasedAt('2028-02-29T00:00:00Z')).toBe('2028-02-29T00:00:00.000Z');
   });
 
-  // Codex re-check R1: the createdAt clamp compared strings. A pre-erase row
-  // stamped +13:00 sorts after the file clock as text, was clamped up to it,
-  // and then outlived the erase.
-  it('US-09 AC20: the createdAt clamp compares instants, so an offset row before the erase still goes', () => {
+  // US-09 AC20: immutable clocks keep their original instant for the erase gate.
+  it('US-09 AC20: an offset row before the erase still goes without rewriting createdAt', () => {
     const ctx = { deviceId: 'dev_x', now: '2026-05-10T01:00:00Z' };
     const before = { ...MEAS, id: 'plus13', createdAt: '2026-05-10T09:00:00+13:00' }; // 2026-05-09T20:00Z
     const stale = ROADMAP_DOC.migrate(rawFile({ meta: { ...META, updatedAt: '2026-05-10T01:00:00Z' }, measurements: [before] }), ctx);
@@ -207,10 +227,10 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
     const erased = ROADMAP_DOC.migrate(rawFile({ meta: { ...META, updatedAt: '2026-05-10T00:00:00Z', eraseEpoch: 1, erasedAt: '2026-05-10T00:00:00Z' } }), ctx);
     expect(mergeFiles(stale, erased, ctx).measurements).toEqual([]);
     expect(mergeFiles(erased, stale, ctx).measurements).toEqual([]);
-    // A row past the clock as an instant is still clamped.
+    // A row past the file clock also keeps its immutable identity.
     const ahead = { ...MEAS, id: 'ahead', createdAt: '2026-05-10T02:00:00Z' };
     expect(migrateFile(rawFile({ meta: { ...META, updatedAt: '2026-05-10T14:00:00+13:00' }, measurements: [ahead] }), ctx).measurements[0].createdAt)
-      .toBe('2026-05-10T14:00:00+13:00');
+      .toBe(ahead.createdAt);
   });
 
   // Defect 2 (cont.): a saturated meta.lamport breaks the file clock forever —
@@ -284,18 +304,17 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
     }
   });
 
-  // Defect 4: a future createdAt beats every later genuine entry in the slot,
-  // flipping the user's own fresh value to 'entered-in-error'.
-  it('clamps a future createdAt so a genuine later entry still wins its slot', () => {
+  // US-10 AC2: future immutable clocks must not split a deletion's identity.
+  // Residual: a forged future createdAt can still win its slot; migration may
+  // not rewrite content identity to solve that separate writer-policy problem.
+  it('preserves a future createdAt so its deletion still absorbs either merge order', () => {
     const forged = { ...MEAS, id: 'agent', value: 9.9, createdAt: '2099-01-01T00:00:00Z' };
     const f = migrateFile(rawFile({ measurements: [forged] }), OPTS);
-    expect(f.measurements[0].createdAt).toBe(META.updatedAt);
-
-    const mine = { ...MEAS, id: 'mine', value: 2.1, createdAt: '2026-06-02T09:00:00Z' };
-    const merged = mergeFiles({ ...f, measurements: [...f.measurements, mine] }, f, OPTS);
-    const actives = merged.measurements.filter((m) => m.status === 'active');
-    expect(actives).toHaveLength(1);
-    expect(actives[0].id).toBe('mine');
+    expect(f.measurements[0].createdAt).toBe(forged.createdAt);
+    const deleted = { ...forged, status: 'entered-in-error' as const };
+    const g = migrateFile(rawFile({ meta: { ...META, updatedAt: '2099-02-01T00:00:00Z' }, measurements: [deleted] }), OPTS);
+    expect(mergeFiles(f, g, OPTS).measurements).toEqual([deleted]);
+    expect(mergeFiles(g, f, OPTS).measurements).toEqual([deleted]);
   });
 
   // Adversarial review (2026-09-01): the anchor was any string. `updatedAt: ""`
@@ -390,6 +409,48 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
     // Absent is not the same as garbage — present-beats-absent still decides.
     const absent = migrateFile(rawFile({ medications: [{ id: 'm', medicationKey: 'statin', drugName: 'x', doseValue: null, doseUnit: null, lamport: 1 }] }), OPTS);
     expect('updatedAt' in absent.medications[0]).toBe(false);
+  });
+
+  // US-23 AC6a (Codex R4, 2026-10-21): the future-clamp compared before it
+  // validated, and a string that is not a time compares as a string. So
+  // 'not-a-date' (which sorts after any ISO stamp) read as future and took the
+  // anchor, a real date the reminder schedule then used as a review date. A
+  // stamp that is not a time is an unknown time, the bottom. Codex R1: the
+  // whole stamp is checked, not only its day, so a real day with a broken time
+  // or offset, or trailing junk, is not a time either.
+  it('reads a row updatedAt that is not a complete stamp as the bottom, never the anchor', () => {
+    for (const updatedAt of INVALID_STAMPS) {
+      const f = migrateFile(rawFile({ medications: [medRow({ updatedAt })] }), OPTS);
+      expect(f.medications[0].updatedAt, String(updatedAt)).toBe('');
+    }
+    for (const updatedAt of VALID_STAMPS) {
+      const f = migrateFile(rawFile({ medications: [medRow({ updatedAt })] }), OPTS);
+      expect(f.medications[0].updatedAt).toBe(updatedAt);
+    }
+    const future = migrateFile(rawFile({ medications: [medRow({ updatedAt: '2099-01-01T00:00:00Z' })] }), OPTS);
+    expect(future.medications[0].updatedAt).toBe(META.updatedAt);
+  });
+
+  // US-23 AC6a (Codex re-check, 2026-10-21): a zone-less time after a
+  // lowercase t was parsed in the machine's zone, so in Auckland
+  // 2026-06-02t00:00:00 fell before an 18:00Z anchor the day before and
+  // escaped the clamp it gets in UTC. It reads as UTC, like an uppercase T.
+  it('reads a zone-less lowercase-t stamp as UTC in every zone', () => {
+    const tz = process.env.TZ;
+    try {
+      for (const zone of ['UTC', 'Pacific/Auckland', 'America/Los_Angeles']) {
+        process.env.TZ = zone; // a forks child re-reads it on the next Date call
+        expect(stampInstant('2026-05-01t10:00:00'), zone).toBe(Date.parse('2026-05-01T10:00:00Z'));
+        const f = migrateFile(rawFile({
+          meta: { ...META, updatedAt: '2026-06-01T18:00:00Z' },
+          medications: [medRow({ updatedAt: '2026-06-02t00:00:00' })],
+        }), OPTS);
+        expect(f.medications[0].updatedAt, zone).toBe('2026-06-01T18:00:00Z');
+      }
+    } finally {
+      if (tz === undefined) delete process.env.TZ;
+      else process.env.TZ = tz;
+    }
   });
 });
 
@@ -509,6 +570,28 @@ describe('US-21 phase 3 — legacy lab rows are corrected into SI at load', () =
       labRow({ id: 'w2', metricName: 'WBC', value: 6.2, unit: 'cells/mm3', referenceLow: 4, referenceHigh: 11 }),
     ];
     expect(stableStringify(migrateFile(fileWith(leftAlone), OPTS).labValues)).toBe(stableStringify(leftAlone));
+  });
+
+  it('US-21 AC22 — legacy cells/mcL and reticulocyte x10(12)/L or 10¹²/L rows convert on load, once', () => {
+    const rows = [
+      labRow({ id: 'w1', metricName: 'WBC', value: 6200, unit: 'cells/mcL', referenceLow: 4000, referenceHigh: 11000 }),
+      labRow({ id: 'r1', metricName: 'Reticulocytes', value: 0.05, unit: 'x10(12)/L', referenceLow: 0.02, referenceHigh: 0.1 }),
+      labRow({ id: 'r2', metricName: 'Reticulocytes', value: 0.05, unit: '10¹²/L', referenceLow: 0.02, referenceHigh: 0.1, recordedAt: '2026-07-15' }),
+    ];
+    const out = migrateFile(fileWith(rows), OPTS);
+    expect(out.labValues).toHaveLength(6);
+    for (const id of ['w1', 'r1', 'r2']) expect(out.labValues.find((l) => l.id === id)).toMatchObject({ status: 'entered-in-error' });
+    expect(out.labValues.find((l) => l.id === 'w1#si')).toMatchObject({
+      value: 6.2, unit: '×10⁹/L', referenceLow: 4, referenceHigh: 11, status: 'active', correctsId: 'w1',
+    });
+    for (const id of ['r1', 'r2']) {
+      expect(out.labValues.find((l) => l.id === `${id}#si`), id).toMatchObject({
+        value: 50, unit: '×10⁹/L', referenceLow: 20, referenceHigh: 100, status: 'active', correctsId: id,
+      });
+    }
+    // The second load is a no-op: the #si rows are already canonical.
+    const twice = migrateFile(JSON.parse(JSON.stringify(out)), OPTS);
+    expect(stableStringify(twice.labValues)).toBe(stableStringify(out.labValues));
   });
 
   it('US-21 phase 3 — a v1 copy merged with a migrated copy converges: no #dup ids, one active row per slot', () => {

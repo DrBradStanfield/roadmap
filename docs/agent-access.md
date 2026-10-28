@@ -36,7 +36,7 @@ so this is the whole footprint.
 | Google Drive | Folder `Health Plan by Dr Brad` in My Drive (an older connection may still use `Health Roadmap by Dr Brad`; the app finds either, `DRIVE_LEGACY_FOLDER_NAME` in `drive-rest.ts`) | Wherever Drive for desktop mounts My Drive, on macOS usually `~/Library/CloudStorage/GoogleDrive-<email>/My Drive/`, elsewhere often `~/Google Drive/My Drive/`. Set the folder "Available offline", or Drive streams it rather than storing it |
 | GitHub | Default branch of the one repo the token is scoped to, at the repo root | your clone: `health-roadmap.json` |
 | WebDAV / self-host | Relative to the configured base URL | wherever you mounted it |
-| Browser only | `localStorage` key `health_roadmap_file_v2` | no file on disk, export from the app instead |
+| Browser only | `localStorage` key `health_roadmap_file_v2` | no file on disk; the user connects a cloud provider in the tool, which merges the browser copy into the cloud file |
 
 Uploaded reports sit beside the JSON in human folders: `Lab results/`, `Scans/`,
 `Clinic letters/`, `Other documents/`, named `YYYY-MM-DD Title.ext`. Each
@@ -105,8 +105,9 @@ someone's medical history, or lose their data at the next device sync.
    different content. Never write a `#dup-` id yourself.
 6. **Leave `meta` alone, except `meta.updatedAt`, which you MUST set to now (ISO 8601),
    using the same clock as your rows' `createdAt`/`updatedAt`.** It is the anchor of the
-   clamp below: leave it stale and every row you just wrote is rewound to it on the next
-   load, and can lose its slot or its record to an older entry. Never touch
+   mutable-clock clamp below: leave it stale and current-state or field `updatedAt`
+   stamps can be rewound on load, letting an older entry win. Measurement/lab
+   `createdAt` is not rewound. Never touch
    `meta.lamport`, `meta.eraseEpoch`, `meta.erasedAt`, or `meta.lastDeviceId`, they are
    the sync engine's clocks. Garbage there is clamped, reset to 0 or dropped on read, and
    a reset `eraseEpoch` makes the next merge discard your copy's rows that an erase listed,
@@ -143,17 +144,24 @@ someone's medical history, or lose their data at the next device sync.
    `get_plan` one keyed by its own `inputs` field names. `get_plan.inputs` is SI
    canonical; `currentValues` is the same values converted to the record's `unitSystem`,
    so read `inputs` when you are computing and `currentValues` when you are quoting.
+   `inputs.labEgfr` (mL/min/1.73m²) and `inputs.labEgfrDate` (YYYY-MM-DD) are set only
+   when the plan's eGFR is the lab's printed one (US-07 AC7): the latest active lab `egfr`
+   row, used when it is from the creatinine's day or later, or when no eGFR can be
+   calculated (no birth year, or a creatinine the plan excludes). They are derived, never
+   stored: write lab values, not these fields.
    One exception to "converted": LDL and ApoB, the lipids with a target line, print on
    the side of their line the plan grades them (US-07 AC5). A value within one display
    step of the line can differ from a plain conversion: one step up to the line when the
    plan grades it at or above, or one more decimal place when it grades it below.
    `get_plan`'s tool description in `mcp-tools.ts` should say this too; it stays frozen
    while OpenAI reviews the app, so add it once that review is done.
-9. **Timestamps are ISO 8601, and never in the future.** On every load the app clamps a
-   row's write-clocks, `createdAt` on measurements and lab values, `updatedAt`/`lamport`
-   on current-state rows and on each field stamp, to the file's own last write (the
-   later of `meta.createdAt` and `meta.updatedAt`), so a future stamp is rewound, not
-   rejected. `recordedAt` is never clamped: it is the clinical date, and a future one
+9. **Timestamps are ISO 8601, and never in the future.** Measurement/lab `createdAt`
+   and document `addedAt` are immutable content identity, so load keeps them as
+   written. A future measurement/lab `createdAt` can take its day slot; agents must
+   never write one. Load clamps mutable row and field `updatedAt` to the file's own
+   last write (the later of normalized `meta.createdAt` and `meta.updatedAt`);
+   Lamport counters are bounded separately. `recordedAt` is never clamped: it is
+   the clinical date, and a future one
    still puts a value on a day that has not happened, that mistake is yours to avoid.
    `recordedAt` may be `YYYY-MM-DD` or a full timestamp, only the day is used for
    slotting.
@@ -203,8 +211,8 @@ Validate your result against the schema before you write it back.
   not a licence to write sloppily. Rule 3 is yours to enforce.
 - **Malformed rows may be dropped, ignored, or have their clocks rewritten.** The app
   normalises an untrusted file on every read, a non-array where an array belongs becomes
-  an empty array, out-of-range counters and future write-stamps are clamped (see the
-  timestamps rule), and a row missing fields the UI needs simply will not render. Beyond
+  an empty array, out-of-range counters and mutable `updatedAt` stamps beyond the
+    file's last-write anchor are clamped (see the timestamps rule), and a row missing fields the UI needs simply will not render. Beyond
   those clamps it does not repair rows, and it does not warn. A measurement or lab row
   whose `recordedAt` does not start with a real calendar day (`YYYY-MM-DD`) is removed
   at the next sync.
@@ -325,7 +333,9 @@ Six things differ from the local path, and they are differences you will hit:
   When the budget runs out the refusal says so and reading still works. `add_lab_values`
   also carries its own per-call cap of 50 rows, regardless of budget.
 - **A record whose `schemaVersion` is newer than the server understands is out of reach
-  entirely: reads refuse too**, because the record is migrated before any tool sees it.
+  entirely: reads refuse too**, because the record is migrated before any tool sees it. On
+  Google Drive, a newer copy beside readable ones does not block reads: they load merged, and
+  saves refuse until the app is updated (US-10 AC4a).
 - **Provider calls time out and surface as "did not answer".** A cloud provider that
   accepts the connection and then goes quiet fails the call rather than hanging it.
   Reading and saving a record gets 30 s; a larger upload gets proportionally longer, so

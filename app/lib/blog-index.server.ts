@@ -15,7 +15,7 @@ export interface BlogIndexEntry {
   publishedAt: string;
   youtube?: string;
   summary?: string;
-  type?: 'reference' | 'article' | 'guideline' | 'pathway';
+  type?: 'reference' | 'article' | 'guideline';
   /** Master handles this post is about (US-50 AC2). */
   topics?: string[];
   /** Set only on a single-subject post: the router drops it once its masters are up to date (US-50 AC3). */
@@ -23,6 +23,9 @@ export interface BlogIndexEntry {
   /** A master's review date, YYYY-MM-DD (US-50 AC1). */
   reviewed?: string;
 }
+
+/** A topic master (US-50 AC1): a reference with a review date. */
+export const isMaster = (entry: BlogIndexEntry) => entry.type === 'reference' && /^\d{4}-\d{2}-\d{2}$/.test(entry.reviewed ?? '');
 
 const INDEX_PATH = path.join(process.cwd(), 'docs/blog/index.json');
 

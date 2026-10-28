@@ -26,7 +26,7 @@
  *    typed lane has held since US-23.
  */
 import { randomBytes } from 'node:crypto';
-import { z } from 'zod';
+import * as z from '../../packages/health-core/src/zod';
 import { REMINDER_CATEGORIES } from '../../packages/health-core/src/reminders';
 import { SCHEDULE_LABELS } from '../../packages/health-core/src/reminder-schedule';
 import { APP_BASE_URL } from './email.server';
@@ -85,7 +85,16 @@ export const scheduleSchema = z
           // A regex-valid impossible date ('2026-99-99') survives to the email
           // builders, where new Date().toISOString() THROWS — poisoning every
           // future send for that row (daily cron error, no email, forever).
-          .refine((d) => !Number.isNaN(Date.parse(d)), 'not a real date'),
+          // And !Number.isNaN(Date.parse(d)) under-rejects: Date.parse
+          // NORMALIZES an impossible day ('2026-02-30' reads as Mar 2), so a
+          // stored row later displays "due Mar 2026" in the email while the
+          // calendar link keeps the raw Feb 30. Require the parsed UTC
+          // year/month/day to equal the submitted YYYY-MM-DD (US-23 AC4 —
+          // dueAt must be a real calendar day).
+          .refine((d) => {
+            const parsed = new Date(d);
+            return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === d;
+          }, 'not a real date'),
       })
       .refine(
         (item) => (SCHEDULE_LABELS[item.category as keyof typeof SCHEDULE_LABELS] ?? []).includes(item.label),

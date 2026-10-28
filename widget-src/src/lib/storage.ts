@@ -1,6 +1,8 @@
-import type { HealthInputs, ApiMeasurement, ApiMedication, ApiScreening, ChatContextPayload } from '@roadmap/health-core';
+import type { HealthInputs, ApiMeasurement, ApiMedication, ApiScreening, ChatContextPayload, LabEgfr } from '@roadmap/health-core';
 import type { UnitSystem } from '@roadmap/health-core';
-import { sanitizeInputs, mergeLongitudinalInputs, chatContextOf, detectUnitSystem, PREFILL_FIELDS } from '@roadmap/health-core';
+import {
+  sanitizeInputs, mergeLongitudinalInputs, chatContextOf, detectUnitSystem, PREFILL_FIELDS, withLabEgfr, dayOf, localDay,
+} from '@roadmap/health-core';
 import type { ApiReminderPreference } from './api-types';
 
 /** The mirror: HealthTool's copy of the saved record, which the chatbot embed
@@ -18,6 +20,8 @@ interface StoredData {
   medications?: ApiMedication[];
   screenings?: ApiScreening[];
   reminderPreferences?: ApiReminderPreference[];
+  /** The saved lab eGFR candidate (US-07 AC7): the other chats hold no lab rows. */
+  labEgfr?: LabEgfr | null;
   savedAt: string;
 }
 
@@ -27,13 +31,15 @@ export interface LoadedData {
   medications: ApiMedication[];
   screenings: ApiScreening[];
   reminderPreferences: ApiReminderPreference[];
+  labEgfr: LabEgfr | null;
 }
 
 /**
  * Write the mirror: the saved profile as `inputs`, the newest saved row per
- * metric, and the medications and screenings on record. Tells the page.
+ * metric, the medications and screenings on record, and the saved lab eGFR
+ * (labEgfrOf over the record's lab rows). Tells the page.
  */
-export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasurements?: ApiMeasurement[], medications?: ApiMedication[], screenings?: ApiScreening[], reminderPreferences?: ApiReminderPreference[]): void {
+export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasurements?: ApiMeasurement[], medications?: ApiMedication[], screenings?: ApiScreening[], reminderPreferences?: ApiReminderPreference[], labEgfr?: LabEgfr | null): void {
   try {
     const data: StoredData = {
       inputs,
@@ -41,6 +47,7 @@ export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasur
       medications,
       screenings,
       reminderPreferences,
+      labEgfr,
       savedAt: new Date().toISOString(),
     };
     localStorage.setItem(MIRROR_KEY, JSON.stringify(data));
@@ -54,7 +61,7 @@ export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasur
  * Replace one part of the mirror (the saved profile, the medications or the
  * screenings) and keep the rest, so no saver can write form inputs into it.
  */
-export function patchMirror(patch: { profile?: Partial<HealthInputs> } & Partial<Pick<LoadedData, 'medications' | 'screenings'>>): void {
+export function patchMirror(patch: { profile?: Partial<HealthInputs> } & Partial<Pick<LoadedData, 'medications' | 'screenings' | 'labEgfr'>>): void {
   const cached = loadFromLocalStorage();
   saveToLocalStorage(
     patch.profile ?? cached?.inputs ?? {},
@@ -62,6 +69,7 @@ export function patchMirror(patch: { profile?: Partial<HealthInputs> } & Partial
     patch.medications ?? cached?.medications ?? [],
     patch.screenings ?? cached?.screenings ?? [],
     cached?.reminderPreferences ?? [],
+    patch.labEgfr !== undefined ? patch.labEgfr : cached?.labEgfr ?? null,
   );
 }
 
@@ -87,6 +95,7 @@ export function loadFromLocalStorage(): LoadedData | null {
     for (const field of [...PREFILL_FIELDS, 'unitSystem'] as const) {
       if (sanitizedInputs[field] !== undefined) (inputs as Record<string, unknown>)[field] = sanitizedInputs[field];
     }
+    const lab = sanitizeInputs({ labEgfr: data.labEgfr?.labEgfr, labEgfrDate: data.labEgfr?.labEgfrDate });
 
     return {
       inputs,
@@ -99,6 +108,7 @@ export function loadFromLocalStorage(): LoadedData | null {
       medications: data.medications ?? [],
       screenings: data.screenings ?? [],
       reminderPreferences: data.reminderPreferences ?? [],
+      labEgfr: lab.labEgfr !== undefined && lab.labEgfrDate !== undefined ? { labEgfr: lab.labEgfr, labEgfrDate: lab.labEgfrDate } : null,
     };
   } catch (error) {
     console.warn('Failed to load from localStorage:', error);
@@ -134,13 +144,14 @@ export const VITALS_DRAFT_KEY = 'health_roadmap_vitals_draft';
 export const LPA_CHECK_KEPT_KEY = 'health_roadmap_lpa_check_kept';
 
 /**
- * Remove every stored document blob, both matrices' unsaved drafts and the
+ * Remove the stored document blobs, both matrices' unsaved drafts and the
  * Lp(a) check's kept answers — the on-device health data an erase would
- * otherwise leave behind.
+ * otherwise leave behind. `keepDocument` spares the blobs of documents an
+ * erase did not remove (US-09 AC20, AC23): by default none is spared.
  */
-export function clearOffFileHealthData(): void {
+export function clearOffFileHealthData(keepDocument: (ref: string) => boolean = () => false): void {
   clearMatrixDrafts();
-  removeByPrefix(DOC_KEY_PREFIX);
+  removeByPrefix(DOC_KEY_PREFIX, (key) => keepDocument(key.slice(DOC_KEY_PREFIX.length)));
   safeRemoveItem(LPA_CHECK_KEPT_KEY);
 }
 
@@ -156,11 +167,12 @@ export function clearMatrixDrafts(): void {
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(DRAFTS_CLEARED_EVENT));
 }
 
-/** Remove every stored key under `prefix` (document blobs, named record files). */
-export function removeByPrefix(prefix: string): void {
+/** Remove every stored key under `prefix` (document blobs, named record
+ *  files), except those `keep` names. */
+export function removeByPrefix(prefix: string, keep: (key: string) => boolean = () => false): void {
   try {
     for (const key of Object.keys(localStorage)) {
-      if (key.startsWith(prefix)) safeRemoveItem(key);
+      if (key.startsWith(prefix) && !keep(key)) safeRemoveItem(key);
     }
   } catch {
     /* storage unavailable — nothing to clear */
@@ -230,14 +242,16 @@ export function setJson(key: string, value: unknown): void {
  * The chat context for the bundles outside the widget (blog bubble, chatbot
  * embed), built as the widget builds its own (chatContextOf): the saved
  * profile, the latest saved values and their dates, the medications and
- * screenings on record, and the unit system the widget shows (US-15 AC10).
- * Null if there is no data.
+ * screenings on record, the saved lab eGFR when the plan reads it (US-07 AC7),
+ * and the unit system the widget shows (US-15 AC10). Null if there is no data.
  */
 export function loadGuestInputs(): ChatContextPayload | null {
   const cached = loadFromLocalStorage();
   if (!cached) return null;
-  const inputs = mergeLongitudinalInputs(cached.inputs, cached.previousMeasurements);
-  if (Object.keys(inputs).length === 0) return null;
+  const merged = mergeLongitudinalInputs(cached.inputs, cached.previousMeasurements);
+  if (Object.keys(merged).length === 0) return null;
+  const creatinine = cached.previousMeasurements.find(m => m.metricType === 'creatinine')?.recordedAt;
+  const inputs = withLabEgfr(merged, typeof creatinine === 'string' ? dayOf(creatinine) : null, cached.labEgfr, localDay(new Date()));
   return chatContextOf(inputs, chatUnitSystem(cached.inputs.unitSystem), cached.medications, cached.screenings, cached.previousMeasurements);
 }
 

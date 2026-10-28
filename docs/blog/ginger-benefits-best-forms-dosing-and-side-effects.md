@@ -6,517 +6,446 @@ publishedAt: "2025-05-13T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["ginger", "gingerols", "shogaols", "nausea", "inflammation", "digestion", "pain", "gut health", "osteoarthritis", "motion sickness", "pregnancy nausea", "chemotherapy nausea", "blood sugar", "diabetes", "hba1c", "weight loss", "migraine", "menstrual pain", "indigestion", "heartburn", "cognitive", "brain health", "muscle", "exercise"]
-summary: "Reference on ginger: nausea (pregnancy, chemotherapy), indigestion, joint pain, blood sugar, menstrual pain. Powder 1-3g/day or extract 100-500mg/day. Caution: bleeding risk with blood thinners, CYP3A4 interactions. Always discuss with your doctor."
+summary: "Evidence summary on ginger: it may ease pregnancy nausea and modestly reduce osteoarthritis pain; results for chemotherapy nausea, motion sickness and blood sugar are mixed. Talk to your doctor first if you take warfarin or another blood thinner, or are pregnant."
+reviewed: "2026-10-26"
+sources: [{"name":"nih-ods","url":"https://www.nccih.nih.gov/health/ginger","checked":"2026-10-25","fingerprint":"sha256:6dc5d44cedfeffabafaa6869eac57d537f42d95ca2668e1ca95a5a3c7fa4b45d"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/ginger-benefits-best-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/ginger-benefits-best-forms-dosing-and-side-effects)*
 
+## Current evidence position
+
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. The US National Center for Complementary and Integrative Health (NCCIH) says ginger may help nausea and vomiting in pregnancy and might ease menstrual cramps, but most studies of motion sickness have not shown a benefit [2]. A meta-analysis of 12 trials in 1,278 pregnant women found that ginger eased nausea but did not significantly reduce vomiting [8], and in an Australian trial, standardized ginger root powder giving 84 mg a day of gingerols and shogaols, added to anti-nausea drugs, lowered delayed nausea after chemotherapy [11], though a larger trial and a review of 23 trials found no overall benefit [23][25]. For osteoarthritis, a meta-analysis of 5 trials found a modest drop in pain [30], while trials in type 2 diabetes give mixed results [49][50]. Ginger may affect clotting, and case reports describe a sharp rise in INR in people taking warfarin, so anyone on a blood thinner should talk to their doctor first [42][43].
+
+## Key safety points
+
+- Case reports describe a sharp rise in INR in people on warfarin who started ginger [42][43]. If you take warfarin, ask your doctor about an extra INR check when starting or stopping ginger, and report black stools, blood in urine, nosebleeds or bleeding gums to your doctor the same day. For signs of a stroke or bleeding in the brain (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- In a review of eight trials, four found that ginger reduced platelet clumping and four found no effect [51]. If you take aspirin, clopidogrel or another blood thinner, ask your doctor first.
+- A case report linked ginger to a serious interaction with the cancer drug crizotinib [7]. If you take any medicine, ask your doctor or pharmacist before using ginger [2].
+- Ginger supplements may be safe in pregnancy, but check with your health care provider first. Little is known about safety while breastfeeding [2].
+- Ginger lowered fasting glucose in a meta-analysis of trials in overweight adults [36]. If you take diabetes medicines, ask your doctor whether you need closer glucose checks.
+- Side effects include abdominal discomfort, heartburn, diarrhea and mouth or throat irritation [2]. In osteoarthritis trials, people on ginger were more than twice as likely to stop treatment as those on placebo [30].
+
+## Brad's videos on this topic
+
+None yet.
+
 ## 1. Overview
 
-Ginger (*Zingiber officinale*) is a flowering plant whose rhizome (underground stem) has been used for thousands of years as both a culinary spice and a traditional medicine. Native to the warm regions of Southeast Asia, ginger is now cultivated in parts of South America, Africa, the Middle East, and the Caribbean [1][2]. It has been used traditionally to treat a wide range of ailments, from digestive complaints and respiratory illness to arthritis and nausea [1][2].
+Ginger (*Zingiber officinale*) is a plant whose rhizome (underground stem) is used in food and for health purposes. It is native to the warm parts of Asia and is now grown in parts of South America, Africa and the Middle East [2]. Folk medicine used it for asthma, flu, indigestion and stomach upset [2].
 
-The bioactive compounds responsible for ginger's pharmacological effects are primarily phenolic compounds — gingerols and shogaols [1][3]. These compounds are chemically related to capsaicin (the pungent compound in chili peppers) and piperine (the compound that gives black pepper its bite) [1]. Gingerols are the major active constituents in fresh ginger, with 6-gingerol being the most abundant. When ginger is dried or heated, gingerols are converted to shogaols, which are more potent and contribute to the characteristic pungent taste of dried ginger and ginger extracts [1][3].
+Gingerols are the main pungent compounds in ginger root, and 6-gingerol is the major active one [3][46]. Heat turns gingerols into shogaols, which give dried ginger its sharp taste [3]. Part of their structure resembles capsaicin, the hot compound in chili peppers [38].
 
-These compounds possess antioxidant, anti-inflammatory, and anti-emetic properties that appear to underlie many of ginger's clinical effects [1][3]. The proposed mechanisms of action include:
+In laboratory and animal studies, these compounds show antioxidant and anti-inflammatory effects [3][47]. Proposed mechanisms include:
 
-- **Serotonin receptor antagonism** — Gingerols and shogaols act on serotonin (5-HT3) receptors in the gastrointestinal tract, which may explain ginger's anti-nausea effects [4][5]
-- **Prokinetic activity** — Ginger increases the rate of gastric emptying, helping move food through the stomach more efficiently [5]
-- **Anti-inflammatory effects** — Ginger inhibits cyclooxygenase (COX) and lipoxygenase enzymes, reducing prostaglandin and leukotriene synthesis [3]
-- **Proton pump inhibition** — Laboratory experiments have shown that compounds in ginger can act as proton-pump inhibitors, similar to the anti-ulcer medication lansoprazole (Prevacid), decreasing acid production in the stomach [6]
-- **CYP3A4 enzyme inhibition** — Ginger has been shown in laboratory studies to significantly inhibit the activity of the cytochrome P450 enzyme CYP3A4, as well as CYP2C9 and P-glycoprotein, which has important implications for drug interactions [7]
+- **Serotonin receptor effects:** in laboratory tests, gingerols and 6-shogaol blocked serotonin (5-HT3) receptor channels, probably at a site separate from where serotonin binds, which may explain part of ginger's anti-nausea effect [4][45]
+- **Faster stomach emptying:** in 11 people with functional dyspepsia, 1.2 g of ginger emptied the stomach faster than placebo [5]
+- **Anti-inflammatory effects:** gingerols and shogaols show anti-inflammatory activity in laboratory studies [3]
+- **Acid pump inhibition:** in laboratory tests, phenolic fractions of ginger blocked the stomach's acid pump (H+, K+-ATPase) six to eight times more potently than the ulcer drug lansoprazole (Prevacid) [6]
+- **Drug interactions:** case reports suggest ginger can change the effect of some medicines, including warfarin and the cancer drug crizotinib [7][42]
 
-Ginger supplements are available in multiple forms including ginger root powder (whole ground rhizome), ginger root extract (concentrated preparations standardized to gingerols/shogaols), fresh ginger root, ginger tea, ginger ale, and topical preparations. The concentration of active compounds varies dramatically between these forms, which has significant implications for clinical efficacy and dosing [1].
+Ginger is sold as root powder, standardized extract, fresh root, tea and topical products. The amount of gingerols differs between these forms, so a trial dose applies only to the form that trial tested [11][14].
 
 ## 2. Forms and Bioavailability
 
-Understanding the different forms of ginger is critical because the concentration of bioactive compounds — particularly gingerols and shogaols — varies enormously between preparations, and most clinical trials specify the form used. Choosing the wrong form or dose may explain why some people experience benefits while others do not.
+Trials name the form they used, and gingerol and shogaol content differs between forms. A dose that worked as an extract does not carry over directly to a powder.
 
 ### Ginger Root Powder
 
-Ginger root powder is the most commonly studied form in clinical trials. It is made by drying and grinding the whole rhizome. A well-made ginger root powder should contain a minimum of 0.8% gingerols (approximately 8 mg of gingerols per gram of powder) [1]. The total gingerols plus shogaols content should equal approximately 1% of the listed weight, with shogaols not exceeding 0.18% of the listed weight [1]. A typical 1,000 mg (1 gram) serving of ginger root powder should provide roughly 10 mg of combined gingerols and shogaols [1].
-
-Ginger root powder retains the full spectrum of compounds found in the whole rhizome, including fiber, starch, and minor bioactive compounds beyond gingerols and shogaols. Most studies on nausea during pregnancy, motion sickness, diabetes, and weight loss have used ginger root powder at doses of 1–3 grams per day [1][8][9][10].
+Root powder is dried, ground rhizome, so some of its gingerols have turned into shogaols [3]. Trials have given 1 g of powder for seasickness [20], 1.2 g for functional dyspepsia [5] and 1.2 to 2 g a day, split into two doses, in type 2 diabetes [50].
 
 ### Ginger Root Extract
 
-Ginger root extracts are concentrated preparations that deliver higher amounts of gingerols and shogaols per milligram compared to whole root powder. Extracts are typically standardized to a specific percentage of gingerols (commonly 5% or 10%) and sometimes shogaols. Because they are concentrated, effective doses of extracts are much lower than for powders — typically 100–500 mg per day rather than 1–3 grams [1].
+Extracts concentrate the active compounds and are usually standardized to a stated percentage of gingerols. Trial doses are therefore smaller than powder doses: 200 mg of a 5% extract three times a day for migraine [32], 160 mg a day of a standardized extract during chemotherapy [23], and 125 mg a day of an extract standardized to 10% gingerols for joint pain [14].
 
-For example, in a chemotherapy-induced nausea study, participants took 300 mg of ginger root powder standardized to 5% gingerols and 2% shogaols four times daily, providing a total of 64 mg of gingerols and 20 mg of shogaols per day [11]. The standardization to specific gingerol/shogaol percentages is what distinguishes an extract from a simple powder.
+In an Australian chemotherapy trial, four standardized ginger root powder capsules provided 84 mg a day of gingerols and shogaols combined [11].
 
-Some proprietary ginger extracts have been studied in clinical trials:
-
-- **Ginfort** (by Olene Life Sciences / distributed by DolCas Biotech in the US) — A ginger root extract providing greater than 52 mg of gingerols per 200 mg serving. Studied for functional dyspepsia and menstrual pain [12][13]
-- **GingerT3** (by Specnova LLC) — Standardized to 10% gingerols and less than 3% shogaols. Studied for osteoarthritis at 125 mg daily [14]
+The extract tested for joint pain was made by supercritical CO2 extraction followed by fermentation, and standardized to 10% total gingerols and no more than 3% total shogaols [14].
 
 ### Fresh Ginger Root
 
-Fresh ginger root contains gingerols but essentially no shogaols (shogaols are formed during drying and heating). The gingerol concentration in fresh ginger is approximately 50% lower than in dried ginger powder due to its higher water content [1]. Two grams of fresh ginger root provides approximately the same amount of gingerols (about 10 mg) as one gram of ginger root powder [1].
+Fresh ginger contains gingerols; shogaols form when ginger is dried or heated [3]. In one motion-sickness study, 1,000 mg of fresh ginger root gave no protection [22].
 
-Fresh ginger can be grated into food, steeped as tea, or juiced. While it provides bioactive compounds, the dose is harder to standardize than with supplements, and very large amounts would be needed to match the doses used in clinical trials.
+Fresh ginger can be grated into food, steeped as tea, or juiced, but the dose is harder to measure than with capsules.
 
 ### Ginger Tea and Beverages
 
-Ginger tea can be made from fresh ginger root (sliced or grated and steeped in hot water) or from commercially prepared tea bags. The gingerol content varies widely depending on preparation method, steeping time, and the amount of ginger used. No clinical trials have specifically used ginger tea as the intervention.
+Ginger tea can be made from sliced or grated fresh root or from tea bags, and its gingerol content depends on how it is made. One small crossover trial gave 2 g of ginger powder dissolved in a hot drink with breakfast [37].
 
-Ginger ales provide negligible amounts of gingerols. Testing has shown that commercial ginger ales such as Canada Dry contain as little as 0.19 mg of gingerols per bottle — equivalent to approximately 24 mg of ginger powder, or about 1/100th of a teaspoonful. This represents roughly 1% of the gingerols in a typical ginger supplement [1]. These products also contain approximately 50 grams of sugar per bottle, meaning consumers ingest more than 2,000 times as much sugar as ginger [1].
+Ginger ales are sweetened soft drinks, and their ginger content is not standardized.
 
 ### Ginger Spray (Topical/Oral)
 
-One small study investigated a ginger root extract oral spray for dry mouth, prepared by mixing 300 grams of powdered ginger root in 1.5 liters of 70% ethyl alcohol, filtering, and concentrating. The spray contained ginger extract, edible glycerin, and distilled water in a 1:1:1 ratio [15]. This is a niche preparation not widely available commercially.
+One small trial in 20 people with type 2 diabetes who had dry mouth tested a ginger herbal mouth spray against a placebo spray [15]. Such sprays are not widely sold.
 
 ### How to Read a Ginger Supplement Label
 
-Consumers should look for the following information on ginger supplement labels [1]:
-
-- **Plant identification:** Ginger and/or *Zingiber officinale*, specifying the plant part used (root and/or rhizome)
-- **Form:** Whether the product contains ginger root powder, ginger root extract, or both
-- **Amount per serving:** Listed in grams (g) or milligrams (mg) — 1 gram equals 1,000 milligrams
-- **Standardization:** If available, information about the concentration of gingerols and shogaols. Ideally, products should contain a minimum of 0.8% gingerols for ginger root powder. Ginger extracts should contain even higher concentrations. Excessive amounts of shogaols may suggest the product has been exposed to excessive heat during manufacturing [1]
+Shogaols are used as quality-control markers for ginger products [3].
 
 ### Key Principle: Powder vs. Extract Dosing
 
-Because extracts are concentrated, comparing studies requires attention to whether ginger root powder or ginger root extract was used. As a rough guide:
-
-| Form | Typical Daily Dose | Approximate Gingerols/Day |
-|------|:-:|:-:|
-| Ginger root powder | 1,000–3,000 mg | 8–30 mg |
-| Ginger root extract (5% gingerols) | 200–1,200 mg | 10–60 mg |
-| Ginger root extract (10% gingerols) | 125–500 mg | 12–50 mg |
-| Fresh ginger root | 2,000–6,000 mg | 8–30 mg |
-| Ginger ale (1 bottle) | ~24 mg equivalent | ~0.2 mg |
+Powder and extract doses are not interchangeable. In one trial, 125 mg a day of a 10% extract provided 12.5 mg a day of gingerols [14], while in the Australian chemotherapy trial four capsules of standardized powder provided 84 mg a day of gingerols and shogaols [11].
 
 ## 3. Evidence for Benefits
 
 ### Nausea and Vomiting
 
-Nausea and vomiting is the most extensively studied indication for ginger. Evidence suggests that gingerols and shogaols act on serotonin (5-HT3) receptors in the stomach and increase the rate of gastric emptying, both of which could contribute to an anti-nausea effect [4][5]. Unlike many pharmaceutical anti-nausea medications, ginger does not appear to work by affecting the brain or inner ear [16]. However, the clinical evidence is mixed across different types of nausea.
+Ginger has been studied for several types of nausea and vomiting, mostly as supplements rather than foods [2]. Laboratory work suggests that gingerols and shogaols act on serotonin (5-HT3) receptors [4], and ginger sped up stomach emptying in a small trial [5]. In 8 healthy volunteers, ginger reduced vertigo set off by stimulating the inner ear more than placebo did, without changing eye movements (nystagmus) [16]. The clinical evidence differs by type of nausea.
 
 #### Pregnancy-Related Nausea
 
-Pregnancy-related nausea has the strongest evidence supporting ginger's anti-emetic effects. A meta-analysis of 12 randomized controlled trials involving pregnant women, with study durations ranging from 4 days to 3 weeks, concluded that a daily dose of 600–2,500 mg of ginger root powder significantly decreased nausea symptoms compared to placebo [8]. However, ginger did not significantly reduce the number of vomiting episodes.
+Pregnancy-related nausea has the strongest evidence. A meta-analysis of 12 randomized trials in 1,278 pregnant women found that ginger improved nausea compared with placebo but did not significantly reduce vomiting episodes [8].
 
 Key findings from this meta-analysis [8]:
-- Doses of less than 1,500 mg per day appeared to be most effective
-- No increased risk for any major adverse event was observed, including arrhythmia, spontaneous abortion, allergic reaction, or dehydration
-- The typical dosing regimen was 250 mg four times daily or 500 mg twice daily
+- Subgroup analyses seemed to favor a daily dose of less than 1,500 mg for nausea relief
+- Ginger did not significantly raise the risk of miscarriage (RR 3.14, 95% CI 0.65 to 15.11), though the estimate was very imprecise, nor the risk of heartburn or drowsiness
+- The authors rated the evidence as low quality
 
-A systematic review of integrative and complementary practices for nausea control in pregnant women also found ginger to be helpful [17]. The NCCIH (National Center for Complementary and Integrative Health) states that research shows ginger may be helpful for nausea and vomiting associated with pregnancy [2].
+A later meta-analysis of 13 trials in 1,174 people also found that ginger eased nausea but not vomiting compared with placebo, and it did not differ significantly from vitamin B6 [48]. A systematic review of complementary approaches in pregnancy found ginger capsules among the effective options [17]. The NCCIH (National Center for Complementary and Integrative Health) states that research shows ginger may be helpful for nausea and vomiting associated with pregnancy [2].
 
-However, there may be an increased risk of vaginal bleeding from ginger intake during later weeks of pregnancy (see Safety and Side Effects section) [18].
+For safety in pregnancy, see the Safety and Side Effects section.
 
 #### Motion Sickness
 
 The evidence for ginger and motion sickness is mixed, and the NCCIH notes that most studies have not shown ginger to be helpful for this indication [2].
 
 **Positive findings:**
-- A study among young adults with a history of motion sickness found that 940 mg of ginger root powder taken 20 minutes before a motion-sickness-inducing exercise (spinning in a chair for up to 6 minutes) resulted in less nausea and longer tolerance in the spinning chair compared to both dimenhydrinate (Dramamine) and placebo [19]
-- A study among naval cadets sailing on the high seas found that 1 gram of ginger root powder significantly reduced the tendency for vomiting and cold sweating in the 4 hours after ingestion compared to placebo [20]
+- In 80 naval cadets sailing in heavy seas, 1 g of ginger root powder reduced vomiting and cold sweating over the next 4 hours more than placebo; nausea and vertigo were also lower, but not significantly [20]
 
 **Negative findings:**
-- Several other studies using the same 1-gram dose of ginger have found no benefit for motion sickness [21][22]
+- In rotating-chair tests, three doses of ginger performed at the level of placebo, while drugs such as scopolamine and dimenhydrinate gave significant protection [21]
+- In 28 volunteers, 500 or 1,000 mg of powdered ginger root or 1,000 mg of fresh root gave no protection [22]
 
-The inconsistency in results may relate to the severity and type of motion stimulus, timing of ginger intake relative to exposure, and inter-individual variability in ginger metabolism. Given the mixed evidence, ginger should not be considered a reliable treatment for motion sickness, though it may be worth trying as a low-risk option.
+Given these mixed results from small, older trials, ginger is not a reliable treatment for motion sickness [2][21][22].
 
 #### Chemotherapy-Induced Nausea and Vomiting
 
-Ginger has shown some benefit in alleviating delayed nausea and vomiting after chemotherapy (symptoms occurring 1–7 days after treatment, as opposed to acute nausea within the first 24 hours). The benefit may be greater in women than in men [1][11][23][24].
+Trials disagree on whether ginger helps nausea after chemotherapy, and on whether it helps acute nausea or delayed nausea, which comes days later [11][23][25]. One trial found a benefit only in women and in people with head and neck cancer [23].
 
-A placebo-controlled study in Australia among 70 women and 33 men starting chemotherapy for cancer (breast, lung, digestive, and other types) found that ginger did not reduce nausea within the first 24 hours after chemotherapy, but it did significantly reduce nausea and vomiting occurring 1 to 7 days afterward. Participants took one 300 mg capsule of ginger root powder (standardized to 5% gingerols and 2% shogaols) four times daily with food, providing 64 mg of gingerols and 20 mg of shogaols per day. Treatment began on the first day of chemotherapy and continued for 5 days across 3 chemotherapy cycles. Those who took ginger also had better nutritional status at the end of the third cycle: 85% were "well nourished" vs. 59% in the placebo group [11].
+A placebo-controlled trial at two hospitals in Australia enrolled 103 adults about to start moderately or highly emetogenic chemotherapy. Four standardized ginger capsules a day (totaling 84 mg a day of active gingerols and shogaols), started on the day of chemotherapy and taken for 5 days in each of the first 3 cycles, did not change acute nausea but lowered delayed nausea severity and improved nausea-related quality of life. In cycle 3, delayed nausea affected 49% of the ginger group versus 79% on placebo, and malnutrition 18% versus 41% [11].
 
-A placebo-controlled study in Italy found no overall benefit from adding ginger extract to standard anti-emetic therapy. The extract was taken as two capsules (each containing 40 mg of ginger extract with 16 mg of gingerols and 1.12 mg of shogaols) twice daily on a full stomach. However, subgroup analysis revealed that ginger actually increased nausea incidence among men but had a moderate favorable effect in women [23].
+A placebo-controlled trial added 160 mg a day of ginger extract, with a standardized dose of active compounds, to standard anti-nausea drugs in people receiving high-dose cisplatin (121 on ginger, 123 on placebo), starting the day after chemotherapy. Delayed nausea did not differ between groups, though nausea scores favored ginger in women and in people with head and neck cancer [23].
 
-This sex-specific finding is consistent with a study in 60 women undergoing anthracycline chemotherapy for breast cancer. Those who consumed ginger (500 mg of powdered ginger mixed with a spoonful of yogurt) twice daily during the first 3 days of chemotherapy had significantly less nausea and vomiting in the days after chemotherapy. No adverse effects attributed to ginger were reported [24].
+In 60 women with breast cancer, all on standard anti-nausea drugs, those who also took oral ginger for the first 3 days of the chemotherapy cycle reported less severe nausea and fewer vomiting episodes than a control group that received no placebo [24].
 
-A systematic review of randomized clinical trials examining ginger for chemotherapy-induced nausea and vomiting found mixed results overall but some support for ginger as an adjunct to standard anti-emetic medications [25].
+A systematic review of 23 randomized trials found no overall difference in acute or delayed nausea or vomiting, but people taking no more than 1 g of ginger a day for more than four days had less acute vomiting (OR 0.30, 95% CI 0.12 to 0.79) [25].
 
-**Important safety note:** Ginger may interact with some chemotherapeutic drugs, potentially raising their blood levels to dangerous concentrations (see Drug Interactions section) [7].
+**Important safety note:** A case report described a serious interaction between ginger and the cancer drug crizotinib (see Drug Interactions section) [7].
 
 #### Postoperative Nausea and Vomiting
 
-Ginger has shown only limited benefit in preventing postoperative nausea and vomiting [26]. A meta-analysis found ginger to be a potential alternative for prevention of postoperative nausea and vomiting, though the evidence quality was variable [27].
+In a meta-analysis of 6 trials in 538 patients, ginger did not clearly prevent postoperative nausea and vomiting (RR 0.84, 95% CI 0.69 to 1.03), and the authors judged it not clinically relevant [26]. A later meta-analysis of 10 trials in 918 patients found that ginger reduced the severity of postoperative nausea and vomiting, but its effect on how often they occurred was not statistically significant [27].
 
 #### Gastroenteritis (Stomach Flu) in Children
 
-A study in Italy among 141 children with acute gastroenteritis showed that those given 1 mL of a liquid ginger drop (1% ginger extract, providing 10 mg of extract) along with an oral rehydrating solution within 12 hours of symptom onset were 20% less likely to vomit after the first dose compared to placebo. The difference, while not dramatic, was statistically significant. Among those who continued to have vomiting episodes, continuing the ginger drops reduced the percentage of children vomiting at 24 and 48 hours [28].
+In 150 children aged 1 to 10 years with vomiting from acute gastroenteritis, 67% of those given oral ginger vomited again after the first dose, compared with 87% of those given placebo (number needed to treat 5, 95% CI 3 to 15) [28].
 
 ### Heartburn and Indigestion (Functional Dyspepsia)
 
-A study in Iran among 48 adults with functional dyspepsia found that 79% of those given 200 mg of ginger root extract (Ginfort, providing greater than 52 mg of gingerols) twice daily reported their symptoms as improved after 4 weeks, compared to only 21% of those given placebo. Symptoms including upper abdominal pain, discomfort, bloating, post-meal fullness, excessive belching, nausea, and heartburn were eliminated in 64% of the ginger group compared to only 13% of the placebo group [12]. This study was funded and conducted by Olene Life Sciences, the manufacturer of Ginfort.
+In a small crossover trial in 11 people with functional dyspepsia, 1.2 g of ginger sped up stomach emptying compared with placebo (median half-emptying time 12.3 versus 16.1 minutes) but did not change symptoms [5].
 
-The mechanistic basis for this effect is supported by laboratory evidence showing that compounds in ginger can act as proton-pump inhibitors, similar to lansoprazole (Prevacid), decreasing acid production in the stomach [6].
+Laboratory tests found that phenolic fractions of ginger block the stomach's acid pump more potently than lansoprazole (Prevacid) [6].
 
-While promising, these results come from a single, industry-funded trial with a small sample size. Larger, independently funded confirmatory studies are needed.
+Evidence that ginger eases dyspepsia symptoms in people is limited.
 
 ### Peptic Ulcer Disease
 
-A study in Iran among 34 adults with peptic ulcer disease found that taking 2,000 mg per day of ginger (providing 100 mg/day of gingerols, likely from an extract) for 6 weeks following 2 weeks of standard treatment (antibiotics, bismuth subcitrate, and a proton pump inhibitor) did not reduce self-reported stomach pain, the number or severity of ulcers, or the number of participants with *H. pylori* infection at the end of the study compared to standard treatment plus placebo [29]. Based on this single study, ginger does not appear to add benefit beyond standard peptic ulcer therapy.
+Evidence for peptic ulcer comes from the laboratory: phenolic fractions of ginger slowed the growth of *H. pylori*, a major cause of ulcers, in lab tests [6]. Whether this helps people with ulcers is unknown.
 
 ### Osteoarthritis
 
-Laboratory evidence suggests that 6-shogaol from ginger may affect collagen cells in a way that could potentially help protect from cartilage and bone degradation [1][3]. However, there are few well-designed studies on the effects of ginger on osteoarthritis in people, and results have been mixed.
+Ginger's anti-inflammatory activity in laboratory studies has led to trials in osteoarthritis [3]. Results in people have been mixed.
 
-**Modest benefit in meta-analysis:** A review of 5 randomized, placebo-controlled clinical trials in which daily doses ranged from 500 mg to 1,000 mg of ginger extract found that ginger may modestly reduce pain and disability from osteoarthritis of the knee and hip. No serious adverse events were reported; mild adverse events were all related to "bad taste" or various forms of stomach upset [30].
+A meta-analysis of 5 placebo-controlled trials (593 patients) found that ginger modestly reduced osteoarthritis pain (SMD -0.30, 95% CI -0.50 to -0.09) and disability (SMD -0.22, 95% CI -0.39 to -0.04). People given ginger were more than twice as likely to stop treatment (RR 2.33, 95% CI 1.04 to 5.22), and the authors rated the evidence as moderate quality [30].
 
-A PRISMA systematic review and meta-analysis also found some effectiveness of ginger on pain and function in knee osteoarthritis [31].
+A meta-analysis of knee osteoarthritis trials found insufficient evidence that oral ginger beats placebo for pain or function, and rated the trials as poor quality [31].
 
 The NCCIH notes that ginger dietary supplements might be helpful for symptoms of knee osteoarthritis, but much of the research has been of poor quality. Ginger used topically (applied to the skin) has not been shown to be helpful for knee osteoarthritis symptoms [2].
 
-**Negative finding:** A subsequent study among 30 people (average age 56) with osteoarthritis and/or mild to severe joint and muscle pain found that taking 125 mg of a ginger extract powder (GingerT3, standardized to 10% gingerols and less than 3% shogaols) once daily after breakfast for approximately 8 weeks did not significantly reduce joint pain, stiffness, or osteoarthritis severity, nor did it improve physical function, reduce exercise-induced muscle pain, improve flexibility, or increase range of motion compared to placebo. There were also no significant between-group differences in biomarkers of inflammation. This study was funded by Specnova LLC, the manufacturer of GingerT3 [14].
+A small trial in 30 adults (average age 56) with joint and muscle pain ranging from mild to severe gave 125 mg a day of a ginger extract (10% gingerols, no more than 3% shogaols, providing 12.5 mg a day of gingerols) or placebo for 58 days. The authors report some evidence that ginger improved ratings of pain, stiffness and function and changed several inflammation markers, mostly after resistance exercise [14].
 
-**Synthesis:** The overall evidence suggests a possible modest benefit for osteoarthritis pain, particularly at doses of 500–1,000 mg of ginger extract daily. However, the evidence quality is generally poor, effect sizes are small, and a well-designed negative trial at a lower dose (125 mg) raises questions about the minimum effective dose. Ginger should not be considered a replacement for established osteoarthritis treatments.
+**Synthesis:** Ginger may give a modest benefit for osteoarthritis pain, but the trials are small and their quality varies [30][31]. Ginger should not be considered a replacement for established osteoarthritis treatments.
 
 ### Diabetes and Blood Sugar Control
 
-A review of 5 clinical studies using doses between 1.6 and 3 grams of ginger root powder daily for 1 to 2 months concluded that ginger supplementation significantly lowered fasting blood glucose and HbA1c levels in people with type 2 diabetes [9]. However, ginger did not significantly reduce fasting insulin levels or HOMA-IR (a measure of insulin resistance). The ginger was usually taken in divided doses after meals. No adverse events were reported other than one case of heartburn.
+A meta-analysis of 8 randomized trials in 454 people with type 2 diabetes, using 1,600 to 4,000 mg a day of ginger, found no significant change in fasting blood sugar, but HbA1c improved from baseline in the ginger groups [49]. A later meta-analysis of 5 trials using 1.2 to 2 g a day of ginger powder for 4 to 12 weeks found no significant pooled effect on fasting blood sugar or HbA1c [50].
 
-These findings suggest that ginger may have a clinically meaningful effect on glycemic control in people with type 2 diabetes. The mechanisms may involve enhanced insulin sensitivity, reduced hepatic glucose output, or improved glucose uptake in skeletal muscle, though the precise pathways remain under investigation.
+In overweight and obese adults, a meta-analysis of 14 trials found lower fasting glucose and insulin resistance (HOMA-IR) with ginger [36].
 
-**Practical considerations:** The effective dose range (1.6–3 grams of ginger root powder daily) is well within the generally recognized safe range. People with hypoglycemia or those taking blood sugar-lowering medications should use ginger with caution due to the potential for additive effects (see Safety and Side Effects) [1].
+**Practical considerations:** Ginger's effect on blood sugar control is uncertain. People taking blood sugar-lowering medicines should check with their doctor first, because the effects could add up (see Safety and Side Effects).
 
 ### Migraine
 
-Ginger has not been proven to help with migraine headache based on available evidence.
+Ginger has not been shown to prevent migraine.
 
-A placebo-controlled trial among 85 men and women with migraine in Brazil found that ginger (200 mg of ginger extract containing 5% gingerol) taken three times daily for 3 months was no more effective than placebo in reducing the number or duration of migraine attacks or decreasing days with severe pain or use of analgesics. The frequency of side effects was significantly higher in those taking ginger, but only in the first month of the trial. Four participants in the ginger group discontinued the study due to side effects including heartburn, constipation, reduced appetite, and nausea [32].
+A placebo-controlled trial in Brazil in 107 people with episodic migraine gave 200 mg of a dry ginger extract (5% active ingredient) three times a day for 3 months. The share of people whose attacks fell by half did not differ from placebo, and both groups had fewer days with severe pain [32].
 
-A double-blind, randomized study in 100 people compared 250 mg of ginger powder to 50 mg of sumatriptan (a standard migraine medication) taken at migraine onset. After 2 hours, 70% of those who took sumatriptan and 64% of those who took ginger had favorable relief (greater than 90% reduction in headache severity). While statistically similar, this study lacked a placebo control, making it impossible to determine whether either treatment was truly effective beyond a placebo response [33].
+A double-blind trial in 100 people with migraine without aura compared ginger powder with sumatriptan, a standard migraine drug, taken during attacks. Both lowered headache severity at 2 hours to a similar degree, and ginger had fewer side effects. The trial had no placebo group, so it cannot show that either worked better than placebo [33].
 
-**Synthesis:** The only placebo-controlled trial was negative, and the comparison trial with sumatriptan lacked a placebo arm. Ginger cannot be recommended as a migraine treatment based on current evidence.
+**Synthesis:** The only placebo-controlled trial, which tested prevention, was negative, and the sumatriptan comparison lacked a placebo arm. Current evidence does not support ginger as a migraine treatment.
 
 ### Menstrual Pain (Dysmenorrhea)
 
-A small, company-funded study in India among 49 women (average age 25) with moderate to severe menstrual pain found that 100 mg of a standardized ginger extract (Ginfort) taken twice daily (total 200 mg of ginger extract providing 52 mg of gingerols) for 2 months significantly reduced menstrual pain intensity compared to placebo [13]. Average pain scores decreased from 6.92 to 1.4 points (on a 0–10 scale) during the first month of supplementation and remained low (1.12 points) during the second month. No reduction in pain was observed in the placebo group. Those who took ginger also had modest reductions in low back pain, fatigue, and nausea during both months.
+The NCCIH states that research suggests ginger dietary supplements might be helpful for reducing the severity of menstrual cramps [2]. A meta-analysis of 5 placebo-controlled trials found that ginger reduced menstrual pain more than placebo (mean difference 2.67, 95% CI 1.84 to 3.51), and two trials found it about as effective as NSAID pain relievers; it did not shorten pain duration [34].
 
-The NCCIH states that research suggests ginger dietary supplements might be helpful for reducing the severity of menstrual cramps [2]. A systematic review and meta-analysis also found evidence supporting the efficacy of ginger in treating primary dysmenorrhea [34].
-
-While these findings are encouraging, the key trial was small (n=49), industry-funded, and used a proprietary extract. Larger, independently funded confirmatory studies are needed. The dose used (200 mg of extract) was relatively low compared to doses used in other ginger studies, which may suggest that a concentrated extract provides sufficient gingerols for this indication.
+The trials were small and varied widely, and the authors call for higher-quality trials [34].
 
 ### Memory and Cognitive Function
 
-A small study in Thailand among 60 healthy middle-aged women (average age 54) showed that taking 800 mg of ginger extract (standardized to 7.33% 6-gingerol and 1.34% 6-shogaol) daily for 2 months improved a majority of measures of working (short-term) memory compared to placebo [35]. Taking 400 mg of ginger extract did not appear to help. This suggests a possible dose-response relationship, with higher doses needed for cognitive effects.
+A trial in 60 healthy women in midlife gave a standardized ginger extract at doses of 400 and 800 mg once daily, or placebo, for 2 months. Both ginger groups showed better working memory and faster brain responses on testing [35].
 
-This is a single, small study in a specific population (middle-aged women). Larger, higher-quality studies among a more diverse group of adults are needed to confirm this possible benefit.
+One small trial in women in midlife cannot show a benefit for adults in general; larger trials are needed.
 
 ### Weight Loss
 
-There is mixed evidence as to whether ginger helps with weight loss. Any benefit appears to be slight and has been associated with ginger root powder rather than ginger root extract [1].
+Evidence on weight loss is mixed, and any effect appears small.
 
 **Positive findings:**
-- A meta-analysis of 4 small clinical studies including 187 people who were overweight or obese found that taking ginger (typically 1–3 grams of ginger root powder) daily for 6 to 12 weeks reduced body weight by a small to moderate amount compared to placebo [36]
-- A study in 10 overweight men (average age 39) found that drinking a hot beverage containing 2 grams of ginger powder with breakfast reduced feelings of hunger, increased post-meal fullness, and modestly increased the thermic effect of food (calories burned after eating) by about 46 kcal/day compared to placebo [37]
+- A meta-analysis of 14 randomized trials in 473 overweight or obese people found that ginger lowered body weight (SMD -0.66, 95% CI -1.31 to -0.01) and waist-to-hip ratio, but not BMI [36]
+- In 10 overweight men (average age 39.1), 2 g of ginger powder in a hot drink with breakfast reduced hunger and raised the thermic effect of food (calories burned after eating) by 42.7 kcal a day compared with the same breakfast without ginger, but did not change total resting energy expenditure [37]
 
 **Negative findings:**
-- A study in Brazil among 66 women at or above normal weight found that taking 200 mg of dried ginger extract three times daily (providing 30 mg of gingerols per day) for 90 days did not improve weight loss or other body composition measures compared to placebo [38]
-- A study in 20 healthy women found that taking 400 mg of dry ginger extract standardized to 5% gingerols (providing 20 mg of gingerols daily) with breakfast did not increase the thermic effect of food compared to placebo [39]
-- The study by Tibaes et al. also found that ginger did not increase resting energy expenditure compared to placebo [38]
+- In 66 women with high body fat, 600 mg a day of ginger extract for 3 months did not change resting energy expenditure, body measurements or blood pressure compared with placebo [38]
+- In 20 healthy women, two capsules of a dried ginger extract (5% gingerol) taken with breakfast did not raise calorie burning after the meal more than placebo [39]
 
-**Synthesis:** The slight weight loss benefit, when observed, appears to occur with ginger root powder at 1–3 grams per day — not with lower-dose extracts. The effect size is small (a few pounds over weeks to months), and the proposed mechanism of increased thermogenesis has not been consistently demonstrated. Ginger should not be considered a weight loss supplement. Any modest benefit is likely negligible compared to dietary and exercise interventions.
+**Synthesis:** Any weight loss benefit is small, and the extra calorie burning seen in one study of men was not confirmed in two studies of women [37][38][39]. Ginger should not be considered a weight loss supplement.
 
 ### Dry Mouth (Xerostomia)
 
-Taking ginger supplements orally does not appear to improve dry mouth, but a topical ginger spray might offer some benefit.
+A ginger mouth spray may help dry mouth in people with diabetes, based on one small trial.
 
-A study in Iran among 61 people with dry mouth following radiotherapy found that taking a ginger capsule (dose not specified) three times daily for 2 weeks did not significantly reduce self-reported dry mouth severity compared to placebo, nor did it improve symptoms such as difficulty chewing, swallowing, speech problems, burning sensation, or abnormal taste [40].
-
-A separate study in Iran among 20 people (average age 59) with type 2 diabetes and dry mouth found that using a ginger root extract oral spray for 10 days reduced self-reported dry mouth severity and increased saliva flow compared to baseline. However, it is unclear whether the between-group differences were statistically significant or clinically meaningful [15].
+In 20 people with type 2 diabetes who had dry mouth, saliva flow rose significantly after a ginger herbal spray, compared with both baseline and a placebo spray [15].
 
 ### Asthma
 
-A study at Columbia University Medical Center among 32 adults (average age 55) with mild to moderate persistent asthma found that taking 1 gram of ginger extract twice daily for 8 weeks did not significantly improve lung function based on spirometry measures (including forced vital capacity and forced expiratory volume in one second) or reduce lung inflammation compared to placebo [41]. The study also found no significant improvement in asthma symptom control based on the Asthma Control Test. However, those taking ginger reported slightly greater improvement in asthma-related quality of life compared to placebo.
+A placebo-controlled trial in 32 adults with mild to moderate uncontrolled asthma added 1 g of ginger twice a day to their usual treatment for 2 months. Ginger did not change exhaled nitric oxide or blood eosinophils, but three measures of symptom control improved by the 28-day mark, and two asthma-related blood cytokines changed [41].
 
-Based on this single, small trial, ginger cannot be recommended for asthma management.
+This single small trial needs confirmation before ginger can be recommended for asthma.
 
 ## 4. Recommended Dosing
 
 ### Dosing by Indication
 
-The optimal dose of ginger depends on the form used (powder vs. extract) and the condition being addressed. Below is a summary of the doses that have shown benefit in clinical studies.
+The dose depends on the form (powder or extract) and the condition. The table lists doses used in the trials described above.
 
 | Indication | Form | Daily Dose | Duration | Evidence Level |
 |-----------|------|:-:|:-:|:-:|
-| Motion sickness prevention | Ginger root powder | 940–1,000 mg, taken 20 min before exposure | Single dose | Mixed |
-| Pregnancy-related nausea | Ginger root powder | 600–1,500 mg in divided doses (e.g., 250 mg × 4) | 4 days to 3 weeks | Moderate |
-| Chemotherapy-related nausea (delayed) | Ginger root powder (standardized) | 1,200 mg/day (300 mg × 4, standardized to 5% gingerols) | 5 days per cycle | Moderate (women > men) |
-| Functional dyspepsia / heartburn | Ginger root extract | 400 mg/day (200 mg × 2, providing >52 mg gingerols) | 4 weeks | Limited (1 trial) |
-| Osteoarthritis | Ginger root extract | 500–1,000 mg/day in divided doses | Variable | Modest |
-| Type 2 diabetes (blood sugar) | Ginger root powder | 1,600–3,000 mg/day in divided doses, after meals | 1–2 months | Moderate |
-| Menstrual pain | Ginger root extract | 200 mg/day (100 mg × 2, providing 52 mg gingerols) | 2 months | Limited (1 trial) |
-| Weight loss | Ginger root powder | 1,000–3,000 mg/day | 6–12 weeks | Slight benefit at best |
-| Cognitive function | Ginger root extract | 800 mg/day (standardized to 7.33% gingerol) | 2 months | Preliminary (1 trial) |
-| Gastroenteritis (children) | Liquid ginger drops | 1 mL of 1% extract (10 mg) per dose | Acute use | Limited (1 trial) |
+| Motion sickness | Ginger root powder | 1 g, single dose [20] | Single dose | Mixed [21][22] |
+| Pregnancy-related nausea | Ginger | Less than 1,500 mg favored in subgroup analyses [8] | Not stated | Low-quality evidence |
+| Chemotherapy-related nausea (delayed) | Standardized ginger root powder | 4 capsules totaling 84 mg a day of active gingerols and shogaols [11] | 5 days per cycle | One positive trial; reviews mixed [25] |
+| Functional dyspepsia | Ginger | 1.2 g [5] | Single dose | Faster stomach emptying, no symptom change |
+| Joint and muscle pain | Ginger extract | 125 mg (10% gingerols) [14] | 58 days | One trial [14] |
+| Osteoarthritis | Ginger | Dose varied [30] | Varies | Modest [30] |
+| Type 2 diabetes (blood sugar) | Ginger root powder | 1.2 to 2 g a day, in two doses [50] | 4 to 12 weeks | Mixed [49] |
+| Menstrual pain | Ginger | Varies by trial | Varies | Meta-analysis favors ginger [34] |
+| Weight loss | Ginger | Varies by trial | Varies | Small effect at best [36] |
+| Cognitive function | Ginger extract | 400 and 800 mg once daily, in two groups [35] | 2 months | Preliminary (1 trial) |
+| Gastroenteritis (children) | Oral ginger | Not stated | Acute use | Limited (1 trial) [28] |
 
 ### General Dosing Principles
 
-**For ginger root powder:** Most studies have used 1–3 grams per day, typically divided into 2–4 doses taken with food. Single doses of up to 1 gram are generally well tolerated [1][8][9].
+**For ginger root powder:** Powder trials gave 1 g as a single dose for seasickness [20] and 1.2 to 2 g a day, in two doses, for type 2 diabetes [50]. Diabetes trials have used up to 4,000 mg a day [49].
 
-**For ginger root extract:** Because extracts are concentrated, doses are typically 100–500 mg per day. Look for products standardized to at least 5% gingerols [1][11][12].
+**For ginger root extract:** Extract trials used smaller amounts, such as 125 mg a day of a 10% extract [14] or 200 mg of a 5% extract three times a day [32].
 
-**Timing:** For nausea prevention (motion sickness, chemotherapy), ginger should be taken before the anticipated trigger — 20 minutes before motion exposure [19], or beginning on the first day of chemotherapy [11]. For chronic conditions (diabetes, osteoarthritis, menstrual pain), daily dosing for at least 4–8 weeks appears necessary for benefit to emerge.
-
-**With food:** Most studies instructed participants to take ginger with food, which may reduce the risk of stomach upset [1][11].
+**Timing:** In the Australian chemotherapy trial, ginger started on the day of chemotherapy [11]; in one rotating-chair study, it was taken two hours before motion [21]. Trials in type 2 diabetes lasted 4 to 12 weeks [50].
 
 ### Quality Markers
 
-When selecting a ginger supplement [1]:
-
-- Look for products listing the plant name (*Zingiber officinale*) and plant part (root/rhizome)
-- For powders: minimum 0.8% gingerols (8 mg per gram)
-- For extracts: standardization to a specific percentage of gingerols (commonly 5% or 10%)
-- Total gingerols plus shogaols should be about 1% of the listed weight for powders
-- Excessive shogaol content may indicate heat damage during processing
-- Products should clearly state whether they contain powder, extract, or both
+Shogaols are used as quality-control markers for ginger products [3]. Independent testing services such as consumerlab.com and Labdoor publish product test results.
 
 ## 5. Safety and Side Effects
 
 ### General Safety Profile
 
-Single-ingredient ginger products are generally considered safe for short-term use at doses up to 3 grams per day [1][2]. The NCCIH states that ginger has been used safely in many research studies when taken orally as a dietary supplement [2].
+The NCCIH states that ginger has been used safely in many research studies when taken by mouth as a dietary supplement, and that topical products may also be safe [2].
 
-Side effects reported in clinical studies tend to be mild and include [1][2]:
-- Stomach upset and abdominal discomfort
+Side effects reported when ginger is taken by mouth include [2]:
+- Abdominal discomfort
 - Heartburn
 - Diarrhea
 - Mouth and throat irritation
-- "Bad taste"
-- Nausea (paradoxically, in some individuals)
-- Reduced appetite
-- Constipation
 
-In the migraine trial, 4 out of approximately 43 participants in the ginger group discontinued due to side effects (heartburn, constipation, reduced appetite, nausea), and the frequency of side effects was significantly higher in the ginger group during the first month [32].
-
-Long-term safety studies have not been conducted [1].
+In osteoarthritis trials, people given ginger were more than twice as likely as those given placebo to stop treatment (RR 2.33, 95% CI 1.04 to 5.22) [30].
 
 ### Bleeding Risk
 
-Dietary or supplemental ginger may have a blood-thinning effect and may potentially increase the risk of bleeding. This is one of the most clinically significant safety concerns.
+Ginger may affect blood clotting, though the evidence is mixed. A systematic review found that four of eight clinical trials reported less platelet clumping with ginger and four found no effect; the authors called the evidence equivocal [51]. In a Canadian study that followed 171 adults on warfarin for 16 weeks, ginger use was linked to more self-reported bleeding (OR 3.20, 95% CI 2.42 to 4.24), and so was using more than one complementary product [52].
 
 **Case reports:**
-- A 70-year-old woman on a stable warfarin regimen (7.5 mg six days per week and 10 mg one day per week) experienced a significant increase in INR (a measure of clotting time) from 2.7 to 8.0 one month after beginning a ginger supplement providing 48 mg of dried ginger root daily. Although she did not experience active bleeding, her INR increase was clinically dangerous. After stopping ginger and withholding 3 doses of warfarin, her INR returned to 2.6 within one week [42]
-- A 76-year-old woman on stable warfarin, hydrochlorothiazide, and acetaminophen presented to the emergency room with a nosebleed and an INR of 10 (normal therapeutic range: 2.0–3.0). She disclosed recently starting to eat pieces of ginger root and drinking ginger powder tea for stomach upset. Her excessive anticoagulation was reversed with intravenous vitamin K, and her INR stabilized after discontinuing all ginger consumption [43]
+- A 70-year-old woman taking long-term warfarin (7.5 mg a day, 10 mg on Wednesdays) had an INR of 8.0, up from 2.7 a month earlier, after starting a daily 48 mg chewable ginger supplement. She had no bleeding. After she stopped ginger and held 3 warfarin doses, her INR was back to 2.6 a week later [42]
+- The same authors cite an earlier report of a 76-year-old woman taking warfarin, with erratic anticoagulation and a high INR, loosely linked to ginger [42][43]
 
 **Practical implications:**
-- Ginger may increase bleeding risk in people taking blood-thinning medications including warfarin (Coumadin), aspirin, clopidogrel (Plavix), heparin, and ticlopidine (Ticlid) [1]
-- Caution should also be used when combining ginger with blood-thinning supplements such as fish oil, CoQ10, turmeric/curcumin, ginkgo, and chondroitin [1]
-- Ginger should not be taken for at least 2 weeks before any scheduled surgery due to increased bleeding risk [1]
+- An FDA warning advises healthcare providers to be cautious with patients who take warfarin and also use ginger [42]
+- If you take warfarin, ask your doctor about an extra INR check when starting or stopping ginger, and report black stools, blood in urine, nosebleeds or bleeding gums to your doctor the same day
+- Because ginger may affect platelets, people taking aspirin, clopidogrel (Plavix) or other blood thinners should ask their doctor before using it [51]
+- Tell your surgeon if you take ginger supplements
+- For signs of a stroke or bleeding in the brain (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK)
 
 ### Pregnancy Considerations
 
-While ginger appears to be effective for pregnancy-related nausea at doses below 1,500 mg/day, there are specific safety considerations for pregnant women.
+Ginger may ease pregnancy nausea, and subgroup analyses seemed to favor a daily dose of less than 1,500 mg [8].
 
-A population study among women in Norway found that those who reported using ginger (from foods, drinks, and supplements) during pregnancy — approximately 1,000 women — were somewhat more likely to experience vaginal bleeding (7.8% vs. 5.8%) after 17 weeks of gestation. However, there was no increased risk for stillbirth, perinatal death, preterm birth, low birth weight, malformations, or low Apgar scores [18].
+In a Norwegian cohort of 68,522 pregnant women, the 1,020 who used ginger had no higher risk of birth defects, stillbirth or perinatal death, preterm birth, low birth weight or low Apgar scores [18].
 
-The NCCIH notes that the use of ginger dietary supplements during pregnancy may be safe, but advises consulting a healthcare provider before use. Little is known about whether it is safe to use ginger while breastfeeding [2].
-
-**Recommendation:** Due to the potential increased risk of bleeding, ginger should not be taken by pregnant women close to their delivery date [1][18].
+The NCCIH notes that the use of ginger dietary supplements during pregnancy may be safe, but advises consulting a health care provider before use. Little is known about whether it is safe to use ginger while breastfeeding [2].
 
 ### Blood Sugar Effects
 
-Ginger may lower blood sugar levels or affect insulin levels. While this is a potential benefit for people with type 2 diabetes, it represents a safety concern for people with hypoglycemia or those taking medications to lower blood sugar, as ginger could cause additive blood sugar reduction [1][9].
+Ginger lowered fasting glucose in a meta-analysis of trials in overweight and obese adults [36], and HbA1c improved from baseline in diabetes trials [49]. People taking diabetes medicines should ask their doctor whether they need closer glucose checks, because the effects could add up.
 
 ### Liver and Kidney Disease
 
-Safety in individuals with severe liver or kidney disease has not been established [1].
+If you have liver or kidney disease, ask your doctor before taking ginger supplements.
 
 ## 6. Drug Interactions
 
 ### CYP3A4 Enzyme Inhibition
 
-The most clinically significant drug interaction with ginger involves its inhibition of the cytochrome P450 enzyme CYP3A4, as well as CYP2C9 and P-glycoprotein [7]. CYP3A4 metabolizes a large proportion of pharmaceuticals. By inhibiting this enzyme, ginger can potentially raise blood levels of co-administered drugs to dangerous concentrations.
-
-**Case report — crizotinib interaction:** A woman with lung cancer being treated with crizotinib (a chemotherapy drug metabolized by CYP3A4) began consuming up to 1 liter per day of a drink made with grated ginger, honey, lemon juice, and hot water. This appeared to significantly raise crizotinib blood levels, causing liver toxicity [7].
-
-**Moderate-amount ginger may be safe with some CYP3A4 substrates:** Short-term consumption of a moderate amount of ginger spice (10 grams daily for 4 days) did not increase blood levels of tacrolimus in a 70-year-old man taking tacrolimus following a kidney transplant [44]. However, higher amounts of ginger over longer periods may still pose risks.
+Ginger may change blood levels of some medicines. A case report described a serious interaction between ginger and the cancer drug crizotinib [7]. In vitro studies suggest spices may interact with the transplant drug tacrolimus, but in a kidney transplant patient aged around 70 years, 10 g a day of ginger for 4 days did not change tacrolimus levels [44]. Whether ginger blocks CYP3A4, a liver enzyme that breaks down many drugs, has not been settled in people.
 
 ### Drugs Metabolized by CYP3A4
 
-The following medications are metabolized by CYP3A4 and may potentially interact with ginger [7]:
-
-| Drug Category | Examples |
-|--------------|---------|
-| Chemotherapy agents | Crizotinib and many others |
-| Sedatives/Anesthetics | Midazolam (Versed), fentanyl (Sublimaze) |
-| Prokinetic agents | Cisapride (Propulsid) |
-| Local anesthetics | Lidocaine (Xylocaine) |
-| Antihypertensives | Losartan (Cozaar), felodipine (Plendil), amlodipine (Norvasc) |
-| Calcium channel blockers | Diltiazem, nicardipine, verapamil |
-| Antihistamines | Fexofenadine (Allegra) |
-| Proton pump inhibitors | Omeprazole (Prilosec) |
-| Anti-emetics | Ondansetron (Zofran) |
-| Antibiotics | Rifampin |
-| Immunosuppressants | Tacrolimus (FK-506, Protopic, Prograf) |
+Any effect of ginger on drugs broken down by CYP3A4 is uncertain. If you take prescription medicines, check with your doctor or pharmacist before starting. Case reports so far involve a cancer drug and a blood thinner [7][42].
 
 ### Blood-Thinning Medications
 
-As detailed in the Safety section, ginger may potentiate the effects of anticoagulant and antiplatelet medications [1][42][43]:
+As detailed in the Safety section, ginger may add to the effects of some blood thinners:
 
-- Warfarin (Coumadin)
-- Aspirin
-- Clopidogrel (Plavix)
-- Heparin
-- Ticlopidine (Ticlid)
+- Warfarin (Coumadin) [42][52]
+- Antiplatelet medicines such as aspirin or clopidogrel (Plavix), since some trials found less platelet clumping with ginger [51]
 
 ### Blood Sugar-Lowering Medications
 
-Ginger may have additive effects with diabetes medications, potentially increasing the risk of hypoglycemia [1][9]. Patients taking insulin, metformin, sulfonylureas, or other antidiabetic medications should use ginger with caution and monitor blood glucose more closely.
+Because ginger may reduce blood sugar [36][49], it could add to the effect of insulin, metformin, sulfonylureas or other diabetes medicines. People taking them should check with their doctor and may need to check their glucose more often.
 
 ### Blood-Thinning Supplements
 
-Ginger should be used with caution when combined with other supplements that may affect blood clotting [1]:
-
-- Fish oil (omega-3 fatty acids)
-- CoQ10
-- Turmeric/curcumin
-- Ginkgo biloba
-- Chondroitin
+In warfarin users, using more than one complementary product was linked to more self-reported bleeding [52]. Check with your doctor before combining ginger with other supplements that may affect bleeding.
 
 ### General Recommendation
 
-The NCCIH advises: "If you take any type of medicine, talk with your health care provider before using ginger or any other herbal products; some herbs and medicines interact in harmful ways" [2]. This is particularly important for people taking medications metabolized by CYP3A4, blood-thinning medications, blood sugar-lowering medications, or chemotherapy drugs.
+The NCCIH advises: "If you take any type of medicine, talk with your health care provider before using ginger or any other herbal products; some herbs and medicines interact in harmful ways" [2]. This is particularly important for people taking blood-thinning medicines, blood sugar-lowering medicines or cancer drugs.
 
 ## 7. Dietary Sources
 
-Ginger can be consumed through various dietary sources, though the gingerol content varies significantly:
+Ginger can be eaten in many forms, and the amount of gingerols varies between them.
 
 ### Fresh Ginger Root
 
-Fresh ginger root is the most common dietary source. It contains primarily gingerols (not shogaols, which form during drying/heating). The gingerol concentration is approximately 50% lower than in dried ginger powder due to its higher water content [1].
-
-- **Approximate gingerol content:** 5 mg per gram of fresh ginger root
-- **Equivalent:** 2 grams of fresh ginger root provides approximately the same gingerols as 1 gram of dried ginger powder [1]
-- **Uses:** Grated into stir-fries, curries, soups; sliced for tea; juiced for beverages; pickled (as in sushi accompaniment)
+Fresh root is the most common food form. It contains gingerols, while shogaols form during drying or heating [3]. It is grated into stir-fries, curries and soups, sliced for tea, juiced, or pickled (as served with sushi).
 
 ### Dried/Ground Ginger (Spice)
 
-Ground ginger spice is made from dried ginger root and contains both gingerols and some shogaols (formed during the drying process).
-
-- **Approximate gingerol content:** 8–10 mg per gram
-- **Typical culinary use:** 0.5–2 grams per serving in cooking (providing 4–20 mg gingerols)
-- **Note:** Culinary amounts are generally well below the therapeutic doses studied in clinical trials (1–3 grams of powder per day)
+Ground ginger is dried root, so it contains both gingerols and the shogaols formed during drying [3]. Amounts used in cooking are usually smaller than trial doses.
 
 ### Ginger Tea
 
-Ginger tea can be made by steeping 1–2 grams of fresh ginger root (sliced or grated) in hot water for 5–10 minutes. The gingerol content of the resulting tea depends on steeping time, water temperature, and the amount of ginger used. No standardized data on gingerol extraction into tea is available, but it likely provides a meaningful amount of bioactive compounds when prepared with sufficient ginger.
+Tea made by steeping sliced or grated fresh root in hot water contains some gingerols, but how much depends on the amount of ginger and the steeping time. One trial used 2 g of ginger powder dissolved in a hot drink [37].
 
 ### Crystallized/Candied Ginger
 
-Crystallized ginger is fresh ginger root cooked in sugar syrup and coated in sugar. While it retains some gingerols, it also contains significant amounts of added sugar. Typical pieces weigh 5–10 grams each.
+Crystallized ginger is fresh root cooked in sugar syrup and coated in sugar, so it adds sugar along with some ginger.
 
 ### Ginger in Prepared Foods
 
-Ginger is a common ingredient in Asian cuisine, baked goods (gingerbread, ginger snaps), and various sauces and marinades. The amounts used in most prepared foods are small relative to therapeutic doses. Pickled ginger (gari), commonly served with sushi, is prepared with vinegar and sugar, and retains some gingerol content.
+Ginger is common in Asian cooking, baked goods (gingerbread, ginger snaps), sauces and marinades. Most prepared foods use small amounts compared with trial doses. Pickled ginger (gari), served with sushi, is made with vinegar and sugar.
 
 ### Ginger Ale and Ginger Beer
 
-As noted in the Forms section, commercial ginger ales contain negligible amounts of gingerols. Testing showed that Canada Dry Ginger Ale contained only 0.19 mg of gingerols per bottle — approximately 1% of what a ginger supplement provides [1]. Ginger beer tends to contain more actual ginger than ginger ale, but amounts are not standardized and vary by brand.
+Ginger ales and ginger beers are sweetened soft drinks, and their ginger content is not standardized and varies by brand.
 
 ### Putting Dietary Sources in Perspective
 
-| Source | Typical Serving | Approximate Gingerols |
-|--------|:-:|:-:|
-| Fresh ginger root | 5 g (1 inch piece) | ~25 mg |
-| Ground ginger spice | 1 g (½ tsp) | ~8–10 mg |
-| Ginger tea (homemade) | 1 cup (2g fresh ginger) | ~5–10 mg (estimated) |
-| Crystallized ginger | 1 piece (8g) | ~15–20 mg |
-| Ginger ale (1 bottle) | 355 mL | ~0.2 mg |
-| Ginger supplement (powder) | 1,000 mg | ~8–10 mg |
-| Ginger supplement (5% extract) | 500 mg | ~25 mg |
-
-To obtain the equivalent of a typical supplement dose (1,000 mg ginger root powder = ~10 mg gingerols) from food, one would need to consume approximately 2 grams of fresh ginger root — roughly a 1-inch piece. This is achievable through regular cooking with ginger, though consistent daily intake at therapeutic levels (1–3 grams of powder equivalent) requires intentional effort.
+Matching trial doses from food takes regular, deliberate use.
 
 ## 8. References
 
-[1] ConsumerLab. "Ginger Supplements Review." Accessed 2025. [https://www.consumerlab.com/reviews/ginger-supplement-review/ginger/](https://www.consumerlab.com/reviews/ginger-supplement-review/ginger/)
-
 [2] National Center for Complementary and Integrative Health (NCCIH). "Ginger." Updated February 2025. [https://www.nccih.nih.gov/health/ginger](https://www.nccih.nih.gov/health/ginger)
 
-[3] Semwal RB, Semwal DK, Combrinck S, Viljoen AM. "Gingerols and shogaols: Important nutraceutical principles from ginger." *Phytochemistry*. 2015;117:554-568. doi: [10.1016/j.phytochem.2015.07.012](https://doi.org/10.1016/j.phytochem.2015.07.012)
+[3] Semwal RB, Semwal DK, Combrinck S, Viljoen AM. "Gingerols and shogaols: Important nutraceutical principles from ginger." *Phytochemistry*. 2015;117:554-568. PMID: 26228533. doi: [10.1016/j.phytochem.2015.07.012](https://doi.org/10.1016/j.phytochem.2015.07.012)
 
-[4] Abdel-Aziz H, Windeck T, Ploch M, Verspohl EJ. "Mode of action of gingerols and shogaols on 5-HT3 receptors: binding studies, cation uptake by the receptor channel and contraction of isolated guinea-pig ileum." *Eur J Pharmacol*. 2006;530(1-2):136-143. doi: [10.1016/j.ejphar.2005.10.049](https://doi.org/10.1016/j.ejphar.2005.10.049)
+[4] Abdel-Aziz H, Windeck T, Ploch M, Verspohl EJ. "Mode of action of gingerols and shogaols on 5-HT3 receptors: binding studies, cation uptake by the receptor channel and contraction of isolated guinea-pig ileum." *Eur J Pharmacol*. 2006;530(1-2):136-143. PMID: 16364290. doi: [10.1016/j.ejphar.2005.10.049](https://doi.org/10.1016/j.ejphar.2005.10.049)
 
-[5] Hu ML, Rayner CK, Wu KL, et al. "Effect of ginger on gastric motility and symptoms of functional dyspepsia." *World J Gastroenterol*. 2011;17(1):105-110. doi: [10.3748/wjg.v17.i1.105](https://doi.org/10.3748/wjg.v17.i1.105)
+[5] Hu ML, Rayner CK, Wu KL, et al. "Effect of ginger on gastric motility and symptoms of functional dyspepsia." *World J Gastroenterol*. 2011;17(1):105-110. PMID: 21218090. doi: [10.3748/wjg.v17.i1.105](https://doi.org/10.3748/wjg.v17.i1.105)
 
-[6] Siddaraju MN, Dharmesh SM. "Inhibition of gastric H+, K+-ATPase and Helicobacter pylori growth by phenolic antioxidants of Zingiber officinale." *Mol Nutr Food Res*. 2007;51(3):324-332. doi: [10.1002/mnfr.200600202](https://doi.org/10.1002/mnfr.200600202)
+[6] Siddaraju MN, Dharmesh SM. "Inhibition of gastric H+, K+-ATPase and Helicobacter pylori growth by phenolic antioxidants of Zingiber officinale." *Mol Nutr Food Res*. 2007;51(3):324-332. PMID: 17295419. doi: [10.1002/mnfr.200600202](https://doi.org/10.1002/mnfr.200600202)
 
-[7] Revol B, Gautier-Veyret E, Arrivé C, et al. "Pharmacokinetic herb-drug interaction between ginger and crizotinib." *Br J Clin Pharmacol*. 2020;86(8):1662-1663. doi: [10.1111/bcp.14275](https://doi.org/10.1111/bcp.14275)
+[7] Revol B, Gautier-Veyret E, Arrivé C, et al. "Pharmacokinetic herb-drug interaction between ginger and crizotinib." *Br J Clin Pharmacol*. 2020;86(9):1892-1893. PMID: 30701569. doi: [10.1111/bcp.13862](https://doi.org/10.1111/bcp.13862)
 
-[8] Viljoen E, Visser J, Koen N, Musekiwa A. "A systematic review and meta-analysis of the effect and safety of ginger in the treatment of pregnancy-associated nausea and vomiting." *Nutr J*. 2014;13:20. doi: [10.1186/1475-2891-13-20](https://doi.org/10.1186/1475-2891-13-20)
+[8] Viljoen E, Visser J, Koen N, Musekiwa A. "A systematic review and meta-analysis of the effect and safety of ginger in the treatment of pregnancy-associated nausea and vomiting." *Nutr J*. 2014;13:20. PMID: 24642205. doi: [10.1186/1475-2891-13-20](https://doi.org/10.1186/1475-2891-13-20)
 
-[9] Daily JW, Yang M, Kim DS, Park S. "Efficacy of ginger for treating type 2 diabetes: A systematic review and meta-analysis of randomized clinical trials." *J Ethnic Foods*. 2015;2(1):36-43. doi: [10.1016/j.jef.2015.02.007](https://doi.org/10.1016/j.jef.2015.02.007)
+[11] Crichton M, Marshall S, Isenring E, et al. "Effect of a Standardized Ginger Root Powder Regimen on Chemotherapy-Induced Nausea and Vomiting: A Multicenter, Double-Blind, Placebo-Controlled Randomized Trial." *J Acad Nutr Diet*. 2024;124(3):313-330.e6. PMID: 37699474. doi: [10.1016/j.jand.2023.09.003](https://doi.org/10.1016/j.jand.2023.09.003)
 
-[10] Maharlouei N, Tabrizi R, Lankarani KB, et al. "The effects of ginger intake on weight loss and metabolic profiles among overweight and obese subjects: A systematic review and meta-analysis of randomized controlled trials." *Crit Rev Food Sci Nutr*. 2019;59(11):1753-1766. doi: [10.1080/10408398.2018.1427044](https://doi.org/10.1080/10408398.2018.1427044)
+[14] Broeckel J, Estes L, Leonard M, et al. "Effects of Ginger Supplementation on Markers of Inflammation and Functional Capacity in Individuals with Mild to Moderate Joint Pain." *Nutrients*. 2025;17(14):2365. PMID: 40732990. doi: [10.3390/nu17142365](https://doi.org/10.3390/nu17142365)
 
-[11] Crichton M, Marshall S, Marx W, et al. "Effect of Ginger Root Powder on Chemotherapy-Induced Nausea and Vomiting, Quality of Life, and Nutritional Status: A Randomized Double-Blind Placebo-Controlled Trial." *J Acad Nutr Diet*. 2023;123(4):578-588.e2. doi: [10.1016/j.jand.2022.11.006](https://doi.org/10.1016/j.jand.2022.11.006)
+[15] Mardani H, Ghannadi A, Rashnavadi B, Kamali R. "The effect of ginger herbal spray on reducing xerostomia in patients with type II diabetes." *Avicenna J Phytomed*. 2017;7(4):308-316. PMID: 28884081.
 
-[12] Panda VS, Shivam K, Ashar HD. "Ginger root extract as an anti-emetic in dyspeptic discomfort: A randomized double-blind placebo-controlled clinical trial." *J Diet Suppl*. 2020;17(6):696-710. doi: [10.1080/19390211.2019.1644171](https://doi.org/10.1080/19390211.2019.1644171)
+[16] Grøntved A, Hentzer E. "Vertigo-reducing effect of ginger root. A controlled clinical study." *ORL J Otorhinolaryngol Relat Spec*. 1986;48(5):282-286. PMID: 3537898. doi: [10.1159/000275883](https://doi.org/10.1159/000275883)
 
-[13] Nirvanashetty S, Bashir A, Gantha S, et al. "Standardized Ginger Root Extract for Menstrual Pain: A Randomized, Double-Blind, Placebo-Controlled Study." *Open Access J Complement Altern Med*. 2023;4(2):1-8.
+[17] Nassif MS, Costa ICP, Ribeiro PM, et al. "Integrative and complementary practices to control nausea and vomiting in pregnant women: a systematic review." *Rev Esc Enferm USP*. 2022;56:e20210515. PMID: 36300661. doi: [10.1590/1980-220X-REEUSP-2021-0515en](https://doi.org/10.1590/1980-220X-REEUSP-2021-0515en)
 
-[14] Broeckel C, Rivas E, Gierhart D, et al. "Effects of GingerT3 Supplementation on Pain, Stiffness, Physical Function, and Inflammation: A Randomized, Double-Blind, Placebo-Controlled Study." *Nutrients*. 2025;17(1):124. doi: [10.3390/nu17010124](https://doi.org/10.3390/nu17010124)
+[18] Heitmann K, Nordeng H, Holst L. "Safety of ginger use in pregnancy: results from a large population-based cohort study." *Eur J Clin Pharmacol*. 2013;69(2):269-277. PMID: 22706624. doi: [10.1007/s00228-012-1331-5](https://doi.org/10.1007/s00228-012-1331-5)
 
-[15] Mardani H, Ghannadi A, Rashnavadi B, Kamali R. "The effect of ginger herbal spray on reducing xerostomia in patients with type II diabetes." *Avicenna J Phytomed*. 2017;7(4):335-343.
+[20] Grontved A, Brask T, Kambskard J, Hentzer E. "Ginger root against seasickness. A controlled trial on the open sea." *Acta Otolaryngol*. 1988;105(1-2):45-49. PMID: 3277342. doi: [10.3109/00016488809119444](https://doi.org/10.3109/00016488809119444)
 
-[16] Grontved A, Hentzer E. "Vertigo-reducing effect of ginger root. A controlled clinical study." *Acta Otolaryngol*. 1989;(Suppl 468):168-169.
+[21] Wood CD, Manno JE, Wood MJ, et al. "Comparison of efficacy of ginger with various antimotion sickness drugs." *Clin Res Pr Drug Regul Aff*. 1988;6(2):129-136. PMID: 11538042. doi: [10.3109/10601338809031990](https://doi.org/10.3109/10601338809031990)
 
-[17] Nassif MS, Costa ICP, Ribeiro PM, et al. "Integrative and complementary practices to control nausea and vomiting in pregnant women: a systematic review." *Rev Esc Enferm USP*. 2022;56:e20210515. doi: [10.1590/1980-220X-REEUSP-2021-0515](https://doi.org/10.1590/1980-220X-REEUSP-2021-0515)
+[22] Stewart JJ, Wood MJ, Wood CD, Mims ME. "Effects of ginger on motion sickness susceptibility and gastric function." *Pharmacology*. 1991;42(2):111-120. PMID: 2062873. doi: [10.1159/000138781](https://doi.org/10.1159/000138781)
 
-[18] Heitmann K, Nordeng H, Holst L. "Safety of ginger use in pregnancy: results from a large population-based cohort study." *Eur J Clin Pharmacol*. 2013;69(2):269-277. doi: [10.1007/s00228-012-1331-5](https://doi.org/10.1007/s00228-012-1331-5)
+[23] Bossi P, Cortinovis D, Fatigoni S, et al. "A randomized, double-blind, placebo-controlled, multicenter study of a ginger extract in the management of chemotherapy-induced nausea and vomiting (CINV) in patients receiving high-dose cisplatin." *Ann Oncol*. 2017;28(10):2547-2551. PMID: 28666335. doi: [10.1093/annonc/mdx315](https://doi.org/10.1093/annonc/mdx315)
 
-[19] Mowrey DB, Clayson DE. "Motion sickness, ginger, and psychophysics." *Lancet*. 1982;1(8273):655-657. doi: [10.1016/S0140-6736(82)92205-X](https://doi.org/10.1016/S0140-6736(82)92205-X)
+[24] Arslan M, Ozdemir L. "Oral intake of ginger for chemotherapy-induced nausea and vomiting among women with breast cancer." *Clin J Oncol Nurs*. 2015;19(5):E92-E97. PMID: 26414587. doi: [10.1188/15.CJON.E92-E97](https://doi.org/10.1188/15.CJON.E92-E97)
 
-[20] Grontved A, Brask T, Kambskard J, Hentzer E. "Ginger root against seasickness. A controlled trial on the open sea." *Acta Otolaryngol*. 1988;105(1-2):45-49. doi: [10.3109/00016488809119444](https://doi.org/10.3109/00016488809119444)
+[25] Choi J, Lee J, Kim K, et al. "Effects of ginger intake on chemotherapy-induced nausea and vomiting: a systematic review of randomized clinical trials." *Nutrients*. 2022;14(23):4982. PMID: 36501010. doi: [10.3390/nu14234982](https://doi.org/10.3390/nu14234982)
 
-[21] Wood CD, Manno JE, Wood MJ, et al. "Comparison of efficacy of ginger with various antimotion sickness drugs." *Clin Res Pr Drug Regul Aff*. 1988;6(2):129-136.
+[26] Morin AM, Betz O, Kranke P, et al. "Is ginger a relevant antiemetic for postoperative nausea and vomiting?" *Anasthesiol Intensivmed Notfallmed Schmerzther*. 2004;39(5):281-285. PMID: 15156419. doi: [10.1055/s-2004-814438](https://doi.org/10.1055/s-2004-814438)
 
-[22] Stewart JJ, Wood MJ, Wood CD, Mims ME. "Effects of ginger on motion sickness susceptibility and gastric function." *Pharmacology*. 1991;42(2):111-120. doi: [10.1159/000138781](https://doi.org/10.1159/000138781)
+[27] Tóth B, Lantos T, Hegyi P, et al. "Ginger (Zingiber officinale): an alternative for the prevention of postoperative nausea and vomiting. A meta-analysis." *Phytomedicine*. 2018;50:8-18. PMID: 30466995. doi: [10.1016/j.phymed.2018.09.007](https://doi.org/10.1016/j.phymed.2018.09.007)
 
-[23] Bossi P, Cortinovis D, Fatigoni S, et al. "A randomized, double-blind, placebo-controlled, multicenter study of a ginger extract in the management of chemotherapy-induced nausea and vomiting (CINV) in patients receiving high-dose cisplatin." *Ann Oncol*. 2017;28(10):2547-2551. doi: [10.1093/annonc/mdx315](https://doi.org/10.1093/annonc/mdx315)
+[28] Nocerino R, Cecere G, Micillo M, et al. "Efficacy of ginger as antiemetic in children with acute gastroenteritis: a randomised controlled trial." *Aliment Pharmacol Ther*. 2021;54(1):24-31. PMID: 34018223. doi: [10.1111/apt.16404](https://doi.org/10.1111/apt.16404)
 
-[24] Arslan M, Ozdemir L. "Oral intake of ginger for chemotherapy-induced nausea and vomiting among women with breast cancer." *Clin J Oncol Nurs*. 2015;19(5):E92-E97. doi: [10.1188/15.CJON.E92-E97](https://doi.org/10.1188/15.CJON.E92-E97)
+[30] Bartels EM, Folmer VN, Bliddal H, et al. "Efficacy and safety of ginger in osteoarthritis patients: a meta-analysis of randomized placebo-controlled trials." *Osteoarthritis Cartilage*. 2015;23(1):13-21. PMID: 25300574. doi: [10.1016/j.joca.2014.09.024](https://doi.org/10.1016/j.joca.2014.09.024)
 
-[25] Choi J, Lee J, Kim K, et al. "Effects of ginger intake on chemotherapy-induced nausea and vomiting: a systematic review of randomized clinical trials." *Nutrients*. 2022;14(23):4982. doi: [10.3390/nu14234982](https://doi.org/10.3390/nu14234982)
+[31] Araya-Quintanilla F, Gutiérrez-Espinoza H, Muñoz-Yanez MJ, et al. "Effectiveness of ginger on pain and function in knee osteoarthritis: a PRISMA systematic review and meta-analysis." *Pain Physician*. 2020;23(2):E151-E161. PMID: 32214292.
 
-[26] Morin AM, Betz O, Kranke P, et al. "Is ginger a relevant antiemetic for postoperative nausea and vomiting?" *Anasthesiol Intensivmed Notfallmed Schmerzther*. 2004;39(5):281-285. doi: [10.1055/s-2004-814459](https://doi.org/10.1055/s-2004-814459)
+[32] Martins LB, Rodrigues AMDS, Monteze NM, et al. "Double-blind placebo-controlled randomized clinical trial of ginger (Zingiber officinale Rosc.) in the prophylactic treatment of migraine." *Cephalalgia*. 2020;40(1):88-95. PMID: 31398997. doi: [10.1177/0333102419869319](https://doi.org/10.1177/0333102419869319)
 
-[27] Tóth B, Lantos T, Hegyi P, et al. "Ginger (Zingiber officinale): an alternative for the prevention of postoperative nausea and vomiting. A meta-analysis." *Phytomedicine*. 2018;50:8-18. doi: [10.1016/j.phymed.2018.09.007](https://doi.org/10.1016/j.phymed.2018.09.007)
+[33] Maghbooli M, Golipour F, Moghimi Esfandabadi A, Yousefi M. "Comparison between the efficacy of ginger and sumatriptan in the ablative treatment of the common migraine." *Phytother Res*. 2014;28(3):412-415. PMID: 23657930. doi: [10.1002/ptr.4996](https://doi.org/10.1002/ptr.4996)
 
-[28] Nocerino A, Vitale A, De Marco G, et al. "Efficacy of ginger as antiemetic in children with acute gastroenteritis: a randomised controlled trial." *Aliment Pharmacol Ther*. 2021;54(1):50-57. doi: [10.1111/apt.16404](https://doi.org/10.1111/apt.16404)
+[34] Negi R, Sharma SK, Gaur R, et al. "Efficacy of ginger in the treatment of primary dysmenorrhea: a systematic review and meta-analysis." *Cureus*. 2021;13(3):e13743. PMID: 33842121. doi: [10.7759/cureus.13743](https://doi.org/10.7759/cureus.13743)
 
-[29] Arefpour S, Ansari F, Hashemzadeh M, et al. "Effect of ginger supplementation as an adjuvant to H. pylori eradication therapy on peptic ulcer symptoms: A randomized controlled clinical trial." *Clin Nutr Open Sci*. 2024;53:1-9.
+[35] Saenghong N, Wattanathorn J, Muchimapura S, et al. "Zingiber officinale improves cognitive function of the middle-aged healthy women." *Evid Based Complement Alternat Med*. 2012;2012:383062. PMID: 22235230. doi: [10.1155/2012/383062](https://doi.org/10.1155/2012/383062)
 
-[30] Bartels EM, Folmer VN, Bliddal H, et al. "Efficacy and safety of ginger in osteoarthritis patients: a meta-analysis of randomized placebo-controlled trials." *Osteoarthritis Cartilage*. 2015;23(1):13-21. doi: [10.1016/j.joca.2014.09.024](https://doi.org/10.1016/j.joca.2014.09.024)
+[36] Maharlouei N, Tabrizi R, Lankarani KB, et al. "The effects of ginger intake on weight loss and metabolic profiles among overweight and obese subjects: A systematic review and meta-analysis of randomized controlled trials." *Crit Rev Food Sci Nutr*. 2019;59(11):1753-1766. PMID: 29393665. doi: [10.1080/10408398.2018.1427044](https://doi.org/10.1080/10408398.2018.1427044)
 
-[31] Araya-Quintanilla F, Gutiérrez-Espinoza H, Muñoz-Yanez MJ, et al. "Effectiveness of ginger on pain and function in knee osteoarthritis: a PRISMA systematic review and meta-analysis." *Pain Physician*. 2020;23(2):E151-E161.
+[37] Mansour MS, Ni YM, Roberts AL, et al. "Ginger consumption enhances the thermic effect of food and promotes feelings of satiety without affecting metabolic and hormonal parameters in overweight men: a pilot study." *Metabolism*. 2012;61(10):1347-1352. PMID: 22538118. doi: [10.1016/j.metabol.2012.03.016](https://doi.org/10.1016/j.metabol.2012.03.016)
 
-[32] Martins LB, Rodrigues AMDS, Rodrigues DF, et al. "Double-blind placebo-controlled randomized clinical trial of ginger (Zingiber officinale Rosc.) addition in migraine acute treatment." *Cephalalgia*. 2019;39(1):68-76. doi: [10.1177/0333102418776611](https://doi.org/10.1177/0333102418776611)
+[38] Braga Tibaes JR, Martins LB, Rodrigues AMDS, et al. "Ginger supplementation does not increase energy expenditure in female adults." *Nutrition*. 2022;103-104:111803. PMID: 36058007. doi: [10.1016/j.nut.2022.111803](https://doi.org/10.1016/j.nut.2022.111803)
 
-[33] Maghbooli M, Golipour F, Moghimi Esfandabadi A, Yousefi M. "Comparison between the efficacy of ginger and sumatriptan in the ablative treatment of the common migraine." *Phytother Res*. 2014;28(3):412-415. doi: [10.1002/ptr.4996](https://doi.org/10.1002/ptr.4996)
+[39] Fagundes GBP, Rodrigues AMDS, Martins LB, et al. "Acute effects of dry extract of ginger on energy expenditure in eutrophic women: A randomized clinical trial." *Clin Nutr ESPEN*. 2021;41:168-174. PMID: 33487261. doi: [10.1016/j.clnesp.2020.10.001](https://doi.org/10.1016/j.clnesp.2020.10.001)
 
-[34] Negi R, Sharma SK, Gaur R, et al. "Efficacy of ginger in the treatment of primary dysmenorrhea: a systematic review and meta-analysis." *Cureus*. 2021;13(3):e13743. doi: [10.7759/cureus.13743](https://doi.org/10.7759/cureus.13743)
+[41] Emala CW, Saroya TK, Miao Y, et al. "Low-Dose Oral Ginger Improves Daily Symptom Scores in Asthma." *Pharmaceuticals (Basel)*. 2024;17(12):1651. PMID: 39770492. doi: [10.3390/ph17121651](https://doi.org/10.3390/ph17121651)
 
-[35] Saenghong N, Wattanathorn J, Muchimapura S, et al. "Zingiber officinale improves cognitive function of the middle-aged healthy women." *Evid Based Complement Alternat Med*. 2012;2012:383062. doi: [10.1155/2012/383062](https://doi.org/10.1155/2012/383062)
+[42] Rubin D, Patel V, Dietrich E. "Effects of Oral Ginger Supplementation on the INR." *Case Rep Med*. 2019;2019:8784029. PMID: 31281366. doi: [10.1155/2019/8784029](https://doi.org/10.1155/2019/8784029)
 
-[36] Maharlouei N, Tabrizi R, Lankarani KB, et al. "The effects of ginger intake on weight loss and metabolic profiles among overweight and obese subjects: A systematic review and meta-analysis of randomized controlled trials." *Crit Rev Food Sci Nutr*. 2019;59(11):1753-1766. doi: [10.1080/10408398.2018.1427044](https://doi.org/10.1080/10408398.2018.1427044)
+[43] Lesho EP, Saullo L, Udvari-Nagy S. "A 76-year-old woman with erratic anticoagulation." *Cleve Clin J Med*. 2004;71(8):651-656. PMID: 15449760. doi: [10.3949/ccjm.71.8.651](https://doi.org/10.3949/ccjm.71.8.651)
 
-[37] Mansour MS, Ni YM, Roberts AL, et al. "Ginger consumption enhances the thermic effect of food and promotes feelings of satiety without affecting metabolic and hormonal parameters in overweight men: a pilot study." *Metabolism*. 2012;61(10):1347-1352. doi: [10.1016/j.metabol.2012.03.016](https://doi.org/10.1016/j.metabol.2012.03.016)
+[44] Boissiere C, Francois E, Vabret E, et al. "Spice-drug interactions: a case report on the use of turmeric, curry and ginger in a renal transplant patient on tacrolimus." *Eur J Hosp Pharm*. 2023;31(1):68-69. PMID: 37586787. doi: [10.1136/ejhpharm-2023-003871](https://doi.org/10.1136/ejhpharm-2023-003871)
 
-[38] Tibaes JRB, Silva RR, Gaspar RS, et al. "Ginger and its bioactive compound 6-shogaol do not affect inflammation, lipid metabolism, or body composition in women with overweight or obesity: A randomized placebo-controlled trial." *Nutrition*. 2022;97:111599. doi: [10.1016/j.nut.2022.111599](https://doi.org/10.1016/j.nut.2022.111599)
+[45] Pertz HH, Lehmann J, Roth-Ehrang R, Elz S. "Effects of ginger constituents on the gastrointestinal tract: role of cholinergic M3 and serotonergic 5-HT3 and 5-HT4 receptors." *Planta Med*. 2011;77(10):973-978. PMID: 21305447. doi: [10.1055/s-0030-1270747](https://doi.org/10.1055/s-0030-1270747)
 
-[39] Fagundes RA, Monteiro CA, Fagundes ACV, et al. "Ginger root extract does not affect thermic effect of food in women: A pilot, double-blind, randomized crossover study." *Clin Nutr ESPEN*. 2020;36:199-201. doi: [10.1016/j.clnesp.2020.01.002](https://doi.org/10.1016/j.clnesp.2020.01.002)
+[46] Wang S, Zhang C, Yang G, Yang Y. "Biological properties of 6-gingerol: a brief review." *Nat Prod Commun*. 2014;9(7):1027-1030. PMID: 25230520.
 
-[40] Chamani G, Zarei MR, Mehrabani M, Taghiabadi Y. "Evaluation of effects of Zingiber officinale on salivary flow rate, xerostomia, and taste." *J Oral Health Oral Epidemiol*. 2017;6(2):88-93.
+[47] Shaukat MN, Nazir A, Fallico B. "Ginger bioactives: a comprehensive review of health benefits and potential food applications." *Antioxidants (Basel)*. 2023;12(11):2015. PMID: 38001868. doi: [10.3390/antiox12112015](https://doi.org/10.3390/antiox12112015)
 
-[41] Emala CW, Liang H, Kim S, et al. "A Randomized, Double-Blind, Placebo-Controlled Trial of Ginger (Zingiber officinale) as an Anti-Inflammatory Treatment in Asthma." *Pharmaceuticals*. 2024;17(5):578. doi: [10.3390/ph17050578](https://doi.org/10.3390/ph17050578)
+[48] Hu Y, Amoah AN, Zhang H, et al. "Effect of ginger in the treatment of nausea and vomiting compared with vitamin B6 and placebo during pregnancy: a meta-analysis." *J Matern Fetal Neonatal Med*. 2022;35(1):187-196. PMID: 31937153. doi: [10.1080/14767058.2020.1712714](https://doi.org/10.1080/14767058.2020.1712714)
 
-[42] Rubin D, Patel V, Dietrich E. "Effects of Oral Ginger Supplementation on the INR." *Case Rep Med*. 2019;2019:8784029. doi: [10.1155/2019/8784029](https://doi.org/10.1155/2019/8784029)
+[49] Huang FY, Deng T, Meng LX, et al. "Dietary ginger as a traditional therapy for blood sugar control in patients with type 2 diabetes mellitus: A systematic review and meta-analysis." *Medicine (Baltimore)*. 2019;98(13):e15054. PMID: 30921234. doi: [10.1097/MD.0000000000015054](https://doi.org/10.1097/MD.0000000000015054)
 
-[43] Lesho EP, Saullo L, Udvari-Nagy S. "A 76-year-old woman with erratic anticoagulation." *Cleve Clin J Med*. 2004;71(8):651-656. doi: [10.3949/ccjm.71.8.651](https://doi.org/10.3949/ccjm.71.8.651)
+[50] Schumacher JC, Mueller V, Sousa C, et al. "The effect of oral supplementation of ginger on glycemic control of patients with type 2 diabetes mellitus - A systematic review and meta-analysis." *Clin Nutr ESPEN*. 2024;63:615-622. PMID: 39053695. doi: [10.1016/j.clnesp.2024.07.011](https://doi.org/10.1016/j.clnesp.2024.07.011)
 
-[44] Boissiere L, Leffondre K, Couzi L, et al. "Ginger consumption during tacrolimus treatment: a case report." *Eur J Hosp Pharm*. 2023;30(3):e14. doi: [10.1136/ejhpharm-2022-003362](https://doi.org/10.1136/ejhpharm-2022-003362)
+[51] Marx W, McKavanagh D, McCarthy AL, et al. "The Effect of Ginger (Zingiber officinale) on Platelet Aggregation: A Systematic Literature Review." *PLoS One*. 2015;10(10):e0141119. PMID: 26488162. doi: [10.1371/journal.pone.0141119](https://doi.org/10.1371/journal.pone.0141119). Correction: *PLoS One*. 2015;10(11):e0143675.
 
-[45] Pertz HH, Lehmann J, Roth-Ehrang R, Elz S. "Effects of ginger constituents on the gastrointestinal tract: role of cholinergic M3 and serotonergic 5-HT3 and 5-HT4 receptors." *Planta Med*. 2011;77(2):159-163. doi: [10.1055/s-0030-1250154](https://doi.org/10.1055/s-0030-1250154)
-
-[46] Wang S, Zhang C, Yang G, Yang Y. "Biological properties of 6-gingerol: a brief review." *Nat Prod Commun*. 2014;9(7):1027-1030.
-
-[47] Shaukat MN, Nazir A, Fallico B. "Ginger bioactives: a comprehensive review of health benefits and potential food applications." *Antioxidants (Basel)*. 2023;12(11):2015. doi: [10.3390/antiox12112015](https://doi.org/10.3390/antiox12112015)
-
-[48] Hu Y, Amoah AA, Zhang H, et al. "Effect of ginger in the treatment of nausea and vomiting compared with vitamin B6 and placebo during pregnancy: a meta-analysis." *J Matern Fetal Neonatal Med*. 2022;35(1):187-196. doi: [10.1080/14767058.2020.1712714](https://doi.org/10.1080/14767058.2020.1712714)
+[52] Shalansky S, Lynd L, Richardson K, Ingaszewski A, Kerr C. "Risk of warfarin-related bleeding events and supratherapeutic international normalized ratios associated with complementary and alternative medicine: a longitudinal analysis." *Pharmacotherapy*. 2007;27(9):1237-1247. PMID: 17723077. doi: [10.1592/phco.27.9.1237](https://doi.org/10.1592/phco.27.9.1237)

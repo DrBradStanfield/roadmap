@@ -1,12 +1,12 @@
 ---
-title: "Pathway: Beta"
-type: "pathway"
-summary: "Clinical pathway for beta."
+title: "Guideline: Beta"
+type: "guideline"
+summary: "Guideline for beta."
 ---
 
 # Beta
 
-*Source: Auckland Region HealthPathways. Last reviewed: January 2026*
+*Source: Beta guideline. Last reviewed: January 2026*
 
 > Your doctor will guide your treatment. This is not a substitute for medical care.
 

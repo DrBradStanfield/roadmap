@@ -5,6 +5,7 @@ import {
   healthInputSchema,
   METRIC_LABELS,
   METRIC_TO_FIELD,
+  commaQuestion,
   parseLocalisedNumber,
   BLOOD_TEST_METRICS,
   VITAL_METRICS,
@@ -24,11 +25,11 @@ import {
 } from '@roadmap/health-core';
 import { getCurrentDateValue } from './DatePicker';
 import type { ExtractedValue, AdditionalLabValue, ApiDocument, ApiLabValue, DocumentResult, UploadHistory } from '../lib/api-types';
-import type { RefusedLabValue } from '@roadmap/health-core';
+import { pendingRowsFor, type RefusedLabValue } from '@roadmap/health-core';
 import { labUnitRefusalLine, labValueLabel } from '../lib/lab-value-labels';
 import { unarchivedOriginals } from '../lib/archive-payloads';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
-import { type CellUnit, type Grading, cellHint, cellLabel, cellText, cellToSI, validateTypedValue } from '../lib/blood-test-cell';
+import { type CellUnit, type Grading, cellHint, cellLabel, cellText, cellToSI, readTypedValue, validateTypedValue } from '../lib/blood-test-cell';
 import { useLpaUnit } from '../lib/lpa-unit';
 import { NumericInputCell } from './NumericInputCell';
 import { DraftDateCell } from './DraftDateCell';
@@ -96,6 +97,10 @@ interface ReviewTableProps {
     values: ReviewedValue[];
     documents: DocumentToSave[];
     labValues: ReviewedLabValue[];
+    /** Every result as reviewed: its report date (the column day, or null) and
+     *  its document's title and date. The archive files originals from these,
+     *  an unselected document included (US-13 AC6). */
+    reviewed: FileResult[];
   }) => void;
   onCancel: () => void;
   isSaving: boolean;
@@ -145,7 +150,20 @@ function longDate(day: string): string | null {
 /** A column's date when it is a calendar day that has happened, else null:
  *  only then is it set, and Save allowed (US-13 AC8). */
 function columnDay(date: FullDate): string | null {
-  return date.day ? validDay(fullDateToIso(date), { now: new Date().toISOString() }) : null;
+  return date.day ? pastDay(fullDateToIso(date)) : null;
+}
+
+/** A calendar day that has happened, by this device's clock, or null. */
+function pastDay(raw: string | null | undefined): string | null {
+  return validDay(raw, { now: new Date().toISOString() });
+}
+
+/** The model's document date as review state (US-13 AC6), read as the
+ *  connector reads it: a past calendar day, else unknown. A month alone keeps
+ *  no day, which is the user's to pick, but it may still date a screening. */
+function readDocumentDate(raw: string | null | undefined): { day: string | null; month: string | null } {
+  const day = pastDay(raw);
+  return { day, month: !day && raw && /^\d{4}-\d{2}$/.test(raw) && pastDay(`${raw}-01`) ? raw : null };
 }
 
 function getDaysInMonth(month: string, year: string): number {
@@ -657,10 +675,22 @@ export function ReviewTable({
     });
   }, [docHistoryIndex, results]);
 
+  // A document whose bytes metadata-only shown-document rows hold (a failed
+  // upload, or the connector's) replaces them, so its card starts from the
+  // newest: the user sees the earlier title and date, a missing date included,
+  // and can change them (US-14 AC4).
+  const [heldRows] = useState(() => results.map(r => (r.document ? pendingRowsFor(history.documents, r.contentHash, false)[0] : undefined)));
+  // A document's date is its own, never the blood-test column's: the day it
+  // saves, null until known or picked. A month alone still dates its
+  // screening update until the user picks a day or clears it (US-13 AC6).
+  const [documentDates, setDocumentDates] = useState<Record<number, { day: string | null; month: string | null }>>(() =>
+    Object.fromEntries(results.map((r, fi) => [fi, readDocumentDate(heldRows[fi] ? heldRows[fi].documentDate : r.document?.documentDate)])));
+  const screeningDateFor = (fi: number) => documentDates[fi]?.day ?? documentDates[fi]?.month ?? null;
+
   // Per-document: editable title
   const [docTitles, setDocTitles] = useState<Record<number, string>>(() => {
     const map: Record<number, string> = {};
-    results.forEach((r, fi) => { if (r.document) map[fi] = r.document.title; });
+    results.forEach((r, fi) => { if (r.document) map[fi] = heldRows[fi]?.title ?? r.document.title; });
     return map;
   });
 
@@ -779,18 +809,20 @@ export function ReviewTable({
    *  124.9 nmol/L shows "50.0" mg/dL → 125); once edited, the typed number in the
    *  unit it was typed in, so a toggle after typing never misconverts it. */
   const savedValue = (cell: EditableMatrixCell, editedStr: string): number | undefined => {
-    const parsed = parseLocalisedNumber(editedStr);
+    const metric = metricOf(cell);
+    const typedIn = metric && UNIT_DEFS[metric] ? touchedRef.current.get(editId(cell))?.display ?? units[metric] ?? unitSystem : undefined;
+    const parsed = metric && typedIn ? readTypedValue(metric, editedStr, typedIn) : parseLocalisedNumber(editedStr);
     if (parsed === undefined) return undefined;
     if (!isEditedText(cell, editedStr)) return cell.valueSI;
-    const metric = metricOf(cell);
-    if (!metric || !UNIT_DEFS[metric]) return parsed;
-    return cellToSI(metric, parsed, touchedRef.current.get(editId(cell))?.display ?? units[metric] ?? unitSystem);
+    return metric && typedIn ? cellToSI(metric, parsed, typedIn) : parsed;
   };
 
   // Validate the quantity we save, not a rounded rendering after a unit switch.
+  // A lab row has no range, so only an ambiguous comma is an error (US-13 AC12).
   const cellError = (cell: EditableMatrixCell, text: string): string | null => {
     const metric = metricOf(cell);
-    if (!text || !metric || !UNIT_DEFS[metric]) return null;
+    if (!text) return null;
+    if (!metric || !UNIT_DEFS[metric]) return commaQuestion(text);
     if (isEditedText(cell, text)) {
       return validateTypedValue(metric, text, touchedRef.current.get(editId(cell))?.display ?? units[metric] ?? unitSystem).error;
     }
@@ -1002,31 +1034,33 @@ export function ReviewTable({
       }
     }
 
-    // Collect documents
+    // Every result as reviewed. The report date is the column's past day or
+    // unknown, never the extracted string (US-13 AC8).
+    const reviewed: FileResult[] = results.map((r, fi) => ({
+      ...r,
+      reportDate: columnDay(fileDates[fi]),
+      ...(r.document ? { document: { ...r.document, title: docTitles[fi] || r.document.title, documentDate: documentDates[fi]?.day ?? null } } : {}),
+    }));
     const documents: DocumentToSave[] = [];
-    results.forEach((r, fi) => {
-      if (!r.document || !docChecked[fi]) return;
-      const date = fileDates[fi];
-      const dateStr = date.year && date.month ? fullDateToIso(date) : null;
-
-      const screeningType = r.document.metadata?.screeningType as string | undefined;
-      const screeningKey = screeningType ? `${screeningType}_last_date` : undefined;
-
+    reviewed.forEach(({ document: doc, fileName, file }, fi) => {
+      if (!doc || !docChecked[fi]) return;
+      const screeningType = doc.metadata?.screeningType as string | undefined;
+      const screeningDate = screeningDateFor(fi);
       documents.push({
-        documentType: r.document.classification,
-        title: docTitles[fi] || r.document.title,
-        documentDate: dateStr,
-        contentMd: r.document.contentMarkdown,
-        metadata: r.document.metadata,
-        sourceFileName: r.fileName,
-        screeningUpdate: screeningKey && screeningChecked[fi] && dateStr
-          ? { key: screeningKey, date: dateStr }
+        documentType: doc.classification,
+        title: doc.title,
+        documentDate: doc.documentDate,
+        contentMd: doc.contentMarkdown,
+        metadata: doc.metadata,
+        sourceFileName: fileName,
+        screeningUpdate: screeningType && screeningChecked[fi] && screeningDate
+          ? { key: `${screeningType}_last_date`, date: screeningDate }
           : undefined,
-        file: r.file,
+        file,
       });
     });
 
-    onSave({ values: selected, documents, labValues: selectedLabValues });
+    onSave({ values: selected, documents, labValues: selectedLabValues, reviewed });
   };
 
   return (
@@ -1077,7 +1111,9 @@ export function ReviewTable({
         const hasNothingForMatrix = !r.error && !r.document && r.values.length === 0 && r.additionalValues.length === 0;
         if (!r.error && !r.document && !hasNothingForMatrix) return null;
 
-        const date = fileDates[fi];
+        const documentDate = documentDates[fi]?.day ?? null;
+        const month = documentDates[fi]?.month;
+        const screeningDate = screeningDateFor(fi);
         const isDocDup = r.document ? isDocDuplicate(r.fileName, docHistoryIndex) : false;
 
         return (
@@ -1116,13 +1152,17 @@ export function ReviewTable({
 
                 <div className="review-file-date">
                   <span>Date:</span>
+                  {/* No day: an empty picker, "— Jun '24" for a month alone
+                      or "Date unknown", so any day picked sets it (US-13 AC6). */}
                   <DraftDateCell
-                    date={fullDateToIso(date)}
-                    needsDay={!date.day}
+                    date={documentDate ?? (month ? `${month}-01` : fullDateToIso(fileDates[fi]))}
+                    needsDay={!documentDate}
+                    placeholder={documentDate || month ? undefined : 'Date unknown'}
                     ariaLabel="Document date"
                     onChange={picked => {
-                      const parsed = parseIsoToFullDate(picked);
-                      if (parsed) setFileDates(prev => ({ ...prev, [fi]: parsed }));
+                      // Cleared is unknown, its month too; a day not yet happened is refused, never written.
+                      const day = pastDay(picked);
+                      if (!picked || day) setDocumentDates(prev => ({ ...prev, [fi]: { day, month: null } }));
                     }}
                   />
                 </div>
@@ -1136,12 +1176,13 @@ export function ReviewTable({
                   <label className="review-screening-update">
                     <input
                       type="checkbox"
-                      checked={screeningChecked[fi] ?? false}
+                      checked={!!screeningDate && (screeningChecked[fi] ?? false)}
+                      disabled={!screeningDate}
                       onChange={(e) => setScreeningChecked(prev => ({ ...prev, [fi]: e.target.checked }))}
                     />
                     <span>
                       Update <strong>{String(r.document.metadata.screeningType)}</strong> screening date
-                      {r.document.documentDate ? ` to ${r.document.documentDate}` : ''}
+                      {screeningDate ? ` to ${screeningDate}` : ' (pick the document date first)'}
                     </span>
                   </label>
                 )}

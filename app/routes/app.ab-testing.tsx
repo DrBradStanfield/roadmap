@@ -1,9 +1,10 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
 import { data, useLoaderData, useSubmit, useNavigation } from "react-router";
 import { useState } from "react";
-import { z } from "zod";
+import * as z from "../../packages/health-core/src/zod";
 
-import { authenticateAdmin } from "../lib/admin-shop.server";
+import { authenticateAdmin, authenticateOwnerAdmin } from "../lib/admin-shop.server";
+import { zod3Message } from "../../packages/health-core/src/validation";
 import {
   getABTests,
   getActiveABTests,
@@ -107,7 +108,7 @@ async function deleteABMetafield(admin: any, shopId: string): Promise<{ error: s
 // ---------------------------------------------------------------------------
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticateAdmin(request);
+  await authenticateOwnerAdmin(request);
 
   try {
     const tests = await getABTests();
@@ -132,6 +133,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 // ---------------------------------------------------------------------------
 
 export const action = async ({ request }: ActionFunctionArgs) => {
+  // US-09 AC12: this route changes the owner's shared experiments, so the
+  // owner gate runs first (the app.trending-test.tsx pattern); the wrapper
+  // then hands the action the admin client for the metafield sync.
+  await authenticateOwnerAdmin(request);
   const { admin } = await authenticateAdmin(request);
   const formData = await request.formData();
   const intent = formData.get('intent') as string;
@@ -144,7 +149,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           name: formData.get('name'),
           target: formData.get('target'),
           variants: JSON.parse(formData.get('variants') as string || '[]'),
-        });
+        }, { error: zod3Message });
       } catch (e) {
         const msg = e instanceof z.ZodError ? e.issues[0]?.message : 'Invalid test data';
         return data({ success: false, error: msg });

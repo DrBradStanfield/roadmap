@@ -7,7 +7,7 @@
 // StartingInfoVitals.
 
 import { useEffect, useRef, useState } from 'react';
-import { LPA_UNITS, localDay, type LpaUnit, type UnitSystem } from '@roadmap/health-core';
+import { isLpaUnit, localDay, type LpaUnit, type UnitSystem } from '@roadmap/health-core';
 import type { CellUnit } from './blood-test-cell';
 import { DRAFTS_CLEARED_EVENT, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
 import type { SaveTask } from './matrix-save';
@@ -166,7 +166,7 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
      *  this was kept, so its unit is unknown. */
     lpaUnitOf: (cell: CellRef<K>): LpaUnit | undefined => {
       const unit = metaOf(cell)?.unit;
-      return (LPA_UNITS as readonly unknown[]).includes(unit) ? unit as LpaUnit : undefined;
+      return isLpaUnit(unit) ? unit : undefined;
     },
     /** A unit chosen on this page says what the numbers typed are in (US-05
      *  AC2): every cell of `key` the user typed by hand on this load of the
@@ -223,23 +223,27 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
 /**
  * Keep what the draft lends the plan and the chat to the values that may
  * stand in for the record there (US-03 AC6): `values` maps each field to its
- * value, or to undefined to leave it to the record. Only a field that changed
- * is sent. The page keeps what is sent apart from the form, and nothing else
+ * value, or to undefined to leave it to the record, and to the day the value
+ * is dated (US-07 AC7). Only a field whose value or day changed is sent. The page keeps what is sent apart from the form, and nothing else
  * writes it, so what was sent is what the page holds. A matrix leaving the
  * page takes back what it sent, and one mounting sends it again: a phone
  * turned across 768 px builds the whole form again.
  */
-export function useDraftMirror<F extends string>(values: Array<[F, number | undefined]>, send: (field: F, value: number | undefined) => void): void {
-  const sent = useRef(new Map<F, number | undefined>());
+export function useDraftMirror<F extends string>(
+  values: Array<[F, number | undefined, string?]>, send: (field: F, value: number | undefined, day?: string) => void,
+): void {
+  const sent = useRef(new Map<F, [number | undefined, string | undefined]>());
   useEffect(() => {
-    for (const [field, value] of values) {
-      if (sent.current.get(field) === value) continue;
-      sent.current.set(field, value);
-      send(field, value);
+    for (const [field, value, day] of values) {
+      const was = sent.current.get(field);
+      if (was ? was[0] === value && was[1] === day : value === undefined) continue;
+      sent.current.set(field, [value, day]);
+      if (day === undefined) send(field, value);
+      else send(field, value, day);
     }
   });
   useEffect(() => () => {
-    for (const [field, value] of sent.current) if (value !== undefined) send(field, undefined);
+    for (const [field, [value]] of sent.current) if (value !== undefined) send(field, undefined);
     sent.current.clear();
   }, [send]);
 }

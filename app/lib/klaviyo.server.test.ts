@@ -195,7 +195,7 @@ describe('Klaviyo failure logging keeps the address off the console', () => {
   it('logs status only when a suppression fails', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     failWith(ECHO);
-    expect(await suppressInKlaviyo(ADDRESS)).toBe(false);
+    expect(await suppressInKlaviyo(ADDRESS)).toEqual({ status: 400, retryable: false });
     expect(error).toHaveBeenCalledWith('Klaviyo suppression failed: 400');
     for (const call of error.mock.calls) {
       expect(JSON.stringify(call)).not.toContain(ADDRESS);

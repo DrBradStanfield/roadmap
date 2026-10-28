@@ -6,630 +6,559 @@ publishedAt: "2025-10-18T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["yohimbe", "yohimbine", "horny goat weed", "epimedium", "icariin", "tribulus terrestris", "maca", "maca root", "ginseng", "panax ginseng", "korean red ginseng", "l-arginine", "arginine", "erectile dysfunction", "libido", "testosterone", "sexual health", "nitric oxide", "zinc", "magnesium", "blood pressure", "cardiovascular", "anxiety", "depression", "cocoa", "fenugreek"]
-summary: "Reference on sexual enhancement supplements: libido, erectile dysfunction. Covers maca root, yohimbine, L-arginine, ginseng, horny goat weed, tribulus. Evidence weak for most; major adulteration risk. Always discuss with your doctor."
+summary: "Evidence summary on sexual enhancement supplements (yohimbe, maca, ginseng, L-arginine, tribulus, horny goat weed): small trials and limited benefit, and some products hide prescription drugs such as sildenafil. Talk to your doctor first, especially if you take nitrates or have heart disease."
+reviewed: "2026-10-25"
+sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/WeightLoss-HealthProfessional/","checked":"2026-10-25","fingerprint":"sha256:d7e4c6628de89807e9c519029e843d841dc0a1cd3caea44699ce5f3aa30ce990"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30646238/","checked":"2026-10-25","fingerprint":"sha256:ff2a9cd80eddb142678b95d6fd27031d90e8b634acd6282f1a645ffd93f1beee"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/21782365/","checked":"2026-10-25","fingerprint":"sha256:f50f6f58169ca6e2e5ea4b6336499f5409516b5e654019b50cbe1b82800b0a87"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects)*
 
+## Current evidence position
+
+Brad has not made a video on this topic; this is a summary of the evidence, not his view. Supplements sold for sexual enhancement are the largest group of products the FDA has found to contain hidden prescription drugs: from 2007 through 2016, 353 of 776 adulterated supplements in its warnings were marketed for sexual enhancement, and sildenafil was the most common hidden drug in them [6]. For the herbs themselves, an overview of systematic reviews drew cautiously positive conclusions for yohimbine and ginseng in erectile dysfunction and found the evidence for maca insufficient, and small trials suggest L-arginine and L-citrulline may help mild to moderate erectile dysfunction [67][53][27]. Yohimbe can be dangerous: high doses of yohimbine can cause heart attack, heart failure and death, and NIH advises using it only under medical supervision [62]. Erection problems are most often caused by artery disease, so see a doctor before trying any of these products [46].
+
+## Key safety points
+
+- Some of these products contain hidden sildenafil or similar drugs, which with nitrates can drop blood pressure sharply; never use them with a nitrate [6][66]. For fainting or chest pain, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- Tribulus may block CYP3A4, which clears statins; a man on atorvastatin taking it had muscle breakdown [41]. For muscle pain with dark urine, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- Never use yohimbe with an MAOI or tricyclic antidepressant [69]. It raises blood pressure and pulse. At 200 mg or more, yohimbine can cause heart attack and death; use it only under a doctor's care [62]. For chest pain, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- Asian ginseng may affect clotting, and American ginseng weakened warfarin in a small trial; on a blood thinner, ask your doctor first [59][61].
+- Do not take L-arginine after a heart attack: 6 people on it died in a trial vs none on placebo [54]. It might drop blood pressure too far with blood pressure drugs, nitrates or sildenafil [55].
+- Asian ginseng may be unsafe in pregnancy; yohimbe, in pregnancy or breastfeeding [61][69].
+- Insomnia is ginseng's most common side effect; L-arginine can cause diarrhea and stomach pain [61][55].
+
+## Brad's videos on this topic
+
+None yet.
+
 ## 1. Overview
 
-Sexual enhancement supplements represent one of the largest and most problematic categories in the dietary supplement market. These products — which include herbal extracts like yohimbe, horny goat weed (epimedium), tribulus terrestris, maca root, and ginseng, along with amino acids such as L-arginine — are widely marketed for improving libido, erectile function, and sexual performance. The global market for sexual health supplements reached an estimated USD 3.5 billion in 2023, with projections indicating growth to over USD 7 billion by 2030 [1].
+Sexual enhancement supplements include herbal extracts such as yohimbe, horny goat weed (epimedium), tribulus terrestris, maca root and ginseng, and amino acids such as L-arginine. They are marketed to improve libido, erections and sexual performance.
 
-The scientific evidence supporting most sexual enhancement supplements is weak, mixed, or insufficient. No single supplement is definitively the best for enhancing male libido based on recent systematic reviews and clinical evidence through 2025 [2]. Maca root (Lepidium meyenii) has the strongest evidence for increasing sexual desire in men, with clinical studies demonstrating benefits typically after consistent use for 8-12 weeks, independent of any impact on testosterone levels [2]. Moderate evidence supports zinc supplementation in cases of deficiency, while cocoa flavanols may provide indirect support through improved vascular function [3][4]. Yohimbine shows some evidence for benefits in erectile function but carries notable cardiovascular and psychiatric risks [5].
+The evidence for most of these ingredients is limited. An overview of systematic reviews drew cautiously positive conclusions for yohimbine and ginseng in erectile dysfunction and found the evidence for maca insufficient [67]. A systematic review of maca found limited evidence from a few small trials [2]. Yohimbine beat placebo in a meta-analysis of seven trials, but it carries cardiovascular risks [5][62].
 
-Critically, sexual enhancer supplements represent the largest category of supplements adulterated with prescription drugs, according to the FDA [6]. Tests of 102 sexual enhancer supplements purchased from gas stations, markets, pharmacies, and stores in the Sacramento area between September 2016 and November 2017 found that 67% were adulterated with at least one phosphodiesterase-5 (PDE5) inhibitor — drugs like sildenafil (Viagra), tadalafil (Cialis), and vardenafil [7]. Samples sold in blister packs were more than 8 times as likely to be adulterated as those sold in bottles (89% vs. 10%) [7]. This adulteration poses serious health risks, particularly for individuals taking nitrates or other cardiovascular medications.
+The bigger problem is what the label leaves out. From 2007 through 2016, the FDA identified 776 adulterated dietary supplements; 353 (45.5%) were marketed for sexual enhancement, and sildenafil was the most common hidden drug in that group (166 of 353) [6]. Hidden drugs kept turning up even after FDA warnings [6]. A hidden PDE5 inhibitor is dangerous for anyone taking nitrate heart medicines, because the two together lower blood pressure sharply [66].
 
-In contrast to supplement-based approaches, lifestyle factors — including regular exercise, adequate sleep, stress management, and a healthy diet — are more reliably beneficial for maintaining healthy libido and sexual function [2]. Individuals experiencing persistent sexual dysfunction should consult a healthcare provider to evaluate underlying causes (cardiovascular disease, hormonal imbalances, medication side effects, psychological factors) before turning to supplements.
+Lifestyle changes also have trial support. In obese men with erectile dysfunction, two years of weight loss and more exercise improved erectile function scores [65], and a review of exercise trials recommended about 160 minutes of aerobic exercise a week [46]. Persistent erection problems deserve a doctor's visit, because the leading cause is artery disease [46].
 
 ## 2. Forms and Bioavailability
 
-Sexual enhancement supplements encompass a diverse group of ingredients, each with distinct forms, active compounds, and bioavailability considerations. Unlike single-nutrient supplements (e.g., magnesium or vitamin D), these products span multiple categories — herbal extracts, amino acids, and minerals — making form selection and standardization especially important.
+These products span herbal extracts, amino acids and minerals, and the amount of active compound can differ widely from the label.
 
 ### Yohimbe (Pausinystalia johimbe)
 
-Yohimbe is derived from the bark of the African evergreen tree *Pausinystalia johimbe* (synonyms: *Corynanthe yohimbe* K. Schum). The primary active compound is yohimbine, an indole alkaloid that acts as an alpha-2 adrenergic receptor antagonist.
+Yohimbe comes from the bark of *Pausinystalia johimbe*, a West African evergreen tree. Its main active compound, yohimbine, blocks alpha-2 adrenergic receptors [62].
 
 **Available forms:**
-- **Yohimbe bark powder** — Unprocessed, ground bark containing a complex mixture of alkaloids. Yohimbine content is typically low and variable (0.5-2% of total bark weight), making dosing unpredictable.
-- **Yohimbe bark extract** — Concentrated extracts standardized to 2-6% total yohimbe alkaloids. Yohimbine constitutes approximately 10-15% of total yohimbe alkaloids, so a 4% yohimbe alkaloid extract contains approximately 0.4-0.6% yohimbine [8].
-- **Yohimbine HCl (prescription)** — Pharmaceutical-grade yohimbine hydrochloride, available by prescription in some countries. This is the form used in most clinical trials and provides precise dosing.
+- **Yohimbe bark and bark extracts:** sold alone or in combination products.
+- **Yohimbine:** used as a drug for erectile dysfunction for longer than sildenafil (Viagra) [9].
 
-**Label interpretation:** A product listing "400 mg yohimbe bark extract standardized to 2% yohimbe alkaloids" provides approximately 8 mg of total yohimbe alkaloids and approximately 0.8-1.2 mg of yohimbine. To achieve the clinically studied dose of 5.4 mg yohimbine, one would need approximately 1,350 mg of a 4% alkaloid extract or approximately 2,700 mg of a 2% alkaloid extract [8]. This discrepancy between supplement doses and clinically studied doses is a major concern.
-
-**Bioavailability:** Oral yohimbine undergoes extensive first-pass hepatic metabolism, resulting in highly variable bioavailability (7-87%) between individuals [9]. This wide interindividual variation makes dose-response relationships unpredictable and contributes to the risk of adverse effects.
+**Label interpretation:** Labels are unreliable. In an analysis of 49 US yohimbe supplements, yohimbine per serving ranged from none detected to 12.1 mg, and only 11 listed a quantity; most of those were wrong, at 23% to 147% of the label amount [58]. In 19 of the 49, the other bark alkaloids were missing, which suggests highly processed extract or synthetic yohimbine [58].
 
 ### Epimedium (Horny Goat Weed)
 
-Epimedium is a genus of flowering plants in the family Berberidaceae. Several species are used in supplements, including *Epimedium grandiflorum* Morr. (barrenwort), *Epimedium brevicornum* Maxim., *Epimedium koreanum* Nakai, and *Epimedium sagittatum*. The plant has been used in traditional Chinese medicine for centuries under the name "Yin Yang Huo."
+Epimedium is a genus of flowering plants used in traditional Chinese medicine. Several species appear in supplements, including *Epimedium brevicornum* and *Epimedium sagittatum* [10][30].
 
-**Available forms:**
-- **Epimedium herb powder** — Ground aerial parts (leaves and stems/stalks). Contains low concentrations of active compounds, typically 1-3% icariin [8].
-- **Epimedium extract** — Concentrated extract from aerial parts, preferably standardized to 8-10% icariin, a prenylated flavonoid glycoside that is the primary marker compound [8].
-
-**Active compound — Icariin:** Icariin is a prenylated flavonol glycoside that acts as a weak phosphodiesterase-5 (PDE5) inhibitor in preclinical studies, with a mechanism analogous to sildenafil [10]. However, the PDE5-inhibiting activity of icariin is orders of magnitude weaker than pharmaceutical PDE5 inhibitors, and human clinical data are extremely limited.
-
-**Label caution:** The description "10% flavonoids as icariin" on a label does not mean that 10% of the ingredient is icariin. It means that any flavonoid compound found in that ingredient is being counted as icariin — an inaccurate measure that overstates actual icariin content [8].
-
-**Bioavailability:** Oral bioavailability of icariin is poor in animal models, with significant first-pass metabolism. Human pharmacokinetic data are limited. The gap between in vitro PDE5 inhibition and in vivo effects in humans remains substantial and largely unbridged by clinical evidence.
+**Active compound, icariin:** In a laboratory test on the human PDE5 enzyme, the target of sildenafil, icariin was far weaker than sildenafil: its IC50 was 5.9 microM, against 74 nM for sildenafil [10]. Human trial evidence is very limited.
 
 ### Maca Root (Lepidium meyenii)
 
-Maca root is a cruciferous plant native to the high-altitude regions of the Peruvian Andes (3,500-4,500 meters elevation), cultivated for centuries as both a food source and medicinal herb [11].
+Maca is a plant of the cabbage family that grows in the central Andes of Peru between 4,000 and 4,500 m altitude, and it is used as a food and a traditional medicine [11].
 
-**Available forms:**
-- **Maca root powder** — Dried and ground root, the most traditional form. Contains the full spectrum of bioactive compounds including glucosinolates (particularly benzyl glucosinolate), sterols, alkaloids, and macamides [12].
-- **Maca root extract** — Concentrated extract, sometimes standardized to specific glucosinolate or macamide content.
-- **Gelatinized maca** — Heat-treated to remove starch, which may improve digestibility and concentrate active compounds.
+**Available forms:** Maca is sold as dried root powder, extracts and gelatinized (heat-treated) powder; the main trial in men used gelatinized maca [15].
 
-**Color variants:** Maca roots come in yellow, red, and black varieties. Black maca has been traditionally associated with male sexual health benefits, though clinical differentiation between varieties is limited [13].
-
-**Bioactive compounds:** The mechanism of maca's effects on libido remains unclear. Key bioactive compounds include glucosinolates (benzyl glucosinolate), macamides and macaenes (unique to maca), alkaloids that may act on the hypothalamic-pituitary-adrenal (HPA) axis, sterols, and polyunsaturated fatty acids [12][14]. Importantly, maca appears to exert its libido-enhancing effects independent of direct hormonal modulation — clinical studies consistently show no significant changes in serum testosterone, estradiol, or other sex hormones [2][15].
+**Hormones:** In trials, maca did not change testosterone or estradiol in men [15], or estradiol, FSH, LH or sex hormone-binding globulin in postmenopausal women; maca extracts also showed no meaningful estrogen-like or androgen-like activity in a laboratory test [33].
 
 ### Ginseng (Panax genus)
 
 **Available forms:**
-- **Panax ginseng (Asian/Korean ginseng)** — The "true" ginseng, containing ginsenosides (saponins) as the primary bioactive compounds [16].
-- **Korean red ginseng** — *Panax ginseng* processed by steaming and drying, which alters the ginsenoside profile and may enhance bioavailability. Red ginseng contains unique ginsenosides (Rg3, Rg5, Rk1) not found in white ginseng [17].
-- **White ginseng** — Sun-dried or air-dried *Panax ginseng*, preserving the natural ginsenoside profile [17].
-- **American ginseng (Panax quinquefolius)** — A related species with a slightly different ginsenoside ratio. Less studied for sexual health than Asian ginseng.
-
-**Standardization:** Ginseng products are typically standardized to ginsenoside content (usually 4-7% total ginsenosides). Ginsenoside types and ratios vary between species and processing methods, contributing to inconsistent clinical results across studies [16].
-
-**Mechanism:** Ginsenosides stimulate nitric oxide production, promoting vasodilation and potentially improving blood flow to genital tissues [16]. Ginseng also acts as an adaptogen, modulating the HPA axis to reduce cortisol levels during chronic stress, which can indirectly support sexual function [18].
+- **Panax ginseng (Asian or Korean ginseng):** the species most studied for erectile dysfunction [16].
+- **Korean red ginseng:** unskinned *Panax ginseng* that is steamed or otherwise heated and then dried [16].
+- **American ginseng (Panax quinquefolius):** a related species, less studied for sexual health.
 
 ### Tribulus Terrestris
 
-Tribulus terrestris (puncture vine) is a flowering plant from the Zygophyllaceae family, native to warm temperate and tropical regions.
+Tribulus terrestris (puncture vine) is a flowering plant used in traditional medicine.
 
-**Available forms:**
-- **Tribulus terrestris extract** — Typically standardized to 40-60% saponin content, with protodioscin as the primary bioactive compound [19].
-- **Tribulus terrestris powder** — Ground aerial parts or fruit, less concentrated than extracts.
+**Available forms:** The extract in the largest trial, Tribestan, is standardized to furostanol saponins [47].
 
-**Claimed mechanism:** Protodioscin is hypothesized to stimulate luteinizing hormone (LH) release from the pituitary gland, which in turn promotes testosterone production. However, a 2025 systematic review concluded that tribulus terrestris has a low level of evidence for improving erectile function and lacks robust support for increasing testosterone levels, particularly in men with normal baseline levels [20].
+**Claimed mechanism:** Tribulus is marketed as a testosterone booster, but in a small trial in young men it did not change testosterone, androstenedione or luteinizing hormone [48].
 
-**Drug interaction concern:** Tribulus terrestris inhibits the liver enzyme CYP3A4, which metabolizes approximately half of all prescription drugs [21]. This creates significant drug interaction potential (see Drug Interactions section).
+**Drug interaction concern:** Research suggests tribulus is a moderate inhibitor of CYP3A4, a liver enzyme that breaks down statins and many other common medicines (see Drug Interactions section) [41].
 
 ### L-Arginine
 
-L-arginine is a semi-essential amino acid that serves as the direct precursor to nitric oxide (NO) via nitric oxide synthase enzymes.
+L-arginine is an amino acid that the body uses to make nitric oxide [22].
 
-**Available forms:**
-- **L-arginine (free-form)** — The most common supplement form. Typical doses for erectile dysfunction studies range from 1,500-6,000 mg daily [22].
-- **L-arginine HCl** — Hydrochloride salt form, with slightly different elemental arginine content.
-- **L-citrulline** — An amino acid that converts to L-arginine in the kidneys. L-citrulline may provide more sustained arginine levels because it bypasses first-pass intestinal and hepatic metabolism that significantly degrades oral L-arginine [23].
+**Available forms:** L-arginine is sold as the free amino acid or as salts. Trials in erectile dysfunction used doses ranging from 1,500 to 5,000 mg [53].
 
-**Bioavailability:** Oral L-arginine undergoes substantial first-pass metabolism in the gut and liver by the enzyme arginase, which limits the fraction that reaches systemic circulation and is available for NO synthesis. L-citrulline supplementation may be a more effective strategy for raising plasma arginine levels, as citrulline is not metabolized by arginase and is efficiently converted to arginine in the kidneys [23].
+**Bioavailability:** Much of an oral L-arginine dose is broken down in the gut by the enzyme arginase. L-citrulline escapes this, is converted to L-arginine, and raised blood arginine more effectively than L-arginine itself [23].
 
 ### Comparison Table: Sexual Enhancement Supplements at a Glance
 
 | Supplement | Primary Active Compound | Standardization | Typical Dose | Evidence Strength |
 |---|---|---|---|---|
-| Yohimbe bark | Yohimbine (alpha-2 antagonist) | 2-6% yohimbe alkaloids | 5.4 mg yohimbine 3x daily | Moderate (for ED); significant safety concerns |
-| Epimedium (Horny goat weed) | Icariin (weak PDE5 inhibitor) | 8-10% icariin | 500-1,000 mg extract/day | Very weak (mostly preclinical) |
-| Maca root | Macamides, glucosinolates | Not standardized | 1,500-3,000 mg/day | Moderate (for libido, not ED) |
-| Panax ginseng | Ginsenosides | 4-7% ginsenosides | 900-3,000 mg/day | Weak-Moderate (mixed results) |
-| Tribulus terrestris | Protodioscin (saponin) | 40-60% saponins | 250-750 mg/day | Weak (low-quality evidence) |
-| L-Arginine | L-arginine (NO precursor) | N/A (amino acid) | 3,000-5,000 mg/day | Weak-Moderate (dose-dependent) |
-| Zinc | Zinc (mineral) | N/A | 15-30 mg/day | Moderate (only if deficient) |
-| Cocoa flavanols | Flavanols (epicatechin) | Varies | 200-900 mg flavanols/day | Moderate (indirect, vascular) |
+| Yohimbe bark | Yohimbine (alpha-2 blocker) | Labels often inaccurate [58] | No safe supplement dose established | Modest benefit for ED; serious safety concerns |
+| Epimedium (Horny goat weed) | Icariin (weak PDE5 inhibitor in the laboratory) | Varies | Not established | Very weak (laboratory and animal data) |
+| Maca root | Not established | Not standardized | 1,500 mg or 3,000 mg in one trial [15] | Limited (for desire, not ED) |
+| Panax ginseng | Ginsenosides | Varies | 900 mg three times daily (Korean red ginseng) [51] | Low certainty; small effect |
+| Tribulus terrestris | Furostanol saponins | Furostanol saponins (Tribestan) [47] | 250 mg tablets, taken as 3×2 tablets daily after meals [47] | One main trial in ED |
+| L-Arginine | L-arginine (NO precursor) | N/A (amino acid) | 1,500 to 5,000 mg (dose range in trials) [53] | Modest, mild to moderate ED |
+| Zinc | Zinc (mineral) | N/A | Only to correct a deficiency | Only if deficient |
+| Cocoa flavanols | Flavanols | Varies | Not established | Indirect (observational data on other flavonoids) |
 
 ## 3. Evidence for Benefits
 
 ### Erectile Dysfunction — Yohimbine
 
-Yohimbine is the most pharmacologically characterized sexual enhancement supplement ingredient. It acts as a selective alpha-2 adrenergic receptor antagonist, which increases sympathetic nervous system activity and promotes norepinephrine release. In the context of erectile function, yohimbine blocks presynaptic alpha-2 receptors in the corpus cavernosum, facilitating smooth muscle relaxation and penile blood flow [9].
+Yohimbine blocks alpha-2 adrenergic receptors, which increases the release of noradrenaline [38].
 
 **Clinical trial evidence:**
 
-Meta-analyses of randomized controlled trials have demonstrated that yohimbine produces modest improvements in erectile function compared to placebo, particularly in men with psychogenic or mild organic erectile dysfunction [5]. However, the magnitude of benefit is considerably smaller than that achieved with pharmaceutical PDE5 inhibitors (sildenafil, tadalafil, vardenafil).
+A 1998 meta-analysis of seven placebo-controlled trials found yohimbine better than placebo for erectile dysfunction (odds ratio 3.85, 95% confidence interval 6.67 to 2.22), with serious adverse reactions infrequent and reversible [5]. A 2001 review concluded that yohimbine alone has only modest efficacy and may work better combined with a drug that boosts the nitric oxide pathway [9].
 
-A typical dosage of yohimbine used in clinical trials for erectile dysfunction is 5.4 mg three times daily, preferably after meals, although one of the doses may be taken before bedtime for overnight activity [8]. Higher doses are not necessarily more effective than lower ones; in fact, for some individuals the reverse is true, likely due to increased sympathetic activation causing anxiety and vasoconstriction at higher doses [8].
+A toxicology report puts the usual oral dose at 5 to 15 mg [38]. At much higher doses, the most common effects are raised blood pressure, mild anxiety and more frequent urination [9].
 
-**Yohimbine plus arginine in women:** A small double-blind, placebo-controlled trial in women with sexual arousal disorder tested a one-time dose of yohimbine (6 mg) plus arginine (6 grams), yohimbine alone, or placebo. The combination therapy enhanced physiological response to visual sexual stimulus compared to placebo; however, yohimbine alone did not produce superior effects to placebo [8]. This suggests that the nitric oxide pathway (via arginine) may be important for the vascular component of female sexual arousal.
+**Yohimbine plus arginine in women:** In a crossover trial in 24 postmenopausal women with sexual arousal disorder, a single dose of L-arginine glutamate (6 g) plus yohimbine hydrochloride (6 mg) increased vaginal blood flow responses to an erotic film at 60 minutes compared with placebo; the women's own ratings of arousal did not differ between treatments [50]. The result belongs to the combination, not to either ingredient alone.
 
-**Limitations:** Yohimbine's clinical utility is substantially limited by its safety profile (see Safety section). The wide interindividual variability in bioavailability (7-87%) means that the same dose can produce dramatically different blood levels — and side effects — in different people [9]. Prescription yohimbine HCl (where available) is preferred over dietary supplement forms due to more reliable dosing.
+**Limitations:** Yohimbine's safety profile limits its use (see Safety section).
 
 ### Erectile Dysfunction — L-Arginine
 
-L-arginine supports erectile function through its role as the substrate for endothelial nitric oxide synthase (eNOS), the enzyme that produces NO in penile vascular endothelium. NO activates guanylate cyclase, increasing cyclic GMP (cGMP) levels, which relaxes corpus cavernosal smooth muscle and allows penile blood engorgement [22]. This is the same pathway targeted by PDE5 inhibitors, which prevent cGMP degradation.
+Erection depends on nitric oxide, which relaxes the smooth muscle of the penis; L-arginine is the raw material the body uses to make it [22]. PDE5 inhibitors act on the same pathway.
 
-**Evidence in men:** Some evidence suggests that 5,000 mg of L-arginine daily may improve erectile function, while 1,500 mg daily is not effective [8]. A study in men with mild to moderate vasculogenic erectile dysfunction demonstrated significant improvements in erectile function scores with L-arginine supplementation at 5 grams daily for six weeks [24]. Results may take up to four weeks to manifest.
+**Evidence in men:** In a 1999 trial in 50 men with organic erectile dysfunction, 5 g a day of L-arginine for 6 weeks led 9 of 29 men (31%) to report better sexual function, against 2 of 17 on placebo; objective measures did not change, and the men who improved had low nitric oxide markers at the start [24]. A 2019 meta-analysis of 10 trials in 540 men with mild to moderate erectile dysfunction found that arginine supplements at 1,500 to 5,000 mg a day improved erectile dysfunction compared with placebo or no treatment (odds ratio 3.37, 95% CI 1.29 to 8.77); some trials combined arginine with other substances [53].
 
-**Evidence in women:** In studies of arginine for sexual dysfunction in women, typical dosages have ranged from 2,500 to 6,000 mg daily [8].
+**Evidence in women:** In women, the trial evidence involves combination products. In a 4-week trial in 77 women, ArginMax for Women (L-arginine with ginseng, ginkgo, damiana, vitamins and minerals) improved satisfaction with overall sex life in 73.5%, against 37.2% on placebo; the result cannot be credited to L-arginine alone [68].
 
-**L-arginine plus sildenafil:** Two small preliminary studies in men suggest that taking arginine with sildenafil (Viagra) may be safe, though caution is warranted due to the potential for additive blood pressure-lowering effects [25][26].
+**L-arginine plus sildenafil:** Combining the two might lower blood pressure too far, so check with your doctor first [55].
 
-**L-citrulline as an alternative:** Because oral L-arginine undergoes extensive first-pass metabolism by arginase in the gut and liver, L-citrulline (which converts to arginine in the kidneys, bypassing first-pass metabolism) may be a more effective oral strategy for raising systemic arginine and NO levels [23]. A pilot study found that L-citrulline supplementation (1.5 g/day) improved erection hardness in men with mild erectile dysfunction, with 50% of treated men reporting improvement versus 8.3% on placebo [27].
+**L-citrulline as an alternative:** L-citrulline raises blood arginine more effectively than L-arginine [23]. In a single-blind study, 24 men with mild erectile dysfunction took placebo for 1 month and then 1.5 g a day of L-citrulline for 1 month; erection hardness became normal in 12 (50%) on L-citrulline, against 2 (8.3%) on placebo [27].
+
+**Brad's position:** Brad does not recommend L-arginine or L-citrulline supplements (Brad's current guidance, 9 Aug 2026).
 
 ### Erectile Dysfunction — Ginseng
 
-Ginseng varieties, particularly *Panax ginseng* and Korean red ginseng, have been studied for erectile function. Ginsenosides stimulate nitric oxide production, promoting vasodilation and improving blood flow to genital tissues [16].
+Korean red ginseng is the form most studied for erectile dysfunction [16].
 
-**Cochrane review (2021):** A Cochrane review of nine RCTs (n=587) examining ginseng for erectile dysfunction confirmed a trivial positive effect on erectile function domain scores (IIEF-EF) but emphasized that effects were below clinically meaningful thresholds and that larger trials were needed [28]. The certainty of evidence was rated low due to small sample sizes, short durations, and high risk of bias.
+**Cochrane review:** A Cochrane review of nine placebo-controlled trials found that ginseng appears to have a trivial effect on erectile function scores (mean difference 3.52, 95% CI 1.79 to 5.25; low certainty) and may improve men's self-reported ability to have intercourse (RR 2.55, 95% CI 1.76 to 3.69) [28].
 
-**Earlier evidence:** Earlier reviews reported improvements in IIEF scores with Korean red ginseng at 900-1,000 mg three times daily over 8-12 weeks, but post-2015 evidence has been inconsistent across diverse populations [28][29].
+**Earlier evidence:** A 2008 systematic review of red ginseng pooled six placebo-controlled trials (risk ratio 2.40, 95% CI of 1.65, 3.51) but rated their quality low [16]. Trials used 900 mg three times daily for 8 weeks [51] or 1,000 mg three times daily [29]; in the second, 20 men (66.6%) in the ginseng group reported better erections [29].
 
-**Animal data:** Both Asian and American ginseng facilitate copulatory behavior and enhance libido in animal models through nitric oxide-dependent mechanisms [16]. However, the translation from animal data to human clinical outcomes has been disappointing.
-
-**Synthesis:** Ginseng may offer modest, clinically marginal benefits for erectile function. The evidence does not support ginseng as a reliable treatment for erectile dysfunction. Its primary value may be as an adaptogen that reduces stress-related sexual dysfunction rather than as a direct pro-erectile agent.
+**Synthesis:** Ginseng may offer a small benefit for erectile function, but the trials are small and of low quality [16][28].
 
 ### Erectile Dysfunction — Horny Goat Weed (Epimedium)
 
-Icariin, the primary bioactive compound in epimedium, acts as a weak PDE5 inhibitor in laboratory studies [10]. This has generated interest in epimedium as a "natural Viagra."
+Icariin, the main marker compound in epimedium, inhibits PDE5 in laboratory tests [10]. This has led to its marketing as a "natural Viagra."
 
-**Reality of the evidence:** Despite widespread marketing claims, human clinical evidence for epimedium/icariin in erectile dysfunction is extremely limited. The vast majority of evidence comes from in vitro studies and animal models. The PDE5-inhibiting activity of icariin is orders of magnitude weaker than sildenafil, tadalafil, or vardenafil, making it highly unlikely that oral supplementation at typical doses achieves meaningful PDE5 inhibition in vivo.
+**Reality of the evidence:** Human trial evidence for horny goat weed in erectile dysfunction is very limited, and in the laboratory icariin was far weaker than sildenafil [10].
 
-**Animal studies:** A study in rats suggested that taking *Epimedium grandiflorum* with sildenafil (Viagra) may actually decrease the effectiveness of the drug [30]. If confirmed in humans, this would mean horny goat weed could interfere with — rather than enhance — pharmaceutical erectile dysfunction treatment.
+**Animal studies:** In rats given an extract of *Epimedium sagittatum* for 3 days, blood levels of sildenafil fell, and the authors advised against combining the two [30]. If this happens in people, horny goat weed could weaken sildenafil rather than boost it.
 
-**Optimal doses:** Optimal doses for horny goat weed have not been well established through clinical trials. Products typically suggest a dose of 500 to 1,000 mg per day of extract standardized to 10% icariin, but this recommendation is based on tradition and marketing rather than human clinical data [8].
+**Optimal doses:** No dose has been established in human trials.
 
 ### Erectile Dysfunction — Tribulus Terrestris
 
-Tribulus terrestris has been marketed aggressively as a testosterone booster and sexual enhancer, with claims rooted in its traditional use in Ayurvedic medicine (where it is known as "Gokshura") and traditional Chinese medicine.
+Tribulus terrestris is marketed as a testosterone booster and sexual enhancer, with roots in Ayurvedic and traditional Chinese medicine.
 
-**2025 systematic review:** A comprehensive 2025 systematic review of clinical trials concluded that tribulus terrestris supplementation has a low level of evidence for improving erectile function in men with erectile dysfunction [20]. The review noted high risk of bias in many included trials and inconsistent effects on testosterone levels.
+**Trials in men:** In a 12-week trial in 180 men with mild or moderate erectile dysfunction, Tribestan (250 mg tablets, taken as 3×2 tablets daily after meals) improved erectile function scores more than placebo (difference 2.70, 95% CI 1.40, 4.01), with no difference in side effects [47].
 
-**Testosterone claims debunked:** The most persistent marketing claim for tribulus — that it boosts testosterone — is not supported by the clinical evidence. While the hypothesized mechanism involves protodioscin stimulating LH release and downstream testosterone production, human studies consistently show no significant hormonal changes in men with normal baseline testosterone levels [20][31]. A 2017 RCT reported enhanced libido and improved sexual function without elevations in serum testosterone, suggesting any benefits (if real) operate through non-hormonal mechanisms [31].
+**Testosterone claims:** In a 4-week trial in 21 healthy young men, tribulus extract at 20 and 10 mg/kg body weight per day did not change testosterone, androstenedione or luteinizing hormone [48].
 
-**Women with hypoactive sexual desire disorder:** Some trials in women with hypoactive sexual desire disorder have shown improvements in sexual function scores with tribulus terrestris, but the evidence is limited and broader validation is lacking [32].
+**Women with hypoactive sexual desire disorder:** In a 4-week trial in premenopausal women with low sexual desire, tribulus extract improved desire, arousal and overall sexual function scores more than placebo, with similar side effects [49].
 
 ### Libido Enhancement — Maca Root
 
-Maca root has the strongest evidence among natural supplements for increasing sexual desire (libido) in men, though the effect is modest and the mechanism remains unclear [2].
+Maca has some evidence for increasing sexual desire, but the trials are few and small [2].
 
-**2024 comprehensive review:** A 2024 comprehensive review of clinical studies indicated improved sexual desire and erectile function in men, with benefits typically observed after consistent use of 1.5-3 grams per day over 8-12 weeks in RCTs involving healthy adults and those with mild erectile dysfunction [2].
+**Systematic review:** A 2010 systematic review found four randomized trials: two suggested benefit for sexual desire or dysfunction, one in cyclists found none, and one in erectile dysfunction found an effect, but the trials were too few and too small for firm conclusions [2].
 
-**2002 landmark RCT:** A double-blind, placebo-controlled trial demonstrated enhanced sexual desire in healthy men after eight weeks of maca supplementation, without alterations in testosterone or estradiol levels [15]. This was one of the first rigorous trials to separate maca's libido effects from hormonal changes.
+**Trial in men:** In a 12-week double-blind trial in men aged 21 to 56 years, maca at 1,500 mg or 3,000 mg improved self-rated sexual desire from 8 weeks, with no change in testosterone or estradiol [15].
 
-**Independence from testosterone:** A consistent and important finding across maca clinical trials is that improvements in sexual desire occur independent of any measurable impact on testosterone, estradiol, LH, FSH, or other sex hormones [2][15]. This distinguishes maca from supplements like tribulus that are marketed primarily on testosterone-boosting claims.
+**Independence from testosterone:** In both men and postmenopausal women, the trials found no change in sex hormones with maca [15][33].
 
-**Women:** Some research suggests benefits for sexual function in menopausal women, with improvements in sexual desire and reductions in sexual dysfunction scores, though the evidence base is smaller than for men [33].
+**Women:** In a small crossover trial in postmenopausal women, 3.5 g a day of powdered maca for 6 weeks lowered sexual dysfunction scores compared with placebo [33].
 
-**Mechanism:** The mechanism remains unclear but may involve macamides and macaenes acting on endocannabinoid or opioid receptor systems, alkaloids modulating the HPA axis, or improvements in energy and fatigue that indirectly support sexual function [14]. Maca's adaptogenic properties may help the body cope with stress-related declines in libido.
+**Mechanism:** How maca might act is unknown.
 
 ### Vascular Health and Erectile Function — Cocoa Flavanols
 
-Cocoa extract, rich in flavanols (particularly epicatechin), has moderate evidence for supporting vascular health and potentially reducing erectile dysfunction risk through improved blood flow and endothelial function [4].
+Cocoa flavanols are promoted for blood flow, but the largest study of flavonoids and erectile dysfunction found its links with other flavonoid groups, mainly from fruit [4].
 
-**Epidemiological evidence:** A prospective study found that higher intake of certain flavonoids (including those from fruit and cocoa sources) was associated with reduced incidence of erectile dysfunction, with mechanisms involving enhanced nitric oxide production and improved endothelial function [4].
+**Epidemiological evidence:** In a prospective study of 25,096 men followed for 10 years, higher intakes of flavones, flavanones and anthocyanins were linked to less erectile dysfunction (for flavanones, RR = 0.89; 95% CI: 0.83, 0.95), and higher fruit intake to a 14% lower risk [4].
 
-**Mechanism:** Cocoa flavanols stimulate endothelial NO synthase, increase NO bioavailability, reduce oxidative stress, and improve flow-mediated dilation — all of which support the vascular component of erectile function [4].
-
-**Limitations:** Direct evidence for cocoa flavanols specifically enhancing libido or treating erectile dysfunction in clinical trials is indirect and limited. The benefits are primarily cardiovascular/vascular in nature, with erectile function improvements being a downstream consequence of better vascular health rather than a direct sexual enhancement effect.
+**Limitations:** This was an observational study, and trials of flavonoid-rich foods for erectile function are still needed [4].
 
 ### Zinc and Sexual Function
 
-Zinc is an essential mineral involved in over 300 enzymatic reactions, including testosterone synthesis and spermatogenesis. Zinc deficiency can impair testosterone production and sexual function in men [3].
+Zinc is needed by hundreds of enzymes [63]. Severe and moderate zinc deficiency is associated with hypogonadism in men [64].
 
-**Evidence:** Zinc supplementation may benefit libido and sexual function in men with zinc deficiency, as deficiency impairs testosterone production, arousal, and overall sexual performance. Improvements in erectile function and sexual performance are observed when correcting deficiencies, but benefits are not observed in men with adequate zinc levels [3].
+**Evidence:** In a small study, zinc supplements given to 9 marginally zinc-deficient older men for 3 to 6 months raised serum testosterone, and restricting zinc in 4 young men lowered it [64].
 
-**Practical implication:** Zinc supplementation is rational only in the context of confirmed or suspected deficiency. Groups at risk include older adults, vegetarians/vegans, individuals with gastrointestinal disorders, and those taking medications that deplete zinc (e.g., proton pump inhibitors, certain diuretics). Routine zinc supplementation in zinc-replete men will not enhance sexual function.
+**Practical implication:** Zinc supplementation makes sense only when a deficiency is confirmed or suspected. Routine zinc supplementation in zinc-replete men is unlikely to enhance sexual function.
 
 ### DHEA (Dehydroepiandrosterone)
 
-DHEA is a steroid hormone precursor produced primarily by the adrenal glands. DHEA levels decline substantially with age, falling approximately 80% from peak levels (around age 25) to age 70.
+**Evidence in women:** A meta-analysis of 23 randomized trials in 1188 postmenopausal women with normal adrenal function found no significant improvement in libido or sexual function, and confidence in the evidence was low [70]. Prasterone, the synthetic form of DHEA, is FDA-approved as a vaginal treatment for moderate to severe pain during sex due to menopause [72].
 
-**Evidence in women:** DHEA supplementation has been studied primarily in postmenopausal women with sexual dysfunction. Some studies show improvements in sexual function, arousal, and desire, particularly in women with documented low DHEA-S levels. Intravaginal DHEA (prasterone) is FDA-approved for dyspareunia due to vulvovaginal atrophy.
+**Evidence in men:** In the DAWN trial in 110 men and 115 women aged 55 to 85, 50 mg a day of oral DHEA for 1 year did no better than placebo on sexual function scales [71].
 
-**Evidence in men:** Evidence for oral DHEA supplementation improving sexual function in men is limited and inconsistent. DHEA may benefit men with documented adrenal insufficiency or very low DHEA-S levels, but routine supplementation in age-related DHEA decline is not well-supported.
-
-**Safety note:** DHEA is a hormonal precursor and can convert to both testosterone and estrogen. This creates risks including acne, hair loss, virilization in women, and potential worsening of hormone-sensitive conditions (prostate, breast, uterine cancers).
+**Safety note:** In a lupus trial, 200 mg a day of prasterone raised testosterone and, to a lesser extent, estradiol, and acne (33% vs 14%) and excess hair growth (16% vs 2%) were more common than on placebo [73]. If you have had a hormone-sensitive cancer, ask your doctor before taking DHEA. The DHEA article covers its safety in full.
 
 ### Fenugreek (Trigonella foenum-graecum)
 
-Fenugreek is a leguminous plant whose seeds contain furostanol saponins (particularly protodioscin and diosgenin) that have been studied for effects on testosterone and sexual function.
+Fenugreek is a leguminous plant whose seed extracts have been studied for effects on testosterone and sexual function.
 
-**Evidence:** Some RCTs have reported improvements in sexual function scores and free testosterone levels with fenugreek seed extract (typically 500-600 mg/day of standardized extract). However, the magnitude of testosterone increases is small and clinical significance is debatable. A 2020 systematic review found modest positive effects on male sexual function but noted the need for larger, higher-quality trials [34].
-
-**Mechanism:** Furostanol saponins may inhibit aromatase and 5-alpha-reductase, potentially modulating the testosterone-to-estrogen and testosterone-to-DHT ratios. They may also act as weak estrogen receptor modulators.
+**Evidence:** In a 12-week trial in 120 healthy men aged 43 to 70 years, a fenugreek seed extract (Testofen, 600 mg a day) improved sexual function, including morning erections and frequency of sexual activity, and raised total and free testosterone compared with placebo [34]. Larger independent trials would help confirm this.
 
 ### Summary of Evidence Quality
 
 | Supplement | Libido/Desire | Erectile Function | Testosterone | Overall Evidence |
 |---|---|---|---|---|
-| Maca root | Moderate positive | Weak positive | No effect | Best for desire; mechanism unclear |
-| Yohimbine | Weak positive | Moderate positive | No significant effect | Effective but safety limits use |
-| L-Arginine (5g/day) | Not studied | Weak-Moderate positive | Not relevant | Dose-dependent; better as L-citrulline |
-| Panax ginseng | Weak positive | Trivial positive | No significant effect | Below clinically meaningful thresholds |
-| Tribulus terrestris | Weak positive | Low evidence | No significant effect | Marketing exceeds evidence |
-| Epimedium/Icariin | Not studied in humans | Not studied in humans | Not studied in humans | Almost entirely preclinical |
-| Zinc | Positive (if deficient) | Positive (if deficient) | Positive (if deficient) | Only benefits deficiency states |
-| Cocoa flavanols | Indirect | Indirect (vascular) | Not relevant | Cardiovascular benefits may help ED |
-| Fenugreek | Weak positive | Weak positive | Small increase (free T) | Needs larger trials |
+| Maca root | Some benefit (small trials) | Limited | No effect | Limited evidence for desire |
+| Yohimbine | Not established | Modest benefit | Not established | Safety limits use |
+| L-Arginine | Unchanged in meta-analysis | Modest benefit in mild to moderate ED | Not relevant | Small trials; check interactions |
+| Panax ginseng | Not established | Trivial to small | No change in one trial | Low-certainty evidence |
+| Tribulus terrestris | Improved in one trial | Improved in one trial | No change | Few trials |
+| Epimedium/Icariin | Not established | Very limited human data | Not established | Mostly laboratory and animal data |
+| Zinc | Unknown | Unknown | Raised in deficient men | Only for deficiency |
+| Cocoa flavanols | Indirect | Not tested in trials | Not relevant | Observational data on other flavonoids |
+| Fenugreek | Improved in one trial | Improved in one trial | Raised in one trial | One main trial |
 
 ## 4. Recommended Dosing
 
 ### Yohimbe / Yohimbine
 
-The clinically studied dose of yohimbine for erectile dysfunction is **5.4 mg three times daily**, preferably after meals [8]. One of the doses may be taken before bedtime for overnight activity.
+No safe supplement dose is established. A toxicology report puts the usual oral dose of yohimbine at 5 to 15 mg [38]. NIH notes that 20 to 40 mg of yohimbine can raise blood pressure slightly, while 200 mg or more can cause serious harm, including death [62].
 
 **Important dosing notes:**
-- Higher doses are not necessarily more effective; for some individuals, lower doses work better [8].
-- If side effects occur (anxiety, elevated blood pressure, rapid heart rate), reduce the dose by half [8].
-- Because yohimbine is only a small percentage of yohimbe bark weight, achieving the clinical dose from bark powder or extract requires large amounts:
-  - ~1,350 mg of yohimbe bark extract standardized to 4% yohimbe alkaloids (yohimbine is ~10% of total alkaloids)
-  - ~2,700 mg of yohimbe bark extract standardized to 2% yohimbe alkaloids [8]
-- Prescription yohimbine HCl is preferred over supplements due to more reliable dosing.
-- **Do not use without medical supervision** due to cardiovascular risks.
+- Supplement labels often misstate yohimbine content, so the dose you take may differ from the label [58].
+- Use yohimbe only under medical supervision [62].
 
 ### Epimedium (Horny Goat Weed)
 
-Optimal doses have not been well established through clinical trials [8]. Products typically suggest:
-- **500-1,000 mg per day** of epimedium extract standardized to 10% icariin [8]
-- If using herb powder (not extract), higher amounts are needed because herb powder contains only 1-3% icariin versus 8-10% in extracts [8]
-
-These dosing recommendations are based on traditional use and product marketing rather than human clinical trials demonstrating efficacy.
+No dose has been established in human trials.
 
 ### Maca Root
 
-- **Standard dose:** 1,500-3,000 mg per day of maca root powder or extract [2][35]
-- **Timing:** Often divided into 2-3 doses throughout the day
-- **Duration:** Benefits for sexual desire typically observed after consistent use for 8-12 weeks [2]
-- **Form:** Both powder and encapsulated forms appear effective in clinical trials
+- **Dose in trials:** 1,500 mg or 3,000 mg of gelatinized maca in men [15]; 3.5 g a day of powder in postmenopausal women [33]
+- **Duration:** Effects on desire appeared from 8 weeks [15]
 
 ### Ginseng (Panax ginseng / Korean Red Ginseng)
 
-- **Standard dose:** 900 mg to 3,000 mg daily of standardized extract [36]
-- **Korean red ginseng dose:** 900-1,000 mg three times daily (total 2,700-3,000 mg/day) was used in the most-cited positive trials for erectile function [29]
-- **Duration:** 8-12 weeks in most clinical trials
-- **Standardization:** Look for products standardized to 4-7% total ginsenosides
+- **Korean red ginseng dose:** 900 mg three times daily for 8 weeks [51] or 1,000 mg three times daily [29] in erectile dysfunction trials
+- **Women:** three 1 g capsules a day in menopausal women [52]
 
 ### Tribulus Terrestris
 
-- **Standard dose:** 250-750 mg per day of extract standardized to 40-45% saponins [36]
-- Evidence for these doses improving sexual function is weak [20]
+- **Dose in the main trial:** 250 mg tablets of Tribestan, taken as 3×2 tablets daily after meals for 12 weeks [47]
+- **Women:** extract for 4 weeks in one trial; the abstract and methods report different doses [49]
 
 ### L-Arginine
 
-- **For erectile dysfunction:** 5,000 mg (5 grams) daily; 1,500 mg daily does not appear to be effective [8]
-- **For sexual dysfunction in women:** 2,500-6,000 mg daily [8]
-- **Duration:** Results may take up to four weeks [8]
-- **Alternative:** L-citrulline (1,500-3,000 mg daily) may be more effective at raising systemic arginine levels due to bypassing first-pass metabolism [23]
+- **For erectile dysfunction:** 1,500 to 5,000 mg in trials [53]; 5 g/day in the 1999 trial [24]
+- **Alternative:** L-citrulline 1.5 g daily in one small trial [27]
 
 ### Zinc
 
-- **For correcting deficiency:** 15-30 mg elemental zinc daily
-- **Duration:** Several weeks to months to correct a deficiency
-- **Note:** Supplementation beyond correcting deficiency does not enhance sexual function [3]
-- **Upper limit:** 40 mg/day for adults (to avoid copper depletion)
+- **Use:** only to correct a deficiency your doctor has found
+- **Upper limit:** 40 mg/day for adults; higher doses taken for weeks can block copper absorption [63]
 
 ### Fenugreek
 
-- **Standard dose:** 500-600 mg daily of standardized fenugreek seed extract (typically standardized to 50% saponins)
-- **Duration:** 6-12 weeks in clinical trials
+- **Dose in the main trial:** 600 mg a day of a standardized seed extract (Testofen) for 12 weeks [34]
 
 ### General Dosing Principles
 
-1. **Start low and titrate up** — especially for yohimbe, which has significant dose-dependent side effects
-2. **Allow adequate time** — most sexual enhancement supplements require 4-12 weeks of consistent use before effects are observed
-3. **Cycling** — some experts recommend 8-12 weeks on, 2-4 weeks off, to prevent tolerance, though evidence for this practice is limited [36]
-4. **Take with food** — improves gastrointestinal tolerance for most supplements, particularly arginine and ginseng
-5. **Do not combine multiple supplements** without medical guidance, as additive effects on blood pressure, heart rate, and drug metabolism are possible
+1. **Allow time:** effects on desire or erections took 8 to 12 weeks in trials [15][47]
+2. **Do not combine multiple supplements** without medical advice, because their effects on blood pressure, heart rate and drug breakdown may add up
 
 ## 5. Safety and Side Effects
 
 ### Widespread Adulteration — The Largest Safety Concern
 
-The single most important safety issue with sexual enhancement supplements is not the labeled ingredients but what is NOT on the label. According to the FDA, sexual enhancer supplements represent the largest category of supplements adulterated with prescription drugs, most commonly with PDE5 inhibitors [6].
+The biggest safety issue is what is not on the label. Products marketed for sexual enhancement made up 353 of the 776 adulterated supplements the FDA identified from 2007 through 2016, and sildenafil was the most common hidden drug in them [6].
 
-**Key findings from testing:**
-- Tests of 102 sexual enhancer supplements purchased from gas stations, markets, pharmacies, and stores in Sacramento (September 2016 - November 2017) found that **67% were adulterated** with at least one PDE5 inhibitor, with 60% of adulterated products containing two or more PDE5 inhibitors [7].
-- **74% of adulterated products contained sildenafil** [7].
-- Products sold in **blister packs were 8 times more likely** to be adulterated than those sold in bottles (89% vs. 10%) [7].
-- Of 18 previously flagged products on the FDA's Health Fraud Product Database, **72% still contained PDE5 inhibitors** when re-tested [7].
+**Key findings from FDA warnings:**
+- Across all categories, 157 adulterated products (20.2%) contained more than 1 unapproved ingredient [6].
+- Of 28 products named in repeat warnings, 19 (67.9%) contained new unapproved ingredients the second or third time [6].
+- The authors warn that these hidden drugs can cause serious harm through misuse, overuse or interactions with other medicines and health conditions [6].
 
-**Why this matters:** Undisclosed PDE5 inhibitors pose life-threatening risks for individuals taking:
-- **Nitrates** (nitroglycerin, isosorbide) — combination can cause fatal hypotension
-- **Alpha-blockers** — additive blood pressure lowering
-- **Other cardiovascular medications** — unpredictable interactions
-- **Drugs metabolized by CYP3A4** — altered drug levels
+**Why this matters:** A hidden PDE5 inhibitor can be dangerous for people taking:
+- **Nitrates** (nitroglycerin, isosorbide): PDE5 inhibitors are contraindicated with nitrates because together they lower blood pressure sharply [66]. Do not use sexual enhancement supplements if you take a nitrate. If you feel faint or have chest pain after combining them, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
+- **Alpha-blockers:** some people develop a drop in blood pressure on standing when a PDE5 inhibitor is taken with an alpha-blocker [66].
 
 ### Yohimbe / Yohimbine
 
-Yohimbe carries the most significant safety profile of any commonly used sexual enhancement supplement.
+Yohimbe can be dangerous [62].
 
 **Common side effects:**
-- Increased blood pressure (typically at doses of 20 mg or more of yohimbine, with greater increases at higher doses) [9]
-- Anxiety and agitation
-- Increased frequency of urination
-- Rapid or irregular heartbeat
-- Nausea and gastrointestinal upset
+- Raised blood pressure, mild anxiety and more frequent urination, mainly at higher doses [9]
+- Headache, agitation and a fast heart rate [62]
 
 **Serious adverse events:**
-- A 49-year-old man with pre-existing untreated hypertension was hospitalized with very high blood pressure (280/142 mmHg), lightheadedness, and anxiety after taking two capsules of a sexual enhancement supplement containing 62.5 mg yohimbe bark extract and 5 mg yohimbine alkaloid per capsule [37].
-- One death has been linked to high blood pressure and seizures in an individual taking high doses of yohimbe [38].
-- Other reported serious effects include rash, rapid heartbeat, atrial fibrillation, headache, confusion, and loss of consciousness [38].
+- A 49-year-old man came to an emergency department with palpitations and severely raised blood pressure that did not respond to several blood pressure drugs; he had been using a herbal product containing yohimbine [37].
+- Two deaths were attributed to acute yohimbine poisoning [38].
+- Yohimbine has been linked with irregular heartbeat, blood pressure problems, heart attacks and seizures [69].
+- Yohimbine doses of 200 mg or more can cause heart attack, heart failure and death [62]. If you have chest pain, a pounding or irregular heartbeat or a severe headache after taking yohimbe, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 **Contraindications:**
-- Hypertension (particularly untreated)
-- Cardiovascular disease
-- Anxiety disorders (yohimbe increases sympathetic nervous system activity)
-- Renal or hepatic impairment
-- Concurrent use of antidepressants (MAOIs are absolutely contraindicated; SSRIs require caution)
-- Concurrent use of blood pressure medications
+- Because yohimbe raises blood pressure and heart rate, people with high blood pressure, heart disease or anxiety disorders are likely at higher risk; use it only under medical supervision [62].
+- Do not use yohimbe if you take a monoamine oxidase inhibitor (MAOI) or tricyclic antidepressant; it can interact with these medicines [69].
+- Yohimbe might be unsafe in pregnancy or while breastfeeding [69].
+- If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Epimedium (Horny Goat Weed)
 
 **Reported adverse effects:**
-- Rapid heart rate (tachycardia)
-- Mania in a person with bipolar disorder after use of *Epimedium grandiflorum* [30]
-- Potential decrease in effectiveness of sildenafil (Viagra) when used concurrently, based on a study in rats [30]
+- A 2004 case report described a fast heart rhythm (tachyarrhythmia) and hypomania with horny goat weed [57].
+- In rats, an epimedium extract lowered sildenafil blood levels [30].
 
 **Contraindications:**
-- Bipolar disorder or other psychiatric conditions susceptible to mania
-- Concurrent PDE5 inhibitor use (potential interference with drug efficacy)
-- Bleeding disorders (icariin may have antiplatelet effects in preclinical studies)
+- Because of this case report, people with a history of mania may want to avoid it [57].
+- Concurrent PDE5 inhibitor use (possible interference with the drug) [30]
 
 ### L-Arginine
 
 **Common side effects:**
-- Occasional mild stomach upset [8]
-- Possible increase in stomach acid levels and worsening of esophageal reflux (heartburn) — though this has been suggested but not proven [8]
+- Nausea, stomach pain and diarrhea [55]
+- Single doses of 3 to 6 g rarely cause side effects; most occur at single doses above 9 g [56]
 
 **Serious safety concerns:**
-- **Post-myocardial infarction:** Arginine should not be recommended for people who have had an acute myocardial infarction. One study showed an increase in deaths in post-MI patients taking arginine versus placebo [8].
-- **Blood pressure effects:** Arginine may cause a mild reduction in blood pressure. Caution is warranted when combining with supplements and medications that lower blood pressure, including sildenafil (Viagra) and tadalafil (Cialis) [39].
-- **Diabetes medications:** Arginine may improve insulin response, which could cause problems for individuals taking diabetes medications (risk of hypoglycemia) [8].
+- **Post-myocardial infarction:** In the VINTAGE MI trial, 6 participants (8.6%) given L-arginine after a heart attack died during the 6-month study, against none on placebo, and the authors concluded that L-arginine should not be recommended after a heart attack [54]. Do not take L-arginine after a heart attack.
+- **Blood pressure effects:** L-arginine might lower blood pressure too far when combined with blood pressure medicines, nitrates or sildenafil [55].
+- **Diabetes medications:** L-arginine might lower blood sugar in people with diabetes, so diabetes medicine doses may need adjusting [55].
+- **Blood thinners:** L-arginine might increase the risk of bleeding with anticoagulant or antiplatelet medicines [55].
+- **Potassium-sparing diuretics:** Do not take L-arginine with amiloride, spironolactone or triamterene; these medicines raise potassium, and the combination risks high blood potassium (hyperkalemia) [55].
+- **Allergies and asthma:** L-arginine can worsen allergies or asthma, so use it with caution if you have either [55].
 
-**Drug interaction with PDE5 inhibitors:** Two small preliminary studies in men suggest that taking arginine with sildenafil may be safe [25][26]. However, additive blood pressure-lowering effects remain a theoretical concern and warrant medical supervision.
-
-**Stomach irritation:** Individuals taking NSAIDs (aspirin, ibuprofen) might increase their risk of developing ulcers if they also take arginine [8].
+**Drug interaction with PDE5 inhibitors:** Check with your doctor before combining L-arginine with sildenafil, because blood pressure might drop too low [55].
 
 ### Tribulus Terrestris
 
 **Common side effects:**
-- Gastrointestinal issues including stomach cramps, nausea, and diarrhea [40]
+- In the 12-week Tribestan trial, side effects were no more common than on placebo [47].
 
-**Serious safety concern — CYP3A4 inhibition:**
+**Serious safety concern, CYP3A4 inhibition:**
 
-Tribulus terrestris inhibits the liver enzyme CYP3A4, which is responsible for metabolizing approximately half of all prescription drugs [21]. This creates a broad range of potential drug interactions (see Drug Interactions section).
+Research suggests tribulus is a moderate inhibitor of CYP3A4, a liver enzyme that breaks down statins and many other common medicines [41].
 
-**Case report — Rhabdomyolysis:** A 71-year-old man who had been taking high-dose atorvastatin (40 mg) for 6 years without adverse effects developed rhabdomyolysis (breakdown of muscle cells) and acute kidney injury two weeks after beginning 500 mg of tribulus terrestris daily [41]. The mechanism was likely CYP3A4 inhibition by tribulus increasing atorvastatin blood levels to toxic concentrations.
+**Case report of rhabdomyolysis:** A 71-year-old man on long-term atorvastatin developed rhabdomyolysis (muscle breakdown) with a mild rise in liver enzymes after taking tribulus; the authors point to CYP3A4 inhibition [41]. If you take a statin and develop muscle pain or weakness with dark urine, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
 
 ### Ginseng
 
 **Common side effects:**
-- Insomnia (particularly with evening dosing)
-- Headache
-- Digestive upset
-- Mild gastrointestinal symptoms [40]
+- Insomnia is the most common side effect of Asian ginseng [61]
+- Severe rash, liver damage and severe allergic reactions are uncommon [61]
 
 **Potential interactions:**
-- May interact with blood thinners (warfarin), potentially increasing bleeding risk by affecting platelet aggregation [40]
-- May have mild estrogenic effects, creating theoretical concerns for hormone-sensitive conditions
-- Rare case reports of liver injury at high doses [42]
+- Asian ginseng may interfere with blood clotting [61]. In a small trial in healthy volunteers, American ginseng reduced warfarin's effect [59], while in another, Asian ginseng did not change it [60].
+- Asian ginseng might lower blood sugar; if you have diabetes, check with your doctor first [61].
+- Asian ginseng may worsen autoimmune disorders [61].
 
 **Contraindications:**
-- Pregnancy and breastfeeding (limited safety data; potential uterine stimulant effects) [40]
-- Hormone-sensitive conditions (theoretical concern)
+- Pregnancy: some studies suggest Asian ginseng may be unsafe when taken by mouth in pregnancy, and little is known about breastfeeding [61].
+- In a trial in menopausal women, two cases of vaginal bleeding occurred during red ginseng treatment [52].
 
 ### Maca Root
 
-**Safety profile:** Maca root has the most favorable safety profile among commonly used sexual enhancement supplements. In clinical trials at doses of 1.5-3 grams daily, maca has not been associated with serious adverse effects [2].
+**Safety profile:** The trials of maca were small and short, so its long-term safety is not well studied.
 
 **Cautions:**
-- Maca may have estrogen-like effects and is contraindicated for individuals with hormone-sensitive conditions such as breast cancer, uterine fibroids, or endometriosis [43]
+- Maca showed no meaningful estrogen-like activity in a laboratory test [33]. Even so, people with hormone-sensitive conditions such as breast cancer, uterine fibroids or endometriosis may wish to check with their doctor first.
 - Limited safety data in pregnancy and breastfeeding
 
 ### Special Populations
 
-**Pregnant or breastfeeding women:** Most sexual enhancement supplements should be avoided due to limited safety data and potential hormonal effects. Ginseng, tribulus, and yohimbe are specifically contraindicated [40].
+**Pregnant or breastfeeding women:** Most sexual enhancement supplements lack safety data in pregnancy. Asian ginseng may be unsafe in pregnancy, and yohimbe in pregnancy or while breastfeeding [61][69].
 
-**Individuals with cardiovascular disease:** Yohimbe poses the greatest risk. Arginine should be avoided post-myocardial infarction. All supplements with vasodilatory effects should be used cautiously with cardiovascular medications.
+**Individuals with cardiovascular disease:** Yohimbe poses the greatest risk [62]. Arginine should be avoided after a heart attack [54]. Hidden PDE5 inhibitors are dangerous with nitrates [66].
 
-**Individuals with psychiatric conditions:** Yohimbe can worsen anxiety. Epimedium has triggered mania in bipolar disorder. Caution is warranted for anyone with mood or anxiety disorders.
+**Individuals with psychiatric conditions:** Yohimbe can cause anxiety and agitation [9][62], and it must not be taken with MAOI or tricyclic antidepressants [69]. Horny goat weed has been linked to hypomania [57].
 
-**Individuals taking multiple medications:** The CYP3A4 inhibition by tribulus and the additive vasodilatory effects of arginine, yohimbine, and ginseng create significant polypharmacy risks.
+**Individuals taking multiple medications:** Tribulus may block CYP3A4 [41], arginine and yohimbine affect blood pressure, and ginseng may affect clotting [55][62][61]. Check with your doctor or pharmacist if you take several medicines.
 
 ## 6. Drug Interactions
 
 ### Tribulus Terrestris — CYP3A4 Inhibition
 
-Tribulus terrestris inhibits the liver enzyme CYP3A4 [21], creating interactions with a large number of medications:
+Tribulus may be a moderate inhibitor of CYP3A4 [41], which could raise blood levels of medicines this enzyme breaks down:
 
 | Drug Class | Examples | Risk |
 |---|---|---|
-| Statins (CYP3A4-metabolized) | Lovastatin (Mevacor), simvastatin (Zocor), atorvastatin (Lipitor) | Increased statin levels leading to rhabdomyolysis risk [41][44] |
-| Blood pressure drugs | Losartan (Cozaar), felodipine (Pendil), amlodipine (Norvasc) | Increased drug levels leading to excessive blood pressure lowering [21] |
-| Anticoagulants | Apixaban (Eliquis), rivaroxaban (Xarelto) | Increased anticoagulant levels leading to bleeding risk [21] |
-| PDE5 inhibitors | Tadalafil (Cialis), sildenafil (Viagra) | Increased drug levels leading to hypotension and priapism risk [21] |
+| Statins broken down by CYP3A4 | Atorvastatin | Muscle breakdown (rhabdomyolysis) in a case report [41] |
 
-**Important note:** The statin medications pravastatin (Pravachol) and rosuvastatin (Crestor) are NOT significantly metabolized by CYP3A4 [45] and are safer alternatives for patients who choose to use tribulus (though this is not recommended without medical guidance).
+If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Yohimbe — Cardiovascular and Psychiatric Drug Interactions
 
-| Drug Class | Interaction | Risk |
-|---|---|---|
-| MAO inhibitors | Hypertensive crisis | **Absolute contraindication** — do not combine |
-| Antihypertensives | Opposing effects on blood pressure | Blood pressure instability |
-| SSRIs/SNRIs | Additive serotonergic effects; opposing noradrenergic effects | Unpredictable mood and blood pressure effects |
-| Stimulants | Additive sympathomimetic effects | Hypertension, tachycardia, cardiac arrhythmia |
-| Alpha-blockers | Opposing alpha-adrenergic effects | Reduced efficacy of both agents |
+Do not use yohimbe if you take an MAOI or tricyclic antidepressant; it can interact with these medicines [69]. Yohimbe raises blood pressure and heart rate [62], so it may work against blood pressure medicines and add to the effects of stimulants. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### L-Arginine — Vasodilatory Drug Interactions
 
 | Drug Class | Examples | Risk |
 |---|---|---|
-| PDE5 inhibitors | Sildenafil, tadalafil | Additive blood pressure reduction [39] |
-| Nitrates | Nitroglycerin, isosorbide | Severe hypotension |
-| Antihypertensives | All classes | Additive blood pressure lowering |
-| Diabetes medications | Insulin, sulfonylureas | Hypoglycemia (arginine improves insulin sensitivity) [8] |
-| NSAIDs | Aspirin, ibuprofen | Increased GI ulcer risk [8] |
+| PDE5 inhibitors | Sildenafil | Blood pressure may drop too low [55] |
+| Nitrates | Nitroglycerin, isosorbide | Blood pressure may drop too low [55] |
+| Antihypertensives | All classes | Blood pressure may drop too low [55] |
+| Diabetes medications | Insulin, sulfonylureas | Blood sugar may drop; doses may need adjusting [55] |
+| Anticoagulants and antiplatelets | Warfarin, aspirin | Bleeding risk may rise [55] |
+| Potassium-sparing diuretics | Amiloride, spironolactone, triamterene | High blood potassium [55] |
 
 ### Epimedium — PDE5 Inhibitor Interaction
 
-A study in rats suggests that *Epimedium grandiflorum* may decrease the effectiveness of sildenafil (Viagra) [30]. If this translates to humans, combining horny goat weed with prescription PDE5 inhibitors could reduce the efficacy of the prescription medication. This is particularly concerning because patients may add horny goat weed to a regimen that already includes a PDE5 inhibitor, expecting enhanced effects but potentially experiencing reduced efficacy.
+In rats, an extract of *Epimedium sagittatum* lowered blood levels of sildenafil [30]. If this happens in people, combining horny goat weed with a PDE5 inhibitor could make the drug less effective.
 
 ### Ginseng — Anticoagulant Interactions
 
-Ginseng may interact with blood thinners like warfarin, potentially increasing the risk of bleeding by affecting platelet aggregation and blood clotting factors [40]. Patients on anticoagulant therapy should inform their healthcare provider before using ginseng products.
+Asian ginseng may interfere with blood clotting [61]. American ginseng reduced warfarin's effect in a small trial in healthy volunteers [59], while Asian ginseng did not change warfarin's effect in another [60]. If you take warfarin or another blood thinner, check with your doctor before using ginseng.
 
 ### Maca — Hormone-Sensitive Conditions
 
-Maca may act like estrogen in the body and is contraindicated for individuals with hormone-sensitive conditions (breast cancer, uterine fibroids, endometriosis), where it might exacerbate symptoms [43]. This is listed as an interaction/contraindication rather than a drug interaction per se, but it is clinically important.
+Maca did not change sex hormones in trials and showed no meaningful estrogen-like activity in a laboratory test [15][33]. Its effects in hormone-sensitive conditions are not known, so check with your doctor first if you have one.
 
 ### Multi-Ingredient Products — Compounded Risk
 
-Many sexual enhancement supplements combine multiple ingredients (e.g., yohimbe + arginine + tribulus + ginseng), creating compounded interaction risks that are difficult to predict. The combination of CYP3A4 inhibition (tribulus), sympathomimetic effects (yohimbe), and vasodilation (arginine, ginseng) in a single product creates a particularly dangerous drug interaction profile for patients on cardiovascular medications.
+Many sexual enhancement supplements combine several of these ingredients, so they carry the interaction risks of each: tribulus may block CYP3A4 [41], yohimbe raises blood pressure and heart rate [62], and L-arginine might lower blood pressure too far with blood pressure medicines [55]. If you take heart or blood pressure medicines, check with your doctor first.
 
 ## 7. Dietary Sources
 
-Unlike single-nutrient supplements (magnesium, zinc, vitamin D), most sexual enhancement supplement ingredients are herbal extracts without significant dietary equivalents. However, several nutritional strategies support the physiological pathways targeted by these supplements.
+Most sexual enhancement ingredients are herbal extracts with no real dietary equivalent, but some foods support the same pathways.
 
 ### Nitric Oxide Precursors (Arginine Pathway)
 
-L-arginine is obtained through dietary protein. Foods rich in arginine include:
+L-arginine comes from dietary protein. Arginine content of some common foods, per 100 g [74]:
 
-| Food | Serving | Arginine (mg) |
-|---|---|---|
-| Turkey breast | 100g | ~1,600 |
-| Pork loin | 100g | ~1,400 |
-| Chicken breast | 100g | ~1,300 |
-| Soybeans (roasted) | 1/2 cup | ~1,200 |
-| Pumpkin seeds | 1 oz (28g) | ~1,100 |
-| Peanuts | 1 oz (28g) | ~900 |
-| Lentils (cooked) | 1 cup | ~700 |
-| Chickpeas (cooked) | 1 cup | ~600 |
-
-Typical dietary intake of arginine is 3-6 grams per day from protein-containing foods, which is in the range studied for erectile function. Individuals consuming adequate protein may already be meeting the arginine doses used in clinical trials [22].
-
-**Nitrate-rich vegetables:** Dietary nitrates from beetroot, spinach, arugula, and other leafy greens are converted to nitric oxide via an alternative oral-enteric pathway (independent of eNOS). Beetroot juice supplementation has been shown to improve endothelial function and reduce blood pressure, supporting the vascular component of erectile function.
+| Food | Arginine (g per 100 g) |
+|---|---|
+| Pumpkin seed kernels, dried | 5.35 |
+| Top sirloin steak, lean, broiled | 1.98 |
+| Chicken breast, roasted | 1.87 |
+| Pork top loin roast, lean, roasted | 1.81 |
+| Atlantic salmon, farmed, cooked | 1.32 |
+| Egg, whole, raw | 0.82 |
+| Lentils, boiled | 0.697 |
 
 ### Zinc-Rich Foods
 
-Zinc is essential for testosterone synthesis, and deficiency impairs sexual function:
-
-| Food | Serving | Zinc (mg) | % DV (11 mg) |
-|---|---|---|---|
-| Oysters | 3 oz (85g) | 74 | 673% |
-| Beef chuck roast | 3 oz (85g) | 7.0 | 64% |
-| Crab (Alaska king) | 3 oz (85g) | 6.5 | 59% |
-| Lobster | 3 oz (85g) | 3.4 | 31% |
-| Pork chop | 3 oz (85g) | 2.9 | 26% |
-| Baked beans | 1/2 cup | 2.9 | 26% |
-| Pumpkin seeds | 1 oz (28g) | 2.2 | 20% |
-| Yogurt | 8 oz | 1.7 | 15% |
-| Cashews | 1 oz (28g) | 1.6 | 15% |
-
-Oysters' legendary reputation as an aphrodisiac may have a physiological basis in their extraordinarily high zinc content — a single 3-ounce serving provides nearly 7 times the daily value [3].
+Meat, fish and other seafood are the richest sources of zinc, and oysters contain more zinc per serving than any other food [63]. Beans, nuts and whole grains also contain zinc, but the body absorbs less of it from these foods [63].
 
 ### Flavonoid-Rich Foods (Vascular Support)
 
-Dietary flavonoids support vascular health and endothelial function, with epidemiological evidence linking higher intake to reduced erectile dysfunction risk [4]:
+In a large prospective study, higher intakes of flavones, flavanones and anthocyanins, and of fruit, were linked to less erectile dysfunction [4]:
 
-- **Cocoa and dark chocolate** — Rich in epicatechin and other flavanols
-- **Berries** (blueberries, strawberries, blackberries) — Anthocyanins
-- **Citrus fruits** — Flavanones (hesperidin, naringenin)
-- **Red wine** (moderate consumption) — Resveratrol and anthocyanins
-- **Green tea** — Catechins (EGCG)
-- **Apples and onions** — Quercetin
+- **Berries** (blueberries, strawberries, blackberries): anthocyanins
+- **Citrus fruits**: flavanones (hesperidin, naringenin)
 
 ### Maca as a Food
 
-Maca root is consumed as a staple food in the Peruvian Andes, where it is traditionally cooked or dried and added to porridges, beverages, and fermented drinks. Gelatinized maca powder can be added to smoothies, oatmeal, or baked goods [11].
+Maca has been cultivated in Peru for more than 2,000 years and is used as a food supplement as well as for its traditional medicinal properties [11].
 
-### Lifestyle Factors That Outperform Supplements
+### Lifestyle Factors
 
-The scientific evidence consistently shows that lifestyle interventions are more effective than any supplement for maintaining healthy sexual function [2]:
+Lifestyle changes have trial evidence for improving erectile function [46][65]:
 
-- **Regular exercise** — Particularly aerobic exercise, which improves cardiovascular fitness, endothelial function, and NO production. A meta-analysis found exercise significantly improved erectile function in men with ED [46].
-- **Healthy weight** — Obesity is strongly associated with erectile dysfunction through multiple mechanisms (endothelial dysfunction, low testosterone, inflammation).
-- **Adequate sleep** — Sleep deprivation reduces testosterone levels and impairs sexual function.
-- **Stress management** — Chronic stress elevates cortisol, which suppresses testosterone and libido.
-- **Mediterranean diet** — Associated with better endothelial function and lower ED risk.
-- **Smoking cessation** — Smoking damages endothelial function and is an independent risk factor for ED.
-- **Moderate alcohol** — Heavy alcohol use impairs sexual function; moderate consumption may have neutral or mildly positive effects.
+- **Regular exercise:** A review of exercise trials recommended 40 minutes of moderate to vigorous aerobic exercise 4 times a week, with weekly exercise of about 160 minutes for 6 months [46].
+- **Healthy weight:** In obese men with erectile dysfunction, two years of weight loss and more exercise improved erectile function, with about one third of men improving [65].
 
 ## 8. References
 
-[1] Global Market for Sexual Health Supplements, industry analysis, 2023. As cited in Grokipedia, "Natural Supplements for Libido Enhancement."
+[2] Shin BC, Lee MS, Yang EJ, et al. "Maca (L. meyenii) for improving sexual function: a systematic review." *BMC Complement Altern Med*. 2010;10:44. PMID: 20691074. [https://doi.org/10.1186/1472-6882-10-44](https://doi.org/10.1186/1472-6882-10-44)
 
-[2] Comprehensive review of clinical evidence for natural libido supplements through 2025, including maca root clinical trials. As cited in Grokipedia, "Natural Supplements for Libido Enhancement." Primary sources include: Shin BC et al., "Maca (L. meyenii) for improving sexual function: a systematic review," *BMC Complement Altern Med*, 2010;10:44. [https://doi.org/10.1186/1472-6882-10-44](https://doi.org/10.1186/1472-6882-10-44)
+[4] Cassidy A, Franz M, Rimm EB. "Dietary flavonoid intake and incidence of erectile dysfunction." *Am J Clin Nutr*. 2016;103(2):534-541. PMID: 26762373. [https://doi.org/10.3945/ajcn.115.122010](https://doi.org/10.3945/ajcn.115.122010)
 
-[3] Prasad AS. "Zinc is an antioxidant and anti-inflammatory agent: its role in human health." *Front Nutr*. 2014;1:14. [https://doi.org/10.3389/fnut.2014.00014](https://doi.org/10.3389/fnut.2014.00014)
+[5] Ernst E, Pittler MH. "Yohimbine for erectile dysfunction: a systematic review and meta-analysis of randomized clinical trials." *J Urol*. 1998;159(2):433-436. PMID: 9649257. [https://doi.org/10.1016/S0022-5347(01)63942-9](https://doi.org/10.1016/S0022-5347(01)63942-9)
 
-[4] Cassidy A, Franz M, Rimm EB, et al. "Dietary flavonoid intake and incidence of erectile dysfunction." *Am J Clin Nutr*. 2016;103(2):534-541. [https://doi.org/10.3945/ajcn.115.120147](https://doi.org/10.3945/ajcn.115.120147)
+[6] Tucker J, Fischer T, Upjohn L, et al. "Unapproved pharmaceutical ingredients included in dietary supplements associated with US Food and Drug Administration warnings." *JAMA Netw Open*. 2018;1(6):e183337. PMID: 30646238. [https://doi.org/10.1001/jamanetworkopen.2018.3337](https://doi.org/10.1001/jamanetworkopen.2018.3337)
 
-[5] Ernst E, Pittler MH. "Yohimbine for erectile dysfunction: a systematic review and meta-analysis of randomized clinical trials." *J Urol*. 1998;159(2):433-436. [https://doi.org/10.1016/S0022-5347(01)63942-9](https://doi.org/10.1016/S0022-5347(01)63942-9)
+[9] Tam SW, Worcel M, Wyllie M. "Yohimbine: a clinical review." *Pharmacol Ther*. 2001;91(3):215-243. PMID: 11744068. [https://doi.org/10.1016/S0163-7258(01)00156-5](https://doi.org/10.1016/S0163-7258(01)00156-5)
 
-[6] Tucker J, Fischer T, Upjohn L, et al. "Unapproved pharmaceutical ingredients included in identified as homeopathic." *JAMA Netw Open*. 2018. As cited in ConsumerLab, "Sexual Enhancement Supplements Review."
+[10] Dell'Agli M, Galli GV, Dal Cero E, et al. "Potent inhibition of human phosphodiesterase-5 by icariin derivatives." *J Nat Prod*. 2008;71(9):1513-1517. PMID: 18778098. [https://doi.org/10.1021/np800049y](https://doi.org/10.1021/np800049y)
 
-[7] Fischer T, et al. "Testing of sexual enhancement supplements purchased from retail stores." *Nutr Diet Suppl*. 2023. As cited in ConsumerLab, "Sexual Enhancement Supplements Review."
+[11] Gonzales GF. "Ethnobiology and ethnopharmacology of Lepidium meyenii (Maca), a plant from the Peruvian highlands." *Evid Based Complement Alternat Med*. 2012;2012:193496. PMID: 21977053. [https://doi.org/10.1155/2012/193496](https://doi.org/10.1155/2012/193496)
 
-[8] ConsumerLab. "Sexual Enhancement Supplements Review (Yohimbe, Horny Goat Weed, Arginine)." Accessed 2026. [https://www.consumerlab.com/reviews/enhancement-supplements-yohimbe-goat-weed-arginine/enhancement/](https://www.consumerlab.com/reviews/enhancement-supplements-yohimbe-goat-weed-arginine/enhancement/)
+[15] Gonzales GF, Cordova A, Vega K, et al. "Effect of Lepidium meyenii (MACA) on sexual desire and its absent relationship with serum testosterone levels in adult healthy men." *Andrologia*. 2002;34(6):367-372. PMID: 12472620. [https://doi.org/10.1046/j.1439-0272.2002.00519.x](https://doi.org/10.1046/j.1439-0272.2002.00519.x)
 
-[9] Tam SW, Worcel M, Wyllie M. "Yohimbine: a clinical review." *Pharmacol Ther*. 2001;91(3):215-243. [https://doi.org/10.1016/S0163-7258(01)00156-5](https://doi.org/10.1016/S0163-7258(01)00156-5)
+[16] Jang DJ, Lee MS, Shin BC, et al. "Red ginseng for treating erectile dysfunction: a systematic review." *Br J Clin Pharmacol*. 2008;66(4):444-450. PMID: 18754850. [https://doi.org/10.1111/j.1365-2125.2008.03236.x](https://doi.org/10.1111/j.1365-2125.2008.03236.x)
 
-[10] Dell'Agli M, Galli GV, Dal Cero E, et al. "Potent inhibition of human phosphodiesterase-5 by icariin derivatives." *J Nat Prod*. 2008;71(9):1513-1517. [https://doi.org/10.1021/np800049y](https://doi.org/10.1021/np800049y)
+[22] Stanislavov R, Nikolova V. "Treatment of erectile dysfunction with pycnogenol and L-arginine." *J Sex Marital Ther*. 2003;29(3):207-213. PMID: 12851125. [https://doi.org/10.1080/00926230390155104](https://doi.org/10.1080/00926230390155104)
 
-[11] Gonzales GF. "Ethnobiology and ethnopharmacology of Lepidium meyenii (Maca), a plant from the Peruvian highlands." *Evid Based Complement Alternat Med*. 2012;2012:193496. [https://doi.org/10.1155/2012/193496](https://doi.org/10.1155/2012/193496)
+[23] Schwedhelm E, Maas R, Freese R, et al. "Pharmacokinetic and pharmacodynamic properties of oral L-citrulline and L-arginine: impact on nitric oxide metabolism." *Br J Clin Pharmacol*. 2008;65(1):51-59. PMID: 17662090. [https://doi.org/10.1111/j.1365-2125.2007.02990.x](https://doi.org/10.1111/j.1365-2125.2007.02990.x)
 
-[12] Esparza E, Hadzich A, Kofer W, et al. "Bioactive maca (Lepidium meyenii) alkamides are a result of traditional Andean postharvest drying practices." *Phytochemistry*. 2015;116:138-148. [https://doi.org/10.1016/j.phytochem.2015.02.030](https://doi.org/10.1016/j.phytochem.2015.02.030)
+[24] Chen J, Wollman Y, Chernichovsky T, et al. "Effect of oral administration of high-dose nitric oxide donor L-arginine in men with organic erectile dysfunction: results of a double-blind, randomized, placebo-controlled study." *BJU Int*. 1999;83(3):269-273. PMID: 10233492. [https://doi.org/10.1046/j.1464-410x.1999.00906.x](https://doi.org/10.1046/j.1464-410x.1999.00906.x)
 
-[13] Gonzales GF, Gonzales C, Gonzales-Castaneda C. "Lepidium meyenii (Maca): a plant from the highlands of Peru — from tradition to science." *Forsch Komplementmed*. 2009;16(6):373-380. [https://doi.org/10.1159/000264618](https://doi.org/10.1159/000264618)
+[27] Cormio L, De Siati M, Lorusso F, et al. "Oral L-citrulline supplementation improves erection hardness in men with mild erectile dysfunction." *Urology*. 2011;77(1):119-122. PMID: 21195829. [https://doi.org/10.1016/j.urology.2010.08.028](https://doi.org/10.1016/j.urology.2010.08.028)
 
-[14] As cited in Grokipedia, "Natural Supplements for Libido Enhancement" — macamides and alkaloids as bioactive mechanisms, 2024 comprehensive review references.
+[28] Lee HW, Lee MS, Kim TH, et al. "Ginseng for erectile dysfunction: a Cochrane systematic review." *World J Mens Health*. 2022;40(2):264-269. PMID: 34169686. [https://doi.org/10.5534/wjmh.210071](https://doi.org/10.5534/wjmh.210071)
 
-[15] Gonzales GF, Cordova A, Vega K, et al. "Effect of Lepidium meyenii (MACA) on sexual desire and its absent relationship with serum testosterone levels in adult healthy men." *Andrologia*. 2002;34(6):367-372. [https://doi.org/10.1046/j.1439-0272.2002.00519.x](https://doi.org/10.1046/j.1439-0272.2002.00519.x)
+[29] de Andrade E, de Mesquita AA, Claro Jde A, et al. "Study of the efficacy of Korean Red Ginseng in the treatment of erectile dysfunction." *Asian J Androl*. 2007;9(2):241-244. PMID: 16855773. [https://doi.org/10.1111/j.1745-7262.2007.00210.x](https://doi.org/10.1111/j.1745-7262.2007.00210.x)
 
-[16] Jang DJ, Lee MS, Shin BC, et al. "Red ginseng for treating erectile dysfunction: a systematic review." *Br J Clin Pharmacol*. 2008;66(4):444-450. [https://doi.org/10.1111/j.1365-2125.2008.03236.x](https://doi.org/10.1111/j.1365-2125.2008.03236.x)
+[30] Hsueh TY, Wu YT, Lin LC, et al. "Herb-drug interaction of Epimedium sagittatum (Sieb. et Zucc.) Maxim extract on the pharmacokinetics of sildenafil in rats." *Molecules*. 2013;18(6):7323-7335. PMID: 23792897. [https://doi.org/10.3390/molecules18067323](https://doi.org/10.3390/molecules18067323)
 
-[17] Kim HG, Yoo SR, Park HJ, et al. "Antioxidant effects of Panax ginseng C.A. Meyer in healthy subjects: a randomized, placebo-controlled clinical trial." *Food Chem Toxicol*. 2011;49(9):2229-2235. [https://doi.org/10.1016/j.fct.2011.06.020](https://doi.org/10.1016/j.fct.2011.06.020)
+[33] Brooks NA, Wilcox G, Walker KZ, et al. "Beneficial effects of Lepidium meyenii (Maca) on psychological symptoms and measures of sexual dysfunction in postmenopausal women are not related to estrogen or androgen content." *Menopause*. 2008;15(6):1157-1162. PMID: 18784609. [https://doi.org/10.1097/gme.0b013e3181732953](https://doi.org/10.1097/gme.0b013e3181732953)
 
-[18] As cited in Grokipedia, "Natural Supplements for Libido Enhancement" — ginseng as adaptogen modulating HPA axis and cortisol.
+[34] Rao A, Steels E, Inder WJ, et al. "Testofen, a specialised Trigonella foenum-graecum seed extract reduces age-related symptoms of androgen decrease, increases testosterone levels and improves sexual function in healthy aging males in a double-blind randomised clinical study." *Aging Male*. 2016;19(2):134-142. PMID: 26791805. [https://doi.org/10.3109/13685538.2015.1135323](https://doi.org/10.3109/13685538.2015.1135323)
 
-[19] As cited in Grokipedia, "Natural Supplements for Libido Enhancement" — Tribulus terrestris bioactive compounds and standardization.
+[37] Prescott A, Smereck J. "Hypertensive urgency: an undesirable complication of a 'male performance' herbal product." *J Emerg Med*. 2019;57(1):43-46. PMID: 31031073. [https://doi.org/10.1016/j.jemermed.2019.03.008](https://doi.org/10.1016/j.jemermed.2019.03.008)
 
-[20] 2025 systematic review of Tribulus terrestris clinical trials. As cited in Grokipedia, "Natural Supplements for Libido Enhancement."
+[38] Anderson C, Anderson D, Harre N, et al. "Case study: two fatal case reports of acute yohimbine intoxication." *J Anal Toxicol*. 2013;37(8):611-614. PMID: 23846025. [https://doi.org/10.1093/jat/bkt057](https://doi.org/10.1093/jat/bkt057)
 
-[21] Wang J, et al. "Tribulus terrestris inhibits CYP3A4." *Front Pharmacol*. 2022. As cited in ConsumerLab, "Sexual Enhancement Supplements Review."
+[41] Huff R, Karpinska-Leydier K, Maddineni G, et al. "Rhabdomyolysis risk: the dangers of Tribulus terrestris, an over-the-counter supplement." *Am J Case Rep*. 2024;25:e943492. PMID: 39012853. [https://doi.org/10.12659/AJCR.943492](https://doi.org/10.12659/AJCR.943492)
 
-[22] Stanislavov R, Nikolova V. "Treatment of erectile dysfunction with pycnogenol and L-arginine." *J Sex Marital Ther*. 2003;29(3):207-213. [https://doi.org/10.1080/00926230390155104](https://doi.org/10.1080/00926230390155104)
+[46] Gerbild H, Larsen CM, Graugaard C, Areskoug Josefsson K. "Physical activity to improve erectile function: a systematic review of intervention studies." *Sex Med*. 2018;6(2):75-89. PMID: 29661646. [https://doi.org/10.1016/j.esxm.2018.02.001](https://doi.org/10.1016/j.esxm.2018.02.001)
 
-[23] Schwedhelm E, Maas R, Freese R, et al. "Pharmacokinetic and pharmacodynamic properties of oral L-citrulline and L-arginine: impact on nitric oxide metabolism." *Br J Clin Pharmacol*. 2008;65(1):51-59. [https://doi.org/10.1111/j.1365-2125.2007.02990.x](https://doi.org/10.1111/j.1365-2125.2007.02990.x)
+[47] Kamenov Z, Fileva S, Kalinov K, et al. "Evaluation of the efficacy and safety of Tribulus terrestris in male sexual dysfunction: a prospective, randomized, double-blind, placebo-controlled clinical trial." *Maturitas*. 2017;99:20-26. PMID: 28364864. [https://doi.org/10.1016/j.maturitas.2017.01.011](https://doi.org/10.1016/j.maturitas.2017.01.011)
 
-[24] Chen J, Wollman Y, Chernichovsky T, et al. "Effect of oral administration of high-dose nitric oxide donor L-arginine in men with organic erectile dysfunction." *BJU Int*. 1999;83(3):269-273. [https://doi.org/10.1046/j.1464-410x.1999.00906.x](https://doi.org/10.1046/j.1464-410x.1999.00906.x)
+[48] Neychev VK, Mitev VI. "The aphrodisiac herb Tribulus terrestris does not influence the androgen production in young men." *J Ethnopharmacol*. 2005;101(1-3):319-323. PMID: 15994038. [https://doi.org/10.1016/j.jep.2005.05.017](https://doi.org/10.1016/j.jep.2005.05.017)
 
-[25] Mantovani F. "Arginine and sildenafil." *Minerva Urol Nefrol*. 2001. As cited in ConsumerLab, "Sexual Enhancement Supplements Review."
+[49] Akhtari E, Raisi F, Keshavarz M, et al. "Tribulus terrestris for treatment of sexual dysfunction in women: randomized double-blind placebo-controlled study." *Daru*. 2014;22(1):40. PMID: 24773615. [https://doi.org/10.1186/2008-2231-22-40](https://doi.org/10.1186/2008-2231-22-40)
 
-[26] Tom B. "Arginine and sildenafil safety." American Society of Anesthesiologists, 2001. As cited in ConsumerLab, "Sexual Enhancement Supplements Review."
+[50] Meston CM, Worcel M. "The effects of yohimbine plus L-arginine glutamate on sexual arousal in postmenopausal women with sexual arousal disorder." *Arch Sex Behav*. 2002;31(4):323-332. PMID: 12187545. [https://doi.org/10.1023/a:1016220225392](https://doi.org/10.1023/a:1016220225392)
 
-[27] Cormio L, De Siati M, Lorusso F, et al. "Oral L-citrulline supplementation improves erection hardness in men with mild erectile dysfunction." *Urology*. 2011;77(1):119-122. [https://doi.org/10.1016/j.urology.2010.08.028](https://doi.org/10.1016/j.urology.2010.08.028)
+[51] Hong B, Ji YH, Hong JH, et al. "A double-blind crossover study evaluating the efficacy of korean red ginseng in patients with erectile dysfunction: a preliminary report." *J Urol*. 2002;168(5):2070-2073. PMID: 12394711. [https://doi.org/10.1016/S0022-5347(05)64298-X](https://doi.org/10.1016/S0022-5347(05)64298-X)
 
-[28] Lee HW, Lee MS, Kim TH, et al. "Ginseng for erectile dysfunction." *Cochrane Database Syst Rev*. 2021. As cited in Grokipedia, "Natural Supplements for Libido Enhancement."
+[52] Oh KJ, Chae MJ, Lee HS, et al. "Effects of Korean red ginseng on sexual arousal in menopausal women: placebo-controlled, double-blind crossover clinical study." *J Sex Med*. 2010;7(4 Pt 1):1469-1477. PMID: 20141583. [https://doi.org/10.1111/j.1743-6109.2009.01700.x](https://doi.org/10.1111/j.1743-6109.2009.01700.x)
 
-[29] de Andrade E, de Mesquita AA, Claro Jde A, et al. "Study of the efficacy of Korean Red Ginseng in the treatment of erectile dysfunction." *Asian J Androl*. 2007;9(2):241-244. [https://doi.org/10.1111/j.1745-7262.2007.00210.x](https://doi.org/10.1111/j.1745-7262.2007.00210.x)
+[53] Rhim HC, Kim MS, Park YJ, et al. "The potential role of arginine supplements on erectile dysfunction: a systemic review and meta-analysis." *J Sex Med*. 2019;16(2):223-234. PMID: 30770070. [https://doi.org/10.1016/j.jsxm.2018.12.002](https://doi.org/10.1016/j.jsxm.2018.12.002)
 
-[30] Hsueh TY, et al. "Epimedium grandiflorum interaction with sildenafil in rats." *Molecules*. 2013. As cited in ConsumerLab, "Sexual Enhancement Supplements Review."
+[54] Schulman SP, Becker LC, Kass DA, et al. "L-arginine therapy in acute myocardial infarction: the Vascular Interaction With Age in Myocardial Infarction (VINTAGE MI) randomized clinical trial." *JAMA*. 2006;295(1):58-64. PMID: 16391217. [https://doi.org/10.1001/jama.295.1.58](https://doi.org/10.1001/jama.295.1.58)
 
-[31] As cited in Grokipedia, "Natural Supplements for Libido Enhancement" — 2017 RCT showing tribulus improved sexual function without testosterone elevation.
+[55] Mayo Clinic Staff. "L-arginine." Mayo Clinic. 16 Mar 2026. [https://www.mayoclinic.org/drugs-supplements-l-arginine/art-20364681](https://www.mayoclinic.org/drugs-supplements-l-arginine/art-20364681)
 
-[32] As cited in Grokipedia, "Natural Supplements for Libido Enhancement" — tribulus terrestris trials in women with hypoactive sexual desire disorder.
+[56] Grimble GK. "Adverse gastrointestinal effects of arginine and related amino acids." *J Nutr*. 2007;137(6 Suppl 2):1693S-1701S. PMID: 17513449. [https://doi.org/10.1093/jn/137.6.1693S](https://doi.org/10.1093/jn/137.6.1693S)
 
-[33] Brooks NA, Wilcox G, Walker KZ, et al. "Beneficial effects of Lepidium meyenii (Maca) on psychological symptoms and measures of sexual dysfunction in postmenopausal women are not related to estrogen or androgen content." *Menopause*. 2008;15(6):1157-1162. [https://doi.org/10.1097/gme.0b013e3181732953](https://doi.org/10.1097/gme.0b013e3181732953)
+[57] Partin JF, Pushkin YR. "Tachyarrhythmia and hypomania with horny goat weed." *Psychosomatics*. 2004;45(6):536-537. PMID: 15546831. [https://doi.org/10.1176/appi.psy.45.6.536](https://doi.org/10.1176/appi.psy.45.6.536)
 
-[34] Rao A, Steels E, Inder WJ, et al. "Testofen, a specialised Trigonella foenum-graecum seed extract reduces age-related symptoms of androgen decrease, increases testosterone levels and improves sexual function in healthy aging males." *Aging Male*. 2016;19(2):134-142. [https://doi.org/10.3109/13685538.2015.1135323](https://doi.org/10.3109/13685538.2015.1135323)
+[58] Cohen PA, Wang YH, Maller G, et al. "Pharmaceutical quantities of yohimbine found in dietary supplements in the USA." *Drug Test Anal*. 2016;8(3-4):357-369. PMID: 26391406. [https://doi.org/10.1002/dta.1849](https://doi.org/10.1002/dta.1849)
 
-[35] As cited in Grokipedia, "Natural Supplements for Libido Enhancement" — maca root dosage recommendations from clinical trials.
+[59] Yuan CS, Wei G, Dey L, et al. "Brief communication: American ginseng reduces warfarin's effect in healthy patients: a randomized, controlled trial." *Ann Intern Med*. 2004;141(1):23-27. PMID: 15238367. [https://doi.org/10.7326/0003-4819-141-1-200407060-00011](https://doi.org/10.7326/0003-4819-141-1-200407060-00011)
 
-[36] As cited in Grokipedia, "Natural Supplements for Libido Enhancement" — dosage recommendations and usage guidelines for ginseng, tribulus, and cycling protocols.
+[60] Jiang X, Williams KM, Liauw WS, et al. "Effect of St John's wort and ginseng on the pharmacokinetics and pharmacodynamics of warfarin in healthy subjects." *Br J Clin Pharmacol*. 2004;57(5):592-599. PMID: 15089812. [https://doi.org/10.1111/j.1365-2125.2003.02051.x](https://doi.org/10.1111/j.1365-2125.2003.02051.x)
 
-[37] Prescott JL, et al. "Hypertensive emergency associated with yohimbe supplement." *J Emerg Med*. 2019. As cited in ConsumerLab, "Sexual Enhancement Supplements Review."
+[61] National Center for Complementary and Integrative Health. "Asian Ginseng." [https://www.nccih.nih.gov/health/asian-ginseng](https://www.nccih.nih.gov/health/asian-ginseng)
 
-[38] Anderson C, et al. "Adverse effects of yohimbine." *J Anal Toxicol*. 2013. As cited in ConsumerLab, "Sexual Enhancement Supplements Review."
+[62] Office of Dietary Supplements, National Institutes of Health. "Dietary Supplements for Weight Loss: Fact Sheet for Health Professionals" (Yohimbe section). [https://ods.od.nih.gov/factsheets/WeightLoss-HealthProfessional/](https://ods.od.nih.gov/factsheets/WeightLoss-HealthProfessional/)
 
-[39] Wallace AW, et al. "Arginine and blood pressure interactions." *Anesth Analg*. 2000. As cited in ConsumerLab, "Sexual Enhancement Supplements Review."
+[63] Office of Dietary Supplements, National Institutes of Health. "Zinc: Fact Sheet for Health Professionals." [https://ods.od.nih.gov/factsheets/Zinc-HealthProfessional/](https://ods.od.nih.gov/factsheets/Zinc-HealthProfessional/)
 
-[40] As cited in Grokipedia, "Natural Supplements for Libido Enhancement" — safety and side effects of ginseng, tribulus terrestris, and arginine.
+[64] Prasad AS, Mantzoros CS, Beck FW, et al. "Zinc status and serum testosterone levels of healthy adults." *Nutrition*. 1996;12(5):344-348. PMID: 8875519. [https://doi.org/10.1016/s0899-9007(96)80058-x](https://doi.org/10.1016/s0899-9007(96)80058-x)
 
-[41] Huff T, et al. "Rhabdomyolysis and acute kidney injury following Tribulus terrestris use with atorvastatin." *Am J Case Rep*. 2024. As cited in ConsumerLab, "Sexual Enhancement Supplements Review."
+[65] Esposito K, Giugliano F, Di Palo C, et al. "Effect of lifestyle changes on erectile dysfunction in obese men: a randomized controlled trial." *JAMA*. 2004;291(24):2978-2984. PMID: 15213209. [https://doi.org/10.1001/jama.291.24.2978](https://doi.org/10.1001/jama.291.24.2978)
 
-[42] As cited in Grokipedia, "Natural Supplements for Libido Enhancement" — rare case reports of ginseng-associated liver injury.
+[66] Kloner RA. "Pharmacology and drug interaction effects of the phosphodiesterase 5 inhibitors: focus on alpha-blocker interactions." *Am J Cardiol*. 2005;96(12B):42M-46M. PMID: 16387566. [https://doi.org/10.1016/j.amjcard.2005.07.011](https://doi.org/10.1016/j.amjcard.2005.07.011)
 
-[43] As cited in Grokipedia, "Natural Supplements for Libido Enhancement" — maca estrogenic effects and contraindications.
+[67] Ernst E, Posadzki P, Lee MS. "Complementary and alternative medicine (CAM) for sexual dysfunction and erectile dysfunction in older men and women: an overview of systematic reviews." *Maturitas*. 2011;70(1):37-41. PMID: 21782365. [https://doi.org/10.1016/j.maturitas.2011.06.011](https://doi.org/10.1016/j.maturitas.2011.06.011)
 
-[44] Park JB, et al. "Tribulus terrestris inhibition of statin metabolism." *Xenobiotica*. 2008. As cited in ConsumerLab, "Sexual Enhancement Supplements Review."
+[68] Ito TY, Trant AS, Polan ML. "A double-blind placebo-controlled study of ArginMax, a nutritional supplement for enhancement of female sexual function." *J Sex Marital Ther*. 2001;27(5):541-549. PMID: 11554217. [https://doi.org/10.1080/713846828](https://doi.org/10.1080/713846828)
 
-[45] Etemad LR, et al. "Statin metabolism differences." *Am J Manag Care*. 2004. As cited in ConsumerLab, "Sexual Enhancement Supplements Review."
+[69] National Center for Complementary and Integrative Health. "Yohimbe." Updated May 2025. [https://www.nccih.nih.gov/health/yohimbe](https://www.nccih.nih.gov/health/yohimbe)
 
-[46] Gerbild H, Larsen CM, Graugaard C, Areskoug Josefsson K. "Physical activity to improve erectile function: A systematic review of intervention studies." *Sex Med*. 2018;6(2):75-89. [https://doi.org/10.1016/j.esxm.2018.02.001](https://doi.org/10.1016/j.esxm.2018.02.001)
+[70] Elraiyah T, Sonbol MB, Wang Z, et al. "Clinical review: The benefits and harms of systemic dehydroepiandrosterone (DHEA) in postmenopausal women with normal adrenal function: a systematic review and meta-analysis." *J Clin Endocrinol Metab*. 2014;99(10):3536-3542. PMID: 25279571. [https://doi.org/10.1210/jc.2014-2261](https://doi.org/10.1210/jc.2014-2261)
+
+[71] Kritz-Silverstein D, Von Muhlen D, Laughlin GA, Bettencourt R. "Effects of dehydroepiandrosterone supplementation on cognitive function and quality of life: the DHEA and Well-Ness (DAWN) trial." *J Am Geriatr Soc*. 2008;56(7):1292-1298. PMID: 18482290. [https://doi.org/10.1111/j.1532-5415.2008.01768.x](https://doi.org/10.1111/j.1532-5415.2008.01768.x)
+
+[72] Portman DJ, Goldstein SR, Kagan R. "Treatment of moderate to severe dyspareunia with intravaginal prasterone therapy: a review." *Climacteric*. 2019;22(1):65-72. PMID: 30554531. [https://doi.org/10.1080/13697137.2018.1535583](https://doi.org/10.1080/13697137.2018.1535583)
+
+[73] Petri MA, Mease PJ, Merrill JT, et al. "Effects of prasterone on disease activity and symptoms in women with active systemic lupus erythematosus." *Arthritis Rheum*. 2004;50(9):2858-2868. PMID: 15452837. [https://doi.org/10.1002/art.20427](https://doi.org/10.1002/art.20427)
+
+[74] U.S. Department of Agriculture, FoodData Central, SR Legacy (FDC 170556, 168634, 171477, 168254, 175168, 171287, 172421). [https://fdc.nal.usda.gov/](https://fdc.nal.usda.gov/)

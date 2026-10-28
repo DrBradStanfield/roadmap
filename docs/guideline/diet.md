@@ -268,7 +268,7 @@ Legumes are also core components of all three named heart-healthy dietary patter
 
 Legumes are high-FODMAP (contain galacto-oligosaccharides) and may trigger bloating, gas, and abdominal pain in IBS patients. For patients with IBS or IBD:
 
-- **IBS-safe alternatives from Brad's algorithm:** Oats (beta-glucan, 5-10% LDL reduction), walnuts (unsaturated fat + ALA, 3-7% LDL reduction), almonds (unsaturated fat + plant sterols, 3-5% LDL reduction), ground flaxseed (soluble fibre + ALA, 5-10% LDL reduction). All are low-FODMAP at recommended amounts.
+- **IBS-safe alternatives from Brad's algorithm:** Oats (beta-glucan, 5-10% LDL reduction), walnuts (unsaturated fat + ALA, 3-7% LDL reduction), almonds (unsaturated fat + plant sterols, 3-5% LDL reduction), ground flaxseed (soluble fibre + ALA, about 4-5% LDL reduction). All are low-FODMAP at recommended amounts.
 - **IBS-safe protein sources:** Fish, eggs, tofu (firm, drained), tempeh, lean poultry.
 - **Fibre:** Soluble fibre (psyllium husk) is ACG-recommended for IBS. Insoluble fibre may worsen symptoms.
 - See "Dietary Management of IBS" section below for full guidance.
@@ -332,10 +332,10 @@ The Portfolio Diet is a targeted LDL-lowering dietary pattern. Brad's algorithm 
 | Oats | Beta-glucan binds bile acids | 75g dry (~3g beta-glucan) | 5-10% |
 | Walnuts | Unsaturated fats, ALA omega-3 | ~40g | 3-7% |
 | Almonds | Unsaturated fats, plant sterols | ~45g | 3-5% |
-| Ground flaxseed | Soluble fibre + ALA omega-3 | ~30g | 5-10% |
+| Ground flaxseed | Soluble fibre + ALA omega-3 | ~30g | About 4-5% |
 | Edamame | Soy protein replacing animal protein | — | 3-5% |
 | Extra-virgin olive oil | Monounsaturated fat replacing saturated fat | — | Modest |
-| Psyllium husk | Soluble, gel-forming fibre | 7g/day | 5-10% |
+| Psyllium husk | Soluble, gel-forming fibre | about 10 g/day husk (≈7 g soluble fibre) | about 0.33 mmol/L (13 mg/dL) lower [Jovanovski 2018] |
 
 **Combined effect:** These dietary changes can reduce LDL cholesterol by 15-25% [Jenkins 2011].
 
@@ -347,6 +347,7 @@ The Portfolio Diet is a targeted LDL-lowering dietary pattern. Brad's algorithm 
 - Jenkins 2011, Portfolio Diet, JAMA (DOI: 10.1001/jama.2011.1202)
 - Sabaté 2010, nut consumption and lipids (DOI: 10.1001/archinternmed.2010.79)
 - Wei 2009, psyllium and cholesterol (DOI: 10.1038/ejcn.2008.49)
+- Jovanovski 2018, psyllium, LDL, non-HDL and apoB meta-analysis, Am J Clin Nutr (DOI: 10.1093/ajcn/nqy115)
 
 ---
 

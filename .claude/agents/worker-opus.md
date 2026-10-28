@@ -1,6 +1,6 @@
 ---
 name: worker-opus
-description: Opus executor at medium effort for implementation that touches clinical logic (the three clinical files, suggestion and screening rules), merge/FHIR (merge.ts, sync-manager.ts, row shapes), security (auth, CORS, app-proxy HMAC), or a live write path (production data, deploy or write-scoped tools), plus every knowledge-base entry or web page it writes (Opus writes those; Brad 2026-10-19). Everything else delegated goes to `worker` (Sonnet). Spawn it by name, one crisp, verifiable deliverable per worker. It reports evidence; clinical, merge/FHIR and security calls stay with the orchestrator, so it returns those as questions.
+description: Opus executor at medium effort for implementation that touches clinical logic (the three clinical files, suggestion and screening rules), merge/FHIR (merge.ts, sync-manager.ts, row shapes), security (auth, CORS, app-proxy HMAC), or a live write path (production data, deploy or write-scoped tools), all UI and design work, iOS and web (Brad 2026-10-23), the four /simplify reviewers, plus every knowledge-base entry or web page it writes (Opus writes those; Brad 2026-10-19). Test runs, simulator checks and mechanical edits go to `worker` (Sonnet). Spawn it by name, one crisp, verifiable deliverable per worker. It reports evidence; clinical, merge/FHIR and security calls stay with the orchestrator, so it returns those as questions.
 model: opus
 effort: medium
 ---

@@ -21,7 +21,7 @@
  *   expected: string[]        handles; any one in the intersection passes ([] = must route nothing)
  *   must_not_route?: string[] handles the case must NEVER get: one in ANY run fails the case,
  *                             reported "✗ routed forbidden handle X". `expected` cannot fail an
- *                             extra handle (2026-09-29: anticoagulant pathways leaked next to the
+ *                             extra handle (2026-09-29: anticoagulant entries leaked next to the
  *                             vitamin K reference and the run still scored 299/304). Each must be
  *                             a real index handle, or the harness exits before any API call.
  *   category, source?, notes?, must_mention?, must_not_mention?, max_length_chars? (below)
@@ -33,7 +33,7 @@
  *                             exit code only under --fixed-handles-only, so a plain
  *                             --answer-check (the model-bump qualification) never goes red on
  *                             them before a live baseline exists. Each handle must load and the list
- *                             must fit the 120K cap, or the harness exits before any API call.
+ *                             must fit MAX_BLOG_CHARS (160K), or the harness exits before any API call.
  *   must_not_claim?: string[]  answer check only: a phrase stated as fact fails. A negation (no, not,
  *                             never, cannot, without, nor, nothing, none, neither, n't) excuses it only
  *                             within the 12 words before it and inside its clause (a semicolon, dash,
@@ -99,7 +99,7 @@
  *
  * --answer-check: for entries with must_mention/must_not_mention/max_length_chars,
  * also calls the main LLM (CHAT_MODEL; --answer-model overrides) with the full production context: blocks 1-3
- * (system prompt + algorithm + products knowledge) PLUS matched pathway/blog content
+ * (system prompt + algorithm + products knowledge) PLUS matched blog content
  * loaded from the handles the router returned, or from `answer_handles` (block 4). The check runs N times
  * (matching --answer-check-runs, default = --runs) and requires majority pass so
  * a single stochastic blip doesn't flip the test. Loads user data only from a fixture's user_context.
@@ -131,7 +131,7 @@ import {
 import { chatToolsFor, withRoadmapRound, type ChatContentBlock } from '../packages/health-core/src/run-roadmap';
 import { toolOnlyAck, type ProposedEdit, type ProposedProfileEdit } from '../packages/health-core/src/chat-edits';
 import { loadBlogArticle, loadMatchedContent } from '../app/lib/matched-content';
-import { routerView, routerIndexBlock, ROUTER_SUMMARY_MAX_CHARS } from '../app/lib/router-view';
+import { routerView, routerIndexBlock, preferMasters, ROUTER_SUMMARY_MAX_CHARS } from '../app/lib/router-view';
 import type { BlogIndexEntry } from '../app/lib/blog-index.server';
 import { parseRouterReply } from '../app/lib/router-reply';
 import { buildSystemBlocks, EMPTY_CHAT_CONTEXT, resolveChatContext } from '../app/lib/chat.server';
@@ -164,7 +164,7 @@ const categoryFilter = args.includes('--category') ? getArg('--category', '') : 
 const sourceFilter = args.includes('--source') ? getArg('--source', '') : null;
 // When set, entries with must_mention/must_not_mention/max_length_chars also call
 // the main LLM to verify generated content. Loads blocks 1-3 (system prompt +
-// algorithm + products) AND matched pathway/blog content (block 4) so the bot has
+// algorithm + products) AND matched blog content (block 4) so the bot has
 // the same context production does. Runs --answer-check-runs times (default = --runs,
 // usually 3) and requires majority pass. Set --answer-check-runs 1 to cut API spend.
 const fixedHandlesOnly = args.includes('--fixed-handles-only');
@@ -187,7 +187,7 @@ console.log(`Using ${usingTestKey ? 'ANTHROPIC_TEST_API_KEY (test workspace)' : 
 // Static portion: prompt cache blocks 1 and 3 (system prompt + algorithm, then
 // products with writing-style.md and the answer bank, the block every surface gets,
 // US-15 AC29). Blocks 2 (evidence) and 4 (knowledge overview) are not sent, as before.
-// Dynamic portion (per-query, in checkAnswer): block 4 matched pathway/blog
+// Dynamic portion (per-query, in checkAnswer): block 4 matched blog
 // content, loaded via loadMatchedContent() from the routing intersection
 // (or a fixture's answer_handles).
 // User data comes only from a fixture's made-up user_context (see the header).
@@ -241,8 +241,9 @@ const INDEX_PATH = indexPathArg
 // The router's view, through the production function (US-50 AC3): a hidden post
 // whose masters are up to date leaves the allow-list, the index block and the count.
 // Fixture handles are checked against the full index; hidden ones are reported.
-const FULL_HANDLES = new Set((JSON.parse(fs.readFileSync(INDEX_PATH, 'utf-8')) as BlogIndexEntry[]).map(e => e.handle));
-const BLOG_INDEX: BlogIndexEntry[] = routerView(JSON.parse(fs.readFileSync(INDEX_PATH, 'utf-8')));
+const FULL_INDEX = JSON.parse(fs.readFileSync(INDEX_PATH, 'utf-8')) as BlogIndexEntry[];
+const FULL_HANDLES = new Set(FULL_INDEX.map(e => e.handle));
+const BLOG_INDEX: BlogIndexEntry[] = routerView(FULL_INDEX);
 
 const VALID_HANDLES = new Set(BLOG_INDEX.map(e => e.handle));
 
@@ -257,7 +258,7 @@ const SUMMARY_CAP = args.includes('--summary-cap') ? parseInt(getArg('--summary-
 // pass rate, which is exactly what happened on the protein queries.
 function repairHandle(h: string): string {
   if (VALID_HANDLES.has(h)) return h;
-  for (const t of ['pathway', 'guideline', 'reference', 'article']) {
+  for (const t of ['guideline', 'reference', 'article']) {
     if (h.startsWith(`${t}-`)) {
       const stripped = h.slice(t.length + 1);
       if (VALID_HANDLES.has(stripped)) return stripped;
@@ -667,8 +668,10 @@ async function runOne(q: TestQuery): Promise<QueryResult> {
   let answerCheck: AnswerCheckResult | null = null;
   if (answerCheckMode && routingPassed && (q.must_mention?.length || q.must_not_mention?.length || q.must_not_claim?.length || q.must_match?.length || q.must_not_match?.length || typeof q.max_length_chars === 'number' || q.expect_roadmap_run !== undefined || q.expect_profile_edit)) {
     const answerRuns: AnswerCheckResult[] = [];
+    // As production: routed older posts give way to their masters (US-50 AC14); fixed handles load as given.
+    const answerHandles = fixed ? intersection : preferMasters(intersection, FULL_INDEX, q.query).handles;
     for (let i = 0; i < answerCheckRuns; i++) {
-      answerRuns.push(await checkAnswer(q, intersection));
+      answerRuns.push(await checkAnswer(q, answerHandles));
     }
     const passCount = answerRuns.filter(r => r.passed).length;
     const majority = Math.floor(answerCheckRuns / 2) + 1;

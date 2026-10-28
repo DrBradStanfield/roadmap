@@ -6,299 +6,315 @@ publishedAt: "2024-03-07T17:34:17Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["astaxanthin", "antioxidant", "carotenoid", "triglycerides", "hdl", "cholesterol", "ldl", "inflammation", "skin", "wrinkles", "photoaging", "uv", "exercise", "cardiovascular", "lutein", "lycopene", "beta-carotene", "eye health", "joint health", "omega-3", "fish oil", "krill", "hyaluronic acid", "selenium", "vitamin e", "vitamin c", "resveratrol", "blood pressure", "heart attack", "stroke", "cognitive", "brain health", "aging", "longevity", "anti-aging", "muscle", "strength training", "resistance training", "testosterone", "estrogen", "spf", "sunscreen", "sleep"]
-summary: "Reference on astaxanthin: antioxidant carotenoid studied for skin UV protection, triglycerides, HDL, joint pain, exercise recovery, and eye fatigue. Natural algal form (4-18 mg/day) used in trials; take with fat. Evidence is mixed and preliminary. Always discuss with your doctor."
+summary: "Reference on astaxanthin, a red carotenoid from algae. Human trials are small and short; about 6 mg a day may help skin hydration and elasticity. A 2026 mouse study did not repeat an earlier lifespan gain, and Brad does not take it. Talk to your doctor first if you take blood thinners."
+reviewed: "2026-10-23"
+sources: [{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-anti-aging-supplement-scam-new-evidence","checked":"2026-10-23","fingerprint":"publishedAt:2026-04-09T12:00:00Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/astaxanthin-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/astaxanthin-benefits-forms-dosing-and-side-effects)*
 
+## Current view (reviewed 23 October 2026)
+
+Astaxanthin is a red pigment from algae, and most human trials are small, short and funded by the companies that make it; they mostly measure blood markers rather than outcomes you would notice (Brad's current guidance, 9 Oct 2026). A widely shared 2024 study from the Interventions Testing Program suggested it could help male mice live longer, but a second Interventions Testing Program study in 2026 did not repeat that result (Brad's current guidance, 9 Oct 2026). The first study's target dose was 4,000 parts per million started at 12 months; the 2026 study used 880 parts per million started at 11 months and at 16 months, found no lifespan benefit, and in females astaxanthin was associated with shorter lifespans in pooled data, though not after the outlier site was excluded ([Brad, 9 Apr 2026](https://drstanfield.com/blogs/articles/the-anti-aging-supplement-scam-new-evidence)). Early randomized trials suggest about 6 mg a day may improve skin hydration and elasticity, but the trials are small, with unclear risks of bias, and Brad does not take it ([Brad, 9 Apr 2026](https://drstanfield.com/blogs/articles/the-anti-aging-supplement-scam-new-evidence)). Be very skeptical of any company selling a supplement that claims to slow ageing ([Brad, 9 Apr 2026](https://drstanfield.com/blogs/articles/the-anti-aging-supplement-scam-new-evidence)). Brad will look at astaxanthin again if larger independent trials show a clear benefit (Brad's current guidance, 9 Oct 2026).
+
+## Key safety points
+
+- In 2026 lab and animal studies, astaxanthin reduced platelet activity and blood clotting, and in one it lengthened bleeding time in animals [41][42]. If you take warfarin, another anticoagulant or an antiplatelet medicine, check with your doctor before starting.
+- In mice, astaxanthin started after a breast tumour was implanted led to the fastest tumour growth [29]. If you have cancer or are having cancer treatment, ask your oncologist first.
+- In one trial in adults with type 2 diabetes, 8 mg a day lowered systolic blood pressure and fructosamine, a blood sugar marker, though a 2020 meta-analysis found no effect on blood pressure [38][39]. If you take blood pressure or diabetes medicines, tell your doctor.
+- European regulators judged 8 mg a day from supplements safe for adults, but children and adolescents can reach or go over the safe daily intake, so do not give astaxanthin supplements to children or teenagers unless a doctor advises it [35][36].
+- Astaxanthin blocked 5-alpha-reductase in a lab study [43]. Whether this matters for people taking finasteride, dutasteride or hormone therapy is unknown, so ask your doctor first.
+- A review of 87 human studies found no safety concerns with natural astaxanthin, but synthetic astaxanthin has had few safety studies [5].
+
+## Brad's videos on this topic
+
+- 9 Apr 2026, [The Anti-Aging Supplement Scam (New Evidence)](https://drstanfield.com/blogs/articles/the-anti-aging-supplement-scam-new-evidence): astaxanthin extended median male mouse lifespan by 12% in an Interventions Testing Program study, but a 2026 retest at a lower dose found no benefit and shorter lifespans in females in pooled data, though not after the outlier site was excluded; about 6 mg a day may help skin, the trials are small, and Brad does not take it.
+
 ## 1. Overview
 
-Astaxanthin is a red-orange carotenoid pigment with potent antioxidant activity, naturally produced by the freshwater microalga *Haematococcus pluvialis* [1]. Through the food chain, astaxanthin accumulates in the tissues of crustaceans (shrimp, krill, crab, crayfish) and gives wild salmon, trout, and flamingos their characteristic pink-red coloration [1][2]. It can also be produced by fermentation of the red yeast *Phaffia rhodozyma* or synthesized chemically [1].
+Astaxanthin is a xanthophyll carotenoid made by the microalga *Haematococcus pluvialis*, where it reaches up to 3.8% of dry weight, and by other algae and the yeast *Phaffia rhodozyma* [2]. Salmon is the main food source, and krill oil also contains it [48]. Astaxanthin can also be made synthetically, and synthetic astaxanthin is chemically different from the natural form [5].
 
-Unlike beta-carotene and some other carotenoids, astaxanthin has no provitamin A activity -- it is not converted to vitamin A in the human body and is not classified as an essential nutrient [1][2]. Its molecular structure contains conjugated double bonds and keto and hydroxyl groups on each ionone ring, which give it an antioxidant capacity reported in some in-vitro assays to be 10-fold greater than other carotenoids (beta-carotene, zeaxanthin, lutein, canthaxanthin) and up to 100-fold greater than alpha-tocopherol (vitamin E), though these comparisons are based on laboratory assays and do not directly translate to in-vivo activity in humans [2].
+Earlier literature reports that astaxanthin is a stronger antioxidant than other carotenoids and vitamin E [37], but antioxidant strength alone does not show that it does anything in people.
 
-Astaxanthin has been the subject of numerous animal studies and a growing number of human clinical trials, though the evidence base for most health claims remains preliminary. Many human studies are small (n < 100), short in duration (6-12 weeks), company-funded, and some have not been published in peer-reviewed journals. The areas with the most human data include cardiovascular risk markers (triglycerides, HDL cholesterol), skin protection against ultraviolet radiation, exercise performance, and anti-inflammatory/joint health effects [1].
+Most human trials are small and short. The areas with the most human data are blood lipids, skin, exercise recovery and joint pain. In mice, astaxanthin extended median male lifespan in one Interventions Testing Program cohort [33] but not in a later one [34]. In the first cohort, the diets held an average of 1,840 parts per million against a 4,000 parts per million target [33]. In the later cohort, females given astaxanthin had shorter lifespans when data from all three sites were pooled, but not when the site with unusually long-lived control females was left out [34].
 
-Global demand for astaxanthin has grown substantially, driven primarily by the aquaculture industry (where it is used as a feed pigment) and increasingly by the dietary supplement market. The majority of commercial astaxanthin is synthetic, used in animal feed; the supplement market primarily uses natural astaxanthin from *Haematococcus pluvialis* cultivation [2].
+Astaxanthin supplements come as tablets, capsules, soft gels, oils, syrups, creams and powders [2].
 
 ## 2. Forms and Bioavailability
 
 ### Natural vs. Synthetic Astaxanthin
 
-Astaxanthin supplements are available in two fundamentally different forms: natural (algal-derived) and synthetic. These differ in their stereoisomer composition, esterification status, and potentially in their biological activity and safety profile.
+Natural and synthetic astaxanthin differ in their mix of stereoisomers, the mirror-image forms of the molecule [5][49].
 
-**Natural astaxanthin** is derived from the microalga *Haematococcus pluvialis* and predominantly exists in a single stereoisomeric form known as 3S,3S' -- the same isomeric configuration found naturally in krill oil and wild salmon [1]. In algal extracts, astaxanthin is predominantly in an esterified form, meaning it is bonded to one or two fatty acids. Common branded natural astaxanthin ingredients found in supplements include:
+**Natural astaxanthin** comes from algae such as *Haematococcus pluvialis* [2]. In supplements and krill oil it is mostly esterified, meaning bound to fatty acids, while salmon flesh holds the unesterified form [48].
 
-- **BioAstin** (Cyanotech Corporation)
-- **AstaREAL** (Fuji Health Science / Fuji Chemical Industry)
-- **Solasta** (Solix)
-- **AstaPure** (Algatechnologies Ltd)
-
-**Synthetic astaxanthin** differs from natural astaxanthin in its stereoisomer composition. Because synthesis does not preferentially produce one isomer, synthetic astaxanthin contains a mixture of three stereoisomers: 3S,3S', 3R,3S' (meso), and 3R,3R' in an approximate 1:2:1 ratio. As a result, only about 25% of synthetic astaxanthin is in the 3S,3S' form that predominates in nature [1]. Synthetic astaxanthin also provides astaxanthin in its free (non-esterified) form rather than the esterified form found in algal sources. One synthetic brand available is AstaSana (DSM) [1].
+**Synthetic astaxanthin** is chemically different from natural astaxanthin [5]. Farmed salmon carry a different isomer mix from wild salmon: men who ate wild salmon had mostly the (3S,3'S) form in their blood (80%), while those who ate farmed salmon had mostly the meso (3R,3'S) form (48%) [49].
 
 ### Bioavailability Comparison
 
-There is preliminary evidence that the free (synthetic) form of astaxanthin may be slightly more bioavailable than the natural esterified form, based on an absorption study in Atlantic salmon (Coral-Hinostroza et al., *Comp Biochem Physiol C Toxicol Pharmacol*, 2004) [3]. However, both the free and esterified forms can increase blood levels of astaxanthin in humans [1]. Counterbalancing this, in-vitro research suggests the natural esterified form may have greater antioxidant activity than the synthetic free form (Capelli et al., *Nutrafoods*, 2013) [4].
+In three middle-aged men given astaxanthin as fatty acid esters, no esters appeared in the blood; the esters were broken down during absorption [3]. In a lab model of digestion, more than 95% of the astaxanthin from supplements and krill oil was in the unesterified form by the end [48]. Both forms therefore appear to end up as free astaxanthin before they reach the blood.
 
 ### Safety of Synthetic Astaxanthin
 
-Synthetic astaxanthin appears to be safe in amounts typically used in foods and supplements [1]. However, due to its significantly different stereoisomer composition, some experts argue it should be considered a different chemical compound from natural astaxanthin and that more research is needed to confirm the safety of synthetic astaxanthin specifically in human supplements (Brendler et al., *Phytother Res*, 2019) [5]. While approved as animal feed, there remain questions about long-term safety when taken directly by humans. Supplement companies have largely opted to use natural astaxanthin until further safety data becomes available [1][6].
+A 2019 safety review noted that synthetic astaxanthin is chemically different from natural astaxanthin and has had few safety studies in humans or animals [5]. The authors recommended separate studies, including human trials, to set a safe intake for the synthetic form [5]. An acceptable daily intake of 2 mg once proposed by the European Food Safety Authority came from a rat study of synthetic astaxanthin [5]. In 2019 an EFSA panel replaced its 2014 limit of 0.034 mg per kg with 0.2 mg per kg of body weight a day [35][36].
 
 ### Absorption Optimization
 
-Astaxanthin is highly fat-soluble, and its absorption is enhanced by concurrent fat or oil intake. Taking astaxanthin with an oil or fat-containing meal may significantly improve bioavailability (Odeberg et al., *Eur J Pharm Sci*, 2003; Okada et al., *Biosci Biotechnol Biochem*, 2009) [7][8]. Almost all commercial astaxanthin softgels are formulated with some form of oil (olive oil, safflower oil, or medium-chain triglycerides), likely to facilitate absorption, though the amounts in capsules are relatively small. Taking astaxanthin with a fat-containing meal is recommended for optimal uptake.
+Fat helps the body absorb astaxanthin. When healthy men took one 40 mg dose, three lipid-based formulations gave 1.7 to 3.7 times the bioavailability of a standard supplement [7]. Taking astaxanthin after a meal rather than before it raised blood levels: the area under the curve was 7,219 versus 2,968 microg h/l [8]. Taking it with food that includes some fat may help.
 
-**Carotenoid competition:** Other carotenoids such as beta-carotene and lycopene may compete with astaxanthin for intestinal absorption, potentially reducing astaxanthin uptake (*Nutr Rev*, 1999) [9]. If supplementing with multiple carotenoids, taking them several hours apart may improve absorption of each.
-
-**Mineral interactions:** High doses of divalent minerals (calcium, magnesium, certain forms of iron, zinc) from supplements may decrease the absorption of astaxanthin and other carotenoids. This is likely due to a chemical interaction between carotenoids and divalent mineral ions that makes the carotenoids less bioavailable (Corte-Real et al., *Food Chem*, 2016; Borel et al., *Br J Nutr*, 2017) [10][11]. It is best to take astaxanthin (or any carotenoid supplement) at a different time of day than a supplement or meal containing large amounts (hundreds of milligrams) of minerals.
+**Mineral interactions:** In a lab digestion model, calcium, magnesium and zinc lowered the bioaccessibility of other carotenoids (lutein, lycopene and beta-carotene), by up to 100% in the case of calcium [10]. In a trial in 25 healthy men, though, 500 or 1000 mg of calcium carbonate taken with a spinach meal did not change carotenoid absorption [50]. Neither study tested astaxanthin.
 
 ### Storage and Stability
 
-Most astaxanthin is sold in softgels, which minimize exposure to oxygen and help maintain stability at room temperature. Astaxanthin can degrade with exposure to heat, light, and oxygen [12].
+In a lab digestion model, the astaxanthin in salmon, supplements and krill oil stayed relatively stable, with more than 80% recovered [48].
 
 ## 3. Evidence for Health Benefits
 
 ### Triglycerides and HDL Cholesterol
 
-Some animal studies suggest astaxanthin may have cardiovascular benefits such as lowering cholesterol or blood pressure; however, evidence in humans is limited and inconsistent.
+Evidence in humans on blood lipids is mixed.
 
-**Positive trial -- Yoshida et al., 2010:** A company-funded (Fuji Chemical Industry) RCT among 61 healthy men and women (average age 44 years) with normal to high-normal triglyceride levels randomized participants to 12 mg/day, 18 mg/day, or placebo of astaxanthin from *Haematococcus pluvialis* (AstaREAL) for 12 weeks. Both the 12 mg and 18 mg doses reduced triglyceride levels by an average of approximately 38 mg/dL compared to placebo. However, neither dose lowered total cholesterol, LDL cholesterol, fasting blood sugar, or blood pressure compared to placebo. Interestingly, the 12 mg dose significantly increased HDL ("good") cholesterol compared to placebo, but the 18 mg dose did not -- a paradoxical dose-response that remains unexplained. The study did not report side effects or adverse events (Yoshida et al., *Atherosclerosis*, 2010) [13].
+**Yoshida et al., 2010:** A placebo-controlled trial randomized 61 non-obese adults aged 25 to 60 years, with fasting triglycerides of 120 to 200 mg/dl, to 0, 6, 12 or 18 mg/day of astaxanthin for 12 weeks. The 12 and 18 mg/day doses lowered triglycerides, the 6 and 12 mg doses raised HDL cholesterol, and LDL cholesterol did not change [13].
 
-**Negative trial -- Choi et al., 2011:** A separate RCT among overweight adults in South Korea found that 20 mg/day of astaxanthin taken daily did not lower triglycerides, LDL cholesterol, or total cholesterol compared to placebo. The study reported that LDL was lowered by 10.4% from baseline in the astaxanthin group, but this change was not statistically significant relative to the change observed in the placebo group (Choi et al., *Plant Foods Hum Nutr*, 2011) [14].
+**Choi et al., 2011:** In 27 overweight adults in Korea given astaxanthin or placebo for 12 weeks, LDL cholesterol and apolipoprotein B fell from the start of treatment in the astaxanthin group, while no lipid measure changed with placebo [14].
 
-**Synthesis:** The evidence for astaxanthin's effect on blood lipids is inconsistent. One positive trial showed a triglyceride reduction of ~38 mg/dL at 12-18 mg/day, but this was company-funded and not replicated in the second trial. The paradoxical HDL finding (12 mg effective, 18 mg not) and the negative 20 mg trial in a different population raise questions about reliability. More independent, well-powered trials are needed before astaxanthin can be recommended for cardiovascular lipid management.
+**Meta-analyses:** A 2020 meta-analysis of 14 trials found that astaxanthin raised HDL cholesterol slightly (WMD: 1.473 mg/dl, 95 % CI: 0.319-2.627) and had no effect on triglycerides, total cholesterol or LDL cholesterol [38]. A letter in the same journal argued that the analysis needed to be redone [38]. A 2022 meta-analysis of 7 trials in adults at risk of metabolic syndrome found a significant drop in LDL cholesterol and marginal effects on total cholesterol and systolic blood pressure [40].
+
+**Synthesis:** The lipid trials are small and their results disagree. Lipid changes are blood markers, and none of these trials measured heart attacks or strokes. The evidence does not support astaxanthin for managing cholesterol.
 
 ### Anti-Inflammatory Effects
 
-There is some evidence that astaxanthin has anti-inflammatory properties, possibly through inhibition of cyclooxygenase-2 (COX-2) and other pro-inflammatory mediators in the body (Choi et al., *J Microbiol Biotechnol*, 2008) [15].
+In lab studies of brain immune cells, astaxanthin blocked the production of inflammatory signals, including COX-2 (Choi et al., *J Microbiol Biotechnol*, 2008) [15].
 
-**Rheumatoid arthritis -- unpublished conference data:** According to a summary published by a company marketing astaxanthin (BioAstin), a small study in adults with rheumatoid arthritis found that a formula providing 4 mg of astaxanthin along with lutein, vitamin A, vitamin E, and safflower oil taken three times daily with meals for 2 months reduced self-reported pain by approximately 40% compared to placebo. This study was apparently presented at a scientific conference in 2002 but does not appear to have been published in a peer-reviewed journal [1]. The combination of multiple active ingredients also makes it impossible to attribute the benefit specifically to astaxanthin.
-
-**Carpal tunnel syndrome:** Astaxanthin has not been found to reduce pain in carpal tunnel syndrome (MacDermid et al., *Hand*, 2012) [16].
+**Carpal tunnel syndrome:** In a trial of 63 people with carpal tunnel syndrome, 4 mg of astaxanthin plus a wrist splint worked no better than placebo plus a splint [16].
 
 ### Joint Health (Osteoarthritis)
 
-**Hill et al., 2023 -- combination product:** A 12-week RCT conducted in South Korea enrolled 75 people (average age 58 years) with mild osteoarthritis of the knee or hip. Participants received either 600 mg capsules of FlexPro MD (a combination product containing 2 mg astaxanthin [Zanthin Natural Astaxanthin by Valensa International], 321 mg Antarctic krill oil [Superba by Aker BioMarine], and 30 mg hyaluronic acid [Flexonic by Valensa International]) or placebo (palm, olive, and soybean oil with beeswax) daily for 12 weeks. The FlexPro MD group showed significantly greater reduction in self-reported joint pain compared to placebo (-20.8 vs. -10.6 on a scale of 0 to 100). However, there was no significant between-group difference in joint pain after only 6 weeks, and the study was sponsored by Novarex, a partner of Valensa International (Hill et al., *Nutrients*, 2023) [17].
+**Hill et al., 2023 (combination product):** A 12-week randomized, double-blind trial in 100 people with mild knee or hip osteoarthritis tested FlexPro MD, a combination of krill oil, astaxanthin and hyaluronic acid, against placebo [17]. Among the 75 who completed the trial as planned, joint pain fell more with FlexPro MD than with placebo (20.8 vs 10.6 mm on a visual analogue scale) [17]. Side effects were reported by 16% of people on placebo and 4% on FlexPro MD [17]. A 2024 correction found no significant difference in the WOMAC pain score, though physical function still improved more with FlexPro MD than with placebo; the correction did not change the visual analogue result [17]. NOVAREX, which made the capsules, funded the trial [17]. Two of the authors work for NOVAREX, and two for Valensa International, which supplied the FlexPro MD ingredients [17].
 
-**Limitations:** The combination product design (astaxanthin + krill oil + hyaluronic acid) makes it impossible to determine which component(s) drove the benefit. Krill oil provides omega-3 fatty acids with independent anti-inflammatory effects, and hyaluronic acid has its own joint health evidence base.
+**Limitations:** The combination product design (astaxanthin + krill oil + hyaluronic acid) makes it impossible to determine which component(s) drove the benefit.
 
 ### Exercise Performance and Recovery
 
-Laboratory and animal studies suggest astaxanthin may improve exercise and sports performance through its antioxidant and mitochondrial effects; however, studies in people have shown mixed results (Belviranli, *Antioxidants in Sport Nutrition*, 2015) [18].
+Trials of astaxanthin for exercise have mixed results.
 
-**Positive -- endurance/strength (Malmsten, 2008):** A placebo-controlled study in Sweden found that 4 mg/day of astaxanthin (AstaREAL), taken with a meal, increased endurance and strength in young men as evidenced by a significant increase in knee-bends that could be performed after 6 months of supplementation during which the men exercised normally (Malmsten et al., *Carotenoid Sci*, 2008) [19]. The long supplementation period (6 months) and modest dose (4 mg) are notable.
+**Positive: cycling time trial (Earnest, 2011):** 21 competitive cyclists were randomized to 4 mg/d of astaxanthin or placebo for 28 d. Of the 14 who finished, the astaxanthin group improved its 20 km time trial by 121 s, against 19 s with placebo [20].
 
-**Positive -- cycling time trial (Earnest, 2011):** A small study among competitive cyclists found that those who took 4 mg of astaxanthin with a meal daily for one month had significant improvements in the time required to complete a 20-kilometer timed trial test compared to those who took placebo (Earnest et al., *Nutrition*, 2011) [20].
+**Negative: cycling time trial (Res, 2013):** In 32 trained male cyclists or triathletes, 20 mg of astaxanthin per day for 4 wk did not improve time trial performance [21].
 
-**Negative -- cycling time trial (Res, 2013):** Another study in well-trained cyclists found that 20 mg of astaxanthin taken daily for one month did not improve timed trial performance (Res et al., *Med Sci Sports Exerc*, 2013) [21]. This higher dose (5 times the amount used in the positive Earnest study) failed to show benefit, raising questions about the dose-response relationship.
+**Positive: muscle damage markers (Djordjevic, 2012):** In 32 elite young male footballers given astaxanthin or placebo for 90 days, the muscle enzymes creatine kinase and aspartate aminotransferase rose less after a 2 hour exercise bout in the astaxanthin group [22].
 
-**Positive -- muscle damage markers (Djordjevic, 2012):** A study among 32 elite male soccer players found that 4 mg of astaxanthin taken daily for 3 months modestly reduced blood markers of muscle damage (creatine kinase and aspartate aminotransferase) following a two-hour session of intense exercise, compared to placebo (Djordjevic et al., *J Sports Med Phys Fitness*, 2012) [22]. This suggests a potential protective effect against exercise-induced muscle damage, though subjective performance was not significantly affected.
+**Negative: resistance exercise (Bloomer, 2005):** In 20 resistance-trained men, 3 weeks of a daily algal extract that contained 4 mg of astaxanthin and 480 mg of lutein did not change muscle soreness, creatine kinase or muscle performance after eccentric exercise compared with placebo [23].
 
-**Negative -- resistance exercise (Bloomer, 2005):** A study did not find astaxanthin (4 mg daily from BioAstin) to improve muscle performance or reduce soreness any more than placebo in resistance-trained men (Bloomer et al., *Int J Sport Nutr Exerc Metab*, 2005) [23].
+**Antioxidants and training adaptations:** A 2026 position stand from the International Society of Sports Nutrition says antioxidants may hinder training adaptations at very high doses [45]. It ranked astaxanthin (4-12 mg/day for 4-12 weeks) among the antioxidants with moderate- to high-quality evidence for recovery or performance without interfering with training adaptations [45].
 
-**Important caveat -- antioxidants and training adaptations:** Other antioxidants, such as resveratrol, vitamin E, and vitamin C, have been shown to impede gains in exercise performance when taken during training programs [1]. The mechanism likely involves blunting the reactive oxygen species (ROS) signaling that drives mitochondrial biogenesis and other exercise adaptations. This concern may apply to astaxanthin as well, and athletes should weigh the potential benefits of reduced muscle damage against the possibility of impaired training adaptations.
-
-**Synthesis:** The exercise evidence for astaxanthin is genuinely mixed. Two studies at 4 mg/day showed endurance benefits, but one used a 6-month protocol and the other was small. One study at 20 mg/day (5x the dose) found no cycling performance benefit. The muscle damage marker reduction is interesting but does not necessarily translate to functional performance gains. Combined with the theoretical concern about antioxidants blunting training adaptations, the evidence does not strongly support astaxanthin supplementation for exercise performance.
+**Synthesis:** A 2026 meta-analysis of 24 trials found that astaxanthin lowered creatine kinase after exercise (SMD = -0.45, 95% CI: -0.83 to -0.07) but did not improve VO2max, time-trial performance or power output [46]. Astaxanthin may help markers of recovery, but the trials show no gain in performance.
 
 ### Skin Protection and UV Defense
 
-Laboratory research suggests astaxanthin may protect against ultraviolet (UV) light-induced damage in human skin cells (Lyons et al., *J Dermatol Sci*, 2002) [24].
+In cultured human skin cells, an algal astaxanthin extract and synthetic astaxanthin prevented DNA damage from UVA light (Lyons et al., *J Dermatol Sci*, 2002) [24].
 
-**Sunburn protection -- patent application (2002):** According to a 2002 patent application, an oral daily dose of 4 mg (2 mg twice a day, with meals) was reported to reduce sunburn in two people [1]. This is essentially anecdotal (n=2) and cannot be considered clinical evidence.
-
-**Sunburn protection -- unpublished study (Cyanotech):** A study among 21 individuals found that 4 mg of astaxanthin (BioAstin, Cyanotech) taken for 2 weeks increased the minimal erythema dose (MED) -- the amount of UV energy required from a sunlight simulator to burn the skin -- by 20%. However, the effect varied substantially between individuals, ranging from no effect to a large effect. The study was funded by Cyanotech and does not appear to have been published in a peer-reviewed journal [1].
-
-**Sunburn protection -- Ito et al., 2018 (published):** A more rigorous study in Japan among 22 adults (average age 43 years) found that 4 mg of astaxanthin (ASTOTS, FUJIFILM) taken daily for 9 weeks modestly increased the minimal erythema dose (UV energy required to burn) compared to placebo. Those who took astaxanthin also reported significant improvements in self-assessed skin roughness and texture compared to placebo. However, there was no improvement in self-reported skin clarity, youthfulness, or wrinkles around the eyes or nose. No adverse effects were reported, and there were no changes in blood levels of cholesterol, triglycerides, liver enzymes, or blood cell counts (Ito et al., *Nutrients*, 2018) [25].
+**Ito et al., 2018:** In a 10-week placebo-controlled trial in 23 healthy Japanese adults, 4 mg of astaxanthin a day raised the minimal erythema dose, the UV dose needed to redden the skin, after 9 weeks [25]. The astaxanthin group also lost less skin moisture in irradiated skin and rated rough skin and texture as improved [25].
 
 ### Wrinkle Reduction
 
-**Tominaga et al., 2012:** A small company-funded (Fuji Chemical Industry) RCT among healthy men ages 20 to 60 found that 6 mg of astaxanthin (as 3 mg twice daily; AstaREAL) taken for 6 weeks significantly reduced the area of wrinkled skin around the eye (crow's feet), but did not reduce the depth of the wrinkles compared to placebo (Tominaga et al., *Acta Biochim Pol*, 2012) [26].
+**Tominaga et al., 2012:** In a randomized, placebo-controlled trial in 36 healthy men, crow's feet wrinkles, skin elasticity and water loss through the skin improved after 6 mg of astaxanthin a day for 6 weeks [26].
 
-**Synthesis:** The skin evidence suggests astaxanthin at 4-6 mg/day may provide modest UV protection and minor cosmetic skin benefits (texture, wrinkle area). The effects are small and variable between individuals. Astaxanthin should not be considered a replacement for topical sunscreen, which provides far more reliable and substantial UV protection.
+**Synthesis:** A 2021 meta-analysis of randomized trials found that oral astaxanthin improved skin moisture (SMD = 0.53; 95% CI = 0.05, 1.01) and elasticity (SMD = 0.77; 95% CI = 0.19, 1.35), with no significant change in wrinkle depth [44]. The trials are small, so astaxanthin may help skin moisture and elasticity modestly at best. It is not a replacement for sunscreen.
 
 ### Eye Health and Visual Acuity
 
-**Sekikawa et al., 2022:** A small trial in Japan among 59 men and women aged 20 to 64 with average corrected vision and high risk of eye fatigue due to regular computer use found that 9 mg of astaxanthin (provided and funded by BGG Japan Co.) taken once daily with water during or after breakfast for 6 weeks slightly improved visual acuity of the dominant eye after a 60-minute video game session among those aged 40 or older compared to placebo. However, there was no significant improvement when the visual acuity of both eyes was averaged together. There were no improvements in visual acuity in those younger than age 40, and no improvements in self-reported quality of life among any of the participants (Sekikawa et al., *J Clin Biochem Nutr*, 2022) [27].
+**Sekikawa et al., 2023:** In a randomized, placebo-controlled trial in 60 healthy adults, 9 mg/day of astaxanthin for 6 weeks better preserved corrected sight in the dominant eye after screen work in people aged 40 or older [27]. People younger than 40 saw no difference, and functional visual acuity and pupil constriction did not differ between groups [27].
 
-**Cataracts and macular degeneration:** There is insufficient evidence to support the use of astaxanthin supplements for cataracts or age-related macular degeneration [1].
-
-**Synthesis:** The eye health evidence for astaxanthin is very limited. The only published human trial showed a modest, subgroup-specific benefit (dominant eye only, in those over 40 only) that was not significant when both eyes were analyzed together. This does not provide a compelling basis for recommending astaxanthin for eye health.
+**Synthesis:** The eye evidence is thin. The one trial found a benefit only in the dominant eye of people aged 40 or older.
 
 ### Male Fertility
 
-There is insufficient evidence to support the use of astaxanthin supplements for male infertility [1]. While some in-vitro and animal studies have explored astaxanthin's potential effects on sperm quality through its antioxidant mechanism, no well-designed human trials have demonstrated clinical benefit.
+A 2026 meta-analysis found that astaxanthin improved sperm measures in animals, but in its three human trials, no semen measure improved significantly compared with placebo [47].
 
 ## 4. Recommended Dosing
 
 ### General Dosing Guidance
 
-Optimal dosing of astaxanthin for specific uses has not been established. Doses used in clinical studies have generally ranged from 4 mg to 18 mg daily, with different dose ranges tending to be used for different indications [1]:
+No best dose of astaxanthin has been set. Recommended or approved doses vary by country, between 2 and 24 mg a day [5]. Trials have used these doses:
 
 | Indication | Dose Used in Studies | Duration | Notes |
 |---|---|---|---|
-| Exercise performance / endurance | 4 mg/day | 1-6 months | Lower doses used in all positive exercise trials [19][20][22] |
-| Skin protection / UV defense | 4 mg/day | 2-9 weeks | Consistent across skin studies [25][26] |
-| Wrinkle reduction (cosmetic) | 6 mg/day (3 mg twice daily) | 6 weeks | Reduced wrinkle area but not depth [26] |
-| Eye fatigue / visual acuity | 9 mg/day | 6 weeks | Limited to dominant eye in those aged 40+ [27] |
-| Triglyceride reduction | 12-18 mg/day | 12 weeks | Single positive trial; 20 mg was ineffective in another trial [13][14] |
-| Joint health (combination product) | 2 mg/day (with krill oil and HA) | 12 weeks | Cannot isolate astaxanthin's contribution [17] |
+| Exercise performance / endurance | 4 to 20 mg/day | 3 weeks to 90 days | Mixed results; recovery markers improved more than performance [20][21][22][23][46] |
+| Skin protection / UV defense | 4 mg/day | 9 weeks | One small trial [25] |
+| Skin moisture, elasticity and wrinkles | 6 mg/day | 6 weeks | Wrinkles and elasticity improved in men [26] |
+| Eye fatigue / visual acuity | 9 mg/day | 6 weeks | Dominant eye only, in people 40 or older [27] |
+| Triglycerides and HDL | 6, 12 or 18 mg/day | 12 weeks | Results differ between trials [13][38] |
+| Joint health (combination product) | Part of a capsule that also holds krill oil and hyaluronic acid | 12 weeks | Cannot isolate astaxanthin's contribution [17] |
 
 ### How to Take Astaxanthin
 
-- **With fat:** Astaxanthin is fat-soluble and should be taken with a meal containing fats or oils for optimal absorption [7][8].
-- **Separate from other carotenoids:** Beta-carotene and lycopene may compete with astaxanthin for absorption. If taking multiple carotenoid supplements, take them several hours apart [9].
-- **Separate from high-dose mineral supplements:** Calcium, magnesium, iron, and zinc at high doses (hundreds of milligrams) may reduce carotenoid absorption. Take astaxanthin at a different time of day from mineral-heavy supplements [10][11].
+- **With fat:** Fat improves absorption, so take astaxanthin with or after a meal that includes some fat [7][8].
+- **Mineral supplements:** Lab work suggests high doses of calcium, magnesium and zinc may reduce carotenoid absorption, but a human trial with calcium found no effect [10][50].
 
 ## 5. Safety and Side Effects
 
 ### General Safety Profile
 
-Natural astaxanthin from *Haematococcus pluvialis* extract is GRAS (generally recognized as safe) when used in foods in amounts below 6-7 mg per day [1]. As a supplement, it is considered safe when taken in daily doses ranging from 2 to 24 mg daily [1].
+A 2019 review of 87 human studies found no safety concerns with natural astaxanthin, 35 of them at doses of 12 mg a day or more [5].
 
-No serious adverse effects have been reported in clinical studies at doses up to 24 mg/day. The safety profile appears favorable in the short to medium term (up to 12 weeks in most studies).
+The European Food Safety Authority concluded in 2020 that 8 mg a day from supplements, on top of astaxanthin from fish and shellfish, is safe for adults [35]. At that intake, adolescents aged 14 to under 18 years reach the acceptable daily intake, and younger children and infants go over it [35]. In 2025 it advised that children and adolescents should not take astaxanthin supplements on the same day as other foods with added astaxanthin [36].
+
+In a trial in 35 healthy adults, 6 mg a day for 8 weeks caused no clinically important changes in blood pressure, blood chemistry or blood counts [37].
 
 ### Reported Side Effects
 
-- **Gastrointestinal effects:** Increased bowel movements and red-colored stool have been reported at a daily dose of 20 mg (Choi et al., *Plant Foods Hum Nutr*, 2011) [14]. A single dose of 48 mg has also been reported to cause red-colored stool (Okada et al., *Biosci Biotechnol Biochem*, 2009) [8].
-- **No other adverse effects** have been reported in clinical studies [1].
+- **Trials:** In the FlexPro MD trial, side effects were reported by 16% of people on placebo and 4% on the combination, most often gut symptoms [17].
 
 ### Long-Term Safety
 
-Due to the limited number and short duration of human studies, the long-term safety of astaxanthin supplementation has not been established. Safe doses in pregnant or nursing women, young children, and individuals with severe liver or kidney disease have not been determined [1].
+Most trials lasted weeks to months, so long-term safety is not established. Safety in pregnancy and breastfeeding has not been studied; if you are pregnant or breastfeeding, check with your doctor before taking it.
 
 ### Hormonal Considerations (Gynecomastia Concern)
 
-A theoretical concern has been raised that astaxanthin may increase the risk of breast enlargement in men (gynecomastia). The basis for this concern is that astaxanthin can block the enzyme 5-alpha-reductase, which converts testosterone to dihydrotestosterone (DHT). By blocking this conversion, astaxanthin could increase free testosterone levels. Since testosterone is also converted to estradiol (an estrogen) by aromatase, there is a theoretical pathway by which astaxanthin could increase estradiol levels and contribute to gynecomastia [1].
+In a lab study, astaxanthin blocked 98% of 5-alpha-reductase activity at 300 microg/mL [43]. This enzyme turns testosterone into dihydrotestosterone (DHT). Drugs that block it raise testosterone, and gynecomastia (breast enlargement in men) has been reported when the extra testosterone is converted to estradiol [28]. Astaxanthin and saw palmetto have also been reported to block aromatase, the enzyme that makes estradiol, in lab studies [28].
 
-However, clinical evidence has not supported this concern. A study in healthy men found that taking a combination of astaxanthin and saw palmetto berry extract (Mytosterone, Triarco Industries -- which funded the study) daily for two weeks did not increase estradiol levels. In fact, those taking a 2,000 mg daily dose of the combination showed a decrease in estradiol levels. In laboratory studies, astaxanthin has been shown to also block the enzyme aromatase (which converts testosterone to estradiol), which may explain why estradiol did not increase (Angwafor et al., *J Int Soc Sports Nutr*, 2008) [28].
+In an open-label study, 42 healthy men aged 37 to 70 years took 800 mg/day or 2000 mg/day of Alphastat, a product that combines astaxanthin with saw palmetto, for fourteen days [28]. Both groups had higher testosterone and lower DHT, and estradiol fell in the 2000 mg/day group [28]. There was no placebo group, and the result cannot be credited to astaxanthin alone.
 
 ### Cancer Therapy Considerations
 
-Individuals undergoing cancer therapy should consult with their physician before taking astaxanthin supplements, as other antioxidant supplements have been associated with poorer survival when taken during chemotherapy and radiation therapy [1].
+If you are having cancer treatment, check with your oncologist before taking any antioxidant supplement, including astaxanthin.
 
-Of particular note, an animal study found a paradoxical effect of astaxanthin on breast cancer: astaxanthin slowed the growth of breast cancer cells into a tumor when given before tumor formation, but giving astaxanthin after a tumor had already formed actually increased the speed of tumor growth (Nakao et al., *Anticancer Res*, 2010) [29]. This finding -- while in mice, not humans -- underscores the importance of caution with antioxidant supplementation during active cancer treatment.
+In mice fed astaxanthin before breast tumour cells were implanted, tumours appeared later and grew less. Mice that started astaxanthin after the tumour cells were implanted had the fastest tumour growth [29]. The authors suggested astaxanthin may be contraindicated after a tumour has started [29]. This was in mice, not people.
 
 ### Allergen Considerations
 
-Although astaxanthin is a component of crustaceans such as shrimp, astaxanthin supplements are unlikely to cause allergic reactions in people with seafood allergies. This is because supplement-grade astaxanthin is produced synthetically or derived from microalgae (*Haematococcus pluvialis*) or yeast (*Phaffia rhodozyma*), not from crustaceans. The European Food Safety Authority noted in its assessment that no allergic reactions to *Haematococcus pluvialis* microalgae have been reported in the literature (EFSA Panel on Dietetic Products, *EFSA Journal*, 2014) [30]. No reports of allergic reactions to yeast-derived astaxanthin in seafood-sensitized individuals have been identified. However, people with any allergy should still carefully check product labels, as some astaxanthin products may contain other allergens such as fish oil or soy [1].
+Most astaxanthin supplements are made from algae, yeast or synthesis [2][5], but krill oil, which also contains astaxanthin, comes from a crustacean [48]. People with a shellfish allergy should check whether a product contains krill, and anyone with an allergy should read the label.
 
 ## 6. Drug Interactions
 
-No specific drug interactions with astaxanthin have been reported in the clinical literature [1]. However, given the limited scope of human research, caution is warranted in several situations:
+Drug interactions with astaxanthin have not been established in human studies. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
-- **Anticoagulants/antiplatelets:** Due to astaxanthin's mild anti-inflammatory activity (COX-2 inhibition), there is a theoretical interaction with blood-thinning medications, though this has not been clinically documented.
-- **Cancer chemotherapy and radiation therapy:** As noted above, antioxidant supplements as a class have been associated with reduced efficacy of some cancer treatments. Patients undergoing cancer therapy should consult their oncologist before using astaxanthin [1][29].
-- **5-alpha-reductase inhibitors (finasteride, dutasteride):** Astaxanthin has been shown to inhibit 5-alpha-reductase in laboratory studies [28]. Theoretically, combining astaxanthin with pharmaceutical 5-alpha-reductase inhibitors could produce additive effects, though this has not been studied clinically.
-- **Hormone therapies:** Given astaxanthin's effects on testosterone metabolism pathways (5-alpha-reductase and aromatase inhibition), caution may be appropriate when combining with testosterone replacement therapy, anti-estrogen medications, or other hormonal treatments.
-- **Mineral supplements:** While not a drug interaction per se, high-dose mineral supplements (calcium, magnesium, iron, zinc) taken simultaneously with astaxanthin may reduce its absorption [10][11].
+- **Anticoagulants/antiplatelets:** In rats and mice and in human platelets in the lab, astaxanthin reduced platelet clumping and blood clotting [41]. In another study, astaxanthin by mouth lengthened tail bleeding time in animals [42]. If you take warfarin, another anticoagulant or an antiplatelet medicine such as aspirin or clopidogrel, check with your doctor first.
+- **Cancer chemotherapy and radiation therapy:** See Cancer Therapy Considerations above [29]. Ask your oncologist before using astaxanthin.
+- **Blood pressure and diabetes medicines:** In 44 adults with type 2 diabetes, 8 mg of astaxanthin a day for 8 weeks lowered systolic blood pressure and fructosamine [39]. A 2020 meta-analysis found no effect on blood pressure or blood glucose [38]. If you take these medicines, tell your doctor.
+- **5-alpha-reductase inhibitors (finasteride, dutasteride):** Astaxanthin blocked 5-alpha-reductase in a lab study [43]. Combining it with these drugs has not been studied.
+- **Hormone therapies:** Because of these lab effects on testosterone pathways [28][43], ask your doctor before combining astaxanthin with testosterone therapy or other hormone treatments.
+- **Mineral supplements:** High doses of calcium, magnesium and zinc reduced carotenoid uptake in a lab model, but not in a human calcium trial [10][50].
 
 ## 7. Dietary Sources
 
-Astaxanthin is found naturally in seafood, with concentrations varying substantially by species, whether the fish is wild or farmed, and how it is prepared.
+Salmon is the main food source of astaxanthin [48].
 
 ### Astaxanthin Content in Common Foods
 
-| Food | Serving | Approximate Astaxanthin Content | Notes |
-|---|---|---|---|
-| Wild Pacific salmon (sockeye) | 4 oz (113 g) | ~4.5 mg | Highest natural dietary source [2] |
-| Farmed Atlantic salmon | 4 oz (113 g) | ~1 mg | Fed synthetic astaxanthin in feed [2] |
-| Wild coho salmon | 4 oz (113 g) | ~2-3 mg | Variable by season and location |
-| Rainbow trout | 4 oz (113 g) | ~0.5-1 mg | Lower than salmon |
-| Shrimp | 4 oz (113 g) | <1 mg | Primarily in shell |
-| Krill | Variable | Variable | Main commercial source of krill oil |
+| Food | Astaxanthin | Notes |
+|---|---|---|
+| Wild salmon | About 10 times more than farmed salmon in one analysis [48] | Mostly the (3S,3'S) form [49] |
+| Farmed salmon | Lower than wild salmon [48] | Mostly the meso form [49] |
+| Krill oil | Present, mostly as esters [48] | Sold as a supplement |
 
 ### Effects of Cooking and Processing
 
-Astaxanthin may degrade during cooking due to high heat and exposure to oxygen (Zhou et al., *IOPScience*, 2018) [12]. This helps explain why canned or pouched salmon, which is typically cooked to 235 degrees F or higher during processing, has been found to contain less astaxanthin than fresh salmon (Lu et al., *Food Chem*, 2025; Tsironi et al., *Ref Mod Food Sci*, 2019) [31][32].
-
-However, a laboratory study showed that cooking salmon to 160 degrees F -- which is slightly higher than the USDA-recommended salmon cooking temperature of 145 degrees F -- did not significantly affect astaxanthin content (Lu et al., *Food Chem*, 2025) [31]. This suggests that normal home cooking temperatures preserve most of the astaxanthin in salmon, while the high temperatures used in commercial canning and retort processing do cause significant degradation.
+In one lab study, common cooking styles cut the astaxanthin in wild salmon by 48-57% and in farmed salmon by 35-47% [48]. A 2025 study found that cooking did not change the main natural form of astaxanthin in salmon, but levels were lower in canned salmon (Lu et al., *Food Chem*, 2025) [31].
 
 ### Practical Implications
 
-For those seeking dietary astaxanthin, wild Pacific salmon (especially sockeye) is the richest readily available food source, providing approximately 4.5 mg per 4-ounce serving -- comparable to a common supplement dose. Consuming salmon 2-3 times per week would provide a meaningful astaxanthin intake alongside the additional benefits of omega-3 fatty acids (EPA and DHA) and high-quality protein. Farmed salmon provides less astaxanthin (approximately 1 mg per serving) and the astaxanthin used in aquaculture feed is typically synthetic.
+Two servings of farmed salmon a week for five weeks, as part of a Mediterranean diet, raised blood levels of the main natural form of astaxanthin [31]. Salmon also provides the marine fats EPA and DHA, with more in wild than in farmed salmon [31].
 
 ## 8. Frequently Asked Questions
 
 **Is natural or synthetic astaxanthin better?**
-The supplement market overwhelmingly uses natural astaxanthin from *Haematococcus pluvialis*, and this is the form used in virtually all human clinical trials. While synthetic astaxanthin may be slightly more bioavailable [3], natural astaxanthin may have greater antioxidant activity [4]. Due to structural differences (synthetic has three stereoisomers vs. predominantly one in natural), some experts have called for additional safety research on synthetic astaxanthin in human supplements [5]. Until such data is available, natural astaxanthin is the more evidence-supported choice.
+Most human trials used natural astaxanthin from algae. Synthetic astaxanthin is chemically different and has had few safety studies, so a 2019 safety review called for separate trials of it [5].
 
 **Can astaxanthin replace sunscreen?**
-No. While small studies suggest astaxanthin at 4 mg/day may modestly increase the UV dose required to burn skin [25], the effect is much smaller and less reliable than topical sunscreen. Astaxanthin should be considered at best a minor complementary measure, not a replacement for broad-spectrum SPF protection.
+No. In one small trial, 4 mg a day modestly raised the UV dose needed to redden the skin [25]. That effect is much smaller and less reliable than sunscreen.
 
 **Should I take astaxanthin for exercise performance?**
-The evidence is mixed and does not strongly support it. Some studies show modest benefits at 4 mg/day for endurance [19][20], while others show no benefit at higher doses [21][23]. Additionally, like other antioxidants (vitamin C, vitamin E, resveratrol), astaxanthin may potentially blunt exercise adaptations by reducing the ROS signaling needed for mitochondrial biogenesis.
+A 2026 meta-analysis found it lowered a muscle damage marker after exercise but did not improve performance [46].
 
 **Does astaxanthin lower cholesterol?**
-One trial found 12-18 mg/day reduced triglycerides by ~38 mg/dL and 12 mg increased HDL [13], but another trial at 20 mg/day found no lipid benefits [14]. The evidence is insufficient to recommend astaxanthin for cholesterol management.
+One trial found 12 and 18 mg/day lowered triglycerides and 6 and 12 mg raised HDL [13], but a 2020 meta-analysis found no effect on triglycerides or LDL [38]. The evidence does not support astaxanthin for cholesterol.
 
 **Is astaxanthin safe long-term?**
-Short-term safety (up to 12 weeks) at doses of 2-24 mg/day appears good, with no serious adverse effects reported. However, long-term safety data is lacking. The most common complaint at higher doses (20 mg) is GI effects including increased bowel movements and red-colored stool [14].
+Short-term trials found no safety concerns with natural astaxanthin [5]. Long-term safety is not established.
 
 **Does astaxanthin affect testosterone?**
-Astaxanthin inhibits 5-alpha-reductase (which converts testosterone to DHT) in laboratory studies, which could theoretically increase free testosterone. However, clinical evidence suggests it also inhibits aromatase (which converts testosterone to estrogen), and a human study found no increase in estradiol [28]. The net hormonal effect in humans at typical supplement doses is likely negligible.
+Astaxanthin blocked 5-alpha-reductase in a lab study [43]. A study of an astaxanthin and saw palmetto combination raised testosterone and lowered DHT, but it had no placebo group [28]. The effect of astaxanthin alone in people is unknown.
 
 ## 9. References
 
-[1] ConsumerLab. "Astaxanthin Supplements Review." Accessed 2025. [https://www.consumerlab.com/reviews/astaxanthin-supplements-review/astaxanthin/](https://www.consumerlab.com/reviews/astaxanthin-supplements-review/astaxanthin/)
+[2] Ambati RR, Phang SM, Ravi S, Aswathanarayana RG. "Astaxanthin: sources, extraction, stability, biological activities and its commercial applications -- a review." *Mar Drugs*. 2014;12(1):128-152. PMID: 24402174. [https://doi.org/10.3390/md12010128](https://doi.org/10.3390/md12010128)
 
-[2] Ambati RR, Phang SM, Ravi S, Aswathanarayana RG. "Astaxanthin: sources, extraction, stability, biological activities and its commercial applications -- a review." *Mar Drugs*. 2014;12(1):128-152. [https://doi.org/10.3390/md12010128](https://doi.org/10.3390/md12010128)
+[3] Coral-Hinostroza GN, Ytrestoyl T, Ruyter B, Bjerkeng B. "Plasma appearance of unesterified astaxanthin geometrical E/Z and optical R/S isomers in men given single doses of a mixture of optical 3 and 3'R/S isomers of astaxanthin fatty acyl diesters." *Comp Biochem Physiol C Toxicol Pharmacol*. 2004;139(1-3):99-110. PMID: 15556071. [https://pubmed.ncbi.nlm.nih.gov/15556071/](https://pubmed.ncbi.nlm.nih.gov/15556071/)
 
-[3] Coral-Hinostroza GN, Ytrestoyl T, Ruyter B, Bjerkeng B. "Plasma appearance of unesterified astaxanthin geometrical E/Z and optical R/S isomers in men given single doses of a mixture of optical 3 and 3'R/S isomers of astaxanthin fatty acyl diesters." *Comp Biochem Physiol C Toxicol Pharmacol*. 2004;139(1-3):99-110.
+[5] Brendler T, Williamson EM. "Astaxanthin: How much is too much? A safety review." *Phytother Res*. 2019;33(12):3090-3111. PMID: 31788888. [https://doi.org/10.1002/ptr.6514](https://doi.org/10.1002/ptr.6514)
 
-[4] Capelli B, Bagchi D, Cysewski GR. "Synthetic astaxanthin is significantly inferior to algal-based astaxanthin as an antioxidant and may not be suitable as a human nutraceutical supplement." *Nutrafoods*. 2013;12:145-152.
+[7] Mercke Odeberg J, Lignell A, Pettersson A, Hoglund P. "Oral bioavailability of the antioxidant astaxanthin in humans is enhanced by incorporation of lipid based formulations." *Eur J Pharm Sci*. 2003;19(4):299-304. PMID: 12885395. [https://pubmed.ncbi.nlm.nih.gov/12885395/](https://pubmed.ncbi.nlm.nih.gov/12885395/)
 
-[5] Brendler T, Williamson EM. "Astaxanthin: How much is too much? A safety review." *Phytother Res*. 2019;33(12):3029-3044. [https://doi.org/10.1002/ptr.6514](https://doi.org/10.1002/ptr.6514)
+[8] Okada Y, Ishikura M, Maoka T. "Bioavailability of astaxanthin in Haematococcus algal extract: the effects of timing of diet and smoking habits." *Biosci Biotechnol Biochem*. 2009;73(9):1928-1932. PMID: 19734684. [https://pubmed.ncbi.nlm.nih.gov/19734684/](https://pubmed.ncbi.nlm.nih.gov/19734684/)
 
-[6] NutraIngredients. "Synthetic astaxanthin for human supplements: industry perspectives." 2019.
+[10] Corte-Real J, Iddir M, Soukoulis C, et al. "Effect of divalent minerals on the bioaccessibility of pure carotenoids and on physical properties of gastro-intestinal fluids." *Food Chem*. 2016;197(Pt A):546-553. PMID: 26616987. [https://doi.org/10.1016/j.foodchem.2015.10.075](https://doi.org/10.1016/j.foodchem.2015.10.075)
 
-[7] Odeberg JM, Lignell A, Pettersson A, Hoglund P. "Oral bioavailability of the antioxidant astaxanthin in humans is enhanced by incorporation of lipid based formulations." *Eur J Pharm Sci*. 2003;19(4):299-304.
+[13] Yoshida H, Yanai H, Ito K, et al. "Administration of natural astaxanthin increases serum HDL-cholesterol and adiponectin in subjects with mild hyperlipidemia." *Atherosclerosis*. 2010;209(2):520-523. PMID: 19892350. [https://doi.org/10.1016/j.atherosclerosis.2009.10.012](https://doi.org/10.1016/j.atherosclerosis.2009.10.012)
 
-[8] Okada Y, Ishikura M, Maoka T. "Bioavailability of astaxanthin in Haematococcus algal extract: the effects of timing of diet and smoking habits." *Biosci Biotechnol Biochem*. 2009;73(9):1928-1932.
+[14] Choi HD, Youn YK, Shin WG. "Positive effects of astaxanthin on lipid profiles and oxidative stress in overweight subjects." *Plant Foods Hum Nutr*. 2011;66(4):363-369. PMID: 21964877. [https://doi.org/10.1007/s11130-011-0258-9](https://doi.org/10.1007/s11130-011-0258-9)
 
-[9] "Carotenoid-carotenoid interactions." *Nutr Rev*. 1999;57(5 Pt 1):162.
+[15] Choi SK, Park YS, Choi DK, Chang HI. "Effects of astaxanthin on the production of NO and the expression of COX-2 and iNOS in LPS-stimulated BV2 microglial cells." *J Microbiol Biotechnol*. 2008;18(12):1990-1996. PMID: 19131704. [https://pubmed.ncbi.nlm.nih.gov/19131704/](https://pubmed.ncbi.nlm.nih.gov/19131704/)
 
-[10] Corte-Real J, Iddir M, Soukoulis C, et al. "Effect of divalent cations on lipid bioaccessibility and on the accumulation (transport and uptake) of carotenoids in differentiated Caco-2 cells." *Food Chem*. 2016;197(Pt A):546-553.
+[16] MacDermid JC, Vincent JI, Gan BS, et al. "A blinded placebo-controlled randomized trial on the use of astaxanthin as an adjunct to splinting in the treatment of carpal tunnel syndrome." *Hand (N Y)*. 2012;7(1):1-9. PMID: 23449748. [https://doi.org/10.1007/s11552-011-9381-1](https://doi.org/10.1007/s11552-011-9381-1)
 
-[11] Borel P, Desmarchelier C. "Bioavailability of fat-soluble vitamins and phytochemicals in humans: effects of genetic variation." *Br J Nutr*. 2017;29:1-16.
+[17] Hill WS, Dohnalek MH, Ha Y, et al. "A Multicenter, Randomized, Double-Blinded, Placebo-Controlled Clinical Trial to Evaluate the Efficacy and Safety of a Krill Oil, Astaxanthin, and Oral Hyaluronic Acid Complex on Joint Health in People with Mild Osteoarthritis." *Nutrients*. 2023;15(17):3769. PMID: 37686801. Correction: *Nutrients*. 2024;16(12):1961 (PMID: 38931329). [https://doi.org/10.3390/nu15173769](https://doi.org/10.3390/nu15173769)
 
-[12] Zhou Q, Yang LL, Xu J, et al. "Evaluation of the physicochemical stability and digestibility of microencapsulated astaxanthin." *IOPScience*. 2018.
+[20] Earnest CP, Lupo M, White KM, Church TS. "Effect of astaxanthin on cycling time trial performance." *Int J Sports Med*. 2011;32(11):882-888. PMID: 21984399. [https://doi.org/10.1055/s-0031-1280779](https://doi.org/10.1055/s-0031-1280779)
 
-[13] Yoshida H, Yanai H, Ito K, et al. "Administration of natural astaxanthin increases serum HDL-cholesterol and adiponectin in subjects with mild hyperlipidemia." *Atherosclerosis*. 2010;209(2):520-523. [https://doi.org/10.1016/j.atherosclerosis.2009.10.012](https://doi.org/10.1016/j.atherosclerosis.2009.10.012)
+[21] Res PT, Cermak NM, Stinkens R, et al. "Astaxanthin supplementation does not augment fat use or improve endurance performance." *Med Sci Sports Exerc*. 2013;45(6):1158-1165. PMID: 23274592. [https://doi.org/10.1249/MSS.0b013e31827fddc4](https://doi.org/10.1249/MSS.0b013e31827fddc4)
 
-[14] Choi HD, Kim JH, Chang MJ, Kyu-Youn Y, Shin WG. "Effects of astaxanthin on oxidative stress in overweight and obese adults." *Plant Foods Hum Nutr*. 2011;66(4):363-369. [https://doi.org/10.1007/s11130-011-0258-9](https://doi.org/10.1007/s11130-011-0258-9)
+[22] Djordjevic B, Baralic I, Kotur-Stevuljevic J, et al. "Effect of astaxanthin supplementation on muscle damage and oxidative stress markers in elite young soccer players." *J Sports Med Phys Fitness*. 2012;52(4):382-392. PMID: 22828460. [https://pubmed.ncbi.nlm.nih.gov/22828460/](https://pubmed.ncbi.nlm.nih.gov/22828460/)
 
-[15] Choi SK, Park YS, Choi DK, Chang HI. "Effects of astaxanthin on the production of NO and the expression of COX-2 and iNOS in LPS-stimulated BV2 microglial cells." *J Microbiol Biotechnol*. 2008;18(12):1990-1996.
+[23] Bloomer RJ, Fry A, Schilling B, Chiu L, Hori N, Weiss L. "Astaxanthin supplementation does not attenuate muscle injury following eccentric exercise in resistance-trained men." *Int J Sport Nutr Exerc Metab*. 2005;15(4):401-412. PMID: 16286671. [https://pubmed.ncbi.nlm.nih.gov/16286671/](https://pubmed.ncbi.nlm.nih.gov/16286671/)
 
-[16] MacDermid JC, Bhatt M, Engel I. "The effect of astaxanthin supplementation on symptoms of carpal tunnel syndrome." *Hand (N Y)*. 2012;7(1):55-59.
+[24] Lyons NM, O'Brien NM. "Modulatory effects of an algal extract containing astaxanthin on UVA-irradiated cells in culture." *J Dermatol Sci*. 2002;30(1):73-84. PMID: 12354422. [https://pubmed.ncbi.nlm.nih.gov/12354422/](https://pubmed.ncbi.nlm.nih.gov/12354422/)
 
-[17] Hill CL, March LI, Aitken D, et al. "A randomized, double-blind, placebo-controlled trial of a nutraceutical supplement (FlexPro MD) for joint health." *Nutrients*. 2023;15(7):1590. [https://doi.org/10.3390/nu15071590](https://doi.org/10.3390/nu15071590)
+[25] Ito N, Seki S, Ueda F. "The protective role of astaxanthin for UV-induced skin deterioration in healthy people -- a randomized, double-blind, placebo-controlled trial." *Nutrients*. 2018;10(7):817. PMID: 29941810. [https://doi.org/10.3390/nu10070817](https://doi.org/10.3390/nu10070817)
 
-[18] Belviranli M, Okudan N. "Well-known antioxidants and newcomers in sport nutrition: coenzyme Q10, quercetin, resveratrol, pterostilbene, pycnogenol and astaxanthin." In: Lamprecht M, ed. *Antioxidants in Sport Nutrition*. CRC Press/Taylor & Francis; 2015.
+[26] Tominaga K, Hongo N, Karato M, Yamashita E. "Cosmetic benefits of astaxanthin on humans subjects." *Acta Biochim Pol*. 2012;59(1):43-47. PMID: 22428137. [https://pubmed.ncbi.nlm.nih.gov/22428137/](https://pubmed.ncbi.nlm.nih.gov/22428137/)
 
-[19] Malmsten CL, Lignell A. "Dietary supplementation with astaxanthin-rich algal meal improves strength endurance -- a double blind placebo controlled study on male students." *Carotenoid Sci*. 2008;13:20-22.
+[27] Sekikawa T, Kizawa Y, Li Y, et al. "Effects of diet containing astaxanthin on visual function in healthy individuals: a randomized, double-blind, placebo-controlled, parallel study." *J Clin Biochem Nutr*. 2023;72(1):74-81. PMID: 36777084. [https://doi.org/10.3164/jcbn.22-65](https://doi.org/10.3164/jcbn.22-65)
 
-[20] Earnest CP, Lupo M, White KM, Church TS. "Effect of astaxanthin on cycling time trial performance." *Int J Sports Med*. 2011;32(11):882-888. [https://doi.org/10.1055/s-0031-1280779](https://doi.org/10.1055/s-0031-1280779)
+[28] Angwafor F 3rd, Anderson ML. "An open label, dose response study to determine the effect of a dietary supplement on dihydrotestosterone, testosterone and estradiol levels in healthy males." *J Int Soc Sports Nutr*. 2008;5:12. PMID: 18700016. [https://doi.org/10.1186/1550-2783-5-12](https://doi.org/10.1186/1550-2783-5-12)
 
-[21] Res PT, Cermak NM, Stinkens R, et al. "Astaxanthin supplementation does not augment fat use or improve endurance performance." *Med Sci Sports Exerc*. 2013;45(6):1158-1165. [https://doi.org/10.1249/MSS.0b013e31827fddc4](https://doi.org/10.1249/MSS.0b013e31827fddc4)
+[29] Nakao R, Nelson OL, Park JS, et al. "Effect of dietary astaxanthin at different stages of mammary tumor initiation in BALB/c mice." *Anticancer Res*. 2010;30(6):2171-2175. PMID: 20651366. [https://pubmed.ncbi.nlm.nih.gov/20651366/](https://pubmed.ncbi.nlm.nih.gov/20651366/)
 
-[22] Djordjevic B, Baralic I, Kotur-Stevuljevic J, et al. "Effect of astaxanthin supplementation on muscle damage and oxidative stress markers in elite young soccer players." *J Sports Med Phys Fitness*. 2012;52(4):382-392.
+[31] Lu P, Reisdorph N, Hendricks AE, et al. "Characterization of astaxanthin isomers in different types of salmon filets and human plasma after salmon consumption." *Food Chem*. 2025;482:144024. PMID: 40179560. [https://doi.org/10.1016/j.foodchem.2025.144024](https://doi.org/10.1016/j.foodchem.2025.144024)
 
-[23] Bloomer RJ, Fry A, Schilling B, Chiu L, Hori N, Weiss L. "Astaxanthin supplementation does not attenuate muscle injury following eccentric exercise in resistance-trained men." *Int J Sport Nutr Exerc Metab*. 2005;15(4):401-412.
+[33] Harrison DE, Strong R, Reifsnyder P, et al. "Astaxanthin and meclizine extend lifespan in UM-HET3 male mice; fisetin, SG1002 (hydrogen sulfide donor), dimethyl fumarate, mycophenolic acid, and 4-phenylbutyrate do not significantly affect lifespan in either sex at the doses and schedules used." *Geroscience*. 2024;46(1):795-816. PMID: 38041783. [https://doi.org/10.1007/s11357-023-01011-0](https://doi.org/10.1007/s11357-023-01011-0)
 
-[24] Lyons NM, O'Brien NM. "Modulatory effects of an algal extract containing astaxanthin on UVA-irradiated cells in culture." *J Dermatol Sci*. 2002;30(1):73-84.
+[34] Korstanje R, Strong R, Salmon AB, et al. "Astaxanthin, meclizine, mitoglitazone, pioglitazone, alpha-ketoglutarate, mifepristone, methotrexate, and atorvastatin-telmisartan do not increase lifespan in UM-HET3 mice." *Geroscience*. 2026;48(3):3821-3830. PMID: 41843349. [https://doi.org/10.1007/s11357-026-02201-2](https://doi.org/10.1007/s11357-026-02201-2)
 
-[25] Ito N, Seki S, Ueda F. "The protective role of astaxanthin for UV-induced skin deterioration in healthy people -- a randomized, double-blind, placebo-controlled trial." *Nutrients*. 2018;10(7):817. [https://doi.org/10.3390/nu10070817](https://doi.org/10.3390/nu10070817)
+[35] EFSA Panel on Nutrition, Novel Foods and Food Allergens (NDA), Turck D, Castenmiller J, et al. "Safety of astaxanthin for its use as a novel food in food supplements." *EFSA J*. 2020;18(2):e05993. PMID: 32874213. [https://doi.org/10.2903/j.efsa.2020.5993](https://doi.org/10.2903/j.efsa.2020.5993)
 
-[26] Tominaga K, Hongo N, Karato M, Yamashita E. "Cosmetic benefits of astaxanthin on human subjects." *Acta Biochim Pol*. 2012;59(1):43-47.
+[36] EFSA Panel on Nutrition, Novel Foods and Food Allergens (NDA), Turck D, Bohn T, et al. "Safety of algal meal from Haematococcus pluvialis containing astaxanthin as a novel food pursuant to Regulation (EU) 2015/2283." *EFSA J*. 2025;23(12):e9736. PMID: 41346945. [https://doi.org/10.2903/j.efsa.2025.9736](https://doi.org/10.2903/j.efsa.2025.9736)
 
-[27] Sekikawa T, Kizawa Y, Li Y, Takara T, Takahashi J, Ariyoshi A. "Effects of astaxanthin supplementation on accommodative recovery." *J Clin Biochem Nutr*. 2022;71(1):58-64. [https://doi.org/10.3164/jcbn.21-125](https://doi.org/10.3164/jcbn.21-125)
+[37] Spiller GA, Dewell A. "Safety of an astaxanthin-rich Haematococcus pluvialis algal extract: a randomized clinical trial." *J Med Food*. 2003;6(1):51-56. PMID: 12804020. [https://pubmed.ncbi.nlm.nih.gov/12804020/](https://pubmed.ncbi.nlm.nih.gov/12804020/)
 
-[28] Angwafor F 3rd, Anderson ML. "An open label, dose response study to determine the effect of a dietary supplement on dihydrotestosterone, testosterone and estradiol levels in healthy males." *J Int Soc Sports Nutr*. 2008;5:12. [https://doi.org/10.1186/1550-2783-5-12](https://doi.org/10.1186/1550-2783-5-12)
+[38] Xia W, Tang N, Kord-Varkaneh H, et al. "The effects of astaxanthin supplementation on obesity, blood pressure, CRP, glycemic biomarkers, and lipid profile: A meta-analysis of randomized controlled trials." *Pharmacol Res*. 2020;161:105113. PMID: 32755613. Comment: Hajhashemy Z, Saneei P. *Pharmacol Res*. 2021;163:105171 (PMID: 32858120). [https://doi.org/10.1016/j.phrs.2020.105113](https://doi.org/10.1016/j.phrs.2020.105113)
 
-[29] Nakao R, Nelson OL, Park JS, Mathison BD, Thompson PA, Chew BP. "Effect of astaxanthin supplementation on inflammation and cardiac function in BALB/c mice." *Anticancer Res*. 2010;30(7):2721-2725.
+[39] Mashhadi NS, Zakerkish M, Mohammadiasl J, et al. "Astaxanthin improves glucose metabolism and reduces blood pressure in patients with type 2 diabetes mellitus." *Asia Pac J Clin Nutr*. 2018;27(2):341-346. PMID: 29384321. [https://doi.org/10.6133/apjcn.052017.11](https://doi.org/10.6133/apjcn.052017.11)
 
-[30] EFSA Panel on Dietetic Products, Nutrition and Allergies. "Scientific opinion on the safety of astaxanthin-rich ingredients (AstaREAL L10, AstaREAL L50) as novel food ingredients." *EFSA Journal*. 2014;12(7):3757. [https://doi.org/10.2903/j.efsa.2014.3757](https://doi.org/10.2903/j.efsa.2014.3757)
+[40] Leung LY, Chan SM, Tam HL, et al. "Astaxanthin Influence on Health Outcomes of Adults at Risk of Metabolic Syndrome: A Systematic Review and Meta-Analysis." *Nutrients*. 2022;14(10):2050. PMID: 35631193. [https://doi.org/10.3390/nu14102050](https://doi.org/10.3390/nu14102050)
 
-[31] Lu X, et al. "Astaxanthin stability and content in salmon as affected by cooking method and temperature." *Food Chem*. 2025.
+[41] Zhang L, Luo Y, Lei N, et al. "Astaxanthin suppresses thrombosis by inhibiting both platelet activation and blood coagulation." *Br J Pharmacol*. 2026;183(11):2890-2912. PMID: 41702374. [https://doi.org/10.1111/bph.70363](https://doi.org/10.1111/bph.70363)
 
-[32] Tsironi TN, et al. "Thermal processing of seafood." In: *Reference Module in Food Science*. Elsevier; 2019.
+[42] Choi H, Kim YJ, Shin HW, et al. "Astaxanthin inhibits platelet-mediated thrombosis via suppression of bidirectional αIIbβ3 signaling." *Eur J Pharmacol*. 2026;1030:179109. PMID: 42392252. [https://doi.org/10.1016/j.ejphar.2026.179109](https://doi.org/10.1016/j.ejphar.2026.179109)
+
+[43] Anderson ML. "A preliminary investigation of the enzymatic inhibition of 5alpha-reduction and growth of prostatic carcinoma cell line LNCap-FGC by natural astaxanthin and Saw Palmetto lipid extract in vitro." *J Herb Pharmacother*. 2005;5(1):17-26. PMID: 16093232. [https://pubmed.ncbi.nlm.nih.gov/16093232/](https://pubmed.ncbi.nlm.nih.gov/16093232/)
+
+[44] Zhou X, Cao Q, Orfila C, et al. "Systematic Review and Meta-Analysis on the Effects of Astaxanthin on Human Skin Ageing." *Nutrients*. 2021;13(9):2917. PMID: 34578794. [https://doi.org/10.3390/nu13092917](https://doi.org/10.3390/nu13092917)
+
+[45] Gonzalez DE, Dickerson BL, Roberts BM, et al. "International Society of Sports Nutrition position stand: effects of dietary antioxidants on exercise and sports performance." *J Int Soc Sports Nutr*. 2026;23(1):2629828. PMID: 41701327. [https://doi.org/10.1080/15502783.2026.2629828](https://doi.org/10.1080/15502783.2026.2629828)
+
+[46] Liu S, Yao W, Wei Y, et al. "The Effects of Astaxanthin Supplementation on Exercise Recovery Biomarkers and Exercise Performance: A Systematic Review and Meta-Analysis." *Nutrients*. 2026;18(10):1570. PMID: 42197030. [https://doi.org/10.3390/nu18101570](https://doi.org/10.3390/nu18101570)
+
+[47] Dehpahni MF, Hoolari BB, Amidi F. "A systematic review and meta-analysis of astaxanthin efficacy in male infertility: evidence from clinical and preclinical studies." *Sci Rep*. 2026;16(1). PMID: 41714744. [https://doi.org/10.1038/s41598-026-39963-w](https://doi.org/10.1038/s41598-026-39963-w)
+
+[48] Chitchumroonchokchai C, Failla ML. "Bioaccessibility and intestinal cell uptake of astaxanthin from salmon and commercial supplements." *Food Res Int*. 2017;99(Pt 2):936-943. PMID: 28847430. [https://doi.org/10.1016/j.foodres.2016.10.010](https://doi.org/10.1016/j.foodres.2016.10.010)
+
+[49] Rüfer CE, Moeseneder J, Briviba K, et al. "Bioavailability of astaxanthin stereoisomers from wild (Oncorhynchus spp.) and aquacultured (Salmo salar) salmon in healthy men: a randomised, double-blind study." *Br J Nutr*. 2008;99(5):1048-1054. PMID: 17967218. [https://pubmed.ncbi.nlm.nih.gov/17967218/](https://pubmed.ncbi.nlm.nih.gov/17967218/)
+
+[50] Corte-Real J, Guignard C, Gantenbein M, et al. "No influence of supplemental dietary calcium intake on the bioavailability of spinach carotenoids in humans." *Br J Nutr*. 2017;117(11):1560-1569. PMID: 28651681. [https://doi.org/10.1017/S0007114517001532](https://doi.org/10.1017/S0007114517001532)

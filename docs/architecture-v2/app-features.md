@@ -10,60 +10,7 @@ Part of [Health by Dr Brad — Architecture (v2, local-first)](../architecture-v
 <a id="chatbot"></a>
 ## Chatbot — server-proxied vs BYOK
 
-The same chat UI, two transports chosen at build time. The Shopify build keeps `chat-api.ts` (app proxy → Brad's server, Brad pays). The Pages build swaps in `byok-chat.ts` (browser → Anthropic direct, user pays). Both send the user's plan as context — the data still comes from the local file, not a server lookup.
-
-### Per-store assistant display name
-
-The assistant's display name is **per-store**, driven by a shop metafield so the same bundle reads differently on each storefront. Default is **"Brad AI"**.
-
-```mermaid
-flowchart LR
-  N1["shop metafield<br/>health_roadmap.chat_assistant_name"] --> N2["Liquid block<br/>data-assistant-name=…"] --> N3["assistant-config.ts<br/>reads attr · default #quot;Brad AI#quot;"] --> N4["ChatMessageBubble.tsx<br/>renders the name in the UI"]
-  classDef blue fill:#eef6ff,stroke:#2563eb,color:#111
-  classDef teal fill:#f0f9f7,stroke:#00a38b,color:#111
-  class N1 blue
-  class N2,N3,N4 teal
-```
-
-drstanfield (education) → "Brad AI"; microvitamin (commerce) → "MicroVitamin". Set per-store as a shop metafield; the widget bundle is identical — the name is data, not a build flag.
-
-### Data-editing via tool-use (the chatbot can pre-fill the form)
-
-The chatbot can now **propose edits to the user's roadmap** using Anthropic tool-use, on *both* the server (storefront) and BYOK (Pages) paths. The tool definitions live in [health-core/chat-edits.ts](../../packages/health-core/src/chat-edits.ts) — `propose_field_edit` (a measurement/profile field) and `propose_medication_edit` — and the parsed intent (`parseProposedEdits()`) carries structured field / value / unit / date, never fuzzy text.
-
-```mermaid
-flowchart LR
-  U["user asks in chat<br/>#quot;my LDL is 3.1#quot;"] --> T["Claude tool-use<br/>propose_field_edit /<br/>propose_medication_edit"] --> P["parseProposedEdits()<br/>structured field/value/unit/date"]
-  P --> F["field edit → form pre-filled (highlighted)<br/>user clicks Save — the save IS the confirmation"]
-  P --> MD["medication edit → saves immediately<br/>with one-click Undo"]
-  linkStyle 0,1,2,3 stroke:#16a34a,stroke-width:1.6px
-  classDef teal fill:#f0f9f7,stroke:#00a38b,color:#111
-  classDef red fill:#fef2f2,stroke:#dc3545,color:#111
-  classDef green fill:#ecfdf5,stroke:#16a34a,color:#111
-  classDef orange fill:#fff3e0,stroke:#fd7e14,color:#111
-  class U,P teal
-  class T red
-  class F green
-  class MD orange
-```
-
-No health data is ever auto-committed for measurements: the widget pre-fills the real form, highlighted, and the user's **Save** is the confirmation. Medications save immediately with Undo. Negatives are guarded — a bare number prompts for a unit; a wildly out-of-range value asks to confirm; a normal question fires no edit. Covered by a dedicated tool-use harness (`tools/test-tool-edits.ts`, fixtures `tools/test-tool-edits.json`) plus a no-spend self-consistency check in `chat-edits.test.ts`.
-
-#### Server pipeline (storefront)
-
-- [chat-classifier.server.ts](../../app/lib/chat-classifier.server.ts) — short-circuits \~59% of turns past the router
-- [chat-router.server.ts](../../app/lib/chat-router.server.ts) — Sonnet 5.5 retrieval over the 1,024-entry blog index (prompt-cached, 1 hour), returns 0–3 content handles
-- [chat.server.ts](../../app/lib/chat.server.ts) — context assembly, system blocks, `getChatCompletion`, titles
-- [platform-chat.server.ts](../../app/lib/platform-chat.server.ts) — reuses the pipeline for Discord + YouTube
-- Client: [chat-api.ts](../../widget-src/src/lib/chat-api.ts) sends the `LOCAL_FIRST` flag so the server treats the user as a guest-with-context, and `stream: true` for an NDJSON reply (status, sources, thinking and text lines, then `done`; US-15 AC16, AC20)
-
-#### BYOK path (Pages)
-
-- [byok-chat.ts](../../widget-src/src/lib/byok-chat.ts) — direct to `api.anthropic.com`, compact prompt grounded in the user's own data (the server's full system prompt + algorithm doc + KB routing are held-back IP and never shipped to a public bundle)
-- [byok-anthropic.ts](../../widget-src/src/lib/byok-anthropic.ts) — shared browser→Anthropic transport
-- Key `hr_anthropic_key` in `localStorage`, this device only, never synced
-
-Training capture: *only* the storefront server chat is written to Supabase (anonymized). The BYOK/self-host chat is browser→Anthropic and is never sent to Brad.
+How the chatbot works (transports, display name, tool-use edits, server pipeline) is documented privately, in the claude_business repo: `docs/chat-app-features.md` and `docs/chat-architecture.md`.
 
 <a id="lab-upload"></a>
 ## Lab upload
@@ -116,7 +63,7 @@ The "Get Your Personalized Plan" button does **exactly two things**: (1) the ema
 
 #### Blog / trending
 
-The chat knowledge base is `docs/blog/` + `docs/guideline/` + `docs/pathway/`, indexed by `scripts/rebuild-blog-index.ts` into `index.json`. [trending-cron](../../app/lib/trending-cron.server.ts) writes trending articles to a metafield. The "supplement wiki" is `type:"reference"` articles with a +5 ranking boost in `chat.server.ts` — content, not infrastructure.
+The chat knowledge base is `docs/blog/` + `docs/guideline/` (third-party pathways removed 2026-10-22, US-15 AC39), indexed by `scripts/rebuild-blog-index.ts` into `index.json`. [trending-cron](../../app/lib/trending-cron.server.ts) writes trending articles to a metafield. The "supplement wiki" is `type:"reference"` articles with a +5 ranking boost in `chat.server.ts` — content, not infrastructure.
 
 #### Discord / YouTube
 

@@ -17,6 +17,8 @@ import {
 import type { ChatFailureMode } from './chat.server';
 import { routeQuery, sanitizeForRouter, type RouterResult } from './chat-router.server';
 import { classifyMessage, shouldFireRouter } from './chat-classifier.server';
+import { loadBlogIndex } from './blog-index.server';
+import { preferMasters } from './router-view';
 import type { AnthropicUsage } from './anthropic.server';
 import type { Classification, RefusalCategory } from '../../packages/health-core/src/models';
 
@@ -35,6 +37,9 @@ export interface PlatformCompletionResult {
   errorDetail?: string;
   /** Router-call result. null when the classifier said SKIP (router never ran). */
   routerResult: RouterResult | null;
+  /** US-50 AC14: router picks replaced by their masters, and masters loaded reduced. */
+  replaced: string[];
+  reduced?: string[];
   classifier: {
     classification: Classification;
     routerSkipped: boolean;
@@ -51,8 +56,8 @@ Discord, not the Health Roadmap app.
 Override the following default system prompt behaviours:
 - Refer to yourself as "Dr Brad's AI assistant" — NOT as "Health Roadmap community chat" or any community-chat phrasing.
 - Do NOT reference "your roadmap suggestions", "your numbers", or any personalized
-  data. Answer based on the general algorithm, clinical guidelines, and pathway
-  content provided.
+  data. Answer based on the general algorithm, clinical guidelines, and content
+  provided.
 - Do NOT direct users to "account.drstanfield.com" or tell them to "log in" /
   "create a free account". They're on Discord. If they want personalized
   recommendations, mention drstanfield.com (the main site) where they can use
@@ -84,7 +89,11 @@ export async function platformChatCompletion(params: {
     ? await routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent)
     : null;
 
-  const blogArticles = loadMatchedArticlesFromHandles(routerResult?.handles ?? [])?.content ?? null;
+  // US-50 AC14: an older post gives way to its topic masters unless the message gives its URL or handle.
+  const index = loadBlogIndex();
+  const routed = routerResult ? preferMasters(routerResult.handles, index, message) : { handles: [], replaced: [] };
+  const matched = loadMatchedArticlesFromHandles(routed.handles);
+  const blogArticles = matched?.content ?? null;
 
   // Discord is a doctor-family surface (Brad's community) → strict doctor posture.
   const systemBlocks = buildSystemBlocks(DISCORD_PLATFORM_CONTEXT, { surfaceContext: DOCTOR_POSTURE, blogArticles });
@@ -102,6 +111,8 @@ export async function platformChatCompletion(params: {
     failureMode: completion.failureMode,
     errorDetail: completion.errorDetail,
     routerResult,
+    replaced: routed.replaced,
+    reduced: matched?.reduced,
     classifier: {
       classification: classifierResult.classification,
       routerSkipped: classifierResult.routerSkipped,

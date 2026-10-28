@@ -1,0 +1,82 @@
+[
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[26] raw_quote shares no number with its body_line: - However, a study of 106 young male athletes in India with adequate blood vitamin C/E levels but...",
+  "reason": "Checker tokenisation: the abstract spells the sample size \"Hundred six\" (106). (carried over unchanged from exceptions-masters-1.json; the entry is untouched by the 2026-10-21 edits)",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[27] raw_quote shares no number with its body_line: | Liposomal hydrogel vitamin C | Liposomal vitamin C encased in a hydrogel matrix (e.g., galactom...",
+  "reason": "Checker tokenisation: body \"more than 7 times\" equals the abstract's \">7-fold\". (carried over unchanged from exceptions-masters-1.json; the entry is untouched by the 2026-10-21 edits)",
+  "by": "orchestrator",
+  "date": "2026-10-20"
+ },
+ {
+  "check": "AC7",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "product section changed: ### Protein Powder as Part of MicroVitamin+ Powder",
+  "reason": "Brad 2026-10-21: count corrected to products.md:136 (v8 powder = 26 core + 4 = 30); 25 was the v7 count",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC7",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "product mentions rose 3 -> 4",
+  "reason": "Brad 2026-10-21: the MicroVitamin+ Powder section now names the MicroVitamin capsules once, to state the corrected 26 + 4 = 30 ingredient count (products.md:136); a correction, not new promotion.",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC7",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "report says product mentions 2 -> 2, recomputed 3 -> 4",
+  "reason": "Brad 2026-10-21: the report is append-only and its count (2 -> 2) predates the corrected ingredient-count sentence; the recount is 3 -> 4, covered by the 'rose' exception above.",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC4",
+  "handle": "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 20 October 2026)",
+  "reason": "Orchestrator 2026-10-21 (R6): the Current view gained Brad's liver-test sentence on 2026-10-21, so its heading and reviewed: are re-dated 21 October 2026; the section itself is kept.",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC7",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "product section changed: ### Product Mention — MicroVitamin",
+  "reason": "Orchestrator 2026-10-21 (R7): the MicroVitamin+ Powder count corrected to products.md:136 (v8 powder = 26 core + 4 = 30; 25 was the v7 count), with the v9 label from products.md:121, :733, :734; also (R8, merged into R7 on Brad's 'sure', 2026-10-21): the MicroVitamin ingredient count and price (25 ingredients, $55 / $49.50 a month = USA v7) and the MicroVitamin+ Powder price ($90 / $81 a month) corrected to USA v8 per products.md: 26 ingredients (:321), $65 one-time / $58.50 a month (:11, :54, :57; :115 gives $58.50), Powder $100 one-time / $90 a month (:121); 25 ingredients in the UK, EU and Canada (:321). Brad confirmed the prices 2026-10-21 ('that's correct'). Corrections, not new promotion.",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"500 mg/day\": Levothyroxine (Synthroid) | Vitamin C may increase how much levothyroxine is absorbed, possibly by increasing stomach...",
+  "reason": "Checker tokenisation (orchestrator 2026-10-21, R3 + Codex): the body says 'about 500 mg to 1 g a day', which the checker reads as 500 mg/day; the Jubiz 2014 abstract [155] (PMID 24601693, extra_raw) gives '500 mg vitamin C' taken with the daily levothyroxine dose, quoted in changed_tokens 53. Ruling 10: the text stays as it should read.",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "changed_tokens[129] raw_quote shares no number with its body_line: The RDA while breastfeeding is 1.3 g/kg a day [115]. Brad's view (October 2026) is that about 1.3...",
+  "reason": "Checker tokenisation (Brad's answer 2026-10-21, relayed by the orchestrator): the Weiler 2023 full-text excerpt [115] (PMID 36839196, extra_raw, ruling 16) writes the lactation RDA as '1.3 g/kg/d'; the body writes '1.3 g/kg a day', which the checker reads as a different unit. Ruling 10: the text stays as it should read.",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1300 mg/kg\", \"1600 mg/kg\": The RDA while breastfeeding is 1.3 g/kg a day [115]. Brad's view (October 2026) is that about 1.3 to 1.6 g/kg a day i...",
+  "reason": "Checker tokenisation and Brad's own number (2026-10-21, relayed by the orchestrator): 1.3 g/kg a day is the lactation RDA in the Weiler 2023 excerpt [115] ('1.3 g/kg/d', read as a different unit); 1.6 is the upper end Brad approved ('1.3 to 1.6'), stated in the body as his judgement, not a trial-tested target. Not a ConsumerLab quote.",
+  "by": "orchestrator",
+  "date": "2026-10-21"
+ }
+]

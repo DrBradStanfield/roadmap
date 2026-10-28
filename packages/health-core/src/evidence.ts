@@ -69,6 +69,8 @@ const REFS_PESA: SuggestionReference[] = [
   { label: 'Ibanez 2021 – PESA study: subclinical atherosclerosis progression (JACC)', url: 'https://doi.org/10.1016/j.jacc.2021.05.011' },
 ];
 
+const REF_EZ_PAVE: SuggestionReference = { label: 'Lee 2026 – Ez-PAVE: LDL target <55 vs <70 mg/dL (NEJM)', url: 'https://doi.org/10.1056/NEJMoa2600283' };
+
 const REFS_LDL_SAFETY: SuggestionReference[] = [
   { label: 'Karagiannis 2021 – Safety of very low LDL (<30 mg/dL) (Eur Heart J)', url: 'https://doi.org/10.1093/eurheartj/ehaa1080' },
   { label: 'Patti 2023 – Very low LDL intensive lowering: safety & efficacy', url: 'https://doi.org/10.1093/ehjcvp/pvac049' },
@@ -243,9 +245,10 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'weight-med-metformin': {
-    reason: 'Metformin has been used for decades to improve blood sugar control. The Diabetes Prevention Program (DPP) study showed that metformin reduced diabetes progression. Extended-release formulations cause fewer gastrointestinal side effects.',
+    reason: 'Metformin has been used for decades to improve blood sugar control. The Diabetes Prevention Program (DPP) trial showed that metformin reduced the move from prediabetes to diabetes by about a third versus placebo; lifestyle change did more. Extended-release formulations cause fewer gastrointestinal side effects.',
     guidelines: [],
     references: [
+      { label: 'Knowler 2002 – Diabetes Prevention Program: lifestyle or metformin & incidence of type 2 diabetes (NEJM)', url: 'https://doi.org/10.1056/NEJMoa012512' },
       { label: 'Lee 2021 – Metformin & mortality in Diabetes Prevention Program (Diabetes Care)', url: 'https://doi.org/10.2337/dc21-1046' },
     ],
   },
@@ -295,21 +298,21 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Blood Work: Atherogenic Lipids ─────────────────────────
 
   'apob-very-high': {
-    reason: 'ApoB directly measures the number of atherogenic (artery-clogging) particles in your blood and is considered the most accurate predictor of cardiovascular risk by the European Atherosclerosis Society. Each LDL, VLDL, and Lp(a) particle carries exactly one ApoB molecule, making it a superior marker to LDL cholesterol, which only estimates particle concentration. A very high ApoB indicates significantly elevated cardiovascular risk, and statin therapy is typically recommended.\n\nSome doctors use on-treatment targets below 50 mg/dL (0.5 g/L) based on the ESC/EAS guidelines and the PESA study, which demonstrated that subclinical atherosclerosis progression is driven by cumulative LDL/ApoB exposure over time — even in young, apparently healthy adults.',
+    reason: 'ApoB directly measures the number of atherogenic (artery-clogging) particles in your blood and is considered the most accurate predictor of cardiovascular risk by the European Atherosclerosis Society. Each LDL, VLDL, and Lp(a) particle carries exactly one ApoB molecule, making it a superior marker to LDL cholesterol, which only estimates particle concentration. A very high ApoB indicates significantly elevated cardiovascular risk, and statin therapy is typically recommended.\n\nESC/EAS 2019 recommends ApoB below 65 mg/dL for very high risk; based on the Ez-PAVE trial of LDL-C targets and the PESA study, this tool aims lower, for ApoB below 50 mg/dL (0.5 g/L). PESA demonstrated that subclinical atherosclerosis progression is driven by cumulative LDL/ApoB exposure over time, even in young, apparently healthy adults.',
     guidelines: [...GUIDELINES_LIPIDS, 'EAS Consensus'],
-    references: [...REFS_LIPID_EVIDENCE, ...REFS_PESA, ...REFS_LDL_SAFETY],
+    references: [...REFS_LIPID_EVIDENCE, REF_EZ_PAVE, ...REFS_PESA, ...REFS_LDL_SAFETY],
   },
 
   'apob-high': {
-    reason: 'ApoB directly measures the number of atherogenic (artery-clogging) particles in your blood. It is considered a more accurate predictor of cardiovascular risk than LDL cholesterol by the European Atherosclerosis Society. Your level is elevated and lifestyle modifications and/or medication should be discussed with your doctor.\n\nSome doctors use on-treatment targets below 50 mg/dL (0.5 g/L) based on ESC/EAS guidelines and the PESA study, which showed that early ApoB/LDL exposure drives atherosclerosis even in young, healthy adults.',
+    reason: 'ApoB directly measures the number of atherogenic (artery-clogging) particles in your blood. It is considered a more accurate predictor of cardiovascular risk than LDL cholesterol by the European Atherosclerosis Society. Your level is elevated and lifestyle modifications and/or medication should be discussed with your doctor.\n\nESC/EAS 2019 recommends ApoB below 65 mg/dL for very high risk; based on the Ez-PAVE trial of LDL-C targets and the PESA study, this tool aims lower, for ApoB below 50 mg/dL (0.5 g/L). PESA showed that early ApoB/LDL exposure drives atherosclerosis even in young, healthy adults.',
     guidelines: [...GUIDELINES_LIPIDS, 'EAS Consensus'],
-    references: [...REFS_LIPID_EVIDENCE, ...REFS_PESA, ...REFS_LDL_SAFETY],
+    references: [...REFS_LIPID_EVIDENCE, REF_EZ_PAVE, ...REFS_PESA, ...REFS_LDL_SAFETY],
   },
 
   'apob-borderline': {
-    reason: 'ApoB measures the total number of atherogenic particles in your blood. Standard guidelines would classify this level as normal, but some doctors use more aggressive targets based on the PESA study, which showed that cumulative LDL/ApoB exposure drives atherosclerosis even in young, apparently healthy adults. This is why your result shows as borderline rather than normal.',
+    reason: 'ApoB measures the total number of atherogenic particles in your blood. Standard guidelines would classify this level as normal, but this tool uses a lower target, based on the Ez-PAVE trial of LDL-C targets and the PESA study, which showed that cumulative LDL/ApoB exposure drives atherosclerosis even in young, apparently healthy adults. This is why your result shows as borderline rather than normal.',
     guidelines: [...GUIDELINES_LIPIDS, 'EAS Consensus'],
-    references: [...REFS_LIPID_EVIDENCE, ...REFS_PESA],
+    references: [...REFS_LIPID_EVIDENCE, REF_EZ_PAVE, ...REFS_PESA],
   },
 
   'ldl-very-high': {
@@ -533,21 +536,26 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Supplements ────────────────────────────────────────────
 
   'supplement-micronutrient-base': {
-    reason: 'A comprehensive daily supplement can help fill nutritional gaps. The COSMOS trial enrolled men aged 60 and over and women aged 65 and over. A meta-analysis of its three cognition sub-studies (about 5,200 people) found that a daily multivitamin-mineral improved global cognition and episodic memory compared with placebo. The effect on global cognition was equivalent to about 2 years less cognitive ageing. This suggests broad micronutrient support may benefit brain health alongside physical health.\n\nThe WHO 2026 guideline on reducing the risk of cognitive decline and dementia recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements for that purpose in people without a diagnosed deficiency. It is a strong recommendation based on moderate-certainty evidence; WHO gave the reason as \'unexpected harmful effects that outweigh any potential benefits\'. It kept its 2019 recommendation without reassessing supplements, and it did not cite the COSMOS trials.',
+    reason: 'A comprehensive daily supplement can help fill nutritional gaps. The COSMOS trial enrolled men aged 60 and over and women aged 65 and over. A meta-analysis of its three cognition sub-studies (about 5,200 people) found that a daily multivitamin-mineral improved global cognition and episodic memory compared with placebo. The effect on global cognition was equivalent to about 2 years less cognitive ageing. This suggests broad micronutrient support may benefit brain health alongside physical health.\n\nThe WHO 2026 guideline on reducing the risk of cognitive decline and dementia recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements for that purpose in people without a diagnosed deficiency. It is a strong recommendation based on moderate-certainty evidence; WHO gave the reason as \'unexpected harmful effects that outweigh any potential benefits\'. It kept its 2019 recommendation without reassessing supplements, and it did not cite the COSMOS trials.\n\nThe base includes vitamin K2. In healthy volunteers taking a vitamin K antagonist, MK-7 (a form of vitamin K2) at 10 to 20 mcg a day lowered the INR enough to matter clinically in at least 40 to 60% of people, and 45 mcg a day lowered the group\'s average INR by about 40%. The study authors concluded that MK-7 supplements should be avoided with vitamin K antagonist therapy. If you take warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR.',
     guidelines: [],
     references: [
       { label: 'Vyas 2024 – Multivitamin & cognition: COSMOS-Clinic + meta-analysis of 3 COSMOS sub-studies (Am J Clin Nutr)', url: 'https://doi.org/10.1016/j.ajcnut.2023.12.011' },
       { label: 'Baker 2023 – Multivitamin & cognitive function: COSMOS-Mind trial (Alzheimers Dement)', url: 'https://doi.org/10.1002/alz.12767' },
       { label: 'WHO 2026 – Risk reduction of cognitive decline and dementia: guidelines, 2nd edition', url: 'https://www.who.int/publications/i/item/9789240123557' },
+      { label: 'Theuwissen 2013 – Low-dose vitamin K2 (MK-7) and oral anticoagulant stability (J Thromb Haemost)', url: 'https://doi.org/10.1111/jth.12203' },
     ],
   },
 
   'supplement-creatine': {
-    reason: 'Creatine monohydrate is one of the most well-studied supplements. A meta-analysis found it significantly increases muscle strength and lean mass when combined with resistance training, and emerging evidence suggests cognitive benefits, particularly under conditions of stress or sleep deprivation.',
+    reason: 'Creatine monohydrate is one of the most well-studied supplements. A meta-analysis found it significantly increases muscle strength and lean mass when combined with resistance training. Dr Stanfield considers the evidence that creatine improves memory clear and consistent; this is his judgement, not a trial finding. Formal reviews are more mixed. A systematic review (Avgerinos 2018) and two meta-analyses of small trials (Prokopidis 2023, Xu 2024) reported better memory, but the meta-analyses counted several tests from the same people as separate results. Reanalysed by its authors, Prokopidis 2023 found no clear overall memory benefit except in older adults (aged 66 to 76). Xu 2024 found no effect on overall cognition or executive function. In 2024 the European Food Safety Authority concluded that a cause-and-effect link between creatine and better cognitive function has not been established.',
     guidelines: [],
     references: [
       { label: 'Kreider 2017 – ISSN position stand: creatine safety & efficacy (J Int Soc Sports Nutr)', url: 'https://doi.org/10.1186/s12970-017-0173-z' },
       { label: 'Avgerinos 2018 – Creatine & cognition: systematic review (Exp Gerontol)', url: 'https://doi.org/10.1016/j.exger.2018.04.013' },
+      { label: 'Prokopidis 2023 – Creatine & memory: meta-analysis of RCTs (Nutr Rev)', url: 'https://doi.org/10.1093/nutrit/nuac064' },
+      { label: 'Prokopidis 2023 – Authors\' reply and reanalysis: memory benefit only in older adults (Nutr Rev)', url: 'https://doi.org/10.1093/nutrit/nuac111' },
+      { label: 'Xu 2024 – Creatine & cognition in adults: meta-analysis of 16 RCTs (Front Nutr)', url: 'https://doi.org/10.3389/fnut.2024.1424972' },
+      { label: 'EFSA 2024 – Creatine & cognitive function: health claim not substantiated (EFSA J)', url: 'https://doi.org/10.2903/j.efsa.2024.9100' },
     ],
   },
 
@@ -573,10 +581,11 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'supplement-sleep': {
-    reason: 'An umbrella review of meta-analyses confirms that melatonin supplementation effectively reduces sleep onset latency and improves sleep quality, with a good safety profile. This supports its use as part of a comprehensive sleep hygiene strategy.',
+    reason: 'An umbrella review of meta-analyses reports that melatonin supplementation may reduce sleep onset latency and improve sleep quality, with a good safety profile. A 2024 dose-response meta-analysis of 26 trials suggests that taking it about 3 hours before bedtime may work better than taking it 30 minutes before. This supports its use as part of a comprehensive sleep hygiene strategy.',
     guidelines: [],
     references: [
       { label: 'Low 2020 – Melatonin efficacy for insomnia (J Psychiatr Res)', url: 'https://doi.org/10.1016/j.jpsychires.2019.10.022' },
+      { label: 'Cruz-Sanabria 2024 – Melatonin timing and dose: dose-response meta-analysis (J Pineal Res)', url: 'https://doi.org/10.1111/jpi.12985' },
     ],
   },
 
@@ -637,7 +646,22 @@ const REFS_IBW: SuggestionReference[] = [
 ];
 
 const REFS_WHTR: SuggestionReference[] = [
-  { label: 'Ashwell & Hsieh 2005 – WHtR as screening tool for metabolic risk (Obes Rev)', url: 'https://doi.org/10.1111/j.1467-789X.2005.00165.x' },
+  { label: 'Ashwell 2012 – WHtR better than BMI for cardiometabolic risk (Obes Rev)', url: 'https://doi.org/10.1111/j.1467-789X.2011.00952.x' },
+  { label: 'Browning 2010 – WHtR boundary values: 0.5 as a possible global boundary (Nutr Res Rev)', url: 'https://doi.org/10.1017/S0954422410000144' },
+  { label: 'Ashwell 2005 – Six reasons to use waist-to-height ratio (Int J Food Sci Nutr)', url: 'https://doi.org/10.1080/09637480500195066' },
+];
+
+/**
+ * References roadmap_text.html cites that no suggestion or card uses yet: the metric
+ * guides cite them (metric-guides.ts, US-58). Titles as roadmap_text.html gives them.
+ * Only Cannon's DOI is in roadmap_text.html; every DOI here was checked against
+ * Crossref (title, journal, first author, year) on 2026-10-26.
+ */
+export const GUIDE_REFERENCES: SuggestionReference[] = [
+  { label: 'Cannon 2015 – IMPROVE-IT: ezetimibe added to statin therapy after acute coronary syndromes (NEJM)', url: 'https://doi.org/10.1056/NEJMoa1410489' },
+  { label: 'He 2022 – GLP-1 receptor agonist use & risk of gallbladder and biliary diseases (JAMA Intern Med)', url: 'https://doi.org/10.1001/jamainternmed.2022.0338' },
+  { label: 'Konopka 2019 – Metformin inhibits mitochondrial adaptations to aerobic exercise training in older adults (Aging Cell)', url: 'https://doi.org/10.1111/acel.12880' },
+  { label: 'Moreno-Cabanas 2022 – Chronic metformin treatment & training adaptations with hyperglycemia (Obesity)', url: 'https://doi.org/10.1002/oby.23410' },
 ];
 
 /** Static stat card evidence entries. */
@@ -665,7 +689,7 @@ export const STAT_CARD_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'egfr': {
-    reason: 'Estimated glomerular filtration rate (eGFR) measures kidney function using the CKD-EPI 2021 equation (race-free), based on creatinine, age, and sex. CKD staging: ≥70 Normal, 60-69 Low Normal, 45-59 Mildly Decreased (Stage 3a), 30-44 Moderately Decreased (Stage 3b), 15-29 Severely Decreased (Stage 4), <15 Kidney Failure (Stage 5). An eGFR below 60 sustained for 3+ months is consistent with chronic kidney disease.',
+    reason: 'Estimated glomerular filtration rate (eGFR) measures kidney function. The plan uses the eGFR printed on your lab report when it is from your latest test; otherwise it calculates one with the CKD-EPI 2021 equation (race-free) from your creatinine, age, and sex. CKD staging: ≥70 Normal, 60-69 Low Normal, 45-59 Mildly Decreased (Stage 3a), 30-44 Moderately Decreased (Stage 3b), 15-29 Severely Decreased (Stage 4), <15 Kidney Failure (Stage 5). An eGFR below 60 sustained for 3+ months is consistent with chronic kidney disease.',
     guidelines: ['KDIGO'],
     references: REFS_EGFR,
   },
@@ -687,6 +711,16 @@ export const STAT_CARD_EVIDENCE: Record<string, SuggestionEvidence> = {
     guidelines: ['ADA'],
     references: [
       { label: 'ADA – Standards of Medical Care in Diabetes', url: 'https://diabetesjournals.org/care/issue/47/Supplement_1' },
+    ],
+  },
+
+  // US-56 AC8: the iPhone app's VO2 max bands (display only; table in vo2max-bands.ts).
+  'vo2max': {
+    reason: 'VO2 max is the most oxygen your body can use during hard exercise, a measure of cardiorespiratory fitness. The bands compare your value with people of your age and sex in the FRIEND registry, cut at its 20th, 50th and 80th percentiles: Low is below the 20th, Below Average up to the 50th, Above Average up to the 80th, and High from the 80th. From age 60, Low uses Apple\'s Low Cardio Fitness alert line (below 18 mL/kg/min for men, 15 for women). Apple uses fixed lines from 60, which it ties to the fitness that independent living may need, so at older ages Low is a functional line rather than a percentile. Apple Watch estimates VO2 max from outdoor walks, runs and hikes; the FRIEND values come from lab treadmill tests.',
+    guidelines: [],
+    references: [
+      { label: 'Kaminsky 2022 – Updated FRIEND reference standards for cardiorespiratory fitness (Mayo Clin Proc)', url: 'https://doi.org/10.1016/j.mayocp.2021.08.020' },
+      { label: 'Apple 2021 – Using Apple Watch to Estimate Cardio Fitness with VO2 max (white paper)', url: 'https://www.apple.com/healthcare/docs/site/Using_Apple_Watch_to_Estimate_Cardio_Fitness_with_VO2_max.pdf' },
     ],
   },
 };

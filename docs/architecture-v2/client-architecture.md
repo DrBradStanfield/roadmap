@@ -59,11 +59,13 @@ Three layers: a pure data model + merge engine in `health-core` (so CI exercises
 - `roadmap-doc.ts` — `health-roadmap.json` as a `DocumentSpec`, shared by the widget and the hosted MCP server so both migrate/merge the record identically
 - `document-path.ts` — the organised-archive folder+filename scheme for uploaded documents
 - `lab-catalog.ts`'s `labSlotKey()` — normalises a lab name to its merge-dedup slot key
+- `erase.ts` (the erased record), `record-session.ts` (the session: save loop, re-read, erase, erase guard, change detection), `live-refresh.ts` (US-34 re-read timing), `record-transfer.ts` (lift on connect, copy-down before a switch), `chat-session.ts` (chat history), `storage-self-test.ts`, `record-host.ts` (what a client gives the engine) — the record engine the widget's store and the iPhone app share (ios/architecture.md D4); `engine-portability.test.ts` keeps them free of DOM and Node
 
 #### Shell (widget-src/storage)
 
 - `dropbox.ts` / `drive.ts` / `github.ts` / `webdav.ts` / `local-storage-adapter.ts`
-- `pkce.ts`, `device-id.ts`, `chat-history-store.ts`, `self-test.ts`
+- `web-record-host.ts` — the web's `RecordHost` (health-core `record-host.ts`): localStorage is the device tier; any other store is a cloud with localStorage as its mirror and the pending-sync marker
+- `pkce.ts`, `device-id.ts`, `chat-history-store.ts`
 
 ### The `RoadmapFile`
 
@@ -100,7 +102,7 @@ The [SyncManager](../../packages/health-core/src/sync-manager.ts) runs one optim
 Two devices editing the same cloud file must converge without losing data and without a CRDT library. The model is append-dominant, so the merge is simple and deterministic:
 
 - **Measurements & lab values** — slot-keyed by `(metric, day)`; at most one `active` row per slot; `entered-in-error` is monotonic (never reverts).
-- **Current-state singletons** (profile, screenings, reminder prefs) — per-key last-write-wins by logical clock. **Wall-clock is only a tiebreak**, so two devices with skewed clocks still converge.
+- **Current-state singletons** (profile, screenings, reminder prefs) — per-key last-write-wins: **the newer edit by clock time wins, the lamport counter only breaks a tie** (US-10 AC8, Brad 2026-10-22; before, the counter decided and a device offline a while could revert a newer edit). The merge reads no clock of its own, so devices still converge; a device whose clock runs ahead wins until real time passes it or an edit made after seeing it, which stamps no earlier (`laterStamp`).
 - **Logs** (medication/supplement history) — unioned. **Snapshots** — deduped. **`eraseEpoch`** — highest wins the whole file.
 
 ```mermaid

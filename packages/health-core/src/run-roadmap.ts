@@ -15,7 +15,7 @@
  * run_roadmap round, every tool_use answered, the first reply replayed
  * unmodified (thinking signatures included), and no tools on the second call.
  */
-import { z } from 'zod';
+import * as z from './zod';
 import type { HealthInputs } from './types';
 import { reportedToCanonical, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
 import { FIELD_TO_METRIC } from './mappings';
@@ -136,7 +136,7 @@ const askUnit = (metric: MetricType, r: { valueSI: number; system: UnitSystem })
   r.valueSI < (UNIT_SWAP_FLOORS[metric] ?? -Infinity) || (r.system === 'si' && r.valueSI < (SI_ASK_UNIT_BELOW[metric] ?? -Infinity));
 /** The day of a value whose date could not be read: later than any real day, so it outdates every stated value. */
 const UNKNOWN_DAY = '9999-12-31';
-const measured = z.object({ value: z.number().finite(), unit: z.string().min(1).max(32) });
+const measured = z.object({ value: z.number(), unit: z.string().min(1).max(32) });
 /** A number, or a numeric string read as one (a model may send "16" for an integer field); NaN otherwise. */
 const numeric = (v: unknown) =>
   typeof v === 'number' ? v : typeof v === 'string' && /^\s*\d+(\.\d+)?\s*$/.test(v) ? Number(v) : NaN;
@@ -292,6 +292,18 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   const payload: Record<string, unknown> = { ...base, ...overlay, ...birth };
   if (payload.birthMonth === undefined) delete payload.birthMonth;
   for (const f of unusable) delete payload[f];
+  // US-07 AC7: a stated creatinine, used or not, from after the lab eGFR's day outdates it (with no
+  // age to read it by, lostEgfr below withholds the protein card and asks). So does the saved one,
+  // newer than the lab eGFR, once the plan can calculate from it: the client kept the lab eGFR
+  // only because it had no age, and a stated one supplies it.
+  const saved = sanitizeInputs({ creatinine: payload.creatinine, birthYear: payload.birthYear } as Partial<HealthInputs>);
+  const creatinineDay = stated.get('creatinine')?.date ?? blocked.get('creatinine')
+    ?? (saved.creatinine !== undefined && saved.birthYear !== undefined
+      ? savedLatestDay(history, 'creatinine', today) || undefined : undefined);
+  if (creatinineDay !== undefined && !(creatinineDay <= String(base.labEgfrDate ?? ''))) {
+    delete payload.labEgfr;
+    delete payload.labEgfrDate;
+  }
   if (unusable.size > 0 && base.measurementHistory !== undefined) {
     const gone = new Set([...unusable].map(f => FIELD_TO_METRIC[f]));
     payload.measurementHistory = Object.fromEntries(Object.entries(history).filter(([metric]) => !gone.has(metric)));
@@ -339,7 +351,7 @@ export interface ToolResultBlock { type: 'tool_result'; tool_use_id: string | un
 export interface ChatTurnMessage { role: 'user' | 'assistant'; content: string | ReadonlyArray<ChatContentBlock | ToolResultBlock> }
 /** What a round cost in values: counts only, for the usage signal. Never a value. */
 export interface RoadmapRoundCounts { applied: number; rejected: number }
-/** A transport's own tool_result for a tool health-core does not know (US-49's subscription tool); undefined for the rest. */
+/** A transport's own tool_result for a tool health-core does not know (US-59's subscription tool); undefined for the rest. */
 export type ToolResultFor = (b: ChatContentBlock, blocks: readonly ChatContentBlock[]) => string | undefined;
 
 /** Stub results for a form tool called beside run_roadmap: the client applies a valid one after the answer. */

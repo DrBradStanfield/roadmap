@@ -525,7 +525,7 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
     ];
     const good = [
       "Pregnancy changes which medicines are used, so your roadmap's weight and diabetes medication cascade (GLP-1, then SGLT2 inhibitor, then metformin) doesn't apply to you. Metformin and insulin are the options. GLP-1 medicines, SGLT2 inhibitors and sulfonylureas should not be used in pregnancy.",
-      'Metformin and insulin are the only medicines the pathway recommends in pregnancy. GLP-1 medicines should not be used. Your roadmap would normally start with a GLP-1, but that does not apply in pregnancy.',
+      'Metformin and insulin are the only medicines guidelines recommend in pregnancy. GLP-1 medicines should not be used. Your roadmap would normally start with a GLP-1, but that does not apply in pregnancy.',
       "Insulin or metformin. Your roadmap's cascade starts with a GLP-1, but GLP-1s are not used in pregnancy, so set that card aside.",
     ];
     expect(verdicts(fixtureOf("I'm 28 weeks pregnant"), [...bad, ...good])).toEqual([...bad.map(() => 'fail'), ...good.map(() => 'pass')]);
@@ -644,7 +644,7 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
     ];
     const good = [
       "Your roadmap doesn't set a target for diagnosed diabetes. It only flags HbA1c at or above 47.5 mmol/mol as the diabetic range, and your latest value is 58 mmol/mol. - **Lower target (below 48 mmol/mol):** used when hypoglycaemia risk is low (not on insulin or sulfonylureas).",
-      "HbA1c targets are individualised. The roadmap's 38.8 is a screening cut-off, not a target for you. On insulin the pathway lists 53 to 70 to limit hypoglycaemia.",
+      "HbA1c targets are individualised. The roadmap's 38.8 is a screening cut-off, not a target for you. On insulin guidelines list 53 to 70 to limit hypoglycaemia.",
     ];
     expect(verdicts(fixtureOf("I have type 2 diabetes and I'm on insulin"), [...bad, ...good])).toEqual([...bad.map(() => 'fail'), ...good.map(() => 'pass')]);
   }, 120_000);
@@ -656,7 +656,7 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
       'Your roadmap starts with a GLP-1 for you.',
     ];
     const good = [
-      "The roadmap's weight-and-diabetes medication cascade (GLP-1, then SGLT2 inhibitor, then metformin) is not triggered for you. The roadmap therefore does not name a first drug for you. The loaded Auckland HealthPathways page says healthy lifestyle measures plus metformin are first-line for type 2 diabetes.",
+      "The roadmap's weight-and-diabetes medication cascade (GLP-1, then SGLT2 inhibitor, then metformin) is not triggered for you. The roadmap therefore does not name a first drug for you. A loaded guideline says healthy lifestyle measures plus metformin are first-line for type 2 diabetes.",
       "Your roadmap's cascade (GLP-1 first) is not triggered at a BMI of 23. The pathway starts with metformin.",
       "The roadmap's cascade starts with a GLP-1, but it only applies when the weight card shows, which it does not for you.",
     ];

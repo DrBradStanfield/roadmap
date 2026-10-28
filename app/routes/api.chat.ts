@@ -27,8 +27,9 @@ import {
   CHAT_MODEL,
   MAX_MESSAGE_LENGTH,
 } from '../lib/chat.server';
-import { routeQuery, reportRouterFailure, sanitizeForRouter, redactForWidget, routerText, ROUTER_VERSION } from '../lib/chat-router.server';
-import { titledHandles } from '../lib/chat-router-guard';
+import { routeQuery, reportRouterFailure, sanitizeForRouter, redactForWidget, ROUTER_VERSION } from '../lib/chat-router.server';
+import { loadBlogIndex } from '../lib/blog-index.server';
+import { openArticle, preferMasters } from '../lib/router-view';
 import { MAX_HISTORY_MESSAGES, MAX_HISTORY_TURN_CHARS, cutText } from '../../packages/health-core/src/chat-history';
 import { classifyMessage, shouldFireRouter } from '../lib/chat-classifier.server';
 import { findDuplicateReply, type DedupHistoryItem } from '../lib/chat-dedup.server';
@@ -317,7 +318,28 @@ export async function loader({ request }: LoaderFunctionArgs) {
 // POST/DELETE — send message or delete conversation
 // ---------------------------------------------------------------------------
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function action({ request, context }: ActionFunctionArgs) {
+  return chatAction(request, (context as Record<symbol, unknown> | undefined)?.[APP_ATTESTED] === true);
+}
+
+/**
+ * Set only by the iPhone app's route, in the server-built `context` it passes
+ * after App Attest checked the request (app-routes.server.ts, US-52 AC5). A
+ * registered symbol, so no request can carry it, and no export is needed: a
+ * route module's other exports would pull its server code into the client build.
+ */
+const APP_ATTESTED = Symbol.for('roadmap.us52.app-attested');
+
+/** The iPhone app's caller (US-52 AC5): App Attest already checked the request
+ *  (api.app.v1.chat.ts). It has no Shopify session and no guest session. */
+const APP_AUTH: AuthResult = { client: null, userId: 'app', customerId: null, admin: null, isGuest: true };
+
+/**
+ * The send-a-message action. `app`: the iPhone app's turn (US-52 AC5), which
+ * runs the widget's path (history and context in the body, nothing stored) with
+ * no guest session, no form edits, no match-event or audit row (D9).
+ */
+async function chatAction(request: Request, app: boolean) {
   const t0 = Date.now();
   try {
     if (process.env.CHAT_ENABLED === 'false') {
@@ -341,11 +363,12 @@ export async function action({ request }: ActionFunctionArgs) {
       return Response.json({ success: false, error: 'JSON object required' }, { status: 400 });
     }
     // Omitted/null means a new conversation; an explicitly empty ID is invalid.
+    if (app && request.method !== 'POST') return Response.json({ success: false, error: 'POST only' }, { status: 405 });
     if ((body.conversationId != null || request.method === 'DELETE') && !validConversationId(body.conversationId)) {
       return Response.json({ success: false, error: 'Invalid conversationId' }, { status: 400 });
     }
 
-    const auth = await getAuthOrGuest(request, body.sessionToken, body.localFirst === true);
+    const auth = app ? APP_AUTH : await getAuthOrGuest(request, body.sessionToken, body.localFirst === true);
 
     // ----- DELETE -----
     if (request.method === 'DELETE') {
@@ -385,7 +408,7 @@ export async function action({ request }: ActionFunctionArgs) {
     // history arrives in the body (US-15 AC7). The other surfaces keep their
     // transcripts server-side and load them here; is_fallback is needed for
     // the dedup check below, created_at for the time window.
-    const widget = body.localFirst === true;
+    const widget = app || body.localFirst === true;
     if (conversationId && !widget) {
       const parentFailure = await checkConversationParent(auth, conversationId);
       if (parentFailure) return parentFailure;
@@ -412,10 +435,10 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     // Dedup: re-serve the previous reply if the user just double-sent the same
-    // message. See app/lib/chat-dedup.server.ts and chat-architecture.md §
+    // message. See app/lib/chat-dedup.server.ts and claude_business docs/chat-architecture.md §
     // Consecutive-duplicate dedup. Shared with the Discord handler. The widget
     // dedups from its own file (chat-api.ts) — its rows here carry no timestamp.
-    // Never while subscription changes are on for a signed-in customer (US-49): a replayed reply would
+    // Never while subscription changes are on for a signed-in customer (US-59): a replayed reply would
     // say "press Confirm below" with no card (cards are never stored), so the turn runs again instead.
     const subscriptionTurn = subscriptionActionsEnabled() && !auth.isGuest;
     if (conversationId && !widget && !subscriptionTurn) {
@@ -442,7 +465,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
     // Only the widget's own chat applies form edits, so only it gets the tools (US-15 AC19):
     // the server holds the other surfaces to that, whatever their body says.
-    const canApplyEdits = widget && body.canApplyEdits === true;
+    const canApplyEdits = !app && widget && body.canApplyEdits === true;
     // US-16 AC2: only a widget that applies a profile edit says so; an older one would write it as a medication.
     const canApplyProfileEdits = canApplyEdits && body.canApplyProfileEdits === true;
     // The streamed turn opens its stream here, before stage 1, so the user
@@ -470,7 +493,7 @@ export async function action({ request }: ActionFunctionArgs) {
       const ordersPromise = !auth.isGuest && auth.admin
         ? getCachedOrders(auth.admin, auth.customerId!)
         : Promise.resolve('');
-      // US-49: subscription changes, commerce surface only and only while
+      // US-59: subscription changes, commerce surface only and only while
       // enabled. The summary comes from the gateway, which checks Shopify's
       // signature on this very request; it never throws.
       const subscriptionsOn = subscriptionActionsEnabled();
@@ -484,7 +507,7 @@ export async function action({ request }: ActionFunctionArgs) {
       // Stage 2: router fires ONLY when the classifier didn't bypass it.
       // Trade-off: +150-300ms on ROUTE turns vs the previous parallel design,
       // since the router now waits for the classifier to return. See
-      // chat-architecture.md § Pre-router classifier for the timing analysis.
+      // claude_business docs/chat-architecture.md § Pre-router classifier for the timing analysis.
       const fireRouter = shouldFireRouter(classifierResult);
       if (fireRouter) write({ type: 'status', text: 'Finding relevant articles' });
       const routerResult = fireRouter
@@ -495,6 +518,14 @@ export async function action({ request }: ActionFunctionArgs) {
 
       const routerSkipped = classifierResult.routerSkipped;
       const effectiveHandles = routerResult?.handles ?? [];
+      // US-50 AC14, only on a turn the router ran: an older post gives way to
+      // its topic masters, unless the chat is open on it (`articleHandle`,
+      // untrusted, a lookup only) or the message gives its URL or handle. The
+      // whole message is read here (Codex C2), a lookup only, never logged.
+      const index = loadBlogIndex();
+      const routed = routerResult
+        ? preferMasters(effectiveHandles, index, message, { open: openArticle(index, body.articleHandle) })
+        : { handles: [], replaced: [] };
 
       reportRouterFailure(routerResult);
 
@@ -549,12 +580,9 @@ export async function action({ request }: ActionFunctionArgs) {
         }
       }
 
-      // Load content from router handles — [] when classifier said SKIP (router never ran).
-      // The stream names the articles loaded, by their index titles (US-15 AC20),
-      // except crisis pathways and population pathways the text gives no signal
-      // of (AC25). Every routed article still loads.
-      const titled = titledHandles(effectiveHandles, routerText(sanitizedCurrent, sanitizedFirst, sanitizedRecent));
-      const articles = loadMatchedArticlesFromHandles(effectiveHandles, titled);
+      // Load content from the routed handles after AC14's filter — [] when classifier said SKIP (router never ran).
+      // The stream names the articles loaded, by their index titles (US-15 AC20).
+      const articles = loadMatchedArticlesFromHandles(routed.handles);
       if (articles?.titles.length) write({ type: 'sources', titles: articles.titles });
 
       // Build system blocks + messages, call LLM
@@ -577,7 +605,7 @@ export async function action({ request }: ActionFunctionArgs) {
           write(event);
         }
         : undefined;
-      // The subscription tool rides only while enabled (US-49), and never on a widget turn:
+      // The subscription tool rides only while enabled (US-59), and never on a widget turn:
       // that is always a guest, so it could only end in "I can't make that change here",
       // replacing a health answer. run_roadmap reads the widget's own record (US-15 AC33).
       const subscriptionTool = subscriptionsOn && !widget;
@@ -590,7 +618,7 @@ export async function action({ request }: ActionFunctionArgs) {
         void recordServerEvent('chat_run_roadmap', { count: completion.roadmapRun.applied, rejected: completion.roadmapRun.rejected });
       }
 
-      // US-49: a proposal becomes a confirm card only when the gateway's summary
+      // US-59: a proposal becomes a confirm card only when the gateway's summary
       // lists that subscription and action with a token. Otherwise the reply
       // must not leave the customer waiting for a card that never comes.
       const card = subscriptionCard(subscriptions, completion.subscriptionProposal ?? null);
@@ -627,6 +655,9 @@ export async function action({ request }: ActionFunctionArgs) {
           platform: 'shopify',
           first: sanitizedFirst ? clip(sanitizedFirst) : null,
           recent: sanitizedRecent.map(clip),
+          // US-50 AC14 usage signal: index handles only, never user text.
+          ...(routed.replaced.length ? { replaced: routed.replaced } : {}),
+          ...(articles?.reduced.length ? { reduced: articles.reduced } : {}),
         },
         matched_handles: effectiveHandles,
         router_version: routerResult ? ROUTER_VERSION : null,
@@ -651,7 +682,9 @@ export async function action({ request }: ActionFunctionArgs) {
           }
         }).catch(() => reportChatError('Chat: Match-event insert failed'));
 
-      if (widget) {
+      if (app) {
+        // D9: the app's turn leaves no row on the server.
+      } else if (widget) {
         logMatchEvent();
       } else {
         // Fire-and-forget: save the assistant message, then log the match event
@@ -692,7 +725,7 @@ export async function action({ request }: ActionFunctionArgs) {
           }).catch(() => reportChatError('Chat: Failed to update conversation timestamp'));
       }
 
-      logAudit(auth.userId, 'CHAT_MESSAGE', 'chat', activeConversationId, {
+      if (!app) logAudit(auth.userId, 'CHAT_MESSAGE', 'chat', activeConversationId, {
         cacheRead: completion.usage.cacheReadTokens,
         cacheCreation: completion.usage.cacheCreationTokens,
       });
@@ -729,6 +762,7 @@ export async function action({ request }: ActionFunctionArgs) {
         routerSkipped,
         classifierError: !!classifierResult.error,
         isGuest: auth.isGuest,
+        app,
         streamed: streaming,
         // The question's length, a number only: how often a message passes 500 or 2,000 (US-15 AC26).
         messageChars: message.length,
@@ -755,7 +789,7 @@ export async function action({ request }: ActionFunctionArgs) {
           ...(completion.proposedEdits && completion.proposedEdits.length > 0
             ? { proposedEdits: completion.proposedEdits }
             : {}),
-          // US-49: the confirm card (the gateway's one-time token and plain facts). Omitted otherwise.
+          // US-59: the confirm card (the gateway's one-time token and plain facts). Omitted otherwise.
           ...(card ? { subscriptionCard: card } : {}),
           ...(auth.isGuest ? { sessionToken: auth.sessionToken, isGuest: true } : {}),
         },

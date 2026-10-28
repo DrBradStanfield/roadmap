@@ -1484,6 +1484,51 @@ describe('US-03: what the plan and the chat read of a draft', () => {
 // reset of the form does not reach it. The erase clears the drafts, and each
 // matrix takes back what it lent.
 describe('US-11: an erase made here', () => {
+  // US-16 AC2a, Codex final R1: the matrices save through their own path,
+  // not the form's change handlers. While this tab's erase writes, the store
+  // already holds the erased copy, and a cell committed then would land in it.
+  it('a vitals cell committed while the erase is writing reaches nothing', async () => {
+    class HeldWrite extends MemoryAdapter {
+      gate: Promise<void> | null = null;
+      reached!: Promise<void>;
+      private entered: () => void = () => {};
+      hold() {
+        let release!: () => void;
+        this.gate = new Promise<void>((r) => { release = r; });
+        this.reached = new Promise<void>((r) => { this.entered = r; });
+        return release;
+      }
+      async write(...args: Parameters<MemoryAdapter['write']>) {
+        if (this.gate && args[0] === ROADMAP_FILE_NAME && ((args[1] as RoadmapFile).meta?.eraseEpoch ?? 0) > 0) {
+          this.entered();
+          await this.gate;
+        }
+        return super.write(...args);
+      }
+    }
+    const cloud = new MemoryCloud();
+    const adapter = new HeldWrite(cloud);
+    await adapter.connect();
+    await initRoadmapStore(adapter);
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {});
+    await addMeasurement('weight', 82, '2026-09-01');
+    await flushRoadmapStore();
+    const view = await secondVisit();
+    const release = adapter.hold();
+    vi.spyOn(window, 'alert').mockImplementation(() => {});
+    fireEvent.click(view.getByRole('button', { name: 'Delete All My Data' }));
+    await adapter.reached;
+    typeInto(draftInput(vitalsMatrix(view.container), 'Waist Circumference'), '90');
+    leaveVitals(view.container); // the matrix commits as you leave it
+    await wait(1500);
+    release();
+    await waitFor(() => expect(window.alert).toHaveBeenCalled());
+    await wait(1500);
+    const stored = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
+    expect(stored.meta.eraseEpoch).toBe(1);
+    expect(stored.measurements.filter((m) => m.metricType === 'waist')).toEqual([]);
+  });
+
   it('takes back what the drafts lent: the plan and the chat read neither, and no draft is left on the device', async () => {
     const view = await returningGuest(); // 82 kg on 1 Sep
     typeWithoutTap(draftInput(vitalsMatrix(view.container), 'Weight'), '84');
@@ -1540,7 +1585,7 @@ describe('US-11: an erase made on another device', () => {
     // devices: this device's draft is put back where it was.
     const kept = localStorage.getItem(BT_TIMELINE_DRAFT_KEY)!;
     expect(kept).toContain('3.2');
-    await (await RoadmapStore.create(new MemoryAdapter(cloud))).deleteUserData();
+    await (await RoadmapStore.create(new MemoryAdapter(cloud))).deleteAllData();
     localStorage.setItem(BT_TIMELINE_DRAFT_KEY, kept);
     await wait(6000);
     act(() => { window.dispatchEvent(new Event('focus')); }); // this page comes back, and re-reads
@@ -1578,7 +1623,7 @@ describe('US-11: an erase made on another device', () => {
     // Another device erases everything and starts again: sex, height, weight.
     const kept = localStorage.getItem(BT_TIMELINE_DRAFT_KEY)!;
     const other = await RoadmapStore.create(new MemoryAdapter(cloud));
-    await other.deleteUserData();
+    await other.deleteAllData();
     localStorage.setItem(BT_TIMELINE_DRAFT_KEY, kept); // one localStorage for both devices
     other.saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {});
     other.addMeasurement('weight', 80, `${TODAY}T00:00:00.000Z`);

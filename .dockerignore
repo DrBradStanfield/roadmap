@@ -22,7 +22,9 @@ demo-video/
 # health data, backups and dumps out of the repo has to hold for the image too
 # (a manual `fly deploy` does not go through git). tests/dockerignore.test.ts
 # pins the pairing. `docs/` deliberately stays: the chatbot reads
-# docs/products.md, docs/pathway and docs/blog at runtime.
+# docs/products.md, docs/guideline and docs/blog at runtime. docs/pathway
+# (third-party pathways, removed 2026-10-22, US-15 AC39) never enters the image.
+docs/pathway/
 .git/
 .github/
 .claude/
@@ -42,7 +44,7 @@ tmp/
 **/health_roadmap_file*
 **/*.map
 widget-src/dist-pages/
-# Raw ConsumerLab and other fetched source text: never in the Fly image.
+# Raw fetched third-party source text: never in the Fly image.
 docs/wiki/research/
 **/_*.mjs
 **/_*.ts

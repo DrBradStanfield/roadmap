@@ -80,8 +80,8 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
 - `[base-rate][server]` 2026-10-14, met 10-16 — Router (Sonnet 5.5): 5 s a try, one
   retry on timeout; a double timeout reads `latencyMs` ~11 000, text in `router_error`
   (Supabase only; Sentry sees /api/chat alone). 104 turns 09-29..10-16: good p95 3.5 s;
-  3 first-try timeouts, all 10-14..10-16. PROBABLY upstream (output ≤200 tokens
-  and request ruled out; host/network not). Met 10-16; Brad 10-17 (#157): no change.
+  3 first-try timeouts 10-14..10-16, PROBABLY upstream. Brad 10-17 (#157): no change.
+  6Z also pools PARSE failures: a 6Z event with `latencyMs` ~2 500 is no timeout; read router_raw (10-24: prose, no JSON, cut at 200).
 - `[class][widget]` 2026-09-17, root-fixed 2026-09-20 — Anything `main()`
   awaits before `createRoot` is a blank-widget path: an unhandled rejection
   there leaves the mount empty and the user reloads (1-4 loads per session in
@@ -122,8 +122,8 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   WORKING localStorage. Audit shortcut: `grep -rn "localStorage\." widget-src
   --include=*.ts* | grep -v test` — anything outside lib/storage.ts and a
   try/catch is this class again. A scrub keeping only closed tags can still
-  carry the error NAME value-free (`cause`): 6M sat unreadable at 32 events
-  without it, and 6W (10-02, upload `no_files`) repeats the gap.
+  carry the error NAME value-free (`cause`), but needs a CLASS beside it: 77 (6M regrouped) read `other`;
+  PR #288 (10-27, AC28) adds `causeClass` + dedupes per wrapped name; its first event (10-28) read other: a closed list's catch-all must hold only shapes no code path makes, so PR #295 (AC29) names StorageError (after-write), DOMException, Error; other = thrown non-Error. Upload `no_files` (6W): read product_events `upload_outcome` openFailed first.
 - `[class][widget]` 2026-10-02 — Bundled DEPENDENCIES escape our ES2020 floor:
   tsc checks our source only, and pdfjs-dist 4.9 ships 41 bare
   `Promise.withResolvers` calls (ES2024) in health-upload.js, so every PDF fails
@@ -145,7 +145,7 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   must be checked against the merge that brings it back (eraseEpoch, LWW,
   marker timing); a guest view for a signed-in user is a fork, not a fallback,
   and our tests proved only the fallback.
-- `[gotcha][supabase]` 2026-09-24 — `SUPABASE_PRODUCT_HEALTH_KEY` is a Bearer
+- `[gotcha][supabase]` 2026-09-24, missed again 10-26 (LEARNINGS read only in part: read it WHOLE) — `SUPABASE_PRODUCT_HEALTH_KEY` is a Bearer
   JWT, not an API key: send `apikey: $SUPABASE_ANON_KEY` (a publishable key)
   + `Authorization: Bearer $SUPABASE_PRODUCT_HEALTH_KEY` (role
   `product_health_ro`, valid to 2027-08-07; the product-health charter has

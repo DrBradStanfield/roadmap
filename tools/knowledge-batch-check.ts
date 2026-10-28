@@ -1,6 +1,6 @@
 /**
  * Batch acceptance checks for the knowledge refresh (plan 2026-09-29, Phase 0
- * step 5; story US-42 in docs/user-stories.md: AC1-AC4, AC6, AC7, AC9, AC11). No model calls. Raw third-party text is read from
+ * step 5; story US-42 in docs/user-stories.md: AC1-AC4, AC6, AC7, AC11). No model calls. Raw third-party text is read from
  * the paths named in the diff reports and never written anywhere: the markdown
  * batch report holds counts and hashes only.
  *
@@ -54,7 +54,7 @@ export interface Result { id: string; title: string; status: Status; evidence: s
 export interface Entry { body_line: string; raw_quote: string; notes?: string; void?: boolean; void_reason?: string }
 export interface Report {
   handle: string;
-  type: "pathway" | "reference" | "video" | "guideline";
+  type: "reference" | "video" | "guideline";
   raw_path: string;
   raw_sha256: string;
   old_raw_path: string | null;
@@ -156,7 +156,7 @@ export const REPORT_SCHEMA = {
     "product_mentions_after", "notes"],
   properties: {
     handle: { type: "string" },
-    type: { enum: ["pathway", "reference", "video", "guideline"] },
+    type: { enum: ["reference", "video", "guideline"] },
     raw_path: { type: "string", description: "absolute path to the NEW raw file" },
     raw_sha256: { type: "string", description: "sha256 hex of that file" },
     old_raw_path: { type: ["string", "null"] },
@@ -265,7 +265,7 @@ export function validateReport(o: unknown): string[] {
       for (const key of ["path", "sha256"]) if (!x || typeof (x as Record<string, unknown>)[key] !== "string") e.push(`extra_raw[${i}].${key}: string expected`);
     });
   }
-  if (!["pathway", "reference", "video", "guideline"].includes(r.type as string)) e.push("type: pathway|reference|video|guideline expected");
+  if (!["reference", "video", "guideline"].includes(r.type as string)) e.push("type: reference|video|guideline expected");
   return e;
 }
 
@@ -286,7 +286,7 @@ export function validDate(s: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
 }
 const SOURCE_KEYS = ["name", "url", "checked", "fingerprint"];
-export const SOURCE_NAMES = ["consumerlab", "nih-ods", "brad-video"];
+export const SOURCE_NAMES = ["consumerlab", "nih-ods", "brad-video", "pubmed"];
 const jsonOf = (v: string): unknown => { try { return JSON.parse(v); } catch { return undefined; } };
 
 /** Shape errors of one master frontmatter value (US-50 AC1), or null. `value` is the text after `key:` on its line. */
@@ -317,7 +317,7 @@ const quoteSource = (q: string) => {
 };
 /** The master's view heading (US-50 AC1), shared with knowledge-lint.ts; group 1 is set for a Current view. */
 export const VIEW_HEADING = /^##\s+(?:(Current view \(reviewed [^)]+\))|Current evidence position)\s*$/;
-/** The contract's first sentence of a Current evidence position (master-writer-contract.md). */
+/** The contract's first sentence of a Current evidence position (claude_business docs/roadmap-chat/knowledge-refresh/master-writer-contract.md). */
 export const EVIDENCE_OPENING = "Brad has not made a video on this topic; this is a summary of the evidence, not his view.";
 /** Frontmatter keys that appear more than once. */
 export const duplicateKeys = (front: string) => {
@@ -622,16 +622,6 @@ export const productMentions = (body: string) =>
 
 const BANNED = ["Top Pick", "What CL Found", "ConsumerLab approved", "CL Approved", "Approved Quality"];
 const BRAND_RANKING = /\b(?:best|top|#1|number one|top[- ]rated|highest[- ]rated)\s+brands?\b|\bbrand rankings?\b|\bbrands?,? ranked\b|\branked (?:the )?brands?\b/i;
-const PATHWAY_FORBIDDEN: [string, RegExp][] = [
-  ["Awanui", /awanui/i], ["0508", /0508/], ["0800", /0800/], ["eReferral", /\be-?referral/i],
-  ["POAC", /\bPOAC/], ["DHB", /\bDHB/], ["Te Whatu Ora", /te\s+whatu\s+ora/i],
-  // Funding criteria are logistics; a bare "funded" or "fully funded" (a one-word status) is allowed.
-  ["Special Authority", /special authority/i], ["funding criteria", /funding criteria/i],
-  ["eligibility for funding", /eligib\w+ for (?:public )?funding/i], ["funded only/if/when", /funded (?:only|if|when|for|provided)/i],
-  ["subsidised only/if/when", /subsidi[sz]ed (?:only|if|when)/i], ["PHARMAC", /\bPHARMAC\b/],
-];
-const PHONE = /\b0[3-9]\d{2}[- ]?\d{3}[- ]?\d{3,4}\b|\b0[3-9][- ]?\d{3}[- ]?\d{4}\b/;
-const stripUrls = (l: string) => l.replace(/\]\([^)]*\)/g, "]").replace(/https?:\/\/\S+/g, " ");
 
 // ---------- git helpers ----------
 
@@ -649,7 +639,7 @@ export interface Options {
   root: string; batch: string; handles: string[]; reportsDir: string; base: string; outRel?: string;
   /** Allowed raw roots (default: the knowledge-map-raw roots of tools/codex-review-includes.json). */
   rawRoots?: string[];
-  exclusionsPath?: string; exceptions?: Exception[]; noExclusions?: boolean;
+  exceptions?: Exception[];
   /** Topic-master batch (US-50 AC1): the master frontmatter keys are allowed and the MASTER body check runs. */
   masters?: boolean;
   /** With masters: each master with a view must carry sound key safety points (US-50 AC12, keySafetyErrors). */
@@ -663,7 +653,7 @@ export interface Row {
   reportFiles?: { name: string; sha256: string }[];
 }
 
-const DIR_FOR: Record<string, string> = { pathway: "pathway", guideline: "guideline", reference: "blog", video: "blog" };
+const DIR_FOR: Record<string, string> = { guideline: "guideline", reference: "blog", video: "blog" };
 const clip = (l: string, n = 120) => { const t = l.trim(); return t.length > n ? `${t.slice(0, n - 3)}...` : t; };
 
 class Check {
@@ -738,7 +728,7 @@ function loadCtx(o: Options, base: string, handle: string, ac2: Check, index: Ma
   // The type comes from the index, never from the report; a handle absent from the index must say "new".
   const entry = index.get(handle);
   let type: string | null = entry ? entry.type ?? "video" : null;
-  const dirs = type ? [DIR_FOR[type]] : ["pathway", "blog", "guideline"];
+  const dirs = type ? [DIR_FOR[type]] : ["blog", "guideline"];
   let rel = `docs/${dirs[0]}/${handle}.md`;
   for (const d of dirs) {
     const cand = `docs/${d}/${handle}.md`;
@@ -1241,7 +1231,7 @@ function checkAc3(c: Ctx, hedgeBefore: number, hedgeAfter: number, ac3: Check) {
 
 /** Body text for AC4: for references and videos the reference list (a "## References" section and "[n] ..." lines) belongs to AC7. A whole-line hyperlink in the body is a sentence. */
 function ac4Body(body: string, type: string | null): string {
-  if (type === "pathway" || type === "guideline") return body;
+  if (type === "guideline") return body;
   return classifyLines(body).filter(({ ref }) => !ref).map((x) => x.line).join("\n");
 }
 
@@ -1391,7 +1381,7 @@ function primaryIds(line: string): PrimaryId[] {
   return [...out.values()];
 }
 
-function checkAc7(c: Ctx, ac7: Check, pw: Check, abstracts: RawSet["abstracts"], idsOut: Map<string, PrimaryId & { handle: string }>, isPost?: (h: string) => boolean) {
+function checkAc7(c: Ctx, ac7: Check, abstracts: RawSet["abstracts"], idsOut: Map<string, PrimaryId & { handle: string }>, isPost?: (h: string) => boolean) {
   const tag = `${c.handle}:`, rep = c.rep;
   const lines = normChars(c.newBody).split(/\r?\n/);
   for (const l of lines) {
@@ -1427,18 +1417,6 @@ function checkAc7(c: Ctx, ac7: Check, pw: Check, abstracts: RawSet["abstracts"],
       } else if (ids.some((x) => !verified(x))) ac7.warns.push(`${tag} unverified primary: ${clip(line, 140)}`);
     }
   }
-  if (c.type === "pathway") {
-    const nb = normChars(c.newBody);
-    if (!/^\*Source: Auckland Region HealthPathways/m.test(nb)) pw.fails.push(`${tag} missing "*Source: Auckland Region HealthPathways" line`);
-    else if (!/^\*Source: Auckland Region HealthPathways[^\n]*Last reviewed:\s*(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}/im.test(nb))
-      pw.fails.push(`${tag} source line lacks "Last reviewed: <month> <year>"`);
-    if (!lines.some((l) => /^>/.test(l) && /doctor|healthcare provider|general practitioner|\bGP\b/i.test(l)))
-      pw.fails.push(`${tag} missing doctor-deferral blockquote`);
-    for (const l of lines) {
-      for (const [name, re] of PATHWAY_FORBIDDEN) if (re.test(l)) pw.fails.push(`${tag} forbidden term "${name}": ${clip(l, 100)}`);
-      if (PHONE.test(stripUrls(l))) pw.fails.push(`${tag} forbidden phone number: ${clip(l, 100)}`);
-    }
-  }
 }
 
 function curlHead(url: string): number {
@@ -1462,8 +1440,6 @@ function verifyIds(ids: Map<string, PrimaryId & { handle: string }>, o: Options,
   if (list.length > cap) ac7.warns.push(`${list.length - cap} identifiers not checked (cap ${cap})`);
 }
 
-const EXCLUSIONS_PATH = "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/tools/healthpathways-exclusions.json";
-
 export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha: string } {
   const base = o.base;
   const baseSha = git(o.root, ["rev-parse", base]).trim();
@@ -1472,8 +1448,7 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
   const ac3 = new Check("AC3", "hedging held; hardening words listed");
   const ac4 = new Check("AC4", "deleted sentences justified; headings kept");
   const ac6 = new Check("AC6", "diff touches only batch files");
-  const ac7 = new Check("AC7", "grokipedia, products, references, banned phrases, exclusions");
-  const pw = new Check("PATHWAY", "source line, deferral blockquote, no NZ logistics");
+  const ac7 = new Check("AC7", "grokipedia, products, references, banned phrases");
   const master = new Check("MASTER", "topic-master sections (Current view or evidence position, Brad's videos)");
   const rows: Row[] = [];
   let index = new Map<string, { type?: string }>();
@@ -1496,7 +1471,7 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
       if (o.masters) checkMasterBody(c, master, raw, isPost, o.keySafetyPoints);
       checkAc3(c, hedgeBefore, hedgeAfter, ac3);
       if (c.baseText !== null) deleted = checkAc4(c, ac4);
-      checkAc7(c, ac7, pw, raw ? raw.abstracts : [], ids, o.masters ? isPost : undefined);
+      checkAc7(c, ac7, raw ? raw.abstracts : [], ids, o.masters ? isPost : undefined);
     }
     rows.push({ handle: c.handle, type: c.type ?? "?", file: c.rel, rawRel: raw?.main?.rel ?? "-", rawSha: c.rep?.raw_sha256 ?? "-",
       bodySha: sha256(c.newBody), tokensNew: added.length, quoted, deleted, hedgeBefore, hedgeAfter,
@@ -1505,17 +1480,7 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
 
   if (o.checkIds) verifyIds(ids, o, ac7);
 
-  // Exclusions (claude_business list; slugs are handles).
-  let excluded = new Set<string>();
-  const exPath = o.exclusionsPath ?? EXCLUSIONS_PATH;
-  if (o.noExclusions) ac7.infos.push("exclusions check skipped (--no-exclusions)");
-  else if (existsSync(exPath)) {
-    const ex = JSON.parse(readFileSync(exPath, "utf8")) as { excluded?: string[]; excludedReasons?: Record<string, { slug?: string }> };
-    excluded = new Set([...(ex.excluded ?? []), ...Object.values(ex.excludedReasons ?? {}).map((r) => r.slug).filter((s): s is string => !!s)]);
-  } else ac7.fails.push(`exclusions file not found (${exPath}); pass --no-exclusions to skip the excluded-handle check`);
-  for (const h of o.handles) if (excluded.has(h)) ac7.fails.push(`${h}: handle is on the HealthPathways exclusion list`);
-
-  // AC6 (only the directory of each entry's type), nothing-to-check, and new files against the exclusion list.
+  // AC6 (only the directory of each entry's type) and nothing-to-check.
   const changed = new Set([
     ...git(o.root, ["diff", "--name-only", "--no-renames", base]).split("\n"),
     ...git(o.root, ["ls-files", "--others", "--exclude-standard"]).split("\n"),
@@ -1529,20 +1494,18 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
   }
   if (!ac1.fails.length) { allowed.add("docs/blog/index.json"); allowed.add("docs/blog/categories.json"); } // AC1 accepted them
   for (const c of ctxs) {
-    const mine = (c.type ? [DIR_FOR[c.type]] : ["pathway", "blog", "guideline"]).map((d) => `docs/${d}/${c.handle}.md`);
+    const mine = (c.type ? [DIR_FOR[c.type]] : ["blog", "guideline"]).map((d) => `docs/${d}/${c.handle}.md`);
     mine.forEach((f) => allowed.add(f));
     if (!mine.some((f) => changed.has(f))) ac6.fails.push(`nothing to check for ${c.handle}: the diff against ${base} touches none of its files`);
   }
   for (const f of changed) {
     if (!allowed.has(f)) ac6.fails.push(`unexpected change: ${f}`);
-    const m = f.match(/^docs\/(?:pathway|blog|guideline)\/(.+)\.md$/);
-    if (m && excluded.has(m[1]) && gitShow(o.root, base, f) === null) ac7.fails.push(`${m[1]}: excluded handle gained a file (${f})`);
   }
   ac6.infos.push(`${changed.size} changed paths versus ${base}`);
   ac6.infos.push("Shopify updated_at snapshot: separate tool, NOT checked here");
 
   const used = new Set<Exception>();
-  const results = [ac1, ac2, ac3, ac4, ac6, ac7, pw, ...(o.masters ? [master] : [])].map((c) => c.result(o.exceptions, used));
+  const results = [ac1, ac2, ac3, ac4, ac6, ac7, ...(o.masters ? [master] : [])].map((c) => c.result(o.exceptions, used));
   for (const x of o.exceptions ?? []) {
     if (used.has(x)) continue;
     const r = results.find((y) => y.id === x.check) ?? results[results.length - 1];
@@ -1552,7 +1515,7 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
   return { results, rows, baseSha };
 }
 
-const EXCEPTION_CHECKS = ["AC2", "AC4", "AC7", "PATHWAY"];
+const EXCEPTION_CHECKS = ["AC2", "AC4", "AC7"];
 export function validateExceptions(x: unknown): string[] {
   if (!Array.isArray(x)) return ["exceptions file must be a JSON array"];
   const e: string[] = [];
@@ -1568,7 +1531,7 @@ export function validateExceptions(x: unknown): string[] {
 /** A batch report must not sit under docs/blog or on any file the batch checks. */
 export function validateOut(outRel: string, handles: string[]): string | null {
   if (outRel.startsWith("docs/blog/")) return `--out ${outRel} is under docs/blog`;
-  const checked = handles.flatMap((h) => ["pathway", "blog", "guideline"].map((d) => `docs/${d}/${h}.md`));
+  const checked = handles.flatMap((h) => ["blog", "guideline"].map((d) => `docs/${d}/${h}.md`));
   return checked.includes(outRel) ? `--out ${outRel} is a checked file` : null;
 }
 
@@ -1636,7 +1599,7 @@ export function main(argv: string[], overrides: Partial<Options> = {}): number {
   const a = parseArgs(argv);
   if (a["print-schema"]) { console.log(JSON.stringify(REPORT_SCHEMA, null, 2)); return 0; }
   if (typeof a.example === "string") { console.log(JSON.stringify(exampleReport(a.example), null, 2)); return 0; }
-  const usage = (msg: string) => { console.error(`${msg}\nusage: knowledge-batch-check.ts --batch <name> --handles <file> --base <git ref> [--reports <dir>] [--out <file>] [--exceptions <file>] [--no-exclusions] [--check-ids [--check-ids-cap <n>]] [--masters] [--key-safety-points]`); return 2; };
+  const usage = (msg: string) => { console.error(`${msg}\nusage: knowledge-batch-check.ts --batch <name> --handles <file> --base <git ref> [--reports <dir>] [--out <file>] [--exceptions <file>] [--check-ids [--check-ids-cap <n>]] [--masters] [--key-safety-points]`); return 2; };
   if (typeof a.batch !== "string" || typeof a.handles !== "string") return usage("--batch and --handles are required");
   if (typeof a.base !== "string") return usage("--base is required (no default)");
   if (a["key-safety-points"] !== undefined && a.masters === undefined) return usage("--key-safety-points needs --masters");
@@ -1665,7 +1628,7 @@ export function main(argv: string[], overrides: Partial<Options> = {}): number {
   const checkIds = a["check-ids"] === true, capArg = a["check-ids-cap"];
   if (capArg !== undefined && (typeof capArg !== "string" || !/^[1-9]\d*$/.test(capArg))) return usage("--check-ids-cap needs a positive integer");
   const { results, rows, baseSha } = runBatch({ root, batch: a.batch, handles, reportsDir, base: a.base, outRel, exceptions,
-    noExclusions: a["no-exclusions"] === true, checkIds, masters: a.masters !== undefined, keySafetyPoints: a["key-safety-points"] !== undefined,
+    checkIds, masters: a.masters !== undefined, keySafetyPoints: a["key-safety-points"] !== undefined,
     idCap: typeof capArg === "string" ? Number(capArg) : undefined, ...overrides });
   for (const r of results) {
     console.log(`${r.status} ${r.id} ${r.title}`);

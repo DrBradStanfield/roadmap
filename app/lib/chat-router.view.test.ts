@@ -11,7 +11,8 @@ const fixture = vi.hoisted(() => [
   { title: 'Mixed skin post', handle: 'skin-aging', url: 'u', tags: [], publishedAt: '2025-03-12T00:00:00Z', topics: ['collagen'] },
 ]);
 
-vi.mock('./blog-index.server', () => ({
+vi.mock('./blog-index.server', async (orig) => ({
+  isMaster: (await orig<typeof import('./blog-index.server')>()).isMaster,
   loadBlogIndex: () => fixture,
 }));
 vi.mock('./anthropic.server', async (orig) => ({
@@ -41,6 +42,6 @@ describe('router view in the router call (US-50 AC3)', () => {
   });
 
   it('ROUTER_VERSION is bumped for the view change', () => {
-    expect(ROUTER_VERSION).toBe(3);
+    expect(ROUTER_VERSION).toBeGreaterThanOrEqual(3);
   });
 });

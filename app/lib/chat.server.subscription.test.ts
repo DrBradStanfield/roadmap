@@ -1,5 +1,5 @@
 /**
- * US-49 AC7: the real getChatCompletion offers the propose-only subscription
+ * US-59 AC7: the real getChatCompletion offers the propose-only subscription
  * tool only when asked, and a tool-only answer gets a short line, never a
  * fallback. Only the network is stubbed.
  */
@@ -24,7 +24,7 @@ afterEach(() => { vi.unstubAllGlobals(); });
 const proposal = { type: 'tool_use', id: 'tu_1', name: 'propose_subscription_change', input: { subscription: 'S1', action: 'pause', reason: 'taking_a_break' } };
 const messages = [{ role: 'user' as const, content: 'Pause my subscription, I am travelling' }];
 
-describe('US-49 AC7 — the subscription tool in getChatCompletion', () => {
+describe('US-59 AC7 — the subscription tool in getChatCompletion', () => {
   it('offered only with subscriptionTool; a tool-only answer is a short line plus the proposal', async () => {
     const bodies = stubAnthropic([proposal]);
     const r = await getChatCompletion([], messages, false, undefined, { subscriptionTool: true });

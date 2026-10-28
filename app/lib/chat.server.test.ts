@@ -15,6 +15,7 @@ import { chatContextOf, MINOR_CHAT_RULE, NO_PLAN_CHAT_RULE } from '../../package
 import { MAX_HISTORY_TURN_CHARS } from '../../packages/health-core/src/chat-history';
 import { CHAT_EDIT_TOOLS, EDITABLE_FIELDS } from '../../packages/health-core/src/chat-edits';
 import { loadBlogIndex } from './blog-index.server';
+import { MAX_BLOG_CHARS } from './matched-content';
 
 describe('buildConversationMessages', () => {
   it('adds new message to empty history', () => {
@@ -119,7 +120,7 @@ describe('buildSystemBlocks', () => {
     expect(NO_PLAN_CHAT_RULE).toMatch(/and no tool result this turn holds a plan/);
     expect(NO_PLAN_CHAT_RULE).not.toContain('run_roadmap');
     // Review R4: eGFR needs more than sex.
-    expect(NO_PLAN_CHAT_RULE).toMatch(/kidney function, as eGFR needs sex, age and creatinine/);
+    expect(NO_PLAN_CHAT_RULE).toMatch(/kidney function, as a calculated eGFR needs sex, age and creatinine/);
     expect(NO_PLAN_CHAT_RULE).not.toMatch(/\u2014/);
   });
 
@@ -446,11 +447,12 @@ describe('loadMatchedArticlesFromHandles', () => {
   });
 });
 
-// US-15 AC23: every routed entry that fits the 120,000-char cap loads; one that
+// US-15 AC23: every routed entry that fits the MAX_BLOG_CHARS cap loads; one that
 // does not fit is skipped, never the rest of the list. The old 80,000 cap with a
 // `break` loaded nothing when vitamin C (83,150 chars) or omega-3 (81,830) came first.
+// Entry a is 37K under the cap: a + b fits, a + b + c and a + x do not.
 describe('loadMatchedArticlesFromHandles cap (US-15 AC23)', () => {
-  const sizes: Record<string, number> = { 'cap-test-a': 83_000, 'cap-test-b': 30_000, 'cap-test-c': 30_000, 'cap-test-x': 40_000 };
+  const sizes: Record<string, number> = { 'cap-test-a': MAX_BLOG_CHARS - 37_000, 'cap-test-b': 30_000, 'cap-test-c': 30_000, 'cap-test-x': 40_000 };
   const realRead = fs.readFileSync;
   afterEach(() => { vi.resetAllMocks(); vi.restoreAllMocks(); });
 
@@ -469,7 +471,7 @@ describe('loadMatchedArticlesFromHandles cap (US-15 AC23)', () => {
     return { a: has('a'), b: has('b'), c: has('c'), x: has('x') };
   }
 
-  it('an 83K entry first no longer blocks the 30K entry after it: both load (113K < 120K)', () => {
+  it('a large entry first no longer blocks the 30K entry after it: both load (7K under the cap)', () => {
     fakeArticles();
     expect(loaded(['cap-test-a', 'cap-test-b'])).toEqual({ a: true, b: true, c: false, x: false });
   });
@@ -481,12 +483,12 @@ describe('loadMatchedArticlesFromHandles cap (US-15 AC23)', () => {
 
   it('an entry that does not fit is skipped, not the rest of the list (only `continue` passes)', () => {
     fakeArticles();
-    // 83K + 40K = 123K overflows, so x is skipped; 83K + 30K = 113K fits, so b still loads.
+    // a + x overflows by 3K, so x is skipped; a + b fits, so b still loads.
     expect(loaded(['cap-test-a', 'cap-test-x', 'cap-test-b'])).toEqual({ a: true, b: true, c: false, x: false });
   });
 
   it('the largest entry in the corpus loads on its own', () => {
-    const dirOf = (t?: string) => (t === 'guideline' ? 'docs/guideline' : t === 'pathway' ? 'docs/pathway' : 'docs/blog');
+    const dirOf = (t?: string) => (t === 'guideline' ? 'docs/guideline' : 'docs/blog');
     const sized = loadBlogIndex().flatMap((e) => {
       try { return [{ e, n: fs.readFileSync(path.join(process.cwd(), dirOf(e.type), `${e.handle}.md`), 'utf-8').length }]; } catch { return []; }
     });

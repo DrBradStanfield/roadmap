@@ -1,27 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
-import type { HealthResults, Suggestion, LipidMarker } from '@roadmap/health-core';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import type { HealthResults, Suggestion } from '@roadmap/health-core';
 import {
   type UnitSystem,
   type MetricType,
   type SuggestionEvidence,
-  formatDisplayValue,
-  formatGradedValue,
-  getDisplayLabel,
-  formatHeightDisplay,
-  APOB_THRESHOLDS,
-  NON_HDL_THRESHOLDS,
-  LDL_THRESHOLDS,
-  lipidMarkerFor,
-  isWaistToHeightElevated,
-  getEgfrStatus,
-  getLpaStatus,
-  getHba1cStatus,
-  getLipidStatus,
-  getProteinRate,
-  STAT_CARD_EVIDENCE,
-  getIbwEvidence,
-  getProteinEvidence,
-  getBmiEvidence,
+  statTiles,
+  statTileText,
+  planSections,
+  type PlanCard,
 } from '@roadmap/health-core';
 import { getReportHtml, sendGuestReport, getReportEmailCaptured, markReportEmailCaptured } from '../lib/roadmap-data';
 import { trackABConversion, trackProductEvent } from '../lib/server-api';
@@ -54,42 +40,6 @@ interface ResultsPanelProps {
   /** The panel's height changed outside its usual triggers (the phone's tab Swiper re-measures). */
   onLayoutChange?: () => void;
 }
-
-function getBmiStatus(bmiCategory: string, waistToHeightRatio?: number): { label: string; className: string } {
-  // When WHtR unknown for BMI 25-29.9, suppress label (prompt user to measure)
-  if (bmiCategory === 'Overweight' && waistToHeightRatio === undefined) {
-    return { label: '', className: '' };
-  }
-  if (bmiCategory.startsWith('Obese')) return { label: 'Obese', className: 'status-attention' };
-  const classMap: Record<string, string> = {
-    'Underweight': 'status-attention',
-    'Normal': 'status-normal',
-    'Overweight': 'status-info',
-  };
-  return { label: bmiCategory, className: classMap[bmiCategory] || '' };
-}
-
-/** The lipid tile for each kind of the plan's lipid marker. */
-const LIPID_TILES: Record<LipidMarker['kind'], { label: string; thresholds: Parameters<typeof getLipidStatus>[1]; metric: MetricType; evidence: string }> = {
-  apoB: { label: 'ApoB', thresholds: APOB_THRESHOLDS, metric: 'apob', evidence: 'apob' },
-  nonHdl: { label: 'Non-HDL Cholesterol', thresholds: NON_HDL_THRESHOLDS, metric: 'ldl', evidence: 'non-hdl' },
-  ldl: { label: 'LDL Cholesterol', thresholds: LDL_THRESHOLDS, metric: 'ldl', evidence: 'ldl' },
-};
-
-function getWaistToHeightStatus(ratio: number): { label: string; className: string } | null {
-  if (isWaistToHeightElevated(ratio)) return { label: 'Elevated', className: 'status-attention' };
-  return { label: 'Healthy', className: 'status-normal' };
-}
-
-const statusClassMap: Record<string, string> = {
-  'Normal': 'status-normal', 'Optimal': 'status-normal', 'Healthy': 'status-normal',
-  'Low Normal': 'status-info', 'Borderline': 'status-info', 'Above optimal': 'status-info', 'Overweight': 'status-info',
-  'Mildly Decreased': 'status-attention', 'High': 'status-attention', 'Elevated': 'status-attention',
-  'Moderately Decreased': 'status-attention', 'Underweight': 'status-attention',
-  'Prediabetic': 'status-attention',
-  'Very High': 'status-urgent', 'Severely Decreased': 'status-urgent', 'Kidney Failure': 'status-urgent',
-  'Diabetic': 'status-urgent',
-};
 
 function StatCard({ label, value, status, evidence }: {
   label: string;
@@ -125,12 +75,6 @@ function StatCard({ label, value, status, evidence }: {
     </div>
   );
 }
-
-// Categories that should be consolidated into grouped cards
-const GROUPED_CATEGORIES = ['nutrition', 'screening', 'bloodwork', 'medication'];
-
-// Display order for all categories (nutrition, exercise, sleep first, then others)
-const CATEGORY_ORDER = ['nutrition', 'exercise', 'sleep', 'screening', 'bloodwork', 'medication', 'blood_pressure', 'general'];
 
 const priorityColors = {
   info: 'suggestion-info',
@@ -248,10 +192,8 @@ function GroupedSubsection({ suggestion, highlighted, fadingOut }: { suggestion:
   );
 }
 
-function GroupedSuggestionCard({ suggestions, category, highlightedIds, fadingOutIds }: { suggestions: Suggestion[]; category: string; highlightedIds?: Set<string>; fadingOutIds?: Set<string> }) {
-  // Get highest priority for the card badge
-  const highestPriority = suggestions.some(s => s.priority === 'urgent') ? 'urgent'
-    : suggestions.some(s => s.priority === 'attention') ? 'attention' : 'info';
+function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds }: { card: PlanCard; highlightedIds?: Set<string>; fadingOutIds?: Set<string> }) {
+  const { suggestions, category, priority: highestPriority } = card;
 
   return (
     <div className={`suggestion-card grouped-card ${priorityColors[highestPriority]}`}>
@@ -270,46 +212,11 @@ function GroupedSuggestionCard({ suggestions, category, highlightedIds, fadingOu
   );
 }
 
-// Group suggestions by category for consolidation
-function groupSuggestionsByCategory(suggestions: Suggestion[]): Map<string, Suggestion[]> {
-  const groups = new Map<string, Suggestion[]>();
-  for (const s of suggestions) {
-    const key = s.category;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(s);
-  }
-  return groups;
-}
-
-// Render suggestions with grouping for specified categories
-function renderGroupedSuggestions(suggestions: Suggestion[], highlightedIds?: Set<string>, fadingOutIds?: Set<string>) {
-  const grouped = groupSuggestionsByCategory(suggestions);
-  const elements: React.ReactNode[] = [];
-
-  // Render categories in defined order
-  for (const cat of CATEGORY_ORDER) {
-    const items = grouped.get(cat);
-    if (!items || items.length === 0) continue;
-
-    // Use grouped card for multi-item grouped categories, individual cards otherwise
-    if (GROUPED_CATEGORIES.includes(cat) && items.length > 1) {
-      elements.push(<GroupedSuggestionCard key={cat} suggestions={items} category={cat} highlightedIds={highlightedIds} fadingOutIds={fadingOutIds} />);
-    } else {
-      for (const s of items) {
-        elements.push(<SuggestionCard key={s.id} suggestion={s} highlighted={highlightedIds?.has(s.id)} fadingOut={fadingOutIds?.has(s.id)} />);
-      }
-    }
-  }
-
-  // Render any remaining categories not in CATEGORY_ORDER
-  for (const [cat, items] of grouped.entries()) {
-    if (CATEGORY_ORDER.includes(cat)) continue;
-    for (const s of items) {
-      elements.push(<SuggestionCard key={s.id} suggestion={s} highlighted={highlightedIds?.has(s.id)} fadingOut={fadingOutIds?.has(s.id)} />);
-    }
-  }
-
-  return elements;
+/** A section's cards: grouped ones as one card, the rest one card each (layout: planSections). */
+function renderCards(cards: PlanCard[], highlightedIds: Set<string>, fadingOutIds: Set<string>) {
+  return cards.map((card) => card.suggestions.length > 1
+    ? <GroupedSuggestionCard key={card.category} card={card} highlightedIds={highlightedIds} fadingOutIds={fadingOutIds} />
+    : <SuggestionCard key={card.suggestions[0].id} suggestion={card.suggestions[0]} highlighted={highlightedIds.has(card.suggestions[0].id)} fadingOut={fadingOutIds.has(card.suggestions[0].id)} />);
 }
 
 // 'skipped' + 'reminded' are US-44's funnel-page states: the block skips the
@@ -643,6 +550,8 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
 
   // The note (and the capture box it can sit in) changes the plan's height.
   useEffect(() => { onLayoutChange?.(); }, [pdfBlocked, guestEmailHook.emailError, guestEmailHook.state]);
+  // Above the early return, as hooks must be; worked out again only when their inputs change.
+  const tiles = useMemo(() => (results ? statTiles(results, { unitSystem, unitOverrides, sex }) : []), [results, unitSystem, unitOverrides, sex]);
 
   // US-09 AC19: the guest has their PDF (or, on the gate-skipped page, signed up
   // for reminders, which marks the record captured). Never before, so the storage
@@ -692,24 +601,13 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
     );
   }
 
-  /** Resolve effective unit system for a metric (per-field override or global default). */
-  const usFor = (metric: MetricType): UnitSystem => unitOverrides?.[metric] ?? unitSystem;
-
-  const weightUnit = getDisplayLabel('weight', usFor('weight'));
-  const ibwDisplay = formatDisplayValue('weight', results.idealBodyWeight, usFor('weight'));
   // US-07 AC6: a known minor's tiles keep the values and drop every adult
-  // reading of them, its status and its "why"; tiles that are only a reading go.
+  // reading of them (health-core statTiles); here, no email and no reminders.
   const adult = !results.knownMinor;
-  const reading = <T,>(value: T): T | undefined => (adult ? value : undefined);
   // US-07 AC6: a known minor is never asked for an email (either box joins the
   // mailing list). Their PDF is the gate-skipped page's Save as PDF (US-44 AC2).
   const emailCapture = showEmailCapture && adult;
 
-  const urgentSuggestions = results.suggestions.filter(s => s.priority === 'urgent');
-  const attentionSuggestions = results.suggestions.filter(s => s.priority === 'attention');
-  const infoSuggestions = results.suggestions.filter(s => s.priority === 'info' && s.category !== 'supplements' && s.category !== 'skin');
-  const supplementSuggestions = results.suggestions.filter(s => s.category === 'supplements');
-  const skinSuggestions = results.suggestions.filter(s => s.category === 'skin');
 
   const printLabel = printStatus === 'loading' ? 'Loading...' : 'Save as PDF';
   const headerNote = <PdfNote show={pdfBlocked === 'header' || pdfBlocked === 'capture'} />;
@@ -746,99 +644,26 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
       {/* Quick Stats */}
       <section className="quick-stats">
         <div className="stats-grid">
-          {results.waistToHeightRatio !== undefined && (() => {
-            const status = getWaistToHeightStatus(results.waistToHeightRatio);
-            return status ? <StatCard label="Waist-to-Height" value={results.waistToHeightRatio} status={status} evidence={STAT_CARD_EVIDENCE['whtr']} /> : null;
-          })()}
-          {results.bmi !== undefined && (
+          {tiles.map((tile) => (
             <StatCard
-              label="BMI"
-              value={results.bmi}
-              status={reading(getBmiStatus(results.bmiCategory!, results.waistToHeightRatio))}
-              evidence={sex ? reading(getBmiEvidence(results.bmi, sex, results.waistToHeightRatio)) : undefined}
+              key={tile.key}
+              label={tile.label}
+              value={statTileText(tile)}
+              status={tile.status && { label: tile.status.label, className: tile.status.tone ? `status-${tile.status.tone}` : '' }}
+              evidence={tile.evidence}
             />
-          )}
-          {adult && <StatCard
-            label="Ideal Body Weight"
-            value={<>{ibwDisplay} {weightUnit}</>}
-            status={{ label: `for ${formatHeightDisplay(results.heightCm, unitSystem)} height`, className: 'status-normal' }}
-            evidence={sex ? getIbwEvidence(sex) : undefined}
-          />}
-          {adult && <StatCard
-            label="Protein Target"
-            value={<>{results.proteinTarget}g/day</>}
-            status={{ label: `${getProteinRate(results.eGFR).toFixed(1)}g per kg IBW`, className: 'status-normal' }}
-            evidence={getProteinEvidence(results.idealBodyWeight, getProteinRate(results.eGFR), results.eGFR)}
-          />}
-
-          {/* Lipid tile: the plan's marker, ApoB → Non-HDL → LDL (results carry ApoB and LDL through from the inputs) */}
-          {(() => {
-            const marker = lipidMarkerFor(results, results);
-            if (!marker) return null;
-            const tile = LIPID_TILES[marker.kind];
-            const s = getLipidStatus(marker.value, tile.thresholds);
-            const u = usFor(tile.metric);
-            // The value reads on the side of the tile's optimal line, the marker's target, that its status grades it (US-07 AC5)
-            return <StatCard label={tile.label} value={<>{formatGradedValue(tile.metric, marker.value, u, marker.target)} {getDisplayLabel(tile.metric, u)}</>} status={reading({ label: s, className: statusClassMap[s] || '' })} evidence={reading(STAT_CARD_EVIDENCE[tile.evidence])} />;
-          })()}
-
-          {adult && results.eGFR !== undefined && (() => {
-            const s = getEgfrStatus(results.eGFR);
-            return <StatCard label="eGFR" value={<>{results.eGFR} mL/min</>} status={{ label: s, className: statusClassMap[s] || '' }} evidence={STAT_CARD_EVIDENCE['egfr']} />;
-          })()}
-
-          {results.lpa !== undefined && (() => {
-            const s = getLpaStatus(results.lpa);
-            return <StatCard label="Lp(a)" value={<>{Math.round(results.lpa)} nmol/L</>} status={reading({ label: s, className: statusClassMap[s] || '' })} evidence={reading(STAT_CARD_EVIDENCE['lpa'])} />;
-          })()}
-
-          {results.hba1c !== undefined && (() => {
-            const s = getHba1cStatus(results.hba1c);
-            return <StatCard label="HbA1c" value={<>{formatDisplayValue('hba1c', results.hba1c, usFor('hba1c'))} {getDisplayLabel('hba1c', usFor('hba1c'))}</>} status={reading({ label: s, className: statusClassMap[s] || '' })} evidence={reading(STAT_CARD_EVIDENCE['hba1c'])} />;
-          })()}
+          ))}
         </div>
       </section>
 
       {/* Suggestions */}
       <section className="suggestions-section">
-        {urgentSuggestions.length > 0 && (
-          <div className="suggestions-group">
-            <h4 className="suggestions-group-title urgent">Requires Attention</h4>
-            {renderGroupedSuggestions(urgentSuggestions, highlightedIds, fadingOutIds)}
+        {planSections(results.suggestions).map((section) => (
+          <div key={section.key} className={`suggestions-group${section.key === 'skin' || section.key === 'supplements' ? ` ${section.key}-group` : ''}`}>
+            <h4 className={`suggestions-group-title ${section.key}`}>{section.title}</h4>
+            {renderCards(section.cards, highlightedIds, fadingOutIds)}
           </div>
-        )}
-
-        {attentionSuggestions.length > 0 && (
-          <div className="suggestions-group">
-            <h4 className="suggestions-group-title attention">Next Steps</h4>
-            {renderGroupedSuggestions(attentionSuggestions, highlightedIds, fadingOutIds)}
-          </div>
-        )}
-
-        {infoSuggestions.length > 0 && (
-          <div className="suggestions-group">
-            <h4 className="suggestions-group-title info">Foundation</h4>
-            {renderGroupedSuggestions(infoSuggestions, highlightedIds, fadingOutIds)}
-          </div>
-        )}
-
-        {skinSuggestions.length > 0 && (
-          <div className="suggestions-group skin-group">
-            <h4 className="suggestions-group-title skin">Skin Health</h4>
-            {skinSuggestions.map((s) => (
-              <SuggestionCard key={s.id} suggestion={s} highlighted={highlightedIds.has(s.id)} fadingOut={fadingOutIds.has(s.id)} />
-            ))}
-          </div>
-        )}
-
-        {supplementSuggestions.length > 0 && (
-          <div className="suggestions-group supplements-group">
-            <h4 className="suggestions-group-title supplements">Supplements</h4>
-            {supplementSuggestions.map((s) => (
-              <SuggestionCard key={s.id} suggestion={s} highlighted={highlightedIds.has(s.id)} fadingOut={fadingOutIds.has(s.id)} />
-            ))}
-          </div>
-        )}
+        ))}
       </section>
 
       {/* Health Records — documents from uploads */}

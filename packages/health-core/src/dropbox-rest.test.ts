@@ -232,6 +232,33 @@ describe('US-35 AC2 — dropboxListFolder lists files only, and follows has_more
   });
 });
 
+// The hosted connector's listing (US-35 AC2): one level, files only.
+describe('US-35 AC2 — dropboxListFolder leaves folders and deleted entries out', () => {
+  const page = {
+    entries: [
+      { '.tag': 'folder', id: 'id:labs', name: 'Labs', path_display: '/Labs', path_lower: '/labs' },
+      { '.tag': 'folder', id: 'id:2025', name: '2025', path_display: '/Labs/2025', path_lower: '/labs/2025' },
+      { '.tag': 'file', id: 'id:one', name: 'a.pdf', path_display: '/Labs/2025/a.pdf', size: 12, server_modified: '2026-09-01T00:00:00Z' },
+      { '.tag': 'file', id: 'id:low', name: 'b.png', path_lower: '/labs/b.png' },
+      { '.tag': 'deleted', name: 'gone.pdf', path_display: '/Labs/gone.pdf' },
+    ],
+    cursor: 'c1', has_more: true,
+  };
+
+  it('dropboxListFolder (the hosted connector, US-35 AC2) still asks for one level and answers files only, without paths', async () => {
+    const bodies: unknown[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init: RequestInit) => {
+      bodies.push(JSON.parse(String(init.body)));
+      return Response.json(url.endsWith('/list_folder') ? page : { entries: [], has_more: false });
+    }));
+    expect(await dropboxListFolder('token', '')).toEqual([
+      { id: 'id:one', name: 'a.pdf', size: 12, modified: '2026-09-01T00:00:00Z' },
+      { id: 'id:low', name: 'b.png', size: 0, modified: '' },
+    ]);
+    expect(bodies[0]).toEqual({ path: '', recursive: false, include_deleted: false });
+  });
+});
+
 describe('a caller’s signal reaches `fetch` on every call the import makes (US-35 AC5)', () => {
   it('aborts the request in flight when the caller aborts, and reports the abort as the adapter’s failure', async () => {
     const fetchSpy = vi.fn((_url: unknown, init: RequestInit) => new Promise<Response>((_, reject) => {
@@ -289,5 +316,38 @@ describe('dropboxApiArg — an ASCII header for a non-ASCII path (US-13 AC1, US-
       const headers = call[1].headers as Record<string, string>;
       expect(headers['Dropbox-API-Arg']).toMatch(/^[\x20-\x7e]*$/);
     }
+  });
+});
+
+// The hosted MCP server constructs `new DropboxAdapter(token)` and must keep
+// refusing document writes word for word; only an explicit opt-in writes.
+describe('document writes: refused by default, written only on opt-in', () => {
+  it('a bare adapter refuses with the same message and calls nothing', async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+    await expect(new DropboxAdapter('token').writeDocument('Lab results/a.pdf', new Blob(['x'])))
+      .rejects.toThrow(new StorageError('The hosted server does not write uploaded documents.'));
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('an opted-in adapter overwrites at the folder-relative path, its non-ASCII name escaped', async () => {
+    const fetchSpy = vi.fn(async () => Response.json({ rev: 'r1' }));
+    vi.stubGlobal('fetch', fetchSpy);
+    const bytes = new Blob(['pdf bytes']);
+    await new DropboxAdapter('token', { documents: 'write' }).writeDocument('Clinic letters/2026-01-01 Letter — GP.pdf', bytes);
+    const [url, init] = (fetchSpy as Mock).mock.calls[0] as [string, RequestInit];
+    const headers = init.headers as Record<string, string>;
+    expect(url).toBe('https://content.dropboxapi.com/2/files/upload');
+    expect(headers.Authorization).toBe('Bearer token');
+    expect(headers['Dropbox-API-Arg']).toBe(dropboxApiArg({ path: '/Clinic letters/2026-01-01 Letter — GP.pdf', mode: { '.tag': 'overwrite' }, autorename: false, mute: true }));
+    expect(init.body).toBe(bytes);
+  });
+
+  it('an opted-in write Dropbox refuses is a StorageError with the status', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('too big', { status: 413 })));
+    const failure = await new DropboxAdapter('token', { documents: 'write' }).writeDocument('a.pdf', new Blob(['x'])).catch((e: unknown) => e);
+    expect(failure).toBeInstanceOf(StorageError);
+    expect((failure as StorageError).message).toBe('Dropbox document write failed (413).');
+    expect((failure as StorageError).status).toBe(413);
   });
 });

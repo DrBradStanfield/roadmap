@@ -1,0 +1,594 @@
+[
+ {
+  "check": "AC2",
+  "handle": "st-johns-wort-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. NIH's complementary health ...\" | \"- With antidepressants or other serotonin drugs it may cause serotonin syndrome, which can be deadly. For shaking, mu...\" | \"**Serotonin syndrome:** Taken with certain antidepressants or other drugs that affect serotonin, St. John's wort may ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-4): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "st-johns-wort-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. NIH's complementary health ...\" | \"- With antidepressants or other serotonin drugs it may cause serotonin syndrome, which can be deadly. For shaking, mu...\" | \"**Serotonin syndrome:** Taken with certain antidepressants or other drugs that affect serotonin, St. John's wort may ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-4): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "st-johns-wort-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. NIH's complementary health ...\" | \"- With antidepressants or other serotonin drugs it may cause serotonin syndrome, which can be deadly. For shaking, mu...\" | \"**Serotonin syndrome:** Taken with certain antidepressants or other drugs that affect serotonin, St. John's wort may ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-4): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "st-johns-wort-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. NIH's complementary health ...\" | \"- With antidepressants or other serotonin drugs it may cause serotonin syndrome, which can be deadly. For shaking, mu...\" | \"**Serotonin syndrome:** Taken with certain antidepressants or other drugs that affect serotonin, St. John's wort may ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-4): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "st-johns-wort-benefits-forms-dosing-and-side-effects",
+  "match": "token \"14\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Meta-analysis of efficacy vs. SSRIs (2023):** Zhao and colleagues pooled 14 trials with 2,270 patients. They conclu...\"",
+  "reason": "AC2 spelled number (orchestrator 2026-10-23, masters-new-4): Zhao 2023 (PMID 36226689) writes \"Fourteen clinical trials with a total of 2270 depression patients\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "st-johns-wort-benefits-forms-dosing-and-side-effects",
+  "match": "token \"200\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Shelton et al. (2001):** In 200 adult outpatients with major depression (Hamilton score of at least 20), an extract...\"",
+  "reason": "AC2 spelled number (orchestrator 2026-10-23, masters-new-4): Shelton 2001 (PMID 11308434) writes \"Two hundred adult outpatients\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Ginkgo may raise bleeding risk with anticoagulants such as warfarin [2][24]. Case reports include serious bleeds, t...\" | \"- In epilepsy, case reports link ginkgo to returning seizures, one fatal [39][40]. If a seizure lasts more than 5 min...\" | \"- Ginkgo seeds, raw or roasted, can be poisonous and have caused seizures in children [2][43]. For a seizure after ea...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-4): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Ginkgo may raise bleeding risk with anticoagulants such as warfarin [2][24]. Case reports include serious bleeds, t...\" | \"- In epilepsy, case reports link ginkgo to returning seizures, one fatal [39][40]. If a seizure lasts more than 5 min...\" | \"- Ginkgo seeds, raw or roasted, can be poisonous and have caused seizures in children [2][43]. For a seizure after ea...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-4): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Ginkgo may raise bleeding risk with anticoagulants such as warfarin [2][24]. Case reports include serious bleeds, t...\" | \"- In epilepsy, case reports link ginkgo to returning seizures, one fatal [39][40]. If a seizure lasts more than 5 min...\" | \"- Ginkgo seeds, raw or roasted, can be poisonous and have caused seizures in children [2][43]. For a seizure after ea...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-4): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Ginkgo may raise bleeding risk with anticoagulants such as warfarin [2][24]. Case reports include serious bleeds, t...\" | \"- In epilepsy, case reports link ginkgo to returning seizures, one fatal [39][40]. If a seizure lasts more than 5 min...\" | \"- Ginkgo seeds, raw or roasted, can be poisonous and have caused seizures in children [2][43]. For a seizure after ea...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-4): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \">5 min\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In epilepsy, case reports link ginkgo to returning seizures, one fatal [39][40]. If a seizure lasts more than 5 min...\" | \"Two people with well-controlled epilepsy had seizures again within 2 weeks of starting ginkgo extract, and both were ...\"",
+  "reason": "AC2 ruling 12 seizure emergency wording (orchestrator 2026-10-23, masters-new-4): \"more than 5 minutes\" is the house seizure action, not a source figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"90 day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Some products combine ginkgo with other herbs. One 90-day trial in 100 middle-aged and older Chinese adults tested Ci...\" | \"**Combination product study:** In a 90-day trial of 100 middle-aged and older adults in China, a Cistanche tubulosa a...\"",
+  "reason": "AC2 thin space (orchestrator 2026-10-23, masters-new-4): Chen 2024 (PMID 38972848) writes \"Over 90&#x2009;days\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"1.2\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Results: By 5 years, 61 people on ginkgo and 73 on placebo had probable Alzheimer's disease (1.2 and 1.4 cases per 10...\"",
+  "reason": "AC2 middle dot (orchestrator 2026-10-23, masters-new-4): GuidAge, Vellas 2012 (PMID 22959217) writes \"1·2 cases per 100 person-years\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"1.4\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Results: By 5 years, 61 people on ginkgo and 73 on placebo had probable Alzheimer's disease (1.2 and 1.4 cases per 10...\"",
+  "reason": "AC2 middle dot (orchestrator 2026-10-23, masters-new-4): GuidAge, Vellas 2012 (PMID 22959217) writes \"1·4 cases per 100 person-years\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"45\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Positive evidence (small, single trial):** In a 6-week trial, 188 healthy adults aged 45 to 56 took 240 mg of EGb 7...\"",
+  "reason": "AC2 hyphen range (orchestrator 2026-10-23, masters-new-4): Kaschel 2011 writes \"188 healthy subjects aged 45-56 years\"; the body writes 45 to 56.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"56\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Positive evidence (small, single trial):** In a 6-week trial, 188 healthy adults aged 45 to 56 took 240 mg of EGb 7...\"",
+  "reason": "AC2 hyphen range (orchestrator 2026-10-23, masters-new-4): Kaschel 2011 writes \"188 healthy subjects aged 45-56 years\"; the body writes 45 to 56.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"15\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Case reports:** A 2005 review of 15 published case reports found a possible causal link between ginkgo and bleedi...\"",
+  "reason": "AC2 spelled number (orchestrator 2026-10-23, masters-new-4): Bent 2005 (PMID 16050865) writes \"Fifteen\" case reports; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"1985\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Clinical trials:** A 2011 meta-analysis of 18 randomised trials (1,985 adults) found no effect on platelet aggreg...\"",
+  "reason": "AC2 \"1985\" read as a year (orchestrator 2026-10-23, masters-new-4): Kellermann 2011 writes \"A total of 1985 adults\"; the body writes 1,985 adults.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"200 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a US National Toxicology Program study, rats and mice were given ginkgo extract by stomach tube 5 days per week fo...\"",
+  "reason": "AC2 unit case (orchestrator 2026-10-23, masters-new-4): NTP writes \"0, 200, 600, or 2,000 mg Ginkgo biloba extract/kg body weight\"; the body writes 200 to 2,000 mg per kg.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"2000 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a US National Toxicology Program study, rats and mice were given ginkgo extract by stomach tube 5 days per week fo...\"",
+  "reason": "AC2 unit case (orchestrator 2026-10-23, masters-new-4): NTP writes \"0, 200, 600, or 2,000 mg Ginkgo biloba extract/kg body weight\"; the body writes 200 to 2,000 mg per kg.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"140 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 18 healthy Chinese adults, 12 days of ginkgo at 140 mg twice daily lowered blood levels of omeprazole by speeding ...\"",
+  "reason": "AC2 unit case (orchestrator 2026-10-23, masters-new-4): Yin 2004 (PMID 15608563) writes \"G. biloba (140 mg, bid)\"; the body writes 140 mg twice daily.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"75 year\": The clinical evidence is mostly disappointing. NCCIH finds no conclusive evidence that ginkgo helps any health condit...",
+  "reason": "AC2 unit case (orchestrator 2026-10-23, masters-new-4): NCCIH writes \"more than 3,000 people age 75 or older\"; the body writes aged 75 or older.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"70\": Post-Cochrane study: In a trial of 69 people aged 40 to 70 with tinnitus, ginkgo 60 mg twice a day combined with anti...",
+  "reason": "AC2 hyphen range (orchestrator 2026-10-23, masters-new-4): Chauhan 2023 (PMID 36710418) writes \"69 patients aged 40-70 years\"; the body writes 40 to 70.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"18\": In 18 healthy Chinese adults, 12 days of ginkgo at 140 mg twice daily lowered blood levels of omeprazole by speeding ...",
+  "reason": "AC2 spelled number (orchestrator 2026-10-23, masters-new-4): Yin 2004 (PMID 15608563) writes \"Eighteen healthy Chinese subjects\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nac-n-acetyl-cysteine-benefits-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A suspected paracetamol (acetaminophen) overdose needs emergency care: call your local emergency number (111 in NZ,...\" | \"A suspected paracetamol overdose needs emergency care: call your local emergency number (111 in NZ, 000 in Australia,...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-4): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nac-n-acetyl-cysteine-benefits-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A suspected paracetamol (acetaminophen) overdose needs emergency care: call your local emergency number (111 in NZ,...\" | \"A suspected paracetamol overdose needs emergency care: call your local emergency number (111 in NZ, 000 in Australia,...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-4): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nac-n-acetyl-cysteine-benefits-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A suspected paracetamol (acetaminophen) overdose needs emergency care: call your local emergency number (111 in NZ,...\" | \"A suspected paracetamol overdose needs emergency care: call your local emergency number (111 in NZ, 000 in Australia,...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-4): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nac-n-acetyl-cysteine-benefits-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A suspected paracetamol (acetaminophen) overdose needs emergency care: call your local emergency number (111 in NZ,...\" | \"A suspected paracetamol overdose needs emergency care: call your local emergency number (111 in NZ, 000 in Australia,...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-4): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nac-n-acetyl-cysteine-benefits-dosing-and-side-effects",
+  "match": "token \"1476.9 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Pathological gambling:** In a small pilot study, 27 people took NAC for 8 weeks, at an average effective dose of 14...\"",
+  "reason": "AC2 \"+/-\" range (orchestrator 2026-10-23, masters-new-4): Grant 2007 writes \"The mean effective dose of NAC was 1476.9 +/- 311.3 mg/day\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nac-n-acetyl-cysteine-benefits-dosing-and-side-effects",
+  "match": "token \"14.5 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Cardiovascular events in renal failure:** In 134 people on haemodialysis, NAC 600 mg twice daily reduced a composit...\" | \"| Cardiovascular events on haemodialysis | 600 mg twice daily | Median 14.5 months | [39] |\"",
+  "reason": "AC2 unit case (orchestrator 2026-10-23, masters-new-4): Tepel 2003 writes \"Median (range) follow-up was 14.5 (1 to 24) months\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nac-n-acetyl-cysteine-benefits-dosing-and-side-effects",
+  "match": "token \"100 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In an open-label pilot trial, eight older adults took GlyNAC for 24 weeks. It corrected red blood cell glutathione de...\"",
+  "reason": "AC2 molar conversion checked by the orchestrator (orchestrator 2026-10-23, masters-new-4): Kumar 2021 full text, glycine 1.33 mmol/kg x 75.07 g/mol = 99.8 mg/kg, \"roughly 100 mg\".",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nac-n-acetyl-cysteine-benefits-dosing-and-side-effects",
+  "match": "token \"130 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In an open-label pilot trial, eight older adults took GlyNAC for 24 weeks. It corrected red blood cell glutathione de...\"",
+  "reason": "AC2 molar conversion checked by the orchestrator (orchestrator 2026-10-23, masters-new-4): Kumar 2021 full text, NAC 0.81 mmol/kg x 163.2 g/mol = 132 mg/kg, \"roughly 130 mg\".",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nac-n-acetyl-cysteine-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"95 %\": NAC has been tested for addiction because of its effects on glutamate [8]. A 2017 meta-analysis of seven trials (245 ...",
+  "reason": "AC2 thin space and \"95%CI\" (orchestrator 2026-10-23, masters-new-4): Duailibi 2017 writes \"Hedges' g&#x2009;=&#x2009;0.94; 95%CI 0.55-1.33\"; same figures.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nac-n-acetyl-cysteine-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"24\": In a later placebo-controlled trial, 24 older adults were randomly assigned to GlyNAC or an alanine placebo for 16 we...",
+  "reason": "AC2 spelled number (orchestrator 2026-10-23, masters-new-4): Kumar 2022 (PMID 35975308) writes \"Twenty-four OA and 12 young adults\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutathione-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Intravenous glutathione for skin lightening has little evidence behind it, and the Philippine FDA has warned agains...\" | \"In the one trial of IV glutathione for skin lightening, liver problems were the main side effect reported, but review...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-4): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutathione-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Intravenous glutathione for skin lightening has little evidence behind it, and the Philippine FDA has warned agains...\" | \"In the one trial of IV glutathione for skin lightening, liver problems were the main side effect reported, but review...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-4): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutathione-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Intravenous glutathione for skin lightening has little evidence behind it, and the Philippine FDA has warned agains...\" | \"In the one trial of IV glutathione for skin lightening, liver problems were the main side effect reported, but review...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-4): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutathione-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Intravenous glutathione for skin lightening has little evidence behind it, and the Philippine FDA has warned agains...\" | \"In the one trial of IV glutathione for skin lightening, liver problems were the main side effect reported, but review...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-4): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutathione-benefits-forms-dosing-and-side-effects",
+  "match": "token \"4800 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- High NAC doses can cause nausea: in a lupus trial, 33% of people taking 4.8 g a day had nausea, which went away [42].\" | \"**Autoimmune disease:** In a placebo-controlled trial in 36 people with lupus, NAC at 2.4 or 4.8 g a day lowered dise...\" | \"- **Nausea:** In a lupus trial, 33% of people taking 4.8 g a day had nausea, which went away; 2.4 g a day was tolerat...\"",
+  "reason": "AC2 unit case (orchestrator 2026-10-23, masters-new-4): Lai 2012 (PMID 22549432) writes \"33% of those receiving 4.8 gm/day had reversible nausea\"; 4.8 g = 4800 mg.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutathione-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.78\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The PANTHEON trial randomized 1,006 Chinese people with moderate to severe COPD to NAC 600 mg twice daily or placebo ...\"",
+  "reason": "AC2 middle dot (orchestrator 2026-10-23, masters-new-4): PANTHEON, Zheng 2014 (PMID 24621680) writes \"risk ratio 0·78, 95% CI 0·67-0·90\"; same figures.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutathione-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.67\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The PANTHEON trial randomized 1,006 Chinese people with moderate to severe COPD to NAC 600 mg twice daily or placebo ...\"",
+  "reason": "AC2 middle dot (orchestrator 2026-10-23, masters-new-4): PANTHEON, Zheng 2014 (PMID 24621680) writes \"risk ratio 0·78, 95% CI 0·67-0·90\"; same figures.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutathione-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.9\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The PANTHEON trial randomized 1,006 Chinese people with moderate to severe COPD to NAC 600 mg twice daily or placebo ...\"",
+  "reason": "AC2 middle dot (orchestrator 2026-10-23, masters-new-4): PANTHEON, Zheng 2014 (PMID 24621680) writes \"risk ratio 0·78, 95% CI 0·67-0·90\"; same figures.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutathione-benefits-forms-dosing-and-side-effects",
+  "match": "token \"200 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Parkinson's disease:** In brains from people who died with Parkinson's disease, glutathione in the substantia nigra...\"",
+  "reason": "AC2 unit case (orchestrator 2026-10-23, masters-new-4): Mischley 2017 writes \"100&#x200a;mg GSH, or 200&#x200a;mg GSH thrice daily\"; the body says 100 mg or 200 mg three times daily.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "glutathione-benefits-forms-dosing-and-side-effects",
+  "match": "token \"600\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Homocysteine reduction:** In a study of 40 healthy adults, oral NAC at 600 or 1,800 mg a day lowered plasma homocys...\"",
+  "reason": "AC2 tokeniser case (orchestrator 2026-10-23, masters-new-4): Ventura 2003 (PMID 12711838) writes \"NAC 600 mg/day, and group C: n = 14, NAC 1,800 mg/day\"; the body writes 600 or 1,800 mg a day.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "token \"111\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- An elderly woman taking nattokinase bled into her abdomen and died [52]. For signs of a stroke or bleeding in the b...\" | \"- Anaphylaxis from nattokinase has been reported in a patient with natto allergy [55]. For trouble breathing, swellin...\" | \"**Intracerebral hemorrhage:** A patient taking aspirin to prevent another stroke had a bleed in the cerebellum after ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-4): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- An elderly woman taking nattokinase bled into her abdomen and died [52]. For signs of a stroke or bleeding in the b...\" | \"- Anaphylaxis from nattokinase has been reported in a patient with natto allergy [55]. For trouble breathing, swellin...\" | \"**Intracerebral hemorrhage:** A patient taking aspirin to prevent another stroke had a bleed in the cerebellum after ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-4): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "token \"911\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- An elderly woman taking nattokinase bled into her abdomen and died [52]. For signs of a stroke or bleeding in the b...\" | \"- Anaphylaxis from nattokinase has been reported in a patient with natto allergy [55]. For trouble breathing, swellin...\" | \"**Intracerebral hemorrhage:** A patient taking aspirin to prevent another stroke had a bleed in the cerebellum after ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-4): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "token \"999\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- An elderly woman taking nattokinase bled into her abdomen and died [52]. For signs of a stroke or bleeding in the b...\" | \"- Anaphylaxis from nattokinase has been reported in a patient with natto allergy [55]. For trouble breathing, swellin...\" | \"**Intracerebral hemorrhage:** A patient taking aspirin to prevent another stroke had a bleed in the cerebellum after ...\"",
+  "reason": "AC2 ruling 17 emergency numbers (orchestrator 2026-10-23, masters-new-4): the emergency line's 111/000/911/999 tokens carry no source by design.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "token \"10 mcg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Natto is rich in vitamin K2 (MK-7), and MK-7 as low as 10 mcg a day lowered INR in some healthy volunteers on a war...\" | \"Natto contains much menaquinone-7 (MK-7), a form of vitamin K2 [23]. Vitamin K helps the liver make clotting factors....\" | \"Natto contains a lot of MK-7, a form of vitamin K2 [23], and MK-7 at doses as low as 10 mcg a day lowered INR in some...\"",
+  "reason": "AC2 unit case (orchestrator 2026-10-23, masters-new-4): Theuwissen 2013 (PMID 23530987) writes \"MK-7 supplementation at doses as low as 10 μg\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "token \"62 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Nattokinase breaks down fibrin, the protein mesh that holds blood clots together. In lab work it also cut and inactiv...\"",
+  "reason": "AC2 \"+/-\" case (orchestrator 2026-10-23, masters-new-4): Fujita 1995 writes \"62.0 +/- 5.3%, 15.8 +/- 0.7%\"; the body writes 62.0% versus 15.8%.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≥50 mcg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Natto contains much menaquinone-7 (MK-7), a form of vitamin K2 [23]. Vitamin K helps the liver make clotting factors....\"",
+  "reason": "AC2 unit case (orchestrator 2026-10-23, masters-new-4): Schurgers 2007 writes \"preparations supplying 50 mug/d or more of MK-7\"; the body writes 50 mcg a day or more.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "token \"16 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Epidemiological data from Japan:** In the Takayama cohort of 13,355 men and 15,724 women followed for 16 years, the...\"",
+  "reason": "AC2 unit case (orchestrator 2026-10-23, masters-new-4): Nagata 2017 (PMID 27927636) writes \"Deaths from CVD were ascertained over 16 y\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "token \"100 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a North American trial in 79 people with raised blood pressure, NSK-SD 100 mg a day for 8 weeks lowered average di...\" | \"Trials have used 2,000 FU a day, two 2,000 FU capsules a day, 6,000 FU a day, 8,000 FU a day and 100 mg a day [26][31...\"",
+  "reason": "AC2 unit case (orchestrator 2026-10-23, masters-new-4): Jensen 2016 writes \"100 mg nattokinase/d for the 8-week study\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3.45 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Meta-analysis:** A 2023 meta-analysis of 6 randomized trials with 546 participants found that nattokinase lowered s...\" | \"Nattokinase may lower blood pressure by a few mmHg; the 2023 meta-analysis found a fall in systolic pressure of 3.45 ...\"",
+  "reason": "AC2 unit case (orchestrator 2026-10-23, masters-new-4): Li 2023 (PMID 39076715) writes \"systolic blood pressure (MD = -3.45, 95% CI: -4.37 to -2.18\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "token \"50 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a 6-month trial in 47 people with high blood lipids, nattokinase alone (two 50 mg capsules twice a day) did not di...\" | \"| Cholesterol (negative) | Two 50 mg capsules twice a day | 6 months | No lipid difference vs placebo [38] |\"",
+  "reason": "AC2 unit case (orchestrator 2026-10-23, masters-new-4): Yang 2009 (PMID 19786378) writes \"nattokinase-mono formula (50 mg/capsule) ... a twice daily dose of two capsules\"; same.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "token \"6000\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Plaque comparison with simvastatin:** In a Chinese trial, 82 patients with carotid atherosclerosis and high blood l...\" | \"Trials have used 2,000 FU a day, two 2,000 FU capsules a day, 6,000 FU a day, 8,000 FU a day and 100 mg a day [26][31...\" | \"| Plaque vs simvastatin | 6,000 FU/day | 26 weeks | Plaque size fell 36.6% vs 11.5% with simvastatin [40] |\"",
+  "reason": "AC2 \"6 000 FU\" case (orchestrator 2026-10-23, masters-new-4): Ren 2017 (PMID 28763875) writes \"NK at a daily dose of 6 000 FU\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "token \"20 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Plaque comparison with simvastatin:** In a Chinese trial, 82 patients with carotid atherosclerosis and high blood l...\"",
+  "reason": "AC2 unit case (orchestrator 2026-10-23, masters-new-4): Ren 2017 (PMID 28763875) writes \"simvastatin 20 mg) daily\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "token \"10 mg/kg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Safety study:** In safety studies of NSK-SD, 10 mg/kg a day for 4 weeks was well tolerated in healthy volunteers, a...\"",
+  "reason": "AC2 unit case (orchestrator 2026-10-23, masters-new-4): Lampe 2016 (PMID 26740078) writes \"10&#xa0;mg/kg-day nattokinase for 4 weeks\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤1000 mg/kg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Safety study:** In safety studies of NSK-SD, 10 mg/kg a day for 4 weeks was well tolerated in healthy volunteers, a...\"",
+  "reason": "AC2 unit case (orchestrator 2026-10-23, masters-new-4): Lampe 2016 (PMID 26740078) writes \"90-day ... at doses up to ... 1000&#xa0;mg/kg-day\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "token \"7 day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Intracerebral hemorrhage:** A patient taking aspirin to prevent another stroke had a bleed in the cerebellum after ...\"",
+  "reason": "AC2 unit case (orchestrator 2026-10-23, masters-new-4): Chang 2008 (PMID 18310985) writes \"nattokinase 400 mg daily for 7 consecutive days\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2000\": Nattokinase strength is given in fibrinolytic units (FU), a measure of enzyme activity, because weight alone does not...",
+  "reason": "AC2 \"(2000 FU)\" read as a year (orchestrator 2026-10-23, masters-new-4): Ero 2013 (PMID 23709455) writes \"a single daily dose (2000 FU)\" and Kurosawa 2015 (PMID 19358933) \"2000 fibrinolysis units per capsule\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2000\": In rats, nattokinase placed in the small intestine was absorbed and broke down fibrinogen in the blood [14]. In peopl...",
+  "reason": "AC2 \"(2000 FU)\" read as a year (orchestrator 2026-10-23, masters-new-4): Ero 2013 (PMID 23709455) writes \"a single daily dose (2000 FU)\" and Kurosawa 2015 (PMID 19358933) \"2000 fibrinolysis units per capsule\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2000\": In 11 healthy adults, nattokinase was detectable in blood from 2 to 24 hours after one 2,000 FU softgel [18].",
+  "reason": "AC2 \"(2000 FU)\" read as a year (orchestrator 2026-10-23, masters-new-4): Ero 2013 (PMID 23709455) writes \"a single daily dose (2000 FU)\" and Kurosawa 2015 (PMID 19358933) \"2000 fibrinolysis units per capsule\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2000\": Look for activity in FU on the label, because milligrams alone do not show enzyme activity. In one study, about 100 m...",
+  "reason": "AC2 \"(2000 FU)\" read as a year (orchestrator 2026-10-23, masters-new-4): Ero 2013 (PMID 23709455) writes \"a single daily dose (2000 FU)\" and Kurosawa 2015 (PMID 19358933) \"2000 fibrinolysis units per capsule\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2000\": Clotting factor reduction: In an open-label study with no placebo group, 45 people (healthy volunteers, people with c...",
+  "reason": "AC2 \"(2000 FU)\" read as a year (orchestrator 2026-10-23, masters-new-4): Ero 2013 (PMID 23709455) writes \"a single daily dose (2000 FU)\" and Kurosawa 2015 (PMID 19358933) \"2000 fibrinolysis units per capsule\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC2",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2000\": Clotting factor reduction | Two 2,000 FU capsules a day | 2 months | Fibrinogen and factors VII and VIII fell 7% to 1...",
+  "reason": "AC2 \"(2000 FU)\" read as a year (orchestrator 2026-10-23, masters-new-4): Ero 2013 (PMID 23709455) writes \"a single daily dose (2000 FU)\" and Kurosawa 2015 (PMID 19358933) \"2000 fibrinolysis units per capsule\"; same figure.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC7",
+  "handle": "st-johns-wort-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host dailymed.nlm.nih.gov: [51] PAXLOVID (nirmatrelvir tablets; ritonavir tablets). Prescribing information, Pfizer. DailyMe...",
+  "reason": "AC7 dailymed.nlm.nih.gov host (orchestrator 2026-10-23, masters-new-4): the US National Library of Medicine's DailyMed, cited for an FDA drug label (orchestrator-ratified).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC7",
+  "handle": "st-johns-wort-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host dailymed.nlm.nih.gov: [52] SOVALDI (sofosbuvir) tablets and oral pellets. Prescribing information, Gilead Sciences. Dai...",
+  "reason": "AC7 dailymed.nlm.nih.gov host (orchestrator 2026-10-23, masters-new-4): the US National Library of Medicine's DailyMed, cited for an FDA drug label (orchestrator-ratified).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC7",
+  "handle": "st-johns-wort-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host dailymed.nlm.nih.gov: [53] HARVONI (ledipasvir and sofosbuvir) tablets and oral pellets. Prescribing information, Gilea...",
+  "reason": "AC7 dailymed.nlm.nih.gov host (orchestrator 2026-10-23, masters-new-4): the US National Library of Medicine's DailyMed, cited for an FDA drug label (orchestrator-ratified).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC7",
+  "handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Combination Products",
+  "reason": "AC7 product-heading regex false positive (orchestrator 2026-10-23, masters-new-4): not a Brad product section (orchestrator-ratified).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC7",
+  "handle": "nac-n-acetyl-cysteine-benefits-dosing-and-side-effects",
+  "match": "product section changed: ### Contaminated Products",
+  "reason": "AC7 product-heading regex false positive (orchestrator 2026-10-23, masters-new-4): not a Brad product section (orchestrator-ratified).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC7",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Other Fermented Soybean Products",
+  "reason": "AC7 product-heading regex false positive (orchestrator 2026-10-23, masters-new-4): not a Brad product section (orchestrator-ratified).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC7",
+  "handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Recombinant and Non-Soy Production",
+  "reason": "AC7 product-heading regex false positive (orchestrator 2026-10-23, masters-new-4): not a Brad product section (orchestrator-ratified).",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ },
+ {
+  "check": "AC7",
+  "handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host pmc.ncbi.nlm.nih.gov: [38] Bent S, Goldberg H, Padula A, Avins AL. \"Spontaneous bleeding associated with ginkgo biloba:...",
+  "reason": "AC7 pmc.ncbi.nlm.nih.gov host (orchestrator 2026-10-23, masters-new-4): PubMed Central free full text of Bent 2005 (PMC1490168), linked because its DOI no longer resolves (doi.org 404) though PubMed lists it.",
+  "by": "orchestrator",
+  "date": "2026-10-23"
+ }
+]

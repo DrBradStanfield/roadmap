@@ -81,6 +81,15 @@ describe('getAuthenticatedUser (US-09 AC24)', () => {
     const req = new Request(`https://health-tool-app.fly.dev/api/chat${signedQuery(proxyPairs('111'))}`);
     expect(await getAuthenticatedUser(req)).toMatchObject({ customerId: '111', userId: 'user-1' });
   });
+
+  // US-09 AC27: a stored link without admin-written proof is a guest, never a 500.
+  it('identifies nobody when the Shopify link has no admin-written proof', async () => {
+    const graphql = vi.fn(async () => ({ json: async () => ({ data: { customer: { email: 'a@example.com', firstName: null, lastName: null } } }) }));
+    mocks.appProxy.mockResolvedValue({ admin: { graphql } });
+    mocks.getOrCreateSupabaseUser.mockResolvedValueOnce(null as unknown as string);
+    const req = new Request(`https://health-tool-app.fly.dev/api/chat${signedQuery(proxyPairs('111'))}`);
+    expect(await getAuthenticatedUser(req)).toBeNull();
+  });
 });
 
 describe('isValidUuid', () => {

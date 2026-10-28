@@ -208,13 +208,16 @@ function bloodTestSchedule(measurementDates: MeasurementDates, items: ReminderSc
 function medicationSchedule(medications: MedicationRecord[], items: ReminderScheduleItem[]): void {
   const active = medications.filter(isActiveMedication);
   if (active.length === 0) return;
-  // Review is due 12 months after the LEAST recently updated active medication
-  const oldest = active.map((m) => m.updatedAt).sort()[0];
+  // Review is due 12 months after the oldest usable active review day.
+  // Unknown dates contribute no candidate; never infer or persist a review.
+  const oldest = active.map((m) => typeof m.updatedAt === 'string' ? dayOf(m.updatedAt) : '')
+    .filter(isCalendarDay).sort()[0];
+  if (!oldest) return;
   items.push({
     category: 'medication_review',
     group: 'medication_review',
     label: 'Medication review',
-    dueAt: addMonths(dayOf(oldest), MEDICATION_REVIEW_STALE_MONTHS),
+    dueAt: addMonths(oldest, MEDICATION_REVIEW_STALE_MONTHS),
   });
 }
 
@@ -264,7 +267,7 @@ export function computeReminderSchedule(file: RoadmapFile, now: Date): ReminderS
   // and scheduleSchema rejects the whole push. One bad row costs its own item.
   const valid = items.filter((item) => ISO_DATE.test(item.dueAt));
 
-  const horizon = addMonths(localDay(now), 12);
+  const horizon = addMonths(dayOf(now.toISOString()), 12);
   if (!valid.some((item) => item.dueAt <= horizon)) {
     valid.push({
       category: 'annual_checkin',
@@ -279,8 +282,8 @@ export function computeReminderSchedule(file: RoadmapFile, now: Date): ReminderS
 function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleItem[] {
   const { sex, birthYear, birthMonth } = file.profile;
   if (!sex || !birthYear) return []; // no demographics → no eligibility rules can run
-  let age = now.getFullYear() - birthYear;
-  if (birthMonth && now.getMonth() + 1 < birthMonth) age -= 1;
+  let age = now.getUTCFullYear() - birthYear;
+  if (birthMonth && now.getUTCMonth() + 1 < birthMonth) age -= 1;
 
   const measurementDates: MeasurementDates = {};
   for (const m of file.measurements) {

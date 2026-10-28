@@ -7,7 +7,7 @@
 
 import { useId } from 'react';
 import type React from 'react';
-import type { MetricType } from '@roadmap/health-core';
+import { commaQuestion, type MetricType } from '@roadmap/health-core';
 import { describedBy } from '../lib/aria';
 import {
   type CellUnit,
@@ -20,8 +20,8 @@ import {
 
 export interface NumericInputCellProps {
   /** Omit for free-form rows (lab values not in the algorithm). Without a
-   *  metric the cell skips validation + status preview and renders a plain
-   *  input with an empty footer. */
+   *  metric the cell has no range or status preview; it only asks about an
+   *  ambiguous comma ("1,234", US-02 AC7). */
   metric?: MetricType;
   display?: CellUnit;
   value: string;
@@ -68,7 +68,7 @@ export function NumericInputCell({
 }: NumericInputCellProps) {
   const errorId = useId();
   const validationError = validationResult !== undefined ? validationResult
-    : metric && display ? validateTypedValue(metric, value, display).error : null;
+    : metric && display ? validateTypedValue(metric, value, display).error : commaQuestion(value);
   const error = externalError ?? validationError;
   const status = !grading || error || !metric || !display
     ? null

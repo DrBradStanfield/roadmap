@@ -4,6 +4,49 @@ History is NOT operative instruction (Brad 2026-08-11): charters never
 contain their own changelog. Dated entries newest first, keep ~10 (git is
 the archive). Exempt from the 200-line operative cap.
 
+- 2026-10-22 (orchestrator): masters cleanup batches 2-4 and deploy. Batch 4
+  (collagen, NAD boosters, nitric oxide, potassium, multivitamins) merged at
+  5d902ce7. The Kim 2022 and Myung 2025 skin claims are gone per
+  products.md:149. The multivitamins K2 caution matches the clinical files
+  (Theuwissen). Nitric oxide lines that rested only on WebMD are re-sourced to
+  WebMD's own text, VINTAGE MI or Mayo Clinic. Batch 3 (lithium, taurine,
+  electrolytes, glycine, resveratrol) merged at 2aeb54c0. Glycine's food table
+  was ConsumerLab's figures relabelled as USDA; it is rebuilt from USDA
+  FoodData Central. Lithium gains label cautions (serotonin syndrome,
+  nitroimidazoles, breastfeeding, Brugada) and a toxicity emergency line. The
+  electrolytes overdrinking warning is corrected per Almond 2005. Batch 2
+  (vitamin K, turmeric, protein powders, vitamin D, B vitamins) merged at
+  15d4b1f0. ConsumerLab findings are removed and re-sourced to primary
+  abstracts, NIH sheets, LiverTox and labels. Each master gains Key safety
+  points, with ratios stated as the abstracts give them. Every batch had a fix
+  round, a re-check and touch-ups after a fresh Opus adversary per master plus
+  Codex. The chat content cap is now 160K (83436c97). CI run 39760005648
+  deployed all stages green, which put all 20 cleaned masters live.
+- 2026-10-22 (orchestrator): masters cleanup batch 1 (omega-3, cholesterol,
+  magnesium, vitamin C, creatine). ConsumerLab findings are removed and
+  re-sourced to primary studies. Each master gains Key safety points. The
+  omega-3 Current view matches the clinical files. Creatine gains a bipolar
+  caution. Red yeast rice interactions match the lovastatin label. Ruling 17
+  emergency numbers apply. Unreviewed after the review cap: the five touch-up
+  commits (omega-3, vitamin C, magnesium, cholesterol, creatine).
+- 2026-10-22 (Brad): what reached main today.
+  - cf8ea1d2 (dc018de3, 098cadde): the creatine card's memory claim now
+    names Dr Stanfield as its source; reviews are mixed. Refs [114]-[117]
+    (US-07 AC1). The roadmap page is republished to Shopify.
+  - 3b0d608a: the 2026-10-21 masters answers landed (multivitamins USA v8,
+    26 ingredients, $65/$58.50 capsules, $100/$90 powder; turmeric, protein,
+    B vitamins, vitamin C, cholesterol).
+  - 61e78f8c: US-50 AC14 master-first routing. An older post is replaced by
+    its masters when every topic is a reviewed master. Named, open and
+    YouTube-own posts load with their masters. `chat_match_events.router_context`
+    gains `replaced` and `reduced`.
+  - 3bfb8103: third-party clinical pathway content is out of the chatbot and
+    the repo (US-15 AC39). Router index 1040 to 291 entries. An
+    emergency-first rule opens the system prompt; YouTube Step 0 answers
+    emergencies. 64 answer checks added, NOT yet run.
+  - 0ab664ea: chatbot architecture and knowledge-pipeline docs moved to the
+    private claude_business repo.
+
 - 2026-10-04 (Brad, issue #125): the weekly lint's model step runs every
   week under the $2 cap, after one supervised run ($0.47, 15 findings).
   Weekly lint section: "waits for Brad's yes" became "Brad said yes".

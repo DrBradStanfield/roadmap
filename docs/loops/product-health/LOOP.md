@@ -96,7 +96,7 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   `chat_opened`, US-15 AC33); `chat_profile_edit` split by `field` (sex|heightCm) and
   `choice` (shown|saved|declined): the saved/shown ratio is the chat-proposed profile save's
   adoption, names only, never a value (US-16 AC2); `subscription_action_confirmed` (server, name only: a customer
-  confirmed a subscription change card in the microvitamin.com chat, US-49 subscriptions; a zero
+  confirmed a subscription change card in the microvitamin.com chat, US-59 subscriptions; a zero
   is by design while `CHAT_SUBSCRIPTION_ACTIONS` is off); `reminder_optin_v2` total by `provider`. Read `mcp_authorize_shown` with a
   clock: more than two rows a second from one client, with no
   `mcp_consent_posted` following, is a probe scanning the door, not people
@@ -126,7 +126,7 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   v1.0.2, receipt 2026-10-13T23:55Z; v1.0.1 rejected 2026-09-30, v1.0.0
   2026-09-15). If it has moved (approved or rejected), lead the report with it
   as Brad's next action (#60 is closed as superseded).
-- **Newer-Sonnet check** (audit `docs/chat-audit-2026-09-29.md` §4.3, US-15
+- **Newer-Sonnet check** (audit `claude_business docs/roadmap-chat/chat-audit-2026-09-29.md` §4.3, US-15
   AC18). Run `npx tsx tools/check-newer-model.ts` (needs
   `ANTHROPIC_TEST_API_KEY`). Exit 0 = nothing newer; 1 = a named gap. On exit
   10, run the answer-hop commands it prints (`--answer-model … --answer-check`,

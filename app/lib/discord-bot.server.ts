@@ -378,6 +378,8 @@ async function handleMessage(message: GuildMessage): Promise<void> {
       failureMode: result.failureMode,
       errorDetail: result.errorDetail,
       routerResult: result.routerResult,
+      replaced: result.replaced,
+      reduced: result.reduced,
       classifier: {
         classification: result.classifier.classification,
         routerSkipped: result.classifier.routerSkipped,
@@ -474,7 +476,7 @@ async function loadConversationHistory(conversationId: string): Promise<ChatHist
     .from('chat_messages')
     .select('role, content, created_at, is_fallback, failure_mode')
     .eq('conversation_id', conversationId)
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .limit(HISTORY_MSG_LIMIT);
 
   if (error || !data) {
@@ -482,7 +484,9 @@ async function loadConversationHistory(conversationId: string): Promise<ChatHist
     return [];
   }
 
+  // Select the newest turns first, then restore chronological order for model + dedup.
   return data
+    .reverse()
     .filter(r => r.role === 'user' || r.role === 'assistant')
     // Purged turns are gone, not empty: past 30 days the cron nulls `content`
     // (US-15 AC8). Drop those rows so the model never sees a blank turn and the
@@ -663,6 +667,9 @@ interface PersistParams {
   errorDetail?: string;
   /** Router-call result. null when classifier said SKIP — router never ran. */
   routerResult: RouterResult | null;
+  /** US-50 AC14: router picks replaced by their masters, and masters loaded reduced. */
+  replaced?: string[];
+  reduced?: string[];
   classifier: {
     classification: string;
     routerSkipped: boolean;
@@ -763,6 +770,8 @@ export async function persistConversation(p: PersistParams): Promise<void> {
         platform: PLATFORM_DISCORD,
         first: p.contextFirst ?? null,
         recent: p.contextRecent,
+        ...(p.replaced?.length ? { replaced: p.replaced } : {}),
+        ...(p.reduced?.length ? { reduced: p.reduced } : {}),
       },
       matched_handles: r?.handles ?? [],
       router_version: r ? ROUTER_VERSION : null,

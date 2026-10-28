@@ -152,6 +152,15 @@ export interface ReadResult {
 
 export interface WriteResult {
   version: string;
+  /** What the user should hear about a write that landed (US-10 AC4a). */
+  warning?: string;
+}
+
+/** The REST adapters' document opt-in. Without `documents: 'write'` they
+ *  refuse document writes (and Drive document reads): the hosted MCP server
+ *  constructs them bare and must stay that way. */
+export interface DocumentAccess {
+  documents?: 'write';
 }
 
 /** One file as `list` names it. `ref` is what `readDocument` takes — a provider id where the provider has one, so a listed name never forms a path. */

@@ -18,7 +18,7 @@
  * file (the POST response carries `isFallback` for it). Not shared on purpose
  * — a package export for four lines would cost more than the twin.
  *
- * See docs/chat-architecture.md § Consecutive-duplicate dedup.
+ * See claude_business docs/chat-architecture.md § Consecutive-duplicate dedup.
  */
 
 export const DEDUP_WINDOW_MS = 60_000;

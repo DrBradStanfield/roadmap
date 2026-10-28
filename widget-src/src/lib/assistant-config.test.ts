@@ -6,7 +6,23 @@ import {
   DEFAULT_ASSISTANT_NAME,
   resolveChatSurface,
   resolveSkipEmailGate,
+  resolveChatArticle,
 } from './assistant-config';
+
+// US-50 AC14: the site chat names the blog post it is open on, by the last
+// segment of /blogs/<blog>/<handle>; any other page names none.
+describe('resolveChatArticle (US-50 AC14)', () => {
+  it('takes the handle from a blog post path', () => {
+    expect(resolveChatArticle('/blogs/articles/vitamin-k2-artery-calcification-trials')).toBe('vitamin-k2-artery-calcification-trials');
+    expect(resolveChatArticle('/en-nz/blogs/news/some-post/')).toBe('some-post');
+  });
+
+  it('names nothing on any other page', () => {
+    for (const p of ['/', '/blogs/articles', '/blogs/articles/tagged/vitamin-d', '/products/microvitamin', '/pages/roadmap']) {
+      expect(resolveChatArticle(p)).toBeNull();
+    }
+  });
+});
 
 // `resolveAssistantName` only touches `root.dataset.assistantName`, so a minimal
 // stub stands in for a real element — no DOM environment needed.

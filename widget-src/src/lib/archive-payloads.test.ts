@@ -1,10 +1,9 @@
 import { describe, it, expect } from 'vitest';
+import { LAB_ARCHIVE_FLAG } from '@roadmap/health-core';
 import {
-  isLabArchiveDocument,
   synthesizeLabArchiveEntries,
   unarchivedOriginals,
   connectorDocumentEntries,
-  LAB_ARCHIVE_FLAG,
 } from './archive-payloads';
 import type { FileResult } from '../components/ReviewTable';
 
@@ -39,60 +38,11 @@ describe('synthesizeLabArchiveEntries', () => {
   });
 });
 
-describe('isLabArchiveDocument', () => {
-  it('hides synthesized blood-test archive entries (explicit flag)', () => {
-    expect(isLabArchiveDocument({
-      documentType: 'pathology_report',
-      title: 'Blood test results',
-      contentMd: '',
-      metadata: { [LAB_ARCHIVE_FLAG]: true },
-    })).toBe(true);
-  });
-
-  it('hides legacy synthesized entries via content signature (no flag)', () => {
-    expect(isLabArchiveDocument({
-      documentType: 'pathology_report',
-      title: 'Blood test results',
-      contentMd: '',
-      metadata: {},
-    })).toBe(true);
-  });
-
-  it('keeps real pathology reports (biopsy/histology with content)', () => {
-    expect(isLabArchiveDocument({
-      documentType: 'pathology_report',
-      title: 'Breast Core Biopsy — Histology',
-      contentMd: '## Histology\n\nInvasive ductal carcinoma...',
-      metadata: { specimenType: 'core biopsy', result: 'malignant' },
-    })).toBe(false);
-  });
-
-  it('keeps clinic letters, discharge summaries, scans, vaccination records', () => {
-    for (const documentType of ['clinic_letter', 'discharge_summary', 'scan_result', 'vaccination_record', 'other']) {
-      expect(isLabArchiveDocument({
-        documentType,
-        title: 'Blood test results', // even with a colliding title, non-pathology types stay
-        contentMd: '',
-        metadata: {},
-      })).toBe(false);
-    }
-  });
-
-  it('does not hide a pathology report whose title happens to match but has content', () => {
-    expect(isLabArchiveDocument({
-      documentType: 'pathology_report',
-      title: 'Blood test results',
-      contentMd: '## Bone marrow biopsy',
-      metadata: {},
-    })).toBe(false);
-  });
-});
-
 // US-13 AC1 / US-35 AC8 — the connector's metadata-only row (hash, no fileRef)
 // is what a website upload of the same bytes archives behind.
 describe('unarchivedOriginals', () => {
   const doc = (over: Partial<{ contentHash: string | null; fileRef: string | null }>) =>
-    ({ contentHash: 'sha256-a', fileRef: null, ...over });
+    ({ contentHash: 'sha256-a', fileRef: null, documentType: 'clinic_letter', title: 'Letter', contentMd: '', metadata: {}, ...over });
 
   it('counts a value-bearing file whose hash matches a row without a fileRef', () => {
     expect(unarchivedOriginals([result({ file: blob(), contentHash: 'sha256-a' })], [doc({})], new Set()).length).toBe(1);
@@ -116,7 +66,7 @@ describe('unarchivedOriginals', () => {
 const LETTER = { classification: 'clinic_letter' as const, title: 'Cardiology follow-up', documentDate: '2024-06-10', contentMarkdown: '# Letter', metadata: { clinic: 'x' } };
 
 describe('connectorDocumentEntries', () => {
-  const pending = [{ contentHash: 'sha256-a', fileRef: null }];
+  const pending = [{ contentHash: 'sha256-a', fileRef: null, documentType: 'clinic_letter', title: 'Connector title', contentMd: '', metadata: {} }];
   const letter = result({ fileName: 'letter.pdf', values: [], file: blob(), contentHash: 'sha256-a', document: LETTER });
 
   it('files an unselected connector-held letter with its reviewed content and bytes', () => {

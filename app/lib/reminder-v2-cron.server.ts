@@ -106,7 +106,7 @@ export function dueItemsFor(optin: ReminderV2Optin, todayStr: string): {
     const lastSent = optin.last_sent[item.category];
     if (!lastSent) return true;
     const next = new Date(lastSent);
-    next.setDate(next.getDate() + GROUP_COOLDOWNS[getCategoryGroup(item.category as ReminderCategory)]);
+    next.setUTCDate(next.getUTCDate() + GROUP_COOLDOWNS[getCategoryGroup(item.category as ReminderCategory)]);
     return next.toISOString().slice(0, 10) <= todayStr;
   });
   return { due, anyDue: arrived.length > 0 };

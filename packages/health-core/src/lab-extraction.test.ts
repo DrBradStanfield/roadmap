@@ -704,6 +704,25 @@ describe('US-12 AC11: the prompt splits a printed blood pressure into its two co
   });
 });
 
+// US-07 AC7 made a lab eGFR drive the plan, so an eGFR printed ">60" must never
+// arrive as 60 (graded "Low Normal"). US-12 AC8 already drops a value string
+// that does not start with its number; the prompt now asks for exactly that.
+describe('US-07 AC7: an eGFR printed with < or > is returned as printed, as a string, and dropped', () => {
+  it('both prompt modes carry the rule', () => {
+    for (const mode of ['full', 'metadata'] as const) {
+      expect(unifiedSystemPrompt(mode)).toContain('An eGFR printed with < or > (">60", ">90") is returned exactly as printed, as a string: never as its number.');
+    }
+  });
+  it('an eGFR returned as ">60" is dropped, never read as 60', () => {
+    const parsed = parseUnifiedResult({
+      classification: 'lab_report', reportDate: '2026-07-01', values: [], document: null,
+      additionalValues: [{ name: 'egfr', value: '>60', unit: 'mL/min/1.73m²' }],
+    });
+    expect(parsed.additionalValues).toEqual([]);
+    expect(parsed.droppedValueCount).toBe(1);
+  });
+});
+
 // A sheet printed vitamin B12's unit only in its reference-range column; the
 // model labelled the value pmol/L without converting it, so the catalogue
 // stored the pg/mL number as pmol/L. Synthetic values throughout.
@@ -1153,5 +1172,21 @@ describe('US-12 AC13 / US-35 AC5: inflateCapped, shared by the .docx reader and 
 
   it('rejects on a stream error before the cap', async () => {
     await expect(inflateCapped(entry([['data', bytes(1)], ['error', new Error('corrupt')]]), 3)).rejects.toThrow('corrupt');
+  });
+});
+
+describe('US-12 AC8: a row with no printedMonth or question is read, not dropped', () => {
+  // zod 4 refuses an absent key whose transform answers undefined unless the
+  // key is optional: every such row would have been counted as dropped.
+  it('keeps a bare core row and a bare additional row', () => {
+    const parsed = parseUnifiedResult({
+      classification: 'lab_report',
+      reportDate: '2026-01-01',
+      values: [{ metric: 'hdl', value: 1.2, unit: 'mmol/L', confidence: 'high' }],
+      additionalValues: [{ name: 'Ferritin', value: 120, unit: 'ug/L' }],
+    });
+    expect(parsed.droppedValueCount).toBe(0);
+    expect(parsed.values).toEqual([{ metric: 'hdl', value: 1.2, unit: 'mmol/L', confidence: 'high' }]);
+    expect(parsed.additionalValues).toEqual([{ name: 'Ferritin', value: 120, unit: 'ug/L' }]);
   });
 });

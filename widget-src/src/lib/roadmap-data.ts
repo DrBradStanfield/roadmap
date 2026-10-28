@@ -5,7 +5,7 @@ import {
   type HealthInputs,
   type LpaUnit,
   type MetricType,
-  isLabUnitWord,
+  labUnitForEvent,
   labUnitTaken,
   type ReminderScheduleItem,
   knownMinorOf,
@@ -17,7 +17,6 @@ import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, setChatHistoryFactory } from './chat-history-access';
 import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
 import { SHOPIFY_SURFACE } from './build-flags';
-import { Sentry } from './sentry';
 import type { StorageAdapter } from '@roadmap/health-core';
 import type {
   AddMeasurementResult,
@@ -37,6 +36,9 @@ let store: RoadmapStore | null = null;
  *  chose could not be read (US-09 AC13). */
 export async function initRoadmapStore(adapter: StorageAdapter, cloudUnreachable = false): Promise<void> {
   store = await RoadmapStore.create(adapter, cloudUnreachable);
+  // The page about to render shows this erase; it moves the mark as it shows
+  // another, and the store refuses a write made against an older one (US-16 AC2a).
+  store.showErase(store.eraseIdentity);
   // Both surfaces init here, so this is the one place the live re-read starts
   // (US-34). It runs for the life of the page; nothing unmounts the data layer.
   store.startLiveRefresh();
@@ -64,6 +66,25 @@ export function getDocumentArchiveMode(): 'no-prompt' | 'cloud' | 'device-only' 
   return getBackendKind() === 'cloud' ? 'cloud' : 'device-only';
 }
 
+/** Which erase the record is at; it moves with every erase, this tab's or
+ *  another device's once re-read (US-16 AC2a). */
+export function getEraseIdentity(): string {
+  return store?.eraseIdentity ?? '';
+}
+/** The erase the page shows, and its mark once the page shows another. */
+export function getShownErase(): string {
+  return store?.shownErase ?? '';
+}
+/** After an erase: clear this device's off-file health data by the record
+ *  session's one rule, which spares the originals of documents that outlive
+ *  the erase (US-11 AC6). The page never clears stored originals itself. */
+export function clearOffFileAfterErase(): void {
+  store?.clearOffFileData();
+}
+export function markEraseShown(identity: string): void {
+  store?.showErase(identity);
+}
+
 /** Where the record lives, as the usage counters name it (US-34). */
 export function getBackendKind(): 'local' | 'cloud' {
   return store && store.backendId !== 'local' ? 'cloud' : 'local';
@@ -83,24 +104,24 @@ export function getInitialInputsSync(): Partial<HealthInputs> {
 export function getReportEmailCaptured(): boolean {
   return store?.getReportEmailCaptured() ?? false;
 }
-export function markReportEmailCaptured(): void {
-  store?.markReportEmailCaptured();
+export function markReportEmailCaptured(): boolean {
+  return store?.markReportEmailCaptured() ?? false;
 }
 
 // --- Lp(a)'s field unit, a profile preference (US-05 AC2; lpa-unit.ts reads it) ---
 export function getLpaUnit(): unknown {
   return store?.getLpaUnit();
 }
-export function setLpaUnit(unit: LpaUnit): void {
-  store?.setLpaUnit(unit);
+export function setLpaUnit(unit: LpaUnit): boolean {
+  return store?.setLpaUnit(unit) ?? false;
 }
 
 // --- email reminders (§10) — used by the standalone RemindersControl ---
 export function getReminderOptIn(): FileReminderOptIn | undefined {
   return store?.getReminderOptIn();
 }
-export function setReminderOptIn(fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>): void {
-  store?.setReminderOptIn(fields);
+export function setReminderOptIn(fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>, erase?: string): boolean {
+  return store?.setReminderOptIn(fields, erase) ?? false;
 }
 export function computeCurrentReminderSchedule(): ReminderScheduleItem[] {
   return store?.computeReminderScheduleNow() ?? [];
@@ -113,6 +134,9 @@ export function isKnownMinorNow(): boolean {
 
 // --- reads ---
 export async function loadLatestMeasurements(): Promise<LatestMeasurementsResult | null> {
+  return loadLatestMeasurementsSync();
+}
+export function loadLatestMeasurementsSync(): LatestMeasurementsResult | null {
   return store ? store.loadLatestMeasurements() : null;
 }
 /** Whether a loaded record holds anything the form shows. One test, shared by
@@ -132,27 +156,29 @@ export async function loadLabValues(): Promise<ApiLabValue[] | null> {
 }
 
 // --- writes ---
-export async function addMeasurement(metricType: string, value: number, recordedAt?: string): Promise<AddMeasurementResult> {
-  return store ? store.addMeasurement(metricType, value, recordedAt) : { status: 'error' };
+// `erase`: the erase the page showed when the write was asked for (US-16
+// AC2a); without it, the one it shows now.
+export async function addMeasurement(metricType: string, value: number, recordedAt?: string, erase?: string): Promise<AddMeasurementResult> {
+  return store ? store.addMeasurement(metricType, value, recordedAt, erase) : { status: 'error' };
 }
 /** Correct a saved core or lab value; `newValue` is in the unit it is stored in. */
-export async function correctValue(id: string, newValue: number): Promise<CorrectStatus> {
-  return store ? store.correctValue(id, newValue) : 'error';
+export async function correctValue(id: string, newValue: number, erase?: string): Promise<CorrectStatus> {
+  return store ? store.correctValue(id, newValue, erase) : 'error';
 }
-export async function saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>): Promise<boolean> {
-  return store ? store.saveChangedMeasurements(current, previous) : false;
+export async function saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): Promise<boolean> {
+  return store ? store.saveChangedMeasurements(current, previous, erase) : false;
 }
-export async function saveMedication(medicationKey: string, drugName: string, doseValue: number | null = null, doseUnit: string | null = null): Promise<boolean> {
-  return store ? store.saveMedication(medicationKey, drugName, doseValue, doseUnit) : false;
+export async function saveMedication(medicationKey: string, drugName: string, doseValue: number | null = null, doseUnit: string | null = null, erase?: string): Promise<boolean> {
+  return store ? store.saveMedication(medicationKey, drugName, doseValue, doseUnit, erase) : false;
 }
-export async function saveSupplement(supplementKey: string, supplementName: string, doseValue: number | null = null, doseUnit: string | null = null, status = 'active', startedAt?: string): Promise<boolean> {
-  return store ? store.saveSupplement(supplementKey, supplementName, doseValue, doseUnit, status, startedAt) : false;
+export async function saveSupplement(supplementKey: string, supplementName: string, doseValue: number | null = null, doseUnit: string | null = null, status = 'active', startedAt?: string, erase?: string): Promise<boolean> {
+  return store ? store.saveSupplement(supplementKey, supplementName, doseValue, doseUnit, status, startedAt, erase) : false;
 }
 export async function deleteSupplementApi(supplementKey: string): Promise<boolean> {
   return store ? store.deleteSupplementApi(supplementKey) : false;
 }
-export async function saveScreening(screeningKey: string, value: string): Promise<boolean> {
-  return store ? store.saveScreening(screeningKey, value) : false;
+export async function saveScreening(screeningKey: string, value: string, erase?: string): Promise<boolean> {
+  return store ? store.saveScreening(screeningKey, value, erase) : false;
 }
 export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[]): Promise<BulkSaveResult> {
   if (!store) return { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] };
@@ -174,17 +200,18 @@ export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<Bu
   const result = store.bulkSaveLabValues(values);
   // The one place every lab writer passes, so each refused row is counted once:
   // only a spelling the test does not take, the signal for the next one to teach it (US-21 AC15).
-  // A unit that is not a unit word is counted without it (US-21 AC11).
+  // A unit that is not a unit word is counted without it (US-21 AC11); a blank one as `(blank)` (AC22).
   for (const row of result.refused) {
     if (!labUnitTaken(resolveLabCatalogEntry(row.key), row.unit)) {
-      trackProductEvent('lab_unit_refused', isLabUnitWord(row.unit) ? { key: row.key, unit: row.unit } : { key: row.key });
+      const unit = labUnitForEvent(row.unit);
+      trackProductEvent('lab_unit_refused', unit ? { key: row.key, unit } : { key: row.key });
     }
   }
   return result;
 }
 export async function bulkSaveDocuments(
   documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob }>,
-): Promise<{ saved: ApiDocument[]; errorCount: number }> {
+): Promise<{ saved: ApiDocument[]; errorCount: number; unstored?: number }> {
   return store ? store.bulkSaveDocuments(documents) : { saved: [], errorCount: documents.length };
 }
 export async function deleteDocument(documentId: string): Promise<boolean> {
@@ -221,37 +248,11 @@ export function setPreEraseHook(fn: () => Promise<void>): void {
 
 export async function deleteUserData(): Promise<{ success: boolean; error?: string; warning?: string; chatErased: boolean }> {
   if (!store) return { success: false, error: 'Data store not initialised', chatErased: false };
-  // Both steps below run only once the store has read the record it erases:
-  // an erase that cannot read it is refused, and must have changed nothing
-  // here either (US-09 AC23).
-  let chatErased = false;
-  const result = await store.deleteUserData(async () => {
-    try {
-      await preEraseHook?.();
-    } catch (error) {
-      // Best-effort: an unreachable server must never block a user from erasing
-      // their own device. The orphaned row is reported, not silently swallowed.
-      console.warn('Pre-erase teardown failed', error);
-      Sentry.captureException(error, { tags: { area: 'reminders', op: 'pre-erase' } });
-    }
-    // Chat history is a SEPARATE file the record erase never touches, and its
-    // merge is append-only — so every conversation is tombstoned. Through the
-    // singleton, so an open chat panel's instance is the one erased, and BEFORE
-    // the record erase, which then clears the local-mode keys underneath it.
-    // Best-effort, like the hook above: a cloud that won't answer must not trap
-    // the user's data on their device.
-    // Reported, not just swallowed: the caller's post-erase notice must not claim
-    // a deletion that did not happen. The tombstones are already in the singleton,
-    // so the next recordExchange carries them through sync.save.
-    try {
-      await (await getChatHistory())?.eraseAll();
-      chatErased = true;
-    } catch (error) {
-      console.warn('Chat-history erase failed', error);
-      Sentry.captureException(error, { tags: { area: 'chat-history', op: 'erase' } });
-    }
-  });
-  return { ...result, chatErased };
+  // The order and the best-effort rules are the record session's (health-core
+  // deleteAllData): it reads the record first, and an erase that cannot read
+  // it is refused before either step runs (US-09 AC23). Chat goes through the
+  // singleton, so an open chat panel's instance is the one erased.
+  return store.deleteAllData({ teardown: preEraseHook ?? undefined, chat: getChatHistory });
 }
 
 // ---------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 /**
- * The subscription change card (US-49): what the chat server sends when the
+ * The subscription change card (US-59): what the chat server sends when the
  * model proposed pausing, skipping or cancelling one of a logged-in customer's
  * subscriptions, the confirm call, and the plain words for each outcome.
  * Shopify commerce surface only; the server sends no card anywhere else.
@@ -65,7 +65,7 @@ export async function confirmSubscriptionChange(card: SubscriptionCard): Promise
   }
 }
 
-// ── Words (US-49; drafted for Brad's review before going live) ──
+// ── Words (US-59; drafted for Brad's review before going live) ──
 export const SUBSCRIPTION_HELP_LINE =
   "You can change it in your account at https://account.microvitamin.com/, or email brad@microvitamin.com and we'll sort it out.";
 
@@ -93,7 +93,7 @@ export function resultText(card: SubscriptionCard, r: SubscriptionResult): strin
   }
   if (r.status === 'accepted') return 'The change has been accepted and should show in your account within a few minutes.';
   if (r.status === 'unconfirmed') return `We couldn't confirm the change. Please check your account in a few minutes. ${SUBSCRIPTION_HELP_LINE}`;
-  // Every refusal ends with where to go instead (US-49 AC8).
+  // Every refusal ends with where to go instead (US-59 AC8).
   if (r.code && EXPIRED.has(r.code)) return `This card is out of date. Ask in the chat again for a fresh one. ${SUBSCRIPTION_HELP_LINE}`;
   if (r.code === 'busy') return `The store is busy. Please try again in a minute. ${SUBSCRIPTION_HELP_LINE}`;
   if (r.code === 'open_order') return `An order for this subscription has already been placed, and this change wouldn't alter it, so it can't be made here. ${SUBSCRIPTION_HELP_LINE}`;

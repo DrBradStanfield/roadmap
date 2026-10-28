@@ -1,5 +1,5 @@
 /**
- * US-49 AC6: in the chat turn, a logged-in commerce customer's subscriptions
+ * US-59 AC6: in the chat turn, a logged-in commerce customer's subscriptions
  * reach the model (no tokens), the propose tool is offered, and a proposal
  * becomes a card only for a subscription the gateway listed for THIS signed-in
  * customer. Nothing typed in the chat can name another customer.
@@ -87,7 +87,7 @@ async function post(message: string) {
   return res.json();
 }
 
-describe('US-49 AC6 — the chat turn', () => {
+describe('US-59 AC6 — the chat turn', () => {
   it('logged in on microvitamin.com: summary in context without tokens, tool offered, proposal becomes a card', async () => {
     const reply = await post('Please cancel my MicroVitamin subscription');
     expect(fetchMock).toHaveBeenCalledTimes(1);

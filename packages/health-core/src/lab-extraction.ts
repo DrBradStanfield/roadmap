@@ -13,7 +13,7 @@
  *    bundle: Brad accepted that 2026-06-10 — it is mechanical value
  *    extraction, not clinical IP (the algorithm doc never leaves the server).
  */
-import { z } from 'zod';
+import * as z from './zod';
 import { reportedToCanonical, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from './units';
 import { foldName, LAB_CATALOG, LAB_GROUPS, normalizeLabUnit, PROMPT_DEFERRED_KEYS } from './lab-catalog';
 import { parseLocalisedNumber } from './parseNumber';
@@ -343,6 +343,7 @@ ${VALID_METRICS.map((metric) => `  - "${metric}" — ${CORE_METRIC_ALIASES[metri
   8. A measured blood pressure printed as one reading ("120/80 mmHg") is two TARGET METRICS: systolic_bp 120 and diastolic_bp 80, both in "values".
   9. UNITS, in "values" and "additionalValues" alike: copy each row's unit exactly as the report prints it for that row: the unit beside the result; else the unit printed in that row's own reference range ("200-900 pg/mL" gives "pg/mL"); else the unit in that column's header. NEVER convert a value and NEVER relabel its unit to the one you expect for that test: a result printed in pg/mL is returned in pg/mL, even where pmol/L is more common. If no unit is printed anywhere for the row, return "unit": "" (an empty string). Never guess one.
   10. REFERENCE RANGES: for each "additionalValues" row, return the row's printed reference range as "referenceLow" and "referenceHigh": the numbers as printed, in the row's printed unit, never converted. A one-sided range sets one side ("<5" is referenceHigh 5, ">40" is referenceLow 40) and the other is null; both are null when no range is printed.
+  11. An eGFR printed with < or > (">60", ">90") is returned exactly as printed, as a string: never as its number.
 
   ADDITIONAL VALUES — use these standardized snake_case names when applicable:
 ${LAB_GROUPS.map((group) => [group.label, LAB_CATALOG.filter((entry) => entry.group === group.id && !PROMPT_DEFERRED_KEYS.has(entry.key)).map((entry) => entry.key)] as const)
@@ -440,7 +441,9 @@ const NUMBER_TOKEN = /^\s*([+-]?[\d.,]+)/;
  * different number, and listing them one by one always missed the next.
  * A minus sign printed as U+2212 ("−2.5") is a minus. 1-3 digits, a comma
  * and exactly 3 digits ("250,000", "1,050") is refused too: US thousands and
- * a European decimal read 1000x apart, and both pass the count guard.
+ * a European decimal read 1000x apart, and both pass the count guard. That
+ * rule is `parseLocalisedNumber`'s (US-02 AC7), given no range here, which
+ * refuses grouped thousands ("1,234,567") as well.
  * Anything unreadable becomes null: the row drops, and a reference bound is
  * unknown. A dot in that place, or any text but a flag, is refused on a
  * count row only (see `refusedCountRow`).
@@ -450,7 +453,7 @@ function readModelNumber(v: unknown): unknown {
   const s = v.replace(/−/g, '-');
   const m = NUMBER_TOKEN.exec(s);
   const rest = s.slice(m?.[0].length).replace(/\s\([^()x×*^]*\)\s*$/u, '');
-  if (!m || /\p{N}/u.test(rest) || /^[+-]?[1-9]\d{0,2},\d{3}$/.test(m[1])) return null;
+  if (!m || /\p{N}/u.test(rest)) return null;
   return parseLocalisedNumber(m[1]) ?? null;
 }
 
@@ -511,9 +514,9 @@ const coreValueRow = z.object({
   // Null, missing or blank is "no unit printed", as on an additional row.
   unit: z.string().nullish().transform(u => u?.trim() ?? ''),
   confidence: z.enum(['high', 'medium', 'low']),
-  question: z.string().nullish().transform(q => q ?? undefined),
+  question: z.string().nullish().transform(q => q ?? undefined).optional(),
   recordedAt: labDay,
-  printedMonth: z.unknown().transform(m => (typeof m === 'string' ? m.trim() : undefined)),
+  printedMonth: z.unknown().transform(m => (typeof m === 'string' ? m.trim() : undefined)).optional(),
 });
 
 const additionalValueRow = z.object({
@@ -523,7 +526,7 @@ const additionalValueRow = z.object({
   referenceLow: labBound,
   referenceHigh: labBound,
   recordedAt: labDay,
-  printedMonth: z.unknown().transform(m => (typeof m === 'string' ? m.trim() : undefined)),
+  printedMonth: z.unknown().transform(m => (typeof m === 'string' ? m.trim() : undefined)).optional(),
 });
 
 const unifiedResultSchema = z.object({
@@ -537,7 +540,7 @@ const unifiedResultSchema = z.object({
     documentDate: z.string().nullable(),
     contentMarkdown: z.string().default(''),
     summary: z.string().optional(),
-    metadata: z.record(z.unknown()).default({}),
+    metadata: z.record(z.string(), z.unknown()).default({}),
   }).nullable().default(null),
 });
 

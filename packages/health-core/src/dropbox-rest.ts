@@ -14,7 +14,7 @@
  * browser refreshes with PKCE and the server refreshes as a confidential
  * client.
  */
-import { ConflictError, fetchOrFail, jsonBody, StorageError, type ReadResult, type StorageAdapter, type StoredFile, type WriteResult } from './adapter';
+import { ConflictError, fetchOrFail, jsonBody, StorageError, type DocumentAccess, type ReadResult, type StorageAdapter, type StoredFile, type WriteResult } from './adapter';
 
 export const DROPBOX_TOKEN_URL = 'https://api.dropboxapi.com/oauth2/token';
 const DOWNLOAD_URL = 'https://content.dropboxapi.com/2/files/download';
@@ -101,6 +101,27 @@ export async function dropboxDownload(accessToken: string, ref: string, signal?:
   const res = await download(accessToken, ref, signal);
   if (!res.ok) throw new StorageError(`${PROVIDER} download failed (${res.status})`, undefined, undefined, res.status);
   return new Uint8Array(await res.arrayBuffer());
+}
+
+/**
+ * Store one uploaded document at its folder-relative `ref`, overwriting
+ * whatever is there (refs are collision-suffixed by buildDocumentRef). The
+ * browser adapter and an opted-in DropboxAdapter both call this. Bare `fetch`,
+ * not `request`: a 10 MB original on a slow uplink outlives `fetchOrFail`'s
+ * 30-second bound, and the browser's failures keep the class they always had.
+ */
+export async function dropboxUploadDocument(accessToken: string, ref: string, bytes: Blob | Uint8Array<ArrayBuffer>): Promise<void> {
+  const arg = { path: `/${ref}`, mode: { '.tag': 'overwrite' }, autorename: false, mute: true };
+  const res = await fetch(UPLOAD_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/octet-stream',
+      'Dropbox-API-Arg': dropboxApiArg(arg),
+    },
+    body: bytes,
+  });
+  if (!res.ok) throw new StorageError(`${PROVIDER} document write failed (${res.status}).`, undefined, undefined, res.status);
 }
 
 /** One folder-relative entry of a listing, as the connector reads it. */
@@ -214,14 +235,19 @@ export async function dropboxWrite(
  *
  * Documents are read (a lab file the user asked the connector to import,
  * US-35) and never written: the hosted write surface is clinical values, plus
- * the import's own pending payload, and nothing else. `DriveAdapter` in
- * `drive-rest.ts` is the same shape for Google.
+ * the import's own pending payload, and nothing else. Only a caller that
+ * passes `{ documents: 'write' }` (the iPhone app's own save) can write one;
+ * the hosted server never does. `DriveAdapter` in `drive-rest.ts` is the same
+ * shape for Google.
  */
 export class DropboxAdapter implements StorageAdapter {
   readonly id = 'dropbox' as const;
   readonly label = PROVIDER;
 
-  constructor(private readonly accessToken: string) {}
+  constructor(
+    private readonly accessToken: string,
+    private readonly options: DocumentAccess = {},
+  ) {}
 
   async connect(): Promise<void> {}
   isConnected(): boolean {
@@ -241,8 +267,9 @@ export class DropboxAdapter implements StorageAdapter {
     return new Blob([await dropboxDownload(this.accessToken, ref, signal)]);
   }
 
-  async writeDocument(): Promise<void> {
-    throw new StorageError('The hosted server does not write uploaded documents.');
+  async writeDocument(ref: string, bytes: Blob): Promise<void> {
+    if (this.options.documents !== 'write') throw new StorageError('The hosted server does not write uploaded documents.');
+    return dropboxUploadDocument(this.accessToken, ref, bytes);
   }
 
   async list(folder: string, signal?: AbortSignal, limit?: number): Promise<StoredFile[]> {

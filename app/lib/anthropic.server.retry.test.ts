@@ -477,3 +477,113 @@ describe('US-15 AC34: an extraction that stopped short is not re-sent', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
+
+// US-15 AC40: on 2026-10-26 every call 400ed for ~12 h on the org spend limit,
+// and Sentry (JAVASCRIPT-REMIX-79) showed only "status 400". The error body's
+// `error.type`, a closed set, is now kept; nothing else from the body is.
+describe('US-15 AC40: an API error names its type and nothing else from the body', () => {
+  const USER_TEXT = 'my private question about a lump';
+  let errorSpy: ReturnType<typeof vi.spyOn>;
+  let warnSpy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    vi.clearAllMocks();
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    global.fetch = REAL_FETCH;
+    errorSpy.mockRestore();
+    warnSpy.mockRestore();
+  });
+
+  const errorJson = (status: number, type: unknown, message = 'x') =>
+    Response.json({ type: 'error', error: { type, message }, request_id: 'req_1' }, { status });
+
+  async function failWith(response: Response): Promise<Error> {
+    global.fetch = vi.fn().mockResolvedValue(response) as unknown as typeof fetch;
+    return callAnthropicWithUsage({ model: 'x' }).catch(e => e);
+  }
+
+  it.each(['billing_error', 'invalid_request_error'])('a 400 %s is in the error, the Sentry tag and the log line', async (type) => {
+    const err = await failWith(errorJson(400, type));
+    expect(err.message).toBe(`Anthropic API error (status 400) (${type})`);
+    expect(Sentry.captureException).toHaveBeenCalledWith(err, expect.objectContaining({
+      tags: { anthropic_error_type: type },
+      extra: expect.objectContaining({ status: 400, errorType: type }),
+    }));
+    expect(errorSpy).toHaveBeenCalledWith(err.message);
+  });
+
+  it('keeps the status where existing matchers read it', async () => {
+    const err = await failWith(errorJson(529, 'overloaded_error'));
+    expect(err.message).toMatch(/\(status 529\)/);
+    expect(classifyChatError(err)).toBe('overloaded_529');
+  });
+
+  it('never lets the message text reach the error, Sentry or the console', async () => {
+    const err = await failWith(errorJson(400, 'invalid_request_error', `messages.0: ${USER_TEXT}`));
+    const seen = JSON.stringify([
+      err.message, err.stack,
+      vi.mocked(Sentry.captureException).mock.calls,
+      errorSpy.mock.calls, warnSpy.mock.calls,
+    ]);
+    expect(seen).not.toContain(USER_TEXT);
+    expect(seen).not.toContain('req_1');
+  });
+
+  it('maps a type off the closed list to other', async () => {
+    expect((await failWith(errorJson(400, 'novel_error'))).message).toBe('Anthropic API error (status 400) (other)');
+    expect((await failWith(errorJson(400, `${USER_TEXT}_error`))).message).toBe('Anthropic API error (status 400) (other)');
+  });
+
+  it.each([
+    ['an empty body', () => new Response(null, { status: 400 })],
+    ['a non-JSON body', () => new Response(`<html>${USER_TEXT}</html>`, { status: 400 })],
+    ['JSON with no type', () => Response.json({ error: { message: USER_TEXT } }, { status: 400 })],
+    ['a non-string type', () => errorJson(400, { nested: USER_TEXT })],
+    ['a body past the cap', () => errorJson(400, 'billing_error', 'y'.repeat(100_000))],
+    ['a body that errors mid-read', () => new Response(new ReadableStream({
+      start(c) { c.enqueue(new TextEncoder().encode('{"error":')); c.error(new TypeError('terminated')); },
+    }), { status: 400 })],
+  ])('%s gives unknown without throwing anything else', async (_, make) => {
+    const err = await failWith(make());
+    expect(err.message).toBe('Anthropic API error (status 400) (unknown)');
+    expect(Sentry.captureException).toHaveBeenCalledWith(err, expect.objectContaining({ tags: { anthropic_error_type: 'unknown' } }));
+    expect(JSON.stringify([err.message, errorSpy.mock.calls])).not.toContain(USER_TEXT);
+  });
+
+  it('a body that never ends cannot outlast the cap', async () => {
+    let pulls = 0;
+    const endless = new Response(new ReadableStream({
+      pull(c) { pulls++; c.enqueue(new Uint8Array(1024).fill(32)); },
+    }), { status: 400 });
+    const err = await failWith(endless);
+    expect(err.message).toBe('Anthropic API error (status 400) (unknown)');
+    expect(pulls).toBeLessThan(10);
+  });
+
+  it('the retry path still cancels the retried body unread, then reads the final one', async () => {
+    const first = errorJson(529, 'overloaded_error', USER_TEXT);
+    const cancel = vi.spyOn(first.body!, 'cancel');
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(first)
+      .mockResolvedValueOnce(errorJson(529, 'overloaded_error'));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const err = await callAnthropicWithUsage({ model: 'x' }).catch(e => e);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(err.message).toBe('Anthropic API error (status 529) (overloaded_error)');
+    expect(Sentry.captureException).not.toHaveBeenCalled(); // transient capacity — still silenced
+    expect(JSON.stringify(warnSpy.mock.calls)).not.toContain(USER_TEXT);
+  });
+
+  it('a retry that recovers is unchanged', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(errorJson(503, 'api_error'))
+      .mockResolvedValueOnce(anthropicMessage('recovered'));
+    global.fetch = fetchMock as unknown as typeof fetch;
+    expect((await callAnthropicWithUsage({ model: 'x' })).content).toBe('recovered');
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+  });
+});

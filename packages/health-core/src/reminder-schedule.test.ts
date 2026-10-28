@@ -8,8 +8,9 @@ import { computePlan } from './plan';
 /** The shape the server's scheduleSchema accepts — a NaN date fails the push. */
 const ISO_DATE_SHAPE = /^\d{4}-\d{2}-\d{2}$/;
 
-// Fixed "today" for determinism: 15 June 2026
-const NOW = new Date(2026, 5, 15);
+// Fixed "today" for determinism: 15 June 2026, a UTC instant. The schedule
+// reads the UTC day (US-23 AC6b); local midnight was 14 June UTC east of Greenwich.
+const NOW = new Date('2026-06-15T12:00:00Z');
 
 const MALE_60: ReminderProfile = { sex: 'male', age: 60 };
 const FEMALE_55: ReminderProfile = { sex: 'female', age: 55 };
