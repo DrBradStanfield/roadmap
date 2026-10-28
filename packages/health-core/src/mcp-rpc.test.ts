@@ -18,6 +18,8 @@ const surface: RpcSurface = {
     name === 'boom' ? { errorMessage: 'That tool failed inside this server.' } : { answer: { text: 'done', isError: false } },
 };
 
+const PUBLISHED = ['name', '_meta', 'title', 'description', 'inputSchema', 'outputSchema', 'annotations'];
+
 function send(method: string, params: object = {}) {
   return dispatchRpc({ jsonrpc: '2.0', id: 1, method, params }, surface) as
     Promise<{ result?: Record<string, never> & Record<string, unknown>; error?: { code: number } } | null>;
@@ -31,7 +33,7 @@ describe('US-32 — the shared dispatch', () => {
     expect((await send('initialize', { protocolVersion: '1999-01-01' }))!.result!.protocolVersion).toBe('2025-11-25');
   });
 
-  it('lists the tools with the two words ChatGPT shows, and never the write cost or the run mode', async () => {
+  it('lists the tools with the two words ChatGPT shows, and none of the server\'s own fields (US-32 AC51)', async () => {
     const listed = (await send('tools/list'))!.result!.tools as Array<Partial<(typeof MCP_TOOLS)[number]>>;
     expect(listed).toHaveLength(MCP_TOOLS.length);
     for (const tool of listed) {
@@ -39,8 +41,41 @@ describe('US-32 — the shared dispatch', () => {
       // mode; neither is a tool fact (US-35 live verify 2026-09-05 saw `run` leak).
       expect(Object.keys(tool), tool.name).not.toContain('cost');
       expect(Object.keys(tool), tool.name).not.toContain('run');
+      // US-32 AC51 (2026-10-21): `nudge`, `twoPhase` and `imports` leaked too
+      // (found while adding AC50). Only the spec's Tool fields are published.
+      expect(Object.keys(tool).sort(), tool.name).toEqual([...PUBLISHED].sort());
       expect(tool._meta!['openai/toolInvocation/invoking'].length, tool.name).toBeLessThanOrEqual(64);
       expect(tool._meta!['openai/toolInvocation/invoked'].length, tool.name).toBeLessThanOrEqual(64);
+    }
+  });
+
+  // US-32 AC50 (2026-10-21): Anthropic's directory form flagged all nine tools
+  // "Missing title annotation" — it reads ToolAnnotations.title, not Tool.title.
+  it('puts every tool\'s display title in its annotations too, hints untouched (US-32 AC50)', async () => {
+    // A surface's own list (the hosted knowledge tools, US-41) is titled the same way.
+    const extra = { ...MCP_TOOLS[0], name: 'extra_tool', title: 'An extra tool' };
+    for (const tools of [undefined, [...MCP_TOOLS, extra]]) {
+      const answer = (await dispatchRpc({ jsonrpc: '2.0', id: 1, method: 'tools/list' }, { ...surface, tools })) as
+        { result: { tools: Array<{ name: string; title: string; annotations: Record<string, unknown> }> } };
+      const source = tools ?? MCP_TOOLS;
+      expect(answer.result.tools).toHaveLength(source.length);
+      answer.result.tools.forEach((tool, i) => {
+        expect(tool.title.length, tool.name).toBeGreaterThan(0);
+        expect(tool.annotations, tool.name).toEqual({ ...source[i].annotations, title: tool.title });
+        expect(tool.title, tool.name).toBe(source[i].title);
+      });
+    }
+    // The definitions themselves stay as they were: the title is added on the wire only.
+    expect(MCP_TOOLS.every((t) => !('title' in t.annotations))).toBe(true);
+  });
+
+  // The list names fields one by one, so a NEW definition field (MCP `icons`,
+  // say) would be dropped silently: every definition key is published or is
+  // one of the server's own (US-32 AC51).
+  it('publishes every definition field that is not the server\'s own (US-32 AC51)', () => {
+    const serverOnly = ['cost', 'run', 'imports', 'twoPhase', 'canonicalArgs', 'nudge'];
+    for (const tool of MCP_TOOLS) {
+      for (const key of Object.keys(tool)) expect([...PUBLISHED, ...serverOnly], `${tool.name}.${key}`).toContain(key);
     }
   });
 
