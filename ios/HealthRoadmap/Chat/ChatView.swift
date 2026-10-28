@@ -93,7 +93,13 @@ struct ChatView: View {
                         }
                         ForEach(lines) { ChatBubble(line: $0) }
                         if let status { Label(status, systemImage: "ellipsis").foregroundStyle(.secondary).font(.footnote) }
-                        if let error { Text(error).foregroundStyle(.red).font(.footnote) }
+                        if let error {
+                            Text(error).foregroundStyle(.red).font(.footnote)
+                            #if DEBUG
+                                // ChatDemoFilmUITests: a failed or cut-off answer is never filmed as finished.
+                                .accessibilityIdentifier("chat.error")
+                            #endif
+                        }
                         Color.clear.frame(height: 1).id("end")
                     }
                     .padding()

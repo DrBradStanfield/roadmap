@@ -20,6 +20,7 @@ struct HealthRoadmapApp: App {
                     .onChange(of: scenePhase, initial: true) { _, phase in follow(phase, parts) }
                     #if DEBUG
                     .onAppear { LaunchClock.mark("app shown") }
+                    .defaultAppStorage(.app)
                     #endif
             case .failure(let error)?:
                 ContentUnavailableView("The app could not start", systemImage: "exclamationmark.triangle", description: Text(error.localizedDescription))
@@ -48,7 +49,12 @@ final class Launch {
         // Before launch finishes, so a tap that starts the app still reaches My plan.
         let reminderTaps = ReminderTaps()
         UNUserNotificationCenter.current().delegate = reminderTaps
+        #if DEBUG
+        // Unavailable, so observeAtLaunch and health.start() return at their first guard.
+        let health: HealthStoreClient = DemoRecord.isOn ? NoHealth() : HealthKitClient()
+        #else
         let health = HealthKitClient()
+        #endif
         let building = Task { try await AppParts.build(reminderTaps: reminderTaps, health: health) }
         // Now, in the app's init, which runs as the process starts: Apple wants Health's
         // observer queries in place before launch finishes, or a background wake for new
@@ -129,6 +135,9 @@ struct AppParts {
     /// One calendar, following the phone's zone, for the store's day anchor and the app's days (adversary R2).
     let live: LiveHealth = {
         let calendar = Calendar.autoupdatingCurrent
+        #if DEBUG
+        if DemoRecord.isOn { return LiveHealth(store: NoLiveHealth(), calendar: calendar) }
+        #endif
         return LiveHealth(store: LiveHealthKitStore(calendar: calendar), calendar: calendar, kept: try? LiveHealth.keptFile())
     }()
     /// The chat history file: Chat's list and the eraser's tombstones, one store.
@@ -155,9 +164,15 @@ struct AppParts {
         self.reminderTaps = reminderTaps
         updater = files.engineFolder.map { EngineUpdater(folder: $0, bundled: files.bundled.facts) }
         let folder = files.record
-        sync = CloudSync(engine: engine, store: store, oauth: OAuthClient())
+        #if DEBUG
+        let (oauth, center): (OAuthClient, NotificationScheduling) = DemoRecord.isOn
+            ? (OAuthClient(tokens: DemoRecord.tokens), NoNotifications()) : (OAuthClient(), UNUserNotificationCenter.current())
+        #else
+        let (oauth, center) = (OAuthClient(), UNUserNotificationCenter.current())
+        #endif
+        sync = CloudSync(engine: engine, store: store, oauth: oauth)
         let (engine, store) = (engine, store)
-        reminders = ReminderScheduler(center: UNUserNotificationCenter.current(), folder: folder) {
+        reminders = ReminderScheduler(center: center, folder: folder) {
             try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
         }
         let sync = self.sync
@@ -178,8 +193,15 @@ private struct LaunchFiles: Sendable {
 
     @concurrent
     static func read() async throws -> LaunchFiles {
+        #if DEBUG
+        let record = try DemoRecord.recordFolder()
+        // A demo record runs the bundled engine only: the phone's downloaded engines and their watermark stay as they are.
+        let engineFolder = DemoRecord.isOn ? nil : try? EngineFolder.live()
+        #else
         let record = try RecordStore.appFolder()
-        return LaunchFiles(bundled: try BundledEngine(), engineFolder: try? EngineFolder.live(), record: record, deviceId: try RecordStore.deviceId(in: record))
+        let engineFolder = try? EngineFolder.live()
+        #endif
+        return LaunchFiles(bundled: try BundledEngine(), engineFolder: engineFolder, record: record, deviceId: try RecordStore.deviceId(in: record))
     }
 }
 

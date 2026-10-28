@@ -289,10 +289,22 @@ enum TourSetup {
         switch mode(environment: environment, arguments: arguments) {
         case .none: return
         case .hidden: Tips.hideAllTipsForTesting()
-        case .fresh: try? Tips.resetDatastore()
+        case .fresh:
+            #if DEBUG
+            // A demo record never resets the phone's own tips' store (its own is set below).
+            if DemoRecord.isOn { break }
+            #endif
+            try? Tips.resetDatastore()
         case .normal: break
         }
         // The tour's order is its own rule, so no wait between tips.
+        #if DEBUG
+        // A demo record keeps its tips' store in its own folder: the phone's tour is never marked seen.
+        if DemoRecord.isOn, let folder = try? DemoRecord.recordFolder() {
+            try? Tips.configure([.displayFrequency(.immediate), .datastoreLocation(.url(folder.appending(path: "Tips")))])
+            return
+        }
+        #endif
         try? Tips.configure([.displayFrequency(.immediate)])
     }
 }

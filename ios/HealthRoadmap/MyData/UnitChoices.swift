@@ -29,13 +29,13 @@ struct UnitChoices: Equatable {
 
     private static let key = "unitChoices.v1"
 
-    static func saved(_ defaults: UserDefaults = .standard) -> UnitChoices {
+    static func saved(_ defaults: UserDefaults = .app) -> UnitChoices {
         var choices = UnitChoices()
         choices.byMetric = (defaults.dictionary(forKey: key) as? [String: String]) ?? [:]
         return choices
     }
 
-    func save(_ defaults: UserDefaults = .standard) {
+    func save(_ defaults: UserDefaults = .app) {
         if byMetric.isEmpty { defaults.removeObject(forKey: Self.key) } else { defaults.set(byMetric, forKey: Self.key) }
     }
 }

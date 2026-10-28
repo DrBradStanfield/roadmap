@@ -6,10 +6,10 @@ enum AIConsent: String {
     case chat = "consent.chat.v1"
     case labUpload = "consent.labUpload.v1"
 
-    var given: Bool { UserDefaults.standard.bool(forKey: rawValue) }
-    func give() { UserDefaults.standard.set(true, forKey: rawValue) }
+    var given: Bool { UserDefaults.app.bool(forKey: rawValue) }
+    func give() { UserDefaults.app.set(true, forKey: rawValue) }
     /// "Stop sharing": nothing is sent again until the user agrees again.
-    func withdraw() { UserDefaults.standard.removeObject(forKey: rawValue) }
+    func withdraw() { UserDefaults.app.removeObject(forKey: rawValue) }
 }
 
 /// The consent screen shown before the first message or upload. Nothing is sent

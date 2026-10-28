@@ -12,7 +12,7 @@ final class CloudPrompt {
     /// RecordStore's `ownSaves` already taken into account, counted or ignored.
     private var seen = 0
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .app) {
         self.defaults = defaults
     }
 

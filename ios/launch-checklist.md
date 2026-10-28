@@ -98,6 +98,24 @@ by the orchestrator, not a fresh reviewer.
      (`node scripts/build-privacy-page.mjs app --publish`) **when build 4 is submitted, not
      before**: the live page's "never saves them" stays true for build 3. Update the App Store
      description and review notes from ios/app-store.md in the same submission.
+   - **Next release: new screenshots and app video (Brad 2026-10-29, don't forget).** App
+     Store Connect locks screenshots and app previews while a version waits for review, so
+     0.1 went out with the old five plain captures. With the next version, replace them with:
+     - the six captioned screenshots (1206 × 2622) in `ios/build/app-store-assets/screenshots/`,
+       in order 1 to 6 (Brad approved the set 2026-10-29);
+     - the app video `ios/build/app-store-assets/video/app-preview-886x1920.mp4` (29 s, with
+       the Chat clip; a 25 s version without Chat sits beside it).
+     `ios/build/` is gitignored: rebuild them with `ios/scripts/app-store-shots.sh` and
+     `ios/scripts/app-store-video.sh` (ios/app-store.md step 6) if the folder is gone or the
+     UI changed. Videos over 10 MB go up by dragging from Finder (the browser tool can't).
+     The header still (21:9) and the search card (3:2) are in the Asset Library (2026-10-29)
+     in a draft submission. App Store Connect refuses to submit it until there is an app
+     version to review it against ("add an app version"), so **submit the draft once 0.1 is
+     approved**. The 15 s header video (`header-3840x1646.mp4`) can join or replace the still.
+     A spare 16:9 `header-universal-5244x2950.png` was also uploaded; it isn't needed.
+     Open before upload: the plan cards on screen show "ApoB 1.02 Very High" and "Consider a
+     GLP-1 medication" for the fictional person (Brad's call), and Sync rows still say
+     "Health Plan by Dr Brad".
 8. **Regulatory advice** on whether the app counts as a medical device in your markets.
 9. **Clinical call:** should the value pages show target bands (blood pressure goal,
    healthy waist, ideal weight)? The targets live only in the website's code today;
