@@ -123,7 +123,7 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   --include=*.ts* | grep -v test` — anything outside lib/storage.ts and a
   try/catch is this class again. A scrub keeping only closed tags can still
   carry the error NAME value-free (`cause`), but needs a CLASS beside it: 77 (6M regrouped) read `other`;
-  PR #288 (10-27, AC28) adds `causeClass` + dedupes per wrapped name. A post-write failure still reads other. Upload `no_files` (6W): read product_events `upload_outcome` openFailed first.
+  PR #288 (10-27, AC28) adds `causeClass` + dedupes per wrapped name; its first event (10-28) read other: a closed list's catch-all must hold only shapes no code path makes, so PR #295 (AC29) names StorageError (after-write), DOMException, Error; other = thrown non-Error. Upload `no_files` (6W): read product_events `upload_outcome` openFailed first.
 - `[class][widget]` 2026-10-02 — Bundled DEPENDENCIES escape our ES2020 floor:
   tsc checks our source only, and pdfjs-dist 4.9 ships 41 bare
   `Promise.withResolvers` calls (ES2024) in health-upload.js, so every PDF fails
