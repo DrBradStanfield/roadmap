@@ -111,7 +111,8 @@ by the orchestrator, not a fresh reviewer.
      The header still (21:9) and the search card (3:2) are in the Asset Library (2026-10-29)
      in a draft submission. App Store Connect refuses to submit it until there is an app
      version to review it against ("add an app version"), so **submit the draft once 0.1 is
-     approved**. The 15 s header video (`header-3840x1646.mp4`) can join or replace the still.
+     approved**. The 15 s header video (`header-3840x1646.mp4`) joined the same draft (Brad
+     dragged it in, 2026-10-29): three items wait, the video, the still and the search card.
      A spare 16:9 `header-universal-5244x2950.png` was also uploaded; it isn't needed.
      Open before upload: the plan cards on screen show "ApoB 1.02 Very High" and "Consider a
      GLP-1 medication" for the fictional person (Brad's call), and Sync rows still say
