@@ -131,8 +131,9 @@ describe('cloud-storage telemetry boundary', () => {
     [new StorageError(marker, undefined, new DOMException(marker, 'QuotaExceededError')), 'DOMException'],
     [new StorageError(marker, undefined, new DOMException(marker, 'SyntaxError')), 'DOMException'], // not instanceof SyntaxError
     [new StorageError(marker, undefined, new StorageError(marker)), 'StorageError'], // AC29: a failure after the write landed
-    [new StorageError(marker, undefined, new Error(marker)), 'other'],
+    [new StorageError(marker, undefined, new Error(marker)), 'Error'],
     [new StorageError(marker, undefined, marker), 'other'],
+    [new StorageError(marker, undefined, { name: 'NS_ERROR_FILE_CORRUPTED', result: 0x8052000b }), 'other'], // Gecko's XPCOM Exception is not an Error
     [new SyntaxError(marker), 'none'], // only a StorageError's own cause is read
   ])('names the cause class from a closed list (US-09 AC28): %s → %s', (error, expected) => {
     expect(storageCauseClass(error)).toBe(expected);
@@ -142,7 +143,7 @@ describe('cloud-storage telemetry boundary', () => {
     [new StorageError(marker, undefined, new SyntaxError(marker)), 'SyntaxError'],
     [new StorageError(marker, undefined, new ConflictError(marker)), 'ConflictError'],
     [new StorageError(marker), 'none'],
-    [new StorageError(marker, undefined, new RangeError(marker)), 'other'],
+    [new StorageError(marker, undefined, new RangeError(marker)), 'Error'],
   ])('tags a persist failure with its error and cause class, never its text (US-09 AC28): %s → %s', async (error, causeClass) => {
     class RefusingCloud extends MemoryAdapter {
       async write(): Promise<never> { throw error; }
@@ -225,7 +226,7 @@ describe('cloud-storage telemetry boundary', () => {
   });
 
   it('keeps a closed cause class through the scrub and drops any other value (US-09 AC28)', () => {
-    for (const causeClass of ['SyntaxError', 'ConflictError', 'StorageError', 'DOMException', 'none', 'other']) {
+    for (const causeClass of ['SyntaxError', 'ConflictError', 'StorageError', 'DOMException', 'Error', 'none', 'other']) {
       const tags = { area: 'cloud-sync', op: 'persist', backend: 'local', errorClass: 'StorageError', causeClass };
       expect(scrubEvent({ type: undefined, tags })!.tags).toEqual(tags);
     }
