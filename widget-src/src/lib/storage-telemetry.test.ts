@@ -90,7 +90,7 @@ describe('cloud-storage telemetry boundary', () => {
     await Sentry.flush();
     const [, items] = envelopes[0] as [unknown, Array<[unknown, { tags: Record<string, string> }]>];
     expect(items[0][1].tags).toEqual({
-      area: 'cloud-sync', op: 'persist', backend: 'local', cause: 'QuotaExceededError', errorClass: 'StorageError', causeClass: 'other',
+      area: 'cloud-sync', op: 'persist', backend: 'local', cause: 'QuotaExceededError', errorClass: 'StorageError', causeClass: 'DOMException',
     });
     expect(JSON.stringify(envelopes)).not.toContain(marker);
   });
@@ -127,7 +127,11 @@ describe('cloud-storage telemetry boundary', () => {
     [new StorageError(marker, undefined, new SyntaxError(marker)), 'SyntaxError'],
     [new StorageError(marker, undefined, new ConflictError(marker)), 'ConflictError'],
     [new StorageError(marker), 'none'],
-    [new StorageError(marker, undefined, new DOMException(marker, 'NS_ERROR_FILE_CORRUPTED')), 'other'],
+    [new StorageError(marker, undefined, new DOMException(marker, 'NS_ERROR_FILE_CORRUPTED')), 'DOMException'],
+    [new StorageError(marker, undefined, new DOMException(marker, 'QuotaExceededError')), 'DOMException'],
+    [new StorageError(marker, undefined, new DOMException(marker, 'SyntaxError')), 'DOMException'], // not instanceof SyntaxError
+    [new StorageError(marker, undefined, new StorageError(marker)), 'StorageError'], // AC29: a failure after the write landed
+    [new StorageError(marker, undefined, new Error(marker)), 'other'],
     [new StorageError(marker, undefined, marker), 'other'],
     [new SyntaxError(marker), 'none'], // only a StorageError's own cause is read
   ])('names the cause class from a closed list (US-09 AC28): %s → %s', (error, expected) => {
@@ -182,7 +186,7 @@ describe('cloud-storage telemetry boundary', () => {
       expect(await persistTags(() => { localStorage.setItem(FILE_KEY, `{${marker}`); })).toEqual({ ...local, causeClass: 'SyntaxError' });
     });
 
-    it('a corrupt read-back after the write landed reads other (wrapped again by the save)', async () => {
+    it('a corrupt read-back after the write landed reads StorageError (wrapped again by the save, US-09 AC29)', async () => {
       let armed = false;
       let written = false;
       vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
@@ -192,7 +196,17 @@ describe('cloud-storage telemetry boundary', () => {
       vi.spyOn(Storage.prototype, 'getItem').mockImplementation(function (this: Storage, key: string) {
         return written && key === FILE_KEY ? `{${marker}` : getItem.call(this, key);
       });
-      expect(await persistTags(() => { armed = true; })).toEqual({ ...local, causeClass: 'other' });
+      expect(await persistTags(() => { armed = true; })).toEqual({ ...local, causeClass: 'StorageError' });
+    });
+
+    it('a refused write with an unlisted browser name reads DOMException, not the marker (US-09 AC29)', async () => {
+      let armed = false;
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+        if (armed && key === FILE_KEY) throw new DOMException(marker, 'NS_ERROR_FILE_CORRUPTED');
+        setItem.call(this, key, value);
+      });
+      expect(await persistTags(() => { armed = true; })).toEqual({ ...local, causeClass: 'DOMException' });
+      expect(JSON.stringify(envelopes)).not.toContain(marker);
     });
 
     it('a write that never lands (verify reads an older revision every time) reads ConflictError', async () => {
@@ -211,7 +225,7 @@ describe('cloud-storage telemetry boundary', () => {
   });
 
   it('keeps a closed cause class through the scrub and drops any other value (US-09 AC28)', () => {
-    for (const causeClass of ['SyntaxError', 'ConflictError', 'none', 'other']) {
+    for (const causeClass of ['SyntaxError', 'ConflictError', 'StorageError', 'DOMException', 'none', 'other']) {
       const tags = { area: 'cloud-sync', op: 'persist', backend: 'local', errorClass: 'StorageError', causeClass };
       expect(scrubEvent({ type: undefined, tags })!.tags).toEqual(tags);
     }

@@ -36,17 +36,22 @@ export function storageFailureClass(error: unknown): string {
   return STORAGE_FAILURE_CLASSES.includes(name) ? name : 'other';
 }
 
-export const CAUSE_CLASS_TAGS = ['SyntaxError', 'ConflictError', 'none', 'other'];
+export const CAUSE_CLASS_TAGS = ['SyntaxError', 'ConflictError', 'StorageError', 'DOMException', 'none', 'other'];
 
 /** What a StorageError wrapped, from a closed list (US-09 AC28, Sentry
  *  JAVASCRIPT-REMIX-77): a corrupt read (SyntaxError) and a conflict read
- *  apart from the refusals `cause=other` pools. `none` when there is no
+ *  apart from the refusals `cause=other` pools. AC29 splits the rest:
+ *  StorageError is a failure after the write landed, wrapped again by the
+ *  save; DOMException is a refused device write whose browser name is off
+ *  the `cause` list (a full disk, a corrupt store). `none` when there is no
  *  StorageError cause. A class, never the message. */
 export function storageCauseClass(error: unknown): string {
   const cause = error instanceof StorageError ? error.cause : undefined;
   return cause === undefined ? 'none'
     : cause instanceof ConflictError ? 'ConflictError'
     : cause instanceof SyntaxError ? 'SyntaxError'
+    : cause instanceof StorageError ? 'StorageError'
+    : cause instanceof DOMException ? 'DOMException'
     : 'other';
 }
 
