@@ -6,8 +6,10 @@
  * the trigger saw no customer id; the server then refused the link, and every
  * later turn hit "email exists" and stayed a guest.
  *
- * Candidates are the profiles named by IDENTITY_LINK_UNPROVEN audit rows. One
- * is linked only when all of these hold, each read over HTTPS:
+ * Candidates are every profile created since 2026-10-21 with no customer id,
+ * read in pages (guests among them carry no proof and are skipped), so an
+ * orphan whose refusal was never audited is found too. One is linked only
+ * when all of these hold, each read over HTTPS:
  * - the profile's shopify_customer_id is null;
  * - its auth user's admin-written app_metadata names a customer (the proof);
  * - no profile already holds that customer id.
@@ -43,10 +45,14 @@ async function main(execute: boolean): Promise<void> {
   if (!url || !key) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_KEY are required');
   const db = createClient(url, key, { auth: { persistSession: false } });
 
-  const { data: rows, error } = await db.from('audit_logs').select('user_id')
-    .eq('action', 'IDENTITY_LINK_UNPROVEN').gte('created_at', '2026-10-21').not('user_id', 'is', null);
-  if (error) throw new Error('Audit read failed');
-  const ids = [...new Set((rows ?? []).map((r) => r.user_id as string))];
+  const ids: string[] = [];
+  for (let from = 0; ; from += 500) {
+    const { data: page, error } = await db.from('profiles').select('id')
+      .is('shopify_customer_id', null).gte('created_at', '2026-10-21').order('id').range(from, from + 499);
+    if (error) throw new Error('Profile scan failed');
+    ids.push(...(page ?? []).map((r) => r.id as string));
+    if ((page ?? []).length < 500) break;
+  }
 
   const counts: Record<Verdict | 'linked' | 'write_failed', number> =
     { link: 0, already_linked: 0, no_profile: 0, no_proof: 0, customer_taken: 0, linked: 0, write_failed: 0 };
