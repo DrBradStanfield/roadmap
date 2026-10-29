@@ -332,6 +332,15 @@ export function StartingInfoVitals({
     const n = readTypedValue(metric, typed, unit);
     return unit === unitFor(metric) || n === undefined ? typed : formatDisplayValue(metric, toCanonicalValue(metric, n, unit), unitFor(metric));
   };
+  // The cell's error is judged as the commit judges it: the typed text in the
+  // unit it was typed in, not the rounded display in the new unit. Otherwise
+  // near a range end the two disagree (19.9 kg shown as 44 lb, no error, not
+  // saved; 79 in shown as 201 cm, "Max 200 cm", saved) (DA-04). Null is
+  // valid, overriding the cell's own check of the shown text.
+  const typedError = (column: string | null, metric: 'weight' | 'waist'): string | null => {
+    const typed = (column === null ? draft.values : backfills[column])?.[metric] ?? '';
+    return typed ? validateTypedValue(metric, typed, typedUnit(column, metric)).error ?? null : null;
+  };
 
   // A saved column's empty cell. Backfilling a PAST date deliberately does NOT
   // stand in for the latest value in the plan (unlike the draft column).
@@ -550,6 +559,7 @@ export function StartingInfoVitals({
                             metric={row.metric}
                             display={display}
                             value={shownText(null, row.metric)}
+                            validationResult={typedError(null, row.metric)}
                             externalError={clashes(row.metric) || taken(row.metric) ? SAME_SLOT : refusal([null, row.metric])}
                             placeholder="—"
                             wrapperClass={`bt-cell-input bt-cell-draft${formStage === 2 && row.metric === 'weight' ? ' field-attention' : ''}`}
@@ -575,6 +585,7 @@ export function StartingInfoVitals({
                             metric={row.metric}
                             display={display}
                             value={shownText(c.col.date, row.metric)}
+                            validationResult={typedError(c.col.date, row.metric)}
                             error={c.col.date === draft.date && clashes(row.metric) ? SAME_SLOT : refusal([c.col.date, row.metric])}
                             pinned={isPinned}
                             active={activeCell === cellId}
