@@ -121,7 +121,7 @@ describe('erase confirm copy (US-11)', () => {
   // US-11 AC2c: a history that could not be opened has no tombstone waiting,
   // so this alert must not promise the next chat will erase it.
   it('US-11 AC2c: an unread cloud chat history is named as still there, not erased later', () => {
-    expect(ERASE_DONE_CHAT_UNREAD).toContain('could not be read, so it is still in your cloud folder as chat-history.json');
+    expect(ERASE_DONE_CHAT_UNREAD).toContain('could not be read, so any chats you saved are still in your cloud folder, in chat-history.json');
     expect(ERASE_DONE_CHAT_UNREAD).not.toMatch(/next chat/i);
     // No retry instruction: the button is gone after an erase, and the failure may be lasting.
     expect(ERASE_DONE_CHAT_UNREAD).not.toMatch(/again/i);

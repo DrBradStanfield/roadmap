@@ -72,6 +72,22 @@ describe('US-11 AC2c: an erase whose chat history could not be opened', () => {
     chatReported();
   });
 
+  it('reports only a fixed message, never the open error, which can quote the file', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const read = MemoryAdapter.prototype.read;
+    vi.spyOn(MemoryAdapter.prototype, 'read').mockImplementation(function (this: MemoryAdapter, fileName, signal) {
+      if (fileName === CHAT_FILE) return Promise.reject(new Error('Unexpected token in JSON near "metformin 500 mg"', { cause: new Error('metformin') }));
+      return read.call(this, fileName, signal);
+    });
+    await data.deleteUserData();
+    chatReported();
+    const seen = JSON.stringify([
+      vi.mocked(Sentry.captureException).mock.calls.map(([e]) => [String(e), String((e as Error)?.cause ?? '')]),
+      warn.mock.calls.map(args => args.map(a => (a instanceof Error ? `${a.message} ${String(a.cause ?? '')}` : String(a)))),
+    ]);
+    expect(seen).not.toContain('metformin');
+  });
+
   it('tries the open again when an earlier chat open this page failed, and erases', async () => {
     let down = true;
     chatReads(() => down);
