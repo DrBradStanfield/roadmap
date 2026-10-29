@@ -4,7 +4,7 @@
  * the write and the cleanup are the caller's. The web widget's RoadmapStore
  * calls it, and so will the iPhone app, so both erase by one rule.
  */
-import { mergeErasedRows, rowRootIds, stampInstant } from './merge';
+import { mergeErasedRows, pickNewerOptional, rowRootIds, stampInstant } from './merge';
 import { migrateFile } from './migrate';
 import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from './roadmap-file';
 import type { SyncContext } from './sync-manager';
@@ -52,8 +52,14 @@ export function buildErasedFile({ stored, own, device, ctx }: EraseInputs): Road
   // wins the merge, and a losing copy keeps only rows the erase did not list
   // (US-09 AC23), never its opt-in, so the record on their other devices
   // can't save them either. Carry the decision, never the identity: no
-  // token, no email address.
-  const priorProvider = own.reminderOptIn?.provider ?? null;
+  // token, no email address. Every copy read counts: an opt-in another
+  // device saved after this copy was read sits only in the stored record or
+  // the device file (US-11 AC4). Any of them turns reminders off; the newest
+  // stamp only picks which provider the cancelled opt-in names.
+  const priorProvider = [stored, device].reduce(
+    (newest, file) => pickNewerOptional(newest, file?.reminderOptIn),
+    own.reminderOptIn,
+  )?.provider ?? null;
   // WHEN, beside WHICH: read only by a copy that missed an earlier erase
   // that listed nothing (US-09 AC20, AC23). Floored 1 ms past the last
   // write this eraser has seen, so a slow clock here cannot let through a

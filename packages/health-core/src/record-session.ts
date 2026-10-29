@@ -299,6 +299,36 @@ export class RecordSession {
       if (debounced) this.touch();
       return { success: false, error: tooNew ? tooNew.message : ERASE_UNREACHABLE };
     }
+    // The device file, on a cloud, is where other tabs' failed saves wait.
+    // One that cannot be read, or read into a record, lists nothing; a
+    // successful erase removes it below. Read before the caller's step, which
+    // needs its opt-in too.
+    const host = this.host;
+    const device = host.tier === 'device'
+      ? null
+      : await host.mirror.adapter.read(ROADMAP_FILE_NAME)
+        .then(({ body }) => (body == null ? null : ROADMAP_DOC.migrate(body, this.ctx())))
+        .catch(() => null);
+    // The caller's step reads the opt-in from this copy, to cancel its server
+    // row. Another device, or another tab whose save failed, may have opted in
+    // since this copy was read: when the merge of every copy read (epoch
+    // first, then the newer stamp) keeps an ACTIVE opt-in, give it to this
+    // copy, so that row is the one cancelled (US-11 AC4). Never anything
+    // less: an erase this copy missed may hold no opt-in at all, and this
+    // copy's own active row must still be cancelled and turned off. No save
+    // is scheduled; the erase replaces this copy.
+    let optIn: RoadmapFile['reminderOptIn'];
+    try {
+      optIn = [stored, device].reduce<RoadmapFile>(
+        (merged, file) => (file ? mergeFiles(merged, file, this.ctx()) : merged),
+        this.current,
+      ).reminderOptIn;
+    } catch {
+      optIn = undefined; // keep this copy's own
+    }
+    if (optIn?.status === 'active' && stableStringify(optIn) !== stableStringify(this.current.reminderOptIn ?? null)) {
+      this.current = { ...this.current, reminderOptIn: optIn };
+    }
     await beforeErase?.();
     // From here every failure comes back as a refusal, never a rejection: the
     // caller's step has run, and its page must leave its deleting state.
@@ -307,15 +337,6 @@ export class RecordSession {
     let erased = false;
     try {
       this.cancelDebounce();
-      // The device file, on a cloud, is where other tabs' failed saves wait.
-      // One that cannot be read, or read into a record, lists nothing; a
-      // successful erase removes it below.
-      const host = this.host;
-      const device = host.tier === 'device'
-        ? null
-        : await host.mirror.adapter.read(ROADMAP_FILE_NAME)
-          .then(({ body }) => (body == null ? null : ROADMAP_DOC.migrate(body, this.ctx())))
-          .catch(() => null);
       this.erasing = true;
       this.saveWarning = undefined;
       this.current = buildErasedFile({ stored, own: this.current, device, ctx: this.ctx() });
