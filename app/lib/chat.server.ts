@@ -376,9 +376,10 @@ export function buildConversationMessages(
 
   // An error line is the server's words, not the model's answer (US-15 AC42):
   // drop it by its stored flag or by the exact line, keep the question it followed.
+  // A Discord thread's history carries the bot's `<@userId> ` reply prefix.
+  const errorLines = new Set([FALLBACK_RESPONSE, REFUSAL_RESPONSES.clinical, REFUSAL_RESPONSES.request]);
   const history = rows.filter((m) => !(m.role === 'assistant' && (
-    m.is_fallback === true || m.failure_mode === 'refusal'
-    || m.content === FALLBACK_RESPONSE || m.content === REFUSAL_RESPONSES.clinical || m.content === REFUSAL_RESPONSES.request)));
+    m.is_fallback === true || m.failure_mode === 'refusal' || errorLines.has(m.content.replace(/^<@!?\d+> /, '')))));
 
   // History rows come straight from chat_messages and carry extra columns
   // (created_at, is_fallback). The Anthropic Messages API strict-validates

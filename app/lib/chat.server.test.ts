@@ -82,6 +82,13 @@ describe('US-15 AC42: an error line is never replayed to the model as its own an
     expect(result).toEqual([asked, { role: 'user', content: 'try again' }]);
   });
 
+  it('drops a line the Discord bot sent with its mention prefix', () => {
+    for (const line of [FALLBACK_RESPONSE, REFUSAL_RESPONSES.clinical]) {
+      const result = buildConversationMessages([asked, { role: 'assistant', content: `<@123456789012345678> ${line}` }], 'try again');
+      expect(result).toEqual([asked, { role: 'user', content: 'try again' }]);
+    }
+  });
+
   it('drops a stored row flagged as a fallback or a refusal, whatever its wording', () => {
     const result = buildConversationMessages(
       [
