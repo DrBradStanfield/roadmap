@@ -247,6 +247,24 @@ export async function driveFileVersion(accessToken: string, fileId: string, sign
 }
 
 /**
+ * Whether a file id from a cache still names a live file: Drive serves a
+ * trashed file by id (read, version, PATCH) though a `trashed=false` search
+ * leaves it out, and a file deleted for good answers 404. A search result
+ * needs no check; a cached id does, or writes land in the trash and, once it
+ * is emptied, fail on every save. With `name`, a file renamed away from it is
+ * not live either: other devices search by name and would not find it, as the
+ * record's known-id check rules (readDriveRecord). Any other failure throws and
+ * changes nothing, so a passing error never makes a caller forget an id.
+ */
+export async function driveFileIsLive(accessToken: string, fileId: string, name?: string, signal?: AbortSignal): Promise<boolean> {
+  const res = await request(`${DRIVE_API}/files/${fileId}?fields=id,name,trashed`, { headers: auth(accessToken), signal });
+  if (res.status === 404) return false;
+  if (!res.ok) await fail('lookup', res);
+  const meta = await jsonBody<{ name?: string; trashed?: boolean }>(res);
+  return meta.trashed !== true && (name === undefined || meta.name === name);
+}
+
+/**
  * Drive's substitute for a conditional write (design §7 step 2), shared by the
  * hosted and the browser adapter. Drive cannot be told "only if the version is
  * still X", so ask it what the version is at the last possible moment and
@@ -635,7 +653,10 @@ export class DriveAdapter implements StorageAdapter {
 
   private async findFile(fileName: string, signal?: AbortSignal): Promise<string | undefined> {
     const cached = this.fileIds.get(fileName);
-    if (cached) return cached;
+    // Only while it still names a live file: Drive serves a trashed file by
+    // id, and the iPhone app keeps one instance for a token's hour (SE-6).
+    if (cached && await driveFileIsLive(this.accessToken, cached, fileName, signal)) return cached;
+    this.fileIds.delete(fileName);
     // No parent filter, exactly as the browser adapter searches: `drive.file`
     // already limits the result set to this app's own files, and a record
     // created before the folder existed still lives at the Drive root.
