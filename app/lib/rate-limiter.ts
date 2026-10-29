@@ -74,6 +74,8 @@ export function createQuotaCounter(limit: number, windowMs: number, cleanupMs: n
   };
 }
 
+const DEFAULT_DAILY_FILE_CAP = 2000;
+
 /**
  * The per-machine daily file cap — the dollar ceiling on extraction. Spent by
  * the website's upload route and the connector's `import_documents` alike
@@ -81,4 +83,20 @@ export function createQuotaCounter(limit: number, windowMs: number, cleanupMs: n
  * `AI_DAILY_FILE_CAP × machines × 2 apps` and it resets on deploy — an
  * accepted approximation until a shared counter is worth its DDL.
  */
-export const machineFiles = createQuotaCounter(Number(process.env.AI_DAILY_FILE_CAP || 2000), DAY_MS, 30 * 60_000);
+export const machineFiles = createQuotaCounter(dailyFileCap(process.env.AI_DAILY_FILE_CAP), DAY_MS, 30 * 60_000);
+
+/**
+ * AI_DAILY_FILE_CAP as a number. A value that is not a finite number of 0 or
+ * more ("2,000", one that kept an inline comment) falls back to the default
+ * 2000 and says so in the log: a bare Number() made it NaN, `count + n > NaN`
+ * is never true, and the machine's $-ceiling was gone (SE-4). The same rule
+ * as `num()` in app-gate.server.ts, which reads this variable for the app's
+ * lab cap, so the two readers agree.
+ */
+export function dailyFileCap(raw: string | undefined, warn: (message: string) => void = console.warn): number {
+  if (!raw) return DEFAULT_DAILY_FILE_CAP;
+  const value = Number(raw);
+  if (Number.isFinite(value) && value >= 0) return value;
+  warn(`AI_DAILY_FILE_CAP is not a number of 0 or more, so the default ${DEFAULT_DAILY_FILE_CAP} applies.`);
+  return DEFAULT_DAILY_FILE_CAP;
+}
