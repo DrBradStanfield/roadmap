@@ -115,8 +115,10 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
         return;
       }
       if (at.op === 'chat-erase') {
-        console.warn('Chat-history erase failed', error);
-        Sentry.captureException(error, { tags: { area: 'chat-history', op: 'erase' } });
+        // An open or save error can quote the chat file (a JSON parse error
+        // around a medication's name), so only a fixed message is reported.
+        console.warn('Chat-history erase failed');
+        Sentry.captureException(recordFailure(error, 'Chat-history erase failed'), { tags: { area: 'chat-history', op: 'erase' } });
         return;
       }
       console.warn('Cloud sync failed');

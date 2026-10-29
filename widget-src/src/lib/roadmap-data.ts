@@ -257,12 +257,9 @@ export async function deleteUserData(): Promise<{ success: boolean; error?: stri
   // exists to send later (US-11 AC2c). On the device the record erase clears
   // the chat file itself, so a failed open there loses nothing.
   let chatUnread = false;
-  // The open failure can quote the file (a JSON parse error around a
-  // medication's name), so only a fixed message reaches the erase's console
-  // and Sentry report: never the original error or its cause.
-  const chat = getBackendKind() === 'local' ? getChatHistory : () => openChatHistory().catch(() => {
+  const chat = getBackendKind() === 'local' ? getChatHistory : () => openChatHistory().catch((error: unknown) => {
     chatUnread = true;
-    throw new Error('Chat history could not be opened for the erase');
+    throw error;
   });
   const result = await store.deleteAllData({ teardown: preEraseHook ?? undefined, chat });
   return chatUnread && !result.chatErased ? { ...result, chatUnread: true } : result;

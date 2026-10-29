@@ -17,7 +17,7 @@ describe('NumericInputCell pasted syntax', () => {
     return render(<Cell />);
   }
 
-  it.each(['-5', '+5', '−5', '1e1', '1E+1', '1\t2', '1 2', '1/2', '<5', '≤5', '≥5', '±5', '1.2.3', '－5', '＋5', '＜5', '＞5', '10³', '⁻5', '1５'])('keeps %j invalid, including free-form lab rows', text => {
+  it.each(['-5', '+5', '−5', '1e1', '1E+1', '1\t2', '1 2', '1/2', '<5', '≤5', '≥5', '±5', '1.2.3', '－5', '＋5', '＜5', '＞5', '10³', '⁻5', '1５', '˗5', '˂5', '➖5', '‹5', 'ー5', '~5', '5.2¹'])('keeps %j invalid, including free-form lab rows', text => {
     const view = cell();
     const input = view.getByRole('textbox') as HTMLInputElement;
     fireEvent.change(input, { target: { value: text } });
@@ -28,7 +28,7 @@ describe('NumericInputCell pasted syntax', () => {
     expect(input.getAttribute('aria-invalid')).toBe('false');
   });
 
-  it.each([['5,2', '5,2'], [' 5.2 % ', '5.2'], ['5.2 mg/dL', '5.2'], ['(5.2)', '5.2'], ['abc', '']])('keeps safe paste %j as %j', (text, expected) => {
+  it.each([['5,2', '5,2'], [' 5.2 % ', '5.2'], ['5.2 mg/dL', '5.2'], ['(5.2)', '5.2'], ['abc', ''], ['5.2 ↑', '5.2'], ['5.2 mmol/L↓', '5.2'], ['24 kg/m²', '24']])('keeps safe paste %j as %j', (text, expected) => {
     const input = cell().getByRole('textbox') as HTMLInputElement;
     fireEvent.change(input, { target: { value: text } });
     expect(input.value).toBe(expected);
