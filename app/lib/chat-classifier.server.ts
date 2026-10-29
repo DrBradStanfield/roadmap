@@ -38,7 +38,7 @@ import { CLASSIFIER_MAX_TOKENS, CLASSIFIER_MODEL, Classification, PROMPT_CACHE, 
 
 export interface ClassificationResult {
   classification: Classification;
-  /** True iff classification is one of the three SKIP states. Caller uses this
+  /** True iff classification is a skip label (anything but ROUTE and ERROR). Caller uses this
    *  to decide whether to invoke routeQuery() at all. */
   routerSkipped: boolean;
   latencyMs: number;
@@ -58,7 +58,7 @@ const EMPTY_USAGE: AnthropicUsage = {
 /**
  * Single source of truth for "should the v2 router fire on this turn?"
  * True on ROUTE (real health query) and ERROR (fail-safe — preserves today's
- * behavior on classifier failure). False on SKIP (GREETING / PRODUCT / ACCOUNT).
+ * behavior on classifier failure). False on every other label.
  */
 export function shouldFireRouter(result: ClassificationResult): boolean {
   return result.classification === Classification.ROUTE || result.classification === Classification.ERROR;

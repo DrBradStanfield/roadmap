@@ -6696,10 +6696,10 @@
   },
   {
     "query": "Switched my Semax to VendorX after one order from a forum shop. HPLC sheet matched, dose matched my labs. Not going back.",
-    "category": "classifier-greeting",
+    "category": "classifier-spam",
     "source": "chat-health-2026-W43",
-    "expected_classification": "GREETING",
-    "notes": "2026-W43 chat-health: YouTube peptide-vendor spam burst on 10-21 (19 comments naming one vendor; vendor name replaced with the placeholder VendorX). Desired: skip (no reply). Production ROUTE on 14 of them; replay ROUTE 5/5 on three texts; the bot replied publicly to 3, one naming the vendor. The spam rule (US-15 AC41, Brad 2026-10-26) targets it."
+    "expected_classification": "SPAM",
+    "notes": "2026-W43 chat-health: YouTube peptide-vendor spam burst on 10-21 (19 comments naming one vendor; vendor name replaced with the placeholder VendorX). Desired: skip (no reply). Production ROUTE on 14 of them; replay ROUTE 5/5 on three texts; the bot replied publicly to 3, one naming the vendor. US-15 AC41: SPAM since 2026-10-29 (was GREETING 2026-10-26); either way the YouTube bot does not reply."
   },
   {
     "query": "Kan ik de MicroVitamin van Dr Brad gebruiken met een nierfunctie (eGFR) van ongeveer 40?",
@@ -7850,30 +7850,30 @@
   },
   {
     "query": "My wife laughed when I bought another health book. Then I finished Hidden Cures by Jane Doe and cancelled three supplement subscriptions. She's not laughing now.",
-    "category": "classifier-greeting",
+    "category": "classifier-spam",
     "source": "us-15-ac41-2026-10-26",
-    "expected_classification": "GREETING",
-    "notes": "US-15 AC41: the W43 book-promotion spam template (title and author replaced). Recommends what to read, asks nothing: GREETING, so the YouTube bot does not reply."
+    "expected_classification": "SPAM",
+    "notes": "US-15 AC41: the W43 book-promotion spam template (title and author replaced). Promotes a book to buy, asks nothing: SPAM, so the YouTube bot does not reply. KNOWN-FAIL on the SPAM-label prompt (ROUTE 5/5, 2026-10-29; it passed as GREETING on the 10-26 wording): this paraphrase reads as a personal experience, which the prompt keeps ROUTE. The real comment it paraphrases was labelled GREETING 3/3, so the bot still skipped it, but not as SPAM."
   },
   {
     "query": "Magnesium glycinate from Thorne fixed my night cramps within a week.",
-    "category": "classifier-greeting",
+    "category": "classifier-spam",
     "source": "us-15-ac41-2026-10-26",
     "expected_classification": "ROUTE",
     "notes": "US-15 AC41 guard: a personal health experience naming a brand is NOT spam. Must stay ROUTE so the bot can answer."
   },
   {
     "query": "Is VendorX a legit place to buy BPC-157? Their HPLC sheets look good.",
-    "category": "classifier-greeting",
+    "category": "classifier-spam",
     "source": "us-15-ac41-2026-10-26",
     "expected_classification": "ROUTE",
     "notes": "US-15 AC41 guard: a question about a seller is ROUTE, not spam (the BPC-157 post answers it)."
   },
   {
     "query": "Read the 2024 Cochrane review on vitamin D and falls, it changes everything.",
-    "category": "classifier-greeting",
+    "category": "classifier-spam",
     "source": "us-15-ac41-2026-10-26",
     "expected_classification": "ROUTE",
-    "notes": "US-15 AC41 guard (adversary R8): a viewer citing a study as evidence is NOT spam and should get an answer. KNOWN-FAIL on the shipped prompt (GREETING 5/5, 2026-10-26): three rewordings that fixed it cost spam recall (18/20 → 6/20, 14/20, 9/20 majority) and made Haiku invent SPAM or PROMOTION labels. Brad decides whether to trade."
+    "notes": "US-15 AC41 guard (adversary R8, 2026-10-26): a viewer citing a study as evidence is NOT spam and should get an answer. Was KNOWN-FAIL under the GREETING wording (GREETING 5/5); the SPAM label (2026-10-29) narrows spam to selling. The prompt's own example uses different wording on purpose."
   }
 ]
