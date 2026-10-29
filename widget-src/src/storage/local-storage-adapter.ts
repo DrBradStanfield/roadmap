@@ -147,12 +147,25 @@ export class LocalStorageAdapter implements StorageAdapter {
     // must never repeat a revision a tab has already seen (US-34 AC6). Only
     // equality is ever asked of it, so an older bundle's plain count checks too.
     const next = `${(parseInt(current ?? '0', 10) || 0) + 1}-${Math.random().toString(36).slice(2, 10)}`;
+    const previous = safeGetItem(fileKey(fileName));
+    const written = JSON.stringify(body);
     try {
-      localStorage.setItem(fileKey(fileName), JSON.stringify(body));
+      localStorage.setItem(fileKey(fileName), written);
     } catch (error) {
-      throw new StorageError('Could not save on this device (local storage may be full).', undefined, error);
+      throw new StorageError(FULL, undefined, error);
     }
-    safeSetItem(versionKey(fileName), next);
+    try {
+      localStorage.setItem(versionKey(fileName), next);
+    } catch (error) {
+      // A record left under the old revision would let a stale tab's save
+      // pass the check above and replace it, so the old record goes back
+      // (US-34 AC6a). It fitted before this save. If another tab wrote in
+      // between, or the old record will not fit, the revision goes instead:
+      // removing a key cannot hit the quota, and every tab then re-reads.
+      const restored = safeGetItem(fileKey(fileName)) === written && restoreItem(fileKey(fileName), previous);
+      if (!restored) safeRemoveItem(versionKey(fileName));
+      throw new StorageError(FULL, restored ? undefined : 'This change may have been stored. Read the record again before trying it a second time.', error);
+    }
     return { version: next };
   }
 
@@ -193,6 +206,19 @@ export class LocalStorageAdapter implements StorageAdapter {
         error,
       );
     }
+  }
+}
+
+const FULL = 'Could not save on this device (local storage may be full).';
+
+/** Put a key back as it was (`null`: absent). False when the write refuses. */
+function restoreItem(key: string, value: string | null): boolean {
+  try {
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
   }
 }
 
