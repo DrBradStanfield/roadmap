@@ -279,6 +279,16 @@ describe('verifyPersistedFile: writes that add no row (US-10 AC6a, US-11 AC7)', 
     expect(verify(erased, back)).toThrow(/a row this save erased/);
   });
 
+  it('refuses a stored file at the erase epoch whose erased list lost an id ours wrote', () => {
+    // Two erases at one epoch: a concurrent one that listed fewer rows
+    // replaced ours. Both files hold no rows, so only the list shows the loss.
+    const erased = erasedFrom(seeded());
+    const ids = erased.erasedRows!.ids;
+    expect(ids).toContain('listed-weight');
+    const back = { ...clone(erased), erasedRows: { ...erased.erasedRows!, ids: ids.filter((id) => id !== 'listed-weight') } };
+    expect(verify(erased, back)).toThrow(/the erased list this save wrote/);
+  });
+
   it('refuses a stored screening answer older than the one written', () => {
     const base = seeded();
     const ours = setScreening(clone(base), 'colorectalMethod', 'colonoscopy', NOW);

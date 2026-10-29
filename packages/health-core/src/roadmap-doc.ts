@@ -67,6 +67,11 @@ export const ROADMAP_DOC: DocumentSpec<RoadmapFile> = {
     if (stored < epoch) return 'the erase this save wrote';
     const listed = new Set(ours.erasedRows?.ids);
     if (rowRootIds(parsed).some((id) => listed.has(id))) return 'a row this save erased';
+    // Lists only ever union (mergeErasedRows), so an id missing from the
+    // stored list means a concurrent erase replaced ours: a stale copy could
+    // then bring that row back (Codex review of PR #299).
+    const kept = new Set(parsed.erasedRows?.ids);
+    if ([...listed].some((id) => !kept.has(id))) return 'the erased list this save wrote';
     // Past a newer erase this reports our fields too, and the retry takes the
     // erase in: mergeFiles lets the higher epoch decide them.
     const behind = fieldsBehind(ours.profile, parsed.profile).length + fieldsBehind(ours.screenings, parsed.screenings).length;
