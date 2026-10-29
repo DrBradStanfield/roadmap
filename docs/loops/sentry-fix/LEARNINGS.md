@@ -154,10 +154,12 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   misuse, not a dead key (bit again 10-15). Funnel column: `event_name`. Reads
   product_events, ab_events, feedback, chat_* and reminder_optin_v2 (emails):
   counts and event names only into a public report, never rows.
-- `[gotcha][process]` 2026-08-14 — Clones are SHALLOW: `git log -S`/`--stat`
-  blame graft-boundary commits (whole-tree adds); `git fetch --deepen=400`.
-  Live-bundle proof without CDN access: the event's debug-meta debug id,
-  grepped in committed `assets/` (10-02: edu-96 = 73291a90).
+- `[gotcha][process]` 2026-08-14 — Clones are SHALLOW: `git log -S` blames graft-boundary
+  commits; `git fetch --deepen=400`. Live-bundle proof: the event's debug id, grepped in
+  committed `assets/` (10-02: edu-96 = 73291a90).
+- `[gotcha][server]` 2026-10-29 — Server breadcrumbs are NOT request-scoped: a 75 event carried
+  a 15:44Z burst (69 Supabase 409s) from 16 min before its turn. Never count a request's
+  calls from crumbs to name its code path (75's 10-27 profile-found reading did); use audit rows.
 - `[class][server]` 2026-09-10 — Shopify's `appProxy` rejects an unsigned
   request by THROWING a 400 Response, and react-router returns a thrown
   Response as-is without `handleError`, so a route catch-all that captures it
@@ -172,10 +174,8 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   product-health key) never failed in 25 probes while the failing paths use
   the service key — with new-format `sb_*` keys the gateway mints a
   per-request JWT whose iat can outrun the project's PostgREST clock, so
-  intermittent PGRST303 is platform-side: check the key format before hunting
-  our code (confirmed again 2026-08-28, escalated to ~40% of half-hourly bot ticks; deploys
-  regroup the continuing fault under NEW Sentry issue ids — check the ledger
-  for the class before triaging an id as new). The defect class it exposed,
+  intermittent PGRST303 is platform-side (confirmed 08-28; deploys regroup it
+  under NEW issue ids: check the ledger for the class). The defect class it exposed,
   now fixed twice (PR #30/US-27 caps; PR #35/US-28 cron locks): a "handled"
   degradation value (0 / empty map / false) feeding a SAFETY or SCHEDULING
   decision is fail-open — such reads must fail distinguishably (throw), never
