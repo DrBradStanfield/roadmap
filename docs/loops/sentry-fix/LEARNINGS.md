@@ -157,9 +157,9 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
 - `[gotcha][process]` 2026-08-14 — Clones are SHALLOW: `git log -S` blames graft-boundary
   commits; `git fetch --deepen=400`. Live-bundle proof: the event's debug id, grepped in
   committed `assets/` (10-02: edu-96 = 73291a90).
-- `[gotcha][server]` 2026-10-29 — Server breadcrumbs are NOT request-scoped: a 75 event carried
-  a 15:44Z burst (69 Supabase 409s) from 16 min before its turn. Never count a request's
-  calls from crumbs to name its code path (75's 10-27 profile-found reading did); use audit rows.
+- `[gotcha][server]` 2026-10-29 — Server events inherit background crumbs from the default scope
+  (a 15:44Z burst sat in two 16:00Z turns). Cut at the request's own first call; after it the
+  count names the path (75: 3 calls = trigger-race lockout, Supabase Auth sets app_metadata post-INSERT).
 - `[class][server]` 2026-09-10 — Shopify's `appProxy` rejects an unsigned
   request by THROWING a 400 Response, and react-router returns a thrown
   Response as-is without `handleError`, so a route catch-all that captures it
@@ -174,8 +174,8 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   product-health key) never failed in 25 probes while the failing paths use
   the service key — with new-format `sb_*` keys the gateway mints a
   per-request JWT whose iat can outrun the project's PostgREST clock, so
-  intermittent PGRST303 is platform-side (confirmed 08-28; deploys regroup it
-  under NEW issue ids: check the ledger for the class). The defect class it exposed,
+  intermittent PGRST303 is platform-side: check the key format before our code
+  (08-28; deploys regroup it under NEW ids: check the ledger). The defect class it exposed,
   now fixed twice (PR #30/US-27 caps; PR #35/US-28 cron locks): a "handled"
   degradation value (0 / empty map / false) feeding a SAFETY or SCHEDULING
   decision is fail-open — such reads must fail distinguishably (throw), never
