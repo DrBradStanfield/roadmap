@@ -460,6 +460,15 @@ function fieldNames(...objs: FieldStamped[]): string[] {
   return [...names].filter((name) => !CLOCK_KEYS.has(name)).sort();
 }
 
+/** Whether a field's local side wins, given `cmpClock(local, remote)`. A
+ *  field never written loses to any write. Tied clocks are one write seen
+ *  twice, or a hand edit that moved no clock: the larger value wins, so every
+ *  order picks the same one. */
+function fieldWins(order: number, local: unknown, remote: unknown): boolean {
+  return order > 0 ||
+    (order === 0 && local !== remote && (stableStringify(local) ?? '') > (stableStringify(remote) ?? ''));
+}
+
 /**
  * Merge a profile or the screening answers field by field (US-10 AC6). Each
  * field takes its newer write, so a copy that changed one field no longer
@@ -488,12 +497,8 @@ function mergeFields<T extends FieldStamped>(local: T, remote: T): T {
     if (!a && !b) continue;
     const l = fieldValue(local, field);
     const r = fieldValue(remote, field);
-    // A field never written loses to any write. Tied clocks are one write seen
-    // twice, or a hand edit that moved no clock: the larger value wins, so
-    // every order picks the same one.
     const order = !b ? 1 : !a ? -1 : cmpClock(a, b);
-    const takeLocal = order > 0 ||
-      (order === 0 && l !== r && (stableStringify(l) ?? '') > (stableStringify(r) ?? ''));
+    const takeLocal = fieldWins(order, l, r);
     const value = takeLocal ? l : r;
     const clock = order > 0 ? a! : order < 0 ? b! : cmpStored(a!, b!) <= 0 ? a! : b!;
     if (value !== undefined) values.push([field, value]);
@@ -508,6 +513,21 @@ function mergeFields<T extends FieldStamped>(local: T, remote: T): T {
     ...(newest ?? older),
     ...(stamps.length > 0 ? { fieldStamps: Object.fromEntries(stamps) } : null),
   } as T;
+}
+
+/**
+ * The stamped fields of `ours` that `stored` does not hold: each one where
+ * merging `ours` in would change what `stored` keeps (US-10 AC6a). The rule is
+ * `mergeFields`' own, so a field another writer stamped later is held.
+ */
+export function fieldsBehind<T extends FieldStamped>(ours: T, stored: T): string[] {
+  const ourAt = fieldClock(ours);
+  const storedAt = fieldClock(stored);
+  return fieldNames(ours).filter((field) => {
+    const clock = ourAt(field);
+    const kept = storedAt(field);
+    return clock !== null && fieldWins(kept ? cmpClock(clock, kept) : 1, fieldValue(ours, field), fieldValue(stored, field));
+  });
 }
 
 /**

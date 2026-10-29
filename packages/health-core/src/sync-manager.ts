@@ -57,6 +57,10 @@ export interface DocumentSpec<T extends SyncedFile> {
    *  see that what was just written is actually there. Optional: a document
    *  with no rows (chat history) has nothing to check. */
   rowIds?(file: T): string[];
+  /** What of `expected` the re-read file does not hold, or null when it holds
+   *  all of it: a write that adds no row (an erase, a profile edit) leaves the
+   *  row check nothing to notice when another writer replaced it. */
+  lostWrite?(expected: T, parsed: T, ctx: SyncContext): string | null;
   /** Set false to skip the verify-after-write re-read (H5). Default true —
    *  right for health-record data; best-effort documents (chat history) can
    *  drop it and save a full-file transfer per save. */
@@ -161,7 +165,7 @@ export class SyncManager<T extends SyncedFile> {
     } catch (error) {
       throw new StorageError('Verify-after-write failed: the written file did not parse', VERIFY_HINT, error);
     }
-    verifyPersistedFile(this.doc, expected, parsed);
+    verifyPersistedFile(this.doc, expected, parsed, this.ctx());
   }
 }
 
@@ -245,7 +249,7 @@ export function isStorageFailure(error: unknown): boolean {
 }
 
 /** Shared exact-target verification: aggregate reads must not mask a lost row. */
-export function verifyPersistedFile<T extends SyncedFile>(doc: DocumentSpec<T>, expected: T, parsed: T): void {
+export function verifyPersistedFile<T extends SyncedFile>(doc: DocumentSpec<T>, expected: T, parsed: T, ctx: SyncContext): void {
   // A revision older than the one we just wrote means somebody overwrote it
   // (or the backend answered from a stale replica). Both are lost updates and
   // both are fixed the same way — re-read, re-merge, write again — so this is
@@ -270,4 +274,8 @@ export function verifyPersistedFile<T extends SyncedFile>(doc: DocumentSpec<T>, 
       );
     }
   }
+  // Retryable like a lost row: the re-merge puts the write back, or takes in
+  // the newer erase that decides it.
+  const lost = doc.lostWrite?.(expected, parsed, ctx);
+  if (lost) throw new LostUpdateError(`Verify-after-write failed: ${lost} is not in the file`);
 }
