@@ -45,6 +45,7 @@ beforeEach(async () => {
     const q: any = {};
     q.select = q.single = q.maybeSingle = q.limit = () => q;
     q.eq = (k: string, v: unknown) => { filters.push([k,v]); return q; };
+    q.is = (k: string, v: unknown) => { filters.push([k,v]); return q; };
     q.upsert = (row: Record<string, any>, opts: any) => {
       if (competingInsert) profiles.push({ id: row.id, shopify_customer_id: 'competing', email: 'competing@example.invalid' });
       payload = row; ignore = opts?.ignoreDuplicates; return q;
@@ -159,6 +160,35 @@ describe('Shopify principal reuse', () => {
     });
     expect(await Promise.all([mapUser(customer, email), mapUser(customer, email)])).toEqual(['shared', 'shared']);
     expect(profiles).toHaveLength(1);
+  });
+  // Issue #309: Supabase Auth INSERTs the user, firing the trigger, before it
+  // writes app_metadata, so the trigger files the profile with no customer id.
+  it('claims the empty profile the trigger filed before the admin-written proof landed', async () => {
+    const customer = identity();
+    state.create.mockImplementationOnce(async () => {
+      profiles.push({ id: 'trigger-first', email, shopify_customer_id: null });
+      addAuth('trigger-first', customer);
+      return { data: { user: { id: 'trigger-first' } }, error: null };
+    });
+    expect(await mapUser(customer, email, 'Synthetic', 'Person')).toBe('trigger-first');
+    expect(profiles[0]).toMatchObject({ id: 'trigger-first', shopify_customer_id: customer, first_name: 'Synthetic' });
+    expect(audits.map((a) => a.action)).toEqual(['USER_CREATED']);
+    expect(state.warn).not.toHaveBeenCalled();
+    // The next turn finds the link by customer id: no second createUser.
+    state.create.mockClear();
+    expect(await mapUser(customer, email)).toBe('trigger-first');
+    expect(state.create).not.toHaveBeenCalled();
+  });
+  it('never claims an empty trigger profile without the admin-written proof', async () => {
+    const customer = identity();
+    state.create.mockImplementationOnce(async () => {
+      profiles.push({ id: 'no-proof', email, shopify_customer_id: null });
+      addAuth('no-proof', null, { user_metadata: { shopify_customer_id: customer } });
+      return { data: { user: { id: 'no-proof' } }, error: null };
+    });
+    expect(await mapUser(customer, email)).toBeNull();
+    expect(profiles[0].shopify_customer_id).toBeNull();
+    expect(writes).toEqual([]);
   });
   it('preserves names when the auth trigger already inserted the same-customer profile', async () => {
     const customer = identity(); state.create.mockImplementationOnce(async () => {
