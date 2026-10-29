@@ -57,7 +57,9 @@ async function form() {
   expect(year).toBeTruthy();
   const { trackProductEvent } = await import('../lib/server-api');
   vi.mocked(trackProductEvent).mockClear();
-  return { view, year };
+  // An edit can re-render the field, so a blur goes to the one on the page.
+  const live = () => view.container.querySelector<HTMLInputElement>('#birthYear')!;
+  return { view, year, live };
 }
 
 // Entrypoint listeners registered before render; jsdom models delivery only.
@@ -75,9 +77,9 @@ function depart(event: 'beforeunload' | 'visibilitychange' | 'pagehide') {
 
 it.each(['beforeunload', 'visibilitychange', 'pagehide'] as const)(
   'US-01 AC4: a valid birth year is staged before %s and survives immediate reload', async event => {
-    const { view, year } = await form();
+    const { view, year, live } = await form();
     fireEvent.change(year, { target: { value: '1975' } });
-    fireEvent.blur(year);
+    fireEvent.blur(live());
     depart(event);
     // Read synchronously before any timer or promise continuation can rescue it.
     expect(saved().profile.birthYear).toBe(1975);
@@ -111,9 +113,9 @@ it('US-01 AC4: rapid profile edits retain the latest year while persistence rema
 
 it.each(['1800', '3000', '197'])(
   'US-01 AC4: birth-year validation still refuses or clears %s before departure', async value => {
-    const { year } = await form();
+    const { year, live } = await form();
     fireEvent.change(year, { target: { value } });
-    fireEvent.blur(year);
+    fireEvent.blur(live());
     depart('beforeunload');
     expect(saved().profile.birthYear ?? null).toBeNull();
   },
@@ -314,6 +316,42 @@ it('US-34 AC4: an edit arriving while a valid save awaits also holds remote repl
   expect(view.container.querySelector<HTMLInputElement>('#birthYear')!.value).toBe('1976');
   expect(saved().profile.birthYear).toBe(1976);
   expect(await appliedRemote()).toBe(1);
+});
+
+// A blur refuses an out-of-range year; the refusal is not a clear.
+it.each(['beforeunload', 'visibilitychange', 'pagehide', 'debounce'] as const)(
+  'US-01 AC4: a refused year blurred before %s keeps the saved year through reload', async mode => {
+    await data.saveChangedMeasurements({ birthYear: 1975 }, {});
+    await data.flushRoadmapStore();
+    const { view, year, live } = await form();
+    fireEvent.change(year, { target: { value: '197' } });
+    fireEvent.blur(live());
+    expect(live().value).toBe('1975');
+    if (mode === 'debounce') await act(async () => { await vi.advanceTimersByTimeAsync(1500); });
+    else depart(mode);
+    expect(saved().profile.birthYear).toBe(1975);
+    view.unmount();
+    await data.initRoadmapStore(new LocalStorageAdapter());
+    const reloaded = await form();
+    expect(reloaded.year.value).toBe('1975');
+  },
+);
+
+it('US-09 AC2c: a held remote update released after another tab logs off does not rewrite the device copy', async () => {
+  const cloud = new MemoryAdapter();
+  await data.initRoadmapStore(cloud);
+  await data.saveChangedMeasurements({ sex: 'male', heightCm: 178, birthMonth: 5, unitSystem: 'si' }, {});
+  await data.flushRoadmapStore();
+  const { year } = await form();
+  fireEvent.change(year, { target: { value: '1975' } });
+  await remoteMonth();
+  expect(await appliedRemote()).toBe(0);
+  window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_log_off_signal', newValue: '1' }));
+  localStorage.clear();
+  await act(async () => { await vi.advanceTimersByTimeAsync(1500); await data.flushRoadmapStore(); });
+  expect((await cloud.read(ROADMAP_FILE_NAME)).body).toMatchObject({ profile: { birthYear: 1975, birthMonth: 6 } });
+  expect(await appliedRemote()).toBe(1);
+  expect(localStorage.getItem('health_roadmap_data')).toBeNull();
 });
 
 it('US-10 AC9: an explicit height clear still saves without blur', async () => {

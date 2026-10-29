@@ -564,7 +564,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       }
       // The chat copy holds the saved profile beside the saved values it
       // already has (US-15 AC10).
-      if (!roadmapLocalWritesStopped()) patchMirror({ profile: { ...previousInputsRef.current } });
+      patchMirror({ profile: { ...previousInputsRef.current } });
       // Refused drafts and edits made during the await still hold the relay.
       // Read the latest form, not the snapshot this save started with (US-34 AC4).
       if (!hasUnsavedProfileEdits(inputsRef.current, previousInputsRef.current)) remoteRelay.saved();
@@ -958,6 +958,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     trackProductEvent('alcohol_question_answered');
     handleInputChange('alcohol', answer);
   }, [handleInputChange]);
+  const handleRestoreSaved = useCallback((field: keyof HealthInputs) => {
+    setInputs(prev => ({ ...prev, [field]: previousInputsRef.current[field] }));
+  }, []);
   // A matrix's draft value, as the plan and the chat read it (US-03 AC6);
   // undefined leaves the field to the record. One update per field, so
   // several sent at once all land.
@@ -1207,6 +1210,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     inputs,
     effectiveInputs,
     onChange: handleInputChange,
+    onRestoreSaved: handleRestoreSaved,
     errors,
     unitSystem,
     onUnitSystemChange: handleUnitSystemChange,

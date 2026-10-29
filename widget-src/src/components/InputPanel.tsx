@@ -126,6 +126,8 @@ interface InputPanelProps {
   effectiveInputs: Partial<HealthInputs>;
   /** One field's new value; `unit`: the unit a weight or waist was typed in. */
   onChange: <K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem) => void;
+  /** Put a profile field back to its saved value, after a blur refused what was typed. */
+  onRestoreSaved: (field: keyof HealthInputs) => void;
   errors: Record<string, string>;
   unitSystem: UnitSystem;
   onUnitSystemChange: (system: UnitSystem) => void;
@@ -209,7 +211,7 @@ function useAutoAdvance(): (opts: { ambiguous: boolean; advance: () => void }) =
 }
 
 export function InputPanel({
-  storageBar, inputs, effectiveInputs, onChange: updateField, errors, unitSystem, onUnitSystemChange,
+  storageBar, inputs, effectiveInputs, onChange: updateField, onRestoreSaved, errors, unitSystem, onUnitSystemChange,
   unitOverrides, onToggleFieldUnit,
   previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onLabValueAdded, onSaveBloodTestBatch,
   onCorrectValue, moveTest, onDraftValue,
@@ -372,13 +374,15 @@ export function InputPanel({
     return getDisplayRange(metric, fieldUnit(field));
   };
 
-  /** Validate on blur for identity fields (no unit conversion). Clears if out of range. */
+  /** Validate on blur for identity fields (no unit conversion). Clears if out
+   *  of range. A refused birth year shows the saved one again instead: an
+   *  empty box would save as a clear of it (US-01 AC4). */
   const validateOnBlur = (field: keyof HealthInputs) => {
     const currentValue = inputs[field] as number | undefined;
     const validated = validateInputValue(field, currentValue);
-    if (validated !== currentValue) {
-      updateField(field, validated);
-    }
+    if (validated === currentValue) return;
+    if (field === 'birthYear') onRestoreSaved(field);
+    else updateField(field, validated);
   };
 
   const getPreviousPlaceholder = (field: string): string | undefined => {
