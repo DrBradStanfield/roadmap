@@ -114,18 +114,24 @@ export function readNumericCell(text: string): number | undefined {
   return hasNumericSyntax(text) ? parseLocalisedNumber(text) : undefined;
 }
 
+/** Text kept for refusal because stripping it could change the number
+ *  (US-02 AC4). Lab flag arrows and a unit's own superscript ('5.2 ↑',
+ *  '24 kg/m²') are not here, so they still strip. */
+const CHANGES_THE_NUMBER = [
+  /[\t\p{Pd}\p{Sk}\p{Lm}\p{Pi}\p{Pf}➖]/u, // a sign or dash in any script: '－5', '˗5', 'ー5'
+  /(?![↑↓])\p{Sm}/u, // a comparison or approximation: '＜5', '~5'
+  /(?![0-9])\p{Nd}/u, // a non-ASCII digit: '1５'
+  /[0-9.,]\p{No}|\p{No}[0-9.,]/u, // a superscript touching a digit: '10³'
+  /[0-9.,][eE]/, // exponent notation: '1e1'
+];
+
 /** Strip decorations only around a single numeric token (US-02 AC4).
  * Keep ambiguous text so validation and every save caller can refuse it. */
 export function numericCellText(text: string): string {
   // Text inputs remove line breaks. Keep a visible separator in state too,
   // so DOM selection offsets and replacement pastes address the same text.
   text = text.replace(/\r\n|[\r\n]/g, ' ');
-  // Keep for refusal anything that can change the number: a sign, dash,
-  // comparison or approximation in any script ('－5', '˗5', '＜5', '~5'), a
-  // non-ASCII digit, or a superscript touching a digit ('10³'). Lab flag
-  // arrows and a unit's own superscript ('5.2 ↑', '24 kg/m²') still strip.
-  if (/[\t\p{Pd}\p{Sk}\p{Lm}\p{Pi}\p{Pf}\u2796]|(?![\u2191\u2193])\p{Sm}|(?![0-9])\p{Nd}|[0-9.,]\p{No}|\p{No}[0-9.,]/u.test(text)
-    || /[0-9.,][eE]/.test(text)) return text;
+  if (CHANGES_THE_NUMBER.some((pattern) => pattern.test(text))) return text;
   const token = text.match(/^[^0-9.,]*([0-9.,]+)[^0-9.,]*$/);
   return token ? token[1] : /[0-9.,]/.test(text) ? text : '';
 }

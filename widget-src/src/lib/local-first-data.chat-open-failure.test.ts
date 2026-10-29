@@ -76,14 +76,14 @@ describe('US-11 AC2c: an erase whose chat history could not be opened', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const read = MemoryAdapter.prototype.read;
     vi.spyOn(MemoryAdapter.prototype, 'read').mockImplementation(function (this: MemoryAdapter, fileName, signal) {
-      if (fileName === CHAT_FILE) return Promise.reject(new Error('Unexpected token in JSON near "metformin 500 mg"', { cause: new Error('metformin') }));
+      if (fileName === CHAT_FILE) return Promise.reject(Object.assign(new Error('Unexpected token in JSON near "metformin 500 mg"'), { cause: new Error('metformin') }));
       return read.call(this, fileName, signal);
     });
     await data.deleteUserData();
     chatReported();
     const seen = JSON.stringify([
-      vi.mocked(Sentry.captureException).mock.calls.map(([e]) => [String(e), String((e as Error)?.cause ?? '')]),
-      warn.mock.calls.map(args => args.map(a => (a instanceof Error ? `${a.message} ${String(a.cause ?? '')}` : String(a)))),
+      vi.mocked(Sentry.captureException).mock.calls.map(([e]) => [String(e), String((e as { cause?: unknown })?.cause ?? '')]),
+      warn.mock.calls.map(args => args.map(a => (a instanceof Error ? `${a.message} ${String((a as { cause?: unknown }).cause ?? '')}` : String(a)))),
     ]);
     expect(seen).not.toContain('metformin');
   });

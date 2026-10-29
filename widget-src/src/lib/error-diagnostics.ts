@@ -13,6 +13,7 @@ type RecordFailure =
   | 'Document file not stored'
   | 'Cloud sync failed'
   | 'Chat-history erase failed'
+  | 'Pre-erase teardown failed'
   | 'Cloud connect failed'
   | 'Cloud record could not be loaded'
   | 'Upload processing failed'

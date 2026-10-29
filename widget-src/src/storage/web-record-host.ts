@@ -108,15 +108,14 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     failureCause: storageFailureClass,
     report(error: unknown, at: { op: 'persist' | 'pre-erase' | 'chat-erase'; cause?: string; repeat: boolean }) {
       // The erase's best-effort steps: an orphaned server row or chat history
-      // left behind is reported, never silently swallowed.
+      // left behind is reported, never silently swallowed, and only as a fixed
+      // message (an error can quote the chat file, e.g. a medication's name).
       if (at.op === 'pre-erase') {
-        console.warn('Pre-erase teardown failed', error);
-        Sentry.captureException(error, { tags: { area: 'reminders', op: 'pre-erase' } });
+        console.warn('Pre-erase teardown failed');
+        Sentry.captureException(recordFailure(error, 'Pre-erase teardown failed'), { tags: { area: 'reminders', op: 'pre-erase' } });
         return;
       }
       if (at.op === 'chat-erase') {
-        // An open or save error can quote the chat file (a JSON parse error
-        // around a medication's name), so only a fixed message is reported.
         console.warn('Chat-history erase failed');
         Sentry.captureException(recordFailure(error, 'Chat-history erase failed'), { tags: { area: 'chat-history', op: 'erase' } });
         return;
