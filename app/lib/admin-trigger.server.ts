@@ -23,12 +23,16 @@ export async function runAdminTrigger<T extends object>(
     const detail = await job(startedAt);
     return data({ ok: true as const, startedAt, completedAt: new Date().toISOString(), ...detail });
   } catch (error) {
+    // The stack stays in the server log. TriggerOutcome prints the whole result
+    // in a <pre>, so anything in it is on the page, and with ADMIN_SHOP_DOMAIN
+    // unset any installing shop's admin can read it: no server paths or
+    // dependency layout in the response (ID-2).
+    console.error("Admin trigger failed:", error);
     return data({
       ok: false as const,
       startedAt,
       completedAt: new Date().toISOString(),
       errorMessage: error instanceof Error ? error.message : String(error),
-      errorStack: error instanceof Error ? error.stack : undefined,
     });
   }
 }
