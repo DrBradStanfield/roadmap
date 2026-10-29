@@ -64,7 +64,8 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   But `routeQuery`/`classifyMessage` get the bare comment with no video
   context, so oblique comments ("could it cause blindness?") are unroutable.
   Categorise YT empties against the companion blog before calling them misses.
-  On YouTube a GREETING label means NO reply, and the classifier labels many
+  On YouTube a GREETING or (from 10-29, US-15 AC41) SPAM label means NO reply
+  (`SILENT_ON_YOUTUBE`), and the classifier labels many
   comments GREETING (W41: 35 of 55 events; 16 substantive health claims and
   one direct question among them, the rest reactions, thanks and spam).
   But first-person vendor spam reads as a health claim: W43's peptide-vendor

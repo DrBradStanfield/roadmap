@@ -125,10 +125,20 @@ export const Classification = {
    * Interpretation ("is my Lp(a) a concern?") stays ROUTE by design.
    */
   MEASUREMENT: 'MEASUREMENT',
+  /**
+   * Promotes a seller, shop or product to buy and asks nothing (US-15 AC41,
+   * 2026-10-29). The YouTube bot skips it without a reply. Its own label because
+   * Haiku names the category itself: folded into GREETING, it answered "SPAM"
+   * or "PROMOTION", which parsed as ERROR and fired the router.
+   */
+  SPAM: 'SPAM',
   ERROR: 'ERROR',
 } as const;
 
 export type Classification = typeof Classification[keyof typeof Classification];
+
+/** Labels the YouTube bot skips without a reply (US-15 AC41); its dry-run tool reads the same set. */
+export const SILENT_ON_YOUTUBE: ReadonlySet<Classification> = new Set([Classification.GREETING, Classification.SPAM]);
 
 const VALID_CLASSIFICATIONS: ReadonlyArray<Classification> = [
   Classification.ROUTE,
@@ -136,6 +146,7 @@ const VALID_CLASSIFICATIONS: ReadonlyArray<Classification> = [
   Classification.PRODUCT,
   Classification.ACCOUNT,
   Classification.MEASUREMENT,
+  Classification.SPAM,
 ];
 
 /**

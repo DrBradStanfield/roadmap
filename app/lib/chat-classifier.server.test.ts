@@ -46,3 +46,15 @@ describe('chat classifier request (US-15 AC34)', () => {
     }));
   });
 });
+
+describe('spam label (US-15 AC41)', () => {
+  beforeEach(() => call.mockReset());
+
+  it('SPAM is a label of its own, so the model naming the category never fails open as ERROR', async () => {
+    call.mockResolvedValue({ content: 'SPAM', contentBlocks: [], usage, stopReason: 'end_turn' });
+    const result = await classifyMessage('Got my Semax from VendorX, real quality.');
+    expect(result.classification).toBe('SPAM');
+    expect(result.routerSkipped).toBe(true);
+  });
+});
+

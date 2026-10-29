@@ -30,6 +30,7 @@ import { supabaseAdmin } from './supabase.server';
 import { classifyMessage, shouldFireRouter } from './chat-classifier.server';
 import { routeQuery, sanitizeForRouter, ROUTER_VERSION, type RouterResult } from './chat-router.server';
 import { cutText } from '../../packages/health-core/src/chat-history';
+import { SILENT_ON_YOUTUBE } from '../../packages/health-core/src/models';
 import { findBlogByVideoId, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { preferMasters } from './router-view';
 import { loadBlogArticle } from './matched-content';
@@ -581,7 +582,7 @@ export async function persistYouTubeTurn(p: {
     }
 
     // The assistant half. Only when the LLM actually produced output: a
-    // classifier GREETING short-circuit never reached the model, and a fallback
+    // classifier silent skip (GREETING or SPAM) never reached the model, and a fallback
     // produced no genuine answer, so neither gets a fabricated assistant row.
     let assistantMessageId: string | null = null;
     if (outcome.llmOutput) {
@@ -864,7 +865,7 @@ export function completionOutcome(completion: ChatCompletionResult, latencyMs: n
   return { posted: true, replyText, llmOutput: replyText };
 }
 
-/** Only a main-LLM failure is retried next tick; skips, GREETING and refusals keep the claim. */
+/** Only a main-LLM failure is retried next tick; skips, silent classifier skips and refusals keep the claim. */
 export function shouldUnclaim(outcome: Pick<PipelineOutcome, 'isFallback'>): boolean {
   return outcome.isFallback === true;
 }
@@ -880,11 +881,12 @@ export async function runPipeline(
   const isFollowUp = history.length > 0;
 
   const classifierResult = await classifyMessage(sanitized);
-  if (classifierResult.classification === 'GREETING') {
+  const { classification } = classifierResult;
+  if (SILENT_ON_YOUTUBE.has(classification)) {
     return {
       posted: false,
-      skipReason: 'classifier=GREETING',
-      classification: 'GREETING',
+      skipReason: `classifier=${classification}`,
+      classification,
       routerHandles: [],
       routerResult: null,
       routerSkipped: true,
@@ -1145,7 +1147,7 @@ async function tick(): Promise<void> {
 
       // Main-LLM failure (fallback path inside getChatCompletion) is transient —
       // un-claim so the next tick can retry once Anthropic recovers. Genuine
-      // SKIP_NO_REPLY / GREETING / blog-missing / refusal cases leave the claim
+      // SKIP_NO_REPLY / GREETING or SPAM / blog-missing / refusal cases leave the claim
       // intact so we don't waste LLM tokens re-evaluating the same comment.
       if (shouldUnclaim(outcome)) await unclaimComment(thread.topLevelCommentId);
       skippedThisTick++;

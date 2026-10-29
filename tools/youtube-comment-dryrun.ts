@@ -39,7 +39,7 @@ import { buildYouTubePlatformContext, loadedHandles } from '../app/lib/youtube-c
 import { routerView, routerIndexBlock, preferMasters } from '../app/lib/router-view';
 import { stripFrontmatter } from '../app/lib/frontmatter';
 import {
-  CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, CLASSIFIER_MAX_TOKENS, CLASSIFIER_MODEL, PROMPT_CACHE, ROUTER_MODEL, getArg as getArgOf, modelParams, parseClassification,
+  CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, CLASSIFIER_MAX_TOKENS, CLASSIFIER_MODEL, PROMPT_CACHE, ROUTER_MODEL, getArg as getArgOf, modelParams, parseClassification, SILENT_ON_YOUTUBE, type Classification,
 } from '../packages/health-core/src/models';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -215,7 +215,7 @@ async function callAnthropic(body: object): Promise<{ ok: boolean; text: string;
   return { ok: true, text, raw: data };
 }
 
-async function classify(comment: string): Promise<{ classification: string; raw: string }> {
+async function classify(comment: string): Promise<{ classification: Classification; raw: string }> {
   const body = {
     ...modelParams(CLASSIFIER_MODEL, CLASSIFIER_MAX_TOKENS),
     system: [{ type: 'text', text: CLASSIFIER_PROMPT, cache_control: PROMPT_CACHE }],
@@ -291,7 +291,7 @@ async function callMainLLM(comment: string, blogPost: BlogPost, matchedHandles: 
 interface DryRunResult {
   comment: YouTubeComment;
   filter: FilterDecision;
-  classification?: string;
+  classification?: Classification;
   routerHandles?: string[];
   routerError?: string | null;
   reply?: string;
@@ -307,10 +307,10 @@ async function processOne(c: YouTubeComment, blogPost: BlogPost): Promise<DryRun
   }
 
   const cls = await classify(c.text);
-  if (cls.classification === 'GREETING') {
+  if (SILENT_ON_YOUTUBE.has(cls.classification)) {
     return {
-      comment: c, filter, classification: 'GREETING',
-      willPost: false, skipReason: 'classifier=GREETING (silent skip)',
+      comment: c, filter, classification: cls.classification,
+      willPost: false, skipReason: `classifier=${cls.classification} (silent skip)`,
     };
   }
 
@@ -381,13 +381,12 @@ function renderHTML(results: DryRunResult[], blogPost: BlogPost): string {
   const totalComments = results.length;
   const willPost = results.filter(r => r.willPost).length;
   const filtered = results.filter(r => !r.filter.keep).length;
-  const greetingSkips = results.filter(r => r.classification === 'GREETING').length;
+  const silentSkips = results.filter(r => r.skipReason?.startsWith('classifier=')).length;
   const llmSkips = results.filter(r => r.skipReason?.includes('SKIP_NO_REPLY')).length;
   const errors = results.filter(r => r.replyError || r.routerError).length;
 
   const classifierColor = (c?: string) => {
     if (c === 'ROUTE') return '#2b5fb0';
-    if (c === 'GREETING') return '#888';
     if (c === 'PRODUCT') return '#a06030';
     if (c === 'ACCOUNT') return '#a06030';
     if (c === 'ERROR') return '#c0392b';
@@ -466,7 +465,7 @@ function renderHTML(results: DryRunResult[], blogPost: BlogPost): string {
     <div><strong>${totalComments}</strong>total fetched</div>
     <div><strong>${willPost}</strong>would post</div>
     <div><strong>${filtered}</strong>filtered out</div>
-    <div><strong>${greetingSkips}</strong>greeting-skips</div>
+    <div><strong>${silentSkips}</strong>silent skips</div>
     <div><strong>${llmSkips}</strong>LLM-skips</div>
     <div><strong>${errors}</strong>errors</div>
   </div>
