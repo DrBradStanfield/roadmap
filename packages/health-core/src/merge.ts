@@ -364,7 +364,7 @@ function mergeSnapshots(
 
 /** The newer of two OPTIONAL singletons by `cmpClock`: present always
  *  beats absent. */
-function pickNewerOptional<T extends SyncStamp>(
+export function pickNewerOptional<T extends SyncStamp>(
   local: T | undefined,
   remote: T | undefined,
 ): T | undefined {
