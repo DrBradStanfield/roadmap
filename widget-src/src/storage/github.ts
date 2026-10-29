@@ -101,7 +101,12 @@ export class GitHubAdapter implements StorageAdapter {
     const res = await fetchOrFail('GitHub', this.contentsUrl(fileName), { headers: this.headers() });
     if (res.status === 404) return { body: null, version: null };
     if (!res.ok) throw new StorageError(`GitHub read failed (${res.status}): ${await res.text()}`);
-    const json = (await res.json()) as { content?: string; sha: string };
+    const json = (await res.json()) as { content?: string; sha: string; size?: number; encoding?: string };
+    // Over 1 MB the API answers 200 with empty content and the real sha (header
+    // LIMIT). Reading that as "no record" lets the next save overwrite it (US-09 AC13c).
+    if (!json.content && (json.encoding === 'none' || (json.size ?? 0) > 0)) {
+      throw new StorageError('GitHub read failed: the file is larger than the 1 MB the Contents API returns inline.');
+    }
     let body: unknown = null;
     if (json.content) {
       try {
