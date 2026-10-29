@@ -118,6 +118,8 @@ Cocoa flavanols were tested in COSMOS, a large trial of more than 21,000 older a
 
 ## MicroVitamin+ Powder
 
+Product page: https://microvitamin.com/products/microvitamin-plus (capsules: https://microvitamin.com/products/microvitamin).
+
 Everything in MicroVitamin core + 4 premium additions. $100 one-time / $90/mo subscription (USA v8 pricing — see the price-history FAQ below). 30 servings (1 scoop). 30 ingredients. Mixed Berry flavor + unflavored option. Manufactured in the USA only (unlike MicroVitamin Capsules, which are made in four regions). 163 reviews, 4.75 average rating (reviews to 15 Sep 2026, counted October 2026). The Powder is the US v8 core formula in every market except the Unflavored powder shipping to Europe, which has already moved to v9 (see Powder v9 under Version History; the USA is still v8 for both flavors).
 
 "Plus" additions over MicroVitamin core:
