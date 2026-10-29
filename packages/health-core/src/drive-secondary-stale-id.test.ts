@@ -1,5 +1,5 @@
 /**
- * V-SE6-1, SE-6's variant in the shared adapter the iPhone app and the hosted
+ * US-10 AC4b, the browser rule's variant in the shared adapter the iPhone app and the hosted
  * server use: DriveAdapter caches a secondary file's id for the instance's
  * life and reuses it on every read and write without checking it is live.
  * The iPhone app keeps one instance per access token (up to an hour), so a
@@ -73,7 +73,7 @@ class Drive {
 
 afterEach(() => { vi.unstubAllGlobals(); });
 
-describe('V-SE6-1: the shared DriveAdapter and a cached id that is no longer live', () => {
+describe('US-10 AC4b: the shared DriveAdapter and a cached id that is no longer live', () => {
   it('a file trashed after this instance cached its id is not written into', async () => {
     const drive = new Drive();
     drive.files.push({ id: 'X', name: CHAT, content: '{"conversations":[]}', version: 1, trashed: false });

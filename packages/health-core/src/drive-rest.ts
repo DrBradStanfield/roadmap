@@ -640,7 +640,7 @@ export class DriveAdapter implements StorageAdapter {
 
   async list(folder: string, signal?: AbortSignal): Promise<StoredFile[]> {
     const files = await driveListByPrefix(this.accessToken, `${folder}/`, signal);
-    for (const file of files) this.fileIds.set(file.name, file.ref); // so `remove` needs no second search
+    for (const file of files) this.fileIds.set(file.name, file.ref); // `remove` then pays one liveness GET, not a search (US-10 AC4b)
     return files;
   }
 

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * DA-04 — after a unit toggle, a vitals cell's shown error must agree with
+ * US-05 AC2a: after a unit toggle, a vitals cell's shown error must agree with
  * whether the commit saves it.
  *
  * The cell shows the typed quantity re-expressed and rounded in the new unit,
@@ -47,7 +47,7 @@ function vitalsDraftCell(label: string, backfill = false) {
   return { input, onSave, toggle, save };
 }
 
-describe('DA-04: the shown error agrees with the save after a unit toggle', () => {
+describe('US-05 AC2a: the shown error agrees with the save after a unit toggle', () => {
   it('weight 19.9 kg shown in lbs', async () => {
     const { input, onSave, toggle, save } = vitalsDraftCell('Weight');
     fireEvent.change(input, { target: { value: '19.9' } }); // typed in kg (below 20)
@@ -87,7 +87,7 @@ describe('DA-04: the shown error agrees with the save after a unit toggle', () =
     expect(onSave).toHaveBeenCalledTimes(error ? 0 : 1);
   });
 
-  it('79 in is saved as 200.66 cm, above the record\'s 200 (DA-01\'s range gap, not fixed here)', async () => {
+  it('79 in is saved as 200.66 cm, above the record\'s 200 (the inch range reaches past it, not fixed here)', async () => {
     const { input, onSave, toggle, save } = vitalsDraftCell('Waist Circumference');
     toggle();
     fireEvent.change(input, { target: { value: '79' } });

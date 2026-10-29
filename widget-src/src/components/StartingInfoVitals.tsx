@@ -335,7 +335,7 @@ export function StartingInfoVitals({
   // The cell's error is judged as the commit judges it: the typed text in the
   // unit it was typed in, not the rounded display in the new unit. Otherwise
   // near a range end the two disagree (19.9 kg shown as 44 lb, no error, not
-  // saved; 79 in shown as 201 cm, "Max 200 cm", saved) (DA-04). Null is
+  // saved; 79 in shown as 201 cm, "Max 200 cm", saved) (US-05 AC2a). Null is
   // valid, overriding the cell's own check of the shown text.
   const typedError = (column: string | null, metric: 'weight' | 'waist'): string | null => {
     const typed = (column === null ? draft.values : backfills[column])?.[metric] ?? '';

@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 /**
- * SE-6: the browser Drive adapter falls back to a cached file id for secondary
+ * US-10 AC4b: the browser Drive adapter falls back to a cached file id for secondary
  * files (chat-history.json) without checking that the file is still live. A
  * trashed file keeps receiving writes; once the trash is emptied, every write
  * PATCHes the dead id and fails with a 404, forever.
@@ -85,7 +85,7 @@ function browserAdapter(fileIds: Record<string, string>, extra: object = {}): Go
 
 afterEach(() => { vi.unstubAllGlobals(); localStorage.clear(); });
 
-describe('SE-6 — a cached chat-history id that is no longer live', () => {
+describe('US-10 AC4b: a cached chat-history id that is no longer live', () => {
   it('a permanently deleted cached file is recreated, not PATCHed forever', async () => {
     const drive = new Drive(); // X was deleted (trash emptied): nothing on Drive
     const a = browserAdapter({ [CHAT]: 'X' });
