@@ -181,6 +181,21 @@ describe("auto-ship claim 7 (US-46 AC5)", { timeout: 60_000 }, () => {
       refused([bot(`${header}Verdict: reject, AC2 fails\n\nVERDICT: APPROVE aaaa`)]);
       refused([bot(`${header}VERDICT REJECT, AC2 fails\n\nVERDICT: APPROVE aaaa`)]);
     });
+    it("a 'Verdict: reject' in Markdown emphasis next to the APPROVE line is not an approval", () => {
+      for (const reject of ["_reject_", "__reject__", "*reject*", "**reject**", "___reject___"]) {
+        refused([bot(`${header}Verdict: ${reject}\n\nVERDICT: APPROVE aaaa`)]);
+      }
+      refused([bot(`${header}**Verdict**: __REJECT__ (AC2 fails)\n\nVERDICT: APPROVE aaaa`)]);
+    });
+    it("'the verdict is (still) REJECT' next to the APPROVE line is not an approval", () => {
+      // The reviewer's own wording in real REJECT comments.
+      refused([bot(`${header}**Result: the code is sound, but the verdict is still REJECT.**\n\nVERDICT: APPROVE aaaa`)]);
+      refused([bot(`${header}The verdict was: reject.\n\nVERDICT: APPROVE aaaa`)]);
+    });
+    it("a verdict line naming another word before 'rejected' still merges", () => {
+      const r = run({ comments: [bot(`${header}The verdict is APPROVE; rejected alternatives are listed below.\n\nVERDICT: APPROVE aaaa`)] });
+      expect(merged(r.calls)).toEqual(["pr merge 7 -R o/r --merge --match-head-commit aaaa"]);
+    });
     it("a 'verdict' at a line end with 'Rejected' starting the next line still merges", () => {
       const r = run({ comments: [bot(`${header}- [x] Publish verdict\n\n---\n### Rejected alternatives\nNone.\n\nVERDICT: APPROVE aaaa`)] });
       expect(merged(r.calls)).toEqual(["pr merge 7 -R o/r --merge --match-head-commit aaaa"]);
