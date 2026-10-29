@@ -2034,7 +2034,7 @@ describe('US-40 AC15 — --subject reviews exact files, never whatever else the 
     mkdirSync(join(dir, 'codex-draftsX')); writeFileSync(join(dir, 'codex-draftsX', 'plan.md'), 'draft\n');
     refused(dir, ['--subject', 'codex-draftsX/plan.md'], 'is not tracked at HEAD', policyFor(dir, { subjectRoots: [`${dir}/codex-drafts`] })); // a sibling sharing the prefix is not under it
     const CB = '/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business';
-    expect(SHIPPED_POLICY.subjectRoots).toEqual(['/Users/bradstanfield/Documents/roadmap.nosync/codex-drafts', `${CB}/output/[0-9] *`, `${CB}/output/[0-9][0-9] *`, `${CB}/output/[0-9][0-9][0-9] *`]);
+    expect(SHIPPED_POLICY.subjectRoots).toEqual(['/Users/bradstanfield/Documents/roadmap/codex-drafts', `${CB}/output/[0-9] *`, `${CB}/output/[0-9][0-9] *`, `${CB}/output/[0-9][0-9][0-9] *`]);
   });
   it('Codex R1, adversary R4: a subject, baseline or context inside a nested git repo is refused (that repo\'s HEAD credentials are never collected)', () => {
     const dir = scriptRepo();
