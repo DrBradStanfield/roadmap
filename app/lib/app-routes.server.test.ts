@@ -326,7 +326,7 @@ describe('US-52 AC7: lab import', () => {
 
   it('stops at the shared per-machine file cap', async () => {
     await registered();
-    machineFiles.take('machine', Number(process.env.AI_DAILY_FILE_CAP || 2000));
+    machineFiles.take('machine', machineFiles.remaining('machine'));
     expect((await appLabImport(signed('/api/app/v1/lab-import', body), store)).status).toBe(429);
     expect(mocks.extract).not.toHaveBeenCalled();
   });
