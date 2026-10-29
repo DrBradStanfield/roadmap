@@ -1046,6 +1046,9 @@ interface BackfillCellProps {
   value: string;
   /** Why the typed value cannot be saved as it stands (`SAME_SLOT`). */
   error?: string | null;
+  /** The typed text's own check when it was typed in another unit (see
+   *  NumericInputCell); omit to check the shown text. */
+  validationResult?: string | null;
   active: boolean;
   onFocus: () => void;
   onBlur: () => void;
@@ -1058,13 +1061,14 @@ interface BackfillCellProps {
 
 // Exported so StartingInfoVitals reuses the identical empty-slot input cell
 // (one source of truth for backfill styling + key handling across both matrices).
-export function BackfillCell({ metric, display, value, error, active, onFocus, onBlur, onEnter, onChange, pinned }: BackfillCellProps) {
+export function BackfillCell({ metric, display, value, error, validationResult, active, onFocus, onBlur, onEnter, onChange, pinned }: BackfillCellProps) {
   return (
     <NumericInputCell
       metric={metric}
       display={display}
       value={value}
       externalError={error}
+      validationResult={validationResult}
       onChange={onChange}
       wrapperClass={`bt-cell-backfill${pinned ? ' bt-cell-pinned' : ''}`}
       inputClass="bt-input bt-input-backfill"
