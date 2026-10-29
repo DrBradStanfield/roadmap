@@ -8,7 +8,7 @@
  * asserting what the user reads.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING } from './HealthTool';
+import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD } from './HealthTool';
 
 /** The erase strings as one build shows them. */
 async function eraseCopyOn(shopify: boolean) {
@@ -118,6 +118,17 @@ describe('erase confirm copy (US-11)', () => {
     expect(ERASE_DONE_CHAT_PENDING).toContain('until that tool next writes the file');
   });
 
+  // US-11 AC2c: a history that could not be opened has no tombstone waiting,
+  // so this alert must not promise the next chat will erase it.
+  it('US-11 AC2c: an unread cloud chat history is named as still there, not erased later', () => {
+    expect(ERASE_DONE_CHAT_UNREAD).toContain('could not be read, so it is still in your cloud folder as chat-history.json');
+    expect(ERASE_DONE_CHAT_UNREAD).not.toMatch(/next chat/i);
+    // No retry instruction: the button is gone after an erase, and the failure may be lasting.
+    expect(ERASE_DONE_CHAT_UNREAD).not.toMatch(/again/i);
+    expect(ERASE_DONE_CHAT_UNREAD).toContain('until that tool next writes the file');
+    expect(ERASE_DONE_CHAT_UNREAD).not.toMatch(/—/);
+  });
+
   it('never claims the kept row stops reminders from restarting', () => {
     expect(ERASE_CONFIRM).not.toMatch(/does not restart/i);
   });
@@ -141,8 +152,8 @@ describe('erase confirm copy (US-11)', () => {
   // that includes items 5 and 6: the bubble and embed on another device, and
   // the chat our server keeps for 30 days.
   it('US-11 AC5: on the Shopify build, the alert repeats items 5 and 6, shorter', async () => {
-    const { ERASE_CONFIRM: confirm, ERASE_DONE: done, ERASE_DONE_CHAT_PENDING: pending } = await eraseCopyOn(true);
-    for (const alert of [done, pending]) {
+    const { ERASE_CONFIRM: confirm, ERASE_DONE: done, ERASE_DONE_CHAT_PENDING: pending, ERASE_DONE_CHAT_UNREAD: unread } = await eraseCopyOn(true);
+    for (const alert of [done, pending, unread]) {
       expect(alert).toContain('On another device, the blog chat bubble and the chatbot embed send your old record until the widget loads there.');
       expect(alert).toContain("Our server keeps your chat questions, and the bubble's and embed's replies, for 30 days after your last message.");
       expect(alert).not.toMatch(/—/);
@@ -151,8 +162,8 @@ describe('erase confirm copy (US-11)', () => {
   });
 
   it('US-11 AC5: on the Pages build, the alert names no bubble, embed or server-kept chat', async () => {
-    const { ERASE_CONFIRM: confirm, ERASE_DONE: done, ERASE_DONE_CHAT_PENDING: pending } = await eraseCopyOn(false);
-    for (const alert of [done, pending]) {
+    const { ERASE_CONFIRM: confirm, ERASE_DONE: done, ERASE_DONE_CHAT_PENDING: pending, ERASE_DONE_CHAT_UNREAD: unread } = await eraseCopyOn(false);
+    for (const alert of [done, pending, unread]) {
       expect(alert).not.toMatch(/chat bubble|chatbot embed|30 days|our server/i);
       expect(alert).toMatch(/version history/i);
       expect(alert.length).toBeLessThan(confirm.length);

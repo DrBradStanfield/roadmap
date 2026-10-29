@@ -51,7 +51,7 @@ vi.mock('./UploadModal', () => ({ UploadModal: ({ onComplete, history }: { onCom
   return null;
 } }));
 
-import { HealthTool, WRITE_REFUSED } from './HealthTool';
+import { ERASE_DONE_CHAT_UNREAD, HealthTool, WRITE_REFUSED } from './HealthTool';
 
 /** The guest's record as this browser holds it, after every pending save. */
 async function recordOnDisk(): Promise<RoadmapFile> {
@@ -450,6 +450,22 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     const stored = await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME);
     expect((stored.body as RoadmapFile).profile).not.toHaveProperty('heightCm');
     expect((await loadLatestMeasurements())?.inputs.heightCm).toBeUndefined();
+  });
+
+  it('US-11 AC2c: an erase whose chat history cannot be opened says where it still is', async () => {
+    const cloud = new MemoryCloud();
+    const view = await cloudGuest(cloud, { sex: 'male', heightCm: 175 });
+    const read = MemoryAdapter.prototype.read;
+    vi.spyOn(MemoryAdapter.prototype, 'read').mockImplementation(function (this: MemoryAdapter, fileName, signal) {
+      if (fileName === 'chat-history.json') return Promise.reject(new Error('chat cloud unreachable'));
+      return read.call(this, fileName, signal);
+    });
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.click(await waitFor(() => view.getByText('Delete All My Data')));
+    await waitFor(() => expect(alert).toHaveBeenCalledOnce());
+    expect(alert.mock.calls[0][0]).toBe(ERASE_DONE_CHAT_UNREAD);
   });
 
   it('an erase refused while a remote erase is held back leaves the form, the unsaved edit and the banner as they were (Codex final R2)', async () => {

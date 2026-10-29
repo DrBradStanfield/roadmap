@@ -39,6 +39,16 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
+describe('US-11 AC2c on the device: a chat file that cannot be opened is still cleared', () => {
+  it('a newer-schema chat file is removed by the erase and the erase says so', async () => {
+    await initRoadmapStore(new LocalStorageAdapter());
+    localStorage.setItem(CHAT_KEY, JSON.stringify({ schemaVersion: 999, conversations: [{ id: 'old', title: OLD_TEXT }] }));
+
+    expect(await deleteUserData()).toEqual({ success: true, chatErased: true });
+    expect(localStorage.getItem(CHAT_KEY)).toBeNull();
+  });
+});
+
 describe('US-11 local erase: a stale chat tab must not restore erased history', () => {
   it('real deleteUserData removes local chat keys; an ordinary stale-tab write keeps only fresh chat', async () => {
     await initRoadmapStore(new LocalStorageAdapter());

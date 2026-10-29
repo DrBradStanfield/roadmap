@@ -30,3 +30,20 @@ export function getChatHistory(): Promise<ChatHistoryStore | null> {
   if (!factory) return Promise.resolve(null);
   return (store ??= factory().catch(() => null));
 }
+
+/**
+ * The same store for the erase, which must know whether it was reached
+ * (US-11 AC2c). A failed open REJECTS here instead of resolving null, and an
+ * open that failed earlier this page is tried again rather than taken from the
+ * cache. Null only when no chat layer is registered, where no history exists.
+ * A successful open becomes the shared instance, so a chat panel opened
+ * afterwards sees the tombstones.
+ */
+export async function openChatHistory(): Promise<ChatHistoryStore | null> {
+  if (!factory) return null;
+  const cached = store ? await store : null;
+  if (cached) return cached;
+  const opening = factory();
+  store = opening.catch(() => null);
+  return opening;
+}

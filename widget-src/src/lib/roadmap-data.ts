@@ -14,7 +14,7 @@ import {
 import { MEASUREMENT_REFUSALS_WITH_METRIC } from '@roadmap/health-core/product-events';
 import { RoadmapStore, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
-import { getChatHistory, setChatHistoryFactory } from './chat-history-access';
+import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
 import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
 import { SHOPIFY_SURFACE } from './build-flags';
 import type { StorageAdapter } from '@roadmap/health-core';
@@ -246,13 +246,23 @@ export function setPreEraseHook(fn: () => Promise<void>): void {
   preEraseHook = fn;
 }
 
-export async function deleteUserData(): Promise<{ success: boolean; error?: string; warning?: string; chatErased: boolean }> {
+export async function deleteUserData(): Promise<{ success: boolean; error?: string; warning?: string; chatErased: boolean; chatUnread?: true }> {
   if (!store) return { success: false, error: 'Data store not initialised', chatErased: false };
   // The order and the best-effort rules are the record session's (health-core
   // deleteAllData): it reads the record first, and an erase that cannot read
   // it is refused before either step runs (US-09 AC23). Chat goes through the
-  // singleton, so an open chat panel's instance is the one erased.
-  return store.deleteAllData({ teardown: preEraseHook ?? undefined, chat: getChatHistory });
+  // singleton, so an open chat panel's instance is the one erased. In the
+  // cloud, a history that could not be opened rejects, so the session reports
+  // it and never counts it erased; `chatUnread` tells the page no tombstone
+  // exists to send later (US-11 AC2c). On the device the record erase clears
+  // the chat file itself, so a failed open there loses nothing.
+  let chatUnread = false;
+  const chat = getBackendKind() === 'local' ? getChatHistory : () => openChatHistory().catch((error: unknown) => {
+    chatUnread = true;
+    throw error;
+  });
+  const result = await store.deleteAllData({ teardown: preEraseHook ?? undefined, chat });
+  return chatUnread && !result.chatErased ? { ...result, chatUnread: true } : result;
 }
 
 // ---------------------------------------------------------------------------
