@@ -120,7 +120,9 @@ export function numericCellText(text: string): string {
   // Text inputs remove line breaks. Keep a visible separator in state too,
   // so DOM selection offsets and replacement pastes address the same text.
   text = text.replace(/\r\n|[\r\n]/g, ' ');
-  if (/[+\-−±<>=≤≥≠≈\t]/.test(text) || /[0-9.,][eE]/.test(text)) return text;
+  // Any sign, dash, comparison, superscript or non-ASCII digit (fullwidth
+  // '－5', '＜5', '10³') is kept for refusal, never stripped to a new number.
+  if (/[\t\p{Sm}\p{Pd}\p{No}]|(?![0-9])\p{Nd}/u.test(text) || /[0-9.,][eE]/.test(text)) return text;
   const token = text.match(/^[^0-9.,]*([0-9.,]+)[^0-9.,]*$/);
   return token ? token[1] : /[0-9.,]/.test(text) ? text : '';
 }

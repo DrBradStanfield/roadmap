@@ -17,7 +17,7 @@ describe('NumericInputCell pasted syntax', () => {
     return render(<Cell />);
   }
 
-  it.each(['-5', '+5', '−5', '1e1', '1E+1', '1\t2', '1 2', '1/2', '<5', '≤5', '≥5', '±5', '1.2.3'])('keeps %j invalid, including free-form lab rows', text => {
+  it.each(['-5', '+5', '−5', '1e1', '1E+1', '1\t2', '1 2', '1/2', '<5', '≤5', '≥5', '±5', '1.2.3', '－5', '＋5', '＜5', '＞5', '10³', '⁻5', '1５'])('keeps %j invalid, including free-form lab rows', text => {
     const view = cell();
     const input = view.getByRole('textbox') as HTMLInputElement;
     fireEvent.change(input, { target: { value: text } });
