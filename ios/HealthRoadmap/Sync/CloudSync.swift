@@ -83,6 +83,10 @@ final class CloudSync: CloudPort {
     /// into the cloud's. Signing in again as a different account is refused:
     /// it would merge one person's record into another's (review A6).
     func connect(_ provider: CloudProvider, authenticate: OAuthClient.Authenticate) async throws {
+        #if DEBUG
+        // A demo record never reaches anyone's cloud (DemoRecord).
+        guard !DemoRecord.isOn else { throw OAuthClient.Failure.refused("A demo record never syncs.") }
+        #endif
         guard !erasing else { throw OAuthClient.Failure.refused("Wait for the erase to finish, then connect.") }
         let signedIn = try await oauth.signIn(provider, authenticate: authenticate)
         // A sign-in begun before the erase may finish during it (Codex re-check R2).

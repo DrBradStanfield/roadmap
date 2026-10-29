@@ -82,17 +82,41 @@ by the orchestrator, not a fresh reviewer.
      2026-10-27 09:27. Apple says up to 48 hours; release is automatic on approval.
    - Build 2 was uploaded but never submitted (VO2 legend slip).
    - The five screenshots predate build 3 but show none of its changes, so they stand.
-   - **TestFlight:** build 3 is in beta review with one external tester (Brad's request). The
-     invite goes out on approval. Test Information holds the beta description and contact.
+   - **TestFlight:** Apple rejected build 3's beta review on 2026-10-28 (guideline 2.1(a),
+     asked for a demo login). The app has none: TestFlight's Test Information now has review
+     notes walking through each feature with no sign-in, and Brad's reply says so. A rejected
+     build cannot be resubmitted, so build 4 went to beta review instead (2026-10-28), with
+     the same external testers (no emails in this repo). The App Store review of build 3 is a
+     separate submission and was not touched.
    - **Next build:** an agent shell cannot upload (no App Store Connect token); the session
      clicks Organizer › Distribute App while the Mac is unlocked (full-screen control).
    - **Build 3 is on Brad's iPhone** (Release, 2026-10-27).
-   - **Build 4 (next):** the Apple Health cards keep their last readings on the phone, so My
-     data opens without the launch jump (US-56 AC2 and AC15, Brad 2026-10-27, checked on his
-     iPhone). Brad approved the new privacy wording (2026-10-27): publish the privacy page
+   - **Build 4** (f47f152c, uploaded 2026-10-28, TestFlight only so far): the Apple Health
+     cards keep their last readings on the phone, so My data opens without the launch jump
+     (US-56 AC2 and AC15, Brad 2026-10-27, checked on his iPhone), and Chat lowers the
+     keyboard on send (US-52 AC6c, checked on his iPhone). Brad approved the new privacy wording (2026-10-27): publish the privacy page
      (`node scripts/build-privacy-page.mjs app --publish`) **when build 4 is submitted, not
      before**: the live page's "never saves them" stays true for build 3. Update the App Store
      description and review notes from ios/app-store.md in the same submission.
+   - **Next release: new screenshots and app video (Brad 2026-10-29, don't forget).** App
+     Store Connect locks screenshots and app previews while a version waits for review, so
+     0.1 went out with the old five plain captures. With the next version, replace them with:
+     - the six captioned screenshots (1206 × 2622) in `ios/build/app-store-assets/screenshots/`,
+       in order 1 to 6 (Brad approved the set 2026-10-29);
+     - the app video `ios/build/app-store-assets/video/app-preview-886x1920.mp4` (29 s, with
+       the Chat clip; a 25 s version without Chat sits beside it).
+     `ios/build/` is gitignored: rebuild them with `ios/scripts/app-store-shots.sh` and
+     `ios/scripts/app-store-video.sh` (ios/app-store.md step 6) if the folder is gone or the
+     UI changed. Videos over 10 MB go up by dragging from Finder (the browser tool can't).
+     The header still (21:9) and the search card (3:2) are in the Asset Library (2026-10-29)
+     in a draft submission. App Store Connect refuses to submit it until there is an app
+     version to review it against ("add an app version"), so **submit the draft once 0.1 is
+     approved**. The 15 s header video (`header-3840x1646.mp4`) joined the same draft (Brad
+     dragged it in, 2026-10-29): three items wait, the video, the still and the search card.
+     A spare 16:9 `header-universal-5244x2950.png` was also uploaded; it isn't needed.
+     Open before upload: the plan cards on screen show "ApoB 1.02 Very High" and "Consider a
+     GLP-1 medication" for the fictional person (Brad's call), and Sync rows still say
+     "Health Plan by Dr Brad".
 8. **Regulatory advice** on whether the app counts as a medical device in your markets.
 9. **Clinical call:** should the value pages show target bands (blood pressure goal,
    healthy waist, ideal weight)? The targets live only in the website's code today;

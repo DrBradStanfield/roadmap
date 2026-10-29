@@ -122,8 +122,8 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   WORKING localStorage. Audit shortcut: `grep -rn "localStorage\." widget-src
   --include=*.ts* | grep -v test` — anything outside lib/storage.ts and a
   try/catch is this class again. A scrub keeping only closed tags can still
-  carry the error NAME value-free (`cause`), but needs a CLASS beside it: 77 (10-25, 6M regrouped) read
-  `other`, ~7 refusals pooled. Upload `no_files` (6W): read product_events `upload_outcome` openFailed first.
+  carry the error NAME value-free (`cause`), but needs a CLASS beside it: 77 (6M regrouped) read `other`;
+  PR #288 (10-27, AC28) adds `causeClass` + dedupes per wrapped name; its first event (10-28) read other: a closed list's catch-all must hold only shapes no code path makes, so PR #295 (AC29) names StorageError (after-write), DOMException, Error; other = thrown non-Error. Upload `no_files` (6W): read product_events `upload_outcome` openFailed first.
 - `[class][widget]` 2026-10-02 — Bundled DEPENDENCIES escape our ES2020 floor:
   tsc checks our source only, and pdfjs-dist 4.9 ships 41 bare
   `Promise.withResolvers` calls (ES2024) in health-upload.js, so every PDF fails
@@ -154,10 +154,12 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   misuse, not a dead key (bit again 10-15). Funnel column: `event_name`. Reads
   product_events, ab_events, feedback, chat_* and reminder_optin_v2 (emails):
   counts and event names only into a public report, never rows.
-- `[gotcha][process]` 2026-08-14 — Clones are SHALLOW: `git log -S`/`--stat`
-  blame graft-boundary commits (whole-tree adds); `git fetch --deepen=400`.
-  Live-bundle proof without CDN access: the event's debug-meta debug id,
-  grepped in committed `assets/` (10-02: edu-96 = 73291a90).
+- `[gotcha][process]` 2026-08-14 — Clones are SHALLOW: `git log -S` blames graft-boundary
+  commits; `git fetch --deepen=400`. Live-bundle proof: the event's debug id, grepped in
+  committed `assets/` (10-02: edu-96 = 73291a90).
+- `[gotcha][server]` 2026-10-29 — Server events inherit background crumbs from the default scope
+  (a 15:44Z burst sat in two 16:00Z turns). Cut at the request's own first call; after it the
+  count names the path (75: 3 calls = trigger-race lockout, Supabase Auth sets app_metadata post-INSERT).
 - `[class][server]` 2026-09-10 — Shopify's `appProxy` rejects an unsigned
   request by THROWING a 400 Response, and react-router returns a thrown
   Response as-is without `handleError`, so a route catch-all that captures it
@@ -172,10 +174,8 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   product-health key) never failed in 25 probes while the failing paths use
   the service key — with new-format `sb_*` keys the gateway mints a
   per-request JWT whose iat can outrun the project's PostgREST clock, so
-  intermittent PGRST303 is platform-side: check the key format before hunting
-  our code (confirmed again 2026-08-28, escalated to ~40% of half-hourly bot ticks; deploys
-  regroup the continuing fault under NEW Sentry issue ids — check the ledger
-  for the class before triaging an id as new). The defect class it exposed,
+  intermittent PGRST303 is platform-side: check the key format before our code
+  (08-28; deploys regroup it under NEW ids: check the ledger). The defect class it exposed,
   now fixed twice (PR #30/US-27 caps; PR #35/US-28 cron locks): a "handled"
   degradation value (0 / empty map / false) feeding a SAFETY or SCHEDULING
   decision is fail-open — such reads must fail distinguishably (throw), never

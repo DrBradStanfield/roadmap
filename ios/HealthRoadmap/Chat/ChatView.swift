@@ -18,6 +18,9 @@ struct ChatView: View {
     @State private var sending = false
     @State private var error: String?
     @State private var showingHistory = false
+    /// The question box. Sending, dragging or tapping the conversation lowers the keyboard,
+    /// so the tab bar under it is back (US-52 AC6c).
+    @FocusState private var asking: Bool
 
     var body: some View {
         NavigationStack {
@@ -90,11 +93,20 @@ struct ChatView: View {
                         }
                         ForEach(lines) { ChatBubble(line: $0) }
                         if let status { Label(status, systemImage: "ellipsis").foregroundStyle(.secondary).font(.footnote) }
-                        if let error { Text(error).foregroundStyle(.red).font(.footnote) }
+                        if let error {
+                            Text(error).foregroundStyle(.red).font(.footnote)
+                            #if DEBUG
+                                // ChatDemoFilmUITests: a failed or cut-off answer is never filmed as finished.
+                                .accessibilityIdentifier("chat.error")
+                            #endif
+                        }
                         Color.clear.frame(height: 1).id("end")
                     }
                     .padding()
                 }
+                .scrollDismissesKeyboard(.interactively)
+                // Alongside, never instead of, the starters' and bubbles' own taps.
+                .simultaneousGesture(TapGesture().onEnded { asking = false })
                 .onChange(of: lines) { proxy.scrollTo("end", anchor: .bottom) }
             }
             Divider()
@@ -103,6 +115,7 @@ struct ChatView: View {
                     .analyticsMasked()
                     .lineLimit(1...5)
                     .textFieldStyle(.roundedBorder)
+                    .focused($asking)
                 Button {
                     Task { await send() }
                 } label: {
@@ -169,6 +182,7 @@ struct ChatView: View {
         let erasures = store.erasures
         let askedAt = ChatHistoryStore.erasures
         draft = ""
+        asking = false
         error = nil
         sending = true
         defer { sending = false; status = nil }

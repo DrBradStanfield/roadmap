@@ -637,11 +637,14 @@ export class RecordSession {
       // Only the device tier names its refusal (6M): a cloud failure's cause
       // is the transport, which the host's report already classifies. A device
       // refuses every retry the same way, and each hide retries a refused
-      // save, so each kind of refusal is reported once per session.
+      // save, so each kind of refusal is reported once per session. The kind
+      // includes what the error wrapped: `other` pools refusals the browser
+      // did not name, and the host tells them apart by it (US-09 AC28).
       const cause = this.host.tier === 'device' ? this.host.failureCause(error) : undefined;
       let repeat = false;
       if (cause) {
-        const kind = `${error instanceof Error ? error.name : ''}/${cause}`;
+        const wrapped = error instanceof Error ? (error as { cause?: unknown }).cause : undefined;
+        const kind = `${error instanceof Error ? error.name : ''}/${cause}/${wrapped instanceof Error ? wrapped.name : ''}`;
         repeat = this.refusalsReported.has(kind);
         this.refusalsReported.add(kind);
       }

@@ -160,8 +160,22 @@ declares the three rows below; declare them as written.
 5. Deploy the server routes for chat and lab upload and run their SQL migration (see
    ios/architecture.md D8).
 6. Screenshots: App Store Connect's iPhone slot (2026-10-26) takes 6.3-inch, 1206 × 2622 (it refused 6.9-inch), at least three. `ios/scripts/app-store-shots.sh`
-   takes five into `ios/build/app-store-shots/`: My data, My plan, a card opened, the
-   weight page and Chat, from the fictional sample record. Rerun it after a UI change.
+   captures the simulator screens from the fictional sample record (with a few extra
+   fictional values) and frames six captioned screenshots into
+   `ios/build/app-store-assets/screenshots/` (`app-store-compose.swift`). Slot 5 (Chat)
+   and slot 2 (check each value) are drop-ins (`app-store-drop-in.swift`): Chat from an
+   iPhone recording in the DEBUG `--demo-record` mode, slot 2 from the video's simulator
+   footage. Before filming, install a Debug build and seed the demo record: write the
+   screenshots' record (the sample plus the extra values in `app-store-shots.sh`) to a
+   file, then `xcrun devicectl device copy to --device <id> --domain-type appDataContainer
+   --domain-identifier com.drstanfield.healthroadmap --source <file> --destination
+   "Library/Application Support/Demo/health-roadmap.json"`, and check My data shows
+   weight 68.5 kg and ApoB 1.02 before you record. Without a seed the demo starts empty.
+   Launch the iPhone demo with `--ui-testing` too, so analytics stay off:
+   `xcrun devicectl device process launch --device <id> --terminate-existing com.drstanfield.healthroadmap --demo-record --ui-testing`.
+   `ios/scripts/app-store-video.sh` records and edits the app video and the
+   product-page header (`app-store-video-compose.swift`); its lab read goes through a
+   local reader (`app-store-video-lab-server.mts`). Rerun both after a UI change.
 7. Archive in Xcode, upload, TestFlight, then submit.
 8. Get advice on whether the app counts as a medical device in each market
    (ios/architecture.md, Open questions). Apple asks medical apps for regulatory

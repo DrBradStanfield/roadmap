@@ -12,7 +12,7 @@ final class ReviewPrompt {
     private static let daysKey = "review.daysWithSaves"
     private static let askedKey = "review.askedVersion"
 
-    init(defaults: UserDefaults = .standard, version: String = Bundle.main.appVersion) {
+    init(defaults: UserDefaults = .app, version: String = Bundle.main.appVersion) {
         self.defaults = defaults
         self.version = version
     }
