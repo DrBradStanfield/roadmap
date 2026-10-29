@@ -10,7 +10,9 @@ import {
   EMPTY_CHAT_CONTEXT,
   MAX_MESSAGE_LENGTH,
   loadMatchedArticlesFromHandles,
+  FALLBACK_RESPONSE,
 } from './chat.server';
+import { REFUSAL_RESPONSES } from '../../packages/health-core/src/models';
 import { chatContextOf, MINOR_CHAT_RULE, NO_PLAN_CHAT_RULE } from '../../packages/health-core/src/chat-context';
 import { MAX_HISTORY_TURN_CHARS } from '../../packages/health-core/src/chat-history';
 import { CHAT_EDIT_TOOLS, EDITABLE_FIELDS } from '../../packages/health-core/src/chat-edits';
@@ -65,6 +67,49 @@ describe('buildConversationMessages', () => {
     expect(result[result.length - 1].content).toBe('New question');
     // Should have fewer messages than the full history
     expect(result.length).toBeLessThan(history.length + 1);
+  });
+});
+
+describe('US-15 AC42: an error line is never replayed to the model as its own answer', () => {
+  const asked = { role: 'user' as const, content: 'Is creatine bad for kidneys?' };
+
+  it.each([
+    ['the fallback line', FALLBACK_RESPONSE],
+    ['the clinical refusal line', REFUSAL_RESPONSES.clinical],
+    ['the request refusal line', REFUSAL_RESPONSES.request],
+  ])('drops %s from the history and keeps the question it followed', (_name, line) => {
+    const result = buildConversationMessages([asked, { role: 'assistant', content: line }], 'try again');
+    expect(result).toEqual([asked, { role: 'user', content: 'try again' }]);
+  });
+
+  it('drops a stored row flagged as a fallback or a refusal, whatever its wording', () => {
+    const result = buildConversationMessages(
+      [
+        asked,
+        { role: 'assistant', content: 'Older wording of the apology.', is_fallback: true },
+        { role: 'user', content: 'again?' },
+        { role: 'assistant', content: 'Older wording of the refusal.', failure_mode: 'refusal' },
+      ],
+      'last try',
+    );
+    expect(result.map((m) => m.content)).toEqual([asked.content, 'again?', 'last try']);
+  });
+
+  it('keeps a real answer, including one that quotes the apology, and a null or false flag', () => {
+    const real = { role: 'assistant' as const, content: 'Creatine is generally safe in healthy kidneys.', is_fallback: false, failure_mode: null };
+    const quoting = { role: 'assistant' as const, content: `You may see "${FALLBACK_RESPONSE}" when the service is down.` };
+    expect(buildConversationMessages([asked, real, { role: 'user', content: 'and the apology?' }, quoting], 'ok')).toEqual([
+      asked,
+      { role: 'assistant', content: real.content },
+      { role: 'user', content: 'and the apology?' },
+      { role: 'assistant', content: quoting.content },
+      { role: 'user', content: 'ok' },
+    ]);
+  });
+
+  it('sends the model only role and content', () => {
+    const result = buildConversationMessages([asked, { role: 'assistant', content: 'Fine.', is_fallback: false }], 'next');
+    for (const m of result) expect(Object.keys(m).sort()).toEqual(['content', 'role']);
   });
 });
 

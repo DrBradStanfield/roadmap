@@ -15,7 +15,7 @@ import { buildChatContextJson } from '../../packages/health-core/src/chat-contex
 import { toolOnlyAck, type ProposedEdit } from '../../packages/health-core/src/chat-edits';
 import { chatToolsFor, withRoadmapRound, type ChatTurnMessage, type RoadmapRoundCounts, type ToolResultFor } from '../../packages/health-core/src/run-roadmap';
 import { callAnthropicWithUsage, streamAnthropicWithUsage, isNetworkOrTimeoutError, type AnthropicStreamEvent, type AnthropicUsage } from './anthropic.server';
-import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, PROMPT_CACHE, modelParams, refusalLine, type RefusalCategory } from '../../packages/health-core/src/models';
+import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, PROMPT_CACHE, REFUSAL_RESPONSES, modelParams, refusalLine, type RefusalCategory } from '../../packages/health-core/src/models';
 import { cutText } from '../../packages/health-core/src/chat-history';
 import { PRODUCTS_BLOCK_FILES, productsBlockText } from './chat-products-block';
 import { PROPOSE_SUBSCRIPTION_CHANGE_TOOL, parseSubscriptionProposal, type SubscriptionProposal } from './subscription-gateway.server';
@@ -369,10 +369,16 @@ function estimateTokens(text: string): number {
 }
 
 export function buildConversationMessages(
-  history: Array<{ role: 'user' | 'assistant'; content: string }>,
+  rows: Array<{ role: 'user' | 'assistant'; content: string; is_fallback?: boolean | null; failure_mode?: string | null }>,
   newMessage: string,
 ): Array<{ role: 'user' | 'assistant'; content: string }> {
   const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+
+  // An error line is the server's words, not the model's answer (US-15 AC42):
+  // drop it by its stored flag or by the exact line, keep the question it followed.
+  const history = rows.filter((m) => !(m.role === 'assistant' && (
+    m.is_fallback === true || m.failure_mode === 'refusal'
+    || m.content === FALLBACK_RESPONSE || m.content === REFUSAL_RESPONSES.clinical || m.content === REFUSAL_RESPONSES.request)));
 
   // History rows come straight from chat_messages and carry extra columns
   // (created_at, is_fallback). The Anthropic Messages API strict-validates
