@@ -40,19 +40,28 @@ export function verdict(c: Candidate): Verdict {
   return c.proofTaken ? 'customer_taken' : 'link';
 }
 
+/** Every id the pager yields, page after page, until a short page. */
+export async function allPages(page: (from: number, to: number) => Promise<string[]>, size = 500): Promise<string[]> {
+  const ids: string[] = [];
+  for (let from = 0; ; from += size) {
+    const batch = await page(from, from + size - 1);
+    ids.push(...batch);
+    if (batch.length < size) return ids;
+  }
+}
+
 async function main(execute: boolean): Promise<void> {
   const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_KEY;
   if (!url || !key) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_KEY are required');
   const db = createClient(url, key, { auth: { persistSession: false } });
 
-  const ids: string[] = [];
-  for (let from = 0; ; from += 500) {
-    const { data: page, error } = await db.from('profiles').select('id')
-      .is('shopify_customer_id', null).gte('created_at', '2026-10-21').order('id').range(from, from + 499);
+  // Not audit rows: a refusal that failed before its audit row still leaves an orphan.
+  const ids = await allPages(async (from, to) => {
+    const { data, error } = await db.from('profiles').select('id')
+      .is('shopify_customer_id', null).gte('created_at', '2026-10-21').order('id').range(from, to);
     if (error) throw new Error('Profile scan failed');
-    ids.push(...(page ?? []).map((r) => r.id as string));
-    if ((page ?? []).length < 500) break;
-  }
+    return (data ?? []).map((r) => r.id as string);
+  });
 
   const counts: Record<Verdict | 'linked' | 'write_failed', number> =
     { link: 0, already_linked: 0, no_profile: 0, no_proof: 0, customer_taken: 0, linked: 0, write_failed: 0 };
