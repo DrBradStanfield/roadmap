@@ -10,11 +10,11 @@
  *
  * why: mcp-architecture.md §7
  */
-import { mergeFiles } from './merge';
+import { fieldsBehind, mergeFiles, rowRootIds } from './merge';
 import { isObject, migrateFile, RecordShapeError } from './migrate';
 import type { RoadmapFile } from './roadmap-file';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
-import { SyncManager, type DocumentSpec } from './sync-manager';
+import { SyncManager, type DocumentSpec, type SyncContext } from './sync-manager';
 
 /** The arrays a record keeps its rows in. Junk in any of them migrates to a
  *  blank record, so a write would replace real values with an empty file. */
@@ -41,12 +41,14 @@ function assertRecordShape(raw: unknown): void {
   }
 }
 
+function migrateRecord(raw: unknown, ctx: SyncContext): RoadmapFile {
+  assertRecordShape(raw);
+  return migrateFile(raw as RoadmapFile | null, ctx);
+}
+
 export const ROADMAP_DOC: DocumentSpec<RoadmapFile> = {
   fileName: ROADMAP_FILE_NAME,
-  migrate: (raw, ctx) => {
-    assertRecordShape(raw);
-    return migrateFile(raw as RoadmapFile | null, ctx);
-  },
+  migrate: migrateRecord,
   merge: (local, base, ctx) => mergeFiles(local, base, ctx),
   // The append-only, id-carrying arrays: rows here are never removed or
   // rewritten, so their ids are exactly what a write can be checked against
@@ -56,6 +58,20 @@ export const ROADMAP_DOC: DocumentSpec<RoadmapFile> = {
     ...file.measurements, ...file.labValues, ...file.documents,
     ...file.medicationHistory, ...file.supplementHistory,
   ].map((row) => row.id),
+  // An erase and a profile or screening edit add no row, so `rowIds` cannot
+  // see another writer replace them (US-10 AC6a, US-11 AC7). Compared after
+  // the same migration the re-read went through, so its clock clamps match.
+  lostWrite: (expected, parsed, ctx) => {
+    const ours = migrateRecord(expected, ctx);
+    const [epoch, stored] = [ours.meta.eraseEpoch ?? 0, parsed.meta.eraseEpoch ?? 0];
+    if (stored < epoch) return 'the erase this save wrote';
+    const listed = new Set(ours.erasedRows?.ids);
+    if (rowRootIds(parsed).some((id) => listed.has(id))) return 'a row this save erased';
+    // Past a newer erase this reports our fields too, and the retry takes the
+    // erase in: mergeFiles lets the higher epoch decide them.
+    const behind = fieldsBehind(ours.profile, parsed.profile).length + fieldsBehind(ours.screenings, parsed.screenings).length;
+    return behind > 0 ? `${behind} profile or screening field(s) this save wrote` : null;
+  },
 };
 
 /** The one write path over the user's record, whichever adapter holds it. */

@@ -538,7 +538,7 @@ export async function writeDriveRecord(token: string, body: object, expected: st
     const persisted = await driveDownloadJson(token, id, signal);
     signal?.throwIfAborted();
     if (persisted === null) throw new LostUpdateError(`${PROVIDER} canonical record missing after write`);
-    verifyPersistedFile(ROADMAP_DOC, intended, ROADMAP_DOC.migrate(persisted, context));
+    verifyPersistedFile(ROADMAP_DOC, intended, ROADMAP_DOC.migrate(persisted, context), context);
   } catch (error) {
     if (error instanceof LostUpdateError) throw error;
     throw uncertain(`${PROVIDER} canonical record verification failed.`, error);
