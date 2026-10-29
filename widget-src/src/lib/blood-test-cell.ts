@@ -101,10 +101,36 @@ function closeTo(a: number, b: number): boolean {
   return Math.abs(a - b) <= 1e-9 * Math.max(Math.abs(a), Math.abs(b));
 }
 
+/** Numeric cells accept unsigned plain decimals, not signs or exponent syntax.
+ * Keep this UI contract separate from the shared record/clinical parser. */
+export const NUMERIC_SYNTAX_GUIDANCE = 'Type one decimal number, without signs, < > or spaces';
+
+export function hasNumericSyntax(text: string): boolean {
+  return /^[0-9.,]+$/.test(text);
+}
+
+/** Free-form rows have no metric range for resolving grouped commas. */
+export function readNumericCell(text: string): number | undefined {
+  return hasNumericSyntax(text) ? parseLocalisedNumber(text) : undefined;
+}
+
+/** Strip decorations only around a single numeric token (US-02 AC4).
+ * Keep ambiguous text so validation and every save caller can refuse it. */
+export function numericCellText(text: string): string {
+  // Text inputs remove line breaks. Keep a visible separator in state too,
+  // so DOM selection offsets and replacement pastes address the same text.
+  text = text.replace(/\r\n|[\r\n]/g, ' ');
+  // Any sign, dash, comparison, superscript or non-ASCII digit (fullwidth
+  // '－5', '＜5', '10³') is kept for refusal, never stripped to a new number.
+  if (/[\t\p{Sm}\p{Pd}\p{No}]|(?![0-9])\p{Nd}/u.test(text) || /[0-9.,][eE]/.test(text)) return text;
+  const token = text.match(/^[^0-9.,]*([0-9.,]+)[^0-9.,]*$/);
+  return token ? token[1] : /[0-9.,]/.test(text) ? text : '';
+}
+
 /** A typed number in the unit it was typed in: "1,234" is the one reading
  *  inside the metric's input range there, else undefined (US-02 AC7). */
 export function readTypedValue(metric: MetricType, typed: string, display: CellUnit): number | undefined {
-  return parseLocalisedNumber(typed, cellRange(metric, display));
+  return hasNumericSyntax(typed) ? parseLocalisedNumber(typed, cellRange(metric, display)) : undefined;
 }
 
 /** Validate a typed display-unit value against the metric's range. */
@@ -115,7 +141,8 @@ export function validateTypedValue(
 ): { error: string | null; range: { min: number; max: number } } {
   const range = cellRange(metric, display);
   if (typed === '') return { error: null, range };
-  const n = parseLocalisedNumber(typed, range);
+  if (!hasNumericSyntax(typed)) return { error: NUMERIC_SYNTAX_GUIDANCE, range };
+  const n = readTypedValue(metric, typed, display);
   if (n === undefined) return { error: commaQuestion(typed) ?? 'Enter a number', range };
   // Include the display unit in min/max errors so a user who typed (e.g.)
   // a mg/dL number into an mmol/L field can see the unit mismatch instead

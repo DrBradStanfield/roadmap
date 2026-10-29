@@ -6,7 +6,6 @@ import {
   METRIC_LABELS,
   METRIC_TO_FIELD,
   commaQuestion,
-  parseLocalisedNumber,
   BLOOD_TEST_METRICS,
   VITAL_METRICS,
   hasUnitChoice,
@@ -29,7 +28,7 @@ import { pendingRowsFor, type RefusedLabValue } from '@roadmap/health-core';
 import { labUnitRefusalLine, labValueLabel } from '../lib/lab-value-labels';
 import { unarchivedOriginals } from '../lib/archive-payloads';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
-import { type CellUnit, type Grading, cellHint, cellLabel, cellText, cellToSI, readTypedValue, validateTypedValue } from '../lib/blood-test-cell';
+import { type CellUnit, type Grading, cellHint, cellLabel, cellText, cellToSI, hasNumericSyntax, NUMERIC_SYNTAX_GUIDANCE, readNumericCell, readTypedValue, validateTypedValue } from '../lib/blood-test-cell';
 import { useLpaUnit } from '../lib/lpa-unit';
 import { NumericInputCell } from './NumericInputCell';
 import { DraftDateCell } from './DraftDateCell';
@@ -809,20 +808,22 @@ export function ReviewTable({
    *  124.9 nmol/L shows "50.0" mg/dL → 125); once edited, the typed number in the
    *  unit it was typed in, so a toggle after typing never misconverts it. */
   const savedValue = (cell: EditableMatrixCell, editedStr: string): number | undefined => {
+    if (!isEditedText(cell, editedStr)) return cell.valueSI;
     const metric = metricOf(cell);
     const typedIn = metric && UNIT_DEFS[metric] ? touchedRef.current.get(editId(cell))?.display ?? units[metric] ?? unitSystem : undefined;
-    const parsed = metric && typedIn ? readTypedValue(metric, editedStr, typedIn) : parseLocalisedNumber(editedStr);
+    const parsed = metric && typedIn ? readTypedValue(metric, editedStr, typedIn) : readNumericCell(editedStr);
     if (parsed === undefined) return undefined;
-    if (!isEditedText(cell, editedStr)) return cell.valueSI;
     return metric && typedIn ? cellToSI(metric, parsed, typedIn) : parsed;
   };
 
   // Validate the quantity we save, not a rounded rendering after a unit switch.
-  // A lab row has no range, so only an ambiguous comma is an error (US-13 AC12).
+  // Untouched extraction is canonical; edited text uses the same reader as Save.
   const cellError = (cell: EditableMatrixCell, text: string): string | null => {
     const metric = metricOf(cell);
     if (!text) return null;
-    if (!metric || !UNIT_DEFS[metric]) return commaQuestion(text);
+    if (isEditedText(cell, text) && !hasNumericSyntax(text)) return NUMERIC_SYNTAX_GUIDANCE;
+    if (!metric || !UNIT_DEFS[metric]) return !isEditedText(cell, text) ? null
+      : commaQuestion(text) ?? (readNumericCell(text) === undefined ? 'Enter a number' : null);
     if (isEditedText(cell, text)) {
       return validateTypedValue(metric, text, touchedRef.current.get(editId(cell))?.display ?? units[metric] ?? unitSystem).error;
     }
@@ -899,8 +900,11 @@ export function ReviewTable({
     for (const cell of matrix.cells.values()) {
       if (cell.state !== 'editable') continue;
       const metric = metricOf(cell);
-      if (!metric) continue;
       const text = (editedDisplayValues[editId(cell)] ?? cell.initialDisplay).trim();
+      if (!metric) {
+        views.set(editId(cell), { valueSI: savedValue(cell, text), error: cellError(cell, text), text });
+        continue;
+      }
       const valueSI = savedValue(cell, text);
       const shownIn = units[metric] ?? unitSystem;
       const typedIn = touchedRef.current.get(editId(cell))?.display ?? shownIn;
@@ -1518,7 +1522,7 @@ const MatrixCellView = memo(function MatrixCellView({
     // A row past its test's ceiling says the line Save would refuse it with,
     // never the impossible number (US-21 AC21).
     const entry = resolveLabCatalogEntry(cell.lab.name);
-    const typed = entry ? parseLocalisedNumber(editedValue) : undefined;
+    const typed = entry ? readNumericCell(editedValue) : undefined;
     const printed = typed === undefined ? null
       : { value: typed, unit: cell.lab.unit, referenceLow: cell.referenceLow, referenceHigh: cell.referenceHigh };
     const row = entry && printed ? canonicalLabRow(entry, printed) : null;
@@ -1545,6 +1549,7 @@ const MatrixCellView = memo(function MatrixCellView({
   ) : (
     <NumericInputCell
       value={editedValue}
+      validationResult={validationError}
       onChange={handleChange}
       wrapperClass="bt-cell-input bt-cell-review"
       ariaLabel={label}

@@ -41,6 +41,45 @@ const connectorRow: ApiDocument = {
   createdAt: '2024-06-02T00:00:00.000Z', fileRef: null, contentHash: HASH,
 };
 
+// US-02 AC4 / US-13: a selected malformed upload cell cannot be saved.
+describe('ReviewTable — malformed numeric text', () => {
+  it('US-02 AC4: preserves an untouched negative extraction while saving the rest of the review', () => {
+    const file: FileResult = { fileName: 'synthetic.pdf', reportDate: '2025-01-10',
+      values: [{ metric: 'ldl', valueSI: 3.2, displayValue: 3.2, displayUnit: 'mmol/L', confidence: 'high' }],
+      additionalValues: [{ name: 'Base excess', value: -2, unit: 'mmol/L' }] };
+    const { container, button, onSave } = renderReview([], [file], []);
+    const input = container.querySelector<HTMLInputElement>('input[value="-2"]')!;
+    expect(input.getAttribute('aria-invalid')).toBe('false');
+    expect(button.disabled).toBe(false);
+    fireEvent.click(button);
+    expect(onSave.mock.calls[0][0].labValues).toEqual([expect.objectContaining({ value: -2 })]);
+    expect(onSave.mock.calls[0][0].values).toEqual([expect.objectContaining({ valueSI: 3.2 })]);
+    fireEvent.change(input, { target: { value: '-3' } });
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(button.disabled).toBe(true);
+    fireEvent.change(input, { target: { value: '2,5' } });
+    expect(button.disabled).toBe(false);
+    fireEvent.click(button);
+    expect(onSave.mock.calls.at(-1)![0].labValues).toEqual([expect.objectContaining({ value: 2.5 })]);
+  });
+
+  it.each(['-5', '+5', '1e1', '1\t2'])('refuses additional lab text %j, then accepts a decimal-comma correction', text => {
+    const file: FileResult = { fileName: 'labs.pdf', reportDate: '2025-01-10', values: [],
+      additionalValues: [{ name: 'Vitamin D', value: 50, unit: 'ng/mL' }] };
+    const { container, button, onSave } = renderReview([], [file], []);
+    const input = container.querySelector<HTMLInputElement>('.bt-cell-review input')!;
+    fireEvent.change(input, { target: { value: text } });
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(button.disabled).toBe(true);
+    fireEvent.click(button);
+    expect(onSave).not.toHaveBeenCalled();
+    fireEvent.change(input, { target: { value: '5,2 ng/mL' } });
+    expect(button.disabled).toBe(false);
+    fireEvent.click(button);
+    expect(onSave.mock.calls[0][0].labValues).toEqual([expect.objectContaining({ value: 5.2 })]);
+  });
+});
+
 const LETTER_HASH = 'sha256-letter';
 const letterResults: FileResult[] = [{
   fileName: 'clinic-letter.pdf',

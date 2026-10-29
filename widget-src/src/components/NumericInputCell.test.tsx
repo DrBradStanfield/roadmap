@@ -1,9 +1,77 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, render } from '@testing-library/react';
+import { cleanup, createEvent, fireEvent, render } from '@testing-library/react';
+import { useState } from 'react';
 import { NumericInputCell } from './NumericInputCell';
 
 afterEach(cleanup);
+
+// US-02 AC4: strip safe decorations, never join separate numeric tokens.
+describe('NumericInputCell pasted syntax', () => {
+  function cell(canonical = false) {
+    function Cell() {
+      const [value, setValue] = useState('');
+      return <NumericInputCell value={value} onChange={setValue} wrapperClass="test-cell"
+        validationResult={canonical ? null : undefined} />;
+    }
+    return render(<Cell />);
+  }
+
+  it.each(['-5', '+5', '−5', '1e1', '1E+1', '1\t2', '1 2', '1/2', '<5', '≤5', '≥5', '±5', '1.2.3', '－5', '＋5', '＜5', '＞5', '10³', '⁻5', '1５'])('keeps %j invalid, including free-form lab rows', text => {
+    const view = cell();
+    const input = view.getByRole('textbox') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: text } });
+    expect(input.value).toBe(text);
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(view.getByText(text === '1.2.3' ? 'Enter a number' : 'Type one decimal number, without signs, < > or spaces')).toBeTruthy();
+    fireEvent.change(input, { target: { value: '5,2' } });
+    expect(input.getAttribute('aria-invalid')).toBe('false');
+  });
+
+  it.each([['5,2', '5,2'], [' 5.2 % ', '5.2'], ['5.2 mg/dL', '5.2'], ['(5.2)', '5.2'], ['abc', '']])('keeps safe paste %j as %j', (text, expected) => {
+    const input = cell().getByRole('textbox') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: text } });
+    expect(input.value).toBe(expected);
+    expect(input.getAttribute('aria-invalid')).toBe('false');
+  });
+
+  it('refuses spreadsheet lines before a single-line input can remove the separator', () => {
+    const view = cell();
+    const input = view.getByRole('textbox') as HTMLInputElement;
+    fireEvent.paste(input, { clipboardData: { getData: () => '1\n2' } });
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(view.getByText('Type one decimal number, without signs, < > or spaces')).toBeTruthy();
+  });
+
+  it.each(['1\n2', '1\r\n2', '1\r2'])('US-02 AC4: select-all corrects bad paste %j without a leftover digit', text => {
+    const input = cell().getByRole('textbox') as HTMLInputElement;
+    fireEvent.paste(input, { clipboardData: { getData: () => text } });
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    input.select();
+    fireEvent.paste(input, { clipboardData: { getData: () => '5.2' } });
+    expect(input.value).toBe('5.2');
+    expect(input.getAttribute('aria-invalid')).toBe('false');
+  });
+  it.each(['<0.5', '1 234'])('US-02 AC4: explains how to correct %j', text => {
+    const view = cell();
+    const input = view.getByRole('textbox');
+    fireEvent.change(input, { target: { value: text } });
+    expect(view.getByRole('textbox', { description: 'Type one decimal number, without signs, < > or spaces' })).toBe(input);
+  });
+
+  it.each(['1\n2', '1\r\n2', '1\t2'])('US-02 AC4: intercepts dropped spreadsheet text %j before the browser joins digits', text => {
+    const input = cell().getByRole('textbox') as HTMLInputElement;
+    const event = createEvent.drop(input, { dataTransfer: { getData: () => text } });
+    fireEvent(input, event);
+    expect(event.defaultPrevented).toBe(true);
+    expect(input.value).toBe(text.replace(/\r\n|[\r\n]/g, ' '));
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    input.select();
+    fireEvent.drop(input, { dataTransfer: { getData: () => '5,2 %' } });
+    expect(input.value).toBe('5,2');
+    expect(input.getAttribute('aria-invalid')).toBe('false');
+  });
+});
 
 // US-02 AC5 / US-13 AC5: only review's canonical result may replace local
 // display validation. Existing save-error callers keep null-as-fallback.

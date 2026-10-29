@@ -36,11 +36,13 @@ describe('validateTypedValue — error text includes the display unit', () => {
     expect(error).toMatch(/mmol\/L/);
   });
 
-  it('HbA1c below min includes "mmol/mol"', () => {
-    const { error } = validateTypedValue('hba1c', '-1', 'si');
-    // -1 won't parse via parseLocalisedNumber, so this exercises the
-    // "Enter a number" branch which doesn't need a unit. Use 0 instead.
-    expect(error === null || /mmol\/mol/.test(error)).toBe(true);
+  it('creatinine below min includes "µmol/L"', () => {
+    expect(validateTypedValue('creatinine', '5', 'si').error).toBe('Min 10 µmol/L');
+  });
+
+  it('US-02 AC4: a sign gets syntax guidance before a range error', () => {
+    expect(validateTypedValue('hba1c', '-1', 'si').error)
+      .toBe('Type one decimal number, without signs, < > or spaces');
   });
 
   it('valid in-range value returns no error', () => {
