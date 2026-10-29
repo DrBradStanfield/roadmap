@@ -190,7 +190,16 @@ export async function getOrCreateSupabaseUser(
     .from('profiles').select('id, shopify_customer_id').eq('id', userId).maybeSingle();
   if (candidateError) throw new Error('Profile identity lookup failed');
   if (candidateProfile && candidateProfile.shopify_customer_id !== shopifyCustomerId) {
-    return refuseUnprovenLink(userId);
+    // Supabase Auth inserts the user before it writes app_metadata, so the auth
+    // trigger files this new profile with no customer id (issue #309). Claim
+    // only that empty slot, and only on the admin-written proof.
+    if (candidateProfile.shopify_customer_id !== null || !(await hasLinkProof(userId, shopifyCustomerId))) {
+      return refuseUnprovenLink(userId);
+    }
+    const { error: claimError } = await supabaseAdmin.from('profiles')
+      .update({ shopify_customer_id: shopifyCustomerId })
+      .eq('id', userId).is('shopify_customer_id', null);
+    if (claimError) return refuseUnprovenLink(userId);
   }
 
   // Explicitly create profile row — this is the primary mechanism.
