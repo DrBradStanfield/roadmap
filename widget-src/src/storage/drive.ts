@@ -31,6 +31,7 @@ import {
   driveDownloadDocument,
   driveDownloadJson,
   driveEnsureSubfolder,
+  driveFileIsLive,
   driveFileVersion,
   driveFindFileId,
   driveFindFolder,
@@ -424,8 +425,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
       return result;
     }
     // Search first, oldest copy first, so every device reads the same copy of
-    // a duplicated file; the cached id only covers a search that lags a create.
-    const fileId = (await this.findFileId(fileName)) ?? this.cachedFileId(fileName);
+    // a duplicated file; the cached id only covers a search that lags a create,
+    // and only while it still names a live file (SE-6).
+    const fileId = (await this.findFileId(fileName)) ?? (await this.liveCachedFileId(fileName));
     if (!fileId) return { body: null, version: null };
     this.rememberFileId(fileName, fileId);
     // Version BEFORE bytes: a writer landing mid-download then conflicts at
@@ -446,7 +448,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
       return result;
     }
     const json = JSON.stringify(body);
-    const fileId = this.cachedFileId(fileName) ?? (await this.findFileId(fileName));
+    const fileId = (await this.liveCachedFileId(fileName)) ?? (await this.findFileId(fileName));
     if (fileId) {
       const version = await driveUpdateIfVersion(await this.getToken(), fileId, json, expectedVersion);
       this.rememberFileId(fileName, fileId);
@@ -459,7 +461,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     // into a decision, so never silently re-create it here.
     if (expectedVersion !== null) throw new ConflictError(`${this.label} no longer holds that file`);
     // First write — create the file (multipart: metadata + content).
-    const res = await driveCreateFile(await this.getToken(), fileName, 'application/json', json, await this.ensureFolderId());
+    const res = await driveCreateFile(await this.getToken(), fileName, 'application/json', json, await this.liveFolderId());
     if (!res.ok) throw new StorageError(`Google Drive create failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
     const created = await jsonBody<{ id?: string; version?: string }>(res);
     if (!created.id) throw new StorageError('Google Drive create returned no file id.');
@@ -552,6 +554,25 @@ export class GoogleDriveAdapter implements StorageAdapter {
     return this.stored?.fileIds?.[fileName];
   }
 
+  /** The cached id of a secondary file, if it still names a live file. Drive
+   *  serves a trashed file by id, and one deleted for good answers 404: either
+   *  way the id is forgotten, so the next save searches and, finding nothing,
+   *  creates the file again instead of writing into the trash or failing on
+   *  every save (SE-6). */
+  private async liveCachedFileId(fileName: string): Promise<string | undefined> {
+    const cached = this.cachedFileId(fileName);
+    if (!cached) return undefined;
+    if (await driveFileIsLive(await this.getToken(), cached, fileName)) return cached;
+    this.forgetFileId(fileName);
+    return undefined;
+  }
+
+  private forgetFileId(fileName: string): void {
+    const { [fileName]: _gone, ...rest } = this.stored?.fileIds ?? {};
+    this.stored = { ...(this.stored ?? {}), fileIds: rest };
+    setJson(CONFIG_KEY, this.stored);
+  }
+
   /** Cache the record's winner for the next page load. */
   private rememberRecord(): void {
     const [winner] = this.recordIds;
@@ -565,6 +586,20 @@ export class GoogleDriveAdapter implements StorageAdapter {
       fileIds: { ...(this.stored?.fileIds ?? {}), [fileName]: fileId },
     };
     setJson(CONFIG_KEY, this.stored);
+  }
+
+  /** The app folder for a new secondary file, checked live first. A file made
+   *  inside a trashed folder is itself trashed, so with a cached trashed
+   *  folder every save would make another file the next check forgets (SE-6).
+   *  A dead folder id is forgotten, with the subfolders under it and its
+   *  rename marker, and the folder is found or made again. */
+  private async liveFolderId(): Promise<string> {
+    const id = await this.ensureFolderId();
+    if (await driveFileIsLive(await this.getToken(), id)) return id;
+    const { folderId: _gone, subfolders: _under, folderName: _named, ...rest } = this.stored ?? {};
+    this.stored = rest;
+    setJson(CONFIG_KEY, this.stored);
+    return this.ensureFolderId();
   }
 
   /** Find-or-create the app folder; records its id (the "folder done" marker). */

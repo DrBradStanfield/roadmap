@@ -423,6 +423,7 @@ export {
   driveDownloadDocument,
   driveDownloadJson,
   driveEnsureSubfolder,
+  driveFileIsLive,
   driveFileVersion,
   driveFindFileId,
   driveFindFolder,
