@@ -63,12 +63,15 @@ const ACTIONS: Record<string, string> = {
   switched: 'Recorded switch to:',
 };
 
-/** A recorded time on a chart's axis, the same on the web and the iPhone: a day slot (a date, or
+/** A recorded time on a chart's axis, the same on the web and the iPhone (the web's value
+ *  points use it too, as `chartTimestamp`): a day slot (a date, or
  *  exactly midnight UTC) sits at the reader's local midnight, as the web's charts plot it; any other
  *  stamp is its instant, read by `stampInstant` so V8 and JavaScriptCore agree. */
 export function recordedTime(recordedAt: string): number {
+  const instant = stampInstant(recordedAt);
   const day = /^(\d{4})-(\d{2})-(\d{2})(?:[Tt]00:00:00(?:\.0+)?[Zz])?$/.exec(recordedAt);
-  if (!day) return stampInstant(recordedAt);
+  // A day the calendar lacks is no time, in either branch (re-check N1).
+  if (!day || !Number.isFinite(instant)) return instant;
   return new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3])).getTime();
 }
 

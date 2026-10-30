@@ -1,6 +1,7 @@
 /**
  * Shared UI constants for the health widget
  */
+import { recordedTime } from '@roadmap/health-core';
 
 // Month arrays for date pickers
 export const MONTHS_FULL = [
@@ -89,7 +90,6 @@ export function formatShortDate(date: string | Date | number): string {
  * moment and is plotted unchanged.
  */
 export function chartTimestamp(date: string): number {
-  const day = /^(\d{4})-(\d{2})-(\d{2})(?:T00:00:00(?:\.000)?Z)?$/.exec(date);
-  if (!day) return new Date(date).getTime();
-  return new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3])).getTime();
+  // health-core's rule, shared with the medication markers and the iPhone (US-25 AC9b re-check N2).
+  return recordedTime(date);
 }

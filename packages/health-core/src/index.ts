@@ -295,7 +295,7 @@ export { liftDeviceCopy, copyCloudDown } from './record-transfer';
 export { ChatSession, type ChatConversationSummary } from './chat-session';
 export { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertSupplement } from './state-edits';
 export { isTakingDrug } from './history-change';
-export { medicationAnnotations, medicationChanges, type ChartAnnotation, type MedicationChange } from './medication-annotations';
+export { recordedTime, medicationAnnotations, medicationChanges, type ChartAnnotation, type MedicationChange } from './medication-annotations';
 export { migrateFile, SchemaTooNewError, RecordShapeError } from './migrate';
 
 // v2 reminder schedule (client-computed; the server is a dumb scheduler — §10)

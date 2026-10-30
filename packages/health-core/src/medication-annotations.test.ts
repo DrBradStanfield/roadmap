@@ -76,6 +76,8 @@ describe('US-06 AC4: medication chart annotations', () => {
     expect(at('2026-09-01t10:00:00z')).toEqual([Date.UTC(2026, 8, 1, 10)]);
     expect(at('not a time')).toBeUndefined();
     expect(recordedTime('2026-02-30T10:00:00Z')).toBeNaN();
+    expect(recordedTime('2026-02-30')).toBeNaN();
+    expect(recordedTime('2026-13-01T00:00:00Z')).toBeNaN();
   });
 });
 
