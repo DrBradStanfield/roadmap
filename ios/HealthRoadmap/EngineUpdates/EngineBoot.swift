@@ -130,12 +130,13 @@ final class EngineTrial {
         self.bundled = bundled
     }
 
-    /// The engine drew and planned the user's record: it is proven.
+    /// The engine drew and planned the user's record: it is proven. Confirmed only once
+    /// the state is written, so a failed write is tried again at the next draw.
     func confirm() {
         guard !confirmed, var state = try? folder.readState(bundled: bundled) else { return }
-        confirmed = true
         if state.trying == version { state.trying = nil }
         if !state.proven.contains(version) { state.proven.append(version) }
-        try? folder.write(state)
+        guard (try? folder.write(state)) != nil else { return }
+        confirmed = true
     }
 }
