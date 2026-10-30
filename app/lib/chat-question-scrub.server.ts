@@ -30,7 +30,7 @@ Call the tool once with the question copied word for word, except replace:
 - an age number with [age] and its decade, in the same place ("I'm 47" becomes "I'm [age 40s]", "my 82 year old mother" becomes "my [age 80s] year old mother"); 90 and over becomes [age 90+]
 - email addresses, phone numbers, street addresses, web addresses and social handles with [contact]
 - order, account, record, policy, membership and similar numbers with [id]
-- employers, schools and job titles with [job]
+- employers and schools (their names) with [job]; a job title alone stays
 Keep everything else exactly as written: symptoms, conditions, medications, doses, lab values, units, products, spelling and punctuation. Add nothing. If nothing needs replacing, return the question unchanged.`;
 
 const TOOL = {
@@ -78,7 +78,7 @@ const DIGIT = /[\d#]/;
  * only its number; an id one token with 4 or more digits or letters and
  * digits mixed; a contact detail an email, a web address, a phone (a run of 7
  * or more digits) or a numbered street address; a date a month or a d/m
- * shape; a name or a place a capitalised word with no digit; a job no digit.
+ * shape; a name, a place or a job (an employer or school) a capitalised word with no digit.
  * Doubt is a skip: a question lost is safer than a question changed.
  */
 function covers(kind: string, span: string): boolean {
@@ -95,9 +95,7 @@ function covers(kind: string, span: string): boolean {
       return /@/.test(span) || /:\/\/|\bwww\./i.test(span) || /[\d#]{7,}/.test(span.replace(/[\s()+-]/g, '')) ||
         (/^[\d#]/.test(span) && STREET.test(span));
     case '[date]': return MONTH.test(span) || /^[\d#]{1,2}[/-][\d#]{1,2}$/.test(span);
-    case '[name]':
-    case '[place]': return /\p{Lu}/u.test(span) && !DIGIT.test(span);
-    default: return !DIGIT.test(span); // [job]
+    default: return /\p{Lu}/u.test(span) && !DIGIT.test(span); // [name], [place], [job]: proper nouns
   }
 }
 

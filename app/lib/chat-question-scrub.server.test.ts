@@ -73,6 +73,8 @@ describe('scrubQuestion — US-15 AC44 the model pass', () => {
     ['a lab value as an age', 'my LDL is 4.2, should I worry', 'my [age 40s], should I worry'],
     ['plain words as a name', 'is my ldl high', 'is my [name]'],
     ['a dose as a job', 'I take 500 mg metformin daily', 'I take [job] daily'],
+    ['a symptom as a job', 'I have chest pain and feel dizzy', 'I have [job] and feel dizzy'],
+    ['a dose and unit as an id', 'Should I take 1000 IU daily?', 'Should I take [id] daily?'],
     ['a clause as a place', 'Is warfarin ok in Auckland, unless my INR is high', 'Is warfarin ok in [place]'],
     ['"cannot" as a place', 'I cannot take statins in Auckland', 'I [place] take statins in [place]'],
     ['"without" as a place', 'I took it without food', 'I took it [place] food'],

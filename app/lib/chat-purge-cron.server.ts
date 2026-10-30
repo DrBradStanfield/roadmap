@@ -352,7 +352,8 @@ async function archiveQuestions({ questions, eligible }: Held): Promise<ArchiveC
     const live = await withTimeout(withLiveConversations(scrubbed), Math.max(left(), 1), 'archive conversation check');
     if (!live.length) return counts(0);
     const rows = shuffle(live.map(({ platform, week, question }) => ({ platform, week, question })));
-    const { error } = await withTimeout(supabaseAdmin!.from('chat_question_archive').insert(rows), Math.max(left(), 1), 'archive insert');
+    // No time limit on the insert: a write cut off by a timer can still commit, and the counts must say what landed.
+    const { error } = await supabaseAdmin!.from('chat_question_archive').insert(rows);
     if (error) {
       reportArchiveFailure('insert');
       return counts(0);

@@ -197,12 +197,13 @@ network tab recording and use the widget.
   because those turns are public comments on a video: the comments and replies
   in `chat_messages` and `youtube_bot_log` have no deletion date. Their
   `chat_match_events` text is blanked at 30 days, as on every platform.
-- Just before the purge blanks a health question from the widget's chat, the
-  bubble or the embed, it keeps a copy of that one question with no end date,
+- Once the question archive is switched on (it ships off; steps in
+  `docs/chat-question-archive/README.md`), just before the purge blanks a
+  health question from the widget's chat, the bubble or the embed, it keeps a copy of that one question with no end date,
   to improve the chatbot (US-15 AC44). An automatic step tries to remove
   names, places, dates (the year stays), exact ages (the decade stays),
-  contact details, account and order numbers, and employers, schools and
-  jobs; it can miss some. The copy keeps the health details, and we do not
+  contact details, account and order numbers, and the names of employers
+  and schools; it can miss some. The copy keeps the health details, and we do not
   link it to your account. Making it sends the question to Anthropic once more
   (their 30-day API retention applies). Store questions, replies, Discord,
   YouTube and bubble or embed conversations deleted within 30 days are never

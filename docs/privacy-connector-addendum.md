@@ -331,7 +331,8 @@ it, or anything from Discord or YouTube.
 
 Before we keep it, an automatic step tries to remove names, places, dates (the year
 stays), exact ages (the decade stays), contact details, account and order numbers, and
-employers, schools and jobs. It can miss some. The copy keeps the health details, and we
+the names of employers and
+schools. It can miss some. The copy keeps the health details, and we
 do not link it to your account. Making the copy sends the question to Anthropic once
 more, and their 30-day API retention, quoted above, applies. To have a copy deleted,
 email brad@drstanfield.com the wording and we will search for it.
