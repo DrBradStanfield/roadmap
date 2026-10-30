@@ -76,6 +76,30 @@ export interface ChatListResult {
   isGuest?: boolean;
 }
 
+/**
+ * The JSON `/api/chat` answers with (app/routes/api.chat.ts). The success
+ * fields are the server's contract. The guest session token is stored and
+ * sent back, so it is checked rather than trusted (US-15 AC6b).
+ */
+interface ChatReply {
+  success?: boolean;
+  error?: string;
+  isGuest?: boolean;
+  sessionToken?: unknown;
+  conversations: ChatConversation[];
+  conversationId: string;
+  messageId: string | null;
+  content: string;
+  isFallback?: boolean;
+  proposedEdits?: unknown;
+  subscriptionCard?: unknown;
+}
+
+/** A reply's guest session token, or undefined when it is not a non-empty string (US-15 AC6b). */
+function tokenOf(data: ChatReply | null): string | undefined {
+  return typeof data?.sessionToken === 'string' && data.sessionToken ? data.sessionToken : undefined;
+}
+
 export interface ChatError {
   error: string;
 }
@@ -229,15 +253,16 @@ export async function listConversations(): Promise<ChatListResult | null> {
       });
       return null;
     }
-    const result = await parseJsonResponse<any>(response);
+    const result = await parseJsonResponse<ChatReply>(response);
     if (!result?.success) return null;
 
     // Persist guest session token if returned
-    if (result.sessionToken) setGuestSessionToken(result.sessionToken);
+    const sessionToken = tokenOf(result);
+    if (sessionToken) setGuestSessionToken(sessionToken);
 
     return {
       conversations: result.conversations,
-      sessionToken: result.sessionToken,
+      sessionToken,
       isGuest: result.isGuest,
     };
   } catch (error) {
@@ -251,9 +276,10 @@ export async function listConversations(): Promise<ChatListResult | null> {
  * A guest's 404 for a thread it no longer owns (US-15 AC6a): its IP changed,
  * so it is a new guest. Keep the session the server handed back.
  */
-function guestThreadGone(status: number, data: any): boolean {
+function guestThreadGone(status: number, data: ChatReply | null): boolean {
   if (status !== 404 || data?.error !== 'Conversation not found' || data.isGuest !== true) return false;
-  if (data.sessionToken) setGuestSessionToken(data.sessionToken);
+  const sessionToken = tokenOf(data);
+  if (sessionToken) setGuestSessionToken(sessionToken);
   return true;
 }
 
@@ -267,7 +293,7 @@ export async function loadConversation(conversationId: string): Promise<ChatMess
       `${PROXY_PATH}/api/chat?${params}`,
     );
     if (!response.ok) {
-      if (guestThreadGone(response.status, await parseJsonResponse<any>(response).catch(() => null))) return null;
+      if (guestThreadGone(response.status, await parseJsonResponse<ChatReply>(response).catch(() => null))) return null;
       Sentry.captureMessage('Chat loadConversation failed', {
         level: 'warning',
         tags: { feature: 'chat' },
@@ -295,7 +321,7 @@ export async function loadConversation(conversationId: string): Promise<ChatMess
  * that is not `{"type":…` returns null, as a non-JSON reply always has.
  * A stream that ends without `done` throws, so the caller reports a network error.
  */
-async function readChatStream(response: Response, onDelta: (delta: ChatDelta) => void): Promise<any> {
+async function readChatStream(response: Response, onDelta: (delta: ChatDelta) => void): Promise<ChatReply | null> {
   if (!response.body) return null;
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
@@ -394,10 +420,11 @@ export async function sendMessage(
     // stores the turn after a disconnect, so a retry would store it twice.
     const data = response.ok && !(response.headers.get('content-type') ?? '').includes('application/json')
       ? await readChatStream(response, onDelta)
-      : await parseJsonResponse<any>(response);
+      : await parseJsonResponse<ChatReply>(response);
 
     // Persist guest session token if returned
-    if (data?.sessionToken) setGuestSessionToken(data.sessionToken);
+    const newToken = tokenOf(data);
+    if (newToken) setGuestSessionToken(newToken);
 
     // A guest is its token plus its IP, so a new IP is a new guest who does
     // not own the stored thread (US-15 AC6a). The server refused before any
@@ -405,7 +432,7 @@ export async function sendMessage(
     // once into a new conversation on it, passed directly in case storage
     // refused the save above. A customer's 404 is shown.
     if (conversationId && guestThreadGone(response.status, data)) {
-      return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits, data.sessionToken ?? sessionToken);
+      return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits, newToken ?? sessionToken);
     }
 
     if (response.status === 429) {
@@ -453,7 +480,7 @@ export async function sendMessage(
         conversationId: data.conversationId,
         messageId: data.messageId,
         content: data.content,
-        sessionToken: data.sessionToken,
+        sessionToken: newToken,
         isGuest: data.isGuest,
         ...(data.isFallback === true ? { isFallback: true } : {}),
         ...(knownEdits(data.proposedEdits).length > 0 ? { proposedEdits: knownEdits(data.proposedEdits) } : {}),
@@ -496,7 +523,7 @@ async function deleteServerConversation(conversationId: string): Promise<boolean
       }),
     });
     if (!response.ok) {
-      if (guestThreadGone(response.status, await parseJsonResponse<any>(response).catch(() => null))) return true;
+      if (guestThreadGone(response.status, await parseJsonResponse<ChatReply>(response).catch(() => null))) return true;
       Sentry.captureMessage('Chat deleteConversation failed', {
         level: 'warning',
         tags: { feature: 'chat' },
