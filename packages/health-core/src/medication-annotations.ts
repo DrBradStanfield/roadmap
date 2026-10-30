@@ -7,6 +7,7 @@
 import type { FileMedication } from './roadmap-file';
 import { isTakingDrug } from './history-change';
 import { isEscalationKey } from './validation';
+import { stampInstant } from './merge';
 
 /** The chart metrics each medication affects. */
 const MED_CHART_MAP: Record<string, string[]> = {
@@ -39,7 +40,7 @@ export function medicationChanges(rows: FileMedication[]): MedicationChange[] {
   return rows
     .filter(h => Object.prototype.hasOwnProperty.call(ACTIONS, h.changeType ?? '')
       && typeof h.medicationKey === 'string' && !isEscalationKey(h.medicationKey) && typeof h.drugName === 'string'
-      && Number.isFinite(Date.parse(h.updatedAt)))
+      && Number.isFinite(recordedTime(h.updatedAt)))
     .map(h => ({
       id: h.id, medicationKey: h.medicationKey, drugName: h.drugName,
       doseValue: h.doseValue, doseUnit: h.doseUnit,
@@ -50,7 +51,7 @@ export function medicationChanges(rows: FileMedication[]): MedicationChange[] {
 
 export interface ChartAnnotation {
   id: string;
-  /** Epoch ms on the caller's time axis. */
+  /** Epoch ms: `recordedTime` of the change. */
   date: number;
   label: string;
 }
@@ -62,14 +63,22 @@ const ACTIONS: Record<string, string> = {
   switched: 'Recorded switch to:',
 };
 
-/** Project recorded events only; never infer a treatment timeline from merged order.
- *  `time` places a recorded time on the caller's axis (the web plots a day slot at local midnight). */
-export function medicationAnnotations(history: MedicationChange[], time: (recordedAt: string) => number = Date.parse): Record<string, ChartAnnotation[]> {
+/** A recorded time on a chart's axis, the same on the web and the iPhone: a day slot (a date, or
+ *  exactly midnight UTC) sits at the reader's local midnight, as the web's charts plot it; any other
+ *  stamp is its instant, read by `stampInstant` so V8 and JavaScriptCore agree. */
+export function recordedTime(recordedAt: string): number {
+  const day = /^(\d{4})-(\d{2})-(\d{2})(?:[Tt]00:00:00(?:\.0+)?[Zz])?$/.exec(recordedAt);
+  if (!day) return stampInstant(recordedAt);
+  return new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3])).getTime();
+}
+
+/** Project recorded events only; never infer a treatment timeline from merged order. */
+export function medicationAnnotations(history: MedicationChange[]): Record<string, ChartAnnotation[]> {
   const map: Record<string, ChartAnnotation[]> = {};
   for (const h of history) {
     const metrics = MED_CHART_MAP[h.medicationKey];
     const action = ACTIONS[h.changeType];
-    const date = time(h.recordedAt);
+    const date = recordedTime(h.recordedAt);
     if (!Array.isArray(metrics) || typeof action !== 'string' || !Number.isFinite(date)) continue;
     // Stops saved as 'none' do not retain the old drug. Name the category
     // instead of guessing which merged row preceded it. A name that is not a

@@ -1,4 +1,4 @@
-# Web app redesign to match the iPhone app: plan (draft 2, 2026-10-30)
+# Web app redesign to match the iPhone app: plan (draft 3, 2026-10-30)
 
 Brad asked for this after using the iPhone app. Beside it, the web app looks shabby,
 especially on a phone. He wants:
@@ -9,7 +9,8 @@ especially on a phone. He wants:
 - better onboarding.
 
 Nothing is built yet. Draft 1 went to a fresh Opus adversary, which found five
-blockers. This draft fixes them; see "Review" at the end.
+blockers, and Codex reviewed draft 2. This draft fixes both; see "Review" at the
+end.
 
 ## What we have today (checked on localhost and in the code)
 
@@ -161,14 +162,23 @@ command line."
 This comes before the mobile shell, because About you can only sit low once onboarding
 asks for it.
 
-**Who sees it.** The decision comes from the storage state and the email flag, never
-from "the browser is empty" alone.
+**Who sees it.** One rule, checked in this order (Codex R1):
 
-- An email arrival shows its US-22 notice first.
-- A browser holding a record, or a connected cloud, skips onboarding.
-- After "Delete all my data", onboarding returns on the empty record, as on the iPhone
-  (US-54 AC7). The completion flag lives in localStorage, keyed to the erase count. It
-  never goes in the record.
+1. An email arrival shows its US-22 notice first. Onboarding waits until it is
+   dismissed.
+2. A cloud that is connected but cannot be read yet (reconnect, or still loading) asks
+   nothing. It shows the reconnect state and waits. Questions never start from a record
+   we have not read.
+3. Once the record is open, onboarding runs if the record lacks sex, birth year or
+   height, or weight on a record with no weight at all. It asks only what is missing,
+   starting at the first gap. That holds for a new browser, a half-finished one and a
+   connected cloud record alike.
+4. A record that has all of them skips onboarding.
+5. After "Delete all my data", the record is empty again, so rule 3 runs the
+   questions, on this device and on any other once the higher erase count arrives (US-54
+   AC7). A connected cloud stays connected. A completion flag in localStorage, keyed to
+   the erase count, only stops the tour from showing twice. It never goes in the
+   record.
 
 **Welcome.**
 
@@ -270,10 +280,19 @@ opens, so it changes look, not structure.
 
 - **Usage signal** for the new story, in `product_events`, on Shopify only (Pages sends
   none):
-  - `onboarding_step` with the step's name, never the value;
+  - `tool_opened` with `phone` or `desktop`, once per tab. This is new and ships in
+    phase 0, on the old layout, so the baseline exists before anything changes. It is
+    the denominator.
+  - `onboarding_step` with the step's name, never the value. The widget throttles
+    events once per name per tab (`server-api.ts`), which would keep only the first
+    step. So the throttle key includes the step name, like `upload_outcome`'s exception
+    (`PER_ACTION_EVENT_NAMES`), with a test that four steps in one tab all arrive
+    (Codex R3);
   - `onboarding_done`;
   - `signin_opened` with its placement;
   - `guide_opened` `plan_footer`.
+  - Every new name and value goes into the server's closed list first, and the server
+    deploys before the widget.
 - **Clarity masking.** Onboarding, value pages and sheets that render outside the
   widget root carry `data-clarity-mask`, as the lightbox, chat and upload modal do
   (US-09 AC8).
@@ -293,9 +312,11 @@ opens, so it changes look, not structure.
   (`tools/webkit-verify.mjs`) runs on it too.
 - **No A/B test** (draft 1 was wrong). No variant delivery exists today: the Liquid
   assigns none and no widget code reads one. Cloud connects run at 5 to 19 a week, too
-  few to power a test. Instead: a before-and-after read of one primary metric, the share
-  of phone `results_viewed` sessions that reach stage 3, over two weeks either side,
-  plus Brad's own check.
+  few to power a test. Instead: a before-and-after read over two weeks either side,
+  plus Brad's own check. The primary metric is the share of phone `tool_opened` tabs
+  that go on to `results_viewed`. The denominator is counted before onboarding starts,
+  so people who give up part way still count (Codex R2). Stage 3 cannot be the metric:
+  onboarding requires weight, so everyone who sees a plan would reach it.
 - **Pages.** It gets the new layout when Shopify does, through a build flag. Its hero is
   a separate copy in `index.html`.
 - **Rollback.** Until the old code is deleted, rollback means turning the block setting
@@ -306,7 +327,8 @@ opens, so it changes look, not structure.
 
 ## Phases
 
-0. **Decisions and baseline.** Brad answers the calls below. Pull the baseline. Write
+0. **Decisions and baseline.** Brad answers the calls below. Ship `tool_opened` on the
+   old layout and collect two weeks. Write
    the new story and the AC changes to US-01, US-02, US-04, US-09, US-11, US-15, US-16,
    US-18, US-20, US-21, US-22 AC13, US-23, US-25 AC3, US-38 and US-44.
 1. **Tokens, the top bar and the Supercharge card.** Behind `.hr-v2`.
@@ -385,4 +407,15 @@ It also accepts these should-fix findings:
 - R14: erase and re-answering.
 - R16, R17: the Swiper leftovers and the full story list.
 
-Codex review: pending.
+Codex (gpt-6.1-sol) then reviewed draft 2 and found three more problems. Draft 3 fixes
+them:
+
+- R1: the onboarding rule skipped half-finished records. It is now one ordered rule
+  built on what the record lacks.
+- R2: the primary metric would have looked better as more people gave up. It now uses
+  a denominator counted before onboarding starts.
+- R3: the event throttle would have kept only the first step. The throttle key now
+  includes the step name.
+
+R4 asked for this change's size: the plan is a doc, so net production LOC is 0 and
+nothing was deleted.

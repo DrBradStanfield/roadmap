@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { medicationAnnotations, medicationChanges, type MedicationChange } from './medication-annotations';
+import { recordedTime, medicationAnnotations, medicationChanges, type MedicationChange } from './medication-annotations';
 import type { FileMedication } from './roadmap-file';
 
 // Moved from widget-src/src/lib (2026-10-30): one source for the web chart and the iPhone's metric pages.
@@ -67,10 +67,15 @@ describe('US-06 AC4: medication chart annotations', () => {
     expect(labels).toEqual(Array(5).fill('Recorded start: Atorvastatin'));
   });
 
-  it('places each event on the caller\'s time axis, and drops one the axis cannot place', () => {
-    const local = (at: string) => (at === '2026-09-01' ? 1 : NaN);
-    expect(medicationAnnotations([event({ id: 'day', recordedAt: '2026-09-01' }), event({ id: 'odd' })], local).ldl)
-      .toEqual([{ id: 'day', date: 1, label: 'Recorded start: Atorvastatin 20mg' }]);
+  // Adversary R3 (2026-10-30): the phone places a change where the web does.
+  it('puts a day slot at local midnight and reads any other stamp as its instant, in either case', () => {
+    const at = (recordedAt: string) => medicationAnnotations([event({ id: 'e', recordedAt })]).ldl?.map(a => a.date);
+    const midnight = new Date(2026, 8, 1).getTime();
+    expect(at('2026-09-01')).toEqual([midnight]);
+    expect(at('2026-09-01T00:00:00Z')).toEqual([midnight]);
+    expect(at('2026-09-01t10:00:00z')).toEqual([Date.UTC(2026, 8, 1, 10)]);
+    expect(at('not a time')).toBeUndefined();
+    expect(recordedTime('2026-02-30T10:00:00Z')).toBeNaN();
   });
 });
 

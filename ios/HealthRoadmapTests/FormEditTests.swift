@@ -116,10 +116,12 @@ final class FormEditTests: XCTestCase {
         record = try saved(engine, .form(.medicationField(field: "statin", value: "atorvastatin")), record)
         let ldl = try engine.blocking { [now] in try $0.history(recordJSON: record, metric: "ldl", now: now, deviceId: "test") }
         XCTAssertEqual(ldl.medicationMarkers.map(\.label), ["Recorded start: Atorvastatin 10mg"])
-        XCTAssertEqual(ldl.medicationMarkers.map(\.day), ["2026-10-21"])
+        // The change's day is this Mac's own day of `now`, in any zone (adversary R4).
+        let day = DayText.iso(now)
+        XCTAssertEqual(ldl.medicationMarkers.map(\.day), [day])
         let chart = ChartData(ldl)
-        XCTAssertEqual(chart.markers.map(\.date), [DayText.date("2026-10-21")])
-        XCTAssertEqual(chart.last, DayText.date("2026-10-21"), "the range reaches the change, as the web's does")
+        XCTAssertEqual(chart.markers.map(\.date), [DayText.date(day)])
+        XCTAssertEqual(chart.last, DayText.date(day), "the range reaches the change, as the web's does")
         XCTAssertEqual(chart.days, [DayText.date("2026-09-01")], "a scrub still picks only values")
         for metric in ["weight", "hdl", MyData.bloodPressure] {
             let other = try engine.blocking { [now] in try $0.history(recordJSON: record, metric: metric, now: now, deviceId: "test") }

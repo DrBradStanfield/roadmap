@@ -278,7 +278,7 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
   };
 
   const annotationsByMetric = useMemo(
-    () => showMedAnnotations ? medicationAnnotations(medHistory, chartTimestamp) : {},
+    () => showMedAnnotations ? medicationAnnotations(medHistory) : {},
     [medHistory, showMedAnnotations],
   );
 

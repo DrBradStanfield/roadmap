@@ -90,7 +90,7 @@ function sameIds(seen: unknown, held: string[]): boolean {
  * it) shows over the pair as it stood but never changes it, so a lost write
  * cannot leak into the pair later writes build on. A half not yet written is a dash.
  */
-export function pressureHistory(file: RoadmapFile, excludedFields: readonly string[]): MetricHistory {
+export function pressureHistory(file: RoadmapFile, excludedFields: readonly string[]): Omit<MetricHistory, 'markers'> {
   const rows = file.measurements.filter((row) => (HALVES as readonly string[]).includes(row.metricType));
   const current = new Set(latestActivePerMetric(rows).map((row) => row.id));
   // One pass each, not one per day: a filter per day was quadratic, 17 s for ten years

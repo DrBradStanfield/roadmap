@@ -9,7 +9,7 @@ does not drink and saw "Reduce alcohol intake" on his plan, with no way to remov
 25 with a waist-to-height ratio of 0.5 or more, or triglycerides are 1.7 mmol/L (150 mg/dL)
 or more. The engine never knows whether the person drinks. Two other cards mention
 alcohol: "Reduce triglycerides with diet" ("limit alcohol") and the very-high triglycerides
-card ("strict alcohol and sugar avoidance"). No suggestion can be dismissed, on the web or
+card (its evidence reason says "strict alcohol and sugar avoidance"). No suggestion can be dismissed, on the web or
 the iPhone.
 
 ## The flow
@@ -36,8 +36,9 @@ the iPhone.
   so the card shows again on that copy until it updates. The iPhone engine updates over the
   air (D3). A test proves an older engine's save keeps the field.
 - **Erase:** "Delete all my data" clears the profile, so the answer goes with it.
-- **Agents:** the MCP tools read the record as it is, so they see the field. No change to
-  the MCP server.
+- **Agents:** `read_record` shows the profile as stored, so agents see the answer. `get_plan`'s
+  profile does not carry it, and `update_profile` cannot set it: agents can read the answer but
+  not give it. No change to the MCP server.
 
 ## Engine (clinical, three-file sync)
 
@@ -47,8 +48,9 @@ the iPhone.
 - If Brad agrees (call C2), the triglycerides diet card drops "limit alcohol" for a
   non-drinker.
 - `health_roadmap_algorithm.md` gets the new condition in the `reduce-alcohol` row, and the
-  triglycerides row if C2 is yes. `evidence.ts` and `roadmap_text.html` change only if C2
-  changes wording they hold. Otherwise they stay as they are, and the commit says why.
+  triglycerides row if C2 is yes. If C2 is yes, `evidence.ts` changes too: its `trig-nutrition` reason names "reducing alcohol".
+  `roadmap_text.html` changes only if it holds that wording. Otherwise it stays, and the commit
+  says why.
 - Chat: the record summary the chat receives (`chat-context.ts`) carries the answer, so
   the chat stops telling a non-drinker to cut down.
 
@@ -78,7 +80,7 @@ Clinical:
   Recommendation: yes. It is the same wrong advice in a second place. It means a text
   variant in suggestions.ts and the algorithm.
 - **C3. The very-high triglycerides card (pancreatitis risk).** Keep "strict alcohol and
-  sugar avoidance" for everyone? Recommendation: keep. It is an urgent safety card, and the
+  sugar avoidance" (its evidence reason) for everyone? Recommendation: keep. It is an urgent safety card, and the
   advice does no harm to a non-drinker.
 - **C4. "I drink."** Should the card stay, or hide anyway?
   - Recommendation: it stays. The advice applies, and the person has seen that we
