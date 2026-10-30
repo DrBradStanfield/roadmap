@@ -447,6 +447,8 @@ Source: `units.ts`
 
 All thresholds stored and compared in SI canonical units.
 
+The cholesterol and triglyceride lines (Borderline, High, Very high, and HDL's Low line) are set in mg/dL, and the HbA1c lines in NGSP %. The code converts each exactly (mg/dL ÷ the factor in section 2, `hba1cNgspToIfcc`), so the mmol/L and IFCC figures in these tables are rounded for display: LDL High is 160 mg/dL, 4.1376 mmol/L, printed 4.14; HDL Low is 40 mg/dL, 1.0344 mmol/L, printed 1.03. A value typed at a printed figure can grade on either side of the line. The same holds for the rounded figures in `evidence.ts` (diabetes from 47.5 mmol/mol, very high triglycerides from 5.64 mmol/L). ApoB's lines are mg/dL ÷ 100, so its g/L figures are exact. The on-treatment Optimal targets are set in SI units (LDL 1.4 and non-HDL 1.6 mmol/L, ApoB 0.5 g/L); the mg/dL figure shown beside them is the first whole number the plan grades at or above the target (LDL 54.1 → 55, non-HDL 61.9 → 62).
+
 ### HbA1c (mmol/mol IFCC)
 
 | Level | IFCC | NGSP % |
