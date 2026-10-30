@@ -207,6 +207,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     setActiveConversationId(id);
     setError(null);
     const msgs = await loadConversation(id);
+    if (activeConversationIdRef.current !== id) return; // another thread was opened meanwhile (US-15 AC7a)
     // The server no longer recognizes this guest thread (US-15 AC6a).
     if (!msgs) { dropThread(id); return; }
     setMessages(msgs);
@@ -285,9 +286,13 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       Boolean(onProposeEditRef.current),
     );
     const approach = endStream();
+    // Another thread was opened while the reply was in flight (US-15 AC7a): it stays
+    // on screen, and the reply stays with the thread it was sent from.
+    const shownId = activeConversationIdRef.current;
+    const stayed = shownId === currentConvId;
 
     if (sendError) {
-      const withoutOptimistic = optimisticMessages.filter(m => m.id !== optimisticMsg.id);
+      const withoutOptimistic = stayed ? optimisticMessages.filter(m => m.id !== optimisticMsg.id) : messagesRef.current;
       setMessages(withoutOptimistic);
       setError(sendError.error);
       setIsLoading(false);
@@ -297,7 +302,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         type: 'state',
         payload: {
           conversations: currentConvs,
-          activeConversationId: currentConvId,
+          activeConversationId: shownId,
           messages: withoutOptimistic,
           isLoading: false,
           error: sendError.error,
@@ -319,7 +324,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       // recognized this one (US-15 AC6a): show that thread, not the old turns,
       // and drop the old thread from the list, since opening it would 404.
       const restarted = currentConvId !== null && result.conversationId !== currentConvId;
-      const finalMessages = [...(restarted ? [optimisticMsg] : optimisticMessages), assistantMsg];
+      const finalMessages = stayed ? [...(restarted ? [optimisticMsg] : optimisticMessages), assistantMsg] : messagesRef.current;
       setMessages(finalMessages);
       if ((approach.thinking || approach.sources.length > 0) && !result.isFallback) {
         setApproachById(prev => ({ ...prev, [assistantMsg.id]: approach }));
@@ -337,10 +342,9 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       }
 
       let finalConversations = currentConvs;
-      let finalConvId = currentConvId;
+      let finalConvId = shownId;
       if (!currentConvId || restarted) {
-        finalConvId = result.conversationId;
-        setActiveConversationId(finalConvId);
+        if (stayed) { finalConvId = result.conversationId; setActiveConversationId(finalConvId); }
         finalConversations = [{
           id: result.conversationId,
           title: trimmed.slice(0, 80),
