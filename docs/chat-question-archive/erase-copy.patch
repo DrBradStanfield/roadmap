@@ -1,0 +1,78 @@
+diff --git a/widget-src/src/components/HealthTool.erase-copy.test.ts b/widget-src/src/components/HealthTool.erase-copy.test.ts
+index 659bc551..79c385a0 100644
+--- a/widget-src/src/components/HealthTool.erase-copy.test.ts
++++ b/widget-src/src/components/HealthTool.erase-copy.test.ts
+@@ -86,6 +86,20 @@ describe('erase confirm copy (US-11)', () => {
+     expect(copy).not.toMatch(/—/);
+   });
+ 
++  // US-15 AC44: just before the purge blanks a health question, it keeps a
++  // scrubbed copy with no end date. The erase never reaches our server, so a
++  // question asked before an erase is still copied; say so before the click.
++  // Never "anonymous" or "not linked" (AC44 "What we say").
++  it('US-15 AC44: on the Shopify build, item 6 names the kept question copy and how to have it deleted', async () => {
++    const copy = await eraseConfirmOn(true);
++    expect(copy).toContain(
++      'It also keeps a copy of each health question, with no end date, to improve the chatbot. ' +
++        'An automatic step tries to remove names and contact details first. Email us the wording to have a copy deleted.',
++    );
++    expect(copy).not.toMatch(/anonym|not linked/i);
++    expect(await eraseConfirmOn(false)).not.toMatch(/copy of each health question/);
++  });
++
+   // A signed-in chat writes a profiles row (email, name) the erase cannot reach
+   // (supabase.server.ts; privacy-connector-addendum.md). Re-check R2, 2026-10-30.
+   it('US-15 AC7: on the Shopify build, names the account row a signed-in chat leaves', async () => {
+@@ -176,7 +190,7 @@ describe('erase confirm copy (US-11)', () => {
+     expect(confirm).toContain(clock);
+     for (const alert of [done, pending, unread]) {
+       expect(alert).toContain('On another device, the blog chat bubble and the chatbot embed send your old record until the widget loads there.');
+-      expect(alert).toContain(`Our server keeps your chat questions, and the bubble's and embed's replies, ${clock}.`);
++      expect(alert).toContain(`Our server keeps your chat questions, and the bubble's and embed's replies, ${clock}, and a copy of each health question, with no end date, to improve the chatbot.`);
+       expect(alert).toContain('It keeps what you sent through the feedback box.');
+       expect(alert).not.toMatch(/—/);
+       expect(alert.length).toBeLessThan(confirm.length);
+@@ -186,7 +200,7 @@ describe('erase confirm copy (US-11)', () => {
+   it('US-11 AC5: on the Pages build, the alert names no bubble, embed or server-kept chat', async () => {
+     const { ERASE_CONFIRM: confirm, ERASE_DONE: done, ERASE_DONE_CHAT_PENDING: pending, ERASE_DONE_CHAT_UNREAD: unread } = await eraseCopyOn(false);
+     for (const alert of [done, pending, unread]) {
+-      expect(alert).not.toMatch(/chat bubble|chatbot embed|30 days|our server/i);
++      expect(alert).not.toMatch(/chat bubble|chatbot embed|30 days|our server|health question/i);
+       expect(alert).toMatch(/version history/i);
+       expect(alert.length).toBeLessThan(confirm.length);
+     }
+diff --git a/widget-src/src/components/HealthTool.tsx b/widget-src/src/components/HealthTool.tsx
+index 51b266c9..4acb8957 100644
+--- a/widget-src/src/components/HealthTool.tsx
++++ b/widget-src/src/components/HealthTool.tsx
+@@ -124,12 +124,17 @@ export const ERASE_CONFIRM =
+   // (US-11), and a server chat (US-15 AC7/AC8). Each bubble and embed row
+   // copies the chat's first and last 3 questions (api.chat.ts router_context),
+   // so a question lasts until 30 days after the chat's last message; the
+-  // widget's own rows drop those copies (redactForWidget). No purge reaches
+-  // feedback_submissions, and its email copy is already in Brad's inbox.
++  // widget's own rows drop those copies (redactForWidget). Just before the
++  // purge blanks a health question, it keeps a scrubbed copy with no end date
++  // (US-15 AC44); the erase never reaches our server, so that copy is still
++  // made. No purge reaches feedback_submissions, and its email copy is
++  // already in Brad's inbox.
+   (SHOPIFY_SURFACE
+     ? '5. On another device, the blog chat bubble and the chatbot embed keep sending your old record until the widget next loads there.\n' +
+       "6. Your chat questions (the widget, the blog chat bubble and the chatbot embed) and the bubble's and embed's replies. " +
+-      "Our server keeps the text of each, and a chat's title, for up to 30 days after your last message in that chat. If you were signed in, it also keeps an account row with your name and email address.\n" +
++      "Our server keeps the text of each, and a chat's title, for up to 30 days after your last message in that chat. " +
++      'It also keeps a copy of each health question, with no end date, to improve the chatbot. An automatic step tries to remove names and contact details first. Email us the wording to have a copy deleted. ' +
++      'If you were signed in, it also keeps an account row with your name and email address.\n' +
+       '7. What you sent through the feedback box. Our server keeps it with your email address, and a copy went to Brad by email.\n'
+     : '') +
+   '\n' +
+@@ -146,7 +151,8 @@ const ERASE_DONE_TAIL =
+   // Items 5 to 7 of the confirm, shorter (US-11 AC5).
+   (SHOPIFY_SURFACE
+     ? '\n\nOn another device, the blog chat bubble and the chatbot embed send your old record until the widget loads there. ' +
+-      "Our server keeps your chat questions, and the bubble's and embed's replies, for up to 30 days after your last message in that chat. " +
++      "Our server keeps your chat questions, and the bubble's and embed's replies, for up to 30 days after your last message in that chat, " +
++      'and a copy of each health question, with no end date, to improve the chatbot. ' +
+       'It keeps what you sent through the feedback box.'
+     : '');
+ 
