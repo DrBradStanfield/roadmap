@@ -373,9 +373,14 @@ export async function getOrCreateGuestSession(
     .single();
 
   if (sessionError || !newSession) {
-    // Clean up both the ghost profile and auth user
-    await supabaseAdmin.from('profiles').delete().eq('id', sessionId);
-    await supabaseAdmin.auth.admin.deleteUser(sessionId).catch(() => {});
+    // Clean up both the ghost profile and auth user. A failed step leaves an
+    // orphan, so report it (US-15 AC7c).
+    const { error: profileDeleteError } = await supabaseAdmin.from('profiles').delete().eq('id', sessionId);
+    const { error: userDeleteError } = await supabaseAdmin.auth.admin.deleteUser(sessionId)
+      .catch((error: unknown) => ({ error }));
+    for (const error of [profileDeleteError, userDeleteError]) {
+      if (error) Sentry.captureException(error, { tags: { feature: 'guest_chat', subsystem: 'guest_session_cleanup' } });
+    }
     console.error('Failed to create guest session:', sessionError);
     throw new Error('Failed to create guest session');
   }
