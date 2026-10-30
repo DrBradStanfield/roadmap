@@ -36,7 +36,8 @@ A/B + product events, reminders, Klaviyo, hosted MCP (mcp.drstanfield.com).
 - Agent surfaces: docs/agent-access.md (contract) · docs/mcp-architecture.md (map).
 - Supabase still holds OPERATIONAL data only (chat, A/B, product events,
   reminders, feedback, audit, cron lock, Shopify sessions; table list:
-  docs/reference.md). No health values, ever.
+  docs/reference.md). No health record or parsed values, ever; chat and
+  feedback text can hold health details (what is kept, how long: US-15).
 - Two builds, same source: Shopify storefront (`build:shopify-prod`, both
   stores; tool page on drstanfield.com only, microvitamin.com runs the chat)
   and GitHub Pages self-host (`build:pages`, no Brad server, BYOK). Flags: `VITE_LOCAL_FIRST` (all v2), `VITE_SHOPIFY_SURFACE` (Shopify only — gates Brad-server features). Detail: docs/deploy-runbook.md.
