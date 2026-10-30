@@ -173,5 +173,25 @@ describe('US-10 AC10: the 50-conversation cap evicts by the merged copy', () => 
       expect(ids).not.toContain('c00');
       expect(s.listConversations().map((c) => c.id)).toEqual(ids);
     });
+
+    it(`${tier}: continuing a conversation in a file already over 50 brings it back to 50`, async () => {
+      const host = shared();
+      const at = (i: number) => new Date(Date.parse('2026-10-01T00:00:00.000Z') + i * 60_000).toISOString();
+      const conversations = Array.from({ length: 51 }, (_, i) => ({
+        id: `c${String(i).padStart(2, '0')}`, title: 't', createdAt: at(i), updatedAt: at(i),
+        messages: [{ id: `m${i}`, role: 'user', content: 'q', createdAt: at(i) }],
+      }));
+      const raw = { schemaVersion: 1, meta: { createdAt: at(0), updatedAt: at(50), lastDeviceId: 'old', lamport: 1 }, conversations };
+      const h = host(); // a file left over the cap (an older app, or two devices at once)
+      if (h.tier === 'device') h.sync.writeSync('chat-history.json', raw, null);
+      else await h.store.write('chat-history.json', raw, null);
+      const s = await ChatSession.open(host());
+      expect(s.listConversations()).toHaveLength(51);
+      await s.recordExchange({ conversationId: 'c10', isNew: false, userText: 'a follow-up', assistantText: 'ok' });
+      const ids = (await ChatSession.open(host())).listConversations().map((c) => c.id);
+      expect(ids).toHaveLength(50);
+      expect(ids[0]).toBe('c10');
+      expect(ids).not.toContain('c00');
+    });
   }
 });
