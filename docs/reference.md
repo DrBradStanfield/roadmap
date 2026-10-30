@@ -250,7 +250,7 @@ Pulsing `.field-attention` CSS class highlights the next field to fill. On mobil
 **Webhooks (Shopify HMAC):** `orders/paid` (message credits), `app/uninstalled`, `app/scopes_update`. **Admin (`authenticateAdmin` in `app/lib/admin-shop.server.ts`, the only caller of `authenticate.admin`):** `/app`, `/app/ab-testing`, `/app/*-test` cron triggers, `/auth/*`.
 ## Backend Features
 
-**Email (Resend)**: `email.server.ts` sends welcome + reminder emails. The v1 welcome triggers (sync-embed / first server measurement save) are retired with the CRUD API; welcome/transactional email in v2 is tied to the reminder-opt-in path. Env: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SHOPIFY_STORE_URL`. (HIPAA-aware: no health *values* in emails.)
+**Email (Resend)**: `email.server.ts` sends welcome + reminder emails. The v1 welcome triggers (sync-embed / first server measurement save) are retired with the CRUD API; welcome/transactional email in v2 is tied to the reminder-opt-in path. Env: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`. (HIPAA-aware: no health *values* in emails.)
 
 **Reminder emails (v2)**: The browser computes the user's reminder schedule from their local file and opts in via `POST api/reminders-v2`, which stores `{ email, provider, token, schedule, last_sent }` in `reminder_optin_v2`. A daily cron (`reminder-v2-cron.server.ts`, batches of 50) reads due items and sends consolidated reminders; the server is a "dumb scheduler" (no health data, no per-category preference table). Unsubscribe is the token link. (The v1 `reminder_preferences`/`reminder_log` tables + their cron are deleted.)
 

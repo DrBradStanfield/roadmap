@@ -160,8 +160,6 @@ export {
 
 // Reminders
 export {
-  computeDueReminders,
-  filterByPreferences,
   getCategoryGroup,
   formatReminderDate,
   REMINDER_CATEGORIES,
@@ -169,12 +167,9 @@ export {
   GROUP_COOLDOWNS,
   type ReminderGroup,
   type ReminderCategory,
-  type DueReminder,
-  type BloodTestDate,
   type ReminderProfile,
   type MeasurementDates,
   type MedicationRecord,
-  type ComputeRemindersResult,
 } from './reminders';
 
 // Units
