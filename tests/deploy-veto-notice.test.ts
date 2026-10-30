@@ -1,7 +1,7 @@
 // US-46 AC9: the deploy notification states the window that really exists.
 // deploy.yml's 'production' environment has had no wait timer since 2026-09-02
 // and the workflow has no wait step, so production changes start once the
-// Pages smoke, the tests and the builds pass (6 to 10 minutes on the 12
+// Pages smoke, the tests and the builds pass (6 to 10 minutes on the 14
 // successful Deploy runs of 2026-10-27 to 2026-10-30). The email used to say
 // "starts in ~30 min" and "Cancel the run before the timer ends". Runs the real
 // notify step from deploy.yml under a fake `gh`.
