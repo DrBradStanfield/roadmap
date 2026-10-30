@@ -195,3 +195,22 @@ describe('US-10 AC10: the 50-conversation cap evicts by the merged copy', () => 
     });
   }
 });
+
+describe('US-10 AC10: conversations saved in the same millisecond keep their file order', () => {
+  it('lists equal updatedAt in file order, and the cap evicts the later of them first', async () => {
+    const at = (i: number) => new Date(Date.parse('2026-10-01T00:00:00.000Z') + i * 60_000).toISOString();
+    // c00..c49 at distinct times; t1 and t2 tie with each other at the oldest time.
+    const row = (id: string, t: number) => ({ id, title: 't', createdAt: at(t), updatedAt: at(t), messages: [{ id: `m-${id}`, role: 'user', content: 'q', createdAt: at(t) }] });
+    const conversations = [row('t1', 0), row('t2', 0), ...Array.from({ length: 49 }, (_, i) => row(`c${String(i + 1).padStart(2, '0')}`, i + 1))];
+    const store = new DeviceStore();
+    store.writeSync('chat-history.json', { schemaVersion: 1, meta: { createdAt: at(0), updatedAt: at(49), lastDeviceId: 'old', lamport: 1 }, conversations }, null);
+    const host = () => deviceHost(store, { value: null });
+    const s = await ChatSession.open(host());
+    expect(s.listConversations().slice(-2).map((c) => c.id)).toEqual(['t1', 't2']);
+    await s.recordExchange({ conversationId: 'c49', isNew: false, userText: 'again', assistantText: 'ok' });
+    const ids = (await ChatSession.open(host())).listConversations().map((c) => c.id);
+    expect(ids).toHaveLength(50);
+    expect(ids.at(-1)).toBe('t1');
+    expect(ids).not.toContain('t2');
+  });
+});
