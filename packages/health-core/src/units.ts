@@ -602,7 +602,7 @@ export const HDL_THRESHOLDS = {
 export const TRIGLYCERIDES_THRESHOLDS = {
   borderline: 150 / TRIGLYCERIDES_FACTOR, // ~1.69
   high: 200 / TRIGLYCERIDES_FACTOR,       // ~2.26
-  veryHigh: 500 / TRIGLYCERIDES_FACTOR,   // ~5.64
+  veryHigh: 500 / TRIGLYCERIDES_FACTOR,   // ~5.645
 } as const;
 
 /** Blood pressure thresholds (mmHg — same in both systems) */

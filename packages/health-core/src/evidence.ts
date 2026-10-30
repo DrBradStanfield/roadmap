@@ -392,7 +392,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'trig-very-high': {
-    reason: 'Very high triglycerides (≥500 mg/dL / ≥5.64 mmol/L) carry an acute risk of pancreatitis — inflammation of the pancreas that can be life-threatening. This requires immediate medical attention and aggressive dietary intervention (strict alcohol and sugar avoidance, calorie reduction).',
+    reason: 'Very high triglycerides (≥500 mg/dL / ≥5.65 mmol/L) carry an acute risk of pancreatitis — inflammation of the pancreas that can be life-threatening. This requires immediate medical attention and aggressive dietary intervention (strict alcohol and sugar avoidance, calorie reduction).',
     guidelines: [...GUIDELINES_LIPIDS],
     references: REFS_LIPID_GUIDELINES,
   },
