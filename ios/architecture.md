@@ -1,15 +1,9 @@
 # iOS app — architecture and decisions
 
-Status: **feature complete in the simulator, waiting on Brad's accounts** (2026-10-21,
-overnight). Built and on main: My data with medications, screenings, supplements and
-history (US-25 AC5-AC9); the plan (AC1, AC2, AC6); welcome, rating prompt, icon (AC10);
-Dropbox sync on the shared sync engine (AC11; Google Drive waits on its iOS client id);
-reminders (AC12); Apple Health (AC13-AC15); erase and export (AC16); chat and lab upload
-behind App Attest (US-52, server routes off until deployed with a team id); over-the-air
-engine updates, signed (D3, AC18, 2026-10-22). What Brad must do before TestFlight:
-[launch-checklist.md](launch-checklist.md). This file records what we decided for the
-native iPhone app and why. It is the entry point for anyone, human or agent, working in
-`ios/`.
+Status: where the app stands (builds, TestFlight, App Store review, and what is left for
+Brad) is kept in [launch-checklist.md](launch-checklist.md), not here. This file records
+what we decided for the native iPhone app and why. It is the entry point for anyone, human
+or agent, working in `ios/`.
 
 **Keep it current (HARD).** Any change to an architectural decision below updates this file
 in the same commit: the decision, the date, who made it and why. A decision reversed stays
@@ -1408,8 +1402,8 @@ by AI agents, so the code is shaped for a reader with no memory of how it got he
 **Bundle ID:** `com.drstanfield.healthroadmap` (2026-10-25, team KAV75KMV2R, Dr Brad, Inc), permanent once
 the app is on the App Store. The earlier `com.drbrad.healthroadmap` was claimed by the free personal team
 when the app was first installed on Brad's iPhone, and Apple will not move an id from a free team to a paid one. Enrolment: DR BRAD, INC.
-under brad@drstanfield.com, Enrollment ID 726UVSY5YZ, waiting on Apple's check of signing
-authority (2026-10-21). The 2015 team (Caddy Limited, b.d.stanfield@gmail.com) expired in
+under brad@drstanfield.com, Enrollment ID 726UVSY5YZ, done 2026-10-25
+(launch-checklist.md). The 2015 team (Caddy Limited, b.d.stanfield@gmail.com) expired in
 2020 and is not used.
 
 **Measured 2026-10-21 in macOS JavaScriptCore** (the same engine iOS ships): the bundle
@@ -1428,8 +1422,9 @@ then about 1 ms each.
   health-core change runs the old engine until `build-engine.mjs` or `test.sh` runs.
 - **Stories first:** each feature gets a US-id with acceptance criteria before code (Lane
   B). Tests cite the id.
-- **CI:** a macOS runner job. Workflow files are Brad-only.
-- **Minimum iOS:** 17 (proposed).
+- **CI:** no job runs the Swift tests yet; they run by hand with `ios/scripts/test.sh`.
+  Workflow files are Brad-only.
+- **Minimum iOS:** 17 (`IPHONEOS_DEPLOYMENT_TARGET = 17.0` in the project).
 
 ### D12 · Onboarding: four questions, prefilled from Apple Health (Brad, 2026-10-22, US-54)
 
@@ -1448,6 +1443,8 @@ A new user answers sex, birth month and year, height and weight, one per screen,
 
 ## Phases
 
+Dated history; the current state is in launch-checklist.md.
+
 0. **Readiness (Brad, in progress 2026-10-21):** macOS upgrade, Xcode 26, Apple Developer
    Program as the company (D-U-N-S), a test iPhone.
 1. **Spike, go/no-go:** done 2026-10-21 for the engine, Dropbox sync (stubbed and
@@ -1459,6 +1456,8 @@ A new user answers sex, birth month and year, height and weight, one per screen,
 4. **App Store submission.**
 
 ## Where things stand (2026-10-23)
+
+Dated history; the current state is in launch-checklist.md.
 
 - **Done on main (pushed, a1276698):** shared document saving (39ff03a5); per-test units
   (d1199494); clinic letters and originals on the phone (1b6d58a7); the parsed-record memo, stage 1
@@ -1480,13 +1479,16 @@ A new user answers sex, birth month and year, height and weight, one per screen,
 
 ## Next, in order (2026-10-22)
 
+Dated history; the current state is in launch-checklist.md.
+
 1. Engine work off the main thread: stages 1 to 4 done (above). Left: profile Charts' first draw
    on a real iPhone (277 ms in a debug build in the simulator, 2026-10-23, the largest stall
    under an app screen).
 2. US-56: heart rate, resting heart rate, sleep, VO2 max and steps from Apple Health, read live (D6).
    Built 2026-10-25 (D6), checked on seeded simulator data; AC8's bands built 2026-10-26; left: the
    side-by-side comparison on Brad's iPhone with a watch.
-3. `APP_ATTEST_TEAM_ID` on the education server, so chat and lab upload work on a phone (D8).
+3. ~~`APP_ATTEST_TEAM_ID` on the education server, so chat and lab upload work on a phone (D8).~~
+   Done 2026-10-25 (launch-checklist.md, step 5).
 4. The Clarity masking check on a real recording (D9).
 5. Known gap: an erase arriving from another device while a sheet is open may wait for the next
    launch to bring the questions back (US-54 AC7, adversary N2, unverified).
