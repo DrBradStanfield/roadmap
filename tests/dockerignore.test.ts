@@ -62,6 +62,19 @@ describe('.dockerignore covers the .gitignore data patterns', () => {
     expect(covered).toBe(true);
   });
 
+  // US-09 AC9a: two gitignored folders hold other people's words rather than
+  // health data, so the data-word filter above never compares them:
+  // tools/output/ (YouTube dry runs: commenters' handles beside their comments)
+  // and codex-drafts/ (drafts for a Codex review).
+  it.each([
+    ['tools/output/', 'tools/output/youtube-dryrun-abc.html'],
+    ['codex-drafts/', 'codex-drafts/plan.md'],
+  ])('.gitignore keeps %s out of the repo and .dockerignore keeps %s out of the image', (rule, path) => {
+    expect(patterns('.gitignore')).toContain(rule);
+    const hit = dockerPatterns.find((d) => toRegExp(d).test(path));
+    expect(hit, `${path} would be copied into the image`).toBeDefined();
+  });
+
   it('the build context still keeps what the server build reads', () => {
     // react-router build + runtime reads: app/, packages/, docs/, the root
     // prompt .md files, instrument*.mjs and the package files. None of them
