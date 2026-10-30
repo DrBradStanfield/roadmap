@@ -167,6 +167,7 @@ export async function verifyGoogleIdToken(idToken: string): Promise<string | nul
   try {
     const res = await fetch(
       `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`,
+      { signal: AbortSignal.timeout(10_000) }, // a stalled Google reads as unverified (US-09 AC30)
     );
     if (!res.ok) {
       // A 4xx is the token's own problem. A 5xx or 429 is Google's, and it

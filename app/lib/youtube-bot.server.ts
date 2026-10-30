@@ -64,6 +64,7 @@ const CRISIS = /\b(die|suicid\w*|kill (myself|me)|chest pain|can'?t breathe|cann
 const FOLLOWUP_MIN_WORDS = 3;             // follow-ups are naturally shorter ("does it cause blindness?")
 const MAX_CHANNEL_REPLIES_PER_THREAD = 2; // hard cap: initial reply + at most ONE follow-up (screenshot-risk control)
 const FOLLOWUP_THREADS_PER_TICK = 25;     // bound the per-tick comments.list calls
+const YOUTUBE_TIMEOUT_MS = 15_000;        // per Google call; a stalled socket must not hold the tick (US-09 AC30)
 
 const PLATFORM_YOUTUBE = 'youtube';
 
@@ -181,6 +182,7 @@ async function getAccessToken(): Promise<string> {
       refresh_token: REFRESH_TOKEN!,
       grant_type: 'refresh_token',
     }).toString(),
+    signal: AbortSignal.timeout(YOUTUBE_TIMEOUT_MS),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
@@ -217,6 +219,7 @@ async function listRecentThreads(token: string): Promise<YouTubeThread[]> {
 
   const res = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(YOUTUBE_TIMEOUT_MS),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
@@ -272,7 +275,7 @@ async function listReplies(token: string, topLevelCommentId: string): Promise<Yo
   url.searchParams.set('maxResults', '100');
   url.searchParams.set('textFormat', 'plainText');
 
-  const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+  const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(YOUTUBE_TIMEOUT_MS) });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
     throw new Error(`YouTube replies list failed: ${res.status} ${body.slice(0, 200)}`);
@@ -312,7 +315,7 @@ async function resolveHandle(token: string, channelId: string): Promise<string |
     const url = new URL('https://www.googleapis.com/youtube/v3/channels');
     url.searchParams.set('id', channelId);
     url.searchParams.set('part', 'snippet');
-    const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(YOUTUBE_TIMEOUT_MS) });
     if (!res.ok) throw new Error(`channels.list ${res.status}`);
     const data = await res.json() as { items?: Array<{ snippet?: { customUrl?: string } }> };
     handle = data.items?.[0]?.snippet?.customUrl ?? null;
@@ -365,6 +368,7 @@ async function postReply(token: string, parentCommentId: string, text: string): 
         textOriginal: text,
       },
     }),
+    signal: AbortSignal.timeout(YOUTUBE_TIMEOUT_MS),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '');

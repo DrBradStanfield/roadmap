@@ -2,6 +2,9 @@ import * as Sentry from '@sentry/react-router';
 
 const KLAVIYO_BASE = 'https://a.klaviyo.com/api';
 const KLAVIYO_REVISION = '2024-10-15';
+// Subscribe and suppress give up after this long (US-09 AC30); each already
+// catches a fetch that throws and reports it as a failure.
+const KLAVIYO_WRITE_TIMEOUT_MS = 10_000;
 
 // Read env at call-time (not module-load) so it's set even when this module is
 // imported before env is populated (e.g. in unit tests).
@@ -65,6 +68,7 @@ export async function subscribeToKlaviyo(data: KlaviyoProfileData): Promise<void
           },
         },
       }),
+      signal: AbortSignal.timeout(KLAVIYO_WRITE_TIMEOUT_MS),
     });
 
     if (!subResponse.ok) {
@@ -250,6 +254,7 @@ export async function suppressInKlaviyo(email: string): Promise<true | null | { 
           relationships: { list: { data: { type: 'list', id: listId } } },
         },
       }),
+      signal: AbortSignal.timeout(KLAVIYO_WRITE_TIMEOUT_MS),
     });
     if (!response.ok) {
       // Status only — the body carries the address (see the note above).

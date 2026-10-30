@@ -22,6 +22,8 @@ import { ALLOWED_ORIGINS, BODY_TOO_LARGE, corsHeaders, getClientIp, parseSimpleR
  */
 
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+// Google gets this long to answer before the exchange fails (US-09 AC30).
+const GOOGLE_TIMEOUT_MS = 10_000;
 
 // Generous: a real user exchanges ~once an hour; connects are rare.
 const allowRequest = createRateLimiter(30, 60_000, 10 * 60_000);
@@ -91,6 +93,7 @@ export async function action({ request }: ActionFunctionArgs) {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: params,
+    signal: AbortSignal.timeout(GOOGLE_TIMEOUT_MS),
   });
   const payload = (await googleRes.json().catch(() => ({}))) as Record<string, unknown>;
 
