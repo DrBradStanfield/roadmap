@@ -78,6 +78,10 @@ const serverMetadataSchema = metadataSchema.extend({
   step: z.enum(['propose', 'confirm']).optional(),
   /** US-15 AC33: how many stated values run_roadmap refused. A count only. Server-only, owned by `chat_run_roadmap`. */
   rejected: z.number().int().min(0).max(1000).optional(),
+  /** US-15 AC44: one purge run's question archive. Counts only. Server-only, owned by `chat_question_archived`. */
+  eligible: z.number().int().min(0).max(100_000).optional(),
+  kept: z.number().int().min(0).max(100_000).optional(),
+  skipped: z.number().int().min(0).max(100_000).optional(),
 });
 
 /** The event a metadata key belongs to, where the key has no vocabulary of its
@@ -94,6 +98,9 @@ const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
   detail: ['mcp_authorize_refused', 'mcp_connect_failed'],
   step: ['mcp_tool_call'],
   rejected: ['chat_run_roadmap'],
+  eligible: ['chat_question_archived'],
+  kept: ['chat_question_archived'],
+  skipped: ['chat_question_archived'],
   field: ['chat_profile_edit'],
   choice: ['chat_profile_edit'],
   ...Object.fromEntries(UPLOAD_OUTCOME_KEYS.map(k => [k, ['upload_outcome']])),
@@ -107,6 +114,7 @@ const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   lpa_check_answered: ['answer'],
   measurement_refused: ['metric', 'refusal'],
   chat_run_roadmap: ['count', 'rejected'],
+  chat_question_archived: ['eligible', 'kept', 'skipped'],
   chat_profile_edit: ['field', 'choice'],
   cloud_connect_cancelled: ['provider'],
   blood_test_moved: [], // US-04 AC5: the name alone

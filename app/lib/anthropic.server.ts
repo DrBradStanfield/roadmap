@@ -503,13 +503,13 @@ async function readEventStream(
 }
 
 /** Text + usage + raw content blocks wrapper — for chat (prompt caching
- *  metrics + tool_use parsing). */
+ *  metrics + tool_use parsing). `maxAttempts: 1` turns the retry off (US-15 AC44's scrub). */
 export async function callAnthropicWithUsage(
-  body: Record<string, unknown>, timeoutMs = 60_000,
+  body: Record<string, unknown>, timeoutMs = 60_000, maxAttempts?: number,
 ): Promise<AnthropicResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
-  return fetchAnthropicRaw(apiKey, body, timeoutMs);
+  return fetchAnthropicRaw(apiKey, body, timeoutMs, maxAttempts);
 }
 
 /** callAnthropicWithUsage, streamed: deltas go to `onEvent`, the result is the same shape. */

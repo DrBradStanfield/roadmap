@@ -14,6 +14,15 @@
             "command": "input=$(cat); case \"$input\" in *push*) printf '%s' \"$input\" | node \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-push-guard.js\";; esac"
           }
         ]
+      },
+      {
+        "matcher": "mcp__claude_ai_Gmail__(reply|send_message|create_draft|update_draft|forward)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$HOME/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/.claude/hooks/email-style-guard.js\"; if [ -f \"$f\" ]; then node \"$f\"; else cat > /dev/null; fi"
+          }
+        ]
       }
     ]
   }

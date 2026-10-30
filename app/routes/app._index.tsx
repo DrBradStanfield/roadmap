@@ -75,7 +75,7 @@ export default function Index() {
       <s-stack gap="large">
         <s-banner tone="info">
           <s-text>
-            Local-first app: no health data is stored on the server. These
+            Local-first app: no health record is stored on the server. These
             analytics cover the server touchpoints that remain — the chatbot,
             email reminders, Klaviyo captures, and A/B tests. Counts marked
             "(30d)" cover the last 30 days.

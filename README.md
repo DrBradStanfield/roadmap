@@ -46,7 +46,9 @@ The same file, the same write path, three ways in.
 
 To answer one hosted call, the server unseals the cloud credential the
 assistant holds, opens the user's folder with it, and holds the record in
-server memory for the length of that request. It stores none of it. (One
+server memory for the length of that request. It stores none of it. It does
+write one value-free activity row per call: which tool, which assistant, the
+outcome and the time. (One
 exception, for an invented account: while an OpenAI or Anthropic app review is pending,
 the server holds the reviewer account's Dropbox credential itself; US-32
 AC38.) Anyone who
@@ -152,8 +154,9 @@ network tab recording and use the widget.
   them. Sending a chat message from the storefront widget POSTs the message,
   that conversation's earlier turns, and the health context needed to answer it
   to `/api/chat`. On that surface the server stores one row per question: the
-  first 500 characters of the text you typed, nothing more, which may hold
-  health details you wrote into it; the articles it matched; its
+  first 500 characters of the text you typed, with every number value masked
+  to `#` (some test names that contain a digit, such as HbA1c, stay as
+  written), which may still hold health details you wrote in words; the articles it matched; its
   classification; the router's raw output and any router error; the name of
   the surface; and a pseudonymous session and conversation id. The
   earlier turns and the reply are not stored. A daily job blanks the question
@@ -175,7 +178,12 @@ network tab recording and use the widget.
   up to 24 dated values per measurement and whatever is typed on the page but
   not yet saved. Neither bundle sets `VITE_LOCAL_FIRST`, so the server takes
   them for a stored surface: it writes your question and the reply into
-  `chat_messages`, and the reply can quote the values you were sent with. Those
+  `chat_messages`, and the reply can quote the values you were sent with.
+  It also writes a `chat_match_events` row per question, holding the question
+  unmasked and your earlier questions (`router_context`). When you are signed
+  in to the store, these rows carry your customer account's `user_id`.
+  Deleting a conversation in the bubble deletes its messages and title and
+  blanks the question text of its match rows. Those
   cached values are still sent as context; Brad chose on 2026-09-10 to keep that, because the answer is
   worse without them. The transcripts now join the same 30-day purge
   (`app/lib/chat-purge-cron.server.ts`): once a row is 30 days old the job
@@ -184,9 +192,24 @@ network tab recording and use the widget.
   ids, the role, the timestamps, the model, the token counts, and the fallback
   flags. A blanked turn reads back as `[removed after 30 days]`. The Discord
   bot's transcripts are blanked on the same clock, decided 2026-09-10: a
-  question typed at the bot is as private as one typed into the bubble. The
-  YouTube transcripts stay, because those turns are public comments on a video
-  under their own retention.
+  question typed at the bot is as private as one typed into the bubble; the
+  author's Discord id stays in `external_id`. The YouTube transcripts stay,
+  because those turns are public comments on a video: the comments and replies
+  in `chat_messages` and `youtube_bot_log` have no deletion date. Their
+  `chat_match_events` text is blanked at 30 days, as on every platform.
+- Just before the purge blanks a health question from the widget's chat, the
+  bubble or the embed, it keeps a copy of that one question with no end date,
+  to improve the chatbot (US-15 AC44). An automatic step tries to remove
+  names, places, dates (the year stays), exact ages (the decade stays),
+  contact details, account and order numbers, and employers, schools and
+  jobs; it can miss some. The copy keeps the health details, and we do not
+  link it to your account. Making it sends the question to Anthropic once more
+  (their 30-day API retention applies). Store questions, replies, Discord,
+  YouTube and bubble or embed conversations deleted within 30 days are never
+  copied (an earlier copy stays until you ask; a tool-page delete never
+  reaches our server, so it does not stop the copy). "Delete all my data"
+  cannot reach it; to have a copy deleted, email us the wording and we will
+  search for it.
 - Two devices editing apart converge without a conversation. If both record the same
   measurement for the same day while apart, the newer entry becomes that day's value;
   the other stays in your history marked entered-in-error. Nothing is deleted. The

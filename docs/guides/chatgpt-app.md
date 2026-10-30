@@ -16,7 +16,7 @@ This page is the plain description of what the app can do. It is for anyone deci
 
 You connect Dropbox or Google Drive yourself, through that provider's own permission screen, and you can withdraw it there at any time: [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps) or [myaccount.google.com/connections](https://myaccount.google.com/connections).
 
-To answer one request, our server fetches your file using your own credential, holds it in memory for that request, and writes it back if you asked for a change. Nothing is kept afterwards. There is no per-user row on our side, no health table, and no copy at rest. Your values never enter our logs, our error reports or our analytics.
+To answer one request, our server fetches your file using your own credential, holds it in memory for that request, and writes it back if you asked for a change. None of it is kept afterwards. There is no per-user row on our side, no health table, and no copy at rest. We keep a count of connector use: which tool ran, from which assistant, whether it worked, and when. Your values never enter our logs, our error reports or our analytics.
 
 One exception, and it is yours to trigger: if you ask the app to import the lab files in your connected Dropbox folder, those files go to Anthropic's API so the text can be read. Your record itself is never sent. We keep none of the files afterwards.
 

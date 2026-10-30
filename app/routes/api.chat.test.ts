@@ -6,6 +6,50 @@ vi.mock('../shopify.server', () => ({
   authenticate: { public: { appProxy: mocks.appProxy } },
 }));
 
+// US-15 AC44: the DELETE's two clients, recorded call by call. Only the
+// DELETE suite gives them behaviour; elsewhere the real module stands.
+const db = vi.hoisted(() => ({
+  calls: [] as { client: 'user' | 'admin'; table: string; op: string; args: unknown[] }[],
+  owned: true,
+  matchEvents: [] as { id: string; router_context: Record<string, unknown> }[],
+  adminUpdateError: null as { message: string; details?: string } | null,
+  active: false,
+}));
+function fakeClient(client: 'user' | 'admin') {
+  return {
+    from(table: string) {
+      const record = (op: string, ...args: unknown[]) => db.calls.push({ client, table, op, args });
+      let op = 'select';
+      const chain: any = {
+        select: (...a: unknown[]) => { record('select', ...a); return chain; },
+        eq: (...a: unknown[]) => { record(`${op}.eq`, ...a); return op === 'update' ? Promise.resolve({ error: db.adminUpdateError }) : chain; },
+        or: (...a: unknown[]) => { record('or', ...a); return chain; },
+        limit: async () => ({ data: db.adminUpdateError ? db.matchEvents : db.matchEvents.splice(0), error: null }),
+        maybeSingle: async () => ({ data: db.owned ? { id: 'x' } : null, error: null }),
+        delete: () => { op = 'delete'; record('delete'); return { eq: () => ({ eq: async () => ({ error: null }) }) }; },
+        update: (patch: unknown) => {
+          op = 'update';
+          record('update', patch);
+          return chain;
+        },
+      };
+      return chain;
+    },
+  };
+}
+vi.mock('../lib/supabase.server', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../lib/supabase.server')>();
+  const admin = fakeClient('admin');
+  return {
+    ...real,
+    get supabaseAdmin() { return db.active ? admin : real.supabaseAdmin; },
+    createUserClient: (id: string) => (db.active ? fakeClient('user') : real.createUserClient(id)),
+    getOrCreateGuestSession: async (...a: Parameters<typeof real.getOrCreateGuestSession>) =>
+      (db.active ? { sessionId: 'guest-1', sessionToken: 'tok' } : real.getOrCreateGuestSession(...a)),
+    logAudit: (...a: Parameters<typeof real.logAudit>) => (db.active ? undefined : real.logAudit(...a)),
+  };
+});
+
 import { action, loader } from './api.chat';
 import { streamingPost } from '../lib/capped-body.test-helpers';
 
@@ -142,5 +186,74 @@ describe('api.chat body cap (US-09 AC25)', () => {
     expect(pulled.bytes).toBeLessThanOrEqual(2 * 1024 * 1024 + 2 * 64 * 1024);
     await Sentry.flush();
     expect(envelopes).toEqual([]);
+  });
+});
+
+// US-15 AC44: a deleted conversation's router rows are blanked at once,
+// through the service role (the user's client has no UPDATE grant on
+// chat_match_events), filtered by this user, after the owner check and the
+// delete. A failure there is reported without text; the delete stands.
+describe('api.chat DELETE blanks the conversation’s match events (US-15 AC44)', () => {
+  const conversationId = '0b6f4c1e-2a3d-4e5f-8a9b-0c1d2e3f4a5b';
+  const LEAK = ['DB', 'ERROR', 'TEXT', 'MARKER'].join('_');
+  const del = () => action({
+    request: new Request('https://drstanfield.com/api/chat', {
+      method: 'DELETE',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ conversationId, localFirst: true }),
+    }),
+    params: {},
+  } as unknown as Parameters<typeof action>[0]);
+
+  beforeEach(() => {
+    mocks.appProxy.mockResolvedValue({});
+    db.active = true;
+    db.calls = [];
+    db.owned = true;
+    db.adminUpdateError = null;
+    db.matchEvents = [{ id: 'evt-1', router_context: { platform: 'shopify', first: LEAK, recent: [LEAK] } }];
+  });
+  afterEach(() => { db.active = false; });
+
+  it('deletes with the user’s client, then blanks the rows with the service role', async () => {
+    const res = await del();
+    expect(await res.json()).toEqual({ success: true });
+    const user = db.calls.filter((c) => c.client === 'user');
+    const admin = db.calls.filter((c) => c.client === 'admin');
+    expect(user.some((c) => c.table === 'chat_conversations' && c.op === 'delete')).toBe(true);
+    // The user's client never touches the router rows.
+    expect(user.filter((c) => c.table === 'chat_match_events')).toEqual([]);
+    // The service role selects only this conversation's rows, for this user.
+    expect(admin.filter((c) => c.op === 'select.eq').map((c) => c.args).slice(0, 2)).toEqual([
+      ['conversation_id', conversationId],
+      ['user_id', 'guest-1'],
+    ]);
+    expect(admin.find((c) => c.op === 'update')?.args[0]).toEqual({
+      message: null, router_raw: null, router_error: null, router_context: { platform: 'shopify' },
+    });
+    expect(admin.find((c) => c.op === 'update.eq')?.args).toEqual(['id', 'evt-1']);
+    // Blanked after the delete, not before.
+    const order = db.calls.map((c) => `${c.client}:${c.op}`);
+    expect(order.indexOf('admin:update')).toBeGreaterThan(order.indexOf('user:delete'));
+  });
+
+  it('a blanking failure is reported without text and the delete still succeeds', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    db.adminUpdateError = { message: LEAK, details: LEAK };
+    const res = await del();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ success: true });
+    expect(consoleError).toHaveBeenCalledWith('Chat: Failed to clear match events');
+    await Sentry.flush();
+    // Sentry's context lines quote this file, so the marker is built, never written out.
+    expect(JSON.stringify(envelopes)).not.toContain(LEAK);
+    expect(JSON.stringify(consoleError.mock.calls)).not.toContain(LEAK);
+  });
+
+  it('touches no router rows when the conversation is not this user’s', async () => {
+    db.owned = false;
+    const res = await del();
+    expect(res.status).toBe(404);
+    expect(db.calls.filter((c) => c.client === 'admin')).toEqual([]);
   });
 });

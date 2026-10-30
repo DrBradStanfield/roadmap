@@ -4,7 +4,11 @@
  * Loaded on all pages via chat-embed.liquid (app embed block).
  * Skips the roadmap page where HealthTool handles its own chat.
  * Reads cached health data from localStorage (entered on roadmap page) and
- * sends it as chat context — local-first, the server holds no health data.
+ * sends it as chat context. Not a local-first surface: the server stores the
+ * question, the reply (which can quote that context) and a title, blanked
+ * after 30 days (US-15 AC7/AC8, app/lib/chat-purge-cron.server.ts). Just
+ * before a health question is blanked, a scrubbed copy is kept with no end
+ * date (US-15 AC44).
  */
 import { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';

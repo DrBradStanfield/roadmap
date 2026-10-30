@@ -159,9 +159,9 @@ const TRANSIENT_RETRY_DELAY_MS = 1000;
  * conversation — on the stored surfaces the server's consecutive-duplicate
  * dedup (chat-dedup.server.ts) is gated on conversationId, so retrying a
  * thread's FIRST message could mint a ghost conversation + a second LLM
- * spend. On the local-first widget the server stores nothing, so a retry
- * that lands after attempt 1 died mid-pipeline costs one more LLM call and
- * no row.
+ * spend. On the local-first widget the server keeps no transcript, only a
+ * masked question row, so a retry that lands after attempt 1 died
+ * mid-pipeline costs one more LLM call and at most one more question row.
  */
 async function fetchWithTransientRetry(input: string, init?: RequestInit, retryable = true): Promise<Response> {
   const first = await fetch(input, init);
@@ -343,8 +343,8 @@ const knownEdits = (edits: unknown): ProposedEdit[] =>
 
 /**
  * `history` is the conversation so far, from the widget's own file. On
- * local-first builds the server stores nothing the widget says (US-15 AC7),
- * so the earlier turns travel with each request, and a byte-identical resend
+ * local-first builds the server keeps no transcript of the widget's chat, only
+ * a masked question row (US-15 AC7), so the earlier turns travel with each request, and a byte-identical resend
  * of the last question is answered from the last reply without a request —
  * the same rule as the server-side dedup the stored surfaces rely on: within
  * the window, and never a fallback.

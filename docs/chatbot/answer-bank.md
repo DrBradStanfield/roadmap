@@ -1,4 +1,4 @@
-<!-- generated — never edit; source hash sha256:cb76c81e6559d98f36333ecfa6c4e06c81766f7c1f15039d3867206d7334c237 -->
+<!-- generated — never edit; source hash sha256:90c8b6d69c963d51f92e8c401a844b390cc644907cd95dd5f7b662612287be0f -->
 <!-- Built by claude_business tools/sync-shared-docs.mjs from docs/customer-service/answer-bank.md. Edit the master there and rerun the sync. -->
 
 Approved answers to questions customers have asked by email (81 entries), written in the first person. Each entry gives the question, then the answer.
@@ -179,13 +179,13 @@ to cause clinically meaningful changes in vitamin and mineral status
 compared with placebo, even when used for several months and at doses
 higher than the 2.5 g of psyllium in one serving of MicroVitamin+
 
-   - Reference: "Psyllium treatment had no clinically significant
+   Reference: "Psyllium treatment had no clinically significant
    effects on vitamin and mineral status." (American Journal of Clinical
    Nutrition) https://ajcn.nutrition.org/article/S0002-9165(23)07010-7/pdf
-   - Reference: "Psyllium... makes little practical difference to
+   Reference: "Psyllium... makes little practical difference to
    availability of co-ingested calcium." (PubMed)
    https://pubmed.ncbi.nlm.nih.gov/7884114/
-   - Reference: "No significant between group differences in serum
+   Reference: "No significant between group differences in serum
    micronutrient concentrations after... psyllium fibre supplementation."
    (Springer Nature) https://link.springer.com/article/10.1186/s40795-022-00534-7
 

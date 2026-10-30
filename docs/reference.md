@@ -97,7 +97,7 @@ health-record instructions describe v1, not the current architecture.
 
 Compact inventory. Tests sit beside their file (`*.test.ts`) and are not listed. Verified against `git ls-files` 2026-09-07.
 
-**Server routes (`app/routes/`).** Storefront routes reach Fly through the Shopify app proxy `/apps/health-tool-1/...` (HMAC-verified). The app stores NO health data: AI, email, tracking and MCP only.
+**Server routes (`app/routes/`).** Storefront routes reach Fly through the Shopify app proxy `/apps/health-tool-1/...` (HMAC-verified). The app stores NO health record and no parsed health value: AI, email, tracking and MCP only. It does keep chat and feedback free text, which can hold health details (US-15 promise paragraph lists each table and its retention).
 
 | Route | Auth | Does |
 | --- | --- | --- |
@@ -160,7 +160,7 @@ Health data lives in the user's own file ([roadmap-file.ts](../packages/health-c
 - `healthDocuments`: Scan results, clinic letters, discharge/pathology reports, vaccination records (markdown + metadata). Dedup on `sourceFileName` (stable) not title+date (LLM-generated, drifts).
 - `reminderOptIn`: mirrored client copy of the user's reminder schedule (the server's `reminder_optin_v2` row is the delivery source of truth).
 
-### Live Supabase tables (operational only, no health data)
+### Live Supabase tables (operational only, no health records; chat and feedback free text per US-15)
 
 - `profiles`: pseudonymous anchors for chat FKs (demographics scrubbed in the June-2026 purge; `shopify_customer_id` may link a logged-in customer).
 - `chat_conversations` / `chat_messages`: transcripts of the blog chat bubble, Discord and YouTube only — the main widget writes none (US-15 AC7, 2026-09-10). `chat_match_events`: one router-telemetry row per answered turn on every surface, `router_context.platform` names it, no FK to the other two; the widget's question text is kept with every number masked to `#` and topic names with a digit (HbA1c, B12, type 2) kept, as are its `router_raw` and `router_error` (US-15 AC33; verbatim before it deployed); no reply, no record. `matched_handles` is what the ROUTER picked, not what loaded: since US-50 AC14 (web chat, YouTube and Discord) a picked older post gives way to its topic masters, listed in `router_context.replaced`, and masters that loaded shortened are in `router_context.reduced` (both index handles, absent when empty). Unreviewed after the review cap: the last AC14 commit was read by the orchestrator. `guest_chat_sessions`: guest sessions (raw IP).
@@ -303,6 +303,7 @@ Restoring or retiring the experiment delivery path is separate behavior work.
 ## Dangerous Gotchas — full archive (curated shortlist lives in CLAUDE.md)
 
 - **2026-10-30 every Codex draft was refused after the repo folder was renamed.** Symptom: `tools/codex-review.mjs --subject codex-drafts/<file>` refused each draft as "not tracked at HEAD and lies outside every subject root". Root cause: `tools/codex-review-includes.json` pinned the drafts folder by absolute path, and the repo folder moves between `roadmap` and `roadmap.nosync`; ab38405e flipped the pin one way the same morning, and the next rename broke it again. Fix: the pin is `./codex-drafts`, which the wrapper resolves against the main checkout of its own repo (the parent of git's common dir), never cwd or a worktree; any other relative root is refused (US-40 AC15). Evidence: this change.
+- **2026-10-30 a Stryker sandbox holds a copy of `.env` (US-48 AC7).** Symptom: none; it is silent. Root cause: Stryker 10 copies the repo into `.stryker-tmp/sandbox-*` and ignores only node_modules, .git and build folders, not `.gitignore`; a crashed or interrupted run leaves the copy, and `.dockerignore`'s `.env` line matches the context root only, so a manual `fly deploy` would bake it into the image. Also: Stryker's vitest runner switches the pool to threads, where `process.env.TZ` does nothing, so TZ-pinning suites fail. Fix: `.env*` and `.mcp.json` in `stryker.clinical.config.json` ignorePatterns, `.stryker-tmp*/` and `reports/` in `.dockerignore`, `vitest.pool: forks` in the Stryker config. Evidence: adversary review of 11938638.
 
 - **2026-10-30 every new Shopify customer stayed a chat guest after US-09 AC27 (issue #309).** Symptom: from 2026-10-21 no `USER_CREATED` audit row; Sentry JAVASCRIPT-REMIX-75 "Shopify link without admin-written proof" in pairs about 30 s apart; three stuck customers. Root cause: Supabase Auth's `adminUserCreate` INSERTs the user (firing our `handle_new_user` trigger) before it writes `app_metadata`, in the same transaction, so the trigger filed the profile with a null customer id; `getOrCreateSupabaseUser` read that as a competing link and refused, and every later `createUser` answered 422 (email exists). Tests missed it because the mock trigger saw the metadata at INSERT. Fix: claim only a null slot, only on the admin-written proof, with a conditional update; `tools/repair-trigger-first-links.ts` repairs the orphans (the standing remedy for any failure between `createUser` and the claim). Evidence: this commit.
 

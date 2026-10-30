@@ -1,11 +1,14 @@
 # Privacy policy addendum: the AI connector
 
 Published at [drstanfield.com/pages/connector-privacy](https://drstanfield.com/pages/connector-privacy)
-by `node scripts/build-privacy-page.mjs --publish` (last 12 October 2026, from commit
-202bfb8a: the repository is public again, US-32 AC39). Republish after every edit here; the page is generated, never hand-edited.
+by `node scripts/build-privacy-page.mjs connector --publish` (last 30 October 2026). Republish after every edit here; the page is generated, never hand-edited.
 Written 2026-09-02, re-audited 2026-09-07 and 2026-09-10, from the code at
 `app/lib/mcp.server.ts`, `app/lib/mcp-*.server.ts`, `app/routes/mcp.$.tsx` and
-`packages/health-core/src/mcp-tools.ts`.
+`packages/health-core/src/mcp-tools.ts`. Re-audited 2026-10-30 against `app/routes/api.chat.ts`,
+`app/lib/chat-router.server.ts` (`redactForWidget`), `app/lib/chat-purge-cron.server.ts`,
+`app/lib/discord-bot.server.ts` and the YouTube bot, after a contributor found claims the code
+contradicted; the text was also brought in line with docs/writing-style.md. Re-audited
+2026-10-30 for US-15 AC44 (the kept copy of health questions). Not yet republished.
 
 > Assistant-side extraction shipped 2026-09-07 (US-36): a file you drop into the chat is
 > read by your assistant, and the sentences below say so. The folder route still sends
@@ -33,41 +36,46 @@ nowhere else. We store none of them.
 The record file is the trust root. Anything that can write it can already delete it
 outright, and a file carrying a later erase wins on every device. Recovery is your
 provider's version history. If two devices record the same measurement for the same day
-while apart, the newer entry becomes that day's value; the other stays in your history
+while apart, the newer entry becomes that day's value. The other stays in your history,
 marked entered-in-error. Nothing is deleted.
 
-Say plainly what that means: to answer through this connector, our server does read your
-health record, in memory, on every call. It cannot do the work without reading it. If
-you would rather no server of ours ever saw your record, there is a version with no
-server in it at all: `tools/mcp-server.ts`, the same tools running as a program on your
-own computer, straight against your own file
-([the setup guide](guides/connect-claude-desktop.md)). No server of ours sees your
-record on that path. What your assistant reads out of the file still goes to whichever
-AI vendor you use, under that vendor's own policy.
+To answer through this connector, our server reads your health record, in memory, on
+every call. It cannot do the work without reading it. If you would rather no server of
+ours ever saw your record, there is a version with no server in it at all:
+`tools/mcp-server.ts`, the same tools running as a program on your own computer,
+straight against your own file ([the setup guide](guides/connect-claude-desktop.md)). No
+server of ours sees your record on that path. What your assistant reads out of the file
+still goes to whichever AI vendor you use, under that vendor's own policy.
 
-If you drop a lab file into the chat, your assistant reads the file itself; the file
-never reaches our server. Only the values it read do, in memory for one request, and
-they are written to your own folder, never kept by us. If instead you ask your assistant
-to import the lab files in your Dropbox folder, each of those files, not your record, is
-held in server memory for one request and sent to Anthropic's API for extraction. That
-happens at the extract step, before you have confirmed anything. We keep none of it.
-What Anthropic keeps is theirs to say, so we quote them rather than promise on their
-behalf: their [commercial terms](https://www.anthropic.com/legal/commercial-terms) say
-"Anthropic may not train models on Customer Content from Services", and their privacy
-centre says that for the API they "automatically delete inputs and outputs on our
-backend within 30 days of receipt or generation", keeping them longer only where they
-need to "enforce our Usage Policy" (up to 2 years for flagged inputs and outputs, up to
-7 years for safety classification scores) or to comply with the law
+If you drop a lab file into the chat, your assistant reads the file itself, and the file
+never reaches our server. Only the values it read do, in memory for one request. They
+are written to your own folder and never kept by us.
+
+If instead you ask your assistant to import the lab files in your Dropbox folder, each
+of those files, not your record, is held in server memory for one request and sent to
+Anthropic's API for extraction. That happens at the extract step, before you have
+confirmed anything. We keep none of it. What Anthropic keeps is theirs to say, so we
+quote them rather than promise on their behalf. Their
+[commercial terms](https://www.anthropic.com/legal/commercial-terms) say "Anthropic may
+not train models on Customer Content from Services". Their privacy centre says that for
+the API they "automatically delete inputs and outputs on our backend within 30 days of
+receipt or generation", keeping them longer only where they need to "enforce our Usage
+Policy" (up to 2 years for flagged inputs and outputs, up to 7 years for safety
+classification scores) or to comply with the law
 ([how long do you store my organization's data](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data)).
-Zero data retention is a separate arrangement Anthropic offers eligible customers; we do
-not have one. (A ChatGPT connection made before 7 September 2026 keeps an older tool
-list until you refresh the connector; since 10 September 2026 our server fetches nothing
-for a dropped file. It asks you to refresh instead.) On a Google Drive record the folder cannot be read,
+Zero data retention is a separate arrangement Anthropic offers eligible customers. We do
+not have one.
+
+A ChatGPT connection made before 7 September 2026 keeps an older tool list until you
+refresh the connector. Since 10 September 2026 our server fetches nothing for a dropped
+file; it asks you to refresh instead. On a Google Drive record the folder cannot be read,
 so only the chat route applies. On a Dropbox record, when your assistant reads your
-record it also lists the file names in that folder, in memory, to tell you which are not
-yet in your record; the names are not kept. The candidate values either route finds are written to YOUR folder, as
+record, the server also lists the file names in that folder, in memory, to tell you
+which are not yet in your record. The names are not kept.
+
+The candidate values either route finds are written to your folder, as
 `imports/pending-<id>.json`, until you confirm them. Nothing is written to your record
-until you do: the candidates wait in that pending file, in your own folder, and the
+until you do. The candidates wait in that pending file, in your own folder, and the
 receipt that names it expires after an hour. When you confirm, the server deletes that
 file. A delete that fails is counted as a number for us, not reported to you, and the
 file stays. A file nobody acts on is removed at your next import, by whichever route you
@@ -76,69 +84,77 @@ where you can delete it yourself.
 
 A call that confirms a change, or files what your assistant found, also carries your
 short approval quoted in your own words (at most 200 characters). The server reads it
-only to check it is there and within that length, holds it in memory for that one
-request, and never stores,
-logs or counts it. It exists because ChatGPT's safety layer judges the call itself for
-evidence of your approval.
+only to check it is there and within that length. It holds it in memory for that one
+request and never stores, logs or counts it. The approval exists because ChatGPT's
+safety layer judges the call itself for evidence of your approval.
 
 ## What we store
 
-For the connector: no account, no copy of your health data, and no row that
-identifies you, with the one exception below. The server holds no database of connector users. (The rest of the
-product does store some things; see "What the rest of the product stores" below.)
+For the connector we store no account, no copy of your health data, and no row that
+identifies you, with the one exception below. The server holds no database of connector
+users. The rest of the product does store some things; see "What the rest of the product
+stores" below.
+
 When you connect, we hand your AI assistant an encrypted credential. Your assistant
-stores it. We hold the encryption key and never a copy of the credential, so neither
-we nor your AI vendor can open your storage from what each holds at rest. The two do
-meet on our server during a normal call: it unseals the credential to open your folder
-for that request, then discards both. A compromised server could capture them at that
-moment; encryption at rest does not protect against that, and we do not claim it does.
+stores it. We hold the encryption key and never a copy of the credential, so neither we
+nor your AI vendor can open your storage from what each holds at rest. The two do meet
+on our server during a normal call: it unseals the credential to open your folder for
+that request, then discards both. A compromised server could capture them at that
+moment. Encryption at rest does not protect against that, and we do not claim it does.
 
 One exception, for one invented account. While an OpenAI or Anthropic app review is
-pending, our server holds the Dropbox credential of a synthetic reviewer account we made,
-so their reviewer can sign in on our consent page with a username and password we issued instead
-of a Dropbox login. The account belongs to no one and its record is invented. The
-reviewer's assistant holds no credential at all, only a marker that names the current
-reviewer secrets, so removing or changing those secrets ends every reviewer session. It
-is the only password login on the connector and the only storage credential our server
-holds, and it exists only while the secrets are set. Your own credential is never held
-this way.
+pending, our server holds the Dropbox credential of a synthetic reviewer account we
+made. Their reviewer can then sign in on our consent page with a username and password
+we issued instead of a Dropbox login. The account belongs to no one and its record is
+invented. The reviewer's assistant holds no credential at all, only a marker that names
+the current reviewer secrets, so removing or changing those secrets ends every reviewer
+session. It is the only password login on the connector and the only storage credential
+our server holds, and it exists only while the secrets are set. Your own credential is
+never held this way.
 
-Some things sit in the memory of a running server and vanish when it restarts. Among
-them: the one-time authorization codes and confirm receipts already used, so neither
-works twice; counts of requests per network address; counts of tool calls, writes and
-imported files per connection; the public bug reports each connection filed recently,
-so a retry does not file twice; a count of failed reviewer sign-ins per network address;
-and a short-lived cache of the descriptions assistants publish about themselves. A
-per-connection count is keyed on a SHA-256 hash of the credential (for the reviewer
+Some things sit in the memory of a running server and vanish when it restarts:
+
+- the one-time authorization codes and confirm receipts already used, so neither works twice;
+- counts of requests per network address;
+- counts of tool calls, writes and imported files per connection;
+- the public bug reports each connection filed recently, so a retry does not file twice;
+- a count of failed reviewer sign-ins per network address;
+- a short-lived cache of the descriptions assistants publish about themselves.
+
+A per-connection count is keyed on a SHA-256 hash of the credential (for the reviewer
 account, of its marker), not on your name, your email or your file.
 
 Our database still carries the tables the old server-stored version used: `lab_values`,
 `health_measurements`, `health_documents`, `medications`, `medication_history`,
 `supplements`, `supplement_history`, `screenings`, `reminder_preferences`,
-`reminder_log` and `message_credit_transactions`. Every one of them holds zero rows.
-They are empty, not in use, and read and written by no code. They are still there
-because dropping a table on our host breaks the API's schema cache, so we leave the
-shells standing. The `profiles` table keeps four columns that were meant to hold your
-sex, birth year, birth month and height; every one of them is null for every row, and
-nothing writes them. Row-level security is on for every table in the database, and the
-public key that would let a browser talk to it directly ships in none of our bundles.
+`reminder_log` and `message_credit_transactions`. Every one of them holds zero rows. No
+code reads or writes them. They are still there because dropping a table on our host
+breaks the API's schema cache, so we leave the empty tables standing. The `profiles`
+table keeps four columns that were meant to hold your sex, birth year, birth month and
+height. Every one of them is null for every row, and nothing writes them. Row-level
+security is on for every table in the database, and the public key that would let a
+browser talk to it directly ships in none of our bundles.
 
 ## What we log
 
 Our hosting provider records ordinary web request lines: the time, the method, the
 path and its query string, and the status code. The web server writes the request line
 as it arrived, so whatever sits in a URL sits in that log. As of 10 September 2026
-nothing about your health travels in one: the lab-import poll carries its token in the
-body of a POST instead. One secret does: when you connect, your storage provider sends
-you back to us with a one-time sign-in code in the address, as OAuth requires. It works
-once, and only together with our app secret, which never leaves our server. What does appear there is the signature and the
-timestamp Shopify puts on an app-proxy address, and both expire in ten minutes. Errors
-go to Sentry. Before an event leaves the server, our own code deletes the
-request body, the cookies and the `Authorization` header from it, cuts the request
-address down to the site and the path with the query string dropped whole, and runs
-that path through the same text scrub as the rest of the event. It replaces the text
-of console breadcrumbs, and filters values stored under a known health, medication or
-identity key name. Sex was always one of them; on 10 September 2026 the list gained
+nothing about your health travels in one; the lab-import poll carries its token in the
+body of a POST instead.
+
+One secret does travel in a URL. When you connect, your storage provider sends you back
+to us with a one-time sign-in code in the address, as OAuth requires. It works once, and
+only together with our app secret, which never leaves our server. The signature and the
+timestamp Shopify puts on an app-proxy address also appear in that log, and both expire
+in ten minutes.
+
+Errors go to Sentry. Before an event leaves the server, our own code deletes the
+request body, the cookies and the `Authorization` header from it. It cuts the request
+address down to the site and the path, dropping the query string whole, and runs that
+path through the same text scrub as the rest of the event. It replaces the text of
+console breadcrumbs, and filters values stored under a known health, medication or
+identity key name. Sex was always one of them. On 10 September 2026 the list gained
 date of birth, gender, a patient name, a patient or NHI number, and the plain field
 names a value or a note is carried in (`value`, `values`, `result`, `results`,
 `title`, `note`, `notes` and `summary`). Sentry's own PII collection is off: we never
@@ -158,69 +174,76 @@ expires 90 days after it is issued.
 One thing is kept: a count of connector activity. Each row says which tool was called,
 which assistant called it, whether it succeeded, was refused or failed, and when. The
 row that marks a new connection also says which storage provider it uses, and whether it
-came through the reviewer sign-in. An import
-adds a row saying which route it took (the Dropbox folder, a ChatGPT file, or a Google
-Drive refusal), which phase (extract or commit), and how many files, as a bucket such as
-"1" or "2-5". No values, no metric names, no file names, no row ids, no identifier, and
-nothing that links two calls to one person. We keep it because a feature nobody uses should be
-retired rather than maintained, and we have no other way to know.
+came through the reviewer sign-in. An import adds a row saying which route it took (the
+Dropbox folder, a ChatGPT file, or a Google Drive refusal), which phase (extract or
+commit), and how many files, as a bucket such as "1" or "2-5". The rows hold no values,
+no metric names, no file names, no row ids, no identifier, and nothing that links two
+calls to one person. We keep them because a feature nobody uses should be retired
+rather than maintained, and we have no other way to know.
 
-Said plainly, because it is the honest version: value-free is not the same as
-person-free. While very few people use the connector, a timestamped row is a thin
-record of somebody's activity, and with one user it is a record of that user. It cannot
-say what they measured, only that they called a tool.
+Value-free is not the same as person-free. While very few people use the connector, a
+timestamped row is a thin record of somebody's activity, and with one user it is a
+record of that user. It cannot say what they measured, only that they called a tool.
 
 ## How to disconnect
 
-Two steps, and the second is the one that counts.
+Disconnecting takes two steps.
 
 1. Remove the connector in ChatGPT or Claude.
 2. Revoke our app in your storage provider:
    `dropbox.com/account/connected_apps` or `myaccount.google.com/connections`.
 
-Step 2 is the real off switch. It also disconnects this website from that folder,
-because both use the same app identity. You can reconnect in one click.
+Step 2 is the one that cuts off access. It also disconnects this website from that
+folder, because both use the same app identity. You can reconnect in one click.
 
 ## Who else is involved
 
-- **Your AI vendor** (OpenAI or Anthropic, whichever you chose). Your questions and the
-  answers pass through them under their own privacy policy. We do not choose them for
-  you.
-- **Anthropic, again, only when you import a file through the connector.** The file
-  goes to their API for extraction at the extract step, under our key and not yours,
-  before you confirm anything. We keep none of it; what they keep is their published
-  API policy, quoted under "Where your health record lives" above.
-- **Dropbox or Google.** Your storage, under your own account.
-- **Fly.io**, who run our server. It runs in Ashburn, Virginia, United States.
-- **Sentry**, for error reports, scrubbed as described above. How far that scrub reaches (`packages/health-core/src/sentry-scrub.ts`): it removes email
-  addresses, numbers carrying a unit, and numbers written within 20 characters of about
-  thirty metric and lab words, drops the query string of every address it reports, including the page addresses in
-  its own breadcrumbs, and
-  server-side it drops any extra field over 200 characters. It does not recognise a diagnosis or a name written in ordinary prose, and
-  it carries no phone-number rule (that guard sits in the connector's feedback tool). The
-  control that does the work is upstream: the code raises errors with fixed messages
-  rather than echoing the text it was reading. The lab-extraction parse path was changed
-  on 10 September 2026 to do the same, because a JSON or schema error quotes the
-  document back.
+Your AI vendor, OpenAI or Anthropic, whichever you chose. Your questions and the answers
+pass through them under their own privacy policy. We do not choose them for you.
+
+Anthropic again, only when you import a file through the connector. The file goes to
+their API for extraction at the extract step, under our key and not yours, before you
+confirm anything. We keep none of it. What they keep is their published API policy,
+quoted under "Where your health record lives" above.
+
+Dropbox or Google hold your storage, under your own account. Fly.io runs our server, in
+Ashburn, Virginia, United States.
+
+Sentry receives our error reports, scrubbed as described above. The scrub
+(`packages/health-core/src/sentry-scrub.ts`) removes email addresses, numbers carrying
+a unit, and numbers written within 20 characters of about thirty metric and lab words.
+It drops the query string of every address it reports, including the page addresses in
+its own breadcrumbs. Server-side it drops any extra field over 200 characters. It does
+not recognise a diagnosis or a name written in ordinary prose, and it carries no
+phone-number rule (that guard sits in the connector's feedback tool). The control that
+does the work is upstream: the code raises errors with fixed messages rather than
+echoing the text it was reading. The lab-extraction parse path was changed on
+10 September 2026 to do the same, because a JSON or schema error quotes the document
+back.
 
 ## What the rest of the product stores
 
-This section covers the connector. Two neighbouring features are worth naming, because
-"we keep no health data" is easy to read more broadly than it is true.
+This section covers the connector. The neighbouring features are named here, because
+"we keep no health data" is easy to read more broadly than it is true. Our server keeps
+no health record and no parsed health value. It does keep the text people type into our
+chats and feedback box, and that text can hold health details.
 
-**Email reminders.** On the website you do not enrol yourself. Connecting a cloud
-provider enrols you, because that connection is treated as the consent
-(`autoEnrolReminders` in `widget-src/standalone/reminders.ts`, a decision taken on
-11 August 2026). The email address comes from the cloud account you just connected. The
-plan-ready email that follows tells you reminders are coming and carries the one-click
-off switch, and so does every reminder after it. The version you run yourself enrols
-nobody: that code path stops at once off the website, and only the toggle, which asks
-you for an address, can enrol you. Enrolled, we hold your email address, the screening
-labels and the dates they are due, a token that turns reminders off, and the date each
-label was last emailed. That is the whole row (`app/lib/reminder-v2.server.ts`). No
-health values, no account, nothing else. A label can imply something about you, and a due date is a
-date: "no health values on our server" is the accurate claim, not "nothing about your
-health."
+### Email reminders
+
+On the website you do not enrol yourself. Connecting a cloud provider enrols you,
+because that connection is treated as the consent (`autoEnrolReminders` in
+`widget-src/standalone/reminders.ts`, a decision taken on 11 August 2026). The email
+address comes from the cloud account you just connected. The plan-ready email that
+follows tells you reminders are coming and carries the one-click off switch, and so does
+every reminder after it. The version you run yourself enrols nobody: that code path
+stops at once off the website, and only the toggle, which asks you for an address, can
+enrol you.
+
+Enrolled, we hold your email address, the screening labels and the dates they are due,
+a token that turns reminders off, and the date each label was last emailed. That is the
+whole row (`app/lib/reminder-v2.server.ts`). It holds no health values and no account.
+A label can imply something about you, and a due date is a date, so the accurate claim
+is "no health values on our server", not "nothing about your health."
 
 Turning reminders off does not always empty that row. The widget toggle and the link in
 a reminder email empty the schedule and keep the rest: the address, the token, the
@@ -228,101 +251,179 @@ last-sent dates and the date the row was created. The row stays so that turning
 reminders on again does not send a second welcome email. Someone who types your address
 later can restart the schedule; each reminder carries the one-click off link. A cancel
 that proves the inbox with a Google sign-in deletes the row outright. An address that
-bounces or reports us as spam is deleted too. A row switched off stays 90 days, then is
-deleted: the daily reminder job sweeps emptied rows once that window has passed
-(`purgeTombstones`), so "kept" no longer means kept forever. Past that window your
-address is a stranger to us again, and an optin naming it starts over, welcome email
-included.
+bounces or reports us as spam is deleted too. A row switched off stays 90 days, then the
+daily reminder job deletes it (`purgeTombstones`). Past that window your address is a
+stranger to us again, and an optin naming it starts over, welcome email included.
 
-**Chat.** On the storefront widget we store one row for each question you send: the
-first 500 characters of that question, nothing more, which may hold health details
-you wrote into it; the articles it matched; its classification; the router's raw
-output and any router error; the name of the surface; and a pseudonymous session and conversation id. The earlier turns of the
-conversation and the reply are not stored. A daily job blanks the question text, the
-router's raw output and the error text once a row is 30 days old; the match record
+### Chat on the tool page
+
+The chat on the tool page keeps one row for each question you send. The row holds the
+first 500 characters of that question, with every number value replaced by `#`. Some
+test names that contain a digit, such as HbA1c, stay as written. Words stay as you typed
+them, so a diagnosis you write stays in that text. The row also holds the
+articles the question matched, its classification, the router's raw output and any
+router error (both with numbers masked the same way), the name of the surface, and a
+pseudonymous session and conversation id. The earlier turns of the conversation and the
+reply are not stored. A daily job blanks the question text, the router's raw output and
+the error text once a row is 30 days old. Just before it does, it keeps a copy of a
+health question, as "The copy we keep of health questions" below says. The match record
 stays: the articles, the classification, the ids. A guest session row holds a hashed
 address, not an IP.
 
-The chat bubble on blog pages and the chatbot embed both send less than the widget's
+If you are signed in to this store, each message also makes our server look up your
+email address and your first and last name from your store account. The first time, it
+creates an account row for you in our database with those details and your store
+customer id, and an audit entry saying it did. Later messages keep the names up to date.
+Neither the daily job nor the erase button removes the account row.
+
+The iPhone app's chat stores no question, no reply and no row of any kind; its own
+notice covers it.
+
+### The blog chat bubble and the chatbot embed
+
+The chat bubble on blog pages and the chatbot embed both send less than the tool page's
 chat, and keep more. Each one reads the copy of your saved record that the widget keeps
 in your browser and sends it as context with every message you type
 (`loadGuestInputs()` in `widget-src/src/lib/storage.ts`, called from
 `widget-src/src/site-chat.tsx` and `widget-src/src/chatbot-embed.tsx`). That context is
 your saved profile (sex, height, birth year and month, and unit system); the latest
 saved value of each measurement, with its date; the medications on record, with drug
-names and doses; and every screening answer on record: methods, results, dates and
-follow-ups, your smoking history and pack-years, your PSA value, your answers on
-discussing prostate and endometrial screening, and your answer about abnormal bleeding.
-It holds nothing you typed and did not save. The widget's own chat sends all of that,
-plus up to 24 dated values for each measurement and anything typed on the page but not
-saved yet. Neither bundle is built as a local-first surface, so the server keeps the
-transcript: your question and the reply are written to `chat_messages`, and the reply
-can quote the values it was sent.
+names and doses; and every screening answer on record. The screening answers include
+methods, results, dates and follow-ups, your smoking history and pack-years, your PSA
+value, your answers on discussing prostate and endometrial screening, and your answer
+about abnormal bleeding. The context holds nothing you typed and did not save. The tool
+page's chat sends all of that, plus up to 24 dated values for each measurement and
+anything typed on the page but not saved yet.
+
+Neither bundle is built as a local-first surface, so the server keeps the transcript.
+Your question and the full reply are written to `chat_messages`, and the reply can quote
+the values it was sent. A title made from your first question is written to
+`chat_conversations`. Each question also writes a row like the tool page's, but with the
+question unmasked and with your earlier questions in that conversation beside it. If you
+are signed in to this store, these rows carry the id of your account row (your email
+address, first and last name and store customer id, as on the tool page); if not, a pseudonymous guest session id.
+
 Brad decided on 10 September 2026 to keep sending those cached values, because the
-answer is worse without them, and to put the transcripts under the same 30-day window as
-the router audit (`app/lib/chat-purge-cron.server.ts`). Once a message is 30 days old the
-daily job blanks its text. The conversation title, which is made of the first words of your
-first question, is blanked 30 days after your last message in that conversation. The shape of the thread stays and the words go: row ids, the
-role, the timestamps, the model, the token counts and the fallback flags remain, and a
-blanked turn reads back as `[removed after 30 days]`. The Discord bot's transcripts are
-blanked on the same clock. Brad decided that on the evening of 10 September 2026,
-because a question typed at the bot is as private as one typed into the bubble. The
-YouTube bot's are not: those turns are public comments on a video, kept under their own
-retention.
+answer is worse without them, and to put the transcripts under the same 30-day window
+as the question rows (`app/lib/chat-purge-cron.server.ts`). Once a message is 30 days
+old the daily job blanks its text. The conversation title is blanked 30 days after your
+last message in that conversation. Each question row's text is blanked 30 days after
+the row was made, but a later row in the same conversation carries copies of your first
+question and your last three, so your words can stay until 30 days after your last
+message in that conversation. The shape of the thread stays and the words go: row ids, the role,
+the timestamps, the model, the token counts and the fallback flags remain, and a blanked
+turn reads back as `[removed after 30 days]`. Just before it blanks a question row, the
+job keeps a copy of a health question, as the next section says.
 
-**Deleting your data.** "Delete all my data" in the widget erases two files in your own
-folder: your health record and your chat history. The chat file cannot simply be emptied,
-because the merge that keeps your devices in step would put the conversations back from
-any other copy, so each one is tombstoned instead: no messages, no title, and marked
-deleted for good. The erase removes every value it can see in this browser and in your
+Deleting a conversation in the bubble or the embed deletes its messages and its title
+from our server at once, and blanks the question text of its question rows. The rest of
+those rows stays until the daily job reaches them. A question in a conversation deleted
+within its 30 days is never copied; a copy made before the delete stays until you ask us to
+delete it.
+
+### The copy we keep of health questions
+
+Just before the daily job blanks a question asked on the tool page, the blog chat bubble
+or the chatbot embed, we keep a copy of that one question, with no end date, to improve
+the chatbot. We copy only health and measurement questions, never questions about orders,
+subscriptions or your account. We never copy a reply, the earlier questions stored beside
+it, or anything from Discord or YouTube.
+
+Before we keep it, an automatic step tries to remove names, places, dates (the year
+stays), exact ages (the decade stays), contact details, account and order numbers, and
+employers, schools and jobs. It can miss some. The copy keeps the health details, and we
+do not link it to your account. Making the copy sends the question to Anthropic once
+more, and their 30-day API retention, quoted above, applies. To have a copy deleted,
+email brad@drstanfield.com the wording and we will search for it.
+
+### Discord and YouTube
+
+The Discord bot keeps each question and reply, blanked on the same 30-day clock and
+never copied. Brad
+decided that on the evening of 10 September 2026, because a question typed at the bot
+is as private as one typed into the bubble. The author's Discord id stays on the
+conversation row after the words are blanked.
+
+The YouTube bot reads public comments on Brad's videos and replies to some. It keeps
+every comment it reads, and every reply, in `chat_messages`. A second log holds the
+commenter's channel name, the comment and the reply. These rows have no deletion date;
+the only cleanup trims comments the bot skipped from that log, down to the latest 200.
+Its question rows are blanked after 30 days, like every other surface's, and none is
+copied. The bot's replies carry no tag.
+
+### Deleting your data
+
+"Delete all my data" in the widget erases two files in your own folder: your health
+record and your chat history. The chat file cannot simply be emptied, because the merge
+that keeps your devices in step would put the conversations back from any other copy.
+So each conversation is tombstoned instead: no messages, no title, and marked deleted
+for good. The erase removes every value it can see in this browser and in your
 connected cloud file. A value another device has not saved yet, or saves while the erase
-runs, is kept and arrives later. With no cloud connected, the values in this browser are erased. If you later connect a cloud, the same values are erased there too and its profile and screening answers are reset; values this browser never held stay. Six copies the button cannot reach, and the confirm dialog now names
-them before you click: documents you uploaded that are already in your folder stay;
-candidate files from a connector import (`imports/pending-*.json`) stay until your next
-import; your cloud provider keeps its own version history, and GitHub keeps every past
-commit; backups the command-line tool made sit beside the file, until that tool next
-writes it; and the copy of your record that the widget keeps in the browser on each of
-your other devices. The button empties that copy on the device you press it on. It
-cannot reach another device's browser storage, so there the copy stays until the widget
-on that device reads the erased record: when the widget next loads there, or, if it is
-already open, when it picks up the change. Until then, the blog chat bubble and the
-chatbot embed on that device keep sending your record as it was before the erase, with
-every message. If that open widget holds a profile edit typed and not yet saved, the
-copy is emptied only once that edit is saved or the page is loaded again. The sixth is
-on our server: your chat questions (the widget, the blog chat bubble and the chatbot
-embed) and the bubble's and embed's replies, and the button does not reach them. A daily
-job blanks the text of each question row 30 days after that row was made, and each bubble
-or embed message 30 days after that message; a bubble or embed conversation's title is
-blanked 30 days after its last message. Reminders are
-turned off by the erase, and stay off on your own devices. The row on our server keeps your address for 90 days, as it does for any
-switch-off, so a later enrolment of that address does not send a second welcome email;
-it does not stop the schedule being refilled. Anyone who enrols that address again
-restarts the schedule, and every reminder carries its own off link. A cancel that
-proves the inbox with a Google sign-in deletes the row outright, and an emptied row is
-deleted after 90 days.
+runs, is kept and arrives later. With no cloud connected, the values in this browser are
+erased. If you later connect a cloud, the same values are erased there too and its
+profile and screening answers are reset; values this browser never held stay.
 
-**Feedback.** The feedback box on the website is a separate store again. It takes your
-email address and up to 2000 characters of whatever you type, adds your Shopify customer
-id if you are signed in, writes that row to `feedback_submissions`, and emails the same
-thing to Brad through Resend (`app/routes/api.feedback.ts`). Nothing scrubs that text
-and nothing deletes the row, so anything about your health you write in that box stays
-written.
+The confirm dialog names seven copies the button cannot reach before you click:
+
+1. Documents you uploaded that are already in your folder stay.
+2. Candidate files from a connector import (`imports/pending-*.json`) stay until your next import.
+3. Your cloud provider keeps its own version history, and GitHub keeps every past commit.
+4. Backups the command-line tool made sit beside the file until that tool next writes it.
+5. The copy of your record that the widget keeps in the browser on each of your other devices.
+6. Your chat questions on our server (the tool page, the blog chat bubble and the chatbot embed) and the bubble's and embed's replies, the copy we keep of each health question, and, if you were signed in, the account row with your name and email address.
+7. What you sent through the feedback box.
+
+On the fifth: the button empties that copy on the device you press it on. It cannot
+reach another device's browser storage, so there the copy stays until the widget on that
+device reads the erased record: when the widget next loads there, or, if it is already
+open, when it picks up the change. Until then, the blog chat bubble and the chatbot
+embed on that device keep sending your record as it was before the erase, with every
+message. If that open widget holds a profile edit typed and not yet saved, the copy is
+emptied only once that edit is saved or the page is loaded again.
+
+On the sixth: a daily job blanks the text of each question row 30 days after that row
+was made, and each bubble or embed message 30 days after that message. A bubble or embed
+conversation's title is blanked 30 days after its last message. Each bubble or embed
+question row also copies the conversation's first question and its last three, so a
+question there can last until 30 days after your last message in that chat; the dialog
+gives that outer bound. Then the job keeps a copy of each health question, as above, so
+a question you asked on the tool page before an erase is still copied. The dialog says
+so, and says to email us to have a copy deleted. The button reaches none of it, nor the
+Discord and YouTube rows.
+
+On the seventh: the feedback box keeps what you send, as the next section says. The
+button does not reach it.
+
+Reminders are turned off by the erase, and stay off on your own devices. The row on our
+server keeps your address for 90 days, as it does for any switch-off, so a later
+enrolment of that address does not send a second welcome email. It does not stop the
+schedule being refilled. Anyone who enrols that address again restarts the schedule, and
+every reminder carries its own off link. A cancel that proves the inbox with a Google
+sign-in deletes the row outright, and an emptied row is deleted after 90 days.
+
+### Feedback
+
+The feedback box on the website is a separate store again. It takes your email address
+and up to 2000 characters of whatever you type, adds your Shopify customer id if you are
+signed in, writes that row to `feedback_submissions`, and emails the same thing to Brad
+through Resend (`app/routes/api.feedback.ts`). Nothing scrubs that text and nothing
+deletes the row: it has no deletion date. Anything about your health you write in that
+box stays written.
 
 ## Bug reports
 
 If you ask your assistant to report a bug, it files one for you: our server opens a
-public issue on the project's GitHub repository. What goes in it is the assistant's own
+public issue on the project's GitHub repository. The issue holds the assistant's own
 description of the problem, and nothing about you: no name, no email, no address, and
 no part of your health record. The tool refuses any report that reads as a health value:
-a number wearing a unit, a bare number written near a metric name it knows, an email
+a number with a unit, a bare number written near a metric name it knows, an email
 address, a phone-shaped run of digits, a file name (lab portals name your download
 after you), or a link carrying a query string that could hold a token
-(`unsafeFeedback` in `packages/health-core/src/mcp-tools.ts`). It cannot
-recognise a diagnosis written in prose, and it does not pretend to. That is why the tool
-shows you the report before it files it: read the receipt before you say yes.
-The issue is public, so your assistant should tell you before it files one. (Software
-you run yourself holds no key, so it cannot file anything: it hands you a link to submit
-yourself.)
+(`unsafeFeedback` in `packages/health-core/src/mcp-tools.ts`). It cannot recognise a
+diagnosis written in prose. That is why the tool shows you the report before it files
+it: read the receipt before you say yes. The issue is public, so your assistant should
+tell you before it files one. Software you run yourself holds no key, so it cannot file
+anything; it hands you a link to submit yourself.
 
 ---
 

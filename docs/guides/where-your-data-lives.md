@@ -2,7 +2,7 @@
 title: "Where your health data lives"
 description: "What the Health by Dr Brad tool keeps, where it keeps it and for how long, including everything that passes through our server or another company."
 slug: "where-your-data-lives"
-updated: "2026-10-22"
+updated: "2026-10-30"
 stories: ["US-09", "US-11", "US-12", "US-15", "US-17", "US-23", "US-32"]
 ---
 
@@ -40,19 +40,25 @@ Each message you send goes to our server with the earlier turns of the conversat
 
 Your conversations are saved in your own cloud folder, as `chat-history.json`, or in this browser.
 
-Our server keeps one row for each question, so we can check which articles the chat matched. The row holds the first 500 characters of your question with every number value replaced by `#`, the articles it matched, how the question was classified and some timings. Some test names that contain a digit, such as HbA1c, stay as written. Words stay as you typed them too, so a diagnosis you write in a question stays in that text. A daily job blanks the question 30 days after the row was made. The rest of the row stays. The reply and the earlier turns are not stored.
+Our server keeps one row for each question, so we can check which articles the chat matched. The row holds the first 500 characters of your question with every number value replaced by `#`, the articles it matched, how the question was classified and some timings. Some test names that contain a digit, such as HbA1c, stay as written. Words stay as you typed them too, so a diagnosis you write in a question stays in that text. A daily job blanks the question 30 days after the row was made. If it is a health question, the job first keeps a copy, as [the questions we keep](#the-questions-we-keep) says. The rest of the row stays. The reply and the earlier turns are not stored.
 
 If you are not signed in to this site, the row is tied to a random session id, not your name. That session is stored with a scrambled form of your network address. Nothing deletes the session row.
 
-If you are signed in to this site, each message also makes our server look up your email address and your first and last name from your store account. The first time, it creates an account row for you in our database with those details, and an audit entry saying it did. Later messages keep the names up to date. Your questions are still stored as above, under a random session id. The 30-day job and Delete All My Data do not remove your account row.
+If you are signed in to this site, each message also makes our server look up your email address and your first and last name from your store account. The first time, it creates an account row for you in our database with those details, and an audit entry saying it did. Later messages keep the names up to date. Your questions are still stored as above, under a random session id. The daily job and Delete All My Data do not remove your account row.
 
 ## The chat bubble on other pages
 
 Where the chat bubble appears on other pages of this site, it works differently. It reads the copy of your record in this browser and sends your saved values with each message, much as the tool page's chat does.
 
-Our server stores that chat: your question and the reply, and the reply can quote your values. Your questions are not masked here: numbers stay as you typed them. A daily job blanks each message's text 30 days after that message. The conversation's title, made of the first words of your first question, is blanked 30 days after your last message in that conversation. Our server also keeps a row for each question, as on the tool page. That row holds your question unmasked, with up to four of your earlier questions, and its text is blanked 30 days after the row was made. What stays is the shape: the ids, the times and the token counts.
+Our server stores that chat: your question and the reply, and the reply can quote your values. Your questions are not masked here: numbers stay as you typed them. A daily job blanks each message's text 30 days after that message. The conversation's title, made of the first words of your first question, is blanked 30 days after your last message in that conversation. Our server also keeps a row for each question, as on the tool page. That row holds your question unmasked, with up to four of your earlier questions, and its text is blanked 30 days after the row was made. What stays is the shape: the ids, the times and the token counts. If you delete a conversation in the chat, its messages and title go at once, and its question text is blanked.
 
 If you are not signed in, the chat is tied to a random session id, stored with a scrambled form of your network address. If you are signed in, our server looks up your email address and name as on the tool page, and stores the conversation under your account row. It also sends a summary of your recent orders on this store to Anthropic with each message, so the chat can answer questions about them.
+
+## The questions we keep
+
+Just before the daily job blanks a question you asked on the tool page or in the chat bubble, we keep a copy of that one question, with no end date, to improve the chatbot. We copy only questions about your health or your measurements, never questions about orders, subscriptions or your account, and never the reply. Before we keep it, an automatic step tries to remove names, places, dates (the year stays), exact ages (the decade stays), contact details, account and order numbers, and employers, schools and jobs. It can miss some. The copy keeps the health details, and we do not link it to your account.
+
+Making the copy sends the question to Anthropic once more, and their 30-day API retention applies. A question in a chat bubble or embed conversation you delete within 30 days of asking it is never copied; a copy made before you deleted it stays until you ask us to delete it. Deleting a conversation on the tool page does not reach our server, so it does not stop the copy. Delete All My Data cannot reach our server, so a question you asked on the tool page before you pressed it is still copied. To have a copy deleted, email brad@drstanfield.com the wording and we will search for it.
 
 ## Connecting ChatGPT or Claude
 
@@ -84,7 +90,7 @@ Most requests from the tool reach our server through Shopify, which hosts this s
 
 ## Delete your data
 
-Use the Delete All My Data button at the bottom of your plan. It erases your health record and chat history in this browser and in your connected cloud, and turns off reminders. A few things are out of its reach, including your uploaded files, your provider's version history, the chat text our server keeps for 30 days, your account row if you are signed in, and the chat session and audit rows. [Find your health record file](/blogs/guides/find-your-record#delete-your-data) lists what it leaves in your cloud and says how to remove each one.
+Use the Delete All My Data button at the bottom of your plan. It erases your health record and chat history in this browser and in your connected cloud, and turns off reminders. A few things are out of its reach, including your uploaded files, your provider's version history, the chat text our server keeps for 30 days, the copy it keeps of each health question, your account row if you are signed in, and the chat session and audit rows. [Find your health record file](/blogs/guides/find-your-record#delete-your-data) lists what it leaves in your cloud and says how to remove each one.
 
 To cut the tool off from your cloud, remove the app in your provider's settings: [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps) for Dropbox, [myaccount.google.com/connections](https://myaccount.google.com/connections) for Google Drive. That also disconnects any AI assistant you connected through us.
 

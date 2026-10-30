@@ -102,7 +102,7 @@ If the form asks why the two add tools are marked `readOnlyHint: false` and `des
 - **Whose API:** ours. The server is our own; it reads and writes the user's file in the user's own Dropbox or Google Drive over the user's own grant.
 - **Handles personal health data:** **Yes.** Say so plainly. Explain in the free text:
 
-> The user's health record lives in their own Dropbox or Google Drive. To answer one tool call the server fetches that file over the user's own credential, holds it in memory for that request, and writes it back if the call was a write. Nothing is persisted: no per-user row, no health table, no health values in logs, error reports or analytics. The one exception is `import_documents`: when the user asks to import files from their Dropbox folder, those files (never the record) go to Anthropic's API for extraction, and we keep nothing. We collect no conversation text.
+> The user's health record lives in their own Dropbox or Google Drive. To answer one tool call the server fetches that file over the user's own credential, holds it in memory for that request, and writes it back if the call was a write. No health data is persisted: no per-user row, no health table, no health values in logs, error reports or analytics. We keep a value-free activity row per tool call: which tool ran, from which assistant, whether it succeeded, and when. The one exception is `import_documents`: when the user asks to import files from their Dropbox folder, those files (never the record) go to Anthropic's API for extraction, and we keep nothing. We collect no conversation text.
 
 ## 8. Test and launch
 

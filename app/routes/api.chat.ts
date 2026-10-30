@@ -33,7 +33,7 @@ import { openArticle, preferMasters } from '../lib/router-view';
 import { MAX_HISTORY_MESSAGES, MAX_HISTORY_TURN_CHARS, cutText } from '../../packages/health-core/src/chat-history';
 import { classifyMessage, shouldFireRouter } from '../lib/chat-classifier.server';
 import { findDuplicateReply, type DedupHistoryItem } from '../lib/chat-dedup.server';
-import { PURGED_TEXT } from '../lib/chat-purge-cron.server';
+import { PURGED_TEXT, clearConversationMatchEvents } from '../lib/chat-purge-cron.server';
 import { recordServerEvent } from '../lib/product-events.server';
 import { subscriptionActionsEnabled, getCachedSubscriptions, formatSubscriptionBlock, subscriptionCard, SUBSCRIPTION_HELP_LINE } from '../lib/subscription-gateway.server';
 
@@ -336,8 +336,9 @@ const APP_AUTH: AuthResult = { client: null, userId: 'app', customerId: null, ad
 
 /**
  * The send-a-message action. `app`: the iPhone app's turn (US-52 AC5), which
- * runs the widget's path (history and context in the body, nothing stored) with
- * no guest session, no form edits, no match-event or audit row (D9).
+ * runs the widget's path (history and context in the body, no transcript stored)
+ * with no guest session, no form edits, no match-event or audit row (D9), so
+ * the app's turn stores nothing; the widget's own turn keeps a masked question row.
  */
 async function chatAction(request: Request, app: boolean) {
   const t0 = Date.now();
@@ -384,6 +385,16 @@ async function chatAction(request: Request, app: boolean) {
       if (error) {
         reportChatError('Chat: Failed to delete conversation');
         return Response.json({ success: false, error: 'Failed to delete' }, { status: 500 });
+      }
+
+      // US-15 AC44: blank the conversation's router rows too, through the
+      // service role (the user's client has no UPDATE grant on that table),
+      // filtered by this user. A failure is reported and the delete stands:
+      // the archive step also skips a question whose conversation is gone.
+      try {
+        await clearConversationMatchEvents(conversationId, auth.userId);
+      } catch {
+        reportChatError('Chat: Failed to clear match events');
       }
 
       logAudit(auth.userId, 'CHAT_CONVERSATION_DELETED', 'chat', conversationId);

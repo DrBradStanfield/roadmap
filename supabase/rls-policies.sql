@@ -1639,6 +1639,24 @@ REVOKE ALL ON FUNCTION app_attest_use(text, bigint, text, integer) FROM PUBLIC, 
 GRANT EXECUTE ON FUNCTION app_attest_use(text, bigint, text, integer) TO service_role;
 NOTIFY pgrst, 'reload schema';
 
+-- ===== chat_question_archive: scrubbed web chat questions (US-15 AC44, 2026-10-30) =====
+-- Apply to production BEFORE deploying the code that writes it. Until then the
+-- purge's archive insert fails, is counted as skipped, and the purge itself
+-- still runs. One scrubbed question per row, kept with no end date to improve
+-- the chatbot: the question with identifying details replaced, its platform,
+-- and the Monday (UTC) of the week it was asked. No row, conversation, user or
+-- session id, and no created_at: ids are random and a run inserts its copies
+-- in one shuffled batch. Service role only: RLS on, no policies.
+CREATE TABLE IF NOT EXISTS chat_question_archive (
+  id       uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  platform text NOT NULL CHECK (platform IN ('shopify', 'widget')),
+  week     date NOT NULL,
+  question text NOT NULL
+);
+ALTER TABLE chat_question_archive ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON chat_question_archive FROM anon, authenticated;
+NOTIFY pgrst, 'reload schema';
+
 -- ===== Lock down SECURITY DEFINER functions (2026-10-21) =====
 -- KEEP THIS SECTION LAST. A definer function runs with its owner's rights,
 -- and Postgres grants EXECUTE to PUBLIC on every new function; Supabase's
