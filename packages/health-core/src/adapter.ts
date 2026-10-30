@@ -79,6 +79,10 @@ export class StorageError extends Error {
 export const UNREACHABLE_HINT = 'Try once more; if it keeps failing, check that the record is reachable.';
 /** A write that went out and got no answer may still have landed (US-09 AC13d). */
 const LANDED_HINT = 'The change may have landed. Read the record again before trying it a second time.';
+/** The hint for a call that got no answer: a write may have landed, a read did not. */
+function unansweredHint(mayHaveWritten?: boolean): string {
+  return mayHaveWritten ? LANDED_HINT : UNREACHABLE_HINT;
+}
 
 /** How long a provider gets to answer, body included, before the call is
  *  abandoned as unreachable. Long enough for a slow phone on a slow network,
@@ -126,7 +130,7 @@ export async function fetchOrFail(
     const bytes = await res.arrayBuffer();
     return new Response(bytes.byteLength ? bytes : null, { status: res.status, statusText: res.statusText, headers: res.headers });
   } catch (error) {
-    throw new StorageError(`${provider} did not answer`, mayHaveWritten ? LANDED_HINT : UNREACHABLE_HINT, error);
+    throw new StorageError(`${provider} did not answer`, unansweredHint(mayHaveWritten), error);
   }
 }
 
