@@ -377,6 +377,16 @@ describe('US-15 AC7a — opening another thread while a reply is in flight', () 
     expect(postSync.mock.calls.at(-1)![0].payload).toMatchObject({ activeConversationId: 'B', isLoading: false });
   });
 
+  it('US-15 AC7a with AC6a: a reply that restarted A in a new thread replaces A in the list and leaves thread B on screen', async () => {
+    const { hook, sending } = await sendInAThenOpenB();
+    await act(async () => { send.resolve!({ result: { conversationId: 'A2', messageId: 'm', content: 'Reply for A2' }, error: null }); await sending; });
+    const { state } = hook.result.current;
+    expect(state.activeConversationId).toBe('B');
+    expect(state.messages.map(m => m.content)).toEqual(['B question', 'B answer']);
+    expect(state.conversations.map(c => c.id)).toEqual(['A2', 'B']);
+    expect(postSync.mock.calls.at(-1)![0].payload).toMatchObject({ activeConversationId: 'B', isLoading: false });
+  });
+
   it('US-15 AC7a: a first question\'s reply joins the list but leaves thread B on screen', async () => {
     const api = await import('../lib/chat-api');
     vi.mocked(api.loadConversation).mockResolvedValueOnce(threadB);
