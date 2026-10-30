@@ -73,13 +73,6 @@ export interface ChatError {
   error: string;
 }
 
-// Guest-session tokens are a Shopify-proxy concept; the standalone has no
-// guest tier. Exported as no-ops for interface parity (HealthTool calls them).
-export function getGuestSessionToken(): string | null { return null; }
-export function setGuestSessionToken(_token: string): void { /* noop */ }
-export function clearGuestSessionToken(): void { /* noop */ }
-export function migrateGuestChatOnLogin(): boolean { return false; }
-
 // ---------------------------------------------------------------------------
 // API key (this device only)
 // ---------------------------------------------------------------------------
