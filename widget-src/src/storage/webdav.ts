@@ -30,6 +30,9 @@ import { encodeStoragePath, legacyDocumentUrl } from './storage-path';
 import { bytesToBase64 } from '../lib/base64';
 
 const CONFIG_KEY = 'health_roadmap_selfhost';
+/** A document read or upload gets Drive's upload cap: a large original on a
+ *  slow link must not be cut at `fetchOrFail`'s 30 s (US-09 AC13e). */
+const DOCUMENT_TIMEOUT_MS = 300_000;
 
 export interface WebDavConfig {
   /** Base WebDAV directory URL the app confines itself to (trailing slash optional). */
@@ -66,7 +69,7 @@ export class WebDavAdapter implements StorageAdapter {
     if (!this.config?.url || !this.config.username) {
       throw new StorageError('Self-host needs a URL, username, and password.');
     }
-    const res = await fetch(this.urlFor(''), {
+    const res = await fetchOrFail('Self-host', this.urlFor(''), {
       method: 'PROPFIND',
       headers: { ...this.authHeaders(), Depth: '0' },
     });
@@ -127,16 +130,16 @@ export class WebDavAdapter implements StorageAdapter {
 
   async readDocument(ref: string): Promise<Blob> {
     const url = this.urlFor(ref);
-    let res = await fetch(url, { headers: this.authHeaders() });
+    let res = await fetchOrFail('Self-host', url, { headers: this.authHeaders(), timeoutMs: DOCUMENT_TIMEOUT_MS });
     const legacy = res.status === 404 ? legacyDocumentUrl(url, this.urlFor(''), ref) : null;
-    if (legacy) res = await fetch(legacy, { headers: this.authHeaders() });
+    if (legacy) res = await fetchOrFail('Self-host', legacy, { headers: this.authHeaders(), timeoutMs: DOCUMENT_TIMEOUT_MS });
     if (!res.ok) throw new StorageError(`Self-host document read failed (${res.status}).`);
     return res.blob();
   }
 
   async writeDocument(ref: string, bytes: Blob): Promise<void> {
     const put = (): Promise<Response> =>
-      fetch(this.urlFor(ref), { method: 'PUT', headers: this.authHeaders(), body: bytes });
+      fetchOrFail('Self-host', this.urlFor(ref), { method: 'PUT', headers: this.authHeaders(), body: bytes, timeoutMs: DOCUMENT_TIMEOUT_MS });
     let res = await put();
     if (res.status === 409) {
       // Parent collection missing — create it, then retry once.
@@ -152,7 +155,7 @@ export class WebDavAdapter implements StorageAdapter {
   private async ensureCollection(ref: string): Promise<void> {
     const slash = ref.lastIndexOf('/');
     if (slash < 0) return;
-    await fetch(this.urlFor(ref.slice(0, slash + 1)), { method: 'MKCOL', headers: this.authHeaders() });
+    await fetchOrFail('Self-host', this.urlFor(ref.slice(0, slash + 1)), { method: 'MKCOL', headers: this.authHeaders() });
   }
 
   private urlFor(path: string): string {
