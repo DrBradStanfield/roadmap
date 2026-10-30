@@ -182,8 +182,8 @@ network tab recording and use the widget.
   It also writes a `chat_match_events` row per question, holding the question
   unmasked and your earlier questions (`router_context`). When you are signed
   in to the store, these rows carry your customer account's `user_id`.
-  Deleting a conversation in the bubble deletes its messages and title; the
-  match rows wait for the purge. Those
+  Deleting a conversation in the bubble deletes its messages and title and
+  blanks the question text of its match rows. Those
   cached values are still sent as context; Brad chose on 2026-09-10 to keep that, because the answer is
   worse without them. The transcripts now join the same 30-day purge
   (`app/lib/chat-purge-cron.server.ts`): once a row is 30 days old the job
@@ -197,6 +197,19 @@ network tab recording and use the widget.
   because those turns are public comments on a video: the comments and replies
   in `chat_messages` and `youtube_bot_log` have no deletion date. Their
   `chat_match_events` text is blanked at 30 days, as on every platform.
+- Just before the purge blanks a health question from the widget's chat, the
+  bubble or the embed, it keeps a copy of that one question with no end date,
+  to improve the chatbot (US-15 AC44). An automatic step tries to remove
+  names, places, dates (the year stays), exact ages (the decade stays),
+  contact details, account and order numbers, and employers, schools and
+  jobs; it can miss some. The copy keeps the health details, and we do not
+  link it to your account. Making it sends the question to Anthropic once more
+  (their 30-day API retention applies). Store questions, replies, Discord,
+  YouTube and bubble or embed conversations deleted within 30 days are never
+  copied (an earlier copy stays until you ask; a tool-page delete never
+  reaches our server, so it does not stop the copy). "Delete all my data"
+  cannot reach it; to have a copy deleted, email us the wording and we will
+  search for it.
 - Two devices editing apart converge without a conversation. If both record the same
   measurement for the same day while apart, the newer entry becomes that day's value;
   the other stays in your history marked entered-in-error. Nothing is deleted. The

@@ -17,6 +17,9 @@ interface Row {
   router_raw: string | null;
   router_error: string | null;
   matched_handles: string[];
+  classification: string | null;
+  conversation_id: string | null;
+  user_id: string;
 }
 
 interface MessageRow {
@@ -43,6 +46,10 @@ const store = vi.hoisted(() => ({
   chat_match_events: [] as Row[],
   chat_messages: [] as MessageRow[],
   chat_conversations: [] as ConversationRow[],
+  chat_question_archive: [] as Record<string, unknown>[],
+  /** Every insert into the archive, batch by batch, in the order sent. */
+  archiveInserts: [] as Record<string, unknown>[][],
+  insertError: null as Record<string, string> | null,
   selectError: null as { message: string } | null,
   updateError: null as { message: string } | null,
   /** Table whose updates commit nothing, to prove the no-progress guard. */
@@ -64,6 +71,8 @@ const fakeAdmin = vi.hoisted(() => ({
         embedded = cols.includes('chat_conversations!inner');
         return query;
       },
+      // `.returns<T>()` only narrows the type in supabase-js.
+      returns: () => query,
       eq: (col: string, value: unknown) => {
         const prev = matches;
         if (col.includes('.')) {
@@ -121,6 +130,12 @@ const fakeAdmin = vi.hoisted(() => ({
         data: store.selectError ? null : matches().slice(0, n).map((r) => ({ ...r })),
         error: store.selectError,
       }),
+      insert: async (batch: Record<string, unknown>[]) => {
+        store.archiveInserts.push(batch);
+        if (store.insertError) return { error: store.insertError };
+        rows.push(...batch);
+        return { error: null };
+      },
       update: (patch: Record<string, unknown>) => {
         const apply = (ids: string[]) => {
           if (store.updateError || store.swallowUpdates === table) return;
@@ -142,13 +157,21 @@ const fakeAdmin = vi.hoisted(() => ({
   },
 }));
 
+vi.mock('./chat-question-scrub.server', () => ({ scrubQuestion: vi.fn(), SCRUB_TIMEOUT_MS: 15_000 }));
+vi.mock('./product-events.server', () => ({ recordServerEvent: vi.fn() }));
+vi.mock('@sentry/react-router', () => ({ captureMessage: vi.fn(), captureException: vi.fn() }));
 vi.mock('./supabase.server', () => ({
   supabaseAdmin: fakeAdmin,
   tryAcquireCronLock: vi.fn(async () => true),
 }));
 
-import { purgeOldChatText, purgeWithLock, PURGE_AFTER_DAYS, PURGED_TEXT } from './chat-purge-cron.server';
+import * as Sentry from '@sentry/react-router';
+import {
+  ARCHIVE_MAX_QUESTIONS, clearConversationMatchEvents, purgeOldChatText, purgeWithLock, PURGE_AFTER_DAYS, PURGED_TEXT,
+} from './chat-purge-cron.server';
 import { tryAcquireCronLock } from './supabase.server';
+import { scrubQuestion } from './chat-question-scrub.server';
+import { recordServerEvent } from './product-events.server';
 
 const NOW = new Date('2026-09-10T04:00:00Z');
 const daysAgo = (n: number) => new Date(NOW.getTime() - n * 86400_000).toISOString();
@@ -162,6 +185,9 @@ function row(id: string, ageDays: number, context: Record<string, unknown>, over
     router_raw: `{"handles":["ldl-cholesterol"]} for ${id}`,
     router_error: `parse failed on "${id}"`,
     matched_handles: ['ldl-cholesterol'],
+    classification: 'ROUTE',
+    conversation_id: null,
+    user_id: 'user-1',
     ...over,
   };
 }
@@ -186,6 +212,14 @@ function message(id: string, conversationId: string, ageDays: number, role = 'us
 }
 
 beforeEach(() => {
+  delete process.env.CHAT_QUESTION_ARCHIVE;
+  store.chat_question_archive = [];
+  store.archiveInserts = [];
+  store.insertError = null;
+  vi.mocked(scrubQuestion).mockReset().mockImplementation(async (text: string) => `scrubbed: ${text}`);
+  vi.mocked(recordServerEvent).mockReset();
+  vi.mocked(Sentry.captureMessage).mockReset();
+  vi.mocked(Sentry.captureException).mockReset();
   store.selectError = null;
   store.updateError = null;
   store.swallowUpdates = null;
@@ -320,7 +354,7 @@ describe('purgeOldChatText — US-15 AC8 bubble and embed transcripts', () => {
 
   it('is idempotent — a second run finds nothing left to clear', async () => {
     await purgeOldChatText(NOW);
-    expect(await purgeOldChatText(NOW)).toEqual({ matchEvents: 0, messages: 0, conversations: 0 });
+    expect(await purgeOldChatText(NOW)).toEqual({ matchEvents: 0, messages: 0, conversations: 0, archive: null });
   });
 
   it('throws when an update fails instead of counting the rows as cleared', async () => {
@@ -341,7 +375,7 @@ describe('purgeOldChatText — US-15 AC8 bubble and embed transcripts', () => {
 
 describe('purgeWithLock — one machine per day', () => {
   it('purges under the chat_text_purge lock', async () => {
-    expect(await purgeWithLock('2026-09-10', NOW)).toEqual({ matchEvents: 4, messages: 3, conversations: 2 });
+    expect(await purgeWithLock('2026-09-10', NOW)).toEqual({ matchEvents: 4, messages: 3, conversations: 2, archive: null });
     expect(vi.mocked(tryAcquireCronLock).mock.calls[0][2]).toBe('chat_text_purge');
   });
 
@@ -360,5 +394,202 @@ describe('purgeWithLock — one machine per day', () => {
     expect(await purgeWithLock('2026-09-10', NOW)).toBeNull();
     expect(byId('old-widget').message).toBe('question old-widget');
     expect(msg('msg-shopify-q').content).toBe('text msg-shopify-q');
+  });
+});
+
+// US-15 AC44: before the purge blanks a web chat question, a scrubbed copy of
+// that one question is kept, with its platform and the Monday of its week.
+describe('purgeOldChatText — US-15 AC44 question archive', () => {
+  beforeEach(() => {
+    process.env.CHAT_QUESTION_ARCHIVE = 'on';
+    // Created 40 days before NOW (Sat 2026-08-01): its Monday is 2026-07-27.
+    store.chat_match_events = [
+      row('shopify-route', 40, { platform: 'shopify', first: 'HbA1c 41 first', recent: ['HbA1c 41 recent'] }, { conversation_id: 'conv-shopify-old' }),
+      row('widget-measure', 40, { platform: 'widget' }, { classification: 'MEASUREMENT' }),
+      row('shopify-account', 40, { platform: 'shopify' }, { classification: 'ACCOUNT', conversation_id: 'conv-shopify-old' }),
+      row('shopify-unlabelled', 40, { platform: 'shopify' }, { classification: null, conversation_id: 'conv-shopify-old' }),
+      row('discord-route', 40, { platform: 'discord' }),
+      row('youtube-route', 40, { platform: 'youtube' }),
+      row('fresh-route', 29, { platform: 'shopify' }, { conversation_id: 'conv-shopify-fresh' }),
+    ];
+  });
+
+  const archived = () => store.chat_question_archive.map((r) => r.question).sort();
+
+  it('copies only shopify and widget rows classified ROUTE or MEASUREMENT', async () => {
+    const counts = await purgeOldChatText(NOW);
+    expect(archived()).toEqual(['scrubbed: question shopify-route', 'scrubbed: question widget-measure']);
+    expect(counts.archive).toEqual({ eligible: 2, kept: 2, skipped: 0 });
+  });
+
+  it('a copy holds only its three fields, and its week is the Monday', async () => {
+    await purgeOldChatText(NOW);
+    for (const copy of store.chat_question_archive) {
+      expect(Object.keys(copy).sort()).toEqual(['platform', 'question', 'week']);
+      expect(copy.week).toBe('2026-07-27');
+    }
+    expect(store.chat_question_archive.map((r) => r.platform).sort()).toEqual(['shopify', 'widget']);
+  });
+
+  it('a question asked on a Monday keeps its own date as the week', async () => {
+    store.chat_match_events = [row('monday', 0, { platform: 'widget' }, { created_at: '2026-07-27T00:05:00Z' })];
+    await purgeOldChatText(NOW);
+    expect(store.chat_question_archive[0].week).toBe('2026-07-27');
+  });
+
+  it('never copies the earlier questions in router_context', async () => {
+    await purgeOldChatText(NOW);
+    expect(vi.mocked(scrubQuestion).mock.calls.map((c) => c[0]).sort()).toEqual(['question shopify-route', 'question widget-measure']);
+    expect(JSON.stringify(store.chat_question_archive)).not.toContain('HbA1c');
+  });
+
+  it('a skipped scrub is counted, and eligible = kept + skipped', async () => {
+    vi.mocked(scrubQuestion).mockImplementation(async (t: string) => (t.includes('widget') ? null : `scrubbed: ${t}`));
+    expect((await purgeOldChatText(NOW)).archive).toEqual({ eligible: 2, kept: 1, skipped: 1 });
+  });
+
+  it.each([
+    ['never resolves', () => new Promise<string | null>(() => {})],
+    ['throws', async () => { throw new Error('boom'); }],
+  ])('a scrub that %s still leaves match events, messages and titles blanked in the same run', async (_, impl) => {
+    vi.mocked(scrubQuestion).mockImplementation(impl as () => Promise<string | null>);
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const run = purgeOldChatText(NOW);
+      await vi.advanceTimersByTimeAsync(5 * 60_000);
+      const counts = await run;
+      expect(counts).toMatchObject({ matchEvents: 6, messages: 3, conversations: 2, archive: { eligible: 2, kept: 0, skipped: 2 } });
+    } finally {
+      vi.useRealTimers();
+    }
+    expect(byId('shopify-route').message).toBeNull();
+    expect(msg('msg-shopify-q').content).toBeNull();
+    expect(conv('conv-shopify-old').title).toBeNull();
+    expect(store.chat_question_archive).toEqual([]);
+  });
+
+  it('an insert error with details reaches neither the console nor Sentry', async () => {
+    store.insertError = { message: 'new row violates check', details: 'Failing row contains (SENTINEL_TEXT)', hint: 'SENTINEL_HINT' };
+    const spies = (['log', 'error', 'warn'] as const).map((m) => vi.spyOn(console, m).mockImplementation(() => {}));
+    try {
+      const counts = await purgeWithLock('2026-09-10', NOW);
+      expect(counts?.archive).toEqual({ eligible: 2, kept: 0, skipped: 2 });
+      expect(counts?.matchEvents).toBe(6);
+      const seen = JSON.stringify([
+        spies.map((s) => s.mock.calls),
+        vi.mocked(Sentry.captureMessage).mock.calls,
+        vi.mocked(Sentry.captureException).mock.calls,
+      ]);
+      expect(seen).not.toContain('SENTINEL');
+      expect(seen).not.toContain('question shopify-route');
+      expect(vi.mocked(Sentry.captureMessage)).toHaveBeenCalledWith('Chat question archive failed', expect.anything());
+    } finally {
+      spies.forEach((s) => s.mockRestore());
+    }
+  });
+
+  it('inserts once, in a shuffled order', async () => {
+    store.chat_match_events = ['a', 'b', 'c', 'd'].map((id) => row(id, 40, { platform: 'widget' }));
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0);
+    try {
+      await purgeOldChatText(NOW);
+    } finally {
+      random.mockRestore();
+    }
+    expect(store.archiveInserts).toHaveLength(1);
+    const order = store.archiveInserts[0].map((r) => r.question);
+    const scrubOrder = vi.mocked(scrubQuestion).mock.calls.map((c) => `scrubbed: ${c[0]}`);
+    expect([...order].sort()).toEqual([...scrubOrder].sort());
+    expect(order).not.toEqual(scrubOrder);
+  });
+
+  it('never copies a shopify row whose conversation is gone', async () => {
+    store.chat_conversations = store.chat_conversations.filter((c) => c.id !== 'conv-shopify-old');
+    expect((await purgeOldChatText(NOW)).archive).toEqual({ eligible: 2, kept: 1, skipped: 1 });
+    expect(archived()).toEqual(['scrubbed: question widget-measure']);
+  });
+
+  it('never copies a conversation deleted after the read and before the insert', async () => {
+    vi.mocked(scrubQuestion).mockImplementation(async (t: string) => {
+      // The DELETE lands while the scrub runs, after the row was read and blanked.
+      store.chat_conversations = store.chat_conversations.filter((c) => c.id !== 'conv-shopify-old');
+      return `scrubbed: ${t}`;
+    });
+    await purgeOldChatText(NOW);
+    expect(archived()).toEqual(['scrubbed: question widget-measure']);
+  });
+
+  it('holds at most 200 questions; the rest count as skipped and blanking completes', async () => {
+    const many = ARCHIVE_MAX_QUESTIONS + 5;
+    store.chat_match_events = Array.from({ length: many }, (_, i) => row(`w${i}`, 40, { platform: 'widget' }));
+    const counts = await purgeOldChatText(NOW);
+    expect(ARCHIVE_MAX_QUESTIONS).toBe(200);
+    expect(vi.mocked(scrubQuestion)).toHaveBeenCalledTimes(200);
+    expect(counts.archive).toEqual({ eligible: many, kept: 200, skipped: 5 });
+    expect(counts.matchEvents).toBe(many);
+    expect(store.chat_match_events.every((r) => r.message === null)).toBe(true);
+  });
+
+  it('a budget spent on scrubbing still inserts what was scrubbed', async () => {
+    // 40 questions at 10 s each is 400 s, past the 5-minute budget.
+    store.chat_match_events = Array.from({ length: 40 }, (_, i) => row(`slow${i}`, 40, { platform: 'widget' }));
+    vi.mocked(scrubQuestion).mockImplementation((text: string) => new Promise((r) => setTimeout(() => r(`scrubbed: ${text}`), 10_000)));
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'], now: Date.now() });
+    try {
+      const run = purgeOldChatText(NOW);
+      await vi.advanceTimersByTimeAsync(6 * 60_000);
+      const counts = await run;
+      // Scrubbing stops with 20 s left for the writes: calls at 0, 10, … 270 s.
+      // Without the reserve it would scrub 30 and leave the insert no time.
+      expect(counts.archive!.kept).toBe(28);
+      expect(counts.archive!.kept + counts.archive!.skipped).toBe(40);
+      expect(store.chat_question_archive).toHaveLength(counts.archive!.kept);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('records the counts as a value-free product event and in the log line', async () => {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    try {
+      await purgeWithLock('2026-09-10', NOW);
+      expect(vi.mocked(recordServerEvent)).toHaveBeenCalledWith('chat_question_archived', { eligible: 2, kept: 2, skipped: 0 });
+      expect(log.mock.calls.join(' ')).toContain('questions archived: 2 eligible, 2 kept, 0 skipped');
+    } finally {
+      log.mockRestore();
+    }
+  });
+
+  it.each([undefined, 'off', 'true', 'ON'])('with CHAT_QUESTION_ARCHIVE=%s: no scrub, no insert, no event; blanking as before', async (value) => {
+    if (value === undefined) delete process.env.CHAT_QUESTION_ARCHIVE;
+    else process.env.CHAT_QUESTION_ARCHIVE = value;
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    try {
+      const counts = await purgeWithLock('2026-09-10', NOW);
+      expect(counts).toEqual({ matchEvents: 6, messages: 3, conversations: 2, archive: null });
+    } finally {
+      log.mockRestore();
+    }
+    expect(vi.mocked(scrubQuestion)).not.toHaveBeenCalled();
+    expect(store.archiveInserts).toEqual([]);
+    expect(vi.mocked(recordServerEvent)).not.toHaveBeenCalled();
+    expect(byId('shopify-route').message).toBeNull();
+  });
+
+  it('a deleted conversation’s match events are blanked and never copied', async () => {
+    store.chat_match_events.push(
+      row('other-user-same-conv', 40, { platform: 'shopify' }, { conversation_id: 'conv-shopify-old', user_id: 'user-2' }),
+    );
+    expect(await clearConversationMatchEvents('conv-shopify-old', 'user-1')).toBe(3);
+    for (const id of ['shopify-route', 'shopify-account', 'shopify-unlabelled']) {
+      expect(byId(id)).toMatchObject({ message: null, router_raw: null, router_error: null });
+      expect(byId(id).router_context).not.toHaveProperty('first');
+    }
+    // The filter names the user: another user's row is untouched.
+    expect(byId('other-user-same-conv').message).toBe('question other-user-same-conv');
+    // The conversation itself is deleted by the route; the purge then copies none of its rows.
+    store.chat_match_events = store.chat_match_events.filter((r) => r.id !== 'other-user-same-conv');
+    await purgeOldChatText(NOW);
+    expect(archived()).toEqual(['scrubbed: question widget-measure']);
   });
 });

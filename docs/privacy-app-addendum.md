@@ -13,7 +13,8 @@ sleep, VO2 max and steps was rewritten on 2026-10-27 from the code of the change
 the cards' readings on the phone (US-56 AC2, not yet committed; commit: to fill in). On
 2026-10-30 the text was brought in line with docs/writing-style.md and the line on the
 website's chat was corrected (it keeps replies too, on the blog bubble). Republished
-30 October 2026.
+30 October 2026. Re-audited 2026-10-30 for US-15 AC44 (the website keeps a copy of health
+questions). Not yet republished.
 
 This policy covers the Health Roadmap iPhone app, made by DR BRAD, INC. It adds to our
 main [privacy policy](https://drstanfield.com/policies/privacy-policy). The website has its
@@ -96,7 +97,8 @@ to write the answer.
 
 Our server keeps no copy of an app chat. It stores no question, no reply, no conversation
 and no session. (The website's chats work differently: our server keeps their question text for up to
-30 days after your last message in that chat, and on the blog chat bubble and the chatbot embed the replies too. The guide linked above has the
+30 days after your last message in that chat, and on the blog chat bubble and the chatbot embed the replies too. It also
+keeps a copy of each health question with no end date, to improve the chatbot. The guide linked above has the
 details.) Your conversations are saved on your
 iPhone, beside your record, and left out of backups. They are not copied to your cloud.
 

@@ -86,6 +86,20 @@ describe('erase confirm copy (US-11)', () => {
     expect(copy).not.toMatch(/—/);
   });
 
+  // US-15 AC44: just before the purge blanks a health question, it keeps a
+  // scrubbed copy with no end date. The erase never reaches our server, so a
+  // question asked before an erase is still copied; say so before the click.
+  // Never "anonymous" or "not linked" (AC44 "What we say").
+  it('US-15 AC44: on the Shopify build, item 6 names the kept question copy and how to have it deleted', async () => {
+    const copy = await eraseConfirmOn(true);
+    expect(copy).toContain(
+      'It also keeps a copy of each health question, with no end date, to improve the chatbot. ' +
+        'An automatic step tries to remove names and contact details first. Email us the wording to have a copy deleted.',
+    );
+    expect(copy).not.toMatch(/anonym|not linked/i);
+    expect(await eraseConfirmOn(false)).not.toMatch(/copy of each health question/);
+  });
+
   // A signed-in chat writes a profiles row (email, name) the erase cannot reach
   // (supabase.server.ts; privacy-connector-addendum.md). Re-check R2, 2026-10-30.
   it('US-15 AC7: on the Shopify build, names the account row a signed-in chat leaves', async () => {
@@ -176,7 +190,7 @@ describe('erase confirm copy (US-11)', () => {
     expect(confirm).toContain(clock);
     for (const alert of [done, pending, unread]) {
       expect(alert).toContain('On another device, the blog chat bubble and the chatbot embed send your old record until the widget loads there.');
-      expect(alert).toContain(`Our server keeps your chat questions, and the bubble's and embed's replies, ${clock}.`);
+      expect(alert).toContain(`Our server keeps your chat questions, and the bubble's and embed's replies, ${clock}, and a copy of each health question, with no end date, to improve the chatbot.`);
       expect(alert).toContain('It keeps what you sent through the feedback box.');
       expect(alert).not.toMatch(/—/);
       expect(alert.length).toBeLessThan(confirm.length);
@@ -186,7 +200,7 @@ describe('erase confirm copy (US-11)', () => {
   it('US-11 AC5: on the Pages build, the alert names no bubble, embed or server-kept chat', async () => {
     const { ERASE_CONFIRM: confirm, ERASE_DONE: done, ERASE_DONE_CHAT_PENDING: pending, ERASE_DONE_CHAT_UNREAD: unread } = await eraseCopyOn(false);
     for (const alert of [done, pending, unread]) {
-      expect(alert).not.toMatch(/chat bubble|chatbot embed|30 days|our server/i);
+      expect(alert).not.toMatch(/chat bubble|chatbot embed|30 days|our server|health question/i);
       expect(alert).toMatch(/version history/i);
       expect(alert.length).toBeLessThan(confirm.length);
     }

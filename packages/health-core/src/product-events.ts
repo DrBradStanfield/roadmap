@@ -118,6 +118,9 @@ export const PRODUCT_EVENT_NAMES = [
   // saved or declined it. Metadata `{ field, choice }` (CHAT_PROFILE_FIELDS,
   // CHAT_PROFILE_CHOICES): the field's name, never its value.
   'chat_profile_edit',
+  // US-15 AC44: one daily purge run's question archive. Server-originated.
+  // Metadata `{ eligible, kept, skipped }`, counts only: never a question.
+  'chat_question_archived',
 ] as const;
 
 /** The `chat_profile_edit` counter's words (US-16 AC2): which profile field, and what the user did. */
@@ -164,6 +167,7 @@ export const SERVER_ONLY_EVENT_NAMES = [
   'mcp_import',
   'chat_run_roadmap',
   'subscription_action_confirmed',
+  'chat_question_archived',
 ] as const satisfies readonly ProductEventName[];
 
 /**

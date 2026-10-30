@@ -7,7 +7,8 @@ Written 2026-09-02, re-audited 2026-09-07 and 2026-09-10, from the code at
 `packages/health-core/src/mcp-tools.ts`. Re-audited 2026-10-30 against `app/routes/api.chat.ts`,
 `app/lib/chat-router.server.ts` (`redactForWidget`), `app/lib/chat-purge-cron.server.ts`,
 `app/lib/discord-bot.server.ts` and the YouTube bot, after a contributor found claims the code
-contradicted; the text was also brought in line with docs/writing-style.md.
+contradicted; the text was also brought in line with docs/writing-style.md. Re-audited
+2026-10-30 for US-15 AC44 (the kept copy of health questions). Not yet republished.
 
 > Assistant-side extraction shipped 2026-09-07 (US-36): a file you drop into the chat is
 > read by your assistant, and the sentences below say so. The folder route still sends
@@ -264,14 +265,16 @@ articles the question matched, its classification, the router's raw output and a
 router error (both with numbers masked the same way), the name of the surface, and a
 pseudonymous session and conversation id. The earlier turns of the conversation and the
 reply are not stored. A daily job blanks the question text, the router's raw output and
-the error text once a row is 30 days old. The match record stays: the articles, the
-classification, the ids. A guest session row holds a hashed address, not an IP.
+the error text once a row is 30 days old. Just before it does, it keeps a copy of a
+health question, as "The copy we keep of health questions" below says. The match record
+stays: the articles, the classification, the ids. A guest session row holds a hashed
+address, not an IP.
 
 If you are signed in to this store, each message also makes our server look up your
 email address and your first and last name from your store account. The first time, it
 creates an account row for you in our database with those details and your store
 customer id, and an audit entry saying it did. Later messages keep the names up to date.
-Neither the 30-day job nor the erase button removes the account row.
+Neither the daily job nor the erase button removes the account row.
 
 The iPhone app's chat stores no question, no reply and no row of any kind; its own
 notice covers it.
@@ -309,14 +312,34 @@ the row was made, but a later row in the same conversation carries copies of you
 question and your last three, so your words can stay until 30 days after your last
 message in that conversation. The shape of the thread stays and the words go: row ids, the role,
 the timestamps, the model, the token counts and the fallback flags remain, and a blanked
-turn reads back as `[removed after 30 days]`.
+turn reads back as `[removed after 30 days]`. Just before it blanks a question row, the
+job keeps a copy of a health question, as the next section says.
 
 Deleting a conversation in the bubble or the embed deletes its messages and its title
-from our server at once. The question rows stay until the 30-day job blanks them.
+from our server at once, and blanks the question text of its question rows. The rest of
+those rows stays until the daily job reaches them. A question in a conversation deleted
+within its 30 days is never copied; a copy made before the delete stays until you ask us to
+delete it.
+
+### The copy we keep of health questions
+
+Just before the daily job blanks a question asked on the tool page, the blog chat bubble
+or the chatbot embed, we keep a copy of that one question, with no end date, to improve
+the chatbot. We copy only health and measurement questions, never questions about orders,
+subscriptions or your account. We never copy a reply, the earlier questions stored beside
+it, or anything from Discord or YouTube.
+
+Before we keep it, an automatic step tries to remove names, places, dates (the year
+stays), exact ages (the decade stays), contact details, account and order numbers, and
+employers, schools and jobs. It can miss some. The copy keeps the health details, and we
+do not link it to your account. Making the copy sends the question to Anthropic once
+more, and their 30-day API retention, quoted above, applies. To have a copy deleted,
+email brad@drstanfield.com the wording and we will search for it.
 
 ### Discord and YouTube
 
-The Discord bot keeps each question and reply, blanked on the same 30-day clock. Brad
+The Discord bot keeps each question and reply, blanked on the same 30-day clock and
+never copied. Brad
 decided that on the evening of 10 September 2026, because a question typed at the bot
 is as private as one typed into the bubble. The author's Discord id stays on the
 conversation row after the words are blanked.
@@ -325,8 +348,8 @@ The YouTube bot reads public comments on Brad's videos and replies to some. It k
 every comment it reads, and every reply, in `chat_messages`. A second log holds the
 commenter's channel name, the comment and the reply. These rows have no deletion date;
 the only cleanup trims comments the bot skipped from that log, down to the latest 200.
-Its question rows are blanked after 30 days, like every other surface's. The bot's
-replies carry no tag.
+Its question rows are blanked after 30 days, like every other surface's, and none is
+copied. The bot's replies carry no tag.
 
 ### Deleting your data
 
@@ -347,7 +370,7 @@ The confirm dialog names seven copies the button cannot reach before you click:
 3. Your cloud provider keeps its own version history, and GitHub keeps every past commit.
 4. Backups the command-line tool made sit beside the file until that tool next writes it.
 5. The copy of your record that the widget keeps in the browser on each of your other devices.
-6. Your chat questions on our server (the tool page, the blog chat bubble and the chatbot embed) and the bubble's and embed's replies, plus, if you were signed in, the account row with your name and email address.
+6. Your chat questions on our server (the tool page, the blog chat bubble and the chatbot embed) and the bubble's and embed's replies, the copy we keep of each health question, and, if you were signed in, the account row with your name and email address.
 7. What you sent through the feedback box.
 
 On the fifth: the button empties that copy on the device you press it on. It cannot
@@ -363,7 +386,10 @@ was made, and each bubble or embed message 30 days after that message. A bubble 
 conversation's title is blanked 30 days after its last message. Each bubble or embed
 question row also copies the conversation's first question and its last three, so a
 question there can last until 30 days after your last message in that chat; the dialog
-gives that outer bound. The button reaches none of it, nor the Discord and YouTube rows.
+gives that outer bound. Then the job keeps a copy of each health question, as above, so
+a question you asked on the tool page before an erase is still copied. The dialog says
+so, and says to email us to have a copy deleted. The button reaches none of it, nor the
+Discord and YouTube rows.
 
 On the seventh: the feedback box keeps what you send, as the next section says. The
 button does not reach it.

@@ -2,7 +2,7 @@
 title: "Find your health record file"
 description: "Where the Health by Dr Brad tool keeps your record in Dropbox, Google Drive, GitHub or your browser, and how to open, back up, move or delete it."
 slug: "find-your-record"
-updated: "2026-10-22"
+updated: "2026-10-30"
 stories: ["US-09", "US-10", "US-11", "US-29"]
 ---
 
@@ -97,6 +97,7 @@ Some things it cannot reach, and the confirm box lists them:
 - your provider's version history, and every past commit on GitHub
 - backups from the command-line tool, until that tool next writes the file
 - your chat questions on our server: on the tool page each is blanked 30 days after you sent it; on the chat bubble and the chatbot embed, questions, replies and the title are gone 30 days after your last message in that chat
+- the copy we keep of each health question you asked in the chat, with no end date, to improve the chatbot (see [the questions we keep](/blogs/guides/where-your-data-lives#the-questions-we-keep)); email brad@drstanfield.com the wording to have one deleted
 
 Delete those in your cloud account if you want them gone.
 
