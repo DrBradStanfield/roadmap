@@ -50,6 +50,8 @@ interface UseChatStateOptions {
 export const MAX_CHARS = 8000;
 const CUT_NOTICE = `Your message was cut at ${MAX_CHARS.toLocaleString('en')} characters.`;
 const NO_PENDING: ChatPending = { thinking: '', text: '', status: '', sources: [] };
+/** How long another tab's reply in flight may lock this tab's chat with no word from it (US-15 AC17a). */
+export const REMOTE_PENDING_MS = 5 * 60_000;
 
 export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemoteConversationSelected, onProposeEdit }: UseChatStateOptions) {
   const [instanceId] = useState(generateInstanceId);
@@ -131,7 +133,9 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
 
   // BroadcastChannel subscription — sync state from other instances
   useEffect(() => {
-    return subscribeSync((msg) => {
+    // A tab closed mid-reply never says the reply ended (US-15 AC17a).
+    let remotePending: ReturnType<typeof setTimeout> | undefined;
+    const unsubscribe = subscribeSync((msg) => {
       if (msg.instanceId === instanceId) return;
 
       if (msg.type === 'input') {
@@ -151,6 +155,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         setActiveConversationId(payload.activeConversationId);
         setMessages(payload.messages);
         setIsLoading(payload.isLoading);
+        clearTimeout(remotePending);
+        if (payload.isLoading) remotePending = setTimeout(() => setIsLoading(false), REMOTE_PENDING_MS);
         setIsLocalSender(false);
         setError(payload.error);
         return;
@@ -173,6 +179,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         return;
       }
     });
+    return () => { unsubscribe(); clearTimeout(remotePending); };
   }, [instanceId, onRemoteConversationSelected]);
 
   const dropThread = useCallback((id: string) => {
