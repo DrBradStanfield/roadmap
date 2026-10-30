@@ -44,10 +44,10 @@ describe('US-15 AC46 — the Delete control in the chat History list', () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
-  it('US-15 AC46 control: Enter on the row itself still opens the thread', () => {
+  it.each(['Enter', ' '])('US-15 AC46 control: %j on the row itself still opens the thread', (key) => {
     const { view, onSelect } = list();
     const row = view.getByRole('button', { name: /^Old thread/ });
-    expect(fireEvent.keyDown(row, { key: 'Enter' })).toBe(false);
+    expect(fireEvent.keyDown(row, { key })).toBe(false);
     expect(onSelect).toHaveBeenCalledWith('c1');
   });
 
