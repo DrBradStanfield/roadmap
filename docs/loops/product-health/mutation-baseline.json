@@ -1,0 +1,2826 @@
+[
+  {
+    "file": "packages/health-core/src/calculations.ts",
+    "mutator": "ArithmeticOperator",
+    "fn": "calculateHealthResults",
+    "original": "ibw * 1.0",
+    "replacement": "ibw / 1.0",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/calculations.ts",
+    "mutator": "ArrayDeclaration",
+    "fn": "calculateHealthResults",
+    "original": "[]",
+    "replacement": "[\"Stryker was here\"]",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/calculations.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "calculateHealthResults",
+    "original": "inputs.apoB !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/calculations.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "calculateHealthResults",
+    "original": "inputs.hba1c !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/calculations.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "calculateHealthResults",
+    "original": "inputs.hdlC !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/calculations.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "calculateHealthResults",
+    "original": "inputs.ldlC !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/calculations.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "calculateHealthResults",
+    "original": "inputs.lpa !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/calculations.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "calculateHealthResults",
+    "original": "inputs.totalCholesterol !== undefined && inputs.hdlC !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/calculations.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "calculateHealthResults",
+    "original": "inputs.totalCholesterol !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/calculations.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "calculateHealthResults",
+    "original": "results.eGFR !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/calculations.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "getLipidStatus",
+    "original": "thresholds.optimal !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/calculations.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "getLipidStatus",
+    "original": "thresholds.veryHigh !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/calculations.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "getProteinRate",
+    "original": "eGFR !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/calculations.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "isKnownMinor",
+    "original": "!birthYear",
+    "replacement": "false",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/calculations.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "missingPlanInputs",
+    "original": "field === 'creatinine'",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/calculations.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "missingPlanInputs",
+    "original": "v !== null",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/calculations.ts",
+    "mutator": "EqualityOperator",
+    "fn": "calculateEGFR",
+    "original": "cr <= kappa",
+    "replacement": "cr < kappa",
+    "count": 2
+  },
+  {
+    "file": "packages/health-core/src/calculations.ts",
+    "mutator": "LogicalOperator",
+    "fn": "calculateHealthResults",
+    "original": "inputs.birthMonth ?? 1",
+    "replacement": "inputs.birthMonth && 1",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/calculations.ts",
+    "mutator": "LogicalOperator",
+    "fn": "calculateHealthResults",
+    "original": "inputs.totalCholesterol !== undefined && inputs.hdlC !== undefined",
+    "replacement": "inputs.totalCholesterol !== undefined || inputs.hdlC !== undefined",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/calculations.ts",
+    "mutator": "StringLiteral",
+    "fn": "knownMinorOf",
+    "original": "'birthMonth'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ArrayDeclaration",
+    "fn": "rowRootIds",
+    "original": "[]",
+    "replacement": "[\"Stryker was here\"]",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ArrayDeclaration",
+    "fn": "stampFields",
+    "original": "[]",
+    "replacement": "[\"Stryker was here\"]",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ArrayDeclaration",
+    "fn": "unionRows",
+    "original": "[]",
+    "replacement": "[\"Stryker was here\"]",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ArrowFunction",
+    "fn": "mergeDocuments",
+    "original": "(a, b) => cmpStr(a.id, b.id)",
+    "replacement": "() => undefined",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ArrowFunction",
+    "fn": "mergeSlotted",
+    "original": "(a, b) => cmpStr(a.id, b.id)",
+    "replacement": "() => undefined",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ArrowFunction",
+    "fn": "mergeSnapshots",
+    "original": "(a, b) => cmpStr(a.date, b.date)",
+    "replacement": "() => undefined",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ArrowFunction",
+    "fn": "unionLog",
+    "original": "(a, b) => cmpStr(a.id, b.id)",
+    "replacement": "() => undefined",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ArrowFunction",
+    "fn": "unionRows",
+    "original": "(a, b) => cmpStr(a.base, b.base) || cmpStr(a.content, b.content)",
+    "replacement": "() => undefined",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "BooleanLiteral",
+    "fn": "rowsSince",
+    "original": "false",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "CallExpression",
+    "fn": "mergeSnapshots",
+    "original": "map.set(snap.date, snap);",
+    "replacement": ";",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "CallExpression",
+    "fn": "unionRows",
+    "original": "absorb(seen, row);",
+    "replacement": ";",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "fieldsBehind",
+    "original": "clock !== null",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "laterErase",
+    "original": "a === undefined",
+    "replacement": "false",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "laterErase",
+    "original": "b !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "laterErase",
+    "original": "b > a",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "laterErase",
+    "original": "tb === ta && b > a",
+    "replacement": "false",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "mergeFields",
+    "original": "!a && !b",
+    "replacement": "false",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "mergeFiles",
+    "original": "erasedAt === undefined",
+    "replacement": "false",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "mergeSlotted",
+    "original": "actives.length > 1",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "mergeSlotted",
+    "original": "r.status === 'active'",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "rowRootIds",
+    "original": "typeof row.id === 'string'",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "rowsSince",
+    "original": "rows.length > 0",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "stampInstant",
+    "original": "mi > 59",
+    "replacement": "false",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "stampInstant",
+    "original": "s > 59",
+    "replacement": "false",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "stampInstant",
+    "original": "typeof iso === 'string'",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "stampInstant",
+    "original": "utc.getUTCDate() !== d",
+    "replacement": "false",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "stampInstant",
+    "original": "utc.getUTCFullYear() !== y || utc.getUTCMonth() !== mo - 1",
+    "replacement": "false",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "stampInstant",
+    "original": "utc.getUTCFullYear() !== y",
+    "replacement": "false",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "stampInstant",
+    "original": "utc.getUTCMonth() !== mo - 1",
+    "replacement": "false",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "unionRows",
+    "original": "cmpStr(a.base, b.base) || cmpStr(a.content, b.content)",
+    "replacement": "false",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "unionRows",
+    "original": "cmpStr(a.base, b.base) || cmpStr(a.content, b.content)",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "unionRows",
+    "original": "seen",
+    "replacement": "false",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "withoutListed",
+    "original": "listed.size === 0",
+    "replacement": "false",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "withoutListed",
+    "original": "typeof row.id !== 'string'",
+    "replacement": "false",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "cmpClock",
+    "original": "a.lamport < b.lamport",
+    "replacement": "a.lamport <= b.lamport",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "cmpClock",
+    "original": "ta < tb",
+    "replacement": "ta <= tb",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "fieldClock",
+    "original": "cmpClock(clock, newest) > 0",
+    "replacement": "cmpClock(clock, newest) >= 0",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "fieldWins",
+    "original": "(stableStringify(local) ?? '') > (stableStringify(remote) ?? '')",
+    "replacement": "(stableStringify(local) ?? '') >= (stableStringify(remote) ?? '')",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "laterErase",
+    "original": "b > a",
+    "replacement": "b <= a",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "laterErase",
+    "original": "b > a",
+    "replacement": "b >= a",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "laterErase",
+    "original": "tb > ta",
+    "replacement": "tb >= ta",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "laterStamp",
+    "original": "timeOf(replaced) > timeOf(now)",
+    "replacement": "timeOf(replaced) >= timeOf(now)",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "latestStamp",
+    "original": "a > b",
+    "replacement": "a >= b",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "latestStamp",
+    "original": "ta > tb",
+    "replacement": "ta >= tb",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "mergeErasedRows",
+    "original": "epochA > epochB",
+    "replacement": "epochA >= epochB",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "mergeFields",
+    "original": "cmpStored(a!, b!) <= 0",
+    "replacement": "cmpStored(a!, b!) < 0",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "mergeFields",
+    "original": "cmpStored(a!, b!) <= 0",
+    "replacement": "cmpStored(a!, b!) > 0",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "mergeFields",
+    "original": "cmpStored(clock, newest) > 0",
+    "replacement": "cmpStored(clock, newest) >= 0",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "mergeFields",
+    "original": "cmpStored(clockOf(local), clockOf(remote)) <= 0",
+    "replacement": "cmpStored(clockOf(local), clockOf(remote)) < 0",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "mergeFiles",
+    "original": "localEpoch > remoteEpoch",
+    "replacement": "localEpoch >= remoteEpoch",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "mergeSlotted",
+    "original": "actives.length > 1",
+    "replacement": "actives.length >= 1",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "mergeSnapshots",
+    "original": "stableStringify(snap) > stableStringify(existing)",
+    "replacement": "stableStringify(snap) >= stableStringify(existing)",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "rowIsNewer",
+    "original": "a.createdAt > b.createdAt",
+    "replacement": "a.createdAt >= b.createdAt",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "rowIsNewer",
+    "original": "a.id > b.id",
+    "replacement": "a.id >= b.id",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "rowsSince",
+    "original": "rows.length > 0",
+    "replacement": "rows.length >= 0",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "rowsSince",
+    "original": "stampInstant(stamp(row)) > stampInstant(latest)",
+    "replacement": "stampInstant(stamp(row)) >= stampInstant(latest)",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "stampIsNewer",
+    "original": "order > 0",
+    "replacement": "order >= 0",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "stampIsNewer",
+    "original": "stableStringify(a) > stableStringify(b)",
+    "replacement": "stableStringify(a) >= stableStringify(b)",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "unionRows",
+    "original": "content < winner",
+    "replacement": "content <= winner",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "EqualityOperator",
+    "fn": "unionRows",
+    "original": "content < winner",
+    "replacement": "content >= winner",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "LogicalOperator",
+    "fn": "stampInstant",
+    "original": "utc.getUTCFullYear() !== y || utc.getUTCMonth() !== mo - 1 || utc.getUTCDate() !== d",
+    "replacement": "(utc.getUTCFullYear() !== y || utc.getUTCMonth() !== mo - 1) && utc.getUTCDate() !== d",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "LogicalOperator",
+    "fn": "stampInstant",
+    "original": "utc.getUTCFullYear() !== y || utc.getUTCMonth() !== mo - 1",
+    "replacement": "utc.getUTCFullYear() !== y && utc.getUTCMonth() !== mo - 1",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "LogicalOperator",
+    "fn": "unionRows",
+    "original": "cmpStr(a.base, b.base) || cmpStr(a.content, b.content)",
+    "replacement": "cmpStr(a.base, b.base) && cmpStr(a.content, b.content)",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "MethodExpression",
+    "fn": "fieldNames",
+    "original": "[...names].filter((name) => !CLOCK_KEYS.has(name)).sort()",
+    "replacement": "[...names].filter(name => !CLOCK_KEYS.has(name))",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "MethodExpression",
+    "fn": "mergeDocuments",
+    "original": "unionRows([...remote, ...local], ['deleted'], (target, source) => { if (source.deleted) target.deleted = true; }).sort((a, b) => cmpStr(a.id, b.id))",
+    "replacement": "unionRows([...remote, ...local], ['deleted'], (target, source) => { if (source.deleted) target.deleted = true; })",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "MethodExpression",
+    "fn": "mergeSlotted",
+    "original": "out.sort((a, b) => cmpStr(a.id, b.id))",
+    "replacement": "out",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "MethodExpression",
+    "fn": "mergeSnapshots",
+    "original": "[...map.values()].sort((a, b) => cmpStr(a.date, b.date))",
+    "replacement": "[...map.values()]",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "MethodExpression",
+    "fn": "stampInstant",
+    "original": "fraction.padEnd(3, '0').slice(0, 3)",
+    "replacement": "fraction.padEnd(3, '0')",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "MethodExpression",
+    "fn": "unionLog",
+    "original": "unionRows([...remote, ...local]).sort((a, b) => cmpStr(a.id, b.id))",
+    "replacement": "unionRows([...remote, ...local])",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "MethodExpression",
+    "fn": "unionRows",
+    "original": "[...distinct.values()].sort( (a, b) => cmpStr(a.base, b.base) || cmpStr(a.content, b.content), )",
+    "replacement": "[...distinct.values()]",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "ObjectLiteral",
+    "fn": "mergeFiles",
+    "original": "{ ...opts, now: updatedAt }",
+    "replacement": "{}",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "Regex",
+    "fn": "baseIdOf",
+    "original": "/(?:#dup-[0-9a-f]{8})+$/",
+    "replacement": "/(?:#dup-[0-9a-f]{8})+/",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "Regex",
+    "fn": "rootIdOf",
+    "original": "/(?:#dup-[0-9a-f]{8}|#si)+$/",
+    "replacement": "/(?:#dup-[0-9a-f]{8}|#si)+/",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "Regex",
+    "fn": "STAMP_PARTS",
+    "original": "/^(\\d{4}-\\d{2}-\\d{2})(?:(?:[Tt](\\d{2}:\\d{2}(?::\\d{2})?)(?:\\.(\\d+))?([Zz]|[+-]\\d{2}:?\\d{2})?)|(?: (\\d{2}:\\d{2}(?::\\d{2})?)(?:\\.(\\d+))?([Zz]|[+-]\\d{2}(?::?\\d{2})?)?))?$/",
+    "replacement": "/(\\d{4}-\\d{2}-\\d{2})(?:(?:[Tt](\\d{2}:\\d{2}(?::\\d{2})?)(?:\\.(\\d+))?([Zz]|[+-]\\d{2}:?\\d{2})?)|(?: (\\d{2}:\\d{2}(?::\\d{2})?)(?:\\.(\\d+))?([Zz]|[+-]\\d{2}(?::?\\d{2})?)?))?$/",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "Regex",
+    "fn": "STAMP_PARTS",
+    "original": "/^(\\d{4}-\\d{2}-\\d{2})(?:(?:[Tt](\\d{2}:\\d{2}(?::\\d{2})?)(?:\\.(\\d+))?([Zz]|[+-]\\d{2}:?\\d{2})?)|(?: (\\d{2}:\\d{2}(?::\\d{2})?)(?:\\.(\\d+))?([Zz]|[+-]\\d{2}(?::?\\d{2})?)?))?$/",
+    "replacement": "/^(\\d{4}-\\d{2}-\\d{2})(?:(?:[Tt](\\d{2}:\\d{2}(?::\\d{2})?)(?:\\.(\\d+))?([Zz]|[+-]\\d{2}:?\\d{2})?)|(?: (\\d{2}:\\d{2}(?::\\d{2})?)(?:\\.(\\d+))?([Zz]|[+-]\\d{2}(?::\\d{2})?)?))?$/",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "Regex",
+    "fn": "STAMP_PARTS",
+    "original": "/^(\\d{4}-\\d{2}-\\d{2})(?:(?:[Tt](\\d{2}:\\d{2}(?::\\d{2})?)(?:\\.(\\d+))?([Zz]|[+-]\\d{2}:?\\d{2})?)|(?: (\\d{2}:\\d{2}(?::\\d{2})?)(?:\\.(\\d+))?([Zz]|[+-]\\d{2}(?::?\\d{2})?)?))?$/",
+    "replacement": "/^(\\d{4}-\\d{2}-\\d{2})(?:(?:[Tt](\\d{2}:\\d{2}(?::\\d{2})?)(?:\\.(\\d+))?([Zz]|[+-]\\d{2}:?\\d{2})?)|(?: (\\d{2}:\\d{2}(?::\\d{2}))(?:\\.(\\d+))?([Zz]|[+-]\\d{2}(?::?\\d{2})?)?))?$/",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "Regex",
+    "fn": "stampInstant",
+    "original": "/^[Zz]$/",
+    "replacement": "/[Zz]$/",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "Regex",
+    "fn": "stampInstant",
+    "original": "/^[Zz]$/",
+    "replacement": "/^[Zz]/",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "StringLiteral",
+    "fn": "shortHash",
+    "original": "'0'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "StringLiteral",
+    "fn": "stampInstant",
+    "original": "'0'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "StringLiteral",
+    "fn": "stampInstant",
+    "original": "'00:00'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/merge.ts",
+    "mutator": "UnaryOperator",
+    "fn": "laterErase",
+    "original": "-Infinity",
+    "replacement": "+Infinity",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ArrayDeclaration",
+    "fn": "generateSuggestions",
+    "original": "['attention', 'Consider increasing GLP-1 dose', 'You may benefit from a higher dose of your current GLP-1 medication. Discuss increasing your dose with your doctor.']",
+    "replacement": "[]",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ArrayDeclaration",
+    "fn": "generateSuggestions",
+    "original": "['Consider adding Ezetimibe', 'Discuss adding Ezetimibe 10mg with your doctor.']",
+    "replacement": "[]",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ArrayDeclaration",
+    "fn": "generateSuggestions",
+    "original": "[]",
+    "replacement": "[\"Stryker was here\"]",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ArrowFunction",
+    "fn": "fmtHba1c",
+    "original": "(v: number, us: UnitSystem) => fmtMetric('hba1c', v, us)",
+    "replacement": "() => undefined",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ArrowFunction",
+    "fn": "fmtHdl",
+    "original": "(v: number, us: UnitSystem) => fmtMetric('hdl', v, us)",
+    "replacement": "() => undefined",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ArrowFunction",
+    "fn": "fmtTotalChol",
+    "original": "(v: number, us: UnitSystem) => fmtMetric('total_cholesterol', v, us)",
+    "replacement": "() => undefined",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ArrowFunction",
+    "fn": "fmtTrig",
+    "original": "(v: number, us: UnitSystem) => fmtMetric('triglycerides', v, us)",
+    "replacement": "() => undefined",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ArrowFunction",
+    "fn": "fmtWeight",
+    "original": "(v: number, us: UnitSystem) => fmtMetric('weight', v, us)",
+    "replacement": "() => undefined",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "BlockStatement",
+    "fn": "weightMedIntro",
+    "original": "{ const and = reasons.length > 0 ? ` and ${joinWithAnd(reasons)} suggest` : ' suggests'; return `Your BMI of ${bmi}${and} you may benefit from medications that support weight management and metabolic health.`; }",
+    "replacement": "{}",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "BooleanLiteral",
+    "fn": "generateSuggestions",
+    "original": "false",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "atOrAboveTarget",
+    "original": "value !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "age >= 50",
+    "replacement": "false",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "age >= 50",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "bpExtraParagraphs.length > 0",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "followupStatus === 'completed'",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "inputs.hdlC !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "inputs.ldlC !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "inputs.systolicBp !== undefined",
+    "replacement": "true",
+    "count": 2
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "inputs.totalCholesterol !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "inputs.triglycerides !== undefined",
+    "replacement": "true",
+    "count": 3
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "results.age !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "results.bmi !== undefined",
+    "replacement": "true",
+    "count": 3
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "results.eGFR !== undefined",
+    "replacement": "true",
+    "count": 3
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "screenings.breastLastDate",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "screenings.cervicalLastDate",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "screenings.colorectalLastDate",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "screenings.dexaLastDate",
+    "replacement": "true",
+    "count": 2
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "screenings.lungLastDate",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "screenings.lungPackYears !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "screenings.prostatePsaValue !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "sex === 'male'",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "unitSystem === 'conventional'",
+    "replacement": "false",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "unitSystem === 'conventional'",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "whrForAlcohol !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "generateSuggestions",
+    "original": "year && month",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "isBmiElevated",
+    "original": "category !== 'Underweight'",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "isBmiElevated",
+    "original": "category !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "isBpRaised",
+    "original": "diastolic !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "isBpRaised",
+    "original": "systolic !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "weightMedicationTrigger",
+    "original": "inputs.hba1c !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "weightMedicationTrigger",
+    "original": "inputs.triglycerides !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "weightMedicationTrigger",
+    "original": "whr !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "weightMedIntro",
+    "original": "reasons.length > 0",
+    "replacement": "false",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "weightMedIntro",
+    "original": "reasons.length > 0",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "withEvidence",
+    "original": "evidence",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "EqualityOperator",
+    "fn": "generateSuggestions",
+    "original": "age >= 50",
+    "replacement": "age < 50",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "EqualityOperator",
+    "fn": "generateSuggestions",
+    "original": "age >= 50",
+    "replacement": "age > 50",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "EqualityOperator",
+    "fn": "generateSuggestions",
+    "original": "bpExtraParagraphs.length > 0",
+    "replacement": "bpExtraParagraphs.length >= 0",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "EqualityOperator",
+    "fn": "generateSuggestions",
+    "original": "unitSystem === 'conventional'",
+    "replacement": "unitSystem !== 'conventional'",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "EqualityOperator",
+    "fn": "weightMedIntro",
+    "original": "reasons.length > 0",
+    "replacement": "reasons.length <= 0",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "EqualityOperator",
+    "fn": "weightMedIntro",
+    "original": "reasons.length > 0",
+    "replacement": "reasons.length >= 0",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "LogicalOperator",
+    "fn": "generateSuggestions",
+    "original": "year && month",
+    "replacement": "year || month",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "LogicalOperator",
+    "fn": "withEvidence",
+    "original": "SUGGESTION_EVIDENCE[s.id] || SUGGESTION_EVIDENCE[s.id.replace(/-(?:overdue|upcoming|followup)$/, '')]",
+    "replacement": "SUGGESTION_EVIDENCE[s.id] && SUGGESTION_EVIDENCE[s.id.replace(/-(?:overdue|upcoming|followup)$/, '')]",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "ObjectLiteral",
+    "fn": "generateSuggestions",
+    "original": "{ followupName: 'follow-up', abnormalMeans: 'abnormal result' }",
+    "replacement": "{}",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "OptionalChaining",
+    "fn": "generateSuggestions",
+    "original": "medications.statin?.dose",
+    "replacement": "medications.statin.dose",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "Regex",
+    "fn": "withEvidence",
+    "original": "/-(?:overdue|upcoming|followup)$/",
+    "replacement": "/-(?:overdue|upcoming|followup)/",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "''",
+    "replacement": "\"Stryker was here!\"",
+    "count": 4
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'\\n\\n'",
+    "replacement": "\"\"",
+    "count": 2
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'A DEXA scan measures bone mineral density and can detect osteoporosis before a fracture occurs. Discuss with your doctor.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'abnormal result'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Abnormal uterine bleeding should be evaluated by your doctor promptly, especially after menopause.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Advanced skin treatments'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Aim for 25-35g of fiber daily from whole grains, fruits, and vegetables. Increase gradually to avoid discomfort. If you have IBS or IBD, discuss appropriate fiber levels with your doctor.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Aim for 3,500–5,000mg of potassium daily from fruits, vegetables, and legumes. High potassium intake supports healthy blood pressure and cardiovascular function.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Aim for 7-9 hours of sleep per night. Maintain a consistent sleep schedule, limit screens before bed, and keep your bedroom cool and dark.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Aim for less than 1,500mg of sodium daily. Most excess sodium comes from processed foods. Reducing sodium can help lower blood pressure.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'apob'",
+    "replacement": "\"\"",
+    "count": 4
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'attention'",
+    "replacement": "\"\"",
+    "count": 9
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Aug'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Bempedoic acid (Nexletol) lowers cholesterol via a different pathway than statins. Discuss with your doctor.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'blood_pressure'",
+    "replacement": "\"\"",
+    "count": 3
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'bloodwork'",
+    "replacement": "\"\"",
+    "count": 19
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Bone density scan overdue'",
+    "replacement": "\"\"",
+    "count": 2
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Bone density scan up to date'",
+    "replacement": "\"\"",
+    "count": 2
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Borderline high ApoB'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Borderline high LDL cholesterol'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Borderline high non-HDL cholesterol'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Borderline high total cholesterol'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Cervical screening overdue'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Cervical screening up to date'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Collagen peptides'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Colorectal screening is recommended. Options include annual FIT testing or colonoscopy every 10 years. Discuss with your doctor.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Colorectal screening overdue'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Colorectal screening up to date'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Consider a DEXA bone density scan'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Consider a PCSK9 inhibitor'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Consider adding an SGLT2 inhibitor'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Consider adding bempedoic acid'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Consider adding Ezetimibe'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Consider adding Metformin'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Consider increasing GLP-1 dose'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Consider increasing statin dose'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Consider starting a statin'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Consider switching to a more potent statin'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'conventional'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Creatine'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Daily broad-spectrum sunscreen'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Daily moisturizer with ceramides'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Dec'",
+    "replacement": "\"\"",
+    "count": 2
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'dexa_scan'",
+    "replacement": "\"\"",
+    "count": 2
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Discuss a PCSK9 inhibitor with your doctor.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Discuss adding Ezetimibe 10mg with your doctor.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Discuss endometrial cancer awareness'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Discuss increasing your statin dose with your doctor.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Discuss prostate cancer screening'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Elevated PSA'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Feb'",
+    "replacement": "\"\"",
+    "count": 2
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'follow-up'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Foods that lower cholesterol'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'For further skin rejuvenation, consider discussing these options with a dermatologist: red light therapy (LED, 630–850nm), fractional laser resurfacing, intense pulsed light (IPL) for pigmentation, and microneedling for collagen induction.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'general'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Glycine'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'HbA1c in diabetic range'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'HbA1c in normal range'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'HbA1c indicates prediabetes'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'hba1c'",
+    "replacement": "\"\"",
+    "count": 5
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'hdl'",
+    "replacement": "\"\"",
+    "count": 4
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'High ApoB'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'High LDL cholesterol'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'High non-HDL cholesterol'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'High total cholesterol'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'HPV testing every 5 years (preferred) or Pap test every 3 years is recommended. Discuss with your doctor.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Hypertensive crisis'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Increase potassium-rich foods'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'info'",
+    "replacement": "\"\"",
+    "count": 10
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Jul'",
+    "replacement": "\"\"",
+    "count": 2
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Jun'",
+    "replacement": "\"\"",
+    "count": 2
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'ldl'",
+    "replacement": "\"\"",
+    "count": 11
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Low HDL cholesterol'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Lung screening overdue'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Lung screening up to date'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Lutein and zeaxanthin'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Lycopene'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Magnesium glycinate'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Mammogram overdue'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Mammogram up to date'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Mammography is recommended at your age. Discuss with your doctor.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Mar'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Maximize fiber intake'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'May'",
+    "replacement": "\"\"",
+    "count": 2
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Measure your waist circumference'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Metformin provides additional glycemic control and has potential long-term health benefits. Extended-release formulations may have fewer GI side effects. Discuss with your doctor.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Methylated B-complex'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Micronutrient base'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Nov'",
+    "replacement": "\"\"",
+    "count": 2
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'nutrition'",
+    "replacement": "\"\"",
+    "count": 3
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Oct'",
+    "replacement": "\"\"",
+    "count": 2
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Omega-3'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Prioritize quality sleep'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'PSA test overdue'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'PSA test up to date'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'PSA testing is an option after an informed discussion with your doctor. Benefits and risks vary by individual.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Reduce alcohol intake'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Reduce and ideally completely stop alcohol intake. Alcohol contributes to weight gain, elevated triglycerides, and increased blood pressure.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Reduce sodium intake'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Reduce triglycerides with diet'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Regular cardio and resistance training'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Report abnormal uterine bleeding'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'screening'",
+    "replacement": "\"\"",
+    "count": 5
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Sep'",
+    "replacement": "\"\"",
+    "count": 2
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'SGLT2 inhibitors like Empagliflozin or Dapagliflozin provide additional metabolic benefits and cardiovascular protection. Discuss with your doctor.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Sleep support'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Stage 1 hypertension'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Stage 2 hypertension'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Start breast cancer screening'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Start cervical cancer screening'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Start colorectal cancer screening'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Start lung cancer screening'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Tirzepatide (Mounjaro/Zepbound) may be more effective for weight management. Discuss switching with your doctor.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'TMG (trimethylglycine)'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Topical retinoid'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'total_cholesterol'",
+    "replacement": "\"\"",
+    "count": 6
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Trace minerals in glycinate form'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'triglycerides'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'unknown'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Use a moisturizer containing ceramides and nicotinamide (vitamin B3) daily. Ceramides restore the skin barrier and reduce wrinkles, while nicotinamide improves hydration and reduces pigmentation.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Very high ApoB'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Very high LDL cholesterol'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Very high non-HDL cholesterol'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Very high triglycerides'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'weight'",
+    "replacement": "\"\"",
+    "count": 2
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'Women at menopause should be informed about the risks and symptoms of endometrial cancer. Discuss with your doctor.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "'You may benefit from a higher dose of your current GLP-1 medication. Discuss increasing your dose with your doctor.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`${type}_other`",
+    "replacement": "``",
+    "count": 2
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us('weight'))}, aim for ${results.proteinTarget}g of protein daily. This supports muscle maintenance and metabolic health.`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Borderline Lp(a): ${Math.round(inputs.lpa)} nmol/L`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Following your ${info.abnormalMeans}, your next screening was due ${nextDueLabel}. Please schedule your screening.`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Next DEXA scan due around ${due}.`",
+    "replacement": "``",
+    "count": 2
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Next low-dose CT due ${due}.`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Next screening due ${due}.`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Organize ${info.followupName}`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`With ${screenings.lungPackYears} pack-years of smoking history, annual low-dose CT screening is recommended. Discuss with your doctor.`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Your ${info.followupName} is scheduled. Keep your appointment.`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Your ApoB of ${fmtApoB(inputs.apoB!, us('apob'))} is elevated. Consider lifestyle modifications and discuss treatment options to reduce cardiovascular risk.`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Your BP of ${sys}/${dia} mmHg is dangerously high. Seek immediate medical attention if accompanied by symptoms.`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Your HbA1c of ${fmtHba1c(inputs.hba1c, us('hba1c'))} indicates diabetes. This requires medical management and lifestyle intervention.`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Your HbA1c of ${fmtHba1c(inputs.hba1c, us('hba1c'))} is in the normal range. Continue healthy habits to maintain this.`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Your HbA1c of ${fmtHba1c(inputs.hba1c, us('hba1c'))} is in the prediabetic range. Lifestyle changes now can prevent progression to diabetes.`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Your next cervical screening was due ${due}. Please schedule your screening.`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Your next DEXA scan was due ${due}. Please schedule your scan.`",
+    "replacement": "``",
+    "count": 2
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Your next low-dose CT was due ${due}. Please schedule your screening.`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Your next mammogram was due ${due}. Please schedule your screening.`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Your next PSA test was due ${due}. Please schedule your test.`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol!, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} is high. Consider lifestyle modifications to reduce cardiovascular risk.`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol!, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} is very high. This reflects total atherogenic particle burden and indicates significantly elevated cardiovascular risk.`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Your PSA of ${screenings.prostatePsaValue.toFixed(1)} ng/mL is above the typical reference range (\\u22644.0). Discuss with your doctor \\u2014 elevated PSA can have multiple causes.`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Your total cholesterol of ${fmtTotalChol(inputs.totalCholesterol, us('total_cholesterol'))} is borderline high. Desirable is <${formatDisplayValue('total_cholesterol', TOTAL_CHOLESTEROL_THRESHOLDS.borderline, us('total_cholesterol'))} ${getDisplayLabel('total_cholesterol', us('total_cholesterol'))}.`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Your total cholesterol of ${fmtTotalChol(inputs.totalCholesterol, us('total_cholesterol'))} is high. Desirable is <${formatDisplayValue('total_cholesterol', TOTAL_CHOLESTEROL_THRESHOLDS.borderline, us('total_cholesterol'))} ${getDisplayLabel('total_cholesterol', us('total_cholesterol'))}.`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "generateSuggestions",
+    "original": "`Your triglycerides of ${fmtTrig(inputs.triglycerides, us('triglycerides'))} are very high, increasing risk of pancreatitis. Immediate intervention is recommended.`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "isBmiElevated",
+    "original": "'Underweight'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "joinWithAnd",
+    "original": "''",
+    "replacement": "\"Stryker was here!\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "LIPID_DIET_ADVICE",
+    "original": "'Specific foods can lower LDL cholesterol: oats, walnuts, almonds, ground flaxseed, edamame, and replacing butter with extra-virgin olive oil. If you don\\'t have IBS or IBD, beans, lentils, chickpeas, and mixed vegetables are also great options. Psyllium husk is a soluble fibre that is well-tolerated even with IBS or IBD; discuss with your doctor whether it fits your routine.'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "weightMedIntro",
+    "original": "' suggests'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "weightMedIntro",
+    "original": "` and ${joinWithAnd(reasons)} suggest`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "weightMedIntro",
+    "original": "`Your BMI of ${bmi}${and} you may benefit from medications that support weight management and metabolic health.`",
+    "replacement": "``",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/suggestions.ts",
+    "mutator": "StringLiteral",
+    "fn": "withEvidence",
+    "original": "''",
+    "replacement": "\"Stryker was here!\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "ArithmeticOperator",
+    "fn": "formatGradedValue",
+    "original": "x * 10 - 1",
+    "replacement": "x * 10 + 1",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "ArithmeticOperator",
+    "fn": "formatTargetLine",
+    "original": "fromCanonicalValue(metric, line, system) / unitScale",
+    "replacement": "fromCanonicalValue(metric, line, system) * unitScale",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "bpTargetFor",
+    "original": "age !== undefined",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "detectUnitSystem",
+    "original": "!lang",
+    "replacement": "false",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "detectUnitSystem",
+    "original": "parts.length > 1",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "detectUnitSystem",
+    "original": "typeof Intl !== 'undefined'",
+    "replacement": "false",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "detectUnitSystem",
+    "original": "typeof Intl !== 'undefined'",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "detectUnitSystem",
+    "original": "typeof navigator !== 'undefined'",
+    "replacement": "false",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "ConditionalExpression",
+    "fn": "detectUnitSystem",
+    "original": "typeof navigator !== 'undefined'",
+    "replacement": "true",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "EqualityOperator",
+    "fn": "detectUnitSystem",
+    "original": "parts.length > 1",
+    "replacement": "parts.length >= 1",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "EqualityOperator",
+    "fn": "detectUnitSystem",
+    "original": "typeof Intl !== 'undefined'",
+    "replacement": "typeof Intl === 'undefined'",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "EqualityOperator",
+    "fn": "detectUnitSystem",
+    "original": "typeof navigator !== 'undefined'",
+    "replacement": "typeof navigator === 'undefined'",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "MethodExpression",
+    "fn": "isUSTimezone",
+    "original": "tz.startsWith('America/Kentucky/')",
+    "replacement": "tz.endsWith('America/Kentucky/')",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "MethodExpression",
+    "fn": "isUSTimezone",
+    "original": "tz.startsWith('America/North_Dakota/')",
+    "replacement": "tz.endsWith('America/North_Dakota/')",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "MethodExpression",
+    "fn": "normaliseUnit",
+    "original": "raw .trim()",
+    "replacement": "raw",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "ObjectLiteral",
+    "fn": "makeIdentityUnit",
+    "original": "{ si: dp, conventional: dp }",
+    "replacement": "{}",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "ObjectLiteral",
+    "fn": "UNIT_ALIASES",
+    "original": "{ 'mmol/mol': SI, '%': CONVENTIONAL }",
+    "replacement": "{}",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "ObjectLiteral",
+    "fn": "UNIT_ALIASES",
+    "original": "{ mmhg: SI }",
+    "replacement": "{}",
+    "count": 2
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "ObjectLiteral",
+    "fn": "UNIT_DEFS",
+    "original": "{ min: 20, max: 98 }",
+    "replacement": "{}",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "Regex",
+    "fn": "normaliseUnit",
+    "original": "/\\s+/g",
+    "replacement": "/\\s/g",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "StringLiteral",
+    "fn": "CONVENTIONAL_COUNTRIES",
+    "original": "'MM'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "StringLiteral",
+    "fn": "detectUnitSystem",
+    "original": "'undefined'",
+    "replacement": "\"\"",
+    "count": 2
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "StringLiteral",
+    "fn": "US_TIMEZONES",
+    "original": "'America/Adak'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "StringLiteral",
+    "fn": "US_TIMEZONES",
+    "original": "'America/Anchorage'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "StringLiteral",
+    "fn": "US_TIMEZONES",
+    "original": "'America/Boise'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "StringLiteral",
+    "fn": "US_TIMEZONES",
+    "original": "'America/Denver'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "StringLiteral",
+    "fn": "US_TIMEZONES",
+    "original": "'America/Detroit'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "StringLiteral",
+    "fn": "US_TIMEZONES",
+    "original": "'America/Juneau'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "StringLiteral",
+    "fn": "US_TIMEZONES",
+    "original": "'America/Los_Angeles'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "StringLiteral",
+    "fn": "US_TIMEZONES",
+    "original": "'America/Menominee'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "StringLiteral",
+    "fn": "US_TIMEZONES",
+    "original": "'America/Metlakatla'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "StringLiteral",
+    "fn": "US_TIMEZONES",
+    "original": "'America/Nome'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "StringLiteral",
+    "fn": "US_TIMEZONES",
+    "original": "'America/Phoenix'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "StringLiteral",
+    "fn": "US_TIMEZONES",
+    "original": "'America/Sitka'",
+    "replacement": "\"\"",
+    "count": 1
+  },
+  {
+    "file": "packages/health-core/src/units.ts",
+    "mutator": "StringLiteral",
+    "fn": "US_TIMEZONES",
+    "original": "'America/Yakutat'",
+    "replacement": "\"\"",
+    "count": 1
+  }
+]
