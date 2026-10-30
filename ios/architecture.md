@@ -1231,12 +1231,14 @@ door or the history door: the drug questions live on My data, not on a metric pa
 answer reaches both without touching the bridge contract (id unchanged, `4bb43ea735cb5a3d`). Cost: about 19 KB of
 static JSON on each draw. An older engine sends no `guides`; Swift reads it as optional and shows none. Swift reads the map leniently (`MetricGuides`): a malformed guide is left out and a malformed map reads as empty, so a bad over-the-air guide never blanks My data. Only https sources are links; any other scheme shows as text. A guide shows only on a page that has data: a metric with no value opens its entry sheet, not the page (Brad's call whether to change that).
 
+**Added 2026-10-30: medication changes on a metric page's chart (US-25 AC9b, Brad: the web's markers on the phone).** A metric page draws each recorded medication change as a dashed indigo rule (the web's `#6366f1`, `#818CF8` in dark mode), with a dated list below the chart that VoiceOver reads; the rules are hidden from it, so nothing is read twice. The drug-to-metric map, the log projection and the words were the web's (`widget-src/src/lib/medication-annotations.ts`); they moved to health-core's `medication-annotations.ts`, which the web's HistoryPanel and RoadmapStore now import, so there is one source. The engine serves each page's as `markers` (`{id, day, label}`, oldest first) on `historyJson`'s `MetricHistory`. Why there: a marker belongs to one metric page, which already reads `historyJson`; `screenJson` would carry every metric's markers on every draw. Why no bridge change: the contract names `historyJson`'s return only as "MetricHistory JSON", and an older app ignores a field it does not know, as with `guides` (id unchanged, `2d467ff50c66c42d`). An older engine sends none; Swift reads the list leniently (`MedicationMarkers`): a malformed marker is left out, a malformed list reads as none. The day is the phone's local day of the recorded time (`localDay` in JavaScriptCore), as the web plots the instant in the reader's zone. The chart's range reaches the markers, as the web's does; the scrub still picks only values (`ChartData.days`).
+
 **Added 2026-10-22.** Number boxes refuse, as typed, what no value can be (`MyData/TypedNumber.swift`,
 US-25 AC17b): blood pressure 3 whole digits, values 5+3, doses 5+2; a refused change goes back to
 the last accepted text, a loaded value is never cut, and an over-limit loaded value is never
 restored (no flip loop). Colours follow Apple Health (AC17c): blood pressure red, body measurements
 purple, blood tests blue; the light accent is dark enough for white text (5.35:1) and dark-mode
-accent buttons carry black text (`OnAccent`, dimmed when disabled).
+accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls carry the brand accent (Brad 2026-10-30): pickers' and menus' values, buttons, "+" and Sync; rows that open a value keep their text in the label colour (`.tint(.primary)`, AC17's plain names).
 
 ## Build and test
 
@@ -1264,7 +1266,8 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled).
 - `engine/my-data-forms.ts`: the medication, screening and supplement questions
   (health-core `input-form.ts`) for the plan's age, sex and cascades, their answers
   (only a shown question, only an offered answer, then the web's writes), and
-  `metricHistory` (every row of a metric, entered-in-error included). Entry door:
+  `metricHistory` (every row of a metric, entered-in-error included, and its medication
+  `markers`, health-core's `medication-annotations.ts`). Entry door:
   `historyJson`. Tested in Node by
   `engine/my-data.test.ts`, which the web's `test:all` runs.
 - `scripts/build-engine.mjs`: bundles health-core with esbuild (target Safari 17, iOS 17's
@@ -1340,7 +1343,8 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled).
     `FormSectionsList`, `MedicationsSection`, `ScreeningsSection`, `SupplementsSection`
     with `SupplementSheet`. Value pages (AC9, AC17): `MetricDetailView` (pushed:
     range picker, headline, values, tap to correct, no delete), `MetricChart` (Swift
-    Charts, scrubbing, the VoiceOver chart descriptor), `ChartRange` (which ranges to
+    Charts, scrubbing, the VoiceOver chart descriptor, the medication markers and their
+    list, `MedicationMarkerList`), `ChartRange` (which ranges to
     offer), `MetricEntrySheet` (picks `BloodPressureSheet` or `ValueEntrySheet`) and
     `FeetInchesSheet`.
   - `Reminders/`: on-device reminders (D7). `PhoneReminders` is the engine's answer,
@@ -1361,7 +1365,10 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled).
     units, statuses and evidence) live once, in health-core's `statTiles`
     (packages/health-core/src/stat-tiles.ts), which the web's results panel calls too;
     `screenJson` in `engine/entry.ts` only passes the phone's units. Swift picks only the
-    status capsule's colour: names are plain text, no symbol (Brad 2026-10-23). Each card
+    status capsule's colour: names are plain text, no symbol (Brad 2026-10-23). The capsule
+    carries the web's status colours, normal in the brand teal-green (Brad 2026-10-30):
+    `Color.status` in `App/Colors.swift`, one map shared with the plan's priority badge,
+    the shades fixed per mode so each word passes WCAG AA on its capsule. Each card
     rises in once, the first time any of it scrolls into view (`RiseIn`, iOS 18's
     `onScrollVisibilityChange`; on iOS 17 cards are simply there). A section-wide transition
     tied to scroll position faded a section out while it was being read, once an opened card

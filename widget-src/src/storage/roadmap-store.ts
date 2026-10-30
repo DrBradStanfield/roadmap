@@ -41,7 +41,7 @@ import {
   stampProfile,
   upsertMedication,
   upsertSupplement,
-  isEscalationKey,
+  medicationChanges,
   computeReminderSchedule,
   correctValue as correctRecordValue,
   moveBloodTest as moveRecordBloodTest,
@@ -265,18 +265,7 @@ export class RoadmapStore {
   }
 
   loadMedicationHistory(): ApiMedicationHistory[] {
-    // An escalation row an earlier build wrote is an answer, not a medication
-    // change (US-06 AC11): the file keeps it, the history view does not show it.
-    return this.file.medicationHistory
-      .filter(h => ['started', 'stopped', 'dose_changed', 'switched'].includes(h.changeType ?? '')
-        && typeof h.medicationKey === 'string' && !isEscalationKey(h.medicationKey) && typeof h.drugName === 'string'
-        && Number.isFinite(Date.parse(h.updatedAt)))
-      .map(h => ({
-        id: h.id, medicationKey: h.medicationKey, drugName: h.drugName,
-        doseValue: h.doseValue, doseUnit: h.doseUnit,
-        changeType: h.changeType!, recordedAt: h.updatedAt,
-      }))
-      .sort((a, b) => a.recordedAt.localeCompare(b.recordedAt) || a.id.localeCompare(b.id));
+    return medicationChanges(this.file.medicationHistory);
   }
 
   loadLabValues(): ApiLabValue[] {

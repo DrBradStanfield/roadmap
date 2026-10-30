@@ -22,6 +22,7 @@ import { BLOOD_PRESSURE, pressureHistory } from './blood-pressure';
 import { cellUnitFor, systemFor, type UnitChoices } from './unit-choices';
 import type { EditOutcome } from './my-data';
 import { cellLabel, cellText } from '../../packages/health-core/src/cell-unit';
+import { medicationAnnotations, medicationChanges } from '../../packages/health-core/src/medication-annotations';
 
 /** A supplement as the tab lists it. */
 export interface SupplementRow {
@@ -75,6 +76,18 @@ export interface MetricHistory {
   metric: string; label: string; unit: string; rows: HistoryRow[];
   /** The plan set the current value aside (outside the range it accepts), so it is not used (Codex R2). */
   excluded: boolean;
+  /** The recorded medication changes this metric's chart marks, oldest first, as the web's
+   *  chart does (health-core's medicationAnnotations). `metricHistory` always sends it. */
+  markers: MedicationMarker[];
+}
+
+/** One recorded medication change on a metric page. */
+export interface MedicationMarker {
+  id: string;
+  /** YYYY-MM-DD: the phone's own day of the recorded time, as the web plots it in the reader's. */
+  day: string;
+  /** "Recorded start: Atorvastatin 20mg" */
+  label: string;
 }
 
 /** The edits this file answers; my-data.ts's `Edit` includes them. */
@@ -263,7 +276,10 @@ export function applyFormEdit(file: RoadmapFile, edit: Exclude<FormEdit, { kind:
 export function metricHistory(file: RoadmapFile, metric: string, now = new Date().toISOString(), choices: UnitChoices = {}): MetricHistory {
   // No plan yet (no usable height or sex): nothing is excluded, and nothing used.
   const excludedFields = planOf(file, now, {})?.excluded ?? [];
-  if (metric === BLOOD_PRESSURE) return pressureHistory(file, excludedFields);
+  // The web's own pins (US-25 AC9b): none for a metric no medication affects.
+  const markers = (medicationAnnotations(medicationChanges(file.medicationHistory))[metric] ?? [])
+    .map(({ id, date, label }) => ({ id, day: localDay(new Date(date)), label }));
+  if (metric === BLOOD_PRESSURE) return { ...pressureHistory(file, excludedFields), markers };
   const shown = cellUnitFor(file, metric, choices);
   const rows = file.measurements.filter((row) => row.metricType === metric);
   // The plan's own pick of the current value.
@@ -273,6 +289,7 @@ export function metricHistory(file: RoadmapFile, metric: string, now = new Date(
     excluded: excludedFields.includes(METRIC_TO_FIELD[metric]),
     label: METRIC_LABELS[metric] ?? metric,
     unit: cellLabel(metric as MetricType, shown),
+    markers,
     rows: [...rows]
       // Newest day first; within a day, newest written first, the active row above the ones it replaced.
       .sort((a, b) => b.recordedAt.slice(0, 10).localeCompare(a.recordedAt.slice(0, 10)) || String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? ''))

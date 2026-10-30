@@ -1,3 +1,4 @@
+import SwiftUI
 import XCTest
 @testable import HealthRoadmap
 
@@ -81,6 +82,35 @@ final class PlanLayoutTests: XCTestCase {
         for tile in tiles { XCTAssertFalse(tile.evidence?.reason.isEmpty ?? true, tile.key) }
         // US-57 AC5: and what it is, required, so every tile opens.
         for tile in tiles { XCTAssertFalse(tile.about.isEmpty, tile.key) }
+    }
+
+    /// US-25 AC22 (Brad 2026-10-30): each status reads in the web's colour, normal in the
+    /// brand teal-green, every word at WCAG AA (4.5:1) on its capsule, in light and dark.
+    func testTileStatusColoursAreTheWebsAndReadable() throws {
+        func rgb(_ color: Color, _ style: UIUserInterfaceStyle) -> [CGFloat] {
+            var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+            UIColor(color).resolvedColor(with: UITraitCollection(userInterfaceStyle: style)).getRed(&r, green: &g, blue: &b, alpha: &a)
+            return [r, g, b]
+        }
+        func luminance(_ c: [CGFloat]) -> CGFloat {
+            let l = c.map { $0 <= 0.04045 ? $0 / 12.92 : pow(($0 + 0.055) / 1.055, 2.4) }
+            return 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2]
+        }
+        let tones: [String?] = ["normal", "info", "attention", "urgent", nil]
+        for style in [UIUserInterfaceStyle.light, .dark] {
+            let card = rgb(Color(.secondarySystemGroupedBackground), style)
+            // Color.accentColor is the AccentColor asset; the two paths differ only past 8 bits.
+            XCTAssertEqual(rgb(.status("normal"), style).map { Int(($0 * 255).rounded()) },
+                           rgb(Color("AccentColor"), style).map { Int(($0 * 255).rounded()) }, "normal is the brand colour")
+            XCTAssertEqual(Set(tones.map { rgb(.status($0), style).map { Int($0 * 255) } }).count, tones.count, "five distinct colours")
+            for tone in tones {
+                let text = rgb(.status(tone), style)
+                let capsule: [CGFloat] = zip(text, card).map { $0 * Color.statusFill + $1 * (1 - Color.statusFill) }
+                let (a, b) = (luminance(text), luminance(capsule))
+                let ratio = (max(a, b) + 0.05) / (min(a, b) + 0.05)
+                XCTAssertGreaterThanOrEqual(ratio, 4.5, "\(tone ?? "none") in \(style == .dark ? "dark" : "light")")
+            }
+        }
     }
 
     /// Re-check F1: a tile Swift cannot decode leaves no tiles, never a blank plan.

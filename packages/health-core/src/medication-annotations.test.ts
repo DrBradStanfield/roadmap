@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { medicationAnnotations } from './medication-annotations';
-import type { ApiMedicationHistory } from './api-types';
+import { medicationAnnotations, medicationChanges, type MedicationChange } from './medication-annotations';
+import type { FileMedication } from './roadmap-file';
 
-const event = (overrides: Partial<ApiMedicationHistory> = {}): ApiMedicationHistory => ({
+// Moved from widget-src/src/lib (2026-10-30): one source for the web chart and the iPhone's metric pages.
+const event = (overrides: Partial<MedicationChange> = {}): MedicationChange => ({
   id: 'event', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20,
   doseUnit: 'mg', recordedAt: '2026-09-01T10:00:00Z', changeType: 'started', ...overrides,
 });
@@ -64,5 +65,34 @@ describe('US-06 AC4: medication chart annotations', () => {
       event({ doseValue: NaN }), event({ doseValue: -5 }),
     ]).ldl.map(a => a.label);
     expect(labels).toEqual(Array(5).fill('Recorded start: Atorvastatin'));
+  });
+
+  it('places each event on the caller\'s time axis, and drops one the axis cannot place', () => {
+    const local = (at: string) => (at === '2026-09-01' ? 1 : NaN);
+    expect(medicationAnnotations([event({ id: 'day', recordedAt: '2026-09-01' }), event({ id: 'odd' })], local).ldl)
+      .toEqual([{ id: 'day', date: 1, label: 'Recorded start: Atorvastatin 20mg' }]);
+  });
+});
+
+// US-06 AC4, AC11: the file's log as the history view reads it (moved from RoadmapStore.loadMedicationHistory).
+describe('medicationChanges: the recorded log a chart reads', () => {
+  const row = (overrides: Partial<FileMedication> = {}): FileMedication => ({
+    id: 'r', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg', changeType: 'started',
+    createdAt: '2026-09-01T10:00:00Z', updatedAt: '2026-09-01T10:00:00Z', ...overrides,
+  } as FileMedication);
+
+  it('keeps recorded changes oldest first, with the write time as the recorded time', () => {
+    const changes = medicationChanges([row({ id: 'b', updatedAt: '2026-09-02T10:00:00Z', changeType: 'stopped', drugName: 'none' }), row({ id: 'a' })]);
+    expect(changes).toEqual([
+      { id: 'a', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg', changeType: 'started', recordedAt: '2026-09-01T10:00:00Z' },
+      expect.objectContaining({ id: 'b', changeType: 'stopped', recordedAt: '2026-09-02T10:00:00Z' }),
+    ]);
+  });
+
+  it('leaves out legacy, escalation, unnamed and undated rows', () => {
+    expect(medicationChanges([
+      row({ id: 'legacy', changeType: undefined }), row({ id: 'esc', medicationKey: 'statin_escalation' }),
+      row({ id: 'n', drugName: 55 as unknown as string }), row({ id: 'd', updatedAt: '!invalid' }), row({ id: 'ok' }),
+    ]).map(c => c.id)).toEqual(['ok']);
   });
 });

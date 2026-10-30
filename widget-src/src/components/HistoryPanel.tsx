@@ -9,6 +9,8 @@ import {
   UNIT_DEFS,
   detectUnitSystem,
   METRIC_LABELS,
+  medicationAnnotations,
+  type ChartAnnotation,
 } from '@roadmap/health-core';
 import {
   Chart,
@@ -27,11 +29,13 @@ import { trackProductEvent } from '../lib/server-api';
 import type { ApiLabValue, ApiMedicationHistory } from '../lib/api-types';
 import { loadUnitPreference } from '../lib/storage';
 import { groupLabHistory } from '../lib/lab-rows';
-import { medicationAnnotations, MED_ANNOTATION_COLOR, type ChartAnnotation } from '../lib/medication-annotations';
 import { chartTimestamp, formatShortDate } from '../lib/constants';
 
 // Register only what we need
 Chart.register(LineController, LineElement, PointElement, LinearScale, TimeScale, Tooltip, Filler, annotationPlugin);
+
+// Recorded medication changes on a chart; the iPhone's metric page draws the same indigo.
+const MED_ANNOTATION_COLOR = '#6366f1';
 
 // Chart colors per metric
 const METRIC_COLORS: Record<string, string> = {
@@ -274,7 +278,7 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
   };
 
   const annotationsByMetric = useMemo(
-    () => showMedAnnotations ? medicationAnnotations(medHistory) : {},
+    () => showMedAnnotations ? medicationAnnotations(medHistory, chartTimestamp) : {},
     [medHistory, showMedAnnotations],
   );
 

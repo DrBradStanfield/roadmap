@@ -17,6 +17,24 @@ extension Color {
         })
     }
 
+    /// The status tones of the web (styles.css `.stat-status`, the suggestion badges),
+    /// recoloured for AA contrast and the brand, not the web's hexes: one map for the tiles
+    /// and the plan's badges. Normal is the brand teal-green, the accent colour (Brad
+    /// 2026-10-30); amber, orange and red are deepened in light mode and lifted in dark so
+    /// each reads at WCAG AA as text on its own capsule; no tone is gray.
+    static func status(_ tone: String?) -> Color {
+        switch tone {
+        case "normal": .accentColor
+        case "info": Color(light: 0x9A5B00, dark: 0xFBBF24)
+        case "attention": Color(light: 0xB43C00, dark: 0xFB923C)
+        case "urgent": Color(light: 0xB91C1C, dark: 0xF87171)
+        default: Color(light: 0x636366, dark: 0xAEAEB2)
+        }
+    }
+
+    /// How strongly a status colour fills its capsule: light enough that its text passes AA.
+    static let statusFill = 0.12
+
     /// A fixed colour for each mode, 0xRRGGBB.
     init(light: UInt32, dark: UInt32) {
         func rgb(_ hex: UInt32) -> UIColor {
@@ -54,5 +72,21 @@ private struct OnAccentLabel: ViewModifier {
 
     func body(content: Content) -> some View {
         content.foregroundStyle(enabled ? Color.onAccent : Color.secondary)
+    }
+}
+
+/// A status word in its colour on a capsule of the same hue: the tiles' status and the
+/// plan's priority badge (Brad 2026-10-30).
+struct StatusCapsule: View {
+    let label: String
+    let tone: String?
+
+    var body: some View {
+        Text(label)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Color.status(tone))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(Color.status(tone).opacity(Color.statusFill), in: Capsule())
     }
 }

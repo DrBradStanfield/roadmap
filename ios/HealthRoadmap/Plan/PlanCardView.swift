@@ -185,11 +185,7 @@ private struct PriorityBadge: View {
 
     var body: some View {
         if priority != "info" {
-            Text(priority == "urgent" ? "Urgent" : "Attention")
-                .font(.caption.weight(.semibold))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 2)
-                .background((priority == "urgent" ? Color.red : Color.orange).opacity(0.15), in: Capsule())
+            StatusCapsule(label: priority == "urgent" ? "Urgent" : "Attention", tone: priority)
         }
     }
 }

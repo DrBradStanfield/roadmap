@@ -101,3 +101,5 @@ struct Lenient<Value: Decodable & Sendable>: Decodable, Sendable {
 
     init(from decoder: Decoder) throws { value = try? Value(from: decoder) }
 }
+
+extension Lenient: Equatable where Value: Equatable {}

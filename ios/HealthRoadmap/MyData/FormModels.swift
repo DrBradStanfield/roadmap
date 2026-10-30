@@ -129,6 +129,21 @@ struct MetricHistory: Decodable, Equatable {
     let rows: [Row]
     /// The plan set the current value aside (outside the range it accepts), so it does not use it.
     let excluded: Bool
+    /// The recorded medication changes this metric's chart marks, health-core's
+    /// `medicationAnnotations` served by the engine (US-25 AC9b), read leniently so a bad
+    /// over-the-air engine never blanks the page: missing (an older engine) or not a list
+    /// reads as none, and a malformed marker is left out.
+    private let markers: Lenient<[Lenient<MedicationMarker>]>?
+
+    var medicationMarkers: [MedicationMarker] { markers?.value?.compactMap(\.value) ?? [] }
+
+    struct MedicationMarker: Decodable, Identifiable, Equatable {
+        let id: String
+        /// YYYY-MM-DD, the phone's own day of the recorded change.
+        let day: String
+        /// "Recorded start: Atorvastatin 20mg"
+        let label: String
+    }
 }
 
 /// An answer to a form question, or a supplement change (`FormEdit` and the

@@ -48,7 +48,8 @@ private struct SnapshotAnchor: ViewModifier {
 }
 
 /// One tile: the name in plain text, the value large with its unit, and the status below.
-/// Colour only where it carries meaning: the status capsule (Brad 2026-10-23).
+/// Colour only where it carries meaning: the status capsule, in the web's status colours
+/// with normal in the brand teal-green (Brad 2026-10-23, 2026-10-30).
 private struct TileCard: View {
     let tile: StatTile
 
@@ -60,12 +61,7 @@ private struct TileCard: View {
                 .lineLimit(2)
             CardValue(value: tile.value, unit: tile.unit)
             if let status = tile.status {
-                Text(status.label)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background((Self.tones[status.tone ?? ""] ?? .gray).softInDark.opacity(0.18), in: Capsule())
+                StatusCapsule(label: status.label, tone: status.tone)
             }
             Spacer(minLength: 0)
         }
@@ -76,7 +72,4 @@ private struct TileCard: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel([tile.label, "\(tile.value) \(tile.unit)", tile.status?.label].compactMap { $0 }.joined(separator: ", "))
     }
-
-    /// The web's status colours; no tone is gray.
-    static let tones: [String: Color] = ["normal": .green, "info": .blue, "attention": .orange, "urgent": .red]
 }

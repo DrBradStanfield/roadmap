@@ -8,7 +8,7 @@
  * disturbing the type graph. `api.ts` re-exports everything here for back-compat
  * import paths; new code may import directly from `./api-types`.
  */
-import type { HealthInputs, DocumentType, ApiMeasurement, ApiMedication, ApiScreening, LabUnitRefusal, MeasurementRefusal, RefusedLabValue } from '@roadmap/health-core';
+import type { HealthInputs, DocumentType, ApiMeasurement, ApiMedication, ApiScreening, MedicationChange, LabUnitRefusal, MeasurementRefusal, RefusedLabValue } from '@roadmap/health-core';
 import type { ExtractionStopCode } from '@roadmap/health-core/models';
 
 export interface ApiReminderPreference {
@@ -51,16 +51,7 @@ export type AddMeasurementResult =
   | { status: 'error' };
 
 /** Recorded medication change projected from the append-only file history. */
-export interface ApiMedicationHistory {
-  id: string;
-  medicationKey: string;
-  drugName: string;
-  doseValue: number | null;
-  doseUnit: string | null;
-  changeType: string;
-  /** When the change was recorded, not a claimed treatment date. */
-  recordedAt: string;
-}
+export type ApiMedicationHistory = MedicationChange;
 
 /** API supplement record. */
 export interface ApiSupplement {

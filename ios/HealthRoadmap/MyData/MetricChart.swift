@@ -23,6 +23,14 @@ struct ChartPoint: Identifiable {
     }
 }
 
+/// A recorded medication change on a chart: a dashed rule on its day (US-25 AC9b).
+struct ChartMarker: Identifiable, Equatable {
+    let id: String
+    let date: Date
+    /// The list's row: "20 Oct 2026: Recorded start: Atorvastatin 20mg", built once, not per redraw.
+    let text: String
+}
+
 /// A history's chart inputs, built once per history the engine answers, never on a redraw:
 /// a scrub redraws the page many times a second.
 struct ChartData {
@@ -30,7 +38,10 @@ struct ChartData {
     let points: [ChartPoint]
     /// Each point's day, in the points' order.
     let days: [Date]
-    /// The oldest and newest of those days; nil with no values.
+    /// The recorded medication changes the chart marks, each on its day (US-25 AC9b).
+    let markers: [ChartMarker]
+    /// The oldest and newest of those days and the markers' (the web's chart range includes
+    /// them, US-06 AC4); nil with no values.
     let first: Date?, last: Date?
     /// The range the page opens on for those days.
     let opening: ChartRange
@@ -42,8 +53,12 @@ struct ChartData {
         self.history = history
         points = ChartPoint.points(history)
         days = points.map(\.date)
-        (first, last) = (days.min(), days.max())
-        opening = ChartRange.opening(for: days)
+        markers = history.medicationMarkers.compactMap { marker in
+            DayText.date(marker.day).map { ChartMarker(id: marker.id, date: $0, text: "\(DayText.short(marker.day)): \(marker.label)") }
+        }
+        let spanned = days.isEmpty ? [] : days + markers.map(\.date)
+        (first, last) = (spanned.min(), spanned.max())
+        opening = ChartRange.opening(for: spanned)
         // The first active row for a day wins, as `rows.first` would pick it.
         activeRows = Dictionary(history.rows.filter(\.isActive).compactMap { row in DayText.date(row.day).map { ($0, row) } },
                                 uniquingKeysWith: { first, _ in first })
@@ -112,6 +127,9 @@ struct MetricChart: View {
         "steps": [Color(light: 0xD9480F, dark: 0xF0985E)],
     ]
 
+    /// The web's indigo for a recorded medication change (#6366f1), lifted in dark mode.
+    nonisolated static let markerColor = Color(light: 0x6366F1, dark: 0x818CF8)
+
     var body: some View {
         Chart {
             ForEach(chart.points) { point in
@@ -121,6 +139,13 @@ struct MetricChart: View {
                 PointMark(x: .value("Day", point.date, unit: .day), y: .value(chart.history.unit, point.value))
                     .foregroundStyle(by: .value("Reading", point.series))
                     .symbolSize(point.date == selected ? 90 : 30)
+            }
+            // The web's medication pins (HistoryPanel.tsx): read by VoiceOver from the list below the chart.
+            ForEach(chart.markers) { marker in
+                RuleMark(x: .value("Day", marker.date, unit: .day))
+                    .foregroundStyle(Self.markerColor)
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                    .accessibilityHidden(true)
             }
             if let selected, let row = chart.activeRows[selected] {
                 RuleMark(x: .value("Day", selected, unit: .day))
@@ -171,6 +196,29 @@ struct MetricChart: View {
         .padding(.vertical, 6)
         .background(Color(uiColor: .tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10))
         .accessibilityHidden(true)
+    }
+}
+
+/// The chart's recorded medication changes, dated, as the web lists them below its chart
+/// (`metric-chart-events`): what VoiceOver reads for the dashed rules.
+struct MedicationMarkerList: View {
+    let markers: [ChartMarker]
+
+    var body: some View {
+        if !markers.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Recorded medication changes").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                ForEach(markers) { marker in
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Rectangle().fill(MetricChart.markerColor).frame(width: 2, height: 12).accessibilityHidden(true)
+                        Text(marker.text).font(.footnote)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("Recorded medication changes")
+        }
     }
 }
 

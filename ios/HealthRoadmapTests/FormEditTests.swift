@@ -106,4 +106,39 @@ final class FormEditTests: XCTestCase {
         XCTAssertEqual(history.rows.map(\.isActive), [true, false])
         XCTAssertEqual(history.rows.map(\.current), [true, false])
     }
+
+    /// US-25 AC9b (Brad 2026-10-30): a statin start marks the LDL page as the web's chart does, on
+    /// its day, and widens the chart to it; a page no medication affects gets none.
+    func testAStatinStartMarksTheCholesterolPagesOnly_US25AC9b() throws {
+        let engine = try HealthEngine()
+        var record = try saved(engine, .add(metric: "ldl", value: 3.4, day: "2026-09-01"), try man60(engine))
+        record = try saved(engine, .add(metric: "weight", value: 80, day: "2026-09-01"), record)
+        record = try saved(engine, .form(.medicationField(field: "statin", value: "atorvastatin")), record)
+        let ldl = try engine.blocking { [now] in try $0.history(recordJSON: record, metric: "ldl", now: now, deviceId: "test") }
+        XCTAssertEqual(ldl.medicationMarkers.map(\.label), ["Recorded start: Atorvastatin 10mg"])
+        XCTAssertEqual(ldl.medicationMarkers.map(\.day), ["2026-10-21"])
+        let chart = ChartData(ldl)
+        XCTAssertEqual(chart.markers.map(\.date), [DayText.date("2026-10-21")])
+        XCTAssertEqual(chart.last, DayText.date("2026-10-21"), "the range reaches the change, as the web's does")
+        XCTAssertEqual(chart.days, [DayText.date("2026-09-01")], "a scrub still picks only values")
+        for metric in ["weight", "hdl", MyData.bloodPressure] {
+            let other = try engine.blocking { [now] in try $0.history(recordJSON: record, metric: metric, now: now, deviceId: "test") }
+            XCTAssertEqual(other.medicationMarkers, [], metric)
+        }
+    }
+
+    /// US-25 AC9b: markers are read leniently. An older engine sends none; a bad marker is left out;
+    /// a list that is not a list reads as none; the values still draw.
+    func testMarkersDecodeLeniently_US25AC9b() throws {
+        let base = #""metric":"ldl","label":"LDL","unit":"mmol/L","excluded":false,"rows":[{"id":"r","value":"3.4","day":"2026-09-01","status":"active","current":true,"correction":false}]"#
+        let decode = { (extra: String) in try JSONDecoder().decode(MetricHistory.self, from: Data("{\(base)\(extra)}".utf8)) }
+        XCTAssertEqual(try decode("").medicationMarkers, [])
+        let mixed = try decode(#","markers":[{"id":"a","day":"2026-10-01","label":"Recorded start: Statin"},{"id":"b","day":3},"x"]"#)
+        XCTAssertEqual(mixed.medicationMarkers.map(\.id), ["a"])
+        let bad = try decode(#","markers":"not a list""#)
+        XCTAssertEqual(bad.medicationMarkers, [])
+        XCTAssertEqual(bad.rows.map(\.value), ["3.4"])
+        // A day the app cannot read draws no rule.
+        XCTAssertEqual(ChartData(try decode(#","markers":[{"id":"a","day":"soon","label":"L"}]"#)).markers, [])
+    }
 }

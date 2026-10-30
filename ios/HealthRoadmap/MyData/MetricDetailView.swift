@@ -88,6 +88,7 @@ struct MetricDetailView: View {
                 Button { editing = Self.adding(row, in: store) } label: {
                     Label("Add Data", systemImage: "plus")
                 }
+                .tint(.accentColor) // the brand on the page's one control (Brad 2026-10-30)
                 .disabled(store.unitSwitches > 0)
             }
         }
@@ -148,6 +149,7 @@ struct MetricDetailView: View {
             }
             // A newer value just added: show it.
             .onChange(of: newest) { scrolledTo = windowStart }
+        MedicationMarkerList(markers: chart.markers)
     }
 
     /// The newest value, large, with its day: Apple Health's headline.
@@ -171,11 +173,13 @@ struct MetricDetailView: View {
                     Text("US").tag("conventional")
                 }
             } label: {
-                LabeledContent("Unit") {
+                // The choice in the accent, as every picker's (Brad 2026-10-30); the name plain.
+                HStack {
+                    Text("Unit").foregroundStyle(Color.primary)
+                    Spacer()
                     Label(history.unit, systemImage: "chevron.up.chevron.down").labelStyle(TrailingIcon())
                 }
             }
-            .tint(.primary)
             .disabled(store.unitSwitches > 0)
         } else if row.metric == "lpa", let unit = store.myData?.lpaUnit {
             Picker("Unit", selection: Binding(get: { unit }, set: { unit in
@@ -191,14 +195,13 @@ struct MetricDetailView: View {
     }
 }
 
-/// The unit, then its menu's chevrons, in the secondary colour of a row's value.
+/// The unit, then its menu's chevrons, in the menu's accent (Brad 2026-10-30).
 private struct TrailingIcon: LabelStyle {
     func makeBody(configuration: Configuration) -> some View {
         HStack(spacing: 4) {
             configuration.title
             configuration.icon.font(.caption.weight(.semibold))
         }
-        .foregroundStyle(.secondary)
     }
 }
 
