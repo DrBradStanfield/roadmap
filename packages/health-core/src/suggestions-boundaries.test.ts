@@ -173,11 +173,12 @@ describe('US-07 AC1: conditional lifestyle cards at their lines (doc §4)', () =
     expect(salt(131, 65)).toBe(true);
   });
 
-  it('reduce-alcohol: BMI 30 alone; BMI over 25 with WHtR 0.5; not BMI 25 with WHtR 0.5', () => {
+  it('reduce-alcohol: BMI 30 alone; BMI 25 or more with WHtR 0.5; not BMI 24.9', () => {
     const alc = (bmi: number, waistToHeightRatio?: number) => ids(plan({}, { bmi, waistToHeightRatio })).includes('reduce-alcohol');
     expect(alc(29.9)).toBe(false);
     expect(alc(30)).toBe(true);
-    expect(alc(25, 0.5)).toBe(false);
+    expect(alc(25, 0.5)).toBe(true);
+    expect(alc(24.9, 0.5)).toBe(false);
     expect(alc(25.1, 0.5)).toBe(true);
     expect(alc(25.1, 0.49)).toBe(false);
   });

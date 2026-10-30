@@ -653,7 +653,7 @@ Three-file sync for this section's 2026-10-14 amendments (the strict missing-mon
 | `low-salt` | systolicBp > 120 (age < 65) or > 130 (age >= 65) | info | Target: <1,500 mg/day (ACC/AHA 2017) |
 | `high-potassium` | eGFR >= 45 (safe kidney function) | info | |
 | `trig-nutrition` | triglycerides 150 mg/dL (about 1.7 mmol/L) or more | attention | |
-| `reduce-alcohol` | BMI >= 30, OR (BMI > 25 AND WHtR >= 0.5), OR triglycerides 150 mg/dL (about 1.7 mmol/L) or more | attention | |
+| `reduce-alcohol` | BMI >= 30, OR (BMI >= 25 AND WHtR >= 0.5), OR triglycerides 150 mg/dL (about 1.7 mmol/L) or more | attention | |
 
 ### HbA1c Tiers
 

@@ -293,7 +293,7 @@ export function generateSuggestions(
   const whrForAlcohol = results.waistToHeightRatio;
   if (
     (results.bmi !== undefined && results.bmi >= 30) ||
-    (results.bmi !== undefined && results.bmi > 25 && whrForAlcohol !== undefined && isWaistToHeightElevated(whrForAlcohol)) ||
+    (results.bmi !== undefined && results.bmi >= 25 && whrForAlcohol !== undefined && isWaistToHeightElevated(whrForAlcohol)) ||
     (inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline)
   ) {
     suggestions.push({
