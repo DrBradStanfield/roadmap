@@ -91,6 +91,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   const activeConversationIdRef = useRef(activeConversationId);
   const messagesRef = useRef(messages);
   const isLoadingConvsRef = useRef(false);
+  const ownSendRef = useRef(false); // this tab's own send is in flight (US-15 AC17a)
   useEffect(() => {
     conversationsRef.current = conversations;
     activeConversationIdRef.current = activeConversationId;
@@ -156,7 +157,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         setMessages(payload.messages);
         setIsLoading(payload.isLoading);
         clearTimeout(remotePending);
-        if (payload.isLoading) remotePending = setTimeout(() => setIsLoading(false), REMOTE_PENDING_MS);
+        // The expiry never ends this tab's own send.
+        if (payload.isLoading) remotePending = setTimeout(() => { if (!ownSendRef.current) setIsLoading(false); }, REMOTE_PENDING_MS);
         setIsLocalSender(false);
         setError(payload.error);
         return;
@@ -283,6 +285,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     // blog bubble and the chatbot embed from the widget's saved copy. The
     // reader runs here, so each message carries what is saved now, even a save
     // made after the page loaded (US-15 AC10). None degrades to the empty context.
+    ownSendRef.current = true;
     const { result, error: sendError } = await sendMessage(
       trimmed,
       currentConvId,
@@ -291,6 +294,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       handleDelta,
       Boolean(onProposeEditRef.current),
     );
+    ownSendRef.current = false;
     const approach = endStream();
 
     if (sendError) {
