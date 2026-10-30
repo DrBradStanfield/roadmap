@@ -1,5 +1,5 @@
 /**
- * Chat feature — context assembly, daily limit check, system prompt construction.
+ * Chat feature — context assembly and system prompt construction.
  *
  * Grounded in health_roadmap_algorithm.md and evidence.ts.
  * Health data is local-first (v2): the client sends the user's plan as

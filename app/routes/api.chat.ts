@@ -1,7 +1,7 @@
 /**
  * Chat API — CRUD for conversations + LLM chat via Shopify app proxy.
  *
- * GET  /api/chat                         — List conversations + daily remaining
+ * GET  /api/chat                         — List conversations
  * GET  /api/chat?conversationId=xxx      — Load conversation messages
  * POST /api/chat { message, conversationId? } — Send message, get response
  * DELETE /api/chat { conversationId }    — Delete conversation
