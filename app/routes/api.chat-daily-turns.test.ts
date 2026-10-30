@@ -109,6 +109,26 @@ describe('US-15 AC45: web chat turns are capped per IP and per machine', () => {
     expect((await post('198.51.100.12')).status).toBe(429);
   });
 
+  it('a turn the machine refuses costs the IP nothing', async () => {
+    await load('1');
+    expect((await post('198.51.100.13')).status).toBe(200);
+    for (let i = 0; i < 5; i++) expect((await post('198.51.100.14')).status).toBe(429);
+    const { webChatTurns } = await import('../lib/rate-limiter');
+    const { ipBucket } = await import('../lib/app-gate.server');
+    webChatTurns.machine.reset();
+    expect(webChatTurns.ip.remaining(ipBucket('198.51.100.14'))).toBe(200);
+    expect(webChatTurns.ip.remaining(ipBucket('198.51.100.13'))).toBe(199);
+  });
+
+  it('the route reads WEB_CHAT_DAILY_CAP through the env rule: "abc" warns and caps at 2000, never at no cap', async () => {
+    await load('abc');
+    const { webChatTurns } = await import('../lib/rate-limiter');
+    expect(webChatTurns.machine.remaining('machine')).toBe(2000);
+    expect(vi.mocked(console.warn).mock.calls.some(([m]) => String(m).startsWith('WEB_CHAT_DAILY_CAP'))).toBe(true);
+    expect((await post('198.51.100.15')).status).toBe(200);
+    expect(webChatTurns.machine.remaining('machine')).toBe(1999);
+  });
+
   it('WEB_CHAT_DAILY_CAP caps the machine across IPs', async () => {
     await load('3');
     for (const ip of ['198.51.100.1', '198.51.100.2', '198.51.100.3']) expect((await post(ip)).status).toBe(200);

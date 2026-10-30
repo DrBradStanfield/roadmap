@@ -109,14 +109,19 @@ export function envCap(name: string, raw: string | undefined, fallback: number, 
 /**
  * Web chat turns a day (US-15 AC45): 200 per shopper IP, as the iPhone app's
  * per-IP chat limit, and `WEB_CHAT_DAILY_CAP` (default 2000) per machine. In
- * memory, so per machine and reset on deploy, as `machineFiles`.
+ * memory, so both are per machine (an IP behind N machines can get 200 × N)
+ * and reset on deploy or when the machine stops, as `machineFiles`. Exported
+ * as a test seam.
  */
-const webChatTurns = {
+export const webChatTurns = {
   ip: createQuotaCounter(200, DAY_MS, 30 * 60_000),
   machine: createQuotaCounter(envCap('WEB_CHAT_DAILY_CAP', process.env.WEB_CHAT_DAILY_CAP, 2000), DAY_MS, 30 * 60_000),
 };
 
-/** Count one web chat turn; false when the IP or the machine is at its cap. An IP at its cap spends none of the machine's. */
+/** Count one web chat turn; false when the IP or the machine is at its cap. A refused turn costs neither: an IP at its cap spends none of the machine's, and a turn the machine refuses is handed back to the IP. */
 export function takeWebChatTurn(ipBucket: string): boolean {
-  return webChatTurns.ip.take(ipBucket, 1) && webChatTurns.machine.take('machine', 1);
+  if (!webChatTurns.ip.take(ipBucket, 1)) return false;
+  if (webChatTurns.machine.take('machine', 1)) return true;
+  webChatTurns.ip.refund(ipBucket, 1);
+  return false;
 }

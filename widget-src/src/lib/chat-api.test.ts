@@ -121,7 +121,7 @@ describe('chat-api transient upstream retry (US-15 AC3)', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(result).toBeNull();
-    expect(error?.error).toBe('rate_limited');
+    expect(error?.error).toBe('Chat limit reached. Please try again later.');
   });
 
   it('listConversations surfaces the failure when the retry also fails', async () => {

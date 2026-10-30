@@ -121,6 +121,9 @@ export interface ChatGate {
   clearKey(): void;
 }
 
+/** What a refused turn (429 `rate_limited`) shows instead of the code (US-15 AC45). */
+export const CHAT_LIMIT_MESSAGE = 'Chat limit reached. Please try again later.';
+
 export function getChatGate(): ChatGate | null {
   return null;
 }
@@ -412,7 +415,7 @@ export async function sendMessage(
     if (response.status === 429) {
       return {
         result: null,
-        error: { error: data?.error ?? 'rate_limited' },
+        error: { error: CHAT_LIMIT_MESSAGE },
       };
     }
 
