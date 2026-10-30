@@ -143,7 +143,7 @@ export function groupLabHistory(rows: LabValueRow[]): {
     }
     series[key].rows.push(row);
     const unit = displayLabUnit(row.unit, resolveLabCatalogEntry(row.metricName));
-    if (!series[key].units.includes(unit)) series[key].units.push(unit);
+    series[key].units = [...new Set([...series[key].units, unit])];
   }
   const keys = Object.keys(series).sort((a, b) => series[a].label.localeCompare(series[b].label));
   return { keys, series };
