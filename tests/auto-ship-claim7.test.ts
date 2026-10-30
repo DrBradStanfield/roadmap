@@ -271,5 +271,17 @@ describe("auto-ship claim 7 (US-46 AC5)", { timeout: 60_000 }, () => {
         expect(r.issueBody).toBe("");
       }
     });
+
+    it("the email quotes the latest claude[bot] verdict for this sha, line by line, never another bot's", () => {
+      const r = run({ comments: [
+        comment("claude[bot]", "FIRST RUN TEXT\n\nVERDICT: APPROVE aaaa"),
+        comment("claude[bot]", "Second run: AC2 untested.\n\nVERDICT: APPROVE aaaa"),
+        comment("github-actions[bot]", "OTHER BOT TEXT\nVERDICT: APPROVE aaaa"),
+      ] });
+      expect(merged(r.calls)).toHaveLength(1);
+      expect(r.issueBody).not.toContain("OTHER BOT TEXT");
+      expect(r.issueBody).not.toContain("FIRST RUN TEXT");
+      expect(r.issueBody).toMatch(/^Second run: AC2 untested\.$/m);
+    });
   });
 });
