@@ -1,0 +1,38 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "testRunner": "vitest",
+  "vitest": {
+    "configFile": "vitest.stryker.config.ts",
+    "pool": "forks"
+  },
+  "coverageAnalysis": "perTest",
+  "mutate": [
+    "packages/health-core/src/calculations.ts",
+    "packages/health-core/src/suggestions.ts",
+    "packages/health-core/src/units.ts",
+    "packages/health-core/src/merge.ts"
+  ],
+  "reporters": [
+    "json",
+    "clear-text"
+  ],
+  "jsonReporter": {
+    "fileName": "reports/mutation/mutation.json"
+  },
+  "tempDirName": ".stryker-tmp",
+  "cleanTempDir": true,
+  "concurrency": 5,
+  "timeoutMS": 30000,
+  "ignorePatterns": [
+    ".claude",
+    ".git",
+    "ios/build",
+    "demo-video",
+    "reports",
+    ".stryker-tmp*",
+    "backups",
+    "tmp",
+    "docs/**/*.pdf"
+  ],
+  "disableTypeChecks": false
+}

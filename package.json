@@ -26,6 +26,8 @@
     "test:core": "npm run test --workspace=@roadmap/health-core",
     "test:server": "vitest run app/lib",
     "test:watch": "npm run test --workspace=@roadmap/health-core -- --watch",
+    "mutation:clinical": "stryker run stryker.clinical.config.json",
+    "mutation:report": "node tools/mutation-report.mjs",
     "rebuild-index": "npx tsx scripts/rebuild-blog-index.ts",
     "build:chatgpt-plugin": "node docs/chatgpt-review/build-plugin-zip.mjs",
     "engine:build": "env -u ENGINE_SIGNING_KEY node ios/scripts/release-engine.mjs",
@@ -59,6 +61,8 @@
   },
   "devDependencies": {
     "@shopify/app-bridge-ui-types": "^0.3.3",
+    "@stryker-mutator/core": "10.1.1",
+    "@stryker-mutator/vitest-runner": "10.1.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
     "@types/eslint": "^9.6.1",

@@ -29,6 +29,11 @@ unacted for a quarter, say so in the retro and propose the fleet review.
    on 09-20; this loop learned it from Gmail a week later).
 
 ## Gather (fan out workers; every unreachable source is a NAMED gap)
+- **Clinical mutation check**: skip ("no clinical change") when `git diff --quiet $(git log -1
+  --format=%H -- docs/loops/product-health/mutation-baseline.json) -- packages/health-core/src`
+  exits 0. Else `npm ci && TZ=UTC npm run mutation:clinical && npm run mutation:report`: the four
+  scores go in metrics.csv; every NEW survivor (file, function, original → replacement) is a backlog
+  item. Fix nothing; never `--update-baseline` (a build session does, after triage).
 - **GitHub account status, before any GitHub read**: zero Actions runs in 8
   days, a 404 fleet dashboard, or empty repo search is an account or platform
   question (check Gmail for a GitHub Support thread) before it is a quiet week

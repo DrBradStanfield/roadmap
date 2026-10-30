@@ -4,6 +4,8 @@ History is NOT operative instruction (Brad 2026-08-11): charters never
 contain their own changelog. Dated entries newest first, keep ~10 (git is
 the archive). Exempt from the 200-line operative cap.
 
+- 2026-10-30: weekly clinical mutation check added (Stryker on calculations, suggestions, units,
+  merge; runs only when health-core src changed since the baseline). Source: ub-mode review + trial.
 - 2026-10-18 (Brad: "do it", on the W42 charter asks): Feedback emails also
   search replies to our own emails (W42's urine-creatinine report came as a
   reply to the plan-ready email); the OpenAI item tracks v1.0.2 receipt
