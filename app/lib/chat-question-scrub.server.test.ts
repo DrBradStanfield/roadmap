@@ -122,6 +122,15 @@ describe('scrubQuestion — US-15 AC44 the model pass', () => {
     expect(await scrubWith(toolAnswer(a), q).out).toBe(a);
   });
 
+  // A unit counts only as a whole word ("g" is not "going"), and "in" is left
+  // out of the list, as in the Sentry scrub, since it is mostly the English word.
+  it.each([
+    ['a unit\'s letters start the next word', "I'm 47 going to start a statin", "I'm [age 40s] going to start a statin"],
+    ['"in" follows the number', "I'm 47 in March, should I start a statin?", "I'm [age 40s] in March, should I start a statin?"],
+  ])('US-15 AC44a: still keeps an age when %s', async (_, q, a) => {
+    expect(await scrubWith(toolAnswer(a), q).out).toBe(a);
+  });
+
   it('skips an age rewritten into new words, which moves the sentence', async () => {
     const q = 'my 82 year old mother takes 5 mg amlodipine, is that safe?';
     expect(await scrubWith(toolAnswer('my mother in her 80s takes 5 mg amlodipine, is that safe?'), q).out).toBeNull();
