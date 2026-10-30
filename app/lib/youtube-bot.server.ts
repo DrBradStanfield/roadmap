@@ -86,6 +86,8 @@ const REFRESH_TOKEN = process.env.YOUTUBE_BOT_REFRESH_TOKEN;
 // ---------------------------------------------------------------------------
 
 let isRunning = false;
+/** One tick at a time per machine: a tick reads the daily cap at its start (US-27 AC3). */
+let tickInFlight = false;
 let cronIntervalId: ReturnType<typeof setInterval> | null = null;
 let cachedAccessToken: string | null = null;
 let cachedAccessTokenExpiresAt = 0;
@@ -125,10 +127,10 @@ export function startYouTubeBot(): void {
   console.log(`YouTube bot started (cron every ${POLL_INTERVAL_MS / 60_000} min, daily cap ${DAILY_REPLY_CAP})`);
 
   // Run first tick after a short delay to avoid blocking app boot.
-  setTimeout(() => { tick().catch(logTickError); }, 30_000);
+  setTimeout(() => { runTick().catch(logTickError); }, 30_000);
 
   cronIntervalId = setInterval(() => {
-    tick().catch(logTickError);
+    runTick().catch(logTickError);
   }, POLL_INTERVAL_MS);
 
   isRunning = true;
@@ -141,6 +143,19 @@ export function stopYouTubeBot(): void {
   }
   isRunning = false;
   console.log('YouTube bot stopped');
+}
+
+async function runTick(): Promise<void> {
+  if (tickInFlight) {
+    console.log('YouTube bot: previous tick still running, skipping this one');
+    return;
+  }
+  tickInFlight = true;
+  try {
+    await tick();
+  } finally {
+    tickInFlight = false;
+  }
 }
 
 function logTickError(err: unknown): void {
