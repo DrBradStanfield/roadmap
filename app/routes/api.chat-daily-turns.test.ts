@@ -57,10 +57,10 @@ async function load(cap?: string) {
 }
 
 /** A returning guest's widget turn from one shopper IP, as the Shopify proxy forwards it. */
-async function post(ip: string, context?: Record<symbol, unknown>) {
+async function post(ip: string, context?: Record<symbol, unknown>, message: unknown = 'what is a good LDL') {
   const request = new Request('https://drstanfield.com/api/chat', {
     method: 'POST',
-    body: JSON.stringify({ message: 'what is a good LDL', localFirst: true, sessionToken: 'tok' }),
+    body: JSON.stringify({ message, localFirst: true, sessionToken: 'tok' }),
     headers: { 'content-type': 'application/json', 'x-forwarded-for': `${ip}, 192.0.2.250`, 'fly-client-ip': '192.0.2.250' },
   });
   const res = await action({ request, params: {}, context } as unknown as Parameters<Action>[0]);
@@ -92,6 +92,18 @@ describe('US-15 AC45: web chat turns are capped per IP and per machine', () => {
     expect(mocks.classify.mock.calls.length).toBe(classified);
     // Another shopper is not refused for it.
     expect((await post('198.51.100.8')).status).toBe(200);
+  });
+
+  it('a message the route refuses (empty, not text, too long) gets its 400 and costs no turn', async () => {
+    await load('1');
+    const refusals = [['', 'message required'], [42, 'message required'], ['x'.repeat(8001), 'Message too long (max 8000 chars)']] as const;
+    for (const [message, error] of refusals) {
+      const res = await post('198.51.100.20', undefined, message);
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ success: false, error });
+    }
+    // The machine's one turn is still there: the checks ran before the cap.
+    expect((await post('198.51.100.20')).status).toBe(200);
   });
 
   it('a new session token does not reset the IP count', async () => {
