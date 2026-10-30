@@ -19,8 +19,10 @@
 #
 # VETO = close the PR or add the 'hold' label, any time before merge.
 #
-# Security notes: the verdict is trusted only from bot logins that external
-# users cannot impersonate, pinned to the head SHA (no stale approvals); a
+# Security notes: the verdict is trusted only from claude[bot], the login
+# claude-code-action posts the review as (not github-actions[bot], which any
+# workflow run in this repo posts as), pinned to the head SHA (no stale
+# approvals), and the veto email quotes that same comment; a
 # poisoned diff still has to survive the fresh-context reviewer, and this
 # workflow's own 30-min wait step is the Tier 3 veto window regardless.
 # Editing this file is Brad-only (constitution Guardrails).
@@ -76,7 +78,7 @@ jobs:
           verdict=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments?per_page=100" \
             | jq --arg sha "${HEAD_SHA}" '[.[] | select(
                 (.user.type=="Bot") and
-                (.user.login | IN("github-actions[bot]","claude[bot]","claude")) and
+                (.user.login == "claude[bot]") and
                 ([.body | split("\n")[] | select(contains("VERDICT:")) | gsub("^\\s+|\\s+$"; "")]
                   == ["VERDICT: APPROVE " + $sha]) and
                 (.body | test("verdict(?:[^A-Za-z0-9\\n]|\\b(?:is|was|remains|still|now)\\b)*reject"; "i") | not)
@@ -127,9 +129,11 @@ jobs:
           files=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/files" \
             --jq '.[:15][] | "- \(.filename) (+\(.additions)/-\(.deletions))"')
           nfiles=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/files" --jq 'length')
-          # The reviewer's verdict comment, minus the boilerplate header.
+          # The reviewer's verdict comment, minus the boilerplate header: same
+          # author and sha as the gate above, never a stranger's comment.
           review=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments?per_page=100" \
-            --jq '[.[] | select(.body | contains("VERDICT: APPROVE"))] | last | .body' \
+            | jq -r --arg sha "${HEAD_SHA}" '[.[] | select(.user.type=="Bot" and .user.login=="claude[bot]"
+                and (.body | contains("VERDICT: APPROVE " + $sha)))] | last | .body' \
             | grep -v '^\s*$' | tail -30)
 
           # --assignee + @mention: bot-created issues notify nobody on their
