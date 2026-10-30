@@ -22,7 +22,8 @@
 # Security notes: the verdict is trusted only from claude[bot], the login
 # claude-code-action posts the review as (not github-actions[bot], which any
 # workflow run in this repo posts as), pinned to the head SHA (no stale
-# approvals), and the veto email quotes that same comment; a
+# approvals); the veto email quotes the latest comment from that same
+# author for that same sha; a
 # poisoned diff still has to survive the fresh-context reviewer, and this
 # workflow's own 30-min wait step is the Tier 3 veto window regardless.
 # Editing this file is Brad-only (constitution Guardrails).
