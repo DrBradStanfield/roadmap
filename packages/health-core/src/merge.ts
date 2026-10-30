@@ -23,7 +23,7 @@
  *    by (id, content); documents also OR the `deleted` tombstone.
  *  - recommendationSnapshots → deduped by date.
  *  - erasedRows → ids union; every listed row goes from both sides first.
- *  - meta.lamport → max(local, remote) + 1.
+ *  - meta.lamport → max(local, remote) + 1, capped at MAX_COUNTER (US-10 AC8b).
  *
  * SECOND-WRITER THREAT MODEL: local-first means the user can open and hand-edit
  * `health-roadmap.json`, and AI agents with filesystem tools now write it too.
@@ -66,6 +66,21 @@ import {
 } from './roadmap-file';
 import type { MeasurementStatus } from './validation';
 import { labSlotKey } from './lab-catalog';
+
+/**
+ * Ceiling for the file's counters (`meta.lamport`, `meta.eraseEpoch`) — far
+ * above any real value (they tick once per write) and far below
+ * MAX_SAFE_INTEGER, so the `+ 1` increments that order writes always advance.
+ * migrate() clamps what it reads to this; a merge must not write past it, or
+ * verify-after-write compares the clamped re-read with a larger lamport and
+ * every save fails as a conflict storm (US-10 AC8b).
+ */
+export const MAX_COUNTER = 1e12;
+
+/** The merged file's lamport: past both copies, but never past the ceiling. */
+function nextLamport(local: number, remote: number): number {
+  return Math.min(Math.max(local, remote) + 1, MAX_COUNTER);
+}
 
 export interface MergeOptions {
   /** This device's id — stamped as the merge author on the result. */
@@ -780,7 +795,7 @@ export function mergeFiles(
         ...winner.meta,
         updatedAt,
         lastDeviceId: opts.deviceId,
-        lamport: Math.max(local.meta.lamport, remote.meta.lamport) + 1,
+        lamport: nextLamport(local.meta.lamport, remote.meta.lamport),
         eraseEpoch: Math.max(localEpoch, remoteEpoch),
       },
     };
@@ -798,7 +813,7 @@ export function mergeFiles(
         local.meta.createdAt < remote.meta.createdAt ? local.meta.createdAt : remote.meta.createdAt,
       updatedAt,
       lastDeviceId: opts.deviceId,
-      lamport: Math.max(local.meta.lamport, remote.meta.lamport) + 1,
+      lamport: nextLamport(local.meta.lamport, remote.meta.lamport),
       eraseEpoch: localEpoch, // equal on both sides in this branch
       // When one side's list covers this epoch and the other's does not, the
       // listing erase's rows go by id; the time that still decides is the
