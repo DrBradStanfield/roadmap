@@ -76,6 +76,8 @@ const UNIT_VALUE = new RegExp(`[\\d#]\\s*(?:${SCRUB_UNITS.filter((u) => u !== 'i
 /** Is a digit of `span` a dose or lab value, its unit in the span or just after it (US-15 AC44a)? */
 const holdsUnitValue = (span: string, after: string) =>
   [...`${span} ${after}`.matchAll(UNIT_VALUE)].some((m) => m.index < span.length);
+/** May placeholder `kind` stand for `span`, given the question's text `after` it (US-15 AC44a)? */
+const mayStandFor = (kind: string, span: string, after: string) => covers(kind, span) && !holdsUnitValue(span, after);
 
 /**
  * May this placeholder stand for this span of the question? Each kind covers
@@ -133,7 +135,7 @@ function isScrubOf(question: string, scrubbed: string): boolean {
     const at = last ? ql.length - piece.length : ql.indexOf(piece, cursor + 1);
     if (at <= cursor || (last && !ql.endsWith(piece))) return false;
     const span = q.slice(cursor, at).trim();
-    if (!covers(swaps[i], span) || holdsUnitValue(span, q.slice(at))) return false;
+    if (!mayStandFor(swaps[i], span, q.slice(at))) return false;
     cursor = at + piece.length;
   }
   return true;
