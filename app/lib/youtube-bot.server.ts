@@ -1,7 +1,7 @@
 /**
  * YouTube comment auto-replier.
  *
- * Auto-starts on module import (same pattern as reminder-cron.server.ts and
+ * Auto-starts on module import (same pattern as reminder-v2-cron.server.ts and
  * discord-bot.server.ts). Polls the YouTube Data API every 30 minutes for new
  * top-level comments across all of Brad's videos (one channel-wide call via
  * `allThreadsRelatedToChannelId`), runs the exact chatbot pipeline on each
