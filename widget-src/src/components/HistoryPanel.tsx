@@ -79,6 +79,15 @@ const LAB_VALUE_PALETTE = [
   '#d946ef', '#64748b', '#e11d48', '#059669', '#7c3aed',
 ];
 
+/** No chart animation when the person asks for reduced motion (US-06 AC4a); the default otherwise. */
+const chartAnimation = () => (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? false : undefined);
+
+/** Show only the chosen event's number and redraw the kept chart, not a new one (US-06 AC4a). */
+function showSelectedEvent(labels: Record<string, { display: boolean }>, selectedId: string | null, chart: Chart | null): void {
+  for (const [id, label] of Object.entries(labels)) label.display = id === selectedId;
+  if (selectedId) chart?.update('none');
+}
+
 // Generic time-series line chart — used for both core metrics and additional lab values
 function TimeSeriesChart({
   title,
@@ -136,7 +145,7 @@ function TimeSeriesChart({
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? false : undefined,
+        animation: chartAnimation(),
         plugins: {
           tooltip: {
             callbacks: {
@@ -198,10 +207,7 @@ function TimeSeriesChart({
     };
   }, [data, title, unit, color, annotations]);
 
-  useEffect(() => {
-    for (const [id, label] of Object.entries(labelsRef.current)) label.display = id === selectedEventId;
-    if (selectedEventId) chartRef.current?.update('none');
-  }, [selectedEventId]);
+  useEffect(() => showSelectedEvent(labelsRef.current, selectedEventId, chartRef.current), [selectedEventId]);
 
   return (
     <div className="metric-chart-container">

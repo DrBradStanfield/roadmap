@@ -107,6 +107,19 @@ describe('US-06 AC4a — history charts are not redrawn for nothing', () => {
     expect(shownNumbers(ldlCharts().at(-1))).toEqual(['1']);
   });
 
+  it('US-06 AC4a: a chart drawn again for another reason keeps the chosen number', async () => {
+    const view = await open();
+    fireEvent.click(view.container.querySelectorAll('ol.metric-chart-events button')[1]);
+    const medChanges = view.getByRole('checkbox', { name: /Show recorded medication changes/ });
+    fireEvent.click(medChanges);
+    await waitFor(() => expect(view.container.querySelectorAll('ol.metric-chart-events')).toHaveLength(0));
+    const made = ldlCharts().length;
+    fireEvent.click(medChanges);
+    await waitFor(() => expect(view.container.querySelectorAll('ol.metric-chart-events button')).toHaveLength(2));
+    expect(ldlCharts().length).toBeGreaterThan(made); // the LDL chart was built again
+    expect(shownNumbers(ldlCharts().at(-1))).toEqual(['2']);
+  });
+
   it('US-06 AC4a: with reduced motion asked for, charts are drawn without animation', async () => {
     vi.stubGlobal('matchMedia', (q: string) => ({ matches: q === '(prefers-reduced-motion: reduce)', addEventListener() {}, removeEventListener() {} }));
     await open();
