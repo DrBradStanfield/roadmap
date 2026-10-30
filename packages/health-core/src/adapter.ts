@@ -77,6 +77,8 @@ export class StorageError extends Error {
  * what the user is told to act on.
  */
 export const UNREACHABLE_HINT = 'Try once more; if it keeps failing, check that the record is reachable.';
+/** A write that went out and got no answer may still have landed (US-09 AC13d). */
+const LANDED_HINT = 'The change may have landed. Read the record again before trying it a second time.';
 
 /** How long a provider gets to answer, body included, before the call is
  *  abandoned as unreachable. Long enough for a slow phone on a slow network,
@@ -95,7 +97,7 @@ const FETCH_TIMEOUT_MS = 30_000;
 export async function fetchOrFail(
   provider: string,
   url: string | URL,
-  init?: RequestInit & { timeoutMs?: number },
+  init?: RequestInit & { timeoutMs?: number; mayHaveWritten?: boolean },
 ): Promise<Response> {
   // A provider that accepts the socket and then says nothing is not an error
   // any layer above can see: the hosted tool call, or the widget's save, waits
@@ -105,7 +107,7 @@ export async function fetchOrFail(
   // and the widget ships untranspiled to them: called unguarded, the bound
   // itself would be the outage, killing every read and save on those browsers.
   // Missing either one, the call runs unbounded — as it did before the bound.
-  const { timeoutMs, signal: callerSignal, ...rest } = init ?? {};
+  const { timeoutMs, mayHaveWritten, signal: callerSignal, ...rest } = init ?? {};
   const timeout = typeof AbortSignal.timeout === 'function'
     ? AbortSignal.timeout(timeoutMs ?? FETCH_TIMEOUT_MS)
     : undefined;
@@ -124,7 +126,7 @@ export async function fetchOrFail(
     const bytes = await res.arrayBuffer();
     return new Response(bytes.byteLength ? bytes : null, { status: res.status, statusText: res.statusText, headers: res.headers });
   } catch (error) {
-    throw new StorageError(`${provider} did not answer`, UNREACHABLE_HINT, error);
+    throw new StorageError(`${provider} did not answer`, mayHaveWritten ? LANDED_HINT : UNREACHABLE_HINT, error);
   }
 }
 

@@ -125,10 +125,11 @@ export class GitHubAdapter implements StorageAdapter {
       content: bytesToBase64(new TextEncoder().encode(JSON.stringify(body))),
     };
     if (expectedVersion) payload.sha = expectedVersion; // omitted on first create
-    const res = await fetch(this.contentsUrl(fileName), {
+    const res = await fetchOrFail('GitHub', this.contentsUrl(fileName), {
       method: 'PUT',
       headers: this.headers(),
       body: JSON.stringify(payload),
+      mayHaveWritten: true,
     });
     // 409 (sha out of date) / 422 (sha mismatch, or "already exists" on create) → conflict.
     if (res.status === 409 || res.status === 422) {
@@ -182,7 +183,7 @@ export class GitHubAdapter implements StorageAdapter {
    */
   private async assertPrivate(): Promise<void> {
     if (!this.config) throw new StorageError('GitHub is not connected.');
-    const res = await fetch(`${API}/repos/${this.config.owner}/${this.config.repo}`, {
+    const res = await fetchOrFail('GitHub', `${API}/repos/${this.config.owner}/${this.config.repo}`, {
       headers: this.headers(),
     });
     if (res.status === 401 || res.status === 403) {
