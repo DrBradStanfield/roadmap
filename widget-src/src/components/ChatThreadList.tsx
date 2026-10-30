@@ -21,13 +21,14 @@ export function ChatThreadList({ conversations, activeConversationId, className,
           onClick={() => onSelect(conv.id)}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(conv.id); } }}
+          onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onSelect(conv.id); } }}
         >
           <span className="chat-thread-title">{conv.title || 'Untitled'}</span>
           <button
             className="chat-thread-delete"
             onClick={(e) => onDelete(conv.id, e)}
             title="Delete conversation"
+            aria-label={`Delete conversation ${conv.title || 'Untitled'}`}
           >✕</button>
         </div>
       ))}
