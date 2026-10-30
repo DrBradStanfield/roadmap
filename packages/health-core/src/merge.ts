@@ -192,11 +192,12 @@ export function baseIdOf(id: string): string {
 
 /**
  * The id a row's original was written under: `baseIdOf` with the `#si`
- * conversion suffix stripped too, so an erase that lists a row takes its
- * quarantined copies and its unit conversion with it (US-09 AC23).
+ * conversion suffix and the `#mv-` move suffix stripped too, so an erase that
+ * lists a row takes its quarantined copies, its unit conversion and its moved
+ * copy with it (US-09 AC23, US-04 AC5a).
  */
 export function rootIdOf(id: string): string {
-  return id.replace(/(?:#dup-[0-9a-f]{8}|#si)+$/, '');
+  return id.replace(/(?:#dup-[0-9a-f]{8}|#si|#mv-[0-9a-f]{8})+$/, '');
 }
 
 /**

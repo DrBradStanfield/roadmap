@@ -101,7 +101,7 @@
 
     "ErasedRows": {
       "type": "object",
-      "description": "Which rows the erases removed (US-09 AC23). Sync bookkeeping: never write or edit it. Every reader drops a row whose root id is listed (the id without any `#dup-…` or `#si` suffix), from every array that carries ids, so an erased row never comes back. A malformed list is dropped whole on read. A file that carries it is schemaVersion 2.",
+      "description": "Which rows the erases removed (US-09 AC23). Sync bookkeeping: never write or edit it. Every reader drops a row whose root id is listed (the id without any `#dup-…`, `#si` or `#mv-…` suffix), from every array that carries ids, so an erased row never comes back. A malformed list is dropped whole on read. A file that carries it is schemaVersion 2.",
       "required": ["fromEpoch", "ids"],
       "properties": {
         "fromEpoch": { "type": "integer", "minimum": 1, "description": "Every erase from this epoch up to `meta.eraseEpoch` listed its ids; `eraseEpoch + 1` claims nothing. Read only if at most `eraseEpoch + 1`." },

@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { correctValue, appendMeasurement, moveBloodTest, planBloodTestMove, type MoveKeep, type MovePlan } from './record-edits';
 import { createEmptyFile, createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { mergeFiles } from './merge';
+import { buildErasedFile } from './erase';
 
 const CTX = { deviceId: 'us04_move', now: '2026-09-01T09:00:00Z' };
 const NOW = '2026-09-01T09:00:00Z';
@@ -292,6 +293,40 @@ describe('US-04 AC5: merge', () => {
         .sort((x, y) => y.recordedAt.localeCompare(x.recordedAt))[0];
       expect(latestLdl.recordedAt.slice(0, 10)).toBe(TO);
       oneActivePerSlot(merged);
+    }
+  });
+});
+
+describe('US-04 AC5a: a move on a copy that has not seen an erase', () => {
+  const LATER = { deviceId: 'eraser', now: '2026-09-02T09:00:00Z' };
+  const OTHER = '2024-01-15';
+
+  it('does not bring the erased values back on the new day, in either merge order', () => {
+    const start = base();
+    const erased = buildErasedFile({ stored: start, own: start, device: null, ctx: LATER });
+    const stale = moved(start).file;
+    for (const merged of [mergeFiles(stale, erased, LATER), mergeFiles(erased, stale, LATER)]) {
+      expect(rows(merged)).toEqual([]);
+    }
+  });
+
+  it('does not bring them back after a second move either', () => {
+    const start = base();
+    const erased = buildErasedFile({ stored: start, own: start, device: null, ctx: LATER });
+    const twice = moved(moved(start).file, {}, TO, OTHER).file;
+    expect(activeOn(twice, OTHER).length).toBe(4);
+    for (const merged of [mergeFiles(twice, erased, LATER), mergeFiles(erased, twice, LATER)]) {
+      expect(rows(merged)).toEqual([]);
+    }
+  });
+
+  it('keeps a value typed on the stale copy that no erase saw', () => {
+    const start = base();
+    const erased = buildErasedFile({ stored: start, own: start, device: null, ctx: LATER });
+    const typed = appendMeasurement(moved(start).file, { metricType: 'hba1c', value: 38, recordedAt: '2024-04-01', now: NOW, latestDay: '2026-09-01' });
+    if (!typed.ok) throw new Error(typed.message);
+    for (const merged of [mergeFiles(typed.file, erased, LATER), mergeFiles(erased, typed.file, LATER)]) {
+      expect(rows(merged).map((r) => `${'metricType' in r ? r.metricType : r.metricName}=${r.value}`)).toEqual(['hba1c=38']);
     }
   });
 });
