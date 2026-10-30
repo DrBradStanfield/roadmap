@@ -220,6 +220,9 @@ jobs:
     # the only check for manual deploys (auto-ship's own 30-min wait step is
     # the Tier 3 veto window, separate from this environment).
     environment: production
+    # The token needs only the checkout; the credentials are the secrets below.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v5
         with:
