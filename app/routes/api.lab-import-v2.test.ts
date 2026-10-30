@@ -501,10 +501,10 @@ describe('lab-import body cap (US-09 AC25)', () => {
 });
 
 // US-12 AC17b: an IP or a machine with no file left today can only poll, so
-// its upload is refused before the body is read: no more than a poll's worth
-// (64 KB, plus the two chunks a stream reads ahead, as the AC25 case below
-// allows) is pulled, and nothing is parsed or charged.
-describe('US-12 AC17b: a spent day is refused before the upload is read', () => {
+// its upload is refused after at most a poll's worth of it is read (64 KB,
+// plus the two chunks a stream reads ahead, as the AC25 case below allows);
+// a larger body is not parsed and nothing is charged.
+describe('US-12 AC17b: a spent day is refused after at most 64 KB of the upload is read', () => {
   const MB = 1024 * 1024;
   const KB = 1024;
   const many = (n: number, ip: string) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
@@ -562,5 +562,29 @@ describe('US-12 AC17b: a spent day is refused before the upload is read', () => 
   it('a fresh IP on a machine with files left is read as before', async () => {
     const res = await action({ request: many(1, '10.5.0.5') } as never);
     expect(res.status).toBe(200);
+  });
+
+  // The 64 KB cap is for a day with no file left, not for a day partly used:
+  // a one-file batch padded past 64 KB must still be read whole and taken.
+  const padded = (ip: string) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
+    method: 'POST', headers: { 'fly-client-ip': ip },
+    body: JSON.stringify({ batch: true, files: FILES }) + ' '.repeat(MB),
+  });
+
+  it('still reads an upload over 64 KB from an IP with 1 of its 200 files left', async () => {
+    expect((await action({ request: many(199, '10.5.0.6') } as never)).status).toBe(200);
+    createBatch.mockClear();
+    const res = await action({ request: padded('10.5.0.6') } as never);
+    expect(res.status).toBe(200);
+    expect(createBatch).toHaveBeenCalledTimes(1);
+  });
+
+  it('still reads an upload over 64 KB on a machine with 1 file left', async () => {
+    machineFiles.take('machine', machineFiles.remaining('machine') - 1);
+    try {
+      const res = await action({ request: padded('10.5.0.7') } as never);
+      expect(res.status).toBe(200);
+      expect(createBatch).toHaveBeenCalledTimes(1);
+    } finally { machineFiles.reset(); }
   });
 });
