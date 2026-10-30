@@ -12,7 +12,8 @@ built that day: re-audit it when it merges. The section on heart rate, resting h
 sleep, VO2 max and steps was rewritten on 2026-10-27 from the code of the change that keeps
 the cards' readings on the phone (US-56 AC2, not yet committed; commit: to fill in). On
 2026-10-30 the text was brought in line with docs/writing-style.md and the line on the
-website's chat was corrected (it keeps replies too, on the blog bubble). Not yet republished.
+website's chat was corrected (it keeps replies too, on the blog bubble). Republished
+30 October 2026.
 
 This policy covers the Health Roadmap iPhone app, made by DR BRAD, INC. It adds to our
 main [privacy policy](https://drstanfield.com/policies/privacy-policy). The website has its

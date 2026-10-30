@@ -1,14 +1,13 @@
 # Privacy policy addendum: the AI connector
 
 Published at [drstanfield.com/pages/connector-privacy](https://drstanfield.com/pages/connector-privacy)
-by `node scripts/build-privacy-page.mjs --publish` (last 12 October 2026, from commit
-202bfb8a: the repository is public again, US-32 AC39). Republish after every edit here; the page is generated, never hand-edited.
+by `node scripts/build-privacy-page.mjs connector --publish` (last 30 October 2026). Republish after every edit here; the page is generated, never hand-edited.
 Written 2026-09-02, re-audited 2026-09-07 and 2026-09-10, from the code at
 `app/lib/mcp.server.ts`, `app/lib/mcp-*.server.ts`, `app/routes/mcp.$.tsx` and
 `packages/health-core/src/mcp-tools.ts`. Re-audited 2026-10-30 against `app/routes/api.chat.ts`,
 `app/lib/chat-router.server.ts` (`redactForWidget`), `app/lib/chat-purge-cron.server.ts`,
 `app/lib/discord-bot.server.ts` and the YouTube bot, after a contributor found claims the code
-contradicted; the text was also brought in line with docs/writing-style.md. Not yet republished.
+contradicted; the text was also brought in line with docs/writing-style.md.
 
 > Assistant-side extraction shipped 2026-09-07 (US-36): a file you drop into the chat is
 > read by your assistant, and the sentences below say so. The folder route still sends
