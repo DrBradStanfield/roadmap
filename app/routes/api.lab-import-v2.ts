@@ -7,6 +7,7 @@ import { extractOneFile, withDaysItReads, withRefusalsItReads } from '../lib/lab
 import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
 import { createQuotaCounter, DAY_MS, machineFiles } from '../lib/rate-limiter';
 import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson, verifyAppProxySignature } from '../lib/local-first-route.server';
+import { SMALL_BODY_CAP } from '../lib/capped-body.server';
 import { activeBatches, armSweep, MAX_ACTIVE_BATCHES, type BatchPollResult } from '../lib/lab-batches.server';
 
 /**
@@ -44,6 +45,11 @@ function consumeQuota(ip: string, count: number): boolean {
   ipQuota.refund(ip, count);
   return false;
 }
+
+const dailyLimit = () => Response.json(
+  { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
+  { status: 429 },
+);
 
 /** Hand back files charged for a batch Anthropic certainly did not create. */
 function refundQuota(ip: string, count: number): void {
@@ -125,11 +131,14 @@ export async function action({ request }: ActionFunctionArgs) {
     return Response.json({ success: false, error: 'Forbidden' }, { status: 403 });
   }
   const ip = getClientIp(request, 'shopify');
+  // US-12 AC17b: with no file left today for this IP or the machine, only a
+  // poll can succeed, so no more than a poll's body is read.
+  const spent = ipQuota.remaining(ip) === 0 || machineFiles.remaining('machine') === 0;
 
   try {
-    const body = await parseSimpleRequestJson(request, 200 * 1024 * 1024);
+    const body = await parseSimpleRequestJson(request, spent ? SMALL_BODY_CAP : 200 * 1024 * 1024);
     if (body === BODY_TOO_LARGE) {
-      return Response.json({ success: false, error: 'Request too large' }, { status: 413 });
+      return spent ? dailyLimit() : Response.json({ success: false, error: 'Request too large' }, { status: 413 });
     }
 
     // --- Batch poll --- (costs no quota; it reads a batch already paid for)
@@ -146,12 +155,7 @@ export async function action({ request }: ActionFunctionArgs) {
       if (activeBatches.size >= MAX_ACTIVE_BATCHES) {
         return Response.json({ success: false, error: 'Server busy. Please try again later.' }, { status: 429 });
       }
-      if (!consumeQuota(ip, files.length)) {
-        return Response.json(
-          { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
-          { status: 429 },
-        );
-      }
+      if (!consumeQuota(ip, files.length)) return dailyLimit();
       // A timeout or network failure may still have made the batch: it stays charged.
       const { batchId } = await createBatch(files).catch((err: unknown) => {
         if (err instanceof BatchRefusedError) refundQuota(ip, files.length);
@@ -168,12 +172,7 @@ export async function action({ request }: ActionFunctionArgs) {
     if (!validation.success) {
       return Response.json({ success: false, error: 'Invalid request' }, { status: 400 });
     }
-    if (!consumeQuota(ip, 1)) {
-      return Response.json(
-        { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
-        { status: 429 },
-      );
-    }
+    if (!consumeQuota(ip, 1)) return dailyLimit();
 
     return extractOneFile(validation.data, () => ({ remaining: ipQuota.remaining(ip) }));
   } catch (error) {

@@ -499,3 +499,68 @@ describe('lab-import body cap (US-09 AC25)', () => {
     expect(pulled.bytes).toBeLessThanOrEqual(10);
   });
 });
+
+// US-12 AC17b: an IP or a machine with no file left today can only poll, so
+// its upload is refused before the body is read: no more than a poll's worth
+// (64 KB, plus the two chunks a stream reads ahead, as the AC25 case below
+// allows) is pulled, and nothing is parsed or charged.
+describe('US-12 AC17b: a spent day is refused before the upload is read', () => {
+  const MB = 1024 * 1024;
+  const KB = 1024;
+  const many = (n: number, ip: string) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
+    method: 'POST', headers: { 'fly-client-ip': ip },
+    body: JSON.stringify({ batch: true, files: Array.from({ length: n }, () => FILES[0]) }),
+  });
+  const limit = { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' };
+
+  it('reads at most 64 KB of an upload from an IP that has used its 200 files', async () => {
+    expect((await action({ request: many(200, '10.5.0.1') } as never)).status).toBe(200);
+    createBatch.mockClear();
+    const { request, pulled } = streamingPost('https://health-tool-app.fly.dev/api/lab-import-v2', 50 * MB, {
+      headers: { 'fly-client-ip': '10.5.0.1' }, chunkBytes: 16 * KB,
+    });
+    const res = await action({ request } as never);
+    expect(pulled.bytes).toBeLessThanOrEqual(64 * KB + 2 * 16 * KB);
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual(limit);
+    expect(createBatch).not.toHaveBeenCalled();
+  });
+
+  it('refuses a declared length over 64 KB from that IP unread', async () => {
+    await action({ request: many(200, '10.5.0.2') } as never);
+    const { request, pulled } = streamingPost('https://health-tool-app.fly.dev/api/lab-import-v2', 10, {
+      headers: { 'fly-client-ip': '10.5.0.2', 'content-length': String(65 * KB) },
+    });
+    const res = await action({ request } as never);
+    expect(pulled.bytes).toBeLessThanOrEqual(10);
+    expect(res.status).toBe(429);
+  });
+
+  it('still answers that IP\'s poll of the batch it already paid for', async () => {
+    createBatch.mockResolvedValueOnce({ batchId: 'batch_spent' });
+    const created = await (await action({ request: many(200, '10.5.0.3') } as never)).json();
+    const answer = await action({ request: new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
+      method: 'POST', headers: { 'fly-client-ip': '10.5.0.3' },
+      body: JSON.stringify({ batchId: created.batchId, pollToken: created.pollToken }),
+    }) } as never);
+    expect(answer.status).toBe(200);
+    expect(pollBatch).toHaveBeenCalled();
+  });
+
+  it('reads at most 64 KB of an upload from a fresh IP once the machine cap is spent', async () => {
+    machineFiles.take('machine', machineFiles.remaining('machine'));
+    try {
+      const { request, pulled } = streamingPost('https://health-tool-app.fly.dev/api/lab-import-v2', 50 * MB, {
+        headers: { 'fly-client-ip': '10.5.0.4' }, chunkBytes: 16 * KB,
+      });
+      const res = await action({ request } as never);
+      expect(pulled.bytes).toBeLessThanOrEqual(64 * KB + 2 * 16 * KB);
+      expect(res.status).toBe(429);
+    } finally { machineFiles.reset(); }
+  });
+
+  it('a fresh IP on a machine with files left is read as before', async () => {
+    const res = await action({ request: many(1, '10.5.0.5') } as never);
+    expect(res.status).toBe(200);
+  });
+});
