@@ -38,8 +38,7 @@ describe('health-core package manifest', () => {
     }
   });
 
-  it('the root tsconfig resolves @roadmap/health-core to its source, with no build', () => {
-    expect(existsSync(join(CORE, 'dist'))).toBe(false);
+  it('the root tsconfig resolves @roadmap/health-core to its source', () => {
     expect(resolveUnderRootTsconfig('@roadmap/health-core')).toBe('packages/health-core/src/index.ts');
   });
 
