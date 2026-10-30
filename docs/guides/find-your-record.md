@@ -96,7 +96,7 @@ Some things it cannot reach, and the confirm box lists them:
 - any pending import file from an AI connector
 - your provider's version history, and every past commit on GitHub
 - backups from the command-line tool, until that tool next writes the file
-- your chat questions on our server: each is blanked 30 days after you sent it, and a chat bubble conversation's title 30 days after your last message in it
+- your chat questions on our server: on the tool page each is blanked 30 days after you sent it; on the chat bubble and the chatbot embed, questions, replies and the title are gone 30 days after your last message in that chat
 
 Delete those in your cloud account if you want them gone.
 

@@ -63,32 +63,51 @@ describe('erase confirm copy (US-11)', () => {
   // Only the Shopify build has a bubble and an embed.
   it('US-11: on the Shopify build, names the chat bubble and embed on another device, which keep the old record until the widget loads there', async () => {
     const copy = await eraseConfirmOn(true);
-    expect(copy).toMatch(/Six things this cannot reach/);
+    expect(copy).toMatch(/Seven things this cannot reach/);
     expect(copy).toMatch(/5\. On another device, the blog chat bubble and the chatbot embed/);
     expect(copy).toMatch(/until the widget next loads there/i);
   });
 
   // US-15 AC7/AC8: the server keeps the widget chat's questions, and the blog
-  // bubble's and the embed's questions and replies, for 30 days, and no erase
-  // reaches them. Say so before the click. The clock is the last message: a
-  // conversation's title (its first question's first words) is purged 30 days
-  // after the conversation's updated_at, which every turn bumps
-  // (app/lib/chat-purge-cron.server.ts).
-  it('US-15 AC7/AC8: on the Shopify build, names every chat question and reply our server keeps for 30 days', async () => {
+  // bubble's and the embed's questions and replies, and no erase reaches them.
+  // Say so before the click. The purge blanks each row by its own created_at,
+  // but every bubble and embed row copies the chat's first question and its
+  // last 3 into router_context (app/routes/api.chat.ts), so a question there
+  // lasts until 30 days after the chat's LAST message. The widget's rows drop
+  // those copies (redactForWidget), so "up to" covers them. A 2026-10-30 draft
+  // said "30 days after it was sent", which the copies made false.
+  it('US-15 AC7/AC8: on the Shopify build, names every chat question and reply our server keeps, up to 30 days after the last message', async () => {
     const copy = await eraseConfirmOn(true);
     expect(copy).toContain(
       "6. Your chat questions (the widget, the blog chat bubble and the chatbot embed) and the bubble's and embed's replies. " +
-        'Our server keeps them for 30 days after your last message in that chat.',
+        "Our server keeps the text of each, and a chat's title, for up to 30 days after your last message in that chat.",
     );
-    expect(copy).not.toMatch(/7\./);
+    expect(copy).not.toMatch(/after it was sent/);
     expect(copy).not.toMatch(/—/);
+  });
+
+  // A signed-in chat writes a profiles row (email, name) the erase cannot reach
+  // (supabase.server.ts; privacy-connector-addendum.md). Re-check R2, 2026-10-30.
+  it('US-15 AC7: on the Shopify build, names the account row a signed-in chat leaves', async () => {
+    expect(await eraseConfirmOn(true)).toContain('If you were signed in, it also keeps an account row with your name and email address.');
+    expect(await eraseConfirmOn(false)).not.toContain('account row');
+  });
+
+  // The feedback box sends to our server (feedback_submissions, no purge) and
+  // emails Brad a copy (app/routes/api.feedback.ts). No erase reaches either.
+  it('US-11: on the Shopify build, names the feedback box as the seventh item, and no eighth', async () => {
+    const copy = await eraseConfirmOn(true);
+    expect(copy).toContain(
+      '7. What you sent through the feedback box. Our server keeps it with your email address, and a copy went to Brad by email.',
+    );
+    expect(copy).not.toMatch(/8\./);
   });
 
   it('US-11: on the Pages build, which has no bubble or embed, keeps four items', async () => {
     const copy = await eraseConfirmOn(false);
     expect(copy).toMatch(/Four things this cannot reach/);
     expect(copy).toMatch(/4\. Backups made by the command-line tool/);
-    expect(copy).not.toMatch(/chat bubble|chatbot embed|30 days|5\.|6\./);
+    expect(copy).not.toMatch(/chat bubble|chatbot embed|feedback|30 days|5\.|6\.|7\./);
   });
 
   // The old sentence said the kept row means "a later re-enrolment does not
@@ -149,13 +168,16 @@ describe('erase confirm copy (US-11)', () => {
   });
 
   // US-11 AC5: the alert repeats the confirm, shorter. On the Shopify build
-  // that includes items 5 and 6: the bubble and embed on another device, and
-  // the chat our server keeps for 30 days.
-  it('US-11 AC5: on the Shopify build, the alert repeats items 5 and 6, shorter', async () => {
+  // that includes items 5 to 7: the bubble and embed on another device, the
+  // chat our server keeps on the confirm's own clock, and the feedback box.
+  it('US-11 AC5: on the Shopify build, the alert repeats items 5 to 7 on the same clock, shorter', async () => {
     const { ERASE_CONFIRM: confirm, ERASE_DONE: done, ERASE_DONE_CHAT_PENDING: pending, ERASE_DONE_CHAT_UNREAD: unread } = await eraseCopyOn(true);
+    const clock = 'for up to 30 days after your last message in that chat';
+    expect(confirm).toContain(clock);
     for (const alert of [done, pending, unread]) {
       expect(alert).toContain('On another device, the blog chat bubble and the chatbot embed send your old record until the widget loads there.');
-      expect(alert).toContain("Our server keeps your chat questions, and the bubble's and embed's replies, for 30 days after your last message.");
+      expect(alert).toContain(`Our server keeps your chat questions, and the bubble's and embed's replies, ${clock}.`);
+      expect(alert).toContain('It keeps what you sent through the feedback box.');
       expect(alert).not.toMatch(/—/);
       expect(alert.length).toBeLessThan(confirm.length);
     }

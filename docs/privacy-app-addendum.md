@@ -10,7 +10,9 @@ this page because the app uses Apple Health (App Store Review Guideline 5.1.3). 
 `supabase/rls-policies.sql`. The engine update paragraph describes D3, which was being
 built that day: re-audit it when it merges. The section on heart rate, resting heart rate,
 sleep, VO2 max and steps was rewritten on 2026-10-27 from the code of the change that keeps
-the cards' readings on the phone (US-56 AC2, not yet committed; commit: to fill in).
+the cards' readings on the phone (US-56 AC2, not yet committed; commit: to fill in). On
+2026-10-30 the text was brought in line with docs/writing-style.md and the line on the
+website's chat was corrected (it keeps replies too, on the blog bubble). Not yet republished.
 
 This policy covers the Health Roadmap iPhone app, made by DR BRAD, INC. It adds to our
 main [privacy policy](https://drstanfield.com/policies/privacy-policy). The website has its
@@ -61,10 +63,10 @@ summary of your record that each question carries (below). The app sends it nowh
 
 These five are different. They never go into your record. The app asks to read them in the same
 Apple Health permission as everything else, all at once, when you connect Apple Health during
-setup, or later from **Connect Apple Health** in My data. If you connected before this was
-added, My data offers **Turn On**, which shows the same permission (iOS lists only what it
+setup, or later from "Connect Apple Health" in My data. If you connected before this was
+added, My data offers "Turn On", which shows the same permission (iOS lists only what it
 has not asked you yet) and also brings in any new weight, height, waist and blood pressure
-readings, as connecting does. After you said no, it offers **Reconnect**. Once you have answered, iOS does not ask again, so Reconnect opens
+readings, as connecting does. After you said no, it offers "Reconnect". Once you have answered, iOS does not ask again, so Reconnect opens
 Settings, where you can turn them on. It
 reads them from Apple Health each time it shows a card or a chart of them. So the cards
 show at once when you open the app, it keeps what the cards draw in one small file on this
@@ -72,12 +74,12 @@ iPhone only: the latest reading of each card, with its date, and the values behi
 line (the past month's daily values, or the last seven readings when there are fewer). That
 file sits in the app's private storage, apart from your record, and is not backed up to
 iCloud or to a computer. When the phone has a passcode, it is encrypted until you first
-unlock the phone after a restart. A chart page's longer history and its hourly and nightly
+enter that passcode after a restart. A chart page's longer history and its hourly and nightly
 detail are read fresh each time and never kept. The readings never go into your record, the app's settings, your Dropbox or
 Google Drive, the chat's summary of your record, the Health Roadmap website or our server.
 The app sends them nowhere. If Apple Health gives nothing back, or iOS asks for permission
 again, the app deletes the file. Clarity learns only that one of these pages was opened,
-never which one or any value. **Delete all my data** deletes the file; while the app can
+never which one or any value. "Delete all my data" deletes the file; while the app can
 still read Apple Health, it keeps a new one the next time it shows the cards. The app writes
 none of these five to Apple Health, so the readings themselves stay where they are: in Apple
 Health, under your Apple settings.
@@ -92,8 +94,9 @@ Apple Health. Our server passes them to Anthropic's API, from the company that m
 to write the answer.
 
 Our server keeps no copy of an app chat. It stores no question, no reply, no conversation
-and no session. (The website's chat works differently: our server keeps its question text
-for 30 days. The guide linked above has the details.) Your conversations are saved on your
+and no session. (The website's chats work differently: our server keeps their question text for up to
+30 days after your last message in that chat, and on the blog chat bubble and the chatbot embed the replies too. The guide linked above has the
+details.) Your conversations are saved on your
 iPhone, beside your record, and left out of backups. They are not copied to your cloud.
 
 You can stop sharing at any time from the chat's menu.
@@ -173,7 +176,7 @@ for tracking.
 
 ## Deleting your data
 
-**Delete all my data**, in the app, deletes your record, your chat history and your
+"Delete all my data", in the app, deletes your record, your chat history and your
 reminders on this iPhone, and deletes the readings this app wrote to Apple Health. Readings
 from other apps and devices stay in Apple Health. With a cloud connected, it also erases your
 record there: the file stays, with your values erased, so your other devices erase their
@@ -189,18 +192,16 @@ Anthropic may keep them for a limited time, as described above. The App Attest r
 An erase made on the website reaches this iPhone's record and reminders when the app next
 syncs, but not the chat history on it. Delete that in the app.
 
-**Export my record** saves a copy of the file wherever you choose, before an erase or at any
+"Export my record" saves a copy of the file wherever you choose, before an erase or at any
 time.
 
 ## Who else is involved
 
-- **Anthropic**, for chat answers and reading lab reports, as described above.
-- **Dropbox or Google**, your storage, under your own account, only if you connect one.
-- **Apple**, for Apple Health and App Attest.
-- **GitHub**, for the engine update check.
-- **Fly.io**, who run our server in the United States.
-- **Supabase**, who host the database holding the App Attest rows.
-- **Sentry**, for error reports from our server, scrubbed as described above.
+Anthropic writes chat answers and reads lab reports, as described above. Dropbox or
+Google hold your storage, under your own account, only if you connect one. Apple runs
+Apple Health and App Attest. GitHub serves the engine update check. Fly.io runs our
+server in the United States. Supabase hosts the database holding the App Attest rows.
+Sentry receives error reports from our server, scrubbed as described above.
 
 ---
 

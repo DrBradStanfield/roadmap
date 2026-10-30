@@ -99,10 +99,11 @@ describe('US-09 AC5 — the picker', () => {
     return document.querySelector('dialog.hr-modal') as HTMLDialogElement;
   };
 
-  it('asks about the record, and promises nothing is stored on our server', () => {
+  it('asks about the record, and says our server never stores your health record', () => {
     const dialog = open();
     expect(dialog.querySelector('h2')?.textContent).toBe(PLAN_STORAGE_CTA);
     expect(dialog.textContent).toContain(PLAN_STORAGE_NOTICE);
+    expect(dialog.textContent).toContain('Our server never stores your health record.');
     expect(dialog.getAttribute('aria-label')).toBe(PLAN_STORAGE_CTA);
   });
 

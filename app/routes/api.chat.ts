@@ -336,8 +336,9 @@ const APP_AUTH: AuthResult = { client: null, userId: 'app', customerId: null, ad
 
 /**
  * The send-a-message action. `app`: the iPhone app's turn (US-52 AC5), which
- * runs the widget's path (history and context in the body, nothing stored) with
- * no guest session, no form edits, no match-event or audit row (D9).
+ * runs the widget's path (history and context in the body, no transcript stored)
+ * with no guest session, no form edits, no match-event or audit row (D9), so
+ * the app's turn stores nothing; the widget's own turn keeps a masked question row.
  */
 async function chatAction(request: Request, app: boolean) {
   const t0 = Date.now();

@@ -2,6 +2,8 @@
  * Embedded chatbot widget — IIFE entry point.
  * Mounted as a section block (target: "section") anywhere on the storefront.
  * Syncs live with the FAB and inline ChatSection via BroadcastChannel.
+ * Like site-chat.tsx, it sends the cached record as context, and the server
+ * stores the question, the reply and a title, blanked after 30 days.
  */
 import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';

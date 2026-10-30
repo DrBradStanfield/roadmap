@@ -3,7 +3,8 @@
  *
  * Grounded in health_roadmap_algorithm.md and evidence.ts.
  * Health data is local-first (v2): the client sends the user's plan as
- * `guestInputs` with every message — the server holds no health data at all.
+ * `guestInputs` with every message, and the server keeps no health record. It
+ * does keep chat text: see US-15 AC7/AC8 and app/lib/chat-purge-cron.server.ts.
  */
 import * as Sentry from '@sentry/react-router';
 import fs from 'fs';

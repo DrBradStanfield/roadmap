@@ -102,7 +102,9 @@ describe('US-15 AC39 — no third-party pathway content', () => {
     expect(step0).toBeGreaterThan(-1);
     expect(step0).toBeLessThan(prompt.indexOf('### Step 1:'));
     const section = prompt.slice(step0, prompt.indexOf('### Step 1:'));
-    for (const s of ['overrides every SKIP category', '111 in NZ', '911 in the US', '1737', '988', 'Samaritans 116 123', 'Lifeline 13 11 14', '[by Brad AI]']) expect(section, s).toContain(s);
+    for (const s of ['overrides every SKIP category', '111 in NZ', '911 in the US', '1737', '988', 'Samaritans 116 123', 'Lifeline 13 11 14']) expect(section, s).toContain(s);
+    // US-15 AC43: no AI tag, in either old form ([written by Brad AI for testing], [by Brad AI]).
+    expect(prompt, 'replies carry no tag (US-15 AC43, Brad 2026-10-30)').not.toMatch(/\[[^\]]*Brad AI[^\]]*\]/);
   });
 
   // Review round 2 (2026-10-22): the answer checks fail de-escalating or harmful answers.

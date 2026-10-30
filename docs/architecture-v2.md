@@ -8,7 +8,7 @@ artifact: https://claude.ai/artifact/BvxuSfA86Lw95E5hMTow24
 
 Last updated 2026-09-29. **Status: Live in production** — drstanfield.com serves the v2 local-first build on `/pages/roadmap`; microvitamin.com has no roadmap page (`/pages/roadmap` answered 404 on 2026-09-29) and runs the chat bubble alone, in brand posture. Whether microvitamin.com gets a roadmap page is Brad's open decision. The thin server runs React Router 7 on Fly (`v361+`). As of the **§12 split (2026-06-24)** the tool runs on **two domains / two Shopify apps / two Fly apps from one codebase & one widget bundle**: `drstanfield.com` is the **education** store (app `shopify.app.edu.toml`, Fly `health-tool-edu`) and `microvitamin.com` is the **commerce** store (app `shopify.app.toml`, Fly `health-tool-app`). This page and its parts are the single source of truth for v2 architecture. The legacy v1 shape and migration log live in **git history**. See [the reference](reference.md#document-import-decisions) for retained rationale and how to retrieve retired designs.
 
-**What changed in one sentence:** the user's health data moved out of Brad's Supabase and into the *user's own cloud* (Google Drive / Dropbox / GitHub / self-host) as plain JSON files — Brad now stores no health data and can't read the user's cloud.
+**What changed in one sentence:** the user's health data moved out of Brad's Supabase and into the *user's own cloud* (Google Drive / Dropbox / GitHub / self-host) as plain JSON files — Brad now stores no health record and can't read the user's cloud (what the server does keep, such as chat text for 30 days: [privacy-and-data-path.md](architecture-v2/privacy-and-data-path.md#thin-server)).
 
 **What this document is:** a single visual map of how the v2 app fits together — the three build flavours, the local-first storage spine, the merge engine, the cloud backends, the thin server that survives, and the data path that never touches Brad's server except through the hosted connector, which reads the record in memory for one request and stores none of it.
 
@@ -102,7 +102,7 @@ flowchart TB
   FD1 ==> APP
   FD2 ==> APP
   APP <==>|"OAuth<br/>(PKCE, client-side)"| CL
-  APP -.->|"AI + schedule (transits, never stored)"| SRV
+  APP -.->|"AI + schedule (record never stored)"| SRV
   %% cannot read cloud
   SRV -.->|"✗ cannot read user cloud"| CL
   SRV --> EXT
@@ -162,14 +162,14 @@ flowchart TB
   style CLOUD fill:#ecfdf5,stroke:#16a34a,stroke-dasharray:4 3,color:#14532d
 ```
 
-Thick teal = the data path (app ↔ user's cloud), all client-side, never touching Brad. Orange dashed = optional thin-server AI + scheduling (content transits, is never stored). Red = the server explicitly cannot read the user's cloud; on the Pages build, AI calls go browser→Anthropic direct with the user's own key. Second diagram: the hosted MCP reaches the user's cloud only with the grant the user gave at consent, per request; Brad's server keeps no cloud credential.
+Thick teal = the data path (app ↔ user's cloud), all client-side, never touching Brad. Orange dashed = optional thin-server AI + scheduling (the record transits and is never stored; chat text is kept 30 days, or longer on YouTube, per privacy-and-data-path.md). Red = the server explicitly cannot read the user's cloud; on the Pages build, AI calls go browser→Anthropic direct with the user's own key. Second diagram: the hosted MCP reaches the user's cloud only with the grant the user gave at consent, per request; Brad's server keeps no user's cloud credential. The one exception: while an app review is pending, it holds the Dropbox credential of one invented reviewer account.
 
 ### Trust boundaries (v2)
 
 - **Browser** — holds the powerful cloud OAuth token and (on Pages) the user's Anthropic key. Both live in `localStorage`/`sessionStorage` on the device only and are never synced or sent to Brad.
 - **User's cloud** — the system of record. Folder-scoped access (the app can only touch files it created). Brad has no credential for it.
-- **Brad's thin server** — trusted but deliberately starved of health data. It sees AI request content in-memory (never stored), the user's record during a hosted-MCP tool call (with the user's own grant, sealed in the bearer token, never at rest), and a reminder's *due date + label + verified email + capability token* — never the values or reasoning behind them.
-- **Supabase** — now holds only anonymized chat history (for training) and A/B events. RLS is deny-all; the service-role key lives in Fly secrets. No health tables remain populated.
+- **Brad's thin server** — trusted but deliberately starved of health data. It sees AI request content in memory (the record never stored; chat question text kept as privacy-and-data-path.md lists), the user's record during a hosted-MCP tool call (with the user's own grant, sealed in the bearer token, never at rest), and a reminder's *due date + label + verified email + capability token* — never the values or reasoning behind them.
+- **Supabase** — holds operational data only, not the health record. That includes chat text as privacy-and-data-path.md lists, which is not anonymous: blog-bubble and embed rows carry a signed-in customer's `user_id`, Discord rows the author's `external_id`, YouTube rows the channel name. It also holds A/B and product events, `feedback_submissions` (email, message, customer id), reminder rows (email, labels, due dates) and `profiles` (a signed-in customer's email and first and last name). RLS is deny-all; the service-role key lives in Fly secrets. No health tables remain populated.
 
 <a id="front-doors"></a>
 ## Front doors × storage (two independent choices)

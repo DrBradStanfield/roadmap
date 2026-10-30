@@ -76,8 +76,14 @@ describe('US-09 AC5 — locked copy', () => {
       expect(copy).not.toMatch(/—/);
       expect(copy).not.toMatch(/Dr Brad/);
     }
-    expect(PLAN_STORAGE_NOTICE).toContain('Nothing is stored on our server.');
-    expect(UPLOAD_STORAGE_NOTICE).toContain('Nothing is stored on our server.');
+    // 2026-10-30: "Nothing is stored on our server" was false beside a chat that
+    // keeps question rows; the claim is now about the record and the files only.
+    // It names the record outright, so it stays true beside a bubble reply
+    // that quotes a value (US-15 AC8).
+    for (const copy of [PLAN_STORAGE_NOTICE, UPLOAD_STORAGE_NOTICE]) expect(copy).not.toContain('Nothing is stored');
+    expect(PLAN_STORAGE_NOTICE).toContain('Our server never stores your health record.');
+    expect(PLAN_STORAGE_NOTICE).not.toMatch(/never stores it\b/);
+    expect(UPLOAD_STORAGE_NOTICE).toContain('Our server never stores them.');
     expect(PLAN_STORAGE_CTA).toBe('Where do you want to keep your health record?');
   });
 
@@ -86,7 +92,7 @@ describe('US-09 AC5 — locked copy', () => {
       'Your health record stays in your browser until you choose if you want to store it in your Dropbox or Google Drive.',
     );
     expect(PLAN_STORAGE_NOTICE).toBe(
-      'Your health record is yours, and yours alone. Keep it in your own Dropbox or Google Drive. Nothing is stored on our server.',
+      'Your health record is yours, and yours alone. Keep it in your own Dropbox or Google Drive. Our server never stores your health record.',
     );
   });
 });

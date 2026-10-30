@@ -27,7 +27,7 @@ const PARTS = {
   ],
   plan: [
     'Your health record is yours, and yours alone. Keep it in your own ',
-    '. Nothing is stored on our server.',
+    '. Our server never stores your health record.',
   ],
 } as const satisfies Record<string, readonly [string, string]>;
 
@@ -42,7 +42,7 @@ export const PLAN_STORAGE_CTA = 'Where do you want to keep your health record?';
 /** The upload modal's own paragraph (plain prose; the CTA button beneath it is
  *  the affordance there). */
 export const UPLOAD_STORAGE_NOTICE =
-  'Keep the files themselves in your own Dropbox or Google Drive, sorted into Lab results, Clinic letters and Scans. Nothing is stored on our server.';
+  'Keep the files themselves in your own Dropbox or Google Drive, sorted into Lab results, Clinic letters and Scans. Our server never stores them.';
 
 export function openBackendPicker(): void {
   window.dispatchEvent(new Event(OPEN_PICKER_EVENT));

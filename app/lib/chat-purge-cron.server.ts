@@ -19,8 +19,9 @@
  * title made of the first few words of the question. Both get blanked on the
  * same schedule, on `platform in ('shopify','discord')` — a question typed at the
  * bot is as private as a bubble question (Brad's decision, 2026-09-10 evening).
- * YouTube stays: those transcripts are public comments under their own
- * retention. The shape of the conversation survives: id, role, timestamps,
+ * YouTube stays: those transcripts are public comments, kept with no deletion
+ * date, as are the replied-to rows in `youtube_bot_log` (its cleanup trims only
+ * skipped rows past the latest 200). The shape of the conversation survives: id, role, timestamps,
  * model, token counts, `is_fallback`, `failure_mode`. Only the words go.
  *
  * Same shape as the other crons (trending, reminder v2): hourly setInterval, a

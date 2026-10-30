@@ -97,7 +97,7 @@ health-record instructions describe v1, not the current architecture.
 
 Compact inventory. Tests sit beside their file (`*.test.ts`) and are not listed. Verified against `git ls-files` 2026-09-07.
 
-**Server routes (`app/routes/`).** Storefront routes reach Fly through the Shopify app proxy `/apps/health-tool-1/...` (HMAC-verified). The app stores NO health data: AI, email, tracking and MCP only.
+**Server routes (`app/routes/`).** Storefront routes reach Fly through the Shopify app proxy `/apps/health-tool-1/...` (HMAC-verified). The app stores NO health record and no parsed health value: AI, email, tracking and MCP only. It does keep chat and feedback free text, which can hold health details (US-15 promise paragraph lists each table and its retention).
 
 | Route | Auth | Does |
 | --- | --- | --- |
@@ -160,7 +160,7 @@ Health data lives in the user's own file ([roadmap-file.ts](../packages/health-c
 - `healthDocuments`: Scan results, clinic letters, discharge/pathology reports, vaccination records (markdown + metadata). Dedup on `sourceFileName` (stable) not title+date (LLM-generated, drifts).
 - `reminderOptIn`: mirrored client copy of the user's reminder schedule (the server's `reminder_optin_v2` row is the delivery source of truth).
 
-### Live Supabase tables (operational only, no health data)
+### Live Supabase tables (operational only, no health records; chat and feedback free text per US-15)
 
 - `profiles`: pseudonymous anchors for chat FKs (demographics scrubbed in the June-2026 purge; `shopify_customer_id` may link a logged-in customer).
 - `chat_conversations` / `chat_messages`: transcripts of the blog chat bubble, Discord and YouTube only — the main widget writes none (US-15 AC7, 2026-09-10). `chat_match_events`: one router-telemetry row per answered turn on every surface, `router_context.platform` names it, no FK to the other two; the widget's question text is kept with every number masked to `#` and topic names with a digit (HbA1c, B12, type 2) kept, as are its `router_raw` and `router_error` (US-15 AC33; verbatim before it deployed); no reply, no record. `matched_handles` is what the ROUTER picked, not what loaded: since US-50 AC14 (web chat, YouTube and Discord) a picked older post gives way to its topic masters, listed in `router_context.replaced`, and masters that loaded shortened are in `router_context.reduced` (both index handles, absent when empty). Unreviewed after the review cap: the last AC14 commit was read by the orchestrator. `guest_chat_sessions`: guest sessions (raw IP).

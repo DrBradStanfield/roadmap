@@ -368,8 +368,22 @@ describe('US-32 AC38 — the form is for the exact pinned ChatGPT and Codex clie
     clearReviewerSecrets();
     // The visible text, not the stylesheet the page shell always carries.
     const text = unescapeHtml((await consentHtml()).replace(/<style[\s\S]*?<\/style>/g, '').replace(/<[^>]+>/g, ' '));
-    expect(text).toContain('Nothing is stored on our server.');
+    expect(text).toContain('Our server never stores your health record.');
     expect(text).not.toMatch(/reviewer/i);
+  });
+
+  // US-32 AC53: the page once said "Nothing is stored on our server", but every
+  // tool call writes a value-free activity row (mcp_tool_call). Say what is kept.
+  it('US-32 AC53: says no health data is stored and names the activity count, with or without the reviewer clause', async () => {
+    for (const held of [false, true]) {
+      if (held) setReviewerSecrets(); else clearReviewerSecrets();
+      const text = unescapeHtml((await consentHtml()).replace(/<style[\s\S]*?<\/style>/g, '').replace(/<[^>]+>/g, ' '));
+      expect(text).not.toContain('Nothing is stored');
+      expect(text).toContain(
+        'Our server never stores your health record. We keep a count of connector use: which tool ran, from which assistant, whether it worked, and when.',
+      );
+      expect(text.includes('we also hold the Dropbox credential of one invented reviewer account.'), String(held)).toBe(held);
+    }
   });
 
   it('names the reviewer credential whenever the token is held, even with the box off (partly set)', async () => {
@@ -800,7 +814,7 @@ describe('US-32 AC49 — the exact pinned Claude and Claude Code clients get the
   });
 
   it('names both reviews in the custody sentence while the token is held', async () => {
-    expect(unescapeHtml(await consentHtml(CLAUDE, CLAUDE_REDIRECT))).toContain('except, while an OpenAI or Anthropic app review is pending, the Dropbox credential of one invented reviewer account');
+    expect(unescapeHtml(await consentHtml(CLAUDE, CLAUDE_REDIRECT))).toContain('While an OpenAI or Anthropic app review is pending, we also hold the Dropbox credential of one invented reviewer account.');
   });
 });
 
