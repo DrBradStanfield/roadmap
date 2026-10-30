@@ -8,7 +8,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync, symlinkSync, existsSync, chmodSync, lstatSync, statSync, realpathSync, truncateSync, linkSync, renameSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 
 // The suite's own temp dir, inherited by every child through childEnv: other sessions' reviews share the system one (their
 // work dirs broke the "nothing kept" checks), and macOS's per-user TMPDIR (/var/folders/jb/7ypw…0000gn/T) holds a
@@ -1616,7 +1616,7 @@ describe('US-40 AC13 — --include copies a pinned, read-only source folder from
   });
   it('the shipped policy pins the dated refresh folders, the supplements raw and the diff reports (the April pathway raw left 2026-10-22, US-15 AC39); only its committed copy in the wrapper\'s own checkout counts', () => {
     const shipped = JSON.parse(readFileSync(resolve(__dirname, 'codex-review-includes.json'), 'utf8'));
-    const kb = '~/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw';
+    const kb = '~/Documents/claude_business.nosync/knowledge-map-raw';
     expect(shipped.roots).toEqual([`${kb}/refresh-*/`, `${kb}/supplements/`, '~/.codex-review/diff-reports/']);
     // A copy of the wrapper in its own git checkout, with that policy committed; another repo is under review.
     const home = realpathSync(mkdtempSync(join(tmpdir(), 'cr-include-home-'))); // node reports the wrapper's own path resolved
@@ -1801,9 +1801,9 @@ describe('US-40 AC15 — --subject reviews exact files, never whatever else the 
     return p;
   };
   /** Runs the wrapper under the test gate with that policy; `during` runs inside the fake reviewer (its cwd is work/src). */
-  const run = (dir: string, extra: string[], o: { during?: string; exit?: number; policy?: string } = {}) => {
+  const run = (dir: string, extra: string[], o: { during?: string; exit?: number; policy?: string; wrapper?: string } = {}) => {
     const f = fake({ output: CLEAN, ...(o.during ? { during: o.during } : {}), ...(o.exit ? { exit: o.exit } : {}) });
-    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, ...extra, '--out', outJson], { cwd: dir, encoding: 'utf8', env: childEnv({ VITEST: 'true', CODEX_REVIEW_TEST_INCLUDE_POLICY: o.policy ?? policyFor(dir) }), timeout: 120_000 });
+    const r = spawnSync('node', [o.wrapper ?? WRAPPER, '--codex', f.bin, ...extra, '--out', outJson], { cwd: dir, encoding: 'utf8', env: childEnv({ VITEST: 'true', CODEX_REVIEW_TEST_INCLUDE_POLICY: o.policy ?? policyFor(dir) }), timeout: 120_000 });
     return { r, f, report: () => JSON.parse(readFileSync(outJson, 'utf8')) };
   };
   /** A copy of the whole work dir, taken by the fake reviewer while it runs: what Codex saw (context and baseline copies are gone after exit). */
@@ -2033,8 +2033,40 @@ describe('US-40 AC15 — --subject reviews exact files, never whatever else the 
     expect(run(dir, ['--subject', 'codex-drafts/plan.md'], { policy: policyFor(dir, { subjectRoots: [`${dir}/codex-drafts`] }) }).r.status).toBe(0); // a plain folder root pins everything under it
     mkdirSync(join(dir, 'codex-draftsX')); writeFileSync(join(dir, 'codex-draftsX', 'plan.md'), 'draft\n');
     refused(dir, ['--subject', 'codex-draftsX/plan.md'], 'is not tracked at HEAD', policyFor(dir, { subjectRoots: [`${dir}/codex-drafts`] })); // a sibling sharing the prefix is not under it
-    const CB = '/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business';
-    expect(SHIPPED_POLICY.subjectRoots).toEqual(['/Users/bradstanfield/Documents/roadmap/codex-drafts', `${CB}/output/[0-9] *`, `${CB}/output/[0-9][0-9] *`, `${CB}/output/[0-9][0-9][0-9] *`]);
+    const CB = '/Users/bradstanfield/Documents/claude_business.nosync';
+    expect(SHIPPED_POLICY.subjectRoots).toEqual(['./codex-drafts', `${CB}/output/[0-9] *`, `${CB}/output/[0-9][0-9] *`, `${CB}/output/[0-9][0-9][0-9] *`]);
+  });
+  it('AC15 (2026-10-30): a ./ root is the main checkout of the wrapper\'s own repo, so a folder rename keeps the pin; never cwd, never a worktree; a bare relative root is refused', () => {
+    /** A copy of the wrapper inside `repo`, so its own repo (HOME_REPO) is that temp repo, as the real one is in production. */
+    const install = (repo: string) => {
+      mkdirSync(join(repo, 'tools'), { recursive: true });
+      for (const m of readdirSync(__dirname).filter((n) => /^codex-review(-[a-z]+)?\.mjs$/.test(n))) writeFileSync(join(repo, 'tools', m), readFileSync(join(__dirname, m)));
+      return join(repo, 'tools', 'codex-review.mjs');
+    };
+    const dir = scriptRepo(), wrapper = install(dir);
+    mkdirSync(join(dir, 'codex-drafts')); writeFileSync(join(dir, 'codex-drafts', 'plan.md'), 'draft\n');
+    const dot = policyFor(dir, { subjectRoots: ['./codex-drafts'] });
+    expect(run(dir, ['--subject', 'codex-drafts/plan.md'], { policy: dot, wrapper }).r.status).toBe(0); // the main checkout's own drafts folder
+    // the real wrapper's ./ is the real repo, never cwd: the temp repo's drafts lie outside it
+    refused(dir, ['--subject', 'codex-drafts/plan.md'], 'codex-drafts/plan.md is not tracked at HEAD and lies outside every subject root pinned in', dot);
+    const bare = run(dir, ['--subject', 'codex-drafts/plan.md'], { policy: policyFor(dir, { subjectRoots: ['codex-drafts'] }), wrapper }).r;
+    expect([bare.status, bare.stderr]).toEqual([1, expect.stringContaining('is relative; write it as ./<path> for the main checkout, so it is refused')]);
+    // a ./ root may not climb out of the main checkout, even back into it
+    const up = run(dir, ['--subject', 'codex-drafts/plan.md'], { policy: policyFor(dir, { subjectRoots: [`./../${basename(dir)}/codex-drafts`] }), wrapper }).r;
+    expect([up.status, up.stderr]).toEqual([1, expect.stringContaining('climbs out of the main checkout (..), so it is refused')]);
+    // nor pin the whole checkout, which would make every gitignored file sendable
+    for (const whole of ['./', './*']) {
+      const w = run(dir, ['--subject', 'codex-drafts/plan.md'], { policy: policyFor(dir, { subjectRoots: [whole] }), wrapper }).r;
+      expect([whole, w.status, w.stderr]).toEqual([whole, 1, expect.stringContaining('pins the whole main checkout, so it is refused')]);
+    }
+    // a worktree's copy is not pinned, whether the main checkout's wrapper or the worktree's own copy runs
+    const wt = join(realpathSync(mkdtempSync(join(tmpdir(), 'cr-wt-'))), 'wt');
+    sh(dir, `git worktree add -q ${JSON.stringify(wt)}`);
+    mkdirSync(join(wt, 'codex-drafts')); writeFileSync(join(wt, 'codex-drafts', 'plan.md'), 'draft\n');
+    for (const w of [wrapper, install(wt)]) {
+      const r = run(wt, ['--subject', 'codex-drafts/plan.md'], { policy: dot, wrapper: w }).r;
+      expect([w, r.status, r.stderr]).toEqual([w, 1, expect.stringContaining('codex-drafts/plan.md is not tracked at HEAD and lies outside every subject root pinned in')]);
+    }
   });
   it('Codex R1, adversary R4: a subject, baseline or context inside a nested git repo is refused (that repo\'s HEAD credentials are never collected)', () => {
     const dir = scriptRepo();
@@ -2230,7 +2262,7 @@ describe('US-40 AC15 — --subject reviews exact files, never whatever else the 
     const specs = SHIPPED_POLICY.privateDeny.flatMap((g: string) => [`:(glob,icase)${g}`, `:(glob,icase)${g}/**`]);
     expect(execFileSync('git', ['ls-files', '-z', '--', ...specs], { cwd: resolve(__dirname, '..'), encoding: 'utf8' })).toBe('');
     // and none in claude_business, where the list is aimed, when that checkout is on this machine (a wider '*-comments.*' once swallowed its tools/youtube-fix-comments.js)
-    const cb = '/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business';
+    const cb = '/Users/bradstanfield/Documents/claude_business.nosync';
     if (existsSync(join(cb, '.git'))) expect(execFileSync('git', ['ls-files', '-z', '--', ...specs], { cwd: cb, encoding: 'utf8' })).toBe('');
   });
   it('the pin matches numbered video FOLDERS only (digits, a space, a real folder): output/0-private, a loose dated file and a loose "7 notes.md" are refused', () => {

@@ -461,16 +461,36 @@ function pinnedPolicy(flag) {
   return policyRead;
 }
 /**
- * Pinned roots, `~/` expanded, never resolved; a glob (`*`, `?`, `[0-9]`) may stand in the last part
- * (`knowledge-map-raw/refresh-*`, `output/[0-9] *`). A root whose fixed part does not exist, passes through a symlink,
- * or is not its own real path carries a `why`: a path under it is refused, naming the root.
+ * The main checkout of the wrapper's own repo (the folder holding its common .git), real path; never cwd, never a
+ * worktree's own folder, so a worktree's copy of a `./` root is not pinned. Null when git cannot say.
+ */
+let mainCheckout;
+const mainOf = () => {
+  if (mainCheckout !== undefined) return mainCheckout;
+  mainCheckout = null;
+  try {
+    // GIT_DIR and friends would redirect the answer to another repo (adversary R4).
+    const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^GIT_(DIR|COMMON_DIR|WORK_TREE|INDEX_FILE)$/.test(k)));
+    const common = execFileSync("git", ["-C", HOME_REPO, "rev-parse", "--path-format=absolute", "--git-common-dir"], { encoding: "utf8", env, stdio: ["ignore", "pipe", "ignore"] }).trim();
+    if (basename(common) === ".git" && realFolder(common)) mainCheckout = realpathSync(dirname(common));
+  } catch { /* stays null */ }
+  return mainCheckout;
+};
+/**
+ * Pinned roots, `~/` expanded, `./` against the main checkout (survives a folder rename), never resolved through a
+ * link; a glob (`*`, `?`, `[0-9]`) may stand in the last part (`knowledge-map-raw/refresh-*`, `output/[0-9] *`). A
+ * root that is otherwise relative, or whose fixed part does not exist, passes through a symlink, or is not its own real
+ * path, carries a `why`: a path under it is refused, naming the root.
  */
 function parseRoots(list) {
   return list.map(String).map((r) => {
-    const text = resolve(r.replace(/^~(?=\/)/, process.env.HOME ?? "\0")), glob = /[*?[]/.test(basename(text));
+    const dot = r.startsWith("./"), main = dot ? mainOf() : null;
+    const text = resolve(dot ? join(main ?? "\0", r.slice(2)) : r.replace(/^~(?=\/)/, process.env.HOME ?? "\0")), glob = /[*?[]/.test(basename(text));
     const fixed = glob ? dirname(text) : text;
     const pattern = glob ? globRe(basename(text)) : null;
-    let why = null, d = "";
+    let why = dot && r.split("/").includes("..") ? "climbs out of the main checkout (..)" : dot && !main ? "is relative to the main checkout, which git cannot name" : !dot && !isAbsolute(r) && !r.startsWith("~/") ? "is relative; write it as ./<path> for the main checkout" : null, d = "";
+    if (!why && dot && fixed === main) why = "pins the whole main checkout";
+    if (why) return { text, fixed, pattern, why };
     for (const c of fixed.split(sep).slice(1)) {
       d += sep + c;
       let st; try { st = lstatSync(d); } catch { why = "does not exist"; break; }

@@ -45,7 +45,7 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const REPO_ROOT = path.resolve(__dirname, '..');
-const CLAUDE_BUSINESS_TOOLS = '/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/tools';
+const CLAUDE_BUSINESS_TOOLS = '/Users/bradstanfield/Documents/claude_business.nosync/tools';
 
 // ---------------------------------------------------------------------------
 // CLI args

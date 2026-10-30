@@ -9,7 +9,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const HERE = import.meta.dirname;
-const ENV = `${process.env.HOME}/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/claude-integration/.env`;
+const ENV = `${process.env.HOME}/Documents/claude_business.nosync/claude-integration/.env`;
 const VOICE = '7ldoJp0BPWRFSdfpq0CF';
 const URL = `https://api.elevenlabs.io/v1/text-to-speech/${VOICE}/with-timestamps?output_format=mp3_44100_128`;
 

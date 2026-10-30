@@ -53,7 +53,7 @@ before deploying.
 
 ## Shared Data with claude_business
 
-(`~/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/`)
+(`~/Documents/claude_business.nosync/`)
 
 - **`docs/products.md` is the MASTER here — a real tracked file** (inverted 2026-08-10; claude_business
   holds the symlink). Edit it here; claude_business edits arrive uncommitted — sweep-commit them.

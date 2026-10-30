@@ -23,7 +23,7 @@
  *  the given directory. Useful for iterating on rendering without re-burning DB queries.)
  *
  * See docs for the full audit playbook:
- *   ~/Library/CloudStorage/Dropbox/YouTube/.../claude_business/docs/chat-start-here.md
+ *   ~/Documents/claude_business.nosync/docs/chat-start-here.md
  */
 
 import fs from 'fs';

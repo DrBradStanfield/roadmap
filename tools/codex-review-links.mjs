@@ -38,7 +38,7 @@ export const MAX_LINK_BYTES = 1 << 20;
 export const LINK_POLICY = {
   repos: {
     roadmap: resolve(dirname(fileURLToPath(import.meta.url)), ".."), // the wrapper's own checkout
-    claude_business: join(homedir(), "Library", "CloudStorage", "Dropbox", "YouTube", "multivitamin & others", "claude_business"),
+    claude_business: join(homedir(), "Documents", "claude_business.nosync"),
   },
   links: [
     { reviewed: "claude_business", link: "docs/products.md", target: "roadmap", path: "docs/products.md" }, // the product master
