@@ -52,7 +52,7 @@ struct AIConsentView: View {
     private var keptWhere: String {
         switch consent {
         case .chat: "Your conversations are saved on this iPhone, beside your record, and left out of its backups."
-        case .labUpload: "The values you confirm are saved in your record. Dr Brad's server keeps no copy of the report. With Dropbox or Google Drive connected, the original is also saved there."
+        case .labUpload: "The values you confirm are saved in your record. If your record syncs with Dropbox or Google Drive, a report you pick from Files is also saved there."
         }
     }
 
