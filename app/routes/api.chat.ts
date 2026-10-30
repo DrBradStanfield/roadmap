@@ -11,6 +11,8 @@ import * as Sentry from '@sentry/react-router';
 import { getAuthenticatedUser, getCustomerId, checkSubscriptionFromTags, getCustomerOrders, isValidUuid } from '../lib/route-helpers.server';
 import { getClientIp } from '../lib/local-first-route.server';
 import { cappedBody } from '../lib/capped-body.server';
+import { takeWebChatTurn } from '../lib/rate-limiter';
+import { ipBucket } from '../lib/app-gate.server';
 import { authenticate } from '../shopify.server';
 import { logAudit, getProfile, updateSubscriptionPlan, createUserClient, getOrCreateGuestSession, GuestRateLimitError, type DbProfile } from '../lib/supabase.server';
 import {
@@ -412,6 +414,11 @@ async function chatAction(request: Request, app: boolean) {
     }
     if (message.length > MAX_MESSAGE_LENGTH) {
       return Response.json({ success: false, error: `Message too long (max ${MAX_MESSAGE_LENGTH} chars)` }, { status: 400 });
+    }
+    // US-15 AC45: a web turn counts against its IP's day and the machine's,
+    // whatever session it carries. The app's turn was counted by its gate.
+    if (!app && !takeWebChatTurn(ipBucket(getClientIp(request, 'shopify')))) {
+      return Response.json({ success: false, error: 'rate_limited' }, { status: 429 });
     }
 
     // Sanitize message for router (strips control chars, caps at 2000 chars)

@@ -94,9 +94,29 @@ export const machineFiles = createQuotaCounter(dailyFileCap(process.env.AI_DAILY
  * lab cap, so the two readers agree.
  */
 export function dailyFileCap(raw: string | undefined, warn: (message: string) => void = console.warn): number {
-  if (!raw) return DEFAULT_DAILY_FILE_CAP;
+  return envCap('AI_DAILY_FILE_CAP', raw, DEFAULT_DAILY_FILE_CAP, warn);
+}
+
+/** `dailyFileCap`'s rule for any cap read from the env: unset is `fallback`, 0 is 0, a non-number warns and is `fallback`. */
+export function envCap(name: string, raw: string | undefined, fallback: number, warn: (message: string) => void = console.warn): number {
+  if (!raw) return fallback;
   const value = Number(raw);
   if (Number.isFinite(value) && value >= 0) return value;
-  warn(`AI_DAILY_FILE_CAP is not a number of 0 or more, so the default ${DEFAULT_DAILY_FILE_CAP} applies.`);
-  return DEFAULT_DAILY_FILE_CAP;
+  warn(`${name} is not a number of 0 or more, so the default ${fallback} applies.`);
+  return fallback;
+}
+
+/**
+ * Web chat turns a day (US-15 AC45): 200 per shopper IP, as the iPhone app's
+ * per-IP chat limit, and `WEB_CHAT_DAILY_CAP` (default 2000) per machine. In
+ * memory, so per machine and reset on deploy, as `machineFiles`.
+ */
+const webChatTurns = {
+  ip: createQuotaCounter(200, DAY_MS, 30 * 60_000),
+  machine: createQuotaCounter(envCap('WEB_CHAT_DAILY_CAP', process.env.WEB_CHAT_DAILY_CAP, 2000), DAY_MS, 30 * 60_000),
+};
+
+/** Count one web chat turn; false when the IP or the machine is at its cap. An IP at its cap spends none of the machine's. */
+export function takeWebChatTurn(ipBucket: string): boolean {
+  return webChatTurns.ip.take(ipBucket, 1) && webChatTurns.machine.take('machine', 1);
 }
