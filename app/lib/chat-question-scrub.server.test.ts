@@ -101,6 +101,27 @@ describe('scrubQuestion — US-15 AC44 the model pass', () => {
     expect(await scrubWith(toolAnswer(a), q).out).toBe(a);
   });
 
+  // US-15 AC44a: a placeholder never stands for a number with a dose or lab
+  // unit, whatever its digits look like. The span shapes alone let an age, an
+  // id or a date take one.
+  it.each([
+    ['a dose as an age', 'I take 20 mg of atorvastatin, is that enough?', 'I take [age 20s] mg of atorvastatin, is that enough?'],
+    ['a dose as an id, its unit kept', 'Should I take 2000 IU vitamin D daily?', 'Should I take [id] IU vitamin D daily?'],
+    ['a dose range as a date', 'Is 5-10 mg of melatonin safe?', 'Is [date] mg of melatonin safe?'],
+    ['a dose written with its unit as an id', 'Is 1000mcg of B12 too much?', 'Is [id] of B12 too much?'],
+    ['a lab value as an age', 'my ferritin is 45 ug/L, is that low?', 'my ferritin is [age 40s] ug/L, is that low?'],
+    ['a lab value as a date', 'my LDL is 3/4 mmol/L', 'my LDL is [date] mmol/L'],
+    ['a masked widget dose as an age', 'I take ## mg of metformin', 'I take [age 20s] mg of metformin'],
+  ])('US-15 AC44a: skips a placeholder that stands for %s', async (_, q, a) => {
+    expect(await scrubWith(toolAnswer(a), q).out).toBeNull();
+  });
+
+  it('US-15 AC44a: still keeps an age, an id and a date that carry no unit', async () => {
+    const q = "I'm 47, order 31648, tested 3/4 2024, and I take 20 mg of atorvastatin";
+    const a = "I'm [age 40s], order [id], tested [date] 2024, and I take 20 mg of atorvastatin";
+    expect(await scrubWith(toolAnswer(a), q).out).toBe(a);
+  });
+
   it('skips an age rewritten into new words, which moves the sentence', async () => {
     const q = 'my 82 year old mother takes 5 mg amlodipine, is that safe?';
     expect(await scrubWith(toolAnswer('my mother in her 80s takes 5 mg amlodipine, is that safe?'), q).out).toBeNull();
