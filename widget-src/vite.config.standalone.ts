@@ -14,6 +14,7 @@ try {
 } catch {
   /* not a git checkout */
 }
+const release = `health-tool-widget@${gitHash}`;
 
 const BYOK_CHAT = resolve(__dirname, 'src/lib/byok-chat.ts');
 const REAL_CHAT_API = /\/widget-src\/src\/lib\/chat-api\.ts$/;
@@ -53,6 +54,7 @@ export default defineConfig(({ command }) => ({
     // React Fast Refresh and dev warnings work while iterating locally.
     'process.env.NODE_ENV': JSON.stringify(command === 'serve' ? 'development' : 'production'),
     'import.meta.env.VITE_GIT_HASH': JSON.stringify(gitHash),
+    '__SENTRY_RELEASE__': JSON.stringify(release),
     // Marks every local-first build: the user's plan lives client-side, so the
     // chat must send it as context rather than expecting it in our DB. The Pages
     // build's BYOK chat ignores it (it reads context locally); only the Shopify

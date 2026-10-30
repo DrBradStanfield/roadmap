@@ -9,6 +9,7 @@
  * bundles must define the flag, and non-surface bundles (above all the
  * GitHub Pages build, marketed as "no Brad server") must never gain it.
  */
+import { execSync } from 'node:child_process';
 import { readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import shopifyProd from './vite.config.shopify-prod';
@@ -65,6 +66,24 @@ describe('vite bundle surface-flag triage (US-15 AC2)', () => {
   for (const [name, config] of Object.entries(NON_SURFACE_BUNDLES)) {
     it(`${name} does NOT define ${SURFACE_KEY}`, () => {
       expect(config.define?.[SURFACE_KEY]).toBeUndefined();
+    });
+  }
+});
+
+// US-49 AC4: every widget bundle tags its errors with the release name the
+// deploy uploads the storefront source maps under (`sentry:sourcemaps` in
+// widget-src/package.json), so an error can be tied to the deploy that shipped it.
+describe('every vite bundle defines __SENTRY_RELEASE__ (US-49 AC4)', () => {
+  let gitHash = 'dev';
+  try {
+    gitHash = execSync('git rev-parse --short HEAD').toString().trim();
+  } catch {
+    /* not a git checkout */
+  }
+  const ALL = { ...SHOPIFY_SURFACE_BUNDLES, ...NON_SURFACE_BUNDLES };
+  for (const [name, config] of Object.entries(ALL)) {
+    it(`${name} sets the release health-tool-widget@<git hash>`, () => {
+      expect(config.define?.__SENTRY_RELEASE__).toBe(JSON.stringify(`health-tool-widget@${gitHash}`));
     });
   }
 });

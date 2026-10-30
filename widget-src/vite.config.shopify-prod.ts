@@ -21,12 +21,14 @@ try {
 } catch {
   /* not a git checkout */
 }
+const release = `health-tool-widget@${gitHash}`;
 
 export default defineConfig({
   plugins: [react()],
   define: {
     'process.env.NODE_ENV': JSON.stringify('production'),
     'import.meta.env.VITE_GIT_HASH': JSON.stringify(gitHash),
+    '__SENTRY_RELEASE__': JSON.stringify(release),
     'import.meta.env.VITE_LOCAL_FIRST': JSON.stringify('true'),
     // Distinguishes the drstanfield.com (Shopify) local-first surface from the
     // Pages/self-host one: Shopify-only features (guest report email through
