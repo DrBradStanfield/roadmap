@@ -585,9 +585,11 @@ type StampedArray = keyof typeof ROW_STAMPS;
  */
 const CREATED_STAMPS: readonly StampedArray[] = ['measurements', 'labValues', 'documents'];
 
-/** The stamp grammar `migrate.ts` accepts: a day, alone or with a time after a
- *  T, a t or a space, and an optional zone (Z, z, +HHMM or +HH:MM; an hour-only
- *  +HH only after a space, Postgres's text style). */
+/** The stamps this parser reads: a day, alone or with a time after a T, a t or
+ *  a space, and an optional zone (Z, z, +HHMM or +HH:MM; an hour-only +HH only
+ *  after a space, Postgres's text style). Looser than `migrate.ts`'s STAMP,
+ *  which needs a zone after a space and keeps an offset within 00-14 hours and
+ *  00-59 minutes; its `isStamp` takes only what both accept. */
 const STAMP_PARTS = /^(\d{4}-\d{2}-\d{2})(?:(?:[Tt](\d{2}:\d{2}(?::\d{2})?)(?:\.(\d+))?([Zz]|[+-]\d{2}:?\d{2})?)|(?: (\d{2}:\d{2}(?::\d{2})?)(?:\.(\d+))?([Zz]|[+-]\d{2}(?::?\d{2})?)?))?$/;
 
 /**

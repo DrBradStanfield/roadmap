@@ -101,7 +101,9 @@ const ISO_DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{
 /** Every shape a writer stamps with: a day alone, or with a time and an
  *  optional zone. A space for the T, and an hour-only offset, are Postgres's
  *  text style, which files imported from v1 may hold. That form needs its
- *  zone: `stampInstant` reads it zone-less in the machine's local time. */
+ *  zone here (US-23 AC6a), though `stampInstant` now reads a zone-less stamp
+ *  as UTC. An hour-only offset after a T passes this pattern but not
+ *  `stampInstant`, so `isStamp` refuses it. */
 const STAMP = /^\d{4}-\d{2}-\d{2}([Tt]\d{2}:\d{2}(:\d{2}(\.\d+)?)?([Zz]|[+-](0\d|1[0-4])(:?[0-5]\d)?)?| \d{2}:\d{2}(:\d{2}(\.\d+)?)?([Zz]|[+-](0\d|1[0-4])(:?[0-5]\d)?))?$/;
 
 /** A complete stamp (US-23 AC6a): a real calendar day, alone or with a time,
