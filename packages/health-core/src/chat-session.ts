@@ -39,7 +39,8 @@ const CHAT_HISTORY_DOC: DocumentSpec<ChatHistoryFile> = {
   // re-read (H5 protects health-record integrity; here it would spend a full
   // file transfer per exchange guarding data whose loss is already tolerated).
   verify: false,
-  // Read only by CHECKED_DOC's verify: a tombstone another writer replaced.
+  // Read only by CHECKED_DOC's verify: any conversation the written copy holds
+  // deleted (this save's or an earlier one) that the re-read holds live.
   lostWrite: (expected, parsed) => {
     const live = new Set(parsed.conversations.filter((c) => !c.deleted).map((c) => c.id));
     const back = expected.conversations.filter((c) => c.deleted && live.has(c.id)).length;
