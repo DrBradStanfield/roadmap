@@ -13,7 +13,7 @@ vi.mock('chart.js', () => ({
 }));
 vi.mock('chartjs-plugin-annotation', () => ({ default: {} }));
 vi.mock('chartjs-adapter-date-fns', () => ({}));
-// Synthetic values. "Zonulin", "Calprotectin" and "Elastase" are off the lab catalogue, so
+// Synthetic values. "Zonulin", "Calprotectin", "Elastase" and "Hyaluronan" are off the lab catalogue, so
 // they keep the unit they were reported in.
 vi.mock('../lib/roadmap-data', () => ({
   loadAllHistory: async () => [],
@@ -24,6 +24,8 @@ vi.mock('../lib/roadmap-data', () => ({
     { id: 'c2', metricName: 'Calprotectin', value: 55, unit: 'µg/g', recordedAt: '2026-09-01' },
     { id: 'e1', metricName: 'Elastase', value: 210, unit: 'µg/g', recordedAt: '2026-03-01' },
     { id: 'e2', metricName: 'Elastase', value: 190, unit: 'µg/g', recordedAt: '2026-09-01' },
+    { id: 'h1', metricName: 'Hyaluronan', value: 12, unit: '', recordedAt: '2026-03-01' },
+    { id: 'h2', metricName: 'Hyaluronan', value: 14, unit: 'mg/L', recordedAt: '2026-09-01' },
   ],
   loadMedicationHistory: async () => [],
 }));
@@ -42,9 +44,16 @@ describe('US-21 AC3a — mixed units in the history lightbox', () => {
     const zonulin = chartHeading(container, 'Zonulin');
     expect(zonulin).toBeTruthy();
     expect(zonulin!.textContent).toContain('Units vary between reports');
+    expect(zonulin!.textContent).toContain('(nmol/L, ng/mL)');
     expect(zonulin!.querySelector('canvas')).toBeNull();
     await waitFor(() => expect(charts).toHaveLength(2));
     expect(charts.some(c => c.data.datasets[0].data.some((p: { y: number }) => p.y === 75))).toBe(false);
+  });
+
+  it('US-21 AC3a: a report saved without a unit is listed as "no unit", not as a blank', async () => {
+    const { container } = render(<HistoryPanel />);
+    await waitFor(() => expect(chartHeading(container, 'Hyaluronan')).toBeTruthy());
+    expect(chartHeading(container, 'Hyaluronan')!.textContent).toContain('(no unit, mg/L)');
   });
 
   it('US-21 AC3a: two spellings of one unit are one line, labelled with the shown unit', async () => {

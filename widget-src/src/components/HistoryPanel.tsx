@@ -397,7 +397,7 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
                   if (units.length > 1) return (
                     <div key={name} className="metric-chart-container">
                       <h3>{labSeries[name].label}</h3>
-                      <p className="history-note">Units vary between reports ({units.join(', ')}), so this test is not charted.</p>
+                      <p className="history-note">Units vary between reports ({units.map((u) => u || 'no unit').join(', ')}), so this test is not charted.</p>
                     </div>
                   );
                   const unit = units[0] ?? '';
