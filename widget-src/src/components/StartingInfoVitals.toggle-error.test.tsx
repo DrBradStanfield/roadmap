@@ -10,7 +10,9 @@
  *   - 19.9 kg → toggle to lbs shows "44" (dp 0), valid in lbs, but the commit
  *     refuses 19.9 kg (min 20): no error shown, nothing saved.
  *   - 79 in → toggle to cm shows "201" with "Max 200 cm", but the commit
- *     accepts 79 in (max 79) and saves 200.66 cm.
+ *     accepted 79 in (then the inch maximum) and saved 200.66 cm. Since
+ *     US-05 AC2b the inch maximum is 78.7 (200 cm rounded inward), so 79 in
+ *     is refused and shows an error in either unit.
  * The assertion is fix-agnostic: an error is shown exactly when nothing saves.
  * Harness copied from StartingInfoVitals.numeric-units.test.tsx. Synthetic values.
  */
@@ -75,7 +77,8 @@ describe('US-05 AC2a: the shown error agrees with the save after a unit toggle',
     { label: 'Weight', typedFirstToggled: true, typed: '661.4', shows: '300.0', error: true }, // lbs → kg
     { label: 'Waist Circumference', typedFirstToggled: false, typed: '40', shows: '15.7', error: false }, // cm → in
     { label: 'Waist Circumference', typedFirstToggled: true, typed: '15.9', shows: '40', error: true }, // in → cm
-    { label: 'Waist Circumference', typedFirstToggled: true, typed: '79', shows: '201', error: false }, // in → cm
+    { label: 'Waist Circumference', typedFirstToggled: true, typed: '79', shows: '201', error: true }, // in → cm, over 78.7 in (US-05 AC2b)
+    { label: 'Waist Circumference', typedFirstToggled: true, typed: '78.7', shows: '200', error: false }, // in → cm, the inch maximum
   ])('$label typed $typed, shown as $shows: error $error, saved exactly when no error', async ({ label, typedFirstToggled, typed, shows, error }) => {
     const { input, onSave, toggle, save } = vitalsDraftCell(label);
     if (typedFirstToggled) toggle();
@@ -87,14 +90,14 @@ describe('US-05 AC2a: the shown error agrees with the save after a unit toggle',
     expect(onSave).toHaveBeenCalledTimes(error ? 0 : 1);
   });
 
-  it('79 in is saved as 200.66 cm, above the record\'s 200 (the inch range reaches past it, not fixed here)', async () => {
+  it('78.7 in, the inch maximum, is saved as 199.90 cm, inside the record\'s 200 (US-05 AC2b)', async () => {
     const { input, onSave, toggle, save } = vitalsDraftCell('Waist Circumference');
     toggle();
-    fireEvent.change(input, { target: { value: '79' } });
+    fireEvent.change(input, { target: { value: '78.7' } });
     toggle();
     await save();
     const task = onSave.mock.calls[0][0][0];
-    expect(Object.values(task.values)[0]).toBeCloseTo(200.66, 2);
+    expect(Object.values(task.values)[0]).toBeCloseTo(199.898, 2);
   });
 
   it('the same holds in a saved column\'s empty cell (backfill)', async () => {
