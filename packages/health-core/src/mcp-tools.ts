@@ -35,6 +35,7 @@ import {
   bulkAppendValues,
   type EditContext,
   correctValue,
+  PRESSURE_ORDER_HALF,
   resolveRecordedAt,
   sameLabQuantity,
   slotIndex,
@@ -52,7 +53,7 @@ import { DROPBOX_APP_FOLDER, IMPORT_ACCEPTED_TYPES, IMPORT_FILE_REASONS, IMPORT_
 import { type McpImportRoute, type McpRefusalReason } from './product-events';
 import { LAB_ARCHIVE_TITLE } from './document-path';
 import { documentRow, labArchiveFields, type DocumentFields } from './document-rows';
-import { DOCUMENT_TYPES, type DocumentType, healthInputSchema, METRIC_TYPES, zod3Message } from './validation';
+import { DOCUMENT_TYPES, type DocumentType, healthInputSchema, METRIC_TYPES, PRESSURE_ORDER, pressureInverted, zod3Message } from './validation';
 import * as z from './zod';
 
 /**
@@ -1471,9 +1472,11 @@ export function prepareImport(
         const metric = value.metric as MetricType;
         const own = value.recordedAt ?? day;
         // A dry run of the real append: it validates the value and the day the
-        // way the record will. Only a taken slot is not a reason to drop it.
+        // way the record will. A taken slot is not a reason to drop it, nor a
+        // blood pressure half judged alone: the pair pass below judges the
+        // report's whole pair (US-02 AC8).
         const check = bundle.checked ? null : appendMeasurement(file, { metricType: metric, value: value.valueSI, recordedAt: own, now: ctx.now, latestDay });
-        if (check && !check.ok && check.reason !== 'slot-occupied') {
+        if (check && !check.ok && check.reason !== 'slot-occupied' && check.message !== PRESSURE_ORDER_HALF) {
           unrecognized.push(`${metric}: ${oneLine(check.message)}`);
           continue;
         }
@@ -1541,7 +1544,35 @@ export function prepareImport(
     files.push(report);
   }
 
-  const payload: ImportPayload = { id: ctx.payloadId, route: bundle.route, createdAt: ctx.now, candidates, documents };
+  // US-02 AC8, per report: a report whose blood pressure halves on a day (its
+  // own, else the halves held) can only form inverted pairs offers neither half
+  // for that day, and says why. A report with any right-way-up pairing, and
+  // another report's pair that day, stay offered; the commit judges the halves
+  // the user picks (`bulkAppendValues`).
+  const isBp = (c: ImportCandidate) => c.kind === 'measurement' && c.metric.endsWith('_bp');
+  const reportDay = (c: ImportCandidate) => `${c.sourceFileName}\u0000${dayOf(c.recordedAt)}`;
+  const pairs = new Map<string, { file: string; day: string; systolic_bp: number[]; diastolic_bp: number[] }>();
+  for (const c of candidates.filter(isBp)) {
+    const pair = pairs.get(reportDay(c)) ?? { file: c.sourceFileName, day: dayOf(c.recordedAt), systolic_bp: [], diastolic_bp: [] };
+    pair[c.metric as 'systolic_bp' | 'diastolic_bp'].push(c.value);
+    pairs.set(reportDay(c), pair);
+  }
+  const halves = (own: number[], metric: string, day: string) => (own.length ? own : [held.get(slotKey('measurement', metric, day))?.value]);
+  const inverted = new Set([...pairs].filter(([, { day, systolic_bp, diastolic_bp }]) =>
+    halves(systolic_bp, 'systolic_bp', day).every((s) => halves(diastolic_bp, 'diastolic_bp', day).every((d) => pressureInverted(s, d)))).map(([key]) => key));
+  for (const key of inverted) unrecognized.push(`Blood pressure on ${pairs.get(key)!.day} in ${pairs.get(key)!.file}: ${PRESSURE_ORDER}`);
+  // A withheld candidate may be the one others name in sameDayAs: each slot's
+  // first survivor takes its place, so every link resolves in the payload.
+  const firstOf = new Map<string, string>();
+  const offered = candidates.filter((c) => !(isBp(c) && inverted.has(reportDay(c)))).map((c) => {
+    const group = c.sameDayAs ?? c.id;
+    const first = firstOf.get(group);
+    if (!first) firstOf.set(group, c.id);
+    if (first === c.sameDayAs) return c;
+    const { sameDayAs: _withheld, ...rest } = c;
+    return first ? { ...rest, sameDayAs: first } : rest;
+  });
+  const payload: ImportPayload = { id: ctx.payloadId, route: bundle.route, createdAt: ctx.now, candidates: offered, documents };
   return { payload, files, unrecognized: unrecognized.slice(0, MAX_UNRECOGNIZED_LINES) };
 }
 
@@ -1642,8 +1673,9 @@ export function fileResultsBundle(request: FileResultsSource, file: RoadmapFile,
       const def = UNIT_DEFS[metric];
       // The real append, dry run under the printed unit: it refuses an unknown
       // unit, an out-of-range number and a bad day in the record's own words.
+      // A blood pressure half is judged with its pair by prepareImport (US-02 AC8).
       const check = appendMeasurement(file, { metricType: metric, value: row.value, unit, recordedAt: day, now: ctx.now, latestDay: ctx.latestDay });
-      if (!check.ok && check.reason !== 'slot-occupied') {
+      if (!check.ok && check.reason !== 'slot-occupied' && check.message !== PRESSURE_ORDER_HALF) {
         const si = getDisplayRange(metric, 'si');
         const conv = getDisplayRange(metric, 'conventional');
         refuse(check.reason === 'unknown-unit'
@@ -1792,6 +1824,14 @@ export function importDocumentsCommit(
   }
 
   const applied = bulkAppendValues(file, rows, now);
+  const pressure = applied.measurementRefusals.find((r) => r.message === PRESSURE_ORDER);
+  if (pressure) {
+    return {
+      status: 'rejected',
+      text: `The selection would leave the blood pressure on ${dayOf(rows[pressure.index].recordedAt)} with the top number (systolic) at or below the bottom number (diastolic). ` +
+        'Nothing was written. Accept or replace both halves of that blood pressure, or neither.',
+    };
+  }
   if (applied.measurementRefusals.length) {
     return { status: 'rejected', text: 'A selected core measurement is invalid or outside the accepted range. Nothing was written. Extract again and review the values.' };
   }

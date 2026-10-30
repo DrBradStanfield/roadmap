@@ -56,7 +56,7 @@ import { computePlan, renderJson, REPO_PUBLIC, REPO_SLUG, REPO_URL, SCHEMA_URL }
 import { dayOf, mergeFiles, stampFields } from './merge';
 import { migrateFile } from './migrate';
 import { createEmptyFile, createLabValue, createMeasurement, type RoadmapFile } from './roadmap-file';
-import { METRIC_TYPES } from './validation';
+import { METRIC_TYPES, PRESSURE_ORDER } from './validation';
 
 const CTX = { deviceId: 'us32_test', now: '2026-09-01T09:00:00Z' };
 const NOW = '2026-09-01T09:00:00Z';
@@ -1843,6 +1843,121 @@ describe('US-12 AC15/AC16 — import_documents refuses a urine creatinine, infer
       { metric: 'creatinine', value: 650, unit: 'µmol/L', confidence: 'high' },
     ]))]), IMPORT_CTX);
     expect(payload.candidates[0]).toMatchObject({ metric: 'creatinine', value: 650, confidence: 'medium', question: 'Was this a blood test?' });
+  });
+});
+
+// US-02 AC8 (review R3): a blood pressure the import would leave inverted on a
+// day is flagged at the preview, never offered, and a commit that would still
+// make one names it, so the assistant does not loop on a generic refusal.
+describe('US-02 AC8 — import_documents and an inverted blood pressure', () => {
+  const answer = (values: unknown[]) => toUnifiedResult(parseUnifiedResult({
+    classification: 'lab_report', reportDate: LAB_DAY, values, additionalValues: [], document: null,
+  }), 'metadata');
+  const bp = (metric: string, value: number) => ({ metric, value, unit: 'mmHg', confidence: 'high' });
+  const withPressure = (systolic: number, diastolic?: number) => {
+    const file = base();
+    file.measurements.push(createMeasurement({ id: 'bs', metricType: 'systolic_bp', value: systolic, recordedAt: LAB_DAY, createdAt: `${LAB_DAY}T08:00:00Z` }));
+    if (diastolic !== undefined) file.measurements.push(createMeasurement({ id: 'bd', metricType: 'diastolic_bp', value: diastolic, recordedAt: LAB_DAY, createdAt: `${LAB_DAY}T08:00:00Z` }));
+    return file;
+  };
+  const bpOffered = <T extends { metric: string }>(candidates: T[]) => candidates.filter((c) => c.metric.endsWith('_bp'));
+
+  it('80/120 on a report is not offered; the preview says why, by day', () => {
+    const { payload, unrecognized } = prepareImport(base(), bundleOf([extracted('bp.pdf', answer([bp('systolic_bp', 80), bp('diastolic_bp', 120), bp('ldl', 3)]))]), IMPORT_CTX);
+    expect(bpOffered(payload.candidates)).toEqual([]);
+    expect(payload.candidates.map((c) => c.metric)).toEqual(['ldl']);
+    expect(unrecognized).toEqual([`Blood pressure on ${LAB_DAY} in bp.pdf: ${PRESSURE_ORDER}`]);
+  });
+
+  it('one half against the half the record holds that day is flagged too', () => {
+    const { payload, unrecognized } = prepareImport(withPressure(80), bundleOf([extracted('dia.pdf', answer([bp('diastolic_bp', 120)]))]), IMPORT_CTX);
+    expect(bpOffered(payload.candidates)).toEqual([]);
+    expect(unrecognized).toEqual([`Blood pressure on ${LAB_DAY} in dia.pdf: ${PRESSURE_ORDER}`]);
+  });
+
+  // Review R1: the per-row dry run judged diastolic 90 against the saved 80 and
+  // dropped it, so the complete replacement pair could never be imported.
+  it('a whole pair that replaces a lone held half is offered whole, and commits (folder route)', () => {
+    const file = withPressure(80);
+    const { payload, unrecognized } = prepareImport(file, bundleOf([extracted('pair.pdf', answer([bp('systolic_bp', 120), bp('diastolic_bp', 90)]))]), IMPORT_CTX);
+    expect(unrecognized).toEqual([]);
+    const [sys, dia] = bpOffered(payload.candidates);
+    expect([sys.metric, sys.value, sys.slot.state, dia.metric, dia.value, dia.slot.state]).toEqual(['systolic_bp', 120, 'held_different', 'diastolic_bp', 90, 'free']);
+    const outcome = importDocumentsCommit(file, payload, { receipt: 'r', accept: [sys.id, dia.id], replace: [sys.id] }, NOW);
+    expect(outcome.status).toBe('ok');
+    const active = (outcome as { file: RoadmapFile }).file.measurements.filter((m) => m.status === 'active' && m.metricType.endsWith('_bp')).map((m) => [m.metricType, m.value]);
+    expect(active).toEqual([['systolic_bp', 120], ['diastolic_bp', 90]]);
+  });
+
+  it('a whole pair that replaces a lone held half is offered whole (file_results)', () => {
+    const { payload, unrecognized } = prepared(labCall([row('systolic_bp', 'Systolic BP', 120, 'mmHg'), row('diastolic_bp', 'Diastolic BP', 90, 'mmHg')]), withPressure(80));
+    expect(unrecognized).toEqual([]);
+    expect(bpOffered(payload.candidates).map((c) => [c.metric, c.value])).toEqual([['systolic_bp', 120], ['diastolic_bp', 90]]);
+  });
+
+  it('an inverted pair sent through file_results is not offered; the preview says why, by day', () => {
+    const { payload, unrecognized } = prepared(labCall([row('systolic_bp', 'Systolic BP', 80, 'mmHg'), row('diastolic_bp', 'Diastolic BP', 120, 'mmHg')]));
+    expect(bpOffered(payload.candidates)).toEqual([]);
+    expect(unrecognized).toEqual([`Blood pressure on ${LAB_DAY} in labs.pdf: ${PRESSURE_ORDER}`]);
+  });
+
+  // Review R2: one report's inverted pair removed every report's blood pressure for that day.
+  it('an inverted report drops only its own halves; another report\'s valid pair that day stays', () => {
+    const { payload, unrecognized } = prepareImport(base(), bundleOf([
+      extracted('swapped.pdf', answer([bp('systolic_bp', 80), bp('diastolic_bp', 120)])),
+      extracted('right.pdf', answer([bp('systolic_bp', 120), bp('diastolic_bp', 80)])),
+    ]), IMPORT_CTX);
+    expect(bpOffered(payload.candidates).map((c) => [c.sourceFileName, c.metric, c.value]))
+      .toEqual([['right.pdf', 'systolic_bp', 120], ['right.pdf', 'diastolic_bp', 80]]);
+    expect(unrecognized).toEqual([`Blood pressure on ${LAB_DAY} in swapped.pdf: ${PRESSURE_ORDER}`]);
+  });
+
+  it('US-02 AC8: an offered candidate\'s sameDayAs never names a candidate the preview withheld', () => {
+    const { payload } = prepareImport(base(), bundleOf([
+      extracted('swapped.pdf', answer([bp('systolic_bp', 80), bp('diastolic_bp', 120)])),
+      extracted('right.pdf', answer([bp('systolic_bp', 120), bp('diastolic_bp', 80)])),
+    ]), IMPORT_CTX);
+    const ids = new Set(payload.candidates.map((c) => c.id));
+    expect(payload.candidates.filter((c) => c.sameDayAs && !ids.has(c.sameDayAs))).toEqual([]);
+    expect(payload.candidates.map((c) => c.sameDayAs)).toEqual([undefined, undefined]);
+  });
+
+  it('US-02 AC8: a report with 150/100 and a repeat 98/62 the same day offers all four; an inverting pick is refused at commit', () => {
+    const file = base();
+    const { payload, unrecognized } = prepareImport(file, bundleOf([extracted('repeat.pdf', answer([
+      bp('systolic_bp', 150), bp('diastolic_bp', 100), bp('systolic_bp', 98), bp('diastolic_bp', 62),
+    ]))]), IMPORT_CTX);
+    expect(unrecognized).toEqual([]);
+    expect(bpOffered(payload.candidates).map((c) => [c.metric, c.value]))
+      .toEqual([['systolic_bp', 150], ['diastolic_bp', 100], ['systolic_bp', 98], ['diastolic_bp', 62]]);
+    const pick = (value: number) => payload.candidates.find((c) => c.metric.endsWith('_bp') && c.value === value)!.id;
+    const outcome = importDocumentsCommit(file, payload, { receipt: 'r', accept: [pick(98), pick(100)], replace: [] }, NOW);
+    expect(outcome.status).toBe('rejected');
+    expect(outcome.text).toContain(`blood pressure on ${LAB_DAY}`);
+  });
+
+  it('a chosen mix of two valid reports that leaves the day inverted is still refused at commit', () => {
+    const file = base();
+    const { payload } = prepareImport(file, bundleOf([
+      extracted('a.pdf', answer([bp('systolic_bp', 120), bp('diastolic_bp', 80)])),
+      extracted('b.pdf', answer([bp('systolic_bp', 130), bp('diastolic_bp', 125)])),
+    ]), IMPORT_CTX);
+    expect(bpOffered(payload.candidates)).toHaveLength(4);
+    const pick = (name: string, metric: string) => payload.candidates.find((c) => c.sourceFileName === name && c.metric === metric)!.id;
+    const outcome = importDocumentsCommit(file, payload, { receipt: 'r', accept: [pick('a.pdf', 'systolic_bp'), pick('b.pdf', 'diastolic_bp')], replace: [] }, NOW);
+    expect(outcome.status).toBe('rejected');
+    expect(outcome.text).toContain(`blood pressure on ${LAB_DAY}`);
+    expect(outcome.text).toContain('Nothing was written.');
+  });
+
+  it('replacing only one half of a right-way-up pair, leaving the day inverted, is refused by name', () => {
+    const file = withPressure(120, 80);
+    const { payload } = prepareImport(file, bundleOf([extracted('low.pdf', answer([bp('systolic_bp', 70), bp('diastolic_bp', 60)]))]), IMPORT_CTX);
+    const sys = payload.candidates.find((c) => c.metric === 'systolic_bp')!;
+    const outcome = importDocumentsCommit(file, payload, { receipt: 'r', accept: [sys.id], replace: [sys.id] }, NOW);
+    expect(outcome.status).toBe('rejected');
+    expect(outcome.text).toContain(`blood pressure on ${LAB_DAY}`);
+    expect(outcome.text).toContain('Nothing was written.');
   });
 });
 

@@ -33,6 +33,8 @@ import {
   isWaistToHeightElevated,
   elevatedWaistFromCm,
   bpTargetFor,
+  PRESSURE_ORDER,
+  pressureInverted,
 } from '@roadmap/health-core';
 import type { PlanBasis } from './InputPanel';
 import { slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
@@ -187,14 +189,15 @@ function isoOnly(s: string): string { return s.slice(0, 10); }
 const BP_SYS_MIN = 60, BP_SYS_MAX = 250;
 const BP_DIA_MIN = 40, BP_DIA_MAX = 150;
 
-/** True only when both fields hold a valid, in-physiological-range number —
- *  the gate that stops a commit from saving a half-entered BP pair. */
+/** True only when both fields hold a valid, in-physiological-range number,
+ *  the right way up (US-02 AC8) — the gate that stops a commit from saving a
+ *  half-entered or swapped BP pair. */
 export function bpPairReady(sys: string, dia: string): boolean {
   const s = parseLocalisedNumber(sys);
   const d = parseLocalisedNumber(dia);
   return (
     s != null && s >= BP_SYS_MIN && s <= BP_SYS_MAX &&
-    d != null && d >= BP_DIA_MIN && d <= BP_DIA_MAX
+    d != null && d >= BP_DIA_MIN && d <= BP_DIA_MAX && s > d
   );
 }
 
@@ -456,10 +459,11 @@ export function StartingInfoVitals({
 
   // What the plan and the chat read of the draft (US-03 AC6, `lends`): a
   // value it could save, clear of clashes. Each half of a blood pressure
-  // counts on its own, in range.
+  // counts on its own, in range; a pair the wrong way up lends neither (US-02 AC8).
+  const bpInverted = pressureInverted(parseLocalisedNumber(draft.values.sys ?? ''), parseLocalisedNumber(draft.values.dia ?? ''));
   const standsIn = (key: VitalsKey): number | undefined => {
     const text = draft.values[key];
-    if (!text || !lends(key) || clashes(key)) return undefined;
+    if (!text || !lends(key) || clashes(key) || ((key === 'sys' || key === 'dia') && bpInverted)) return undefined;
     const n = parseLocalisedNumber(text);
     if (key === 'sys') return n != null && n >= BP_SYS_MIN && n <= BP_SYS_MAX ? n : undefined;
     if (key === 'dia') return n != null && n >= BP_DIA_MIN && n <= BP_DIA_MAX ? n : undefined;
@@ -755,8 +759,10 @@ function BpInputCell({
   const handleDiaChange = (raw: string) => onDiaChange(raw.replace(/[^0-9]/g, ''));
   // Visible range validation (US-02 AC5) — same inline-error pattern as
   // NumericInputCell (this is the one cell that can't reuse it directly).
-  const sysError = validateTypedValue('systolic_bp', sys, 'si').error ?? clash;
-  const diaError = validateTypedValue('diastolic_bp', dia, 'si').error ?? clash;
+  // A pair the wrong way up is the pair's error, as a clash is (US-02 AC8).
+  const pairError = clash ?? (pressureInverted(parseLocalisedNumber(sys), parseLocalisedNumber(dia)) ? PRESSURE_ORDER : undefined);
+  const sysError = validateTypedValue('systolic_bp', sys, 'si').error ?? pairError;
+  const diaError = validateTypedValue('diastolic_bp', dia, 'si').error ?? pairError;
   const error = sysError ?? diaError;
   // Each half's visible error describes it; a title would be captured with
   // the page (US-13 AC10). One error for the pair (a clash) shows once, and
@@ -785,7 +791,7 @@ function BpInputCell({
       <div className="bt-vitals-bp-inputs">
         <input ref={sysRef} className={`bt-input${active ? ' bt-input-active' : ''}${sysError ? ' bt-input-error' : ''}`}
                inputMode="numeric" pattern="[0-9]*" placeholder="sys" size={1} aria-label="Systolic blood pressure"
-               aria-invalid={!!sysError} aria-describedby={describedBy(sysError && sysErrorId, diaOwnError && diaError === clash && diaErrorId)}
+               aria-invalid={!!sysError} aria-describedby={describedBy(sysError && sysErrorId, diaOwnError && diaError === pairError && diaErrorId)}
                value={sys} onChange={e => handleSysChange(e.target.value)} onKeyDown={onKey}/>
         <span className="bt-vitals-bp-sep">/</span>
         <input ref={diaRef} className={`bt-input${active ? ' bt-input-active' : ''}${diaError ? ' bt-input-error' : ''}`}

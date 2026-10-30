@@ -58,7 +58,7 @@ import {
 } from './types';
 import type { UnitSystem } from './units';
 import {
-  healthInputSchema, sanitizeInputs, excludedInputFields, MEDICATION_KEYS, SCREENING_KEYS,
+  healthInputSchema, inputsPressureInverted, sanitizeInputs, excludedInputFields, MEDICATION_KEYS, SCREENING_KEYS,
 } from './validation';
 import {
   FIELD_UNITS, LONGITUDINAL_FIELDS, METRIC_TO_FIELD, medicationsToInputs, screeningRange, screeningsToInputs,
@@ -70,6 +70,7 @@ import {
 } from './measurement-history';
 import { calculateAge, calculateHealthResults, knownMinorOf, missingPlanInputs } from './calculations';
 import { parseLocalisedNumber } from './parseNumber';
+import { localDay } from './merge';
 
 /** What a client sends as the chat's context. A row carries only the fields
  *  the builder reads: never its id, update time or lamport clock. */
@@ -143,13 +144,21 @@ export function buildChatContextJson(payload: unknown): string | null {
   // from parsed.data, so Zod's key stripping stands between an unknown field
   // and the model.
   const sanitized = sanitizeInputs(raw as Partial<HealthInputs>);
+  const measurementHistory = historyOf(raw.measurementHistory);
+  // US-02 AC8: a blood pressure the wrong way up from one day is no blood
+  // pressure, for the plan and for latestValues alike.
+  const pressure = pressureOf(sanitized, measurementHistory);
+  if (pressure) {
+    delete sanitized.systolicBp;
+    delete sanitized.diastolicBp;
+  }
   const parsed = healthInputSchema.safeParse(sanitized);
   // US-07 AC6: a known minor's context always says so, plan or not, so no chat
   // grades their values against adult targets.
   const knownMinor = knownMinorOf(sanitized);
 
   const inputs: Partial<HealthInputs> = parsed.success ? parsed.data : healthInputSchema.partial().parse(sanitized);
-  const excludedFields = excludedInputFields(raw as Partial<HealthInputs>);
+  const excludedFields = [...excludedInputFields(raw as Partial<HealthInputs>), ...(pressure ? ['systolicBp', 'diastolicBp'] : [])];
   const unitSystem: UnitSystem = raw.unitSystem === 'conventional' ? 'conventional' : 'si';
   const medicationRowsOnRecord = medicationRows(raw.medications);
   const screenings = screeningsToInputs(screeningRows(raw.screenings));
@@ -185,12 +194,12 @@ export function buildChatContextJson(payload: unknown): string | null {
   // the latest value by clinical date (US-07 AC4), which is what the old
   // "history wins" override was for. The dated series fills only fields the
   // snapshot lacks, and is sent beside it.
-  const measurementHistory = historyOf(raw.measurementHistory);
   const hasHistory = Object.keys(measurementHistory).length > 0;
   // US-15 AC36: no plan and nothing saved is the empty form, which the callers send as '{}'.
   if (!results && !knownMinor && !hasHistory && excludedFields.length === 0
     && [inputs, medications, screenings].every(o => Object.values(o).every(v => v === undefined))) return null;
   for (const [field, value] of Object.entries(latestFromHistory(measurementHistory))) {
+    if (pressure && (field === 'systolicBp' || field === 'diastolicBp')) continue;
     latestValues[field] ??= `${value}`;
   }
 
@@ -213,7 +222,8 @@ export function buildChatContextJson(payload: unknown): string | null {
     // US-15 AC36: with no plan too, so the model asks for what the plan needs.
     // Not for a known minor with no plan: their plan is withheld whatever they add.
     ...(results || !knownMinor ? { missingInputs: missingPlanInputs(inputs) } : {}),
-    // Field names only: the user HAS a value here, but it was out of range.
+    // Field names only: the user HAS a value here, but it was out of range,
+    // or was a blood pressure the wrong way up (US-02 AC8).
     // Without it the model reads the gap as "never entered".
     ...(excludedFields.length > 0 ? { excludedFields } : {}),
     // Chronological per metric; the LAST entry is the most recent, in SI.
@@ -231,6 +241,24 @@ export function buildChatContextJson(payload: unknown): string | null {
     } : {}),
     uploadedDocuments: [],
   }, null, 2);
+}
+
+/**
+ * US-02 AC8: the blood pressure latestValues would hold (the snapshot's, else
+ * the history's latest) is one day's reading the wrong way up. A snapshot
+ * half's day is its history point's when the latest point holds the same
+ * value; a half that differs is an unsaved draft, so today's, as HealthTool
+ * dates a typed half.
+ */
+function pressureOf(snapshot: Partial<HealthInputs>, history: MeasurementHistoryMap): boolean {
+  const today = localDay(new Date());
+  const half = (field: 'systolicBp' | 'diastolicBp', metric: string) => {
+    const latest = history[metric]?.at(-1);
+    const value = snapshot[field] ?? latest?.value;
+    return { value, day: latest && latest.value === value ? latest.date : today };
+  };
+  const [sys, dia] = [half('systolicBp', 'systolic_bp'), half('diastolicBp', 'diastolic_bp')];
+  return inputsPressureInverted({ systolicBp: sys.value, diastolicBp: dia.value }, { systolicBp: sys.day, diastolicBp: dia.day });
 }
 
 /** The age the plan would compute, for a context with no plan (US-15 AC36). */

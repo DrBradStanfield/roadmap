@@ -27,7 +27,7 @@ import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } f
 import {
   UNIT_DEFS, formatDisplayValue, formatGradedValue, getDisplayLabel, type MetricType, type UnitSystem,
 } from './units';
-import { getValidationErrors, sanitizeInputs, validateHealthInputs } from './validation';
+import { getValidationErrors, PRESSURE_ORDER, sanitizeInputs, validateHealthInputs } from './validation';
 
 /** This project, named once. Every URL that points at the code derives from it. */
 export const REPO_SLUG = 'DrBradStanfield/roadmap';
@@ -205,7 +205,12 @@ export interface Plan extends PlanInputs {
   labs: PlanLab[];
   /** Input fields dropped as out of range — displayed, never fed to the plan. */
   excluded: string[];
+  /** The blood pressure is in `excluded` because the day's pair is the wrong way up (US-02 AC8), not out of range. */
+  pressureOrder?: boolean;
 }
+
+/** Why a row the plan left out was left out, when it is not out of range (US-02 AC8). */
+export const PRESSURE_EXCLUDED = 'the top number is not above the bottom one, so the plan ignores this day’s blood pressure';
 
 /**
  * The whole plan. Invalid fields are stripped before calculating (the widget
@@ -217,8 +222,12 @@ export function computePlan(file: RoadmapFile, now = new Date(), unitOverrides?:
   const derived = derivePlanInputs(file, now);
   let inputs = derived.inputs;
   let excluded: string[] = [];
+  const day = (metric: string) => {
+    const row = derived.currentRows.find((r) => r.metricType === metric);
+    return row ? dayOf(row.recordedAt) : null;
+  };
 
-  const validation = validateHealthInputs(inputs);
+  const validation = validateHealthInputs(inputs, { systolicBp: day('systolic_bp'), diastolicBp: day('diastolic_bp') });
   if (!validation.success && validation.errors) {
     const invalid = new Set(validation.errors.issues.map((i) => String(i.path[0])));
     if (invalid.has('heightCm') || invalid.has('sex')) {
@@ -238,6 +247,7 @@ export function computePlan(file: RoadmapFile, now = new Date(), unitOverrides?:
     ...derived,
     inputs,
     excluded,
+    ...(validation.errors?.issues.some((i) => i.message === PRESSURE_ORDER) ? { pressureOrder: true } : {}),
     generatedAt: now.toISOString(),
     today: localDay(now),
     results: calculateHealthResults(inputs as HealthInputs, derived.unitSystem, derived.medications, derived.screenings, unitOverrides, now),
@@ -250,8 +260,8 @@ export function computePlan(file: RoadmapFile, now = new Date(), unitOverrides?:
 // Shared shaping — the rows every renderer prints
 // ---------------------------------------------------------------------------
 
-/** A printed row: current value or lab. `excluded` marks a value the plan ignored. */
-export type DisplayRow = { id: string; label: string; value: unknown; unit: string; date: string; excluded?: boolean };
+/** A printed row: current value or lab. `excluded` marks a value the plan ignored; `excludedReason` says why when it is not out of range. */
+export type DisplayRow = { id: string; label: string; value: unknown; unit: string; date: string; excluded?: boolean; excludedReason?: string };
 
 /**
  * Current values as displayed: row id, label, converted value, unit, clinical
@@ -278,6 +288,7 @@ export function currentValues(plan: Plan) {
         unit: getDisplayLabel(metric, plan.unitSystem),
         date: String(row.recordedAt ?? '').slice(0, 10),
         excluded: excluded.has(METRIC_TO_FIELD[row.metricType]) || undefined,
+        excludedReason: plan.pressureOrder && row.metricType.endsWith('_bp') ? PRESSURE_EXCLUDED : undefined,
       };
     })
     .sort((a, b) => cmpStr(a.label, b.label));

@@ -40,7 +40,7 @@ import { dayOf, latestStamp, localDay } from './merge';
 import { isCalendarDay, isClinicalDay } from './measurement-history';
 import { createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
-import { healthInputSchema, type MeasurementSource, METRIC_TYPES } from './validation';
+import { healthInputSchema, type MeasurementSource, METRIC_TYPES, PRESSURE_ORDER, pressureInverted } from './validation';
 import type { MEASUREMENT_REFUSAL_REASONS } from './product-events';
 
 /**
@@ -250,6 +250,26 @@ export function measurementValueFault(metricType: string, value: number): EditRe
   return reject('out-of-range', parsed.error?.issues[0]?.message ?? 'Value out of range');
 }
 
+/** A Map, not an object: a metric named `__proto__` or `toString` must not find a half. */
+const OTHER_HALF = new Map([['systolic_bp', 'diastolic_bp'], ['diastolic_bp', 'systolic_bp']]);
+/** A one-half refusal says how to change both numbers without passing through an inverted pair. */
+export const PRESSURE_ORDER_HALF = `${PRESSURE_ORDER} To change both numbers, change the bottom number first when lowering them, and the top number first when raising them.`;
+
+/**
+ * US-02 AC8 for one half written on `day`: refused when it would leave the
+ * day's active pair inverted. A day already inverted (saved before the rule,
+ * or made by a merge of two devices' corrections) is not refused, so it can be
+ * fixed one half at a time.
+ */
+function pressureFault(file: RoadmapFile, metricType: string, value: number, day: string): EditRejection | null {
+  const other = OTHER_HALF.get(metricType);
+  if (!other) return null;
+  const otherValue = findActiveInSlot(file, 'measurement', other, day)?.value;
+  const inverted = (own: number | undefined) => (metricType === 'systolic_bp' ? pressureInverted(own, otherValue) : pressureInverted(otherValue, own));
+  const before = findActiveInSlot(file, 'measurement', metricType, day)?.value;
+  return inverted(value) && !inverted(before) ? reject('out-of-range', PRESSURE_ORDER_HALF) : null;
+}
+
 /**
  * The file with this row appended and `meta.updatedAt` moved to the write
  * clock — rule 6. Forward ONLY, like `mergeFiles` (merge.ts): `meta.updatedAt`
@@ -368,7 +388,8 @@ export function appendMeasurement(file: RoadmapFile, request: AppendMeasurementR
  * 6). `appendMeasurement` reaches it after its own checks (metric, unit,
  * range, a past day). The web form reaches it directly, after only its
  * clinical-day check, so its rows keep the timestamp it stores and no range
- * refusal it never had (D4b, 2026-10-21): the slot rule is the one both share.
+ * refusal it never had (D4b, 2026-10-21): the slot rule is the one both
+ * share, and the blood pressure pair rule (US-02 AC8).
  */
 export function placeMeasurement(
   file: RoadmapFile,
@@ -379,6 +400,8 @@ export function placeMeasurement(
   if (taken) {
     return reject('slot-occupied', `${metricType} already has a value on ${dayOf(recordedAt)}`, taken);
   }
+  const inverted = pressureFault(file, metricType, value, recordedAt);
+  if (inverted) return inverted;
   const row = createMeasurement({ id: newId(), metricType, value, recordedAt, createdAt: now, ...(source ? { source } : null) });
   return { ok: true, file: withRow(file, 'measurements', [...file.measurements, row], now), row };
 }
@@ -451,7 +474,7 @@ export function correctValue(file: RoadmapFile, request: CorrectValueRequest): E
   if (measurement) {
     const newValue = toCanonicalUnit(measurement.metricType, request.newValue, request.unit);
     if (typeof newValue !== 'number') return newValue;
-    const invalid = checkMeasurementValue(measurement.metricType, newValue);
+    const invalid = checkMeasurementValue(measurement.metricType, newValue) ?? pressureFault(file, measurement.metricType, newValue, measurement.recordedAt);
     if (invalid) return invalid;
     const row = createMeasurement({
       id: newId(), metricType: measurement.metricType, value: newValue,
@@ -680,7 +703,8 @@ export interface MeasurementRefusal {
   reason: (typeof MEASUREMENT_REFUSAL_REASONS)[number];
   message: string;
   /** For `out-of-range`: which end of the accepted range it missed, so the
-   *  refusal can name that end without the value (US-35 AC17). */
+   *  refusal can name that end without the value (US-35 AC17). Absent for a
+   *  blood pressure the wrong way up, whose message is `PRESSURE_ORDER` (US-02 AC8). */
   bound?: 'above' | 'below';
 }
 
@@ -725,6 +749,7 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
 
   const refused: BulkAppendResult['refused'] = [];
   const measurementRefusals: MeasurementRefusal[] = [];
+  const inverted = invertedPressureDays(file, rows);
 
   for (const [index, input] of rows.entries()) {
     // A lab row is CONVERTED before its slot is touched: a refused row must
@@ -753,6 +778,10 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
           : { index, metricType: input.metricType, reason: 'invalid-value', message: invalid.message });
         continue;
       }
+      if (OTHER_HALF.has(input.metricType) && inverted.has(dayOf(input.recordedAt))) {
+        measurementRefusals.push({ index, metricType: input.metricType, reason: 'out-of-range', message: PRESSURE_ORDER });
+        continue;
+      }
       makeRow = (recordedAt, correctsId) => createMeasurement({
         id: newId(), metricType: input.metricType, value: input.value,
         recordedAt, createdAt: now, source: input.source, correctsId,
@@ -778,4 +807,30 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
   }
   const next = saved.length ? stampUpdatedAt({ ...file, measurements, labValues }, now) : file;
   return { file: next, saved, skippedDuplicates, refused, measurementRefusals };
+}
+
+/**
+ * US-02 AC8 for a batch: the days whose blood pressure the batch would leave
+ * inverted, judged on the pair it leaves (a half it writes, else the half the
+ * record holds). Every half the batch has for such a day is refused, so an
+ * inverted pair is never half saved. A half that would not land (refused for
+ * its number, its slot taken, or a stale `correctsId`) leaves the held value
+ * in place.
+ */
+function invertedPressureDays(file: RoadmapFile, rows: BulkRow[]): Set<string> {
+  const held = slotIndex(file);
+  const heldValue = (metric: string, day: string) => held.get(slotKey('measurement', metric, day))?.value;
+  const landing = new Map<string, Record<string, number>>();
+  for (const row of rows) {
+    if (row.kind !== 'measurement' || !OTHER_HALF.has(row.metricType) || measurementValueFault(row.metricType, row.value)) continue;
+    const day = dayOf(row.recordedAt);
+    const holder = held.get(slotKey('measurement', row.metricType, day));
+    if (row.correctsId ? holder?.id !== row.correctsId : holder) continue;
+    const pair = landing.get(day) ?? {};
+    pair[row.metricType] ??= row.value;
+    landing.set(day, pair);
+  }
+  const days = [...landing].filter(([day, pair]) =>
+    pressureInverted(pair.systolic_bp ?? heldValue('systolic_bp', day), pair.diastolic_bp ?? heldValue('diastolic_bp', day)));
+  return new Set(days.map(([day]) => day));
 }

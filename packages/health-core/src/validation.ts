@@ -167,21 +167,50 @@ export function excludedInputFields(inputs: Partial<HealthInputs>): string[] {
     .map(([key]) => key);
 }
 
+/** US-02 AC8: a blood pressure's top number is above its bottom one. */
+export const PRESSURE_ORDER = 'The top number (systolic) must be higher than the bottom number (diastolic).';
+
+/** A pair that cannot be measured, almost always a swapped entry. Half a pair is no pair. */
+export function pressureInverted(systolic: number | undefined, diastolic: number | undefined): boolean {
+  return systolic !== undefined && diastolic !== undefined && systolic <= diastolic;
+}
+
+/** The day (YYYY-MM-DD) each blood pressure half was measured; null or absent is unknown, e.g. a typed draft. */
+export type PressureDays = { systolicBp?: string | null; diastolicBp?: string | null };
+
 /**
- * Validate health inputs and return result
+ * US-02 AC8 (Brad 2026-10-30): the inputs hold an inverted blood pressure the
+ * plan must leave out. The pair is judged as one reading, so halves from two
+ * known, different days are not judged. A half the schema refuses is no half:
+ * it cannot knock out the other.
  */
-export function validateHealthInputs(data: unknown): {
+export function inputsPressureInverted(inputs: Partial<HealthInputs>, days: PressureDays = {}): boolean {
+  const { systolicBp, diastolicBp } = inputs;
+  if (days.systolicBp && days.diastolicBp && days.systolicBp !== days.diastolicBp) return false;
+  return isInputFieldValid('systolicBp', systolicBp) && isInputFieldValid('diastolicBp', diastolicBp)
+    && pressureInverted(systolicBp, diastolicBp);
+}
+
+/**
+ * Validate health inputs and return result. An inverted blood pressure from
+ * one day is an error on both halves (US-02 AC8, `inputsPressureInverted`),
+ * so every plan leaves both out, as it leaves out any field the schema refuses.
+ */
+export function validateHealthInputs(data: unknown, days?: PressureDays): {
   success: boolean;
   data?: ValidatedHealthInputs;
   errors?: z.ZodError;
 } {
   const result = healthInputSchema.safeParse(data, { error: zod3Message });
+  const pair = inputsPressureInverted((data ?? {}) as Partial<HealthInputs>, days)
+    ? (['systolicBp', 'diastolicBp'] as const).map((field) => ({ code: 'custom' as const, path: [field], message: PRESSURE_ORDER, input: data }))
+    : [];
 
-  if (result.success) {
+  if (result.success && pair.length === 0) {
     return { success: true, data: result.data };
   }
 
-  return { success: false, errors: result.error };
+  return { success: false, errors: new z.ZodError([...(result.error?.issues ?? []), ...pair]) };
 }
 
 /**

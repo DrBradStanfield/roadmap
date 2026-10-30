@@ -659,6 +659,53 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
     expect(await bpRows()).toEqual([[120, 'active', TODAY], [80, 'active', TODAY]]);
   });
 
+  // US-02 AC8 (review R2): the first-time fields say why a pair the wrong way
+  // up is not saved, once, and the record is left as it was.
+  it('US-02 AC8: in the first-time fields, 80/120 shows the rule and saves nothing; so does one half against today\'s saved half', async () => {
+    await guest();
+    const view = render(<HealthTool />);
+    const rule = 'The top number (systolic) must be higher than the bottom number (diastolic).';
+    const shownRule = () => [...view.container.querySelectorAll('.error-message')].filter((e) => e.textContent === rule);
+    const bpRows = async () => [...await rowsOf('systolic_bp'), ...await rowsOf('diastolic_bp')].map((m) => [m.value, m.status]);
+    const enter = async (id: string, value: string) => {
+      const field = await shown<HTMLInputElement>(view.container, id);
+      fireEvent.change(field, { target: { value } });
+      fireEvent.blur(field);
+    };
+
+    await enter('#systolicBp', '80');
+    await enter('#diastolicBp', '120');
+    await wait(600);
+    await waitFor(() => expect(shownRule()).toHaveLength(1));
+    expect(await bpRows()).toEqual([]);
+
+    await enter('#systolicBp', '120');
+    await enter('#diastolicBp', '80');
+    await wait(600);
+    await waitFor(async () => expect(await bpRows()).toEqual([[120, 'active'], [80, 'active']]));
+    expect(shownRule()).toHaveLength(0);
+
+    fireEvent.click(await shown<HTMLElement>(view.container, '.collapsed-field-value')); // open today's 120/80
+    await enter('#diastolicBp', '130');
+    await wait(600);
+    await waitFor(() => expect(shownRule()).toHaveLength(1));
+    expect(await bpRows()).toEqual([[120, 'active'], [80, 'active']]);
+  });
+
+  // US-02 AC8 (Brad 2026-10-30, adversary N1): the plan judges a pair only
+  // within one day. Monday 150/100, then a lone systolic 98 on Tuesday: the
+  // plan reads 98/100 from two days and keeps its blood pressure card.
+  it('US-02 AC8: halves from different days are not judged: 98 then 100 from the day before still gives the BP card', async () => {
+    await guest();
+    await addMeasurement('systolic_bp', 150, '2026-10-26');
+    await addMeasurement('diastolic_bp', 100, '2026-10-26');
+    await addMeasurement('systolic_bp', 98, '2026-10-27');
+    expect(await activeOn('systolic_bp')).toEqual([[150, '2026-10-26'], [98, '2026-10-27']]);
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(view.container.textContent).toContain('Stage 2 hypertension'));
+    expect(view.container.textContent).not.toContain('The top number (systolic) must be higher than the bottom number (diastolic).');
+  });
+
   // Cleanup review of 2026-09-25: a save took each field it saved out of the
   // form by name, so a number typed there while the save ran went with it.
   it('US-03 AC3: a weight typed into its first-time field while that field\'s save runs stays in the form, and is saved next', async () => {

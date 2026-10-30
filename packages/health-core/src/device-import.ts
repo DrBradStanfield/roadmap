@@ -32,7 +32,7 @@ import { isCalendarDay } from './measurement-history';
 import { measurementValueFault, newId, slotKey, stampUpdatedAt } from './record-edits';
 import { createMeasurement, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { stampProfile } from './state-edits';
-import { healthInputSchema, type MeasurementSource, METRIC_TYPES } from './validation';
+import { healthInputSchema, type MeasurementSource, METRIC_TYPES, pressureInverted } from './validation';
 
 /** One reading from the store, already in the record's SI units. */
 export interface DeviceSample {
@@ -169,6 +169,11 @@ export function importDeviceSamples(
       const heldAt = activeAt.get(key);
       return { sample, recordedAt, key, heldAt, held: heldAt === undefined ? undefined : measurements[heldAt] };
     });
+    // US-02 AC8: a blood pressure leaves its day's pair (its halves, else the held ones) the right way up.
+    const leaves = (metric: string) => places.find(({ sample }) => sample.metricType === metric)?.sample.value
+      ?? measurements[activeAt.get(slotKey('measurement', metric, places[0].recordedAt)) ?? -1]?.value;
+    const pressure = places.some(({ sample }) => sample.metricType.endsWith('_bp'));
+    if (pressure && pressureInverted(leaves('systolic_bp'), leaves('diastolic_bp'))) { skip('invalid'); continue; }
     if (places.some(({ held }) => held && held.source !== source)) { skip('held'); continue; }
     if (places.some(({ held, recordedAt }) => held && Date.parse(held.recordedAt) >= Date.parse(recordedAt))) { skip('earlier'); continue; }
 

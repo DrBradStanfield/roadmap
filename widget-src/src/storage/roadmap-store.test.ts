@@ -200,6 +200,17 @@ describe('RoadmapStore — supplement history (append-only change log)', () => {
   });
 });
 
+describe('RoadmapStore — US-02 AC8: a blood pressure the wrong way up (review R7)', () => {
+  it('answers invalid, not duplicate, and writes nothing; a taken slot is still a duplicate', async () => {
+    const store = await RoadmapStore.create(new MemoryAdapter(new MemoryCloud()));
+    const day = '2024-03-01T09:00:00.000Z';
+    expect(store.addMeasurement('systolic_bp', 80, day).status).toBe('inserted');
+    expect(store.addMeasurement('diastolic_bp', 120, day)).toEqual({ status: 'invalid' });
+    expect(store.addMeasurement('systolic_bp', 130, day)).toEqual({ status: 'duplicate' });
+    expect(store.loadAllHistory().filter((m) => m.metricType === 'diastolic_bp')).toEqual([]);
+  });
+});
+
 describe('RoadmapStore — deleted measurements stay deleted (no resurrection)', () => {
   // Regression: the BP-resurrection bug. The v1 guest→cloud resync in
   // HealthTool re-inserted the stale `health_roadmap_data` mirror's longitudinal

@@ -518,6 +518,8 @@ The Optimal line for LDL and non-HDL is the plan's on-treatment target (below). 
 
 **Raised blood pressure** means one thing everywhere (the `bp-stage1` card and the weight-medication trigger): systolic >= 130 OR diastolic > 80. Either half counts on its own; the stage cards still need both halves to show.
 
+**Inverted blood pressure (US-02 AC8):** a pair from one day with systolic at or below diastolic is not a blood pressure. When the newest systolic and diastolic are from the same day and inverted, the plan leaves both out (`validateHealthInputs` names the rule on both), so it shows no blood pressure card and raises no marker, the weight-medication trigger included, until a half is corrected. It does not fall back to an earlier day. Halves from different days are not judged as a pair and are used as before. Writes refuse such a pair (section 12); a merge of two devices' one-half corrections can still make one. `evidence.ts` and `roadmap_text.html` do not change: this is an input-integrity rule, with no new threshold, card text or citation.
+
 **Age-dependent target** (based on SPRINT 2015 + ESPRIT 2024; `bpTargetFor` in `units.ts`, which the stage 1 card, the low-salt card, the Lp(a) checklist and the form's BP targets all read):
 - Age < 65: < 120/80
 - Age >= 65: < 130/80
@@ -1138,6 +1140,8 @@ Source: `units.ts` (UNIT_DEFS) + `validation.ts`
 | diastolic_bp | 40 mmHg | 150 mmHg | 40 mmHg | 150 mmHg |
 | psa | 0 ng/mL | 10,000 ng/mL | 0 ng/mL | 10,000 ng/mL |
 | lpa | 0 nmol/L | 750 nmol/L | 0 mg/dL | 300 mg/dL (= 750 / 2.5; EAS pairs 300 mg/dL with 750 nmol/L) |
+
+Blood pressure pair (US-02 AC8, `record-edits.ts`): on any day, the active systolic_bp must be above the active diastolic_bp; a save that would leave systolic at or below diastolic is refused (`out-of-range`).
 
 ### Profile Validation
 

@@ -464,17 +464,30 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     [inputs, lent, previousMeasurements],
   );
 
+  // The day of the value the plan reads for a field: a draft's own; one
+  // typed with no day counts as today's (null); else the saved row's.
+  const inputDay = useCallback((field: keyof HealthInputs, metric: string) => {
+    const saved = previousMeasurements.find((m) => m.metricType === metric);
+    return lent[field] !== undefined ? lentDays[field] ?? null
+      : inputs[field] !== undefined || !saved ? null : dayOf(saved.recordedAt);
+  }, [inputs, lent, lentDays, previousMeasurements]);
+
   // What the plan and the chat read: the inputs with the lab's printed eGFR
-  // when it is newer than the creatinine or from its day (US-07 AC7). The
-  // creatinine's day: a draft's own; one typed with no day counts as today's
-  // (null); else the saved row's.
+  // when it is newer than the creatinine or from its day (US-07 AC7).
   const labEgfr = useMemo(() => labEgfrOf(labValueHistory), [labValueHistory]);
-  const planInputs = useMemo(() => {
-    const saved = previousMeasurements.find((m) => m.metricType === 'creatinine');
-    const creatinineDay = lent.creatinine !== undefined ? lentDays.creatinine ?? null
-      : inputs.creatinine !== undefined || !saved ? null : dayOf(saved.recordedAt);
-    return withLabEgfr(effectiveInputs, creatinineDay, labEgfr, localDay(new Date()));
-  }, [inputs, lent, lentDays, previousMeasurements, effectiveInputs, labEgfr]);
+  const planInputs = useMemo(
+    () => withLabEgfr(effectiveInputs, inputDay('creatinine', 'creatinine'), labEgfr, localDay(new Date())),
+    [inputDay, effectiveInputs, labEgfr],
+  );
+  // US-02 AC8: the pair is judged only when both halves are from one day. A
+  // typed half counts as today's, the day it would be saved with.
+  const pressureDays = useMemo(() => {
+    const today = localDay(new Date());
+    return {
+      systolicBp: inputDay('systolicBp', 'systolic_bp') ?? today,
+      diastolicBp: inputDay('diastolicBp', 'diastolic_bp') ?? today,
+    };
+  }, [inputDay]);
 
   // Progressive disclosure: which stage of the form to show. The chatbot
   // embed reads the same rule.
@@ -612,7 +625,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
           await loadAllHistory(), // the store's rows, as it writes: never the page's copy
           async (date, metric, value) => {
             const { status } = await addMeasurement(metric, value, ensureIsoDatetime(date), erase);
-            return status === 'inserted' ? 'ok' : status === 'duplicate' ? 'changed' : 'error';
+            return status === 'inserted' ? 'ok' : status === 'duplicate' ? 'changed' : status;
           },
           (id, newValue) => countedCorrection(id, newValue, erase),
         );
@@ -755,7 +768,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       return { results: null, isValid: false, validationErrors: null, planBasis: null };
     }
 
-    const validation = validateHealthInputs(planInputs);
+    const validation = validateHealthInputs(planInputs, pressureDays);
 
     let inputsForCalc = planInputs;
     let errors: Record<string, string> | null = null;
@@ -796,7 +809,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       lipidMarker: medicines ? lipidMarkerFor(calcInputs, healthResults) : null,
     };
     return { results: healthResults, isValid: true, validationErrors: errors, planBasis };
-  }, [planInputs, unitSystem, medications, screenings, metricUnitOverrides]);
+  }, [planInputs, pressureDays, unitSystem, medications, screenings, metricUnitOverrides]);
 
   useEffect(() => {
     setErrors(validationErrors ?? {});

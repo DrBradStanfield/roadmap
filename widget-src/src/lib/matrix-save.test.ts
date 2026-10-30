@@ -253,3 +253,51 @@ describe('routeTasksToSaves — an Lp(a) cell typed in its own unit (US-05 AC2)'
     expect(onCorrect).toHaveBeenCalledWith('l1', 77.5);
   });
 });
+
+// US-02 AC8: a blood pressure saves only the right way up, judged on the pair
+// the day would hold: the halves typed, else the halves saved.
+describe('routeTasksToSaves: blood pressure the right way up (US-02 AC8)', () => {
+  it('refuses an inverted pair as invalid and writes neither half', async () => {
+    const onInsert = vi.fn().mockResolvedValue('ok');
+    const refused = await routeTasksToSaves([task('2024-03-01', { systolic_bp: 80, diastolic_bp: 120 })], [], onInsert, vi.fn());
+    expect(onInsert).not.toHaveBeenCalled();
+    expect([...refused]).toEqual([[slotOf('2024-03-01', 'systolic_bp'), 'invalid'], [slotOf('2024-03-01', 'diastolic_bp'), 'invalid']]);
+  });
+
+  it('refuses one half against the other half saved that day', async () => {
+    const onInsert = vi.fn().mockResolvedValue('ok');
+    const history = [m('systolic_bp', 80, '2024-03-01', 'sys1')];
+    const refused = await routeTasksToSaves([task('2024-03-01', { diastolic_bp: 120 })], history, onInsert, vi.fn());
+    expect(onInsert).not.toHaveBeenCalled();
+    expect(refused.get(slotOf('2024-03-01', 'diastolic_bp'))).toBe('invalid');
+  });
+
+  it('a weight on a day whose saved pair is inverted still saves', async () => {
+    const onInsert = vi.fn().mockResolvedValue('ok');
+    const history = [m('systolic_bp', 80, '2024-03-01', 'sys1'), m('diastolic_bp', 120, '2024-03-01', 'dia1')];
+    const refused = await routeTasksToSaves([task('2024-03-01', { weight: 82 })], history, onInsert, vi.fn());
+    expect(refused.size).toBe(0);
+    expect(onInsert).toHaveBeenCalledWith('2024-03-01', 'weight', 82);
+  });
+
+  it('one half on a day already inverted is let through, as the record lets it through (review R8)', async () => {
+    const onCorrect = vi.fn().mockResolvedValue('ok');
+    const history = [m('systolic_bp', 80, '2024-03-01', 'sys1'), m('diastolic_bp', 120, '2024-03-01', 'dia1')];
+    const refused = await routeTasksToSaves([task('2024-03-01', { systolic_bp: 125 }, { systolic_bp: 'sys1' })], history, vi.fn(), onCorrect);
+    expect(refused.size).toBe(0);
+    expect(onCorrect).toHaveBeenCalledWith('sys1', 125);
+    // A typed pair is held to the rule whatever the day holds.
+    const pair = task('2024-03-01', { systolic_bp: 90, diastolic_bp: 100 }, { systolic_bp: 'sys1', diastolic_bp: 'dia1' });
+    expect([...(await routeTasksToSaves([pair], history, vi.fn(), onCorrect)).values()]).toEqual(['invalid', 'invalid']);
+  });
+
+  it('lowering both numbers corrects the bottom one first, so neither write alone inverts the pair', async () => {
+    const calls: string[] = [];
+    const onCorrect = vi.fn(async (id: string) => { calls.push(id); return 'ok' as const; });
+    const history = [m('systolic_bp', 120, '2024-03-01', 'sys1'), m('diastolic_bp', 80, '2024-03-01', 'dia1')];
+    const pair = task('2024-03-01', { systolic_bp: 70, diastolic_bp: 60 }, { systolic_bp: 'sys1', diastolic_bp: 'dia1' });
+    expect((await routeTasksToSaves([pair], history, vi.fn(), onCorrect)).size).toBe(0);
+    expect(calls).toEqual(['dia1', 'sys1']);
+  });
+});
+

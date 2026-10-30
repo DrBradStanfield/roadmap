@@ -1036,7 +1036,8 @@ export function InputPanel({
               </div>
             </div>
             {errors.systolicBp && <span className="error-message">{errors.systolicBp}</span>}
-            {errors.diastolicBp && <span className="error-message">{errors.diastolicBp}</span>}
+            {/* A pair the wrong way up is one error on both halves (US-02 AC8): said once. */}
+            {errors.diastolicBp && errors.diastolicBp !== errors.systolicBp && <span className="error-message">{errors.diastolicBp}</span>}
             <div className="field-meta">
               {bpTargetText && <span className="field-hint">{bpTargetText}</span>}
               {!bpExpanded && bpLabel && (

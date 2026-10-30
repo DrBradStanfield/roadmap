@@ -48,6 +48,7 @@ export interface LatestMeasurementsResult {
 export type AddMeasurementResult =
   | { status: 'inserted'; row: ApiMeasurement }
   | { status: 'duplicate' }
+  | { status: 'invalid' }
   | { status: 'error' };
 
 /** Recorded medication change projected from the append-only file history. */

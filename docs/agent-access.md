@@ -161,6 +161,14 @@ someone's medical history, or lose their data at the next device sync.
    plan grades it at or above, or one more decimal place when it grades it below.
    `get_plan`'s tool description in `mcp-tools.ts` should say this too; it stays frozen
    while OpenAI reviews the app, so add it once that review is done.
+   **Blood pressure (US-02 AC8):** on any day, the active `systolic_bp` must be above the
+   active `diastolic_bp`. A write that would leave it at or below is refused
+   (`out-of-range`). To change both numbers one at a time, change the bottom number
+   first when lowering them and the top number first when raising them. A day already
+   inverted can be fixed one half at a time. The plan reads an inverted day as no blood
+   pressure: `get_plan` leaves both halves out of `inputs`, and each blood pressure row in
+   `currentValues` has `excluded: true` and an `excludedReason`. Only a pair from one day is
+   judged: halves from different days are used.
 9. **Timestamps are ISO 8601, and never in the future.** Measurement/lab `createdAt`
    and document `addedAt` are immutable content identity, so load keeps them as
    written. A future measurement/lab `createdAt` can take its day slot; agents must

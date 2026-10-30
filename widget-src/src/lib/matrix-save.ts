@@ -17,7 +17,7 @@
 //   - one write per (day, metric), the later cell's. A safety net only: a
 //     matrix never sends two values for one slot, it shows them as an error.
 
-import type { ApiMeasurement, MetricType } from '@roadmap/health-core';
+import { pressureInverted, type ApiMeasurement, type MetricType } from '@roadmap/health-core';
 import { cellFromSI, cellText, sameAsSaved, type CellUnit } from './blood-test-cell';
 import type { CorrectStatus } from '../storage/roadmap-store';
 
@@ -65,15 +65,29 @@ export async function routeTasksToSaves(
   onCorrect: CorrectFn,
 ): Promise<Refused> {
   const index = activeRowIndex(history);
-  const slots = new Map<string, { task: SaveTask; metric: MetricType } | 'changed'>();
+  const slots = new Map<string, { task: SaveTask; metric: MetricType } | 'changed' | 'invalid'>();
   for (const task of tasks) {
     const metrics = Object.keys(task.values);
     const changed = metrics.some((metric) => (index.get(slotOf(task.date, metric))?.id ?? null) !== (task.expected[metric] ?? null));
-    for (const metric of metrics) slots.set(slotOf(task.date, metric), changed ? 'changed' : { task, metric: metric as MetricType });
+    // US-02 AC8: a blood pressure leaves its day's pair (typed, else saved) the right way up.
+    // One half on a day already inverted is let through, as the record lets it through,
+    // so the day can be fixed one half at a time; a typed pair must be right way up.
+    const saved = (metric: string) => index.get(slotOf(task.date, metric))?.value;
+    const half = (metric: string) => task.values[metric] ?? saved(metric);
+    const both = 'systolic_bp' in task.values && 'diastolic_bp' in task.values;
+    const inverted = metrics.some((metric) => metric.endsWith('_bp')) && pressureInverted(half('systolic_bp'), half('diastolic_bp'))
+      && (both || !pressureInverted(saved('systolic_bp'), saved('diastolic_bp')));
+    // Writes run in slot order, each one done before the next starts (the store is
+    // synchronous): a lower bottom number first, so neither half alone inverts the pair.
+    const heldDia = saved('diastolic_bp');
+    if (heldDia !== undefined && task.values.diastolic_bp < heldDia) metrics.sort((a, b) => Number(b === 'diastolic_bp') - Number(a === 'diastolic_bp'));
+    for (const metric of metrics) {
+      slots.set(slotOf(task.date, metric), changed ? 'changed' : inverted && metric.endsWith('_bp') ? 'invalid' : { task, metric: metric as MetricType });
+    }
   }
   const refused: Refused = new Map();
   await Promise.all([...slots].map(async ([key, slot]) => {
-    if (slot === 'changed') { refused.set(key, 'changed'); return; }
+    if (slot === 'changed' || slot === 'invalid') { refused.set(key, slot); return; }
     const { task: { date, values, unit }, metric } = slot;
     const value = values[metric];
     const held = index.get(key);

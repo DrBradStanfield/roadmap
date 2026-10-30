@@ -79,3 +79,29 @@ describe('US-13 AC10: a blood pressure error describes its input; it is not a ti
     expect(view.getByRole('textbox', { name: 'Diastolic blood pressure', description: clash })).toBeTruthy();
   });
 });
+
+describe('US-02 AC8: a blood pressure the wrong way up is the pair\'s error', () => {
+  it('80/120 shows the rule once, describing both inputs', () => {
+    const view = renderVitals();
+    fireEvent.change(view.getByRole('textbox', { name: 'Systolic blood pressure' }), { target: { value: '80' } });
+    fireEvent.change(view.getByRole('textbox', { name: 'Diastolic blood pressure' }), { target: { value: '120' } });
+    const rule = 'The top number (systolic) must be higher than the bottom number (diastolic).';
+    expect(errors(view.container)).toEqual([rule]);
+    expect(view.getByRole('textbox', { name: 'Systolic blood pressure', description: rule })).toBeTruthy();
+    expect(view.getByRole('textbox', { name: 'Diastolic blood pressure', description: rule })).toBeTruthy();
+  });
+
+  it('80/120 lends neither half to the plan or the chat (review R1)', () => {
+    const lent = new Map<string, number | undefined>();
+    const view = render(
+      <StartingInfoVitals vitalsHistory={[]} unitSystem="si"
+        onSave={vi.fn()} onCorrectValue={vi.fn()} onDraftValue={(field: string, value: number | undefined) => { lent.set(field, value); }} formStage={3}
+        plan={{ age: 50, idealBodyWeight: 73, heightCm: 178 }} unitOverrides={{}} onToggleFieldUnit={() => {}}/>,
+    );
+    fireEvent.change(view.getByRole('textbox', { name: 'Systolic blood pressure' }), { target: { value: '80' } });
+    expect(lent.get('systolicBp')).toBe(80);
+    fireEvent.change(view.getByRole('textbox', { name: 'Diastolic blood pressure' }), { target: { value: '120' } });
+    expect([lent.get('systolicBp'), lent.get('diastolicBp')]).toEqual([undefined, undefined]);
+  });
+});
+

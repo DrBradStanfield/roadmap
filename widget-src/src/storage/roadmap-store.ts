@@ -150,6 +150,7 @@ export interface LatestMeasurementsResult {
 export type AddMeasurementResult =
   | { status: 'inserted'; row: ApiMeasurement }
   | { status: 'duplicate' }
+  | { status: 'invalid' }
   | { status: 'error' };
 /** How a correction ended. `changed`: the value named is not there any
  *  more, or another row has replaced it (another device, a connector).
@@ -290,7 +291,7 @@ export class RoadmapStore {
     // health-core's slot rule and row (record-edits placeMeasurement, shared
     // with every other writer): one active value per (metric, day).
     const result = placeMeasurement(this.file, { metricType, value, recordedAt: when, now: new Date().toISOString() });
-    if (!result.ok) return { status: 'duplicate' };
+    if (!result.ok) return { status: result.reason === 'slot-occupied' ? 'duplicate' : 'invalid' };
     this.session.edit(() => result.file, erase);
     return { status: 'inserted', row: result.row as ApiMeasurement };
   }

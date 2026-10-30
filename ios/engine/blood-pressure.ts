@@ -4,6 +4,7 @@
 // neither, and reads them back as pairs.
 import type { FileMeasurement, RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { appendMeasurement, correctValue, findActiveInSlot, resolveRecordedAt, slotKey } from '../../packages/health-core/src/record-edits';
+import { PRESSURE_ORDER, pressureInverted } from '../../packages/health-core/src/validation';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { formatDisplayValue } from '../../packages/health-core/src/units';
 import type { HistoryRow, MetricHistory } from './my-data-forms';
@@ -43,6 +44,7 @@ export function applyPressure(file: RoadmapFile, edit: PressureEdit, now: string
   if (!values.every((value) => typeof value === 'number' && Number.isFinite(value))) {
     return { ok: false, reason: 'invalid-value', message: 'A blood pressure needs both numbers.' };
   }
+  if (pressureInverted(edit.systolic, edit.diastolic)) return { ok: false, reason: 'out-of-range', message: PRESSURE_ORDER };
   const day = resolveRecordedAt(edit.day, { now });
   if (typeof day !== 'string') return day;
   // Ask before touching a day that holds either half, so a free half is never written alone.
@@ -57,7 +59,10 @@ export function applyPressure(file: RoadmapFile, edit: PressureEdit, now: string
     return { ok: false, reason: 'record-changed', message: CHANGED };
   }
   let next = file;
-  for (const [index, metricType] of HALVES.entries()) {
+  // A lower bottom number goes first, so neither half, written alone, inverts the pair (US-02 AC8).
+  const order = held[1] && edit.diastolic < held[1].value ? [1, 0] : [0, 1];
+  for (const index of order) {
+    const metricType = HALVES[index];
     const old = held[index];
     // Only a changed half is corrected. Re-correcting an unchanged one would join
     // merge's last-writer-wins and could undo another device's fix of that half.

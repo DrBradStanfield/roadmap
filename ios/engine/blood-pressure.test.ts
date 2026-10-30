@@ -298,3 +298,36 @@ describe('blood pressure history at scale', () => {
     expect(rows[0]).toMatchObject({ value: '120/80', status: 'active' });
   });
 });
+
+// US-02 AC8: the top number above the bottom, on every save of the pair.
+describe('blood pressure the right way up (US-02 AC8)', () => {
+  const ORDER = 'The top number (systolic) must be higher than the bottom number (diastolic).';
+  const values = (file: RoadmapFile) => file.measurements.filter((row) => row.status === 'active').map((row) => [row.metricType, row.value]).sort().reverse();
+
+  it('refuses 80/120 and 80/80, writing neither half', () => {
+    const file = nz();
+    expect(applyEdit(file, { kind: 'bloodPressure', systolic: 80, diastolic: 120, day: '2026-10-20' }, NOW)).toEqual({ ok: false, reason: 'out-of-range', message: ORDER });
+    expect(applyEdit(file, { kind: 'bloodPressure', systolic: 80, diastolic: 80, day: '2026-10-20' }, NOW)).toEqual({ ok: false, reason: 'out-of-range', message: ORDER });
+    expect(file.measurements).toEqual([]);
+  });
+
+  it('a replace lowering both numbers saves, though either half alone would pass through an inverted pair', () => {
+    const file = edited(nz(), NOW, { kind: 'bloodPressure', systolic: 120, diastolic: 80, day: '2026-10-20' });
+    const lower = edited(file, LATER, { kind: 'bloodPressure', systolic: 70, diastolic: 60, day: '2026-10-20', replace: true, seenIds: seen(file) });
+    expect(values(lower)).toEqual([['systolic_bp', 70], ['diastolic_bp', 60]]);
+    const higher = edited(lower, plus(LATER, 60_000), { kind: 'bloodPressure', systolic: 200, diastolic: 130, day: '2026-10-20', replace: true, seenIds: seen(lower) });
+    expect(values(higher)).toEqual([['systolic_bp', 200], ['diastolic_bp', 130]]);
+  });
+
+  it('a swapped pair saved before this rule is fixed by replacing it', () => {
+    const swapped = webPair(120, 80);
+    for (const row of swapped.measurements) row.value = row.metricType === 'systolic_bp' ? 80 : 120;
+    const fixed = edited(swapped, LATER, { kind: 'bloodPressure', systolic: 120, diastolic: 80, day: '2026-10-20', replace: true, seenIds: seen(swapped) });
+    expect(values(fixed)).toEqual([['systolic_bp', 120], ['diastolic_bp', 80]]);
+  });
+
+  it('one half typed on the web against the other half held is refused too', () => {
+    const sys = edited(nz(), NOW, { kind: 'add', metric: 'systolic_bp', value: 80, day: '2026-10-20' });
+    expect(applyEdit(sys, { kind: 'add', metric: 'diastolic_bp', value: 120, day: '2026-10-20' }, LATER)).toMatchObject({ ok: false, reason: 'out-of-range', message: expect.stringContaining(`${ORDER} To change both numbers`) });
+  });
+});

@@ -19,7 +19,7 @@ import * as z from './zod';
 import type { HealthInputs } from './types';
 import { reportedToCanonical, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
 import { FIELD_TO_METRIC } from './mappings';
-import { healthInputSchema, sanitizeInputs } from './validation';
+import { healthInputSchema, PRESSURE_ORDER, pressureInverted, sanitizeInputs } from './validation';
 import { ISO_DATE } from './measurement-history';
 import { latestDayOnEarth } from './merge';
 import { resolveRecordedAt } from './record-edits';
@@ -122,6 +122,7 @@ const REASONS = {
   later: 'a later value for the same field was used',
   superseded: 'a later or same-day value for this field could not be used, so this one was not used either',
   pair: 'blood pressure is read as a pair: both numbers are needed, each one usable, so neither was used',
+  pressureOrder: `${PRESSURE_ORDER} Neither number was used: ask the user to check the reading`,
   minor: 'the saved profile is under 18: a stated age or birth year is not used',
   protein: 'the protein target depends on kidney function, which this run could not work out, so it is left out until the refused value is confirmed',
   proteinAge: 'the protein target depends on kidney function, which needs the user\'s age: ask for their age',
@@ -179,7 +180,8 @@ function savedLatestDay(history: Record<string, unknown>, metric: string, today:
  * use (out of range, a bad date, shape or unit, or in an ask-unit band) that is
  * not older than the saved point takes the field out of the run: the saved
  * value, and any stated one from that day or earlier, never answers for it.
- * So does a blood pressure that is not a usable pair (two numbers from one day).
+ * So does a blood pressure that is not a usable pair (two numbers from one day,
+ * the top one above the bottom one: US-02 AC8).
  * A stated age sets the birth year from `now`, in January, so the plan's age
  * is the stated one and the minor gate is exactly under 18. A stated birth
  * year (when no usable age is given) is used as stated, without a month.
@@ -249,6 +251,13 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   if ((bpRejected.length > 0 || sys || dia) && !(sys && dia && sys.date === dia.date) && !bpOutdated) {
     for (const f of BP_FIELDS as EditableField[]) {
       if (stated.delete(f) || !bpRejected.some(r => r.field === f)) reject(f, REASONS.pair);
+      unusable.add(f);
+    }
+  } else if (sys && dia && pressureInverted(sys.si, dia.si)) {
+    // US-02 AC8: one day's pair the wrong way up is no blood pressure, saved or stated.
+    for (const f of BP_FIELDS as EditableField[]) {
+      stated.delete(f);
+      reject(f, REASONS.pressureOrder);
       unusable.add(f);
     }
   }

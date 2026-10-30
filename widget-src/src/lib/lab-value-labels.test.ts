@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { bulkAppendValues, convertValidationErrorsToUnits, createEmptyFile, LAB_CATALOG, type MetricType } from '@roadmap/health-core';
+import { bulkAppendValues, convertValidationErrorsToUnits, createEmptyFile, LAB_CATALOG, PRESSURE_ORDER, type MetricType } from '@roadmap/health-core';
 import { cellToSI, type CellUnit } from './blood-test-cell';
 import { labUnitRefusalLine, labValueLabel, measurementRefusalLine } from './lab-value-labels';
 
@@ -64,6 +64,11 @@ describe('measurementRefusalLine', () => {
       .toBe('LDL Cholesterol: the value was not a number the record can store, so it was not saved.');
     expect(measurementRefusalLine({ index: 0, metricType: 'toString', reason: 'unknown-metric', message: 'synthetic' }, 'si'))
       .toBe('toString: not a test the record knows, so it was not saved.');
+  });
+
+  it('US-02 AC8: a blood pressure the wrong way up says so, with no number', () => {
+    expect(measurementRefusalLine({ index: 0, metricType: 'diastolic_bp', reason: 'out-of-range', message: PRESSURE_ORDER }, 'si'))
+      .toBe('Blood pressure not saved: the top number (systolic) must be higher than the bottom number (diastolic). Check the report, then enter it again.');
   });
 
   it('names the PSA ceiling of 10,000 ng/mL', () => {

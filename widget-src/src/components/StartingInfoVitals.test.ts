@@ -124,6 +124,11 @@ describe('bpPairReady', () => {
     expect(bpPairReady('135', '85')).toBe(true);
   });
 
+  it('US-02 AC8: is false for a pair the wrong way up', () => {
+    expect(bpPairReady('80', '120')).toBe(false);
+    expect(bpPairReady('90', '90')).toBe(false);
+  });
+
   it('rejects out-of-physiological-range values', () => {
     expect(bpPairReady('300', '80')).toBe(false); // sys too high
     expect(bpPairReady('120', '200')).toBe(false); // dia too high
