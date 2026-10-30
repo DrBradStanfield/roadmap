@@ -229,8 +229,8 @@ jobs:
           merged=1
           step="merged; dispatching deploy.yml (merge already happened)"
           # GITHUB_TOKEN-caused events don't trigger workflows, so dispatch
-          # the deploy explicitly (its gate + environment window still apply).
+          # the deploy explicitly (its gate still applies; it has no wait timer).
           gh workflow run deploy.yml -R "${GITHUB_REPOSITORY}" --ref main -f surfaces=all
           finished=1
           gh issue close "${issue}" -R "${GITHUB_REPOSITORY}" \
-            --comment "Merged ${HEAD_SHA} and dispatched deploy.yml (its own 30-min window + veto email follows)."
+            --comment "Merged ${HEAD_SHA} and dispatched deploy.yml (its notification email follows; it has no wait timer)."

@@ -124,7 +124,7 @@ jobs:
             --title "🚀 Deploying: ${subject}" \
             --assignee DrBradStanfield \
             --body "$(printf '%s\n' \
-              "@DrBradStanfield — production deploy starts in ~30 min." \
+              "@DrBradStanfield, production deploy is starting. There is no wait timer: production changes begin once the Pages smoke, the tests and the builds pass, usually 6 to 10 minutes after this email." \
               "" \
               "## What is shipping" \
               "**${subject}**" \
@@ -138,7 +138,7 @@ jobs:
               "Surfaces: ${surfaces} · commit \`${GITHUB_SHA}\` · triggered by ${GITHUB_ACTOR} (${GITHUB_EVENT_NAME})" \
               "" \
               "## To veto" \
-              "Cancel the run before the timer ends: ${url}" \
+              "Cancel the run within those minutes. Once a Shopify or Fly step has started, cancelling may not undo it: ${url}" \
               "" \
               "---" \
               "This issue auto-closes when live verification passes (a still-open issue = failed or in-flight deploy)." \
