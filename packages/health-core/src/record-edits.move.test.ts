@@ -320,6 +320,28 @@ describe('US-04 AC5a: a move on a copy that has not seen an erase', () => {
     }
   });
 
+  // An app from before AC5a roots an id by stripping only `#dup-…` and `#si`.
+  const olderAppRoot = (id: string) => id.replace(/(?:#dup-[0-9a-f]{8}|#si)+$/, '');
+
+  it('lists each moved row under its own id too, so an older app that merges the erase drops a move synced before it', () => {
+    const synced = moved(base()).file;
+    const erased = buildErasedFile({ stored: synced, own: synced, device: null, ctx: LATER });
+    const listed = new Set(erased.erasedRows!.ids);
+    const movedIds = activeOn(synced, TO).map((r) => r.id);
+    expect(movedIds.length).toBe(4);
+    for (const id of movedIds) expect(listed.has(id)).toBe(true);
+    expect(rows(synced).filter((r) => !listed.has(olderAppRoot(r.id)))).toEqual([]);
+  });
+
+  it('keeps one #mv- suffix on the original root however often the test moves, so the id stays short', () => {
+    let file = base();
+    const days = [FROM, TO, OTHER, '2023-11-02', '2023-09-14', '2023-07-03', '2023-05-21'];
+    for (let i = 1; i < days.length; i++) file = moved(file, {}, days[i - 1], days[i]).file;
+    const ids = activeOn(file, days[days.length - 1]).map((r) => r.id).sort();
+    expect(ids.length).toBe(4);
+    for (const id of ids) expect(id).toMatch(/^(fer1|hdl1|ldl1|psa1)#mv-[0-9a-f]{8}$/);
+  });
+
   it('keeps a value typed on the stale copy that no erase saw', () => {
     const start = base();
     const erased = buildErasedFile({ stored: start, own: start, device: null, ctx: LATER });

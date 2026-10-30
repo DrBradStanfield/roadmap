@@ -639,10 +639,14 @@ export function latestStamp(a: string, b: string): string {
 }
 
 /** The root id of every row in the file: what an erase made now would list
- *  (US-09 AC23). A row whose id is not a string has no root, and is skipped. */
+ *  (US-09 AC23). A row whose id is not a string has no root, and is skipped.
+ *  A moved row is listed under its own id too, as an app from before US-04
+ *  AC5a roots it (only `#dup-…` and `#si` stripped), so that app drops it. */
 export function rowRootIds(file: RoadmapFile): string[] {
   return (Object.keys(ROW_STAMPS) as StampedArray[]).flatMap((key) =>
-    (file[key] as Array<{ id: unknown }>).flatMap((row) => (typeof row.id === 'string' ? [rootIdOf(row.id)] : [])));
+    (file[key] as Array<{ id: unknown }>).flatMap((row) => (typeof row.id === 'string'
+      ? [...new Set([rootIdOf(row.id), row.id.replace(/(?:#dup-[0-9a-f]{8}|#si)+$/, '')])]
+      : [])));
 }
 
 /** `file` without the rows `listed` names, from every array that carries ids;
