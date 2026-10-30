@@ -483,3 +483,35 @@ describe('RoadmapStore — latest value per metric drives the plan (US-07 AC4)',
     expect(inputs.ldlC).toBe(1.8);
   });
 });
+
+describe('RoadmapStore — moving a blood test (US-04 AC5)', () => {
+  it('previews without writing, moves as previewed, and refuses a stale preview as changed', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    store.addMeasurement('ldl', 3.2, '2024-03-12T00:00:00.000Z');
+    store.addMeasurement('weight', 82, '2024-03-12T00:00:00.000Z');
+    await store.flush();
+    const before = JSON.stringify(readCloudFile(cloud).measurements);
+
+    const plan = store.previewMove('2024-03-12', '2024-02-21');
+    if (!('rows' in plan)) throw new Error(plan.message);
+    expect(plan.rows.map((r) => 'metricType' in r && r.metricType)).toEqual(['ldl']);
+    await store.flush();
+    expect(JSON.stringify(readCloudFile(cloud).measurements)).toBe(before);
+
+    expect(store.moveBloodTest('2024-03-12', '2024-02-21', ['not-the-row'], {})).toEqual({ status: 'changed' });
+    expect(store.moveBloodTest('2024-03-12', '2024-02-21', plan.rows.map((r) => r.id), {})).toEqual({ status: 'ok' });
+    await store.flush();
+    const active = readCloudFile(cloud).measurements.filter((m) => m.status === 'active');
+    expect(active.map((m) => `${m.metricType}@${m.recordedAt.slice(0, 10)}`).sort()).toEqual(['ldl@2024-02-21', 'weight@2024-03-12']);
+  });
+
+  it('answers a refused day as invalid, with the refusal', async () => {
+    const store = await RoadmapStore.create(new MemoryAdapter());
+    const added = store.addMeasurement('ldl', 3.2, '2024-03-12T00:00:00.000Z');
+    if (added.status !== 'inserted') throw new Error(added.status);
+    const outcome = store.moveBloodTest('2024-03-12', '2024-03-12', [added.row.id], {});
+    expect(outcome.status).toBe('invalid');
+    expect(outcome.status === 'invalid' && outcome.refusal.reason).toBe('same-day');
+  });
+});

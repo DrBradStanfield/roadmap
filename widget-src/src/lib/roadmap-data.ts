@@ -1,10 +1,13 @@
 /** Local-first health records and client-side reports, on every widget surface. */
 import {
   type ApiMeasurement,
+  type MoveKeep,
+  type MoveRejection,
   type FileReminderOptIn,
   type HealthInputs,
   type LpaUnit,
   type MetricType,
+  type MovePlan,
   labUnitForEvent,
   labUnitTaken,
   type ReminderScheduleItem,
@@ -12,7 +15,7 @@ import {
   resolveLabCatalogEntry,
 } from '@roadmap/health-core';
 import { MEASUREMENT_REFUSALS_WITH_METRIC } from '@roadmap/health-core/product-events';
-import { RoadmapStore, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus } from '../storage/roadmap-store';
+import { RoadmapStore, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
 import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
@@ -164,6 +167,14 @@ export async function addMeasurement(metricType: string, value: number, recorded
 /** Correct a saved core or lab value; `newValue` is in the unit it is stored in. */
 export async function correctValue(id: string, newValue: number, erase?: string): Promise<CorrectStatus> {
   return store ? store.correctValue(id, newValue, erase) : 'error';
+}
+/** What moving a saved blood test would do (US-04 AC5); null with no record open. */
+export function previewMove(from: string, to: string): MovePlan | MoveRejection | null {
+  return store ? store.previewMove(from, to) : null;
+}
+/** Move a saved blood test to the day it was drawn, as previewed (US-04 AC5). */
+export async function moveBloodTest(from: string, to: string, expectedIds: string[], keep: MoveKeep, erase?: string): Promise<MoveOutcome> {
+  return store ? store.moveBloodTest(from, to, expectedIds, keep, erase) : { status: 'error' };
 }
 export async function saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): Promise<boolean> {
   return store ? store.saveChangedMeasurements(current, previous, erase) : false;

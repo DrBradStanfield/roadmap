@@ -98,4 +98,16 @@ describe('US-05 AC3 — the Lp(a) rows the page asks about', () => {
     keepLpaAsIs('r1');
     expect(lpaRowsToCheck([lpa(), lpa({ id: 'r2' })], 'conventional').map((c) => c.row.id)).toEqual(['r2']);
   });
+
+  it('US-04 AC5: a row kept while the browser refuses the store is still kept on this page, so a move is not left waiting', () => {
+    const setItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = () => { throw new Error('QuotaExceededError'); };
+    try {
+      keepLpaAsIs('r3');
+    } finally {
+      Storage.prototype.setItem = setItem;
+    }
+    expect(localStorage.length).toBe(0);
+    expect(lpaRowsToCheck([lpa({ id: 'r3' }), lpa({ id: 'r4' })], 'conventional').map((c) => c.row.id)).toEqual(['r4']);
+  });
 });

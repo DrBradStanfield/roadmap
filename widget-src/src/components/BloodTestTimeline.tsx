@@ -48,6 +48,7 @@ import { NumericInputCell } from './NumericInputCell';
 import { CommitTickButton } from './CommitTickButton';
 import { DraftDateCell } from './DraftDateCell';
 import { LpaUnitControl } from './LpaUnitControl';
+import { MOVE_TITLE, type MoveHeaders } from './MoveTestPanel';
 import { UnitChip } from './UnitChip';
 
 // PSA is omitted from the matrix — rendered separately in the men's section
@@ -134,6 +135,8 @@ export interface BloodTestTimelineProps {
   // ValueCell calls this when the user corrects a saved value. A failure
   // leaves the editor open so the user can retry.
   onCorrectValue?: CorrectFn;
+  /** The page's move of a saved column's test to another day (US-04 AC5); without it the headers stay plain. */
+  move?: MoveHeaders;
   // The draft values the plan and the chat may read, in SI; undefined leaves
   // the field to the record.
   onDraftValue: (field: keyof HealthInputs, siValue: number | undefined, day?: string) => void;
@@ -178,7 +181,7 @@ const MONTH_LABELS = MONTHS_SHORT.map(m => m.label);
 
 export function BloodTestTimeline({
   bloodTestHistory, unitSystem, unitOverrides, onToggleFieldUnit,
-  onSaveBatch, onCorrectValue, onDraftValue, isSaving, grading, onUploadClick, uploadDisabled, loginUrl,
+  onSaveBatch, onCorrectValue, move, onDraftValue, isSaving, grading, onUploadClick, uploadDisabled, loginUrl,
   hasApiResponse, flushRef, prefillRef,
 }: BloodTestTimelineProps) {
   const batches = useMemo(() => groupByBatch(bloodTestHistory), [bloodTestHistory]);
@@ -203,6 +206,19 @@ export function BloodTestTimeline({
   // the editors' own open and close, never from the highlight, which another
   // cell takes while an editor is still open, and a refused save leaves behind.
   const [lpaEditors, setLpaEditors] = useState(0);
+  // A saved column's move waits while the column holds typed text, the draft
+  // dated onto it included, or an open editor (US-04 AC5): the page is told
+  // each typed day here, and each editor as it opens and closes.
+  const typedDays = useMemo(() => {
+    const days = Object.keys(backfills).filter(day => Object.values(backfills[day] ?? {}).some(Boolean));
+    return Object.values(draft.values).some(Boolean) ? [...days, draft.date] : days;
+  }, [backfills, draft]);
+  const onHeld = move?.onHeld;
+  useEffect(() => {
+    if (!onHeld) return;
+    for (const day of typedDays) onHeld(day, true);
+    return () => { for (const day of typedDays) onHeld(day, false); };
+  }, [typedDays, onHeld]);
 
   // Lp(a) has three units on its own control, kept in the record (US-05 AC2);
   // every other field, the two-way toggle.
@@ -429,7 +445,7 @@ export function BloodTestTimeline({
                 return <DraftDateCell key="draft" date={c.date} onChange={setDraftDate} label="New" ariaLabel="Choose draft batch date"/>;
               }
               const isPinnedRecent = i === columns.length - 2;
-              return <BatchDateCell key={c.date} date={c.date} pinned={isPinnedRecent}/>;
+              return <BatchDateCell key={c.date} date={c.date} pinned={isPinnedRecent} move={move}/>;
             })}
             <div className="bt-row-filler"/>
             {showTrend && <div className="bt-cell-trend bt-cell-header">Trend</div>}
@@ -514,10 +530,12 @@ export function BloodTestTimeline({
                       pinned={isPinned}
                       onActivate={() => {
                         setActiveCell(cellId);
+                        onHeld?.(c.date, true);
                         if (row.metric === 'lpa') setLpaEditors(n => n + 1);
                       }}
                       onDeactivate={() => {
                         unmark(cellId)();
+                        onHeld?.(c.date, false);
                         if (row.metric === 'lpa') setLpaEditors(n => n - 1);
                       }}
                       onCorrect={onCorrectValue}
@@ -676,17 +694,28 @@ const CHECK_CHANGED = 'This result changed on another device. Nothing was saved.
 
 // Exported so StartingInfoVitals can reuse the exact same saved-date header
 // cell — keeps the two matrices pixel-identical without copy-paste drift.
-export function BatchDateCell({ date, pinned }: { date: string; pinned: boolean }) {
-  const d = new Date(date + 'T00:00');
-  const day = d.getDate();
-  const mon = MONTH_LABELS[d.getMonth()];
-  const yr = String(d.getFullYear()).slice(-2);
+// With `move`, a blood test's header picks the day to move it to (US-04
+// AC5); the vitals keep the plain header, since vitals never move.
+export function BatchDateCell({ date, pinned, move }: { date: string; pinned: boolean; move?: MoveHeaders }) {
+  if (move) {
+    return <DraftDateCell date={date} picked={move.picked?.from === date ? move.picked.to : undefined} disabled={move.held.has(date)}
+      onChange={day => { if (day) move.onPick(date, day); }}
+      className={`bt-cell-value bt-cell-date bt-cell-movable${pinned ? ' bt-cell-pinned' : ''}`}
+      title={MOVE_TITLE} ariaLabel={MOVE_TITLE}/>;
+  }
+  const [day, year] = headerDay(date);
   return (
     <div className={`bt-cell-value bt-cell-date${pinned ? ' bt-cell-pinned' : ''}`}>
-      <div className="bt-date-day">{day} {mon}</div>
-      <div className="bt-date-year">'{yr}</div>
+      <div className="bt-date-day">{day}</div>
+      <div className="bt-date-year">{year}</div>
     </div>
   );
+}
+
+/** A saved column's header date: ["12 Mar", "'24"]. */
+export function headerDay(date: string): [string, string] {
+  const d = new Date(date + 'T00:00');
+  return [`${d.getDate()} ${MONTH_LABELS[d.getMonth()]}`, `'${String(d.getFullYear()).slice(-2)}`];
 }
 
 interface ValueCellProps {

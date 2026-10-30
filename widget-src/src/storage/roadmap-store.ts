@@ -33,6 +33,9 @@ import {
   saveDocuments,
   documentView,
   type DocumentPayload,
+  type MoveKeep,
+  type MoveRejection,
+  type MovePlan,
   setReminderOptIn,
   setScreening,
   stampProfile,
@@ -41,6 +44,8 @@ import {
   isEscalationKey,
   computeReminderSchedule,
   correctValue as correctRecordValue,
+  moveBloodTest as moveRecordBloodTest,
+  planBloodTestMove,
   diffInputsToMeasurements,
   fileProfileToApi,
   fileScreeningRows,
@@ -151,6 +156,10 @@ export type AddMeasurementResult =
  *  `invalid`: the record does not take that number (outside the metric's
  *  range). `error`: no record is open. */
 export type CorrectStatus = 'ok' | 'changed' | 'invalid' | 'error';
+/** How a blood test move ended (US-04 AC5), as a correction does. `changed`:
+ *  the test on that day is not what the page showed. `invalid` carries the
+ *  record's refusal, for the page to say. */
+export type MoveOutcome = { status: Exclude<CorrectStatus, 'invalid'> } | { status: 'invalid'; refusal: MoveRejection };
 export interface BulkSaveResult {
   saved: ApiMeasurement[];
   skippedDuplicates: number;
@@ -306,6 +315,22 @@ export class RoadmapStore {
     if (!result.ok) return result.reason === 'not-found' || result.reason === 'not-active' ? 'changed' : 'invalid';
     this.session.edit(() => result.file, erase);
     return 'ok';
+  }
+
+  /** What moving the blood test on `from` to `to` would do, or why it cannot
+   *  (US-04 AC5). Writes nothing: the page shows it for the person to confirm. */
+  previewMove(from: string, to: string): MovePlan | MoveRejection {
+    return planBloodTestMove(this.file, from, to, { now: new Date().toISOString() });
+  }
+
+  /** Move the blood test on `from` to `to` by record-edits' one rule, as
+   *  previewed: `expectedIds` are the rows shown, `keep` answers each clash. */
+  moveBloodTest(from: string, to: string, expectedIds: string[], keep: MoveKeep, erase?: string): MoveOutcome {
+    if (this.refuses(erase)) return { status: 'error' };
+    const result = moveRecordBloodTest(this.file, { from, to, expectedIds, keep, now: new Date().toISOString() });
+    if (!result.ok) return result.reason === 'value-changed' ? { status: 'changed' } : { status: 'invalid', refusal: result };
+    this.session.edit(() => result.file, erase);
+    return { status: 'ok' };
   }
 
   saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): boolean {

@@ -87,7 +87,13 @@ someone's medical history, or lose their data at the next device sync.
    `"entered-in-error"`. That status flip is the only edit ever permitted to an existing
    row, and it is one-way, `entered-in-error` never goes back to `active`. The
    correction row keeps the original row's `recordedAt`, a correction changes the
-   value, never the date.
+   value, never the date. One writer is the exception: the website can move a whole
+   blood test to the day it was really drawn (US-04 AC5), which appends each row on the
+   new day with `correctsId` set. So when you read, never assume a `correctsId` row
+   shares its target's day. Agents cannot move a test; your corrections keep the date.
+   Two devices that both held the test before it moved can move it to different days;
+   after a sync the test then appears on both days, each set active, and the later day
+   reads as latest (a known limit, US-04 AC5 R4).
 3. **Check the slot before you append.** Look for an active row in the same
    `(metric, calendar day)` slot. If one exists you have exactly two options: flip it to
    `"entered-in-error"` (setting `correctsId` on your new row if you are correcting it),

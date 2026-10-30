@@ -5032,6 +5032,37 @@ a.action-btn-small.action-btn-small:hover {
   border: none;
 }
 .bt-date-hidden-icon::-webkit-calendar-picker-indicator { display: none; }
+/* US-04 AC5: a saved blood test's date header is a button that picks the day
+   to move the test to. Reset like .bt-cell-clickable, so it keeps the 1px
+   left divider and the column widths stay aligned. */
+.bt-cell-movable {
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  position: relative;
+  cursor: pointer;
+}
+.bt-cell-movable.bt-cell-pinned { background: var(--bt-ink-50); }
+.bt-cell-movable:hover:not(:disabled) { background: var(--bt-ink-100); }
+.bt-cell-movable:disabled { cursor: default; opacity: 0.5; }
+.bt-cell-movable .bt-draft-date-year-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 1px;
+}
+.bt-cell-movable .bt-draft-date-icon { color: var(--bt-ink-400); }
+.bt-move-panel { margin: 12px 0 0; }
+.bt-move-panel p { margin: 0; }
+.bt-move-rows { margin: 6px 0 0; padding-left: 18px; }
+.bt-move-clash { border: 0; margin: 8px 0 0; padding: 0; min-width: 0; }
+.bt-move-clash legend { padding: 0; }
+.bt-move-clash label { display: block; }
+.bt-move-status { margin: 8px 0 0; font-size: 12.5px; }
 /* The draft column's first line (US-03): "New", so it never reads as a
    second copy of a saved column's date. */
 .bt-cell-draft-date .bt-draft-label {

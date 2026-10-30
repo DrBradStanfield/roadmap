@@ -9,6 +9,7 @@ import { groupLabValues, countLabValuePoints, labGroupMatrix, type LabRowsIcon, 
 import { AddLabTest } from './AddLabTest';
 import { UnitChip } from './UnitChip';
 import { BatchDateCell, ValueCell, useLiveRegion } from './BloodTestTimeline';
+import type { MoveHeaders } from './MoveTestPanel';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { trackProductEvent } from '../lib/server-api';
 import type { CorrectFn } from '../lib/matrix-save';
@@ -90,7 +91,7 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
 // columns = dates, sticky name cell, newest column pinned). Memoised: a group
 // once opened stays mounted, and its lab values do not change as the user
 // types elsewhere in the form.
-const LabGroupMatrix = memo(function LabGroupMatrix({ group, onCorrect }: { group: LabValueGroup; onCorrect?: CorrectFn }) {
+const LabGroupMatrix = memo(function LabGroupMatrix({ group, onCorrect, move }: { group: LabValueGroup; onCorrect?: CorrectFn; move?: MoveHeaders }) {
   const { dates, points } = useMemo(() => labGroupMatrix(group), [group]);
   const scrollRef = useScrollToRightOnMount<HTMLDivElement>([dates.length]);
   const [say, cellMessages] = useLiveRegion('bt-cell-messages');
@@ -101,7 +102,8 @@ const LabGroupMatrix = memo(function LabGroupMatrix({ group, onCorrect }: { grou
           <div className="bt-timeline-scroll-inner" style={{ '--bt-col-count': dates.length } as React.CSSProperties}>
             <div className="bt-row bt-header-row">
               <div className="bt-cell-name bt-cell-header">Metric</div>
-              {dates.map((d, i) => <BatchDateCell key={d} date={d} pinned={i === dates.length - 1}/>)}
+              {/* A lab-only day moves from here; the move takes the whole test, core values too (US-04 AC5). */}
+              {dates.map((d, i) => <BatchDateCell key={d} date={d} pinned={i === dates.length - 1} move={move}/>)}
               <div className="bt-row-filler"/>
             </div>
             {group.series.map((s, idx) => (
@@ -121,7 +123,8 @@ const LabGroupMatrix = memo(function LabGroupMatrix({ group, onCorrect }: { grou
                   }
                   return (
                     <ValueCell key={d} value={p.value} unit={s.mixedUnits ? p.unit : undefined}
-                               rowId={p.id} status={null} pinned={pinned} onCorrect={onCorrect} say={say}/>
+                               rowId={p.id} status={null} pinned={pinned} onCorrect={onCorrect} say={say}
+                               onActivate={() => move?.onHeld(d, true)} onDeactivate={() => move?.onHeld(d, false)}/>
                   );
                 })}
                 <div className="bt-row-filler"/>
@@ -135,7 +138,7 @@ const LabGroupMatrix = memo(function LabGroupMatrix({ group, onCorrect }: { grou
   );
 });
 
-function LabGroupSection({ group, expanded, onToggle, onCorrect }: { group: LabValueGroup; expanded: boolean; onToggle: () => void; onCorrect?: CorrectFn }) {
+function LabGroupSection({ group, expanded, onToggle, onCorrect, move }: { group: LabValueGroup; expanded: boolean; onToggle: () => void; onCorrect?: CorrectFn; move?: MoveHeaders }) {
   // Once opened, the matrix stays mounted and is only hidden when the group
   // closes (US-21 AC5): a correction left open in it still saves, and one the
   // record refused is still there, with its reason, when the group reopens.
@@ -159,14 +162,16 @@ function LabGroupSection({ group, expanded, onToggle, onCorrect }: { group: LabV
       </button>
       {opened && (
         <div ref={bodyRef} style={expanded ? undefined : { display: 'none' }}>
-          <LabGroupMatrix group={group} onCorrect={onCorrect}/>
+          <LabGroupMatrix group={group} onCorrect={onCorrect} move={move}/>
         </div>
       )}
     </div>
   );
 }
 
-export function AdditionalLabRows({ labValues, onAdded, onCorrect }: { labValues: ApiLabValue[]; onAdded?: () => void; onCorrect?: CorrectFn }) {
+export function AdditionalLabRows({ labValues, onAdded, onCorrect, move }: {
+  labValues: ApiLabValue[]; onAdded?: () => void; onCorrect?: CorrectFn; move?: MoveHeaders;
+}) {
   const groups = useMemo(() => groupLabValues(labValues), [labValues]);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
@@ -192,7 +197,7 @@ export function AdditionalLabRows({ labValues, onAdded, onCorrect }: { labValues
     <div className="alr-wrap">
       <div className="alr-title">Additional lab results</div>
       {groups.map(g => (
-        <LabGroupSection key={g.id} group={g} expanded={expandedIds.has(g.id)} onToggle={() => toggle(g.id)} onCorrect={onCorrect}/>
+        <LabGroupSection key={g.id} group={g} expanded={expandedIds.has(g.id)} onToggle={() => toggle(g.id)} onCorrect={onCorrect} move={move}/>
       ))}
       {onAdded && <AddLabTest onAdded={onAdded} labValues={labValues} onCorrect={onCorrect}/>}
     </div>

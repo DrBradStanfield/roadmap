@@ -83,6 +83,7 @@ import { formatShortDate, MONTHS_FULL } from '../lib/constants';
 import { InlineDatePicker, getCurrentDateValue, type DateValue } from './DatePicker';
 import { BloodTestTimeline, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
+import { useMoveTest, type MoveTestApi } from './MoveTestPanel';
 import { StartingInfoVitals, type VitalsPrefillFn } from './StartingInfoVitals';
 import { CommitTickButton } from './CommitTickButton';
 import { StorageNotice } from '../lib/storage-notice';
@@ -142,6 +143,8 @@ interface InputPanelProps {
   // Click-to-correct handler for saved cells in every matrix: blood tests,
   // vitals and the additional lab rows.
   onCorrectValue?: CorrectFn;
+  /** Moves a saved blood test to another day (US-04 AC5), from either blood-test matrix. */
+  moveTest?: MoveTestApi;
   /** A matrix's draft value as the plan reads it (both matrices). */
   onDraftValue: (field: keyof HealthInputs, value: number | undefined, day?: string) => void;
   medications: ApiMedication[];
@@ -207,7 +210,7 @@ export function InputPanel({
   inputs, effectiveInputs, onChange: updateField, errors, unitSystem, onUnitSystemChange,
   unitOverrides, onToggleFieldUnit,
   previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onLabValueAdded, onSaveBloodTestBatch,
-  onCorrectValue, onDraftValue,
+  onCorrectValue, moveTest, onDraftValue,
   medications, onMedicationChange,
   screenings, onScreeningChange,
   supplements, onSupplementChange, onSupplementDelete,
@@ -1096,6 +1099,9 @@ export function InputPanel({
     </div>
   );
 
+  // One move for both blood-test matrices: their headers pick it, the panel sits between them (US-04 AC5).
+  const move = useMoveTest({ api: moveTest, unitSystem, unitOverrides, bloodTestHistory, labValues });
+
   const renderBloodTests = () => (
     <BloodTestTimeline
       bloodTestHistory={bloodTestHistory}
@@ -1104,6 +1110,7 @@ export function InputPanel({
       onToggleFieldUnit={onToggleFieldUnit}
       onSaveBatch={onSaveBloodTestBatch}
       onCorrectValue={onCorrectValue}
+      move={move.headers}
       onDraftValue={onDraftValue}
       isSaving={isSavingLongitudinal}
       grading={grading}
@@ -2092,7 +2099,8 @@ export function InputPanel({
       {formStage >= 3 && (
         <div className="section-card section-card--bt stage-reveal">
           {renderBloodTests()}
-          <AdditionalLabRows labValues={labValues} onAdded={onLabValueAdded} onCorrect={onCorrectValue}/>
+          {move.panel}
+          <AdditionalLabRows labValues={labValues} onAdded={onLabValueAdded} onCorrect={onCorrectValue} move={move.headers}/>
         </div>
       )}
 

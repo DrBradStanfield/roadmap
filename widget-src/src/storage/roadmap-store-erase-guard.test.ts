@@ -57,6 +57,7 @@ async function seeded(adapter: MemoryAdapter) {
 const WRITES: Array<[string, (s: RoadmapStore, ids: { weightId: string; documentId: string }) => unknown | Promise<unknown>, unknown]> = [
   ['addMeasurement', (s) => s.addMeasurement('waist', 90, '2026-09-02'), { status: 'error' }],
   ['correctValue', (s, ids) => s.correctValue(ids.weightId, 81), 'error'],
+  ['moveBloodTest', (s) => s.moveBloodTest('2026-09-01', '2026-08-30', [], {}), { status: 'error' }],
   ['saveChangedMeasurements', (s) => s.saveChangedMeasurements({ heightCm: 181 }, { heightCm: 178 }), false],
   ['saveMedication', (s) => s.saveMedication('statin', 'atorvastatin', 20, 'mg'), false],
   ['saveSupplement', (s) => s.saveSupplement('vitd', 'Vitamin D', 25, 'mcg'), false],

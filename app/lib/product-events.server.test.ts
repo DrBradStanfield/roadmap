@@ -216,6 +216,17 @@ describe('the email-arrival counters', () => {
     });
     expect(parseProductEvent({ eventName: 'pdf_window_blocked', visitorId: VISITOR, metadata: { key: 'x' } })).toBeNull();
   });
+
+  it('takes blood_test_moved from a browser, with no metadata (US-04 AC5)', () => {
+    expect(parseProductEvent({ eventName: 'blood_test_moved', visitorId: VISITOR })).toEqual({
+      eventName: 'blood_test_moved',
+      visitorId: VISITOR,
+    });
+    expect(parseProductEvent({ eventName: 'blood_test_moved', visitorId: VISITOR, metadata: { key: 'x' } })).toBeNull();
+    // Keys other events may carry are no count of moved rows and no provider here (Codex R2).
+    expect(parseProductEvent({ eventName: 'blood_test_moved', visitorId: VISITOR, metadata: { count: 4 } })).toBeNull();
+    expect(parseProductEvent({ eventName: 'blood_test_moved', visitorId: VISITOR, metadata: { provider: 'dropbox' } })).toBeNull();
+  });
 });
 
 /** US-38 — the guide link's counter: which surface sent someone to the hub. */

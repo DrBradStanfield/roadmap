@@ -22,6 +22,9 @@ export const PRODUCT_EVENT_NAMES = [
   // Metadata `{ provider }` only.
   'cloud_connect_cancelled',
   'correction_made',
+  // US-04 AC5: a saved blood test moved to the day it was drawn. Name only:
+  // never a date, a value or how many rows moved.
+  'blood_test_moved',
   // US-17 default-on reminders: optin fires SERVER-side when a new row lands
   // (every lane, since 2026-09-10 — only the server knows it landed, and abuse
   // enrolments count rather than hide), optout client-side on disable. The

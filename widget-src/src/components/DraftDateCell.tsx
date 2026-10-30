@@ -20,9 +20,16 @@ export interface DraftDateCellProps {
   /** A first line above the date. The matrices say "New", so the draft
    *  column never reads as a second copy of a saved column's date. */
   label?: string;
+  /** A saved column's header (US-04 AC5): its own classes and title, and the
+   *  day picked so far, which the picker holds while the header still shows
+   *  the saved date. */
+  className?: string;
+  title?: string;
+  picked?: string;
+  disabled?: boolean;
 }
 
-export function DraftDateCell({ date, onChange, needsDay, placeholder, ariaLabel, label }: DraftDateCellProps) {
+export function DraftDateCell({ date, onChange, needsDay, placeholder, ariaLabel, label, className, title, picked, disabled }: DraftDateCellProps) {
   const ref = useRef<HTMLInputElement | null>(null);
   const d = new Date(date + 'T00:00');
   const day = d.getDate();
@@ -33,9 +40,9 @@ export function DraftDateCell({ date, onChange, needsDay, placeholder, ariaLabel
     catch { ref.current?.click(); }
   };
   return (
-    <button type="button" onClick={open}
-            title={needsDay ? 'Pick the exact day' : 'Click to change date'}
-            className={`bt-cell-value bt-cell-draft-date${needsDay ? ' bt-cell-draft-date-incomplete' : ''}`}>
+    <button type="button" onClick={open} disabled={disabled}
+            title={title ?? (needsDay ? 'Pick the exact day' : 'Click to change date')}
+            className={className ?? `bt-cell-value bt-cell-draft-date${needsDay ? ' bt-cell-draft-date-incomplete' : ''}`}>
       {label && <span className="bt-draft-label">{label}</span>}
       <span className="bt-date-day">{needsDay && placeholder ? placeholder : `${needsDay ? '—' : day} ${mon}`}</span>
       <div className="bt-draft-date-year-row">
@@ -47,7 +54,7 @@ export function DraftDateCell({ date, onChange, needsDay, placeholder, ariaLabel
           <line x1="11" y1="2" x2="11" y2="4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
         </svg>
       </div>
-      <input ref={ref} type="date" value={needsDay ? '' : date}
+      <input ref={ref} type="date" value={needsDay ? '' : picked ?? date} disabled={disabled}
              onChange={e => onChange(e.target.value)}
              className="bt-date-hidden-icon"
              aria-label={ariaLabel ?? 'Choose date'}/>

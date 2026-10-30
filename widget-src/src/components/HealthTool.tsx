@@ -45,6 +45,7 @@ import {
   formatHeightDisplay,
 } from '@roadmap/health-core';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
+import type { MoveTestApi } from './MoveTestPanel';
 import { routeVitalsEdit, type VitalsPrefillFn } from './StartingInfoVitals';
 import type { ApiSupplement, ApiLabValue } from '../lib/api-types';
 import { InputPanel, type PlanBasis } from './InputPanel';
@@ -84,6 +85,8 @@ import {
   saveChangedMeasurements,
   addMeasurement,
   correctValue,
+  moveBloodTest,
+  previewMove,
   saveMedication,
   saveScreening,
   saveSupplement,
@@ -549,6 +552,20 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     if (status === 'ok') await reloadValues();
     return status;
   }, [reloadValues]);
+
+  // A saved blood test moved to the day it was drawn (US-04 AC5), counted by
+  // name only; the page re-reads the record as after a correction.
+  const moveTest = useMemo<MoveTestApi>(() => ({
+    preview: previewMove,
+    move: async (from, to, expectedIds, keep) => {
+      const outcome = await moveBloodTest(from, to, expectedIds, keep);
+      if (outcome.status === 'ok') {
+        trackProductEvent('blood_test_moved');
+        await reloadValues();
+      }
+      return outcome;
+    },
+  }), [reloadValues]);
 
   // Save typed values by the one routing rule (matrix-save.ts), against the
   // store's own rows, then re-read the record. The matrices pass their cells;
@@ -1143,6 +1160,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     onLabValueAdded: refreshLabValues,
     onSaveBloodTestBatch: handleSaveLongitudinal,
     onCorrectValue: handleCorrectValue,
+    moveTest,
     onDraftValue: handleDraftValue,
     medications,
     onMedicationChange: handleMedicationChange,

@@ -11,7 +11,9 @@
  *  - one `active` row per (metric, calendar day) slot — rule 3, the same check
  *    `RoadmapStore.addMeasurement` answers with its 409-shaped `duplicate`;
  *  - a correction APPENDS with `correctsId` and the ORIGINAL `recordedAt`, and
- *    flips the old row to `entered-in-error` (one-way) — rule 2;
+ *    flips the old row to `entered-in-error` (one-way) — rule 2. The one
+ *    correction that changes the day is the website's `moveBloodTest` (US-04
+ *    AC5): a whole blood test moved to the day it was really drawn;
  *  - a fresh UUID per row, never a reused id — rule 5;
  *  - `meta.updatedAt` set to the same clock stamped on the row, and no other
  *    `meta` field touched — rule 6 (advance the file clock without rewinding
@@ -32,7 +34,7 @@ import {
   canonicalLabRow, canonicalLabValue, correctionOffScale, type CountFault, foldName, labCountFault, type LabCatalogEntry, labSlotKey,
   labUnitRefusal, normalizeLabUnit, resolveLabCatalogEntry, type StoredLabRow,
 } from './lab-catalog';
-import { METRIC_TO_FIELD } from './mappings';
+import { BLOOD_TEST_METRICS, METRIC_TO_FIELD } from './mappings';
 import { resolveCoreMetricName } from './lab-extraction';
 import { dayOf, latestStamp, localDay } from './merge';
 import { isCalendarDay, isClinicalDay } from './measurement-history';
@@ -147,7 +149,8 @@ export interface EditSuccess<TRow> {
 
 export type EditResult<TRow> = EditSuccess<TRow> | EditRejection;
 
-function reject(reason: EditRejectionReason, message: string, existing?: FileMeasurement | FileLabValue): EditRejection {
+/** A refusal; the move passes its own reasons too (`MoveRejection`). */
+function reject<R extends string = EditRejectionReason>(reason: R, message: string, existing?: FileMeasurement | FileLabValue): Omit<EditRejection, 'reason'> & { reason: R } {
   return { ok: false, reason, message, ...(existing ? { existing } : null) };
 }
 
@@ -423,6 +426,7 @@ export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest
  * the old row's id in `correctsId` and — always — the old row's `recordedAt`,
  * then flip the old row to `entered-in-error`. A correction changes the value,
  * never the date, so the pair stays in one slot and history stays readable.
+ * The one exception is `moveBloodTest` below, which changes only the day.
  *
  * It does not REPAIR a slot it did not break: if the file already carried two
  * active rows for that day (a hand edit, or another writer), correcting one
@@ -494,6 +498,148 @@ export function correctValue(file: RoadmapFile, request: CorrectValueRequest): E
   };
   const rows = file.labValues.map((l) => (l.id === id ? { ...l, status: 'entered-in-error' as const } : l));
   return { ok: true, file: withRow(file, 'labValues', [...rows, row], now), row };
+}
+
+// ---------------------------------------------------------------------------
+// A blood test moved to the day it was drawn (US-04 AC5)
+// ---------------------------------------------------------------------------
+
+type ClinicalRow = FileMeasurement | FileLabValue;
+
+/** A moving row and the active row already on the new day in its slot. */
+export interface MoveClash { moving: ClinicalRow; held: ClinicalRow }
+
+/** One answer per clash, keyed by the held row's id. */
+export type MoveKeep = Record<string, 'moving' | 'held'>;
+
+/** What a move would do, for the page to show before anything is written. */
+export interface MovePlan {
+  /** `YYYY-MM-DD`. */
+  to: string;
+  /** Every active blood test row on `from`: core metrics (PSA too) and lab values. Never a vital. */
+  rows: ClinicalRow[];
+  /** A different value already on `to`: the person answers each one. */
+  clashes: MoveClash[];
+  /** The same quantity already on `to`: asked nothing; the moving row flips and the held one stays. */
+  matches: MoveClash[];
+  /** An uploaded document is dated `from`. It keeps its own date. */
+  documentDated: boolean;
+}
+
+export interface MoveBloodTestRequest extends EditContext {
+  from: string;
+  to: string;
+  /** The ids of the plan's `rows`, as the page showed them. */
+  expectedIds: string[];
+  keep: MoveKeep;
+  source?: MeasurementSource;
+}
+
+/** A refused move: a write's refusal, or one of the move's own. Kept apart
+ *  from `EditRejectionReason`, the agents' refusal words, since no agent moves
+ *  a test. `existing` is one of the two rows on `duplicate-slot`. */
+export type MoveRejection = Omit<EditRejection, 'reason'> & { reason: EditRejectionReason | 'same-day' | 'empty-day' | 'duplicate-slot' };
+
+export type MoveResult = { ok: true; file: RoadmapFile; rows: ClinicalRow[] } | MoveRejection;
+
+const isBloodTestRow = (row: ClinicalRow) => !('metricType' in row) || BLOOD_TEST_METRICS.includes(row.metricType);
+const metricOf = (row: ClinicalRow) => ('metricType' in row ? row.metricType : row.metricName);
+
+/** Every active row on `day` that `pick` takes, measurements then lab values. */
+function activeOn(file: RoadmapFile, day: string, pick: (row: ClinicalRow) => boolean = () => true): ClinicalRow[] {
+  const lists: ClinicalRow[][] = [file.measurements, file.labValues];
+  return lists.flatMap((list) => list.filter((row) => row.status === 'active' && dayOf(row.recordedAt ?? '') === day && pick(row)));
+}
+
+/**
+ * Plan a move of the blood test on `from` to `to`. The day is checked as any
+ * write's is (rule 9). A day holding two active values for one test that
+ * moves, on either side, is refused: the person corrects one first, so a
+ * move never carries a broken slot onto another day.
+ */
+export function planBloodTestMove(file: RoadmapFile, from: string, to: string, ctx: EditContext): MovePlan | MoveRejection {
+  const day = resolveRecordedAt(to, ctx);
+  if (typeof day !== 'string') return day;
+  if (day === from) return reject('same-day', `The test is already on ${from}`);
+  const fromSlots = new Map<string, ClinicalRow>();
+  for (const row of activeOn(file, from, isBloodTestRow)) {
+    const slot = slotOfRow(row);
+    const twin = fromSlots.get(slot);
+    if (twin) return reject('duplicate-slot', `${metricOf(row)} has two values on ${from}; correct one first`, twin);
+    fromSlots.set(slot, row);
+  }
+  const rows = [...fromSlots.values()];
+  if (rows.length === 0) return reject('empty-day', `No blood test value is saved on ${from}`);
+
+  const toSlots = new Map<string, ClinicalRow[]>();
+  for (const row of activeOn(file, day)) {
+    const slot = slotOfRow(row);
+    toSlots.set(slot, [...(toSlots.get(slot) ?? []), row]);
+  }
+  const clashes: MoveClash[] = [];
+  const matches: MoveClash[] = [];
+  for (const moving of rows) {
+    const holders = toSlots.get(slotKey('metricType' in moving ? 'measurement' : 'lab', metricOf(moving), day)) ?? [];
+    if (holders.length > 1) return reject('duplicate-slot', `${metricOf(moving)} has two values on ${day}; correct one first`, holders[0]);
+    const held = holders[0];
+    if (!held) continue;
+    const same = 'metricType' in moving
+      ? sameValue(moving.value, held.value)
+      : !('metricType' in held) && sameLabQuantity({ name: moving.metricName, value: moving.value, unit: moving.unit }, { name: held.metricName, value: held.value, unit: held.unit });
+    (same ? matches : clashes).push({ moving, held });
+  }
+  const documentDated = file.documents.some((d) => !d.deleted && d.date === from);
+  return { to: day, rows, clashes, matches, documentDated };
+}
+
+/**
+ * Move a whole blood test, as one edit, to the day it was really drawn
+ * (US-04 AC5). The one correction that changes the day: each active blood
+ * test row on `from` flips to `entered-in-error`, and a row on `to` carries
+ * its value, unit, reference range and `correctsId`. Its `recordedAt` keeps
+ * the old row's form (a bare day, or a datetime). Vitals stay; so does an
+ * uploaded document's date.
+ *
+ * A clash on `to` is the person's answer: `moving` flips the held row too,
+ * `held` keeps it and flips the moving row with no child. The same quantity
+ * already there asks nothing and is kept, as `held` is.
+ *
+ * Refused as `value-changed`, writing nothing, unless the active rows on
+ * `from` are exactly `expectedIds` and `keep` answers exactly the clashes: a
+ * value added, corrected or moved on another device since the page showed the
+ * plan, or a day emptied or doubled since, stops the whole move, so nothing
+ * half-moves.
+ */
+export function moveBloodTest(file: RoadmapFile, request: MoveBloodTestRequest): MoveResult {
+  const sameIds = (a: string[], b: string[]) => [...a].sort().join('\n') === [...b].sort().join('\n');
+  const changed = () => reject('value-changed', `The test on ${request.from} changed since it was shown; read the record again`);
+  if (!sameIds(activeOn(file, request.from, isBloodTestRow).map((r) => r.id), request.expectedIds)) return changed();
+  const plan = planBloodTestMove(file, request.from, request.to, request);
+  if (!('rows' in plan)) return plan;
+  if (!sameIds(plan.clashes.map((c) => c.held.id), Object.keys(request.keep))) return changed();
+
+  const { now } = request;
+  const source = request.source ?? 'manual_correction';
+  const flip = new Set<string>();
+  const added: ClinicalRow[] = [];
+  const clashOf = new Map([...plan.clashes, ...plan.matches].map((c) => [c.moving.id, c]));
+  for (const row of plan.rows) {
+    flip.add(row.id);
+    const clash = clashOf.get(row.id);
+    if (clash && request.keep[clash.held.id] !== 'moving') continue; // `held`, or the same quantity
+    if (clash) flip.add(clash.held.id);
+    const recordedAt = plan.to + row.recordedAt.slice(10);
+    added.push('metricType' in row
+      ? createMeasurement({ id: newId(), metricType: row.metricType, value: row.value, recordedAt, createdAt: now, source, correctsId: row.id })
+      : { ...row, id: newId(), recordedAt, createdAt: now, source, status: 'active', correctsId: row.id });
+  }
+  const flipped = <T extends ClinicalRow>(r: T): T => (flip.has(r.id) ? { ...r, status: 'entered-in-error' } : r);
+  const next = stampUpdatedAt({
+    ...file,
+    measurements: [...file.measurements.map(flipped), ...added.filter((r): r is FileMeasurement => 'metricType' in r)],
+    labValues: [...file.labValues.map(flipped), ...added.filter((r): r is FileLabValue => !('metricType' in r))],
+  }, now);
+  return { ok: true, file: next, rows: added };
 }
 
 // ---------------------------------------------------------------------------

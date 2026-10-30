@@ -8,8 +8,8 @@
  * things that also became impossible to edit or remove."
  *
  * The record is append-only: nothing here removes a value. A value reaches it
- * only when the user commits one. Moving a value to another day is a later
- * batch.
+ * only when the user commits one. A whole blood test can move to another day
+ * (US-04 AC5).
  *
  * The whole widget renders over a REAL RoadmapStore on this browser's
  * localStorage, the guest's own backend. Only the network edges and the chat's
@@ -378,6 +378,26 @@ describe('the 2026-09-22 feedback: blood tests on the wrong day', () => {
     await waitFor(() => expect(ldlTile(view.container)).toBe('1.9 mmol/L'));
     expect(active(await rowsOf('ldl')).map((m) => m.value).sort()).toEqual([1.9, 3.9]);
     expect(trackProductEvent).toHaveBeenCalledWith('correction_made');
+  });
+
+  it('US-04 AC5: a test moved to the day it was drawn changes the plan\'s latest value', async () => {
+    await guest({ weight: 82 });
+    await addMeasurement('ldl', 3.9, '2026-01-10');
+    await addMeasurement('ldl', 2.1, '2026-08-15'); // the latest, but drawn last December
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(ldlTile(view.container)).toBe('2.1 mmol/L'));
+
+    const header = Array.from(bloodMatrix(view.container).querySelectorAll<HTMLElement>('.bt-cell-movable'))
+      .find((b) => b.querySelector('input')!.value === '2026-08-15')!;
+    fireEvent.change(header.querySelector('input[type="date"]')!, { target: { value: '2025-12-01' } });
+    expect(active(await rowsOf('ldl')).map(day).sort()).toEqual(['2026-01-10', '2026-08-15']); // picking writes nothing
+    fireEvent.click(within(view.container.querySelector('.bt-move-panel') as HTMLElement).getByRole('button', { name: 'Move' }));
+
+    await waitFor(() => expect(ldlTile(view.container)).toBe('3.9 mmol/L'));
+    expect(await activeOn('ldl')).toEqual([[2.1, '2025-12-01'], [3.9, '2026-01-10']]);
+    const moved = (await rowsOf('ldl')).find((m) => day(m) === '2025-12-01')!;
+    expect((await rowsOf('ldl')).find((m) => m.id === moved.correctsId)).toMatchObject({ status: 'entered-in-error', recordedAt: expect.stringMatching(/^2026-08-15/) });
+    expect(trackProductEvent).toHaveBeenCalledWith('blood_test_moved');
   });
 
   // Review of 2026-09-24 (D2): a matrix saving two tests cleared its copy of

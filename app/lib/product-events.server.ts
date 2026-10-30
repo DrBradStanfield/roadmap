@@ -109,6 +109,7 @@ const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   chat_run_roadmap: ['count', 'rejected'],
   chat_profile_edit: ['field', 'choice'],
   cloud_connect_cancelled: ['provider'],
+  blood_test_moved: [], // US-04 AC5: the name alone
 };
 
 /**

@@ -79,9 +79,13 @@ const OLD_NMOL_PER_MG_L = 0.24;
 // rows right; the question's number-and-unit answers keep those rows safe.
 const TYPED_SOURCES: readonly unknown[] = ['manual', 'manual_correction', 'lab_import_edited'];
 
+// Kept on this page when the browser refuses the store: that must not leave the move
+// panel waiting on a question that is no longer shown (US-04 AC5).
+const keptHere = new Set<string>();
+
 const keptIds = (): unknown[] => {
   const kept = getJson<unknown>(LPA_CHECK_KEPT_KEY);
-  return Array.isArray(kept) ? kept : [];
+  return [...(Array.isArray(kept) ? kept : []), ...keptHere];
 };
 
 /** The row asked about, and the number the user would have typed into the
@@ -109,4 +113,12 @@ export function lpaRowsToCheck(rows: ApiMeasurement[], unitSystem: UnitSystem): 
 /** The report matches neither number, or its correction would save what is stored: keep the row as saved, and never ask about it again on this device. */
 export function keepLpaAsIs(id: string): void {
   setJson(LPA_CHECK_KEPT_KEY, [...keptIds(), id]);
+  if (!getJson<unknown[]>(LPA_CHECK_KEPT_KEY)?.includes(id)) keptHere.add(id);
+  for (const onChange of listeners) onChange();
+}
+
+/** Re-renders the caller when a row is kept as saved: the move panel waits on
+ *  the check, so it reads the answer as soon as it is given (US-04 AC5, Codex R1). */
+export function useLpaKept(): void {
+  useSyncExternalStore(subscribe, () => `${keptHere.size}:${safeGetItem(LPA_CHECK_KEPT_KEY)}`);
 }
