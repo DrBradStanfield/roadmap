@@ -139,3 +139,39 @@ describe('US-52 AC6 / US-15 AC7: a saved conversation keeps each question above 
     expect(s.getMessages('old').map((m) => m.content)).toEqual(['q1', 'a1']);
   });
 });
+
+describe('US-10 AC10: the 50-conversation cap evicts by the merged copy', () => {
+  const seed = async (s: ChatSession) => { for (let i = 0; i < 50; i++) await exchange(s, `c${String(i).padStart(2, '0')}`); };
+  const hosts = {
+    cloud: () => { const cloud = new MemoryCloud(); return () => cloudHost(new MemoryAdapter(cloud)); },
+    device: () => { const store = new DeviceStore(); const fence = { value: null }; return () => deviceHost(store, fence); },
+  };
+
+  for (const [tier, shared] of Object.entries(hosts)) {
+    it(`${tier}: a conversation another page just continued survives this page's new one`, async () => {
+      const host = shared();
+      await seed(await ChatSession.open(host()));
+      const laptop = await ChatSession.open(host()); // opened, then left open
+      const phone = await ChatSession.open(host());
+      await phone.recordExchange({ conversationId: 'c00', isNew: false, userText: 'a follow-up', assistantText: 'ok' });
+      await exchange(laptop, 'new');
+      const ids = (await ChatSession.open(host())).listConversations().map((c) => c.id);
+      expect(ids).toHaveLength(50);
+      expect(ids).toContain('c00');
+      expect(ids).toContain('new');
+      expect(ids).not.toContain('c01'); // the oldest by the merged copy goes
+      expect(laptop.listConversations().map((c) => c.id)).toEqual(ids);
+    });
+
+    it(`${tier}: with no other page, a new conversation past 50 still evicts the oldest`, async () => {
+      const host = shared();
+      const s = await ChatSession.open(host());
+      await seed(s);
+      await exchange(s, 'new');
+      const ids = (await ChatSession.open(host())).listConversations().map((c) => c.id);
+      expect(ids).toHaveLength(50);
+      expect(ids).not.toContain('c00');
+      expect(s.listConversations().map((c) => c.id)).toEqual(ids);
+    });
+  }
+});
