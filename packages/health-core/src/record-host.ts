@@ -29,8 +29,9 @@ export interface DeviceMirror {
    *  reached the cloud (US-11). */
   wipe(): Promise<void>;
   /** The cloud record has loaded: from now on this device's log-off, made in
-   *  another page, stops writes here too (US-09 AC2c). Not before: a load
-   *  that fails falls back to the device, whose copy is then its only store. */
+   *  another page, stops writes here too (US-09 AC2c), and so does one heard
+   *  while it loaded (AC2f). Not before: a load that fails falls back to the
+   *  device, whose copy is then its only store. */
   opened(): void;
 }
 

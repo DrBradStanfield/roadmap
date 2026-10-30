@@ -50,11 +50,30 @@ export function signalLogOff(): void {
 function latchOnLogOffSignal(event: Event): void {
   if ((event as StorageEvent).key === LOG_OFF_SIGNAL_KEY) stopLocalHealthWrites();
 }
+let logOffHeardWhileLoading = false;
+function noteLogOffSignal(event: Event): void {
+  if ((event as StorageEvent).key === LOG_OFF_SIGNAL_KEY) logOffHeardWhileLoading = true;
+}
+/** A cloud host was just built and its first read may still be running. The
+ *  log-off signal is set and removed at once, so note one heard now; the page
+ *  latches on it only if a cloud load succeeds (latchOnOtherTabsLogOff, via
+ *  mirror.opened()). A load that fails falls back to the device, whose copy is
+ *  then its only store, so a note alone never stops a write (US-09 AC2f). The
+ *  note is never reset: the OAuth return builds two cloud hosts in a row (the
+ *  lift, then the store), and every way back to a cloud from a fallback page
+ *  reloads the page. */
+export function noteOtherTabsLogOffWhileLoading(): void {
+  if (typeof window !== 'undefined') window.addEventListener('storage', noteLogOffSignal);
+}
 /** Only a cloud-mode page listens: there the device copy is a mirror. A local
  *  page's device copy is its only store, so latching would lose its edits.
  *  Re-adding the same listener is a no-op. */
 export function latchOnOtherTabsLogOff(): void {
-  if (typeof window !== 'undefined') window.addEventListener('storage', latchOnLogOffSignal);
+  if (logOffHeardWhileLoading) stopLocalHealthWrites();
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('storage', noteLogOffSignal);
+    window.addEventListener('storage', latchOnLogOffSignal);
+  }
 }
 export function roadmapLocalWritesStopped(): boolean {
   return localHealthWritesStopped();
