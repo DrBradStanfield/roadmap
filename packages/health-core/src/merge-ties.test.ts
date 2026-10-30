@@ -184,3 +184,73 @@ describe('US-09 AC23, US-10: an exact tie in eraseEpoch', () => {
     expect(merged.measurements).toEqual([]);
   });
 });
+
+describe('US-10 AC8: two spellings of one erasedAt instant resolve the same way in either order', () => {
+  it('equal epochs, no lists, erasedAt tie: the larger spelling, byte for byte both ways', () => {
+    const a = emptyFile();
+    const b = emptyFile();
+    a.meta.eraseEpoch = 2;
+    b.meta.eraseEpoch = 2;
+    a.meta.erasedAt = '2026-05-10T00:00:00.000Z';
+    b.meta.erasedAt = '2026-05-10T00:00:00Z'; // the same instant; 'Z' sorts after '.'
+    const ab = mergeFiles(a, b, OPTS);
+    const ba = mergeFiles(b, a, OPTS);
+    expect(JSON.stringify(ab)).toBe(JSON.stringify(ba));
+    expect(ab.meta.erasedAt).toBe('2026-05-10T00:00:00Z');
+  });
+});
+
+describe('US-10: recommendation snapshots on dates only one side has all survive, in a stable order', () => {
+  const snap = (date: string) => ({ date, suggestions: [{ id: `s_${date}` } as any] });
+
+  it('a local-only date and a remote-only date both survive the merge, in either order', () => {
+    const local = emptyFile();
+    const remote = emptyFile();
+    local.recommendationSnapshots = [snap('2026-06-02')];
+    remote.recommendationSnapshots = [snap('2026-06-01')];
+    expect(mergeFiles(local, remote, OPTS).recommendationSnapshots.map((s) => s.date)).toEqual(['2026-06-01', '2026-06-02']);
+    expect(mergeFiles(remote, local, OPTS).recommendationSnapshots.map((s) => s.date)).toEqual(['2026-06-01', '2026-06-02']);
+  });
+
+  it('snapshot order does not depend on merge order', () => {
+    const a = emptyFile();
+    const b = emptyFile();
+    a.recommendationSnapshots = [snap('2026-06-03'), snap('2026-06-01')];
+    b.recommendationSnapshots = [snap('2026-06-02')];
+    const merged = bothWays(a, b);
+    expect(JSON.stringify(mergeFiles(a, b, OPTS))).toBe(JSON.stringify(mergeFiles(b, a, OPTS)));
+    expect(merged.recommendationSnapshots.map((s) => s.date)).toEqual(['2026-06-01', '2026-06-02', '2026-06-03']);
+  });
+});
+
+describe('US-10: the erase-gate rescue re-merge keeps this merge\'s device and clock', () => {
+  // The higher epoch wins; the stale copy's row created after erasedAt is
+  // rescued through a second mergeFiles call, which must still see opts.
+  function rescueInputs() {
+    const erased = emptyFile();
+    erased.meta.eraseEpoch = 1;
+    erased.meta.erasedAt = '2026-05-10T00:00:00Z';
+    erased.meta.updatedAt = '2026-05-10T00:00:00Z';
+    const stale = emptyFile();
+    stale.meta.updatedAt = '2026-05-12T00:00:00Z';
+    stale.measurements = [measurement({ id: 'm_new', value: 2.1, recordedAt: '2026-05-11', createdAt: '2026-05-11T08:00:00Z' })];
+    return { erased, stale };
+  }
+
+  it('the rescued row survives, and lastDeviceId and updatedAt come from opts.now, in either order', () => {
+    const { erased, stale } = rescueInputs();
+    const merged = bothWays(erased, stale);
+    expect(merged.measurements.map((m) => m.id)).toEqual(['m_new']);
+    expect(merged.meta.eraseEpoch).toBe(1);
+    expect(merged.meta.lastDeviceId).toBe(OPTS.deviceId);
+    expect(merged.meta.updatedAt).toBe(OPTS.now);
+  });
+
+  it("the loser's later meta clock is not rewound when it is later than opts.now", () => {
+    const { erased, stale } = rescueInputs();
+    stale.meta.updatedAt = '2026-07-01T00:00:00Z'; // after OPTS.now
+    const merged = bothWays(erased, stale);
+    expect(merged.meta.updatedAt).toBe('2026-07-01T00:00:00Z');
+    expect(merged.meta.lastDeviceId).toBe(OPTS.deviceId);
+  });
+});

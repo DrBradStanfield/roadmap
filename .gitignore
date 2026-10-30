@@ -79,6 +79,6 @@ demo-video/public/review/
 # Third-party clinical pathways left this public repo and the chatbot (Brad, 2026-10-22; US-15 AC39)
 docs/pathway/
 
-# Weekly clinical mutation run (stryker.clinical.config.json); the incremental file is committed
+# Weekly clinical mutation run (stryker.clinical.config.json); only the baseline is committed
 reports/mutation/
 .stryker-tmp*/

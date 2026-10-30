@@ -24,7 +24,7 @@ const report = (extra: unknown[] = []) => ({
   },
 });
 
-describe('mutation-report', () => {
+describe('US-48 AC7: mutation-report', () => {
   it('scores per file and keys open mutants by text and enclosing declaration', () => {
     const { scores, open } = analyse(report());
     expect(scores[0].score).toBeCloseTo(50);

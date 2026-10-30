@@ -52,3 +52,7 @@ docs/wiki/research/
 
 # Archived, unsigned clinical drafts (never loaded by the server)
 archive/
+
+# Stryker sandboxes copy the whole repo, .env included, and survive a crashed run (US-48 AC7)
+.stryker-tmp*/
+reports/

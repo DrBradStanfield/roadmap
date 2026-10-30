@@ -348,7 +348,7 @@ export function generateSuggestions(
   }
 
   // Prompt to measure waist circumference when BMI 25-29.9 and waist data missing
-  if (results.bmi !== undefined && results.bmi > 25 && results.bmi < 30 && results.waistToHeightRatio === undefined) {
+  if (results.bmi !== undefined && results.bmi >= 25 && results.bmi < 30 && results.waistToHeightRatio === undefined) {
     suggestions.push({
       id: 'measure-waist',
       category: 'general',

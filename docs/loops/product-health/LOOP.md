@@ -29,11 +29,7 @@ unacted for a quarter, say so in the retro and propose the fleet review.
    on 09-20; this loop learned it from Gmail a week later).
 
 ## Gather (fan out workers; every unreachable source is a NAMED gap)
-- **Clinical mutation check**: skip ("no clinical change") when `git diff --quiet $(git log -1
-  --format=%H -- docs/loops/product-health/mutation-baseline.json) -- packages/health-core/src`
-  exits 0. Else `npm ci && TZ=UTC npm run mutation:clinical && npm run mutation:report`: the four
-  scores go in metrics.csv; every NEW survivor (file, function, original → replacement) is a backlog
-  item. Fix nothing; never `--update-baseline` (a build session does, after triage).
+- **Clinical mutation check**: follow [mutation-check.md](mutation-check.md) (US-48 AC7).
 - **GitHub account status, before any GitHub read**: zero Actions runs in 8
   days, a 404 fleet dashboard, or empty repo search is an account or platform
   question (check Gmail for a GitHub Support thread) before it is a quiet week
@@ -187,5 +183,4 @@ Commit `product-health: weekly report YYYY-Www` to main — the report is the
 delivery (constitution: no email by default). Open a "🎯 Decision needed"
 issue ONLY for items requiring Brad's call (keep-or-kill, spend, scope).
 
-Charter history: [changelog.md](changelog.md) — history file, exempt
-from the operative cap. History NEVER lives inside this charter.
+Charter history: [changelog.md](changelog.md): history, exempt from the cap; never inside this charter.

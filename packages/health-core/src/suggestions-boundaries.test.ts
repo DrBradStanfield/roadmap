@@ -69,6 +69,8 @@ describe('US-07 AC1: lipid tiers at each exact line (doc §3, §4)', () => {
     expect(family(plan({ ldlC: chol(160), totalCholesterol: tc }), 'total-chol-')).toEqual([]);
     expect(family(plan({ apoB: apoB(70), totalCholesterol: tc }), 'total-chol-')).toEqual([]);
     expect(family(plan({ totalCholesterol: tc }, { nonHdlCholesterol: chol(190) }), 'total-chol-')).toEqual([]);
+    expect(family(plan({ ldlC: chol(190), totalCholesterol: tc }), 'total-chol-')).toEqual([]);
+    expect(family(plan({ apoB: apoB(100), totalCholesterol: tc }), 'total-chol-')).toEqual([]);
     expect(family(plan({ ldlC: chol(130), totalCholesterol: tc }), 'total-chol-')).toEqual(['total-chol-high']);
   });
 
@@ -188,8 +190,7 @@ describe('US-07 AC1: conditional lifestyle cards at their lines (doc §4)', () =
     expect(waist(27, 0.45)).toBe(false);
   });
 
-  // code/doc disagree: doc §1 shows the waist prompt for BMI 25.0–29.9 with no waist; code needs BMI > 25, so 25.0 gets none.
-  it.fails('measure-waist at exactly BMI 25.0 with no waist (doc §1: 25.0–29.9, unknown WHtR → prompt)', () => {
+  it('measure-waist at exactly BMI 25.0 with no waist (doc §1: 25.0–29.9, unknown WHtR → prompt)', () => {
     expect(ids(plan({}, { bmi: 25 }))).toContain('measure-waist');
   });
 });
@@ -267,6 +268,9 @@ describe('US-06, US-07 AC1: screening eligibility at each age gate, one year eit
     expect([39, 40].map((a) => has('female', a, 'screening-breast'))).toEqual([false, true]);
     const pri = (age: number) => byId(plan({ sex: 'female' }, { age }, undefined, {}), 'screening-breast')?.priority;
     expect([40, 44, 45].map(pri)).toEqual(['info', 'info', 'attention']);
+    const text = (age: number) => byId(plan({ sex: 'female' }, { age }, undefined, {}), 'screening-breast')!.description;
+    expect(text(44)).toContain('optional');
+    expect(text(45)).not.toContain('optional');
     expect(has('male', 50, 'screening-breast')).toBe(false);
     expect(has('female', 45, 'screening-breast', { breastFrequency: 'not_yet_started' })).toBe(true);
   });
@@ -293,6 +297,9 @@ describe('US-06, US-07 AC1: screening eligibility at each age gate, one year eit
     expect(has('female', 50, 'screening-prostate')).toBe(false);
     expect(has('male', 50, 'screening-prostate', { prostateDiscussion: 'not_yet' })).toBe(true);
     expect(family(plan({}, { age: 50 }, undefined, { prostateDiscussion: 'elected_not_to' }), 'screening-prostate')).toEqual([]);
+    // Elected not to: no card even with an old PSA date on record.
+    expect(family(plan({}, { age: 50 }, undefined, { prostateDiscussion: 'elected_not_to', prostateLastDate: '2020-01' }), 'screening-prostate')).toEqual([]);
+    expect(family(plan({}, { age: 50 }, undefined, { prostateDiscussion: 'will_screen', prostateLastDate: '2020-01' }), 'screening-prostate')).toEqual(['screening-prostate-overdue']);
   });
 
   it('endometrial: women from 45; the bleeding card is urgent and never for men', () => {
@@ -303,6 +310,8 @@ describe('US-06, US-07 AC1: screening eligibility at each age gate, one year eit
     expect([44, 45].map((a) => has('female', a, 'screening-endometrial-bleeding', bleed))).toEqual([false, true]);
     expect(byId(plan({ sex: 'female' }, { age: 45 }, undefined, bleed), 'screening-endometrial-bleeding')?.priority).toBe('urgent');
     expect(has('male', 50, 'screening-endometrial-bleeding', bleed)).toBe(false);
+    expect(has('female', 50, 'screening-endometrial-bleeding')).toBe(false);
+    expect(has('female', 50, 'screening-endometrial-bleeding', { endometrialAbnormalBleeding: 'yes_reported' })).toBe(false);
     expect(has('male', 50, 'screening-endometrial')).toBe(false);
   });
 

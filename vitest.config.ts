@@ -45,6 +45,7 @@ export default defineConfig({
       "**/build/**",
       "**/.react-router/**",
       "**/.claude/**",
+      "**/.stryker-tmp*/**",
     ],
     server: {
       deps: {

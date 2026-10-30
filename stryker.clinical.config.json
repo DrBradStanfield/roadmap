@@ -32,7 +32,10 @@
     ".stryker-tmp*",
     "backups",
     "tmp",
-    "docs/**/*.pdf"
+    "docs/**/*.pdf",
+    ".env*",
+    "**/.env*",
+    ".mcp.json"
   ],
   "disableTypeChecks": false
 }
