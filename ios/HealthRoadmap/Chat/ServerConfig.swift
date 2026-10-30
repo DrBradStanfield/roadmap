@@ -14,7 +14,7 @@ enum ServerConfig {
         // The simulator talks to a server on this Mac (`npm run start`, port 3000).
         return URL(string: "http://127.0.0.1:3000")!
         #else
-        // PLACEHOLDER until Brad picks the host (D8 "Config"): the education Fly app.
+        // The education Fly app: Brad kept it as the release host (launch-checklist.md, step 2).
         return URL(string: "https://health-tool-edu.fly.dev")!
         #endif
     }

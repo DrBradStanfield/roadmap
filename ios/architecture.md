@@ -1019,8 +1019,8 @@ log a closed reason word, never the key id or IP.
 **Config.** `APP_ATTEST_TEAM_ID` (no default: Apple enrolment pending; until set, the
 endpoints answer 503), `APP_ATTEST_BUNDLE_ID` (default `com.drstanfield.healthroadmap`, the
 placeholder above), `APP_ATTEST_ALLOW_DEVELOPMENT`, `APP_ATTEST_DEV_BYPASS`,
-`APP_CHAT_DAILY_CAP`, `APP_LAB_DAILY_CAP`. The app's server address is a build setting; the release value is a
-placeholder until Brad picks the host.
+`APP_CHAT_DAILY_CAP`, `APP_LAB_DAILY_CAP`. The app's server address is `ServerConfig.baseURL`; the
+release value is `health-tool-edu.fly.dev`, which Brad kept as the host (launch-checklist.md, step 2).
 
 **Consent** (App Review 5.1.2(i)): before the first chat message, and before the first lab
 upload, a screen names Anthropic, says what is sent, that Brad's server keeps none of it,
