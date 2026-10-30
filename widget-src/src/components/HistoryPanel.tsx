@@ -392,8 +392,15 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
               {labMetricNames
                 .filter((name) => selectedLabMetrics.has(name))
                 .map((name) => {
-                  // Use the unit from the first value (consistent per metric)
-                  const unit = labSeries[name].rows[0]?.unit || '';
+                  const { units } = labSeries[name];
+                  // One line through values in different units would be a false trend (US-21 AC3a).
+                  if (units.length > 1) return (
+                    <div key={name} className="metric-chart-container">
+                      <h3>{labSeries[name].label}</h3>
+                      <p className="history-note">Units vary between reports ({units.join(', ')}), so this test is not charted.</p>
+                    </div>
+                  );
+                  const unit = units[0] ?? '';
                   return (
                     <TimeSeriesChart
                       key={name}

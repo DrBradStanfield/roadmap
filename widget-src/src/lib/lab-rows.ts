@@ -129,18 +129,21 @@ export function countLabValuePoints(groups: LabValueGroup[]): number {
 
 /** One history series per lab SLOT (US-10) — "Vitamin D" and `vitamin_d` are
  *  one chart, not two — labelled from the catalogue when the test is known.
+ *  `units` holds each distinct display unit, as the table shows them (US-21 AC3a).
  *  Series come back sorted by label; rows keep their loaded order. */
 export function groupLabHistory(rows: LabValueRow[]): {
   keys: string[];
-  series: Record<string, { label: string; rows: LabValueRow[] }>;
+  series: Record<string, { label: string; rows: LabValueRow[]; units: string[] }>;
 } {
-  const series: Record<string, { label: string; rows: LabValueRow[] }> = {};
+  const series: Record<string, { label: string; rows: LabValueRow[]; units: string[] }> = {};
   for (const row of rows) {
     const key = labSlotKey(row.metricName);
     if (!series[key]) {
-      series[key] = { label: labValueLabel(row.metricName), rows: [] };
+      series[key] = { label: labValueLabel(row.metricName), rows: [], units: [] };
     }
     series[key].rows.push(row);
+    const unit = displayLabUnit(row.unit, resolveLabCatalogEntry(row.metricName));
+    if (!series[key].units.includes(unit)) series[key].units.push(unit);
   }
   const keys = Object.keys(series).sort((a, b) => series[a].label.localeCompare(series[b].label));
   return { keys, series };
