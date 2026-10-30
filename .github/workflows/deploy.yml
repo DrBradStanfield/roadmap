@@ -32,6 +32,10 @@ on:
         type: choice
         options: [all, fly-only, shopify-only]
         default: all
+      sweeps_since:
+        description: "Only if the sweep check finds no earlier successful Deploy run: the sha last deployed"
+        type: string
+        default: ""
   pull_request:
     types: [closed]
 
@@ -95,28 +99,46 @@ jobs:
 
       # CLAUDE.md: other sessions' work is committed as "Swept, unreviewed: ..."
       # and the DEPLOY is gated (US-46 AC10). Every such commit on main since
-      # the last successful Deploy run blocks, on both paths, until a commit
-      # message carries a line "Reviewed-sweep: <its sha, 7+ characters>".
+      # the last successful Deploy run blocks, on both paths, until any commit
+      # message in that range carries a line "Reviewed-sweep: <its sha, 7+
+      # characters>". A refusal, or a failed check, is filed as an issue for
+      # Brad: on the auto-ship path the bot's failed run reaches no one.
       - name: Refuse unreviewed sweeps since the last deploy
         env:
           GH_TOKEN: ${{ github.token }}
+          SINCE_INPUT: ${{ inputs.sweeps_since }}
         run: |
           set -euo pipefail
+          why="the sweep check itself failed; see the run log"; list=""
+          file_refusal() {
+            local t="Deploy refused: unreviewed sweeps on main" n body
+            body=$(printf '%s\n' "@DrBradStanfield, a deploy stopped before its veto email: ${why}" "" "${list}" "" \
+              "Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID} (${GITHUB_EVENT_NAME}, ${GITHUB_ACTOR}). Nothing shipped." \
+              "When cleared, dispatch Deploy again (a re-run of a PR-triggered run fails at the main-tip check).")
+            n=$(gh issue list -R "${GITHUB_REPOSITORY}" --state open --search "\"${t}\" in:title" --json number,title \
+              --jq "[.[] | select(.title == \"${t}\")][0].number // empty")
+            if [ -n "${n}" ]; then gh issue comment "${n}" -R "${GITHUB_REPOSITORY}" --body "${body}"
+            else gh issue create -R "${GITHUB_REPOSITORY}" --title "${t}" --assignee DrBradStanfield --body "${body}"; fi
+          }
+          trap 'rc=$?; if [ "${rc}" != 0 ]; then echo "::error::${why}"; echo "${list}"; file_refusal || true; fi; exit "${rc}"' EXIT
           last=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/deploy.yml/runs?status=success&per_page=1" \
             --jq '.workflow_runs[0].head_sha // empty')
-          [ -n "${last}" ] || { echo "::error::No earlier successful Deploy run to compare with."; exit 1; }
+          last=${last:-${SINCE_INPUT:-}}
+          why="No earlier successful Deploy run to compare with: dispatch Deploy with sweeps_since set to the sha last deployed."
+          [ -n "${last}" ] || exit 1
+          why="the sweep check itself failed; see the run log"
           main=$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq '.sha')
-          unreviewed=$(gh api "repos/${GITHUB_REPOSITORY}/compare/${last}...${main}" | jq -r '
-            if .total_commits > (.commits | length) then "more commits than the compare lists: check by hand" else
+          # The compare lists 250 commits at most unless paged.
+          range=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/compare/${last}...${main}?per_page=100" \
+            | jq -s '{total: .[0].total_commits, commits: [.[].commits[]]}')
+          list=$(jq -r '
+            if .total != (.commits | length) then error("the compare listed \(.commits | length) of \(.total) commits") else
             [.commits[].commit.message | split("\n")[] | capture("^Reviewed-sweep: *(?<s>[0-9a-f]{7,40})\\s*$") | .s] as $ok
             | .commits[] | select(.commit.message | startswith("Swept, unreviewed"))
             | select(.sha as $s | $ok | any(. as $p | $s | startswith($p)) | not)
-            | "\(.sha[0:12]) \(.commit.message | split("\n")[0] | .[0:100])" end')
-          if [ -n "${unreviewed}" ]; then
-            echo "::error::Unreviewed sweeps on main since the last deploy (${last:0:12}). Review each, then commit a message with a line 'Reviewed-sweep: <sha>' per sweep:"
-            echo "${unreviewed}"
-            exit 1
-          fi
+            | "\(.sha[0:12]) \(.commit.message | split("\n")[0] | .[0:100])" end' <<<"${range}")
+          why="Unreviewed sweeps on main since the last deploy (${last:0:12}). Review each, then commit a message with a line 'Reviewed-sweep: <sha>' per sweep:"
+          [ -z "${list}" ] || exit 1
           echo "No unreviewed sweeps between ${last:0:12} and ${main:0:12}."
 
       # Zero-click autonomy relies on a VISIBLE veto window: this issue is
