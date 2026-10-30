@@ -312,7 +312,6 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
     return { grouped: g, metricTypes: Object.keys(g).sort() };
   }, [measurements]);
 
-  // One series per lab slot key, so spelling variants share a chart (US-10).
   // Each chart's points, built once per load: a fresh array every render would
   // rebuild every chart on any tick (US-06 AC4a).
   const chartData = useMemo(() => Object.fromEntries(metricTypes.map((mt) => [mt, grouped[mt].map((m) => ({
@@ -320,6 +319,7 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
     y: toDisplayValue(mt, m.value, unitSystem),
   }))])), [grouped, metricTypes, unitSystem]);
 
+  // One series per lab slot key, so spelling variants share a chart (US-10).
   const { labSeries, labMetricNames, labColorMap } = useMemo(() => {
     const { keys, series } = groupLabHistory(labVals);
     const colors: Record<string, string> = {};

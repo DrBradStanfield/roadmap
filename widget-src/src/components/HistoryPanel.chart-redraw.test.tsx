@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * US-06 AC4a: a history chart is drawn again only when what it shows changes.
- * Ticking another metric's box leaves it alone, and choosing a medication
+ * Ticking or unticking another metric's or lab test's box leaves it alone, and choosing a medication
  * change in its list shows that change's number on the same chart, with no
  * redraw. With reduced motion asked for, charts appear without the draw-in.
  */
@@ -46,6 +46,7 @@ afterEach(() => {
 
 const ldlCharts = () => chart.made.filter(c => c.data.datasets[0].data.length === 2);
 const labCharts = () => chart.made.filter(c => c.data.datasets[0].data.length === 3);
+const weightCharts = () => chart.made.filter(c => c.data.datasets[0].data.length === 1);
 const shownNumbers = (config: any) =>
   Object.values(config.options.plugins.annotation.annotations as Record<string, { label: { display: boolean; content: string } }>)
     .filter(pin => pin.label.display).map(pin => pin.label.content);
@@ -69,6 +70,27 @@ describe('US-06 AC4a — history charts are not redrawn for nothing', () => {
     expect(ldlCharts()).toHaveLength(made);
     expect(labCharts()).toHaveLength(madeLab);
     expect(chart.destroyed).toBe(destroyed + 1); // the weight chart only
+  });
+
+  it('US-06 AC4a: re-ticking a metric and unticking a lab test leave the other charts as they are', async () => {
+    const view = await open();
+    await waitFor(() => expect(view.container.querySelectorAll('canvas')).toHaveLength(3));
+    fireEvent.click(view.getByRole('checkbox', { name: /Weight/ }));
+    await waitFor(() => expect(view.container.querySelectorAll('canvas')).toHaveLength(2));
+    const made = ldlCharts().length;
+    const madeLab = labCharts().length;
+    const madeWeight = weightCharts().length;
+    fireEvent.click(view.getByRole('checkbox', { name: /Weight/ }));
+    await waitFor(() => expect(view.container.querySelectorAll('canvas')).toHaveLength(3));
+    expect(weightCharts()).toHaveLength(madeWeight + 1); // the weight chart is drawn again
+    expect(ldlCharts()).toHaveLength(made);
+    expect(labCharts()).toHaveLength(madeLab);
+    const destroyed = chart.destroyed;
+    fireEvent.click(view.getByRole('checkbox', { name: /Zinc/ }));
+    await waitFor(() => expect(view.container.querySelectorAll('canvas')).toHaveLength(2));
+    expect(ldlCharts()).toHaveLength(made);
+    expect(weightCharts()).toHaveLength(madeWeight + 1);
+    expect(chart.destroyed).toBe(destroyed + 1); // the Zinc chart only
   });
 
   it('US-06 AC4a: choosing a medication change shows its number on the same chart, without a redraw', async () => {
