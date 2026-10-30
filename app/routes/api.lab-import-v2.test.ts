@@ -236,6 +236,15 @@ describe('a single file that stopped short', () => {
     }));
   });
 
+  it('US-12 AC17: a single file costs one of the IP\'s 200 files', async () => {
+    extractOrClassify.mockResolvedValueOnce({ classification: 'other' });
+    const request = single();
+    const ip = request.headers.get('fly-client-ip')!;
+    await action({ request } as never);
+    const preflight = await loader({ request: new Request('https://health-tool-app.fly.dev/api/lab-import-v2', { headers: { 'fly-client-ip': ip } }) } as never);
+    expect((await preflight.json()).remaining).toBe(199);
+  });
+
   // One deadline for the file: a malformed answer's re-send gets what is left,
   // never a fresh 60 s.
   it('gives the file one 60 s deadline', async () => {
@@ -487,6 +496,7 @@ describe('lab-import body cap (US-09 AC25)', () => {
     });
     const res = await action({ request } as never);
     expect(res.status).toBe(413);
+    expect(await res.json()).toEqual({ success: false, error: 'Request too large' });
     expect(pulled.bytes).toBeLessThanOrEqual(202 * MB);
     expect(createBatch).not.toHaveBeenCalled();
   });

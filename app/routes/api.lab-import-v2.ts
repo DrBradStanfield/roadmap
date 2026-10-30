@@ -51,6 +51,17 @@ const dailyLimit = () => Response.json(
   { status: 429 },
 );
 
+/**
+ * US-12 AC17b: with no file left today for this IP or the machine, only a poll
+ * can succeed, so no more than a poll's body is read, and a larger one gets the
+ * daily-limit answer.
+ */
+function bodyLimit(ip: string): { cap: number; tooLarge: () => Response } {
+  const spent = ipQuota.remaining(ip) === 0 || machineFiles.remaining('machine') === 0;
+  if (spent) return { cap: SMALL_BODY_CAP, tooLarge: dailyLimit };
+  return { cap: 200 * 1024 * 1024, tooLarge: () => Response.json({ success: false, error: 'Request too large' }, { status: 413 }) };
+}
+
 /** Hand back files charged for a batch Anthropic certainly did not create. */
 function refundQuota(ip: string, count: number): void {
   ipQuota.refund(ip, count);
@@ -131,15 +142,11 @@ export async function action({ request }: ActionFunctionArgs) {
     return Response.json({ success: false, error: 'Forbidden' }, { status: 403 });
   }
   const ip = getClientIp(request, 'shopify');
-  // US-12 AC17b: with no file left today for this IP or the machine, only a
-  // poll can succeed, so no more than a poll's body is read.
-  const spent = ipQuota.remaining(ip) === 0 || machineFiles.remaining('machine') === 0;
+  const limit = bodyLimit(ip);
 
   try {
-    const body = await parseSimpleRequestJson(request, spent ? SMALL_BODY_CAP : 200 * 1024 * 1024);
-    if (body === BODY_TOO_LARGE) {
-      return spent ? dailyLimit() : Response.json({ success: false, error: 'Request too large' }, { status: 413 });
-    }
+    const body = await parseSimpleRequestJson(request, limit.cap);
+    if (body === BODY_TOO_LARGE) return limit.tooLarge();
 
     // --- Batch poll --- (costs no quota; it reads a batch already paid for)
     const poll = body as { batchId?: unknown; pollToken?: unknown } | null;
