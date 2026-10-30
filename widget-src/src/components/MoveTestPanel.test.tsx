@@ -101,6 +101,19 @@ describe('US-04 AC5: the saved column header', () => {
     expect(listed).toEqual(['LDL Cholesterol 3.2 mmol/L', 'PSA 1.1 ng/mL', 'Ferritin 210 µg/L']);
   });
 
+  it('brings the panel into view, since on a phone it opens below the whole table', async () => {
+    const scrolled = vi.fn();
+    Element.prototype.scrollIntoView = scrolled;
+    try {
+      const { pick, panel } = matrix();
+      pick(FROM, TO);
+      await wait(0);
+      expect(scrolled.mock.contexts[0]).toBe(panel());
+    } finally {
+      delete (Element.prototype as Partial<Element>).scrollIntoView;
+    }
+  });
+
   it('is disabled while its column holds typed text', async () => {
     const { view, header } = matrix();
     const fromCell = view.container.querySelectorAll<HTMLInputElement>('[data-metric="apob"] .bt-cell-backfill input')[1];

@@ -4,7 +4,7 @@
 // names every value that moves and asks about each clash. The page owns one
 // move for both matrices (InputPanel); only the Move button writes.
 
-import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   METRIC_LABELS, METRIC_TO_FIELD,
   type FileLabValue, type FileMeasurement, type MetricType, type MoveKeep, type MovePlan, type MoveRejection, type UnitSystem,
@@ -109,6 +109,9 @@ function MoveTestPanel({ from, to, api, unitSystem, unitOverrides, bloodTestHist
   const [lpaUnit] = useLpaUnit(unitSystem);
   useLpaKept(); // the check's "keep as saved" answer frees Move
   const plan = useMemo(() => api.preview(from, to), [api, from, to, bloodTestHistory, labValues]);
+  // On a phone the panel opens below the whole table, out of sight of the header just tapped.
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => { panelRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' }); }, [from, to]);
   if (!plan) return null;
   const refused = !('rows' in plan);
 
@@ -162,7 +165,7 @@ function MoveTestPanel({ from, to, api, unitSystem, unitOverrides, bloodTestHist
   };
 
   return (
-    <div className="screening-notice bt-move-panel">
+    <div ref={panelRef} className="screening-notice bt-move-panel">
       {refused ? <p>{refusalText(plan)}</p> : body(plan)}
       {lpaWaits && <p className="lpa-check-note">{MOVE_LPA}</p>}
       {error && <p className="alr-add-notice">{error}</p>}
