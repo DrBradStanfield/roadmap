@@ -129,6 +129,14 @@ export const PRODUCT_EVENT_NAMES = [
   // since which cards show can reveal a health state.
   'us_product_shown',
   'us_product_link_clicked',
+  // US-62 AC1, the web redesign's usage signal. `tool_opened` is the
+  // denominator, metadata `{ device }` (TOOL_DEVICES); `onboarding_step` names
+  // the step (ONBOARDING_STEPS), never its answer; `onboarding_done` is the
+  // name alone; `signin_opened` carries its own SIGNIN_PLACEMENTS.
+  'tool_opened',
+  'onboarding_step',
+  'onboarding_done',
+  'signin_opened',
 ] as const;
 
 /** The `chat_profile_edit` counter's words (US-16 AC2): which profile field, and what the user did. */
@@ -210,8 +218,16 @@ export type McpToolName = (typeof MCP_TOOL_NAMES)[number] | (typeof MCP_KNOWLEDG
 
 /** The `mcp_import` counter's three closed vocabularies (US-35 usage signal). */
 export const MCP_IMPORT_ROUTES = ['dropbox', 'drive_refused', 'assistant'] as const;
-/** The `guide_opened` counter's surfaces (US-38): the column header, or its mobile foot. */
-export const GUIDE_PLACEMENTS = ['header', 'footer'] as const;
+/** The `guide_opened` counter's surfaces (US-38): the column header, or its
+ *  mobile foot; `plan_footer` is the redesign's foot of the plan (US-62 AC1). */
+export const GUIDE_PLACEMENTS = ['header', 'footer', 'plan_footer'] as const;
+/** The `signin_opened` counter's surfaces (US-62 AC1). Its own list: a
+ *  guide placement on a sign-in row, or the reverse, would split both counts. */
+export const SIGNIN_PLACEMENTS = ['top_bar', 'plan_panel'] as const;
+/** The `tool_opened` counter's device (US-62 AC1). */
+export const TOOL_DEVICES = ['phone', 'desktop'] as const;
+/** The `onboarding_step` counter's step names (US-62 AC1): which question, never its answer. */
+export const ONBOARDING_STEPS = ['measurements', 'sex', 'birth'] as const;
 /** The `upload_outcome` counter's integer counts (US-12 AC10): files seen, then
  *  how each ended. `truncated` overlaps the rest and `valuesDropped` counts value
  *  rows the parse refused, not files; the others sum to `picked`. `refused` and

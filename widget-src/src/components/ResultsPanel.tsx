@@ -643,7 +643,7 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
               <span className="stat-status">Awaiting</span>
             </div>
             <div className="stat-card stat-card--awaiting">
-              <span className="stat-label">Ideal Body Weight</span>
+              <span className="stat-label">Ideal Body Weight (IBW)</span>
               <span className="stat-value">—</span>
               <span className="stat-status">Awaiting</span>
             </div>

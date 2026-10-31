@@ -66,6 +66,30 @@ describe('trackProductEvent on the Shopify surface', () => {
     expect(metadata).toEqual([{ product: 'microvitamin_plus' }, { product: 'sleep' }]);
   });
 
+  it('US-62 AC2 — counts each onboarding step once per tab, so three steps in one tab all arrive', async () => {
+    const { trackProductEvent } = await import('./server-api');
+    trackProductEvent('onboarding_step', { step: 'measurements' });
+    trackProductEvent('onboarding_step', { step: 'sex' });
+    trackProductEvent('onboarding_step', { step: 'birth' });
+    trackProductEvent('onboarding_step', { step: 'sex' }); // a re-answered step counts once
+    const metadata = fetchMock.mock.calls.map(([, init]) => JSON.parse((init as RequestInit).body as string).metadata);
+    expect(metadata).toEqual([{ step: 'measurements' }, { step: 'sex' }, { step: 'birth' }]);
+  });
+
+  it('US-62 AC2 — counts sign-in and guide opens once per placement per tab', async () => {
+    const { trackProductEvent } = await import('./server-api');
+    trackProductEvent('signin_opened', { placement: 'top_bar' });
+    trackProductEvent('signin_opened', { placement: 'top_bar' });
+    trackProductEvent('signin_opened', { placement: 'plan_panel' });
+    trackProductEvent('guide_opened', { placement: 'header' });
+    trackProductEvent('guide_opened', { placement: 'footer' });
+    trackProductEvent('guide_opened', { placement: 'header' });
+    const sent = fetchMock.mock.calls.map(([, init]) => JSON.parse((init as RequestInit).body as string));
+    expect(sent.map((b) => [b.eventName, b.metadata.placement])).toEqual([
+      ['signin_opened', 'top_bar'], ['signin_opened', 'plan_panel'], ['guide_opened', 'header'], ['guide_opened', 'footer'],
+    ]);
+  });
+
   it('US-09 AC22 — counts a cloud-connect outcome once per provider per tab, so a second provider is not dropped', async () => {
     const { trackProductEvent } = await import('./server-api');
     trackProductEvent('cloud_connect_cancelled', { provider: 'dropbox' });

@@ -58,6 +58,28 @@ final class MyDataLayoutTests: XCTestCase {
         XCTAssertEqual(pressure.sources.first?.url.host(), "doi.org")
     }
 
+    /// US-58 AC7 (Brad 2026-10-31): each Apple Health page (heart rate, resting heart rate, sleep,
+    /// VO2 max, steps) finds its guide in the engine's My data by its snake-case `guideKey`, the
+    /// guide `MyDataView` hands `LiveHealthPage` for the foot of the page.
+    func testEveryAppleHealthPageFindsItsGuide_US58_AC7() throws {
+        let engine = try HealthEngine()
+        let empty = try record(engine)
+        let shown = try engine.blocking { [now] in try $0.myData(recordJSON: empty, now: now, deviceId: "test") }
+        let guides = try XCTUnwrap(shown.guides)
+        XCTAssertEqual(LiveMetric.allCases.map(\.guideKey), ["heart_rate", "resting_heart_rate", "sleep", "vo2_max", "steps"])
+        let titles: [LiveMetric: String] = [.heartRate: "Heart rate", .restingHeartRate: "Resting heart rate", .sleep: "Sleep", .vo2Max: "VO2 max", .steps: "Steps"]
+        let headings: [LiveMetric: String] = [.heartRate: "How to read it", .restingHeartRate: "How to read it", .sleep: "How to sleep well",
+                                              .vo2Max: "How to get a good estimate", .steps: "How to add steps"]
+        for metric in LiveMetric.allCases {
+            let guide = try XCTUnwrap(guides[metric.guideKey], metric.rawValue)
+            XCTAssertEqual(guide.title, titles[metric], metric.rawValue)
+            XCTAssertEqual(guide.howTo.heading, headings[metric], metric.rawValue)
+            XCTAssertFalse(guide.howTo.points.isEmpty, metric.rawValue)
+            XCTAssertFalse(guide.sources.isEmpty, metric.rawValue)
+            XCTAssertTrue(guide.sources.allSatisfy { MetricGuide.link($0) != nil }, metric.rawValue)
+        }
+    }
+
     /// US-58 AC4b (2026-10-26): every row opens its page; an empty metric's page has its guide
     /// and no readings ("No data yet", "Add your first value").
     func testAnEmptyMetricOpensAPageWithItsGuide_US58() throws {

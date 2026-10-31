@@ -11,10 +11,7 @@ export function GuideLink() {
       target="_blank"
       rel="noopener"
       className="hr-guide-card no-print"
-      // TODO(web redesign events): send placement 'plan_footer' once the server's
-      // GUIDE_PLACEMENTS has it (PR claude/redesign-events-server). Until then
-      // the old foot-of-column word stands in, so a click is still counted.
-      onClick={() => trackProductEvent('guide_opened', { placement: 'footer' })}
+      onClick={() => trackProductEvent('guide_opened', { placement: 'plan_footer' })}
     >
       <span className="hr-guide-card-title">Supercharge this tool</span>
       <span className="hr-guide-card-line">Open source. Use your record with ChatGPT, Claude or the command line.</span>

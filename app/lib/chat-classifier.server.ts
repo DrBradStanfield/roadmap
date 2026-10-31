@@ -18,9 +18,9 @@
  *   - claude_business docs/chat-knowledge-map-v2.md § Pre-router classifier (the "why")
  *   - claude_business docs/chat-overview.md Diagram 6 (the picture)
  *
- * Failure mode is fail-safe: any classifier error → router still fires
- * (matches today's behavior). The classifier can only OMIT a router call,
- * never substitute one.
+ * Failure mode is fail-safe: any classifier error → router still fires. The
+ * one exception is on YouTube: an answer that is not a label, or a refusal
+ * (isUnreadableAnswer), skips the comment silently (US-15 AC48).
  *
  * Separate file from chat-router.server.ts so the two prompts evolve
  * independently and the router cache stays untouched.
@@ -64,6 +64,16 @@ export function shouldFireRouter(result: ClassificationResult): boolean {
   return result.classification === Classification.ROUTE || result.classification === Classification.ERROR;
 }
 
+/**
+ * The model answered but gave no label: it refused, or wrote a word that is
+ * none. Unlike a timeout or an API failure, a retry would not help, so the
+ * YouTube bot skips these silently (US-15 AC48).
+ */
+export function isUnreadableAnswer(result: Pick<ClassificationResult, 'classification' | 'error'>): boolean {
+  return result.classification === Classification.ERROR
+    && (result.error === 'refusal' || result.error?.startsWith('unparseable:') === true);
+}
+
 // ---------------------------------------------------------------------------
 // Classifier prompt — loaded from chat-classifier-prompt.md with a 60s TTL,
 // mirroring chat-router.server.ts. Lets Brad edit the prompt and see effects
@@ -73,6 +83,7 @@ export function shouldFireRouter(result: ClassificationResult): boolean {
 
 let cachedPrompt: string | null = null;
 let promptCachedAt = 0;
+let promptMissingReported = false;
 const PROMPT_TTL_MS = 60_000;
 const PROMPT_PATH = path.join(process.cwd(), 'app/lib/chat-classifier-prompt.md');
 
@@ -99,6 +110,28 @@ export async function classifyMessage(
 ): Promise<ClassificationResult> {
   const t0 = Date.now();
 
+  // No prompt means every answer would be unparseable, which YouTube drops for
+  // good (US-15 AC48). Fail open instead, without a wasted call; Sentry once.
+  const prompt = getClassifierPrompt();
+  if (!prompt) {
+    if (!promptMissingReported) {
+      promptMissingReported = true;
+      Sentry.captureMessage('Chat classifier: prompt missing', {
+        level: 'error',
+        tags: { feature: 'chat', subsystem: 'classifier' },
+      });
+    }
+    return {
+      classification: Classification.ERROR,
+      routerSkipped: false,
+      latencyMs: Date.now() - t0,
+      cacheHit: false,
+      raw: '',
+      usage: EMPTY_USAGE,
+      error: 'no prompt',
+    };
+  }
+
   // Same input sanitization as the router — strip control chars, cap length.
   const safeCurrent = sanitizeForRouter(currentMessage);
   const safeFirst = firstMessage ? sanitizeForRouter(firstMessage) : undefined;
@@ -116,7 +149,7 @@ export async function classifyMessage(
     system: [
       {
         type: 'text',
-        text: getClassifierPrompt(),
+        text: prompt,
         cache_control: PROMPT_CACHE,
       },
     ],

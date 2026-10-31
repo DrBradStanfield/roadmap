@@ -27,6 +27,6 @@ describe('US-38 AC1 GuideLink', () => {
     const { getByRole } = render(<GuideLink />);
     fireEvent.click(getByRole('link'));
     expect(trackProductEvent).toHaveBeenCalledTimes(1);
-    expect(trackProductEvent).toHaveBeenLastCalledWith('guide_opened', { placement: 'footer' });
+    expect(trackProductEvent).toHaveBeenLastCalledWith('guide_opened', { placement: 'plan_footer' });
   });
 });

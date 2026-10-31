@@ -122,7 +122,7 @@ export function statTiles(results: HealthResults, { unitSystem, unitOverrides, s
   }
   if (adult) {
     tiles.push({
-      key: 'ibw', label: 'Ideal Body Weight',
+      key: 'ibw', label: 'Ideal Body Weight (IBW)',
       value: formatDisplayValue('weight', results.idealBodyWeight, usFor('weight')), unit: getDisplayLabel('weight', usFor('weight')),
       // Height reads in the plan's units: it has no per-test toggle.
       // No tone: a fact, not a grade, so neutral gray (Brad 2026-10-31).

@@ -189,7 +189,14 @@ struct ChatView: View {
         let question = question.trimmingCharacters(in: .whitespacesAndNewlines)
         // One turn at a time: a double tap sends once, and Stop always cancels the turn on screen.
         guard turn == nil, !question.isEmpty, AIConsent.chat.given else { return }
-        turn = Task { await send(question) }
+        // A failed turn is never history (US-52 AC6d), so a retried first question is still new.
+        let earlier = transcript.history
+        // The question goes on screen now, so a Stop always acts on this turn, never the one before.
+        let answerIndex = transcript.ask(question)
+        // An erase while the answer streams empties `lines` and the history: from then on
+        // this turn is dropped, never indexed into the new lines or saved (review R1).
+        let erasures = store.erasures
+        turn = Task { await send(question, earlier: earlier, answerIndex: answerIndex, erasures: erasures) }
     }
 
     /// Cancels the turn in flight. The screen moves on now, not when the request unwinds:
@@ -203,21 +210,15 @@ struct ChatView: View {
         if let question = transcript.stop(), draft.isEmpty { draft = question }
     }
 
-    private func send(_ question: String) async {
-        // A failed turn is never history (US-52 AC6d), so a retried first question is still new.
-        let earlier = transcript.history
+    private func send(_ question: String, earlier: [ChatClient.Turn], answerIndex: Int, erasures: Int) async {
         let isNew = earlier.isEmpty
         let conversation = conversationId
-        // An erase while the answer streams empties `lines` and the history: from then on
-        // this turn is dropped, never indexed into the new lines or saved (review R1).
-        let erasures = store.erasures
         let askedAt = ChatHistoryStore.erasures
         // A stopped or erased turn changes nothing more on screen.
         func live() -> Bool { store.erasures == erasures && !Task.isCancelled }
         asking = false
         // A stopped turn leaves these to Stop, and to the turn that may follow it.
         defer { if !Task.isCancelled { turn = nil; status = nil } }
-        let answerIndex = transcript.ask(question)
 
         do {
             let context = try await engine.chatContext(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)

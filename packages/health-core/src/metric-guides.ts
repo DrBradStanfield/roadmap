@@ -7,11 +7,14 @@
  * standard prescribing facts Brad approved (side effects, how a drug works; Brad
  * 2026-10-25), the standard measuring and preparation tips he approved as a category,
  * and the lines he restored (Brad 2026-10-26; docs/drafts/metric-guides.md). Sources are evidence.ts's own references, never a new citation.
+ * The five Apple Health guides (Brad 2026-10-31; docs/drafts/live-metric-guides.md) restate the claims he
+ * approved there, which roadmap_text.html now states and cites; Apple sources back only device facts.
  * metric-guides.test.ts holds both rules: every source resolves to an evidence.ts
  * reference, and every number is on its entry's list, found in the clinical files.
  *
  * Keys: metric types from mappings.ts (blood pressure as one, `blood_pressure`), height,
- * and MEDICATION_KEYS without the two escalation answers. The iOS engine serves them on
+ * MEDICATION_KEYS without the two escalation answers, and the five Apple Health metrics in snake case
+ * (the app's `LiveMetric.guideKey`). The iOS engine serves them on
  * My data (ios/engine/my-data.ts), so a correction ships over the air (ios/architecture.md D3).
  */
 import { GUIDE_REFERENCES, SUGGESTION_EVIDENCE, STAT_CARD_EVIDENCE, getBmiEvidence, getIbwEvidence, type SuggestionReference } from './evidence';
@@ -39,6 +42,7 @@ function ref(labelStart: string): SuggestionReference {
 const MEASURE = 'How to measure';
 const PREPARE = 'How to prepare';
 const WORKS = 'How it works and side effects';
+const READ = 'How to read it';
 const NO_FASTING = 'Most labs no longer require fasting for a cholesterol panel.';
 const FAST_REPEAT = 'If your triglycerides come back high, your doctor may repeat the test after a fast.';
 const TALK = 'If you notice side effects, talk to your doctor.';
@@ -269,5 +273,66 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
       TALK,
     ] },
     sources: [ref('Knowler 2002'), ref('Lee 2021'), ref('Konopka 2019'), ref('Moreno-Cabanas 2022')],
+  },
+
+  // ── Apple Health (US-56 pages; US-58 AC7, Brad 2026-10-31) ──
+  // Apple's pages are cited only for how its devices measure, never for a clinical claim.
+  heart_rate: {
+    title: 'Heart rate',
+    whatItIs: 'How many times your heart beats each minute (bpm). Apple Watch reads it through the skin with green light, at times through the day and more often during a workout.',
+    whyItMatters: 'Heart rate rises with activity, stress, caffeine, heat, dehydration and illness, and falls as you rest. The pattern over days tells you more than any one reading. A racing or very slow pulse with chest pain, fainting, dizziness or breathlessness needs prompt medical care.',
+    howTo: { heading: READ, points: [
+      'Compare readings taken at rest with each other, not with readings taken just after moving.',
+      'Wear the watch snug on top of your wrist. A loose band gives poorer readings.',
+      'If your watch warns of a high, low or irregular heart rate, tell your doctor.',
+    ] },
+    sources: [ref('Apple 2026 – Monitor your heart rate')],
+  },
+  resting_heart_rate: {
+    title: 'Resting heart rate',
+    whatItIs: 'Your heart rate when you are calm and still: the lowest it runs while you are awake and resting. Apple Watch estimates it each day from readings taken while you sit still, so the day\'s value can change as more readings come in.',
+    whyItMatters: 'In large studies, people with a higher resting heart rate had a higher risk of heart disease and of dying early, even after allowing for other risk factors. In a meta-analysis of 46 studies, each 10 bpm higher was linked with about 9% higher risk of death. These are links, not proof that lowering it helps. Regular endurance exercise tends to lower it.',
+    howTo: { heading: READ, points: [
+      'Compare it with your own past values, not with other people\'s.',
+      'It can rise for some days with illness, poor sleep, alcohol, stress or hard training.',
+      'Some medicines, such as beta blockers, lower it.',
+      'A resting rate that is suddenly much higher or lower than usual, especially with symptoms, is worth raising with your doctor.',
+    ] },
+    sources: [ref('Zhang 2016'), ref('Aune 2017'), ref('Reimers 2018'), ref('Apple 2026 – HealthKit')],
+  },
+  sleep: {
+    title: 'Sleep',
+    whatItIs: 'The time you spend asleep each night. With Apple Watch worn to bed, the Sleep app estimates when you were asleep and splits the night into stages: Awake, REM, Core (light sleep) and Deep. It works from the watch\'s motion sensor, which picks up even the small movements of breathing. The stages are estimates, not a sleep study.',
+    whyItMatters: 'The plan suggests 7 to 9 hours a night. In a meta-analysis of over 1.3 million people, both short sleep (under 6 hours) and long sleep (over 8 to 9 hours) were linked with a higher risk of dying early. Loud snoring or gasping in your sleep can be a sign of sleep apnoea, which is worth raising with your doctor.',
+    howTo: { heading: 'How to sleep well', points: [
+      'Go to bed and get up at the same times every day, weekends included.',
+      'Get at least 30 minutes of daylight a day, ideally in the morning.',
+      'Have no caffeine later than 3 to 4 hours after waking, and no alcohol in the 4 to 6 hours before bed.',
+      'Keep your bedroom cool and dark, around 18 to 20 °C.',
+    ] },
+    sources: [ref('Cappuccio 2010'), ref('Watson 2015'), ref('Apple 2025 – Estimating Sleep Stages')],
+  },
+  vo2_max: {
+    title: 'VO2 max',
+    whatItIs: 'The most oxygen your body can use during hard exercise, in mL/kg/min: a measure of cardiorespiratory fitness. Apple Watch estimates it during outdoor walks, runs and hikes, from your heart rate and how fast you move. A lab measures it directly on a treadmill, so the watch\'s value is an estimate.',
+    whyItMatters: 'Fitness is one of the strongest predictors of how long people live. In a meta-analysis of 33 studies, people with low fitness had a higher risk of death and heart disease than fitter people. The bands on the chart compare you with people of your age and sex; from age 60, Low uses Apple\'s fixed line. Treat your band as a rough guide.',
+    howTo: { heading: 'How to get a good estimate', points: [
+      'Record outdoor walks, runs or hikes in the Workout app, with the watch snug on your wrist.',
+      'Keep your age, sex, height, weight and any heart rate medicines up to date in the Health app. The estimate uses them.',
+      'To raise it, do regular aerobic exercise. In trials, interval training raised fitness at least as much as steady, moderate exercise.',
+    ] },
+    sources: [ref('Kodama 2009'), ref('Kaminsky 2022'), ref('Apple 2021'), ref('Milanović 2015'), ref('Apple 2026 – Track your cardio')],
+  },
+  steps: {
+    title: 'Steps',
+    whatItIs: 'The steps your iPhone or Apple Watch counts each day with its motion sensors. A phone left on a desk counts nothing, so the watch usually gives the fuller count.',
+    whyItMatters: 'In a meta-analysis of 15 studies of about 47,000 adults, people who took more steps a day had a lower risk of dying early. The benefit levelled off at about 6,000 to 8,000 steps a day in people aged 60 and over, and 8,000 to 10,000 in younger adults. Brisk walking also counts toward the plan\'s 150 minutes of moderate activity a week.',
+    howTo: { heading: 'How to add steps', points: [
+      'Park further away and walk the last 10 minutes.',
+      'Take a short walk before lunch.',
+      'Take the stairs instead of the lift.',
+      'Build up slowly, a little more each week.',
+    ] },
+    sources: [ref('Paluch 2022'), ref('Bull 2020'), ref('Piercy 2018')],
   },
 };

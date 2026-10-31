@@ -351,7 +351,8 @@ async function handleMessage(message: GuildMessage): Promise<void> {
     // chunk is sent via message.reply() with `<@userId> ` prepended, which adds
     // ~22 chars. Splitting at 2000 exactly caused Discord to reject the first
     // chunk with DiscordAPIError[50035] "content[BASE_TYPE_MAX_LENGTH]".
-    const chunks = splitForDiscord(result.content, DISCORD_SPLIT_CHARS);
+    // US-15 AC48: a silent (SPAM) turn sends nothing; below, only its match event is stored.
+    const chunks = result.silent ? [] : splitForDiscord(result.content, DISCORD_SPLIT_CHARS);
     const sentMessages: Message[] = [];
     let firstChunk = true;
     for (const chunk of chunks) {
@@ -372,6 +373,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
       userMessage: truncatedInput,
       userDiscordMessageId: message.id,
       assistantContent: result.content,
+      silent: result.silent === true,
       assistantDiscordMessageIds: sentMessages.map(m => m.id),
       usage: result.usage,
       isFallback: result.isFallback,
@@ -668,6 +670,8 @@ interface PersistParams {
   userMessage: string;
   userDiscordMessageId: string;
   assistantContent: string;
+  /** US-15 AC48: a SPAM turn. Only its match event is stored, so it never enters history or continuity. */
+  silent: boolean;
   assistantDiscordMessageIds: string[];
   usage: { inputTokens: number; outputTokens: number; cacheCreationTokens: number; cacheReadTokens: number };
   isFallback: boolean;
@@ -697,7 +701,7 @@ export async function persistConversation(p: PersistParams): Promise<void> {
 
   let conversationId = p.conversationId;
 
-  if (!conversationId) {
+  if (!conversationId && !p.silent) {
     const title = generateTitle(p.userMessage);
     const { data: conv, error: convErr } = await supabaseAdmin
       .from('chat_conversations')
@@ -720,7 +724,7 @@ export async function persistConversation(p: PersistParams): Promise<void> {
   }
 
   // User message first (keeps chronological order when reading the thread back)
-  const { error: userErr } = await supabaseAdmin
+  const { error: userErr } = p.silent ? { error: null } : await supabaseAdmin
     .from('chat_messages')
     .insert({
       conversation_id: conversationId,
@@ -739,9 +743,11 @@ export async function persistConversation(p: PersistParams): Promise<void> {
 
   // Save the assistant message. We reuse the first Discord-sent message ID so
   // replies to that message can find this conversation via discord_message_id.
+  // A silent turn (SPAM, US-15 AC48) stores no message rows: its match event
+  // carries a null message_id, as YouTube's skips do.
   const firstSentId = p.assistantDiscordMessageIds[0] ?? null;
-  const assistantMessageId = crypto.randomUUID();
-  const { error: asstErr } = await supabaseAdmin
+  const assistantMessageId = p.silent ? null : crypto.randomUUID();
+  const { error: asstErr } = !assistantMessageId ? { error: null } : await supabaseAdmin
     .from('chat_messages')
     .insert({
       id: assistantMessageId,
@@ -765,7 +771,7 @@ export async function persistConversation(p: PersistParams): Promise<void> {
     return;
   }
 
-  // Router event (analytics / QA). FK on message_id requires the assistant row to exist.
+  // Router event (analytics / QA). Written only after the assistant row it points to.
   // All router_* metric columns are null on SKIP turns (router never ran).
   const r = p.routerResult;
   const { error: evtErr } = await supabaseAdmin
@@ -803,8 +809,9 @@ export async function persistConversation(p: PersistParams): Promise<void> {
     });
   }
 
-  // Touch the conversation timestamp so the list is ordered by recency.
-  await supabaseAdmin
+  // Touch the conversation timestamp so the list is ordered by recency. Not for
+  // a silent turn, which must not extend the 30-min continuity window.
+  if (!p.silent) await supabaseAdmin
     .from('chat_conversations')
     .update({ updated_at: new Date().toISOString() })
     .eq('id', conversationId);

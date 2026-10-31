@@ -447,7 +447,7 @@ describe('US-06 AC5: the vitals matrix takes its weight and waist targets from t
     const view = await guestWith({ sex: 'male', weight: 80, waist: 85 });
     await waitFor(() => expect(bmiTile(view.container)).toBe('25.2'));
     const ibw = Array.from(view.container.querySelectorAll('.stat-card'))
-      .find((c) => c.querySelector('.stat-label')?.textContent === 'Ideal Body Weight')?.querySelector('.stat-value')?.textContent;
+      .find((c) => c.querySelector('.stat-label')?.textContent === 'Ideal Body Weight (IBW)')?.querySelector('.stat-value')?.textContent;
     expect(await matrixTarget(view.container, 'Weight')).toBe(`Target: ${ibw}`);
     // At 178 cm the plan's ratio rounds to 0.50 from 88.11 cm: 88 cm is
     // healthy and 89 cm elevated, so the label is the first elevated value.
