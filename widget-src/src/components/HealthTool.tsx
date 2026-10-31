@@ -26,6 +26,7 @@ import {
   localDay,
   dayOf,
   withLabEgfr,
+  withPsaMeasurement,
   labEgfrOf,
   toCanonicalValue,
   VITALS_INPUT_FIELDS,
@@ -807,7 +808,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       calcInputs,
       unitSystem,
       medicationsToInputs(medications),
-      screeningsToInputs(screenings),
+      // US-06 AC14: the prostate cards read the newest saved PSA, as computePlan does.
+      withPsaMeasurement(screeningsToInputs(screenings), previousMeasurements.find((m) => m.metricType === 'psa')),
       metricUnitOverrides,
     );
     // The form follows the plan: its recommendations, targets and cascade
@@ -822,7 +824,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       lipidMarker: medicines ? lipidMarkerFor(calcInputs, healthResults) : null,
     };
     return { results: healthResults, isValid: true, validationErrors: errors, planBasis };
-  }, [planInputs, pressureDays, unitSystem, medications, screenings, metricUnitOverrides]);
+  }, [planInputs, pressureDays, unitSystem, medications, screenings, previousMeasurements, metricUnitOverrides]);
 
   useEffect(() => {
     setErrors(validationErrors ?? {});

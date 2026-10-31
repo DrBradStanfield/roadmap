@@ -32,9 +32,9 @@ import {
 } from './reminders';
 import { knownMinorOf } from './calculations';
 import { dayOf, localDay } from './merge';
-import { ISO_DATE, isCalendarDay } from './measurement-history';
+import { ISO_DATE, isCalendarDay, latestActivePerMetric } from './measurement-history';
 import type { RoadmapFile } from './roadmap-file';
-import { screeningsToInputs } from './mappings';
+import { screeningsToInputs, withPsaMeasurement } from './mappings';
 import { fileScreeningRows } from './file-inputs';
 
 // ===== Types =====
@@ -299,7 +299,9 @@ function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleIte
 
   // The screenings the plan reads (US-06/US-15 AC11): a date that is not a
   // real calendar date, or a "last done" date after this month, is dropped.
-  const screenings = screeningsToInputs(fileScreeningRows(file.screenings));
+  // The PSA reminder dates from the newest saved PSA, as the plan's card does (US-06 AC14).
+  const screenings = withPsaMeasurement(screeningsToInputs(fileScreeningRows(file.screenings)),
+    latestActivePerMetric(file.measurements).find((m) => m.metricType === 'psa'));
   return computeNextDueDates({ sex, age }, screenings, measurementDates, medications);
 }
 

@@ -157,6 +157,7 @@ export {
   type ApiProfile,
   type ApiMedication,
   medicationsToInputs,
+  withPsaMeasurement,
   type ApiScreening,
   screeningsToInputs,
   computeFormStage,

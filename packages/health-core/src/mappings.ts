@@ -415,6 +415,25 @@ export function screeningsToInputs(
   return inputs;
 }
 
+/**
+ * US-06 AC14: the PSA the plan's prostate cards and PSA reminder read. PSA is
+ * a measurement now (no client writes `prostate_psa_value` or
+ * `prostate_last_date` any more), so the newest saved `psa` row stands in for
+ * both, value and day together. The newer by date wins over the old answers;
+ * in the same month the row wins, since the answer gives no day. A row off the
+ * PSA range or without a real past day is skipped, as either answer would be.
+ */
+export function withPsaMeasurement(
+  screenings: import('./types').ScreeningInputs,
+  psa: { value: number; recordedAt: string } | undefined,
+): import('./types').ScreeningInputs {
+  const { min, max } = SCREENING_RANGES.prostate_psa_value;
+  if (!psa || !(psa.value >= min && psa.value <= max)) return screenings;
+  const day = screeningDate(psa.recordedAt.slice(0, 10), true);
+  if (!day || (screenings.prostateLastDate ?? '') > day) return screenings;
+  return { ...screenings, prostatePsaValue: psa.value, prostateLastDate: day };
+}
+
 /** API profile shape (camelCase, as returned by API endpoints). */
 export interface ApiProfile {
   sex: number | null;
