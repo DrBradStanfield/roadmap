@@ -40,10 +40,13 @@ const CHAT_HISTORY_DOC: DocumentSpec<ChatHistoryFile> = {
   // file transfer per exchange guarding data whose loss is already tolerated).
   verify: false,
   // Read only by CHECKED_DOC's verify: any conversation the written copy holds
-  // deleted (this save's or an earlier one) that the re-read holds live.
+  // deleted (this save's or an earlier one) that the re-read does not hold
+  // deleted, live or missing. A missing tombstone is lost too: a device that
+  // still holds the conversation live would bring it back. The retry merges
+  // the local tombstone in again, so this cannot loop.
   lostWrite: (expected, parsed) => {
-    const live = new Set(parsed.conversations.filter((c) => !c.deleted).map((c) => c.id));
-    const back = expected.conversations.filter((c) => c.deleted && live.has(c.id)).length;
+    const stillDeleted = new Set(parsed.conversations.filter((c) => c.deleted).map((c) => c.id));
+    const back = expected.conversations.filter((c) => c.deleted && !stillDeleted.has(c.id)).length;
     return back > 0 ? `${back} deleted conversation(s)` : null;
   },
 };

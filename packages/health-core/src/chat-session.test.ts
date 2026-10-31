@@ -254,6 +254,25 @@ describe('US-11 AC2d: a chat delete is reported only once the stored file holds 
     expect((await ChatSession.open(cloudHost(store))).listConversations().map((c) => c.id)).toEqual(['c2']);
   });
 
+  it('eraseAll writes its tombstone again when the writer that replaced it never held the conversation', async () => {
+    // Brad's five steps (review 2026-10-31): B reads before X exists, A makes
+    // X and erases, B's copy lands with no X at all, and C, which still holds
+    // X live, saves later. A missing tombstone must count as lost.
+    const store = new OverwrittenOnce();
+    const a = await ChatSession.open(cloudHost(store));
+    await exchange(a, 'c1');
+    await a.deleteConversation('c1'); // B's copy holds nothing live, so only X can be lost
+    const b = (await store.read('chat-history.json')).body as { meta: { lamport: number } }; // 1. B reads
+    await exchange(a, 'x'); // 2. A creates X...
+    const c = await ChatSession.open(cloudHost(store)); // C holds X live
+    store.stale = { ...b, meta: { ...b.meta, lamport: b.meta.lamport + 10 } }; // 3. B lands after A's write
+    await a.eraseAll(); // 2. ...then erases; 4. the re-read has no X
+    const stored = (await store.read('chat-history.json')).body as { conversations: { id: string; deleted?: boolean }[] };
+    expect(stored.conversations.find((conv) => conv.id === 'x')?.deleted).toBe(true);
+    await exchange(c, 'later'); // 5. C saves
+    expect((await ChatSession.open(cloudHost(store))).listConversations().map((conv) => conv.id)).toEqual(['later']);
+  });
+
   it('eraseAll fails, never reports success, when every write is replaced', async () => {
     const { store, s } = await twoLive();
     store.always = true;
