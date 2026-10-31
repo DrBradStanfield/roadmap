@@ -79,6 +79,7 @@ import {
   getShownErase,
   markEraseShown,
   clearOffFileAfterErase,
+  flushRoadmapStoreSync,
   loadLatestMeasurementsSync,
   loadAllHistory,
   loadLabValues,
@@ -202,16 +203,29 @@ async function mirrorSavedLists(): Promise<void> {
   if (result) patchMirror({ medications: result.medications, screenings: result.screenings });
 }
 
+/** Each key's waiting save: its timer and the save itself. */
+type ListSaves = Map<string, { timer: ReturnType<typeof setTimeout>; fire: () => void }>;
+
 /** One save per key, 300 ms after its last change: rapid dropdown changes
  *  would otherwise race. The save carries the erase the page showed when the
  *  change was made, not when the timer fires (US-16 AC2a). */
-function debounceSave(timers: Map<string, ReturnType<typeof setTimeout>>, key: string, save: (erase: string) => void, erase = getShownErase()): void {
-  const existing = timers.get(key);
-  if (existing) clearTimeout(existing);
-  timers.set(key, setTimeout(() => {
+function debounceSave(timers: ListSaves, key: string, save: (erase: string) => void, erase = getShownErase()): void {
+  clearTimeout(timers.get(key)?.timer);
+  const fire = () => {
     timers.delete(key);
     save(erase);
-  }, 300));
+  };
+  timers.set(key, { timer: setTimeout(fire, 300), fire });
+}
+
+/** Run every waiting list save now, as the page goes away (US-06 AC13). */
+function flushListSaves(all: ListSaves[]): void {
+  for (const timers of all) {
+    for (const { timer, fire } of [...timers.values()]) {
+      clearTimeout(timer);
+      fire();
+    }
+  }
 }
 
 export function HealthTool({ syncControl, remindersSection }: { syncControl?: (ctx: { hasData: boolean; attention: boolean }) => ReactNode; remindersSection?: ReactNode } = {}) {
@@ -273,8 +287,8 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // these fields on the matrices' draft model.
   const typedIn = useRef<Partial<Record<keyof HealthInputs, { value: unknown; unit: UnitSystem }>>>({});
   const [isDeleting, setIsDeleting] = useState(false);
-  const medSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
-  const screeningSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const medSaveTimers = useRef<ListSaves>(new Map());
+  const screeningSaveTimers = useRef<ListSaves>(new Map());
   const isFirstSaveRef = useRef(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [floatingChatOpen, setFloatingChatOpen] = useState(false);
@@ -283,8 +297,8 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // Clean up debounce timers on unmount to prevent stale API calls
   useEffect(() => {
     return () => {
-      for (const timer of medSaveTimers.current.values()) clearTimeout(timer);
-      for (const timer of screeningSaveTimers.current.values()) clearTimeout(timer);
+      for (const { timer } of medSaveTimers.current.values()) clearTimeout(timer);
+      for (const { timer } of screeningSaveTimers.current.values()) clearTimeout(timer);
     };
   }, []);
   // Unit system: load saved preference or auto-detect
@@ -694,14 +708,26 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
 
   // Tab-close safety net for the first-time vitals fields: a field the user
   // left has its save waiting (500 ms); it runs before the page unloads. A
-  // matrix's draft stays on the device instead (US-03 AC5).
+  // matrix's draft stays on the device instead (US-03 AC5). The waiting
+  // medication, screening and supplement saves run too, then the record is
+  // written at once: the entrypoint's own flush ran before this one (US-06 AC13).
   useEffect(() => {
-    const onUnload = () => longitudinalDebounce.flush();
+    const flushLists = () => {
+      flushListSaves([medSaveTimers.current, screeningSaveTimers.current, supSaveTimers.current]);
+      flushRoadmapStoreSync();
+    };
+    const onUnload = () => {
+      longitudinalDebounce.flush();
+      flushLists();
+    };
+    const onHidden = () => { if (document.visibilityState === 'hidden') flushLists(); };
     window.addEventListener('beforeunload', onUnload);
     window.addEventListener('pagehide', onUnload);
+    document.addEventListener('visibilitychange', onHidden);
     return () => {
       window.removeEventListener('beforeunload', onUnload);
       window.removeEventListener('pagehide', onUnload);
+      document.removeEventListener('visibilitychange', onHidden);
     };
   }, [longitudinalDebounce]);
 
@@ -894,7 +920,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       longitudinalDebounce.cancel();
       // A save the form scheduled before the erase is pre-erase (US-16 AC2a).
       for (const timers of [medSaveTimers, screeningSaveTimers, supSaveTimers]) {
-        for (const timer of timers.current.values()) clearTimeout(timer);
+        for (const { timer } of timers.current.values()) clearTimeout(timer);
         timers.current.clear();
       }
       previousInputsRef.current = {};
@@ -974,8 +1000,8 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       (stamp) => void saveScreening(screeningKey, value, stamp).then(afterListSave), erase);
   }, [afterListSave]);
 
-  const supSaveTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
-  useEffect(() => () => { for (const t of supSaveTimers.current.values()) clearTimeout(t); }, []);
+  const supSaveTimers = useRef<ListSaves>(new Map());
+  useEffect(() => () => { for (const { timer } of supSaveTimers.current.values()) clearTimeout(timer); }, []);
 
   const handleSupplementChange = useCallback((
     supplementKey: string,
@@ -1006,7 +1032,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
 
   const handleSupplementDelete = useCallback((supplementKey: string) => {
     // A dose save still waiting would land after the stop and restart the row.
-    clearTimeout(supSaveTimers.current.get(supplementKey));
+    clearTimeout(supSaveTimers.current.get(supplementKey)?.timer);
     supSaveTimers.current.delete(supplementKey);
     // Keep stopped keys reserved for later additions, as they are after reload.
     setSupplements(prev => prev.map(s => s.supplementKey === supplementKey ? { ...s, status: 'stopped', updatedAt: new Date().toISOString() } : s));
