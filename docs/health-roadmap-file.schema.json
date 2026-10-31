@@ -101,7 +101,7 @@
 
     "ErasedRows": {
       "type": "object",
-      "description": "Which rows the erases removed (US-09 AC23). Sync bookkeeping: never write or edit it. Every reader drops a row whose root id is listed (the id without any `#dup-…`, `#si` or `#mv-…` suffix), from every array that carries ids, so an erased row never comes back. A malformed list is dropped whole on read. A file that carries it is schemaVersion 2.",
+      "description": "Which rows the erases removed (US-09 AC23). Sync bookkeeping: never write or edit it. Every reader drops a row whose root id is listed (the id without any `#dup-…`, `#si` or `#mv-…` suffix), or whose id without any `#dup-…` or `#si` suffix is listed (how an older app lists a moved row), from every array that carries ids, so an erased row never comes back. A malformed list is dropped whole on read. A file that carries it is schemaVersion 2.",
       "required": ["fromEpoch", "ids"],
       "properties": {
         "fromEpoch": { "type": "integer", "minimum": 1, "description": "Every erase from this epoch up to `meta.eraseEpoch` listed its ids; `eraseEpoch + 1` claims nothing. Read only if at most `eraseEpoch + 1`." },
@@ -206,7 +206,7 @@
         "externalId"
       ],
       "properties": {
-        "id": { "type": "string", "description": "Stable unique id. Write a fresh UUID; never reuse one. Read ids as opaque strings: an id containing '#dup-' is a quarantined duplicate the merge created after an id was reused with different content — never write one yourself." },
+        "id": { "type": "string", "description": "Stable unique id. Write a fresh UUID; never reuse one. Read ids as opaque strings: an id containing '#dup-' is a quarantined duplicate the merge created after an id was reused with different content, and an id containing '#mv-' is the app's moved copy of a blood test — never write either one yourself." },
         "metricType": { "$ref": "#/$defs/MetricType" },
         "value": { "type": "number", "description": "SI canonical unit: kg, cm, mmHg, mmol/mol (HbA1c), mmol/L (lipids), g/L (ApoB), µmol/L (creatinine), ng/mL (PSA), nmol/L (Lp(a))." },
         "recordedAt": {
@@ -245,7 +245,7 @@
         "correctsId"
       ],
       "properties": {
-        "id": { "type": "string", "description": "Stable unique id. Write a fresh UUID; never reuse one. An id containing '#dup-' is a merge-quarantined duplicate, and an id ending '#si' is the app's own unit conversion of the row it corrects — never write either one yourself." },
+        "id": { "type": "string", "description": "Stable unique id. Write a fresh UUID; never reuse one. An id containing '#dup-' is a merge-quarantined duplicate, an id ending '#si' is the app's own unit conversion of the row it corrects, and an id containing '#mv-' is the app's moved copy of a blood test — never write any of them yourself." },
         "metricName": {
           "type": "string",
           "description": "Prefer a catalogue key from packages/health-core/src/lab-catalog.ts (e.g. 'ferritin'). Free text otherwise. Slot key is (metricName, day of recordedAt)."

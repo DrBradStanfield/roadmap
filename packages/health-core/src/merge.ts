@@ -638,24 +638,33 @@ export function latestStamp(a: string, b: string): string {
   return ta !== tb ? (ta > tb ? a : b) : a > b ? a : b;
 }
 
+/** The root an app from before US-04 AC5a gives a row: only `#dup-…` and
+ *  `#si` stripped, so a moved row's is its own id. */
+function rootBeforeMoveOf(id: string): string {
+  return id.replace(/(?:#dup-[0-9a-f]{8}|#si)+$/, '');
+}
+
 /** The root id of every row in the file: what an erase made now would list
  *  (US-09 AC23). A row whose id is not a string has no root, and is skipped.
  *  A moved row is listed under its own id too, as an app from before US-04
- *  AC5a roots it (only `#dup-…` and `#si` stripped), so that app drops it. */
+ *  AC5a roots it, so that app drops it. */
 export function rowRootIds(file: RoadmapFile): string[] {
   return (Object.keys(ROW_STAMPS) as StampedArray[]).flatMap((key) =>
     (file[key] as Array<{ id: unknown }>).flatMap((row) => (typeof row.id === 'string'
-      ? [...new Set([rootIdOf(row.id), row.id.replace(/(?:#dup-[0-9a-f]{8}|#si)+$/, '')])]
+      ? [...new Set([rootIdOf(row.id), rootBeforeMoveOf(row.id)])]
       : [])));
 }
 
 /** `file` without the rows `listed` names, from every array that carries ids;
- *  the same object when it names none (US-09 AC23). */
+ *  the same object when it names none (US-09 AC23). A row goes if its root is
+ *  listed, or its own id as an app from before US-04 AC5a roots it: that app
+ *  lists a moved row whose original is gone under the moved row's own id. */
 export function withoutListed(file: RoadmapFile, listed: ReadonlySet<string>): RoadmapFile {
   if (listed.size === 0) return file;
   const out: Record<string, unknown> = { ...file };
   for (const key of Object.keys(ROW_STAMPS) as StampedArray[]) {
-    out[key] = (file[key] as Array<{ id: unknown }>).filter((row) => typeof row.id !== 'string' || !listed.has(rootIdOf(row.id)));
+    out[key] = (file[key] as Array<{ id: unknown }>).filter((row) => typeof row.id !== 'string'
+      || !(listed.has(rootIdOf(row.id)) || listed.has(rootBeforeMoveOf(row.id))));
   }
   return out as unknown as RoadmapFile;
 }

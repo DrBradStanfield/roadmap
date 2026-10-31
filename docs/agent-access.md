@@ -122,7 +122,8 @@ someone's medical history, or lose their data at the next device sync.
    "delete all my data" stick). **Leave the top-level `erasedRows` alone too** (US-09
    AC23): it holds the root ids of the rows each erase removed (an id without its `#dup-…`,
    `#si` or `#mv-…` suffix) and the epoch its claim starts from. Every reader and every merge drops
-   a row whose root id is listed, so a listed row never comes back, whoever writes it. A
+   a row whose root id is listed (or whose id without its `#dup-…` or `#si` suffix is, as
+   an older app lists a moved row), so a listed row never comes back, whoever writes it. A
    malformed list is dropped on read, which only makes the next merge stricter. Never
    reuse a listed id. `read_record` leaves the field out.
 7. **Touch only the rows you added.** Do not reformat, re-sort, or normalise other rows.

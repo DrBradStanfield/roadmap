@@ -11,6 +11,7 @@ import { correctValue, appendMeasurement, moveBloodTest, planBloodTestMove, type
 import { createEmptyFile, createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { mergeFiles } from './merge';
 import { buildErasedFile } from './erase';
+import { migrateFile } from './migrate';
 
 const CTX = { deviceId: 'us04_move', now: '2026-09-01T09:00:00Z' };
 const NOW = '2026-09-01T09:00:00Z';
@@ -348,6 +349,75 @@ describe('US-04 AC5a: a move on a copy that has not seen an erase', () => {
     const typed = appendMeasurement(moved(start).file, { metricType: 'hba1c', value: 38, recordedAt: '2024-04-01', now: NOW, latestDay: '2026-09-01' });
     if (!typed.ok) throw new Error(typed.message);
     for (const merged of [mergeFiles(typed.file, erased, LATER), mergeFiles(erased, typed.file, LATER)]) {
+      expect(rows(merged).map((r) => `${'metricType' in r ? r.metricType : r.metricName}=${r.value}`)).toEqual(['hba1c=38']);
+    }
+  });
+});
+
+describe('US-04 AC5a: an older app erases a moved row whose original an earlier erase pruned', () => {
+  // An app from before AC5a roots an id by stripping only `#dup-…` and `#si`,
+  // so it lists a moved row under its own id.
+  const olderAppRoot = (id: string) => id.replace(/(?:#dup-[0-9a-f]{8}|#si)+$/, '');
+  const LEGACY_ERASED_AT = '2026-08-31T09:00:00.000Z'; // before the move (NOW)
+  const OLDER = { deviceId: 'older_app', now: '2026-09-02T09:00:00Z' };
+  const UPDATED = { deviceId: 'updated_app', now: '2026-09-03T09:00:00Z' };
+
+  /** The updated app's epoch-1 copy: a legacy erase that listed nothing
+   *  dropped every original and kept the moved rows made after it (US-09 AC20). */
+  function prunedParents(): RoadmapFile {
+    const start = base();
+    const legacy = buildErasedFile({ stored: start, own: start, device: null, ctx: CTX });
+    delete legacy.erasedRows;
+    legacy.meta.erasedAt = LEGACY_ERASED_AT;
+    const copy = mergeFiles(moved(start).file, legacy, CTX);
+    expect(copy.meta.eraseEpoch).toBe(1);
+    expect(copy.erasedRows).toBeUndefined();
+    expect(rows(copy).map((r) => r.id.replace(/#mv-[0-9a-f]{8}$/, '#mv')).sort()).toEqual(['fer1#mv', 'hdl1#mv', 'ldl1#mv', 'psa1#mv']);
+    return copy;
+  }
+
+  /** The older app erases that copy at epoch 2, listing the moved ids as it roots them. */
+  function olderAppErase(copy: RoadmapFile): RoadmapFile {
+    const erased = buildErasedFile({ stored: copy, own: copy, device: null, ctx: OLDER });
+    erased.erasedRows = { fromEpoch: erased.erasedRows!.fromEpoch, ids: [...new Set(rows(copy).map((r) => olderAppRoot(r.id)))].sort() };
+    expect(erased.meta.eraseEpoch).toBe(2);
+    expect(erased.erasedRows.fromEpoch).toBe(2);
+    for (const id of erased.erasedRows.ids) expect(id).toMatch(/#mv-[0-9a-f]{8}$/);
+    return erased;
+  }
+
+  it('drops the moved rows when the updated app merges its epoch-1 copy, in either merge order', () => {
+    const copy = prunedParents();
+    const erased = olderAppErase(copy);
+    for (const merged of [mergeFiles(copy, erased, UPDATED), mergeFiles(erased, copy, UPDATED)]) {
+      expect(rows(merged)).toEqual([]);
+    }
+  });
+
+  it('drops them on read, from a file that lists them and still holds them', () => {
+    const copy = prunedParents();
+    const erased = olderAppErase(copy);
+    // What an updated app without the own-id rule wrote after that merge.
+    const written = JSON.parse(JSON.stringify({ ...erased, measurements: copy.measurements, labValues: copy.labValues }));
+    expect(rows(migrateFile(written, UPDATED))).toEqual([]);
+  });
+
+  it('drops a quarantined or converted copy of a moved row too, which the older app roots the same way', () => {
+    const copy = prunedParents();
+    copy.measurements = copy.measurements.map((r) => (r.id.startsWith('ldl1#mv-') ? { ...r, id: `${r.id}#dup-0123abcd` } : r));
+    copy.labValues = copy.labValues.map((r) => ({ ...r, id: `${r.id}#si` }));
+    const erased = olderAppErase(copy);
+    for (const merged of [mergeFiles(copy, erased, UPDATED), mergeFiles(erased, copy, UPDATED)]) {
+      expect(rows(merged)).toEqual([]);
+    }
+  });
+
+  it('keeps a value typed on the epoch-1 copy that the older erase never saw', () => {
+    const copy = prunedParents();
+    const erased = olderAppErase(copy);
+    const typed = appendMeasurement(copy, { metricType: 'hba1c', value: 38, recordedAt: '2024-04-01', now: UPDATED.now, latestDay: '2026-09-03' });
+    if (!typed.ok) throw new Error(typed.message);
+    for (const merged of [mergeFiles(typed.file, erased, UPDATED), mergeFiles(erased, typed.file, UPDATED)]) {
       expect(rows(merged).map((r) => `${'metricType' in r ? r.metricType : r.metricName}=${r.value}`)).toEqual(['hba1c=38']);
     }
   });
