@@ -12,6 +12,8 @@ import {
   isNotReplyableError,
   type YouTubeReply,
 } from './youtube-bot.server';
+import { ROUTER_VERSION } from './chat-router.server';
+import { CHAT_MODEL } from './chat.server';
 
 // Chainable PostgREST-builder stub: every filter returns the chain, awaiting it
 // resolves to whatever response the test staged.
@@ -380,5 +382,64 @@ describe('US-53: a comment YouTube will not let us reply to is skipped, not an e
     expect(isNotReplyableError(new Error(`YouTube post failed: 400 ${body}`))).toBe(true);
     expect(isNotReplyableError(new Error('YouTube post failed: 403 quota'))).toBe(false);
     expect(isNotReplyableError(new Error('YouTube post failed: 400 other'))).toBe(false);
+  });
+});
+
+// US-15 AC37a: every chat row a YouTube turn writes, pinned column for column,
+// so moving the router columns into one shared mapping changes nothing else.
+describe('US-15 AC37a: the YouTube turn rows, column for column', () => {
+  const thread = {
+    topLevelCommentId: 'c1', videoId: 'v1', authorDisplayName: 'Viewer', authorChannelId: 'UC_viewer',
+    text: 'What is a good ApoB?', publishedAt: '2026-10-14T00:00:00Z',
+  };
+  const usage = { inputTokens: 11, outputTokens: 22, cacheCreationTokens: 0, cacheReadTokens: 0 };
+  const routerResult = {
+    handles: ['apob'], rawJson: '{"handles":["apob"]}', latencyMs: 15, cacheHit: true, error: null,
+    usage: { inputTokens: 900, outputTokens: 37, cacheCreationTokens: 0, cacheReadTokens: 120 },
+  };
+  const conv = { user_id: 'bot-profile', title: 'What is a good ApoB?', platform: 'youtube', external_id: 'c1' };
+  const userRow = { conversation_id: 'conv-1', user_id: 'bot-profile', role: 'user', content: 'What is a good ApoB?' };
+  const context = { platform: 'youtube', videoId: 'v1', commentId: 'c1', followUpCommentId: null };
+
+  it('a posted answer the router ran for', async () => {
+    supa.inserts.length = 0;
+    await persistYouTubeTurn({
+      thread, postedYoutubeId: 'yt-9',
+      outcome: { posted: true, classification: 'ROUTE', routerHandles: ['apob'], routerResult, routerSkipped: false,
+        replaced: ['old-post'], llmOutput: 'An answer.', usage, isFallback: false },
+    });
+    const asst = supa.inserts[2].row;
+    expect(supa.inserts).toEqual([
+      { table: 'chat_conversations', row: conv },
+      { table: 'chat_messages', row: userRow },
+      { table: 'chat_messages', row: { id: expect.any(String), conversation_id: 'conv-1', user_id: 'bot-profile', role: 'assistant',
+        content: 'An answer.', input_tokens: 11, output_tokens: 22, model: CHAT_MODEL, is_fallback: false } },
+      { table: 'chat_match_events', row: {
+        message_id: asst.id, conversation_id: 'conv-1', user_id: 'bot-profile', message: 'What is a good ApoB?',
+        router_context: { ...context, postedYoutubeId: 'yt-9', posted: true, skipReason: null, replaced: ['old-post'] },
+        matched_handles: ['apob'], router_version: ROUTER_VERSION, router_latency_ms: 15, router_cache_hit: true,
+        router_input_tokens: 900, router_cache_read_tokens: 120, router_output_tokens: 37, router_raw: null, router_error: null,
+        classification: 'ROUTE', router_skipped: false, is_fallback: false, failure_mode: null,
+      } },
+    ]);
+  });
+
+  it('a classifier skip: the router did not run, so every router column is null, router_version included', async () => {
+    supa.inserts.length = 0;
+    await persistYouTubeTurn({
+      thread, postedYoutubeId: null,
+      outcome: { posted: false, skipReason: 'classifier=GREETING', classification: 'GREETING', routerHandles: [], routerResult: null, routerSkipped: true },
+    });
+    expect(supa.inserts).toEqual([
+      { table: 'chat_conversations', row: conv },
+      { table: 'chat_messages', row: userRow },
+      { table: 'chat_match_events', row: {
+        message_id: null, conversation_id: 'conv-1', user_id: 'bot-profile', message: 'What is a good ApoB?',
+        router_context: { ...context, postedYoutubeId: null, posted: false, skipReason: 'classifier=GREETING' },
+        matched_handles: [], router_version: null, router_latency_ms: null, router_cache_hit: null,
+        router_input_tokens: null, router_cache_read_tokens: null, router_output_tokens: null, router_raw: null, router_error: null,
+        classification: 'GREETING', router_skipped: true, is_fallback: false, failure_mode: null,
+      } },
+    ]);
   });
 });

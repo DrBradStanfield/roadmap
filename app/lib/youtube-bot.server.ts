@@ -28,7 +28,8 @@
 import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin } from './supabase.server';
 import { classifyMessage, isUnreadableAnswer, shouldFireRouter } from './chat-classifier.server';
-import { routeQuery, sanitizeForRouter, ROUTER_VERSION, type RouterResult } from './chat-router.server';
+import { routeQuery, sanitizeForRouter, type RouterResult } from './chat-router.server';
+import { routerColumns } from './chat-persist.server';
 import { cutText } from '../../packages/health-core/src/chat-history';
 import { SILENT_ON_YOUTUBE } from '../../packages/health-core/src/models';
 import { findBlogByVideoId, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
@@ -640,14 +641,7 @@ export async function persistYouTubeTurn(p: {
         ...(outcome.reduced?.length ? { reduced: outcome.reduced } : {}),
       },
       matched_handles: outcome.routerHandles ?? [],
-      router_version: ROUTER_VERSION,
-      router_latency_ms: r?.latencyMs ?? null,
-      router_cache_hit: r?.cacheHit ?? null,
-      router_input_tokens: r?.usage.inputTokens ?? null,
-      router_cache_read_tokens: r?.usage.cacheReadTokens ?? null,
-      router_output_tokens: r?.usage.outputTokens ?? null,
-      router_raw: r?.error && r.rawJson != null ? cutText(r.rawJson, 500) : null,
-      router_error: r?.error ?? null,
+      ...routerColumns(r),
       classification: outcome.classification ?? 'ERROR',
       router_skipped: outcome.routerSkipped ?? false,
       is_fallback: outcome.isFallback ?? false,

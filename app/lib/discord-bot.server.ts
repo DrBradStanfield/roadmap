@@ -21,7 +21,8 @@ import { findDuplicateReply } from './chat-dedup.server';
 import { sleep } from './cron-helpers.server';
 import { reportChatFallback } from './chat.server';
 import { generateTitle, CHAT_MODEL } from './chat.server';
-import { ROUTER_VERSION, type RouterResult } from './chat-router.server';
+import type { RouterResult } from './chat-router.server';
+import { routerColumns } from './chat-persist.server';
 import { cutText } from '../../packages/health-core/src/chat-history';
 import { supabaseAdmin } from './supabase.server';
 import { createRateLimiter } from './rate-limiter';
@@ -789,14 +790,7 @@ export async function persistConversation(p: PersistParams): Promise<void> {
         ...(p.reduced?.length ? { reduced: p.reduced } : {}),
       },
       matched_handles: r?.handles ?? [],
-      router_version: r ? ROUTER_VERSION : null,
-      router_latency_ms: r?.latencyMs ?? null,
-      router_cache_hit: r?.cacheHit ?? null,
-      router_input_tokens: r?.usage.inputTokens ?? null,
-      router_cache_read_tokens: r?.usage.cacheReadTokens ?? null,
-      router_output_tokens: r?.usage.outputTokens ?? null,
-      router_raw: r?.error && r.rawJson != null ? cutText(r.rawJson, 500) : null,
-      router_error: r?.error ?? null,
+      ...routerColumns(r),
       classification: p.classifier.classification,
       router_skipped: p.classifier.routerSkipped,
       is_fallback: p.isFallback,
