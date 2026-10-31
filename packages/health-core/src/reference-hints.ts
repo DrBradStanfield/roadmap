@@ -62,18 +62,6 @@ export function lpaLine(unit: LpaUnit): string {
   return `<${Number(formatTargetLine('lpa', LPA_THRESHOLDS.normal, system, undefined, scale))}`;
 }
 
-/**
- * Resolve a reference hint for a metric in the requested display unit, picking
- * a sex-specific variant when available. Returns null if no hint exists.
- */
-export function refHintFor(
-  metric: MetricType,
-  display: 'si' | 'conventional',
-  sex?: 'male' | 'female',
-): string | null {
-  return refHintVariant(metric, sex)?.[display === 'si' ? 'si' : 'conv'] ?? null;
-}
-
 /** The metric's hint, the sex-specific variant when there is one and the sex is known. */
 export function refHintVariant(metric: MetricType, sex?: 'male' | 'female'): RefHint | null {
   const hint = REFERENCE_HINTS[metric];

@@ -14,8 +14,10 @@ vi.mock('../lib/server-api', async importOriginal => ({ ...await importOriginal<
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
 afterEach(cleanup);
-// InputPanel reads the phone breakpoint (US-62 AC8); jsdom has no matchMedia. These run as desktop.
-vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} }));
+// InputPanel reads the phone breakpoint (US-62 AC8); jsdom has no matchMedia. Desktop unless a test sets `phone`.
+let phone = false;
+vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('max-width') ? phone : !phone, media: q, addEventListener() {}, removeEventListener() {} }));
+afterEach(() => { phone = false; });
 
 const renderPanel = () => {
   const inputs = { sex: 'male' as const, heightCm: 180, birthYear: 1960, birthMonth: 1, weightKg: 80, waistCm: 90, psa: 2 };
@@ -86,4 +88,14 @@ describe('US-02 AC7: an unreadable number box is not a clear', () => {
     typeEmpty(p.box('lung-pack-years'));
     expect(p.onScreeningChange).toHaveBeenLastCalledWith('lung_pack_years', '');
   });
+});
+
+// US-62 AC12: on a phone, About you sits low; its height box keeps the same rule.
+it('on a phone too, an unreadable height keeps the saved value', () => {
+  phone = true;
+  const p = renderPanel();
+  expect(p.container.querySelector('.md-about-you #heightCm')).not.toBeNull();
+  typeUnreadable(p.box('heightCm'));
+  expect(callsFor(p.onChange, 'heightCm')).toEqual([]);
+  expect(p.getByText('Enter a number')).toBeTruthy();
 });

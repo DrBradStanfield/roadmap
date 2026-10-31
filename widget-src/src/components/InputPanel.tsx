@@ -1,4 +1,4 @@
-import { Fragment, useState, useEffect, useRef, type MutableRefObject } from 'react';
+import { Fragment, useCallback, useState, useEffect, useRef, type MutableRefObject } from 'react';
 import { ColumnHeader } from './ColumnHeader';
 import { InfoTooltip } from './InfoTooltip';
 import { DocumentLightbox } from './DocumentLightbox';
@@ -92,6 +92,12 @@ import { useLpaUnit } from '../lib/lpa-unit';
 import { BloodTestRows, VitalsRows, type RowContext, type ValueSubject } from './MyDataRows';
 import { ValuePage } from './ValuePage';
 
+/** The history-state key a phone value page's entry carries (US-62 AC10). */
+const VALUE_PAGE_STATE = 'hrValuePage';
+const LEAVE_UNSAVED = 'Leave without saving the value you typed?';
+/** The vitals grid's draft fields; the blood-test grid's are every other. */
+const VITALS_DRAFT_FIELDS: ReadonlySet<string> = new Set(['weightKg', 'waistCm', 'systolicBp', 'diastolicBp']);
+
 interface FieldConfig {
   field: keyof HealthInputs;
   name: string;
@@ -145,7 +151,8 @@ interface InputPanelProps {
   labValues: ApiLabValue[];
   /** US-21 phase 2: present = manual add enabled; called after a saved add. */
   onLabValueAdded?: () => void;
-  onSaveBloodTestBatch: (tasks: SaveTask[]) => Promise<Refused>;
+  /** `erase`: the erase the values were typed under (US-16 AC2a); the page's shown one by default. */
+  onSaveBloodTestBatch: (tasks: SaveTask[], erase?: string) => Promise<Refused>;
   // Click-to-correct handler for saved cells in every matrix: blood tests,
   // vitals and the additional lab rows.
   onCorrectValue?: CorrectFn;
@@ -326,21 +333,90 @@ export function InputPanel({
   const revealing = !!revealCell && revealCell !== seenReveal;
   const tableShown = !isPhone || tableOpen || revealing;
   const pageShown = isPhone && !revealing ? valuePage : null;
-  // Back from a page returns to the row it opened from, scrolled and focused as it was.
+  // A page is a history entry (a state marker, no URL change), so the phone's
+  // back gesture closes it, and "‹ My data" goes back. Typed, unsaved Add
+  // input is never dropped silently: leaving asks first. Back returns to the
+  // row it opened from, scrolled and focused as it was.
   const cameFrom = useRef<{ el: Element | null; y: number }>({ el: null, y: 0 });
+  const pageDirty = useRef(false);
+  const onPageEntry = () => !!window.history.state?.[VALUE_PAGE_STATE];
+  const mayLeave = () => !pageDirty.current || window.confirm(LEAVE_UNSAVED);
   const openPage = (subject: ValueSubject) => {
     cameFrom.current = { el: document.activeElement, y: window.scrollY };
     setSeenReveal(revealCell);
     setValuePage(subject);
+    if (!onPageEntry()) window.history.pushState({ ...window.history.state, [VALUE_PAGE_STATE]: true }, '');
     window.scrollTo?.(0, panelTop());
   };
-  const closePage = () => {
+  const finishClose = () => {
+    pageDirty.current = false;
     setValuePage(null);
     requestAnimationFrame(() => {
       window.scrollTo?.(0, cameFrom.current.y);
       if (cameFrom.current.el instanceof HTMLElement) cameFrom.current.el.focus({ preventScroll: true });
     });
   };
+  const closePage = () => {
+    if (!mayLeave()) return;
+    pageDirty.current = false;
+    if (onPageEntry()) window.history.back(); // its popstate closes the page
+    else finishClose();
+  };
+  // A reload on a page's entry opens on the rows: drop the stale marker, so the next page pushes its own.
+  useEffect(() => {
+    if (onPageEntry()) window.history.replaceState({ ...window.history.state, [VALUE_PAGE_STATE]: undefined }, '');
+  }, []);
+  useEffect(() => {
+    if (!valuePage) return;
+    const onPop = () => {
+      if (onPageEntry()) return;
+      // Back from a page holding typed input, declined: stay, and keep the entry.
+      if (!mayLeave()) { window.history.pushState({ ...window.history.state, [VALUE_PAGE_STATE]: true }, ''); return; }
+      finishClose();
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [valuePage]);
+  // An erase, here or on another device, closes an open page and drops what it held (US-16 AC2a).
+  useEffect(() => {
+    const drop = () => {
+      if (!valuePageRef.current) return;
+      setValuePage(null);
+      pageDirty.current = false;
+      if (onPageEntry()) window.history.back();
+    };
+    window.addEventListener(DRAFTS_CLEARED_EVENT, drop);
+    return () => window.removeEventListener(DRAFTS_CLEARED_EVENT, drop);
+  }, []);
+  const valuePageRef = useRef(valuePage);
+  valuePageRef.current = valuePage;
+  // A chat edit that fills a grid cell closes any open page, so the table shows.
+  useEffect(() => {
+    if (!revealing || !valuePage) return;
+    setValuePage(null);
+    pageDirty.current = false;
+    if (onPageEntry()) window.history.back();
+  }, [revealing]);
+  // A grid's typed values not yet saved: the plan and the chat read them, and
+  // an upload saves them first, so on a phone, where the grids sit hidden
+  // under the rows, each card says so and opens the table (US-62 AC11).
+  const [drafted, setDrafted] = useState<ReadonlySet<string>>(new Set());
+  const onDraftValueRef = useRef(onDraftValue);
+  onDraftValueRef.current = onDraftValue;
+  const trackDraft = useCallback((field: keyof HealthInputs, value: number | undefined, day?: string) => {
+    setDrafted(prev => {
+      if ((value !== undefined) === prev.has(field)) return prev;
+      const next = new Set(prev);
+      if (value !== undefined) next.add(field); else next.delete(field);
+      return next;
+    });
+    if (day === undefined) onDraftValueRef.current(field, value); else onDraftValueRef.current(field, value, day);
+  }, []);
+  const draftedVitals = [...drafted].some(f => VITALS_DRAFT_FIELDS.has(f));
+  const draftedBlood = [...drafted].some(f => !VITALS_DRAFT_FIELDS.has(f));
+  const unsavedCue = (shown: boolean) => isPhone && !tableShown && shown && (
+    <button type="button" className="md-unsaved" onClick={() => showTable(true)}>Unsaved values: review</button>
+  );
   const showTable = (open: boolean) => { setSeenReveal(revealCell); setTableOpen(open); };
   const panelRef = useRef<HTMLDivElement>(null);
   const panelTop = () => (panelRef.current ? panelRef.current.getBoundingClientRect().top + window.scrollY - 60 : window.scrollY);
@@ -1001,7 +1077,7 @@ export function InputPanel({
         unitSystem={unitSystem}
         onSave={onSaveBloodTestBatch}
         onCorrectValue={onCorrectValue}
-        onDraftValue={onDraftValue}
+        onDraftValue={trackDraft}
         formStage={formStage}
         plan={planBasis}
         knownMinor={knownMinor}
@@ -1117,7 +1193,11 @@ export function InputPanel({
     return (
       <>
         {!tableShown && <VitalsRows history={vitalsHistory} ctx={rowCtx} onOpen={openPage}/>}
-        <div className="md-table" hidden={!tableShown}>{renderVitalsMatrix()}</div>
+        {unsavedCue(draftedVitals)}
+        <div className="md-table" hidden={!tableShown}>
+          <button type="button" className="md-back md-table-back" onClick={() => showTable(false)}>‹ Show as rows</button>
+          {renderVitalsMatrix()}
+        </div>
       </>
     );
   };
@@ -1190,7 +1270,7 @@ export function InputPanel({
       onSaveBatch={onSaveBloodTestBatch}
       onCorrectValue={onCorrectValue}
       move={move.headers}
-      onDraftValue={onDraftValue}
+      onDraftValue={trackDraft}
       isSaving={isSavingLongitudinal}
       grading={grading}
       onUploadClick={() => setShowUploadModal?.(true)}
@@ -2164,7 +2244,7 @@ export function InputPanel({
     <div ref={panelRef} className={`health-input-panel${pageShown ? ' md-page-open' : ''}`}>
       {pageShown && (
         <ValuePage key={JSON.stringify(pageShown)} subject={pageShown} history={[...vitalsHistory, ...bloodTestHistory]} labValues={labValues}
-                   ctx={rowCtx} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage}/>
+                   ctx={rowCtx} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} dirtyRef={pageDirty}/>
       )}
       <ColumnHeader step={1} title="Your information" meta={storageBar} actions={!!storageBar} />
       {/* Card 1: Units + Basic Info + Vitals + Birth Info (stage 2+). On a
@@ -2193,6 +2273,7 @@ export function InputPanel({
         <div className="section-card section-card--bt stage-reveal">
           {isPhone && !tableShown && (
             <BloodTestRows history={bloodTestHistory} labValues={labValues} ctx={rowCtx} onOpen={openPage}>
+              {unsavedCue(draftedBlood)}
               <div className="md-foot">
                 <button type="button" className="md-foot-btn" onClick={() => showTable(true)}>All results as a table</button>
                 {setShowUploadModal && <button type="button" className="md-foot-btn" onClick={() => setShowUploadModal(true)}>Upload lab results</button>}

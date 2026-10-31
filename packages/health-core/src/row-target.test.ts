@@ -80,8 +80,8 @@ describe('rowTarget: the plan’s vitals targets (US-06 AC5)', () => {
 describe('rowTarget: a catalogue test’s printed range', () => {
   it('both sides, one side, none', () => {
     expect(rowTarget({ referenceLow: 135, referenceHigh: 145 }, 'si', adult, null)).toEqual({ full: 'Ref: 135–145', bare: 'Ref 135–145' });
-    expect(rowTarget({ referenceLow: null, referenceHigh: 5 }, 'si', adult, null)).toEqual({ full: 'Ref: ––5', bare: 'Ref <5' });
-    expect(rowTarget({ referenceLow: 40, referenceHigh: null }, 'si', adult, null)).toEqual({ full: 'Ref: 40––', bare: 'Ref >40' });
+    expect(rowTarget({ referenceLow: null, referenceHigh: 5 }, 'si', adult, null)).toEqual({ full: 'Ref: ––5', bare: 'Ref ≤5' });
+    expect(rowTarget({ referenceLow: 40, referenceHigh: null }, 'si', adult, null)).toEqual({ full: 'Ref: 40––', bare: 'Ref ≥40' });
     expect(rowTarget({ referenceLow: null, referenceHigh: null }, 'si', adult, null)).toBeNull();
     expect(rowTarget({}, 'si', adult, null)).toBeNull();
   });

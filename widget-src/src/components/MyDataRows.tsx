@@ -3,7 +3,7 @@
 // value with the previous one in brackets over its unit. A tap opens the
 // value's page (ValuePage). Desktop keeps the grids.
 
-import { useMemo } from 'react';
+import { useId, useMemo } from 'react';
 import {
   type ApiMeasurement,
   type CellUnit,
@@ -35,9 +35,11 @@ export const BLOOD_ROWS = BLOOD_TEST_METRICS.filter(m => m !== 'psa' && METRIC_T
 const TINT: Record<string, string> = {
   weight: '#AF52DE', waist: '#5856D6', blood_pressure: '#FF3B30', hba1c: '#D07A00', ldl: '#007AFF',
   apob: '#2E9ED2', total_cholesterol: '#2A9BB0', hdl: '#2CA84B', triglycerides: '#B28F00',
-  creatinine: '#A2845E', lpa: '#B2598C',
+  creatinine: '#A2845E', lpa: '#B2598C', diastolic_bp: '#D37A70',
 };
 const LAB_TINT = '#6680A6';
+/** A metric's line colour on its row and its page's chart; a lab test's (null) is one shared slate. */
+export const tintOf = (metric: string | null) => (metric && TINT[metric]) || LAB_TINT;
 
 /** Everything the rows and value pages read to grade and print a value. */
 export interface RowContext {
@@ -60,6 +62,24 @@ export function pressureStatus(r: DayReading, { grading, plan }: RowContext): St
   return bpStatus(r.value, r.dia?.value, plan && grading ? bpTargetFor(plan.age) : undefined);
 }
 
+/** The line each metric's grade is read against, in the words its target prints. */
+const LINE_WORD: Record<string, string> = {
+  ldl: 'optimal', apob: 'optimal', total_cholesterol: 'optimal',
+  hba1c: 'normal', triglycerides: 'normal', lpa: 'normal', creatinine: 'normal',
+  waist: 'target', blood_pressure: 'target',
+};
+
+/** A grade as a screen reader hears it beside the value ("3.4, above optimal,
+ *  previous 2.9"): the colour says it on screen. Weight's amber covers both
+ *  sides of its target, and HDL is better higher. */
+export function gradeWords(status: Status, metric: string): string | null {
+  if (!status) return null;
+  if (status === 'ok') return 'in range';
+  if (metric === 'hdl') return status === 'bad' ? 'low' : 'below optimal';
+  if (metric === 'weight') return status === 'bad' ? 'above target' : 'outside target';
+  return status === 'bad' ? 'high' : `above ${LINE_WORD[metric] ?? 'target'}`;
+}
+
 /** A pressure as the grid prints it: "128/82". */
 export const pressureText = (r: DayReading) => `${Math.round(r.value)}/${Math.round(r.dia!.value)}`;
 
@@ -74,6 +94,8 @@ interface RowModel {
   trend: number[];
   tint: string;
   status: Status;
+  /** The metric the grade is read for (`gradeWords`). */
+  graded: string;
 }
 
 function coreRow(metric: MetricType, history: ApiMeasurement[], ctx: RowContext): RowModel {
@@ -91,6 +113,7 @@ function coreRow(metric: MetricType, history: ApiMeasurement[], ctx: RowContext)
     trend: recentTrend(readings).map(r => r.value),
     tint: TINT[metric] ?? LAB_TINT,
     status: latest ? valueStatus(metric, latest.value, ctx) : null,
+    graded: metric,
   };
 }
 
@@ -108,6 +131,7 @@ function pressureRow(history: ApiMeasurement[], ctx: RowContext): RowModel {
     trend: recentTrend(readings).map(r => r.value),
     tint: TINT.blood_pressure,
     status: latest ? pressureStatus(latest, ctx) : null,
+    graded: 'blood_pressure',
   };
 }
 
@@ -132,6 +156,7 @@ function labRows(labValues: ApiLabValue[]): RowModel[] {
       trend: sameUnit ? recentTrend(readings).map(r => r.value) : [],
       tint: LAB_TINT,
       status: null,
+      graded: '',
     };
   });
 }
@@ -140,6 +165,7 @@ function labRows(labValues: ApiLabValue[]): RowModel[] {
  *  `Sparkline`): the metric's colour, a fading fill under it and a dot on the
  *  newest day. Nothing for fewer than two days. */
 export function RowTrend({ points, tint, width = 44, height = 18 }: { points: number[]; tint: string; width?: number; height?: number }) {
+  const fill = `md-fill${useId().replace(/:/g, '')}`; // one gradient per row
   if (points.length < 2) return <span className="md-row-trend" aria-hidden="true">{' '}</span>;
   const low = Math.min(...points), high = Math.max(...points);
   const span = high - low || 1;
@@ -152,7 +178,6 @@ export function RowTrend({ points, tint, width = 44, height = 18 }: { points: nu
   const line = coords.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
   const [lastX, lastY] = coords[coords.length - 1];
   const area = `${line} L${(width - pad).toFixed(1)},${height} L${pad},${height} Z`;
-  const fill = `md-fill-${tint.slice(1)}`;
   return (
     <svg className="md-row-trend" width={width} height={height} aria-hidden="true" focusable="false">
       <defs>
@@ -186,7 +211,7 @@ function MetricRow({ row, onOpen }: { row: RowModel; onOpen: (subject: ValueSubj
                 <span className={`md-row-latest md-status-${row.status ?? 'none'}`}>{row.latest}</span>
                 {row.previous && <span className="md-row-prev"> ({row.previous})</span>}
               </span>
-              <span className="hr-sr-only">{row.previous ? `${row.latest}, previous ${row.previous}` : row.latest}</span>
+              <span className="hr-sr-only">{[row.latest, gradeWords(row.status, row.graded), row.previous && `previous ${row.previous}`].filter(Boolean).join(', ')}</span>
               <span className="md-row-unit">{row.unit}</span>
             </>
           ) : <span className="md-row-add">Add</span>}

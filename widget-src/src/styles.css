@@ -11,6 +11,9 @@
   --color-brand: #00a38b;
   --color-brand-text: #007c6a;
   --color-brand-text-hover: #006b5b;
+  /* A grade as text on white (US-62 AC8): amber-700 and red-700, both above 4.5:1. */
+  --color-grade-warn-text: #b45309;
+  --color-grade-bad-text: #b91c1c;
 
   /* Grays */
   --color-gray-light: #888;
@@ -5368,8 +5371,23 @@ input[type="number"] {
   color: var(--color-brand-text);
   font-size: 15px;
 }
-.md-status-warn { color: var(--bt-warn, #c58b2a); }
-.md-status-bad { color: var(--bt-bad, #c65454); }
+.md-status-warn { color: var(--color-grade-warn-text); }
+.md-status-bad { color: var(--color-grade-bad-text); }
+.md-unsaved {
+  display: block;
+  margin: 4px 0 8px;
+  padding: 8px 12px;
+  width: 100%;
+  border: 1px solid var(--color-grade-warn-text);
+  border-radius: var(--control-radius);
+  background: #fffbeb;
+  color: var(--color-grade-warn-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
 .md-foot {
   display: flex;
   flex-wrap: wrap;

@@ -82,9 +82,11 @@ export function rowTarget(metric: RowSubject, unit: CellUnit, grading: Grading, 
 }
 
 /** A lab's printed range: "Ref: 135–145" in the grid, as the upload review
- *  prints it, and "Ref 135–145", "Ref <5" or "Ref >40" in a row. */
+ *  prints it, and "Ref 135–145", "Ref ≤5" or "Ref ≥40" in a row. One side is
+ *  the extraction's bound (a printed "<5" is referenceHigh 5), so the row says
+ *  "≤", never claiming the bound itself is out of range. */
 function printedRange(low: number | null, high: number | null): RowTarget | null {
   if (low == null && high == null) return null;
-  const bare = low != null && high != null ? `${low}–${high}` : high != null ? `<${high}` : `>${low}`;
+  const bare = low != null && high != null ? `${low}–${high}` : high != null ? `≤${high}` : `≥${low}`;
   return { full: `Ref: ${low ?? '–'}–${high ?? '–'}`, bare: `Ref ${bare}` };
 }
