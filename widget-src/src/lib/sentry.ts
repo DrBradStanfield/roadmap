@@ -183,6 +183,9 @@ export function initSentry() {
   Sentry.init({
     dsn: SENTRY_DSN,
     release: typeof __SENTRY_RELEASE__ !== 'undefined' ? __SENTRY_RELEASE__ : undefined,
+    // A release switches Sentry sessions on (the default browserSessionIntegration
+    // sends one per page load and route change). US-49 AC4 allows errors only.
+    integrations: (defaults) => defaults.filter((i) => i.name !== 'BrowserSession'),
     environment: local
       ? 'development'
       : window.location.hostname === 'drbradstanfield.github.io'
