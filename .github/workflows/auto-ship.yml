@@ -70,11 +70,16 @@ jobs:
           case ",${labels}," in *,hold,*) echo "'hold' label present — vetoed."; exit 0;; esac
 
           # Reviewer verdict: trusted bot author + pinned to the CURRENT head sha.
+          # Exactly one line may contain VERDICT:, it must be the APPROVE line, and
+          # no "verdict ... reject" on one line in any case, with only spaces, punctuation,
+          # Markdown (_ and *) or is/was/remains/still/now between: a REJECT quoting it is not an approval.
           verdict=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments?per_page=100" \
             | jq --arg sha "${HEAD_SHA}" '[.[] | select(
                 (.user.type=="Bot") and
                 (.user.login | IN("github-actions[bot]","claude[bot]","claude")) and
-                (.body | contains("VERDICT: APPROVE " + $sha))
+                ([.body | split("\n")[] | select(contains("VERDICT:")) | gsub("^\\s+|\\s+$"; "")]
+                  == ["VERDICT: APPROVE " + $sha]) and
+                (.body | test("verdict(?:[^A-Za-z0-9\\n]|\\b(?:is|was|remains|still|now)\\b)*reject"; "i") | not)
               )] | length')
           [ "${verdict}" -ge 1 ] || { echo "No trusted APPROVE verdict for ${HEAD_SHA} — not shipping."; exit 0; }
 
