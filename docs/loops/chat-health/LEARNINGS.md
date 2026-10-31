@@ -68,8 +68,10 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   (`SILENT_ON_YOUTUBE`), and the classifier labels many
   comments GREETING (W41: 35 of 55 events; 16 substantive health claims and
   one direct question among them, the rest reactions, thanks and spam).
-  But first-person vendor spam reads as a health claim: W43's peptide-vendor
-  burst (19 comments) got ROUTE on 14 and three public replies; no spam rule exists.
+  First-person vendor spam read as a health claim (W43: 19-comment burst, ROUTE
+  14, three replies); SPAM label since 10-29 (AC41), yet W44 logged 0 SPAM rows: a
+  10-29 book-promo trio got GREETING (no reply either way), and a lab's
+  self-promotion without a question got ROUTE 5/5 and a reply.
 - **2026-08-10 [retrieval]** Term presence in the visible summary is necessary
   but NOT sufficient: before any summary edit, check what the router picked
   INSTEAD. On the Haiku router, steals (a theme neighbour beating the named
@@ -114,10 +116,11 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
 - **2026-09-05 [content]** The YouTube bot persists its skip decision as a
   literal `SKIP_NO_REPLY` 1-word assistant row (W36 3, W37 20/45, W39 8/41) —
   exclude them from reply-length stats or the median reads low (W37: 66 words
-  without, 52 with); proposal filed W36. Real replies end with the 6-word
-  `[written by Brad AI for testing]` tag (prompt before 08-10; in W39 raw counts),
-  `[by Brad AI]` from 10-19 (3985ae4). Strip URLs before splitting sentences:
-  a W43 worker's splitter read 13 of 29 replies as >5 sentences; review found 4.
+  without, 52 with); proposal filed W36. Replies carried an AI tag
+  (`[written by Brad AI for testing]`, then `[by Brad AI]` from 10-19) until US-15
+  AC43 removed it on 10-30: raw and stripped counts converge from W45. Strip URLs
+  but KEEP the punctuation after them before splitting sentences: W43's worker read
+  13/29 replies as >5 sentences (4), W44's 29/36 as having a >25-word one (3).
 - **2026-09-19 [latency]** The cache-hit rate is an inter-arrival metric, not
   a router property: on the 5-minute TTL every W36–W38 hit fell within 300 s
   of the previous router call (13/13, 10/13, 2/2) and none beyond (0/28,
@@ -142,6 +145,9 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   with and without error rows (nearest-rank from W37 on). Classifier ERROR
   fails open to the router by design; router failures reach Sentry only as
   `warning`-level events (`reportRouterFailure`), so a burst raises no alert.
+  10-26 (W44): an 8-hour Anthropic 400 outage wrote 212 ERROR rows at ~130 ms.
+  They collapse the all-rows median to 134.5 ms: report latency and cache hit on
+  non-error rows. YouTube retries each failed comment every tick (64 → 209 rows).
 - **2026-09-29 [content]** Weekly knowledge lint (US-43): steps, rules, schemas, cost and baseline in [notes/weekly-lint.md](notes/weekly-lint.md).
 - **2026-10-03 [loop]** A non-miss bucket needs a run against rule 7, not a
   judgment: W40 called a blood-results paste "no defensible handle" and a
@@ -149,17 +155,11 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   rows drop `first`/`recent`, but a conversation_id join recovers the turns
   and `router_input_tokens` shows the router had them; replay through the
   real `routeQuery` with the test key passed as ANTHROPIC_API_KEY (scratch).
-- **2026-10-15 [loop]** The own-data-analysis X3 fixture ("can you analyze my
-  data", values entered, no sex) is a KNOWN-FAIL caused upstream: production
-  sends '{}' when sex or height is missing, so the model says the data is
-  empty. It fails 0/6 on 925d3d1 too. Do not read a miss as a regression or
-  tune the prompt for it; it clears only when production sends partial data.
-- **2026-10-18 [loop]** X3's upstream cause is fixed (US-15 AC36): with
-  no sex or height, production now sends the saved values and `missingInputs`,
-  with no cards. X3 is an expected pass from here; a miss now is a real
-  regression. Its partner fixture, source `us-15-ac36-2026-10-18`, checks the
-  answer asks for height and says why. Neither is measured yet (test key
-  limit until 2026-11-01).
+- **2026-10-18 [loop]** The own-data X3 fixture ("can you analyze my data", no
+  sex) failed upstream until US-15 AC36: production sent '{}' without sex or
+  height. It now sends the saved values and `missingInputs`, so a miss is a real
+  regression; partner fixture `us-15-ac36-2026-10-18` checks the answer asks for
+  height. Neither measured yet (answer-check arm).
 - **2026-10-18 [classifier]** A classifier model swap moves labels with no
   prompt change. Replayed with thread context, Haiku 5.5 labelled six
   mid-thread value corrections ROUTE 30/30; Haiku 4.5 said MEASUREMENT 12/12.
