@@ -125,6 +125,14 @@ const EVENT_WORDS: Record<string, Partial<Record<string, readonly string[]>>> = 
   step: { mcp_tool_call: MCP_TOOL_STEPS, onboarding_step: ONBOARDING_STEPS },
 };
 
+/** Events that mean nothing without their key: a tool tab with no device, or
+ *  a step with no name, would be a row no breakdown can place (US-62 AC1). */
+const EVENT_REQUIRED_KEY: Partial<Record<string, string>> = {
+  tool_opened: 'device',
+  onboarding_step: 'step',
+  signin_opened: 'placement',
+};
+
 /** Events whose metadata is ONLY their own keys: a shared key such as
  *  `provider` or `count` would make a counts-only row carry something else. */
 const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
@@ -159,6 +167,10 @@ function checkEventKeys(
   ctx: z.RefinementCtx,
 ): void {
   const metadata = event.metadata;
+  const required = EVENT_REQUIRED_KEY[event.eventName];
+  if (required && metadata?.[required] === undefined) {
+    ctx.addIssue({ code: 'custom', path: ['metadata', required], message: 'this event needs its key' });
+  }
   if (!metadata) return;
   for (const [key, owners] of Object.entries(EVENT_KEY_OWNERS)) {
     if (metadata[key] !== undefined && !owners.includes(event.eventName)) {
@@ -232,7 +244,8 @@ export const SERVER_VISITOR_ID = '00000000-0000-0000-0000-000000000000';
 /** Fire-and-forget server-side counter. Never throws — callers are hot paths. */
 export async function recordServerEvent(
   eventName: ServerProductEvent['eventName'],
-  metadata?: ServerProductEvent['metadata'],
+  // A server producer's `step` is only a tool call's half; the onboarding words are the browser's (US-62 AC1).
+  metadata?: Omit<ServerEventMetadata, 'step'> & { step?: (typeof MCP_TOOL_STEPS)[number] },
 ): Promise<void> {
   try {
     await recordProductEvent({ eventName, visitorId: SERVER_VISITOR_ID, metadata });

@@ -33,6 +33,8 @@ describe('parseProductEvent', () => {
   it('accepts every client-emittable event name', () => {
     for (const eventName of PRODUCT_EVENT_NAMES) {
       if (SERVER_ONLY.has(eventName)) continue;
+      // US-62 AC1: these three need their key, tested with it below.
+      if (['tool_opened', 'onboarding_step', 'signin_opened'].includes(eventName)) continue;
       expect(parseProductEvent({ eventName, visitorId: VISITOR })).toEqual({
         eventName,
         visitorId: VISITOR,
@@ -301,6 +303,16 @@ describe('the web redesign counters (US-62 AC1)', () => {
       .toEqual({ eventName, visitorId: VISITOR, ...(metadata ? { metadata } : {}) });
   const refused = (eventName: string, metadata: Record<string, unknown>) =>
     expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata }), JSON.stringify({ eventName, metadata })).toBeNull();
+
+  it('refuses tool_opened, onboarding_step and signin_opened without their key (adversary R2)', () => {
+    for (const eventName of ['tool_opened', 'onboarding_step', 'signin_opened']) {
+      expect(parseProductEvent({ eventName, visitorId: VISITOR }), eventName).toBeNull();
+      refused(eventName, {});
+    }
+    refused('tool_opened', { step: 'sex' });
+    refused('onboarding_step', { device: 'phone' });
+    refused('signin_opened', { device: 'phone' });
+  });
 
   it('takes tool_opened with a device, phone or desktop, and nothing else', () => {
     ok('tool_opened', { device: 'phone' });
@@ -615,7 +627,8 @@ describe('recordServerEvent — the server path validates too', () => {
       await recordProductEvent(parsed!);
     }
     await recordServerEvent('onboarding_step', { step: 'confirm' } as never);
-    await recordServerEvent('mcp_tool_call', { tool: 'correct_value', client: 'chatgpt', outcome: 'ok', step: 'sex' } as never);
+    // @ts-expect-error a server producer's step is only propose or confirm (adversary N2)
+    await recordServerEvent('mcp_tool_call', { tool: 'correct_value', client: 'chatgpt', outcome: 'ok', step: 'sex' });
     expect(inserts.map((row) => [row.event_name, row.metadata])).toEqual([
       ['tool_opened', { device: 'phone' }],
       ['onboarding_step', { step: 'birth' }],
