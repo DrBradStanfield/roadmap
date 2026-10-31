@@ -32,13 +32,13 @@ Sources read for structure: Apple Support "Monitor your heart rate with Apple Wa
 
 ## Heart rate (`heart_rate`)
 
-**What it is.** How many times your heart beats each minute (bpm). Apple Watch reads it through the skin with green light, at times through the day and more often during a workout.
+**What it is.** How many times your heart beats each minute (bpm). Apple Watch measures your pulse with light sensors on its back, through the day and during workouts. *(Edited in review 2026-10-31 (narrowed; Apple's pages and Paluch's design).)*
 
 **Why it matters.** Heart rate rises with activity, stress, caffeine, heat, dehydration and illness, and falls as you rest. The pattern over days tells you more than any one reading. A racing or very slow pulse with chest pain, fainting, dizziness or breathlessness needs prompt medical care.
 
 **How to read it.**
 - Compare readings taken at rest with each other, not with readings taken just after moving.
-- Wear the watch snug on top of your wrist. A loose band gives poorer readings.
+- Wear the watch so it fits well. A good fit helps the reading. *(Edited in review 2026-10-31 (narrowed; Apple's pages and Paluch's design).)*
 - If your watch warns of a high, low or irregular heart rate, tell your doctor.
 
 **Sources.** Apple Support, "Monitor your heart rate with Apple Watch", https://support.apple.com/en-us/120277 (how the watch measures; fit).
@@ -78,7 +78,7 @@ Sources read for structure: Apple Support "Monitor your heart rate with Apple Wa
 **Why it matters.** Fitness is one of the strongest predictors of how long people live. In a meta-analysis of 33 studies, people with low fitness had a higher risk of death and heart disease than fitter people. The bands on the chart compare you with people of your age and sex; from age 60, Low uses Apple's fixed line. Treat your band as a rough guide.
 
 **How to get a good estimate.**
-- Record outdoor walks, runs or hikes in the Workout app, with the watch snug on your wrist.
+- Record outdoor walks, runs or hikes in the Workout app. *(Edited in review 2026-10-31 (narrowed; Apple's pages and Paluch's design).)*
 - Keep your age, sex, height, weight and any heart rate medicines up to date in the Health app. The estimate uses them.
 - To raise it, do regular aerobic exercise. In trials, interval training raised fitness at least as much as steady, moderate exercise.
 
@@ -88,7 +88,7 @@ Sources read for structure: Apple Support "Monitor your heart rate with Apple Wa
 
 **What it is.** The steps your iPhone or Apple Watch counts each day with its motion sensors. A phone left on a desk counts nothing, so the watch usually gives the fuller count.
 
-**Why it matters.** In a meta-analysis of 15 studies of about 47,000 adults, people who took more steps a day had a lower risk of dying early. The benefit levelled off at about 6,000 to 8,000 steps a day in people aged 60 and over, and 8,000 to 10,000 in younger adults. Brisk walking also counts toward the plan's 150 minutes of moderate activity a week.
+**Why it matters.** In a meta-analysis of 15 studies of about 47,000 adults, people who took more steps a day had a lower risk of dying early. The lower risk of death levelled off at about 6,000 to 8,000 steps a day in people aged 60 and over, and 8,000 to 10,000 in younger adults. *(Edited in review 2026-10-31 (narrowed; Apple's pages and Paluch's design).)* Brisk walking also counts toward the plan's 150 minutes of moderate activity a week.
 
 **How to add steps.**
 - Park further away and walk the last 10 minutes.
@@ -105,10 +105,10 @@ Sources read for structure: Apple Support "Monitor your heart rate with Apple Wa
 (a) = already in the three clinical files (where quoted). (b) = NEW: needs Brad's approval; if approved, a line in health_roadmap_algorithm.md (the metric-guides.ts paragraph near the top, or a new short section), a reference in evidence.ts (`GUIDE_REFERENCES`), and a citation in roadmap_text.html's reference list (metric-guides.test.ts requires every `GUIDE_REFERENCES` entry to be cited there).
 
 ### Heart rate
-1. (b) Apple Watch reads heart rate through the skin with green light, more often in a workout. Source: Apple Support 120277 (read 2026-10-30).
+1. (b) Apple Watch measures your pulse with light sensors on its back, through the day and during workouts. Source: Apple Support 120277 (read 2026-10-30). *(Edited in review 2026-10-31 (narrowed; Apple's pages and Paluch's design).)*
 2. (b) Heart rate rises with activity, stress, caffeine, heat, dehydration and illness. Standard physiology; no source cited.
 3. (a, extended) Prompt care for chest pain, fainting, dizziness or breathlessness. roadmap_text.html, Exercise safety: "Stop if you get chest pain, dizziness, fainting, palpitations or unusual breathlessness, and see your doctor". The files say it for exercise; the guide says it for a racing or slow pulse at any time.
-4. (b) A loose band gives poorer readings. Apple Support 120277 ("getting the best results" covers fit).
+4. (b) A good fit helps the reading. Apple Support 120277 ("Start with a good fit"). *(Edited in review 2026-10-31 (narrowed; Apple's pages and Paluch's design).)*
 5. (b) Tell your doctor if the watch warns of a high, low or irregular rate. Apple Support 120277 describes those notifications; the advice is standard.
 
 ### Resting heart rate
