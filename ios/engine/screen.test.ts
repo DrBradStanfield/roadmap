@@ -30,7 +30,7 @@ describe('screenJson (US-25 AC2, AC22)', () => {
     const tiles = statTiles(plan.results, { unitSystem: plan.unitSystem, unitOverrides: choices, sex: plan.inputs.sex });
     expect(JSON.parse(screenJson(sample, NOW, 'phone', UNITS))).toEqual({
       myData: JSON.parse(JSON.stringify(myData(file, NOW, choices))),
-      plan: { sections: JSON.parse(JSON.stringify(planSections(plan.results.suggestions))), tiles: JSON.parse(JSON.stringify(tiles)), ms: expect.any(Number) },
+      plan: { sections: JSON.parse(JSON.stringify(planSections(plan.results.suggestions))), tiles: JSON.parse(JSON.stringify(tiles)), usProducts: { blocks: [], ownershipLine: null }, ms: expect.any(Number) },
     });
   });
 

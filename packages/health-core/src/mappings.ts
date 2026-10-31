@@ -9,7 +9,7 @@
  */
 import type { AlcoholAnswer, HealthInputs } from './types';
 import { encodeSex, decodeSex, encodeUnitSystem, decodeUnitSystem, isAlcoholAnswer } from './types';
-import { CANONICAL_UNITS, UNIT_DEFS, type MetricType } from './units';
+import { CANONICAL_UNITS, rangeFault, UNIT_DEFS, type MetricType, type ValidationRange } from './units';
 import { parseLocalisedNumber } from './parseNumber';
 
 /**
@@ -575,8 +575,7 @@ export function computeFormStage(
   saved: ReadonlyArray<Pick<ApiMeasurement, 'metricType' | 'value'>> = [],
 ): 1 | 2 | 3 {
   const merged = mergeLongitudinalInputs(inputs, saved);
-  const plausible = (v: number | undefined, r: { min: number; max: number }) =>
-    v !== undefined && v >= r.min && v <= r.max;
+  const plausible = (v: number | undefined, r: ValidationRange) => v !== undefined && !rangeFault(r, v);
   if (plausible(merged.weightKg, UNIT_DEFS.weight.validationRange.si)) return 3;
   if (saved.some(m => BLOOD_TEST_METRICS.includes(m.metricType))) return 3;
   if (merged.sex !== undefined && plausible(merged.heightCm, UNIT_DEFS.height.validationRange.si)) return 2;

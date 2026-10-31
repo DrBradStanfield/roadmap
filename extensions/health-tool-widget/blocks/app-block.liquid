@@ -16,7 +16,7 @@
 <header class="hr-hero">
   <div class="hr-hero-text">
     <h1>Get Your Personalized Health Plan</h1>
-    <p>Enter your health information below to receive personalized suggestions to discuss with your healthcare provider. The more information you provide, the more tailored your suggestions will be.</p>
+    <p><span class="hr-hero-long">Enter your health information below to receive personalized suggestions to discuss with your healthcare provider. The more information you provide, the more tailored your suggestions will be.</span><span class="hr-hero-short">Personalized suggestions to discuss with your doctor.</span></p>
   </div>
   <img
     class="hr-hero-img"
@@ -46,6 +46,9 @@
        the homepage and /pages/roadmap blocks carry no settings and stay gated.
        Non-trimming tags keep the space between attributes. {% endcomment %}
   data-skip-email-gate="{{ block.settings.skip_email_gate }}"
+  {% comment %} US-61: the market country (as /pages/my-supplements reads it),
+       on every placement; the widget shows the US product blocks for "US". {% endcomment %}
+  data-country="{{ localization.country.iso_code | escape }}"
 >
   <div class="hr-skeleton" aria-hidden="true">
     <div class="hr-skel-tabbar">&nbsp;</div>

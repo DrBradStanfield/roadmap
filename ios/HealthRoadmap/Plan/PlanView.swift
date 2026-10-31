@@ -108,6 +108,14 @@ struct PlanList: View {
                                     PlanCardView(card: card, askAboutAlcohol: asksAboutAlcohol(card)).modifier(RiseIn())
                                 }
                             }
+                            // US-61 AC7: once, under the last Supplements card, when a card shows a product.
+                            if let ownership = section.ownershipLine {
+                                Text(ownership)
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.horizontal, 4)
+                                    .accessibilityIdentifier("plan.ownershipLine")
+                            }
                         }
                     }
 

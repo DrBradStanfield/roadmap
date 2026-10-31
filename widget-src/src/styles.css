@@ -5729,3 +5729,45 @@ a.action-btn-small.action-btn-small:hover {
   cursor: pointer;
 }
 .hr-storage-link:hover { color: #006355; }
+
+/* US-61: Brad's product at the foot of a US supplement card. Part of the card,
+   in its own quiet type, never a banner; the ownership line sits once below
+   the last Supplements card. Neither is printed (the PDF clone also drops
+   .no-print). */
+.us-product {
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--color-gray-border);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-gray-medium);
+}
+
+.us-product-line {
+  margin: 0 0 var(--spacing-xs);
+}
+
+.us-product-link {
+  font-weight: 600;
+  color: var(--color-brand);
+  text-decoration: none;
+}
+
+.us-product-link:hover {
+  color: var(--color-brand-hover);
+  text-decoration: underline;
+}
+
+.us-ownership {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-gray-medium); /* #888 would fail AA contrast at 12px */
+}
+
+@media print {
+  .us-product,
+  .us-ownership {
+    display: none !important;
+  }
+}

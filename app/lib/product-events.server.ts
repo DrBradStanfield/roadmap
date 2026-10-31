@@ -5,6 +5,7 @@ import * as z from '../../packages/health-core/src/zod';
 // same reason chat.server.ts / email.server.ts import health-core this way.
 import { CHAT_PROFILE_CHOICES, CHAT_PROFILE_FIELDS, EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, LPA_CHECK_ANSWERS, isLabUnitWord, LAB_UNIT_BLANK, MCP_IMPORT_FILE_BUCKETS, MCP_OAUTH_DETAILS, MEASUREMENT_REFUSAL_REASONS, MEASUREMENT_REFUSALS_WITH_METRIC, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_KNOWLEDGE_TOOL_NAMES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type McpOAuthDetail, type McpOAuthReason, type McpRefusalReason, type ProductEventName, type UploadOutcomeKey } from '../../packages/health-core/src/product-events';
 import { LPA_UNITS } from '../../packages/health-core/src/units';
+import { US_PRODUCTS, type UsProduct } from '../../packages/health-core/src/us-products';
 import { METRIC_TYPES } from '../../packages/health-core/src/validation';
 import { MCP_CLIENT_LABELS } from './mcp-clients.server';
 import { supabaseAdmin } from './supabase.server';
@@ -53,6 +54,8 @@ const metadataSchema = z
     /** US-16 AC2: which profile field the chat proposed, and what the user did. Closed words, never a value. */
     field: z.enum(CHAT_PROFILE_FIELDS).optional(),
     choice: z.enum(CHAT_PROFILE_CHOICES).optional(),
+    /** US-61 AC8: which US product block was seen or clicked. Never the card it sat on. */
+    product: z.enum(Object.keys(US_PRODUCTS) as [UsProduct, ...UsProduct[]]).optional(),
     ...(Object.fromEntries(UPLOAD_OUTCOME_KEYS.map(k => [k, uploadOutcomeCount])) as Record<UploadOutcomeKey, typeof uploadOutcomeCount>),
   })
   .strict();
@@ -103,6 +106,7 @@ const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
   skipped: ['chat_question_archived'],
   field: ['chat_profile_edit'],
   choice: ['chat_profile_edit'],
+  product: ['us_product_shown', 'us_product_link_clicked'],
   ...Object.fromEntries(UPLOAD_OUTCOME_KEYS.map(k => [k, ['upload_outcome']])),
 };
 
@@ -119,6 +123,8 @@ const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   cloud_connect_cancelled: ['provider'],
   blood_test_moved: [], // US-04 AC5: the name alone
   alcohol_question_answered: [], // US-60: the name alone, never the answer
+  us_product_shown: ['product'], // US-61 AC8: the product alone, never the card
+  us_product_link_clicked: ['product'],
 };
 
 /**

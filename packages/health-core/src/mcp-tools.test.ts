@@ -2860,7 +2860,7 @@ describe('US-36 AC2 — every row runs the record’s own dry run; a bad row is 
       row('ferritin', 'Ferritin', 210, 'ug/L'),
     ]));
     expect(out.unrecognized).toEqual([
-      expect.stringMatching(/^LDL Cholesterol 320 mmol\/L: LDL-c must be at most 12.9 mmol\/L \(got 320\) \(0–12.9 mmol\/L; 0–500 mg\/dL\)\. Check the unit; if the report really says that, tell the user and do not file it\.$/),
+      expect.stringMatching(/^LDL Cholesterol 320 mmol\/L: LDL-c must be at most 12.9 mmol\/L \(got 320\) \(above 0, up to 12.9 mmol\/L; above 0, up to 500 mg\/dL\)\. Check the unit; if the report really says that, tell the user and do not file it\.$/),
       expect.stringMatching(/^HDL Cholesterol 1.3 mmol\/L: .*2030-01-01.*Ask the user for the date, then re-send\.$/),
       'LDL Cholesterol 2.8 mmol/L: printed name LDL Cholesterol is the core metric ldl. Re-send it with metric ldl.',
     ]);
@@ -3589,5 +3589,24 @@ describe('US-32 — a malformed call is worded as it was before zod 4 (the agent
 
   it.each(WORDED)('%s %j', (name, args, text) => {
     expect(callTool(name as 'add_measurement', args, { file: base(), now: NOW })).toEqual({ status: 'invalid-args', text });
+  });
+});
+
+// US-03 AC7 (Brad, 2026-10-31): the connector's import preview runs the record's
+// dry run, so a lipid of 0 is one refused line and PSA and Lp(a) of 0 file.
+describe('US-03 AC7 — the import preview refuses a lipid of 0, never files it', () => {
+  it('refuses LDL 0 mmol/L and HDL 0 mg/dL in words, and offers PSA and Lp(a) of 0', () => {
+    const out = prepared(labCall([
+      row('ldl', 'LDL Cholesterol', 0, 'mmol/L'),
+      row('hdl', 'HDL Cholesterol', 0, 'mg/dL'),
+      row('psa', 'PSA', 0, 'ng/mL'),
+      row('lpa', 'Lipoprotein(a)', 0, 'nmol/L'),
+    ]));
+    expect(out.unrecognized).toEqual([
+      'LDL Cholesterol 0 mmol/L: LDL-c must be above 0 (got 0) (above 0, up to 12.9 mmol/L; above 0, up to 500 mg/dL). Check the unit; if the report really says that, tell the user and do not file it.',
+      expect.stringMatching(/^HDL Cholesterol 0 mg\/dL: HDL must be above 0 \(got 0\) \(above 0, up to 5.2 mmol\/L; above 0, up to 200 mg\/dL\)/),
+    ]);
+    expect(out.unrecognized.join('\n')).not.toContain('0–');
+    expect(out.payload.candidates.map((c) => [c.metric, c.value])).toEqual([['psa', 0], ['lpa', 0]]);
   });
 });

@@ -42,7 +42,7 @@ export interface UnitDef {
   /** Convert a canonical value to the display unit */
   fromCanonical: Record<UnitSystem, (v: number) => number>;
   /** Valid input range expressed in each unit system's display units */
-  validationRange: Record<UnitSystem, { min: number; max: number }>;
+  validationRange: Record<UnitSystem, ValidationRange>;
   /** Number of decimal places to round to for display */
   decimalPlaces: Record<UnitSystem, number>;
 }
@@ -101,22 +101,27 @@ const identity = (v: number) => v;
 // Unit definition factories (reduce boilerplate for common patterns)
 // ---------------------------------------------------------------------------
 
-type Range = { min: number; max: number };
+/** A metric's input range. `minExclusive`: the value must be above `min`, never equal to it (US-03 AC7). */
+export type ValidationRange = { min: number; max: number; minExclusive?: true };
 
-/** mmol/L ↔ mg/dL conversion using a multiplication factor. */
-function makeMmolMgdlUnit(factor: number, siRange: Range, convRange: Range, siDp = 1, convDp = 0): UnitDef {
+/** mmol/L ↔ mg/dL conversion using a multiplication factor. `minExclusive`
+ *  sets the floor for both systems, so they cannot disagree. */
+function makeMmolMgdlUnit(
+  factor: number, siRange: ValidationRange, convRange: ValidationRange,
+  floor: { minExclusive?: true } = {}, siDp = 1, convDp = 0,
+): UnitDef {
   return {
     canonical: 'mmol/L',
     label: { si: 'mmol/L', conventional: 'mg/dL' },
     toCanonical: { si: identity, conventional: (v) => v / factor },
     fromCanonical: { si: identity, conventional: (v) => v * factor },
-    validationRange: { si: siRange, conventional: convRange },
+    validationRange: { si: { ...siRange, ...floor }, conventional: { ...convRange, ...floor } },
     decimalPlaces: { si: siDp, conventional: convDp },
   };
 }
 
 /** Same unit in both systems (no conversion needed). */
-function makeIdentityUnit(canonical: string, range: Range, dp: number): UnitDef {
+function makeIdentityUnit(canonical: string, range: ValidationRange, dp: number): UnitDef {
   return {
     canonical,
     label: { si: canonical, conventional: canonical },
@@ -204,10 +209,10 @@ export const UNIT_DEFS: Record<MetricType, UnitDef> = {
     decimalPlaces: { si: 0, conventional: 1 },
   },
 
-  ldl: makeMmolMgdlUnit(CHOLESTEROL_FACTOR, { min: 0, max: 12.9 }, { min: 0, max: 500 }),
-  hdl: makeMmolMgdlUnit(CHOLESTEROL_FACTOR, { min: 0, max: 5.2 }, { min: 0, max: 200 }),
-  total_cholesterol: makeMmolMgdlUnit(CHOLESTEROL_FACTOR, { min: 0, max: 15 }, { min: 0, max: 580 }),
-  triglycerides: makeMmolMgdlUnit(TRIGLYCERIDES_FACTOR, { min: 0, max: 22.6 }, { min: 0, max: 2000 }),
+  ldl: makeMmolMgdlUnit(CHOLESTEROL_FACTOR, { min: 0, max: 12.9 }, { min: 0, max: 500 }, { minExclusive: true }),
+  hdl: makeMmolMgdlUnit(CHOLESTEROL_FACTOR, { min: 0, max: 5.2 }, { min: 0, max: 200 }, { minExclusive: true }),
+  total_cholesterol: makeMmolMgdlUnit(CHOLESTEROL_FACTOR, { min: 0, max: 15 }, { min: 0, max: 580 }, { minExclusive: true }),
+  triglycerides: makeMmolMgdlUnit(TRIGLYCERIDES_FACTOR, { min: 0, max: 22.6 }, { min: 0, max: 2000 }, { minExclusive: true }),
 
   systolic_bp: makeIdentityUnit('mmHg', { min: 60, max: 250 }, 0),
   diastolic_bp: makeIdentityUnit('mmHg', { min: 40, max: 150 }, 0),
@@ -224,8 +229,8 @@ export const UNIT_DEFS: Record<MetricType, UnitDef> = {
       conventional: (v) => v * APOB_FACTOR,
     },
     validationRange: {
-      si: { min: 0, max: 3 },
-      conventional: { min: 0, max: 300 },
+      si: { min: 0, max: 3, minExclusive: true },
+      conventional: { min: 0, max: 300, minExclusive: true },
     },
     decimalPlaces: { si: 2, conventional: 0 },
   },
@@ -312,6 +317,21 @@ export function roundBoundInward(value: number, dp: number, end: 'min' | 'max'):
   return (end === 'max' ? Math.floor(steps) : Math.ceil(steps)) / scale;
 }
 
+/** Which end of `range` the value misses, or null when it fits. A
+ *  `minExclusive` floor refuses the floor itself (US-03 AC7). */
+export function rangeFault(range: ValidationRange, n: number): 'below' | 'above' | null {
+  if (range.minExclusive ? n <= range.min : n < range.min) return 'below';
+  return n > range.max ? 'above' : null;
+}
+
+/** A range in words: "0–12.9 mmol/L", or "above 0, up to 12.9 mmol/L" when
+ *  the floor itself is refused. */
+export function formatRange(range: ValidationRange, unitLabel: string): string {
+  return range.minExclusive
+    ? `above ${range.min}, up to ${range.max} ${unitLabel}`
+    : `${range.min}–${range.max} ${unitLabel}`;
+}
+
 /** Format a canonical value for display (converted + rounded). */
 export function formatDisplayValue(
   metric: MetricType,
@@ -396,7 +416,7 @@ export function getDisplayLabel(metric: MetricType, system: UnitSystem): string 
 export function getDisplayRange(
   metric: MetricType,
   system: UnitSystem,
-): { min: number; max: number } {
+): ValidationRange {
   return UNIT_DEFS[metric].validationRange[system];
 }
 
@@ -485,7 +505,7 @@ export function canonicalToReported(metric: MetricType, valueSI: number, statedU
 /**
  * Below these canonical values a core result is not a result but a unit
  * swap: an SI number sent under the conventional label (LDL "3.4 mg/dL" is
- * 0.09 mmol/L). `healthInputSchema` floors these metrics at 0, so the range
+ * 0.09 mmol/L). `healthInputSchema` only asks these to be above 0, so the range
  * check passes them; a writer that offers candidates marks such a value low
  * confidence with a question instead (US-36 AC4). Not a clinical range —
  * a display floor, one decimal of the SI label — and not in the three-file

@@ -211,6 +211,7 @@ export {
   formatGradedValue,
   unitDecimalPlaces,
   roundBoundInward,
+  rangeFault,
   // Feet/inches height conversion helpers
   inchesToFeetInches,
   feetInchesToInches,
@@ -225,6 +226,7 @@ export {
   type MetricType,
   type UnitSystem,
   type UnitDef,
+  type ValidationRange,
 } from './units';
 
 // Chat → form-edit tool schemas + validation (chatbot drives the form UI)

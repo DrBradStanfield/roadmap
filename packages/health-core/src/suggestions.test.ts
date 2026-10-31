@@ -2323,16 +2323,18 @@ describe('generateSuggestions', () => {
   });
 
   describe('Supplement suggestions', () => {
-    it('always includes five generic supplement profiles', () => {
+    it('always includes seven generic supplement profiles (US-61 AC1)', () => {
       const { inputs, results } = createTestData();
       const suggestions = generateSuggestions(inputs, results);
 
       const supplements = suggestions.filter(s => s.category === 'supplements');
-      expect(supplements).toHaveLength(5);
+      expect(supplements).toHaveLength(7);
       expect(supplements.map(s => s.id)).toEqual([
         'supplement-micronutrient-base',
         'supplement-creatine',
         'supplement-collagen',
+        'supplement-lutein-zeaxanthin',
+        'supplement-tmg',
         'supplement-omega3',
         'supplement-sleep',
       ]);

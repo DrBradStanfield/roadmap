@@ -1066,11 +1066,28 @@ Generic, evidence-based ingredient profiles only — **no product names, no comm
 links** (compliance: listing generic ingredients is protected health information;
 naming/linking a branded product is advertising a therapeutic good).
 
+**US overlay exception (US-61, Brad 2026-10-31).** The engine emits these generic
+cards in every country, and runRoadmap, get_plan, the CLI, the chat context and the
+PDF never carry a product. Only the screen (the Shopify web build and the iPhone app)
+adds a product block (`us-products.ts`) for a known adult in the US: MicroVitamin+ on
+the micronutrient base, creatine, collagen, lutein and zeaxanthin and TMG cards; Sleep
+on the sleep card; none on omega-3 or fiber; one ownership line under the section. On
+three cards the overlay also swaps in a US text, kept beside the generic one under an
+explicit `-us` key (`US_SUPPLEMENT_DESCRIPTIONS` in suggestions.ts,
+`US_SUPPLEMENT_REFERENCES` in evidence.ts), so no disease outcome sits beside a named
+product: `supplement-micronutrient-base-us` drops the WHO 2026 dementia sentences and
+reference (COSMOS and the vitamin K2 / warfarin sentence stay);
+`supplement-creatine-us` keeps the strength and lean mass sentence and Kreider 2017
+only; `supplement-lutein-zeaxanthin-us` keeps the macular pigment sentences and Wilson
+2021 only (no AREDS outcome).
+
 | ID | Title | Ingredients / notes | Evidence |
 |----|-------|---------------------|----------|
 | `supplement-micronutrient-base` | Micronutrient base | Methylated B-complex; vitamin D3 + K2; magnesium taurate; trace minerals (glycinate); lutein + zeaxanthin; TMG; lycopene | COSMOS meta-analysis of 3 cognition sub-studies, men 60+ and women 65+ (Vyas 2024): global cognition and episodic memory, about 2 years less cognitive ageing. Executive function improved in COSMOS-Mind only (Baker 2023), so it is not a headline claim. WHO 2026 dementia guideline recommends against B, E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia without a diagnosed deficiency (strong recommendation, moderate certainty; stated reason: 'unexpected harmful effects that outweigh any potential benefits'); it validated its 2019 advice without reassessing supplements and did not cite COSMOS. Vitamin K2 caveat: in healthy volunteers on a vitamin K antagonist, MK-7 at 10–20 mcg/day lowered the INR to a clinically relevant degree in at least 40–60%, and 45 mcg/day lowered the group mean INR by about 40% (Theuwissen 2013). The authors concluded that MK-7 supplements should be avoided with VKA therapy. The card keeps the softer instruction: it asks anyone on warfarin (Coumadin, Marevan) or another vitamin K antagonist to check with their doctor or anticoagulation clinic before starting or stopping K2 |
 | `supplement-creatine` | Creatine | Creatine monohydrate, 3–5 g/day | Strength/lean mass (Kreider 2017). Cognition: that the memory evidence is clear and consistent is Dr Stanfield's judgement, not a trial finding; formal reviews are more mixed. Avgerinos 2018 (systematic review) and two meta-analyses (Prokopidis 2023; Xu 2024, 16 RCTs, 492 adults) reported better memory, but both meta-analyses pooled several non-independent tests per participant (Prokopidis authors' reply 2023; Citherlet 2026 commentary on Xu). The Prokopidis authors' reanalysis found no clear overall memory benefit (SMD 0.19, P = 0.15) except in older adults aged 66–76 (SMD 0.80). Xu 2024: no effect on overall cognition or executive function; GRADE certainty moderate for memory, low for attention and processing speed. EFSA 2024: cause-and-effect not established for any cognitive domain; a working-memory effect only at 20 g/day for 5–7 days, not at 2.2–14 g/day or 5 g/day for 6 weeks after a 5-day loading phase. Text only: the card is always shown and no rule or dose changed |
 | `supplement-collagen` | Collagen peptides | Hydrolyzed collagen peptides; may improve skin hydration and elasticity | Skin hydration/elasticity meta-analysis (Batool 2026) |
+| `supplement-lutein-zeaxanthin` | Lutein and zeaxanthin | The macular pigments. No disease claim in the card's own advice; the AREDS lines report the trials | Macular pigment optical density rises with L/Z supplements, more at higher doses (Wilson 2021, Adv Nutr: 46 studies, 3,189 adults with healthy eyes; +0.04 at 5 to <20 mg/day, +0.11 at ≥20 mg/day). AREDS (2001): a formula of vitamins C and E, beta-carotene and zinc slowed progression of macular degeneration in people at risk. AREDS2 (2013, JAMA): 10 mg lutein + 2 mg zeaxanthin worked as well as beta-carotene in that formula, without beta-carotene's excess lung cancers, mostly in former smokers. Framing rule (Brad): never write that adding L/Z "did not significantly slow progression". Adults only, like every supplement card (US-61) |
+| `supplement-tmg` | TMG (trimethylglycine) | Betaine. Card: "lowers blood homocysteine … Small trials suggest it may improve strength and power" | Homocysteine: meta-analysis of 5 RCTs in healthy adults, ≥4 g/day for 6–24 weeks, −1.23 µmol/L (McRae 2013). Strength and power: small trials with mixed results, much weaker than creatine's (Lee 2010; Pryor 2012, cycling sprint; Nobari 2021, young soccer players). The homocysteine-to-dementia link stays off the card. Adults only (US-61) |
 | `supplement-omega3` | Omega-3 | EPA/DHA, up to 1 g/day combined | CV benefits (Bernasconi 2021). The cognitive benefit of B vitamins may depend on good omega-3 status: in one trial, VITACOG, B vitamins slowed brain atrophy only with good omega-3 status, which was measured, not randomised (Jernerén 2015, Oulhaj 2016). The Dutch FACIT trial found the reverse: 800 mcg/day folic acid improved global cognition and processing speed only with lower omega-3 (van Soest 2021; 791 adults aged 50–70 with raised homocysteine; post hoc). WHO 2026 guideline recommends against omega-3, B, E and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia without a diagnosed deficiency (strong recommendation, moderate certainty; stated reason: 'unexpected harmful effects that outweigh any potential benefits'); it validated its 2019 advice without reassessing supplements, did not consider the omega-3 analyses of VITACOG or FACIT, and does not address omega-3 for heart health. That everyone may reasonably consider up to 1 g/day is Dr Stanfield's judgement, not a trial finding: CV benefit may rise with dose, but so may atrial fibrillation risk: AF HR 1.49 in trials testing >1 g/day vs 1.12 at ≤1 g/day (Gencer 2021). The card asks people with AF or on a blood thinner to check with their doctor first. Text only: the card is always shown and no dose is recorded or checked |
 | `supplement-sleep` | Sleep support | Low-dose melatonin; glycine; magnesium glycinate. Timing (3 to 4 hours before the person wants to fall asleep) appears in roadmap_text only; the card carries no timing | Melatonin may reduce sleep onset latency (Low 2020); a longer gap between dose and bedtime predicted faster sleep onset, and the authors suggest about 3 hours (Cruz-Sanabria 2024; pooled trials of other doses and forms, not 0.8 mg sustained-release) |
 
@@ -1146,16 +1163,18 @@ Source: `units.ts` (UNIT_DEFS) + `validation.ts`
 | weight | 20 kg | 300 kg | 44 lbs | 661 lbs |
 | waist | 40 cm | 200 cm | 16 in | 79 in |
 | hba1c | 9 mmol/mol | 195 mmol/mol | 3% | 20% |
-| ldl | 0 mmol/L | 12.9 mmol/L | 0 mg/dL | 500 mg/dL |
-| hdl | 0 mmol/L | 5.2 mmol/L | 0 mg/dL | 200 mg/dL |
-| total_cholesterol | 0 mmol/L | 15 mmol/L | 0 mg/dL | 580 mg/dL |
-| triglycerides | 0 mmol/L | 22.6 mmol/L | 0 mg/dL | 2000 mg/dL |
-| apob | 0 g/L | 3 g/L | 0 mg/dL | 300 mg/dL |
+| ldl | above 0 mmol/L | 12.9 mmol/L | above 0 mg/dL | 500 mg/dL |
+| hdl | above 0 mmol/L | 5.2 mmol/L | above 0 mg/dL | 200 mg/dL |
+| total_cholesterol | above 0 mmol/L | 15 mmol/L | above 0 mg/dL | 580 mg/dL |
+| triglycerides | above 0 mmol/L | 22.6 mmol/L | above 0 mg/dL | 2000 mg/dL |
+| apob | above 0 g/L | 3 g/L | above 0 mg/dL | 300 mg/dL |
 | creatinine | 10 umol/L | 2650 umol/L | 0.1 mg/dL | 30 mg/dL |
 | systolic_bp | 60 mmHg | 250 mmHg | 60 mmHg | 250 mmHg |
 | diastolic_bp | 40 mmHg | 150 mmHg | 40 mmHg | 150 mmHg |
 | psa | 0 ng/mL | 10,000 ng/mL | 0 ng/mL | 10,000 ng/mL |
 | lpa | 0 nmol/L | 750 nmol/L | 0 mg/dL | 300 mg/dL (= 750 / 2.5; EAS pairs 300 mg/dL with 750 nmol/L) |
+
+"above 0" is an exclusive floor (US-03 AC7, Brad 2026-10-31; `minExclusive` in `units.ts`, `.gt(0)` in `validation.ts`): LDL, HDL, total cholesterol, triglycerides and ApoB refuse 0, because zero is not a real result for them, and take any positive value, however small (LDL about 0.2 mmol/L on a PCSK9 inhibitor, HDL near 0.05 in Tangier disease), so there is no clinical floor above zero. PSA and Lp(a) keep an inclusive 0: very low readings happen and are reported as such. A 0 stored before the rule is never changed; the plan leaves it out like any out-of-range value. The history matrix shows it with no status colour, and the chat gets no older value in its place: it reads as if none was entered. Every other bound is inclusive. Three-file sync: `evidence.ts` and `roadmap_text.html` do not change, because neither states input ranges.
 
 Blood pressure pair (US-02 AC8, `record-edits.ts`): on any day, the active systolic_bp must be above the active diastolic_bp; a save that would leave systolic at or below diastolic is refused (`out-of-range`).
 
@@ -1166,6 +1185,7 @@ Blood pressure pair (US-02 AC8, `record-edits.ts`): on any day, the active systo
 - `birthMonth`: 1-12
 - `unitSystem`: 1 (SI) or 2 (conventional)
 - `height`: 50-250 cm
+- `alcohol`: `'none'` or `'drinks'`; absent or null is not answered (US-60). Any other value reads as not answered.
 
 ---
 
@@ -1185,7 +1205,6 @@ Medications stored with separate fields for drug identity and dosage (FHIR Medic
 ### Status Derivation
 
 Automatic from `drug_name`:
-- `alcohol`: `'none'` or `'drinks'`; absent or null is not answered (US-60). Any other value reads as not answered.
 - `'none'` -> `'not-taken'`
 - `'not_tolerated'` -> `'stopped'`
 - `'not_yet'` -> `'intended'`

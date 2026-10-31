@@ -85,6 +85,11 @@ private struct SuggestionRow: View {
             .accessibilityHint(expanded ? "Collapses the details" : "Shows the details")
             .accessibilityIdentifier("plan.suggestion")
 
+            if let product = suggestion.usProduct {
+                USProductBlock(block: product)
+                    .padding(.leading, showsIcon ? 54 : 0)
+            }
+
             if let dismiss {
                 Button("Dismiss") { answer = dismiss() }
                     .font(.subheadline.weight(.medium))
@@ -111,6 +116,35 @@ private struct SuggestionRow: View {
         // The rows below slide while this one grows: clipped to its own frame, the
         // opened text is revealed, never drawn over the next suggestion.
         .clipped()
+    }
+}
+
+/// Dr Brad's product for a supplement card (US-61), the engine's words and link: a quiet
+/// inset under the card's text, its link opening the product page in Safari, as every
+/// link in the plan does.
+private struct USProductBlock: View {
+    let block: USProducts.Block
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(block.name)
+                .font(.subheadline.weight(.semibold))
+            Text(block.line)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Link(destination: block.url) {
+                Label(block.url.host() ?? block.name, systemImage: "arrow.up.right.square")
+                    .font(.footnote.weight(.medium))
+            }
+            .accessibilityLabel("\(block.name) on \(block.url.host() ?? "its website")")
+            .accessibilityHint("Opens in Safari")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("plan.usProduct")
     }
 }
 

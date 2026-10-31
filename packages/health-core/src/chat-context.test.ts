@@ -337,8 +337,20 @@ describe('US-15 AC36: no plan still sends what is saved', () => {
   it('US-15 AC36: an out-of-range value is named in excludedFields and never printed', () => {
     const context = build({ ...SAVED, ldlC: 99, heightCm: 999 });
     expect(context.excludedFields).toEqual(['ldlC', 'heightCm']);
-    expect(context.latestValues.ldlC).toBe('3.9'); // the saved series, as on the plan path
+    // US-03 AC7: the plan reads as if no LDL was entered, so no older value stands in.
+    expect(context.latestValues).not.toHaveProperty('ldlC');
     expect(JSON.stringify(context)).not.toMatch(/\b99\b|999/);
+  });
+
+  it('US-03 AC7: a stored LDL 0 is excluded, and the older LDL never fills latestValues', () => {
+    const history = [
+      { metricType: 'ldl', value: 3.0, recordedAt: '2026-08-01' },
+      { metricType: 'ldl', value: 0, recordedAt: '2026-09-01' },
+    ];
+    const context = JSON.parse(buildChatContextJson(chatContextOf({ ...SAVED, ldlC: 0, heightCm: 168 }, 'si', [], [], history))!);
+    expect(context.excludedFields).toEqual(['ldlC']);
+    expect(context.latestValues).not.toHaveProperty('ldlC');
+    expect(context.latestValues).toMatchObject({ hba1c: '40', systolicBp: '138' });
   });
 
   it('US-15 AC36: the boundary holds: an unknown key and an unlisted drug name never reach the prompt', () => {

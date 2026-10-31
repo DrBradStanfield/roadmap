@@ -7,7 +7,7 @@ import Foundation
 enum EngineRelease {
     /// The native bridge this binary serves: the first 16 hex digits of the SHA-256 of
     /// ios/engine/bridge-contract.json. EngineBridgeContractTests fails if they drift.
-    static let bridge = "2d467ff50c66c42d"
+    static let bridge = "d0ffd9e53f8499b3"
 
     /// The signing keys this app trusts, by id: the daily key (Brad's login Keychain),
     /// the cold backup (the Passwords app) and the ci key (the GitHub `engine-signing`

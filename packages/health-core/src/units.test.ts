@@ -31,6 +31,8 @@ import {
   type MetricType,
   type UnitSystem,
   hasUnitChoice,
+  rangeFault,
+  formatRange,
 } from './units';
 import { METRIC_TYPES } from './validation';
 import { getLpaStatus } from './calculations';
@@ -649,5 +651,27 @@ describe('hasUnitChoice (US-12 AC11: a fixed unit gets a static chip)', () => {
     expect(hasUnitChoice('ldl')).toBe(true);
     expect(hasUnitChoice('systolic_bp')).toBe(false);
     expect(hasUnitChoice('psa')).toBe(false);
+  });
+});
+
+// US-03 AC7: a lipid's floor is exclusive (0 is refused); every other floor is inclusive.
+describe('US-03 AC7 — rangeFault and formatRange honour an exclusive floor', () => {
+  it('refuses the floor itself only when it is exclusive', () => {
+    const ldl = UNIT_DEFS.ldl.validationRange.si;
+    expect([0, 0.01, 12.9, 12.91, -1].map((n) => rangeFault(ldl, n))).toEqual(['below', null, null, 'above', 'below']);
+    const psa = UNIT_DEFS.psa.validationRange.si;
+    expect([0, -0.1, 10000, 10001].map((n) => rangeFault(psa, n))).toEqual([null, 'below', null, 'above']);
+  });
+
+  it('prints an inclusive range with an en dash and an exclusive one in words', () => {
+    expect(formatRange(UNIT_DEFS.psa.validationRange.si, 'ng/mL')).toBe('0–10000 ng/mL');
+    expect(formatRange(UNIT_DEFS.ldl.validationRange.conventional, 'mg/dL')).toBe('above 0, up to 500 mg/dL');
+  });
+
+  it('gives each lipid the same exclusive floor in both systems', () => {
+    for (const m of ['ldl', 'hdl', 'total_cholesterol', 'triglycerides', 'apob'] as const) {
+      const { si, conventional } = UNIT_DEFS[m].validationRange;
+      expect([si.minExclusive, conventional.minExclusive], m).toEqual([true, true]);
+    }
   });
 });

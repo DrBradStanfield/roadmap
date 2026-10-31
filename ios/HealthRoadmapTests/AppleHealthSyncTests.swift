@@ -195,6 +195,35 @@ final class AppleHealthSyncTests: XCTestCase {
         XCTAssertGreaterThan(health.saved.last?.version ?? 0, first.version)
     }
 
+    /// US-25 AC14b: a record holding rows the save path would refuse (a damaged file, a
+    /// hand edit) writes none of them to Health, through the real engine; an in-range
+    /// value beside them still goes, unchanged.
+    func testImpossibleValuesInTheRecordNeverReachHealth_US25_AC14b() async throws {
+        do {
+            let (store, _) = try parts()
+            for (day, kg) in [("2026-10-17", 71.0), ("2026-10-18", 72.0), ("2026-10-19", 73.0), ("2026-10-20", 80.0)] {
+                await XCTAssertSaved(await store.apply(.add(metric: "weight", value: kg, day: day)))
+            }
+        }
+        // Plant the bad values straight into the file. 1e400 reads back as Infinity.
+        let file = RecordStore.file(in: folder)
+        var text = try String(contentsOf: file, encoding: .utf8)
+        for (typed, planted) in [("71", "1e308"), ("72", "-5"), ("73", "1e400")] {
+            let before = text
+            text = text.replacingOccurrences(of: "\"value\":\(typed),", with: "\"value\":\(planted),")
+            XCTAssertNotEqual(text, before, "planted \(planted)")
+        }
+        try text.write(to: file, atomically: true, encoding: .utf8)
+
+        let (store, engine) = try parts()
+        let health = FakeHealthStore()
+        let sync = sync(store, engine, health)
+        await sync.connect()
+        await sync.refresh()
+        XCTAssertEqual(health.saved.map(\.values), [["weight": 80]])
+        guard case .upToDate = sync.status else { return XCTFail("status \(sync.status)") }
+    }
+
     func testOneRefusedWriteDoesNotBlockTheOthers() async throws {
         let (store, engine) = try parts()
         // Both values typed, and Health set to refuse the first, before Health connects:

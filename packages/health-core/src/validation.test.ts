@@ -91,9 +91,10 @@ describe('validateInputValue', () => {
   // and the record refuses on the schema: the two must be one range.
   it('US-35 AC17 — every core metric\'s schema bounds are its unit table\'s SI range', () => {
     for (const metric of METRIC_TYPES) {
-      const { min, max } = UNIT_DEFS[metric].validationRange.si;
+      const { min, max, minExclusive } = UNIT_DEFS[metric].validationRange.si;
       const field = (healthInputSchema.shape as Record<string, { safeParse: (v: number) => { success: boolean } }>)[METRIC_TO_FIELD[metric]];
-      expect([min, max, min - 1e-6, max + 1e-6].map(v => field.safeParse(v).success), metric).toEqual([true, true, false, false]);
+      // An exclusive floor (US-03 AC7) refuses the bound itself and takes the next number up.
+      expect([min, max, min - 1e-6, max + 1e-6, min + 1e-6].map(v => field.safeParse(v).success), metric).toEqual([!minExclusive, true, false, false, true]);
     }
   });
 
@@ -472,10 +473,14 @@ describe('sanitizeInputs', () => {
     expect(result).toEqual({ heightCm: 178, sex: 'male', hdlC: 1.2 });
   });
 
-  it('keeps zero values (ldlC 0 / hdlC 0 are in range)', () => {
-    const result = sanitizeInputs({ heightCm: 178, sex: 'male', ldlC: 0, hdlC: 0 } as never);
-    expect(result.ldlC).toBe(0);
-    expect(result.hdlC).toBe(0);
+  // A 0 is judged by its range, never dropped as falsy. Since US-03 AC7 a lipid
+  // of 0 is out of range and stripped; PSA and Lp(a) of 0 are in range and kept.
+  it('keeps zero values that are in range (psa 0 / lpa 0), and strips a lipid of 0', () => {
+    const result = sanitizeInputs({ heightCm: 178, sex: 'male', psa: 0, lpa: 0, ldlC: 0, hdlC: 0 } as never);
+    expect(result.psa).toBe(0);
+    expect(result.lpa).toBe(0);
+    expect('ldlC' in result).toBe(false);
+    expect('hdlC' in result).toBe(false);
   });
 
   it('passes unknown keys through unchanged', () => {
@@ -551,6 +556,39 @@ describe('US-03 — form messages keep their words across the zod 4 upgrade', ()
 
   it('an infinite number is refused by the range it breaks, as zod 3 did', () => {
     const result = validateHealthInputs({ heightCm: Infinity, sex: 'male', ldlC: -Infinity });
-    expect(getValidationErrors(result.errors!)).toEqual({ heightCm: 'Height must be at most 250 cm', ldlC: 'LDL-c must be positive' });
+    expect(getValidationErrors(result.errors!)).toEqual({ heightCm: 'Height must be at most 250 cm', ldlC: 'LDL-c must be above 0' });
+  });
+});
+
+// US-03 AC7 (Brad, 2026-10-31): zero is not a real lipid or ApoB result, so
+// the five refuse it; any positive value still saves; PSA and Lp(a) keep 0.
+describe('US-03 AC7 — lipids and ApoB refuse 0; PSA and Lp(a) take it', () => {
+  const ZERO_REFUSED = { ldlC: 'LDL-c must be above 0', totalCholesterol: 'Total cholesterol must be above 0', hdlC: 'HDL must be above 0', triglycerides: 'Triglycerides must be above 0', apoB: 'ApoB must be above 0' };
+
+  it('validateHealthInputs refuses 0 for each of the five, in plain words', () => {
+    const result = validateHealthInputs({ heightCm: 178, sex: 'male', ldlC: 0, totalCholesterol: 0, hdlC: 0, triglycerides: 0, apoB: 0 });
+    expect(result.success).toBe(false);
+    expect(getValidationErrors(result.errors!)).toEqual(ZERO_REFUSED);
+  });
+
+  it('the message is the same in US units', () => {
+    expect(convertValidationErrorsToUnits(ZERO_REFUSED, 'conventional')).toEqual(ZERO_REFUSED);
+  });
+
+  it('a tiny positive value still passes: no clinical floor above zero', () => {
+    const result = validateHealthInputs({ heightCm: 178, sex: 'male', ldlC: 0.2, totalCholesterol: 0.01, hdlC: 0.05, triglycerides: 0.01, apoB: 0.01 });
+    expect(result.success).toBe(true);
+  });
+
+  it('PSA and Lp(a) still take 0', () => {
+    const result = validateHealthInputs({ heightCm: 178, sex: 'male', psa: 0, lpa: 0 });
+    expect(result.success).toBe(true);
+    expect(result.data).toMatchObject({ psa: 0, lpa: 0 });
+  });
+
+  it('the unit table marks the five floors exclusive in both systems, and only those', () => {
+    const exclusive = METRIC_TYPES.filter(m => UNIT_DEFS[m].validationRange.si.minExclusive);
+    expect(exclusive).toEqual(['ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'apob']);
+    for (const m of exclusive) expect(UNIT_DEFS[m].validationRange.conventional).toMatchObject({ min: 0, minExclusive: true });
   });
 });

@@ -48,3 +48,21 @@ describe('US-29/US-30 get_plan: currentValues agree with the cards (US-07 AC5)',
     expect(valueOf(payload, 'hdl')).toBe('54');
   });
 });
+
+// US-03 AC7 (Brad, 2026-10-31): a lipid of 0 saved before the rule still opens.
+// The row is never changed; the plan leaves that test out, as it does any
+// value out of range, and computes everything else.
+describe('US-03 AC7 — a stored LDL of 0 still loads; the plan leaves it out', () => {
+  it('computes the plan, names ldlC excluded, and keeps the other values', () => {
+    const file = createEmptyFile({ deviceId: 'plan_zero_ldl', now: NOW.toISOString() });
+    Object.assign(file.profile, { sex: 'male', heightCm: 180, birthYear: 1970, birthMonth: 1, unitSystem: 'si' });
+    file.measurements = [{ metricType: 'ldl', value: 0 }, { metricType: 'hdl', value: 1.3 }].map((r, i) => createMeasurement({
+      id: `m${i}`, ...r, recordedAt: '2026-08-01T00:00:00.000Z', createdAt: '2026-08-01T00:00:00.000Z',
+    }));
+    const plan = computePlan(file, NOW);
+    expect(plan.excluded).toEqual(['ldlC']);
+    expect(plan.inputs.ldlC).toBeUndefined();
+    expect(plan.inputs.hdlC).toBe(1.3);
+    expect(file.measurements[0]).toMatchObject({ value: 0, status: 'active' });
+  });
+});

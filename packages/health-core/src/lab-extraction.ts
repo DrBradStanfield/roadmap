@@ -14,7 +14,7 @@
  *    extraction, not clinical IP (the algorithm doc never leaves the server).
  */
 import * as z from './zod';
-import { reportedToCanonical, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from './units';
+import { rangeFault, reportedToCanonical, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from './units';
 import { foldName, LAB_CATALOG, LAB_GROUPS, normalizeLabUnit, PROMPT_DEFERRED_KEYS } from './lab-catalog';
 import { parseLocalisedNumber } from './parseNumber';
 import { DOCUMENT_TYPES } from './validation';
@@ -250,11 +250,9 @@ export function resolveUnit(metric: MetricType, unitStr: string, value: number):
   if (reported) return { ...reported, confident: true };
 
   // Fallback: check which validation range the value fits
-  const def = UNIT_DEFS[metric];
-  const siRange = def.validationRange.si;
-  const convRange = def.validationRange.conventional;
-  const fitsInSI = value >= siRange.min && value <= siRange.max;
-  const fitsInConv = value >= convRange.min && value <= convRange.max;
+  const { si, conventional } = UNIT_DEFS[metric].validationRange;
+  const fitsInSI = rangeFault(si, value) === null;
+  const fitsInConv = rangeFault(conventional, value) === null;
 
   if (fitsInSI && !fitsInConv) {
     return { valueSI: value, system: 'si', confident: false };

@@ -101,6 +101,7 @@ describe('statTiles (US-25 AC22)', () => {
       expect(JSON.parse(screenJson(record, NOW, 'phone', units)).plan).toEqual({
         sections: JSON.parse(sectionsJson(plan)),
         tiles: JSON.parse(JSON.stringify(tiles)),
+        usProducts: { blocks: [], ownershipLine: null },
         ms: expect.any(Number),
       });
     }

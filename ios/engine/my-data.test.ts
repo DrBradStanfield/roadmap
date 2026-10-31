@@ -226,7 +226,7 @@ describe('readNumber (AC5, adversary R2)', () => {
     const { inputRanges } = myData(newRecord(NOW, 'd', 'en-NZ', 'Pacific/Auckland'), NOW);
     expect(inputRanges.weight).toEqual({ si: { min: 20, max: 300 }, conventional: { min: 44, max: 661 } });
     expect(inputRanges.height.si).toEqual({ min: 50, max: 250 });
-    expect(inputRanges.triglycerides.conventional).toEqual({ min: 0, max: 2000 });
+    expect(inputRanges.triglycerides.conventional).toEqual({ min: 0, max: 2000, minExclusive: true }); // US-03 AC7: above 0, the record refuses 0
     expect(Object.keys(inputRanges.lpa).sort()).toEqual(['conventional', 'mg/L', 'mg/dL', 'nmol/L', 'si']);
     expect(inputRanges.lpa['mg/L']).toEqual({ min: 0, max: 3000 });
   });

@@ -48,7 +48,7 @@ import {
 } from './record-edits';
 import type { FileDocument, FileLabValue, FileMeasurement, RoadmapFile, RoadmapProfile } from './roadmap-file';
 import type { SyncManager } from './sync-manager';
-import { CANONICAL_UNITS, formatDisplayValue, getDisplayLabel, getDisplayRange, reportedToCanonical, UNIT_DEFS, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
+import { CANONICAL_UNITS, formatDisplayValue, formatRange, getDisplayLabel, getDisplayRange, reportedToCanonical, UNIT_DEFS, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
 import { DROPBOX_APP_FOLDER, IMPORT_ACCEPTED_TYPES, IMPORT_FILE_REASONS, IMPORT_REFUSALS, importHint } from './import-hints';
 import { type McpImportRoute, type McpRefusalReason } from './product-events';
 import { LAB_ARCHIVE_TITLE } from './document-path';
@@ -1681,7 +1681,7 @@ export function fileResultsBundle(request: FileResultsSource, file: RoadmapFile,
         refuse(check.reason === 'unknown-unit'
           ? `${oneLine(check.message)}. Check the unit column; if the report really prints that, tell the user and do not file it.`
           : check.reason === 'out-of-range'
-            ? `${oneLine(check.message)} (${si.min}–${si.max} ${def.label.si}; ${conv.min}–${conv.max} ${def.label.conventional}). Check the unit; if the report really says that, tell the user and do not file it.`
+            ? `${oneLine(check.message)} (${formatRange(si, def.label.si)}; ${formatRange(conv, def.label.conventional)}). Check the unit; if the report really says that, tell the user and do not file it.`
             : `${oneLine(check.message)}.`);
         continue;
       }

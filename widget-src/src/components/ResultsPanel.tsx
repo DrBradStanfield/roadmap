@@ -7,8 +7,11 @@ import {
   statTiles,
   statTileText,
   planSections,
+  medicinesShown,
   type PlanCard,
 } from '@roadmap/health-core';
+// US-61 AC5: called only under SHOPIFY_SURFACE, so the Pages build drops the module.
+import { usProductBlocks, type UsProductBlock, type UsProductOverlay } from '@roadmap/health-core/us-products';
 import { getReportHtml, sendGuestReport, getReportEmailCaptured, markReportEmailCaptured } from '../lib/roadmap-data';
 import { trackABConversion, trackProductEvent } from '../lib/server-api';
 import { EMAIL_REGEX } from '../lib/email';
@@ -18,6 +21,8 @@ import { ColumnHeader } from './ColumnHeader';
 import { StorageNotice } from '../lib/storage-notice';
 import { FeedbackForm } from './FeedbackForm';
 import { alcoholDismiss } from './AlcoholQuestion';
+import { getMarketCountry } from '../lib/market-country';
+import { observeVisibility } from '../lib/observe-visibility';
 interface ResultsPanelProps {
   results: HealthResults | null;
   isValid: boolean;
@@ -125,7 +130,27 @@ function SuggestionEvidence({ suggestion, open, onToggle }: { suggestion: Sugges
 
 type AlcoholAnswerFn = (answer: AlcoholAnswer) => void;
 
-function SuggestionCard({ suggestion, highlighted, fadingOut, onAlcoholAnswer }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; onAlcoholAnswer?: AlcoholAnswerFn }) {
+/** US-61 AC4: Brad's product on a US adult's supplement card, at the card's foot. Never printed. */
+function UsProductBlockView({ block }: { block: UsProductBlock }) {
+  return (
+    <div className="us-product no-print">
+      <p className="us-product-line">{block.line}</p>
+      <a
+        className="us-product-link"
+        href={block.url}
+        target="_blank"
+        rel="noopener"
+        onClick={() => trackProductEvent('us_product_link_clicked', { product: block.product })}
+      >
+        {block.name}<span aria-hidden="true"> ↗</span>
+      </a>
+    </div>
+  );
+}
+
+const NO_US_OVERLAY: UsProductOverlay = { blocks: [], ownershipLine: null };
+
+function SuggestionCard({ suggestion, highlighted, fadingOut, onAlcoholAnswer, usBlock }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; onAlcoholAnswer?: AlcoholAnswerFn; usBlock?: UsProductBlock }) {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const hasEvidence = suggestionHasEvidence(suggestion);
   const isSupplementCard = suggestion.category === 'supplements';
@@ -167,6 +192,7 @@ function SuggestionCard({ suggestion, highlighted, fadingOut, onAlcoholAnswer }:
         )}
       </div>
       {hasEvidence && <SuggestionEvidence suggestion={suggestion} open={evidenceOpen} onToggle={toggleEvidence!} />}
+      {usBlock && <UsProductBlockView block={usBlock} />}
     </div>
   );
 }
@@ -220,11 +246,22 @@ function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds, onAlcoholAn
   );
 }
 
-/** A section's cards: grouped ones as one card, the rest one card each (layout: planSections). */
-function renderCards(cards: PlanCard[], highlightedIds: Set<string>, fadingOutIds: Set<string>, onAlcoholAnswer?: AlcoholAnswerFn) {
-  return cards.map((card) => card.suggestions.length > 1
-    ? <GroupedSuggestionCard key={card.category} card={card} highlightedIds={highlightedIds} fadingOutIds={fadingOutIds} onAlcoholAnswer={onAlcoholAnswer} />
-    : <SuggestionCard key={card.suggestions[0].id} suggestion={card.suggestions[0]} highlighted={highlightedIds.has(card.suggestions[0].id)} fadingOut={fadingOutIds.has(card.suggestions[0].id)} onAlcoholAnswer={onAlcoholAnswer} />);
+/** US-61 AC2: a US card's own text and references, in place of the card's, when it has them. */
+function withUsText(suggestion: Suggestion, block?: UsProductBlock): Suggestion {
+  return block?.description ? { ...suggestion, description: block.description, references: block.references } : suggestion;
+}
+
+/** A section's cards: grouped ones as one card, the rest one card each (layout: planSections).
+ *  `usBlocks` (US-61) sit on single cards only. */
+function renderCards(cards: PlanCard[], highlightedIds: Set<string>, fadingOutIds: Set<string>, onAlcoholAnswer?: AlcoholAnswerFn, usBlocks?: ReadonlyMap<string, UsProductBlock>) {
+  return cards.map((card) => {
+    if (card.suggestions.length > 1) {
+      return <GroupedSuggestionCard key={card.category} card={card} highlightedIds={highlightedIds} fadingOutIds={fadingOutIds} onAlcoholAnswer={onAlcoholAnswer} />;
+    }
+    const s = card.suggestions[0];
+    const usBlock = usBlocks?.get(s.id);
+    return <SuggestionCard key={s.id} suggestion={withUsText(s, usBlock)} highlighted={highlightedIds.has(s.id)} fadingOut={fadingOutIds.has(s.id)} onAlcoholAnswer={onAlcoholAnswer} usBlock={usBlock} />;
+  });
 }
 
 // 'skipped' + 'reminded' are US-44's funnel-page states: the block skips the
@@ -561,6 +598,26 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
   // Above the early return, as hooks must be; worked out again only when their inputs change.
   const tiles = useMemo(() => (results ? statTiles(results, { unitSystem, unitOverrides, sex }) : []), [results, unitSystem, unitOverrides, sex]);
 
+  // US-61 AC5: Brad's products for a known adult in the US, on the Shopify build only.
+  const usOverlay = useMemo(() => (SHOPIFY_SURFACE && results
+    ? usProductBlocks(results.suggestions, medicinesShown(results), getMarketCountry() === 'US', 'web')
+    : NO_US_OVERLAY), [results]);
+  const usBlocks = useMemo(() => new Map(usOverlay.blocks.map((b) => [b.suggestionId, b])), [usOverlay]);
+  // US-61 AC8: once the Supplements section is on screen, one count per product
+  // (trackProductEvent keeps one per product per tab session).
+  const supplementsRef = useRef<HTMLDivElement>(null);
+  const usProducts = [...new Set(usOverlay.blocks.map((b) => b.product))].join(' ');
+  useEffect(() => {
+    const el = supplementsRef.current;
+    if (!el || !usProducts) return;
+    let counted = false; // without IntersectionObserver the callback runs before observeVisibility returns
+    return observeVisibility(el, (visible) => {
+      if (!visible || counted) return;
+      counted = true;
+      for (const product of usProducts.split(' ') as UsProductBlock['product'][]) trackProductEvent('us_product_shown', { product });
+    });
+  }, [usProducts]);
+
   // US-09 AC19: the guest has their PDF (or, on the gate-skipped page, signed up
   // for reminders, which marks the record captured). Never before, so the storage
   // button's pulse never competes with the email box. A known minor has no email
@@ -667,9 +724,10 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
       {/* Suggestions */}
       <section className="suggestions-section">
         {planSections(results.suggestions).map((section) => (
-          <div key={section.key} className={`suggestions-group${section.key === 'skin' || section.key === 'supplements' ? ` ${section.key}-group` : ''}`}>
+          <div key={section.key} ref={section.key === 'supplements' ? supplementsRef : undefined} className={`suggestions-group${section.key === 'skin' || section.key === 'supplements' ? ` ${section.key}-group` : ''}`}>
             <h4 className={`suggestions-group-title ${section.key}`}>{section.title}</h4>
-            {renderCards(section.cards, highlightedIds, fadingOutIds, onAlcoholAnswer)}
+            {renderCards(section.cards, highlightedIds, fadingOutIds, onAlcoholAnswer, section.key === 'supplements' ? usBlocks : undefined)}
+            {section.key === 'supplements' && usOverlay.ownershipLine && <p className="us-ownership no-print">{usOverlay.ownershipLine}</p>}
           </div>
         ))}
       </section>

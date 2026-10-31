@@ -12,11 +12,11 @@ struct ChatView: View {
 
     @State private var consented = AIConsent.chat.given
     @State private var conversationId = UUID().uuidString.lowercased()
-    @State private var lines: [ChatLine] = []
+    @State private var transcript = ChatTranscript()
     @State private var draft = ""
     @State private var status: String?
-    @State private var sending = false
-    @State private var error: String?
+    /// The turn in flight, for Stop (US-52 AC6d).
+    @State private var turn: Task<Void, Never>?
     @State private var showingHistory = false
     /// The question box. Sending, dragging or tapping the conversation lowers the keyboard,
     /// so the tab bar under it is back (US-52 AC6c).
@@ -42,8 +42,7 @@ struct ChatView: View {
         // and the next question starts a new one (US-25 AC13). The shared list was read
         // again by the eraser (DataEraser), and History reads it again as it opens.
         .onChange(of: store.erasures) {
-            lines = []
-            error = nil
+            transcript = ChatTranscript()
             conversationId = UUID().uuidString.lowercased()
         }
     }
@@ -63,8 +62,7 @@ struct ChatView: View {
         VStack(alignment: .leading, spacing: 10) {
             ForEach(Self.starterQuestions, id: \.self) { question in
                 Button {
-                    draft = question
-                    Task { await send() }
+                    ask(question)
                 } label: {
                     Label(question, systemImage: "sparkle")
                         .font(.subheadline)
@@ -85,20 +83,26 @@ struct ChatView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 12) {
-                        if lines.isEmpty {
+                        if transcript.lines.isEmpty {
                             Text("Ask about your plan, a test result, or a guideline. The answer uses your saved values.")
                                 .foregroundStyle(.secondary)
                                 .padding(.top, 24)
                             starters
                         }
-                        ForEach(lines) { ChatBubble(line: $0) }
+                        ForEach(transcript.shown) { ChatBubble(line: $0) }
                         if let status { Label(status, systemImage: "ellipsis").foregroundStyle(.secondary).font(.footnote) }
-                        if let error {
+                        if let error = transcript.error {
                             Text(error).foregroundStyle(.red).font(.footnote)
                             #if DEBUG
                                 // ChatDemoFilmUITests: a failed or cut-off answer is never filmed as finished.
                                 .accessibilityIdentifier("chat.error")
                             #endif
+                            // The failed question, sent again with one tap (US-52 AC6d).
+                            if let question = transcript.retryQuestion {
+                                Button("Try again", systemImage: "arrow.clockwise") { ask(question) }
+                                    .font(.footnote)
+                                    .buttonStyle(.bordered)
+                            }
                         }
                         Color.clear.frame(height: 1).id("end")
                     }
@@ -107,7 +111,7 @@ struct ChatView: View {
                 .scrollDismissesKeyboard(.interactively)
                 // Alongside, never instead of, the starters' and bubbles' own taps.
                 .simultaneousGesture(TapGesture().onEnded { asking = false })
-                .onChange(of: lines) { proxy.scrollTo("end", anchor: .bottom) }
+                .onChange(of: transcript.lines) { proxy.scrollTo("end", anchor: .bottom) }
             }
             Divider()
             HStack(alignment: .bottom) {
@@ -116,13 +120,23 @@ struct ChatView: View {
                     .lineLimit(1...5)
                     .textFieldStyle(.roundedBorder)
                     .focused($asking)
-                Button {
-                    Task { await send() }
-                } label: {
-                    Image(systemName: "arrow.up.circle.fill").font(.title)
+                if sending && !transcript.finished {
+                    // Stop cancels the turn at once; the question comes back to the box (US-52 AC6d).
+                    Button(action: stop) {
+                        Image(systemName: "stop.circle.fill").font(.title)
+                    }
+                    .accessibilityLabel("Stop")
+                } else {
+                    Button {
+                        let question = draft
+                        draft = ""
+                        ask(question)
+                    } label: {
+                        Image(systemName: "arrow.up.circle.fill").font(.title)
+                    }
+                    .disabled(sending || draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .accessibilityLabel("Send")
                 }
-                .disabled(sending || draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .accessibilityLabel("Send")
             }
             .padding()
         }
@@ -153,8 +167,7 @@ struct ChatView: View {
     private func startNew() {
         history.leave()
         conversationId = UUID().uuidString.lowercased()
-        lines = []
-        error = nil
+        transcript = ChatTranscript()
     }
 
     /// Shows a saved conversation once the engine has read it. An erase, a question sent,
@@ -166,68 +179,75 @@ struct ChatView: View {
         Task {
             guard let messages = await loading.value, store.erasures == erasures, !sending else { return }
             conversationId = id
-            lines = messages.map { ChatLine(role: $0.role == "user" ? .user : .assistant, text: $0.content) }
-            error = nil
+            transcript = ChatTranscript(lines: messages.map { ChatLine(role: $0.role == "user" ? .user : .assistant, text: $0.content) })
         }
     }
 
-    private func send() async {
-        let question = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !question.isEmpty, AIConsent.chat.given else { return }
-        let earlier = lines.filter { !$0.failed }.map { ChatClient.Turn(role: $0.role == .user ? "user" : "assistant", content: $0.text) }
-        let isNew = lines.isEmpty
+    private var sending: Bool { turn != nil }
+
+    private func ask(_ question: String) {
+        let question = question.trimmingCharacters(in: .whitespacesAndNewlines)
+        // One turn at a time: a double tap sends once, and Stop always cancels the turn on screen.
+        guard turn == nil, !question.isEmpty, AIConsent.chat.given else { return }
+        turn = Task { await send(question) }
+    }
+
+    /// Cancels the turn in flight. The screen moves on now, not when the request unwinds:
+    /// the cancelled turn changes nothing more (its guards check `Task.isCancelled`).
+    /// Once the answer is in, it is too late: the turn ends as answered (review R3).
+    private func stop() {
+        guard !transcript.finished else { return }
+        turn?.cancel()
+        turn = nil
+        status = nil
+        if let question = transcript.stop(), draft.isEmpty { draft = question }
+    }
+
+    private func send(_ question: String) async {
+        // A failed turn is never history (US-52 AC6d), so a retried first question is still new.
+        let earlier = transcript.history
+        let isNew = earlier.isEmpty
         let conversation = conversationId
         // An erase while the answer streams empties `lines` and the history: from then on
         // this turn is dropped, never indexed into the new lines or saved (review R1).
         let erasures = store.erasures
         let askedAt = ChatHistoryStore.erasures
-        draft = ""
+        // A stopped or erased turn changes nothing more on screen.
+        func live() -> Bool { store.erasures == erasures && !Task.isCancelled }
         asking = false
-        error = nil
-        sending = true
-        defer { sending = false; status = nil }
-        lines.append(ChatLine(role: .user, text: question))
-        let answerIndex = lines.count
-        lines.append(ChatLine(role: .assistant, text: ""))
+        // A stopped turn leaves these to Stop, and to the turn that may follow it.
+        defer { if !Task.isCancelled { turn = nil; status = nil } }
+        let answerIndex = transcript.ask(question)
 
         do {
             let context = try await engine.chatContext(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
+            // Stopped or erased while the context was built: nothing is sent (review R5).
+            guard live() else { return }
             let body = try ChatClient.body(message: question, conversationId: conversation, history: earlier, contextJSON: context)
             var finished = false
             for try await event in ChatClient().ask(body: body) {
-                guard store.erasures == erasures else { return }
+                guard live() else { return }
                 switch event {
                 case .status(let text): status = text
-                case .text(let text): lines[answerIndex].text += text
-                case .sources(let titles): lines[answerIndex].sources = titles
+                case .text(let text): transcript.lines[answerIndex].text += text
+                case .sources(let titles): transcript.lines[answerIndex].sources = titles
                 case .done(let content, let isFallback, let failure):
                     if let failure { throw AppAttestClient.Failure.server(status: 500, message: failure) }
-                    // The final reply replaces what streamed (US-15 AC16).
-                    lines[answerIndex].text = content ?? lines[answerIndex].text
+                    // The answer is in: Stop goes, and it is saved (review R3).
+                    let answer = transcript.finish(answerIndex, content: content)
                     finished = true
-                    await history.record(ChatExchange(conversationId: conversation, isNew: isNew, userText: question, assistantText: lines[answerIndex].text, isFallback: isFallback), askedAt: askedAt)
+                    status = nil
+                    await history.record(ChatExchange(conversationId: conversation, isNew: isNew, userText: question, assistantText: answer, isFallback: isFallback), askedAt: askedAt)
                 case .other: break
                 }
             }
             // A stream that ended with no `done` line was cut off: never history.
-            guard store.erasures == erasures else { return }
-            if !finished { throw AppAttestClient.Failure.server(status: 0, message: "The answer was cut off. Please ask again.") }
+            guard live() else { return }
+            if !finished { throw AppAttestClient.Failure.server(status: 0, message: "The answer was cut off. Please try again.") }
         } catch {
-            guard store.erasures == erasures else { return }
-            lines[answerIndex].failed = true
-            if lines[answerIndex].text.isEmpty { lines[answerIndex].text = "No answer." }
-            self.error = error.localizedDescription
+            guard live() else { return }
+            transcript.fail(error)
         }
     }
 }
 
-/// One message on screen.
-struct ChatLine: Identifiable, Equatable {
-    enum Role { case user, assistant }
-    let id = UUID()
-    let role: Role
-    var text: String
-    var sources: [String] = []
-    /// The answer did not finish: shown, but never sent back as history.
-    var failed = false
-}

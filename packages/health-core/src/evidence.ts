@@ -115,6 +115,29 @@ const GUIDELINES_LIPIDS = ['ACC/AHA 2026', 'ESC/EAS 2019'];
 const GUIDELINES_STATIN_STEPS = ['ESC/EAS 2019', 'BPAC 2021'];
 const GUIDELINES_BP = ['ISH/ESH 2023'];
 
+const REFS_COSMOS: SuggestionReference[] = [
+  { label: 'Vyas 2024 – Multivitamin & cognition: COSMOS-Clinic + meta-analysis of 3 COSMOS sub-studies (Am J Clin Nutr)', url: 'https://doi.org/10.1016/j.ajcnut.2023.12.011' },
+  { label: 'Baker 2023 – Multivitamin & cognitive function: COSMOS-Mind trial (Alzheimers Dement)', url: 'https://doi.org/10.1002/alz.12767' },
+];
+const REF_WHO_DEMENTIA_2026: SuggestionReference = { label: 'WHO 2026 – Risk reduction of cognitive decline and dementia: guidelines, 2nd edition', url: 'https://www.who.int/publications/i/item/9789240123557' };
+const REF_K2_VKA: SuggestionReference = { label: 'Theuwissen 2013 – Low-dose vitamin K2 (MK-7) and oral anticoagulant stability (J Thromb Haemost)', url: 'https://doi.org/10.1111/jth.12203' };
+const REF_CREATINE_STRENGTH: SuggestionReference = { label: 'Kreider 2017 – ISSN position stand: creatine safety & efficacy (J Int Soc Sports Nutr)', url: 'https://doi.org/10.1186/s12970-017-0173-z' };
+const REF_MPOD: SuggestionReference = { label: 'Wilson 2021 – Lutein/zeaxanthin intake & macular pigment optical density: meta-analysis (Adv Nutr)', url: 'https://doi.org/10.1093/advances/nmab071' };
+
+/**
+ * The references of the US variants (US-61 AC3), keyed `<id>-us` like
+ * suggestions.ts's US_SUPPLEMENT_DESCRIPTIONS. Read only by the US product
+ * overlay (us-products.ts); never attached by the engine.
+ */
+export const US_SUPPLEMENT_REFERENCES: Readonly<Record<string, SuggestionReference[]>> = {
+  // No WHO dementia guideline.
+  'supplement-micronutrient-base-us': [...REFS_COSMOS, REF_K2_VKA],
+  // No cognition or memory references.
+  'supplement-creatine-us': [REF_CREATINE_STRENGTH],
+  // No macular degeneration trials.
+  'supplement-lutein-zeaxanthin-us': [REF_MPOD],
+};
+
 // ============================================================
 // Evidence map
 // ============================================================
@@ -539,10 +562,9 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
     reason: 'A comprehensive daily supplement can help fill nutritional gaps. The COSMOS trial enrolled men aged 60 and over and women aged 65 and over. A meta-analysis of its three cognition sub-studies (about 5,200 people) found that a daily multivitamin-mineral improved global cognition and episodic memory compared with placebo. The effect on global cognition was equivalent to about 2 years less cognitive ageing. This suggests broad micronutrient support may benefit brain health alongside physical health.\n\nThe WHO 2026 guideline on reducing the risk of cognitive decline and dementia recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements for that purpose in people without a diagnosed deficiency. It is a strong recommendation based on moderate-certainty evidence; WHO gave the reason as \'unexpected harmful effects that outweigh any potential benefits\'. It kept its 2019 recommendation without reassessing supplements, and it did not cite the COSMOS trials.\n\nThe base includes vitamin K2. In healthy volunteers taking a vitamin K antagonist, MK-7 (a form of vitamin K2) at 10 to 20 mcg a day lowered the INR enough to matter clinically in at least 40 to 60% of people, and 45 mcg a day lowered the group\'s average INR by about 40%. The study authors concluded that MK-7 supplements should be avoided with vitamin K antagonist therapy. If you take warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR.',
     guidelines: [],
     references: [
-      { label: 'Vyas 2024 – Multivitamin & cognition: COSMOS-Clinic + meta-analysis of 3 COSMOS sub-studies (Am J Clin Nutr)', url: 'https://doi.org/10.1016/j.ajcnut.2023.12.011' },
-      { label: 'Baker 2023 – Multivitamin & cognitive function: COSMOS-Mind trial (Alzheimers Dement)', url: 'https://doi.org/10.1002/alz.12767' },
-      { label: 'WHO 2026 – Risk reduction of cognitive decline and dementia: guidelines, 2nd edition', url: 'https://www.who.int/publications/i/item/9789240123557' },
-      { label: 'Theuwissen 2013 – Low-dose vitamin K2 (MK-7) and oral anticoagulant stability (J Thromb Haemost)', url: 'https://doi.org/10.1111/jth.12203' },
+      ...REFS_COSMOS,
+      REF_WHO_DEMENTIA_2026,
+      REF_K2_VKA,
     ],
   },
 
@@ -550,7 +572,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
     reason: 'Creatine monohydrate is one of the most well-studied supplements. A meta-analysis found it significantly increases muscle strength and lean mass when combined with resistance training. Dr Stanfield considers the evidence that creatine improves memory clear and consistent; this is his judgement, not a trial finding. Formal reviews are more mixed. A systematic review (Avgerinos 2018) and two meta-analyses of small trials (Prokopidis 2023, Xu 2024) reported better memory, but the meta-analyses counted several tests from the same people as separate results. Reanalysed by its authors, Prokopidis 2023 found no clear overall memory benefit except in older adults (aged 66 to 76). Xu 2024 found no effect on overall cognition or executive function. In 2024 the European Food Safety Authority concluded that a cause-and-effect link between creatine and better cognitive function has not been established.',
     guidelines: [],
     references: [
-      { label: 'Kreider 2017 – ISSN position stand: creatine safety & efficacy (J Int Soc Sports Nutr)', url: 'https://doi.org/10.1186/s12970-017-0173-z' },
+      REF_CREATINE_STRENGTH,
       { label: 'Avgerinos 2018 – Creatine & cognition: systematic review (Exp Gerontol)', url: 'https://doi.org/10.1016/j.exger.2018.04.013' },
       { label: 'Prokopidis 2023 – Creatine & memory: meta-analysis of RCTs (Nutr Rev)', url: 'https://doi.org/10.1093/nutrit/nuac064' },
       { label: 'Prokopidis 2023 – Authors\' reply and reanalysis: memory benefit only in older adults (Nutr Rev)', url: 'https://doi.org/10.1093/nutrit/nuac111' },
@@ -564,6 +586,31 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
     guidelines: [],
     references: [
       { label: 'Batool 2026 – Oral collagen peptides & skin: meta-analysis (J Cosmet Dermatol)', url: 'https://doi.org/10.1111/jocd.71041' },
+    ],
+  },
+
+  // US-61: AREDS framing (Brad): beta-carotene in AREDS slowed progression; in
+  // AREDS2 lutein and zeaxanthin worked as well, without the lung cancer signal.
+  'supplement-lutein-zeaxanthin': {
+    reason: 'Lutein and zeaxanthin are the pigments of the macula, the part of the eye that sees fine detail. A meta-analysis of 46 studies in adults with healthy eyes found that lutein and zeaxanthin supplements raise macular pigment optical density, more at higher doses. In the AREDS trial, a formula of vitamins C and E, beta-carotene and zinc slowed the progression of macular degeneration in people at risk of it. In AREDS2, 10 mg of lutein and 2 mg of zeaxanthin worked as well as beta-carotene in that formula. Beta-carotene brought more lung cancers, mostly in former smokers; lutein and zeaxanthin did not.',
+    guidelines: [],
+    references: [
+      REF_MPOD,
+      { label: 'AREDS 2001 – Vitamins C and E, beta-carotene and zinc for age-related macular degeneration: AREDS Report 8 (Arch Ophthalmol)', url: 'https://doi.org/10.1001/archopht.119.10.1417' },
+      { label: 'AREDS2 2013 – Lutein + zeaxanthin and omega-3 fatty acids for age-related macular degeneration (JAMA)', url: 'https://doi.org/10.1001/jama.2013.4997' },
+    ],
+  },
+
+  // US-61: the muscle evidence is small trials with mixed results, far weaker
+  // than creatine's. Homocysteine and dementia stay off the card.
+  'supplement-tmg': {
+    reason: 'TMG (trimethylglycine, also called betaine) lowers blood homocysteine: a meta-analysis of randomized trials in healthy adults found that at least 4 g a day for 6 to 24 weeks lowered it. Small trials suggest it may improve strength and power, though results are mixed and the evidence is much weaker than for creatine.',
+    guidelines: [],
+    references: [
+      { label: 'McRae 2013 – Betaine supplementation decreases plasma homocysteine: meta-analysis (J Chiropr Med)', url: 'https://doi.org/10.1016/j.jcm.2012.11.001' },
+      { label: 'Lee 2010 – Betaine supplementation and strength and power performance (J Int Soc Sports Nutr)', url: 'https://doi.org/10.1186/1550-2783-7-27' },
+      { label: 'Pryor 2012 – Betaine supplementation and cycling sprint performance (J Int Soc Sports Nutr)', url: 'https://doi.org/10.1186/1550-2783-9-12' },
+      { label: 'Nobari 2021 – Chronic betaine supplementation in young soccer players: RCT (J Int Soc Sports Nutr)', url: 'https://doi.org/10.1186/s12970-021-00464-y' },
     ],
   },
 

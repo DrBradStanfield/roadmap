@@ -237,6 +237,35 @@ describe('the email-arrival counters', () => {
       expect(parseProductEvent({ eventName: 'alcohol_question_answered', visitorId: VISITOR, metadata })).toBeNull();
     }
   });
+
+  it('US-61 AC8: takes the two US product events with a product word, and nothing else', () => {
+    for (const eventName of ['us_product_shown', 'us_product_link_clicked']) {
+      for (const product of ['microvitamin_plus', 'sleep']) {
+        expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata: { product } })).toEqual({
+          eventName, visitorId: VISITOR, metadata: { product },
+        });
+      }
+      // No card id (a health-state leak), no other key, no other product word.
+      for (const metadata of [
+        { product: 'sleep', id: 'supplement-sleep' },
+        { product: 'sleep', key: 'x' },
+        { product: 'sleep', count: 1 },
+        { product: 'sleep', provider: 'dropbox' },
+        { product: 'microvitamin' },
+        { product: 'fiber' },
+        { product: 'MicroVitamin+' },
+        { count: 1 },
+      ]) {
+        expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata })).toBeNull();
+      }
+    }
+  });
+
+  it('US-61 AC8: no other event may carry a product', () => {
+    for (const eventName of ['results_viewed', 'chat_opened', 'alcohol_question_answered', 'upload_outcome']) {
+      expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata: { product: 'sleep' } })).toBeNull();
+    }
+  });
 });
 
 /** US-38 — the guide link's counter: which surface sent someone to the hub. */
