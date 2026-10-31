@@ -19,9 +19,12 @@
       }
       .hr-hero-text { flex: 1; }
       .hr-hero-img { width: 240px; height: auto; flex: 0 0 auto; }
+      .hr-hero-short { display: none; }
       @media (max-width: 700px) {
-        .hr-hero { flex-direction: column-reverse; text-align: center; gap: 16px; }
-        .hr-hero-img { width: 180px; }
+        .hr-hero { flex-direction: row-reverse; gap: 12px; }
+        .hr-hero-img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; }
+        .hr-hero-long { display: none; }
+        .hr-hero-short { display: inline; }
       }
     </style>
   </head>
@@ -29,7 +32,7 @@
     <header class="hr-hero">
       <div class="hr-hero-text">
         <h1>Get Your Personalized Health Plan</h1>
-        <p>Enter your health information below to receive personalized suggestions to discuss with your healthcare provider. The more information you provide, the more tailored your suggestions will be.</p>
+        <p><span class="hr-hero-long">Enter your health information below to receive personalized suggestions to discuss with your healthcare provider. The more information you provide, the more tailored your suggestions will be.</span><span class="hr-hero-short">Personalized suggestions to discuss with your doctor.</span></p>
       </div>
       <img
         class="hr-hero-img"

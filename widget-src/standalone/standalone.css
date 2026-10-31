@@ -14,9 +14,16 @@
 .hr-hero-img {
   width: 240px; height: auto; flex: 0 0 auto;
 }
+.hr-hero-short { display: none; }
+/* Phones: one compact row, small round photo left of the text, so the form
+   starts near the top of the screen. */
 @media (max-width: 700px) {
-  .hr-hero { flex-direction: column-reverse; text-align: center; gap: 16px; }
-  .hr-hero-img { width: 180px; }
+  .hr-hero { flex-direction: row-reverse; gap: 12px; }
+  .hr-hero-text h1 { font-size: 22px; margin-bottom: 4px; }
+  .hr-hero-text p { font-size: 14px; line-height: 1.4; }
+  .hr-hero-img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; }
+  .hr-hero-long { display: none; }
+  .hr-hero-short { display: inline; }
 }
 
 /* Sync control (rendered inside the plan panel, where "Data synced" was). */
