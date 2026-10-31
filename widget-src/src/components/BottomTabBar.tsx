@@ -60,13 +60,15 @@ export function BottomTabBar({ activeTab, onTabChange, idPrefix, dot = null }: {
           id={tabDomId(idPrefix, id)}
           aria-selected={activeTab === id}
           aria-controls={panelDomId(idPrefix, id)}
+          aria-describedby={dot === id ? `${tabDomId(idPrefix, id)}-new` : undefined}
           tabIndex={activeTab === id ? 0 : -1}
           className={`hr-tab${activeTab === id ? ' hr-tab--active' : ''}`}
           onClick={() => onTabChange(id)}
         >
           <svg className="hr-tab-icon" viewBox="0 0 24 24" aria-hidden="true">{icon}</svg>
           <span className="hr-tab-label">{label}</span>
-          {dot === id && <span className="hr-tab-dot" aria-hidden="true" />}
+          {/* Hidden from the name, read as the tab's description: the name stays "My plan". */}
+          {dot === id && <span className="hr-tab-dot" id={`${tabDomId(idPrefix, id)}-new`} aria-hidden="true"><span className="hr-sr-only">New</span></span>}
         </button>
       ))}
     </div>

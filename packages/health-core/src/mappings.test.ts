@@ -726,7 +726,11 @@ describe('computeFormStage', () => {
   it('asks the birth month and year once sex is in', () => {
     expect(computeFormStage({ heightCm: 170, weightKg: 70, sex: 'female' })).toBe(3);
     expect(computeFormStage({ heightCm: 170, weightKg: 70, sex: 'female', birthMonth: 6 })).toBe(3);
-    expect(computeFormStage({ heightCm: 170, weightKg: 70, sex: 'female', birthYear: 1985 })).toBe(3);
+  });
+
+  it('a birth year alone answers step 3, as the plan (January) and the iPhone read it', () => {
+    expect(computeFormStage({ heightCm: 170, weightKg: 70, sex: 'female', birthYear: 1985 })).toBe(4);
+    expect(computeFormStage({ heightCm: 170, weightKg: 70, sex: 'female', birthYear: 1899 })).toBe(3);
   });
 
   it('is done with all four', () => {
@@ -773,10 +777,13 @@ describe('opensFullForm (US-01 AC3)', () => {
   it('opens the whole form once the onboarding is done', () => {
     expect(opensFullForm(4, [])).toBe(true);
     expect(opensFullForm(3, [])).toBe(false);
+    expect(opensFullForm(3, [saved('weight', 82)])).toBe(false); // the onboarding's own answer
   });
-  it('opens it at once for a record with a saved blood test, at any stage', () => {
+  it('opens it at once for a record holding more than the four answers, at any stage', () => {
     expect(opensFullForm(1, [saved('hba1c', 39)])).toBe(true);
-    expect(opensFullForm(2, [saved('weight', 82), saved('waist', 90)])).toBe(false);
+    expect(opensFullForm(2, [saved('weight', 82), saved('waist', 90)])).toBe(true);
+    expect(opensFullForm(3, [saved('systolic_bp', 120)])).toBe(true);
+    expect(opensFullForm(3, [], true)).toBe(true); // a medication, screening, supplement, lab test or document
   });
 });
 

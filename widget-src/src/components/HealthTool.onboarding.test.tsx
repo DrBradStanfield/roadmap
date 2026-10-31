@@ -14,9 +14,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor, type RenderResult } from '@testing-library/react';
 import { localDay, ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
-import { RoadmapStore } from '../storage/roadmap-store';
+import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication } from '../lib/roadmap-data';
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -274,11 +274,100 @@ describe('US-62 AC13: on a phone, the My plan tab shows a dot when a new tile ap
     expect(planTab.querySelector('.hr-tab-dot')).toBeNull();
     await measurements(view);
     await waitFor(() => expect(planTab.querySelector('.hr-tab-dot')).toBeTruthy());
+    // Read as the tab's description; the name stays "My plan".
+    expect(view.getByRole('tab', { name: 'My plan' })).toBe(planTab);
+    expect(document.getElementById(planTab.getAttribute('aria-describedby')!)?.textContent).toBe('New');
     fireEvent.click(planTab);
     expect(planTab.querySelector('.hr-tab-dot')).toBeNull();
     fireEvent.click(view.getByRole('tab', { name: /My data/ }));
     expect(planTab.querySelector('.hr-tab-dot')).toBeNull();
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
     await waitFor(() => expect(planTab.querySelector('.hr-tab-dot')).toBeTruthy());
+  });
+});
+
+describe('US-62 AC13 review fixes (PR 421)', () => {
+  it('R1: a birth year alone answers the step: a year-only record gets the whole form, nothing pinned', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980 }, {});
+    await addMeasurement('weight', 70, '2026-09-01');
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    expect(q(view, '#birthYear')).toBeTruthy();
+    expect(q(view, '#birthMonth')!.closest('.field-attention')).toBeNull();
+    expect(chat.muted.at(-1)).toBe(false);
+  });
+
+  it('R1: a returning record with medications and no birth date gets the whole form, the question pinned', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'male' }, {});
+    await addMeasurement('weight', 80, '2026-09-01');
+    await saveMedication('statin', 'rosuvastatin', 10, 'mg');
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    const month = q(view, '#birthMonth')!;
+    expect(month.closest('.field-attention')).toBeTruthy();
+    expect(month.compareDocumentPosition(q(view, '.bt-timeline-title')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(chat.muted.at(-1)).toBe(true);
+  });
+
+  it('R2: on a phone, retyping the birth year keeps the field and its focus where they are', async () => {
+    phone = true;
+    await saveChangedMeasurements({ heightCm: 170, sex: 'male', birthYear: 1980, birthMonth: 3 }, {});
+    await addMeasurement('weight', 80, '2026-09-01');
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(q(view, '.md-about-you #birthYear')).toBeTruthy()); // About you low
+    const year = q(view, '#birthYear') as HTMLInputElement;
+    act(() => year.focus());
+    fireEvent.change(year, { target: { value: '' } });
+    fireEvent.change(year, { target: { value: '198' } });
+    expect(q(view, '#birthYear')).toBe(year);
+    expect(document.activeElement).toBe(year);
+    expect(q(view, '.md-about-you #birthYear')).toBe(year);
+    fireEvent.change(year, { target: { value: '1981' } });
+    expect(q(view, '#birthYear')).toBe(year);
+    expect(document.activeElement).toBe(year);
+  });
+
+  it('R3: the desktop floating chat button waits for all four answers', async () => {
+    const view = await open();
+    const fab = () => document.querySelector('.chat-fab');
+    expect(fab()).toBeNull();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    expect(fab()).toBeNull();
+    birth(view);
+    await waitFor(() => expect(fab()).toBeTruthy());
+    void view;
+  });
+
+  it('R4: a returning user resuming mid-onboarding sees the weight once when the form opens', async () => {
+    await saveChangedMeasurements({ heightCm: 170 }, {});
+    await addMeasurement('weight', 80, '2026-09-01');
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(sexQuestion(view)).toBeTruthy());
+    fireEvent.click(view.getByRole('radio', { name: 'Female' }));
+    birth(view);
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    const weightRows = Array.from(view.container.querySelectorAll('.collapsed-field-label, .bt-name-label, label[for="weightKg"]'))
+      .filter((l) => l.textContent?.trim().startsWith('Weight'));
+    expect(weightRows).toHaveLength(1);
+  });
+
+  it('R5: a jump from another device or tab sends no onboarding events', async () => {
+    await saveChangedMeasurements({ heightCm: 170 }, {});
+    await addMeasurement('weight', 80, '2026-09-01');
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(sexQuestion(view)).toBeTruthy());
+    await saveChangedMeasurements({ heightCm: 170, sex: 'male', birthYear: 1980, birthMonth: 3 }, { heightCm: 170 }); // another writer
+    await flushRoadmapStore();
+    await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    await waitFor(() => expect(fullForm(view)).toBe(true), { timeout: 3000 });
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    expect(named('onboarding_step')).toEqual([]);
+    expect(named('onboarding_done')).toEqual([]);
   });
 });

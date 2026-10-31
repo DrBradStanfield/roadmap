@@ -314,7 +314,7 @@ export function InputPanel({
     const metric = FIELD_METRIC_MAP[field];
     return !!metric && hasUnitChoice(metric);
   };
-  const prefillComplete = !!(inputs.sex && inputs.heightCm && inputs.birthYear && inputs.birthYear >= 1900 && inputs.birthMonth);
+  const prefillComplete = !!(inputs.sex && inputs.heightCm && inputs.birthYear && inputs.birthYear >= 1900);
 
   // Collapse only on return visits with the onboarding done at mount (data
   // pre-loaded). No auto-collapse on first visit, nor mid-onboarding.
@@ -428,18 +428,21 @@ export function InputPanel({
     panelRef.current?.querySelectorAll<HTMLElement>('.md-table .bt-timeline-scroll').forEach(el => { el.scrollLeft = el.scrollWidth; });
   }, [isPhone, tableShown]);
   // About you sits low, as on the iPhone, once the onboarding is done.
-  // Decided at mount, so the section never jumps away while someone is
-  // typing; a new user finishes it first, at the top (US-62 AC12, AC13).
+  // Decided at mount, then held as long as the whole form is (an answer
+  // retyped never moves it); a new user finishes it first, at the top
+  // (US-62 AC12, AC13).
   const profileAtMount = useRef(formStage === 4);
-  const aboutYouLow = isPhone && profileAtMount.current && formStage === 4;
-  // The onboarding asks the weight beside the height (US-62 AC13). Once
-  // shown there it stays for this visit, so the whole form opening, or the
+  const aboutYouLow = isPhone && profileAtMount.current && fullForm;
+  // The onboarding asks the weight beside the height (US-62 AC13). A weight
+  // typed there stays there for this visit, so the whole form opening, or the
   // weight cleared to retype, never moves the field being typed in; the
-  // first-time vitals then leave it out. A visit that opens on the whole form
-  // keeps the weight with the vitals, and sex beside the height.
-  const weightHere = useRef(false);
-  if (!fullForm) weightHere.current = true;
-  const weightInProfile = weightHere.current;
+  // first-time vitals then leave it out. Otherwise it joins the vitals when
+  // the whole form opens, shown once, and sex sits beside the height.
+  const weightShown = useRef(false);
+  const weightTyped = useRef(false);
+  if (weightShown.current && inputs.weightKg !== undefined) weightTyped.current = true;
+  const weightInProfile = !fullForm || weightTyped.current;
+  weightShown.current = weightInProfile;
   const sexInRow = fullForm && !weightInProfile;
   const [collapseAnimating, setCollapseAnimating] = useState(false);
   const hasMountedRef = useRef(false);
@@ -1098,7 +1101,7 @@ export function InputPanel({
         formStage={formStage}
         plan={planBasis}
         knownMinor={knownMinor}
-        onAutoFocusEmail={onAutoFocusEmail}
+        onAutoFocusEmail={prefillComplete ? onAutoFocusEmail : undefined /* only as the last answer (US-62 AC13) */}
         unitOverrides={unitOverrides}
         onToggleFieldUnit={onToggleFieldUnit}
         prefillRef={vitalsPrefillRef}
@@ -1226,7 +1229,7 @@ export function InputPanel({
   const renderBirthInfo = () => (
     <>
       <div className="health-field-group">
-        <div className={`health-field${!inputs.birthMonth ? ' field-attention' : ''}`}>
+        <div className={`health-field${!inputs.birthMonth && !inputs.birthYear ? ' field-attention' : ''}`}>
           <label htmlFor="birthMonth">Birth Month</label>
           <select
             id="birthMonth"
@@ -1242,7 +1245,7 @@ export function InputPanel({
           {errors.birthMonth && <span className="error-message">{errors.birthMonth}</span>}
         </div>
 
-        {inputs.birthMonth && (
+        {(inputs.birthMonth || inputs.birthYear) && (
           <div className={`health-field stage-reveal${!inputs.birthYear ? ' field-attention' : ''}`}>
             <label htmlFor="birthYear">Birth Year</label>
             <input

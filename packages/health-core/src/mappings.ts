@@ -563,7 +563,7 @@ export type FormStage = 1 | 2 | 3 | 4;
  *
  * Stage 1: a plausible height and weight (the BMI tile)
  * Stage 2: sex (the healthy weight and the protein target)
- * Stage 3: the birth month and year (the age-based plan)
+ * Stage 3: the birth year, with its month when given (the age-based plan)
  * Stage 4: all four known: the rest of the form, the chat and the embed
  *
  * `saved` holds the newest saved row per metric; they fill the fields the
@@ -571,8 +571,9 @@ export type FormStage = 1 | 2 | 3 | 4;
  * "Plausible" = inside the canonical SI validation range (UNIT_DEFS in
  * units.ts) — a half-typed "1" of "180" must NOT open the next stage; the
  * gate opens only once the value could be a real measurement. The birth date
- * counts once the plan would keep it: a year from 1900 and a month not in
- * the future.
+ * counts once the plan would keep it: a year from 1900, alone (the plan reads
+ * January, as the iPhone does) or with a month not in the future. The form
+ * asks both.
  */
 export function computeFormStage(
   inputs: Partial<HealthInputs>,
@@ -585,13 +586,15 @@ export function computeFormStage(
   if (merged.sex !== 'male' && merged.sex !== 'female') return 2;
   const year = validateInputValue('birthYear', merged.birthYear);
   const month = validateInputValue('birthMonth', merged.birthMonth);
-  if (year === undefined || month === undefined || birthInFuture(year, month, new Date())) return 3;
+  if (year === undefined || (merged.birthMonth !== undefined && (month === undefined || birthInFuture(year, month, new Date())))) return 3;
   return 4;
 }
 
 /** The whole form shows once the onboarding is done, or at once for a record
- *  holding a saved blood test, with the missing questions pinned at the top
- *  (US-01 AC3). */
-export function opensFullForm(stage: FormStage, saved: ReadonlyArray<Pick<ApiMeasurement, 'metricType'>>): boolean {
-  return stage === 4 || saved.some(m => BLOOD_TEST_METRICS.includes(m.metricType));
+ *  holding more than the onboarding's answers: any saved value but the
+ *  weight (a blood test, a waist, a blood pressure), or `otherRecords` (a
+ *  medication, screening, supplement, lab test or document). The missing
+ *  questions are pinned at the top (US-01 AC3). */
+export function opensFullForm(stage: FormStage, saved: ReadonlyArray<Pick<ApiMeasurement, 'metricType'>>, otherRecords = false): boolean {
+  return stage === 4 || otherRecords || saved.some(m => m.metricType !== 'weight');
 }

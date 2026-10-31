@@ -293,11 +293,11 @@ Desktop: `grid-template-columns: 5fr 6fr; gap: 32px`
 - Previous value shown as a small clickable label below the input (links to history chart)
 - "Save New Values" button appends an immutable record — never overwrites
 
-### Progressive Disclosure
-- Stage 1: Units, Sex, Height
-- Stage 2 (unlocks): Birth Month, Birth Year
-- Stage 3 (unlocks): Weight, Waist
-- Stage 4 (unlocks): BP, Blood Tests, Medications, Screenings
+### Progressive Disclosure (the onboarding, US-62 AC13)
+- Stage 1: Units, Height, Weight (shows the BMI tile)
+- Stage 2 (unlocks): Sex, its why-text under it
+- Stage 3 (unlocks): Birth Month, Birth Year, the why-text under them
+- Stage 4 (unlocks): Waist, BP, Blood Tests, Medications, Screenings, Supplements, the chats
 - The next-to-fill field gets `.field-attention` pulsing highlight class
 
 ### Medication Cascade UI
