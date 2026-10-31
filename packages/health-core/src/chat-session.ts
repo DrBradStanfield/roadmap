@@ -39,7 +39,22 @@ const CHAT_HISTORY_DOC: DocumentSpec<ChatHistoryFile> = {
   // re-read (H5 protects health-record integrity; here it would spend a full
   // file transfer per exchange guarding data whose loss is already tolerated).
   verify: false,
+  // Read only by CHECKED_DOC's verify: any conversation the written copy holds
+  // deleted (this save's or an earlier one) that the re-read does not hold
+  // deleted, live or missing. A missing tombstone is lost too: a device that
+  // still holds the conversation live would bring it back. The retry merges
+  // the local tombstone in again, so this cannot loop.
+  lostWrite: (expected, parsed) => {
+    const stillDeleted = new Set(parsed.conversations.filter((c) => c.deleted).map((c) => c.id));
+    const back = expected.conversations.filter((c) => c.deleted && !stillDeleted.has(c.id)).length;
+    return back > 0 ? `${back} deleted conversation(s)` : null;
+  },
 };
+
+/** A delete or an erase is not tolerated loss: re-read after the write, and
+ *  write again if another writer put the conversation back. On Drive, which
+ *  has no conditional write, nothing else sees that writer (US-11 AC2d). */
+const CHECKED_DOC: DocumentSpec<ChatHistoryFile> = { ...CHAT_HISTORY_DOC, verify: true };
 
 /** A tombstone carries no content: no messages, and no title (it is the user's
  *  own words). The merge enforces the same shape; every local one matches it. */
@@ -81,6 +96,8 @@ export class ChatSession {
     private readonly host: RecordHost,
     /** The cloud's loop; null on the device tier, written synchronously. */
     private readonly sync: SyncManager<ChatHistoryFile> | null,
+    /** The same loop with verify-after-write, for deletes and the erase. */
+    private readonly checked: SyncManager<ChatHistoryFile> | null,
     private file: ChatHistoryFile,
     private fenceSeen: string | null,
   ) {
@@ -96,10 +113,11 @@ export class ChatSession {
       // a record removal and parses no health data.
       const fence = device.fence();
       const file = migrateChatHistoryFile(device.sync.readSync(CHAT_HISTORY_DOC.fileName).body, ctx);
-      return new ChatSession(host, null, file, fence);
+      return new ChatSession(host, null, null, file, fence);
     }
-    const sync = new SyncManager(host.store, ctx.deviceId, CHAT_HISTORY_DOC, { now: () => contextOf(host).now });
-    return new ChatSession(host, sync, await sync.load(), null);
+    const opts = { now: () => contextOf(host).now };
+    const sync = new SyncManager(host.store, ctx.deviceId, CHAT_HISTORY_DOC, opts);
+    return new ChatSession(host, sync, new SyncManager(host.store, ctx.deviceId, CHECKED_DOC, opts), await sync.load(), null);
   }
 
   /** Live (non-deleted) conversation summaries, newest first. */
@@ -171,7 +189,7 @@ export class ChatSession {
     const conv = this.file.conversations.find((c) => c.id === conversationId);
     if (!conv || conv.deleted) return;
     tombstone(conv);
-    await this.persist();
+    await this.persist(true);
   }
 
   /**
@@ -186,7 +204,7 @@ export class ChatSession {
     if (this.file.conversations.length === 0) return; // nothing to tombstone
     const now = new Date(this.host.clock.now()).toISOString();
     for (const conv of this.file.conversations) tombstone(conv, now);
-    await this.persist();
+    await this.persist(true);
   }
 
   /** After a device erase, replace the entire stale working copy before
@@ -200,9 +218,9 @@ export class ChatSession {
     this.fenceSeen = fence;
   }
 
-  private async persist(): Promise<void> {
+  private async persist(deleted = false): Promise<void> {
     if (this.sync) {
-      const result = await this.sync.save(this.file);
+      const result = await (deleted ? this.checked! : this.sync).save(this.file);
       // Merged in, never put in place: a delete made while this save was in
       // the air lives only in the working copy (US-11 AC2b).
       const ctx = contextOf(this.host);

@@ -214,3 +214,76 @@ describe('US-10 AC10: conversations saved in the same millisecond keep their fil
     expect(ids).not.toContain('t2');
   });
 });
+
+describe('US-11 AC2d: a chat delete is reported only once the stored file holds it', () => {
+  /** Drive's gap: no conditional write, so a second writer that read before
+   *  our upload can land right after it. The first armed write is followed by
+   *  that writer's copy, taken before the delete, with the higher clock. */
+  class OverwrittenOnce extends MemoryAdapter {
+    stale: object | null = null;
+    always = false;
+    reads = 0;
+    async read(name: string, signal?: AbortSignal) { this.reads++; return super.read(name, signal); }
+    async write(name: string, body: object, expected: string | null, signal?: AbortSignal) {
+      const result = await super.write(name, body, expected, signal);
+      if (!this.stale) return result;
+      const stale = this.stale;
+      if (!this.always) this.stale = null;
+      return super.write(name, stale, result.version);
+    }
+  }
+  async function twoLive() {
+    const store = new OverwrittenOnce();
+    const s = await ChatSession.open(cloudHost(store));
+    await exchange(s, 'c1', 'first question');
+    await exchange(s, 'c2', 'second question');
+    const before = (await store.read('chat-history.json')).body as { meta: { lamport: number } };
+    store.stale = { ...before, meta: { ...before.meta, lamport: before.meta.lamport + 10 } };
+    return { store, s };
+  }
+
+  it('eraseAll writes its tombstones again when another writer replaced them', async () => {
+    const { store, s } = await twoLive();
+    await s.eraseAll();
+    expect((await ChatSession.open(cloudHost(store))).listConversations()).toEqual([]);
+  });
+
+  it('deleteConversation writes its tombstone again when another writer replaced it', async () => {
+    const { store, s } = await twoLive();
+    await s.deleteConversation('c1');
+    expect((await ChatSession.open(cloudHost(store))).listConversations().map((c) => c.id)).toEqual(['c2']);
+  });
+
+  it('eraseAll writes its tombstone again when the writer that replaced it never held the conversation', async () => {
+    // Brad's five steps (review 2026-10-31): B reads before X exists, A makes
+    // X and erases, B's copy lands with no X at all, and C, which still holds
+    // X live, saves later. A missing tombstone must count as lost.
+    const store = new OverwrittenOnce();
+    const a = await ChatSession.open(cloudHost(store));
+    await exchange(a, 'c1');
+    await a.deleteConversation('c1'); // B's copy holds nothing live, so only X can be lost
+    const b = (await store.read('chat-history.json')).body as { meta: { lamport: number } }; // 1. B reads
+    await exchange(a, 'x'); // 2. A creates X...
+    const c = await ChatSession.open(cloudHost(store)); // C holds X live
+    store.stale = { ...b, meta: { ...b.meta, lamport: b.meta.lamport + 10 } }; // 3. B lands after A's write
+    await a.eraseAll(); // 2. ...then erases; 4. the re-read has no X
+    const stored = (await store.read('chat-history.json')).body as { conversations: { id: string; deleted?: boolean }[] };
+    expect(stored.conversations.find((conv) => conv.id === 'x')?.deleted).toBe(true);
+    await exchange(c, 'later'); // 5. C saves
+    expect((await ChatSession.open(cloudHost(store))).listConversations().map((conv) => conv.id)).toEqual(['later']);
+  });
+
+  it('eraseAll fails, never reports success, when every write is replaced', async () => {
+    const { store, s } = await twoLive();
+    store.always = true;
+    await expect(s.eraseAll()).rejects.toThrow();
+  });
+
+  it('an ordinary exchange still costs one read, no verify re-read', async () => {
+    const store = new OverwrittenOnce();
+    const s = await ChatSession.open(cloudHost(store));
+    store.reads = 0;
+    await exchange(s, 'c1');
+    expect(store.reads).toBe(1);
+  });
+});
