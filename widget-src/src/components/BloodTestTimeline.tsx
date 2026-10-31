@@ -16,6 +16,7 @@ import {
   METRIC_LABELS,
   reportedToCanonical,
   UNIT_DEFS,
+  rowTarget,
 } from '@roadmap/health-core';
 import { formatShortDate, MONTHS_SHORT } from '../lib/constants';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
@@ -31,7 +32,6 @@ import {
   type Status,
   blockBadNumericKeys,
   cellFromSI,
-  cellHint,
   cellLabel,
   cellText,
   cellToSI,
@@ -454,7 +454,7 @@ export function BloodTestTimeline({
           {/* Body — metric rows */}
           {ROWS.map((row, rowIdx) => {
             const display = fieldUnit(row.field);
-            const ref = cellHint(row.metric, display, grading);
+            const ref = rowTarget(row.metric, display, grading, null)?.full ?? null;
 
             // Sparkline points in display units. Series is precomputed in SI;
             // converting to display unit here keeps the y-axis monotonic when

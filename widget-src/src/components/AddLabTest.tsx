@@ -16,17 +16,21 @@ import { labUnitRefusalLine } from '../lib/lab-value-labels';
 import type { CorrectFn } from '../lib/matrix-save';
 import type { ApiLabValue } from '../lib/api-types';
 
-export function AddLabTest({ onAdded, labValues = [], onCorrect }: {
+export function AddLabTest({ onAdded, labValues = [], onCorrect, preset }: {
   onAdded: () => void;
   /** The saved values, to name the one a duplicate collides with. */
   labValues?: ApiLabValue[];
   /** The cell editor's correction: present = Replace is offered. */
   onCorrect?: CorrectFn;
+  /** One test, fixed: a phone value page's Add (US-62 AC10). The test is
+   *  not chosen, and the form adds a value to it under the same rules. */
+  preset?: { metricName: string; unit: string };
 }) {
+  const presetKey = preset && (LAB_CATALOG.some(e => e.key === preset.metricName) ? preset.metricName : 'custom');
   const [open, setOpen] = useState(false);
-  const [testKey, setTestKey] = useState(''); // catalogue key | 'custom' | ''
-  const [customName, setCustomName] = useState('');
-  const [customUnit, setCustomUnit] = useState('');
+  const [testKey, setTestKey] = useState(presetKey ?? ''); // catalogue key | 'custom' | ''
+  const [customName, setCustomName] = useState(presetKey === 'custom' ? preset!.metricName : '');
+  const [customUnit, setCustomUnit] = useState(presetKey === 'custom' ? preset!.unit : '');
   const [valueStr, setValueStr] = useState('');
   const [date, setDate] = useState(() => localDay(new Date()));
   const [saving, setSaving] = useState(false);
@@ -37,7 +41,7 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect }: {
   if (!open) {
     return (
       <button type="button" className="alr-add-btn" onClick={() => setOpen(true)}>
-        + Add a blood test
+        {preset ? '+ Add a value' : '+ Add a blood test'}
       </button>
     );
   }
@@ -57,7 +61,10 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect }: {
   const clearNotice = () => { setNotice(null); setHeld(null); };
   const close = () => {
     setOpen(false);
-    setTestKey(''); setCustomName(''); setCustomUnit(''); setValueStr('');
+    setTestKey(presetKey ?? '');
+    setCustomName(presetKey === 'custom' ? preset!.metricName : '');
+    setCustomUnit(presetKey === 'custom' ? preset!.unit : '');
+    setValueStr('');
     setDate(localDay(new Date())); clearNotice();
   };
 
@@ -125,7 +132,7 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect }: {
   return (
     <div className="alr-add-form">
       <div className="alr-add-fields">
-        <select
+        {!preset && <select
           aria-label="Test"
           className="alr-add-select"
           value={testKey}
@@ -140,8 +147,8 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect }: {
             </optgroup>
           ))}
           <option value="custom">Other test…</option>
-        </select>
-        {testKey === 'custom' && (
+        </select>}
+        {testKey === 'custom' && !preset && (
           <input
             aria-label="Test name"
             className="alr-add-input alr-add-name"
@@ -162,7 +169,7 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect }: {
         />
         {entry
           ? <UnitChip label={entry.unit} title="Recorded in this unit"/>
-          : testKey === 'custom' && (
+          : testKey === 'custom' && (preset ? <UnitChip label={customUnit} title="Recorded in this unit"/> :
               <input
                 aria-label="Unit"
                 className="alr-add-input alr-add-unit"

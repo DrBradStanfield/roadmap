@@ -74,6 +74,8 @@ describe('US-16 AC2 on a phone: a chat edit lands on My data, on the cell it fil
     expect(tab(view, 'My data').getAttribute('aria-selected')).toBe('true');
     expect(cell.value).toBe('3.2');
     expect(cell.closest('[role="tabpanel"]')?.hasAttribute('hidden')).toBe(false);
+    // US-62 AC11: the grids sit hidden under the phone's rows; the chat edit opens them.
+    expect(cell.closest<HTMLElement>('.md-table')?.hidden).toBe(false);
     expect(scrolledIntoView).toContain(cell);
   });
 
