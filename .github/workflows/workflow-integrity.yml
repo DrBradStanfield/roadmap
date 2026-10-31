@@ -16,9 +16,11 @@
 #   the product-health loop's weekly git-log check is the out-of-band layer.
 #
 # Residual (documented, accepted): a same-push-triggered malicious run may
-# execute for a few seconds before cancellation — which is why the deploy
-# credentials live behind the 'production' environment wait timer and only the
-# spend-capped ANTHROPIC_API_KEY exists at repo level.
+# execute for a few seconds before cancellation. Only the spend-capped
+# ANTHROPIC_API_KEY exists at repo level, but the 'production' environment has
+# had no wait timer or required reviewer since 2026-09-02 (deploy.yml), so a
+# run that names that environment can read the deploy secrets (Fly, Shopify,
+# Sentry) in those seconds. That is why the playbook below revokes them.
 #
 # Editing this file is Brad-only (constitution Guardrails).
 

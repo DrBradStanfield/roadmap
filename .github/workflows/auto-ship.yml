@@ -70,11 +70,16 @@ jobs:
           case ",${labels}," in *,hold,*) echo "'hold' label present — vetoed."; exit 0;; esac
 
           # Reviewer verdict: trusted bot author + pinned to the CURRENT head sha.
+          # Exactly one line may contain VERDICT:, it must be the APPROVE line, and
+          # no "verdict ... reject" on one line in any case, with only spaces, punctuation,
+          # Markdown (_ and *) or is/was/remains/still/now between: a REJECT quoting it is not an approval.
           verdict=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments?per_page=100" \
             | jq --arg sha "${HEAD_SHA}" '[.[] | select(
                 (.user.type=="Bot") and
                 (.user.login | IN("github-actions[bot]","claude[bot]","claude")) and
-                (.body | contains("VERDICT: APPROVE " + $sha))
+                ([.body | split("\n")[] | select(contains("VERDICT:")) | gsub("^\\s+|\\s+$"; "")]
+                  == ["VERDICT: APPROVE " + $sha]) and
+                (.body | test("verdict(?:[^A-Za-z0-9\\n]|\\b(?:is|was|remains|still|now)\\b)*reject"; "i") | not)
               )] | length')
           [ "${verdict}" -ge 1 ] || { echo "No trusted APPROVE verdict for ${HEAD_SHA} — not shipping."; exit 0; }
 
@@ -229,8 +234,8 @@ jobs:
           merged=1
           step="merged; dispatching deploy.yml (merge already happened)"
           # GITHUB_TOKEN-caused events don't trigger workflows, so dispatch
-          # the deploy explicitly (its gate + environment window still apply).
+          # the deploy explicitly (its gate still applies; it has no wait timer).
           gh workflow run deploy.yml -R "${GITHUB_REPOSITORY}" --ref main -f surfaces=all
           finished=1
           gh issue close "${issue}" -R "${GITHUB_REPOSITORY}" \
-            --comment "Merged ${HEAD_SHA} and dispatched deploy.yml (its own 30-min window + veto email follows)."
+            --comment "Merged ${HEAD_SHA} and dispatched deploy.yml (its notification email follows; it has no wait timer)."

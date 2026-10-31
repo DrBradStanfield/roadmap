@@ -10,6 +10,7 @@ vi.mock('./supabase.server', () => ({ supabaseAdmin: null }));
 vi.mock('./chat-classifier.server', () => ({
   classifyMessage: async () => ({ classification: 'SKIP', routerSkipped: true, latencyMs: 0, error: null }),
   shouldFireRouter: () => false,
+  isUnreadableAnswer: () => false,
 }));
 
 process.env.ANTHROPIC_API_KEY ??= 'sk-test-dummy';
