@@ -90,14 +90,29 @@ describe('web redesign §1 — each use is on the right token', () => {
   });
 
   // Opacity blends the text green into its background: 0.7 over white is about 3:1.
-  it.each([['styles.css', css], ['standalone.css', standaloneCss]])('%s never fades brand-green text with opacity', (_, sheet) => {
+  // A parent's opacity fades its children too: `.a strong` under `.a { opacity: 0.6 }`
+  // (the empty-plan lead was 2.4:1 that way). A sibling's opacity does not count.
+  const fadedGreen = (sheet: string) => {
+    const spaced = (sel: string) => sel.replace(/\s*>\s*/g, ' > ');
     const selectorsOf = (test: (body: string) => boolean) => new Set(rules(sheet)
       .map((r) => r.split('{'))
       .filter(([, body]) => body !== undefined && test(body))
-      .flatMap(([sel]) => sel.split(',').map((x) => x.trim())));
+      .flatMap(([sel]) => sel.split(',').map((x) => spaced(x.trim()))));
     const green = selectorsOf((b) => /(^|[; ])color:\s*var\(--color-brand-text/.test(b));
     const faded = selectorsOf((b) => /(^|[; ])opacity:\s*0?\.\d/.test(b));
-    expect([...green].filter((sel) => faded.has(sel))).toEqual([]);
+    const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const underFadedParent = (sel: string) => [...faded].some((f) => new RegExp(`(^| )${esc(f)} (> )?[^+~ ]`).test(sel));
+    return [...green].filter((sel) => faded.has(sel) || underFadedParent(sel));
+  };
+
+  it('counts a faded parent as fading its green children, and a faded sibling as not', () => {
+    const green = 'color: var(--color-brand-text);';
+    expect(fadedGreen(`.a { opacity: 0.6; } .a strong { ${green} } .a>em { ${green} } .a + b { ${green} } .ab i { ${green} }`))
+      .toEqual(['.a strong', '.a > em']);
+  });
+
+  it.each([['styles.css', css], ['standalone.css', standaloneCss]])('%s never fades brand-green text with opacity', (_, sheet) => {
+    expect(fadedGreen(sheet)).toEqual([]);
   });
 
   it.each([['styles.css', css], ['standalone.css', standaloneCss]])('%s never puts a white label on the brand green', (_, sheet) => {
