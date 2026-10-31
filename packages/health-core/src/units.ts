@@ -708,6 +708,24 @@ export const LPA_THRESHOLDS = {
   elevated: 125,  // ≥125 nmol/L is elevated
 } as const;
 
+/**
+ * A value as it prints beside its grade: HbA1c and Lp(a) by
+ * `formatGradedValue` at each of their grade lines (5.7 and 6.5 %, 75 and
+ * 125 nmol/L), so 47 mmol/mol reads 6.45 % in the prediabetic range, not
+ * 6.5 %. The lines are many display steps apart, so at most one moves the
+ * number. Any other metric prints as `formatDisplayValue` (US-07 AC9).
+ */
+export function formatGradedReading(metric: MetricType, canonical: number, system: UnitSystem): string {
+  const lines = metric === 'hba1c' ? Object.values(HBA1C_THRESHOLDS)
+    : metric === 'lpa' ? Object.values(LPA_THRESHOLDS) : [];
+  const shown = formatDisplayValue(metric, canonical, system);
+  for (const line of lines) {
+    const graded = formatGradedValue(metric, canonical, system, line);
+    if (graded !== shown) return graded;
+  }
+  return shown;
+}
+
 // ---------------------------------------------------------------------------
 // Feet/inches conversion helpers (for US height display)
 // ---------------------------------------------------------------------------

@@ -7,7 +7,7 @@ import { STAT_CARD_EVIDENCE, getBmiEvidence, getIbwEvidence, getProteinEvidence 
 import { getEgfrStatus, getHba1cStatus, getLipidStatus, getLpaStatus, getProteinRate } from './calculations';
 import { lipidMarkerFor, type LipidMarker } from './suggestions';
 import {
-  APOB_THRESHOLDS, LDL_THRESHOLDS, NON_HDL_THRESHOLDS, formatDisplayValue, formatGradedValue, formatHeightDisplay,
+  APOB_THRESHOLDS, LDL_THRESHOLDS, NON_HDL_THRESHOLDS, formatDisplayValue, formatGradedReading, formatGradedValue, formatHeightDisplay,
   getDisplayLabel, isWaistToHeightElevated, type MetricType, type UnitSystem,
 } from './units';
 
@@ -157,14 +157,14 @@ export function statTiles(results: HealthResults, { unitSystem, unitOverrides, s
   }
   if (results.lpa !== undefined) {
     tiles.push({
-      key: 'lpa', label: 'Lp(a)', value: String(Math.round(results.lpa)), unit: 'nmol/L',
+      key: 'lpa', label: 'Lp(a)', value: formatGradedReading('lpa', results.lpa, 'si'), unit: 'nmol/L',
       status: reading(graded(getLpaStatus(results.lpa))), evidence: reading(STAT_CARD_EVIDENCE['lpa']),
     });
   }
   if (results.hba1c !== undefined) {
     tiles.push({
       key: 'hba1c', label: 'HbA1c',
-      value: formatDisplayValue('hba1c', results.hba1c, usFor('hba1c')), unit: getDisplayLabel('hba1c', usFor('hba1c')),
+      value: formatGradedReading('hba1c', results.hba1c, usFor('hba1c')), unit: getDisplayLabel('hba1c', usFor('hba1c')),
       status: reading(graded(getHba1cStatus(results.hba1c))), evidence: reading(STAT_CARD_EVIDENCE['hba1c']),
     });
   }
