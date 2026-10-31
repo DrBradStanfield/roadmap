@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import type { HealthResults, Suggestion } from '@roadmap/health-core';
+import type { AlcoholAnswer, HealthResults, Suggestion } from '@roadmap/health-core';
 import {
   type UnitSystem,
   type MetricType,
@@ -17,6 +17,7 @@ import { getSkipEmailGate } from '../lib/assistant-config';
 import { ColumnHeader } from './ColumnHeader';
 import { StorageNotice } from '../lib/storage-notice';
 import { FeedbackForm } from './FeedbackForm';
+import { alcoholDismiss } from './AlcoholQuestion';
 interface ResultsPanelProps {
   results: HealthResults | null;
   isValid: boolean;
@@ -39,6 +40,8 @@ interface ResultsPanelProps {
   remindersSection?: React.ReactNode;
   /** The panel's height changed outside its usual triggers (the phone's tab Swiper re-measures). */
   onLayoutChange?: () => void;
+  /** US-60: save the answer the "Reduce alcohol intake" card's Dismiss asks for; absent once answered. */
+  onAlcoholAnswer?: (answer: AlcoholAnswer) => void;
 }
 
 function StatCard({ label, value, status, evidence }: {
@@ -120,7 +123,9 @@ function SuggestionEvidence({ suggestion, open, onToggle }: { suggestion: Sugges
   );
 }
 
-function SuggestionCard({ suggestion, highlighted, fadingOut }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean }) {
+type AlcoholAnswerFn = (answer: AlcoholAnswer) => void;
+
+function SuggestionCard({ suggestion, highlighted, fadingOut, onAlcoholAnswer }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; onAlcoholAnswer?: AlcoholAnswerFn }) {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const hasEvidence = suggestionHasEvidence(suggestion);
   const isSupplementCard = suggestion.category === 'supplements';
@@ -139,6 +144,7 @@ function SuggestionCard({ suggestion, highlighted, fadingOut }: { suggestion: Su
             {suggestion.priority === 'urgent' && '⚠️ '}
             {suggestion.category.replace(/_/g, ' ')}
           </span>
+          {alcoholDismiss(suggestion, onAlcoholAnswer)}
         </div>
       )}
       <div className="suggestion-body" onClick={toggleEvidence}>
@@ -165,16 +171,18 @@ function SuggestionCard({ suggestion, highlighted, fadingOut }: { suggestion: Su
   );
 }
 
-function GroupedSubsection({ suggestion, highlighted, fadingOut }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean }) {
+function GroupedSubsection({ suggestion, highlighted, fadingOut, onAlcoholAnswer }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; onAlcoholAnswer?: AlcoholAnswerFn }) {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const hasEvidence = suggestionHasEvidence(suggestion);
   const highlightClass = fadingOut ? ' suggestion-highlight suggestion-fade-out'
     : highlighted ? ' suggestion-highlight' : '';
 
+  const dismiss = alcoholDismiss(suggestion, onAlcoholAnswer);
   const toggleEvidence = hasEvidence ? () => setEvidenceOpen(o => !o) : undefined;
 
   return (
     <div className={`suggestion-subsection${highlightClass}${hasEvidence ? ' suggestion-subsection-clickable' : ''}`}>
+      {dismiss && <div className="suggestion-subsection-actions">{dismiss}</div>}
       <div className="suggestion-body" onClick={toggleEvidence}>
         <h4 className="suggestion-title">
           {suggestion.link ? (
@@ -192,7 +200,7 @@ function GroupedSubsection({ suggestion, highlighted, fadingOut }: { suggestion:
   );
 }
 
-function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds }: { card: PlanCard; highlightedIds?: Set<string>; fadingOutIds?: Set<string> }) {
+function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds, onAlcoholAnswer }: { card: PlanCard; highlightedIds?: Set<string>; fadingOutIds?: Set<string>; onAlcoholAnswer?: AlcoholAnswerFn }) {
   const { suggestions, category, priority: highestPriority } = card;
 
   return (
@@ -205,7 +213,7 @@ function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds }: { card: P
       </div>
       <div className="grouped-subsections">
         {suggestions.map((s) => (
-          <GroupedSubsection key={s.id} suggestion={s} highlighted={highlightedIds?.has(s.id)} fadingOut={fadingOutIds?.has(s.id)} />
+          <GroupedSubsection key={s.id} suggestion={s} highlighted={highlightedIds?.has(s.id)} fadingOut={fadingOutIds?.has(s.id)} onAlcoholAnswer={onAlcoholAnswer} />
         ))}
       </div>
     </div>
@@ -213,10 +221,10 @@ function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds }: { card: P
 }
 
 /** A section's cards: grouped ones as one card, the rest one card each (layout: planSections). */
-function renderCards(cards: PlanCard[], highlightedIds: Set<string>, fadingOutIds: Set<string>) {
+function renderCards(cards: PlanCard[], highlightedIds: Set<string>, fadingOutIds: Set<string>, onAlcoholAnswer?: AlcoholAnswerFn) {
   return cards.map((card) => card.suggestions.length > 1
-    ? <GroupedSuggestionCard key={card.category} card={card} highlightedIds={highlightedIds} fadingOutIds={fadingOutIds} />
-    : <SuggestionCard key={card.suggestions[0].id} suggestion={card.suggestions[0]} highlighted={highlightedIds.has(card.suggestions[0].id)} fadingOut={fadingOutIds.has(card.suggestions[0].id)} />);
+    ? <GroupedSuggestionCard key={card.category} card={card} highlightedIds={highlightedIds} fadingOutIds={fadingOutIds} onAlcoholAnswer={onAlcoholAnswer} />
+    : <SuggestionCard key={card.suggestions[0].id} suggestion={card.suggestions[0]} highlighted={highlightedIds.has(card.suggestions[0].id)} fadingOut={fadingOutIds.has(card.suggestions[0].id)} onAlcoholAnswer={onAlcoholAnswer} />);
 }
 
 // 'skipped' + 'reminded' are US-44's funnel-page states: the block skips the
@@ -442,7 +450,7 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
   );
 }
 
-export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, onDeleteData, isDeleting, sex, showEmailCapture, formStage, syncControl, remindersSection, onLayoutChange }: ResultsPanelProps) {
+export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, onDeleteData, isDeleting, sex, showEmailCapture, formStage, syncControl, remindersSection, onLayoutChange, onAlcoholAnswer }: ResultsPanelProps) {
   // Track highlighted (new/changed) suggestion IDs
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
   const [fadingOutIds, setFadingOutIds] = useState<Set<string>>(new Set());
@@ -661,7 +669,7 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
         {planSections(results.suggestions).map((section) => (
           <div key={section.key} className={`suggestions-group${section.key === 'skin' || section.key === 'supplements' ? ` ${section.key}-group` : ''}`}>
             <h4 className={`suggestions-group-title ${section.key}`}>{section.title}</h4>
-            {renderCards(section.cards, highlightedIds, fadingOutIds)}
+            {renderCards(section.cards, highlightedIds, fadingOutIds, onAlcoholAnswer)}
           </div>
         ))}
       </section>

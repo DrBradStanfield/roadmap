@@ -11,7 +11,9 @@
  * text reaches the prompt unless it is allowlisted or bounded:
  *   - profile.sex, profile.heightCm: the input schema (enum; ranged number);
  *     profile.age is computed; profile.knownMinor is computed, true or absent
- *     (US-07 AC6); profile.unitSystem is 'si' or 'conventional'.
+ *     (US-07 AC6); profile.unitSystem is 'si' or 'conventional';
+ *     profile.alcohol (US-60) is 'does not drink' or 'drinks' from the
+ *     schema's two answers, absent when not answered.
  *     A known minor with no usable sex or height still gets a context, with
  *     no plan: profile.knownMinor and whatever passed the schema below, and
  *     no profile.age, missingInputs or currentSuggestions (US-07 AC6). Anyone
@@ -205,7 +207,11 @@ export function buildChatContextJson(payload: unknown): string | null {
 
   return JSON.stringify({
     // US-07 AC6: the plan's adults-only gate applies, so every surface's model knows.
-    profile: { sex: inputs.sex, age: results ? results.age : knownMinor ? undefined : ageOf(inputs), heightCm: inputs.heightCm, unitSystem, ...(knownMinor ? { knownMinor: true } : {}) },
+    profile: {
+      sex: inputs.sex, age: results ? results.age : knownMinor ? undefined : ageOf(inputs), heightCm: inputs.heightCm, unitSystem,
+      ...(knownMinor ? { knownMinor: true } : {}),
+      ...(inputs.alcohol ? { alcohol: inputs.alcohol === 'none' ? 'does not drink' : 'drinks' } : {}),
+    },
     latestValues,
     // US-15 AC33: what a bare latestValues number is in, whatever profile.unitSystem says (US-32 AC35's table).
     units: Object.fromEntries(Object.keys(latestValues).map(field => [field, FIELD_UNITS[field]])),

@@ -227,6 +227,16 @@ describe('the email-arrival counters', () => {
     expect(parseProductEvent({ eventName: 'blood_test_moved', visitorId: VISITOR, metadata: { count: 4 } })).toBeNull();
     expect(parseProductEvent({ eventName: 'blood_test_moved', visitorId: VISITOR, metadata: { provider: 'dropbox' } })).toBeNull();
   });
+
+  it('US-60: takes alcohol_question_answered from a browser by name alone, never with an answer', () => {
+    expect(parseProductEvent({ eventName: 'alcohol_question_answered', visitorId: VISITOR })).toEqual({
+      eventName: 'alcohol_question_answered',
+      visitorId: VISITOR,
+    });
+    for (const metadata of [{ answer: 'none' }, { choice: 'saved' }, { field: 'sex' }, { provider: 'dropbox' }, { count: 1 }]) {
+      expect(parseProductEvent({ eventName: 'alcohol_question_answered', visitorId: VISITOR, metadata })).toBeNull();
+    }
+  });
 });
 
 /** US-38 — the guide link's counter: which surface sent someone to the hub. */

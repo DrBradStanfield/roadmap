@@ -15,7 +15,7 @@ import { DRAFTS_CLEARED_EVENT, loadFromLocalStorage } from '../lib/storage';
 const interceptHistory = (metric: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
   if (openHistoryLightbox(metric)) e.preventDefault();
 };
-import type { HealthInputs, HealthResults, ScreeningInputs, WeightMedicationTrigger, LipidMarker } from '@roadmap/health-core';
+import type { AlcoholAnswer, HealthInputs, HealthResults, ScreeningInputs, WeightMedicationTrigger, LipidMarker } from '@roadmap/health-core';
 import {
   type UnitSystem,
   fromCanonicalValue,
@@ -86,6 +86,7 @@ import { AdditionalLabRows } from './AdditionalLabRows';
 import { useMoveTest, type MoveTestApi } from './MoveTestPanel';
 import { StartingInfoVitals, type VitalsPrefillFn } from './StartingInfoVitals';
 import { CommitTickButton } from './CommitTickButton';
+import { ALCOHOL_OPTIONS } from './AlcoholQuestion';
 import { StorageNotice } from '../lib/storage-notice';
 
 interface FieldConfig {
@@ -1097,6 +1098,18 @@ export function InputPanel({
           />
         </div>
       )}
+
+      {/* US-60: the answer the plan's "Reduce alcohol intake" Dismiss asks for. */}
+      <div className="health-field">
+        <label htmlFor="alcohol">Alcohol</label>
+        <select
+          id="alcohol"
+          value={inputs.alcohol ?? ''}
+          onChange={(e) => updateField('alcohol', (e.target.value || undefined) as AlcoholAnswer | undefined)}
+        >
+          {ALCOHOL_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </div>
     </div>
   );
 

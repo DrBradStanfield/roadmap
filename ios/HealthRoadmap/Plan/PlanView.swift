@@ -10,12 +10,14 @@ struct PlanView: View {
     let store: RecordStore
     /// Switches to the My data tab.
     let showMyData: () -> Void
+    @State private var refusal: String?
+    @Environment(\.analytics) private var analytics
 
     var body: some View {
         Group {
             switch store.plan {
             case .planned(let tiles, let sections, let ms):
-                PlanList(tiles: tiles, sections: sections, planMs: ms, showMyData: showMyData)
+                PlanList(tiles: tiles, sections: sections, planMs: ms, showMyData: showMyData, askAboutAlcohol: alcoholQuestion)
             case .needsDetails:
                 // health-core's PlanError: its own words are written for connectors, so
                 // people get a plain sentence.
@@ -29,6 +31,29 @@ struct PlanView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemGroupedBackground))
+        // The save lands after an await, outside any withAnimation, so the plan animates
+        // on the answer itself: the card "I don't drink" removes fades out and the rest
+        // close up, with the spring a card opens with. Nothing else animates the plan.
+        .animation(.spring(duration: 0.35, bounce: 0.2), value: store.myData?.profile.alcohol?.value)
+        .refusalAlert($refusal)
+    }
+
+    /// Offered only while the question is unanswered: after "I drink" the card stays, without
+    /// its Dismiss. Called at the tap, it checks the answer against the screen then, as a
+    /// sheet's save is (RecordPin.swift), so an erase in between refuses it.
+    private var alcoholQuestion: AlcoholQuestion? {
+        guard store.myData?.profile.alcohol?.value == nil else { return nil }
+        return { [store, analytics] in
+            let seen = store.screen
+            return { choice in
+                Task {
+                    switch await store.apply(.alcohol(choice), as: seen) {
+                    case .saved: analytics?.event(.alcoholAnswered)
+                    case .refused(let message, _): refusal = message
+                    }
+                }
+            }
+        }
     }
 
     /// The privacy line's words, with the engine's own whole milliseconds: a plan faster
@@ -52,11 +77,13 @@ struct PlanView: View {
 
 /// The summary tiles, then the plan's sections, whose cards rise in as they scroll into
 /// view, then the disclaimer and the privacy line.
-private struct PlanList: View {
+struct PlanList: View {
     let tiles: [StatTile]
     let sections: [PlanSection]
     let planMs: Double
     let showMyData: () -> Void
+    /// Asks "Do you drink alcohol?" (US-60); nil once it is answered.
+    let askAboutAlcohol: AlcoholQuestion?
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -74,11 +101,11 @@ private struct PlanList: View {
                             ForEach(section.cards) { card in
                                 // Tour tip 2 (US-57 AC6): the first Foundation step; its Next opens tip 3 on My data.
                                 if section.isFoundation, card.id == section.cards.first?.id {
-                                    PlanCardView(card: card).modifier(RiseIn())
+                                    PlanCardView(card: card, askAboutAlcohol: asksAboutAlcohol(card)).modifier(RiseIn())
                                         .id(Self.foundationCard)
                                         .tourTip(FoundationTip(), next: showMyData)
                                 } else {
-                                    PlanCardView(card: card).modifier(RiseIn())
+                                    PlanCardView(card: card, askAboutAlcohol: asksAboutAlcohol(card)).modifier(RiseIn())
                                 }
                             }
                         }
@@ -117,6 +144,11 @@ private struct PlanList: View {
             .tourStep(SnapshotTip(), hasNoAnchor: tiles.isEmpty)
             .tourStep(FoundationTip(), hasNoAnchor: !sections.contains { $0.isFoundation && !$0.cards.isEmpty })
         }
+    }
+
+    /// The question goes only to the card holding reduce-alcohol; the rest get nil, so they stay comparable.
+    func asksAboutAlcohol(_ card: PlanCard) -> AlcoholQuestion? {
+        card.suggestions.contains { $0.id == Suggestion.reduceAlcohol } ? askAboutAlcohol : nil
     }
 
     /// The scroll id of the Foundation section's first card.

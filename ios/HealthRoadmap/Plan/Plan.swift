@@ -24,6 +24,9 @@ struct Suggestion: Decodable, Identifiable {
     let references: [Reference]?
     /// A product's ingredient list, shown as bullets.
     let ingredients: [String]?
+
+    /// The one suggestion with a Dismiss button, which asks "Do you drink alcohol?" (US-60).
+    static let reduceAlcohol = "reduce-alcohol"
 }
 
 /// The Plan tab for one record, as the engine's `screenJson` gave it with My data (US-25 AC2).

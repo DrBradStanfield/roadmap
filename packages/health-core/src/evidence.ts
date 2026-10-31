@@ -181,7 +181,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'trig-nutrition': {
-    reason: 'Blood triglycerides are highly responsive to dietary changes — improvements can be seen within 2–3 weeks. The most effective dietary measures are reducing alcohol, sugar, and total calorie intake. Mendelian randomisation studies confirm that triglyceride-lowering reduces coronary heart disease risk.',
+    reason: 'Blood triglycerides are highly responsive to dietary changes — improvements can be seen within 2–3 weeks. The most effective dietary measures are reducing sugar and total calorie intake, and reducing alcohol for people who drink. Mendelian randomisation studies confirm that triglyceride-lowering reduces coronary heart disease risk.',
     guidelines: [],
     references: [
       { label: 'Ference 2019 – Triglyceride-lowering & coronary risk: Mendelian randomisation (JAMA)', url: 'https://doi.org/10.1001/jama.2018.20045' },

@@ -36,9 +36,12 @@ describe('statTiles (US-25 AC22)', () => {
     // BMI 25-29.9 with no waist: no label, the plan asks for the waist instead.
     expect(t.bmi).toMatchObject({ label: 'BMI', value: '25.2', unit: '' });
     expect(t.bmi.status).toBeUndefined();
-    expect(t.ibw).toMatchObject({ label: 'Ideal Body Weight', value: '60.0', unit: 'kg', status: { label: 'for 165 cm height', tone: 'normal' } });
+    expect(t.ibw).toMatchObject({ label: 'Ideal Body Weight', value: '60.0', unit: 'kg', status: { label: 'for 165 cm height' } });
+    // A fact, not a grade: no tone, so the app draws it gray (Brad 2026-10-31).
+    expect(t.ibw.status?.tone).toBeUndefined();
     expect(t.ibw.evidence).toEqual(getIbwEvidence('female'));
-    expect(t.protein).toMatchObject({ label: 'Protein Target', value: '72', unit: 'g/day', status: { label: '1.2g per kg IBW', tone: 'normal' } });
+    expect(t.protein).toMatchObject({ label: 'Protein Target', value: '72', unit: 'g/day', status: { label: '1.2g per kg IBW' } });
+    expect(t.protein.status?.tone).toBeUndefined();
     expect(t.ldl).toMatchObject({ label: 'LDL Cholesterol', value: '3.6', unit: 'mmol/L', status: { label: 'Borderline', tone: 'info' } });
     expect(t.ldl.evidence).toEqual(STAT_CARD_EVIDENCE['ldl']);
     expect(t.hba1c).toMatchObject({ label: 'HbA1c', value: '38', unit: 'mmol/mol', status: { label: 'Normal', tone: 'normal' } });

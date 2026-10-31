@@ -60,7 +60,8 @@ describe('waist-to-height tile', () => {
 
 describe('IBW and protein tiles', () => {
   it('reads IBW in the weight unit and height in the plan units', () => {
-    expect(tile({}, 'ibw')).toMatchObject({ label: 'Ideal Body Weight', value: '70.5', unit: 'kg', status: { label: 'for 175 cm height', tone: 'normal' } });
+    expect(tile({}, 'ibw')).toMatchObject({ label: 'Ideal Body Weight', value: '70.5', unit: 'kg', status: { label: 'for 175 cm height' } });
+    expect(tile({}, 'ibw')?.status?.tone).toBeUndefined(); // neutral gray (Brad 2026-10-31)
     expect(tile({}, 'ibw').evidence).toEqual(getIbwEvidence('male'));
     const us = tile({}, 'ibw', { unitSystem: 'conventional', sex: 'male' });
     expect(us.unit).toBe('lbs');
@@ -72,7 +73,8 @@ describe('IBW and protein tiles', () => {
   });
 
   it('lowers the protein rate below eGFR 45', () => {
-    expect(tile({}, 'protein')).toMatchObject({ label: 'Protein Target', value: '85', unit: 'g/day', status: { label: '1.2g per kg IBW', tone: 'normal' } });
+    expect(tile({}, 'protein')).toMatchObject({ label: 'Protein Target', value: '85', unit: 'g/day', status: { label: '1.2g per kg IBW' } });
+    expect(tile({}, 'protein')?.status?.tone).toBeUndefined();
     expect(tile({}, 'protein').evidence).toEqual(getProteinEvidence(70.5, 1.2, undefined));
     expect(tile({ eGFR: 40 }, 'protein').status?.label).toBe('1.0g per kg IBW');
   });

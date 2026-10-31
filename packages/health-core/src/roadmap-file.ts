@@ -22,7 +22,7 @@
  *    Profile and screenings also stamp each field (`fieldStamps`), so they
  *    merge field by field.
  */
-import type { Suggestion, ScreeningInputs } from './types';
+import type { AlcoholAnswer, Suggestion, ScreeningInputs } from './types';
 import type { MeasurementSource, MeasurementStatus, DocumentType } from './validation';
 import type { LpaUnit } from './units';
 
@@ -104,6 +104,12 @@ export interface RoadmapProfile extends FieldStamped {
    * button instead, so returning users aren't re-asked for their email.
    */
   reportEmailCaptured?: boolean;
+  /**
+   * The answer to "Do you drink alcohol?" (US-60). Absent: never answered.
+   * null: answered, then cleared with "Not answered" (a stamped clear, as
+   * US-10 AC9 clears any profile field). The plan drops `reduce-alcohol` for 'none'.
+   */
+  alcohol?: AlcoholAnswer | null;
 }
 
 /** One immutable measurement row (mirrors a `health_measurements` row, camelCase). */

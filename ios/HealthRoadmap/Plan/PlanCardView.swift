@@ -4,6 +4,8 @@ import SwiftUI
 /// more of one category (the web's `GroupedSuggestionCard` in ResultsPanel.tsx).
 struct PlanCardView: View {
     let card: PlanCard
+    /// Opens "Do you drink alcohol?" (US-60); only the reduce-alcohol suggestion offers it.
+    var askAboutAlcohol: AlcoholQuestion? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -19,22 +21,35 @@ struct PlanCardView: View {
                 .padding(.bottom, 4)
                 ForEach(card.suggestions) { suggestion in
                     Divider().padding(.leading, 16)
-                    SuggestionRow(suggestion: suggestion, showsIcon: false)
+                    SuggestionRow(suggestion: suggestion, showsIcon: false, dismiss: dismiss(for: suggestion))
                 }
             } else if let suggestion = card.suggestions.first {
-                SuggestionRow(suggestion: suggestion, showsIcon: true)
+                SuggestionRow(suggestion: suggestion, showsIcon: true, dismiss: dismiss(for: suggestion))
             }
         }
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
+
+    /// The Dismiss action, on the reduce-alcohol suggestion only (US-60): no other card can be dismissed.
+    func dismiss(for suggestion: Suggestion) -> AlcoholQuestion? {
+        suggestion.id == Suggestion.reduceAlcohol ? askAboutAlcohol : nil
+    }
 }
+
+/// "Do you drink alcohol?" (US-60): called at Dismiss's tap, it records the screen then
+/// and returns the save for the answer. Web twin: widget-src/src/components/AlcoholQuestion.tsx.
+typealias AlcoholQuestion = @MainActor () -> (MyData.Alcohol) -> Void
 
 /// A suggestion's title and two lines; a tap opens everything the web shows:
 /// the full text, ingredients, guideline tags, the reason and the references.
 private struct SuggestionRow: View {
     let suggestion: Suggestion
     let showsIcon: Bool
+    /// Shown as a Dismiss button under the text when set.
+    let dismiss: AlcoholQuestion?
     @State private var expanded = false
+    /// The open question's save, so its dialog's arrow points at this Dismiss.
+    @State private var answer: ((MyData.Alcohol) -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -69,6 +84,21 @@ private struct SuggestionRow: View {
             .sensoryFeedback(.selection, trigger: expanded)
             .accessibilityHint(expanded ? "Collapses the details" : "Shows the details")
             .accessibilityIdentifier("plan.suggestion")
+
+            if let dismiss {
+                Button("Dismiss") { answer = dismiss() }
+                    .font(.subheadline.weight(.medium))
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .confirmationDialog("Do you drink alcohol?", isPresented: Binding(get: { answer != nil }, set: { if !$0 { answer = nil } }), titleVisibility: .visible, presenting: answer) { save in
+                        ForEach(MyData.Alcohol.allCases, id: \.self) { choice in Button(choice.label) { save(choice) } }
+                    } message: { _ in
+                        Text("Your answer is kept in your record, so your plan follows it on every device. You can change it in My data, under About you.")
+                    }
+                    .padding(.leading, showsIcon ? 54 : 0)
+                    .accessibilityHint("Asks whether you drink alcohol")
+                    .accessibilityIdentifier("plan.dismissAlcohol")
+            }
 
             if expanded {
                 SuggestionDetails(suggestion: suggestion)

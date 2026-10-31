@@ -30,6 +30,7 @@ export function fileProfileToApi(p: RoadmapProfile): ApiProfile {
     firstName: null,
     lastName: null,
     height: p.heightCm ?? null,
+    alcohol: p.alcohol ?? null,
   };
 }
 

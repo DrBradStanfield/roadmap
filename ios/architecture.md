@@ -1455,6 +1455,30 @@ A new user answers sex, birth month and year, height and weight, one per screen,
    over-the-air update path (D3) was built 2026-10-22.
 2. **TestFlight:** every feature is built (2026-10-21); a real iPhone and Brad's
    accounts are owed (launch-checklist.md).
+### D13 · "Do you drink alcohol?": one profile answer, the engine drops the card (Brad, 2026-10-31, US-60)
+
+Only the reduce-alcohol suggestion has a Dismiss button (keyed off its id in
+`PlanCardView`), shown only while the answer is unanswered. It opens the app's usual
+confirmation dialog, attached to the button so its arrow points there, "I don't drink"
+or "I drink"; the answer is checked against the screen recorded at the tap. Plan:
+[docs/drafts/alcohol-question.md](../docs/drafts/alcohol-question.md).
+- **The answer is a profile field** (`profile.alcohol`), written by the engine's own edit
+  (`{kind: 'alcohol'}` in `engine/my-data.ts`, health-core's `stampProfile`), so it merges
+  field by field like the rest of the profile. "Not answered" in About you writes null, as
+  every cleared profile field is stored, so a clear merges as a write.
+- **Swift never filters cards.** "I don't drink" reaches the engine, which stops sending
+  the card. The plan animates on the answer alone (`.animation(value:)` on it: the save
+  lands after an await, outside any `withAnimation`), so the card fades out and the rest
+  close up while nothing else on the plan animates.
+- **Never re-asked.** "I drink" keeps the card, without its Dismiss; About you is the only
+  place to change it.
+- **No new bridge.** The edit and the field ride the existing `applyEditJson`/`screenJson`
+  doors; the contract file is unchanged. Swift reads the field leniently, so a value it
+  does not know shows as "Not answered", never a broken My data.
+- **Usage signal:** Clarity's "Alcohol answered", sent from the plan's dialog only, never
+  the answer (D9). The chat allow-list (`ChatClient.contextKeys`) carries health-core's
+  new `alcohol` key, so the chat knows a non-drinker.
+
 3. **Health Records labs and camera lab upload.**
 4. **App Store submission.**
 

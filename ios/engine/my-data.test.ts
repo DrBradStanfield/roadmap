@@ -137,7 +137,7 @@ describe('myData (AC5)', () => {
 
   it('shows the profile, height in the user\'s units', () => {
     const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'profile', sex: 'female', birthYear: 1970, birthMonth: 4, height: 165 });
-    expect(myData(file).profile).toEqual({ sex: 'female', birthYear: 1970, birthMonth: 4, height: '165', heightUnit: 'cm', feetInches: null });
+    expect(myData(file).profile).toEqual({ sex: 'female', birthYear: 1970, birthMonth: 4, height: '165', heightUnit: 'cm', feetInches: null, alcohol: null });
   });
 });
 
@@ -672,5 +672,63 @@ describe('Lp(a) unit (US-05 AC2, US-25 AC20)', () => {
     const text = (f: RoadmapFile) => JSON.stringify(JSON.parse(planJson(JSON.stringify(f), NOW, 'phone')).results.suggestions);
     expect(text(file)).toContain('Lp(a): 124 nmol/L');
     expect(text(inUnit(file, 'mg/dL'))).toEqual(text(file));
+  });
+});
+
+// US-60: "Do you drink alcohol?", asked from the reduce-alcohol card and in About you.
+// The phone writes the answer to profile.alcohol; the engine alone drops the card.
+describe('alcohol (US-60)', () => {
+  const base = () => edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'profile', sex: 'male', birthYear: 1970, height: 175 });
+  const answer = (file: RoadmapFile, alcohol: 'none' | 'drinks' | null, at = LATER) => {
+    const outcome = applyEdit(file, { kind: 'alcohol', alcohol }, at);
+    if (!outcome.ok) throw new Error(outcome.message);
+    return outcome.file;
+  };
+
+  it('saves the answer field-stamped, shows it in My data, and writes nothing for the same answer', () => {
+    const file = base();
+    expect(myData(file).profile.alcohol).toBeNull();
+    const none = answer(file, 'none');
+    expect(none.profile.alcohol).toBe('none');
+    expect(none.profile.fieldStamps?.alcohol).toBeDefined();
+    expect(myData(none).profile.alcohol).toBe('none');
+    expect(myData(answer(none, 'drinks')).profile.alcohol).toBe('drinks');
+    expect(applyEdit(none, { kind: 'alcohol', alcohol: 'none' }, LATER)).toEqual({ ok: true, file: none });
+    expect(applyEdit(file, { kind: 'alcohol', alcohol: null }, LATER)).toEqual({ ok: true, file });
+    expect(applyEdit(file, { kind: 'alcohol', alcohol: 'sometimes' as never }, LATER)).toMatchObject({ ok: false, reason: 'invalid-value' });
+  });
+
+  it('"Not answered" clears it with null, which survives the file and merges as a write (M2)', () => {
+    const none = answer(base(), 'none');
+    const cleared = answer(none, null, '2026-10-21T10:00:00.000Z');
+    expect(cleared.profile.alcohol).toBeNull();
+    const reread = readRecord(JSON.stringify(cleared), LATER, 'phone');
+    expect(reread.profile.alcohol).toBeNull();
+    expect(myData(reread).profile.alcohol).toBeNull();
+    // The clear is newer than the answer on the other copy, in either order.
+    expect(mergeFiles(none, cleared, { deviceId: 'web', now: LATER }).profile.alcohol ?? null).toBeNull();
+    expect(mergeFiles(cleared, none, { deviceId: 'phone', now: LATER }).profile.alcohol ?? null).toBeNull();
+    // And an answer given after the clear wins over it.
+    const again = answer(cleared, 'drinks', '2026-10-21T11:00:00.000Z');
+    expect(mergeFiles(cleared, again, { deviceId: 'web', now: LATER }).profile.alcohol).toBe('drinks');
+  });
+
+  it('shows a value it does not know as not answered, and every other profile write keeps the answer', () => {
+    const odd = base();
+    expect(myData({ ...odd, profile: { ...odd.profile, alcohol: 'sometimes' as never } }).profile.alcohol).toBeNull();
+    const none = answer(base(), 'none');
+    const later = edited(none, { kind: 'profile', birthMonth: 6 }, { kind: 'units', unitSystem: 'conventional' }, { kind: 'lpaUnit', unit: 'mg/L' },
+      { kind: 'profile', heightFeet: 5, heightInches: 10 });
+    expect(later.profile.alcohol).toBe('none');
+    expect(readRecord(JSON.stringify(later), LATER, 'phone').profile.alcohol).toBe('none');
+  });
+
+  it('the engine drops the reduce-alcohol card for "I don\'t drink" and keeps it for "I drink"', () => {
+    const heavy = edited(base(), { kind: 'add', metric: 'weight', value: 100, day: '2026-10-01' });
+    const ids = (f: RoadmapFile) => (JSON.parse(planJson(JSON.stringify(f), NOW, 'phone')).results.suggestions as { id: string }[]).map((s) => s.id);
+    expect(ids(heavy)).toContain('reduce-alcohol');
+    expect(ids(answer(heavy, 'drinks'))).toContain('reduce-alcohol');
+    expect(ids(answer(heavy, 'none'))).not.toContain('reduce-alcohol');
+    expect(ids(answer(answer(heavy, 'none'), null, '2026-10-21T10:00:00.000Z'))).toContain('reduce-alcohol');
   });
 });

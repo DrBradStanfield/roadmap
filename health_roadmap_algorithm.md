@@ -656,8 +656,20 @@ Three-file sync for this section's 2026-10-14 amendments (the strict missing-mon
 |----|-----------|----------|-------|
 | `low-salt` | systolicBp > 120 (age < 65) or > 130 (age >= 65) | info | Target: <1,500 mg/day (ACC/AHA 2017) |
 | `high-potassium` | eGFR >= 45 (safe kidney function) | info | |
-| `trig-nutrition` | triglycerides 150 mg/dL (about 1.7 mmol/L) or more | attention | |
-| `reduce-alcohol` | BMI >= 30, OR (BMI >= 25 AND WHtR >= 0.5), OR triglycerides 150 mg/dL (about 1.7 mmol/L) or more | attention | |
+| `trig-nutrition` | triglycerides 150 mg/dL (about 1.7 mmol/L) or more | attention | Its text names "limit alcohol" among the key measures, except for someone who answered "I don't drink": then "Key measures: reduce sugar intake, and reduce total fat and calorie intake." (US-60, Brad 2026-10-31). Its evidence reason is one text for everyone: "reducing sugar and total calorie intake, and reducing alcohol for people who drink." |
+| `reduce-alcohol` | (BMI >= 30, OR (BMI >= 25 AND WHtR >= 0.5), OR triglycerides 150 mg/dL (about 1.7 mmol/L) or more), and the person has not answered "I don't drink" | attention | "I drink" or no answer keeps the card (US-60) |
+
+### The Alcohol Question (US-60)
+
+The plan asks one question, from the "Reduce alcohol intake" card's Dismiss button: "Do you drink alcohol?" There are two answers, "I don't drink" and "I drink" (Brad 2026-10-31, C1).
+
+- **Where it lives:** `profile.alcohol` in the record, `'none'` or `'drinks'`; the plan reads it as `HealthInputs.alcohol`. Absent means not answered.
+- **What it changes:** "I don't drink" leaves out `reduce-alcohol` and drops "limit alcohol" from `trig-nutrition`'s text (above). "I drink" changes nothing: the card stays (C4). `trig-very-high` is unchanged for everyone (C3).
+- **Changing it:** the Alcohol row in Starting Info (web) or About you (iPhone) shows Not answered, I don't drink and I drink. Not answered clears the field (a stamped null, as any cleared profile field), and the card comes back (M2).
+- **Never re-asked:** the plan does not ask again on its own; the answer stays until the person changes it (C5).
+- **Across devices:** the profile merges field by field, newest write wins, so the last answer given on any device wins (M1).
+
+Three-file sync: `evidence.ts` changes one sentence, `trig-nutrition`'s reason (above); `trig-very-high`'s and `reduce-alcohol`'s reasons are unchanged. `roadmap_text.html` is unchanged: it gives no triglyceride advice about alcohol, and its alcohol lines ("No Smoking and Limited (ideally no) Alcohol Consumption", the blood pressure and sleep lists) are general guidance for everyone, not a card's text.
 
 ### HbA1c Tiers
 
@@ -705,6 +717,8 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 |----|-----------|----------|
 | `hdl-low` | HDL < sex-specific threshold | attention |
 | `trig-very-high` | triglycerides >= 5.64 mmol/L (500 mg/dL) — pancreatitis risk | urgent |
+
+`trig-very-high` is the same for everyone, the alcohol answer included: its evidence reason keeps "strict alcohol and sugar avoidance" on purpose for a non-drinker too (US-60 C3, Brad 2026-10-31). It is an urgent safety card, and the advice does no harm to someone who does not drink.
 
 ### Blood Pressure Tiers
 
@@ -1082,7 +1096,7 @@ Logic checks from stage 3 down (short-circuit), so returning users skip to full 
 
 ### Field Categories
 
-**PREFILL_FIELDS** (auto-saved with debounce): `heightCm`, `sex`, `birthYear`, `birthMonth`. `unitSystem` is also auto-saved but not in the array.
+**PREFILL_FIELDS** (auto-saved with debounce): `heightCm`, `sex`, `birthYear`, `birthMonth`, `alcohol` (US-60). `unitSystem` is also auto-saved but not in the array.
 
 **LONGITUDINAL_FIELDS** (immutable time-series, "Save New Values" button): `weightKg`, `waistCm`, `hba1c`, `creatinine`, `psa`, `apoB`, `ldlC`, `totalCholesterol`, `hdlC`, `triglycerides`, `systolicBp`, `diastolicBp`, `lpa`.
 
@@ -1171,6 +1185,7 @@ Medications stored with separate fields for drug identity and dosage (FHIR Medic
 ### Status Derivation
 
 Automatic from `drug_name`:
+- `alcohol`: `'none'` or `'drinks'`; absent or null is not answered (US-60). Any other value reads as not answered.
 - `'none'` -> `'not-taken'`
 - `'not_tolerated'` -> `'stopped'`
 - `'not_yet'` -> `'intended'`

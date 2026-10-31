@@ -25,6 +25,9 @@ import {
   LPA_THRESHOLDS,
 } from './units';
 
+/** The card whose Dismiss asks "Do you drink alcohol?" (US-60). */
+export const REDUCE_ALCOHOL_ID = 'reduce-alcohol';
+
 /** Dietary advice for elevated lipids — shared between suggestion card and InputPanel medication cascade */
 export const LIPID_DIET_ADVICE = 'Specific foods can lower LDL cholesterol: oats, walnuts, almonds, ground flaxseed, edamame, and replacing butter with extra-virgin olive oil. If you don\'t have IBS or IBD, beans, lentils, chickpeas, and mixed vegetables are also great options. Psyllium husk is a soluble fibre that is well-tolerated even with IBS or IBD; discuss with your doctor whether it fits your routine.';
 
@@ -285,19 +288,21 @@ export function generateSuggestions(
       category: 'nutrition',
       priority: 'attention',
       title: 'Reduce triglycerides with diet',
-      description: 'Blood triglycerides are very diet-sensitive—improvements can be seen within 2-3 weeks. Key measures: limit alcohol, reduce sugar intake, and reduce total fat and calorie intake.',
+      // US-60: no "limit alcohol" for someone who has said they don't drink.
+      description: `Blood triglycerides are very diet-sensitive—improvements can be seen within 2-3 weeks. Key measures: ${inputs.alcohol === 'none' ? '' : 'limit alcohol, '}reduce sugar intake, and reduce total fat and calorie intake.`,
     });
   }
 
-  // Reduce alcohol — when obesity (BMI >= 30), or overweight with central adiposity, or triglycerides elevated
+  // Reduce alcohol — when obesity (BMI >= 30), or overweight with central adiposity, or triglycerides elevated,
+  // unless the person has said they don't drink (US-60)
   const whrForAlcohol = results.waistToHeightRatio;
-  if (
+  if (inputs.alcohol !== 'none' && (
     (results.bmi !== undefined && results.bmi >= 30) ||
     (results.bmi !== undefined && results.bmi >= 25 && whrForAlcohol !== undefined && isWaistToHeightElevated(whrForAlcohol)) ||
     (inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline)
-  ) {
+  )) {
     suggestions.push({
-      id: 'reduce-alcohol',
+      id: REDUCE_ALCOHOL_ID,
       category: 'nutrition',
       priority: 'attention',
       title: 'Reduce alcohol intake',

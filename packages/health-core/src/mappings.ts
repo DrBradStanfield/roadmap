@@ -7,8 +7,8 @@
  * Demographics (sex, birthYear, birthMonth, unitSystem) are stored on the
  * profiles table, not as measurements. Use diffProfileFields() for those.
  */
-import type { HealthInputs } from './types';
-import { encodeSex, decodeSex, encodeUnitSystem, decodeUnitSystem } from './types';
+import type { AlcoholAnswer, HealthInputs } from './types';
+import { encodeSex, decodeSex, encodeUnitSystem, decodeUnitSystem, isAlcoholAnswer } from './types';
 import { CANONICAL_UNITS, UNIT_DEFS, type MetricType } from './units';
 import { parseLocalisedNumber } from './parseNumber';
 
@@ -100,11 +100,12 @@ export const METRIC_LABELS: Record<string, string> = {
 };
 
 /**
- * Fields that are always pre-filled from saved data (demographics + height).
+ * Fields that are always pre-filled from saved data (demographics + height,
+ * and the alcohol answer, US-60).
  * These are mutable profile-level data or rarely-changing measurements.
  */
 export const PREFILL_FIELDS: ReadonlyArray<keyof HealthInputs> = [
-  'heightCm', 'sex', 'birthYear', 'birthMonth',
+  'heightCm', 'sex', 'birthYear', 'birthMonth', 'alcohol',
 ];
 
 /**
@@ -423,6 +424,8 @@ export interface ApiProfile {
   firstName: string | null;
   lastName: string | null;
   height: number | null;
+  /** US-60: the alcohol answer; absent or null when not answered. */
+  alcohol?: AlcoholAnswer | null;
 }
 
 /**
@@ -457,6 +460,10 @@ export function measurementsToInputs(
     }
     if (profile.height != null) {
       (inputs as any).heightCm = profile.height;
+    }
+    // The file may be hand-edited: only the two answers count (US-60).
+    if (isAlcoholAnswer(profile.alcohol)) {
+      inputs.alcohol = profile.alcohol;
     }
   }
 
