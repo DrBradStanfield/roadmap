@@ -18,8 +18,9 @@ export const ALCOHOL_OPTIONS: ReadonlyArray<{ value: AlcoholAnswer | ''; label: 
 /**
  * The Dismiss for `reduce-alcohol` (US-60 AC3), or null: `onAnswer` is absent
  * once the question is answered, so "I drink" leaves the card with no Dismiss.
- * The answer saves on the click, so no deferred write can outlive an erase
- * (US-16 AC2a); "I don't drink" takes the card off the plan with it.
+ * The answer goes into the form on the click and saves through the profile's
+ * debounced autosave, which keeps the erase the screen showed then (US-16 AC2a);
+ * "I don't drink" takes the card off the plan at once.
  */
 export function alcoholDismiss(suggestion: Suggestion, onAnswer?: (answer: AlcoholAnswer) => void) {
   return suggestion.id === REDUCE_ALCOHOL_ID && onAnswer ? <AlcoholDismiss onChoose={onAnswer} /> : null;

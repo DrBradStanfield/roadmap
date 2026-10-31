@@ -69,7 +69,7 @@ import {
   type RoadmapFile,
   type RoadmapProfile,
 } from '@roadmap/health-core';
-import { ROADMAP_DOC } from '@roadmap/health-core';
+import { isAlcoholAnswer, ROADMAP_DOC } from '@roadmap/health-core';
 import { type EraseResult, type EraseSteps, type RecordHost, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { webRecordHost } from './web-record-host';
@@ -447,6 +447,8 @@ export class RoadmapStore {
       const v = (p as unknown as Record<string, unknown>)[field];
       if (v != null) (out as Record<string, unknown>)[field] = v;
     }
+    // A hand-edited file may hold any value: only the two answers reach the form (US-60).
+    if (!isAlcoholAnswer(out.alcohol)) delete out.alcohol;
     if (p.unitSystem !== undefined) out.unitSystem = p.unitSystem;
     return out;
   }

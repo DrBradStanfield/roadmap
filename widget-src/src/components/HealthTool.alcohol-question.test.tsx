@@ -73,8 +73,8 @@ it('US-60 AC3: "I don\'t drink" takes the card off the plan and saves the answer
   expect(view.container.querySelectorAll('.suggestion-dismiss')).toHaveLength(1);
   fireEvent.click(within(dialog()!).getByText("I don't drink"));
   expect(dialog()).toBeNull();
-  // US-16 AC2a: the answer is in the form on the click, with no deferred
-  // write that could land in a record erased meanwhile; the card leaves at once.
+  // The answer is in the form on the click, so the card leaves at once; it saves
+  // through the profile autosave and its erase guard (US-16 AC2a).
   expect(alcoholCard(view.container)).toBeUndefined();
   await persist();
   expect(saved().profile.alcohol).toBe('none');

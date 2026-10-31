@@ -103,3 +103,15 @@ it('US-10 AC9: an erase mismatch refuses a clear without changing the saved reco
   await vi.advanceTimersByTimeAsync(2000);
   expect(cloud.files.get(ROADMAP_FILE_NAME)).toEqual(before);
 });
+
+it('US-60 AC2: a hand-edited alcohol value never reaches the form; the two answers do', async () => {
+  const cloud = new MemoryCloud();
+  const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+  store.saveChangedMeasurements({ heightCm: 178 }, {});
+  await store.flush();
+  const file: RoadmapFile = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
+  for (const [stored, read] of [['sometimes', undefined], ['none', 'none'], ['drinks', 'drinks']] as const) {
+    cloud.files.set(ROADMAP_FILE_NAME, { ...cloud.files.get(ROADMAP_FILE_NAME)!, json: JSON.stringify({ ...file, profile: { ...file.profile, alcohol: stored } }) });
+    expect((await RoadmapStore.create(new MemoryAdapter(cloud))).getPrefillInputs().alcohol).toBe(read);
+  }
+});

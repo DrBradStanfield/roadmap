@@ -1446,15 +1446,6 @@ A new user answers sex, birth month and year, height and weight, one per screen,
   Health Roadmap" connects the cloud first, then asks only what is missing.
 - **No usage event** (D9 holds): App Store Connect retention is the signal.
 
-## Phases
-
-0. **Readiness (Brad, in progress 2026-10-21):** macOS upgrade, Xcode 26, Apple Developer
-   Program as the company (D-U-N-S), a test iPhone.
-1. **Spike, go/no-go:** done 2026-10-21 for the engine, Dropbox sync (stubbed and
-   Node-tested; the live check waits on a sign-in) and Apple Health (simulator). The
-   over-the-air update path (D3) was built 2026-10-22.
-2. **TestFlight:** every feature is built (2026-10-21); a real iPhone and Brad's
-   accounts are owed (launch-checklist.md).
 ### D13 · "Do you drink alcohol?": one profile answer, the engine drops the card (Brad, 2026-10-31, US-60)
 
 Only the reduce-alcohol suggestion has a Dismiss button (keyed off its id in
@@ -1479,6 +1470,15 @@ or "I drink"; the answer is checked against the screen recorded at the tap. Plan
   the answer (D9). The chat allow-list (`ChatClient.contextKeys`) carries health-core's
   new `alcohol` key, so the chat knows a non-drinker.
 
+## Phases
+
+0. **Readiness (Brad, in progress 2026-10-21):** macOS upgrade, Xcode 26, Apple Developer
+   Program as the company (D-U-N-S), a test iPhone.
+1. **Spike, go/no-go:** done 2026-10-21 for the engine, Dropbox sync (stubbed and
+   Node-tested; the live check waits on a sign-in) and Apple Health (simulator). The
+   over-the-air update path (D3) was built 2026-10-22.
+2. **TestFlight:** every feature is built (2026-10-21); a real iPhone and Brad's
+   accounts are owed (launch-checklist.md).
 3. **Health Records labs and camera lab upload.**
 4. **App Store submission.**
 
