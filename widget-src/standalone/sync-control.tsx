@@ -11,7 +11,7 @@
  * listener below is the only listener.
  */
 import React, { useEffect, useState } from 'react';
-import { GoogleDriveAdapter, isSyncPending, SYNC_PENDING_EVENT } from '../src/storage';
+import { gisReady, GoogleDriveAdapter, isSyncPending, preloadGis, SYNC_PENDING_EVENT } from '../src/storage';
 import { googleDriveConfig } from './google-config';
 import { adapterFor, connectRefusal, forgetBackend, liftLocalInto, PROVIDER_LABELS, rememberBackend, storageState, useBusyRun, type Backend } from './connect';
 import { BackendPickerModal } from './backend-picker';
@@ -24,6 +24,91 @@ import { safeGetItem, safeSetItem } from '../src/lib/storage';
 const STORAGE_CTA_SEEN_KEY = 'hr_storage_cta_seen';
 /** The same, for this page's life, in case storage throws. */
 let storageCtaSeen = false;
+
+/** "Still waiting to sync": driven by the store's pending-sync marker, set by a
+ *  failed cloud save or a failed connect-time lift and cleared by the next
+ *  successful cloud save. The store fires SYNC_PENDING_EVENT on every flip, so
+ *  this is true only while data is genuinely unsynced; no polling. */
+function usePendingSync(backend: Backend): boolean {
+  const [pendingSync, setPendingSync] = useState(false);
+  useEffect(() => {
+    if (backend === 'local') return;
+    const check = () => setPendingSync(isSyncPending());
+    check();
+    window.addEventListener(SYNC_PENDING_EVENT, check);
+    return () => window.removeEventListener(SYNC_PENDING_EVENT, check);
+  }, [backend]);
+  return pendingSync;
+}
+
+/** US-09 AC30: the top bar's label, from the real storage state (storageState's
+ *  three, plus pending sync), so it never claims what is not true. A reconnect
+ *  session runs on 'local', so it is asked first. */
+function storageBarLabel(backend: Backend, reconnect: Exclude<Backend, 'local'> | undefined, pendingSync: boolean): string {
+  // Only Drive can re-auth in place; the others only try the read again, as the panel says.
+  if (reconnect) return reconnect === 'google-drive' ? 'Sign in to Google again' : 'Retry';
+  if (backend === 'local') return 'Sign in';
+  return pendingSync ? 'Saving…' : PROVIDER_LABELS[backend];
+}
+
+/** One reconnect at a time across the bar and the panel (both mount the hook). */
+let reconnectInFlight = false;
+
+/** US-09 AC30: said instead of starting a popup the browser would block. */
+export const GIS_LOADING = 'Google is loading. Tap again.';
+
+/** US-09 AC13: the way back to a provider that could not be read this session,
+ *  shared by the plan panel and the top bar so the two cannot drift. Drive
+ *  re-auths through the GIS popup FALLBACK (~1 h token), which works even with
+ *  the exchange endpoint down and needs this click's user gesture, so it starts
+ *  synchronously inside the click; local edits made while signed out merge up
+ *  before the reload. The others can only try the read again. */
+function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
+  const { busy, error, setError, run } = useBusyRun();
+  // GIS loads on mount, so the click can open the popup synchronously.
+  useEffect(() => { if (reconnect === 'google-drive') preloadGis(); }, [reconnect]);
+  const reconnectNow = (): void => {
+    if (reconnect !== 'google-drive') { location.reload(); return; }
+    // Still loading: a popup started now would outlast the click and be blocked.
+    if (!gisReady()) { preloadGis(); setError(GIS_LOADING); return; }
+    if (reconnectInFlight) return;
+    reconnectInFlight = true;
+    void run(async () => {
+      try {
+        const gd = new GoogleDriveAdapter(googleDriveConfig());
+        await gd.connectViaPopup().catch((error: unknown) => { connectRefusal(error); throw error; });
+        await liftLocalInto(gd, 'google-drive');
+        rememberBackend('google-drive');
+        location.reload();
+      } finally {
+        reconnectInFlight = false;
+      }
+    });
+  };
+  return { busy, error, run, reconnectNow };
+}
+
+/** US-09 AC30: the top bar's storage button, where "Supercharge this tool" sat.
+ *  A record that could not be read runs the panel's own reconnect; every other
+ *  state opens the one picker, which SyncControl hosts (AC13). */
+export function StorageBar({ backend, reconnect }: { backend: Backend; reconnect?: Exclude<Backend, 'local'> }) {
+  const pendingSync = usePendingSync(backend);
+  const { busy, error, reconnectNow } = useReconnect(reconnect);
+  return (
+    <>
+      <button
+        type="button"
+        className="action-btn-small"
+        aria-haspopup={reconnect ? undefined : 'dialog'}
+        disabled={busy}
+        onClick={reconnect ? reconnectNow : openBackendPicker}
+      >
+        {busy ? 'Reconnecting…' : storageBarLabel(backend, reconnect, pendingSync)}
+      </button>
+      {error && <span className="hr-sync-error" role="alert">{error}</span>}
+    </>
+  );
+}
 
 export function SyncControl({ backend, reconnect, hasData = true, attention = false }: {
   backend: Backend;
@@ -38,7 +123,7 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
   const [pickerOpen, setPickerOpen] = useState(false);
   // Unreadable storage counts as unseen, so the pulse lasts only this page's life.
   const [ctaSeen, setCtaSeen] = useState(() => storageCtaSeen || !!safeGetItem(STORAGE_CTA_SEEN_KEY));
-  const { busy, error, run } = useBusyRun();
+  const { busy, error, run, reconnectNow } = useReconnect(reconnect);
 
   // Every route to the picker passes here, so any opening stops the pulse.
   useEffect(() => {
@@ -52,32 +137,7 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
     return () => window.removeEventListener(OPEN_PICKER_EVENT, open);
   }, []);
 
-  // "Still waiting to sync" indicator — driven by the store's pending-sync
-  // marker: set by a failed cloud save or a failed connect-time lift, cleared
-  // by the next successful cloud save. The store fires SYNC_PENDING_EVENT on
-  // every flip (same convention as the hr:* reminder events), so the line
-  // appears only while data is genuinely unsynced and clears the moment it
-  // lands — no polling.
-  const [pendingSync, setPendingSync] = useState(false);
-  useEffect(() => {
-    if (backend === 'local') return;
-    const check = () => setPendingSync(isSyncPending());
-    check();
-    window.addEventListener(SYNC_PENDING_EVENT, check);
-    return () => window.removeEventListener(SYNC_PENDING_EVENT, check);
-  }, [backend]);
-
-  // Reconnect via the GIS popup FALLBACK (~1 h token) — works even with the
-  // exchange endpoint down; needs this click's user gesture. Local edits made
-  // while signed out merge up before the reload.
-  const reconnectDrive = (): Promise<void> =>
-    run(async () => {
-      const gd = new GoogleDriveAdapter(googleDriveConfig());
-      await gd.connectViaPopup().catch((error: unknown) => { connectRefusal(error); throw error; });
-      await liftLocalInto(gd, 'google-drive');
-      rememberBackend('google-drive');
-      location.reload();
-    });
+  const pendingSync = usePendingSync(backend);
 
   // Forget the unreachable connection (no copy-down needed — this session
   // already runs on the device copy; the cloud file stays put).
@@ -105,7 +165,7 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
         <button
           className="hr-sync-btn"
           disabled={busy}
-          onClick={() => (drive ? void reconnectDrive() : location.reload())}
+          onClick={reconnectNow}
         >
           {drive ? (busy ? 'Reconnecting…' : `Reconnect ${label}`) : 'Retry'}
         </button>
@@ -170,7 +230,7 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
       {/* An unreachable provider is still the CURRENT one: the picker must copy
           it down (and fail loudly if it cannot) before any switch, or the
           record is orphaned there (US-09 AC13). */}
-      {pickerOpen && <BackendPickerModal current={reconnect ?? backend} onClose={() => setPickerOpen(false)} />}
+      {pickerOpen && <BackendPickerModal current={reconnect ?? backend} unreachable={!!reconnect} onClose={() => setPickerOpen(false)} />}
     </>
   );
 }
