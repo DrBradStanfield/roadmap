@@ -145,7 +145,7 @@ Compact inventory. Tests sit beside their file (`*.test.ts`) and are not listed.
 
 **Shopify extension (`extensions/health-tool-widget/`):** `blocks/app-block.liquid` (skeleton + A/B inline script, passes customer data) · `chat-embed.liquid` · `chatbot-embed.liquid` · `clarity-embed.liquid` · built `assets/` (`health-plan-v2.js/.css`, `health-plan-v2-HistoryPanel.js`, `health-upload.js`, `health-site-chat.*`, `health-chatbot-embed.*`).
 
-**Infrastructure:** `supabase/rls-policies.sql` (operational schema + RLS; retired v1 tables still declared) · `.github/workflows/`: `ci.yml` (tests on PRs + pushes to main), `deploy.yml` (gate, Pages WebKit smoke, full suite, `tsc --noEmit` for widget-src + health-core, builds, Sentry maps, Shopify ×2, Fly ×2 canary, health gates, live WebKit verify), `pages.yml`, `claude-review.yml` + `auto-ship.yml` (Tier 3 loop pipeline), `loop-issue-notify.yml`, `stranded-branch-watch.yml`, `workflow-integrity.yml` · `fly.toml` / `fly.edu.toml`, `shopify.app.toml` / `shopify.app.edu.toml`.
+**Infrastructure:** `supabase/rls-policies.sql` (operational schema + RLS; retired v1 tables still declared) · `.github/workflows/`: `ci.yml` (tests on PRs + pushes to main), `deploy.yml` (gate, Pages WebKit smoke, full suite, `tsc --noEmit` for widget-src + health-core, builds, Sentry maps, Shopify ×2, Fly ×2 canary, health gates, live WebKit verify), `pages.yml`, `claude-review.yml` + `auto-ship.yml` (Tier 3 loop pipeline), `loop-issue-notify.yml`, `stranded-branch-watch.yml`, `stale-pr-watch.yml` (open PRs idle >48h, one refreshed issue), `workflow-integrity.yml` · `fly.toml` / `fly.edu.toml`, `shopify.app.toml` / `shopify.app.edu.toml`.
 
 ## Data Model
 
