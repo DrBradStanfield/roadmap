@@ -6,7 +6,7 @@
  * comment + bot response, and sends it via Resend so Brad can audit the
  * bot's behaviour each morning.
  *
- * Mirrors reminder-cron.server.ts / trending-cron.server.ts: setInterval at
+ * Mirrors reminder-v2-cron.server.ts / trending-cron.server.ts: setInterval at
  * hourly cadence, distributed lock via cron_lock so only one Fly machine sends
  * per day, fast local skip to avoid double-processing inside a single machine.
  *

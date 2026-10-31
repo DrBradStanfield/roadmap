@@ -224,7 +224,8 @@ describe('readNumber (AC5, adversary R2)', () => {
   // phone picks the one reading in range as the web does. Input bounds, not targets.
   it('My data carries each metric\'s input range by unit, Lp(a) in its own three (US-02 AC7)', () => {
     const { inputRanges } = myData(newRecord(NOW, 'd', 'en-NZ', 'Pacific/Auckland'), NOW);
-    expect(inputRanges.weight).toEqual({ si: { min: 20, max: 300 }, conventional: { min: 44, max: 661 } });
+    // 45, not 44: 44 lbs is 19.96 kg, under the record's 20 kg floor (US-05 AC2b).
+    expect(inputRanges.weight).toEqual({ si: { min: 20, max: 300 }, conventional: { min: 45, max: 661 } });
     expect(inputRanges.height.si).toEqual({ min: 50, max: 250 });
     expect(inputRanges.triglycerides.conventional).toEqual({ min: 0, max: 2000, minExclusive: true }); // US-03 AC7: above 0, the record refuses 0
     expect(Object.keys(inputRanges.lpa).sort()).toEqual(['conventional', 'mg/L', 'mg/dL', 'nmol/L', 'si']);

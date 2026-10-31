@@ -56,7 +56,7 @@ export function connectRefusal(error: unknown): string | null {
  *  next good cloud session merge this session's edits up (US-09 AC13), whether
  *  the user clicks Reconnect or the next load simply succeeds; against an
  *  erased cloud file they survive because no erase listed them (AC23). */
-export function onDeviceFallback(backend: Exclude<Backend, 'local'>): ResolvedBackend {
+function onDeviceFallback(backend: Exclude<Backend, 'local'>): ResolvedBackend {
   markSyncPending();
   return { adapter: new LocalStorageAdapter(), backend: 'local', reconnect: backend };
 }

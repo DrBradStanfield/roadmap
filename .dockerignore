@@ -32,6 +32,10 @@ docs/pathway/
 .mcp.json
 .review-shots/
 tmp/
+# Other people's words (US-09 AC9a): YouTube dry-run output with commenters'
+# handles and comments, and drafts written for a Codex review.
+tools/output/
+codex-drafts/
 **/exports/
 **/dumps/
 **/*.dump

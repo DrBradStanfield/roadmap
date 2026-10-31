@@ -1373,16 +1373,29 @@ describe('US-03 AC4: a commit that partly lands', () => {
     await addMeasurement('ldl', 3.0, `${TODAY}T00:00:00.000Z`);
     const view = render(<HealthTool />);
     await shown(view.container, '.bt-timeline-title');
-    toggleChip(bloodMatrix(view.container), 'LDL Cholesterol'); // LDL in mg/dL
-    typeInto(draftInput(bloodMatrix(view.container), 'LDL Cholesterol'), '500'); // the cell takes it; the record's range does not
+    typeInto(draftInput(bloodMatrix(view.container), 'LDL Cholesterol'), '2.5'); // corrects the 3.0 the page shows
     typeInto(draftInput(bloodMatrix(view.container), 'HDL Cholesterol'), '1.4');
+    // The record refuses the LDL correction and takes the HDL. The refusal
+    // used to be provoked by typing an LDL of 500 mg/dL, which the cell took
+    // and the record's range did not; US-05 AC2b closed that gap, so the cell
+    // now refuses 500 itself, before any save, and no typed value reaches the
+    // record's range check. So the LDL correction reaches the real store with
+    // 12.93 mmol/L, the 500 mg/dL it used to carry: the refusal is the
+    // record's own, and what HealthTool does with it is real.
+    const [ldlRow] = active(await rowsOf('ldl'));
+    const correct = RoadmapStore.prototype.correctValue;
+    const correcting = vi.spyOn(RoadmapStore.prototype, 'correctValue').mockImplementation(function (this: RoadmapStore, id, newValue, erase) {
+      return correct.call(this, id, id === ldlRow.id ? 12.93 : newValue, erase);
+    });
     tapOutside(view.container);
 
     await waitFor(async () => expect(await activeOn('hdl')).toEqual([[1.4, TODAY]]));
     await waitFor(() => expect(draftInput(bloodMatrix(view.container), 'HDL Cholesterol').value).toBe(''));
-    expect(draftInput(bloodMatrix(view.container), 'LDL Cholesterol').value).toBe('500');
+    expect(draftInput(bloodMatrix(view.container), 'LDL Cholesterol').value).toBe('2.5');
     expect(within(row(bloodMatrix(view.container), 'LDL Cholesterol')).getByText(SAVE_ERRORS.invalid)).toBeTruthy();
     expect(await activeOn('ldl')).toEqual([[3, TODAY]]);
+    // The page sent the typed correction; only the store's input was changed.
+    expect(correcting.mock.calls.some(([id, value]) => id === ldlRow.id && value === 2.5)).toBe(true);
 
     // The saved HDL, corrected, stays corrected through the next leave.
     const editor = openEditor(row(bloodMatrix(view.container), 'HDL Cholesterol'));
