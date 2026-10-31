@@ -91,7 +91,8 @@ const SOURCED: Record<string, Array<{ says: string; in: Source; as: string }>> =
     { says: 'around 18 to 20 °C', in: 'html', as: 'around 18-20 degrees Celsius' },
   ],
   vo2_max: [
-    { says: 'a meta-analysis of 33 studies', in: 'brad', as: 'Kodama 2009, 33 studies' },
+    { says: 'a meta-analysis of 33 studies, people with low fitness had a higher risk of death and heart disease', in: 'html',
+      as: 'a meta-analysis of 33 studies, people with low fitness had a higher risk of death and heart disease' },
     { says: 'from age 60, Low', in: 'html', as: 'From age 60, Low uses' },
   ],
   steps: [
@@ -281,6 +282,23 @@ describe('METRIC_GUIDES (US-58)', () => {
         expect(g.sources.some((s) => !isApple(s.label)), key).toBe(true);
       }
     }
+  });
+
+  it('AC7: the four claims narrowed in review (2026-10-31) keep their shipped wording', () => {
+    const hr = METRIC_GUIDES.heart_rate.whatItIs;
+    expect(hr).not.toContain('green light');
+    expect(hr).not.toContain('more often during a workout');
+    // Apple's pages back only "a good fit helps": no guide tells the reader to wear it "snug on"
+    // the wrist (the waist guide's tape tip is not about a watch).
+    for (const [key, g] of Object.entries(METRIC_GUIDES)) {
+      if (key === 'waist') continue;
+      for (const point of g.howTo.points) expect(point, key).not.toMatch(/snug on/);
+    }
+    // Paluch 2022 is observational: the plateau is of lower risk, not of a benefit.
+    expect(METRIC_GUIDES.steps.whyItMatters).toContain('lower risk of death levelled off');
+    expect(METRIC_GUIDES.steps.whyItMatters).not.toContain('benefit levelled off');
+    // Watson's advice is for adults aged 18 to 60.
+    expect(FILES.html).toContain('advise adults aged 18 to 60 to sleep at least 7 hours a night on a regular basis.[');
   });
 
   it('AC7: the Apple Health guides have their headings, parts and sources', () => {
