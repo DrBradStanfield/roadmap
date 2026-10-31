@@ -66,6 +66,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   // The reply as it streams in (US-15 AC16/AC17/AC20), on the sending
   // instance only; other tabs show the dots.
   const [pending, setPending] = useState(NO_PENDING);
+  // The thread the reply in flight was sent from: the stream shows only there (US-15 AC7a).
+  const [sendingConversationId, setSendingConversationId] = useState<string | null>(null);
   // A landed answer's thinking summary and articles read, by message id, for
   // this session only (AC17/AC22). Never persisted: not in `messages` (so not synced
   // to other tabs or written to the user's cloud chat history) and never sent to the server.
@@ -196,7 +198,9 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         activeConversationIdRef.current = latest.id; // dropThread reads it after the await
         setActiveConversationId(latest.id);
         const msgs = await loadConversation(latest.id);
-        if (msgs) setMessages(msgs); else dropThread(latest.id);
+        if (!msgs) { dropThread(latest.id); return; }
+        if (activeConversationIdRef.current !== latest.id) return; // the guest opened another thread meanwhile (US-15 AC7a)
+        setMessages(msgs);
       }
     }
   }, [isLoggedIn, dropThread]);
@@ -207,9 +211,9 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     setActiveConversationId(id);
     setError(null);
     const msgs = await loadConversation(id);
-    if (activeConversationIdRef.current !== id) return; // another thread was opened meanwhile (US-15 AC7a)
-    // The server no longer recognizes this guest thread (US-15 AC6a).
+    // The server no longer recognizes this guest thread (US-15 AC6a), even if another is open now.
     if (!msgs) { dropThread(id); return; }
+    if (activeConversationIdRef.current !== id) return; // another thread was opened meanwhile (US-15 AC7a)
     setMessages(msgs);
     postSync({
       instanceId,
@@ -256,6 +260,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     postInputSync(instanceId, '');
     setIsLoading(true);
     setIsLocalSender(true);
+    setSendingConversationId(currentConvId);
 
     postSync({
       instanceId,
@@ -408,6 +413,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     postInputSync(instanceId, sliced);
   }, [instanceId]);
 
+  // Another thread open while the reply streams (US-15 AC7a): it shows the dots, not the reply.
+  const onSendingThread = activeConversationId === sendingConversationId;
   return {
     state: {
       conversations,
@@ -415,9 +422,9 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       messages,
       inputText,
       isLoading,
-      isLocalSender,
+      isLocalSender: isLocalSender && onSendingThread,
       error,
-      pending,
+      pending: onSendingThread ? pending : NO_PENDING,
       approachById,
       cardsById,
       isOffline,

@@ -29,6 +29,8 @@ import * as hookModule from './useChatState';
 const { useChatState } = hookModule;
 
 const THINKING = 'Checking the ApoB entry';
+/** Lets a pending requestAnimationFrame (the stream's render) run. */
+const nextFrame = () => new Promise<void>(r => requestAnimationFrame(() => r()));
 
 async function startSend() {
   const hook = renderHook(() => useChatState({ isLoggedIn: false }));
@@ -422,6 +424,85 @@ describe('US-15 AC7a — opening another thread while a reply is in flight', () 
     const { state } = hook.result.current;
     expect(state.activeConversationId).toBe('C');
     expect(state.messages.map(m => m.content)).toEqual(['C question']);
+  });
+
+  // Review 2026-10-31 item 1: one stream for the whole chat drew A's reply under B.
+  it('US-15 AC7a: A\'s streaming reply does not show under B; B shows the dots', async () => {
+    const { hook, api } = await sendInAThenOpenB();
+    act(() => { send.onDelta!({ type: 'thinking', text: 'A thinking' }); send.onDelta!({ type: 'text', text: 'A streaming' }); });
+    await act(nextFrame);
+    const { state } = hook.result.current;
+    expect(state.activeConversationId).toBe('B');
+    expect(state.isLoading).toBe(true);
+    expect(state.pending).toEqual({ thinking: '', text: '', status: '', sources: [] });
+    expect(state.isLocalSender).toBe(false); // ChatPendingReply draws only the dots
+    // Back in A, the stream shows again.
+    vi.mocked(api.loadConversation).mockResolvedValueOnce(threadA);
+    await act(async () => { await hook.result.current.actions.selectConversation('A'); });
+    expect(hook.result.current.state.pending).toMatchObject({ thinking: 'A thinking', text: 'A streaming' });
+    expect(hook.result.current.state.isLocalSender).toBe(true);
+  });
+
+  // Review 2026-10-31 item 3: the stale check returned before dropping a thread that 404ed.
+  it('US-15 AC7a with AC6a: A not found after B was opened is dropped from the list, and B stays', async () => {
+    const api = await import('../lib/chat-api');
+    let finishA!: (m: null) => void;
+    vi.mocked(api.loadConversation)
+      .mockImplementationOnce(() => new Promise(r => { finishA = r; }))
+      .mockResolvedValueOnce(threadB);
+    const hook = renderHook(() => useChatState({
+      isLoggedIn: false,
+      prefetchedData: { conversations, messages: [], activeConversationId: null },
+    }));
+    let openingA!: Promise<void>;
+    act(() => { openingA = hook.result.current.actions.selectConversation('A'); });
+    await act(async () => { await hook.result.current.actions.selectConversation('B'); });
+    await act(async () => { finishA(null); await openingA; });
+    const { state } = hook.result.current;
+    expect(state.conversations.map(c => c.id)).toEqual(['B']);
+    expect(state.activeConversationId).toBe('B');
+    expect(state.messages.map(m => m.content)).toEqual(['B question', 'B answer']);
+  });
+
+  // Review 2026-10-31 item 2: a guest's automatic first load of the latest thread
+  // set its turns even after the guest had opened another thread.
+  describe('the guest\'s first load', () => {
+    async function openBDuringFirstLoad() {
+      const api = await import('../lib/chat-api');
+      vi.mocked(api.sendMessage).mockClear();
+      vi.mocked(api.listConversations).mockResolvedValueOnce({ conversations });
+      let finishA!: (m: typeof threadA | null) => void;
+      vi.mocked(api.loadConversation)
+        .mockImplementationOnce(() => new Promise(r => { finishA = r; }))
+        .mockResolvedValueOnce(threadB);
+      const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+      let firstLoad!: Promise<void>;
+      act(() => { firstLoad = hook.result.current.actions.loadConversationsIfNeeded(); });
+      await waitFor(() => expect(hook.result.current.state.activeConversationId).toBe('A'));
+      await act(async () => { await hook.result.current.actions.selectConversation('B'); });
+      return { hook, api, finishA, firstLoad };
+    }
+
+    it('US-15 AC7a: B opened before A\'s first load returns stays on screen, and the next question goes with B\'s turns', async () => {
+      const { hook, api, finishA, firstLoad } = await openBDuringFirstLoad();
+      await act(async () => { finishA(threadA); await firstLoad; });
+      expect(hook.result.current.state.activeConversationId).toBe('B');
+      expect(hook.result.current.state.messages.map(m => m.content)).toEqual(['B question', 'B answer']);
+      act(() => hook.result.current.actions.handleInputChange('B follow-up'));
+      act(() => { void hook.result.current.actions.handleSend(); });
+      const [, conversationId, , history] = vi.mocked(api.sendMessage).mock.calls.at(-1)!;
+      expect(conversationId).toBe('B');
+      expect((history as { content: string }[]).map(m => m.content)).toEqual(['B question', 'B answer']);
+    });
+
+    it('US-15 AC7a with AC6a: A not found on first load after B was opened is dropped, and B stays', async () => {
+      const { hook, finishA, firstLoad } = await openBDuringFirstLoad();
+      await act(async () => { finishA(null); await firstLoad; });
+      const { state } = hook.result.current;
+      expect(state.conversations.map(c => c.id)).toEqual(['B']);
+      expect(state.activeConversationId).toBe('B');
+      expect(state.messages.map(m => m.content)).toEqual(['B question', 'B answer']);
+    });
   });
 
   it('US-15 AC7a control: a reply to the open thread still lands in it', async () => {
