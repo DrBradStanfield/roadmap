@@ -230,9 +230,10 @@ describe('US-52 AC1/AC2: the gate', () => {
     let release!: () => void;
     const get = store.get.bind(store);
     store.get = async (keyId: string) => { await new Promise<void>((r) => { release = r; }); return get(keyId); };
-    const start = Date.now();
     const pending = appChat(signed('/api/app/v1/chat', { ...chatBody, stream: false }), store);
     await vi.waitFor(() => expect(release).toBeTypeOf('function'));
+    // Read after the reservation (made before the key read), so start + 24h + 1 is past its window.
+    const start = Date.now();
     const now = vi.spyOn(Date, 'now').mockReturnValue(start + 24 * 60 * 60_000 + 1);
     try {
       store.get = get;
