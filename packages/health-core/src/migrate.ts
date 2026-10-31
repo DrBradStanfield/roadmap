@@ -30,7 +30,7 @@
  */
 import { canonicalLabRow, resolveLabCatalogEntry } from './lab-catalog';
 import { isCalendarDay, isClinicalDay } from './measurement-history';
-import { stampInstant, withoutListed } from './merge';
+import { MAX_COUNTER, stampInstant, withoutListed } from './merge';
 import {
   BASE_SCHEMA_VERSION,
   CURRENT_SCHEMA_VERSION,
@@ -74,12 +74,9 @@ export function asArray<T>(v: unknown): T[] {
   return Array.isArray(v) ? (v as T[]) : [];
 }
 
-/**
- * Ceiling for the file's counters (`meta.lamport`, `meta.eraseEpoch`) — far
- * above any real value (they tick once per write) and far below
- * MAX_SAFE_INTEGER, so the `+ 1` increments that order writes always advance.
- */
-export const MAX_COUNTER = 1e12;
+// The ceiling for the file's counters lives in merge.ts, which must stay
+// within it when it advances the lamport (US-10 AC8b); migrate already imports merge.
+export { MAX_COUNTER } from './merge';
 
 /** A metadata clock uses the same complete-stamp grammar as a row. Preserve
  *  valid UTC precision; normalize other accepted spellings to UTC. */
