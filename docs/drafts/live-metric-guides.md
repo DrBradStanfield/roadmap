@@ -12,7 +12,7 @@ Brad approved everything on 2026-10-31: all 32 claims as drafted (17 new), and t
 4. (A) No "60 to 100 bpm" range.
 5. (A) Watson 2015 as a second sleep source, with no new sentence.
 6. (A) The standard tips (claims 2, 4, 5, 10, 11, 26, 28) approved as a category.
-7. (A) Short sentences in roadmap_text.html: Exercise gains resting heart rate and steps (and the device sentences for heart rate and VO2 max, so every new source is cited); Sleep gains the watch's stages, and Watson is cited on its 7 to 9 hour target. The new references are appended after [122] as [123] to [131], with no renumbering.
+7. (A) Short sentences in roadmap_text.html: Exercise gains resting heart rate and steps (and the device sentences for heart rate and VO2 max, so every new source is cited); Sleep gains the watch's stages, and Watson is cited on one sentence giving its floor of at least 7 hours a night (it sets no upper bound, so it is not cited on the 7 to 9 target). Exercise also gains a Kodama sentence for the VO2 max guide's 33 studies, citing [23] (orchestrator 2026-10-31). The new references are appended after [122] as [123] to [131], with no renumbering.
 
 ## What Apple does, and what we take from it
 

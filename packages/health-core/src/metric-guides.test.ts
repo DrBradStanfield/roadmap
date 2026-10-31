@@ -91,7 +91,8 @@ const SOURCED: Record<string, Array<{ says: string; in: Source; as: string }>> =
     { says: 'around 18 to 20 °C', in: 'html', as: 'around 18-20 degrees Celsius' },
   ],
   vo2_max: [
-    { says: 'a meta-analysis of 33 studies', in: 'brad', as: 'Kodama 2009, 33 studies' },
+    { says: 'a meta-analysis of 33 studies, people with low fitness had a higher risk of death and heart disease', in: 'html',
+      as: 'a meta-analysis of 33 studies, people with low fitness had a higher risk of death and heart disease' },
     { says: 'from age 60, Low', in: 'html', as: 'From age 60, Low uses' },
   ],
   steps: [
