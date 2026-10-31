@@ -157,6 +157,61 @@ describe('US-09 AC30: a stalled provider is abandoned at the deadline', () => {
     expect((outcome as { rejected: DOMException }).rejected.name).toBe('TimeoutError');
   });
 
+  /** A token-exchange request from an allowed origin, as the browser sends it. */
+  function exchangeRequest(): Request {
+    return new Request('https://health-tool-app.fly.dev/api/google-token', {
+      method: 'POST',
+      headers: { Origin: 'https://drstanfield.com', 'fly-client-ip': '203.0.113.61', 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ grantType: 'code', code: 'synthetic-code', codeVerifier: 'synthetic-verifier', redirectUri: 'https://drstanfield.com/pages/roadmap' }),
+    });
+  }
+
+  it('the Google token exchange fails, not 200 with no tokens, when the 200 body passes the deadline', async () => {
+    // Google sends 200 headers at once, then stalls the body. As Node's fetch
+    // does, the caller's signal errors the body stream when it aborts.
+    vi.mocked(fetch).mockImplementation((_url, init = {}) => {
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('{"access_token":"synthetic-acc'));
+          init.signal?.addEventListener('abort', () => controller.error(init.signal?.reason), { once: true });
+        },
+      });
+      return Promise.resolve(new Response(body, { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    });
+    const { action } = await import('../routes/api.google-token');
+    const { early, outcome } = await settleBy(action({ request: exchangeRequest() } as never), 10_000);
+    expect(early).toBe(false);
+    const res = outcome as Response;
+    expect(res.status).toBe(502);
+    const json = await res.json() as Record<string, unknown>;
+    expect(json).toEqual({ error: 'exchange_failed', errorDescription: 'unreadable_response' });
+    expect(json).not.toHaveProperty('accessToken');
+  });
+
+  it('the Google token exchange fails when a 200 body is not JSON', async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response('<html>proxy error</html>', { status: 200 }));
+    const { action } = await import('../routes/api.google-token');
+    const res = await action({ request: exchangeRequest() } as never);
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: 'exchange_failed', errorDescription: 'unreadable_response' });
+  });
+
+  it('the Google token exchange still passes an unreadable error status through as exchange_failed', async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response('<html>bad gateway</html>', { status: 503 }));
+    const { action } = await import('../routes/api.google-token');
+    const res = await action({ request: exchangeRequest() } as never);
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: 'exchange_failed', errorDescription: '' });
+  });
+
+  it('the Google token exchange still passes a readable 200 through', async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ access_token: 'synthetic-access', refresh_token: 'synthetic-refresh', expires_in: 3599 }), { status: 200 }));
+    const { action } = await import('../routes/api.google-token');
+    const res = await action({ request: exchangeRequest() } as never);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ accessToken: 'synthetic-access', refreshToken: 'synthetic-refresh', expiresIn: 3599 });
+  });
+
   describe('the YouTube bot tick', () => {
     beforeEach(() => { process.env.YOUTUBE_BOT_FORCE_START = 'true'; sentry.captureException.mockClear(); });
     afterEach(async () => { (await import('./youtube-bot.server')).stopYouTubeBot(); delete process.env.YOUTUBE_BOT_FORCE_START; });

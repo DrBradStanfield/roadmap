@@ -95,15 +95,24 @@ export async function action({ request }: ActionFunctionArgs) {
     body: params,
     signal: AbortSignal.timeout(GOOGLE_TIMEOUT_MS),
   });
-  const payload = (await googleRes.json().catch(() => ({}))) as Record<string, unknown>;
+  // null = the body never arrived whole (its read passed the deadline) or was
+  // not JSON.
+  const payload = (await googleRes.json().catch(() => null)) as Record<string, unknown> | null;
 
   if (!googleRes.ok) {
     // Pass Google's machine-readable error through (e.g. invalid_grant so the
     // client knows to re-auth) — never log it (it can reference the token).
     return Response.json(
-      { error: String(payload.error ?? 'exchange_failed'), errorDescription: String(payload.error_description ?? '') },
+      { error: String(payload?.error ?? 'exchange_failed'), errorDescription: String(payload?.error_description ?? '') },
       { status: googleRes.status, headers },
     );
+  }
+
+  // A 2xx whose body could not be read is a failed exchange, never a 200
+  // without tokens (US-09 AC30). 502, not 400/401: the browser reads those
+  // as a revoked refresh token and clears it.
+  if (payload === null) {
+    return Response.json({ error: 'exchange_failed', errorDescription: 'unreadable_response' }, { status: 502, headers });
   }
 
   // Whitelist the fields the client needs — nothing else passes through.
