@@ -25,7 +25,7 @@ import { computeReminderSchedule, type ReminderScheduleItem } from './reminder-s
 import { BASE_SCHEMA_VERSION, type FileLabValue, type RoadmapFile } from './roadmap-file';
 import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
 import {
-  UNIT_DEFS, formatDisplayValue, formatGradedValue, getDisplayLabel, type MetricType, type UnitSystem,
+  UNIT_DEFS, formatGradedReading, formatGradedValue, getDisplayLabel, type MetricType, type UnitSystem,
 } from './units';
 import { getValidationErrors, PRESSURE_ORDER, sanitizeInputs, validateHealthInputs } from './validation';
 
@@ -276,14 +276,14 @@ export function currentValues(plan: Plan) {
     .filter((row) => row.metricType in UNIT_DEFS)
     .map((row) => {
       const metric = row.metricType as MetricType;
-      // A lipid with a "<X" line prints on the side the cards grade it (US-07 AC5).
+      // A lipid with a "<X" line prints on the side the cards grade it (US-07 AC5), HbA1c and Lp(a) on the side of their grade lines (AC9).
       const line = refLineFor(metric);
       return {
         id: row.id,
         metric: row.metricType,
         label: METRIC_LABELS[row.metricType] ?? row.metricType,
         value: line === undefined
-          ? formatDisplayValue(metric, row.value, plan.unitSystem)
+          ? formatGradedReading(metric, row.value, plan.unitSystem)
           : formatGradedValue(metric, row.value, plan.unitSystem, line),
         unit: getDisplayLabel(metric, plan.unitSystem),
         date: String(row.recordedAt ?? '').slice(0, 10),

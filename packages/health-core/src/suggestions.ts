@@ -7,6 +7,7 @@ import {
   type MetricType,
   formatDisplayValue,
   formatTargetLine,
+  formatGradedReading,
   formatGradedValue,
   getDisplayLabel,
   HBA1C_THRESHOLDS,
@@ -61,7 +62,9 @@ function fmtMetric(metricType: MetricType, value: number, us: UnitSystem): strin
 }
 
 // Metric-specific aliases for readability
-const fmtHba1c = (v: number, us: UnitSystem) => fmtMetric('hba1c', v, us);
+// HbA1c and Lp(a) read on the side of their grade lines (US-07 AC9).
+const fmtHba1c = (v: number, us: UnitSystem) => `${formatGradedReading('hba1c', v, us)} ${getDisplayLabel('hba1c', us)}`;
+const fmtLpa = (v: number) => `${formatGradedReading('lpa', v, 'si')} nmol/L`;
 const fmtLdl = (v: number, us: UnitSystem) => fmtMetric('ldl', v, us);
 const fmtHdl = (v: number, us: UnitSystem) => fmtMetric('hdl', v, us);
 const fmtTrig = (v: number, us: UnitSystem) => fmtMetric('triglycerides', v, us);
@@ -609,7 +612,7 @@ export function generateSuggestions(
         id: 'lpa-elevated',
         category: 'bloodwork',
         priority: 'attention',
-        title: `Elevated Lp(a): ${Math.round(inputs.lpa)} nmol/L`,
+        title: `Elevated Lp(a): ${fmtLpa(inputs.lpa)}`,
         description: `Lp(a) is genetically determined and cannot be changed by diet or lifestyle. With an elevated Lp(a), reducing all other modifiable cardiovascular risk factors is especially important.\n\nYour modifiable risk factors:\n${checklist.join('\n')}`,
       });
     } else if (inputs.lpa >= LPA_THRESHOLDS.normal) {
@@ -617,7 +620,7 @@ export function generateSuggestions(
         id: 'lpa-borderline',
         category: 'bloodwork',
         priority: 'info',
-        title: `Borderline Lp(a): ${Math.round(inputs.lpa)} nmol/L`,
+        title: `Borderline Lp(a): ${fmtLpa(inputs.lpa)}`,
         description: 'Your Lp(a) is in the borderline range (75\u2013125 nmol/L). Lp(a) is genetically determined and does not change with lifestyle. Continue to optimize other cardiovascular risk factors.',
       });
     } else {
@@ -625,7 +628,7 @@ export function generateSuggestions(
         id: 'lpa-normal',
         category: 'bloodwork',
         priority: 'info',
-        title: `Lp(a): ${Math.round(inputs.lpa)} nmol/L`,
+        title: `Lp(a): ${fmtLpa(inputs.lpa)}`,
         description: 'Your Lp(a) is in the normal range (<75 nmol/L). This is a one-time test \u2014 Lp(a) is genetically determined and does not change significantly over time.',
       });
     }
