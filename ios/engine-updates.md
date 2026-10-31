@@ -47,6 +47,9 @@ file on the phone cannot lower them.
 **What only an app update can change** (the app refuses these in a download): the
 native bridge (`ios/engine/bridge-contract.json`: its hash is the bridge id, and a new
 bridge gets its own folder), the record schema version, and the pinned keys.
+An optional trailing argument or an optional return field that works both ways is not a
+bridge change: it goes in `ios/engine/bridge-optional.json`, which is not hashed, so the id
+and its folder stay (US-61's `isUS` and `usProducts`; architecture.md D3, D14).
 
 **Revocation needs the repo public.** Phones read releases from raw.githubusercontent.com
 with no sign-in. If the repo goes private (as in September 2026), no phone can fetch a

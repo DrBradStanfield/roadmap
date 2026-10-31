@@ -1,0 +1,9 @@
+{
+  "about": "Additions to bridge-contract.json that work both ways, so they do not feed its hash and keep the bridge id (ios/architecture.md D3, D14). Two kinds only. An optional trailing argument: an app built before it sends one fewer, and the engine must answer as it did before when the argument is undefined. An optional return field: an engine built before it leaves it out, and the app must read its absence as none; an app built before it ignores a field it does not know. Anything else, or anything an older app cannot do without, belongs in bridge-contract.json and is a new bridge. bridge.test.ts and EngineBridgeContractTests.swift count each door's arity as its contract args plus these; bridge.test.ts also checks each optional argument trails the contract ones by name and that a call with only the contract args answers as one with them undefined. An optional return field's absence is tested per feature (US-61: USProductsTests). A real bridge change never goes here.",
+  "doors": {
+    "screenJson": {
+      "optionalArgs": ["isUS"],
+      "optionalReturns": "plan.usProducts: us-products.ts's {blocks: [{suggestionId, product, name, line, url, description?, references?}], ownershipLine|null} for isUS true (the App Store storefront USA) and a known adult, else no blocks and a null line (US-61). An app before it sends no isUS, so it gets no blocks; an engine before it sends no usProducts, so the app shows none."
+    }
+  }
+}
