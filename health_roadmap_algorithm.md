@@ -447,7 +447,7 @@ Source: `units.ts`
 
 All thresholds stored and compared in SI canonical units.
 
-The cholesterol and triglyceride lines (Borderline, High, Very high, and HDL's Low line) are set in mg/dL, and the HbA1c lines in NGSP %. The code converts each exactly (mg/dL ÷ the factor in section 2, `hba1cNgspToIfcc`), so the mmol/L and IFCC figures in these tables are rounded for display: LDL High is 160 mg/dL, 4.1376 mmol/L, printed 4.14; HDL Low is 40 mg/dL, 1.0344 mmol/L, printed 1.03. A value typed at a printed figure can grade on either side of the line. The same holds for the rounded figures in `evidence.ts` (diabetes from 47.5 mmol/mol, very high triglycerides from 5.64 mmol/L). ApoB's lines are mg/dL ÷ 100, so its g/L figures are exact. The on-treatment Optimal targets are set in SI units (LDL 1.4 and non-HDL 1.6 mmol/L, ApoB 0.5 g/L); the mg/dL figure shown beside them is the first whole number the plan grades at or above the target (LDL 54.1 → 55, non-HDL 61.9 → 62).
+The cholesterol and triglyceride lines (Borderline, High, Very high, and HDL's Low line) are set in mg/dL, and the HbA1c lines in NGSP %. The code converts each exactly (mg/dL ÷ the factor in section 2, `hba1cNgspToIfcc`), so the mmol/L and IFCC figures in these tables are rounded for display: LDL High is 160 mg/dL, 4.1376 mmol/L, printed 4.14; HDL Low is 40 mg/dL, 1.0344 mmol/L, printed 1.03. A value typed at a printed figure can grade on either side of the line. The same holds for the rounded figures in `evidence.ts` (diabetes from 47.5 mmol/mol, very high triglycerides from 5.65 mmol/L, the first 2-dp value graded Very high). ApoB's lines are mg/dL ÷ 100, so its g/L figures are exact. The on-treatment Optimal targets are set in SI units (LDL 1.4 and non-HDL 1.6 mmol/L, ApoB 0.5 g/L); the mg/dL figure shown beside them is the first whole number the plan grades at or above the target (LDL 54.1 → 55, non-HDL 61.9 → 62).
 
 ### HbA1c (mmol/mol IFCC)
 
@@ -507,7 +507,7 @@ The Optimal line for LDL and non-HDL is the plan's on-treatment target (below). 
 |-------|--------|-------|
 | Borderline | 1.69 | 150 |
 | High | 2.26 | 200 |
-| Very high | 5.64 | 500 |
+| Very high | 5.65 | 500 |
 
 ### Blood Pressure (mmHg)
 
@@ -704,7 +704,7 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 | ID | Condition | Priority |
 |----|-----------|----------|
 | `hdl-low` | HDL < sex-specific threshold | attention |
-| `trig-very-high` | triglycerides >= 5.64 mmol/L (500 mg/dL) — pancreatitis risk | urgent |
+| `trig-very-high` | triglycerides >= 5.65 mmol/L (500 mg/dL) — pancreatitis risk | urgent |
 
 ### Blood Pressure Tiers
 
