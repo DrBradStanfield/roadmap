@@ -1,5 +1,6 @@
 // US-58: the "about this measure" guides are display-only text bound by the
-// clinical files. AC1 (which guides), AC2 (no new citation, no new number).
+// clinical files. AC1 (which guides), AC2 (no new citation, no new number), AC7 (the
+// Apple Health guides, Brad 2026-10-31: Apple cited only for device facts).
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -24,6 +25,11 @@ const bradStart = draft.indexOf("## Brad's decisions (2026-10-25)"), bradEnd = d
 if (bradStart < 0 || bradEnd < bradStart) throw new Error("metric-guides.md lost its Brad's decisions or Proposed shape heading");
 const BRAD = draft.slice(bradStart, bradEnd);
 if (!BRAD.includes("## Brad's decisions (2026-10-26)")) throw new Error("metric-guides.md lost its Brad's decisions (2026-10-26) heading");
+/** Brad's decisions on the Apple Health guides' draft (2026-10-31). */
+const live = read('docs/drafts/live-metric-guides.md');
+const liveStart = live.indexOf("## Brad's decisions (2026-10-31)"), liveEnd = live.indexOf('## What Apple does');
+if (liveStart < 0 || liveEnd < liveStart) throw new Error("live-metric-guides.md lost its Brad's decisions or What Apple does heading");
+const BRAD_LIVE = live.slice(liveStart, liveEnd);
 
 /**
  * Every quantity a guide states, in digits or in words, with where it is already said:
@@ -69,16 +75,44 @@ const SOURCED: Record<string, Array<{ says: string; in: Source; as: string }>> =
   ],
   // Knowler 2002 (DPP): 31% fewer cases with metformin, 58% with lifestyle (Brad 2026-10-27, option A).
   metformin: [{ says: 'by about a third', in: 'evidence', as: 'by about a third versus placebo; lifestyle change did more' }],
+  // The Apple Health guides (AC7): roadmap_text.html states each new number with its citation.
+  resting_heart_rate: [
+    { says: '46 studies, each 10 bpm higher was linked with about 9% higher risk of death', in: 'html',
+      as: '46 studies, each 10 beats per minute higher was linked with about 9% higher risk of death' },
+  ],
+  sleep: [
+    { says: '7 to 9 hours a night', in: 'algorithm', as: '7-9 hours nightly' },
+    { says: 'over 1.3 million people', in: 'evidence', as: 'over 1.3 million participants' },
+    { says: '(under 6 hours)', in: 'evidence', as: 'short sleep (<6 hours)' },
+    { says: '(over 8 to 9 hours)', in: 'evidence', as: 'long sleep (>8–9 hours)' },
+    { says: 'at least 30 minutes of daylight', in: 'html', as: 'at least 30 minutes of natural sunlight' },
+    { says: '3 to 4 hours after waking', in: 'html', as: 'more than 3 to 4 hours after waking' },
+    { says: 'in the 4 to 6 hours before bed', in: 'html', as: 'at least 4-6 hours before going to bed' },
+    { says: 'around 18 to 20 °C', in: 'html', as: 'around 18-20 degrees Celsius' },
+  ],
+  vo2_max: [
+    { says: 'a meta-analysis of 33 studies', in: 'brad', as: 'Kodama 2009, 33 studies' },
+    { says: 'from age 60, Low', in: 'html', as: 'From age 60, Low uses' },
+  ],
+  steps: [
+    { says: '15 studies of about 47,000 adults', in: 'html', as: '15 studies of about 47,000 adults' },
+    { says: 'about 6,000 to 8,000 steps a day in people aged 60 and over, and 8,000 to 10,000 in younger adults', in: 'html',
+      as: 'about 6,000 to 8,000 steps a day in people aged 60 and over, and 8,000 to 10,000 in younger adults' },
+    { says: '150 minutes of moderate activity', in: 'algorithm', as: 'At least 150 min moderate cardio' },
+    { says: 'walk the last 10 minutes', in: 'html', as: 'allowing for a 10-minute walk' },
+  ],
 };
 
 /** Words that state no quantity of their own: names with a digit, and counts of what the sentence lists. */
 const NOT_QUANTITIES: Record<string, string[]> = {
-  '*': ['GLP-1', 'SGLT2', 'PCSK9', 'HbA1c', 'B12', 'type 2 diabetes'],
+  '*': ['GLP-1', 'SGLT2', 'PCSK9', 'HbA1c', 'B12', 'type 2 diabetes', 'VO2'],
   weight: ['not single days'],
   height: ['You enter it once in your profile'],
   apob: ['Two people with the same LDL'],
   lpa: ['The app accepts all three'],
   glp1: ['acts on two hormones, GLP-1 and GIP'],
+  heart_rate: ['any one reading'],
+  vo2_max: ['one of the strongest predictors'],
 };
 
 const WORDS: Record<string, number> = {
@@ -90,6 +124,40 @@ const QUANTITY = new RegExp(`\\d+(?:\\.\\d+)?|\\b(?:${Object.keys(WORDS).join('|
 /** The quantities a text states, digits and words alike, sorted. */
 const quantities = (text: string) =>
   (text.match(QUANTITY) ?? []).map((q) => WORDS[q.toLowerCase()] ?? Number(q)).sort((a, b) => a - b);
+
+/** The five Apple Health metrics' keys (AC7): the app's `LiveMetric.guideKey`, snake case (Brad's decision 1). */
+const APPLE_HEALTH = ['heart_rate', 'resting_heart_rate', 'sleep', 'vo2_max', 'steps'];
+
+/** roadmap_text.html's numbered references, in order, and the numbers its text cites. */
+const refsAt = FILES.html.indexOf('<h2 id="references">');
+const REF_LIST = FILES.html.slice(refsAt, FILES.html.indexOf('<h2 id="changelog">')).match(/^<li>.*$/gm) ?? [];
+const BODY = FILES.html.slice(0, refsAt);
+const MARKER = /\[(\d+(?:[-–]\d+)?(?:, \d+(?:[-–]\d+)?)*)\]/g;
+const numbersIn = (marker: string) => marker.split(', ').flatMap((part) => {
+  const [a, b = a] = part.split(/[-–]/).map(Number);
+  return Array.from({ length: b - a + 1 }, (_, i) => a + i);
+});
+/** The reference list's number for a GUIDE_REFERENCES entry, found by its DOI or URL. */
+const numberOf = (url: string) => REF_LIST.findIndex((li) => li.includes(url.replace('https://doi.org/', ''))) + 1;
+/**
+ * What each citation of `n` supports (`span`: the text from the previous marker, or the start of
+ * its paragraph or item, up to it) and its paragraph or item so far (`lead`).
+ */
+const spansCiting = (n: number) => {
+  const spans: Array<{ span: string; lead: string }> = [];
+  let from = 0;
+  const strip = (html: string) => html.replace(/<[^>]+>/g, '');
+  for (const m of BODY.matchAll(MARKER)) {
+    const upTo = BODY.slice(0, m.index);
+    const element = Math.max(upTo.lastIndexOf('<li'), upTo.lastIndexOf('<p'));
+    if (numbersIn(m[1]).includes(n)) {
+      spans.push({ span: strip(BODY.slice(Math.max(from, element), m.index)), lead: strip(BODY.slice(element, m.index)) });
+    }
+    from = m.index + m[0].length;
+  }
+  return spans;
+};
+const isApple = (label: string) => label.startsWith('Apple ');
 
 const textOf = (key: string) => {
   const g = METRIC_GUIDES[key];
@@ -109,9 +177,10 @@ describe('METRIC_GUIDES (US-58)', () => {
       ...VITAL_METRICS.filter((m) => m !== 'systolic_bp' && m !== 'diastolic_bp'), 'blood_pressure', 'height',
       ...BLOOD_TEST_METRICS,
       ...MEDICATION_KEYS.filter((k) => !escalations.includes(k)),
+      ...APPLE_HEALTH,
     ];
     expect(Object.keys(METRIC_GUIDES).sort()).toEqual([...expected].sort());
-    expect(Object.keys(METRIC_GUIDES)).toHaveLength(20);
+    expect(Object.keys(METRIC_GUIDES)).toHaveLength(25);
   });
 
   it('AC1: every guide has its parts, with no draft marker and no em dash', () => {
@@ -142,7 +211,7 @@ describe('METRIC_GUIDES (US-58)', () => {
   });
 
   it('AC2: a guide states only the quantities on its list, each tied to the same quantities in its source', () => {
-    const sources = { ...FILES, brad: BRAD };
+    const sources = { ...FILES, brad: BRAD + BRAD_LIVE };
     for (const key of Object.keys(METRIC_GUIDES)) {
       let text = textOf(key);
       for (const phrase of NOT_QUANTITIES[key] ?? []) {
@@ -168,10 +237,67 @@ describe('METRIC_GUIDES (US-58)', () => {
   it('AC2: the references added for the guides are roadmap_text.html\'s own, and each one is cited', () => {
     for (const r of GUIDE_REFERENCES) {
       const [author, year] = r.label.split(' ');
-      // roadmap_text.html's reference list: "<li>Author, A., et al., <em>Title.</em> Journal, Year."
-      expect(FILES.html, r.label).toMatch(new RegExp(`<li>${author}, [^\\n]*?, ${year}\\.`));
+      // roadmap_text.html's reference list: "<li>Author, A., et al., <em>Title.</em> Journal, Year." (Apple as "Apple Inc.")
+      expect(FILES.html, r.label).toMatch(new RegExp(`<li>${author}(?: Inc\\.)?, [^\\n]*?, ${year}\\.`));
       expect(Object.values(METRIC_GUIDES).some((g) => g.sources.includes(r)), r.label).toBe(true);
     }
+  });
+
+  it('AC7: each reference added for the Apple Health guides is in the list and cited in the text by its number', () => {
+    const added = GUIDE_REFERENCES.filter((r) => APPLE_HEALTH.some((k) => METRIC_GUIDES[k].sources.includes(r)));
+    expect(added.map((r) => r.label.split(' ')[0])).toEqual(
+      ['Zhang', 'Aune', 'Reimers', 'Paluch', 'Watson', 'Milanović', 'Apple', 'Apple', 'Apple', 'Apple']);
+    const cited = new Set([...BODY.matchAll(MARKER)].flatMap((m) => numbersIn(m[1])));
+    for (const r of added) {
+      const n = numberOf(r.url);
+      expect(n, `${r.label} is in the reference list`).toBeGreaterThan(0);
+      expect(cited.has(n), `${r.label} [${n}] is cited`).toBe(true);
+    }
+    // Appended after [122], none renumbered (Brad's decision 7); Milanović was [108] already.
+    expect(REF_LIST).toHaveLength(131);
+    expect(numberOf('https://doi.org/10.1056/NEJMoa012512')).toBe(122);
+    expect(numberOf('https://doi.org/10.1007/s40279-015-0365-0')).toBe(108);
+    expect(Math.max(...cited)).toBe(131);
+  });
+
+  it('AC7: no clinical claim cites an Apple source (Brad\'s decision 2)', () => {
+    const apple = GUIDE_REFERENCES.filter((r) => isApple(r.label));
+    expect(apple).toHaveLength(4);
+    for (const r of apple) {
+      // Its label says it backs a device fact, and every sentence that cites it names the
+      // device and claims no risk or benefit.
+      expect(r.label, r.label).toMatch(/\((?:Apple Support|Apple Developer|white paper); (?:how the (?:watch measures|estimate is made)|what feeds the estimate)\)$/);
+      const spans = spansCiting(numberOf(r.url));
+      expect(spans.length, r.label).toBeGreaterThan(0);
+      for (const { span, lead } of spans) {
+        expect(lead, r.label).toContain('Apple Watch');
+        expect(span, r.label).not.toMatch(/risk|linked|death|dying|mortality|disease|benefit|lower/i);
+      }
+    }
+    // A guide that states a study finding cites a study, not only Apple.
+    for (const key of APPLE_HEALTH) {
+      const g = METRIC_GUIDES[key];
+      if (/stud|trial|meta-analysis/.test(g.whyItMatters + g.howTo.points.join(' '))) {
+        expect(g.sources.some((s) => !isApple(s.label)), key).toBe(true);
+      }
+    }
+  });
+
+  it('AC7: the Apple Health guides have their headings, parts and sources', () => {
+    const headings = { heart_rate: 'How to read it', resting_heart_rate: 'How to read it', sleep: 'How to sleep well',
+      vo2_max: 'How to get a good estimate', steps: 'How to add steps' };
+    for (const [key, heading] of Object.entries(headings)) {
+      const g = METRIC_GUIDES[key];
+      expect(g.howTo.heading, key).toBe(heading);
+      expect(g.howTo.points.length, key).toBeGreaterThanOrEqual(3);
+    }
+    expect(METRIC_GUIDES.resting_heart_rate.sources.map((s) => s.label.split(' ')[0])).toEqual(['Zhang', 'Aune', 'Reimers', 'Apple']);
+    expect(METRIC_GUIDES.sleep.sources.map((s) => s.label.split(' ')[0])).toEqual(['Cappuccio', 'Watson', 'Apple']);
+    expect(METRIC_GUIDES.vo2_max.sources.map((s) => s.label.split(' – ')[0])).toEqual(['Kodama 2009', 'Kaminsky 2022', 'Apple 2021', 'Milanović 2015', 'Apple 2026']);
+    expect(METRIC_GUIDES.steps.sources.map((s) => s.label.split(' ')[0])).toEqual(['Paluch', 'Bull', 'Piercy']);
+    expect(METRIC_GUIDES.heart_rate.sources.map((s) => s.url)).toEqual(['https://support.apple.com/en-us/120277']);
+    // No "60 to 100 bpm" normal range (Brad's decision 4).
+    expect(textOf('heart_rate') + textOf('resting_heart_rate')).not.toMatch(/60 to 100|60-100/);
   });
 
   it('AC2: the algorithm names the guides as display-only text', () => {
