@@ -309,8 +309,6 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // Track previously saved inputs to only save changed fields (demographics + height only)
   const previousInputsRef = useRef<Partial<HealthInputs>>({});
 
-  // Get auth state once on mount
-
   // Load additional lab values on mount (AdditionalLabRows surfaces them
   // under the matrix — US-21 phase 1) and refresh when the upload modal
   // opens (review-matrix dedup/context columns). Was modal-open-only while
