@@ -246,7 +246,12 @@ time.
     "undefinedg";
   - `statTiles` always pushes the IBW and protein tiles (123-136).
   Each one gets an explicit "needs sex" gate and a test with `sex: undefined` that fails
-  today. Callers to update: `stat-tiles.ts`, `suggestions.ts`, `plan.ts` and its
+  today. **`withLabEgfr` too** (`plan.ts` 160-168; whole-tree Codex review, 2026-10-31): it
+  drops a lab eGFR whenever a newer creatinine and a birth year exist, without asking
+  for sex. With sex missing, the calculated eGFR is then gated off, so the person
+  loses both (US-07 AC7). A calculated eGFR may only outrank the lab's once sex is
+  usable; regression test: no sex, an older lab eGFR, a newer creatinine, and the lab
+  eGFR is kept. Callers to update: `stat-tiles.ts`, `suggestions.ts`, `plan.ts` and its
   PlanError hint, `NO_PLAN_CHAT_RULE` (US-15 AC36), `tools/get-plan.ts`,
   `ios/engine/bridge-contract.json` and Swift's `.needsDetails` mapping
   (`HealthEngine.swift` 151), plus a rebuilt iPhone engine and Brad's signed engine
