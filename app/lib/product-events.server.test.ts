@@ -35,9 +35,12 @@ describe('parseProductEvent', () => {
       if (SERVER_ONLY.has(eventName)) continue;
       // US-62 AC1: these three need their key, tested with it below.
       if (['tool_opened', 'onboarding_step', 'signin_opened'].includes(eventName)) continue;
-      expect(parseProductEvent({ eventName, visitorId: VISITOR })).toEqual({
+      // US-61 AC8: the two US product events need their product.
+      const metadata = eventName.startsWith('us_product_') ? { metadata: { product: 'sleep' } } : {};
+      expect(parseProductEvent({ eventName, visitorId: VISITOR, ...metadata })).toEqual({
         eventName,
         visitorId: VISITOR,
+        ...metadata,
       });
     }
   });
@@ -260,6 +263,13 @@ describe('the email-arrival counters', () => {
       ]) {
         expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata })).toBeNull();
       }
+    }
+  });
+
+  it('US-61 AC8: refuses the two US product events without a product', () => {
+    for (const eventName of ['us_product_shown', 'us_product_link_clicked']) {
+      expect(parseProductEvent({ eventName, visitorId: VISITOR })).toBeNull();
+      expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata: {} })).toBeNull();
     }
   });
 
