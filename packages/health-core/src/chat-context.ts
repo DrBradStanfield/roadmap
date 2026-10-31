@@ -140,13 +140,15 @@ export const NO_PLAN_CHAT_RULE =
 /**
  * The rule every chat's prompt carries for a plan without sex (US-07 AC8):
  * the plan has cards, but none of the parts that need sex, and the model must
- * not fill them in.
+ * not fill them in. A plan run_roadmap computed this turn from a stated sex wins
+ * (US-15 AC33), as it does over NO_PLAN_CHAT_RULE.
  */
 export const NO_SEX_CHAT_RULE =
   "When the user's health data has `missingInputs` naming `sex`, the plan has no ideal body weight, protein target, " +
   'calculated eGFR (it needs sex, age and creatinine), HDL verdict or sex-specific screening: never work them out ' +
-  'yourself or assume a sex; say they need sex, and ask for it. Once they state it, propose saving it with ' +
-  '`propose_profile_edit` when you have that tool; they can also enter it in the roadmap tool.';
+  'yourself or assume a sex; say they need sex, and ask for it, unless a tool result this turn gives the sex; then ' +
+  'use that plan. Once they state it, propose saving it with `propose_profile_edit` when you have that tool; they ' +
+  'can also enter it in the roadmap tool.';
 
 /**
  * The JSON the model reads for a payload, or null when it holds nothing:

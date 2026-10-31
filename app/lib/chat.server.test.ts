@@ -183,6 +183,9 @@ describe('buildSystemBlocks', () => {
     // Review R4: eGFR needs more than sex.
     expect(NO_SEX_CHAT_RULE).toMatch(/calculated eGFR \(it needs sex, age and creatinine\)/);
     expect(NO_SEX_CHAT_RULE).toMatch(/never work them out yourself or assume a sex; say they need sex, and ask for it/);
+    // Codex R2 on PR 402: a plan computed this turn from a stated sex wins (AC33), without naming the tool.
+    expect(NO_SEX_CHAT_RULE).toMatch(/unless a tool result this turn gives the sex; then use that plan/);
+    expect(NO_SEX_CHAT_RULE).not.toContain('run_roadmap');
     expect(NO_PLAN_CHAT_RULE).not.toMatch(/names `sex`/);
     expect(NO_SEX_CHAT_RULE).not.toMatch(/\u2014/);
   });

@@ -62,6 +62,20 @@ R1):** from 60 its `p20`, the Low line, is Apple's Low Cardio Fitness alert line
 `2d467ff50c66c42d` (D3) and an older app refuses any engine that serves it; `bridge.test.ts`
 fails if the contract stops naming it.
 
+**The engine without sex moves the bridge (2026-11-01, US-07 AC8, Codex R1 on PR 402).** The
+engine's chat context gained a key, `labEgfrOutdated`: true when a creatinine newer than the
+lab eGFR exists but cannot be used yet (no sex or no birth year), so the server's chat plan
+withholds potassium advice as the engine's own plan does. The app forwards only the keys in
+`ChatClient.contextKeys`. A binary built before the key would take the new engine over the air
+and strip it, and its chat would give the advice the plan withheld. So `chatContextJson`'s
+returns in `bridge-contract.json` name the key and the rule (an app whose allow-list lacks a
+key the engine produces must not run it), the bridge id moved from `d0ffd9e53f8499b3` to
+`dc156e7c19dc8573`, and `EngineRelease.bridge` and the allow-list moved with it. Older binaries
+keep their bridge's engines and never read the new one's releases; the change needs an App
+Store build. `ios/engine/chat-context-keys.test.ts` holds the previous binary's bridge and
+allow-list, and fails if the engine produces a key that list lacks while the bridge id is
+unchanged.
+
 Speed, measured 2026-10-21 (Node 22, esbuild bundle, an Intel iMac, the sample record
 padded to 526 rows; `--jitless` stands in for an app's JavaScriptCore, which runs without a
 JIT): build the plan 1.3 ms with JIT, 1.6 ms without; merge two copies 3.2 ms vs 4.6 ms.

@@ -10,6 +10,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { buildChatContextJson, chatContextOf } from './chat-context';
+import { withLabEgfr } from './plan';
 import { calculateHealthResults } from './calculations';
 import { medicationsToInputs } from './mappings';
 import type { HealthInputs } from './types';
@@ -667,3 +668,22 @@ describe('US-15 AC31: the context carries the plan\'s own verdicts', () => {
   });
 });
 
+// US-07 AC8 (adversary S2 on PR 402): the outdated lab eGFR mark crosses the chat boundary,
+// so the server's chat plan withholds potassium advice as the widget's plan does.
+describe('US-07 AC8: labEgfrOutdated reaches the chat plan', () => {
+  const lab = { labEgfr: 70, labEgfrDate: '2026-06-01' };
+  const bp = { systolicBp: 145, diastolicBp: 92 };
+  const ids = (inputs: Partial<HealthInputs>) =>
+    JSON.parse(buildChatContextJson(chatContextOf(inputs, 'si', [], [], []))!).currentSuggestions.map((s: { id: string }) => s.id);
+
+  it('no sex and a newer creatinine: the chat plan has no potassium card', () => {
+    const inputs = withLabEgfr<Partial<HealthInputs>>({ heightCm: 170, birthYear: 1960, creatinine: 80, ...bp }, '2026-08-01', lab, '2026-09-01');
+    expect(inputs.labEgfrOutdated).toBe(true);
+    expect(ids(inputs)).not.toContain('high-potassium');
+  });
+
+  it('the control: the same lab eGFR with no newer creatinine opens it', () => {
+    const inputs = withLabEgfr<Partial<HealthInputs>>({ heightCm: 170, birthYear: 1960, creatinine: 80, ...bp }, '2026-05-01', lab, '2026-09-01');
+    expect(ids(inputs)).toContain('high-potassium');
+  });
+});

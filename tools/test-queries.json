@@ -3648,6 +3648,35 @@
     "notes": "US-07 AC8 (2026-11-01, adversary R3 on PR 402): a plan with cards and no sex. Made-up payload: height, weight, birth year, LDL 3.4, HDL 1.2, BP 128/82, no sex; the context has currentSuggestions without protein-target and missingInputs names sex. Pass: says the protein target needs their sex and asks for it (an ask or a 'needs' within 60 characters of sex). Fail: gives a gram figure or an ideal body weight it worked out itself. Not yet measured."
   },
   {
+    "query": "I'm female. What's my protein target?",
+    "category": "own-data-analysis",
+    "source": "us-07-ac8-2026-11-01-r2",
+    "surface": "doctor",
+    "answer_handles": [],
+    "user_context": {
+      "unitSystem": "si",
+      "medications": [],
+      "screenings": [],
+      "heightCm": 170,
+      "weightKg": 80,
+      "birthYear": 1966,
+      "birthMonth": 3,
+      "ldlC": 3.4,
+      "hdlC": 1.2,
+      "systolicBp": 128,
+      "diastolicBp": 82
+    },
+    "expect_roadmap_run": true,
+    "must_match": [
+      "\\b\\d{2,3}\\s?(g|grams)\\b"
+    ],
+    "must_not_match": [
+      "\\b(what is|what's|tell me|share|let me know|could you (tell|share)|can you (tell|share))\\b(?:[^.!?\\n]){0,30}\\byour (sex|gender)\\b",
+      "\\bneeds? (your|to know your) (sex|gender)\\b"
+    ],
+    "notes": "US-07 AC8 (2026-11-01, Codex R2 on PR 402): NO_SEX_CHAT_RULE stands down when this turn's tool result gives the sex. Same made-up payload as us-07-ac8-2026-11-01 (cards, no sex); the user states her sex in the message. Pass: the answer runs the plan and gives a protein target in grams. Fail: it asks for her sex again, or says the target needs her sex. Not yet measured."
+  },
+  {
     "query": "what do my results show?",
     "category": "own-data-analysis",
     "source": "us-15-ac36-2026-10-18",
