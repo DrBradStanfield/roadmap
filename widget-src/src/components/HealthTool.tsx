@@ -125,12 +125,17 @@ export const ERASE_CONFIRM =
   // (US-11), and a server chat (US-15 AC7/AC8). Each bubble and embed row
   // copies the chat's first and last 3 questions (api.chat.ts router_context),
   // so a question lasts until 30 days after the chat's last message; the
-  // widget's own rows drop those copies (redactForWidget). No purge reaches
-  // feedback_submissions, and its email copy is already in Brad's inbox.
+  // widget's own rows drop those copies (redactForWidget). Just before the
+  // purge blanks a health question, it keeps a scrubbed copy with no end date
+  // (US-15 AC44); the erase never reaches our server, so that copy is still
+  // made. No purge reaches feedback_submissions, and its email copy is
+  // already in Brad's inbox.
   (SHOPIFY_SURFACE
     ? '5. On another device, the blog chat bubble and the chatbot embed keep sending your old record until the widget next loads there.\n' +
       "6. Your chat questions (the widget, the blog chat bubble and the chatbot embed) and the bubble's and embed's replies. " +
-      "Our server keeps the text of each, and a chat's title, for up to 30 days after your last message in that chat. If you were signed in, it also keeps an account row with your name and email address.\n" +
+      "Our server keeps the text of each, and a chat's title, for up to 30 days after your last message in that chat. " +
+      'It also keeps a copy of each health question, with no end date, to improve the chatbot. An automatic step tries to remove names and contact details first. Email us the wording to have a copy deleted. ' +
+      'If you were signed in, it also keeps an account row with your name and email address.\n' +
       '7. What you sent through the feedback box. Our server keeps it with your email address, and a copy went to Brad by email.\n'
     : '') +
   '\n' +
@@ -147,7 +152,8 @@ const ERASE_DONE_TAIL =
   // Items 5 to 7 of the confirm, shorter (US-11 AC5).
   (SHOPIFY_SURFACE
     ? '\n\nOn another device, the blog chat bubble and the chatbot embed send your old record until the widget loads there. ' +
-      "Our server keeps your chat questions, and the bubble's and embed's replies, for up to 30 days after your last message in that chat. " +
+      "Our server keeps your chat questions, and the bubble's and embed's replies, for up to 30 days after your last message in that chat, " +
+      'and a copy of each health question, with no end date, to improve the chatbot. ' +
       'It keeps what you sent through the feedback box.'
     : '');
 
