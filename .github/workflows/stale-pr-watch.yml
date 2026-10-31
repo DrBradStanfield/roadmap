@@ -1,0 +1,66 @@
+# Stale-PR watchdog (Brad 2026-10-31: "I'm worried that stuff will get
+# orphaned and forgotten about").
+#
+# WHY THIS EXISTS: every change now ships through its own branch and PR
+# (CLAUDE.md, "Every change: its own worktree"). stranded-branch-watch catches
+# a branch that never got a PR; nothing caught a PR that was opened and then
+# left. This daily audit lists every open PR with no activity for 48h in ONE
+# issue, refreshed each run, so a burst of idle PRs is one email, not dozens.
+# github-actions[bot] is the author, so the issue emails Brad natively. When
+# nothing is stale, the issue is closed with a note.
+name: Stale PR watch
+
+on:
+  schedule:
+    - cron: '47 12 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner, repo = context.repo.repo;
+            const IDLE_MS = 48 * 60 * 60 * 1000;
+            const TITLE = '⏳ Stale pull requests (idle over 48h)';
+            const prs = await github.paginate(github.rest.pulls.list, { owner, repo, state: 'open', per_page: 100 });
+            const stale = prs
+              .filter(p => !p.draft && Date.now() - new Date(p.updated_at).getTime() > IDLE_MS)
+              .sort((a, b) => new Date(a.updated_at) - new Date(b.updated_at));
+            const found = await github.rest.search.issuesAndPullRequests({
+              q: `repo:${owner}/${repo} is:issue is:open in:title "Stale pull requests"`,
+            });
+            const open = found.data.items.find(i => i.title === TITLE);
+            if (stale.length === 0) {
+              if (open) {
+                await github.rest.issues.createComment({ owner, repo, issue_number: open.number, body: 'No PR is idle over 48h now. Closing.' });
+                await github.rest.issues.update({ owner, repo, issue_number: open.number, state: 'closed' });
+              }
+              return;
+            }
+            const days = p => Math.floor((Date.now() - new Date(p.updated_at).getTime()) / 86400000);
+            const body = [
+              `**${stale.length} open PR(s)** have had no activity for over 48 hours. Each needs an owner to merge or close it.`,
+              '',
+              '| PR | Idle | Branch | Author |',
+              '|---|---|---|---|',
+              ...stale.map(p => `| #${p.number} ${p.title.replace(/\|/g, '/')} | ${days(p)}d | \`${p.head.ref}\` | ${p.user.login} |`),
+              '',
+              'What to do with each: merge it (CI green, main merged in), close it with a note on where its work went, or mark it draft if it is deliberately parked.',
+              '',
+              '_Refreshed daily by stale-pr-watch. Closes itself when nothing is stale._',
+            ].join('\n');
+            if (open) {
+              await github.rest.issues.update({ owner, repo, issue_number: open.number, body });
+              await github.rest.issues.createComment({ owner, repo, issue_number: open.number, body: `Still ${stale.length} stale PR(s); the list above is refreshed.` });
+            } else {
+              await github.rest.issues.create({ owner, repo, title: TITLE, body });
+            }
