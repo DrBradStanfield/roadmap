@@ -93,34 +93,6 @@ input[type="number"] {
   clip-path: inset(0 -100vmax);
 }
 
-/* Hero Section — outside React, rendered by Liquid */
-.hero-section {
-  display: grid;
-  grid-template-columns: 77% 23%;
-  gap: 0;
-  align-items: center;
-  max-width: var(--container-max-width);
-  margin: 0 auto;
-  font-family: var(--font-family-base);
-}
-
-.hero-text h1 {
-  font-size: clamp(20px, 4vw, 40px);
-  margin: 0 0 12px;
-}
-
-.hero-text p {
-  font-size: clamp(14px, 2vw, 18px);
-  margin: 0;
-}
-
-.hero-image img {
-  width: 100%;
-  height: auto;
-  border-radius: 0;
-  display: block;
-}
-
 /* Two-Panel Layout */
 .health-tool-content {
   display: grid;
@@ -180,20 +152,6 @@ input[type="number"] {
 
   .health-tool-right {
     margin: 0 10px;
-  }
-
-  .hero-section {
-    grid-template-columns: 100% 0%;
-    gap: 0px;
-    margin-top: 16px;
-  }
-
-  .hero-image {
-    display: none;
-  }
-
-  .hero-text h1 {
-    text-align: center;
   }
 
   .mobile-tab-bar-container {
@@ -300,23 +258,6 @@ input[type="number"] {
   flex-direction: column;
   gap: 8px;
 }
-
-.unit-toggle {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 16px;
-}
-
-.unit-toggle label {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-gray-dark);
-}
-
-/* The Units control is now a compact `.unit-toggle-pill` button (styled
-   separately), not a full-height `<select>` — so it no longer shares the
-   `.health-field input, .health-field select` coherence geometry. */
 
 .health-section {
   padding-bottom: 9px;
@@ -1323,65 +1264,6 @@ a.action-btn-small.action-btn-small:hover {
   cursor: not-allowed;
 }
 
-/* Migration Prompt */
-.health-tool-migration-prompt {
-  background: #e0f5f1;
-  border: 1px solid #bbdefb;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 24px;
-}
-
-.migration-content p {
-  font-size: 15px;
-  color: #1565c0;
-  margin: 0 0 16px;
-  line-height: 1.5;
-}
-
-.migration-content strong {
-  color: #0d47a1;
-}
-
-.migration-actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.migration-btn {
-  padding: 10px 20px;
-  font-size: 14px;
-  font-weight: 500;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
-  border: none;
-}
-
-.migration-btn:active {
-  transform: scale(0.98);
-}
-
-.migration-btn.primary {
-  background: var(--color-brand);
-  color: #fff;
-}
-
-.migration-btn.primary:hover {
-  background: var(--color-brand-hover);
-}
-
-.migration-btn.secondary {
-  background: #fff;
-  color: var(--color-brand);
-  border: 1px solid var(--color-brand);
-}
-
-.migration-btn.secondary:hover {
-  background: #e0f5f1;
-}
-
 /* Previous Value Label (longitudinal fields) */
 .previous-value {
   display: block;
@@ -1503,23 +1385,6 @@ a.action-btn-small.action-btn-small:hover {
   color: var(--color-gray-light);
   margin-bottom: 4px;
   font-style: italic;
-}
-
-/* Cancel button in blood test header */
-.add-results-btn--cancel {
-  background: none;
-  border: 1px solid var(--color-gray-border);
-  border-radius: 6px;
-  padding: 6px 14px;
-  font-size: 13px;
-  color: var(--color-gray-light);
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.add-results-btn--cancel:hover {
-  color: var(--color-gray-dark);
-  border-color: var(--color-gray-dark);
 }
 
 /* Save Longitudinal Button */
@@ -1798,85 +1663,6 @@ a.action-btn-small.action-btn-small:hover {
   font-size: 13px;
   line-height: 1.5;
   color: var(--color-text-secondary);
-}
-
-/* Reminder Settings */
-.reminder-settings {
-  border: 1px solid var(--color-gray-border);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.reminder-settings-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 12px 16px;
-  background: #fff;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-gray-dark);
-  user-select: none;
-}
-
-.reminder-settings-toggle:hover {
-  background: #fafafa;
-}
-
-.reminder-settings-content {
-  padding: 0 16px 16px;
-  background: #fff;
-}
-
-.reminder-settings-desc {
-  font-size: 13px;
-  color: var(--color-gray-medium);
-  margin: 0 0 12px;
-  line-height: 1.4;
-}
-
-.reminder-checkboxes {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.reminder-checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 0;
-  font-size: 13px;
-  color: var(--color-gray-dark);
-  cursor: pointer;
-}
-
-.reminder-checkbox-label input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
-
-.reminder-unsubscribe-btn {
-  display: block;
-  width: 100%;
-  margin-top: 16px;
-  padding: 10px;
-  background: none;
-  border: 1px solid var(--color-error);
-  border-radius: 6px;
-  color: var(--color-error);
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-}
-
-.reminder-unsubscribe-btn:hover {
-  background: var(--color-error);
-  color: #fff;
 }
 
 /* Feedback Section */
@@ -2219,18 +2005,6 @@ a.action-btn-small.action-btn-small:hover {
    Upload Lab Results — Button
    --------------------------------------------------------------------------- */
 
-.health-section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.health-section-header .health-section-title {
-  margin: 0;
-}
-
 .upload-lab-btn {
   display: inline-flex;
   align-items: center;
@@ -2435,13 +2209,6 @@ a.action-btn-small.action-btn-small:hover {
   color: var(--color-gray-light);
 }
 
-.upload-extract-btn {
-  width: 100%;
-  padding: 12px;
-  margin-top: 16px;
-  font-size: 15px;
-}
-
 .upload-error {
   color: var(--color-error);
   font-size: 13px;
@@ -2474,12 +2241,6 @@ a.action-btn-small.action-btn-small:hover {
 
 .upload-progress-fill--smooth {
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.upload-progress-text {
-  font-size: 15px;
-  color: var(--color-gray-dark);
-  margin: 0 0 4px;
 }
 
 .upload-progress-file {
@@ -2615,85 +2376,19 @@ a.action-btn-small.action-btn-small:hover {
   flex-wrap: wrap;
 }
 
-.review-date-warning {
-  color: var(--color-warning);
-  font-size: 12px;
-}
-
 .review-no-values {
   font-size: 13px;
   color: var(--color-gray-light);
   font-style: italic;
 }
 
-.review-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 0;
-  font-size: 13px;
-  flex-wrap: wrap;
-}
-
 .review-row-check {
   flex-shrink: 0;
-}
-
-.review-row-metric {
-  font-weight: 500;
-  min-width: 120px;
 }
 
 .review-row-value {
   color: var(--color-gray-dark);
 }
-
-/* Inline-editable value input in the lab-upload review table. Compact so the
-   row layout doesn't reflow when switching from the old read-only span. */
-.review-row-value-input {
-  width: 80px;
-  padding: 4px 6px;
-  font-size: 14px;
-  font-family: inherit;
-  border: 1px solid var(--color-gray-border, #d0d0d0);
-  border-radius: 4px;
-  background: white;
-  text-align: right;
-}
-.review-row-value-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.15);
-}
-
-.review-row-unit {
-  font-size: 13px;
-  color: var(--color-gray-dark);
-  margin-left: 4px;
-}
-
-.review-row-edited-note {
-  font-size: 11px;
-  color: var(--color-gray-light);
-  font-style: italic;
-}
-
-.review-row-warning,
-.review-row-question {
-  width: 100%;
-  font-size: 12px;
-  color: var(--color-warning);
-  margin: 2px 0 0 28px;
-  padding-left: 0;
-}
-
-.review-row-confidence {
-  font-size: 10px;
-}
-
-.review-confidence--high { color: var(--color-success); }
-.review-confidence--medium { color: var(--color-warning); }
-.review-confidence--low { color: var(--color-error); }
 
 .review-row-dup {
   font-size: 12px;
@@ -2703,26 +2398,6 @@ a.action-btn-small.action-btn-small:hover {
   padding: 2px 7px;
   border-radius: 4px;
   font-weight: 500;
-}
-
-.review-additional {
-  margin-top: 12px;
-  border-top: 1px dashed var(--color-gray-border);
-  padding-top: 8px;
-}
-
-.review-additional-label {
-  margin: 0 0 6px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-gray-light);
-}
-
-.review-row--additional .review-row-ref {
-  font-size: 11px;
-  color: var(--color-gray-light);
-  margin-left: 4px;
-  white-space: nowrap;
 }
 
 .review-date-hint {
@@ -3147,88 +2822,6 @@ a.action-btn-small.action-btn-small:hover {
   font-weight: 500;
 }
 
-.chat-counter {
-  font-size: 12px;
-  color: var(--color-gray-light);
-  white-space: nowrap;
-}
-
-/* --- Guest (greyed out) --- */
-
-.chat-guest .chat-collapsed {
-  cursor: default;
-  position: relative;
-}
-
-.chat-guest .chat-collapsed:hover {
-  background: rgba(0, 163, 139, 0.04);
-  border-color: rgba(0, 163, 139, 0.25);
-  box-shadow: none;
-}
-
-/* Shared tooltip base for chat login prompts */
-.chat-guest-tooltip,
-.chat-fab-tooltip {
-  position: absolute;
-  padding: 10px 16px;
-  background: #fff;
-  color: var(--color-text);
-  font-size: 13px;
-  border-radius: 8px;
-  white-space: nowrap;
-  border: 1px solid var(--color-gray-border);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  visibility: hidden;
-  opacity: 0;
-  transition: opacity 0.15s, visibility 0.15s;
-}
-
-.chat-guest-tooltip a,
-.chat-fab-tooltip a {
-  color: var(--color-brand);
-  font-weight: 600;
-  text-decoration: underline;
-}
-
-.chat-guest-tooltip::after,
-.chat-fab-tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  border: 6px solid transparent;
-  border-top-color: var(--color-gray-border);
-}
-
-/* Inline chat tooltip — centered above the collapsed bar */
-.chat-guest-tooltip {
-  bottom: calc(100% + 2px);
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  transition-delay: 0.3s;
-}
-
-.chat-guest-tooltip::after {
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-/* Invisible bridge so hovering between card and tooltip keeps it visible */
-.chat-guest-tooltip::before {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  height: 12px;
-}
-
-.chat-guest .chat-collapsed:hover .chat-guest-tooltip {
-  visibility: visible;
-  opacity: 1;
-  transition-delay: 0s;
-}
-
 /* --- Expanded panel --- */
 
 .chat-expanded {
@@ -3558,33 +3151,6 @@ a.action-btn-small.action-btn-small:hover {
   border-radius: 4px 14px 14px 14px;
 }
 
-.chat-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-gray-light);
-  animation: chat-bounce 1.2s ease-in-out infinite;
-}
-
-.chat-dot:nth-child(2) {
-  animation-delay: 0.15s;
-}
-
-.chat-dot:nth-child(3) {
-  animation-delay: 0.3s;
-}
-
-@keyframes chat-bounce {
-  0%, 60%, 100% {
-    transform: translateY(0);
-    opacity: 0.4;
-  }
-  30% {
-    transform: translateY(-6px);
-    opacity: 1;
-  }
-}
-
 /* Live thinking summary while the answer streams (US-15 AC16/AC17), and
    the toggle it folds into once the answer lands. */
 
@@ -3769,64 +3335,6 @@ a.action-btn-small.action-btn-small:hover {
 .chat-sub-card-buttons button:disabled {
   opacity: 0.6;
   cursor: default;
-}
-
-/* Upgrade CTA (shown when daily limit reached) */
-
-.chat-upgrade {
-  padding: 16px;
-  text-align: center;
-}
-
-.chat-upgrade p {
-  margin: 0 0 4px;
-  font-size: 14px;
-  color: var(--color-text);
-}
-
-.chat-upgrade-subtitle {
-  color: var(--color-gray-medium) !important;
-  font-size: 13px !important;
-  margin-bottom: 12px !important;
-}
-
-.chat-pack-options {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.chat-pack-btn {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  padding: 10px 16px;
-  border: 1px solid var(--color-gray-border);
-  border-radius: 8px;
-  background: #fff;
-  color: var(--color-text);
-  font-size: 14px;
-  cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.chat-pack-btn:hover {
-  border-color: var(--color-brand);
-  box-shadow: 0 0 0 1px var(--color-brand);
-}
-
-.chat-signup-btn {
-  justify-content: center;
-}
-
-.chat-pack-amount {
-  font-weight: 500;
-}
-
-.chat-pack-price {
-  font-weight: 600;
-  color: var(--color-brand);
 }
 
 /* Input bar */
@@ -4087,33 +3595,6 @@ a.action-btn-small.action-btn-small:hover {
 @keyframes chat-fab-entrance {
   from { opacity: 0; transform: scale(0.5); }
   to { opacity: 1; transform: scale(1); }
-}
-
-/* Guest FAB — greyed out with tooltip */
-
-.chat-fab-guest {
-  background: var(--color-gray-light);
-  cursor: default;
-}
-
-.chat-fab-guest:hover {
-  transform: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* FAB tooltip — anchored above the round button, right-aligned */
-.chat-fab-tooltip {
-  bottom: calc(100% + 10px);
-  right: 0;
-}
-
-.chat-fab-tooltip::after {
-  right: 20px;
-}
-
-.chat-fab-guest:hover .chat-fab-tooltip {
-  visibility: visible;
-  opacity: 1;
 }
 
 /* ── Chat thinking dots (remote instances — no animated text, just pulsing dots) ── */
@@ -5207,12 +4688,6 @@ a.action-btn-small.action-btn-small:hover {
      same outer width in the header and rows — otherwise the flex `bt-cell-strip`
      resolves to a different width per row and the matrix columns misalign by
      a few px. */
-}
-
-.bt-rows {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
 }
 
 /* ---------------------------------------------------------------------------
