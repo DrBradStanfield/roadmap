@@ -6,6 +6,7 @@ import * as Sentry from '@sentry/react';
 import { MAX_HISTORY_MESSAGES, type ProposedEdit } from '@roadmap/health-core';
 import { PROXY_PATH, parseJsonResponse } from './server-api';
 import { getChatHistory } from './chat-history-access';
+import { recordFailure } from './error-diagnostics';
 import { readSubscriptionCard, type SubscriptionCard } from './subscription-card';
 import type { ChatHistoryStore } from '../storage/chat-history-store';
 
@@ -446,7 +447,10 @@ export async function sendMessage(
           ...(data.isFallback === true ? { isFallback: true } : {}),
         }),
       )
-      .catch(() => {});
+      .catch((error) => {
+        // A turn missing from the history file is reported, not only dropped (US-15 AC47).
+        Sentry.captureException(recordFailure(error, 'Chat-history save failed'), { tags: { area: 'chat-history', op: 'save' } });
+      });
 
     return {
       result: {

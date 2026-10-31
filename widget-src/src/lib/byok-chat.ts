@@ -30,7 +30,9 @@ import {
 } from '@roadmap/health-core';
 import { modelParams } from '@roadmap/health-core/models';
 import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
+import * as Sentry from '@sentry/react';
 import { getChatHistory } from './chat-history-access';
+import { recordFailure } from './error-diagnostics';
 import { ByokAnthropicError, callAnthropicDirectRaw } from './byok-anthropic';
 import type { ChatDelta } from './chat-api';
 
@@ -250,7 +252,10 @@ export async function sendMessage(
         assistantMessageId: assistantId,
       }),
     )
-    .catch(() => {});
+    .catch((error) => {
+      // A turn missing from the history file is reported, not only dropped (US-15 AC47).
+      Sentry.captureException(recordFailure(error, 'Chat-history save failed'), { tags: { area: 'chat-history', op: 'save' } });
+    });
 
   return {
     result: {
