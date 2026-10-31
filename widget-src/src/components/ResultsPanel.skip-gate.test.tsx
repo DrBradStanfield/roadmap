@@ -354,19 +354,18 @@ describe('US-44 AC6 — Save as PDF shows on a phone', () => {
     await waitFor(() => expect(planHeader(view).classList.contains('hr-col-header--actions')).toBe(true));
   });
 
-  it('the empty-plan placeholder header and the input header stay fully hidden on a phone', () => {
+  // The input header keeps its actions only when it holds the storage button
+  // (US-09 AC30, HealthTool.top-bar.test.tsx).
+  it('the empty-plan placeholder header stays fully hidden on a phone', () => {
     const view = render(<ResultsPanel results={null} isValid={false} unitSystem="si" />);
     expect(planHeader(view as ReturnType<typeof showPlan>).classList.contains('hr-col-header--actions')).toBe(false);
-    const input = readFileSync(resolve(__dirname, 'InputPanel.tsx'), 'utf8');
-    const inputHeader = /<ColumnHeader step=\{1\}[^\n]*\/>/.exec(input)![0];
-    expect(inputHeader).not.toContain('actions');
   });
 
   it('styles.css: at 768px the column header hides, except the plan header\'s actions', () => {
     const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8').replace(/\s+/g, ' ');
     const hide = css.indexOf('.hr-col-header { display: none; }');
     expect(hide).toBeGreaterThan(-1);
-    const block = css.slice(css.lastIndexOf('@media (max-width: 768px) {', hide), css.indexOf('.hr-guide-mobile', hide));
+    const block = css.slice(css.lastIndexOf('@media (max-width: 768px) {', hide), css.indexOf('}', css.indexOf('.hr-col-header--actions .hr-col-title', hide)) + 1);
     const keep = block.indexOf('.hr-col-header--actions { display: flex;');
     expect(keep).toBeGreaterThan(block.indexOf('.hr-col-header { display: none; }'));
     expect(block).toContain('.hr-col-header--actions .hr-col-title { display: none; }');

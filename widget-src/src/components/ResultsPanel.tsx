@@ -18,6 +18,7 @@ import { EMAIL_REGEX } from '../lib/email';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { getSkipEmailGate } from '../lib/assistant-config';
 import { ColumnHeader } from './ColumnHeader';
+import { GuideLink } from './GuideLink';
 import { StorageNotice } from '../lib/storage-notice';
 import { FeedbackForm } from './FeedbackForm';
 import { alcoholDismiss } from './AlcoholQuestion';
@@ -765,6 +766,9 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
       {emailCapture && !guestEmailHook.gateSkipped && <GuestEmailCapture hook={guestEmailHook} pdfBlocked={pdfBlocked === 'capture'} />}
 
       {SHOPIFY_SURFACE && <FeedbackForm />}
+
+      {/* US-38 AC1: the open-source link, at the foot of the plan. */}
+      <GuideLink />
 
       <div className="privacy-notice-link">
         <a

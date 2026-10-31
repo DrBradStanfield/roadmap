@@ -110,6 +110,11 @@ const OPTIONS: Option[] = [
   },
 ];
 
+/** US-09 AC30: what a guest who tapped "Sign in" expects to hear first. A
+ *  connected or reconnecting record is not "in this browser", so guests only. */
+export const PICKER_GUEST_LEAD =
+  'Saved your record to Dropbox, Google Drive or GitHub before? Open it here. If not, it is in this browser, and you can choose a home for it now.';
+
 export function BackendPickerModal({ current, onClose }: { current: Backend; onClose: () => void }) {
   const [step, setStep] = useState<'list' | 'github' | 'self-host' | 'log-off'>('list');
   const { busy, error, setError, run } = useBusyRun();
@@ -174,6 +179,7 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
         {step === 'list' && (
           <>
             <h2>{PLAN_STORAGE_CTA}</h2>
+            {current === 'local' && <p className="hr-modal-sub">{PICKER_GUEST_LEAD}</p>}
             <p className="hr-modal-sub">{PLAN_STORAGE_NOTICE}</p>
             {OPTIONS.map((o, i) => (
               <React.Fragment key={o.id}>

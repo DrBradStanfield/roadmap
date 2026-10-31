@@ -25,6 +25,46 @@ const STORAGE_CTA_SEEN_KEY = 'hr_storage_cta_seen';
 /** The same, for this page's life, in case storage throws. */
 let storageCtaSeen = false;
 
+/** "Still waiting to sync": driven by the store's pending-sync marker, set by a
+ *  failed cloud save or a failed connect-time lift and cleared by the next
+ *  successful cloud save. The store fires SYNC_PENDING_EVENT on every flip, so
+ *  this is true only while data is genuinely unsynced; no polling. */
+function usePendingSync(backend: Backend): boolean {
+  const [pendingSync, setPendingSync] = useState(false);
+  useEffect(() => {
+    if (backend === 'local') return;
+    const check = () => setPendingSync(isSyncPending());
+    check();
+    window.addEventListener(SYNC_PENDING_EVENT, check);
+    return () => window.removeEventListener(SYNC_PENDING_EVENT, check);
+  }, [backend]);
+  return pendingSync;
+}
+
+/** US-09 AC30: the top bar's label, from the real storage state (storageState's
+ *  three, plus pending sync), so it never claims what is not true. A reconnect
+ *  session runs on 'local', so it is asked first. */
+function storageBarLabel(backend: Backend, reconnect: Exclude<Backend, 'local'> | undefined, pendingSync: boolean): string {
+  if (reconnect) {
+    if (reconnect === 'dropbox') return 'Reconnect Dropbox';
+    return reconnect === 'google-drive' ? 'Sign in to Google again' : 'Retry';
+  }
+  if (backend === 'local') return 'Sign in';
+  return pendingSync ? 'Saving…' : PROVIDER_LABELS[backend];
+}
+
+/** US-09 AC30: the top bar's storage button, where "Supercharge this tool" sat.
+ *  Every state opens the one picker, which SyncControl hosts with
+ *  `current={reconnect ?? backend}` (AC13). */
+export function StorageBar({ backend, reconnect }: { backend: Backend; reconnect?: Exclude<Backend, 'local'> }) {
+  const pendingSync = usePendingSync(backend);
+  return (
+    <button type="button" className="action-btn-small" aria-haspopup="dialog" onClick={openBackendPicker}>
+      {storageBarLabel(backend, reconnect, pendingSync)}
+    </button>
+  );
+}
+
 export function SyncControl({ backend, reconnect, hasData = true, attention = false }: {
   backend: Backend;
   reconnect?: Exclude<Backend, 'local'>;
@@ -52,20 +92,7 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
     return () => window.removeEventListener(OPEN_PICKER_EVENT, open);
   }, []);
 
-  // "Still waiting to sync" indicator — driven by the store's pending-sync
-  // marker: set by a failed cloud save or a failed connect-time lift, cleared
-  // by the next successful cloud save. The store fires SYNC_PENDING_EVENT on
-  // every flip (same convention as the hr:* reminder events), so the line
-  // appears only while data is genuinely unsynced and clears the moment it
-  // lands — no polling.
-  const [pendingSync, setPendingSync] = useState(false);
-  useEffect(() => {
-    if (backend === 'local') return;
-    const check = () => setPendingSync(isSyncPending());
-    check();
-    window.addEventListener(SYNC_PENDING_EVENT, check);
-    return () => window.removeEventListener(SYNC_PENDING_EVENT, check);
-  }, [backend]);
+  const pendingSync = usePendingSync(backend);
 
   // Reconnect via the GIS popup FALLBACK (~1 h token) — works even with the
   // exchange endpoint down; needs this click's user gesture. Local edits made
