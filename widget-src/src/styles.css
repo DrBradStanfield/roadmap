@@ -5151,6 +5151,12 @@ input[type="number"] {
   content: ''; order: -1; flex: 0 0 var(--bt-foot-h); width: 0;
 }
 .bt-vitals-bp-inputs .bt-input { width: 42%; font-size: 13px; }
+/* US-20 AC8: the phone's 16px guard for `.bt-input`, for the pair too. After
+   the rule above, which has two classes and would otherwise win, so iOS
+   zoomed the page when either half was tapped. */
+@media (max-width: 768px) {
+  .bt-vitals-bp-inputs .bt-input { font-size: 16px; }
+}
 .bt-vitals-bp-sep { color: var(--bt-ink-400); font-size: 13px; font-weight: 600; }
 /* Saved BP cell renders the "128/80" value at slightly smaller size to fit. */
 .bt-value-num--bp { font-size: 13px; }
