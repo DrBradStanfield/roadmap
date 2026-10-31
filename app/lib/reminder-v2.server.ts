@@ -452,16 +452,22 @@ export async function deleteByEmail(email: string): Promise<boolean> {
   return (data?.length ?? 0) > 0;
 }
 
-/** Page through all reminder opt-ins (cron). */
+/**
+ * Page through all reminder opt-ins (cron) by id: each page starts after the
+ * last id already read. Rows are deleted while the cron walks (a bounce from
+ * its own sends, a complaint, an erase), and with an offset every row deleted
+ * from a page already read made the next page skip one that was still there.
+ */
 export async function getOptinsBatch(
   limit: number,
-  offset: number,
+  afterId: string | null,
 ): Promise<ReminderV2Optin[]> {
-  const { data, error } = await requireAdmin()
+  const query = requireAdmin()
     .from('reminder_optin_v2')
-    .select('id, email, provider, schedule, last_sent, token, created_at')
-    .order('created_at', { ascending: true })
-    .range(offset, offset + limit - 1);
+    .select('id, email, provider, schedule, last_sent, token, created_at');
+  const { data, error } = await (afterId === null ? query : query.gt('id', afterId))
+    .order('id', { ascending: true })
+    .limit(limit);
   if (error) throw new Error(`reminder_optin_v2 select failed: ${error.message}`);
   return (data ?? []) as ReminderV2Optin[];
 }
