@@ -80,8 +80,14 @@ describe('every vite bundle defines __SENTRY_RELEASE__ (US-49 AC4)', () => {
   } catch {
     /* not a git checkout */
   }
-  const ALL = { ...SHOPIFY_SURFACE_BUNDLES, ...NON_SURFACE_BUNDLES };
-  for (const [name, config] of Object.entries(ALL)) {
+  // The dev:shopify server (vite.config.shopify-dev.ts) ships no bundle and
+  // runs only on localhost, where Sentry is off (US-20 AC5,
+  // src/lib/sentry-enabled.test.ts), so there is no deploy to tag.
+  const DEV_ONLY = new Set(['vite.config.shopify-dev.ts']);
+  const ALL = Object.entries({ ...SHOPIFY_SURFACE_BUNDLES, ...NON_SURFACE_BUNDLES })
+    .filter(([name]) => !DEV_ONLY.has(name));
+  it('checks the five built configs', () => expect(ALL).toHaveLength(5));
+  for (const [name, config] of ALL) {
     it(`${name} sets the release health-tool-widget@<git hash>`, () => {
       expect(config.define?.__SENTRY_RELEASE__).toBe(JSON.stringify(`health-tool-widget@${gitHash}`));
     });
