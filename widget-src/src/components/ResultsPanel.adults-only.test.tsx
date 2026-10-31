@@ -70,7 +70,7 @@ describe('US-07 AC6: a minor\'s tiles hold values, not adult readings', () => {
     });
     const { container } = render(<ResultsPanel results={results} isValid unitSystem="si" />);
     const labels = Array.from(container.querySelectorAll('.stat-label')).map((l) => l.textContent);
-    expect(labels).toEqual(expect.arrayContaining(['BMI', 'Ideal Body Weight', 'Protein Target', 'LDL Cholesterol', 'eGFR', 'Lp(a)', 'HbA1c']));
+    expect(labels).toEqual(expect.arrayContaining(['BMI', 'Ideal Body Weight (IBW)', 'Protein Target', 'LDL Cholesterol', 'eGFR', 'Lp(a)', 'HbA1c']));
     expect(container.querySelectorAll('.stat-status').length).toBeGreaterThanOrEqual(6);
   });
 });

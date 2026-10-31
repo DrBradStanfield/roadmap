@@ -20,7 +20,7 @@ import { classifyMessage, shouldFireRouter } from './chat-classifier.server';
 import { loadBlogIndex } from './blog-index.server';
 import { preferMasters } from './router-view';
 import type { AnthropicUsage } from './anthropic.server';
-import type { Classification, RefusalCategory } from '../../packages/health-core/src/models';
+import { Classification, type RefusalCategory } from '../../packages/health-core/src/models';
 
 export interface PlatformCompletionResult {
   content: string;
@@ -29,6 +29,8 @@ export interface PlatformCompletionResult {
    *  Callers must propagate to their persistence layer (chat_messages.is_fallback) AND
    *  to reportChatFallback() for the Sentry alert. */
   isFallback: boolean;
+  /** US-15 AC48: the classifier said SPAM, so content is empty and the caller sends nothing. */
+  silent?: boolean;
   /** The model declined: content is the refusal line, which the caller posts as is. */
   isRefusal?: boolean;
   refusalCategory?: RefusalCategory;
@@ -83,6 +85,17 @@ export async function platformChatCompletion(params: {
 
   // Stage 1: classifier (Discord has no per-user data fetch to parallelize with).
   const classifierResult = await classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent);
+  const classifier = {
+    classification: classifierResult.classification,
+    routerSkipped: classifierResult.routerSkipped,
+    latencyMs: classifierResult.latencyMs,
+    error: classifierResult.error,
+  };
+
+  // US-15 AC48: spam gets no reply on Discord, so no router or answer call either.
+  if (classifierResult.classification === Classification.SPAM) {
+    return { silent: true, content: '', usage: classifierResult.usage, isFallback: false, routerResult: null, replaced: [], classifier };
+  }
 
   // Stage 2: router fires only when the classifier didn't bypass it (ROUTE/ERROR → fire).
   const routerResult: RouterResult | null = shouldFireRouter(classifierResult)
@@ -113,11 +126,6 @@ export async function platformChatCompletion(params: {
     routerResult,
     replaced: routed.replaced,
     reduced: matched?.reduced,
-    classifier: {
-      classification: classifierResult.classification,
-      routerSkipped: classifierResult.routerSkipped,
-      latencyMs: classifierResult.latencyMs,
-      error: classifierResult.error,
-    },
+    classifier,
   };
 }

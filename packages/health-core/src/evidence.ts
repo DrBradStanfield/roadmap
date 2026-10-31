@@ -709,6 +709,19 @@ export const GUIDE_REFERENCES: SuggestionReference[] = [
   { label: 'He 2022 – GLP-1 receptor agonist use & risk of gallbladder and biliary diseases (JAMA Intern Med)', url: 'https://doi.org/10.1001/jamainternmed.2022.0338' },
   { label: 'Konopka 2019 – Metformin inhibits mitochondrial adaptations to aerobic exercise training in older adults (Aging Cell)', url: 'https://doi.org/10.1111/acel.12880' },
   { label: 'Moreno-Cabanas 2022 – Chronic metformin treatment & training adaptations with hyperglycemia (Obesity)', url: 'https://doi.org/10.1002/oby.23410' },
+  // The Apple Health guides (US-58 AC7; docs/drafts/live-metric-guides.md, Brad 2026-10-31).
+  // DOIs checked against Crossref on 2026-10-30 and 2026-10-31. Apple's pages back only how
+  // its devices measure, never a clinical claim (Brad's decision 2).
+  { label: 'Zhang 2016 – Resting heart rate & all-cause and cardiovascular mortality: meta-analysis (CMAJ)', url: 'https://doi.org/10.1503/cmaj.150535' },
+  { label: 'Aune 2017 – Resting heart rate & cardiovascular disease, cancer and mortality: dose-response meta-analysis (Nutr Metab Cardiovasc Dis)', url: 'https://doi.org/10.1016/j.numecd.2017.04.004' },
+  { label: 'Reimers 2018 – Effects of exercise on resting heart rate: meta-analysis of interventional studies (J Clin Med)', url: 'https://doi.org/10.3390/jcm7120503' },
+  { label: 'Paluch 2022 – Daily steps & all-cause mortality: meta-analysis of 15 international cohorts (Lancet Public Health)', url: 'https://doi.org/10.1016/S2468-2667(21)00302-9' },
+  { label: 'Watson 2015 – Recommended amount of sleep for a healthy adult: AASM and SRS consensus (J Clin Sleep Med)', url: 'https://doi.org/10.5664/jcsm.4758' },
+  { label: 'Milanović 2015 – Interval versus continuous training for VO2 max: meta-analysis (Sports Med)', url: 'https://doi.org/10.1007/s40279-015-0365-0' },
+  { label: 'Apple 2026 – Monitor your heart rate with Apple Watch (Apple Support; how the watch measures)', url: 'https://support.apple.com/en-us/120277' },
+  { label: 'Apple 2026 – HealthKit documentation: restingHeartRate (Apple Developer; how the estimate is made)', url: 'https://developer.apple.com/documentation/healthkit/hkquantitytypeidentifier/restingheartrate' },
+  { label: 'Apple 2025 – Estimating Sleep Stages from Apple Watch (white paper; how the watch measures)', url: 'https://www.apple.com/health/pdf/Estimating_Sleep_Stages_from_Apple_Watch_Oct_2025.pdf' },
+  { label: 'Apple 2026 – Track your cardio fitness levels (Apple Support; what feeds the estimate)', url: 'https://support.apple.com/en-us/108790' },
 ];
 
 /** Static stat card evidence entries. */

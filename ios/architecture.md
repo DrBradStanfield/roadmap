@@ -818,6 +818,9 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   `navigationDestination`; My data reads Health on `.task` and on return to the app.
 - Usage signal: `Analytics.Screen.appleHealthMetric` ("Apple Health metric"); `LiveHealth.pagesOpen`
   counts open pages, and RootView names the My data tab by it.
+- Guides (US-58 AC7, Brad 2026-10-31): each page ends with its health-core guide, the same `GuideSections` as a
+  record metric's page. `LivePageFrame` draws it last; `MyDataView` hands it in from My data's `guides` by
+  `LiveMetric.guideKey` (the snake-case key, as `paletteKey`). No engine change: the engine already serves every guide.
 - Simulator seeding: `App/LiveHealthSeed.swift`, DEBUG only (`#if DEBUG`, never in a release build):
   `--seed-live-health` asks to write the five types and saves 60 days of synthetic samples and a
   year of VO2 max. A sheet asked for during launch is dismissed by iOS, so it waits 4 s. Apple's

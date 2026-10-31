@@ -60,7 +60,7 @@ describe('waist-to-height tile', () => {
 
 describe('IBW and protein tiles', () => {
   it('reads IBW in the weight unit and height in the plan units', () => {
-    expect(tile({}, 'ibw')).toMatchObject({ label: 'Ideal Body Weight', value: '70.5', unit: 'kg', status: { label: 'for 175 cm height' } });
+    expect(tile({}, 'ibw')).toMatchObject({ label: 'Ideal Body Weight (IBW)', value: '70.5', unit: 'kg', status: { label: 'for 175 cm height' } });
     expect(tile({}, 'ibw')?.status?.tone).toBeUndefined(); // neutral gray (Brad 2026-10-31)
     expect(tile({}, 'ibw').evidence).toEqual(getIbwEvidence('male'));
     const us = tile({}, 'ibw', { unitSystem: 'conventional', sex: 'male' });

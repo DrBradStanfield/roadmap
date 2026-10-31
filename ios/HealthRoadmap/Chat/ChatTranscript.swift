@@ -46,6 +46,8 @@ struct ChatTranscript {
 
     /// The last turn failed: its question stays, an empty answer goes.
     mutating func fail(_ error: Error) {
+        // An answer already finished (and saved to history) stays as it is.
+        guard !finished else { return }
         guard let start = lines.lastIndex(where: { $0.role == .user }) else { return }
         if lines.last?.role == .assistant, lines.last?.text.isEmpty == true { lines.removeLast() }
         for index in start..<lines.count { lines[index].failed = true }

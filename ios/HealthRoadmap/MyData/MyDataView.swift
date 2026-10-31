@@ -55,7 +55,8 @@ struct MyDataView: View {
                 MetricDetailView(store: store, row: row, saved: saved)
             }
             .navigationDestination(item: $liveDetail) { metric in
-                if let live { LiveHealthPage(live: live, metric: metric, bands: metric == .vo2Max ? store.myData?.vo2Bands?.value : nil) }
+                if let live { LiveHealthPage(live: live, metric: metric, bands: metric == .vo2Max ? store.myData?.vo2Bands?.value : nil,
+                                              guide: store.myData?.guides?[metric.guideKey]) }
             }
             // Read from Health each time My data shows and on return to the app; nothing is kept (US-56 AC2).
             .task { await live?.refresh() }

@@ -1,10 +1,18 @@
 # Apple Health metric guides (DRAFT for Brad)
 
-Status: draft, 2026-10-30. Not built. Brad asked for "the clinical info for resting heart rate, etc", with Apple Health as the template. This file holds the proposed text for the five US-56 metrics (heart rate, resting heart rate, sleep, VO2 max, steps), the same shape as the US-58 guides (docs/drafts/metric-guides.md), for review.
+Status: approved by Brad 2026-10-31 and built the same day (US-58 AC7). Was: draft, 2026-10-30. Brad asked for "the clinical info for resting heart rate, etc", with Apple Health as the template. This file holds the proposed text for the five US-56 metrics (heart rate, resting heart rate, sleep, VO2 max, steps), the same shape as the US-58 guides (docs/drafts/metric-guides.md), for review.
 
-## Brad's decisions
+## Brad's decisions (2026-10-31)
 
-None yet. See "Decisions for Brad" at the end.
+Brad approved everything on 2026-10-31: all 32 claims as drafted (17 new), and the seven decisions as recommended.
+
+1. (A) Snake-case keys in health-core (`heart_rate`, `resting_heart_rate`, `sleep`, `vo2_max`, `steps`), with a `guideKey` on the app's `LiveMetric`.
+2. (A) Apple's support pages, HealthKit documentation and white papers are cited for device facts only, never for a clinical claim.
+3. (A) Numbers as drafted: resting heart rate's "about 9% per 10 bpm" (Zhang 2016, 46 studies), the step plateaus (Paluch 2022), Kodama 2009, 33 studies, with no per-MET figure.
+4. (A) No "60 to 100 bpm" range.
+5. (A) Watson 2015 as a second sleep source, with no new sentence.
+6. (A) The standard tips (claims 2, 4, 5, 10, 11, 26, 28) approved as a category.
+7. (A) Short sentences in roadmap_text.html: Exercise gains resting heart rate and steps (and the device sentences for heart rate and VO2 max, so every new source is cited); Sleep gains the watch's stages, and Watson is cited on one sentence giving its floor of at least 7 hours a night (it sets no upper bound, so it is not cited on the 7 to 9 target). Exercise also gains a Kodama sentence for the VO2 max guide's 33 studies, citing [23] (orchestrator 2026-10-31). The new references are appended after [122] as [123] to [131], with no renumbering.
 
 ## What Apple does, and what we take from it
 

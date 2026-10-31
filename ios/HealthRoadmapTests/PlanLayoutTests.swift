@@ -74,7 +74,7 @@ final class PlanLayoutTests: XCTestCase {
         let tiles = try view(units: #"{"hba1c":"conventional"}"#).tiles
 
         XCTAssertEqual(tiles.map(\.key), ["bmi", "ibw", "protein", "ldl", "hba1c"])
-        XCTAssertEqual(tiles.map(\.label), ["BMI", "Ideal Body Weight", "Protein Target", "LDL Cholesterol", "HbA1c"])
+        XCTAssertEqual(tiles.map(\.label), ["BMI", "Ideal Body Weight (IBW)", "Protein Target", "LDL Cholesterol", "HbA1c"])
         XCTAssertNil(tiles[0].status, "BMI 25-29.9 with no waist has no label, as on the web")
         XCTAssertEqual(tiles[3].status?.label, "Borderline")
         XCTAssertEqual(tiles[3].status?.tone, "info")
