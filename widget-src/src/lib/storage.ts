@@ -161,7 +161,7 @@ export const DRAFTS_CLEARED_EVENT = 'hr:drafts-cleared';
 
 /** Remove both matrices' unsaved drafts: an erase, made here or on another
  *  device, leaves none behind (US-11). */
-export function clearMatrixDrafts(): void {
+function clearMatrixDrafts(): void {
   safeRemoveItem(BT_TIMELINE_DRAFT_KEY);
   safeRemoveItem(VITALS_DRAFT_KEY);
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(DRAFTS_CLEARED_EVENT));

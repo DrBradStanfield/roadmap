@@ -235,8 +235,8 @@ export const GUEST_CAPTURE_BUTTON_LABEL = 'Get My Health Plan';
 
 /** US-44: the funnel page's optional reminders line (no email gate there). */
 export const REMINDER_SIGNUP_LABEL = 'Email me when a check-up is due';
-export const REMINDER_SIGNUP_HELPER = "Optional. You don't need this to save your PDF.";
-export const REMINDER_SIGNUP_BUTTON = 'Remind me';
+const REMINDER_SIGNUP_HELPER = "Optional. You don't need this to save your PDF.";
+const REMINDER_SIGNUP_BUTTON = 'Remind me';
 export const REMINDER_SIGNUP_DONE = "You're signed up. We'll email you when a check-up is due.";
 
 /** US-18 AC6: shown beside the Save as PDF pressed when the browser refuses
