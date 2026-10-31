@@ -2860,7 +2860,7 @@ describe('US-36 AC2 — every row runs the record’s own dry run; a bad row is 
       row('ferritin', 'Ferritin', 210, 'ug/L'),
     ]));
     expect(out.unrecognized).toEqual([
-      expect.stringMatching(/^LDL Cholesterol 320 mmol\/L: LDL-c must be at most 12.9 mmol\/L \(got 320\) \(0–12.9 mmol\/L; 0–500 mg\/dL\)\. Check the unit; if the report really says that, tell the user and do not file it\.$/),
+      expect.stringMatching(/^LDL Cholesterol 320 mmol\/L: LDL-c must be at most 12.9 mmol\/L \(got 320\) \(0–12.9 mmol\/L; 0–498 mg\/dL\)\. Check the unit; if the report really says that, tell the user and do not file it\.$/),
       expect.stringMatching(/^HDL Cholesterol 1.3 mmol\/L: .*2030-01-01.*Ask the user for the date, then re-send\.$/),
       'LDL Cholesterol 2.8 mmol/L: printed name LDL Cholesterol is the core metric ldl. Re-send it with metric ldl.',
     ]);
