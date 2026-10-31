@@ -28,6 +28,15 @@ the workflow (auto-mode blocks production deploys — a human clicks Run).
 Full manual deploy (widget + Shopify extensions + backend):
 
 ```bash
+# 0. Only merged code ships (Brad 2026-10-31, docs/git-workflow.md). Never deploy from a session worktree or a
+#    claude/ branch: HEAD must be exactly origin/main. `shopify app deploy` also refuses while any worktree sits
+#    inside the repo (docs/reference.md, 2026-10-01), so release from a detached checkout outside it:
+git fetch origin main
+git worktree add --detach "$TMPDIR/deploy-checkout" origin/main && cd "$TMPDIR/deploy-checkout"
+[ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || echo "REFUSED: HEAD is not origin/main; stop here"
+#    It has no node_modules or .env: `npm ci`, and `ln -s <main checkout>/.env .env` (a link, never a copy).
+#    When done: cd back, `git worktree remove --force "$TMPDIR/deploy-checkout"` (--force: the build output).
+
 # 1. Build the live v2 widget bundle (from project root). build:shopify-prod
 #    emits health-plan-v2.js + the upload bundle into the extension assets.
 #    (build:widget only builds the side bundles: upload, site-chat, chatbot.)
@@ -57,7 +66,7 @@ npx shopify app deploy --allow-updates
 #     Fix with `node tools/sync-shared-docs.mjs` there, commit both repos, then deploy.
 #     (CI cannot see claude_business: its guard, scripts/check-symlinks.mjs, only checks
 #     each copy against the hash its last sync recorded.)
-(cd ~/Library/CloudStorage/Dropbox/YouTube/multivitamin\ \&\ others/claude_business && node tools/sync-shared-docs.mjs --check)
+(cd ~/Documents/claude_business.nosync && node tools/sync-shared-docs.mjs --check)
 
 # 6. Deploy backend to Fly.io (MUST run from project root where Dockerfile lives).
 #    THERE ARE TWO FLY APPS sharing the same Dockerfile + the same chatbot knowledge files:
@@ -252,7 +261,7 @@ to both — deploy twice, see "Shopify app configs".**)
   unset. Same `metafieldsSet` call as the name; no redeploy needed after the extension is live.
 
 **Important deploy notes:**
-- **`docs/products.md` is a real tracked file (since 2026-08-10)** — the old pre-deploy symlink dance is retired. The master lives HERE; `claude_business/docs/products.md` is now the symlink pointing back at this repo. If a claude_business session edits product content through that symlink, the change appears as an uncommitted modification in THIS repo — commit it (sweep rule) before deploying, or `fly deploy` ships it uncommitted.
+- **`docs/products.md` is a real tracked file (since 2026-08-10)** — the old pre-deploy symlink dance is retired. The master lives HERE; `claude_business/docs/products.md` is now the symlink pointing back at this repo. If a claude_business session edits product content through that symlink, the change appears as an uncommitted modification in THIS repo — land it in its own PR (docs/git-workflow.md) before deploying; only merged code ships.
 - `fly deploy` must be run from the **project root** (`/roadmap/`), not a subdirectory. The Dockerfile is at root level. Do NOT use `--app` flag — Fly reads `fly.toml` from the current directory.
 - `npx shopify app deploy --allow-updates` — in a non-interactive environment (CI, Claude Code) the CLI needs `--allow-updates`, `--allow-deletes` or `--no-release`, since it cannot ask for confirmation. deploy.yml uses `--allow-updates`; a release that removes an extension needs `--allow-deletes`. CLI 4 (deploy.yml pins 4.9.4) rejects the old `--force`: "Nonexistent flag".
 - `SENTRY_AUTH_TOKEN` is never a Fly RUNTIME secret (the running server only needs `SENTRY_DSN`, set on BOTH Fly apps: edu got it only on 2026-10-13, so diff `fly secrets list` across the apps). For sourcemap uploads it's used two ways: locally for the WIDGET maps (step 2), and passed into the Fly BUILD as a `--build-secret sentry_auth_token=...` (step 6) for the SERVER maps. As a build secret it's mounted only for the `npm run build` RUN in the Dockerfile and never persists in any image layer. The server source-map config lives in `vite.config.ts` (`sentryConfig`) + `react-router.config.ts` (`sentryOnBuildEnd`); when the build secret is absent the upload disables itself gracefully (build stays green).
