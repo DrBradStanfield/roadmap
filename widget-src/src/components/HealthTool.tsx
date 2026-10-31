@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef, useId, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
   calculateHealthResults,
@@ -58,10 +58,7 @@ import { UploadModal } from './UploadModal';
 import { useIsMobile, useIsWideDesktop } from '../lib/useIsMobile';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
 import { ensureIsoDatetime } from '../lib/recordedAt';
-import { MobileTabBar, type TabId } from './MobileTabBar';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import type { Swiper as SwiperType } from 'swiper';
-import 'swiper/css';
+import { BottomTabBar, panelDomId, tabDomId, type TabId } from './BottomTabBar';
 import {
   saveToLocalStorage,
   loadFromLocalStorage,
@@ -842,8 +839,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const isMobile = useIsMobile();
   const isWideDesktop = useIsWideDesktop(1200);
   const [activeTab, setActiveTab] = useState<TabId>('input');
-
-
+  const tabIds = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
 
   // US-62 AC4: the redesign's denominator, once per tab, with the layout chosen
   // at mount (a later resize does not change it). Shopify only, like every event.
@@ -852,10 +849,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   }, []); // at mount only
 
   // US-62 AC5: `results_viewed` once the plan is on screen, not when it mounts
-  // (all three phone slides mount). On a phone, the Plan tab is active; this
-  // reads activeTab, not Swiper, so it outlives Swiper. On desktop, the plan
-  // column's top is in the upper three quarters of the viewport (a margin, not
-  // a ratio: a tall plan never reaches 25% visible). Once per tab by the throttle.
+  // (all three phone panels mount). On a phone, the My plan tab is active. On
+  // desktop, the plan column's top is in the upper three quarters of the
+  // viewport (a margin, not a ratio: a tall plan never reaches 25% visible).
+  // Once per tab by the throttle.
   const hasSuggestions = (results?.suggestions?.length ?? 0) > 0;
   const planColumnRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -871,25 +868,40 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     }, { rootMargin: '0px 0px -25% 0px' });
   }, [hasSuggestions, isMobile, activeTab]);
 
-  // Swiper ref for programmatic slide control (tab button clicks)
-  const swiperRef = useRef<SwiperType | null>(null);
-  // The Swiper renders only under isMobile: a viewport crossing the
-  // breakpoint destroys it while the ref still points at it, and
-  // updateAutoHeight on a destroyed instance throws inside the commit
-  // (US-20 AC2). Every call goes through here; the test counts direct reads.
-  const liveSwiper = () => (swiperRef.current && !swiperRef.current.destroyed ? swiperRef.current : null);
-
-  // Sync tab button clicks → Swiper
-  useEffect(() => {
-    const index = activeTab === 'input' ? 0 : activeTab === 'plan' ? 1 : 2;
-    const swiper = liveSwiper();
-    if (swiper && swiper.activeIndex !== index) swiper.slideTo(index);
+  // US-20 AC6: each tab keeps its own scroll position. The page scrolls, not
+  // the panel, so leaving a tab records the page's offset and coming back
+  // restores it; a tab not yet visited opens at the widget's top.
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
+  const scrollByTab = useRef<Partial<Record<TabId, number>>>({});
+  const scrollOnSwitch = useRef(false);
+  const selectTab = useCallback((tab: TabId) => {
+    if (tab === activeTabRef.current) return;
+    scrollByTab.current[activeTabRef.current] = window.scrollY;
+    scrollOnSwitch.current = true;
+    setActiveTab(tab);
+  }, []);
+  useLayoutEffect(() => {
+    if (!scrollOnSwitch.current) return;
+    scrollOnSwitch.current = false;
+    const saved = scrollByTab.current[activeTab];
+    const top = rootRef.current?.getBoundingClientRect().top ?? 0;
+    if (saved !== undefined) window.scrollTo(0, saved);
+    else if (top < 0) window.scrollTo(0, window.scrollY + top);
   }, [activeTab]);
 
-  // Re-measure Swiper autoHeight when slide content changes
+  // US-16 AC2 on a phone: after a chat edit switches to My data, the filled
+  // cell (a matrix's highlighted cell, or the plain field) is scrolled to the
+  // middle, clear of the tab bar, and focused. After the commit, so after the
+  // tab's own scroll restore.
+  const [revealCell, setRevealCell] = useState<{ field: string } | null>(null);
   useEffect(() => {
-    liveSwiper()?.updateAutoHeight();
-  }, [formStage, supplements, documentHistory]);
+    if (!revealCell) return;
+    const panel = rootRef.current?.querySelector('.health-input-panel');
+    const cell = panel?.querySelector<HTMLElement>('.bt-input-active') ?? document.getElementById(revealCell.field);
+    cell?.scrollIntoView({ block: 'center' });
+    cell?.focus({ preventScroll: true });
+  }, [revealCell]);
 
   // US-16 AC2: a sex or height the chat proposed, waiting for the user's Save.
   // The form writes these on change, so nothing reaches the form until then.
@@ -1145,14 +1157,14 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     // While the store holds an erase the screen does not show, the reply comes
     // from the conversation the erase tombstones: none of it applies (US-16 AC2a).
     if (eraseUnshown()) return;
-    let hasFieldEdit = false;
+    let editedField: string | null = null;
     const stated = new Set(edits.flatMap(e => (e.kind === 'medication' ? [e.medicationKey] : [])));
     // Undo restores every medication row the reply changed, the last edit
     // first. Field edits are drafts the person saves or discards.
     const undo: NonNullable<typeof medUndo> = [];
     for (const edit of edits) {
       switch (edit.kind) {
-        case 'field': applyFieldEdit(edit); hasFieldEdit = true; break;
+        case 'field': applyFieldEdit(edit); editedField ??= edit.field; break;
         case 'medication': undo.unshift(...applyMedicationEdit(edit, stated)); break;
         case 'profile': break; // merged below
         // A kind this build does not know writes nothing (an older server's reply, or a newer one's).
@@ -1172,11 +1184,11 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     }
     // Mobile hand-off: bring the user to the form so they SEE the pre-filled
     // cell + Save button (they were on the chat tab). Mirror handleAutoFocusEmail.
-    if (hasFieldEdit && isMobileRef.current) {
-      setActiveTab('input');
-      liveSwiper()?.slideTo(0);
+    if (editedField && isMobileRef.current) {
+      selectTab('input');
+      setRevealCell({ field: editedField });
     }
-  }, [applyFieldEdit, applyMedicationEdit, unitSystem, eraseUnshown]);
+  }, [applyFieldEdit, applyMedicationEdit, unitSystem, eraseUnshown, selectTab]);
 
   const undoMedEdit = useCallback(() => {
     if (!medUndo) return;
@@ -1191,12 +1203,12 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const handleAutoFocusEmail = useCallback(() => {
     if (!emailCaptureActive) return;
     if (isMobile) {
-      setActiveTab('plan');
+      selectTab('plan');
       setTimeout(() => document.getElementById('guestEmail')?.focus(), 400);
     } else {
       document.getElementById('guestEmail')?.focus();
     }
-  }, [emailCaptureActive, isMobile]);
+  }, [emailCaptureActive, isMobile, selectTab]);
 
   // Memoised so the UploadModal's matrix doesn't rebuild on unrelated
   // HealthTool re-renders (typing, mobile-tab switches, etc.).
@@ -1206,7 +1218,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   );
 
   const inputPanelProps = {
-    storageBar,
+    // On a phone the storage button sits in the top bar, above every tab.
+    storageBar: isMobile ? undefined : storageBar,
     inputs,
     effectiveInputs,
     onChange: handleInputChange,
@@ -1266,7 +1279,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     sex: inputs.sex,
     showEmailCapture: emailCaptureActive,
     formStage,
-    onLayoutChange: () => liveSwiper()?.updateAutoHeight(),
     // US-60 AC3: the Dismiss shows only while the question is unanswered.
     onAlcoholAnswer: inputs.alcohol === undefined ? handleAlcoholAnswer : undefined,
   };
@@ -1288,53 +1300,36 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     onProposeEdit: handleProposeEdit,
   };
 
-  // Bottom clearance only while the fixed "See Your Personalized Plan" bar is
-  // actually rendered (same condition as the button below) — an unconditional
-  // padding would leave a blank strip on the plan/chat tabs and stage 1.
-  const planBarVisible = isMobile && formStage >= 2 && activeTab === 'input';
+  // US-20 AC6: on a phone, three panels and a bottom tab bar. All three stay
+  // mounted (the form's drafts and the chat's conversation survive a switch);
+  // only the active one shows.
+  const panel = (tab: TabId, children: ReactNode) => (
+    <div className="hr-tabpanel" role="tabpanel" id={panelDomId(tabIds, tab)} aria-labelledby={tabDomId(tabIds, tab)} hidden={activeTab !== tab}>
+      {children}
+    </div>
+  );
   return (
-    <div className={`health-tool${planBarVisible ? ' health-tool--plan-bar' : ''}`} data-clarity-mask="true">
+    <div className="health-tool" ref={rootRef} data-clarity-mask="true">
       {isMobile ? (
         <>
-          <MobileTabBar activeTab={activeTab} onTabChange={setActiveTab} />
-          <Swiper
-            autoHeight
-            touchStartPreventDefault={false}
-            noSwiping
-            noSwipingSelector=".bt-cell-strip, .bt-timeline-scroll"
-            onSwiper={(s) => { swiperRef.current = s; }}
-            onSlideChange={(s) => {
-              const tabs: TabId[] = ['input', 'plan', 'chat'];
-              setActiveTab(tabs[s.activeIndex] ?? 'input');
-            }}
-          >
-            <SwiperSlide>
-              <fieldset className="health-form-lock" disabled={isDeleting}><InputPanel {...inputPanelProps} /></fieldset>
-            </SwiperSlide>
-            <SwiperSlide>
-              <div className="health-tool-right">
-                <ResultsPanel {...resultsPanelProps} />
-              </div>
-            </SwiperSlide>
-            <SwiperSlide>
-              <div className="health-tool-chat">
-                <ChatEmbed
-                  isLoggedIn={chatSectionProps.isLoggedIn}
-                  guestInputs={chatSectionProps.guestInputs}
-                  muted={formStage < 3}
-                  onProposeEdit={handleProposeEdit}
-                />
-              </div>
-            </SwiperSlide>
-          </Swiper>
-          {formStage >= 2 && activeTab === 'input' && (
-            <button
-              className="btn-primary mobile-view-plan-btn"
-              onClick={() => setActiveTab('plan')}
-            >
-              See Your Personalized Plan
-            </button>
-          )}
+          {storageBar && <div className="hr-top-bar">{storageBar}</div>}
+          {panel('input', <fieldset className="health-form-lock" disabled={isDeleting}><InputPanel {...inputPanelProps} /></fieldset>)}
+          {panel('plan', (
+            <div className="health-tool-right">
+              <ResultsPanel {...resultsPanelProps} />
+            </div>
+          ))}
+          {panel('chat', (
+            <div className="health-tool-chat">
+              <ChatEmbed
+                isLoggedIn={chatSectionProps.isLoggedIn}
+                guestInputs={chatSectionProps.guestInputs}
+                muted={formStage < 3}
+                onProposeEdit={handleProposeEdit}
+              />
+            </div>
+          ))}
+          <BottomTabBar activeTab={activeTab} onTabChange={selectTab} idPrefix={tabIds} />
         </>
       ) : (
         <div className="health-tool-content">
