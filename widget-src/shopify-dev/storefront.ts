@@ -76,8 +76,15 @@ const escape = (v: string): string => v.replace(/[&"<>]/g, (c) => `&#${c.charCod
 const stripScripts = (html: string): string =>
   html.replace(/<!--[\s\S]*?-->/g, '').replace(/<(script|style)\b[\s\S]*?<\/\1\s*>/gi, '');
 
+/** An attribute value as the browser reads it: `&amp;` is `&`, so it is decoded before it is escaped again. */
+const NAMED: Record<string, string> = { amp: '&', quot: '"', apos: "'", lt: '<', gt: '>' };
+const decode = (v: string): string =>
+  v.replace(/&(#x[0-9a-f]+|#\d+|amp|quot|apos|lt|gt);/gi, (_, e: string) =>
+    e[0] === '#' ? String.fromCodePoint(e[1].toLowerCase() === 'x' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10)) : NAMED[e.toLowerCase()]);
+
 /** An http(s) stylesheet URL, or null. */
-function stylesheetUrl(href: string): string | null {
+function stylesheetUrl(raw: string): string | null {
+  const href = decode(raw);
   try {
     const url = new URL(href.startsWith('//') ? `https:${href}` : href);
     return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null;

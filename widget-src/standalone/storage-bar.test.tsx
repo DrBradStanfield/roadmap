@@ -15,6 +15,8 @@ vi.mock('../src/storage', () => ({
   WebDavAdapter: class {},
   isSyncPending: () => sync.pending,
   SYNC_PENDING_EVENT: 'hr:sync-pending',
+  gisReady: () => true,
+  preloadGis: () => undefined,
 }));
 vi.mock('./google-config', () => ({ googleDriveConfig: () => ({}) }));
 vi.mock('../src/lib/server-api', () => ({ trackProductEvent: vi.fn() }));
@@ -85,7 +87,7 @@ describe('US-09 AC30 — the label says the real storage state', () => {
   });
 
   it.each([
-    ['dropbox', 'Reconnect Dropbox'],
+    ['dropbox', 'Retry'],
     ['google-drive', 'Sign in to Google again'],
     ['github', 'Retry'],
     ['self-host', 'Retry'],
@@ -105,7 +107,17 @@ describe('US-09 AC30 — a reconnect label runs the reconnect, never the picker'
     expect(dialog()).toBeNull();
   });
 
-  it.each([['dropbox', 'Reconnect Dropbox'], ['github', 'Retry'], ['self-host', 'Retry']] as const)(
+  it('the bar and the panel never start two Drive reconnects at once', () => {
+    vi.stubGlobal('location', { reload: vi.fn() });
+    sync.popup.mockImplementationOnce(() => new Promise(() => {})); // the popup stays open
+    mount('local', 'google-drive');
+    fireEvent.click(bar());
+    const panelButton = [...document.querySelectorAll('.hr-sync-btn')].find((b) => b.textContent === 'Reconnect Google Drive') as HTMLButtonElement;
+    fireEvent.click(panelButton);
+    expect(sync.popup).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([['dropbox', 'Retry'], ['github', 'Retry'], ['self-host', 'Retry']] as const)(
     '%s: "%s" tries the read again', (provider, label) => {
       vi.stubGlobal('location', { reload: vi.fn() });
       mount('local', provider);

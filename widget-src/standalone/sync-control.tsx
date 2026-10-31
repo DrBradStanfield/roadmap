@@ -11,7 +11,7 @@
  * listener below is the only listener.
  */
 import React, { useEffect, useState } from 'react';
-import { GoogleDriveAdapter, isSyncPending, SYNC_PENDING_EVENT } from '../src/storage';
+import { gisReady, GoogleDriveAdapter, isSyncPending, preloadGis, SYNC_PENDING_EVENT } from '../src/storage';
 import { googleDriveConfig } from './google-config';
 import { adapterFor, connectRefusal, forgetBackend, liftLocalInto, PROVIDER_LABELS, rememberBackend, storageState, useBusyRun, type Backend } from './connect';
 import { BackendPickerModal } from './backend-picker';
@@ -45,13 +45,17 @@ function usePendingSync(backend: Backend): boolean {
  *  three, plus pending sync), so it never claims what is not true. A reconnect
  *  session runs on 'local', so it is asked first. */
 function storageBarLabel(backend: Backend, reconnect: Exclude<Backend, 'local'> | undefined, pendingSync: boolean): string {
-  if (reconnect) {
-    if (reconnect === 'dropbox') return 'Reconnect Dropbox';
-    return reconnect === 'google-drive' ? 'Sign in to Google again' : 'Retry';
-  }
+  // Only Drive can re-auth in place; the others only try the read again, as the panel says.
+  if (reconnect) return reconnect === 'google-drive' ? 'Sign in to Google again' : 'Retry';
   if (backend === 'local') return 'Sign in';
   return pendingSync ? 'Saving…' : PROVIDER_LABELS[backend];
 }
+
+/** One reconnect at a time across the bar and the panel (both mount the hook). */
+let reconnectInFlight = false;
+
+/** US-09 AC30: said instead of starting a popup the browser would block. */
+export const GIS_LOADING = 'Google is loading. Tap again.';
 
 /** US-09 AC13: the way back to a provider that could not be read this session,
  *  shared by the plan panel and the top bar so the two cannot drift. Drive
@@ -60,15 +64,25 @@ function storageBarLabel(backend: Backend, reconnect: Exclude<Backend, 'local'> 
  *  synchronously inside the click; local edits made while signed out merge up
  *  before the reload. The others can only try the read again. */
 function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
-  const { busy, error, run } = useBusyRun();
+  const { busy, error, setError, run } = useBusyRun();
+  // GIS loads on mount, so the click can open the popup synchronously.
+  useEffect(() => { if (reconnect === 'google-drive') preloadGis(); }, [reconnect]);
   const reconnectNow = (): void => {
     if (reconnect !== 'google-drive') { location.reload(); return; }
+    // Still loading: a popup started now would outlast the click and be blocked.
+    if (!gisReady()) { preloadGis(); setError(GIS_LOADING); return; }
+    if (reconnectInFlight) return;
+    reconnectInFlight = true;
     void run(async () => {
-      const gd = new GoogleDriveAdapter(googleDriveConfig());
-      await gd.connectViaPopup().catch((error: unknown) => { connectRefusal(error); throw error; });
-      await liftLocalInto(gd, 'google-drive');
-      rememberBackend('google-drive');
-      location.reload();
+      try {
+        const gd = new GoogleDriveAdapter(googleDriveConfig());
+        await gd.connectViaPopup().catch((error: unknown) => { connectRefusal(error); throw error; });
+        await liftLocalInto(gd, 'google-drive');
+        rememberBackend('google-drive');
+        location.reload();
+      } finally {
+        reconnectInFlight = false;
+      }
     });
   };
   return { busy, error, run, reconnectNow };

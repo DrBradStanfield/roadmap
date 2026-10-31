@@ -101,6 +101,13 @@ describe('themeShell: nothing from the live page runs', () => {
     expect(shell.head).toBe('<link rel="stylesheet" href="https://cdn.example/a.css">');
   });
 
+  it('decodes an entity in a fetched href before escaping it, so &amp; survives as &', () => {
+    const shell = themeShell(page('<link rel="stylesheet" href="//cdn.example/a.css?v=1&amp;subset=x">', '<div>'));
+    expect(shell.head).toBe('<link rel="stylesheet" href="https://cdn.example/a.css?v=1&#38;subset=x">');
+    const link = new DOMParser().parseFromString(shell.head, 'text/html').querySelector('link')!;
+    expect(link.getAttribute('href')).toBe('https://cdn.example/a.css?v=1&subset=x');
+  });
+
   it('keeps inline style text only, with every < removed, so it cannot close itself early', () => {
     const shell = themeShell(page('<style onload="x()">a{color:red}</style ><img src=x onerror=steal()><style>b{}</style>', '<div>'));
     expect(shell.head).toBe('<style>a{color:red}</style>\n<style>b{}</style>');
