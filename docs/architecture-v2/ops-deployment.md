@@ -45,7 +45,7 @@ Two Shopify apps now — **commerce** (`shopify.app.toml`, Fly `health-tool-app`
 ```mermaid
 flowchart LR
   P1["1 · localhost<br/>npm run dev:pages · Vite HMR :5173"] --> P2["2 · GitHub Pages<br/>build:pages · push main → Actions → /roadmap/"]
-  P2 -->|"deploy.yml (tests · tsc · builds)"| P3["3 · Shopify (both stores)<br/>build:shopify-prod + deploy --force → both stores<br/>same bundle → commerce + education apps"]
+  P2 -->|"deploy.yml (tests · tsc · builds)"| P3["3 · Shopify (both stores)<br/>build:shopify-prod + deploy --allow-updates → both stores<br/>same bundle → commerce + education apps"]
   linkStyle 0 stroke:#16a34a,stroke-width:2.5px
   linkStyle 1 stroke:#fd7e14,stroke-width:2.5px
   classDef teal fill:#f0f9f7,stroke:#00a38b,color:#00695c
@@ -123,7 +123,7 @@ Two app registrations (two `client_id`s, two TOML variants) and two Fly apps bui
 ## Deployment
 
 - **Pages:** `npm run build:pages` → commit + push `main` → GitHub Actions publishes `drbradstanfield.github.io/roadmap`. (A `dev` branch builds to a `/dev/` subpath, best-effort.)
-- **Shopify widget:** `shopify app config use shopify.app.toml` → `npm run build:shopify-prod` → strip `*.map` → `npx shopify app deploy --force`. Verify the success banner names the app you INTENDED (prod `health-roadmap-<N>`, not the education app).
+- **Shopify widget:** `shopify app config use shopify.app.toml` → `npm run build:shopify-prod` → strip `*.map` → `npx shopify app deploy --allow-updates`. Verify the success banner names the app you INTENDED (prod `health-roadmap-<N>`, not the education app).
 - **Backend:** CI is the primary path (see [pipeline](#pipeline)). Manual fallback: from repo root, `fly deploy --strategy canary` per app (`docs/deploy-runbook.md`). `docs/products.md` is a real tracked file here since 2026-08-10, so there is no symlink to dereference. Use canary for any risky change — the default rolling strategy does not protect against a boot crash (see [gotchas](teardown-rejected-gotchas.md#gotchas)).
 
 Rollback: there is **no JS rollback bundle**. The legacy `health-tool.js` was retired on 2026-06-15 (bundle, entry, and config deleted), and even before deletion it was a dead end — its `api.ts` fetch functions targeted server endpoints and Supabase tables that the v2 teardown removed/purged, so re-pointing `app-block.liquid` at it would load a non-functional, data-less zombie. A genuine rollback now means reverting the v2 teardown commits and rebuilding the v1 stack from git history.
