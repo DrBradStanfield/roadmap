@@ -2986,8 +2986,13 @@ a.action-btn-small.action-btn-small:hover {
   transition: opacity 0.15s, background 0.15s, color 0.15s;
 }
 
-.chat-thread-item:hover .chat-thread-delete {
+.chat-thread-item:hover .chat-thread-delete,
+.chat-thread-item:focus-within .chat-thread-delete {
   opacity: 1;
+}
+
+@media (hover: none) {
+  .chat-thread-delete { opacity: 1; }
 }
 
 .chat-thread-delete:hover {
