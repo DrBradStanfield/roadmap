@@ -11,6 +11,7 @@ import {
   clearLocalNamedFiles,
   latchOnOtherTabsLogOff,
   localEraseGeneration,
+  noteOtherTabsLogOffWhileLoading,
   roadmapLocalWritesStopped,
   stopRoadmapLocalWrites,
 } from './local-storage-adapter';
@@ -137,6 +138,10 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     return { ...base, tier: 'device', sync: store, clearNamedFiles: clearLocalNamedFiles, eraseFence: localEraseGeneration };
   }
   const device = new LocalStorageAdapter();
+  // Note a log-off from another page from now, not only once the first cloud
+  // read returns: its signal is set and removed at once, so a tab still
+  // loading would miss it (US-09 AC2f). opened() latches on the note.
+  noteOtherTabsLogOffWhileLoading();
   return {
     ...base,
     tier: 'cloud',
