@@ -1362,6 +1362,20 @@ As a US adult reading My Plan on drstanfield.com or the iPhone app, I see which 
 - Tests: 🟡 `packages/health-core/src/us-products.test.ts` (AC1 the new cards' text, order and references, the AREDS framing, none for a minor; AC3 no `-us` id or product name from generateSuggestions for two US-like adults, runRoadmap, the chat context, and renderJson of computePlan; AC2 each variant against its card, no product names, the reference sets; AC4 the same blocks for two very different adults, the lines, the variant text; AC5 none for a minor, an unknown age or outside the US; AC6 none for fiber and omega-3; AC8 the UTM tag for web and ios); `packages/health-core/src/suggestions.test.ts` (seven supplement cards). Not yet: the web overlay, the event schema, the Pages bundle grep, the iPhone overlay, live checks.
 - **Open questions (Brad):** whether the US lutein card should cite AREDS2 (its title names macular degeneration; it currently cites Wilson 2021 only). Settled 2026-10-31: "former smokers" (AREDS2's excess lung cancers); the TMG block notes its 500 mg is below the trials' doses.
 
+### US-62 · The web app looks and works like the iPhone app — **added 2026-10-31 (Brad approved the plan: [docs/drafts/web-redesign.md](drafts/web-redesign.md)); phase 0 server half built 2026-10-31, not deployed**
+As someone using the tool on drstanfield.com or the GitHub Pages build, on a phone or a desktop, the web app looks and works like the iPhone app, so moving between them feels like one product. This story holds phase 0 only, the server's event list; later phases add their ACs before they build.
+
+- **Usage signal (declared):** the share of phone `tool_opened` tabs that go on to `results_viewed`, read over two weeks before and two weeks after the redesign ships. `product_events`, on the Shopify surface only (the Pages build sends no events). `tool_opened` ships first, on the old layout, so the "before" exists.
+- AC1 (the server's closed list, phase 0): the events route accepts these events from a browser, with closed metadata, and rejects anything else (another word, another key, or the key on another event):
+  - `tool_opened`, `device` `phone` | `desktop`;
+  - `onboarding_step`, `step` `measurements` | `sex` | `birth` (the question, never its answer);
+  - `onboarding_done`, the name alone;
+  - `signin_opened`, `placement` `top_bar` | `plan_panel`;
+  - `guide_opened` gains the placement `plan_footer` (beside US-38's `header` and `footer`).
+  `placement` and `step` are judged against the event that carries them: a sign-in placement on `guide_opened`, a guide placement on `signin_opened`, a connector `step` (`propose`, `confirm`, US-36 AC9) on `onboarding_step`, or an onboarding step on `mcp_tool_call` is refused. `guide_opened` now carries `placement` and nothing else. No health value can reach any of them.
+- **Gate check (Lane B):** no clinical, merge, FHIR or record change. The event allow-list is the privacy boundary for telemetry, so a fresh adversary reads it before it ships. The server ships in its own PR and deploy, before the widget that sends the events (CI deploys the widget before the server).
+- Tests: 🟡 AC1 `app/lib/product-events.server.test.ts` (each event and word accepted from a browser; another word, another key, and each key on another event refused; the browser path through `recordProductEvent` keeps each row whole, and the server's wider `step` list keeps each step word on its own event). Not deployed; the widget does not send these yet.
+
 ### US-26 · Action links — every reminder pairs the "what" with a "where" (stub)
 As a user told a lipid panel is due, the reminder also tells me where to get one — direct-to-consumer lab links (Quest/Ulta-style, US), supplement refills via Brad's store, later pharmacy integration. Start affiliate-grade (plain links, zero API work); the click-through data is the evidence needed before building any real integration. This is the monetization seam, honestly labeled — and it must never gate the reminder itself.
 
