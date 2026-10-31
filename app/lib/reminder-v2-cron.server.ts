@@ -70,9 +70,15 @@ export function startReminderV2Cron(): void {
         lastRunDate = todayStr;
         return;
       }
+      // Marked while the pass runs, so a pass that outlasts the hour is not
+      // started twice on this machine; released if it fails, so the next tick
+      // re-runs the day (US-28 AC3). The lock row names this machine, so its
+      // re-acquire wins, and the cooldowns skip what the failed pass sent and stamped.
       lastRunDate = todayStr;
-
-      const count = await processV2Reminders(todayStr);
+      const count = await processV2Reminders(todayStr).catch((passError: unknown) => {
+        lastRunDate = null;
+        throw passError;
+      });
       console.log(`Reminder v2 cron: completed, sent ${count} emails`);
     } catch (error) {
       console.error('Reminder v2 cron error:', error);
