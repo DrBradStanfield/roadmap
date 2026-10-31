@@ -86,7 +86,10 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   too; value-free by design — while n is tiny these are Brad's own
   verification, not adoption); `guide_opened` split by `placement`
   (header|footer|plan_footer), read against `results_viewed`; the web
-  redesign's (US-62 AC1, once the widget sends them): phone `tool_opened` →
+  redesign's (US-62 AC1, once the widget sends them; **`results_viewed` was
+  redefined 2026-11-01, live from that deploy (US-62 AC5): plan on screen, no
+  longer plan mounted, so phone counts before it run high; never trend across
+  it**): phone `tool_opened` →
   `results_viewed` share is its primary metric (`device` phone|desktop),
   `onboarding_step` by `step`, `onboarding_done`, `signin_opened` by
   `placement` (top_bar|plan_panel); `lpa_unit_selected`

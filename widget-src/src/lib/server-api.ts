@@ -1,6 +1,6 @@
 /** Shopify services only. Health records are read and written by roadmap-data. */
 import type { GUIDE_PLACEMENTS, LPA_CHECK_ANSWERS, LpaUnit, MeasurementRefusal, MetricType, ProductEventName, REMOTE_CHANGE_BACKENDS } from '@roadmap/health-core';
-import { PER_ACTION_EVENT_NAMES, type CHAT_PROFILE_CHOICES, type ONBOARDING_STEPS, type SIGNIN_PLACEMENTS, type CHAT_PROFILE_FIELDS, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
+import { PER_ACTION_EVENT_NAMES, type CHAT_PROFILE_CHOICES, type ONBOARDING_STEPS, type SIGNIN_PLACEMENTS, type CHAT_PROFILE_FIELDS, type TOOL_DEVICES, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import type { UsProduct } from '@roadmap/health-core/us-products';
 import { safeGetItem, safeSetItem } from './storage';
 import { SHOPIFY_SURFACE } from './build-flags';
@@ -135,6 +135,8 @@ export interface ProductEventMetadata extends Partial<Record<UploadOutcomeKey, n
   provider?: 'google-drive' | 'dropbox' | 'github' | 'webdav' | 'local' | 'typed';
   count?: number;
   placement?: (typeof GUIDE_PLACEMENTS)[number] | (typeof SIGNIN_PLACEMENTS)[number];
+  /** `tool_opened` (US-62 AC4): the layout the tool opened in. */
+  device?: (typeof TOOL_DEVICES)[number];
   /** `onboarding_step` (US-62 AC1): the question's name, never its answer. */
   step?: (typeof ONBOARDING_STEPS)[number];
   backend?: (typeof REMOTE_CHANGE_BACKENDS)[number];
