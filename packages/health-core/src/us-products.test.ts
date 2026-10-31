@@ -51,7 +51,7 @@ describe('US-61 AC1: the two new supplement cards, in every market', () => {
     ]);
     const tmg = suggestions.find((s) => s.id === 'supplement-tmg')!;
     expect(tmg).toMatchObject({ category: 'supplements', priority: 'info', title: 'TMG (trimethylglycine)' });
-    expect(tmg.description).toBe('TMG lowers blood homocysteine, according to a meta-analysis of randomized trials. Small trials suggest it may improve strength and power. At the higher doses used in these trials, it slightly raised total cholesterol.');
+    expect(tmg.description).toBe('TMG lowers blood homocysteine, according to a meta-analysis of randomized trials. Small trials suggest it may improve strength and power. At 4 g a day or more, the doses used in the homocysteine trials, it may modestly raise total cholesterol.');
     expect(tmg.references!.map((r) => r.label.split(' ')[0])).toEqual(['McRae', 'Lee', 'Pryor', 'Nobari', 'Zawieja']);
     expect(tmg.references!.at(-1)!.url).toBe('https://doi.org/10.1080/19390211.2019.1699223');
   });
@@ -60,7 +60,7 @@ describe('US-61 AC1: the two new supplement cards, in every market', () => {
     const text = `${plan(adult).suggestions.find((s) => s.id === 'supplement-lutein-zeaxanthin')!.description} ${SUGGESTION_EVIDENCE['supplement-lutein-zeaxanthin'].reason}`;
     expect(text).not.toMatch(/did not (significantly )?slow/i);
     expect(SUGGESTION_EVIDENCE['supplement-tmg'].reason).not.toMatch(/dementia|alzheimer/i);
-    expect(SUGGESTION_EVIDENCE['supplement-lutein-zeaxanthin'].reason).toContain('slowed progression in people with intermediate macular degeneration');
+    expect(SUGGESTION_EVIDENCE['supplement-lutein-zeaxanthin'].reason).toContain('slowed progression in people with intermediate macular degeneration, or advanced disease in one eye');
   });
 
   it('US-61 AC1: a known minor gets neither new card (adults only, like every supplement card)', () => {
