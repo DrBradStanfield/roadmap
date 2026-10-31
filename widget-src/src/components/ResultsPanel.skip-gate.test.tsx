@@ -370,6 +370,12 @@ describe('US-44 AC6 — Save as PDF shows on a phone', () => {
     expect(keep).toBeGreaterThan(block.indexOf('.hr-col-header { display: none; }'));
     expect(block).toContain('.hr-col-header--actions .hr-col-title { display: none; }');
   });
+
+  it('styles.css: on a phone the header actions keep the cards\' 10px side gutter (live 2026-11-01: Sign in sat flush on the screen edge)', () => {
+    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8').replace(/\s+/g, ' ');
+    expect(css).toContain('.section-card { padding: 12px !important; margin-left: 10px; margin-right: 10px; }');
+    expect(css).toContain('.hr-col-header--actions { display: flex; justify-content: flex-end; padding: 8px 10px 0; }');
+  });
 });
 
 describe('US-44 AC1 — the block setting', () => {

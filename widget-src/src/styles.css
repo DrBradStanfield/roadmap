@@ -3960,7 +3960,7 @@ input[type="number"] {
   /* US-44 AC6 and US-09 AC30: a header's actions stay (Save as PDF on the plan,
      Sign in on the input column; the tabs name the column), right-aligned with
      the cards, clear of the tabs. */
-  .hr-col-header--actions { display: flex; justify-content: flex-end; padding: 8px 0 0; }
+  .hr-col-header--actions { display: flex; justify-content: flex-end; padding: 8px 10px 0; }
   .hr-col-header--actions .hr-col-title { display: none; }
 }
 
