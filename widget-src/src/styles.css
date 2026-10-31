@@ -773,6 +773,8 @@ input[type="number"] {
   font-size: 11px;
   font-weight: 500;
   margin-top: 4px;
+  /* No tone (IBW's height, the protein rate): neutral gray, as on the iPhone. */
+  color: var(--color-gray-medium);
 }
 
 .stat-status.status-normal {
@@ -969,6 +971,38 @@ input[type="number"] {
 
 .suggestion-subsection .suggestion-desc {
   margin: 0;
+}
+
+/* US-60: "Reduce alcohol intake"'s Dismiss, and its question. */
+.suggestion-subsection-actions {
+  float: right;
+  margin-left: 8px;
+}
+.suggestion-dismiss {
+  background: none;
+  border: 1px solid var(--color-gray-border);
+  border-radius: 6px;
+  color: var(--color-gray-medium);
+  font-size: 12px;
+  padding: 2px 10px;
+  cursor: pointer;
+}
+.suggestion-dismiss:hover { color: var(--color-text-heading); }
+.upload-modal.alcohol-dialog {
+  max-width: 360px;
+  padding: 20px;
+  text-align: center;
+  font-family: var(--font-family-base); /* portaled outside .health-tool */
+}
+.alcohol-dialog-title {
+  margin: 0 0 16px;
+  font-size: 18px;
+  color: var(--color-text-heading);
+}
+.alcohol-dialog-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
 }
 
 .suggestion-header {
@@ -5175,3 +5209,45 @@ a.action-btn-small.action-btn-small:hover {
   cursor: pointer;
 }
 .hr-storage-link:hover { color: #006355; }
+
+/* US-61: Brad's product at the foot of a US supplement card. Part of the card,
+   in its own quiet type, never a banner; the ownership line sits once below
+   the last Supplements card. Neither is printed (the PDF clone also drops
+   .no-print). */
+.us-product {
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--color-gray-border);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-gray-medium);
+}
+
+.us-product-line {
+  margin: 0 0 var(--spacing-xs);
+}
+
+.us-product-link {
+  font-weight: 600;
+  color: var(--color-brand);
+  text-decoration: none;
+}
+
+.us-product-link:hover {
+  color: var(--color-brand-hover);
+  text-decoration: underline;
+}
+
+.us-ownership {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-gray-medium); /* #888 would fail AA contrast at 12px */
+}
+
+@media print {
+  .us-product,
+  .us-ownership {
+    display: none !important;
+  }
+}

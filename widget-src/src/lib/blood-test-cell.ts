@@ -5,6 +5,7 @@
 import {
   commaQuestion,
   parseLocalisedNumber,
+  rangeFault,
   cellLabel,
   cellRange,
   cellToSI,
@@ -21,6 +22,7 @@ import {
   PSA_THRESHOLDS,
   type CellUnit,
   type MetricType,
+  type ValidationRange,
 } from '@roadmap/health-core';
 
 import type React from 'react';
@@ -147,7 +149,7 @@ export function validateTypedValue(
   metric: MetricType,
   typed: string,
   display: CellUnit,
-): { error: string | null; range: { min: number; max: number } } {
+): { error: string | null; range: ValidationRange } {
   const range = cellRange(metric, display);
   if (typed === '') return { error: null, range };
   if (!hasNumericSyntax(typed)) return { error: NUMERIC_SYNTAX_GUIDANCE, range };
@@ -157,15 +159,17 @@ export function validateTypedValue(
   // a mg/dL number into an mmol/L field can see the unit mismatch instead
   // of a bare "Max 22.6".
   const unit = cellLabel(metric, display);
-  if (n < range.min) return { error: `Min ${range.min} ${unit}`, range };
-  if (n > range.max) return { error: `Max ${range.max} ${unit}`, range };
+  const fault = rangeFault(range, n);
+  if (fault === 'below') return { error: `${range.minExclusive ? 'Must be above' : 'Min'} ${range.min} ${unit}`, range };
+  if (fault === 'above') return { error: `Max ${range.max} ${unit}`, range };
   return { error: null, range };
 }
 
 /** Clinical threshold mapping. Returns null for metrics whose status is
- *  judged elsewhere (e.g. creatinine → eGFR). */
+ *  judged elsewhere (e.g. creatinine → eGFR), and for a value the plan leaves
+ *  out as out of range, such as a stored LDL 0 (US-03 AC7). */
 export function statusOf(metric: MetricType, siValue: number, grading: Grading): Status {
-  if (!grading || siValue == null || Number.isNaN(siValue)) return null;
+  if (!grading || siValue == null || Number.isNaN(siValue) || rangeFault(cellRange(metric, 'si'), siValue)) return null;
   const { sex } = grading;
   switch (metric) {
     case 'hba1c':

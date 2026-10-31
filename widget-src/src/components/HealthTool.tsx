@@ -31,6 +31,7 @@ import {
   VITALS_INPUT_FIELDS,
   ESCALATION_KEY_OF,
   UNANSWERED_OF,
+  type AlcoholAnswer,
   type HealthInputs,
   type UnitSystem,
   type MetricType,
@@ -921,6 +922,13 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     if (field === 'sex' || field === 'heightCm') setProfileProposal(null);
     setInputs(prev => ({ ...prev, [field]: value }));
   }, []);
+  // US-60: the plan card's answer saves as a profile field, as Starting Info's
+  // Alcohol row does. Its usage signal is the name alone, never the answer
+  // (whether someone drinks is health information), and only from the card.
+  const handleAlcoholAnswer = useCallback((answer: AlcoholAnswer) => {
+    trackProductEvent('alcohol_question_answered');
+    handleInputChange('alcohol', answer);
+  }, [handleInputChange]);
   // A matrix's draft value, as the plan and the chat read it (US-03 AC6);
   // undefined leaves the field to the record. One update per field, so
   // several sent at once all land.
@@ -1226,6 +1234,8 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     showEmailCapture: emailCaptureActive,
     formStage,
     onLayoutChange: () => liveSwiper()?.updateAutoHeight(),
+    // US-60 AC3: the Dismiss shows only while the question is unanswered.
+    onAlcoholAnswer: inputs.alcohol === undefined ? handleAlcoholAnswer : undefined,
   };
 
   // The chat reads its context as each message is sent (useChatState), through

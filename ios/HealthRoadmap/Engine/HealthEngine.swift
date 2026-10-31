@@ -32,6 +32,9 @@ actor HealthEngine {
     let natives: EngineNatives
     /// Set when this is a downloaded engine on trial (EngineBoot, US-25 AC18).
     @MainActor var trial: EngineTrial?
+    /// Whether the App Store storefront is the US (US-61, `AppStoreCountry`): every screen
+    /// draw passes it, so the plan's supplement cards show Dr Brad's products to a known adult.
+    private(set) var storefrontIsUS = false
 
     /// The engine shipped in the app. `session`: the URLSession the engine's fetch
     /// runs on (EngineHTTP's own by default); tests pass a stubbed one.
@@ -71,6 +74,11 @@ actor HealthEngine {
         }
     }
 
+    /// The storefront's country changed (US-61): the next draw follows it.
+    func useStorefront(isUS: Bool) {
+        storefrontIsUS = isUS
+    }
+
     /// Where the engine reaches the phone: tokens and news on the main actor, the
     /// record file and the pending marker as plain files here (US-25 AC11).
     func attach(_ port: CloudPort?, phone: PhoneFiles) {
@@ -97,7 +105,7 @@ actor HealthEngine {
     /// the plan. My data the engine cannot draw throws the whole call.
     /// `units`: the phone's per-test units as JSON (UnitChoices, US-25 AC17e); "{}" for none.
     func screen(recordJSON: String, now: Date, deviceId: String, units: String = "{}") throws -> Drawn {
-        let json = try call("screenJson", [recordJSON, now.formatted(Self.iso), deviceId, units])
+        let json = try call("screenJson", [recordJSON, now.formatted(Self.iso), deviceId, units, storefrontIsUS])
         let answer = try JSONDecoder().decode(Drawn.Answer.self, from: Data(json.utf8))
         return Drawn(myData: answer.myData, plan: answer.plan.state)
     }
@@ -120,7 +128,9 @@ actor HealthEngine {
             let ms: Double
             let error: String?
             let planError: Bool
-            enum CodingKeys: CodingKey { case sections, tiles, ms, error, planError }
+            /// US-61's blocks; one Swift cannot read shows none, never a broken plan.
+            let usProducts: USProducts?
+            enum CodingKeys: CodingKey { case sections, tiles, ms, error, planError, usProducts }
             /// Sections decode strictly: sections Swift cannot read fail the plan, never My data.
             /// A tile Swift cannot read leaves no tiles, never a blank plan.
             init(from decoder: Decoder) throws {
@@ -128,6 +138,7 @@ actor HealthEngine {
                 tiles = (try? c.decode([StatTile].self, forKey: .tiles)) ?? []
                 ms = (try? c.decodeIfPresent(Double.self, forKey: .ms)) ?? 0
                 planError = (try? c.decodeIfPresent(Bool.self, forKey: .planError)) == true
+                usProducts = (try? c.decodeIfPresent(USProducts.self, forKey: .usProducts)) ?? nil
                 do {
                     (sections, error) = (try c.decodeIfPresent([PlanSection].self, forKey: .sections), try c.decodeIfPresent(String.self, forKey: .error))
                 } catch {
@@ -136,7 +147,7 @@ actor HealthEngine {
             }
 
             var state: PlanState {
-                if let sections { return .planned(tiles: tiles, sections: sections, ms: ms) }
+                if let sections { return .planned(tiles: tiles, sections: usProducts?.applied(to: sections) ?? sections, ms: ms) }
                 if planError { return .needsDetails }
                 return .failed(EngineError.callFailed(error ?? "no plan").localizedDescription)
             }

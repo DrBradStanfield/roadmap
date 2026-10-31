@@ -33,7 +33,14 @@ export interface HealthInputs {
   labEgfrDate?: string; // YYYY-MM-DD
   // User preference (stored as 1=si, 2=conventional in DB)
   unitSystem?: 'si' | 'conventional';
+  /** US-60: "Do you drink alcohol?", from `profile.alcohol`. Absent: not answered. */
+  alcohol?: AlcoholAnswer;
 }
+
+/** US-60: the two answers to "Do you drink alcohol?". */
+export const ALCOHOL_ANSWERS = ['none', 'drinks'] as const;
+export type AlcoholAnswer = typeof ALCOHOL_ANSWERS[number];
+export const isAlcoholAnswer = (v: unknown): v is AlcoholAnswer => (ALCOHOL_ANSWERS as readonly unknown[]).includes(v);
 
 /**
  * Calculated health results

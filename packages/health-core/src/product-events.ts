@@ -121,6 +121,14 @@ export const PRODUCT_EVENT_NAMES = [
   // US-15 AC44: one daily purge run's question archive. Server-originated.
   // Metadata `{ eligible, kept, skipped }`, counts only: never a question.
   'chat_question_archived',
+  // US-60: "Do you drink alcohol?" was answered in the plan card's Dismiss
+  // dialog (not About you). Name only: whether someone drinks is health information.
+  'alcohol_question_answered',
+  // US-61 AC8: the US product blocks were scrolled into view, and a block's
+  // link was clicked. Metadata `{ product }` only: never the card it sat on,
+  // since which cards show can reveal a health state.
+  'us_product_shown',
+  'us_product_link_clicked',
 ] as const;
 
 /** The `chat_profile_edit` counter's words (US-16 AC2): which profile field, and what the user did. */

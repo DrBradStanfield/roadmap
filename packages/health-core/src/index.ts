@@ -20,6 +20,7 @@ export type {
   Sglt2iNameValue,
   MetforminValue,
   SupplementOption,
+  AlcoholAnswer,
 } from './types';
 
 export {
@@ -65,6 +66,9 @@ export {
   decodeSex,
   encodeUnitSystem,
   decodeUnitSystem,
+  // US-60
+  ALCOHOL_ANSWERS,
+  isAlcoholAnswer,
 } from './types';
 
 // Calculations
@@ -85,7 +89,7 @@ export {
 } from './calculations';
 
 // Suggestions
-export { generateSuggestions, LIPID_DIET_ADVICE, lipidMarkerFor, lipidTargetSentence, medicinesShown, weightMedicationTrigger, weightMedIntro } from './suggestions';
+export { generateSuggestions, REDUCE_ALCOHOL_ID, LIPID_DIET_ADVICE, lipidMarkerFor, lipidTargetSentence, medicinesShown, weightMedicationTrigger, weightMedIntro } from './suggestions';
 export type { LipidMarker, WeightMedicationTrigger } from './suggestions';
 export { weightCascade, lipidCascade } from './medication-cascades';
 export { planSections, type PlanSection, type PlanCard, type PlanSectionKey } from './plan-sections';
@@ -202,6 +206,7 @@ export {
   formatGradedValue,
   unitDecimalPlaces,
   roundBoundInward,
+  rangeFault,
   // Feet/inches height conversion helpers
   inchesToFeetInches,
   feetInchesToInches,
@@ -216,6 +221,7 @@ export {
   type MetricType,
   type UnitSystem,
   type UnitDef,
+  type ValidationRange,
 } from './units';
 
 // Chat → form-edit tool schemas + validation (chatbot drives the form UI)

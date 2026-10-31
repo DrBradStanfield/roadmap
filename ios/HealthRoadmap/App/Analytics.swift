@@ -65,6 +65,8 @@ final class Analytics {
         /// A metric page's About section shown, or a medicine's guide opened from its info
         /// button (US-58); never which one.
         case guideSeen = "Guide seen", guideOpened = "Guide opened"
+        /// "Do you drink alcohol?" answered from the plan card's Dismiss (US-60); never the answer.
+        case alcoholAnswered = "Alcohol answered"
 
         /// A tour tip closed (its Next or Done, a tap outside it, leaving it, its action, or no anchor) or skipped.
         static func tip(_ step: TourStep, skipped: Bool) -> Event? {

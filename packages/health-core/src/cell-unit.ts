@@ -6,7 +6,7 @@
 import {
   LPA_UNITS, UNIT_DEFS, canonicalToReported, formatDisplayValue, fromCanonicalValue, getDisplayLabel, getDisplayRange,
   lookupUnit, reportedToCanonical, toCanonicalValue, unitDecimalPlaces,
-  type LpaUnit, type MetricType, type UnitSystem,
+  type LpaUnit, type MetricType, type UnitSystem, type ValidationRange,
 } from './units';
 
 /** The unit a core cell is typed and shown in: one of its metric's two
@@ -56,8 +56,8 @@ export function cellLabel(metric: MetricType, unit: CellUnit): string {
 
 /** The range a value typed in `unit` must fall in: the system's, or the
  *  canonical range in that Lp(a) unit (0–3000 mg/L). */
-export function cellRange(metric: MetricType, unit: CellUnit): { min: number; max: number } {
+export function cellRange(metric: MetricType, unit: CellUnit): ValidationRange {
   if (isSystem(unit)) return getDisplayRange(metric, unit);
-  const { min, max } = UNIT_DEFS[metric].validationRange.si; // Lp(a)'s canonical unit is its SI one
-  return { min: cellFromSI(metric, min, unit), max: cellFromSI(metric, max, unit) };
+  const range = UNIT_DEFS[metric].validationRange.si; // Lp(a)'s canonical unit is its SI one
+  return { ...range, min: cellFromSI(metric, range.min, unit), max: cellFromSI(metric, range.max, unit) };
 }

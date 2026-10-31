@@ -11,7 +11,9 @@
  * text reaches the prompt unless it is allowlisted or bounded:
  *   - profile.sex, profile.heightCm: the input schema (enum; ranged number);
  *     profile.age is computed; profile.knownMinor is computed, true or absent
- *     (US-07 AC6); profile.unitSystem is 'si' or 'conventional'.
+ *     (US-07 AC6); profile.unitSystem is 'si' or 'conventional';
+ *     profile.alcohol (US-60) is 'does not drink' or 'drinks' from the
+ *     schema's two answers, absent when not answered.
  *     A known minor with no usable sex or height still gets a context, with
  *     no plan: profile.knownMinor and whatever passed the schema below, and
  *     no profile.age, missingInputs or currentSuggestions (US-07 AC6). Anyone
@@ -56,7 +58,7 @@ import {
   STATIN_NAMES, EZETIMIBE_OPTIONS, BEMPEDOIC_ACID_OPTIONS, PCSK9I_OPTIONS,
   GLP1_NAMES, SGLT2I_NAMES, METFORMIN_OPTIONS,
 } from './types';
-import type { UnitSystem } from './units';
+import { rangeFault, type UnitSystem } from './units';
 import {
   healthInputSchema, inputsPressureInverted, sanitizeInputs, excludedInputFields, MEDICATION_KEYS, SCREENING_KEYS,
 } from './validation';
@@ -198,14 +200,20 @@ export function buildChatContextJson(payload: unknown): string | null {
   // US-15 AC36: no plan and nothing saved is the empty form, which the callers send as '{}'.
   if (!results && !knownMinor && !hasHistory && excludedFields.length === 0
     && [inputs, medications, screenings].every(o => Object.values(o).every(v => v === undefined))) return null;
+  // A field the plan left out (out of range, or a pressure the wrong way up)
+  // gets no older value either: the plan reads as if none was entered (US-03 AC7).
   for (const [field, value] of Object.entries(latestFromHistory(measurementHistory))) {
-    if (pressure && (field === 'systolicBp' || field === 'diastolicBp')) continue;
+    if (excludedFields.includes(field)) continue;
     latestValues[field] ??= `${value}`;
   }
 
   return JSON.stringify({
     // US-07 AC6: the plan's adults-only gate applies, so every surface's model knows.
-    profile: { sex: inputs.sex, age: results ? results.age : knownMinor ? undefined : ageOf(inputs), heightCm: inputs.heightCm, unitSystem, ...(knownMinor ? { knownMinor: true } : {}) },
+    profile: {
+      sex: inputs.sex, age: results ? results.age : knownMinor ? undefined : ageOf(inputs), heightCm: inputs.heightCm, unitSystem,
+      ...(knownMinor ? { knownMinor: true } : {}),
+      ...(inputs.alcohol ? { alcohol: inputs.alcohol === 'none' ? 'does not drink' : 'drinks' } : {}),
+    },
     latestValues,
     // US-15 AC33: what a bare latestValues number is in, whatever profile.unitSystem says (US-32 AC35's table).
     units: Object.fromEntries(Object.keys(latestValues).map(field => [field, FIELD_UNITS[field]])),
@@ -333,7 +341,7 @@ function screeningRows(raw: unknown): Array<Pick<ApiScreening, 'screeningKey' | 
     const range = screeningRange(screeningKey);
     if (range) {
       const n = parseLocalisedNumber(value, range) ?? NaN;
-      if (!Number.isFinite(n) || n < range.min || n > range.max) return [];
+      if (!Number.isFinite(n) || rangeFault(range, n)) return [];
     }
     return [{ screeningKey, value }];
   });

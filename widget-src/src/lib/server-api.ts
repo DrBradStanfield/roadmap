@@ -1,6 +1,7 @@
 /** Shopify services only. Health records are read and written by roadmap-data. */
 import type { GUIDE_PLACEMENTS, LPA_CHECK_ANSWERS, LpaUnit, MeasurementRefusal, MetricType, ProductEventName, REMOTE_CHANGE_BACKENDS } from '@roadmap/health-core';
 import { PER_ACTION_EVENT_NAMES, type CHAT_PROFILE_CHOICES, type CHAT_PROFILE_FIELDS, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
+import type { UsProduct } from '@roadmap/health-core/us-products';
 import { safeGetItem, safeSetItem } from './storage';
 import { SHOPIFY_SURFACE } from './build-flags';
 import { Sentry } from './sentry';
@@ -149,6 +150,8 @@ export interface ProductEventMetadata extends Partial<Record<UploadOutcomeKey, n
   /** `chat_profile_edit` (US-16 AC2): the profile field's name and what the user did. Never a value. */
   field?: (typeof CHAT_PROFILE_FIELDS)[number];
   choice?: (typeof CHAT_PROFILE_CHOICES)[number];
+  /** `us_product_shown` / `us_product_link_clicked` (US-61 AC8): the product alone, never the card. */
+  product?: UsProduct;
 }
 
 /**
@@ -177,6 +180,8 @@ export function trackProductEvent(
       const detail = metadata?.key ? `_${metadata.key}_${metadata.unit}`
         : metadata?.refusal ? `_${metadata.metric ?? localDetail}_${metadata.refusal}`
         : metadata?.choice ? `_${metadata.field}_${metadata.choice}`
+        // US-61 AC8: once per product, so one product seen does not swallow the other.
+        : metadata?.product ? `_${metadata.product}`
         // Per provider, so a tab that tries Dropbox then Drive counts both (US-09 AC22).
         : eventName.startsWith('cloud_connect_') && metadata?.provider ? `_${metadata.provider}` : '';
       const sentKey = `hr_pe_${eventName}${detail}`;

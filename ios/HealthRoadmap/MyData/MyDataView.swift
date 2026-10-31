@@ -133,6 +133,13 @@ struct MyDataView: View {
             .tint(.primary)
             .disabled(store.unitSwitches > 0)
 
+            // US-60: the answer the reduce-alcohol card's Dismiss asks for; "Not answered" clears it.
+            Picker("Alcohol", selection: binding(data.profile.alcohol?.value) { .alcohol($0) }) {
+                Text("Not answered").tag(MyData.Alcohol?.none)
+                ForEach(MyData.Alcohol.allCases, id: \.self) { Text($0.label).tag(Optional($0)) }
+            }
+            .disabled(picking)
+
             LabeledContent("Units") { units(data) }
         } header: {
             SectionTitle.aboutYou()

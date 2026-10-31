@@ -100,6 +100,12 @@ describe('US-12: resolveUnit — numeric-range fallback (unrecognized unit strin
     expect(result.valueSI).toBe(20);
   });
 
+  // US-03 AC7: a lipid of 0 fits neither scale (both floors are exclusive), so it
+  // never claims to fit both.
+  it('a lipid of 0 fits neither range, never both', () => {
+    expect(resolveUnit('ldl', 'some_weird_unit', 0)).toEqual({ valueSI: 0, system: 'si', confident: false });
+  });
+
   it('assumes SI (low confidence) when the value fits neither range', () => {
     const result = resolveUnit('creatinine', 'some_weird_unit', 999_999);
     expect(result.confident).toBe(false);

@@ -22,6 +22,7 @@ import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages
 import { METRIC_GUIDES, type MetricGuide } from '../../packages/health-core/src/metric-guides';
 import { APPLE_LOW_FROM_60, FRIEND_2022_TREADMILL, type Vo2MaxCutPoints } from '../../packages/health-core/src/vo2max-bands';
 import { calculateAge } from '../../packages/health-core/src/calculations';
+import { isAlcoholAnswer, type AlcoholAnswer } from '../../packages/health-core/src/types';
 import {
   cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, getDisplayLabel, LPA_UNITS, toCanonicalValue, UNIT_DEFS,
   type LpaUnit, type MetricType, type UnitSystem,
@@ -58,6 +59,8 @@ export interface MyData {
     heightUnit: string;
     /** A US height as the web shows it, 5 ft 10 in; null in metric or with no height. */
     feetInches: { feet: number; inches: number } | null;
+    /** "Do you drink alcohol?" (US-60): null when not answered, or a value this engine does not know. */
+    alcohol: AlcoholAnswer | null;
   };
   vitals: MyDataRow[];
   bloodTests: MyDataRow[];
@@ -81,6 +84,8 @@ export type Edit =
   /** Systolic and diastolic for one day, both or neither (blood-pressure.ts). */
   | PressureEdit
   | { kind: 'units'; unitSystem: UnitSystem }
+  /** "Do you drink alcohol?" (US-60): set from the plan card or About you; null clears it. */
+  | { kind: 'alcohol'; alcohol: AlcoholAnswer | null }
   /** Lp(a)'s unit, written to the record as the web writes it (US-05 AC2). */
   | { kind: 'lpaUnit'; unit: LpaUnit }
   | { kind: 'add'; metric: string; value: number; day?: string }
@@ -194,6 +199,7 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
       height: heightCm === undefined ? null : formatDisplayValue('height', heightCm, system),
       heightUnit: getDisplayLabel('height', system),
       feetInches: heightCm === undefined || system !== 'conventional' ? null : cmToFeetInches(heightCm),
+      alcohol: isAlcoholAnswer(file.profile.alcohol) ? file.profile.alcohol : null,
     },
     // Blood pressure is one row, as the web's matrix shows it: the newest day's pair.
     vitals: [...VITAL_METRICS.filter((metric) => metric !== 'systolic_bp' && metric !== 'diastolic_bp').map(row), pressureRow(file, trend)],
@@ -245,6 +251,15 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
       }
       if (edit.unitSystem === file.profile.unitSystem) return { ok: true, file };
       return { ok: true, file: stampProfile(file, { unitSystem: edit.unitSystem }, now) };
+    }
+    case 'alcohol': {
+      if (edit.alcohol !== null && !isAlcoholAnswer(edit.alcohol)) {
+        return { ok: false, reason: 'invalid-value', message: 'Alcohol is "none", "drinks" or not answered.' };
+      }
+      // The same answer again writes nothing. "Not answered" writes null, as every cleared
+      // profile field is stored (US-10 AC6, roadmap-file.schema.test.ts), so it merges as a write.
+      if (edit.alcohol === (file.profile.alcohol ?? null)) return { ok: true, file };
+      return { ok: true, file: stampProfile(file, { alcohol: edit.alcohol }, now) };
     }
     case 'lpaUnit': {
       if (!isLpaUnit(edit.unit)) {

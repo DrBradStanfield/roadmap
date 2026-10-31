@@ -629,6 +629,15 @@ Decisions made building it (agent, 2026-10-21; Brad to confirm):
 - **The write version is the correction chain's length** (the sum of both chains for a
   blood pressure), not a clock: a phone clock set back would otherwise give a correction a
   lower version, and Health would keep the old value (Codex review 2026-10-21).
+- **Nothing the save path would refuse is written** (US-25 AC14b, break-it pass 2026-10-31):
+  `deviceWrites` skips a row that fails `measurementValueFault`, the check typed values and
+  imports already pass, so the ranges stay in health-core and Swift holds no copy. Skipped,
+  never clamped: a clamped number would be a value the person never entered. A blood
+  pressure the wrong way up (`pressureInverted`, US-02 AC8) is skipped too, both halves.
+  When the newest version of a value turns bad, nothing is written for it, so Health keeps
+  the earlier sample: skipped, never clamped or deleted. A record with
+  thousands of typed days still writes each once on first connect; the per-version memory
+  keeps later launches from writing them again.
 
 **Built 2026-10-21 (app).** `HealthRoadmap/Health/`: `HealthKitClient` is the only file that
 touches HealthKit (types, SI units, anchored queries, observer queries, saves), behind the
@@ -1244,7 +1253,7 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
 
 **Layout.**
 - `engine/entry.ts`: the one door Swift calls, JSON in and out: `screenJson` (My data and
-  the Plan tab's sections and tiles from one read and one plan; the self-test calls it too,
+  the Plan tab's sections and tiles from one read and one plan, with US-61's product blocks, D14; the self-test calls it too,
   so it proves what both screens draw), `planJson` and `sectionsJson` (the parity goldens; the
   self-test also checks `planJson`), and `newRecordJson`, `applyEditJson`, `numberJson`. Every door reads the record through health-core's `ROADMAP_DOC.migrate`
   (shape check, then migration), as the web, CLI and connector do.
@@ -1445,6 +1454,61 @@ A new user answers sex, birth month and year, height and weight, one per screen,
 - **Existing users skip it**: a record holding sex, birth year and height. "I already use
   Health Roadmap" connects the cloud first, then asks only what is missing.
 - **No usage event** (D9 holds): App Store Connect retention is the signal.
+
+### D13 · "Do you drink alcohol?": one profile answer, the engine drops the card (Brad, 2026-10-31, US-60)
+
+Only the reduce-alcohol suggestion has a Dismiss button (keyed off its id in
+`PlanCardView`), shown only while the answer is unanswered. It opens the app's usual
+confirmation dialog, attached to the button so its arrow points there, "I don't drink"
+or "I drink"; the answer is checked against the screen recorded at the tap. Plan:
+[docs/drafts/alcohol-question.md](../docs/drafts/alcohol-question.md).
+- **The answer is a profile field** (`profile.alcohol`), written by the engine's own edit
+  (`{kind: 'alcohol'}` in `engine/my-data.ts`, health-core's `stampProfile`), so it merges
+  field by field like the rest of the profile. "Not answered" in About you writes null, as
+  every cleared profile field is stored, so a clear merges as a write.
+- **Swift never filters cards.** "I don't drink" reaches the engine, which stops sending
+  the card. The plan animates on the answer alone (`.animation(value:)` on it: the save
+  lands after an await, outside any `withAnimation`), so the card fades out and the rest
+  close up while nothing else on the plan animates.
+- **Never re-asked.** "I drink" keeps the card, without its Dismiss; About you is the only
+  place to change it.
+- **No new bridge.** The edit and the field ride the existing `applyEditJson`/`screenJson`
+  doors; the contract file is unchanged. Swift reads the field leniently, so a value it
+  does not know shows as "Not answered", never a broken My data.
+- **Usage signal:** Clarity's "Alcohol answered", sent from the plan's dialog only, never
+  the answer (D9). The chat allow-list (`ChatClient.contextKeys`) carries health-core's
+  new `alcohol` key, so the chat knows a non-drinker.
+
+### D14 · Dr Brad's products on the US plan: the App Store storefront decides (Brad, 2026-10-31, US-61)
+
+A known adult whose App Store storefront is the US sees, on each mapped supplement card, the
+product that holds it (MicroVitamin+, or Sleep on the sleep card), and under the last
+Supplements card one line saying Brad owns the company. Everyone else sees the plan as it
+is. Spec: docs/user-stories.md US-61.
+- **Why the storefront.** StoreKit's `Storefront.current` is the App Store country of the
+  Apple ID, the same market the app is sold in, and needs no permission, no location and no
+  network call of ours. The phone's region is a display setting anyone changes; the record's
+  units say nothing about the market. Nil (no Apple ID, StoreKit cannot say) is not the US.
+  `AppStoreCountry` keeps the last answer in the app's defaults, so a launch draws the plan
+  at once with it; each return to the app asks StoreKit again (the storefront changes only in
+  Settings) and a change redraws (`RecordStore.follow(storefrontIsUS:)`). Under the tests it
+  is always false. DEBUG only, compiled out of Release: the launch argument
+  `-StorefrontCountry USA` (or `NZL`) stands in for StoreKit, for simulator checks.
+- **The engine stays the one source.** `screenJson` takes `isUS` as a new last argument and
+  answers `plan.usProducts`, health-core's `usProductBlocks` (us-products.ts, the web's own
+  overlay) with the adult rule `medicinesShown`, the web's. Only `true` counts. Every word,
+  link and card choice is the engine's, so a wording or mapping change ships over the air
+  (D3), and an engine release that empties the mapping removes the blocks (no kill switch,
+  Brad). The sections stay the web's `planSections`, product-free; Swift places each block on
+  its card, swaps in the card's US text and references when the block has them
+  (`USProducts.applied`), and draws the ownership line on the Supplements section once.
+- **Bridge change.** The new argument moved the bridge id from `2d467ff50c66c42d` to
+  `d0ffd9e53f8499b3` (D3), so the overlay needs an App Store build: an older app keeps its
+  bridge's engines and never reads the new one's releases.
+- **Taps only, no new Clarity word.** The links carry `utm_source=health-tool&utm_medium=ios`,
+  so taps and orders show in Shopify, and nothing from the record enters a URL. No impression
+  is counted: a Clarity event would add a word to D9's fixed list, which US-61 leaves as it is.
+- **Tests:** `ios/engine/us-products.test.ts` (Node), `USProductsTests.swift` (XCTest).
 
 ## Phases
 

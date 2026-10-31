@@ -56,6 +56,16 @@ describe('trackProductEvent on the Shopify surface', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it('US-61 AC8 — counts a US product event once per product per tab, sending the product alone', async () => {
+    const { trackProductEvent } = await import('./server-api');
+    trackProductEvent('us_product_shown', { product: 'microvitamin_plus' });
+    trackProductEvent('us_product_shown', { product: 'microvitamin_plus' });
+    trackProductEvent('us_product_shown', { product: 'sleep' });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const metadata = fetchMock.mock.calls.map(([, init]) => JSON.parse((init as RequestInit).body as string).metadata);
+    expect(metadata).toEqual([{ product: 'microvitamin_plus' }, { product: 'sleep' }]);
+  });
+
   it('US-09 AC22 — counts a cloud-connect outcome once per provider per tab, so a second provider is not dropped', async () => {
     const { trackProductEvent } = await import('./server-api');
     trackProductEvent('cloud_connect_cancelled', { provider: 'dropbox' });

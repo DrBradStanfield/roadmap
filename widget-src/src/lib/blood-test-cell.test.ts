@@ -228,6 +228,17 @@ describe('statusOf — LDL cells (US-07 AC5)', () => {
   });
 });
 
+// US-03 AC7: a stored 0 the plan leaves out gets no colour, neither green nor red.
+describe('statusOf — a value out of range (US-03 AC7)', () => {
+  it.each(['ldl', 'hdl', 'total_cholesterol', 'triglycerides', 'apob'] as const)('%s 0 has no status', (metric) => {
+    expect(statusOf(metric, 0, {})).toBeNull();
+  });
+
+  it('an in-range value is still graded, and PSA 0 (in range) still is', () => {
+    expect([statusOf('ldl', 1.0, {}), statusOf('hdl', 0.5, {}), statusOf('psa', 0, {})]).toEqual(['ok', 'bad', 'ok']);
+  });
+});
+
 // US-07 AC6: one grading value; null (a known minor) grades nothing and hints nothing.
 describe('grading null — no adult grade or hint', () => {
   it('statusOf, previewStatus and cellHint all answer null', () => {
@@ -270,5 +281,20 @@ describe('an ambiguous comma in a typed cell (US-02 AC7)', () => {
     expect(readTypedValue('triglycerides', '1234', 'conventional')).toBe(1234);
     expect(readTypedValue('triglycerides', '1.234', 'conventional')).toBe(1.234);
     expect(validateTypedValue('triglycerides', '1,234,567', 'conventional').error).toBe('Max 2000 mg/dL');
+  });
+});
+
+// US-03 AC7 (Brad, 2026-10-31): the cell says a lipid of 0 is refused before save.
+describe('US-03 AC7 — validateTypedValue refuses 0 for lipids and ApoB, takes it for PSA and Lp(a)', () => {
+  it('LDL 0 in either unit reads "Must be above 0"', () => {
+    expect(validateTypedValue('ldl', '0', 'si').error).toBe('Must be above 0 mmol/L');
+    expect(validateTypedValue('ldl', '0', 'conventional').error).toBe('Must be above 0 mg/dL');
+    expect(validateTypedValue('apob', '0', 'si').error).toBe('Must be above 0 g/L');
+  });
+
+  it('a tiny positive LDL is fine, and PSA and Lp(a) take 0', () => {
+    expect(validateTypedValue('ldl', '0.2', 'si').error).toBeNull();
+    expect(validateTypedValue('psa', '0', 'si').error).toBeNull();
+    expect(validateTypedValue('lpa', '0', 'si').error).toBeNull();
   });
 });

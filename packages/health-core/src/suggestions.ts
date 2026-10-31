@@ -25,6 +25,33 @@ import {
   LPA_THRESHOLDS,
 } from './units';
 
+/** The card whose Dismiss asks "Do you drink alcohol?" (US-60). */
+export const REDUCE_ALCOHOL_ID = 'reduce-alcohol';
+
+// Supplement card text, in pieces, so each US variant below is the card's own
+// text minus what it drops, never a second copy (US-61 AC3).
+const BASE_COSMOS = 'A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps.';
+const BASE_WHO = 'The WHO\'s 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials.';
+const BASE_K2 = 'If you take warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR.';
+const CREATINE_STRENGTH = 'One of the most-studied supplements: a meta-analysis found creatine (3–5 g/day) significantly increases muscle strength and lean mass with resistance training.';
+const LUTEIN_PIGMENT = 'Lutein and zeaxanthin are the pigments of the macula, the part of the eye that sees fine detail. Trials show supplements raise macular pigment density.';
+const LUTEIN_AREDS = 'In the AREDS trial, a formula containing beta-carotene slowed the progression of macular degeneration. In AREDS2, lutein and zeaxanthin worked as well as beta-carotene, without beta-carotene\'s lung cancer signal in former smokers.';
+
+/**
+ * US variants of three supplement cards' text (US-61 AC3), keyed `<id>-us`.
+ * Only the US product overlay (us-products.ts) reads them: generateSuggestions
+ * never emits them, so the plan, chat, agents and the CLI stay the same in
+ * every country. No product name here; the product line lives in us-products.ts.
+ */
+export const US_SUPPLEMENT_DESCRIPTIONS: Readonly<Record<string, string>> = {
+  // No WHO dementia sentences (a disease outcome beside a named product).
+  'supplement-micronutrient-base-us': `${BASE_COSMOS} ${BASE_K2}`,
+  // Strength and lean mass only: no memory sentence.
+  'supplement-creatine-us': CREATINE_STRENGTH,
+  // Macular pigment only: no macular degeneration outcome.
+  'supplement-lutein-zeaxanthin-us': LUTEIN_PIGMENT,
+};
+
 /** Dietary advice for elevated lipids — shared between suggestion card and InputPanel medication cascade */
 export const LIPID_DIET_ADVICE = 'Specific foods can lower LDL cholesterol: oats, walnuts, almonds, ground flaxseed, edamame, and replacing butter with extra-virgin olive oil. If you don\'t have IBS or IBD, beans, lentils, chickpeas, and mixed vegetables are also great options. Psyllium husk is a soluble fibre that is well-tolerated even with IBS or IBD; discuss with your doctor whether it fits your routine.';
 
@@ -287,19 +314,21 @@ export function generateSuggestions(
       category: 'nutrition',
       priority: 'attention',
       title: 'Reduce triglycerides with diet',
-      description: 'Blood triglycerides are very diet-sensitive—improvements can be seen within 2-3 weeks. Key measures: limit alcohol, reduce sugar intake, and reduce total fat and calorie intake.',
+      // US-60: no "limit alcohol" for someone who has said they don't drink.
+      description: `Blood triglycerides are very diet-sensitive—improvements can be seen within 2-3 weeks. Key measures: ${inputs.alcohol === 'none' ? '' : 'limit alcohol, '}reduce sugar intake, and reduce total fat and calorie intake.`,
     });
   }
 
-  // Reduce alcohol — when obesity (BMI >= 30), or overweight with central adiposity, or triglycerides elevated
+  // Reduce alcohol — when obesity (BMI >= 30), or overweight with central adiposity, or triglycerides elevated,
+  // unless the person has said they don't drink (US-60)
   const whrForAlcohol = results.waistToHeightRatio;
-  if (
+  if (inputs.alcohol !== 'none' && (
     (results.bmi !== undefined && results.bmi >= 30) ||
     (results.bmi !== undefined && results.bmi >= 25 && whrForAlcohol !== undefined && isWaistToHeightElevated(whrForAlcohol)) ||
     (inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline)
-  ) {
+  )) {
     suggestions.push({
-      id: 'reduce-alcohol',
+      id: REDUCE_ALCOHOL_ID,
       category: 'nutrition',
       priority: 'attention',
       title: 'Reduce alcohol intake',
@@ -1008,13 +1037,14 @@ export function generateSuggestions(
 
   // === Supplement suggestions (always shown) ===
   // Generic, evidence-based ingredient profiles — no product names, no links.
+  // The US product overlay (US-61) adds its blocks on screen, never here.
   suggestions.push(
     {
       id: 'supplement-micronutrient-base',
       category: 'supplements',
       priority: 'info',
       title: 'Micronutrient base',
-      description: 'A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO\'s 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials. If you take warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR.',
+      description: `${BASE_COSMOS} ${BASE_WHO} ${BASE_K2}`,
       ingredients: [
         'Methylated B-complex',
         'Vitamin D3 with K2',
@@ -1030,7 +1060,7 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'Creatine',
-      description: 'One of the most-studied supplements: a meta-analysis found creatine (3–5 g/day) significantly increases muscle strength and lean mass with resistance training. Dr Stanfield considers the memory evidence clear and consistent; formal reviews are more mixed, with the clearest benefit in older adults.',
+      description: `${CREATINE_STRENGTH} Dr Stanfield considers the memory evidence clear and consistent; formal reviews are more mixed, with the clearest benefit in older adults.`,
     },
     {
       id: 'supplement-collagen',
@@ -1038,6 +1068,20 @@ export function generateSuggestions(
       priority: 'info',
       title: 'Collagen peptides',
       description: 'Collagen peptides may improve skin hydration and elasticity (Batool 2026).',
+    },
+    {
+      id: 'supplement-lutein-zeaxanthin',
+      category: 'supplements',
+      priority: 'info',
+      title: 'Lutein and zeaxanthin',
+      description: `${LUTEIN_PIGMENT} ${LUTEIN_AREDS}`,
+    },
+    {
+      id: 'supplement-tmg',
+      category: 'supplements',
+      priority: 'info',
+      title: 'TMG (trimethylglycine)',
+      description: 'TMG lowers blood homocysteine, according to a meta-analysis of randomized trials. Small trials suggest it may improve strength and power.',
     },
     {
       id: 'supplement-omega3',

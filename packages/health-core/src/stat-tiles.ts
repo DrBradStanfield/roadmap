@@ -125,13 +125,14 @@ export function statTiles(results: HealthResults, { unitSystem, unitOverrides, s
       key: 'ibw', label: 'Ideal Body Weight',
       value: formatDisplayValue('weight', results.idealBodyWeight, usFor('weight')), unit: getDisplayLabel('weight', usFor('weight')),
       // Height reads in the plan's units: it has no per-test toggle.
-      status: { label: `for ${formatHeightDisplay(results.heightCm, unitSystem)} height`, tone: 'normal' },
+      // No tone: a fact, not a grade, so neutral gray (Brad 2026-10-31).
+      status: { label: `for ${formatHeightDisplay(results.heightCm, unitSystem)} height` },
       evidence: sex ? getIbwEvidence(sex) : undefined,
     });
     const rate = getProteinRate(results.eGFR);
     tiles.push({
       key: 'protein', label: 'Protein Target', value: String(results.proteinTarget), unit: 'g/day',
-      status: { label: `${rate.toFixed(1)}g per kg IBW`, tone: 'normal' },
+      status: { label: `${rate.toFixed(1)}g per kg IBW` },
       evidence: getProteinEvidence(results.idealBodyWeight, rate, results.eGFR),
     });
   }

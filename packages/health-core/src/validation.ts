@@ -1,7 +1,7 @@
 import * as z from './zod';
-import { roundBoundInward, UNIT_DEFS, UnitSystem } from './units';
+import { rangeFault, roundBoundInward, UNIT_DEFS, UnitSystem } from './units';
 import { FIELD_METRIC_MAP } from './mappings';
-import type { HealthInputs } from './types';
+import { ALCOHOL_ANSWERS, type HealthInputs } from './types';
 import { IMPORT_LIMITS } from './import-hints';
 
 /**
@@ -62,27 +62,27 @@ export const healthInputSchema = z.object({
     .optional(),
   ldlC: z
     .number()
-    .min(0, 'LDL-c must be positive')
+    .gt(0, 'LDL-c must be above 0')
     .max(12.9, 'LDL-c must be at most 12.9 mmol/L')
     .optional(),
   totalCholesterol: z
     .number()
-    .min(0, 'Total cholesterol must be positive')
+    .gt(0, 'Total cholesterol must be above 0')
     .max(15, 'Total cholesterol must be at most 15 mmol/L')
     .optional(),
   hdlC: z
     .number()
-    .min(0, 'HDL must be positive')
+    .gt(0, 'HDL must be above 0')
     .max(5.2, 'HDL must be at most 5.2 mmol/L')
     .optional(),
   triglycerides: z
     .number()
-    .min(0, 'Triglycerides must be positive')
+    .gt(0, 'Triglycerides must be above 0')
     .max(22.6, 'Triglycerides must be at most 22.6 mmol/L')
     .optional(),
   apoB: z
     .number()
-    .min(0, 'ApoB must be positive')
+    .gt(0, 'ApoB must be above 0')
     .max(3, 'ApoB must be at most 3 g/L')
     .optional(),
   creatinine: z
@@ -117,6 +117,8 @@ export const healthInputSchema = z.object({
     .max(200, 'eGFR must be at most 200 mL/min/1.73m²')
     .optional(),
   labEgfrDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'eGFR date must be YYYY-MM-DD').optional(),
+  // US-60: the profile's alcohol answer. Absent: not answered.
+  alcohol: z.enum(ALCOHOL_ANSWERS).optional(),
 });
 
 /**
@@ -533,8 +535,7 @@ export function validateInputValue(
   if (value === undefined) return undefined;
   const range = IDENTITY_FIELD_RANGES[field];
   if (!range) return value; // Unknown field — pass through
-  if (value < range.min || value > range.max) return undefined;
-  return value;
+  return rangeFault(range, value) ? undefined : value;
 }
 
 /**
