@@ -1,5 +1,5 @@
 /**
- * The Docker build is `COPY . .` (Dockerfile:20), so anything .dockerignore
+ * The Docker build is `COPY . .` (Dockerfile:18), so anything .dockerignore
  * misses is baked into the image. A manual `fly deploy` ships the WORKING
  * TREE, not HEAD, so the .gitignore patterns that exist to keep real health
  * data and backups out of the repo have to hold for the image too.
