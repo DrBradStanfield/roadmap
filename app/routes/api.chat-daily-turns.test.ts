@@ -132,13 +132,25 @@ describe('US-15 AC45: web chat turns are capped per IP and per machine', () => {
     expect(webChatTurns.ip.remaining(ipBucket('198.51.100.13'))).toBe(199);
   });
 
-  it('the route reads WEB_CHAT_DAILY_CAP through the env rule: "abc" warns and caps at 2000, never at no cap', async () => {
+  // Brad's decision (2026-10-31): 200 a day per IP, 10,000 a day per machine.
+  it('by default a machine allows 10,000 turns a day and an IP 200', async () => {
+    await load();
+    const { webChatTurns } = await import('../lib/rate-limiter');
+    const { ipBucket } = await import('../lib/app-gate.server');
+    expect(webChatTurns.machine.remaining('machine')).toBe(10_000);
+    expect((await post('198.51.100.16')).status).toBe(200);
+    expect(webChatTurns.machine.remaining('machine')).toBe(9_999);
+    expect(webChatTurns.ip.remaining(ipBucket('198.51.100.16'))).toBe(199);
+    expect(vi.mocked(console.warn)).not.toHaveBeenCalled();
+  });
+
+  it('the route reads WEB_CHAT_DAILY_CAP through the env rule: "abc" warns and caps at 10,000, never at no cap', async () => {
     await load('abc');
     const { webChatTurns } = await import('../lib/rate-limiter');
-    expect(webChatTurns.machine.remaining('machine')).toBe(2000);
+    expect(webChatTurns.machine.remaining('machine')).toBe(10_000);
     expect(vi.mocked(console.warn).mock.calls.some(([m]) => String(m).startsWith('WEB_CHAT_DAILY_CAP'))).toBe(true);
     expect((await post('198.51.100.15')).status).toBe(200);
-    expect(webChatTurns.machine.remaining('machine')).toBe(1999);
+    expect(webChatTurns.machine.remaining('machine')).toBe(9_999);
   });
 
   it('WEB_CHAT_DAILY_CAP caps the machine across IPs', async () => {
@@ -155,11 +167,11 @@ describe('US-15 AC45: web chat turns are capped per IP and per machine', () => {
     expect(mocks.completion).not.toHaveBeenCalled();
   });
 
-  for (const raw of ['2,000', 'abc', '-1']) {
-    it(`a WEB_CHAT_DAILY_CAP of ${JSON.stringify(raw)} falls back to the default 2000, never to no cap`, async () => {
+  for (const raw of ['10,000', 'abc', '-1']) {
+    it(`a WEB_CHAT_DAILY_CAP of ${JSON.stringify(raw)} falls back to the default 10,000, never to no cap`, async () => {
       const { envCap } = await import('../lib/rate-limiter');
       const warn = vi.fn();
-      expect(envCap('WEB_CHAT_DAILY_CAP', raw, 2000, warn)).toBe(2000);
+      expect(envCap('WEB_CHAT_DAILY_CAP', raw, 10_000, warn)).toBe(10_000);
       expect(warn).toHaveBeenCalledTimes(1);
       expect(warn.mock.calls[0][0]).not.toContain(raw);
     });
