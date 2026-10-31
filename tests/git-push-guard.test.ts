@@ -82,7 +82,7 @@ describe('git-push-guard.test.sh', () => {
       const [, got, want] = l.match(/^(\S+)\s+expected\s+(\S+)/)!;
       return got !== want;
     });
-    expect(cases.length).toBeGreaterThanOrEqual(49);
+    expect(cases.length).toBeGreaterThanOrEqual(70);
     expect(mismatches).toEqual([]);
     expect(r.status).toBe(0);
   }, 120_000);

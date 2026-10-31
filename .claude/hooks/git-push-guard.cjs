@@ -117,13 +117,40 @@ for (const seg of segs) {
     deny(`Repo policy (CLAUDE.md Git workflow): "${bad}" force-pushes or deletes, which can overwrite work the cloud loops `
       + 'or other sessions pushed. Pull, merge deliberately, push normally. A branch delete Brad has approved: he runs it himself.');
   }
-  try {
-    const conf = execFileSync('git', ['-C', dir, 'config', '--get-regexp', '^remote\\..*\\.(push|mirror)$'],
-      { encoding: 'utf8', timeout: 10000, stdio: ['ignore', 'pipe', 'ignore'] }).trim().split('\n').map((l) => l.replace(' ', '='));
-    const badConf = conf.find(badConfig);
-    if (badConf) deny(`Repo config "${badConf}" makes every push a force or mirror push. Remove it, then push normally.`);
-  } catch { /* no such config (exit 1) */ }
+  const gitq = (args) => { try { return execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8', timeout: 10000, stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { return ''; } };
+  // Push config from the repo ("key value") and from this command's -c ("key=value"), as "key=value" lines.
+  const conf = [...gitq(['config', '--get-regexp', '^(remote\\..*\\.(push|mirror)|push\\.default)$']).split('\n').filter(Boolean)
+    .map((l) => l.replace(' ', '=')), ...g.cfg];
+  const badConf = conf.filter((l) => /^remote\./i.test(l)).find(badConfig);
+  if (badConf) deny(`Repo config "${badConf}" makes every push a force or mirror push. Remove it, then push normally.`);
+  const positional = g.args.filter((a) => !a.startsWith('-'));
+  const current = gitq(['rev-parse', '--abbrev-ref', 'HEAD']);
+  // A destination ref as a branch name: HEAD and @ are the current branch; refs/heads/ and heads/ are dropped.
+  const toDst = (s) => {
+    const d = s.includes(':') ? s.split(':').pop() : s;
+    return d === 'HEAD' || d === '@' ? current : d.replace(/^refs\//, '').replace(/^heads\//, '');
+  };
+  const pushConf = conf.filter((l) => /^remote\..*\.push=/i.test(l)).map((l) => toDst(l.slice(l.indexOf('=') + 1)));
+  const configured = pushConf.length > 0 || conf.some((l) => /^push\.default=(upstream|tracking)$/i.test(l));
+  // A claude/ branch reaches main only through its PR: a push of it to main is refused, even right after a pull
+  // or merge (checked before that shortcut). That covers an explicit main destination, and a bare push (no
+  // refspec) whose destination config names main: a remote.*.push refspec, or an upstream of main. Cloud loops
+  // commit to main by design (LOOP.md) and skip this.
+  if (current && current !== 'HEAD' && current !== 'main' && process.env.CLAUDE_CODE_REMOTE !== 'true') {
+    const bare = positional.length < 2;
+    const upstreamMain = toDst(gitq(['config', `branch.${current}.merge`]) || '-') === 'main';
+    if (positional.slice(1).map(toDst).includes('main')
+        || (bare && (upstreamMain || pushConf.some((d) => d === 'main' || d === '?')))) {
+      deny(`This pushes branch ${current} straight to main, skipping its PR (docs/git-workflow.md). Push the branch `
+        + '(`git push -u origin <branch>`), then merge the PR.');
+    }
+  }
   if (synced.has(dir)) continue;
+  // A push that cannot land on main (a claude/ branch push, docs/git-workflow.md) skips the behind-main check:
+  // that branch merges origin/main at PR time. Unknown, --all, or a bare push whose destination comes from
+  // config (remote.*.push, push.default upstream/tracking, from the repo or -c) counts as main-bound.
+  const specs = positional.length >= 2 ? positional.slice(1) : [configured ? 'main' : (current || 'main')];
+  if (!g.args.some((a) => a === '--all' || a === '--branches') && specs.map(toDst).every((d) => d && d !== 'main')) continue;
 
   let behind = 0;
   try {
@@ -133,7 +160,8 @@ for (const seg of segs) {
   } catch { continue; }
   if (behind > 0) {
     deny(`origin/main has ${behind} commit(s) this checkout lacks (a cloud loop or another session pushed). `
-      + 'Commit everything first, then `git pull --no-rebase`, resolve any conflict deliberately (ledgers/CSVs keep '
+      + 'Commit first, then `git pull --no-rebase` (on main) or `git fetch origin main && git merge --no-edit origin/main` '
+      + '(on a claude/ branch), resolve any conflict deliberately (ledgers/CSVs keep '
       + 'BOTH sides\' rows, never "take mine"), then push. Never force.');
   }
 }

@@ -57,7 +57,7 @@ before deploying.
 (`~/Documents/claude_business.nosync/`)
 
 - **`docs/products.md` is the MASTER here — a real tracked file** (inverted 2026-08-10; claude_business
-  holds the symlink). Edit it here; claude_business edits arrive uncommitted — sweep-commit them.
+  holds the symlink). Edit it in a worktree; claude_business edits land uncommitted here: own PR (docs/git-workflow.md).
 - **`docs/chatbot/` is GENERATED (claude_business `tools/sync-shared-docs.mjs`), never edit.** `scripts/check-symlinks.mjs` keeps it, products.md and writing-style.md REAL files (mode 100644) and checks the synced hashes.
 - `docs/blog/*.md` — chatbot blog cache from claude_business `/blog-post`; after a frontmatter edit, `npm run rebuild-index` rebuilds `docs/blog/index.json` (CI checks it is in sync).
 - **Customer-service gateway (live):** its OWN Fly app; code only in private claude_business `customer-service-gateway/`. Spec: its `docs/customer-service.md`.
@@ -178,11 +178,11 @@ same commit).
 
 ## Development Rules
 
-- **Every change: its own worktree, `claude/` branch and PR (HARD, Brad 2026-10-31)**, never the main
-  checkout's tree, so no session commits or deploys another's half-done work. Before the PR and the merge:
-  merge `origin/main` in, `test:all`, re-review if main touched your files (PR 150); adversary + Codex first;
-  check clinical citation numbering. Ship: auto-ship, or `gh pr merge --match-head-commit` once CI is green,
-  then the CI Deploy. Brad's account merges workflow-file PRs. Loops: LOOP.md.
+- **Every change: its own worktree, `claude/` branch and PR (HARD, Brad 2026-10-31)**, never the main checkout:
+  `sh tools/worktree-new.sh <name>`, EnterWorktree `path`; hooks deny main-checkout edits and an un-PR'd turn end.
+  Before the PR and the merge: merge `origin/main` in, `test:all`, re-review if main touched your files (PR 150);
+  adversary + Codex first; check citation numbering. Ship: auto-ship, or `gh pr merge --merge --match-head-commit`
+  once CI is green, then the CI Deploy; finish with `tools/worktree-done.sh`. Steps, exceptions: docs/git-workflow.md.
 - **One owner per PR (HARD):** whoever opens it merges or closes it before ending, or the final report names
   it. `stale-pr-watch.yml` (PRs idle >48h) and `stranded-branch-watch.yml` email Brad. Work found uncommitted
   in the main checkout goes in its own PR, "Swept, unreviewed: <what>" (name failing tests), never in yours.

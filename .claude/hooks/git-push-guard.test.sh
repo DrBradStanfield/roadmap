@@ -54,6 +54,36 @@ t "$S/a" "cd ../b && git push" DENY
 t "$S" "git --git-dir=b/.git push origin main" DENY
 t "$S" "git -C . -C b push" DENY
 t "$S/b" "cd ../a && git push" allow
+# A claude/ branch push may be behind main (docs/git-workflow.md); anything landing on main may not.
+(cd b && git checkout -q -b claude/x)
+t "$S/b" "git push -u origin claude/x" allow
+t "$S/b" "git push" allow
+t "$S/b" "git push origin HEAD:main" DENY
+t "$S/b" "git push origin claude/x:refs/heads/main" DENY
+t "$S/b" "git push --all origin" DENY
+t "$S/b" "git push origin @:main" DENY
+(cd b && git pull -q --no-rebase origin main 2>/dev/null)   # even when not behind, a branch never pushes to main
+t "$S/b" "git push origin HEAD:main" DENY
+t "$S/b" "git push -u origin claude/x" allow
+t "$S/b" "git merge --no-edit origin/main && git push origin HEAD:main" DENY
+# A configured bare push from an up-to-date branch is git's to resolve (GitHub still refuses a non-fast-forward).
+(cd b && git config push.default upstream); t "$S/b" "git push" allow; (cd b && git config --unset push.default)
+# Other spellings of main, and config that sends a bare push to main (repo or -c), are refused too (PR 415 R3).
+t "$S/b" "git push origin HEAD:heads/main" DENY
+t "$S/b" "git push origin HEAD:refs/heads/main" DENY
+t "$S/b" "git -c remote.origin.push=HEAD:refs/heads/main push origin" DENY
+t "$S/b" "git -c remote.origin.push=HEAD:refs/heads/main push" DENY
+(cd b && git config remote.origin.push HEAD:refs/heads/main); t "$S/b" "git push" DENY; t "$S/b" "git push origin" DENY
+(cd b && git config --unset remote.origin.push)
+(cd b && git branch -q --set-upstream-to=origin/main)
+t "$S/b" "git -c push.default=upstream push" DENY
+t "$S/b" "git push" DENY
+t "$S/b" "git push origin" DENY
+t "$S/b" "git push origin claude/x" allow
+CLAUDE_CODE_REMOTE=true t "$S/b" "git push origin HEAD:main" allow   # cloud loops commit to main by design
+(cd b && git branch -q --unset-upstream)
+(cd b && git checkout -q main)
+t "$S/b" "git push origin @" DENY
 (cd a && git config remote.origin.push +refs/heads/main:refs/heads/main); t "$S/b" "cd ../a && git push" DENY
 (cd a && git config --unset remote.origin.push)
 (cd b && git config remote.origin.push +refs/heads/main:refs/heads/main); t "$S/b" "git pull -q && git push" DENY
