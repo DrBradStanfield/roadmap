@@ -28,6 +28,16 @@ actor AppAttestClient {
         }
     }
 
+    /// A request that failed on the way, in plain words, never URLSession's ("The request
+    /// timed out.", US-52 AC6d, AC7a). `subject` is what was asked: "The chat".
+    static func words(for error: URLError, subject: String) -> String {
+        switch error.code {
+        case .timedOut: "\(subject) took too long to answer. Please try again."
+        case .networkConnectionLost: "The connection dropped before the answer finished. Please try again."
+        default: "\(subject) could not be reached. Check your connection, then try again."
+        }
+    }
+
     private let session: URLSession
     private var busy = false
     private var waiters: [CheckedContinuation<Void, Never>] = []

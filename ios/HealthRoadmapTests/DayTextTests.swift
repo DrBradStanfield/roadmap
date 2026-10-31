@@ -39,6 +39,47 @@ final class DayTextTests: XCTestCase {
         XCTAssertEqual(years.last, 1900)
     }
 
+    /// US-54 AC5b: no birth month after this one is offered. Every month of an earlier
+    /// year is; this year's stop at this month.
+    func testBirthMonthsStopAtThisMonthThisYear_US54_AC5b() throws {
+        let now = try Date("2026-10-21T00:00:00Z", strategy: .iso8601)
+        XCTAssertEqual(DayText.birthMonths(year: 2026, now: now), Array(1...10))
+        XCTAssertEqual(DayText.birthMonths(year: 2025, now: now), Array(1...12))
+        XCTAssertEqual(DayText.latestBirthMonth(year: 2026, now: now), 10, "onboarding moves a later month back to this one")
+        XCTAssertEqual(DayText.latestBirthMonth(year: 2025, now: now), 12)
+    }
+
+    /// Review R4: a month stored in the future (the web saved December this year) still
+    /// shows in the menu, never a blank one; a month in range is not offered twice.
+    func testAStoredFutureMonthStaysInTheMenu_US54_AC5b() throws {
+        let now = try Date("2026-10-21T00:00:00Z", strategy: .iso8601)
+        XCTAssertEqual(DayText.birthMonths(year: 2026, now: now, keeping: 12), Array(1...10) + [12])
+        XCTAssertEqual(DayText.birthMonths(year: 2026, now: now, keeping: 3), Array(1...10))
+        XCTAssertEqual(DayText.birthMonths(year: 2026, now: now, keeping: nil), Array(1...10))
+    }
+
+    /// Review R4: changing only the year, as onboarding's wheel does, moves a stored month
+    /// that would then be in the future back to the latest one, in the same edit.
+    func testANewBirthYearMovesAFutureMonthBack_US54_AC5b() throws {
+        let now = try Date("2026-10-21T00:00:00Z", strategy: .iso8601)
+        XCTAssertEqual(RecordEdit.birthYear(2026, storedMonth: 12, now: now), .profile(birthYear: 2026, birthMonth: 10))
+        XCTAssertEqual(RecordEdit.birthYear(2026, storedMonth: 4, now: now), .profile(birthYear: 2026))
+        XCTAssertEqual(RecordEdit.birthYear(2025, storedMonth: 12, now: now), .profile(birthYear: 2025))
+        XCTAssertEqual(RecordEdit.birthYear(2026, storedMonth: nil, now: now), .profile(birthYear: 2026))
+    }
+
+    /// Review round 2 N1: "this month" is the engine's, judged at UTC+14, in any phone zone.
+    /// On 30 Sep at 10:30 UTC it is already October there (not yet in New Zealand); on 31 Dec it is already next year.
+    func testTheLatestBirthMonthIsJudgedWhereTheDayBeginsFirst_US54_AC5b() throws {
+        let october = try Date("2026-09-30T10:30:00Z", strategy: .iso8601)
+        XCTAssertEqual(DayText.latestBirthMonth(year: 2026, now: october), 10)
+        XCTAssertEqual(RecordEdit.birthYear(2026, storedMonth: 10, now: october), .profile(birthYear: 2026))
+        let newYear = try Date("2026-12-31T10:30:00Z", strategy: .iso8601)
+        XCTAssertEqual(DayText.latestBirthMonth(year: 2026, now: newYear), 12)
+        XCTAssertEqual(DayText.latestBirthMonth(year: 2027, now: newYear), 1)
+        XCTAssertEqual(RecordEdit.birthYear(2026, storedMonth: 12, now: newYear), .profile(birthYear: 2026))
+    }
+
     func testAStoredDayPrintsAsItself() {
         XCTAssertTrue(DayText.short("2026-10-20").contains("20"), DayText.short("2026-10-20"))
         XCTAssertEqual(DayText.short("not a day"), "not a day")

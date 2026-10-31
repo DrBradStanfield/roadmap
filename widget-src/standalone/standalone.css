@@ -51,14 +51,14 @@
    sentence stays one continuous line; underlined to read as a link. */
 .hr-sync-status-link {
   background: none; border: 0; padding: 0; cursor: pointer;
-  font: inherit; color: var(--color-brand, #00a38b); text-decoration: underline;
+  font: inherit; color: var(--color-brand-text); text-decoration: underline;
 }
 .hr-sync-detail { color: #5a6b73; font-size: 12.5px; flex-basis: 100%; margin: 0; }
 .hr-sync-btn {
-  margin-left: auto; background: #00a38b; color: #fff; border: 0; border-radius: 8px;
+  margin-left: auto; background: var(--color-brand-text); color: #fff; border: 0; border-radius: 8px;
   font-size: 13px; font-weight: 600; padding: 7px 13px; cursor: pointer;
 }
-.hr-sync-btn:hover { background: #008f7a; }
+.hr-sync-btn:hover { background: var(--color-brand-text-hover); }
 .hr-sync-link {
   margin-left: auto; background: none; border: 0; color: #5a6b73;
   font-size: 12.5px; text-decoration: underline; cursor: pointer; padding: 4px;
@@ -95,7 +95,7 @@
    is visible on the input tab where every cloud connect lands. Tinted .hr-sync
    card + a left rule so it reads as an announcement, not another status line. */
 .hr-page-notice {
-  margin: 0 0 16px; border-left: 4px solid #00a38b; align-items: flex-start;
+  margin: 0 0 16px; border-left: 4px solid var(--color-brand); align-items: flex-start;
 }
 .hr-page-notice-dismiss { margin-left: auto; }
 /* A notice with an explanation line (US-22 AC13): the action starts the row
@@ -126,7 +126,7 @@
   font-size: 24px; line-height: 1; color: #5a6b73; cursor: pointer; padding: 4px;
 }
 .hr-modal-back {
-  background: none; border: 0; color: #00897b; font-size: 13px; cursor: pointer;
+  background: none; border: 0; color: var(--color-brand-text); font-size: 13px; cursor: pointer;
   padding: 0; margin-bottom: 10px;
 }
 .hr-opt {
@@ -134,7 +134,7 @@
   background: #fff; border: 1px solid #cdd9dd; border-radius: 10px;
   padding: 12px 14px; margin-bottom: 8px; cursor: pointer;
 }
-.hr-opt:hover { border-color: #00a38b; background: #f7fcfb; }
+.hr-opt:hover { border-color: var(--color-brand); background: #f7fcfb; }
 .hr-opt:disabled { opacity: 0.55; cursor: default; }
 .hr-opt-logo { flex: 0 0 auto; width: 24px; height: 24px; }
 .hr-opt-logo svg { width: 24px; height: 24px; display: block; }
@@ -144,7 +144,7 @@
 .hr-opt-note { font-size: 11.5px; line-height: 1.4; color: #5a6b73; margin-top: 2px; }
 .hr-opt-hint { font-size: 11.5px; line-height: 1.4; color: #1f2d33; font-weight: 600; margin-top: 2px; }
 .hr-opt-connected {
-  margin-left: 8px; font-size: 11px; font-weight: 700; color: #0a7a5f;
+  margin-left: 8px; font-size: 11px; font-weight: 700; color: var(--color-brand-text);
   background: #e6f6f1; border-radius: 10px; padding: 2px 8px; vertical-align: 1px;
 }
 .hr-opt-divider {

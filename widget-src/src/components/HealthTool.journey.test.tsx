@@ -692,6 +692,22 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
     expect(await bpRows()).toEqual([[120, 'active'], [80, 'active']]);
   });
 
+  // US-54 AC5b now covers the web: the plan leaves a future birth month out and says why.
+  it('US-54 AC5b: a birth month after this one shows the rule under the month; this month does not', async () => {
+    vi.setSystemTime(new Date('2026-09-01T09:00:00.000Z'));
+    await guest();
+    const view = render(<HealthTool />);
+    const rule = 'Your birth month cannot be in the future.';
+    const shownRule = () => [...view.container.querySelectorAll('.error-message')].filter((e) => e.textContent === rule);
+
+    fireEvent.change(await shown<HTMLSelectElement>(view.container, '#birthMonth'), { target: { value: '10' } });
+    fireEvent.change(await shown<HTMLInputElement>(view.container, '#birthYear'), { target: { value: '2026' } });
+    await waitFor(() => expect(shownRule()).toHaveLength(1));
+
+    fireEvent.change(view.container.querySelector('#birthMonth')!, { target: { value: '9' } });
+    await waitFor(() => expect(shownRule()).toHaveLength(0));
+  });
+
   // US-02 AC8 (Brad 2026-10-30, adversary N1): the plan judges a pair only
   // within one day. Monday 150/100, then a lone systolic 98 on Tuesday: the
   // plan reads 98/100 from two days and keeps its blood pressure card.
@@ -1112,6 +1128,7 @@ describe('US-03 AC3: a first-time value the form was built again without', () =>
     await wait(600);
     expect(await rowsOf('waist')).toEqual([]);
 
+    fireEvent.click(view.getByRole('tab', { name: 'My plan' })); // Save as PDF is on the plan tab
     savePdf(view);
     await waitFor(async () => expect(await activeOn('waist')).toEqual([[90, TODAY]]));
   });

@@ -134,6 +134,26 @@ the teardown commits and rebuild the legacy entry from source.
 | Shopify storefront — prod **and** edu apps (post-split: microvitamin.com + drstanfield.com/pages/roadmap) | `npm run build:shopify-prod` | `'true'` | `'true'` | None |
 | GitHub Pages / self-host | `npm run build:pages` | `'true'` | undefined (false) | `chat-api.ts → byok-chat.ts`, `upload-api.ts → byok-upload.ts` |
 
+**Two localhosts.** `npm run dev:pages` (port 5173) is the Pages build. `npm run
+dev:shopify` (port 5174, `vite.config.shopify-dev.ts`) is the storefront build
+with `VITE_SHOPIFY_SURFACE`, so the email box, Save as PDF gating, the feedback
+form and the US-61 product blocks render. It serves the real `app-block.liquid`
+(an unknown Liquid tag fails the page, so it cannot drift) inside
+drstanfield.com's live theme stylesheets, inline theme styles and wrapper
+markup, fetched once per server start and rebuilt from safe parts (stylesheet
+hrefs, CSS text, wrapper tag/id/class), so collisions like `div:empty` show
+before a deploy. Theme scripts are left out, so WebKit on the live page still
+checks after. Every `/apps/health-tool-1` call is a local stub (events, A/B and
+feedback accept; the email box accepts; chat lists nothing; lab import 503s).
+The absolute Brad-server URLs in widget source (the Google token exchange,
+reminders) are rewritten in this dev build only to `/__brad-server/…`, which
+answers 503 locally, and Sentry is off on every loopback host. So no call
+reaches Brad's servers. Real third parties still answer: Dropbox and Google
+sign-in, and the live theme's stylesheets. Query switches: `?skip_email_gate=true`
+(`/pages/start`), `?country=NZ` (hides US-61 blocks), `?theme=off`. Never
+`shopify app dev`. For `.claude/launch.json` (gitignored):
+`{ "name": "web-shopify", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev:shopify"], "port": 5174 }`.
+
 (Both the production and education Shopify apps build from this same
 shopify-prod config family — see "Shopify app configs" below. **⚠️ §12 split is
 LIVE (2026-06-24): the PROD app now serves `microvitamin.com` (commerce); the

@@ -187,9 +187,21 @@ function gis(): Gis | undefined {
   return (window as unknown as { google?: Gis }).google;
 }
 
+/** True once the GIS script has loaded, so a popup can open inside the click. */
+export function gisReady(): boolean {
+  return !!gis()?.accounts?.oauth2;
+}
+
+/** Start loading GIS ahead of the click that needs it (US-09 AC30): a script
+ *  that loads after the click can outlast its user activation, and the popup is
+ *  then blocked. A failure here is retried by the click's own load. */
+export function preloadGis(): void {
+  loadGis().catch(() => undefined);
+}
+
 /** Lazily inject + await the GIS script — loaded only when the fallback runs. */
 function loadGis(): Promise<void> {
-  if (gis()?.accounts?.oauth2) return Promise.resolve();
+  if (gisReady()) return Promise.resolve();
   return new Promise((resolve, reject) => {
     if (!document.querySelector('script[src*="gsi/client"]')) {
       const s = document.createElement('script');
@@ -699,29 +711,31 @@ export class GoogleDriveAdapter implements StorageAdapter {
     throw new StorageError('Google Drive needs to be reconnected.');
   }
 
-  /** GIS popup token grant (requires a user gesture). */
+  /** GIS popup token grant (requires a user gesture). With GIS loaded, the
+   *  popup opens synchronously inside the click; otherwise it waits for the load. */
   private acquireViaGis(): Promise<{ accessToken: string; expiresAt: number }> {
-    return loadGis().then(
-      () =>
-        new Promise((resolve, reject) => {
-          const client = gis()!.accounts.oauth2.initTokenClient({
-            client_id: this.config.clientId,
-            scope: this.config.scope,
-            callback: (r) => {
-              if (r.error || !r.access_token) {
-                reject(new StorageError(`Google Drive authorization failed${r.error ? `: ${r.error}` : ''}.`));
-                return;
-              }
-              if (!grantsDrive(r.scope)) {
-                reject(new DriveGrantRefusedError());
-                return;
-              }
-              resolve({ accessToken: r.access_token, expiresAt: expiry(r.expires_in) });
-            },
-            error_callback: () => reject(new StorageError('Google Drive sign-in was cancelled or blocked.')),
-          });
-          client.requestAccessToken({ prompt: '' });
-        }),
-    );
+    return gisReady() ? this.requestGisToken() : loadGis().then(() => this.requestGisToken());
+  }
+
+  private requestGisToken(): Promise<{ accessToken: string; expiresAt: number }> {
+    return new Promise((resolve, reject) => {
+      const client = gis()!.accounts.oauth2.initTokenClient({
+        client_id: this.config.clientId,
+        scope: this.config.scope,
+        callback: (r) => {
+          if (r.error || !r.access_token) {
+            reject(new StorageError(`Google Drive authorization failed${r.error ? `: ${r.error}` : ''}.`));
+            return;
+          }
+          if (!grantsDrive(r.scope)) {
+            reject(new DriveGrantRefusedError());
+            return;
+          }
+          resolve({ accessToken: r.access_token, expiresAt: expiry(r.expires_in) });
+        },
+        error_callback: () => reject(new StorageError('Google Drive sign-in was cancelled or blocked.')),
+      });
+      client.requestAccessToken({ prompt: '' });
+    });
   }
 }
