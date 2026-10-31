@@ -417,7 +417,23 @@ export function getDisplayRange(
   metric: MetricType,
   system: UnitSystem,
 ): ValidationRange {
-  return UNIT_DEFS[metric].validationRange[system];
+  const def = UNIT_DEFS[metric];
+  if (system === 'si') return def.validationRange.si;
+  // US units: the hand-written round numbers, but never past the record's SI
+  // bounds converted and rounded inward, so every number the field accepts is
+  // one the record accepts (US-35 AC17). The table overshot at some ends: 44
+  // lbs is 19.96 kg, under the 20 kg floor, and 79 in is 200.66 cm, over the
+  // 200 cm waist ceiling (US-05 AC2b). Where the table sits inside, it stands,
+  // and so does its exclusive floor (US-03 AC7).
+  const table = def.validationRange.conventional;
+  const { min, max } = def.validationRange.si;
+  const dp = def.decimalPlaces.conventional;
+  const ends = [def.fromCanonical.conventional(min), def.fromCanonical.conventional(max)];
+  return {
+    ...table,
+    min: Math.max(table.min, roundBoundInward(Math.min(...ends), dp, 'min')),
+    max: Math.min(table.max, roundBoundInward(Math.max(...ends), dp, 'max')),
+  };
 }
 
 /** Normalise a unit string for comparison: lowercase, strip spaces + micro sign variants. */
@@ -622,7 +638,7 @@ export const HDL_THRESHOLDS = {
 export const TRIGLYCERIDES_THRESHOLDS = {
   borderline: 150 / TRIGLYCERIDES_FACTOR, // ~1.69
   high: 200 / TRIGLYCERIDES_FACTOR,       // ~2.26
-  veryHigh: 500 / TRIGLYCERIDES_FACTOR,   // ~5.64
+  veryHigh: 500 / TRIGLYCERIDES_FACTOR,   // ~5.645
 } as const;
 
 /** Blood pressure thresholds (mmHg — same in both systems) */

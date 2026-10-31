@@ -14,7 +14,7 @@
  *    extraction, not clinical IP (the algorithm doc never leaves the server).
  */
 import * as z from './zod';
-import { rangeFault, reportedToCanonical, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from './units';
+import { getDisplayRange, rangeFault, reportedToCanonical, toCanonicalValue, type MetricType, type UnitSystem } from './units';
 import { foldName, LAB_CATALOG, LAB_GROUPS, normalizeLabUnit, PROMPT_DEFERRED_KEYS } from './lab-catalog';
 import { parseLocalisedNumber } from './parseNumber';
 import { DOCUMENT_TYPES } from './validation';
@@ -250,9 +250,11 @@ export function resolveUnit(metric: MetricType, unitStr: string, value: number):
   if (reported) return { ...reported, confident: true };
 
   // Fallback: check which validation range the value fits
-  const { si, conventional } = UNIT_DEFS[metric].validationRange;
-  const fitsInSI = rangeFault(si, value) === null;
-  const fitsInConv = rangeFault(conventional, value) === null;
+  const siRange = getDisplayRange(metric, 'si');
+  // The US range the record can hold, not the hand-written table (US-05 AC2b).
+  const convRange = getDisplayRange(metric, 'conventional');
+  const fitsInSI = rangeFault(siRange, value) === null;
+  const fitsInConv = rangeFault(convRange, value) === null;
 
   if (fitsInSI && !fitsInConv) {
     return { valueSI: value, system: 'si', confident: false };

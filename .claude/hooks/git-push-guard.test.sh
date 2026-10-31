@@ -1,12 +1,14 @@
 #!/bin/bash
-# Test for git-push-guard.js against a throwaway local bare remote. Run: bash .claude/hooks/git-push-guard.test.sh
-# Prints one line per case; every line must read DENY/DENY or allow/allow.
-G="$(cd "$(dirname "$0")" && pwd)/git-push-guard.js"
+# Test for git-push-guard.cjs against a throwaway local bare remote. Run: bash .claude/hooks/git-push-guard.test.sh
+# Prints one line per case; every line must read DENY/DENY or allow/allow. Exits 1 if any does not.
+# tests/git-push-guard.test.ts runs it in CI.
+G="$(cd "$(dirname "$0")" && pwd)/git-push-guard.cjs"
+fail=0
 S=$(mktemp -d); rm -rf "$S"; mkdir -p "$S"; cd "$S" || exit 1
 git init -q --bare -b main remote.git; git clone -q remote.git a 2>/dev/null
 (cd a && git commit -q --allow-empty -m one && git push -q origin main); git clone -q remote.git b
 t(){ out=$(printf '{"cwd":"%s","tool_input":{"command":%s}}' "$1" "$(node -e 'console.log(JSON.stringify(process.argv[1]))' "$2")" | node "$G")
-  case "$out" in *deny*) r=DENY;; *) r=allow;; esac; printf '%-6s expected %-6s %s\n' "$r" "$3" "[$2] in $(basename "$1")"; }
+  case "$out" in *deny*) r=DENY;; *) r=allow;; esac; printf '%-6s expected %-6s %s\n' "$r" "$3" "[$2] in $(basename "$1")"; [ "$r" = "$3" ] || fail=1; }
 t "$S/b" "git push" allow
 t "$S/b" "git push --force origin main" DENY
 t "$S/b" "git push -f" DENY
@@ -59,3 +61,4 @@ t "$S/b" "cd ../a && git push" allow
 (cd b && git pull -q --no-rebase); t "$S/b" "git push" allow
 t /nonexistent "git push" allow
 t "$S/b" "git commit -m 'note' && echo pushed" allow
+exit $fail

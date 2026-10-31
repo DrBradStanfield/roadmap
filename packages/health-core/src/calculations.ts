@@ -264,7 +264,7 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
   }
 
   // Generate personalized suggestions based on all inputs and results
-  results.suggestions = generateSuggestions(inputs, results, unitSystem, medications, screenings, unitOverrides);
+  results.suggestions = generateSuggestions(inputs, results, unitSystem, medications, screenings, unitOverrides, now);
 
   return results;
 }

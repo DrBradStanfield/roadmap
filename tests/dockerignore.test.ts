@@ -1,5 +1,5 @@
 /**
- * The Docker build is `COPY . .` (Dockerfile:20), so anything .dockerignore
+ * The Docker build is `COPY . .` (Dockerfile:18), so anything .dockerignore
  * misses is baked into the image. A manual `fly deploy` ships the WORKING
  * TREE, not HEAD, so the .gitignore patterns that exist to keep real health
  * data and backups out of the repo have to hold for the image too.
@@ -60,6 +60,19 @@ describe('.dockerignore covers the .gitignore data patterns', () => {
       dockerPatterns.includes(rule) ||
       dockerPatterns.some((d) => toRegExp(d).test(rule.replace(/\/$/, '')));
     expect(covered).toBe(true);
+  });
+
+  // US-09 AC9a: two gitignored folders hold other people's words rather than
+  // health data, so the data-word filter above never compares them:
+  // tools/output/ (YouTube dry runs: commenters' handles beside their comments)
+  // and codex-drafts/ (drafts for a Codex review).
+  it.each([
+    ['tools/output/', 'tools/output/youtube-dryrun-abc.html'],
+    ['codex-drafts/', 'codex-drafts/plan.md'],
+  ])('.gitignore keeps %s out of the repo and .dockerignore keeps %s out of the image', (rule, path) => {
+    expect(patterns('.gitignore')).toContain(rule);
+    const hit = dockerPatterns.find((d) => toRegExp(d).test(path));
+    expect(hit, `${path} would be copied into the image`).toBeDefined();
   });
 
   it('the build context still keeps what the server build reads', () => {

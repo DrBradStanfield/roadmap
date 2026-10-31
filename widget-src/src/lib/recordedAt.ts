@@ -1,7 +1,7 @@
-// Widen a `yyyy-mm-dd` to UTC midnight ISO datetime. The server validates
-// `recordedAt` with Zod `.datetime()` which rejects date-only strings — and
-// the matrix's auto-save silently clears the draft on any 4xx, so a missing
-// widen here looks like "the value disappeared" to the user.
+// Widen a `yyyy-mm-dd` to UTC midnight ISO datetime, the form a measurement's
+// `recordedAt` is stored in. A picked date (HealthTool) and the no-date
+// default (roadmap-store addMeasurement) both pass through here, so the two
+// land on the same (metric, day) slot.
 export function ensureIsoDatetime(value: string): string;
 export function ensureIsoDatetime(value: string | undefined): string | undefined;
 export function ensureIsoDatetime(value: string | undefined): string | undefined {

@@ -44,8 +44,8 @@ cd widget-src && npm run sentry:sourcemaps && cd ..
 # 3. Remove sourcemaps before Shopify deploy (they push the extension over the 10MB limit)
 rm -f extensions/health-tool-widget/assets/*.map
 
-# 4. Deploy Shopify extensions to CDN (must use --force for non-interactive environments)
-npx shopify app deploy --force
+# 4. Deploy Shopify extensions to CDN (--allow-updates, as deploy.yml does; CLI 4 has no --force)
+npx shopify app deploy --allow-updates
 
 # 5. (RETIRED 2026-08-10 — no symlink dance. docs/products.md is now a real tracked
 #    file in this repo; the Docker build ships it as-is. Just make sure product-content
@@ -116,7 +116,7 @@ local-first record API directly; TypeScript checks the actual data calls:
 
 **PRODUCTION CUTOVER DONE (2026-06-12):** `/pages/roadmap` now serves the v2
 local-first build (prod version `health-roadmap-726`). The production app's
-`extensions/health-tool-widget/app-block.liquid` was swapped to load
+`extensions/health-tool-widget/blocks/app-block.liquid` was swapped to load
 `health-plan-v2.js`; build it with **`npm run build:shopify-prod`** (= build the
 shopify-prod config + copy the v2 assets into
 `extensions/health-tool-widget/assets`).
@@ -164,7 +164,7 @@ to both — deploy twice, see "Shopify app configs".**)
   **currently-active config**, which is whatever the last `shopify app config
   use` set (it drifts!). So:
   - **Production: `shopify app config use shopify.app.toml` → `npm run build:shopify-prod`
-    → `rm -f extensions/health-tool-widget/assets/*.map` → `shopify app deploy --force`.**
+    → `rm -f extensions/health-tool-widget/assets/*.map` → `shopify app deploy --allow-updates`.**
   - **Verify the success banner names the app you INTENDED** (prod
     `health-roadmap-<N>`, vs the education app) — `shopify app deploy` ships to
     whatever config is active, so the drift risk is now shipping to the WRONG
@@ -198,9 +198,9 @@ to both — deploy twice, see "Shopify app configs".**)
   extension (built once here; the prod-built assets are deployed to BOTH Shopify apps). **To ship a
   widget change to both stores, deploy twice (then restore prod active):**
   1. `shopify app config use shopify.app.toml` → `npm run build:shopify-prod` (+ `build:widget` for
-     side bundles + Sentry sourcemaps + `rm *.map`) → `shopify app deploy --force` → verify banner
+     side bundles + Sentry sourcemaps + `rm *.map`) → `shopify app deploy --allow-updates` → verify banner
      **`health-roadmap-<N>`** (prod / microvitamin).
-  2. `shopify app config use shopify.app.edu.toml` → `shopify app deploy --force` (no rebuild — same
+  2. `shopify app config use shopify.app.edu.toml` → `shopify app deploy --allow-updates` (no rebuild — same
      assets) → verify banner **`health-roadmap-edu-<N>`** (edu / drstanfield).
   3. `shopify app config use shopify.app.toml` → **RESTORE prod active** (config drifts!).
   (Reality check 2026-08-07, live verification: `microvitamin.com/pages/roadmap` **404s** — the
@@ -234,7 +234,7 @@ to both — deploy twice, see "Shopify app configs".**)
 **Important deploy notes:**
 - **`docs/products.md` is a real tracked file (since 2026-08-10)** — the old pre-deploy symlink dance is retired. The master lives HERE; `claude_business/docs/products.md` is now the symlink pointing back at this repo. If a claude_business session edits product content through that symlink, the change appears as an uncommitted modification in THIS repo — commit it (sweep rule) before deploying, or `fly deploy` ships it uncommitted.
 - `fly deploy` must be run from the **project root** (`/roadmap/`), not a subdirectory. The Dockerfile is at root level. Do NOT use `--app` flag — Fly reads `fly.toml` from the current directory.
-- `npx shopify app deploy --force` — the `--force` flag is required in non-interactive environments (CI, Claude Code). Without it, the CLI prompts for confirmation and hangs.
+- `npx shopify app deploy --allow-updates` — in a non-interactive environment (CI, Claude Code) the CLI needs `--allow-updates`, `--allow-deletes` or `--no-release`, since it cannot ask for confirmation. deploy.yml uses `--allow-updates`; a release that removes an extension needs `--allow-deletes`. CLI 4 (deploy.yml pins 4.9.4) rejects the old `--force`: "Nonexistent flag".
 - `SENTRY_AUTH_TOKEN` is never a Fly RUNTIME secret (the running server only needs `SENTRY_DSN`, set on BOTH Fly apps: edu got it only on 2026-10-13, so diff `fly secrets list` across the apps). For sourcemap uploads it's used two ways: locally for the WIDGET maps (step 2), and passed into the Fly BUILD as a `--build-secret sentry_auth_token=...` (step 6) for the SERVER maps. As a build secret it's mounted only for the `npm run build` RUN in the Dockerfile and never persists in any image layer. The server source-map config lives in `vite.config.ts` (`sentryConfig`) + `react-router.config.ts` (`sentryOnBuildEnd`); when the build secret is absent the upload disables itself gracefully (build stays green).
 - If Fly.io is suspended, `fly deploy` won't unsuspend it. Use `fly machine start <id>` first.
 - **`fly` saying "No access token available" does NOT mean the token expired — and a failed `fly` command is NEVER evidence that a secret or resource is absent.** Observed 2026-08-06/07: `fly deploy`, `fly logs` and `fly status` all worked, then `fly secrets list` began failing with that error while the credential in `~/.fly/config.yml` was still valid — flyctl had simply stopped reading its own config in that shell. **Do not run `fly auth login`** (interactive browser flow; it will hang here). Pass the stored token explicitly instead:

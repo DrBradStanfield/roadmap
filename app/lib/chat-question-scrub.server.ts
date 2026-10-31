@@ -15,6 +15,7 @@
 import * as z from '../../packages/health-core/src/zod';
 import { CLASSIFIER_MODEL, modelParams } from '../../packages/health-core/src/models';
 import { callAnthropicWithUsage } from './anthropic.server';
+import { SCRUB_UNITS } from '../../packages/health-core/src/sentry-scrub';
 
 /** Per call. The purge's own 5-minute budget bounds the run. */
 export const SCRUB_TIMEOUT_MS = 15_000;
@@ -69,6 +70,14 @@ const MEANING = /\b(?:not|no|never|cannot|without|unless|except|but|if|than|less
 const STREET = /\b(?:st|street|rd|road|ave|avenue|lane|ln|drive|dr|pl|place|cres|crescent|way|tce|terrace|blvd|boulevard|ct|court|close|hwy|highway)\b/i;
 /** A masked widget digit (`#`) counts as a digit. */
 const DIGIT = /[\d#]/;
+/** A digit then a dose or lab unit (the Sentry scrub's list, longest first; inches left out, as there). */
+const UNIT_VALUE = new RegExp(`[\\d#]\\s*(?:${SCRUB_UNITS.filter((u) => u !== 'in' && u !== '"')
+  .sort((a, b) => b.length - a.length).map((u) => u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(?![a-z])`, 'gi');
+/** Is a digit of `span` a dose or lab value, its unit in the span or just after it (US-15 AC44a)? */
+const holdsUnitValue = (span: string, after: string) =>
+  [...`${span} ${after}`.matchAll(UNIT_VALUE)].some((m) => m.index < span.length);
+/** May placeholder `kind` stand for `span`, given the question's text `after` it (US-15 AC44a)? */
+const mayStandFor = (kind: string, span: string, after: string) => covers(kind, span) && !holdsUnitValue(span, after);
 
 /**
  * May this placeholder stand for this span of the question? Each kind covers
@@ -125,7 +134,8 @@ function isScrubOf(question: string, scrubbed: string): boolean {
     const last = i === swaps.length - 1;
     const at = last ? ql.length - piece.length : ql.indexOf(piece, cursor + 1);
     if (at <= cursor || (last && !ql.endsWith(piece))) return false;
-    if (!covers(swaps[i], q.slice(cursor, at).trim())) return false;
+    const span = q.slice(cursor, at).trim();
+    if (!mayStandFor(swaps[i], span, q.slice(at))) return false;
     cursor = at + piece.length;
   }
   return true;

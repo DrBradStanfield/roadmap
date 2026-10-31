@@ -14,7 +14,7 @@ import { execSync } from 'child_process';
 //    debug IDs) but the shipped .js carries NO //# sourceMappingURL comment, so
 //    nothing is referenced/leaked publicly. The deploy workflow uploads the maps
 //    to Sentry then strips them before `shopify app deploy` (10MB limit).
-// Deploys with `npx shopify app deploy --force` (production app).
+// Deploys with `npx shopify app deploy --allow-updates` (production app).
 let gitHash = 'dev';
 try {
   gitHash = execSync('git rev-parse --short HEAD').toString().trim();

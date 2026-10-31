@@ -9,7 +9,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { isLpaUnit, localDay, type LpaUnit, type UnitSystem } from '@roadmap/health-core';
 import type { CellUnit } from './blood-test-cell';
-import { DRAFTS_CLEARED_EVENT, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
+import { DRAFTS_CLEARED_EVENT, localHealthWritesStopped, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
 import type { SaveTask } from './matrix-save';
 
 type Typed<K extends string> = Partial<Record<K, string>>;
@@ -118,6 +118,10 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
   const typedHere = (key: K) => metaOf([null, key])?.typedOn === PAGE;
 
   useEffect(() => {
+    // After log-off, typed values stay on screen only: writing them would put
+    // health values back on a device the user meant to leave clean (US-09 AC2e).
+    // Removing a draft is always safe, so a stale one does not stay behind.
+    if (localHealthWritesStopped()) { safeRemoveItem(storageKey); return; }
     if (holdsAny(state.draft.values) || holdsAny(state.backfills)) safeSetItem(storageKey, JSON.stringify(state));
     else safeRemoveItem(storageKey);
   }, [storageKey, state]);

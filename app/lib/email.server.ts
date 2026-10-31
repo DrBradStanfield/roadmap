@@ -10,7 +10,6 @@ import { scrubText } from '../../packages/health-core/src/sentry-scrub';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
-const SHOPIFY_STORE_URL = process.env.SHOPIFY_STORE_URL || 'https://drstanfield.com';
 // Our own origin, for links that must hit our routes (the US-22 click redirect)
 // rather than the storefront. Same source as the reminder cron's unsubscribe URL.
 export const APP_BASE_URL = process.env.SHOPIFY_APP_URL || 'https://health-tool-app.fly.dev';
@@ -83,141 +82,8 @@ export async function sendEmail(
 // Reminder email builder
 // ---------------------------------------------------------------------------
 
-import type { DueReminder, BloodTestDate } from '../../packages/health-core/src/reminders';
 import { formatReminderDate } from '../../packages/health-core/src/reminders';
 
-/**
- * Build HTML for a health reminder email.
- * HIPAA-aware: uses generic messages only, never specific health values.
- */
-export function buildReminderEmailHtml(
-  firstName: string | null,
-  reminders: DueReminder[],
-  bloodTestDates: BloodTestDate[],
-  preferencesUrl: string,
-): string {
-  const greeting = firstName ? `Hi ${escapeHtml(firstName)},` : 'Hello,';
-  const roadmapUrl = SHOPIFY_STORE_URL;
-
-  // Group reminders
-  const screeningReminders = reminders.filter(r => r.group === 'screening');
-  const bloodTestReminders = reminders.filter(r => r.group === 'blood_test');
-  const medicationReminders = reminders.filter(r => r.group === 'medication_review');
-
-  let sectionsHtml = '';
-
-  // Screening section
-  if (screeningReminders.length > 0) {
-    const items = screeningReminders.map(r =>
-      reminderItem(r.title, r.description, '#f0ad4e')
-    ).join('');
-    sectionsHtml += `
-      <div style="margin:0 0 24px;">
-        <h2 style="color:#1a1a1a;font-size:18px;margin:0 0 12px;padding-bottom:8px;border-bottom:2px solid #f0ad4e;">
-          Screening Reminders
-        </h2>
-        ${items}
-      </div>
-    `;
-  }
-
-  // Blood test section (includes context for ALL tracked tests)
-  if (bloodTestReminders.length > 0) {
-    const overdueItems = bloodTestReminders.map(r =>
-      reminderItem(r.title, r.description, '#f0ad4e')
-    ).join('');
-
-    // Add context for non-overdue blood tests
-    const upToDateTests = bloodTestDates.filter(d => !d.isOverdue);
-    let contextHtml = '';
-    if (upToDateTests.length > 0) {
-      const contextItems = upToDateTests.map(d =>
-        `<div style="padding:8px 12px;color:#555;font-size:13px;">
-          ${d.label}: last tested ${d.lastDate ? formatReminderDate(d.lastDate) : 'unknown'}
-        </div>`
-      ).join('');
-      contextHtml = `
-        <div style="margin:8px 0 0;padding:12px;background:#f0f8f0;border-radius:4px;">
-          <div style="color:#333;font-size:13px;font-weight:600;margin:0 0 4px;">Your other blood tests:</div>
-          ${contextItems}
-        </div>
-      `;
-    }
-
-    sectionsHtml += `
-      <div style="margin:0 0 24px;">
-        <h2 style="color:#1a1a1a;font-size:18px;margin:0 0 12px;padding-bottom:8px;border-bottom:2px solid #f0ad4e;">
-          Blood Test Reminders
-        </h2>
-        ${overdueItems}
-        ${contextHtml}
-      </div>
-    `;
-  }
-
-  // Medication review section
-  if (medicationReminders.length > 0) {
-    const items = medicationReminders.map(r =>
-      reminderItem(r.title, r.description, '#0275d8')
-    ).join('');
-    sectionsHtml += `
-      <div style="margin:0 0 24px;">
-        <h2 style="color:#1a1a1a;font-size:18px;margin:0 0 12px;padding-bottom:8px;border-bottom:2px solid #0275d8;">
-          Medication Review
-        </h2>
-        ${items}
-      </div>
-    `;
-  }
-
-  return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <div style="display:none;max-height:0;overflow:hidden;">Health reminders based on your saved data</div>
-  <div style="max-width:600px;margin:0 auto;background:#ffffff;">
-
-    <!-- Header -->
-    <div style="background:#2563eb;padding:32px 24px;text-align:center;">
-      <h1 style="color:#ffffff;margin:0;font-size:24px;font-weight:600;">Health Reminders</h1>
-    </div>
-
-    <!-- Content -->
-    <div style="padding:24px;">
-
-      <p style="color:#333;font-size:16px;line-height:1.5;margin:0 0 20px;">${greeting}</p>
-      <p style="color:#333;font-size:16px;line-height:1.5;margin:0 0 24px;">
-        Based on the health data you've saved, here are some upcoming items to discuss with your healthcare provider.
-      </p>
-
-      ${sectionsHtml}
-
-      <!-- CTA Button -->
-      <div style="text-align:center;margin:32px 0;">
-        <a href="${roadmapUrl}"
-           style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:16px;font-weight:600;">
-          View Your Health Roadmap
-        </a>
-      </div>
-
-      <!-- Disclaimer -->
-      <div style="background:#f8f9fa;border-radius:6px;padding:16px;margin:24px 0 0;">
-        <p style="color:#666;font-size:13px;line-height:1.5;margin:0;">
-          <strong>Disclaimer:</strong> This tool provides educational information only. It is not medical advice and should not be used to diagnose or treat health conditions. Always consult your healthcare provider before making changes to your health regimen.
-        </p>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <div style="padding:16px 24px;text-align:center;border-top:1px solid #eee;">
-      <p style="color:#999;font-size:12px;margin:0;">
-        <a href="${preferencesUrl}" style="color:#999;text-decoration:underline;">Manage notification preferences</a>
-      </p>
-    </div>
-  </div>
-</body>
-</html>`;
-}
 
 /**
  * Send a reminder email via Resend. Returns true on success.

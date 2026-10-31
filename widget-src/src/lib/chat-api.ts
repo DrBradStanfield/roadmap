@@ -6,6 +6,7 @@ import * as Sentry from '@sentry/react';
 import { MAX_HISTORY_MESSAGES, type ProposedEdit } from '@roadmap/health-core';
 import { PROXY_PATH, parseJsonResponse } from './server-api';
 import { getChatHistory } from './chat-history-access';
+import { recordFailure } from './error-diagnostics';
 import { readSubscriptionCard, type SubscriptionCard } from './subscription-card';
 import type { ChatHistoryStore } from '../storage/chat-history-store';
 
@@ -76,6 +77,30 @@ export interface ChatListResult {
   isGuest?: boolean;
 }
 
+/**
+ * The JSON `/api/chat` answers with (app/routes/api.chat.ts). The success
+ * fields are the server's contract. The guest session token is stored and
+ * sent back, so it is checked rather than trusted (US-15 AC6b).
+ */
+interface ChatReply {
+  success?: boolean;
+  error?: string;
+  isGuest?: boolean;
+  sessionToken?: unknown;
+  conversations: ChatConversation[];
+  conversationId: string;
+  messageId: string | null;
+  content: string;
+  isFallback?: boolean;
+  proposedEdits?: unknown;
+  subscriptionCard?: unknown;
+}
+
+/** A reply's guest session token, or undefined when it is not a non-empty string (US-15 AC6b). */
+function tokenOf(data: ChatReply | null): string | undefined {
+  return typeof data?.sessionToken === 'string' && data.sessionToken ? data.sessionToken : undefined;
+}
+
 export interface ChatError {
   error: string;
 }
@@ -106,39 +131,12 @@ export function getChatGate(): ChatGate | null {
 
 const GUEST_SESSION_KEY = 'health_roadmap_guest_session';
 
-export function getGuestSessionToken(): string | null {
+function getGuestSessionToken(): string | null {
   try { return localStorage.getItem(GUEST_SESSION_KEY); } catch { return null; }
 }
 
-export function setGuestSessionToken(token: string): void {
+function setGuestSessionToken(token: string): void {
   try { localStorage.setItem(GUEST_SESSION_KEY, token); } catch { /* noop */ }
-}
-
-export function clearGuestSessionToken(): void {
-  try { localStorage.removeItem(GUEST_SESSION_KEY); } catch { /* noop */ }
-}
-
-/**
- * On Shopify login, hand any guest chat history to the customer record and
- * drop the guest token (sync-embed mirrors this on non-widget pages). Returns
- * true when a migration was kicked off, so callers can clear stale guest UI.
- *
- * NEVER on local-first builds: there "logged in" is storage UX only and the
- * guest session IS the chat identity — clearing it orphaned the user's
- * conversations on every page load, and the migrate POST hit the data API as
- * an unauthed 401. The standalone build swaps in byok-chat's no-op.
- */
-export function migrateGuestChatOnLogin(): boolean {
-  if (LOCAL_FIRST) return false;
-  const guestToken = getGuestSessionToken();
-  if (!guestToken) return false;
-  clearGuestSessionToken();
-  fetch(`${PROXY_PATH}/api/measurements`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ migrateGuestChat: guestToken }),
-  }).catch(() => {});
-  return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -229,15 +227,16 @@ export async function listConversations(): Promise<ChatListResult | null> {
       });
       return null;
     }
-    const result = await parseJsonResponse<any>(response);
+    const result = await parseJsonResponse<ChatReply>(response);
     if (!result?.success) return null;
 
     // Persist guest session token if returned
-    if (result.sessionToken) setGuestSessionToken(result.sessionToken);
+    const sessionToken = tokenOf(result);
+    if (sessionToken) setGuestSessionToken(sessionToken);
 
     return {
       conversations: result.conversations,
-      sessionToken: result.sessionToken,
+      sessionToken,
       isGuest: result.isGuest,
     };
   } catch (error) {
@@ -251,9 +250,10 @@ export async function listConversations(): Promise<ChatListResult | null> {
  * A guest's 404 for a thread it no longer owns (US-15 AC6a): its IP changed,
  * so it is a new guest. Keep the session the server handed back.
  */
-function guestThreadGone(status: number, data: any): boolean {
+function guestThreadGone(status: number, data: ChatReply | null): boolean {
   if (status !== 404 || data?.error !== 'Conversation not found' || data.isGuest !== true) return false;
-  if (data.sessionToken) setGuestSessionToken(data.sessionToken);
+  const sessionToken = tokenOf(data);
+  if (sessionToken) setGuestSessionToken(sessionToken);
   return true;
 }
 
@@ -267,7 +267,7 @@ export async function loadConversation(conversationId: string): Promise<ChatMess
       `${PROXY_PATH}/api/chat?${params}`,
     );
     if (!response.ok) {
-      if (guestThreadGone(response.status, await parseJsonResponse<any>(response).catch(() => null))) return null;
+      if (guestThreadGone(response.status, await parseJsonResponse<ChatReply>(response).catch(() => null))) return null;
       Sentry.captureMessage('Chat loadConversation failed', {
         level: 'warning',
         tags: { feature: 'chat' },
@@ -295,7 +295,7 @@ export async function loadConversation(conversationId: string): Promise<ChatMess
  * that is not `{"type":…` returns null, as a non-JSON reply always has.
  * A stream that ends without `done` throws, so the caller reports a network error.
  */
-async function readChatStream(response: Response, onDelta: (delta: ChatDelta) => void): Promise<any> {
+async function readChatStream(response: Response, onDelta: (delta: ChatDelta) => void): Promise<ChatReply | null> {
   if (!response.body) return null;
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
@@ -394,10 +394,11 @@ export async function sendMessage(
     // stores the turn after a disconnect, so a retry would store it twice.
     const data = response.ok && !(response.headers.get('content-type') ?? '').includes('application/json')
       ? await readChatStream(response, onDelta)
-      : await parseJsonResponse<any>(response);
+      : await parseJsonResponse<ChatReply>(response);
 
     // Persist guest session token if returned
-    if (data?.sessionToken) setGuestSessionToken(data.sessionToken);
+    const newToken = tokenOf(data);
+    if (newToken) setGuestSessionToken(newToken);
 
     // A guest is its token plus its IP, so a new IP is a new guest who does
     // not own the stored thread (US-15 AC6a). The server refused before any
@@ -405,7 +406,7 @@ export async function sendMessage(
     // once into a new conversation on it, passed directly in case storage
     // refused the save above. A customer's 404 is shown.
     if (conversationId && guestThreadGone(response.status, data)) {
-      return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits, data.sessionToken ?? sessionToken);
+      return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits, newToken ?? sessionToken);
     }
 
     if (response.status === 429) {
@@ -446,14 +447,17 @@ export async function sendMessage(
           ...(data.isFallback === true ? { isFallback: true } : {}),
         }),
       )
-      .catch(() => {});
+      .catch((error) => {
+        // A turn missing from the history file is reported, not only dropped (US-15 AC47).
+        Sentry.captureException(recordFailure(error, 'Chat-history save failed'), { tags: { area: 'chat-history', op: 'save' } });
+      });
 
     return {
       result: {
         conversationId: data.conversationId,
         messageId: data.messageId,
         content: data.content,
-        sessionToken: data.sessionToken,
+        sessionToken: newToken,
         isGuest: data.isGuest,
         ...(data.isFallback === true ? { isFallback: true } : {}),
         ...(knownEdits(data.proposedEdits).length > 0 ? { proposedEdits: knownEdits(data.proposedEdits) } : {}),
@@ -496,7 +500,7 @@ async function deleteServerConversation(conversationId: string): Promise<boolean
       }),
     });
     if (!response.ok) {
-      if (guestThreadGone(response.status, await parseJsonResponse<any>(response).catch(() => null))) return true;
+      if (guestThreadGone(response.status, await parseJsonResponse<ChatReply>(response).catch(() => null))) return true;
       Sentry.captureMessage('Chat deleteConversation failed', {
         level: 'warning',
         tags: { feature: 'chat' },
