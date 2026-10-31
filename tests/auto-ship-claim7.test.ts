@@ -283,5 +283,20 @@ describe("auto-ship claim 7 (US-46 AC5)", { timeout: 60_000 }, () => {
       expect(r.issueBody).not.toContain("FIRST RUN TEXT");
       expect(r.issueBody).toMatch(/^Second run: AC2 untested\.$/m);
     });
+
+    it("the email never quotes a later claude[bot] comment the gate refused (one filter for both)", () => {
+      // Each later comment holds "VERDICT: APPROVE aaaa" but fails AC7's
+      // one-line rule or its reject check, so the gate does not count it.
+      for (const later of [
+        "LATER REFUSED TEXT\n\nVERDICT: APPROVE aaaa\n\nVERDICT: REJECT — edits ci.yml",
+        "LATER REFUSED TEXT: the verdict is still REJECT.\n\nVERDICT: APPROVE aaaa",
+        "LATER REFUSED TEXT\n> VERDICT: APPROVE aaaa\n\nVERDICT: APPROVE aaaa",
+      ]) {
+        const r = run({ comments: [reviewer, comment("claude[bot]", later)] });
+        expect(merged(r.calls)).toHaveLength(1);
+        expect(r.issueBody).toContain("Reviewer caveat: AC2 untested.");
+        expect(r.issueBody).not.toContain("LATER REFUSED TEXT");
+      }
+    });
   });
 });
