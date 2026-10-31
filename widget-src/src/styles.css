@@ -631,7 +631,6 @@ input[type="number"] {
 .plan-empty-intro {
   margin: 0;
   padding: 17px;
-  opacity: 0.6;
   border: 1px solid #d4ebe4;
   border-radius: 10px;
   background: #f1faf6;
