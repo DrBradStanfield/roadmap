@@ -161,6 +161,9 @@ final class OAuthClient {
         ])
         // Google may rotate the refresh token; Dropbox keeps the one it gave.
         let next = OAuthTokens(accessToken: answer.accessToken, refreshToken: answer.refreshToken ?? saved.refreshToken, expiresAt: expiry(answer))
+        // A Disconnect or a new sign-in while this ran replaced the grant it refreshed:
+        // putting it back would undo the Disconnect, or sync as the old account.
+        guard tokens.load(provider)?.refreshToken == saved.refreshToken else { throw Failure.signInAgain }
         try tokens.save(next, for: provider)
         return next
     }
