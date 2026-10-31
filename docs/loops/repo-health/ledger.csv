@@ -46,3 +46,102 @@ ref,kind,origin,opened_utc,loop_replied_utc,brad_replied_utc,status,note
 #223,pr,external,2026-10-22T01:30Z,,2026-10-22T02:43:50Z,closed,"new: keep unsubscribe links in empty-schedule confirmations; merged by Brad, no comment"
 #224,pr,external,2026-10-22T01:30Z,,2026-10-22T02:43:50Z,closed,"new: match checklist copy to its rule (clinical-adjacent copy, three-file check is Brad's); merged by Brad, no comment"
 #229,pr,external,2026-10-22T17:44Z,,2026-10-23T00:23:49Z,closed,"new: persist cleared profile fields through autosave; merged by Brad, no comment"
+#263,pr,external,2026-10-26T02:51Z,,2026-10-26T03:42:40Z,closed,new: refuse non-list document and history arrays before record saves (sync class); merged by Brad with review comment
+#264,pr,external,2026-10-26T02:51Z,,2026-10-26T03:42:40Z,closed,new: owner-shop gate on shared A/B administration (security surface); merged by Brad with review comment
+#265,pr,external,2026-10-26T02:51Z,,2026-10-26T03:42:40Z,closed,"new: refuse OAuth state that cannot fit the consent cookie (security surface, mcp-authorize); merged by Brad with comment"
+#266,pr,external,2026-10-26T02:51Z,,2026-10-26T03:42:40Z,closed,new: reject impossible reminder days before storage; merged by Brad with comment
+#267,pr,external,2026-10-26T02:51Z,,2026-10-26T03:42:40Z,closed,new: upload message no longer claims skipped values were saved; merged by Brad with comment
+#268,pr,external,2026-10-26T02:51Z,,2026-10-26T03:37:29Z,closed,"new: recover metadata clocks without reader time (merge.ts, merge class); reviewed, merged by Brad"
+#278,pr,external,2026-10-26T22:03Z,,2026-10-26T22:33:57Z,triaged,"new: persist queued birth-year edits before page departure; open, Brad reviewed"
+#279,pr,external,2026-10-26T22:10Z,,2026-10-26T22:34:00Z,closed,"new: refuse ambiguous pasted lab values; reviewed, merged by Brad"
+#280,pr,external,2026-10-26T22:10Z,,2026-10-26T22:33:59Z,closed,"new: enforce supplement dose bounds before autosave; reviewed, merged by Brad"
+#285,issue,external,2026-10-27T15:34Z,,,triaged,"new bug report: plan and form use different smoking-history cut-offs for lung screening (clinical-adjacent, spec call is Brad's); open, no maintainer reply; no health data in thread"
+#286,pr,external,2026-10-27T15:57Z,,2026-10-29T20:59:45Z,closed,"new: pin screening reminder eligibility at document boundaries (test only); merged by Brad, no comment"
+#290,pr,external,2026-10-27T17:49Z,,2026-10-29T20:59:44Z,closed,new: chat never replays an error line to the model; merged by Brad
+#293,pr,external,2026-10-28T17:36Z,,2026-10-29T20:59:44Z,closed,"new: Discord bot logs failed-send kind, never the reply; merged by Brad"
+#294,pr,external,2026-10-28T17:36Z,,2026-10-29T20:47:33Z,closed,"new: auto-ship ignores a REJECT that quotes the APPROVE line (workflow file, Brad-only class); reviewed with Codex, review comment from Brad, then superseded by Brad's own merge PR"
+#299,pr,external,2026-10-29T00:52Z,,2026-10-29T20:59:44Z,closed,new: verify an erase or profile edit survives a Drive save (merge.ts and sync-manager.ts; merge class); merged by Brad
+#300,pr,external,2026-10-29T00:52Z,,2026-10-29T20:59:44Z,closed,new: never report a local revision that was not stored; merged by Brad
+#302,pr,external,2026-10-29T13:30Z,,2026-10-29T20:59:44Z,closed,new: never read an oversized GitHub record as missing; merged by Brad
+#303,pr,external,2026-10-29T14:17Z,,2026-10-29T20:59:44Z,closed,new: erase never claims chat history deleted when it could not be opened; merged by Brad
+#304,pr,external,2026-10-29T15:02Z,,2026-10-29T20:59:44Z,closed,new: erase from a stale copy still turns reminders off (merge.ts; merge class); merged by Brad
+#305,pr,external,2026-10-29T15:42Z,,2026-10-29T20:59:44Z,closed,new: no chat history read or write through a dead cached Drive id; merged by Brad
+#306,pr,external,2026-10-29T16:05Z,,2026-10-29T20:59:44Z,closed,new: non-numeric AI daily file cap no longer removes machine cap (limits; security-adjacent); merged by Brad
+#307,pr,external,2026-10-29T16:22Z,,2026-10-29T20:59:44Z,closed,new: failed admin trigger no longer returns the server stack (security surface); merged by Brad
+#308,pr,external,2026-10-29T16:47Z,,2026-10-29T20:59:44Z,closed,new: error after unit switch matches the save; merged by Brad
+#314,pr,external,2026-10-30T00:04Z,,2026-10-31T09:12:03Z,closed,"new: record at the counter ceiling still saves (merge.ts, merge class); merged by Brad in batch, no comment"
+#315,pr,external,2026-10-30T00:11Z,,2026-10-31T09:12:03Z,closed,"new: save whose read conflicts re-reads and merges (sync-manager.ts, merge class); merged by Brad in batch, no comment"
+#317,pr,external,2026-10-30T00:34Z,,2026-10-31T09:12:03Z,closed,new: unit input ranges never exceed the record SI range; merged by Brad in batch
+#318,pr,external,2026-10-30T00:34Z,,2026-10-31T09:12:03Z,closed,new: tab stops writing health data after another tab logs off; merged by Brad in batch
+#320,pr,external,2026-10-30T00:44Z,,2026-10-31T09:12:30Z,triaged,"new: tab still loading when another tab logs off latches once loaded; open, Brad review found a stale-reference break, author fixed and rebased"
+#324,pr,external,2026-10-30T17:57Z,,2026-10-31T09:28:06Z,closed,"new: deploy refuses unreviewed swept commits (workflow file, Brad-only class); closed unmerged by Brad's decision with reasons"
+#325,pr,external,2026-10-30T17:58Z,,2026-10-31T09:12:03Z,closed,new: another tab's pending chat reply expires after five minutes; merged by Brad in batch
+#326,pr,external,2026-10-30T18:16Z,,2026-10-31T09:12:03Z,closed,new: keep tool output folders out of the server image; merged by Brad in batch
+#327,pr,external,2026-10-30T18:21Z,,2026-10-31T09:34:12Z,closed,new: deploy notification states the real window (workflow file); merged by Brad in the workflow batch
+#328,pr,external,2026-10-30T18:21Z,,2026-10-31T09:34:12Z,closed,new: pin the Claude review action to a commit SHA (workflow file); merged by Brad in the workflow batch
+#329,pr,external,2026-10-30T18:42Z,,2026-10-31T09:34:12Z,closed,new: workflow-integrity text states accepted residual (workflow file); merged by Brad in the workflow batch
+#330,pr,external,2026-10-30T18:42Z,,2026-10-31T09:28:51Z,triaged,"new: auto-ship counts only the reviewer's own comment (workflow file); open, Brad approved merge once rebased; author rebased"
+#331,pr,external,2026-10-30T18:42Z,,2026-10-31T09:12:03Z,closed,"new: print the very-high triglycerides figure with correct rounding (clinical files: algorithm doc and evidence.ts touched, roadmap_text.html not touched); merged by Brad in batch"
+#332,pr,external,2026-10-30T20:05Z,,2026-10-31T09:12:03Z,closed,new: chat archive scrub check refuses a placeholder standing for a dose; merged by Brad with follow-up request
+#333,pr,external,2026-10-30T20:30Z,,2026-10-31T09:12:03Z,closed,new: chat history Delete works from the keyboard; merged by Brad in batch
+#334,pr,external,2026-10-30T20:47Z,,2026-10-31T09:12:03Z,closed,new: history charts redraw only on change; merged by Brad in batch
+#335,pr,external,2026-10-30T20:49Z,,2026-10-31T09:12:03Z,closed,new: lab-upload consent wording no longer says report is not kept; merged by Brad in batch
+#336,pr,external,2026-10-30T20:54Z,,2026-10-31T09:12:34Z,triaged,"new: chat erase or delete reported done only after stored file confirms; open, Brad reviewed"
+#337,pr,external,2026-10-30T20:55Z,,2026-10-31T09:12:36Z,triaged,"new: blood test moved on stale copy no longer revives erased values (merge.ts, merge class); open, Brad reviewed"
+#338,pr,external,2026-10-30T21:00Z,,2026-10-31T09:12:37Z,triaged,"new: chat reply stays with the thread it was sent from; open, Brad reviewed"
+#339,pr,external,2026-10-30T21:01Z,,2026-10-31T09:12:03Z,closed,"new: lab upload from a spent IP or machine refused (rate limit, security-adjacent); merged by Brad in batch"
+#340,pr,external,2026-10-30T21:09Z,,2026-10-31T09:28:09Z,triaged,"new: web chat turns capped per IP and machine (rate limit, security-adjacent); open, Brad reviewed"
+#341,pr,external,2026-10-30T21:16Z,,2026-10-31T09:12:03Z,closed,new: 50-conversation chat cap evicts by merged copy; merged by Brad in batch
+#342,pr,external,2026-10-30T21:29Z,,2026-10-31T09:12:03Z,closed,new: history lightbox does not chart across mixed units; merged by Brad in batch
+#343,pr,external,2026-10-30T21:29Z,,2026-10-31T09:12:03Z,closed,new: GitHub and WebDAV saves get the same timeout; merged by Brad in batch
+#344,pr,external,2026-10-31T00:35Z,,2026-10-31T09:12:03Z,closed,new: comment-only fix in merge.ts and migrate.ts; merged by Brad in batch
+#345,pr,external,2026-10-31T00:36Z,,2026-10-31T09:12:03Z,closed,new: README lock bullets match file-adapter; merged by Brad in batch
+#346,pr,external,2026-10-31T00:52Z,,,withdrawn,"new: iOS architecture doc status fix; author closed unmerged, no maintainer reply"
+#347,pr,external,2026-10-31T01:26Z,,2026-10-31T09:34:12Z,closed,new: type-check the iPhone engine in CI (workflow file); merged by Brad in the workflow batch
+#348,pr,external,2026-10-31T01:30Z,,,withdrawn,"new: iOS release host note; author closed unmerged within minutes, no maintainer reply"
+#349,pr,external,2026-10-31T01:33Z,,2026-10-31T09:12:03Z,closed,new: delete the v1 reminder engine and email (algorithm doc source note edited; clinical file touched); merged by Brad in batch
+#350,pr,external,2026-10-31T01:55Z,,2026-10-31T09:12:03Z,closed,new: report a chat turn the history file failed to save; merged by Brad in batch
+#351,pr,external,2026-10-31T02:04Z,,2026-10-31T09:12:47Z,triaged,"new: lockfile bump past an npm advisory (dependency); open, Brad reviewed, asked rebase and ordering"
+#352,pr,external,2026-10-31T02:11Z,,2026-10-31T09:12:03Z,closed,new: stale chat header comments; merged by Brad in batch
+#353,pr,external,2026-10-31T02:17Z,,2026-10-31T09:12:03Z,closed,new: escape two raw fields in the chat audit page; merged by Brad in batch
+#354,pr,external,2026-10-31T02:23Z,,2026-10-31T09:12:03Z,closed,new: point cron comments at existing files; merged by Brad in batch
+#355,pr,external,2026-10-31T02:30Z,,2026-10-31T09:12:48Z,triaged,"new: declare each package where imported (dependency manifest); open, Brad reviewed, asked rebase and ordering"
+#356,pr,external,2026-10-31T02:38Z,,2026-10-31T09:12:03Z,closed,new: deploy docs name what exists; merged by Brad in batch
+#357,pr,external,2026-10-31T02:46Z,,2026-10-31T09:12:03Z,closed,new: keep guest session token only when a string; merged by Brad in batch
+#358,pr,external,2026-10-31T02:54Z,,2026-10-31T09:34:12Z,closed,new: deploy job token read-only (workflow file); merged by Brad in the workflow batch
+#359,pr,external,2026-10-31T03:00Z,,2026-10-31T09:12:03Z,closed,new: env example lists a Discord user id var; merged by Brad in batch
+#360,pr,external,2026-10-31T03:05Z,,2026-10-31T09:12:03Z,closed,new: drop a Dockerfile CLI removal line; merged by Brad in batch
+#361,pr,external,2026-10-31T03:10Z,,2026-10-31T09:12:03Z,closed,new: GitHub and WebDAV document calls use fetchOrFail; merged by Brad in batch
+#362,pr,external,2026-10-31T03:16Z,,2026-10-31T09:12:03Z,closed,new: escape backslash in a Drive name query (injection hardening); merged by Brad in batch
+#363,pr,external,2026-10-31T03:22Z,,2026-10-31T09:12:03Z,closed,new: refuse incomplete Dropbox token reply; merged by Brad in batch
+#364,pr,external,2026-10-31T03:29Z,,2026-10-31T09:12:03Z,closed,new: iOS engine marked proven only after write; merged by Brad in batch
+#365,pr,external,2026-10-31T03:36Z,,2026-10-31T09:12:03Z,closed,new: env example matches server reads; merged by Brad in batch
+#366,pr,external,2026-10-31T03:42Z,,2026-10-31T09:12:03Z,closed,new: delete unread exempt-customers var; merged by Brad in batch
+#367,pr,external,2026-10-31T03:48Z,,2026-10-31T09:12:03Z,closed,new: report a Google tokeninfo outage; merged by Brad in batch
+#368,pr,external,2026-10-31T03:54Z,,2026-10-31T09:12:03Z,closed,new: delete dead guest-chat migration; merged by Brad in batch
+#369,pr,external,2026-10-31T04:00Z,,2026-10-31T09:12:39Z,triaged,"new: report failed guest-session cleanup; open, Brad reviewed"
+#370,pr,external,2026-10-31T04:06Z,,2026-10-31T09:12:45Z,triaged,"new: health-core main and types point at src, drop unused build; open, Brad reviewed"
+#371,pr,external,2026-10-31T04:12Z,,2026-10-31T09:12:03Z,closed,new: type the upload bundle global; merged by Brad in batch
+#372,pr,external,2026-10-31T04:18Z,,2026-10-31T09:12:03Z,closed,new: delete never-run lint script and unused devDependencies (lockfile); merged by Brad in batch
+#373,pr,external,2026-10-31T04:24Z,,2026-10-31T09:12:33Z,triaged,"new: save medication, screening, supplement edits made just before tab close; open, Brad reviewed"
+#374,pr,external,2026-10-31T04:30Z,,2026-10-31T09:12:03Z,closed,"new: widget chat turn checks proxy signature only (auth surface, test file touched); merged by Brad in batch"
+#375,pr,external,2026-10-31T04:37Z,,2026-10-31T09:12:03Z,closed,"new: screening cards measure against the plan's now (suggestions.ts, clinical file; roadmap_text.html and evidence.ts untouched); merged by Brad in batch"
+#376,pr,external,2026-10-31T04:43Z,,2026-10-31T09:12:03Z,closed,new: escape placeholder NUL bytes in privacy page builder; merged by Brad in batch
+#377,pr,external,2026-10-31T04:50Z,,2026-10-31T09:12:03Z,closed,new: push guard loaded as CommonJS so it denies force pushes; merged by Brad with comment
+#378,pr,external,2026-10-31T04:55Z,,2026-10-31T09:12:40Z,triaged,"new: tag storefront plan and Pages errors with Sentry release; open, Brad reviewed"
+#379,pr,external,2026-10-31T05:01Z,,2026-10-31T09:12:41Z,triaged,"new: deadline on every server call to Google, Klaviyo, YouTube; open, Brad reviewed"
+#380,pr,external,2026-10-31T05:07Z,,2026-10-31T09:12:03Z,closed,new: comment fix in recordedAt; merged by Brad in batch
+#381,pr,external,2026-10-31T05:13Z,,2026-10-31T09:12:03Z,closed,new: tools README tool count; merged by Brad in batch
+#382,pr,external,2026-10-31T05:19Z,,2026-10-31T09:12:02Z,closed,new: drop a stale route note; merged by Brad in batch
+#383,pr,external,2026-10-31T05:31Z,,2026-10-31T09:12:02Z,closed,new: delete 525 lines of unused CSS; merged by Brad in batch
+#384,pr,external,2026-10-31T05:38Z,,2026-10-31T09:12:03Z,closed,new: one YouTube tick at a time per machine; merged by Brad in batch
+#385,pr,external,2026-10-31T05:40Z,,2026-10-31T09:12:02Z,closed,new: drop export from widget symbols used only in-file; merged by Brad in batch
+#422,pr,external,2026-10-31T16:13Z,,,triaged,"new: make pending-refund test independent of the clock; open, no maintainer reply"
+#423,pr,external,2026-10-31T16:22Z,,,triaged,"new: phone blood pressure inputs 16px to stop iOS zoom; open, no maintainer reply"
+#424,pr,external,2026-10-31T16:30Z,,,triaged,"new: Pages test page Dropbox round trip never writes the health file; open, no maintainer reply"
+#425,pr,external,2026-10-31T16:38Z,,,triaged,"new: empty-plan lead contrast; open, no maintainer reply"
+#427,pr,external,2026-10-31T18:34Z,,,triaged,"new: HbA1c and Lp(a) print on the correct side of grade lines (suggestions.ts, plan.ts, units.ts; clinical file); open, no maintainer reply"
+#428,pr,external,2026-10-31T19:07Z,,,triaged,"new: daily reminder pass no longer skips users after a bounce; open, no maintainer reply"
+#429,issue,external,2026-10-31T19:44Z,,,triaged,"new feature ask: decision on splitting the largest source files (one PR per piece, behaviour unchanged); open, no maintainer reply; logged in feature-backlog"
+#430,pr,external,2026-10-31T20:44Z,,,triaged,"new: plan PSA cards and yearly PSA reminder read saved PSA measurement (plan.ts, reminder-schedule.ts); open, no maintainer reply"
+#222,pr,external,2026-10-22T01:29Z,,2026-10-22T02:38:34Z,closed,update: merged by Brad 2026-10-27T02:45Z after hold (first response 10-22 recorded earlier)
