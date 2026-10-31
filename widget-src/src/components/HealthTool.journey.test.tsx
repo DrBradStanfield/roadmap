@@ -1128,6 +1128,7 @@ describe('US-03 AC3: a first-time value the form was built again without', () =>
     await wait(600);
     expect(await rowsOf('waist')).toEqual([]);
 
+    fireEvent.click(view.getByRole('tab', { name: 'My plan' })); // Save as PDF is on the plan tab
     savePdf(view);
     await waitFor(async () => expect(await activeOn('waist')).toEqual([[90, TODAY]]));
   });

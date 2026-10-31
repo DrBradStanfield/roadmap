@@ -13,6 +13,7 @@ import { readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import shopifyProd from './vite.config.shopify-prod';
 import siteChat from './vite.config.site-chat';
+import shopifyDev from './vite.config.shopify-dev';
 import chatbot from './vite.config.chatbot';
 import upload from './vite.config.upload';
 import standaloneFactory from './vite.config.standalone';
@@ -22,6 +23,8 @@ const SURFACE_KEY = 'import.meta.env.VITE_SHOPIFY_SURFACE';
 const SHOPIFY_SURFACE_BUNDLES = {
   'vite.config.shopify-prod.ts': shopifyProd,
   'vite.config.site-chat.ts': siteChat,
+  // The Shopify-like localhost: the storefront widget against a stubbed proxy.
+  'vite.config.shopify-dev.ts': shopifyDev,
 };
 
 // Bundles that must NEVER declare the flag. Every vite.config.*.ts must

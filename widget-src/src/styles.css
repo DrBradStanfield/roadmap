@@ -3,8 +3,14 @@
   /* Primary */
   --color-primary: #0066cc;
   --color-primary-hover: #0052a3;
+  /* The brand green is for marks only: logo, chart lines, edges, focus rings,
+     and fills under dark labels. White on it is 3.18:1 and it is 2.85:1 as
+     text on the grey page, both below 4.5:1. Green text, links and buttons
+     with a white label use the deeper shade of the same hue (contrast pinned
+     in brand-contrast.test.ts). */
   --color-brand: #00a38b;
-  --color-brand-hover: #008f7a;
+  --color-brand-text: #007c6a;
+  --color-brand-text-hover: #006b5b;
 
   /* Grays */
   --color-gray-light: #888;
@@ -66,14 +72,14 @@ input[type="number"] {
   border-radius: 12px;
   padding: 1px 8px;
   font-size: 0.85em;
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   cursor: pointer;
   font-weight: 500;
   transition: background-color 0.15s, border-color 0.15s;
 }
 .unit-toggle-pill:hover {
   background-color: rgba(0, 163, 139, 0.08);
-  border-color: var(--color-brand);
+  border-color: var(--color-brand-text);
 }
 
 /* Health Tool Container */
@@ -107,30 +113,9 @@ input[type="number"] {
   }
 }
 
-/* Mobile Tab Bar — hidden on desktop, shown on mobile */
-.mobile-tab-bar {
-  display: none;
-}
-.mobile-view-plan-btn {
-  display: none;
-}
-
 @media (max-width: 768px) {
   .health-tool {
-    padding: 0 0 16px;
-  }
-
-  /* 76px bottom clearance while the fixed "See Your Personalized Plan" bar
-     (.mobile-view-plan-btn, ~60px tall at bottom:12px) is rendered — without it
-     the bar sits over the last form rows and intercepts taps meant for inputs
-     (2026-08 audit, US-02/US-20). Gated by HealthTool so the plan/chat tabs
-     don't pay a blank strip. */
-  .health-tool--plan-bar {
-    padding-bottom: 76px;
-  }
-
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+    padding: 0;
   }
 
   .section-card {
@@ -154,80 +139,79 @@ input[type="number"] {
     margin: 0 10px;
   }
 
-  .mobile-tab-bar-container {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: #fff;
-  }
-
-  .mobile-tab-bar {
+  /* US-20 AC6: the top bar holds the storage button above every tab, with
+     the cards' 10px gutter. */
+  .hr-top-bar {
     display: flex;
-    padding-top: 8px;
-    border-bottom: 1px solid var(--color-gray-border);
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 8px 10px 0;
+    font-size: 12px;
   }
 
-  .mobile-tab {
-    flex: 1;
-    padding: 8px 16px;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--color-gray-medium);
-    background: none;
-    border: none;
-    border-bottom: 2px solid transparent;
-    cursor: pointer;
-    text-align: center;
-    transition: color 0.2s, border-color 0.2s;
-  }
-
-  .mobile-tab--active {
-    color: var(--color-brand);
-    border-bottom-color: var(--color-brand);
-  }
-
-  /* Swiper handles the 2-tab layout (autoHeight, swipe, slide sync).
-     These styles override the desktop results panel for mobile context. */
-  .swiper {
+  /* The phone's panels; only the active one shows (the others are [hidden]). */
+  .hr-tabpanel {
     padding-top: 16px;
-  }
-
-  .swiper-slide {
+    padding-bottom: 16px;
     min-width: 0;
     overflow-x: hidden;
   }
 
-  .swiper-slide .section-card {
+  .hr-tabpanel .section-card {
     margin-bottom: 0;
   }
 
-  .swiper-slide .health-tool-right {
+  .hr-tabpanel .health-tool-right {
     position: static;
     max-height: none;
     overflow-y: visible;
   }
 
-
-  .btn-primary.mobile-view-plan-btn,
-  .btn-primary.mobile-view-plan-btn:hover,
-  .btn-primary.mobile-view-plan-btn:active {
-    display: block;
-    position: fixed;
-    bottom: 12px;
-    left: 15px;
-    right: 15px;
-    width: auto;
-    box-sizing: border-box;
-    padding: 14px 20px;
-    font-size: 16px;
-    border-radius: 8px;
-    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
-    background: var(--color-brand);
-    border-color: var(--color-brand);
+  /* US-20 AC6: the bottom tab bar, as on the iPhone. Sticky at the widget's
+     foot, never fixed: a sticky child cannot leave its container, so it never
+     floats over the page above or below the widget. Opaque, so nothing shows
+     through it. */
+  .hr-tabbar {
+    position: sticky;
+    bottom: 0;
     z-index: 20;
+    display: flex;
+    background: #f8f8fa;
+    border-top: 1px solid var(--color-gray-border);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
+  .hr-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-height: 49px;
+    padding: 6px 4px 4px;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--color-gray-medium);
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
 
+  .hr-tab--active {
+    color: var(--color-brand-text);
+  }
+
+  .hr-tab-icon {
+    width: 26px;
+    height: 26px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
 }
 
 /* The form, locked while this tab's erase runs (US-16 AC2a): a plain box. */
@@ -457,7 +441,7 @@ input[type="number"] {
 }
 
 .health-tool .sex-toggle-btn--active {
-  background: var(--color-brand);
+  background: var(--color-brand-text);
   color: #fff;
 }
 
@@ -482,7 +466,7 @@ input[type="number"] {
 .field-hint-attention {
   margin: 8px 0 0;
   font-size: 13px;
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   line-height: 1.4;
 }
 
@@ -635,7 +619,7 @@ input[type="number"] {
 }
 
 .plan-empty-intro strong {
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   font-weight: 600;
 }
 
@@ -695,6 +679,17 @@ input[type="number"] {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
+}
+
+/* Two tiles a row on a phone. After the base rule, or the base rule wins. A
+   long title ("Ideal Body Weight (IBW)") wraps rather than spill at 320px. */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .stats-grid .stat-label {
+    white-space: normal;
+  }
 }
 
 .stat-card {
@@ -829,8 +824,8 @@ input[type="number"] {
 }
 
 .suggestions-group-title.supplements {
-  color: #00A38B;
-  border-color: #00A38B;
+  color: var(--color-brand-text);
+  border-color: var(--color-brand);
 }
 
 .suggestions-group-title.skin {
@@ -871,7 +866,7 @@ input[type="number"] {
 
 .suggestion-card-clickable .suggestion-body:hover .suggestion-title,
 .suggestion-subsection-clickable .suggestion-body:hover .suggestion-title {
-  color: var(--color-brand);
+  color: var(--color-brand-text);
 }
 .suggestion-attention .suggestion-body:hover .suggestion-title { color: #fd7e14; }
 .suggestion-info .suggestion-body:hover .suggestion-title { color: var(--color-primary); }
@@ -895,7 +890,7 @@ input[type="number"] {
 }
 
 .suggestion-card.supplement-card {
-  border-left-color: #00A38B;
+  border-left-color: var(--color-brand);
 }
 
 .suggestion-ingredients {
@@ -912,11 +907,11 @@ input[type="number"] {
 }
 
 .supplement-card .suggestion-title a {
-  color: #00A38B;
+  color: var(--color-brand-text);
 }
 
 .supplement-card .suggestion-title a:hover {
-  color: #008571;
+  color: var(--color-brand-text-hover);
 }
 
 .suggestion-card.skin-card {
@@ -1087,7 +1082,7 @@ input[type="number"] {
 
 .evidence-toggle {
   font-size: 13px;
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   cursor: pointer;
   user-select: none;
 }
@@ -1113,7 +1108,7 @@ input[type="number"] {
 
 .evidence-refs a {
   font-size: 12px;
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   text-decoration: none;
   line-height: 1.5;
 }
@@ -1202,12 +1197,12 @@ input[type="number"] {
   white-space: nowrap;
   padding: 10px 20px;
   font-size: 15px;
-  background-color: var(--color-brand);
-  border-color: var(--color-brand);
+  background-color: var(--color-brand-text);
+  border-color: var(--color-brand-text);
 }
 .email-capture-row .btn-primary:hover {
-  background-color: var(--color-brand-hover);
-  border-color: var(--color-brand-hover);
+  background-color: var(--color-brand-text-hover);
+  border-color: var(--color-brand-text-hover);
 }
 
 .email-capture-error {
@@ -1235,8 +1230,8 @@ input[type="number"] {
   font-size: 12px;
   padding: 4px 10px;
   background: transparent;
-  color: var(--color-brand);
-  border: 1px solid var(--color-brand);
+  color: var(--color-brand-text);
+  border: 1px solid var(--color-brand-text);
   border-radius: 6px;
   white-space: nowrap;
   cursor: pointer;
@@ -1244,7 +1239,7 @@ input[type="number"] {
 }
 
 .action-btn-small:hover {
-  background: var(--color-brand);
+  background: var(--color-brand-text);
   color: #fff;
 }
 
@@ -1253,19 +1248,29 @@ input[type="number"] {
   cursor: not-allowed;
 }
 
-/* US-38 guide link. The storefront theme styles bare `a` inside the widget —
-   the doubled class outranks it. */
-a.action-btn-small.action-btn-small {
+/* US-38: the open-source card at the foot of the plan. The storefront theme
+   styles bare `a` inside the widget; the doubled class outranks it. */
+.hr-guide-card.hr-guide-card {
+  display: block;
+  margin: 16px 0 4px;
+  padding: 12px 16px;
+  background: #fff;
+  border: 1px solid var(--color-gray-border);
+  border-left: 3px solid var(--color-brand);
+  border-radius: 12px;
   text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  color: var(--color-brand);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.4;
 }
-a.action-btn-small.action-btn-small:hover {
-  color: #fff;
+.hr-guide-card.hr-guide-card:hover {
+  border-color: var(--color-brand);
 }
-.hr-guide-mobile.hr-guide-mobile {
-  display: none;
+.hr-guide-card-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-brand-text);
 }
 
 /* Report action buttons (bottom, after suggestions) */
@@ -1280,8 +1285,8 @@ a.action-btn-small.action-btn-small:hover {
   font-size: 14px;
   padding: 8px 20px;
   background: transparent;
-  color: var(--color-brand);
-  border: 1px solid var(--color-brand);
+  color: var(--color-brand-text);
+  border: 1px solid var(--color-brand-text);
   border-radius: 6px;
   white-space: nowrap;
   cursor: pointer;
@@ -1289,7 +1294,7 @@ a.action-btn-small.action-btn-small:hover {
 }
 
 .action-btn:hover {
-  background: var(--color-brand);
+  background: var(--color-brand-text);
   color: #fff;
 }
 
@@ -1302,7 +1307,7 @@ a.action-btn-small.action-btn-small:hover {
 .previous-value {
   display: block;
   font-size: 12px;
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   margin-top: 4px;
   font-style: italic;
   text-decoration: none;
@@ -1369,7 +1374,7 @@ a.action-btn-small.action-btn-small:hover {
 
 .collapsed-field-label:hover {
   text-decoration: underline;
-  color: var(--color-brand);
+  color: var(--color-brand-text);
 }
 
 .collapsed-field-value {
@@ -1400,7 +1405,7 @@ a.action-btn-small.action-btn-small:hover {
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1408,9 +1413,9 @@ a.action-btn-small.action-btn-small:hover {
 }
 
 .collapsed-field-add:hover {
-  background: var(--color-brand);
+  background: var(--color-brand-text);
   color: white;
-  border-color: var(--color-brand);
+  border-color: var(--color-brand-text);
 }
 
 /* Previous value reference shown in expanded mode */
@@ -1425,7 +1430,7 @@ a.action-btn-small.action-btn-small:hover {
 /* Primary Button Base */
 .btn-primary {
   font-weight: 500;
-  background: var(--color-brand);
+  background: var(--color-brand-text);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -1434,7 +1439,7 @@ a.action-btn-small.action-btn-small:hover {
 }
 
 .btn-primary:hover {
-  background: var(--color-brand-hover);
+  background: var(--color-brand-text-hover);
 }
 
 .btn-primary:active {
@@ -1495,7 +1500,7 @@ a.action-btn-small.action-btn-small:hover {
 .bp-info-tooltip-wrap:hover .bp-info-icon,
 .bp-info-tooltip-wrap:focus-within .bp-info-icon {
   opacity: 1;
-  color: var(--color-brand);
+  color: var(--color-brand-text);
 }
 
 .bp-info-tooltip::before {
@@ -1527,7 +1532,7 @@ a.action-btn-small.action-btn-small:hover {
 }
 
 .bp-info-tooltip a {
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   text-decoration: none;
   white-space: nowrap;
 }
@@ -1718,7 +1723,7 @@ a.action-btn-small.action-btn-small:hover {
 }
 
 .privacy-notice-link a:hover {
-  color: var(--color-brand);
+  color: var(--color-brand-text);
 }
 
 .feedback-links {
@@ -1734,7 +1739,7 @@ a.action-btn-small.action-btn-small:hover {
   font-size: 14px;
   font-weight: 500;
   color: #fff;
-  background: var(--color-brand);
+  background: var(--color-brand-text);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -1742,7 +1747,7 @@ a.action-btn-small.action-btn-small:hover {
 }
 
 .feedback-btn:hover {
-  background: var(--color-brand-hover);
+  background: var(--color-brand-text-hover);
   color: #fff;
 }
 
@@ -1753,7 +1758,7 @@ a.action-btn-small.action-btn-small:hover {
 }
 
 .source-code-link:hover {
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   text-decoration: underline;
 }
 
@@ -1942,21 +1947,25 @@ a.action-btn-small.action-btn-small:hover {
 }
 /* Mobile-only tab-bar strip (shown only inside the ≤768px block below). */
 .hr-skel-tabbar { display: none; }
-/* ≤768px: single column + a tab-bar strip, matching the mobile widget. */
+/* ≤768px: single column + the bottom tab bar's strip, matching the mobile widget. */
 @media (max-width: 768px) {
-  .hr-skeleton { padding: 0 0 16px; }
+  .hr-skeleton { padding: 0; }
   .hr-skeleton-content {
     grid-template-columns: 1fr;
     gap: 0;
-    padding: 0 10px;
+    /* 49px: the top bar (33px, Sign in) and the panel's 16px. */
+    padding: 49px 10px 16px;
   }
   .hr-skeleton-col:not(:first-child) { display: none; }
   .hr-skel-colhead { display: none; }
   .hr-skel-tabbar {
     display: block;
-    height: 43px;
-    margin: 0 -10px 16px;
-    border-bottom: 1px solid var(--color-gray-border);
+    position: sticky;
+    bottom: 0;
+    height: 51px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: #f8f8fa;
+    border-top: 1px solid var(--color-gray-border);
   }
 }
 
@@ -2089,7 +2098,7 @@ a.action-btn-small.action-btn-small:hover {
 }
 
 .upload-lab-tooltip-link {
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   text-decoration: none;
   font-weight: 500;
 }
@@ -2174,7 +2183,7 @@ a.action-btn-small.action-btn-small:hover {
   line-height: 1.5;
 }
 .upload-btn-primary {
-  background: var(--color-brand);
+  background: var(--color-brand-text);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -2528,10 +2537,11 @@ a.action-btn-small.action-btn-small:hover {
 }
 
 @media (max-width: 768px) {
+  /* Clear of the bottom tab bar (US-20 AC6). */
   .floating-upload-indicator {
     left: 16px;
     right: 16px;
-    bottom: 16px;
+    bottom: calc(66px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -2839,7 +2849,7 @@ a.action-btn-small.action-btn-small:hover {
   flex-shrink: 0;
 }
 .chat-feedback-link:hover {
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   text-decoration: underline;
 }
 
@@ -2965,14 +2975,15 @@ a.action-btn-small.action-btn-small:hover {
   background: rgba(0, 163, 139, 0.07);
   border: 1px solid rgba(0, 163, 139, 0.2);
   border-radius: 8px;
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
 
 .chat-new-btn:hover {
   background: rgba(0, 163, 139, 0.13);
-  border-color: var(--color-brand);
+  border-color: var(--color-brand-text);
+  color: var(--color-brand-text-hover);
 }
 
 .chat-thread-item {
@@ -3095,7 +3106,7 @@ a.action-btn-small.action-btn-small:hover {
 .chat-message-name {
   font-size: 11px;
   letter-spacing: 0.6px;
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   text-transform: uppercase;
   font-weight: 600;
   margin-bottom: 4px;
@@ -3165,7 +3176,7 @@ a.action-btn-small.action-btn-small:hover {
 }
 
 .chat-message--assistant .chat-message-content a {
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   text-decoration: underline;
 }
 
@@ -3357,12 +3368,12 @@ a.action-btn-small.action-btn-small:hover {
 
 .chat-sub-card-confirm {
   border: 0;
-  background: var(--color-brand);
+  background: var(--color-brand-text);
   color: #fff;
 }
 
 .chat-sub-card-confirm:hover:not(:disabled) {
-  background: var(--color-brand-hover);
+  background: var(--color-brand-text-hover);
 }
 
 .chat-sub-card-dismiss {
@@ -3433,7 +3444,7 @@ a.action-btn-small.action-btn-small:hover {
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: var(--color-brand);
+  background: var(--color-brand-text);
   color: #fff;
   font-size: 16px;
   line-height: 1;
@@ -3446,7 +3457,7 @@ a.action-btn-small.action-btn-small:hover {
 }
 
 .chat-send-btn:hover:not(:disabled) {
-  background: var(--color-brand-hover);
+  background: var(--color-brand-text-hover);
 }
 
 .chat-send-btn:disabled {
@@ -3549,7 +3560,7 @@ a.action-btn-small.action-btn-small:hover {
   animation: chat-fab-entrance 0.25s ease-out;
 }
 .chat-med-undo-btn {
-  background: var(--color-brand);
+  background: var(--color-brand-text);
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -3576,7 +3587,7 @@ a.action-btn-small.action-btn-small:hover {
   height: 48px;
   padding: 0 20px;
   border-radius: 24px;
-  background: var(--color-brand);
+  background: var(--color-brand-text);
   color: #fff;
   border: none;
   cursor: pointer;
@@ -3874,7 +3885,7 @@ a.action-btn-small.action-btn-small:hover {
 }
 
 .supplement-custom {
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   font-style: italic;
 }
 
@@ -3905,7 +3916,7 @@ a.action-btn-small.action-btn-small:hover {
   justify-content: center;
   border-radius: 50%;
   background: #e6f4f1;
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0;
@@ -3940,23 +3951,10 @@ a.action-btn-small.action-btn-small:hover {
 
 @media (max-width: 768px) {
   .hr-col-header { display: none; }
-  /* US-44 AC6: the plan header holds Save as PDF, so its actions stay (the
-     tabs name the column), right-aligned with the cards, clear of the tabs. */
-  .hr-col-header--actions { display: flex; justify-content: flex-end; padding: 8px 0 0; }
+  /* US-44 AC6: a header's actions stay (Save as PDF on the plan; the tabs
+     name the column), right-aligned with the cards' 10px gutter. */
+  .hr-col-header--actions { display: flex; justify-content: flex-end; padding: 8px 10px 0; }
   .hr-col-header--actions .hr-col-title { display: none; }
-  /* US-38: the header (and its guide button) is hidden here, so the footer
-     link is the mobile entry point. */
-  .hr-guide-mobile.hr-guide-mobile {
-    display: block;
-    text-align: center;
-    margin: 12px 0 4px;
-    font-size: 13px;
-    color: var(--color-gray-medium);
-    text-decoration: none;
-  }
-  .hr-guide-mobile.hr-guide-mobile:hover {
-    color: var(--color-brand);
-  }
 }
 
 /* ─── Inline unit toggle in Basic Information card header ─────── */
@@ -4029,20 +4027,25 @@ a.action-btn-small.action-btn-small:hover {
   .chat-fab { display: none; }
 }
 
-/* Mobile: chat slide keeps inline variant but needs a sensible height
-   so Swiper's autoHeight doesn't collapse it to 0 */
+/* Mobile: the chat tab is a screen tall, less the top and tab bars, so its
+   tab bar sits at the foot of the screen as on the iPhone. */
 @media (max-width: 768px) {
   .health-tool-chat {
     position: static;
     max-height: none;
     overflow-y: visible;
   }
-  .chat-expanded.chat-expanded--inline {
-    min-height: 70vh;
-  }
   .chat-embed,
   .health-tool-chat .chat-embed {
     margin: 0 10px;
+    min-height: 300px;
+  }
+  /* A fixed height: the messages scroll inside, so the chat's auto-scroll
+     works and the composer stays on screen. */
+  .hr-tabpanel .health-tool-chat .chat-embed {
+    flex: none;
+    height: calc(100vh - 150px - env(safe-area-inset-bottom, 0px));
+    height: calc(100svh - 150px - env(safe-area-inset-bottom, 0px));
     min-height: 300px;
   }
 
@@ -4172,7 +4175,7 @@ a.action-btn-small.action-btn-small:hover {
     height: 28px;
     border-radius: 50%;
     border: none;
-    background: var(--color-brand);
+    background: var(--color-brand-text);
     color: #fff;
     cursor: pointer;
     padding: 0;
@@ -4233,9 +4236,7 @@ a.action-btn-small.action-btn-small:hover {
   scrollbar-width: none;
   /* `pan-x` scrolls the matrix horizontally; `pan-y` lets vertical
      gestures bubble through to the page so users can scroll the page
-     down even when the touch starts on the matrix. Swiper's
-     `noSwipingSelector=".bt-cell-strip, .bt-timeline-scroll"` blocks
-     tab swipes here independently of touch-action. */
+     down even when the touch starts on the matrix. */
   touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
 }
@@ -4419,9 +4420,7 @@ a.action-btn-small.action-btn-small:hover {
      gestures bubble through to the page so users can scroll the page
      up/down even when the touch starts on a strip — without this, a
      touch starting on Weight/Waist/BP rows freezes the page (mirrors
-     the `.bt-timeline-scroll` rule). Swiper's `noSwipingSelector=
-     ".bt-cell-strip, .bt-timeline-scroll"` still blocks tab swipes
-     independently of touch-action. */
+     the `.bt-timeline-scroll` rule). */
   touch-action: pan-x pan-y;
 }
 .bt-cell-strip::-webkit-scrollbar { display: none; }
@@ -4500,7 +4499,7 @@ a.action-btn-small.action-btn-small:hover {
   line-height: 1.2;
 }
 .bt-cell-draft-date .bt-date-day {
-  color: var(--color-brand);
+  color: var(--color-brand-text);
 }
 .bt-cell-date .bt-date-year,
 .bt-cell-draft-date .bt-date-year {
@@ -4511,8 +4510,7 @@ a.action-btn-small.action-btn-small:hover {
   line-height: 1.2;
 }
 .bt-cell-draft-date .bt-date-year {
-  color: var(--color-brand);
-  opacity: 0.7;
+  color: var(--color-brand-text);
 }
 .bt-cell-draft-date {
   border-left: 2px solid var(--color-brand);
@@ -4533,15 +4531,14 @@ a.action-btn-small.action-btn-small:hover {
   gap: 4px;
   margin-top: 1px;
 }
-.bt-cell-draft-date .bt-draft-date-icon { color: var(--color-brand); }
+.bt-cell-draft-date .bt-draft-date-icon { color: var(--color-brand-text); }
 .bt-cell-draft-date .bt-date-day {
-  color: var(--color-brand);
+  color: var(--color-brand-text);
 }
 .bt-cell-draft-date .bt-date-year {
-  color: var(--color-brand);
-  opacity: 0.7;
+  color: var(--color-brand-text);
 }
-.bt-cell-draft-date svg { color: var(--color-brand); flex-shrink: 0; }
+.bt-cell-draft-date svg { color: var(--color-brand-text); flex-shrink: 0; }
 .bt-draft-date-icon { margin-top: 2px; }
 .bt-date-hidden-icon {
   position: absolute;
@@ -4590,7 +4587,7 @@ a.action-btn-small.action-btn-small:hover {
   font-weight: 700;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   line-height: 1.2;
 }
 
@@ -5161,20 +5158,20 @@ a.action-btn-small.action-btn-small:hover {
 }
 .chat-key-gate-title { font-size: 15px; font-weight: 700; margin: 0 0 8px; color: #1c2b33; }
 .chat-key-gate-copy { font-size: 13px; line-height: 1.5; color: #44535b; margin: 0 0 10px; }
-.chat-key-gate-copy a { color: #00897b; }
+.chat-key-gate-copy a { color: var(--color-brand-text); }
 .chat-key-gate-form { display: flex; gap: 8px; margin: 4px 0 8px; }
 .chat-key-gate-form input {
   flex: 1; min-width: 0; padding: 9px 11px; border: 1px solid #cdd9dd;
   border-radius: 8px; font-size: 13px;
 }
 .chat-key-gate-form button {
-  background: #00a38b; color: #fff; border: 0; border-radius: 8px;
+  background: var(--color-brand-text); color: #fff; border: 0; border-radius: 8px;
   font-size: 13px; font-weight: 600; padding: 9px 16px; cursor: pointer;
 }
 .chat-key-gate-form button:disabled { opacity: 0.5; cursor: default; }
 .chat-key-gate-error { color: #b91c1c; font-size: 12.5px; margin: 0 0 8px; }
 .chat-key-gate-fineprint { font-size: 12px; color: #5a6b73; margin: 0; }
-.chat-key-gate-fineprint a { color: #00897b; }
+.chat-key-gate-fineprint a { color: var(--color-brand-text); }
 .chat-key-disconnect {
   background: none; border: 0; color: #8aa0a9; font-size: 11.5px;
   text-decoration: underline; cursor: pointer; padding: 0;
@@ -5183,7 +5180,7 @@ a.action-btn-small.action-btn-small:hover {
 /* --- View-original in the document lightbox (v2 archive) --- */
 .doc-lightbox-footer { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .doc-view-original-btn {
-  background: #fff; color: #00897b; border: 1px solid #00a38b; border-radius: 8px;
+  background: #fff; color: var(--color-brand-text); border: 1px solid var(--color-brand); border-radius: 8px;
   font-size: 13px; font-weight: 600; padding: 8px 14px; cursor: pointer;
 }
 .doc-view-original-btn:hover { background: #f0faf8; }
@@ -5204,11 +5201,11 @@ a.action-btn-small.action-btn-small:hover {
   border: 0;
   padding: 0;
   font: inherit;
-  color: #00806e;
+  color: var(--color-brand-text);
   text-decoration: underline;
   cursor: pointer;
 }
-.hr-storage-link:hover { color: #006355; }
+.hr-storage-link:hover { color: var(--color-brand-text-hover); }
 
 /* US-61: Brad's product at the foot of a US supplement card. Part of the card,
    in its own quiet type, never a banner; the ownership line sits once below
@@ -5229,12 +5226,12 @@ a.action-btn-small.action-btn-small:hover {
 
 .us-product-link {
   font-weight: 600;
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   text-decoration: none;
 }
 
 .us-product-link:hover {
-  color: var(--color-brand-hover);
+  color: var(--color-brand-text-hover);
   text-decoration: underline;
 }
 
@@ -5249,5 +5246,20 @@ a.action-btn-small.action-btn-small:hover {
   .us-product,
   .us-ownership {
     display: none !important;
+  }
+}
+
+/* US-20 AC6: on a phone, what scrolls into view stops clear of the bottom tab
+   bar, and pop-overs open above it (the bar is z-index 20). After the base
+   rules, so these win. */
+@media (max-width: 768px) {
+  .feedback-form,
+  .bt-move-panel {
+    scroll-margin-bottom: 60px;
+  }
+  .supplement-dropdown,
+  .bp-info-tooltip,
+  .upload-lab-tooltip {
+    z-index: 21;
   }
 }

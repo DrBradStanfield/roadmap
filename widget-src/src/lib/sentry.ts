@@ -169,20 +169,26 @@ export function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
   return event;
 }
 
+/** A local dev host (US-20 AC5): localhost, its subdomains, and both loopback addresses. */
+export function isLoopbackHost(hostname: string): boolean {
+  return hostname === 'localhost' || hostname.endsWith('.localhost') || hostname === '127.0.0.1' || hostname === '[::1]';
+}
+
 export function initSentry() {
   if (initialized) return;
   initialized = true;
 
+  const local = isLoopbackHost(window.location.hostname);
   Sentry.init({
     dsn: SENTRY_DSN,
     release: typeof __SENTRY_RELEASE__ !== 'undefined' ? __SENTRY_RELEASE__ : undefined,
-    environment: window.location.hostname.includes('localhost')
+    environment: local
       ? 'development'
       : window.location.hostname === 'drbradstanfield.github.io'
         ? 'standalone' // the GitHub Pages front door — separable from the website in Sentry
         : 'production',
     // Don't send in development
-    enabled: !window.location.hostname.includes('localhost'),
+    enabled: !local,
     // Limit serialization depth for Sentry event payloads
     normalizeDepth: 5,
     ignoreErrors: [

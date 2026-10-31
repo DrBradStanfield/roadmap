@@ -46,8 +46,9 @@ function AlcoholDismiss({ onChoose }: { onChoose: (answer: AlcoholAnswer) => voi
       <button type="button" className="suggestion-dismiss no-print" onClick={(e) => { e.stopPropagation(); setOpen(true); }}>
         Dismiss
       </button>
-      {/* Portaled: the plan sits in a transformed Swiper slide on phones, which
-          would pin a fixed backdrop to the slide (the upload modal does the same). */}
+      {/* Portaled: the plan card is transformed on hover and as it enters, and
+          .health-tool is transformed, either of which would pin a fixed backdrop
+          to it (the upload modal does the same). */}
       {open && createPortal(
         <div className="upload-modal-backdrop no-print" data-clarity-mask="true"
           onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>

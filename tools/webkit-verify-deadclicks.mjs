@@ -1,12 +1,12 @@
 // Verify the 2026-08-07 dead-click fixes (US-02) on the LIVE site in real
 // WebKit (iPhone 13 emulation): tooltip tap-toggle, Birth Month label
-// no-hijack, plan-bar clearance class. Run: node tools/webkit-verify-deadclicks.mjs
+// no-hijack, the sticky tab bar. Run: node tools/webkit-verify-deadclicks.mjs
 import { webkit, devices } from 'playwright';
 
 const browser = await webkit.launch();
 const ctx = await browser.newContext({ ...devices['iPhone 13'] });
 const page = await ctx.newPage();
-// Seed sex+height so stage 2 (Birth Month + plan bar) renders. The copy holds
+// Seed sex+height so stage 2 (Birth Month) renders. The copy holds
 // what the widget writes: the saved profile, and the weight as a saved row
 // (US-15 AC10), which opens the vitals matrix at mount.
 await page.addInitScript(() => {
@@ -61,15 +61,12 @@ if (results.birthMonthTooltipExists) {
     .isVisible());
 }
 
-// 3. Plan-bar clearance: on the input tab at stage>=2 the container carries
-//    the modifier class and the fixed bar exists.
-results.planBarRendered = (await page.locator('.mobile-view-plan-btn').count()) === 1;
-results.planBarClearance = await page.evaluate(() => {
-  const el = document.querySelector('.health-tool');
-  return {
-    hasClass: !!el?.classList.contains('health-tool--plan-bar'),
-    paddingBottom: el ? getComputedStyle(el).paddingBottom : null,
-  };
+// 3. The bottom tab bar (US-20 AC6) replaced the fixed plan button: no
+//    fixed bar can cover the last form rows.
+results.planButtonGone = (await page.locator('.mobile-view-plan-btn').count()) === 0;
+results.tabBarSticky = await page.evaluate(() => {
+  const bar = document.querySelector('.hr-tabbar');
+  return !!bar && getComputedStyle(bar).position === 'sticky';
 });
 
 console.log(JSON.stringify(results, null, 2));

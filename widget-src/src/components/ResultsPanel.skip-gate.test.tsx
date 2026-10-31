@@ -179,7 +179,6 @@ describe('US-18 AC6 — a refused print window is never silent', () => {
   // that refused storage runs from memory), and never "use another browser":
   // that browser would not hold this plan.
   const BLOCKED = "The PDF window didn't open. Try Save as PDF again. Some apps' built-in browsers block it.";
-  const opens = () => vi.mocked(window.open).mockImplementation(() => ({ document: { write: vi.fn(), close: vi.fn() }, print }) as unknown as Window);
   const refuseWindow = () => vi.mocked(window.open).mockImplementation(() => null);
   const blockedEvents = () => mocks.trackProductEvent.mock.calls.filter(([name]) => name === 'pdf_window_blocked');
 
@@ -246,23 +245,6 @@ describe('US-18 AC6 — a refused print window is never silent', () => {
     await waitFor(() => expect(note.textContent).toBe(BLOCKED));
     expect(view.getByText(BLOCKED)).toBe(note);
     expect(blockedEvents()).toHaveLength(2); // trackProductEvent itself sends once per tab session
-  });
-
-  it('on a phone the Plan tab re-measures its height when the note comes and goes', async () => {
-    const onLayoutChange = vi.fn();
-    refuseWindow();
-    const view = showPlan({ onLayoutChange });
-    onLayoutChange.mockClear();
-    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
-    await waitFor(() => expect(view.getByText(BLOCKED)).toBeTruthy());
-    expect(onLayoutChange).toHaveBeenCalled();
-    onLayoutChange.mockClear();
-    opens();
-    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
-    await waitFor(() => expect(view.queryByText(BLOCKED)).toBeNull());
-    expect(onLayoutChange).toHaveBeenCalled();
-    const tool = readFileSync(resolve(__dirname, 'HealthTool.tsx'), 'utf8');
-    expect(tool).toContain('onLayoutChange: () => liveSwiper()?.updateAutoHeight(),');
   });
 
   it('a refusal on a capture that then fails to send shows beside that error', async () => {
@@ -354,22 +336,27 @@ describe('US-44 AC6 — Save as PDF shows on a phone', () => {
     await waitFor(() => expect(planHeader(view).classList.contains('hr-col-header--actions')).toBe(true));
   });
 
-  it('the empty-plan placeholder header and the input header stay fully hidden on a phone', () => {
+  // The input header keeps its actions only when it holds the storage button
+  // (US-09 AC30, HealthTool.top-bar.test.tsx).
+  it('the empty-plan placeholder header stays fully hidden on a phone', () => {
     const view = render(<ResultsPanel results={null} isValid={false} unitSystem="si" />);
     expect(planHeader(view as ReturnType<typeof showPlan>).classList.contains('hr-col-header--actions')).toBe(false);
-    const input = readFileSync(resolve(__dirname, 'InputPanel.tsx'), 'utf8');
-    const inputHeader = /<ColumnHeader step=\{1\}[^\n]*\/>/.exec(input)![0];
-    expect(inputHeader).not.toContain('actions');
   });
 
   it('styles.css: at 768px the column header hides, except the plan header\'s actions', () => {
     const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8').replace(/\s+/g, ' ');
     const hide = css.indexOf('.hr-col-header { display: none; }');
     expect(hide).toBeGreaterThan(-1);
-    const block = css.slice(css.lastIndexOf('@media (max-width: 768px) {', hide), css.indexOf('.hr-guide-mobile', hide));
+    const block = css.slice(css.lastIndexOf('@media (max-width: 768px) {', hide), css.indexOf('}', css.indexOf('.hr-col-header--actions .hr-col-title', hide)) + 1);
     const keep = block.indexOf('.hr-col-header--actions { display: flex;');
     expect(keep).toBeGreaterThan(block.indexOf('.hr-col-header { display: none; }'));
     expect(block).toContain('.hr-col-header--actions .hr-col-title { display: none; }');
+  });
+
+  it('styles.css: on a phone the header actions keep the cards\' 10px side gutter (live 2026-11-01: Sign in sat flush on the screen edge)', () => {
+    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8').replace(/\s+/g, ' ');
+    expect(css).toContain('.section-card { padding: 12px !important; margin-left: 10px; margin-right: 10px; }');
+    expect(css).toContain('.hr-col-header--actions { display: flex; justify-content: flex-end; padding: 8px 10px 0; }');
   });
 });
 
