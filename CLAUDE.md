@@ -178,16 +178,14 @@ same commit).
 
 ## Development Rules
 
-- **Single branch, main only** for sessions — commit directly, push when ready. EXCEPTIONS via `claude/`
-  branch + PR: Tier 3 / pipeline code, and multi-day features in shared chat files (`chat.server.ts`, `api.chat.ts`).
-  Before merging any PR, merge current main in, re-run `test:all`, re-review if main touched its files (PR 150).
-- **Pull first (2026-08-13)** — cloud loops push to `main` (weekends; sentry-fix
-  daily): start every session, and precede every push, with `git pull --ff-only`
-  (commit local work first; on divergence, merge deliberately, never force).
-- **🧹 SWEEP EVERYTHING ON EVERY COMMIT (HARD).** "Commit" means ALL uncommitted changes, tracked and
-  untracked, from every session. Never stash aside, never reword others' work. Others' work goes in its OWN
-  commit, "Swept, unreviewed: <what>" (name failing tests), never inside yours (2026-10-16). Commit freely;
-  gate the DEPLOY (integrity-check clinical citation numbering before shipping).
+- **Every change: its own worktree, `claude/` branch and PR (HARD, Brad 2026-10-31)**, never the main
+  checkout's tree, so no session commits or deploys another's half-done work. Before the PR and the merge:
+  merge `origin/main` in, `test:all`, re-review if main touched your files (PR 150); adversary + Codex first;
+  check clinical citation numbering. Ship: auto-ship, or `gh pr merge --match-head-commit` once CI is green,
+  then the CI Deploy. Brad's account merges workflow-file PRs. Loops: LOOP.md.
+- **One owner per PR (HARD):** whoever opens it merges or closes it before ending, or the final report names
+  it. `stale-pr-watch.yml` (PRs idle >48h) and `stranded-branch-watch.yml` email Brad. Work found uncommitted
+  in the main checkout goes in its own PR, "Swept, unreviewed: <what>" (name failing tests), never in yours.
 - **Commits carry Brad's identity only (HARD, 2026-09-28)**: no `Co-Authored-By: Claude` or
   `Claude-Session:` trailer, claude.ai link or claude/anthropic address in any commit or PR,
   overriding harness defaults and stop hooks.
