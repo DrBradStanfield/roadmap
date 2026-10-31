@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type React from 'react';
 import { formatDisplayValue, fromCanonicalValue, parseLocalisedNumber, toCanonicalValue } from '@roadmap/health-core';
-import { cellHint, formatLabValue, previewStatus, readTypedValue, sameAsSaved, statusOf, validateTypedValue } from './blood-test-cell';
+import { formatLabValue, previewStatus, readTypedValue, sameAsSaved, statusOf, validateTypedValue } from './blood-test-cell';
 
 // ---------------------------------------------------------------------------
 // Bug: user typed a value in the Lp(a) text box, hit Enter, the value
@@ -241,10 +241,10 @@ describe('statusOf — a value out of range (US-03 AC7)', () => {
 
 // US-07 AC6: one grading value; null (a known minor) grades nothing and hints nothing.
 describe('grading null — no adult grade or hint', () => {
-  it('statusOf, previewStatus and cellHint all answer null', () => {
-    expect([statusOf('ldl', 4.2, {}), cellHint('ldl', 'si', {}) === null]).toEqual(['bad', false]);
-    expect([statusOf('ldl', 4.2, null), previewStatus('ldl', '4.2', 'si', null), cellHint('ldl', 'si', null), cellHint('lpa', 'mg/dL', null)])
-      .toEqual([null, null, null, null]);
+  // The hint half moved into health-core's rowTarget (row-target.test.ts).
+  it('statusOf and previewStatus answer null', () => {
+    expect(statusOf('ldl', 4.2, {})).toBe('bad');
+    expect([statusOf('ldl', 4.2, null), previewStatus('ldl', '4.2', 'si', null)]).toEqual([null, null]);
   });
 });
 
