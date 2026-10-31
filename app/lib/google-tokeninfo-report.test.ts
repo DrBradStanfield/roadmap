@@ -32,7 +32,7 @@ describe('verifyGoogleIdToken: a Google failure is reported', () => {
     answer(new Response('synthetic outage', { status }));
     expect(await verifyGoogleIdToken('synthetic-id-token')).toBeNull();
     expect(reports()).toBe(1);
-    expect(sentry.captureMessage.mock.calls[0][1]).toMatchObject({ tags: { feature: 'reminders_v2' }, extra: { status } });
+    expect(sentry.captureMessage.mock.calls[0][1]).toMatchObject({ level: 'warning', tags: { feature: 'reminders_v2' }, extra: { status } });
   });
 
   it('a network failure is null and reported once', async () => {
@@ -41,6 +41,7 @@ describe('verifyGoogleIdToken: a Google failure is reported', () => {
     expect(await verifyGoogleIdToken('synthetic-id-token')).toBeNull();
     expect(sentry.captureException).toHaveBeenCalledTimes(1);
     expect(sentry.captureException.mock.calls[0][0]).toBe(failure);
+    expect(sentry.captureException.mock.calls[0][1]).toMatchObject({ tags: { feature: 'reminders_v2' } });
   });
 });
 
