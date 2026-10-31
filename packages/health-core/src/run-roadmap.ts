@@ -126,6 +126,7 @@ const REASONS = {
   minor: 'the saved profile is under 18: a stated age or birth year is not used',
   protein: 'the protein target depends on kidney function, which this run could not work out, so it is left out until the refused value is confirmed',
   proteinAge: 'the protein target depends on kidney function, which needs the user\'s age: ask for their age',
+  egfrSex: 'kidney function (eGFR) from creatinine needs the user\'s sex: ask for their sex',
 } as const;
 
 const BP_FIELDS: readonly string[] = ['systolicBp', 'diastolicBp'];
@@ -302,12 +303,12 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   if (payload.birthMonth === undefined) delete payload.birthMonth;
   for (const f of unusable) delete payload[f];
   // US-07 AC7: a stated creatinine, used or not, from after the lab eGFR's day outdates it (with no
-  // age to read it by, lostEgfr below withholds the protein card and asks). So does the saved one,
+  // age or sex to read it by, lostEgfr below withholds the protein card and asks). So does the saved one,
   // newer than the lab eGFR, once the plan can calculate from it: the client kept the lab eGFR
-  // only because it had no age, and a stated one supplies it.
-  const saved = sanitizeInputs({ creatinine: payload.creatinine, birthYear: payload.birthYear } as Partial<HealthInputs>);
+  // only because it had no age (or no sex, AC8), and a stated one supplies it.
+  const saved = sanitizeInputs({ creatinine: payload.creatinine, birthYear: payload.birthYear, sex: payload.sex } as Partial<HealthInputs>);
   const creatinineDay = stated.get('creatinine')?.date ?? blocked.get('creatinine')
-    ?? (saved.creatinine !== undefined && saved.birthYear !== undefined
+    ?? (saved.creatinine !== undefined && saved.birthYear !== undefined && saved.sex !== undefined
       ? savedLatestDay(history, 'creatinine', today) || undefined : undefined);
   if (creatinineDay !== undefined && !(creatinineDay <= String(base.labEgfrDate ?? ''))) {
     delete payload.labEgfr;
@@ -323,7 +324,7 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   }
   const contextJson = buildChatContextJson(payload);
   const plan = contextJson ? JSON.parse(contextJson) : null;
-  // No usable sex or height: the context carries the values but no cards (US-15 AC36);
+  // No usable height: the context carries the values but no cards (US-15 AC36);
   // this tool still answers "no plan". A known minor's context has no cards either, and is sent.
   if (!plan?.currentSuggestions && !plan?.profile?.knownMinor) return { contextJson: null, applied, rejected };
   // Without an eGFR the protein card falls back to the standard target. When this run
@@ -336,12 +337,14 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   plan.currentSuggestions = plan.currentSuggestions?.filter((s: { id?: string }) => s.id !== 'protein-target');
   // A creatinine the run used with no age to read it by: the gap is the age, not a refused value.
   if (plan.latestValues?.creatinine !== undefined && plan.profile?.age === undefined) reject('age', REASONS.proteinAge);
+  // US-07 AC8: so is one with no sex to read it by.
+  else if (plan.latestValues?.creatinine !== undefined && plan.profile?.sex === undefined) reject('sex', REASONS.egfrSex);
   else reject('creatinine', REASONS.protein);
   return { contextJson: JSON.stringify(plan), applied, rejected };
 }
 
 const NOT_SAVED = 'The stated values are used for this answer only; nothing was saved.';
-const NO_PLAN = 'No plan: the roadmap needs at least the user\'s sex and height. Ask for them; do not assess the values yourself.';
+const NO_PLAN = 'No plan: the roadmap needs at least the user\'s height. Ask for it; do not assess the values yourself.';
 
 /** The tool_result text: buildChatContextJson's output, verbatim, beside the applied and rejected fields. */
 export function roadmapResultText(run: RoadmapRun): string {

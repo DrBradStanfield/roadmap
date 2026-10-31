@@ -246,7 +246,7 @@ Validate your result against the schema before you write it back.
   and leave the superseded one where it is. If you convert such a row yourself you will
   make a second, competing correction.
 - **A thin plan is not a clean bill of health.** On a record holding no measurement at
-  all, `get_plan` still returns `protein-target`, `exercise` and `sleep` — they rest on
+  all, `get_plan` still returns `protein-target` (when sex is known), `exercise` and `sleep` — they rest on
   no value whatever — plus the screening, skin and supplement cards, which follow from
   sex and age alone, and `fiber`, which shows whenever lipids are NOT elevated, absent
   lipids included: read it as "no lipid card", never as "lipids fine". Every other
@@ -269,6 +269,15 @@ Validate your result against the schema before you write it back.
   `adults-only` card, a `null` in those four profile fields means "withheld". In any
   other plan a `null` means the inputs are missing (no creatinine, no weight): read
   `missingInputs` for which.
+- **The plan needs a height, not a sex** (US-07 AC8, 2026-10-31). A record with a height
+  and no sex gets a plan without every part that needs sex: `profile.sex`,
+  `profile.idealBodyWeightKg` and `profile.proteinTargetG` are `null`, there is no
+  `protein-target` card, no calculated eGFR (a lab-printed eGFR still shows), no
+  `hdl-low` card and no breast, cervical, prostate, endometrial or bone-density screening.
+  `missingInputs` names `sex`, and `profile.needsSex` lists those parts in words (`[]` once sex
+  is set). Do not work them out yourself or assume a sex; ask the user, then
+  `update_profile`. Only a missing or unusable height still fails, with a hint that asks
+  for it.
 
 ## The hosted path (US-32 Phase 1)
 

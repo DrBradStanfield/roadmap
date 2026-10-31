@@ -59,7 +59,9 @@ export const PLAN_INSTRUCTION =
   '("may support", "evidence suggests") is calibrated — never upgrade it into a recommendation — and every ' +
   'reference stays attached to the suggestion it belongs to. This is educational, not medical advice: say so, and ' +
   'tell the user to take it to their doctor. When the plan holds only the `adults-only` card, do not grade the ' +
-  'person’s values against adult targets and do not suggest medicines; point them to their doctor.';
+  'person’s values against adult targets and do not suggest medicines; point them to their doctor. When ' +
+  '`profile.needsSex` is not empty, the record has no sex: those parts are missing, not normal. Do not work them out ' +
+  'yourself; tell the user they need their sex, and ask for it.';
 
 /** A failure the user can act on: one plain line plus a hint, never a stack. */
 export class PlanError extends Error {
@@ -152,7 +154,7 @@ export function labEgfrOf(labValues: readonly LabRowLike[]): LabEgfr | null {
  * it is the plan's eGFR, and cleared when it is not. The candidates are `lab`
  * (labEgfrOf) and the eGFR calculated from the creatinine the inputs hold,
  * dated `creatinineDay`. Only an eGFR the plan can calculate competes: a
- * creatinine the schema keeps, and a birth year. The newer by day wins; on
+ * creatinine the schema keeps, a birth year and a sex (AC8). The newer by day wins; on
  * the same day the lab's does, since ours may come from a misread creatinine.
  * A creatinine with no date (typed, not yet saved: `null`) is `today`'s, the
  * day it would be saved with.
@@ -162,8 +164,9 @@ export function withLabEgfr<T extends Partial<HealthInputs>>(
 ): T {
   const { labEgfr: _value, labEgfrDate: _day, ...rest } = inputs;
   if (!lab) return rest as T;
-  const usable = sanitizeInputs({ creatinine: inputs.creatinine, birthYear: inputs.birthYear });
-  const crDay = usable.creatinine === undefined || usable.birthYear === undefined ? null : creatinineDay ?? today;
+  const usable = sanitizeInputs({ creatinine: inputs.creatinine, birthYear: inputs.birthYear, sex: inputs.sex });
+  const crDay = usable.creatinine === undefined || usable.birthYear === undefined || usable.sex === undefined
+    ? null : creatinineDay ?? today;
   return crDay !== null && crDay > lab.labEgfrDate ? rest as T : { ...rest, ...lab } as T;
 }
 
@@ -230,12 +233,12 @@ export function computePlan(file: RoadmapFile, now = new Date(), unitOverrides?:
   const validation = validateHealthInputs(inputs, { systolicBp: day('systolic_bp'), diastolicBp: day('diastolic_bp') });
   if (!validation.success && validation.errors) {
     const invalid = new Set(validation.errors.issues.map((i) => String(i.path[0])));
-    if (invalid.has('heightCm') || invalid.has('sex')) {
+    // Sex is not required (US-07 AC8): a bad one is stripped below like any field, and `needsSex` says what it costs.
+    if (invalid.has('heightCm')) {
       throw new PlanError(
-        `This record has no usable height and sex (${Object.values(getValidationErrors(validation.errors)).join('; ')})`,
-        'The plan needs both. Ask the user for their height, and whether the plan should be computed for male or ' +
-          'female, and set them on the record — with `update_profile` if you have it, otherwise in the app — then ' +
-          'run this again.',
+        `This record has no usable height (${getValidationErrors(validation.errors).heightCm})`,
+        'The plan needs it. Ask the user for their height and set it on the record — with `update_profile` if you ' +
+          'have it, otherwise in the app — then run this again.',
       );
     }
     const stripped = { ...inputs } as Record<string, unknown>;
@@ -302,6 +305,18 @@ export function dueSplit(plan: Plan): { overdue: ReminderScheduleItem[]; upcomin
   };
 }
 
+/**
+ * US-07 AC8, US-32: what a plan without sex leaves out. `planPayload` lists it
+ * as `profile.needsSex` when the record has no sex, so an agent knows these parts are
+ * missing, not clear, and asks for sex rather than working them out itself.
+ */
+export const NEEDS_SEX: readonly string[] = [
+  'profile.idealBodyWeightKg and profile.proteinTargetG (null) and the protein-target suggestion',
+  'profile.eGFR when it would be calculated from creatinine (a lab-printed eGFR still shows)',
+  'the low-HDL suggestion: its line differs by sex',
+  'the sex-specific screening suggestions: breast, cervical, prostate, endometrial and bone density',
+];
+
 /** The agent-facing shape. Field names are stable; add, never rename. */
 export function planPayload(plan: Plan) {
   const { overdue, upcoming } = dueSplit(plan);
@@ -315,7 +330,7 @@ export function planPayload(plan: Plan) {
     unitSystem: plan.unitSystem,
     units: FIELD_UNITS,
     profile: {
-      sex: plan.inputs.sex,
+      sex: plan.inputs.sex ?? null,
       age: plan.results.age ?? null,
       heightCm: plan.results.heightCm,
       bmi: plan.results.bmi ?? null,
@@ -324,6 +339,8 @@ export function planPayload(plan: Plan) {
       eGFR: adult?.eGFR ?? null,
       idealBodyWeightKg: adult?.idealBodyWeight ?? null,
       proteinTargetG: adult?.proteinTarget ?? null,
+      // Inside `profile`, a free-form object, so tools/list stays frozen (US-35 AC13).
+      needsSex: plan.inputs.sex ? [] : NEEDS_SEX,
     },
     inputs: plan.inputs,
     missingInputs: missingPlanInputs(plan.inputs),

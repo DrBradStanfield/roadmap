@@ -258,7 +258,7 @@ A signature means "the key holder approved this bundle", nothing more.
   confirms in one place, `RecordStore.display`, whenever a draw of the user's record
   (launch, an edit, a unit switch, a cloud record, a return to the app) planned it; orchestrator's
   call, 2026-10-22, moved into the store 2026-10-25. It confirms only when the plan worked
-  or met health-core's own PlanError (no height or sex), never when the engine threw
+  or met health-core's own PlanError (no height; US-07 AC8), never when the engine threw
   (review R5, N1), and a later draw that plans re-checks a trial the first draw left open.
   So a crash or hang on the real record counts, not only one on the self-test's fixture,
   while quitting does not: the store draws the record before the first screen. What that

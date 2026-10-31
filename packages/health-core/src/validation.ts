@@ -28,7 +28,8 @@ export const healthInputSchema = z.object({
     .number()
     .min(50, 'Height must be at least 50 cm')
     .max(250, 'Height must be at most 250 cm'),
-  sex: z.enum(['male', 'female'], { error: 'Please select male or female' }),
+  // Optional (US-07 AC8): the plan works without it, minus what needs sex.
+  sex: z.enum(['male', 'female'], { error: 'Please select male or female' }).optional(),
 
   // Optional body measurements
   weightKg: z

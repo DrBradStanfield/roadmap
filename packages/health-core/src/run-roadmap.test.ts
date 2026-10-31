@@ -103,7 +103,7 @@ describe('US-15 AC33: runRoadmap overlays stated values and returns the plan cod
     expect(none.contextJson).toBeNull();
     const text = JSON.parse(roadmapResultText(none));
     expect(text.roadmap).toBeNull();
-    expect(text.note).toMatch(/sex and height/);
+    expect(text.note).toMatch(/needs at least the user's height/);
 
     const run = runRoadmap(null, { values, sex: 'female', height: { value: 165, unit: 'cm' }, age: new Date().getFullYear() - 1970 });
     expect(run.applied).toEqual(['ldlC', 'hba1c', 'systolicBp', 'diastolicBp', 'sex', 'heightCm', 'age']);
@@ -856,11 +856,11 @@ describe('US-15 AC33: the protein target is withheld only when the run loses kid
     }
   });
 
-  it('no sex or height: no plan, and no protein reason (US-15 AC36 sends the values, but run_roadmap still answers no plan)', () => {
+  it('no height: no plan, and no protein reason (US-15 AC36 sends the values, but run_roadmap still answers no plan)', () => {
     const r = runRoadmap({}, { values: [val('creatinine', 90, 'µmol/L'), val('ldlC', 4.1, 'mmol/L')] });
     expect(r.contextJson).toBeNull();
     expect(r.rejected).toEqual([]);
-    expect(JSON.parse(roadmapResultText(r)).note).toMatch(/sex and height/);
+    expect(JSON.parse(roadmapResultText(r)).note).toMatch(/needs at least the user's height/);
   });
 
   it('a saved creatinine but no saved age, nothing stated about kidneys: the card shows as the saved plan does', () => {

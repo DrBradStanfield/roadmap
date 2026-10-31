@@ -76,7 +76,7 @@ export async function loadRecord(path: string, now = new Date()): Promise<Roadma
  * are theirs, not a second copy. Nothing is saved.
  */
 const valuesSpec = z.object({
-  sex: z.enum(['male', 'female']),
+  sex: z.enum(['male', 'female']).optional(),
   heightCm: z.number(),
   age: z.number().int().optional(),
   birthYear: z.number().int().optional(),
@@ -162,7 +162,8 @@ const PRIORITY_GROUPS = [
 function profileLine(plan: Plan): string {
   const bits: string[] = [];
   if (plan.results.age !== undefined) bits.push(`${plan.results.age}y`);
-  bits.push(plan.inputs.sex === 'female' ? 'female' : 'male');
+  // US-07 AC8: never a default sex; say what its absence costs.
+  bits.push(plan.inputs.sex ?? 'sex not given (needed for ideal body weight, protein, a calculated eGFR, HDL and some screenings)');
   const height = FIELD_METRIC_MAP.heightCm;
   bits.push(`${formatDisplayValue(height, plan.results.heightCm, plan.unitSystem)}${getDisplayLabel(height, plan.unitSystem)}`);
   // The adult readings as the payload gives them: null for a known minor (US-07 AC6).
@@ -348,7 +349,9 @@ memory by edit-record's own rules, and writes nothing. Works with --json/--html:
   {"sex":"male","age":52,"heightCm":178,
    "values":[{"metric":"ldl","value":3.2,"unit":"mmol/L"},
              {"test":"ferritin","value":210,"unit":"µg/L"}]}
-  sex, heightCm       required
+  heightCm            required
+  sex                 optional, but without it the parts that need sex drop
+                      out (see profile.needsSex below)
   age | birthYear     optional, but without one the age-based steps drop out;
                       birthYear (+ birthMonth) is exact, age may be a year off
   unitSystem          optional: si (default, mmol/L) or conventional (mg/dL)
@@ -360,9 +363,12 @@ memory by edit-record's own rules, and writes nothing. Works with --json/--html:
   instruction    how to present this plan: keep the hedging, keep the citations
   schemaVersion, generatedAt, today, unitSystem
   profile        age, sex, heightCm, bmi, bmiCategory, waistToHeightRatio,
-                 eGFR, idealBodyWeightKg, proteinTargetG
+                 eGFR, idealBodyWeightKg, proteinTargetG, needsSex (with no
+                 sex on record, the parts left out because they need it;
+                 [] when sex is set)
   units          the SI unit each inputs field is stored in, keyed by field
   inputs         the HealthInputs the plan was computed from (SI canonical)
+  missingInputs  the inputs the record lacks that would change the plan
   currentValues  one row per metric — id, label, display value, unit, clinical
                  date; excluded: true marks a value out of range — shown, but
                  unused; excludedReason says why when it is something else

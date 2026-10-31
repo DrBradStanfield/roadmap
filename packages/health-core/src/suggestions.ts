@@ -245,17 +245,19 @@ export function generateSuggestions(
 
   // === Always-show lifestyle suggestions ===
 
-  // Protein target (core recommendation, adjusted for CKD)
+  // Protein target (core recommendation, adjusted for CKD). Needs sex, as ideal body weight does (US-07 AC8).
   const isCkd = results.eGFR !== undefined && results.eGFR < EGFR_THRESHOLDS.mildlyDecreased;
-  suggestions.push({
-    id: 'protein-target',
-    category: 'nutrition',
-    priority: 'info',
-    title: `Daily protein target: ${results.proteinTarget}g`,
-    description: isCkd
-      ? `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us('weight'))}, aim for ${results.proteinTarget}g of protein daily (1.0g per kg, adjusted for kidney function). Discuss with your doctor.`
-      : `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us('weight'))}, aim for ${results.proteinTarget}g of protein daily. This supports muscle maintenance and metabolic health.`,
-  });
+  if (results.idealBodyWeight !== undefined && results.proteinTarget !== undefined) {
+    suggestions.push({
+      id: 'protein-target',
+      category: 'nutrition',
+      priority: 'info',
+      title: `Daily protein target: ${results.proteinTarget}g`,
+      description: isCkd
+        ? `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us('weight'))}, aim for ${results.proteinTarget}g of protein daily (1.0g per kg, adjusted for kidney function). Discuss with your doctor.`
+        : `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us('weight'))}, aim for ${results.proteinTarget}g of protein daily. This supports muscle maintenance and metabolic health.`,
+    });
+  }
 
   // Low salt — above the age-dependent BP target
   if (inputs.systolicBp !== undefined && inputs.systolicBp > bpTargetFor(results.age)) {
@@ -653,8 +655,8 @@ export function generateSuggestions(
     }
   }
 
-  // HDL cholesterol (thresholds in mmol/L)
-  if (inputs.hdlC !== undefined) {
+  // HDL cholesterol (thresholds in mmol/L). The line is sex-specific, so no sex, no card (US-07 AC8).
+  if (inputs.hdlC !== undefined && inputs.sex) {
     const lowThreshold = inputs.sex === 'male' ? HDL_THRESHOLDS.lowMale : HDL_THRESHOLDS.lowFemale;
     if (inputs.hdlC < lowThreshold) {
       suggestions.push({

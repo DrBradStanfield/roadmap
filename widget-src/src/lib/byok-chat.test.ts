@@ -89,10 +89,12 @@ describe('BYOK chat context — per-field sanitizing', () => {
     expect(context.excludedFields).toEqual(['heightCm']);
     expect(context.missingInputs).toContain('heightCm');
     expect(context).not.toHaveProperty('currentSuggestions');
-    expect(state.sent!.system).toMatch(/no `currentSuggestions`.*ask them for the missing sex or height/i);
+    expect(state.sent!.system).toMatch(/no `currentSuggestions`.*ask them for the missing height/i);
     // US-16 AC2: once stated, the chat proposes saving them; the tool stays an option.
     expect(state.sent!.system).toMatch(/propose saving them with `propose_profile_edit`.*enter them in the roadmap tool/);
-    expect(state.sent!.system).toMatch(/needs height and sex to work out the plan/);
+    expect(state.sent!.system).toMatch(/needs height to work out the plan/);
+    // US-07 AC8: a plan without sex lacks its sex parts; the model asks rather than works them out.
+    expect(state.sent!.system).toMatch(/When `missingInputs` names `sex`.*never work them out yourself/);
   });
 
   it('US-15 AC36: an empty form still sends no context', async () => {

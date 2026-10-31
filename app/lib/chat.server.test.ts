@@ -165,14 +165,17 @@ describe('buildSystemBlocks', () => {
       expect(text).toContain(NO_PLAN_CHAT_RULE);
     }
     expect(NO_PLAN_CHAT_RULE).toMatch(/without grading them/);
-    expect(NO_PLAN_CHAT_RULE).toMatch(/ask them for the missing sex or height/);
+    expect(NO_PLAN_CHAT_RULE).toMatch(/ask them for the missing height \(and sex, if `missingInputs` names it\)/);
     expect(NO_PLAN_CHAT_RULE).not.toContain('cannot save');
-    expect(NO_PLAN_CHAT_RULE).toMatch(/one plain sentence why: the roadmap needs height and sex to work out the plan/);
+    expect(NO_PLAN_CHAT_RULE).toMatch(/one plain sentence why: the roadmap needs height to work out the plan/);
     // Review R2 (2026-10-20): a plan computed this turn from stated values wins (AC33), without naming the tool.
     expect(NO_PLAN_CHAT_RULE).toMatch(/and no tool result this turn holds a plan/);
     expect(NO_PLAN_CHAT_RULE).not.toContain('run_roadmap');
     // Review R4: eGFR needs more than sex.
-    expect(NO_PLAN_CHAT_RULE).toMatch(/kidney function, as a calculated eGFR needs sex, age and creatinine/);
+    expect(NO_PLAN_CHAT_RULE).toMatch(/calculated eGFR \(it needs sex, age and creatinine\)/);
+    // US-07 AC8: no sex is a plan without its sex parts; the model never fills them in.
+    expect(NO_PLAN_CHAT_RULE).toMatch(/When `missingInputs` names `sex`, the plan has no ideal body weight, protein target/);
+    expect(NO_PLAN_CHAT_RULE).toMatch(/never work them out yourself; say they need sex, and ask for it/);
     expect(NO_PLAN_CHAT_RULE).not.toMatch(/\u2014/);
   });
 
@@ -359,13 +362,14 @@ describe('resolveChatContext — client inputs', () => {
   });
 
   // US-15 AC36 (2026-10-18): this used to return no context, so the chat said the user had no data.
-  it('US-15 AC36: unusable required fields give the no-plan context: the values, the field named, never its value', () => {
-    for (const [payload, field] of [[{ heightCm: 9999, sex: 'male', ldlC: 2.1 }, 'heightCm'], [{ heightCm: 180, sex: 'martian', ldlC: 2.1 }, 'sex']] as const) {
+  // US-07 AC8: an unusable sex is dropped like any field, and the plan runs without it.
+  it('US-15 AC36: an unusable height gives the no-plan context, an unusable sex a plan without it: the field named, never its value', () => {
+    for (const [payload, field, plan] of [[{ heightCm: 9999, sex: 'male', ldlC: 2.1 }, 'heightCm', false], [{ heightCm: 180, sex: 'martian', ldlC: 2.1 }, 'sex', true]] as const) {
       const { json, parsed } = contextOf(payload)!;
       expect(parsed.latestValues).toEqual({ ldlC: '2.1' });
       expect(parsed.excludedFields).toEqual([field]);
       expect(parsed.missingInputs).toContain(field);
-      expect(parsed).not.toHaveProperty('currentSuggestions');
+      expect('currentSuggestions' in parsed).toBe(plan);
       expect(json).not.toMatch(/9999|martian/);
     }
   });

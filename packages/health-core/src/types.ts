@@ -11,7 +11,8 @@ export interface HealthInputs {
   heightCm: number;
   weightKg?: number;
   waistCm?: number;
-  sex: 'male' | 'female';
+  /** Absent until the person answers: every sex-dependent output is then left out (US-07 AC8). */
+  sex?: 'male' | 'female';
   birthYear?: number;
   birthMonth?: number;
   // Blood test values (SI canonical units)
@@ -47,8 +48,9 @@ export const isAlcoholAnswer = (v: unknown): v is AlcoholAnswer => (ALCOHOL_ANSW
  */
 export interface HealthResults {
   heightCm: number;
-  idealBodyWeight: number;
-  proteinTarget: number;
+  /** Both need sex (US-07 AC8). */
+  idealBodyWeight?: number;
+  proteinTarget?: number;
   bmi?: number;
   bmiCategory?: string;         // e.g. 'Normal', 'Overweight', 'Obese (Class I)' — computed by getBMICategory
   waistToHeightRatio?: number;
