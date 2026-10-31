@@ -11,7 +11,8 @@ export interface HealthInputs {
   heightCm: number;
   weightKg?: number;
   waistCm?: number;
-  sex: 'male' | 'female';
+  /** Absent until the person answers: every sex-dependent output is then left out (US-07 AC8). */
+  sex?: 'male' | 'female';
   birthYear?: number;
   birthMonth?: number;
   // Blood test values (SI canonical units)
@@ -31,6 +32,9 @@ export interface HealthInputs {
    *  creatinine, or from the same day). */
   labEgfr?: number;
   labEgfrDate?: string; // YYYY-MM-DD
+  /** US-07 AC8: a newer creatinine the plan cannot read yet (no sex or no age) outdates the lab eGFR.
+   *  It still shows and sets the protein target, but opens no potassium advice. */
+  labEgfrOutdated?: true;
   // User preference (stored as 1=si, 2=conventional in DB)
   unitSystem?: 'si' | 'conventional';
   /** US-60: "Do you drink alcohol?", from `profile.alcohol`. Absent: not answered. */
@@ -47,8 +51,9 @@ export const isAlcoholAnswer = (v: unknown): v is AlcoholAnswer => (ALCOHOL_ANSW
  */
 export interface HealthResults {
   heightCm: number;
-  idealBodyWeight: number;
-  proteinTarget: number;
+  /** Both need sex (US-07 AC8). */
+  idealBodyWeight?: number;
+  proteinTarget?: number;
   bmi?: number;
   bmiCategory?: string;         // e.g. 'Normal', 'Overweight', 'Obese (Class I)' — computed by getBMICategory
   waistToHeightRatio?: number;

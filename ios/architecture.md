@@ -62,6 +62,20 @@ R1):** from 60 its `p20`, the Low line, is Apple's Low Cardio Fitness alert line
 `2d467ff50c66c42d` (D3) and an older app refuses any engine that serves it; `bridge.test.ts`
 fails if the contract stops naming it.
 
+**The engine without sex moves the bridge (2026-11-01, US-07 AC8, Codex R1 on PR 402).** The
+engine's chat context gained a key, `labEgfrOutdated`: true when a creatinine newer than the
+lab eGFR exists but cannot be used yet (no sex or no birth year), so the server's chat plan
+withholds potassium advice as the engine's own plan does. The app forwards only the keys in
+`ChatClient.contextKeys`. A binary built before the key would take the new engine over the air
+and strip it, and its chat would give the advice the plan withheld. So `chatContextJson`'s
+returns in `bridge-contract.json` name the key and the rule (an app whose allow-list lacks a
+key the engine produces must not run it), the bridge id moved from `d0ffd9e53f8499b3` to
+`dc156e7c19dc8573`, and `EngineRelease.bridge` and the allow-list moved with it. Older binaries
+keep their bridge's engines and never read the new one's releases; the change needs an App
+Store build. `ios/engine/chat-context-keys.test.ts` holds the previous binary's bridge and
+allow-list, and fails if the engine produces a key that list lacks while the bridge id is
+unchanged.
+
 Speed, measured 2026-10-21 (Node 22, esbuild bundle, an Intel iMac, the sample record
 padded to 526 rows; `--jitless` stands in for an app's JavaScriptCore, which runs without a
 JIT): build the plan 1.3 ms with JIT, 1.6 ms without; merge two copies 3.2 ms vs 4.6 ms.
@@ -258,7 +272,7 @@ A signature means "the key holder approved this bundle", nothing more.
   confirms in one place, `RecordStore.display`, whenever a draw of the user's record
   (launch, an edit, a unit switch, a cloud record, a return to the app) planned it; orchestrator's
   call, 2026-10-22, moved into the store 2026-10-25. It confirms only when the plan worked
-  or met health-core's own PlanError (no height or sex), never when the engine threw
+  or met health-core's own PlanError (no height; US-07 AC8), never when the engine threw
   (review R5, N1), and a later draw that plans re-checks a trial the first draw left open.
   So a crash or hang on the real record counts, not only one on the self-test's fixture,
   while quitting does not: the store draws the record before the first screen. What that
@@ -1568,3 +1582,8 @@ is. Spec: docs/user-stories.md US-61.
 - **Hardware:** the build Mac is Intel. macOS 26 is the last Intel release, so a later
   required Xcode may need Apple silicon.
 - **Two release paths:** binary changes still go through App Review; plan for it.
+- **Follow-up: the "cannot plan" sentence (US-07 AC8, 2026-11-01).** Since the engine plans
+  without sex, health-core's `PlanError` means no usable height only, but `PlanView`'s
+  `.needsDetails` text still says "Add your sex and height on My data". It is left as it is
+  until an app release that ships with the new engine, so a new app on an old engine never
+  under-asks. Then build the sentence from the profile, naming only what is missing.

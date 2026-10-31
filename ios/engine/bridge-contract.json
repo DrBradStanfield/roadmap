@@ -21,7 +21,7 @@
   },
   "doors": {
     "applyEditJson": { "args": ["recordJson", "editJson", "nowIso", "deviceId", "unitsJson"], "returns": "{ok:true, record} or {ok:false, reason, message}" },
-    "chatContextJson": { "args": ["recordJson", "nowIso", "deviceId"], "returns": "chat context JSON" },
+    "chatContextJson": { "args": ["recordJson", "nowIso", "deviceId"], "returns": "chat context JSON; the app forwards every top-level key it holds, labEgfrOutdated included (US-07 AC8: true when a newer creatinine outdates the lab eGFR, so the server's chat plan withholds potassium advice as the engine does); an app whose allow-list lacks a key the engine produces must not run this engine" },
     "chatDeleteJson": { "args": ["historyText", "conversationId", "nowIso", "deviceId"], "returns": "settle handle; read with settledJson" },
     "chatListJson": { "args": ["historyText", "nowIso", "deviceId"], "returns": "conversation list JSON" },
     "chatMessagesJson": { "args": ["historyText", "conversationId", "nowIso", "deviceId"], "returns": "messages JSON" },

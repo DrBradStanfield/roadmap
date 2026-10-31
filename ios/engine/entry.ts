@@ -82,8 +82,8 @@ export function newRecordJson(nowIso: string, deviceId: string, locale: string, 
  *  phone's per-test units, and the milliseconds from computePlan through the tiles and the
  *  layout (D2's plan budget; whole ms, the engine's only clock). A tile that cannot be drawn never
  *  blanks the plan (adversary R7): no tiles instead. A record that cannot be planned gives
- *  `{error, planError}`, `planError` true for health-core's PlanError (no usable height or
- *  sex), and never blanks My data. My data that cannot be drawn throws the whole call.
+ *  `{error, planError}`, `planError` true for health-core's PlanError (no usable height; a
+ *  record with no sex is planned without the parts that need it, US-07 AC8), and never blanks My data. My data that cannot be drawn throws the whole call.
  *  `isUS`: the App Store storefront is the US (US-61). `plan.usProducts` is then Dr Brad's
  *  products for the supplement cards of a known adult (us-products.ts, the web's own
  *  overlay); anything but `true`, an app older than it included, gives no blocks. */

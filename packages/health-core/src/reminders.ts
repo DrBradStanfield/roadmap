@@ -48,7 +48,8 @@ export function isActiveMedication(m: { medicationKey: string; drugName: string 
 // ===== Profile info needed for reminder eligibility =====
 
 export interface ReminderProfile {
-  sex: 'male' | 'female';
+  /** Absent: only the sexed screenings drop out (US-07 AC8). */
+  sex?: 'male' | 'female';
   age: number;
 }
 

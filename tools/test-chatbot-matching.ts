@@ -62,7 +62,7 @@
  *                             entered). Any other payload that makes no plan undeclared, has a key the
  *                             widget never sends, or loses a field to its range exits the harness before
  *                             any API call.
- *   expect_no_plan?: true      with user_context: this payload makes no plan (no sex or height), and the
+ *   expect_no_plan?: true      with user_context: this payload makes no plan (no usable height; US-07 AC8), and the
  *                             answer gets the saved values with no cards, as production sends them
  *                             (US-15 AC36). A payload that does make a plan then exits the harness before
  *                             any API call.
@@ -387,7 +387,7 @@ interface TestQuery {
   answer_handles?: string[];   // fixed-handle answer check, no `expected` (see the header)
   surface?: 'doctor' | 'brand'; // answer check adds that surface's posture block (see the header)
   user_context?: unknown;      // answer check sends this widget payload as the user's data (see the header)
-  expect_no_plan?: true;       // user_context makes no plan: no sex or height (see the header)
+  expect_no_plan?: true;       // user_context makes no plan: no usable height (see the header)
   expect_roadmap_run?: boolean; // the answer must (true) or must not (false) call run_roadmap (see the header)
   expect_profile_edit?: { sex?: 'male' | 'female'; heightCm?: number }; // the reply proposes saving these (see the header)
   history?: Array<{ role: 'user' | 'assistant'; content: string }>; // earlier turns, before the query (see the header)

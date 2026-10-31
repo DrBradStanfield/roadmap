@@ -99,7 +99,7 @@ export type FormEdit =
   /** A supplement typed by name, not on the list. */
   | { kind: 'customSupplement'; name: string };
 
-/** The record's plan for `now` and `choices`; null when it cannot be made (no usable height or sex). */
+/** The record's plan for `now` and `choices`; null when it cannot be made (no usable height; US-07 AC8). */
 export function planOf(file: RoadmapFile, now: string, choices: UnitChoices): Plan | null {
   try {
     return computePlan(file, new Date(now), choices);
@@ -190,7 +190,9 @@ function buildForms(file: RoadmapFile, now: string, basis: Basis): FormsView {
     screenings,
     screeningNote: screenings.length > 0 ? null
       : basis.age === undefined ? 'Screening questions appear once your sex, birth year and height are in About you.'
-        : 'No screening questions apply at your age and sex yet.',
+        // US-07 AC8: with no sex, the sexed questions wait for it; "at your age and sex" would be wrong.
+        : basis.sex === undefined ? 'Some screening questions depend on your sex. Add it in About you.'
+          : 'No screening questions apply at your age and sex yet.',
     supplements: {
       intro: SUPPLEMENT_TEXT.intro,
       active: listable(file, 'active').map(supplementRow),
@@ -274,7 +276,7 @@ export function applyFormEdit(file: RoadmapFile, edit: Exclude<FormEdit, { kind:
  * view offers corrections, never removal.
  */
 export function metricHistory(file: RoadmapFile, metric: string, now = new Date().toISOString(), choices: UnitChoices = {}): MetricHistory {
-  // No plan yet (no usable height or sex): nothing is excluded, and nothing used.
+  // No plan yet (no usable height): nothing is excluded, and nothing used.
   const excludedFields = planOf(file, now, {})?.excluded ?? [];
   // The web's own pins (US-25 AC9b): none for a metric no medication affects.
   const markers = (medicationAnnotations(medicationChanges(file.medicationHistory))[metric] ?? [])

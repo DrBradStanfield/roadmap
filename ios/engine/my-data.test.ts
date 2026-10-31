@@ -368,6 +368,15 @@ describe('forms (AC8)', () => {
     expect(data.medications).toEqual([]);
   });
 
+  // US-07 AC8: an age and no sex is a plan; the note must not say "at your age and sex".
+  it('with an age and no sex and no question that applies, says the sexed questions wait for sex', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+      { kind: 'profile', birthYear: 2004, birthMonth: 1, height: 170 });
+    const data = myData(file, NOW);
+    expect(data.screenings).toEqual([]);
+    expect(data.screeningNote).toBe('Some screening questions depend on your sex. Add it in About you.');
+  });
+
   it('asks the web\'s questions for the plan\'s age and sex, and the cascade\'s first step', () => {
     const data = myData(man60(), NOW);
     expect(data.screenings[0].groups.map((g) => g.id)).toEqual(['colorectal', 'lung', 'prostate']);

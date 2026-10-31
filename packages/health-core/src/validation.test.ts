@@ -549,9 +549,10 @@ describe('US-12 AC13: labImportPageSchema caps a text page, not an image', () =>
 });
 
 describe('US-03 — form messages keep their words across the zod 4 upgrade', () => {
-  it('a missing height reads "Required", a missing sex the field\'s own sentence', () => {
-    const result = validateHealthInputs({});
-    expect(getValidationErrors(result.errors!)).toEqual({ heightCm: 'Required', sex: 'Please select male or female' });
+  it('a missing height reads "Required", a wrong sex the field\'s own sentence; a missing sex is no error (US-07 AC8)', () => {
+    expect(getValidationErrors(validateHealthInputs({}).errors!)).toEqual({ heightCm: 'Required' });
+    const wrong = validateHealthInputs({ heightCm: 170, sex: 'other' as unknown as 'male' });
+    expect(getValidationErrors(wrong.errors!)).toEqual({ sex: 'Please select male or female' });
   });
 
   it('an infinite number is refused by the range it breaks, as zod 3 did', () => {
