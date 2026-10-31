@@ -229,7 +229,7 @@ time.
   embed open only when all four are known. A saved blood test still opens the full
   form, with the missing profile questions pinned at the top. Re-pin
   `mappings.test.ts`, US-01 AC1/AC3, US-15 AC10 and the §10 table.
-- **Weight saves when the person leaves the field**, using the grid's existing
+- **Weight saves when the person leaves the field** (B10, Brad 2026-10-31), using the grid's existing
   commit-on-leave and its one-active-row-per-day rule. Today weight is longitudinal
   and waits for "Save New Values" (`StartingInfoVitals.tsx` 477-499), so a step-1
   weight would be lost on leaving the page. Height, sex and birth date already save
@@ -261,11 +261,9 @@ time.
   present), §3 (HDL by sex), §4 (the always-shown protein row and the "Unknown (no
   birth year)" row, 621-623) and `roadmap_text.html` 546 (eGFR "uses ... your age and
   sex"). `evidence.ts` likely unchanged; the commit says why.
-- **Children (B9).** Today a child can already get the full adult plan, because birth
-  date is optional and weight opens everything. The new order is safer: it requires
-  birth date before the plan's cards. Until step 3, only the BMI, healthy-weight and
-  protein tiles show, labelled "adult ranges"; the suggestion cards (alcohol at BMI 30
-  and the rest) wait for the birth date. A known minor then gets today's handling.
+- **Children (B9): left as today** (Brad, 2026-10-31). No new rule for the steps before
+  the birth date; once it arrives, a known minor gets today's handling (`knownMinorOf`).
+  The new order still asks birth date before the full form, where today it is optional.
 - A returning person on a new device who answers before tapping Sign in: weight is a
   new dated reading, which is right. Height, sex and now birth date (required, where
   today it was optional) follow newest-wins (`merge.ts` 813), so typed values replace
@@ -496,14 +494,9 @@ the engine changed to work without sex; tab bar with Swiper removed; plan cards
 unchanged; localhost (with the live theme CSS) then production; #00a38b brand plus
 #007C6A (draft 5; was #008270) for green text and white-label buttons, and the iPhone moves to it too; lab rows with target ·
 date, the previous value in brackets and the unit under it, plus "All results as a
-table"; the compact phone hero (live).
+table"; the compact phone hero (live); B9 children left as today; B10 the step-1 weight
+saves when the person leaves the field.
 
-- **B9. Children before the birth date.** Until step 3, show only the BMI, healthy-weight
-  and protein tiles, labelled "adult ranges", and hold the suggestion cards until the
-  birth date arrives (recommended); or ask birth date first, before any tile.
-- **B10. Weight saving.** Save the step-1 weight when the person leaves the field
-  (recommended: it uses the grid's existing commit-on-leave and day rule); or keep an
-  explicit Add button.
 - **B8. Dark mode.** Later (recommended).
 
 ## Review
