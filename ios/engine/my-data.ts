@@ -7,6 +7,7 @@
 import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import type { Plan } from '../../packages/health-core/src/plan';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
+import { SchemaTooNewError } from '../../packages/health-core/src/migrate';
 import { localDay } from '../../packages/health-core/src/merge';
 import { parseLocalisedNumber } from '../../packages/health-core/src/parseNumber';
 import { appendMeasurement, bulkAppendValues, correctValue, validDay } from '../../packages/health-core/src/record-edits';
@@ -107,6 +108,14 @@ export type EditOutcome =
   | { ok: false; reason: string; message: string; existingId?: string };
 
 /**
+ * Words meant for the person. HealthEngine shows them as they are; any other
+ * exception's text stays hidden (US-25 AC6b, review R8).
+ */
+export class Refusal extends Error {
+  override name = 'Refusal';
+}
+
+/**
  * The record on disk, read as every other writer reads it (ROADMAP_DOC: the
  * shape check, then the migration). JSON that is not an object, or a record
  * with a broken part, is refused: the migration would quietly empty it, and
@@ -116,9 +125,15 @@ export function readRecord(text: string, now: string, deviceId: string): Roadmap
   if (kept && kept.text === text && kept.deviceId === deviceId) return kept.file;
   const raw: unknown = JSON.parse(text);
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
-    throw new Error('This file is not a health record.');
+    throw new Refusal('This file is not a health record.');
   }
-  const file = ROADMAP_DOC.migrate(raw, { deviceId, now });
+  let file: RoadmapFile;
+  try {
+    file = ROADMAP_DOC.migrate(raw, { deviceId, now });
+  } catch (error) {
+    if (error instanceof SchemaTooNewError) throw new Refusal('A newer version of Health Roadmap wrote this record. Update the app to open it.');
+    throw error;
+  }
   kept = { text, deviceId, file: FREEZE_KEPT ? deepFreeze(file) : file };
   return file;
 }
@@ -242,7 +257,8 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
         }
       }
       const outcome = updateProfile(file, { ...rest, ...(heightCm === undefined ? null : { heightCm }) }, now);
-      if (outcome.status !== 'ok') return { ok: false, reason: 'invalid-value', message: outcome.text };
+      // The person's words, not the agent's field key and tail (US-54 AC5c).
+      if (outcome.status !== 'ok') return { ok: false, reason: 'invalid-value', message: (outcome.status === 'rejected' && outcome.message) || outcome.text };
       return { ok: true, file: outcome.file ?? file };
     }
     case 'units': {

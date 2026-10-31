@@ -68,9 +68,7 @@ struct ChatTranscript {
     static func words(for error: Error) -> String {
         switch error {
         case is AppAttestClient.Failure, is ChatClient.ContextRefused: error.localizedDescription
-        case let url as URLError where url.code == .timedOut: "The chat took too long to answer. Please try again."
-        case let url as URLError where url.code == .networkConnectionLost: "The connection dropped before the answer finished. Please try again."
-        case is URLError: "The chat could not be reached. Check your connection, then try again."
+        case let url as URLError: AppAttestClient.words(for: url, subject: "The chat")
         default: "Something went wrong, so this question has no answer. Please try again."
         }
     }

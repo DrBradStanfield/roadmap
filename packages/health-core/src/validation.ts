@@ -3,6 +3,7 @@ import { rangeFault, roundBoundInward, UNIT_DEFS, UnitSystem } from './units';
 import { FIELD_METRIC_MAP } from './mappings';
 import { ALCOHOL_ANSWERS, type HealthInputs } from './types';
 import { IMPORT_LIMITS } from './import-hints';
+import { latestDayOnEarth } from './merge';
 
 /**
  * Valid metric types for the health_measurements table.
@@ -193,26 +194,46 @@ export function inputsPressureInverted(inputs: Partial<HealthInputs>, days: Pres
     && pressureInverted(systolicBp, diastolicBp);
 }
 
+/** US-54 AC5b. */
+export const BIRTH_IN_FUTURE = 'Your birth month cannot be in the future.';
+
+/**
+ * US-54 AC5b: a birth month after this one. "This month" is the one the zone
+ * furthest ahead (UTC+14) is in, so no one's own month is refused.
+ */
+export function birthInFuture(year: number, month: number, now: string | Date): boolean {
+  return `${year}-${String(month).padStart(2, '0')}` > latestDayOnEarth(now).slice(0, 7);
+}
+
 /**
  * Validate health inputs and return result. An inverted blood pressure from
  * one day is an error on both halves (US-02 AC8, `inputsPressureInverted`),
  * so every plan leaves both out, as it leaves out any field the schema refuses.
+ * A birth month in the future is an error on the month (US-54 AC5b).
  */
-export function validateHealthInputs(data: unknown, days?: PressureDays): {
+export function validateHealthInputs(data: unknown, days?: PressureDays, now: string | Date = new Date()): {
   success: boolean;
   data?: ValidatedHealthInputs;
   errors?: z.ZodError;
 } {
   const result = healthInputSchema.safeParse(data, { error: zod3Message });
-  const pair = inputsPressureInverted((data ?? {}) as Partial<HealthInputs>, days)
+  const inputs = (data ?? {}) as Partial<HealthInputs>;
+  const pair = inputsPressureInverted(inputs, days)
     ? (['systolicBp', 'diastolicBp'] as const).map((field) => ({ code: 'custom' as const, path: [field], message: PRESSURE_ORDER, input: data }))
     : [];
+  // As with the pair, a half the schema refuses is no half.
+  const { birthYear, birthMonth } = inputs;
+  const birth = birthYear !== undefined && birthMonth !== undefined
+    && isInputFieldValid('birthYear', birthYear) && isInputFieldValid('birthMonth', birthMonth)
+    && birthInFuture(birthYear, birthMonth, now)
+    ? [{ code: 'custom' as const, path: ['birthMonth'], message: BIRTH_IN_FUTURE, input: data }]
+    : [];
 
-  if (result.success && pair.length === 0) {
+  if (result.success && pair.length === 0 && birth.length === 0) {
     return { success: true, data: result.data };
   }
 
-  return { success: false, errors: new z.ZodError([...(result.error?.issues ?? []), ...pair]) };
+  return { success: false, errors: new z.ZodError([...(result.error?.issues ?? []), ...pair, ...birth]) };
 }
 
 /**

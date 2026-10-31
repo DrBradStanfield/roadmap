@@ -28,6 +28,8 @@ struct LabUploadSheet: View {
     @State private var reviewSaving = false
     /// The read or send under way, cancelled when the sheet closes (review R1, Codex).
     @State private var work: Task<Void, Never>?
+    /// Where Cancel on the reading screen goes: the sources, or the review a Try again left (AC7a).
+    @State private var cancelTo = Step.choose
 
     var body: some View {
         NavigationStack {
@@ -51,7 +53,7 @@ struct LabUploadSheet: View {
         .interactiveDismissDisabled(reviewSaving)
         .onDisappear { work?.cancel() }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.folder, .pdf, .jpeg, .png, .zip], allowsMultipleSelection: false) { result in
-            if case .success(let urls) = result, let url = urls.first { start { await read(file: url) } }
+            if case .success(let urls) = result, let url = urls.first { pick { await read(file: url) } }
         }
         // Presented from the sheet's root, like Files: an inline PhotosPicker row took
         // the whole sheet down with it when a photo was picked (iOS 27, seen 2026-10-22).
@@ -59,12 +61,12 @@ struct LabUploadSheet: View {
         .onChange(of: photo) {
             guard let item = photo else { return }
             photo = nil
-            start { await read(photo: item) }
+            pick { await read(photo: item) }
         }
         .fullScreenCover(isPresented: $scanning) {
             DocumentScanner { pages in
                 scanning = false
-                if !pages.isEmpty { start { await read { [try await LabFileReader.pictures(pages, name: "Scanned report")] } } }
+                if !pages.isEmpty { pick { await read { [try await LabFileReader.pictures(pages, name: "Scanned report")] } } }
             }
             .ignoresSafeArea()
         }
@@ -77,16 +79,21 @@ struct LabUploadSheet: View {
         case .consent(let documents):
             AIConsentView(consent: .labUpload) { start { await send(documents) } }
         case .working(let what, let progress):
-            LabReadingDiagram(step: what, progress: progress)
+            VStack {
+                LabReadingDiagram(step: what, progress: progress)
+                // A way out of a wait that may run to the timeout (AC7a); Close stays too.
+                Button("Cancel") { work?.cancel(); step = cancelTo }.buttonStyle(.bordered)
+            }
         case .review(let results, let index):
-            LabReviewView(engine: engine, store: store, result: results[index], position: (index + 1, results.count), saving: $reviewSaving) {
+            LabReviewView(engine: engine, store: store, result: results[index], position: (index + 1, results.count), saving: $reviewSaving,
+                          tryAgain: results[index].retry == nil ? nil : { retry(results, at: index) }) {
                 if index + 1 < results.count {
                     step = .review(results, index: index + 1)
                 } else {
                     dismiss()
                 }
             }
-            .id(index)
+            .id(results[index].id)
         case .failed(let message):
             VStack(spacing: 16) {
                 Text(message).multilineTextAlignment(.center)
@@ -128,22 +135,31 @@ struct LabUploadSheet: View {
         }
     }
 
-    /// Runs a read or a send as the sheet's tracked work, which Close cancels.
+    /// Runs a read or a send as the sheet's tracked work, which Close cancels. One at a
+    /// time: a new one cancels the last, so a late answer never moves the screen (review R1).
     private func start(_ operation: @escaping @MainActor () async -> Void) {
+        work?.cancel()
         work = Task { await operation() }
+    }
+
+    /// Starts a read from a pick. Only from the sources: a second pick while one is under
+    /// way (a double tap) is ignored and never cancels the first (review R6). The screen
+    /// moves at the pick, so nothing can slip in before the read starts.
+    private func pick(_ operation: @escaping @MainActor () async -> Void) {
+        guard case .choose = step else { return }
+        cancelTo = .choose
+        step = .working("Reading the file on your iPhone")
+        start(operation)
     }
 
     // MARK: Reading, on the phone
 
     /// Reads the report on the phone, then sends it, or asks for consent first.
-    /// Nothing leaves the phone for the server before the user agrees.
-    /// A second pick while one is under way (a double tap) is ignored (review R6).
+    /// Nothing leaves the phone for the server before the user agrees. Started by `pick`.
     private func read(_ documents: () async throws -> [LabFileReader.Document]) async {
-        guard case .choose = step else { return }
-        step = .working("Reading the file on your iPhone")
         do {
             let read = try await documents()
-            // Closed while it read: nothing is sent (review R1).
+            // Closed or cancelled while it read: nothing is sent (review R1).
             try Task.checkCancellation()
             if AIConsent.labUpload.given {
                 await send(read)
@@ -151,7 +167,7 @@ struct LabUploadSheet: View {
                 step = .consent(read)
             }
         } catch {
-            step = .failed(error.localizedDescription)
+            if !Task.isCancelled { step = .failed(error.localizedDescription) }
         }
     }
 
@@ -182,11 +198,42 @@ struct LabUploadSheet: View {
 
     private func send(_ documents: [LabFileReader.Document]) async {
         guard AIConsent.labUpload.given else { step = .consent(documents); return }
-        let units = store.myData?.unitSystem ?? "si"
-        let results = await Self.extractEach(documents, extract: { try await LabUploadClient().extract($0, unitSystem: units) }) { n, document in
+        cancelTo = .choose
+        let results = await Self.extractEach(documents, extract: extract) { n, document in
             step = .working("Reading the values in \(document.name)", .init(done: n, total: documents.count, started: .now))
         }
         if let results { step = .review(results, index: 0) }
+    }
+
+    private func extract(_ document: LabFileReader.Document) async throws -> String {
+        try await LabUploadClient().extract(document, unitSystem: store.myData?.unitSystem ?? "si")
+    }
+
+    /// Try again (AC7a): the report read on the phone goes again, with no new pick. Cancel
+    /// goes back to the review it came from. Tapped only: the app never retries on its own.
+    /// The screen moves at the tap, so a same-instant Next or Done cannot be overridden later.
+    private func retry(_ results: [LabResult], at index: Int) {
+        cancelTo = .review(results, index: index)
+        step = .working("Reading the values in \(results[index].name)")
+        start { if let again = await Self.retried(results, at: index, extract: extract) { step = .review(again, index: index) } }
+    }
+
+    /// `results` with the report at `index` sent again; nil when it keeps no report or the
+    /// task was cancelled.
+    static func retried(_ results: [LabResult], at index: Int, extract: (LabFileReader.Document) async throws -> String) async -> [LabResult]? {
+        guard let document = results[index].retry, let again = await extractEach([document], extract: extract, progress: { _, _ in }) else { return nil }
+        var results = results
+        results[index] = again[0]
+        return results
+    }
+
+    /// A failed read in plain words: the server's own, or ours. Never an exception's text.
+    static func words(for error: Error) -> String {
+        switch error {
+        case is AppAttestClient.Failure: error.localizedDescription
+        case let url as URLError: AppAttestClient.words(for: url, subject: "The server")
+        default: "Something went wrong, so this report was not read. Please try again."
+        }
     }
 
     /// Each report sent in turn, or nil once the sheet is closed: a report not yet
@@ -201,10 +248,18 @@ struct LabUploadSheet: View {
                 let extraction = try await extract(document)
                 results.append(LabResult(name: document.name, truncated: document.truncated, extractionJSON: extraction, failure: nil,
                                          original: document.original))
-            } catch AppAttestClient.Failure.server(status: 422, message: _) {
-                results.append(LabResult(name: document.name, truncated: false, extractionJSON: nil, failure: "The AI could not read this file."))
             } catch {
-                results.append(LabResult(name: document.name, truncated: false, extractionJSON: nil, failure: error.localizedDescription))
+                // Try again only for a failure that may mend: the network (a timeout, no
+                // connection, a dropped one) or the server's own trouble (5xx). A refused
+                // attestation (401), a file too large (413), one the AI declined (422) and the
+                // daily limit (429) fail the same way again (review R5).
+                let (failure, mends): (String, Bool) = switch error {
+                case AppAttestClient.Failure.server(status: 422, message: _): ("The AI could not read this file.", false)
+                case AppAttestClient.Failure.server(status: let status, message: _): (words(for: error), status >= 500)
+                case is URLError: (words(for: error), true)
+                default: (words(for: error), false)
+                }
+                results.append(LabResult(name: document.name, truncated: false, extractionJSON: nil, failure: failure, retry: mends ? document : nil))
             }
         }
         return Task.isCancelled ? nil : results
@@ -237,10 +292,14 @@ private struct SourceRow: View {
 
 /// One file's answer from the server, or why there is none.
 struct LabResult: Sendable {
+    /// A new answer, a Try again's included, opens a fresh review.
+    let id = UUID()
     let name: String
     let truncated: Bool
     let extractionJSON: String?
     let failure: String?
     /// The picked file, to keep in the person's cloud (US-52 AC13d); the engine keeps it only there.
     var original: LabFileReader.Original? = nil
+    /// The report as read on the phone, kept after a failure Try again can mend (AC7a).
+    var retry: LabFileReader.Document? = nil
 }

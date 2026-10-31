@@ -1075,6 +1075,8 @@ export function InputPanel({
             <option key={i + 1} value={i + 1}>{m.label}</option>
           ))}
         </select>
+        {/* US-54 AC5b: a birth month in the future, left out of the plan. */}
+        {errors.birthMonth && <span className="error-message">{errors.birthMonth}</span>}
       </div>
 
       {inputs.birthMonth && (

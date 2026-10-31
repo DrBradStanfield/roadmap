@@ -78,6 +78,130 @@ final class LabSourceTests: XCTestCase {
         XCTAssertEqual(all?.map(\.name), ["r1.pdf", "r2.pdf", "r3.pdf"])
     }
 
+    // MARK: A read that does not answer (AC7a)
+
+    /// The break-it pass: a server that never answered left "The request timed out." and
+    /// only Skip, so the person had to pick the photo again. The report read on the phone
+    /// is kept for Try again, and the words are plain.
+    func testATimedOutReadKeepsItsReportForTryAgain_US52_AC7a() async throws {
+        let documents = [LabFileReader.Document(name: "Photo", pages: [], truncated: false)]
+        let timedOut = await LabUploadSheet.extractEach(documents, extract: { _ in throw URLError(.timedOut) }, progress: { _, _ in })
+        let results = try XCTUnwrap(timedOut)
+        XCTAssertEqual(results.first?.failure, "The server took too long to answer. Please try again.")
+        XCTAssertEqual(results.first?.retry?.name, "Photo", "the read report is kept, so Try again needs no new pick")
+        let unreached = await LabUploadSheet.extractEach(documents, extract: { _ in throw URLError(.notConnectedToInternet) }, progress: { _, _ in })
+        let offline = try XCTUnwrap(unreached)
+        XCTAssertEqual(offline.first?.failure, "The server could not be reached. Check your connection, then try again.")
+        XCTAssertNotNil(offline.first?.retry)
+        let lost = await LabUploadSheet.extractEach(documents, extract: { _ in throw URLError(.networkConnectionLost) }, progress: { _, _ in })
+        let dropped = try XCTUnwrap(lost)
+        XCTAssertEqual(dropped.first?.failure, "The connection dropped before the answer finished. Please try again.")
+        // An exception's own text never reaches the screen; the server's words do.
+        let thrown = await LabUploadSheet.extractEach(documents, extract: { _ in
+            throw NSError(domain: "JSContext", code: 7, userInfo: [NSLocalizedDescriptionKey: "TypeError: undefined is not an object"])
+        }, progress: { _, _ in })
+        let odd = try XCTUnwrap(thrown)
+        XCTAssertEqual(odd.first?.failure, "Something went wrong, so this report was not read. Please try again.")
+        XCTAssertNil(odd.first?.retry, "an unknown failure is not one Try again is known to mend (review R5)")
+        let gateway = await LabUploadSheet.extractEach(documents, extract: { _ in
+            throw AppAttestClient.Failure.server(status: 502, message: "The server could not answer just now. Please try again later.")
+        }, progress: { _, _ in })
+        let busy = try XCTUnwrap(gateway)
+        XCTAssertEqual(busy.first?.failure, "The server could not answer just now. Please try again later.")
+        XCTAssertNotNil(busy.first?.retry)
+    }
+
+    /// Review R5: a refusal that fails the same way again offers no Try again: a refused
+    /// attestation (401), a file too large (413). The server's words are kept.
+    func testARefusalThatWouldFailAgainHasNoTryAgain_US52_AC7a() async throws {
+        let documents = [LabFileReader.Document(name: "r1.pdf", pages: [], truncated: false)]
+        for (status, words) in [(401, "The app could not be verified."), (413, "This file is too large.")] {
+            let refused = await LabUploadSheet.extractEach(documents, extract: { _ in
+                throw AppAttestClient.Failure.server(status: status, message: words)
+            }, progress: { _, _ in })
+            let results = try XCTUnwrap(refused)
+            XCTAssertEqual(results.first?.failure, words, "\(status)")
+            XCTAssertNil(results.first?.retry, "\(status)")
+        }
+        let unavailable = await LabUploadSheet.extractEach(documents, extract: { _ in
+            throw AppAttestClient.Failure.server(status: 503, message: "Busy.")
+        }, progress: { _, _ in })
+        XCTAssertNotNil(try XCTUnwrap(unavailable).first?.retry, "a server's own trouble may mend")
+    }
+
+    /// A file the AI declined reads the same way again (US-15 AC34): no Try again.
+    func testAReportTheAICouldNotReadHasNoTryAgain_US52_AC7a() async throws {
+        let documents = [LabFileReader.Document(name: "r1.pdf", pages: [], truncated: false)]
+        let declined = await LabUploadSheet.extractEach(documents, extract: { _ in
+            throw AppAttestClient.Failure.server(status: 422, message: "Not read")
+        }, progress: { _, _ in })
+        let results = try XCTUnwrap(declined)
+        XCTAssertEqual(results.first?.failure, "The AI could not read this file.")
+        XCTAssertNil(results.first?.retry)
+    }
+
+    /// The daily limit mends only tomorrow, so it shows the server's words and offers no Try again.
+    func testTheDailyLimitHasNoTryAgain_US52_AC7a() async throws {
+        let documents = [LabFileReader.Document(name: "r1.pdf", pages: [], truncated: false)]
+        let limited = await LabUploadSheet.extractEach(documents, extract: { _ in
+            throw AppAttestClient.Failure.server(status: 429, message: "You can upload more tomorrow.")
+        }, progress: { _, _ in })
+        let results = try XCTUnwrap(limited)
+        XCTAssertEqual(results.first?.failure, "You can upload more tomorrow.")
+        XCTAssertNil(results.first?.retry)
+    }
+
+    /// Try again sends the same report once, and only it: the other reports' answers stay.
+    /// Closed or cancelled while it runs, it gives nothing back.
+    func testTryAgainResendsOnlyThatReport_US52_AC7a() async throws {
+        let documents = ["r1.pdf", "r2.pdf"].map { LabFileReader.Document(name: $0, pages: [], truncated: false) }
+        let sentOnce = await LabUploadSheet.extractEach(documents, extract: { document in
+            if document.name == "r2.pdf" { throw URLError(.timedOut) }
+            return #"{"first":1}"#
+        }, progress: { _, _ in })
+        let first = try XCTUnwrap(sentOnce)
+        var sent: [String] = []
+        let retried = await LabUploadSheet.retried(first, at: 1, extract: { document in
+            sent.append(document.name)
+            return "{}"
+        })
+        let again = try XCTUnwrap(retried)
+        XCTAssertEqual(sent, ["r2.pdf"])
+        XCTAssertEqual(again.map(\.name), ["r1.pdf", "r2.pdf"])
+        XCTAssertEqual(again[0].extractionJSON, #"{"first":1}"#)
+        XCTAssertNil(again[1].failure)
+        XCTAssertEqual(again[1].extractionJSON, "{}")
+        XCTAssertEqual(again[0].id, first[0].id, "the other review keeps its place")
+        XCTAssertNotEqual(again[1].id, first[1].id, "the new answer opens a fresh review")
+        let cancelled = await Task { @MainActor in
+            await LabUploadSheet.retried(first, at: 1, extract: { _ in
+                withUnsafeCurrentTask { $0?.cancel() }
+                return "{}"
+            })
+        }.value
+        XCTAssertNil(cancelled, "a cancelled Try again leaves the review as it was")
+    }
+
+    /// Cancel and Close stop a read whose server never answers at once, and the request
+    /// with it, rather than waiting out the timeout.
+    func testCancellingAReadThatHangsStopsTheRequest_US52_AC7a() async throws {
+        StubHTTP.handler = { _ in StubHTTP.Answer(hang: true) }
+        let stoppedBefore = StubHTTP.stopped
+        let client = LabUploadClient(attest: AppAttestClient(session: StubHTTP.session()))
+        let read = Task { () -> Bool in
+            do { _ = try await client.extract(LabFileReader.Document(name: "Photo", pages: [], truncated: false), unitSystem: "si"); return false }
+            catch { return true }
+        }
+        try await Task.sleep(for: .milliseconds(300))
+        let started = Date()
+        read.cancel()
+        let threw = await read.value
+        XCTAssertTrue(threw)
+        XCTAssertLessThan(Date().timeIntervalSince(started), 2, "the read ended at once")
+        for _ in 0..<20 where StubHTTP.stopped == stoppedBefore { try await Task.sleep(for: .milliseconds(100)) }
+        XCTAssertGreaterThan(StubHTTP.stopped, stoppedBefore, "the request was cancelled, not left running")
+    }
+
     // MARK: Reading on the phone (AC10)
 
     func testAFileOverTheWebsLimitDoesNotFit() {

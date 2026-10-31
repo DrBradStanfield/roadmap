@@ -125,7 +125,8 @@ struct ValueRow: View {
                 }
             }
         } else {
-            Text("Add").foregroundStyle(Color.accentColor)
+            // VoiceOver: "LDL Cholesterol, no value yet, add one", never a bare "Add" beside the lab upload's (US-52 AC7b).
+            Text("Add").foregroundStyle(Color.accentColor).accessibilityLabel("No value yet, add one")
         }
     }
 }
