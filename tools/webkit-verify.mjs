@@ -113,7 +113,7 @@ async function inspect(browser, deviceName, viewport) {
     await ctx.route('**/*', route => {
       const request = route.request();
       const url = new URL(request.url());
-      const tracking = /sentry|clarity|google-analytics|googletagmanager|facebook|hotjar/.test(url.hostname);
+      const tracking = /sentry|clarity|google-analytics|googletagmanager|facebook|hotjar|klaviyo/.test(url.hostname);
       return tracking || !['GET', 'HEAD'].includes(request.method()) ? route.abort() : route.continue();
     });
     const page = await ctx.newPage();
