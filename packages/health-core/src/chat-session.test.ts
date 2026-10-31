@@ -83,6 +83,93 @@ describe('ChatSession on a cloud', () => {
     const file = JSON.parse(cloud.files.get('chat-history.json')!.json);
     expect(file.conversations).toEqual([expect.objectContaining({ id: 'c1', deleted: true, title: '', messages: [] })]);
   });
+
+  describe('US-11 AC2e: eraseAll erases what is stored, not only what this page loaded', () => {
+    /** The stored file, as a fresh device would read it. */
+    const storedOf = (cloud: MemoryCloud) =>
+      JSON.parse(cloud.files.get('chat-history.json')!.json) as { conversations: Array<{ id: string; deleted?: boolean; title: string; messages: unknown[] }> };
+    /** A cloud whose reads fail while `down`. */
+    class ReadFails extends MemoryAdapter {
+      down = false;
+      async read(name: string, signal?: AbortSignal) {
+        if (this.down) throw new Error('cloud down');
+        return super.read(name, signal);
+      }
+    }
+
+    it('tombstones a conversation another device saved after this page opened with nothing', async () => {
+      const cloud = new MemoryCloud();
+      const page = await ChatSession.open(cloudHost(new MemoryAdapter(cloud))); // opened before any chat
+      await exchange(await ChatSession.open(cloudHost(new MemoryAdapter(cloud))), 'other', 'words from the laptop');
+      await page.eraseAll();
+      expect(storedOf(cloud).conversations).toEqual([expect.objectContaining({ id: 'other', deleted: true, title: '', messages: [] })]);
+      expect(cloud.files.get('chat-history.json')!.json).not.toMatch(/laptop/);
+      expect(page.listConversations()).toEqual([]);
+    });
+
+    it('tombstones the other device\'s conversation as well as this page\'s own', async () => {
+      const cloud = new MemoryCloud();
+      const page = await ChatSession.open(cloudHost(new MemoryAdapter(cloud)));
+      await exchange(page, 'mine', 'words from the phone');
+      await exchange(await ChatSession.open(cloudHost(new MemoryAdapter(cloud))), 'other', 'words from the laptop');
+      await page.eraseAll();
+      const stored = storedOf(cloud).conversations;
+      expect(stored.map((c) => c.id).sort()).toEqual(['mine', 'other']);
+      expect(stored.every((c) => c.deleted === true && c.title === '' && c.messages.length === 0)).toBe(true);
+      expect((await ChatSession.open(cloudHost(new MemoryAdapter(cloud)))).listConversations()).toEqual([]);
+    });
+
+    it('fails, never reports done, when the stored file cannot be read', async () => {
+      const store = new ReadFails();
+      const page = await ChatSession.open(cloudHost(store)); // opened with nothing loaded
+      store.down = true;
+      await expect(page.eraseAll()).rejects.toThrow('cloud down');
+    });
+
+    it('a failed read still leaves this page\'s own tombstones for the next chat save', async () => {
+      // The page then says the history is erased on the next chat (ERASE_DONE_CHAT_PENDING).
+      const cloud = new MemoryCloud();
+      const store = new ReadFails(cloud);
+      const page = await ChatSession.open(cloudHost(store));
+      await exchange(page, 'mine', 'words from the phone');
+      store.down = true;
+      await expect(page.eraseAll()).rejects.toThrow('cloud down');
+      store.down = false;
+      await exchange(page, 'next', 'a new question');
+      expect(storedOf(cloud).conversations.find((c) => c.id === 'mine')).toMatchObject({ deleted: true, title: '', messages: [] });
+    });
+
+    it('erases this page\'s own conversation whose save is still in the air when the erase reads', async () => {
+      /** Holds the first write on the wire: its body is sent as it was when the write began. */
+      class HoldFirstWrite extends MemoryAdapter {
+        held = true;
+        release!: () => void;
+        gate = new Promise<void>((r) => { this.release = r; });
+        async write(name: string, body: object, expected: string | null) {
+          const sent = structuredClone(body);
+          if (this.held) { this.held = false; await this.gate; }
+          return super.write(name, sent, expected);
+        }
+      }
+      const cloud = new MemoryCloud();
+      const store = new HoldFirstWrite(cloud);
+      const page = await ChatSession.open(cloudHost(store));
+      const saving = exchange(page, 'mine', 'words still on their way');
+      await new Promise((r) => setTimeout(r, 0)); // its write is held: the stored file has nothing yet
+      await page.eraseAll();
+      store.release();
+      await saving;
+      expect(storedOf(cloud).conversations).toEqual([expect.objectContaining({ id: 'mine', deleted: true, title: '', messages: [] })]);
+      expect(cloud.files.get('chat-history.json')!.json).not.toMatch(/on their way/);
+    });
+
+    it('still writes nothing when nothing is stored anywhere', async () => {
+      const cloud = new MemoryCloud();
+      const page = await ChatSession.open(cloudHost(new MemoryAdapter(cloud)));
+      await page.eraseAll();
+      expect(cloud.files.has('chat-history.json')).toBe(false);
+    });
+  });
 });
 
 describe('ChatSession on the device tier', () => {
