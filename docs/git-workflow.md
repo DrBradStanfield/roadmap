@@ -42,7 +42,7 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    docs/deploy-runbook.md (HEAD exactly `origin/main`, never a session worktree).
 6. **Finish**: ExitWorktree (`keep`), then from the main checkout `git pull --ff-only` and
    `bash tools/worktree-done.sh <name>`. It refuses unless everything is pushed and merged (or the PR is closed),
-   copies the worktree's own gitignored outputs back into the main checkout (never `node_modules` or build and
+   copies the worktree's own gitignored outputs back into the main checkout (never `.claude/`, `node_modules` or build and
    cache output; it never overwrites: a differing file keeps the worktree for you to resolve), then removes the
    worktree and its local branch. `bash tools/worktree-done.sh --all` does the same for every unlocked worktree
    under `.claude/worktrees/` not used in the last day, skipping the rest.
@@ -54,9 +54,9 @@ it in the final message as still open and why.
 
 | Check | Where | What it does |
 |---|---|---|
-| Main-checkout edit block | `.claude/hooks/worktree-guard.cjs` (PreToolUse Edit/Write/NotebookEdit) | Denies edits to the main checkout's tracked or new files (symlink- and case-proof); untracked gitignored outputs are allowed; Bash writes are not covered |
-| Package clone | same script (PreToolUse Bash) | In a worktree under `.claude/worktrees/`, clones the three `node_modules` folders once |
-| Turn-end landing check | same script (Stop) | Blocks once while the worktree has uncommitted, unpushed, or un-PR'd work |
+| Main-checkout edit block | `.claude/hooks/worktree-guard.cjs` (PreToolUse Edit/Write/NotebookEdit) | Denies edits to the main checkout's tracked or new files whatever the session's cwd (symlink- and case-proof; the hook finds the main checkout from its own place); untracked gitignored outputs are allowed, never under `.claude/`; Bash writes are not covered |
+| Package clone | same script (PreToolUse Bash) | In a worktree under `.claude/worktrees/`, clones the three `node_modules` folders once; parallel calls race safely (own copy each, atomic rename); off macOS, `cp -a` |
+| Turn-end landing check | same script (Stop) | Blocks once while the worktree has uncommitted, unpushed, or un-PR'd work; fails open if `gh` is missing |
 | Session-start audit | same script (SessionStart) | Lists local worktrees with unlanded work and uncommitted files in the main checkout |
 | Push guard | `.claude/hooks/git-push-guard.cjs` | No force pushes or deletes; a `claude/` branch never pushes to `main` (that is the PR's job); a push to `main` is refused while `origin/main` is ahead |
 | Stranded-branch watch | `.github/workflows/stranded-branch-watch.yml` | Issue for a branch with unmerged commits, no PR, idle 20h+ |

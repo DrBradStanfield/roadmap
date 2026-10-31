@@ -1,23 +1,25 @@
 /**
- * The worktree workflow (docs/git-workflow.md, Brad 2026-10-31): .claude/hooks/worktree-guard.cjs and
+ * US-63: the worktree workflow (docs/git-workflow.md, Brad 2026-10-31): .claude/hooks/worktree-guard.cjs and
  * tools/worktree-new.sh / worktree-done.sh, run against a throwaway repo with a local bare remote.
  * A stub `gh` on PATH answers the PR questions: GH_COUNT (open PRs for the Stop check) and GH_STATE
- * (the PR state worktree-done.sh reads).
+ * (the PR state worktree-done.sh reads); GH_FAIL makes it fail. The guard finds the main checkout it protects
+ * from its own place, so each case runs a copy installed in the throwaway repo's .claude/hooks/.
  *
  * Housekeeping (no user-facing behaviour). Each case checks what the harness sees: the hook's JSON
  * decision, or the script's exit code and what it left on disk.
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import {
-  chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync,
+  chmodSync, copyFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync,
+  symlinkSync, utimesSync, writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const GUARD = join(ROOT, '.claude/hooks/worktree-guard.cjs');
+const GUARD_SRC = join(ROOT, '.claude/hooks/worktree-guard.cjs');
 const NEW = join(ROOT, 'tools/worktree-new.sh');
 const DONE = join(ROOT, 'tools/worktree-done.sh');
 
@@ -25,6 +27,15 @@ let S: string; // scratch root (real path)
 let MAIN: string; // the "main checkout"
 let BIN: string; // stub gh
 let ENV: NodeJS.ProcessEnv;
+let GUARD: string; // the guard as installed in MAIN
+
+// Install the guard in a checkout, where settings.json would run it from.
+function installGuard(checkout: string) {
+  mkdirSync(join(checkout, '.claude/hooks'), { recursive: true });
+  copyFileSync(GUARD_SRC, join(checkout, '.claude/hooks/worktree-guard.cjs'));
+  return join(checkout, '.claude/hooks/worktree-guard.cjs');
+}
+const countFiles = (dir: string) => Number(spawnSync('sh', ['-c', `find "${dir}" -type f | wc -l`], { encoding: 'utf8' }).stdout.trim());
 
 function sh(cwd: string, cmd: string, extra: NodeJS.ProcessEnv = {}) {
   const r = spawnSync('bash', ['-c', cmd], { cwd, encoding: 'utf8', env: { ...ENV, ...extra } });
@@ -32,18 +43,18 @@ function sh(cwd: string, cmd: string, extra: NodeJS.ProcessEnv = {}) {
   return r.stdout.trim();
 }
 
-function hook(payload: Record<string, unknown>, extra: NodeJS.ProcessEnv = {}) {
-  const r = spawnSync('node', [GUARD], { input: JSON.stringify(payload), encoding: 'utf8', env: { ...ENV, ...extra } });
+function hook(payload: Record<string, unknown>, extra: NodeJS.ProcessEnv = {}, guard = GUARD) {
+  const r = spawnSync('node', [guard], { input: JSON.stringify(payload), encoding: 'utf8', env: { ...ENV, ...extra } });
   expect(r.status).toBe(0);
   return r.stdout ? JSON.parse(r.stdout) : null;
 }
-const edit = (file: string, extra: NodeJS.ProcessEnv = {}, tool = 'Edit') =>
-  hook({ hook_event_name: 'PreToolUse', tool_name: tool, cwd: MAIN,
+const edit = (file: string, extra: NodeJS.ProcessEnv = {}, tool = 'Edit', cwd = MAIN) =>
+  hook({ hook_event_name: 'PreToolUse', tool_name: tool, cwd,
     tool_input: tool === 'NotebookEdit' ? { notebook_path: file } : { file_path: file } }, extra);
 const denied = (o: unknown) => (o as { hookSpecificOutput?: { permissionDecision?: string } } | null)
   ?.hookSpecificOutput?.permissionDecision === 'deny';
-const stop = (cwd: string, extra: NodeJS.ProcessEnv = {}, active = false) =>
-  hook({ hook_event_name: 'Stop', cwd, stop_hook_active: active }, extra);
+const stop = (cwd: string, extra: NodeJS.ProcessEnv = {}, active = false, guard = GUARD) =>
+  hook({ hook_event_name: 'Stop', cwd, stop_hook_active: active }, extra, guard);
 
 function newWorktree(name: string) {
   const r = spawnSync('sh', [NEW, name], { cwd: MAIN, encoding: 'utf8', env: ENV });
@@ -51,13 +62,18 @@ function newWorktree(name: string) {
 }
 const done = (name: string, extra: NodeJS.ProcessEnv = {}) =>
   spawnSync('bash', [DONE, name], { cwd: MAIN, encoding: 'utf8', env: { ...ENV, ...extra } });
+const gitDirOf = (wt: string) => spawnSync('git', ['-C', wt, 'rev-parse', '--absolute-git-dir'], { encoding: 'utf8', env: ENV }).stdout.trim();
 
 beforeAll(() => {
   S = realpathSync(mkdtempSync(join(tmpdir(), 'wt-guard-')));
   BIN = join(S, 'bin');
   mkdirSync(BIN);
-  writeFileSync(join(BIN, 'gh'), '#!/bin/sh\ncase "$*" in *length*) echo "${GH_COUNT:-0}";; *) echo "${GH_STATE:-}";; esac\n');
+  writeFileSync(join(BIN, 'gh'), '#!/bin/sh\n[ -n "$GH_FAIL" ] && exit 1\n'
+    + 'case "$*" in *length*) echo "${GH_COUNT:-0}";; *) echo "${GH_STATE:-}";; esac\n');
   chmodSync(join(BIN, 'gh'), 0o755);
+  // cp passes through to the real one, unless CP_FAIL asks it to fail (a disk or OS with no clone support).
+  writeFileSync(join(BIN, 'cp'), `#!/bin/sh\n[ -n "$CP_FAIL" ] && exit 1\nexec ${spawnSync('sh', ['-c', 'command -v cp'], { encoding: 'utf8' }).stdout.trim()} "$@"\n`);
+  chmodSync(join(BIN, 'cp'), 0o755);
   ENV = {
     ...process.env,
     PATH: `${BIN}:${process.env.PATH}`,
@@ -75,6 +91,7 @@ beforeAll(() => {
   mkdirSync(join(MAIN, 'widget-src'));
   writeFileSync(join(MAIN, 'widget-src/a.ts'), 'x\n');
   sh(MAIN, 'git add -A && git commit -q -m one && git push -q origin main');
+  GUARD = installGuard(MAIN);
   // Installed packages exist only in the main checkout, as in real life.
   for (const d of ['node_modules', 'widget-src/node_modules']) mkdirSync(join(MAIN, d, 'pkg'), { recursive: true });
   // A stray self-link, as the real main checkout has (node_modules/node_modules -> node_modules).
@@ -82,7 +99,7 @@ beforeAll(() => {
 }, 60_000);
 afterAll(() => rmSync(S, { recursive: true, force: true }));
 
-describe('worktree-guard.cjs: edits', () => {
+describe('worktree-guard.cjs: edits (US-63 AC1)', () => {
   it('denies an edit to a tracked file in the main checkout', () => {
     expect(denied(edit(join(MAIN, 'tracked.txt')))).toBe(true);
   });
@@ -106,13 +123,21 @@ describe('worktree-guard.cjs: edits', () => {
     if (!existsSync(join(MAIN, 'TRACKED.TXT'))) return; // case-sensitive disk: nothing to prove
     expect(denied(edit(join(MAIN, 'TRACKED.TXT')))).toBe(true);
   });
+  it('denies an edit to the main checkout whatever the session cwd (scratchpad, another repo) (US-63 AC1)', () => {
+    expect(denied(edit(join(MAIN, 'tracked.txt'), {}, 'Edit', S))).toBe(true);
+    expect(denied(edit(join(MAIN, 'tracked.txt'), {}, 'Edit', '/'))).toBe(true);
+  });
+  it('denies a gitignored file under .claude/, where settings.local.json could switch the hooks off (US-63 AC1)', () => {
+    expect(denied(edit(join(MAIN, '.claude/settings.local.json'), {}, 'Write'))).toBe(true);
+    expect(denied(edit(join(MAIN, '.claude/hooks/worktree-guard.cjs')))).toBe(true);
+  });
   it('skips cloud sessions and the opt-out', () => {
     expect(edit(join(MAIN, 'tracked.txt'), { CLAUDE_CODE_REMOTE: 'true' })).toBeNull();
     expect(edit(join(MAIN, 'tracked.txt'), { CLAUDE_MAIN_CHECKOUT_WRITES: '1' })).toBeNull();
   });
 });
 
-describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh', () => {
+describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US-63 AC2-AC4)', () => {
   let WT: string;
   beforeAll(() => {
     const r = newWorktree('feat');
@@ -153,9 +178,11 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh', (
     expect(stop(WT)).toBeNull();
     expect(stop(MAIN)).toBeNull();
   });
-  it('Stop blocks uncommitted work, once', () => {
+  it('Stop blocks uncommitted work, once, even from a cwd outside the repo (US-63 AC2)', () => {
     writeFileSync(join(WT, 'tracked.txt'), 'two\n');
     expect(stop(WT)?.decision).toBe('block');
+    // A session started in the worktree runs the worktree's own copy of the hook; its cwd may wander off.
+    expect(stop(S, {}, false, installGuard(WT))?.decision).toBe('block');
     expect(stop(WT, {}, true)).toBeNull();
     expect(stop(WT, { CLAUDE_CODE_REMOTE: 'true' })).toBeNull();
   });
@@ -175,6 +202,7 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh', (
     sh(WT, 'git push -q -u origin claude/feat');
     expect(stop(WT, { GH_COUNT: '0' })?.reason).toMatch(/no open PR/);
     expect(stop(WT, { GH_COUNT: '1' })).toBeNull();
+    expect(stop(WT, { GH_FAIL: '1' })).toBeNull(); // gh missing or failing: fail open, the GitHub watches back it up
   });
   it('worktree-done refuses work whose PR is still open', () => {
     expect(done('feat', { GH_STATE: 'OPEN' }).stdout).toMatch(/PR OPEN; merge or close it first/);
@@ -190,11 +218,13 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh', (
   it('once merged, worktree-done copies gitignored output back, keeps the packages, removes worktree and branch', () => {
     mkdirSync(join(WT, 'tmp'));
     writeFileSync(join(WT, 'tmp/result.txt'), 'made in the worktree\n');
+    writeFileSync(join(WT, '.claude/settings.local.json'), '{}\n'); // gitignored, but never copied back
     sh(MAIN, 'git pull -q --ff-only && git merge -q --no-edit origin/claude/feat && git push -q origin main');
     const r = done('feat');
     expect(r.status).toBe(0);
     expect(r.stdout).toMatch(/^done/m);
     expect(readFileSync(join(MAIN, 'tmp/result.txt'), 'utf8')).toBe('made in the worktree\n');
+    expect(existsSync(join(MAIN, '.claude/settings.local.json'))).toBe(false);
     expect(existsSync(join(MAIN, 'node_modules/pkg'))).toBe(true); // the worktree's clone went, never the original
     expect(existsSync(WT)).toBe(false);
     expect(spawnSync('git', ['-C', MAIN, 'show-ref', '-q', '--verify', 'refs/heads/claude/feat'], { env: ENV }).status).not.toBe(0);
@@ -209,4 +239,54 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh', (
     expect(existsSync(w)).toBe(true);
     expect(readFileSync(join(MAIN, 'tmp/result.txt'), 'utf8')).toBe('made in the worktree\n');
   });
+});
+
+describe('worktree-done.sh --all (US-63 AC4)', () => {
+  it('skips a locked worktree and one used in the last day, and finishes an old unlocked one', () => {
+    const locked = newWorktree('all-locked').path;
+    const recent = newWorktree('all-recent').path;
+    const old = newWorktree('all-old').path;
+    for (const w of [recent, old]) sh(MAIN, `git worktree unlock "${w}"`);
+    const past = new Date(Date.now() - 3 * 86_400_000);
+    for (const f of ['index', 'HEAD']) utimesSync(join(gitDirOf(old), f), past, past);
+    const r = spawnSync('bash', [DONE, '--all'], { cwd: MAIN, encoding: 'utf8', env: ENV });
+    expect(r.stdout).toMatch(/skip .*all-locked.*locked/);
+    expect(r.stdout).toMatch(/skip .*all-recent.*used in the last day/);
+    expect(r.stdout).toMatch(/done .*all-old/);
+    expect(existsSync(locked)).toBe(true);
+    expect(existsSync(recent)).toBe(true);
+    expect(existsSync(old)).toBe(false);
+  }, 60_000);
+});
+
+describe('a worktree whose packages cannot be cloned (US-63 AC3)', () => {
+  it('the hook still answers cleanly, leaves no partial folder and no stray copy', () => {
+    const wt = newWorktree('noclone').path;
+    expect(hook({ hook_event_name: 'PreToolUse', tool_name: 'Bash', cwd: wt, tool_input: { command: 'ls' } },
+      { CP_FAIL: '1' })).toBeNull();
+    expect(existsSync(join(wt, 'node_modules'))).toBe(false);
+    expect(readdirSync(gitDirOf(wt)).filter((f) => f.startsWith('package-clone-'))).toEqual([]);
+  }, 60_000);
+});
+
+describe('parallel Bash calls in a new worktree (US-63 AC3)', () => {
+  it('three hooks 0.2 s apart leave one whole clone and no stray copies', async () => {
+    // Enough files that the clones overlap in time.
+    for (let i = 0; i < 40; i++) {
+      mkdirSync(join(MAIN, 'node_modules', `p${i}`), { recursive: true });
+      for (let j = 0; j < 50; j++) writeFileSync(join(MAIN, 'node_modules', `p${i}`, `f${j}.js`), `${i}-${j}\n`);
+    }
+    const wt = newWorktree('race').path;
+    const payload = JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Bash', cwd: wt, tool_input: { command: 'ls' } });
+    const run = (delay: number) => new Promise<number>((resolve) => setTimeout(() => {
+      const c = spawn('node', [GUARD], { env: ENV, stdio: ['pipe', 'ignore', 'ignore'] });
+      c.on('close', (code) => resolve(code ?? -1));
+      c.stdin.end(payload);
+    }, delay));
+    expect(await Promise.all([run(0), run(200), run(400)])).toEqual([0, 0, 0]);
+    // The source's regular files plus the marker written last; the stray self-link is dropped.
+    expect(countFiles(join(wt, 'node_modules'))).toBe(countFiles(join(MAIN, 'node_modules')) + 1);
+    expect(existsSync(join(wt, 'node_modules/.worktree-clone'))).toBe(true);
+    expect(readdirSync(gitDirOf(wt)).filter((f) => f.startsWith('package-clone-'))).toEqual([]);
+  }, 120_000);
 });

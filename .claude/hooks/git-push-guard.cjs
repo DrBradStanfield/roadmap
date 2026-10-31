@@ -118,25 +118,37 @@ for (const seg of segs) {
       + 'or other sessions pushed. Pull, merge deliberately, push normally. A branch delete Brad has approved: he runs it himself.');
   }
   const gitq = (args) => { try { return execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8', timeout: 10000, stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { return ''; } };
-  const conf = gitq(['config', '--get-regexp', '^(remote\\..*\\.(push|mirror)|push\\.default)$']).split('\n').filter(Boolean);
-  const badConf = conf.filter((l) => /^remote\./.test(l)).map((l) => l.replace(' ', '=')).find(badConfig);
+  // Push config from the repo ("key value") and from this command's -c ("key=value"), as "key=value" lines.
+  const conf = [...gitq(['config', '--get-regexp', '^(remote\\..*\\.(push|mirror)|push\\.default)$']).split('\n').filter(Boolean)
+    .map((l) => l.replace(' ', '=')), ...g.cfg];
+  const badConf = conf.filter((l) => /^remote\./i.test(l)).find(badConfig);
   if (badConf) deny(`Repo config "${badConf}" makes every push a force or mirror push. Remove it, then push normally.`);
   const positional = g.args.filter((a) => !a.startsWith('-'));
   const current = gitq(['rev-parse', '--abbrev-ref', 'HEAD']);
-  const toDst = (s) => { const d = s.includes(':') ? s.split(':').pop() : s; return d === 'HEAD' || d === '@' ? current : d.replace(/^refs\/heads\//, ''); };
-  // A claude/ branch reaches main only through its PR: an explicit push of it to main is refused, even right
-  // after a pull or merge (checked before that shortcut). A bare push follows config git resolves; GitHub's
-  // non-fast-forward rule and the behind-main check below still apply to it.
-  if (current && current !== 'HEAD' && current !== 'main' && process.env.CLAUDE_CODE_REMOTE !== 'true'
-      && positional.slice(1).map(toDst).includes('main')) {
-    deny(`This pushes branch ${current} straight to main, skipping its PR (docs/git-workflow.md). Push the branch `
-      + '(`git push -u origin <branch>`), then merge the PR.');
+  // A destination ref as a branch name: HEAD and @ are the current branch; refs/heads/ and heads/ are dropped.
+  const toDst = (s) => {
+    const d = s.includes(':') ? s.split(':').pop() : s;
+    return d === 'HEAD' || d === '@' ? current : d.replace(/^refs\//, '').replace(/^heads\//, '');
+  };
+  const pushConf = conf.filter((l) => /^remote\..*\.push=/i.test(l)).map((l) => toDst(l.slice(l.indexOf('=') + 1)));
+  const configured = pushConf.length > 0 || conf.some((l) => /^push\.default=(upstream|tracking)$/i.test(l));
+  // A claude/ branch reaches main only through its PR: a push of it to main is refused, even right after a pull
+  // or merge (checked before that shortcut). That covers an explicit main destination, and a bare push (no
+  // refspec) whose destination config names main: a remote.*.push refspec, or an upstream of main. Cloud loops
+  // commit to main by design (LOOP.md) and skip this.
+  if (current && current !== 'HEAD' && current !== 'main' && process.env.CLAUDE_CODE_REMOTE !== 'true') {
+    const bare = positional.length < 2;
+    const upstreamMain = toDst(gitq(['config', `branch.${current}.merge`]) || '-') === 'main';
+    if (positional.slice(1).map(toDst).includes('main')
+        || (bare && (upstreamMain || pushConf.some((d) => d === 'main' || d === '?')))) {
+      deny(`This pushes branch ${current} straight to main, skipping its PR (docs/git-workflow.md). Push the branch `
+        + '(`git push -u origin <branch>`), then merge the PR.');
+    }
   }
   if (synced.has(dir)) continue;
   // A push that cannot land on main (a claude/ branch push, docs/git-workflow.md) skips the behind-main check:
   // that branch merges origin/main at PR time. Unknown, --all, or a bare push whose destination comes from
-  // config (remote.*.push, push.default upstream/tracking) counts as main-bound.
-  const configured = conf.some((l) => /^remote\..*\.push /.test(l) || /^push\.default (upstream|tracking)$/.test(l));
+  // config (remote.*.push, push.default upstream/tracking, from the repo or -c) counts as main-bound.
   const specs = positional.length >= 2 ? positional.slice(1) : [configured ? 'main' : (current || 'main')];
   if (!g.args.some((a) => a === '--all' || a === '--branches') && specs.map(toDst).every((d) => d && d !== 'main')) continue;
 

@@ -31,10 +31,16 @@ Full manual deploy (widget + Shopify extensions + backend):
 # 0. Only merged code ships (Brad 2026-10-31, docs/git-workflow.md). Never deploy from a session worktree or a
 #    claude/ branch: HEAD must be exactly origin/main. `shopify app deploy` also refuses while any worktree sits
 #    inside the repo (docs/reference.md, 2026-10-01), so release from a detached checkout outside it:
-git fetch origin main
-git worktree add --detach "$TMPDIR/deploy-checkout" origin/main && cd "$TMPDIR/deploy-checkout"
-[ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || echo "REFUSED: HEAD is not origin/main; stop here"
-#    It has no node_modules or .env: `npm ci`, and `ln -s <main checkout>/.env .env` (a link, never a copy).
+#    Run from the main checkout's root. The block stops at the first failure; if it prints STOP, run nothing below.
+( set -euo pipefail
+  MAIN="$PWD"
+  git fetch origin main
+  git worktree add --detach "$TMPDIR/deploy-checkout" origin/main
+  cd "$TMPDIR/deploy-checkout"
+  [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || { echo "REFUSED: HEAD is not origin/main" >&2; exit 1; }
+  ln -s "$MAIN/.env" .env   # a link to the secrets, never a copy
+  npm ci
+) && cd "$TMPDIR/deploy-checkout" || echo "STOP: step 0 failed; do not run the steps below"
 #    When done: cd back, `git worktree remove --force "$TMPDIR/deploy-checkout"` (--force: the build output).
 
 # 1. Build the live v2 widget bundle (from project root). build:shopify-prod

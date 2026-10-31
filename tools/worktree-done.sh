@@ -16,14 +16,15 @@
 # Workflow: docs/git-workflow.md.
 set -u
 MAIN="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"
-git -C "$MAIN" fetch -q origin || { echo "REFUSED: git fetch failed; nothing removed." >&2; exit 1; }
+# --prune: a remote branch deleted on GitHub must not still count as "pushed".
+git -C "$MAIN" fetch -q --prune origin || { echo "REFUSED: git fetch failed; nothing removed." >&2; exit 1; }
 
 finish() { # $1 = worktree path, $2 = 1 to unlock a locked worktree; prints one line; returns 0 if removed
   local WT="$1" UNLOCK="$2" BR LOCAL UNMERGED STATE f
   local -a differ=()
   [ -d "$WT" ] || { echo "skip  $WT: not a folder"; return 1; }
   BR="$(git -C "$WT" rev-parse --abbrev-ref HEAD 2>/dev/null)" || { echo "skip  $WT: not a git worktree"; return 1; }
-  if [ -n "$(git -C "$WT" status --porcelain)" ]; then echo "keep  $WT [$BR]: uncommitted changes"; return 1; fi
+  # The lock and last-used checks come before `git status`, which refreshes the index and so its mtime.
   if [ "$UNLOCK" != 1 ]; then
     local GD; GD="$(git -C "$WT" rev-parse --absolute-git-dir)"
     if [ -e "$GD/locked" ]; then echo "skip  $WT [$BR]: locked (a live session's); finish it by name"; return 1; fi
@@ -32,6 +33,7 @@ finish() { # $1 = worktree path, $2 = 1 to unlock a locked worktree; prints one 
       echo "skip  $WT [$BR]: used in the last day; finish it by name if it is done"; return 1
     fi
   fi
+  if [ -n "$(git -C "$WT" status --porcelain)" ]; then echo "keep  $WT [$BR]: uncommitted changes"; return 1; fi
   LOCAL="$(git -C "$WT" rev-list --count HEAD --not --remotes)"
   if [ "$LOCAL" != 0 ]; then echo "keep  $WT [$BR]: $LOCAL commit(s) on no remote branch; push them"; return 1; fi
   UNMERGED="$(git -C "$WT" rev-list --count origin/main..HEAD)"
@@ -48,7 +50,8 @@ finish() { # $1 = worktree path, $2 = 1 to unlock a locked worktree; prints one 
   while IFS= read -r -d '' f; do
     # Finder junk is never worth keeping a worktree for; a dependency install is never copied (reinstall in main);
     # build and cache output (.gitignore) is rebuilt, and both checkouts usually hold a different copy.
-    case "/$f" in */.DS_Store|*/._*|*/node_modules/*|*/dist/*|*/dist-pages/*|*/_site/*|*/build/*|*/.cache/*|\
+    # .claude/ (settings, hooks) never flows back: a worktree's settings.local.json must not reach the main checkout.
+    case "/$f" in */.claude/*|*/.DS_Store|*/._*|*/node_modules/*|*/dist/*|*/dist-pages/*|*/_site/*|*/build/*|*/.cache/*|\
       */.react-router/*|*/.vite/*|*/.stryker-tmp*|*/reports/mutation/*|*.log|*.map) continue;; esac
     [ -L "$WT/$f" ] && [ "$(readlink "$WT/$f")" = "$MAIN/$f" ] && continue
     [ -f "$WT/$f" ] || [ -L "$WT/$f" ] || continue
@@ -66,8 +69,12 @@ finish() { # $1 = worktree path, $2 = 1 to unlock a locked worktree; prints one 
     printf '    %s\n' "${differ[@]}"
     return 1
   fi
+  local WASLOCKED=""; [ -e "$(git -C "$WT" rev-parse --absolute-git-dir)/locked" ] && WASLOCKED=1
   git -C "$MAIN" worktree unlock "$WT" 2>/dev/null
-  if ! git -C "$MAIN" worktree remove "$WT"; then echo "keep  $WT [$BR]: git refused to remove it"; return 1; fi
+  if ! git -C "$MAIN" worktree remove "$WT"; then
+    [ -z "$WASLOCKED" ] || git -C "$MAIN" worktree lock --reason "session worktree (re-locked by worktree-done)" "$WT" 2>/dev/null
+    echo "keep  $WT [$BR]: git refused to remove it"; return 1
+  fi
   [ "$BR" = HEAD ] || git -C "$MAIN" branch -q -D "$BR"
   echo "done  $WT [$BR]"
 }

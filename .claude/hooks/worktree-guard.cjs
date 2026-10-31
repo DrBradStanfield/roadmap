@@ -17,6 +17,7 @@
 // tests/git-push-guard.test.ts). Ported from claude_business's worktree-guard.js; edit both.
 // Workflow: docs/git-workflow.md.
 const { execFileSync } = require('child_process');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
@@ -46,13 +47,16 @@ function real(p) {
 const same = (a, b) => a.toLowerCase() === b.toLowerCase();
 const under = (p, dir) => same(p, dir) || p.toLowerCase().startsWith(dir.toLowerCase() + path.sep);
 
-// main = the main checkout's root; top = this checkout's root (equal outside a linked worktree).
+// main = the main checkout's root, found from this hook's own place (.claude/hooks/ in a checkout of this repo),
+// never from the session's cwd: a session sitting in the scratchpad or another repo is still refused.
+// top = the checkout the session works in: the cwd's when the cwd is inside this repo, else the hook's own.
+const roots = (dir) => {
+  const [common, toplevel] = git(dir, ['rev-parse', '--path-format=absolute', '--git-common-dir', '--show-toplevel']).split('\n');
+  return { main: real(path.dirname(common)), top: real(toplevel) };
+};
 let main, top;
-try {
-  const [common, toplevel] = git(cwd, ['rev-parse', '--path-format=absolute', '--git-common-dir', '--show-toplevel']).split('\n');
-  main = real(path.dirname(common));
-  top = real(toplevel);
-} catch { process.exit(0); }
+try { ({ main, top } = roots(path.join(__dirname, '..', '..'))); } catch { process.exit(0); }
+try { const c = roots(cwd); if (same(c.main, main)) top = c.top; } catch { /* cwd outside any repo */ }
 const inWorktree = !same(top, main);
 // One worktree's landing state: uncommitted lines, commits on no remote, commits not on origin/main.
 const landing = (dir) => ({
@@ -66,10 +70,12 @@ const landing = (dir) => ({
 // fails twice: Vite resolves it to a real path outside the worktree and refuses imports from it ("Denied ID",
 // widget-src/src/upload-entry.test.ts), and `npm ci` run through a link empties the MAIN checkout's folder
 // (tested 2026-11-01; the 2026-10-14 gotcha in docs/reference.md). A clone is the worktree's own: npm may
-// rebuild it freely. The clone lands in the worktree's git dir first, then moves into place, so a hook killed
-// mid-copy never leaves half a folder. `.gitignore`'s `node_modules/` keeps it out of every commit, and nothing
-// shared is written. Other gitignored inputs (.env, fly.toml, health-roadmap.json) are NOT mirrored: work that
-// needs them reads them from the main checkout (docs/git-workflow.md).
+// rebuild it freely. Each hook clones into its own folder in the worktree's git dir, marks it whole, then renames
+// it into place: the rename is atomic and refuses a folder already there, so parallel Bash calls (each fires this
+// hook) never share or leave half a folder; a loser deletes its own copy. `.gitignore`'s `node_modules/` keeps
+// the clone out of every commit, and nothing shared is written. Other gitignored inputs (.env,
+// health-roadmap.json) are NOT mirrored: work that needs them reads them from the main checkout
+// (docs/git-workflow.md).
 const PACKAGE_DIRS = ['node_modules', 'widget-src/node_modules', 'packages/health-core/node_modules'];
 function clonePackages() {
   let gitDir;
@@ -77,16 +83,22 @@ function clonePackages() {
     const src = path.join(main, rel), dst = path.join(top, rel);
     try { fs.lstatSync(dst); continue; } catch { /* absent: clone it */ }
     if (!fs.existsSync(src) || !fs.existsSync(path.dirname(dst))) continue;
+    let tmp = '';
     try {
       gitDir = gitDir || git(top, ['rev-parse', '--absolute-git-dir']);
-      const tmp = path.join(gitDir, 'package-clone-' + rel.replace(/\//g, '_'));
-      fs.rmSync(tmp, { recursive: true, force: true });
-      execFileSync('cp', ['-cR', src, tmp], { stdio: 'ignore', timeout: 240000 });
+      tmp = path.join(gitDir, `package-clone-${rel.replace(/\//g, '_')}-${process.pid}-${crypto.randomBytes(4).toString('hex')}`);
+      // macOS: an APFS clone. Elsewhere (Linux CI runs these tests): GNU cp, a reflink where the disk has
+      // them, else a plain copy.
+      const copy = (args) => execFileSync('cp', [...args, src, tmp], { stdio: 'ignore', timeout: 240000 });
+      if (process.platform === 'darwin') copy(['-cR']);
+      else try { copy(['-a', '--reflink=auto']); } catch { fs.rmSync(tmp, { recursive: true, force: true }); copy(['-a']); }
       // A link back into the main checkout (a stray `node_modules/node_modules`, left by an old `ln -s`) would
       // load a second React from there: drop it, so the clone resolves only inside the worktree.
       execFileSync('find', [tmp, '-type', 'l', '-lname', main + '/*', '-delete'], { stdio: 'ignore', timeout: 60000 });
+      fs.writeFileSync(path.join(tmp, '.worktree-clone'), `cloned whole from ${src}\n`); // written last
       fs.renameSync(tmp, dst);
-    } catch { /* no clone support, or raced: skip (npm ci in the worktree works) */ }
+    } catch { /* no clone support, killed, or another hook won the rename: npm ci in the worktree works */ }
+    finally { if (tmp) fs.rmSync(tmp, { recursive: true, force: true }); }
   }
 }
 
@@ -100,8 +112,9 @@ if (event === 'PreToolUse') {
   if (!under(file, main) || under(file, path.join(main, '.claude', 'worktrees'))) process.exit(0);
   const rel = file.slice(main.length + 1) || '.';
   // Allowed only when the path is untracked AND gitignored (renders, dumps, scratch output): it is in no commit.
+  // Never under .claude/: a gitignored settings.local.json there could switch these hooks off.
   const tracked = gitOk(main, ['ls-files', '--error-unmatch', '--', rel]);
-  if (!tracked && gitOk(main, ['check-ignore', '-q', '--', rel])) process.exit(0);
+  if (!/^\.claude([/\\]|$)/i.test(rel) && !tracked && gitOk(main, ['check-ignore', '-q', '--', rel])) process.exit(0);
   out({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason:
     'Repo policy (CLAUDE.md Development Rules): never edit the main checkout. Start your worktree: '
     + '`sh tools/worktree-new.sh <short-name>`, then EnterWorktree with `path` set to the printed folder (never '
