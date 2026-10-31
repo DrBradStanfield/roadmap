@@ -200,6 +200,51 @@ describe('US-52 AC1/AC2: the gate', () => {
     expect(mocks.getChatCompletion).not.toHaveBeenCalled();
   });
 
+  it('reserves the failure budget before reading: 200 parallel forged requests read at most 50 bodies (US-52 AC4a)', async () => {
+    await registered();
+    const reqs = Array.from({ length: 200 }, () => signed('/api/app/v1/lab-import', chatBody, { tamper: true }));
+    const res = await Promise.all(reqs.map((r) => appLabImport(r, store)));
+    expect(reqs.filter((r) => r.bodyUsed).length).toBe(50);
+    expect(res.filter((r) => r.status === 401).length).toBe(50);
+    expect(res.filter((r) => r.status === 429).length).toBe(150);
+    expect(mocks.extract).not.toHaveBeenCalled();
+  });
+
+  it('reserves the failure budget before the key read: 200 parallel unknown keys make at most 50 reads (US-52 AC4a)', async () => {
+    let reads = 0;
+    const get = store.get.bind(store);
+    store.get = async (keyId: string) => { reads++; return get(keyId); };
+    const res = await Promise.all(Array.from({ length: 200 }, () => appChat(signed('/api/app/v1/chat', chatBody), store)));
+    expect(reads).toBe(50);
+    expect(res.filter((r) => r.status === 429).length).toBe(150);
+  });
+
+  it('hands the reservation back for a request that passes, so good requests never spend the budget (US-52 AC4a)', async () => {
+    await registered();
+    for (let i = 0; i < 60; i++) expect((await appChat(signed('/api/app/v1/chat', chatBody), store)).status).toBe(200);
+    expect(appLimits.failures.remaining(ipBucket('203.0.113.9'))).toBe(50);
+  });
+
+  it('a refund from a request pending across the window never reopens the next window (US-52 AC4a, Codex round 2 C1)', async () => {
+    await registered();
+    let release!: () => void;
+    const get = store.get.bind(store);
+    store.get = async (keyId: string) => { await new Promise<void>((r) => { release = r; }); return get(keyId); };
+    const start = Date.now();
+    const pending = appChat(signed('/api/app/v1/chat', { ...chatBody, stream: false }), store);
+    await vi.waitFor(() => expect(release).toBeTypeOf('function'));
+    const now = vi.spyOn(Date, 'now').mockReturnValue(start + 24 * 60 * 60_000 + 1);
+    try {
+      store.get = get;
+      for (let i = 0; i < 50; i++) expect((await appChat(signed('/api/app/v1/chat', chatBody, { tamper: true }), store)).status).toBe(401);
+      release();
+      expect((await pending).status).toBe(200);
+      expect((await appChat(signed('/api/app/v1/chat', chatBody, { tamper: true }), store)).status).toBe(429);
+    } finally {
+      now.mockRestore();
+    }
+  });
+
   it('charges an oversized body to the failure budget, still a 413 (Codex re-check R2)', async () => {
     await registered();
     const big = { message: 'x'.repeat(2 * 1024 * 1024 + 10) };
@@ -235,6 +280,8 @@ describe('US-52 AC1/AC2: the gate', () => {
     const down = await appChat(signed('/api/app/v1/chat', chatBody), store);
     expect(down.status).toBe(503);
     expect((await down.json()).reason).toBe('unavailable');
+    // An outage is not abuse: its reservation is handed back (US-52 AC4a).
+    expect(appLimits.failures.remaining(ipBucket('203.0.113.9'))).toBe(50);
     store.fail = false;
     process.env.CHAT_SURFACE = 'brand';
     expect((await appChat(signed('/api/app/v1/chat', chatBody), store)).status).toBe(503);
@@ -271,6 +318,16 @@ describe('US-52 AC4: limits', () => {
     const over = await appChat(signed('/api/app/v1/chat', chatBody), store);
     expect(over.status).toBe(429);
     expect(mocks.getChatCompletion).toHaveBeenCalledTimes(60);
+    // A key at its cap is not abuse: the failure budget is untouched (US-52 AC4a).
+    expect(appLimits.failures.remaining(ipBucket('203.0.113.9'))).toBe(50);
+  });
+
+  it('charges a development key the flag no longer allows to the failure budget (R10, US-52 AC4a)', async () => {
+    await registered();
+    for (const row of store.rows.values()) row.environment = 'development';
+    const res = await appChat(signed('/api/app/v1/chat', chatBody), store);
+    expect(res.status).toBe(401);
+    expect(appLimits.failures.remaining(ipBucket('203.0.113.9'))).toBe(49);
   });
 
   it('keys IPv6 on the /64', () => {

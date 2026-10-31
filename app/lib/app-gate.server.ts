@@ -139,50 +139,57 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
   if (!validKeyId(keyId) || !header) { logRefusal(kind, 'missing_assertion'); return unauthorized('missing_assertion'); }
 
   // A refused signed request costs a key read and maybe a body read: past
-  // the IP's failure budget, nothing more is read.
-  if (appLimits.failures.remaining(ip) === 0) { logRefusal(kind, 'failure_limit'); return overLimit(); }
-  const failed = (reason: string) => { appLimits.failures.take(ip, 1); logRefusal(kind, reason); return unauthorized(reason); };
-
-  let assertion;
+  // the IP's failure budget, nothing more is read. The unit is reserved before
+  // any await, so a parallel burst cannot all pass the check (US-52 AC4a); a
+  // request that is not refused as abuse hands it back to the window it charged, at the one refund below.
+  const refund = appLimits.failures.reserve(ip, 1);
+  if (!refund) { logRefusal(kind, 'failure_limit'); return overLimit(); }
+  let charged = false;
+  const failed = (reason: string) => { charged = true; logRefusal(kind, reason); return unauthorized(reason); };
   try {
-    assertion = parseAssertion(header, config.appId);
-  } catch (error) {
-    return failed(error instanceof AttestError ? error.reason : 'bad_assertion');
-  }
+    let assertion;
+    try {
+      assertion = parseAssertion(header, config.appId);
+    } catch (error) {
+      return failed(error instanceof AttestError ? error.reason : 'bad_assertion');
+    }
 
-  let key;
-  try {
-    key = await store.get(keyId);
-  } catch {
-    logRefusal(kind, 'store_unavailable');
-    return unavailable(); // an outage is never "unknown key", or every app would re-attest (R11)
-  }
-  if (!key) return failed('unknown_key');
-  // A development key stops working the day the flag goes off (R10).
-  if (!config.environments.includes(key.environment)) { appLimits.failures.take(ip, 1); logRefusal(kind, 'environment_refused'); return unauthorized('unknown_key'); }
+    let key;
+    try {
+      key = await store.get(keyId);
+    } catch {
+      logRefusal(kind, 'store_unavailable');
+      return unavailable(); // an outage is never "unknown key", or every app would re-attest (R11)
+    }
+    if (!key) return failed('unknown_key');
+    // A development key stops working the day the flag goes off (R10).
+    if (!config.environments.includes(key.environment)) { charged = true; logRefusal(kind, 'environment_refused'); return unauthorized('unknown_key'); }
 
-  const body = await readBody(request, opts.bodyCap);
-  if (body === 'too_large') {
-    // Charged like any refused signed request, so it cannot repeat forever (Codex re-check R2).
-    appLimits.failures.take(ip, 1);
-    logRefusal(kind, 'too_large');
-    return refuse(413, 'too_large', 'Request too large');
-  }
-  // A dropped upload is the network's fault, not abuse: refused, not charged.
-  if (!body) { logRefusal(kind, 'body_read_failed'); return refuse(400, 'body_read_failed', 'The request did not arrive whole. Please try again.'); }
-  if (!assertionSignatureValid(assertion, requestClientData(request.method, path, body), key.publicKey)) return failed('bad_signature');
+    const body = await readBody(request, opts.bodyCap);
+    if (body === 'too_large') {
+      // Charged like any refused signed request, so it cannot repeat forever (Codex re-check R2).
+      charged = true;
+      logRefusal(kind, 'too_large');
+      return refuse(413, 'too_large', 'Request too large');
+    }
+    // A dropped upload is the network's fault, not abuse: refused, not charged.
+    if (!body) { logRefusal(kind, 'body_read_failed'); return refuse(400, 'body_read_failed', 'The request did not arrive whole. Please try again.'); }
+    if (!assertionSignatureValid(assertion, requestClientData(request.method, path, body), key.publicKey)) return failed('bad_signature');
 
-  let outcome: UseOutcome;
-  try {
-    outcome = await store.use(keyId, assertion.counter, kind, PER_KEY_DAILY[kind]);
-  } catch {
-    logRefusal(kind, 'store_unavailable');
-    return unavailable();
+    let outcome: UseOutcome;
+    try {
+      outcome = await store.use(keyId, assertion.counter, kind, PER_KEY_DAILY[kind]);
+    } catch {
+      logRefusal(kind, 'store_unavailable');
+      return unavailable();
+    }
+    if (outcome === 'unknown') return failed('unknown_key');
+    if (outcome === 'stale') return failed('stale_counter');
+    if (outcome === 'limit') { logRefusal(kind, 'key_limit'); return overLimit(); }
+    return takeShared(kind, ip) ? { body } : overLimit();
+  } finally {
+    if (!charged) refund();
   }
-  if (outcome === 'unknown') return failed('unknown_key');
-  if (outcome === 'stale') return failed('stale_counter');
-  if (outcome === 'limit') { logRefusal(kind, 'key_limit'); return overLimit(); }
-  return takeShared(kind, ip) ? { body } : overLimit();
 }
 
 /** The per-IP and per-machine counts, all or nothing. */

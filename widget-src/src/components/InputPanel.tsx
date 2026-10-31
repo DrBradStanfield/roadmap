@@ -14,7 +14,7 @@ import { DRAFTS_CLEARED_EVENT, loadFromLocalStorage } from '../lib/storage';
 const interceptHistory = (metric: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
   if (openHistoryLightbox(metric)) e.preventDefault();
 };
-import type { AlcoholAnswer, HealthInputs, HealthResults, ScreeningInputs, WeightMedicationTrigger, LipidMarker } from '@roadmap/health-core';
+import type { AlcoholAnswer, FormStage, HealthInputs, HealthResults, ScreeningInputs, WeightMedicationTrigger, LipidMarker } from '@roadmap/health-core';
 import {
   type UnitSystem,
   fromCanonicalValue,
@@ -80,13 +80,23 @@ import {
 } from '@roadmap/health-core';
 import { formatShortDate, MONTHS_FULL } from '../lib/constants';
 import { InlineDatePicker, getCurrentDateValue, type DateValue } from './DatePicker';
-import { BloodTestTimeline, type BloodTestPrefillFn } from './BloodTestTimeline';
+import { BloodTestTimeline, useLiveRegion, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
 import { useMoveTest, type MoveTestApi } from './MoveTestPanel';
 import { StartingInfoVitals, type VitalsPrefillFn } from './StartingInfoVitals';
 import { CommitTickButton } from './CommitTickButton';
 import { ALCOHOL_OPTIONS } from './AlcoholQuestion';
 import { StorageNotice } from '../lib/storage-notice';
+import { useIsMobile } from '../lib/useIsMobile';
+import { useLpaUnit } from '../lib/lpa-unit';
+import { BloodTestRows, VitalsRows, type RowContext, type ValueSubject } from './MyDataRows';
+import { ValuePage } from './ValuePage';
+
+/** The history-state key a phone value page's entry carries (US-62 AC10). */
+const VALUE_PAGE_STATE = 'hrValuePage';
+const LEAVE_UNSAVED = 'Leave without saving the value you typed?';
+/** Said when a chat edit closes a page that held typed input. */
+const TYPED_NOT_SAVED = 'Your typed value was not saved.';
 
 interface FieldConfig {
   field: keyof HealthInputs;
@@ -97,8 +107,9 @@ interface FieldConfig {
   hintFemale?: { si: string; conv: string };
 }
 
+const WEIGHT_FIELD: FieldConfig = { field: 'weightKg', name: 'Weight' };
 const BASIC_LONGITUDINAL_FIELDS: FieldConfig[] = [
-  { field: 'weightKg', name: 'Weight' },
+  WEIGHT_FIELD,
   { field: 'waistCm', name: 'Waist Circumference' },
 ];
 
@@ -141,7 +152,8 @@ interface InputPanelProps {
   labValues: ApiLabValue[];
   /** US-21 phase 2: present = manual add enabled; called after a saved add. */
   onLabValueAdded?: () => void;
-  onSaveBloodTestBatch: (tasks: SaveTask[]) => Promise<Refused>;
+  /** `erase`: the erase the values were typed under (US-16 AC2a); the page's shown one by default. */
+  onSaveBloodTestBatch: (tasks: SaveTask[], erase?: string) => Promise<Refused>;
   // Click-to-correct handler for saved cells in every matrix: blood tests,
   // vitals and the additional lab rows.
   onCorrectValue?: CorrectFn;
@@ -176,7 +188,11 @@ interface InputPanelProps {
   // pre-fill + flash a vitals cell. Non-null on the ref ⇒ the vitals matrix is
   // mounted; HealthTool uses that to route vitals chat edits here vs the field.
   vitalsPrefillRef?: MutableRefObject<VitalsPrefillFn | null>;
-  formStage: 1 | 2 | 3;
+  /** The first answer the record lacks (US-62 AC13): 1 height and weight,
+   *  2 sex, 3 birth date, 4 none. */
+  formStage: FormStage;
+  /** The whole form shows: the onboarding is done, or a blood test is saved. */
+  fullForm: boolean;
   setShowUploadModal?: (show: boolean) => void;
   /** What the plan was computed from. Null until there is a plan (no valid
    *  sex or height). */
@@ -188,6 +204,9 @@ interface InputPanelProps {
   healthDocuments?: ApiDocument[];
   onDocumentDeleted?: (docId: string) => void;
   onAutoFocusEmail?: () => void;
+  /** A chat edit that filled a grid cell on a phone (US-16 AC2): the table
+   *  opens so the filled cell shows. Each new edit is a new object. */
+  revealCell?: { field: string } | null;
 }
 
 /**
@@ -219,9 +238,9 @@ export function InputPanel({
   scheduleLongitudinalSave, flushLongitudinalSave,
   isSavingLongitudinal, fieldsSaved, hasApiResponse,
   bloodTestFlushRef, vitalsFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
-  formStage,
+  formStage, fullForm,
   setShowUploadModal, planBasis, grading,
-  healthDocuments, onDocumentDeleted, onAutoFocusEmail,
+  healthDocuments, onDocumentDeleted, onAutoFocusEmail, revealCell = null,
 }: InputPanelProps) {
   const [prefillExpanded, setPrefillExpanded] = useState(false);
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
@@ -295,12 +314,136 @@ export function InputPanel({
     const metric = FIELD_METRIC_MAP[field];
     return !!metric && hasUnitChoice(metric);
   };
-  const prefillComplete = !!(inputs.sex && inputs.heightCm && inputs.birthYear && inputs.birthYear >= 1900 && inputs.birthMonth);
+  const prefillComplete = !!(inputs.sex && inputs.heightCm && inputs.birthYear && inputs.birthYear >= 1900);
 
-  // Collapse only on return visits (data pre-loaded at mount). No auto-collapse on first visit.
-  const isReturningUser = useRef(prefillComplete);
-  const canCollapse = isReturningUser.current && prefillComplete;
+  // Collapse only on return visits with the onboarding done at mount (data
+  // pre-loaded). No auto-collapse on first visit, nor mid-onboarding.
+  const isReturningUser = useRef(prefillComplete && fullForm);
+  const canCollapse = isReturningUser.current && prefillComplete && fullForm;
   const [collapsed, setCollapsed] = useState(isReturningUser.current);
+
+  // ── The phone's My data (US-62 AC8-AC12) ──
+  // Rows replace the grids, which stay mounted but hidden: their drafts, the
+  // chat's prefill (US-16 AC2) and the save before an upload all keep working.
+  // "All results as a table" shows them; so does a chat edit that filled one.
+  const isPhone = useIsMobile();
+  const [lpaUnit] = useLpaUnit(unitSystem);
+  const rowCtx: RowContext = {
+    grading,
+    plan: planBasis,
+    unitOf: m => (m === 'lpa' ? lpaUnit : unitOverrides[METRIC_TO_FIELD[m]] ?? unitSystem),
+  };
+  const [valuePage, setValuePage] = useState<ValueSubject | null>(null);
+  const [tableOpen, setTableOpen] = useState(false);
+  const [seenReveal, setSeenReveal] = useState<{ field: string } | null>(null);
+  const revealing = !!revealCell && revealCell !== seenReveal;
+  const tableShown = !isPhone || tableOpen || revealing;
+  const pageShown = isPhone && !revealing ? valuePage : null;
+  // A page is a history entry (a state marker, no URL change), so the phone's
+  // back gesture closes it, and "‹ My data" goes back. Typed, unsaved Add
+  // input is never dropped silently: leaving asks first. Back returns to the
+  // row it opened from, scrolled and focused as it was.
+  const cameFrom = useRef<{ el: Element | null; y: number }>({ el: null, y: 0 });
+  const pageDirty = useRef(false);
+  const onPageEntry = () => !!window.history.state?.[VALUE_PAGE_STATE];
+  const mayLeave = () => !pageDirty.current || window.confirm(LEAVE_UNSAVED);
+  const openPage = (subject: ValueSubject) => {
+    cameFrom.current = { el: document.activeElement, y: window.scrollY };
+    setSeenReveal(revealCell);
+    setValuePage(subject);
+    if (!onPageEntry()) window.history.pushState({ ...window.history.state, [VALUE_PAGE_STATE]: true }, '');
+    window.scrollTo?.(0, panelTop());
+  };
+  const finishClose = () => {
+    pageDirty.current = false;
+    setValuePage(null);
+    requestAnimationFrame(() => {
+      window.scrollTo?.(0, cameFrom.current.y);
+      if (cameFrom.current.el instanceof HTMLElement) cameFrom.current.el.focus({ preventScroll: true });
+    });
+  };
+  const closePage = () => {
+    if (!mayLeave()) return;
+    pageDirty.current = false;
+    if (onPageEntry()) window.history.back(); // its popstate closes the page
+    else finishClose();
+  };
+  // A reload on a page's entry opens on the rows: drop the stale marker, so the next page pushes its own.
+  useEffect(() => {
+    if (onPageEntry()) window.history.replaceState({ ...window.history.state, [VALUE_PAGE_STATE]: undefined }, '');
+  }, []);
+  useEffect(() => {
+    if (!valuePage) return;
+    const onPop = () => {
+      // A page left open on My data while another tab shows does not answer Back.
+      if (onPageEntry() || panelRef.current?.closest('[hidden]')) return;
+      // Back from a page holding typed input, declined: stay, and keep the entry.
+      if (!mayLeave()) { window.history.pushState({ ...window.history.state, [VALUE_PAGE_STATE]: true }, ''); return; }
+      finishClose();
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [valuePage]);
+  // An erase, here or on another device, closes an open page and drops what it held (US-16 AC2a).
+  useEffect(() => {
+    const drop = () => {
+      if (!valuePageRef.current) return;
+      setValuePage(null);
+      pageDirty.current = false;
+      if (onPageEntry()) window.history.back();
+    };
+    window.addEventListener(DRAFTS_CLEARED_EVENT, drop);
+    return () => window.removeEventListener(DRAFTS_CLEARED_EVENT, drop);
+  }, []);
+  const valuePageRef = useRef(valuePage);
+  valuePageRef.current = valuePage;
+  // A chat edit that fills a grid cell closes any open page, so the table shows.
+  const [sayPanel, panelMessages] = useLiveRegion('md-panel-messages');
+  // Read as the reveal renders: the page unmounts in this commit, and its form clears the mark as it goes.
+  const revealDropsTyping = useRef(false);
+  if (revealing && valuePage && pageDirty.current) revealDropsTyping.current = true;
+  useEffect(() => {
+    if (!revealing || !valuePage) return;
+    if (revealDropsTyping.current) sayPanel(TYPED_NOT_SAVED);
+    revealDropsTyping.current = false;
+    setValuePage(null);
+    pageDirty.current = false;
+    if (onPageEntry()) window.history.back();
+  }, [revealing]);
+  // A grid's typed text not yet saved, valid or not (the plan and the chat
+  // read the valid part, and an upload saves it first): on a phone, where the
+  // grids sit hidden under the rows, each card says so and opens the table
+  // (US-62 AC11). Each grid reports what it keeps.
+  const [draftedVitals, setDraftedVitals] = useState(false);
+  const [draftedBlood, setDraftedBlood] = useState(false);
+  const unsavedCue = (shown: boolean) => isPhone && !tableShown && shown && (
+    <button type="button" className="md-unsaved" onClick={() => showTable(true)}>Unsaved values: review</button>
+  );
+  const showTable = (open: boolean) => { setSeenReveal(revealCell); setTableOpen(open); };
+  const panelRef = useRef<HTMLDivElement>(null);
+  const panelTop = () => (panelRef.current ? panelRef.current.getBoundingClientRect().top + window.scrollY - 60 : window.scrollY);
+  // A grid mounted hidden never scrolled to its newest column: do it on showing.
+  useEffect(() => {
+    if (!isPhone || !tableShown) return;
+    panelRef.current?.querySelectorAll<HTMLElement>('.md-table .bt-timeline-scroll').forEach(el => { el.scrollLeft = el.scrollWidth; });
+  }, [isPhone, tableShown]);
+  // About you sits low, as on the iPhone, once the onboarding is done.
+  // Decided at mount, then held as long as the whole form is (an answer
+  // retyped never moves it); a new user finishes it first, at the top
+  // (US-62 AC12, AC13).
+  const profileAtMount = useRef(formStage === 4);
+  const aboutYouLow = isPhone && profileAtMount.current && fullForm;
+  // The onboarding asks the weight beside the height (US-62 AC13). A weight
+  // typed there stays there for this visit, so the whole form opening, or the
+  // weight cleared to retype, never moves the field being typed in; the
+  // first-time vitals then leave it out. Otherwise it joins the vitals when
+  // the whole form opens, shown once, and sex sits beside the height.
+  const weightShown = useRef(false);
+  const weightTyped = useRef(false);
+  if (weightShown.current && inputs.weightKg !== undefined) weightTyped.current = true;
+  const weightInProfile = !fullForm || weightTyped.current;
+  weightShown.current = weightInProfile;
+  const sexInRow = fullForm && !weightInProfile;
   const [collapseAnimating, setCollapseAnimating] = useState(false);
   const hasMountedRef = useRef(false);
 
@@ -519,7 +662,7 @@ export function InputPanel({
     const previous = metric && previousMeasurements.find(m => m.metricType === metric);
     const shown = metric && previous ? `${toDisplay(field, previous.value)} ${getDisplayLabel(metric, fieldUnit(field))}` : '';
     const previousLabel = previous ? `${shown} · ${formatShortDate(previous.recordedAt)}` : null;
-    const needsAttention = field === 'weightKg' && formStage === 2 && inputs.weightKg === undefined;
+    const needsAttention = field === 'weightKg' && formStage === 1 && inputs.heightCm !== undefined && inputs.weightKg === undefined;
     // In expanded mode with previous data, show "Previous:" reference instead of placeholder
     // (blood tests no longer use this render path — they use BloodTestTimeline).
     const isExpandedWithData = !!previous && expandedVitals.has(field);
@@ -558,7 +701,8 @@ export function InputPanel({
                 return;
               }
               updateField(field, parseAndConvert(field, raw), fieldUnit(field));
-              if (field === 'weightKg' && !hasAutoFocusedEmail.current && onAutoFocusEmail) {
+              // Only as the last answer: a first weight is step 1, sex comes next (US-62 AC13).
+              if (field === 'weightKg' && prefillComplete && !hasAutoFocusedEmail.current && onAutoFocusEmail) {
                 const weightNum = parseLocalisedNumber(raw);
                 if (weightNum !== undefined && /^\d{2,3}$/.test(raw) && weightNum >= r.min && weightNum <= r.max) {
                   advanceToEmail({
@@ -743,6 +887,141 @@ export function InputPanel({
 
   // ── Section render functions (shared closure state, not separate components) ──
 
+  const sexField = (
+  <div className={`health-field${!inputs.sex ? ' field-attention' : ''}`}>
+    <label>Sex</label>
+    <div className="sex-toggle" role="radiogroup" aria-label="Sex">
+      <button
+        type="button"
+        role="radio"
+        aria-checked={inputs.sex === 'male'}
+        className={`sex-toggle-btn${inputs.sex === 'male' ? ' sex-toggle-btn--active' : ''}`}
+        onClick={() => { updateField('sex', 'male'); if (!inputs.birthMonth) focusById('birthMonth'); }}
+      >
+        Male
+      </button>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={inputs.sex === 'female'}
+        className={`sex-toggle-btn${inputs.sex === 'female' ? ' sex-toggle-btn--active' : ''}`}
+        onClick={() => { updateField('sex', 'female'); if (!inputs.birthMonth) focusById('birthMonth'); }}
+      >
+        Female
+      </button>
+    </div>
+    <p className="field-why">Used to calculate ideal body weight, kidney function, and screening programs.</p>
+    {errors.sex && <span className="error-message">{errors.sex}</span>}
+  </div>
+  );
+
+  const heightField = (
+  <div className={`health-field${!inputs.heightCm ? ' field-attention' : ''}`}>
+    <label htmlFor="heightCm">
+      Height{' '}
+      <button
+        type="button"
+        className="unit-toggle-pill"
+        data-unit-control="all"
+        onClick={(e) => { e.preventDefault(); onUnitSystemChange(unitSystem === 'si' ? 'conventional' : 'si'); }}
+        title={`Switch to ${unitSystem === 'si' ? 'US (in, lbs, mg/dL)' : 'Metric (cm, kg, mmol/L)'}`}
+      >
+        {unitSystem === 'si' ? 'cm' : 'ft/in'}
+      </button>
+    </label>
+    {unitSystem === 'si' ? (
+      <input
+        type="number"
+        id="heightCm"
+        onKeyDown={blockBadNumericKeys}
+        onWheel={blurOnWheel}
+        value={rawInputs['heightCm'] !== undefined ? rawInputs['heightCm'] : toDisplay('heightCm', inputs.heightCm)}
+        onChange={(e) => {
+          const raw = e.target.value;
+          setRawInputs(prev => ({ ...prev, heightCm: raw }));
+          if (!readable('heightCm', e)) return;
+          updateField('heightCm', parseAndConvert('heightCm', raw));
+          const heightNum = parseLocalisedNumber(raw);
+          const heightRange = range('heightCm');
+          // Plausible height → move on to weight.
+          if (heightNum !== undefined && /^\d{2,3}$/.test(raw) && heightNum >= heightRange.min && heightNum <= heightRange.max && inputs.weightKg === undefined) {
+            advanceToWeight({
+              ambiguous: /^\d{2}$/.test(raw) && heightNum * 10 <= heightRange.max,
+              advance: () => focusById('weightKg'),
+            });
+          }
+        }}
+        onBlur={() => { if (!unreadable.heightCm) setRawInputs(prev => { const next = { ...prev }; delete next['heightCm']; return next; }); }}
+        placeholder=""
+        min={range('heightCm').min}
+        max={range('heightCm').max}
+        className={errors.heightCm ? 'error' : ''}
+      />
+    ) : (
+      <div className="height-fieldset">
+        <input
+          type="text"
+          id="heightFeet"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={heightFeet}
+          onChange={(e) => {
+            const val = e.target.value.replace(/[^0-9]/g, '');
+            setHeightFeet(val);
+            const feet = parseInt(val, 10) || 0;
+            const inches = parseInt(heightInches, 10) || 0;
+            if (val !== '' || heightInches !== '') {
+              updateField('heightCm', feetInchesToCm(feet, inches));
+            } else {
+              updateField('heightCm', undefined);
+            }
+            if (val.length === 1) {
+              focusById('heightInches');
+            }
+          }}
+          placeholder=""
+          maxLength={1}
+          className={errors.heightCm ? 'error' : ''}
+        />
+        <span className="height-unit">ft</span>
+        <input
+          type="text"
+          id="heightInches"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={heightInches}
+          onChange={(e) => {
+            const val = e.target.value.replace(/[^0-9]/g, '');
+            setHeightInches(val);
+            const feet = parseInt(heightFeet, 10) || 0;
+            const inches = parseInt(val, 10) || 0;
+            if (heightFeet !== '' || val !== '') {
+              updateField('heightCm', feetInchesToCm(feet, inches));
+            } else {
+              updateField('heightCm', undefined);
+            }
+            // Height complete → move on to weight (mirrors the cm
+            // path). A lone '1' might still become 10/11 — wait it out.
+            if (heightFeet !== '' && val !== '' && inches <= 11 && inputs.weightKg === undefined) {
+              advanceToWeight({
+                ambiguous: val === '1',
+                advance: () => focusById('weightKg'),
+              });
+            }
+          }}
+          placeholder=""
+          maxLength={2}
+          className={errors.heightCm ? 'error' : ''}
+        />
+        <span className="height-unit">in</span>
+      </div>
+    )}
+    {((unreadable.heightCm && unitSystem === 'si') || errors.heightCm) && (
+      <span className="error-message">{unreadable.heightCm && unitSystem === 'si' ? 'Enter a number' : errors.heightCm}</span>
+    )}
+  </div>
+  );
+
   const renderProfile = () => (
     <>
       <section className="health-section">
@@ -751,7 +1030,7 @@ export function InputPanel({
             className={`health-section-title${canCollapse ? ' health-section-title--collapsible' : ''}`}
             onClick={canCollapse ? () => setPrefillExpanded(!prefillExpanded) : undefined}
           >
-            Starting Info
+            {aboutYouLow ? 'About you' : 'Starting Info'}
             {canCollapse && (
               <span className={`collapse-chevron${prefillExpanded ? ' expanded' : ''}`}>{'\u25B8'}</span>
             )}
@@ -788,152 +1067,21 @@ export function InputPanel({
         </div>
 
         <div className={`prefill-fields-wrapper${collapseAnimating && !prefillExpanded ? ' collapsing' : ''}${collapsed && !prefillExpanded ? ' collapsed' : ''}`}>
+          {/* The onboarding, one question at a time (US-62 AC13): height and
+              weight, then sex, then the birth date. Each answer saves. Every
+              slot keeps its place as the form opens, so a field being typed
+              in is never remounted under the cursor. */}
           <div className="sex-height-row">
-            <div className={`health-field${!inputs.sex ? ' field-attention' : ''}`}>
-              <label>Sex
-                <InfoTooltip ariaLabel="Why we ask for your sex">
-                  Used to calculate ideal body weight, kidney function, and screening programs.
-                </InfoTooltip>
-              </label>
-              <div className="sex-toggle" role="radiogroup" aria-label="Sex">
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={inputs.sex === 'male'}
-                  className={`sex-toggle-btn${inputs.sex === 'male' ? ' sex-toggle-btn--active' : ''}`}
-                  onClick={() => { updateField('sex', 'male'); focusById(unitSystem === 'si' ? 'heightCm' : 'heightFeet'); }}
-                >
-                  Male
-                </button>
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={inputs.sex === 'female'}
-                  className={`sex-toggle-btn${inputs.sex === 'female' ? ' sex-toggle-btn--active' : ''}`}
-                  onClick={() => { updateField('sex', 'female'); focusById(unitSystem === 'si' ? 'heightCm' : 'heightFeet'); }}
-                >
-                  Female
-                </button>
-              </div>
-              {errors.sex && <span className="error-message">{errors.sex}</span>}
-            </div>
-
-            <div className={`health-field${inputs.sex && !inputs.heightCm ? ' field-attention' : ''}`}>
-              <label htmlFor="heightCm">
-                Height{' '}
-                <button
-                  type="button"
-                  className="unit-toggle-pill"
-                  data-unit-control="all"
-                  onClick={(e) => { e.preventDefault(); onUnitSystemChange(unitSystem === 'si' ? 'conventional' : 'si'); }}
-                  title={`Switch to ${unitSystem === 'si' ? 'US (in, lbs, mg/dL)' : 'Metric (cm, kg, mmol/L)'}`}
-                >
-                  {unitSystem === 'si' ? 'cm' : 'ft/in'}
-                </button>
-              </label>
-              {unitSystem === 'si' ? (
-                <input
-                  type="number"
-                  id="heightCm"
-                  onKeyDown={blockBadNumericKeys}
-                  onWheel={blurOnWheel}
-                  value={rawInputs['heightCm'] !== undefined ? rawInputs['heightCm'] : toDisplay('heightCm', inputs.heightCm)}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    setRawInputs(prev => ({ ...prev, heightCm: raw }));
-                    if (!readable('heightCm', e)) return;
-                    updateField('heightCm', parseAndConvert('heightCm', raw));
-                    const heightNum = parseLocalisedNumber(raw);
-                    const heightRange = range('heightCm');
-                    // Plausible height → move on to weight.
-                    if (heightNum !== undefined && /^\d{2,3}$/.test(raw) && heightNum >= heightRange.min && heightNum <= heightRange.max && inputs.weightKg === undefined) {
-                      advanceToWeight({
-                        ambiguous: /^\d{2}$/.test(raw) && heightNum * 10 <= heightRange.max,
-                        advance: () => focusById('weightKg'),
-                      });
-                    }
-                  }}
-                  onBlur={() => { if (!unreadable.heightCm) setRawInputs(prev => { const next = { ...prev }; delete next['heightCm']; return next; }); }}
-                  placeholder=""
-                  min={range('heightCm').min}
-                  max={range('heightCm').max}
-                  className={errors.heightCm ? 'error' : ''}
-                />
-              ) : (
-                <div className="height-fieldset">
-                  <input
-                    type="text"
-                    id="heightFeet"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    value={heightFeet}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9]/g, '');
-                      setHeightFeet(val);
-                      const feet = parseInt(val, 10) || 0;
-                      const inches = parseInt(heightInches, 10) || 0;
-                      if (val !== '' || heightInches !== '') {
-                        updateField('heightCm', feetInchesToCm(feet, inches));
-                      } else {
-                        updateField('heightCm', undefined);
-                      }
-                      if (val.length === 1) {
-                        focusById('heightInches');
-                      }
-                    }}
-                    placeholder=""
-                    maxLength={1}
-                    className={errors.heightCm ? 'error' : ''}
-                  />
-                  <span className="height-unit">ft</span>
-                  <input
-                    type="text"
-                    id="heightInches"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    value={heightInches}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9]/g, '');
-                      setHeightInches(val);
-                      const feet = parseInt(heightFeet, 10) || 0;
-                      const inches = parseInt(val, 10) || 0;
-                      if (heightFeet !== '' || val !== '') {
-                        updateField('heightCm', feetInchesToCm(feet, inches));
-                      } else {
-                        updateField('heightCm', undefined);
-                      }
-                      // Height complete → move on to weight (mirrors the cm
-                      // path). A lone '1' might still become 10/11 — wait it out.
-                      if (heightFeet !== '' && val !== '' && inches <= 11 && inputs.weightKg === undefined) {
-                        advanceToWeight({
-                          ambiguous: val === '1',
-                          advance: () => focusById('weightKg'),
-                        });
-                      }
-                    }}
-                    placeholder=""
-                    maxLength={2}
-                    className={errors.heightCm ? 'error' : ''}
-                  />
-                  <span className="height-unit">in</span>
-                </div>
-              )}
-              {((unreadable.heightCm && unitSystem === 'si') || errors.heightCm) && (
-                <span className="error-message">{unreadable.heightCm && unitSystem === 'si' ? 'Enter a number' : errors.heightCm}</span>
-              )}
-            </div>
+            {heightField}
+            {weightInProfile && renderVital(WEIGHT_FIELD)}
+            {sexInRow && sexField}
           </div>
-
-          {/* Returning users (collapsible "Starting Info"): birth month/year
-              belong with the other PREFILL demographics — directly under Sex +
-              Height — NOT after the vitals table. Fresh users keep the
-              progressive-disclosure layout (birth info renders below the vitals
-              matrix; see the !canCollapse branch in the main composition). */}
-          {canCollapse && renderBirthInfo()}
-
-          {(!inputs.sex || !inputs.heightCm) && (
+          {!sexInRow && (fullForm || formStage >= 2) && <div className="stage-reveal profile-step">{sexField}</div>}
+          {(fullForm || formStage >= 3) && <div className="stage-reveal profile-step">{renderBirthInfo()}</div>}
+          {fullForm && renderAlcohol()}
+          {!fullForm && (
             <p className="field-hint-attention field-hint-attention--centered">
-              Enter your sex and height — then more fields will appear.
+              {formStage === 1 ? 'Enter your height and weight — then more fields will appear.' : 'Fill in the above — then more fields will appear.'}
             </p>
           )}
         </div>
@@ -949,10 +1097,11 @@ export function InputPanel({
         onSave={onSaveBloodTestBatch}
         onCorrectValue={onCorrectValue}
         onDraftValue={onDraftValue}
+        onHoldsText={setDraftedVitals}
         formStage={formStage}
         plan={planBasis}
         knownMinor={knownMinor}
-        onAutoFocusEmail={onAutoFocusEmail}
+        onAutoFocusEmail={prefillComplete ? onAutoFocusEmail : undefined /* only as the last answer (US-62 AC13) */}
         unitOverrides={unitOverrides}
         onToggleFieldUnit={onToggleFieldUnit}
         prefillRef={vitalsPrefillRef}
@@ -960,6 +1109,18 @@ export function InputPanel({
       />
     </section>
   );
+
+  /** A first-time vitals field: its saved value with a +, or the field. It
+   *  saves when left (500 ms later), one active row per day (US-03 AC3). */
+  const renderVital = (cfg: FieldConfig) => {
+    if (hasPreviousValue(cfg.field) && !expandedVitals.has(cfg.field)) {
+      return renderCollapsedField(cfg, () => {
+        focusFieldRef.current = cfg.field;
+        setExpandedVitals(prev => new Set(prev).add(cfg.field));
+      });
+    }
+    return renderLongitudinalField(cfg);
+  };
 
   // Legacy inline weight / waist / BP fields — kept for first-time users.
   // The matrix above shows historical context + a draft column, which is
@@ -971,15 +1132,7 @@ export function InputPanel({
     const bpLabel = bpData ? `${bpShown} · ${formatShortDate(bpData.latestDate)}` : null;
     return (
       <section className="health-section">
-        {BASIC_LONGITUDINAL_FIELDS.map(cfg => {
-          if (hasPreviousValue(cfg.field) && !expandedVitals.has(cfg.field)) {
-            return renderCollapsedField(cfg, () => {
-              focusFieldRef.current = cfg.field;
-              setExpandedVitals(prev => new Set(prev).add(cfg.field));
-            });
-          }
-          return renderLongitudinalField(cfg);
-        })}
+        {BASIC_LONGITUDINAL_FIELDS.filter(cfg => !(weightInProfile && cfg === WEIGHT_FIELD)).map(renderVital)}
 
         {hasBpPreviousData && !bpExpanded && bpData ? (
           <div>{renderCollapsedBp(bpData)}</div>
@@ -1055,62 +1208,82 @@ export function InputPanel({
     );
   };
 
-  const renderVitals = () =>
-    vitalsViewMode === 'matrix' ? renderVitalsMatrix() : renderVitalsLegacy();
+  const renderVitals = () => {
+    // A phone shows rows for any saved vitals, the mirror's or the record's
+    // (a new device), unless the plain fields saved one this visit: those
+    // stay, so nothing moves under someone typing.
+    const phoneRows = isPhone && (vitalsViewMode === 'matrix' || (vitalsHistory.length > 0 && fieldsSaved === 0));
+    if (!phoneRows) return vitalsViewMode === 'matrix' ? renderVitalsMatrix() : renderVitalsLegacy();
+    return (
+      <>
+        {!tableShown && <VitalsRows history={vitalsHistory} ctx={rowCtx} onOpen={openPage}/>}
+        {unsavedCue(draftedVitals)}
+        <div className="md-table" hidden={!tableShown}>
+          <button type="button" className="md-back md-table-back" onClick={() => showTable(false)}>‹ Show as rows</button>
+          {renderVitalsMatrix()}
+        </div>
+      </>
+    );
+  };
 
   const renderBirthInfo = () => (
-    <div className="health-field-group">
-      <div className="health-field">
-        <label htmlFor="birthMonth">Birth Month
-          <InfoTooltip ariaLabel="Why we ask for your birth date">
-            Used to calculate age-based screening suggestions (cancer, bone density) and kidney function.
-          </InfoTooltip>
-        </label>
-        <select
-          id="birthMonth"
-          value={inputs.birthMonth || ''}
-          onChange={(e) => updateField('birthMonth', parseLocalisedNumber(e.target.value))}
-        >
-          <option value="">Month...</option>
-          {MONTHS_FULL.map((m, i) => (
-            <option key={i + 1} value={i + 1}>{m.label}</option>
-          ))}
-        </select>
-      </div>
-
-      {inputs.birthMonth && (
-        <div className="health-field stage-reveal">
-          <label htmlFor="birthYear">Birth Year</label>
-          <input
-            type="number"
-            id="birthYear"
-            onKeyDown={blockNonIntegerKeys}
-            onWheel={blurOnWheel}
-            value={inputs.birthYear || ''}
-            onChange={(e) => {
-              const num = parseLocalisedNumber(e.target.value);
-              if (num !== undefined && isBirthYearClearlyInvalid(num)) return;
-              updateField('birthYear', num);
-            }}
-            onBlur={() => validateOnBlur('birthYear')}
-            placeholder=""
-            min="1900"
-            max={new Date().getFullYear()}
-          />
+    <>
+      <div className="health-field-group">
+        <div className={`health-field${!inputs.birthMonth && !inputs.birthYear ? ' field-attention' : ''}`}>
+          <label htmlFor="birthMonth">Birth Month</label>
+          <select
+            id="birthMonth"
+            value={inputs.birthMonth || ''}
+            onChange={(e) => updateField('birthMonth', parseLocalisedNumber(e.target.value))}
+          >
+            <option value="">Month...</option>
+            {MONTHS_FULL.map((m, i) => (
+              <option key={i + 1} value={i + 1}>{m.label}</option>
+            ))}
+          </select>
+          {/* US-54 AC5b: a birth month in the future, left out of the plan. */}
+          {errors.birthMonth && <span className="error-message">{errors.birthMonth}</span>}
         </div>
-      )}
 
-      {/* US-60: the answer the plan's "Reduce alcohol intake" Dismiss asks for. */}
-      <div className="health-field">
-        <label htmlFor="alcohol">Alcohol</label>
-        <select
-          id="alcohol"
-          value={inputs.alcohol ?? ''}
-          onChange={(e) => updateField('alcohol', (e.target.value || undefined) as AlcoholAnswer | undefined)}
-        >
-          {ALCOHOL_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
+        {(inputs.birthMonth || inputs.birthYear) && (
+          <div className={`health-field stage-reveal${!inputs.birthYear ? ' field-attention' : ''}`}>
+            <label htmlFor="birthYear">Birth Year</label>
+            <input
+              type="number"
+              id="birthYear"
+              onKeyDown={blockNonIntegerKeys}
+              onWheel={blurOnWheel}
+              value={inputs.birthYear || ''}
+              onChange={(e) => {
+                const num = parseLocalisedNumber(e.target.value);
+                if (num !== undefined && isBirthYearClearlyInvalid(num)) return;
+                updateField('birthYear', num);
+              }}
+              onBlur={() => validateOnBlur('birthYear')}
+              placeholder=""
+              min="1900"
+              max={new Date().getFullYear()}
+            />
+          </div>
+        )}
+
       </div>
+      <p className="field-why">Used to calculate age-based screening suggestions (cancer, bone density) and kidney function.</p>
+    </>
+  );
+
+  // US-60: the answer the plan's "Reduce alcohol intake" Dismiss asks for. Not
+  // an onboarding question, so it shows with the whole form.
+  const renderAlcohol = () => (
+    <div className="health-field">
+      <label htmlFor="alcohol">Alcohol</label>
+      <select
+        id="alcohol"
+        value={inputs.alcohol ?? ''}
+        onChange={(e) => updateField('alcohol', (e.target.value || undefined) as AlcoholAnswer | undefined)}
+      >
+        {ALCOHOL_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
     </div>
   );
 
@@ -1127,6 +1300,7 @@ export function InputPanel({
       onCorrectValue={onCorrectValue}
       move={move.headers}
       onDraftValue={onDraftValue}
+      onHoldsText={setDraftedBlood}
       isSaving={isSavingLongitudinal}
       grading={grading}
       onUploadClick={() => setShowUploadModal?.(true)}
@@ -2084,50 +2258,68 @@ export function InputPanel({
   };
 
   // ── Render all sections with progressive disclosure (both mobile and desktop) ──
+  const bloodTestGrids = (
+    <>
+      {renderBloodTests()}
+      {move.panel}
+      <AdditionalLabRows labValues={labValues} onAdded={onLabValueAdded} onCorrect={onCorrectValue} move={move.headers}/>
+    </>
+  );
   return (
-    <div className="health-input-panel">
+    <div ref={panelRef} className={`health-input-panel${pageShown ? ' md-page-open' : ''}`}>
+      {pageShown && (
+        <ValuePage key={JSON.stringify(pageShown)} subject={pageShown} history={[...vitalsHistory, ...bloodTestHistory]} labValues={labValues}
+                   ctx={rowCtx} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} dirtyRef={pageDirty}/>
+      )}
       <ColumnHeader step={1} title="Your information" meta={storageBar} actions={!!storageBar} />
-      {/* Card 1: Units + Basic Info + Vitals + Birth Info (stage 2+) */}
+      {panelMessages}
+      {/* Card 1: the profile (the onboarding's questions until they are
+          answered, US-62 AC13), then the vitals once the whole form shows.
+          On a phone with the onboarding done, About you moves to the foot
+          (US-62 AC12). */}
       <div className="section-card">
-        {renderProfile()}
-        {formStage >= 2 && <div className="stage-reveal">{renderVitals()}</div>}
-        {/* Birth info placement is split by user type:
-            - Returning (canCollapse): rendered inside renderProfile, under
-              Sex + Height (the other PREFILL demographics).
-            - Fresh (!canCollapse): rendered HERE, below the vitals matrix —
-              the progressive-disclosure order Brad confirmed is correct. */}
-        {formStage >= 2 && !canCollapse && (
-          <div className={`prefill-fields-wrapper${collapseAnimating && !prefillExpanded ? ' collapsing' : ''}${collapsed && !prefillExpanded ? ' collapsed' : ''}`}>
-            <div>{renderBirthInfo()}</div>
-          </div>
-        )}
-        {formStage === 2 && (
-          <p className="field-hint-attention field-hint-attention--centered">
-            Fill in the above — then more fields will appear.
-          </p>
-        )}
+        {!aboutYouLow && renderProfile()}
+        {fullForm && <div className="stage-reveal">{renderVitals()}</div>}
       </div>
 
-      {/* Card 2: Blood Tests (stage 3+). `section-card--bt` zeros the
+      {/* Card 2: Blood Tests (the whole form). `section-card--bt` zeros the
           card's inner padding so the timeline matrix sits flush against
-          the card edges (column-fit math expects no inner padding). */}
-      {formStage >= 3 && (
+          the card edges (column-fit math expects no inner padding). On a
+          phone, rows, with the grids one tap away (US-62 AC11). */}
+      {fullForm && (
         <div className="section-card section-card--bt stage-reveal">
-          {renderBloodTests()}
-          {move.panel}
-          <AdditionalLabRows labValues={labValues} onAdded={onLabValueAdded} onCorrect={onCorrectValue} move={move.headers}/>
+          {isPhone && !tableShown && (
+            <BloodTestRows history={bloodTestHistory} labValues={labValues} ctx={rowCtx} onOpen={openPage}>
+              {unsavedCue(draftedBlood)}
+              <div className="md-foot">
+                <button type="button" className="md-foot-btn" onClick={() => showTable(true)}>All results as a table</button>
+                {setShowUploadModal && <button type="button" className="md-foot-btn" onClick={() => setShowUploadModal(true)}>Upload lab results</button>}
+              </div>
+            </BloodTestRows>
+          )}
+          {isPhone ? (
+            <div className="md-table" hidden={!tableShown}>
+              <button type="button" className="md-back md-table-back" onClick={() => showTable(false)}>‹ Show as rows</button>
+              {bloodTestGrids}
+            </div>
+          ) : bloodTestGrids}
         </div>
       )}
 
-      {formStage >= 3 && renderMedications()}
-      {formStage >= 3 && renderScreening()}
-      {formStage >= 3 && renderBoneDensity()}
-      {formStage >= 3 && renderSupplements()}
+      {fullForm && renderMedications()}
+      {fullForm && renderScreening()}
+      {fullForm && renderBoneDensity()}
+      {fullForm && renderSupplements()}
+      {aboutYouLow && (
+        <div className="section-card md-about-you">
+          {renderProfile()}
+        </div>
+      )}
       {healthDocuments && healthDocuments.length > 0 && (
         <HealthRecordsSection documents={healthDocuments} onDeleted={onDocumentDeleted} />
       )}
-      {/* US-09 AC5: stage 2 is the first moment a value exists. */}
-      {formStage >= 2 && <StorageNotice surface="input" />}
+      {/* US-09 AC5: once a value exists: height and weight, or a saved blood test. */}
+      {(formStage >= 2 || fullForm) && <StorageNotice surface="input" />}
     </div>
   );
 }

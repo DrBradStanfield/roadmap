@@ -19,6 +19,10 @@ vi.mock('../lib/server-api', async importOriginal => ({ ...await importOriginal<
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
 afterEach(cleanup);
+// InputPanel reads the phone breakpoint (US-62 AC8); jsdom has no matchMedia. Desktop unless a test sets `phone`.
+let phone = false;
+vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('max-width') ? phone : !phone, media: q, addEventListener() {}, removeEventListener() {} }));
+afterEach(() => { phone = false; });
 
 interface State {
   sex?: 'male' | 'female';
@@ -43,7 +47,7 @@ function renderPanel(state: State): HTMLElement {
     screenings: screeningRows(state.screenings), onScreeningChange: vi.fn(),
     supplements: [], onSupplementChange: vi.fn(), onSupplementDelete: vi.fn(),
     scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false, fieldsSaved: 0,
-    hasApiResponse: false, formStage: 3 as const, planBasis: state.basis, grading: {},
+    hasApiResponse: false, formStage: 4 as const, fullForm: true, planBasis: state.basis, grading: {},
   };
   return render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />).container;
 }
@@ -133,4 +137,17 @@ describe('US-25 AC8, US-06 — the web medication cards are medicationForm', () 
     expect(sections.length).toBeGreaterThan(0);
     expectParity(container, sections);
   });
+});
+
+// US-62 AC12: the phone layout shows the same cards.
+it('on a phone too, a medication card is medicationForm', () => {
+  phone = true;
+  const off = { on: false, reasons: [] };
+  const state: State = { sex: 'male', inputs: { ldlC: 2 }, basis: { age: 56, lipidMarker: null, weightMedTrigger: off } };
+  const container = renderPanel(state);
+  expect(container.querySelector('.md-row')).not.toBeNull();
+  const sections = medicationForm(medicationsToInputs(medicationRows(state.medications)), {
+    lipidMarker: null, weightMedTrigger: off, bmi: undefined, hasLipidInput: true, hasWeightInput: false, unitFor: () => 'si',
+  });
+  expectParity(container, sections);
 });

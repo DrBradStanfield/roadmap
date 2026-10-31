@@ -121,6 +121,37 @@ final class DataEraserTests: XCTestCase {
         XCTAssertTrue(UserDefaults.standard.bool(forKey: "welcomed"), "the welcome screen does not come back")
     }
 
+    /// The break-it pass read the erased file's entry (title "", 0 messages) as a conversation
+    /// left behind. It is the conversation's tombstone, kept so a copy of the file elsewhere
+    /// (a cloud connected later, the website) cannot bring it back on merge; it holds no
+    /// words of the person's. Every entry the erase leaves is one: deleted, no title, no messages.
+    func testThePhoneEraseLeavesOnlyContentFreeTombstones_US11_AC2() async throws {
+        let app = try app(connected: false)
+        await seedChat(app.chat)
+        await app.chat.record(ChatExchange(conversationId: "c2", isNew: true, userText: "Second question", assistantText: "Second answer.", isFallback: false), askedAt: ChatHistoryStore.erasures)
+
+        guard case .erased = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
+
+        let file = object(try String(contentsOf: chatFile, encoding: .utf8))
+        let left = try XCTUnwrap(file["conversations"] as? [[String: Any]])
+        XCTAssertEqual(left.count, 2)
+        for entry in left {
+            XCTAssertEqual(entry["deleted"] as? Bool, true)
+            XCTAssertEqual(entry["title"] as? String, "")
+            XCTAssertEqual((entry["messages"] as? [Any])?.count, 0)
+            XCTAssertEqual(Set(entry.keys), ["id", "title", "createdAt", "updatedAt", "messages", "deleted"], "no other field carries content")
+        }
+        XCTAssertTrue(app.chat.conversations.isEmpty, "History lists nothing")
+    }
+
+    /// With no chat saved, the erase writes no chat file: an unanswered question leaves none.
+    func testThePhoneEraseWithNoSavedChatWritesNoChatFile_US11_AC2() async throws {
+        let app = try app(connected: false)
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 76, day: "2026-10-01")))
+        guard case .erased = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
+        XCTAssertFalse(exists(chatFile))
+    }
+
     func testThePhoneEraseRefusesARecordItCannotReadAndChangesNothing() async throws {
         let first = try app(connected: false)
         await seedChat(first.chat)

@@ -12,6 +12,7 @@ import {
   medicationsToInputs,
   screeningsToInputs,
   computeFormStage,
+  opensFullForm,
   type ApiMeasurement,
   type ApiMedication,
   type ApiProfile,
@@ -703,76 +704,86 @@ describe('hasCloudData', () => {
   });
 });
 
+// US-01 AC1/AC3, US-15 AC10, US-62 AC13: the form is the onboarding. The
+// stage is the first answer the record lacks: 1 height and weight, 2 sex,
+// 3 birth month and year, 4 none (the rest of the form, the chat, the embed).
 describe('computeFormStage', () => {
-  it('returns 1 when no inputs', () => {
-    expect(computeFormStage({})).toBe(1);
-  });
-
-  it('returns 1 when only sex is set', () => {
-    expect(computeFormStage({ sex: 'male' })).toBe(1);
-  });
-
-  it('returns 1 when only height is set', () => {
-    expect(computeFormStage({ heightCm: 170 })).toBe(1);
-  });
-
-  it('returns 2 when sex AND height are set', () => {
-    expect(computeFormStage({ sex: 'female', heightCm: 165 })).toBe(2);
-  });
-
-  it('returns 2 when sex + height + birth info set but no weight (birth no longer advances stage)', () => {
-    expect(computeFormStage({ sex: 'male', heightCm: 175, birthMonth: 6, birthYear: 1985 })).toBe(2);
-  });
-
-  it('returns 3 when weightKg is set', () => {
-    expect(computeFormStage({
-      sex: 'female', heightCm: 160, birthMonth: 3, birthYear: 1990, weightKg: 65,
-    })).toBe(3);
-  });
-
-  it('returns 3 for returning user with all data', () => {
-    expect(computeFormStage({
-      sex: 'male', heightCm: 180, birthMonth: 1, birthYear: 1980,
-      weightKg: 85, waistCm: 90, hba1c: 39, ldlC: 2.5,
-    })).toBe(3);
-  });
-
-  it('returns 3 even if intermediate fields missing (short-circuit)', () => {
-    expect(computeFormStage({ weightKg: 70 })).toBe(3);
-  });
-
-  it('does NOT advance on half-typed (implausible) height — "1" of "180"', () => {
-    expect(computeFormStage({ sex: 'male', heightCm: 1 })).toBe(1);
-    expect(computeFormStage({ sex: 'male', heightCm: 18 })).toBe(1);
-    expect(computeFormStage({ sex: 'male', heightCm: 180 })).toBe(2);
-  });
-
-  it('does NOT advance on half-typed (implausible) weight — "7" of "75"', () => {
-    expect(computeFormStage({ sex: 'male', heightCm: 180, weightKg: 7 })).toBe(2);
-    expect(computeFormStage({ sex: 'male', heightCm: 180, weightKg: 75 })).toBe(3);
-  });
-
-  it('treats out-of-range values as not entered (height > 250, weight > 300)', () => {
-    expect(computeFormStage({ sex: 'male', heightCm: 1800 })).toBe(1);
-    expect(computeFormStage({ sex: 'male', heightCm: 180, weightKg: 750 })).toBe(2);
-  });
-
-  // US-15 AC10: the widget and the chatbot embed read one rule, with the
-  // saved rows beside the form.
+  const adult = { birthMonth: 6, birthYear: 1985 };
   const saved = (metricType: string, value: number) => ({ metricType, value });
 
-  it('US-15 AC10: a saved weight fills an empty weight field', () => {
-    expect(computeFormStage({ sex: 'male', heightCm: 180 }, [saved('weight', 82)])).toBe(3);
-    expect(computeFormStage({}, [saved('weight', 82)])).toBe(3);
+  it('asks height and weight first, whatever else is known', () => {
+    expect(computeFormStage({})).toBe(1);
+    expect(computeFormStage({ sex: 'male', ...adult })).toBe(1);
+    expect(computeFormStage({ heightCm: 170 })).toBe(1);
+    expect(computeFormStage({ weightKg: 70 })).toBe(1);
   });
 
-  it('US-15 AC10: a typed weight wins over the saved one, so a half-typed weight holds stage 2', () => {
-    expect(computeFormStage({ sex: 'male', heightCm: 180, weightKg: 7 }, [saved('weight', 82)])).toBe(2);
+  it('asks sex once height and weight are in', () => {
+    expect(computeFormStage({ heightCm: 170, weightKg: 70 })).toBe(2);
+    expect(computeFormStage({ heightCm: 170, weightKg: 70, ...adult })).toBe(2);
   });
 
-  it('US-15 AC10: any saved blood test opens the whole form, even with no weight', () => {
-    expect(computeFormStage({}, [saved('ldl', 3.1)])).toBe(3);
-    expect(computeFormStage({ sex: 'male', heightCm: 180 }, [saved('waist', 90)])).toBe(2);
+  it('asks the birth month and year once sex is in', () => {
+    expect(computeFormStage({ heightCm: 170, weightKg: 70, sex: 'female' })).toBe(3);
+    expect(computeFormStage({ heightCm: 170, weightKg: 70, sex: 'female', birthMonth: 6 })).toBe(3);
+  });
+
+  it('a birth year alone answers step 3, as the plan (January) and the iPhone read it', () => {
+    expect(computeFormStage({ heightCm: 170, weightKg: 70, sex: 'female', birthYear: 1985 })).toBe(4);
+    expect(computeFormStage({ heightCm: 170, weightKg: 70, sex: 'female', birthYear: 1899 })).toBe(3);
+  });
+
+  it('is done with all four', () => {
+    expect(computeFormStage({ heightCm: 170, weightKg: 70, sex: 'female', ...adult })).toBe(4);
+  });
+
+  it('does NOT advance on a half-typed height, weight or birth year', () => {
+    expect(computeFormStage({ heightCm: 18, weightKg: 70 })).toBe(1);
+    expect(computeFormStage({ heightCm: 180, weightKg: 7 })).toBe(1);
+    expect(computeFormStage({ heightCm: 1800, weightKg: 70 })).toBe(1);
+    expect(computeFormStage({ heightCm: 180, weightKg: 750 })).toBe(1);
+    expect(computeFormStage({ heightCm: 180, weightKg: 75, sex: 'male', birthMonth: 6, birthYear: 198 })).toBe(3);
+  });
+
+  it('a birth month in the future is not an answer', () => {
+    const next = new Date();
+    next.setMonth(next.getMonth() + 2);
+    expect(computeFormStage({
+      heightCm: 180, weightKg: 75, sex: 'male', birthMonth: next.getMonth() + 1, birthYear: next.getFullYear(),
+    })).toBe(3);
+  });
+
+  it('a sex that is neither male nor female is no sex', () => {
+    expect(computeFormStage({ heightCm: 180, weightKg: 75, sex: 'other' as never, ...adult })).toBe(2);
+  });
+
+  it('US-15 AC10: a saved weight fills an empty weight field, so a returning user resumes at sex', () => {
+    expect(computeFormStage({ heightCm: 180 }, [saved('weight', 82)])).toBe(2);
+    expect(computeFormStage({ heightCm: 180, sex: 'male', ...adult }, [saved('weight', 82)])).toBe(4);
+  });
+
+  it('US-15 AC10: a typed weight wins over the saved one, so a half-typed weight holds stage 1', () => {
+    expect(computeFormStage({ heightCm: 180, sex: 'male', weightKg: 7 }, [saved('weight', 82)])).toBe(1);
+  });
+
+  it('a saved blood test no longer skips the questions: the stage stays the first missing answer', () => {
+    expect(computeFormStage({}, [saved('ldl', 3.1)])).toBe(1);
+    expect(computeFormStage({ heightCm: 180, sex: 'male' }, [saved('weight', 82), saved('ldl', 3.1)])).toBe(3);
+  });
+});
+
+describe('opensFullForm (US-01 AC3)', () => {
+  const saved = (metricType: string, value: number) => ({ metricType, value });
+  it('opens the whole form once the onboarding is done', () => {
+    expect(opensFullForm(4, [])).toBe(true);
+    expect(opensFullForm(3, [])).toBe(false);
+    expect(opensFullForm(3, [saved('weight', 82)])).toBe(false); // the onboarding's own answer
+  });
+  it('opens it at once for a record holding more than the four answers, at any stage', () => {
+    expect(opensFullForm(1, [saved('hba1c', 39)])).toBe(true);
+    expect(opensFullForm(2, [saved('weight', 82), saved('waist', 90)])).toBe(true);
+    expect(opensFullForm(3, [saved('systolic_bp', 120)])).toBe(true);
+    expect(opensFullForm(3, [], true)).toBe(true); // a medication, screening, supplement, lab test or document
   });
 });
 

@@ -11,6 +11,9 @@
   --color-brand: #00a38b;
   --color-brand-text: #007c6a;
   --color-brand-text-hover: #006b5b;
+  /* A grade as text on white (US-62 AC8): amber-700 and red-700, both above 4.5:1. */
+  --color-grade-warn-text: #b45309;
+  --color-grade-bad-text: #b91c1c;
 
   /* Grays */
   --color-gray-light: #888;
@@ -113,30 +116,9 @@ input[type="number"] {
   }
 }
 
-/* Mobile Tab Bar — hidden on desktop, shown on mobile */
-.mobile-tab-bar {
-  display: none;
-}
-.mobile-view-plan-btn {
-  display: none;
-}
-
 @media (max-width: 768px) {
   .health-tool {
-    padding: 0 0 16px;
-  }
-
-  /* 76px bottom clearance while the fixed "See Your Personalized Plan" bar
-     (.mobile-view-plan-btn, ~60px tall at bottom:12px) is rendered — without it
-     the bar sits over the last form rows and intercepts taps meant for inputs
-     (2026-08 audit, US-02/US-20). Gated by HealthTool so the plan/chat tabs
-     don't pay a blank strip. */
-  .health-tool--plan-bar {
-    padding-bottom: 76px;
-  }
-
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+    padding: 0;
   }
 
   .section-card {
@@ -160,80 +142,91 @@ input[type="number"] {
     margin: 0 10px;
   }
 
-  .mobile-tab-bar-container {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: #fff;
-  }
-
-  .mobile-tab-bar {
+  /* US-20 AC6: the top bar holds the storage button above every tab, with
+     the cards' 10px gutter. */
+  .hr-top-bar {
     display: flex;
-    padding-top: 8px;
-    border-bottom: 1px solid var(--color-gray-border);
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 8px 10px 0;
+    font-size: 12px;
   }
 
-  .mobile-tab {
-    flex: 1;
-    padding: 8px 16px;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--color-gray-medium);
-    background: none;
-    border: none;
-    border-bottom: 2px solid transparent;
-    cursor: pointer;
-    text-align: center;
-    transition: color 0.2s, border-color 0.2s;
-  }
-
-  .mobile-tab--active {
-    color: var(--color-brand-text);
-    border-bottom-color: var(--color-brand);
-  }
-
-  /* Swiper handles the 2-tab layout (autoHeight, swipe, slide sync).
-     These styles override the desktop results panel for mobile context. */
-  .swiper {
+  /* The phone's panels; only the active one shows (the others are [hidden]). */
+  .hr-tabpanel {
     padding-top: 16px;
-  }
-
-  .swiper-slide {
+    padding-bottom: 16px;
     min-width: 0;
     overflow-x: hidden;
   }
 
-  .swiper-slide .section-card {
+  .hr-tabpanel .section-card {
     margin-bottom: 0;
   }
 
-  .swiper-slide .health-tool-right {
+  .hr-tabpanel .health-tool-right {
     position: static;
     max-height: none;
     overflow-y: visible;
   }
 
-
-  .btn-primary.mobile-view-plan-btn,
-  .btn-primary.mobile-view-plan-btn:hover,
-  .btn-primary.mobile-view-plan-btn:active {
-    display: block;
-    position: fixed;
-    bottom: 12px;
-    left: 15px;
-    right: 15px;
-    width: auto;
-    box-sizing: border-box;
-    padding: 14px 20px;
-    font-size: 16px;
-    border-radius: 8px;
-    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
-    background: var(--color-brand-text);
-    border-color: var(--color-brand-text);
+  /* US-20 AC6: the bottom tab bar, as on the iPhone. Sticky at the widget's
+     foot, never fixed: a sticky child cannot leave its container, so it never
+     floats over the page above or below the widget. Opaque, so nothing shows
+     through it. */
+  .hr-tabbar {
+    position: sticky;
+    bottom: 0;
     z-index: 20;
+    display: flex;
+    background: #f8f8fa;
+    border-top: 1px solid var(--color-gray-border);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
+  .hr-tab {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-height: 49px;
+    padding: 6px 4px 4px;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--color-gray-medium);
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
 
+  .hr-tab--active {
+    color: var(--color-brand-text);
+  }
+
+  /* US-62 AC13: something new on this tab (a tile on My plan). */
+  .hr-tab-dot {
+    position: absolute;
+    top: 6px;
+    left: calc(50% + 10px);
+    width: 0;
+    height: 0;
+    border: 4px solid var(--color-brand); /* a border, so forced colours still draw it */
+    border-radius: 50%;
+  }
+
+  .hr-tab-icon {
+    width: 26px;
+    height: 26px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
 }
 
 /* The form, locked while this tab's erase runs (US-16 AC2a): a plain box. */
@@ -534,6 +527,27 @@ input[type="number"] {
   gap: 12px;
 }
 
+/* US-62 AC13: each profile question below the height row. */
+.profile-step {
+  margin-top: 16px;
+}
+
+/* US-62 AC13: why a question is asked, shown under it (it was a tooltip). */
+.field-why {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--color-gray-medium);
+}
+
+.profile-step .health-field-group .health-field {
+  margin-bottom: 0;
+}
+
+.profile-step + .health-field {
+  margin-top: 16px;
+}
+
 /* A drug name and its dose. The name keeps room for its longest label
    ("Semaglutide injection (Ozempic/Wegovy)"); a panel too narrow for both
    puts the dose on its own line instead of cutting either off. */
@@ -701,6 +715,17 @@ input[type="number"] {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
+}
+
+/* Two tiles a row on a phone. After the base rule, or the base rule wins. A
+   long title ("Ideal Body Weight (IBW)") wraps rather than spill at 320px. */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .stats-grid .stat-label {
+    white-space: normal;
+  }
 }
 
 .stat-card {
@@ -1958,21 +1983,25 @@ input[type="number"] {
 }
 /* Mobile-only tab-bar strip (shown only inside the ≤768px block below). */
 .hr-skel-tabbar { display: none; }
-/* ≤768px: single column + a tab-bar strip, matching the mobile widget. */
+/* ≤768px: single column + the bottom tab bar's strip, matching the mobile widget. */
 @media (max-width: 768px) {
-  .hr-skeleton { padding: 0 0 16px; }
+  .hr-skeleton { padding: 0; }
   .hr-skeleton-content {
     grid-template-columns: 1fr;
     gap: 0;
-    padding: 0 10px;
+    /* 49px: the top bar (33px, Sign in) and the panel's 16px. */
+    padding: 49px 10px 16px;
   }
   .hr-skeleton-col:not(:first-child) { display: none; }
   .hr-skel-colhead { display: none; }
   .hr-skel-tabbar {
     display: block;
-    height: 43px;
-    margin: 0 -10px 16px;
-    border-bottom: 1px solid var(--color-gray-border);
+    position: sticky;
+    bottom: 0;
+    height: 51px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: #f8f8fa;
+    border-top: 1px solid var(--color-gray-border);
   }
 }
 
@@ -2544,10 +2573,11 @@ input[type="number"] {
 }
 
 @media (max-width: 768px) {
+  /* Clear of the bottom tab bar (US-20 AC6). */
   .floating-upload-indicator {
     left: 16px;
     right: 16px;
-    bottom: 16px;
+    bottom: calc(66px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -3957,10 +3987,9 @@ input[type="number"] {
 
 @media (max-width: 768px) {
   .hr-col-header { display: none; }
-  /* US-44 AC6 and US-09 AC30: a header's actions stay (Save as PDF on the plan,
-     Sign in on the input column; the tabs name the column), right-aligned with
-     the cards, clear of the tabs. */
-  .hr-col-header--actions { display: flex; justify-content: flex-end; padding: 8px 0 0; }
+  /* US-44 AC6: a header's actions stay (Save as PDF on the plan; the tabs
+     name the column), right-aligned with the cards' 10px gutter. */
+  .hr-col-header--actions { display: flex; justify-content: flex-end; padding: 8px 10px 0; }
   .hr-col-header--actions .hr-col-title { display: none; }
 }
 
@@ -4034,20 +4063,25 @@ input[type="number"] {
   .chat-fab { display: none; }
 }
 
-/* Mobile: chat slide keeps inline variant but needs a sensible height
-   so Swiper's autoHeight doesn't collapse it to 0 */
+/* Mobile: the chat tab is a screen tall, less the top and tab bars, so its
+   tab bar sits at the foot of the screen as on the iPhone. */
 @media (max-width: 768px) {
   .health-tool-chat {
     position: static;
     max-height: none;
     overflow-y: visible;
   }
-  .chat-expanded.chat-expanded--inline {
-    min-height: 70vh;
-  }
   .chat-embed,
   .health-tool-chat .chat-embed {
     margin: 0 10px;
+    min-height: 300px;
+  }
+  /* A fixed height: the messages scroll inside, so the chat's auto-scroll
+     works and the composer stays on screen. */
+  .hr-tabpanel .health-tool-chat .chat-embed {
+    flex: none;
+    height: calc(100vh - 150px - env(safe-area-inset-bottom, 0px));
+    height: calc(100svh - 150px - env(safe-area-inset-bottom, 0px));
     min-height: 300px;
   }
 
@@ -4238,9 +4272,7 @@ input[type="number"] {
   scrollbar-width: none;
   /* `pan-x` scrolls the matrix horizontally; `pan-y` lets vertical
      gestures bubble through to the page so users can scroll the page
-     down even when the touch starts on the matrix. Swiper's
-     `noSwipingSelector=".bt-cell-strip, .bt-timeline-scroll"` blocks
-     tab swipes here independently of touch-action. */
+     down even when the touch starts on the matrix. */
   touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
 }
@@ -4424,9 +4456,7 @@ input[type="number"] {
      gestures bubble through to the page so users can scroll the page
      up/down even when the touch starts on a strip — without this, a
      touch starting on Weight/Waist/BP rows freezes the page (mirrors
-     the `.bt-timeline-scroll` rule). Swiper's `noSwipingSelector=
-     ".bt-cell-strip, .bt-timeline-scroll"` still blocks tab swipes
-     independently of touch-action. */
+     the `.bt-timeline-scroll` rule). */
   touch-action: pan-x pan-y;
 }
 .bt-cell-strip::-webkit-scrollbar { display: none; }
@@ -5049,8 +5079,10 @@ input[type="number"] {
 .lpa-check-wait { align-self: center; }
 .lpa-check-status { margin: 8px 0 0; }
 /* US-04 AC1: a matrix's live region for its cells' messages; each shows in its cell.
-   US-13 AC10: a review cell's new value, mirrored as text for its Replace box. */
+   US-13 AC10: a review cell's new value, mirrored as text for its Replace box.
+   US-62 AC11: what the phone's My data says when a chat edit closes a value page. */
 .bt-cell-messages,
+.md-panel-messages,
 .bt-cell-heard {
   position: absolute;
   width: 1px;
@@ -5253,4 +5285,274 @@ input[type="number"] {
   .us-ownership {
     display: none !important;
   }
+}
+
+/* US-20 AC6: on a phone, what scrolls into view stops clear of the bottom tab
+   bar, and pop-overs open above it (the bar is z-index 20). After the base
+   rules, so these win. */
+@media (max-width: 768px) {
+  .feedback-form,
+  .bt-move-panel {
+    scroll-margin-bottom: 60px;
+  }
+  .supplement-dropdown,
+  .bp-info-tooltip,
+  .upload-lab-tooltip {
+    z-index: 21;
+  }
+}
+
+/* US-62 AC8-AC11: the phone's My data rows and value pages, the iPhone's
+   layout (ValueRow.swift). Rendered only at 768px or less; desktop keeps the
+   grids. */
+.hr-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.health-input-panel.md-page-open > :not(.md-page) {
+  display: none !important;
+}
+.md-table[hidden] {
+  display: none !important;
+}
+.section-card--bt .md-section,
+.section-card--bt .md-table-back {
+  margin: 12px 12px 0;
+}
+.md-section-title {
+  margin-bottom: 4px;
+}
+.md-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.md-rows > li + li .md-row {
+  border-top: 1px solid var(--bt-ink-100, #eceef0);
+}
+.md-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  font: inherit;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+.md-row:focus-visible {
+  outline: 2px solid var(--color-brand-text);
+  outline-offset: 2px;
+}
+.md-row-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.md-row-label {
+  font-size: 15px;
+  line-height: 1.25;
+}
+.md-row-meta {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--color-text-secondary);
+}
+.md-row-trend {
+  display: block;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 18px;
+}
+.md-row-reading {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex: 0 0 auto;
+  min-width: 56px;
+  text-align: right;
+}
+.md-row-value {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.md-row-prev {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+.md-row-unit {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+.md-row-add {
+  color: var(--color-brand-text);
+  font-size: 15px;
+}
+.md-status-warn { color: var(--color-grade-warn-text); }
+.md-status-bad { color: var(--color-grade-bad-text); }
+.md-unsaved {
+  display: block;
+  margin: 4px 0 8px;
+  padding: 8px 12px;
+  width: 100%;
+  border: 1px solid var(--color-grade-warn-text);
+  border-radius: var(--control-radius);
+  background: #fffbeb;
+  color: var(--color-grade-warn-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.md-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0 12px;
+}
+.md-foot-btn,
+.md-back,
+.md-history-correct {
+  background: none;
+  border: 0;
+  padding: 8px 0;
+  font: inherit;
+  font-size: 15px;
+  color: var(--color-brand-text);
+  cursor: pointer;
+}
+.md-foot-btn + .md-foot-btn {
+  margin-left: auto;
+}
+.md-page {
+  background: #fff;
+  border-radius: 12px;
+  margin: 0 10px 12px;
+  padding: 8px 12px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.md-page-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 4px 0 2px;
+}
+.md-page-title:focus {
+  outline: none;
+}
+.md-page-target,
+.md-page-hint,
+.md-page-empty {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin: 0 0 8px;
+}
+.md-page-subtitle {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 16px 0 6px;
+}
+.md-page .metric-chart-container {
+  margin: 8px 0;
+}
+.md-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+}
+.md-add-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.md-add-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.md-add input {
+  height: var(--control-height);
+  padding: 0 10px;
+  border: var(--control-border);
+  border-radius: var(--control-radius);
+  font-size: 16px; /* 16px or iOS zooms on focus */
+  color: var(--color-text);
+}
+.md-add input[inputmode] {
+  width: 76px;
+}
+.md-add-unit {
+  font-size: 13px;
+}
+.md-add-note,
+.md-add .error-message {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 13px;
+}
+.md-add-save {
+  height: var(--control-height);
+  padding: 0 18px;
+  border: 0;
+  border-radius: var(--control-radius);
+  background: var(--color-brand-text);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.md-add-save:disabled {
+  opacity: 0.6;
+}
+.md-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.md-history-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  border-top: 1px solid var(--bt-ink-100, #eceef0);
+}
+.md-history-day {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+.md-history-row .bt-cell-value,
+.md-history-row .bt-cell-input {
+  min-width: 96px;
+  justify-content: flex-end;
+}
+.md-history-bp {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.md-history-value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }

@@ -44,8 +44,6 @@ interface ResultsPanelProps {
   /** The local-first email-reminders section (US-17), rendered as its own block
    *  lower in the plan — not bolted onto the sync line at the top. */
   remindersSection?: React.ReactNode;
-  /** The panel's height changed outside its usual triggers (the phone's tab Swiper re-measures). */
-  onLayoutChange?: () => void;
   /** US-60: save the answer the "Reduce alcohol intake" card's Dismiss asks for; absent once answered. */
   onAlcoholAnswer?: (answer: AlcoholAnswer) => void;
 }
@@ -450,7 +448,7 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
   if (hook.gateSkipped) return <ReminderSignup hook={hook} />;
 
   return (
-    <div className={`email-capture no-print${formStage === 3 ? ' field-attention' : ''}`}>
+    <div className={`email-capture no-print${formStage === 4 ? ' field-attention' : ''}`}>
       <p className="email-guest-helper">{helperText}</p>
       <div className="email-capture-row">
         <input
@@ -488,7 +486,7 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
   );
 }
 
-export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, onDeleteData, isDeleting, sex, showEmailCapture, formStage, syncControl, remindersSection, onLayoutChange, onAlcoholAnswer }: ResultsPanelProps) {
+export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, onDeleteData, isDeleting, sex, showEmailCapture, formStage, syncControl, remindersSection, onAlcoholAnswer }: ResultsPanelProps) {
   // Track highlighted (new/changed) suggestion IDs
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
   const [fadingOutIds, setFadingOutIds] = useState<Set<string>>(new Set());
@@ -533,13 +531,6 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
     const timer = setTimeout(() => { settledRef.current = true; }, 3000);
     return () => clearTimeout(timer);
   }, []);
-
-  // Funnel signal: the user reached actual results (suggestions rendered).
-  // trackProductEvent self-throttles to once per tab session.
-  const hasSuggestions = (results?.suggestions?.length ?? 0) > 0;
-  useEffect(() => {
-    if (hasSuggestions) trackProductEvent('results_viewed');
-  }, [hasSuggestions]);
 
   // Detect new/changed suggestions
   useEffect(() => {
@@ -594,8 +585,6 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
   // Shared state for guest email capture (top + bottom instances stay in sync)
   const guestEmailHook = useGuestEmailCapture(() => printReport('capture'));
 
-  // The note (and the capture box it can sit in) changes the plan's height.
-  useEffect(() => { onLayoutChange?.(); }, [pdfBlocked, guestEmailHook.emailError, guestEmailHook.state]);
   // Above the early return, as hooks must be; worked out again only when their inputs change.
   const tiles = useMemo(() => (results ? statTiles(results, { unitSystem, unitOverrides, sex }) : []), [results, unitSystem, unitOverrides, sex]);
 

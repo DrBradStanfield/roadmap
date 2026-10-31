@@ -10,7 +10,7 @@ import type { ApiMedication } from '../../packages/health-core/src/mappings';
 import { derivePlanInputs } from '../../packages/health-core/src/plan';
 import type { RecordHost } from '../../packages/health-core/src/record-host';
 import { labReview, labRows, labSaveSummary, type Extraction } from './lab-review';
-import { readRecord } from './my-data';
+import { readRecord, Refusal } from './my-data';
 
 /** What the chat sends with a question (US-52 AC5): the widget's payload, built from the record. */
 export function chatContextJson(recordJson: string, nowIso: string, deviceId: string): string {
@@ -60,13 +60,14 @@ export function settle(work: Promise<unknown>): string {
   settled = null;
   work.then(
     (value) => { settled = JSON.stringify({ ok: true, value }); },
-    (error: unknown) => { settled = JSON.stringify({ ok: false, message: error instanceof Error ? error.message : 'failed' }); },
+    (error: unknown) => { settled = JSON.stringify({ ok: false, message: error instanceof Error ? error.message : 'failed', refused: error instanceof Refusal }); },
   );
   return '';
 }
 
 /**
- * The last async door's answer: `{ ok, value }` or `{ ok: false, message }`.
+ * The last async door's answer: `{ ok, value }` or `{ ok: false, message, refused }`,
+ * `refused` when the message is a Refusal's words for the person.
  * JavaScriptCore runs pending promise work before an API call returns, so it
  * is ready by the time Swift asks; `pending` means it was not.
  */

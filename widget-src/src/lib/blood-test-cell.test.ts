@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type React from 'react';
 import { formatDisplayValue, fromCanonicalValue, parseLocalisedNumber, toCanonicalValue } from '@roadmap/health-core';
-import { cellHint, formatLabValue, previewStatus, readTypedValue, sameAsSaved, statusOf, validateTypedValue } from './blood-test-cell';
+import { formatLabValue, previewStatus, readTypedValue, sameAsSaved, statusOf, validateTypedValue } from './blood-test-cell';
 
 // ---------------------------------------------------------------------------
 // Bug: user typed a value in the Lp(a) text box, hit Enter, the value
@@ -239,12 +239,38 @@ describe('statusOf — a value out of range (US-03 AC7)', () => {
   });
 });
 
+// US-62 AC13 (adversary N1 on PR 402, R4 on PR 421): with no sex on record
+// the grid grades HDL and creatinine on the bands both sexes share, never
+// one sex's. The creatinine ceiling used to fall back to the male 110, so a
+// woman's 100 read green.
+describe('statusOf — no sex grades on the shared bands (US-62 AC13)', () => {
+  it('HDL: ok from 1.29 (50 mg/dL), bad below 1.034 (40 mg/dL), warn between', () => {
+    expect([1.0, 1.03, 1.04, 1.1, 1.28, 1.3, 2.0].map((v) => statusOf('hdl', v, {})))
+      .toEqual(['bad', 'bad', 'warn', 'warn', 'warn', 'ok', 'ok']);
+  });
+
+  it('creatinine: ok to 90, bad from 143 µmol/L, warn between', () => {
+    expect([60, 90, 91, 100, 110, 142, 143, 200].map((v) => statusOf('creatinine', v, {})))
+      .toEqual(['ok', 'ok', 'warn', 'warn', 'warn', 'warn', 'bad', 'bad']);
+    expect(previewStatus('creatinine', '100', 'si', {})).toBe('warn');
+  });
+
+  it('with sex, each is graded on its own line', () => {
+    expect(statusOf('creatinine', 100, { sex: 'female' })).toBe('warn');
+    expect(statusOf('creatinine', 100, { sex: 'male' })).toBe('ok');
+    expect(statusOf('creatinine', 120, { sex: 'female' })).toBe('bad');
+    expect(statusOf('creatinine', 120, { sex: 'male' })).toBe('warn');
+    expect(statusOf('hdl', 1.1, { sex: 'female' })).toBe('warn');
+    expect(statusOf('hdl', 1.1, { sex: 'male' })).toBe('ok');
+  });
+});
+
 // US-07 AC6: one grading value; null (a known minor) grades nothing and hints nothing.
 describe('grading null — no adult grade or hint', () => {
-  it('statusOf, previewStatus and cellHint all answer null', () => {
-    expect([statusOf('ldl', 4.2, {}), cellHint('ldl', 'si', {}) === null]).toEqual(['bad', false]);
-    expect([statusOf('ldl', 4.2, null), previewStatus('ldl', '4.2', 'si', null), cellHint('ldl', 'si', null), cellHint('lpa', 'mg/dL', null)])
-      .toEqual([null, null, null, null]);
+  // The hint half moved into health-core's rowTarget (row-target.test.ts).
+  it('statusOf and previewStatus answer null', () => {
+    expect(statusOf('ldl', 4.2, {})).toBe('bad');
+    expect([statusOf('ldl', 4.2, null), previewStatus('ldl', '4.2', 'si', null)]).toEqual([null, null]);
   });
 });
 

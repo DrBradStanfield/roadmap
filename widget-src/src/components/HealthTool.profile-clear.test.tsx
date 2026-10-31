@@ -4,7 +4,7 @@ import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react
 import { ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
 
 // Only off-device boundaries are mocked; the form, autosave and store are real.
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -37,6 +37,7 @@ beforeEach(async () => {
   });
   await initRoadmapStore(new LocalStorageAdapter());
   await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 5, unitSystem: 'si' }, {});
+  await addMeasurement('weight', 80, '2026-10-01'); // the onboarding done: the birth date shows (US-62 AC13)
   await flushRoadmapStore();
 });
 afterEach(async () => {

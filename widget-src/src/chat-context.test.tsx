@@ -40,7 +40,7 @@ const row = (metricType: string, value: number): ApiMeasurement => ({
   id: metricType, metricType, value, recordedAt: '2026-09-01T00:00:00Z', createdAt: '2026-09-01T00:00:00Z',
 });
 
-const PROFILE = { heightCm: 178, sex: 'male' as const, birthYear: 1970, unitSystem: 'si' as const };
+const PROFILE = { heightCm: 178, sex: 'male' as const, birthYear: 1970, birthMonth: 5, unitSystem: 'si' as const };
 const SAVED = [row('weight', 82), row('ldl', 3.1)];
 
 /** What HealthTool writes on load for a returning user: the record's profile
@@ -119,9 +119,21 @@ describe('US-15 AC10: the chat reads the inputs the plan reads', () => {
     expect(contextNow(captured.embed?.guestInputs)).toMatchObject({ weightKg: 82, ldlC: 3.1 });
   });
 
-  it('US-15 AC10: the chatbot embed is not muted for a user whose only saved values are blood tests', async () => {
+  // US-62 AC13: a saved blood test opens the whole form, but the embed, like
+  // the widget's chat, waits for all four answers: height, weight, sex, birth.
+  it('US-15 AC10: the chatbot embed stays muted for a user whose only saved values are blood tests, until the weight is saved', async () => {
     saveToLocalStorage(PROFILE, [row('ldl', 3.1)], [], []);
     await mountEntry('health-chatbot-embed-root', () => import('./chatbot-embed'));
+    expect(captured.embed?.muted).toBe(true);
+    act(() => saveToLocalStorage(PROFILE, [row('ldl', 3.1), row('weight', 82)], [], []));
+    expect(captured.embed?.muted).toBe(false);
+  });
+
+  it('US-15 AC10 (US-62 AC13): the chatbot embed stays muted until the birth month and year are saved', async () => {
+    saveToLocalStorage({ heightCm: 178, sex: 'male' }, [row('weight', 82)], [], []);
+    await mountEntry('health-chatbot-embed-root', () => import('./chatbot-embed'));
+    expect(captured.embed?.muted).toBe(true);
+    act(() => saveToLocalStorage({ heightCm: 178, sex: 'male', birthYear: 1970, birthMonth: 5 }, [row('weight', 82)], [], []));
     expect(captured.embed?.muted).toBe(false);
   });
 

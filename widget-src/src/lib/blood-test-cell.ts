@@ -9,8 +9,6 @@ import {
   cellLabel,
   cellRange,
   cellToSI,
-  refHintFor,
-  lpaRefHint,
   HBA1C_THRESHOLDS,
   LDL_THRESHOLDS,
   getLipidStatus,
@@ -29,19 +27,14 @@ import type React from 'react';
 
 export type Status = 'ok' | 'warn' | 'bad' | null;
 
-/** Whom a value is graded for against adult thresholds: their sex (some lines
- *  differ by it), or null to grade nothing, as for a known minor (US-07 AC6). */
-export type Grading = { sex?: 'male' | 'female' } | null;
+// Whom a value is graded for (null: a known minor, US-07 AC6) lives in
+// health-core beside rowTarget, which reads it too.
+export type { Grading } from '@roadmap/health-core';
+import type { Grading } from '@roadmap/health-core';
 
 // The unit a cell is shown and typed in, and its conversions, live in health-core
 // (cell-unit.ts), which the iPhone app reads too.
 export { type CellUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel } from '@roadmap/health-core';
-
-/** The reference hint under the unit: the metric's, or Lp(a)'s in its unit. */
-export function cellHint(metric: MetricType, unit: CellUnit, grading: Grading): string | null {
-  if (!grading) return null;
-  return unit === 'si' || unit === 'conventional' ? refHintFor(metric, unit, grading.sex) : lpaRefHint(unit);
-}
 
 // Keystroke filters (US-02 AC4). Most of our numeric cells are type="text"
 // (for inputMode/pattern control), and even type="number" doesn't reject
@@ -186,8 +179,9 @@ export function statusOf(metric: MetricType, siValue: number, grading: Grading):
       if (siValue >= TOTAL_CHOLESTEROL_THRESHOLDS.borderline) return 'warn';
       return 'ok';
     case 'hdl': {
-      // Higher is better. lowFemale (~1.29) is the more conservative "ok"
-      // gate. Below lowMale (~1.03) = bad. Between = warn.
+      // Higher is better. Below lowMale (~1.03) = bad. Between = warn. With
+      // no sex, the bands both sexes share: ok only from lowFemale (~1.29),
+      // the no-sex hint's ">1.0/>1.3" (US-62 AC13).
       const okGate = sex === 'male' ? HDL_THRESHOLDS.lowMale : HDL_THRESHOLDS.lowFemale;
       if (siValue >= okGate) return 'ok';
       if (siValue >= HDL_THRESHOLDS.lowMale) return 'warn';
@@ -211,9 +205,12 @@ export function statusOf(metric: MetricType, siValue: number, grading: Grading):
       // No formal threshold (eGFR is the clinical gate). Use the adult
       // reference range as the ok ceiling, mild elevation → warn,
       // significant elevation (≥30% over) → bad.
-      const max = sex === 'female' ? 90 : 110; // µmol/L
-      if (siValue >= max * 1.3) return 'bad';
-      if (siValue > max) return 'warn';
+      // With no sex, the bands both sexes share, never one sex's (US-62
+      // AC13): ok to the female 90, bad from the male 143, warn between.
+      const okMax = sex === 'male' ? 110 : 90; // µmol/L
+      const badFrom = (sex === 'female' ? 90 : 110) * 1.3;
+      if (siValue >= badFrom) return 'bad';
+      if (siValue > okMax) return 'warn';
       return 'ok';
     }
     default:

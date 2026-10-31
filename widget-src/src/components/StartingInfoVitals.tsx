@@ -20,6 +20,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import {
   type ApiMeasurement,
+  type FormStage,
   type HealthInputs,
   type MetricType,
   type UnitSystem,
@@ -28,11 +29,10 @@ import {
   formatDisplayValue,
   getDisplayLabel,
   parseLocalisedNumber,
-  formatTargetLine,
   waistToHeightRatio,
   isWaistToHeightElevated,
-  elevatedWaistFromCm,
   bpTargetFor,
+  rowTarget,
   PRESSURE_ORDER,
   pressureInverted,
 } from '@roadmap/health-core';
@@ -58,6 +58,8 @@ import { DraftDateCell } from './DraftDateCell';
 import { UnitChip } from './UnitChip';
 
 interface StartingInfoVitalsProps {
+  /** Told whether the grid keeps any typed text, valid or not (US-62 AC11). */
+  onHoldsText?: (holds: boolean) => void;
   /** Full per-metric history (filtered to vitals metrics). Latest-per-metric
    *  is insufficient — the matrix needs the timeline. */
   vitalsHistory: ApiMeasurement[];
@@ -74,10 +76,9 @@ interface StartingInfoVitalsProps {
   /** The draft values the plan and the chat may read, in SI; undefined
    *  leaves the field to the record. */
   onDraftValue: (field: keyof HealthInputs, value: number | undefined) => void;
-  /** Used to pulse the weight draft cell at stage 2 (the progressive-
-   *  disclosure gate that unlocks the blood-test panel): no weight in what
-   *  the plan reads, the draft's own included. */
-  formStage: 1 | 2 | 3;
+  /** Used to pulse the weight draft cell at stage 1 (US-62 AC13: no weight
+   *  in what the plan reads, the draft's own included). */
+  formStage: FormStage;
   /** What the plan was computed from (US-06 AC5): its age sets the
    *  blood-pressure target, its weight target (kg) the weight line and its
    *  validated height (cm) the waist line. Null until there is a plan. */
@@ -150,14 +151,6 @@ function weightStatus(siKg: number | null | undefined, ibw?: number): Status {
   if (siKg <= ibw + 5) return 'warn';
   return 'bad';
 }
-/** The waist target's number, in the display unit: the first waist, at the
- *  unit's display step, that the plan grades elevated at this height. A waist
- *  shown below "<X" reads healthy, and X itself elevated (US-06 AC5). */
-export function healthyWaistBelow(heightCm: number, unit: UnitSystem): string {
-  const elevated = (cm: number) => isWaistToHeightElevated(waistToHeightRatio(cm, heightCm));
-  return formatTargetLine('waist', elevatedWaistFromCm(heightCm), unit, elevated);
-}
-
 /** 'ok' exactly when the plan counts the waist as healthy (US-06 AC5). */
 function waistStatus(siCm: number | null | undefined, heightCm?: number): Status {
   if (siCm == null || Number.isNaN(siCm) || heightCm == null) return null;
@@ -166,14 +159,14 @@ function waistStatus(siCm: number | null | undefined, heightCm?: number): Status
   return 'bad';
 }
 /** Neutral with no systolic target: there is no plan (US-06 AC5). */
-function bpStatus(sys: number | null | undefined, dia: number | null | undefined, sysTarget: number | undefined): Status {
+export function bpStatus(sys: number | null | undefined, dia: number | null | undefined, sysTarget: number | undefined): Status {
   if (sys == null || dia == null || Number.isNaN(sys) || Number.isNaN(dia) || sysTarget === undefined) return null;
   const diaTarget = 80;
   if (sys < sysTarget && dia < diaTarget) return 'ok';
   if (sys < sysTarget + 10 && dia < diaTarget + 5) return 'warn';
   return 'bad';
 }
-function simpleStatus(metric: 'weight' | 'waist', si: number | null | undefined, ibwKg?: number, planHeightCm?: number): Status {
+export function simpleStatus(metric: 'weight' | 'waist', si: number | null | undefined, ibwKg?: number, planHeightCm?: number): Status {
   return metric === 'weight' ? weightStatus(si, ibwKg) : waistStatus(si, planHeightCm);
 }
 
@@ -270,7 +263,7 @@ export function vitalsCellsOf(
 export function StartingInfoVitals({
   vitalsHistory, unitSystem, onSave, onCorrectValue,
   onDraftValue, formStage, plan, knownMinor, onAutoFocusEmail, unitOverrides, onToggleFieldUnit,
-  prefillRef, flushRef,
+  prefillRef, flushRef, onHoldsText,
 }: StartingInfoVitalsProps) {
   // The plan's systolic target; none, and no BP colours, with no plan. A known
   // minor gets no adult weight or BP target or colour (US-07 AC6); the waist
@@ -282,21 +275,14 @@ export function StartingInfoVitals({
 
   const fieldUnit = (field: 'weightKg' | 'waistCm'): UnitSystem => unitOverrides[field] ?? unitSystem;
 
-  // Reference labels (per row, in the row's display unit).
-  const refLabel = (row: RowConfig): string | null => {
-    if (!adult && (row.kind === 'bp' || row.metric === 'weight')) return null;
-    if (row.kind === 'bp') return bpSysTarget !== undefined ? `Target: <${bpSysTarget}/80 mmHg` : 'Set sex + height to see target';
-    if (row.metric === 'weight') {
-      const u = fieldUnit('weightKg');
-      return ibwKg != null
-        ? `Target: ${formatDisplayValue('weight', ibwKg, u)} ${getDisplayLabel('weight', u)}`
-        : 'Set sex + height to see target';
-    }
-    const u = fieldUnit('waistCm');
-    return planHeightCm != null
-      ? `Target: <${healthyWaistBelow(planHeightCm, u)} ${getDisplayLabel('waist', u)}`
-      : 'Set sex + height to see target';
-  };
+  // Reference labels (per row, in the row's display unit): rowTarget's, which
+  // the phone's rows print too.
+  const refLabel = (row: RowConfig): string | null => rowTarget(
+    row.kind === 'bp' ? 'blood_pressure' : row.metric,
+    row.kind === 'bp' ? unitSystem : fieldUnit(row.metric === 'weight' ? 'weightKg' : 'waistCm'),
+    knownMinor ? null : {},
+    plan,
+  )?.full ?? null;
 
   const dateColumns = useMemo(() => buildColumns(vitalsHistory), [vitalsHistory]);
 
@@ -316,8 +302,11 @@ export function StartingInfoVitals({
   };
   const latestDay = (key: VitalsKey) => [...dateColumns].reverse().find(c => c[key] != null)?.date;
   const {
+    holdsText,
     draft, backfills, type, setDate, unitOf, expected, clashes, taken, lends, settle, refusal,
   } = useMatrixDraft<VitalsKey>(VITALS_DRAFT_KEY, { onScreen, rowsUnder, latestDay, cellOf: key => (key === 'dia' ? 'sys' : key) });
+  // On a phone the grid sits hidden under rows: tell the page it holds typed text (US-62 AC11).
+  useEffect(() => { onHoldsText?.(holdsText); }, [holdsText]);
   const [activeCell, setActiveCell] = useState<string | null>(null);
   // A cell leaving clears only its own mark: another may have taken it since.
   const unmark = (cellId: string) => () => setActiveCell(prev => (prev === cellId ? null : prev));
@@ -566,7 +555,7 @@ export function StartingInfoVitals({
                             validationResult={typedError(null, row.metric)}
                             externalError={clashes(row.metric) || taken(row.metric) ? SAME_SLOT : refusal([null, row.metric])}
                             placeholder="—"
-                            wrapperClass={`bt-cell-input bt-cell-draft${formStage === 2 && row.metric === 'weight' ? ' field-attention' : ''}`}
+                            wrapperClass={`bt-cell-input bt-cell-draft${formStage === 1 && row.metric === 'weight' ? ' field-attention' : ''}`}
                             active={activeCell === cellId}
                             onChange={v => setSimpleDraft(row.metric, v)}
                             onFocus={() => setActiveCell(cellId)}

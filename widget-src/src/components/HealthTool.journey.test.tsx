@@ -100,10 +100,11 @@ const active = <T extends { status: string }>(rows: T[]) => rows.filter((r) => r
 const day = (r: FileMeasurement | FileLabValue) => r.recordedAt.slice(0, 10);
 const activeOn = async (metric: string) => active(await rowsOf(metric)).map((m) => [m.value, day(m)]).sort();
 
-/** A guest who has entered sex and height (and, for stage 3, a weight). */
+/** A guest who has entered height, sex and birth date (and, to finish the
+ *  onboarding, a weight: US-62 AC13). */
 async function guest({ weight }: { weight?: number } = {}) {
   await initRoadmapStore(new LocalStorageAdapter());
-  await saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {});
+  await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
   if (weight) await addMeasurement('weight', weight, '2026-09-01');
 }
 
@@ -635,7 +636,8 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
 
   // Round 7: a blood pressure has no unit to keep; mmHg is mmHg in both.
   it('US-03 AC3: in the first-time fields, a blood pressure saves as a pair, and the same pair typed again writes nothing across a unit switch', async () => {
-    await guest(); // stage 2: the first-time fields
+    await guest();
+    await addMeasurement('ldl', 3.0, RIGHT_DAY); // a saved blood test opens the whole form: the first-time fields (US-62 AC13)
     const view = render(<HealthTool />);
     async function typePair(sys: string, dia: string) {
       const systolic = await shown<HTMLInputElement>(view.container, '#systolicBp');
@@ -663,6 +665,7 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
   // up is not saved, once, and the record is left as it was.
   it('US-02 AC8: in the first-time fields, 80/120 shows the rule and saves nothing; so does one half against today\'s saved half', async () => {
     await guest();
+    await addMeasurement('ldl', 3.0, RIGHT_DAY); // a saved blood test opens the whole form: the first-time fields (US-62 AC13)
     const view = render(<HealthTool />);
     const rule = 'The top number (systolic) must be higher than the bottom number (diastolic).';
     const shownRule = () => [...view.container.querySelectorAll('.error-message')].filter((e) => e.textContent === rule);
@@ -690,6 +693,22 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
     await wait(600);
     await waitFor(() => expect(shownRule()).toHaveLength(1));
     expect(await bpRows()).toEqual([[120, 'active'], [80, 'active']]);
+  });
+
+  // US-54 AC5b now covers the web: the plan leaves a future birth month out and says why.
+  it('US-54 AC5b: a birth month after this one shows the rule under the month; this month does not', async () => {
+    vi.setSystemTime(new Date('2026-09-01T09:00:00.000Z'));
+    await guest({ weight: 82 });
+    const view = render(<HealthTool />);
+    const rule = 'Your birth month cannot be in the future.';
+    const shownRule = () => [...view.container.querySelectorAll('.error-message')].filter((e) => e.textContent === rule);
+
+    fireEvent.change(await shown<HTMLSelectElement>(view.container, '#birthMonth'), { target: { value: '10' } });
+    fireEvent.change(await shown<HTMLInputElement>(view.container, '#birthYear'), { target: { value: '2026' } });
+    await waitFor(() => expect(shownRule()).toHaveLength(1));
+
+    fireEvent.change(view.container.querySelector('#birthMonth')!, { target: { value: '9' } });
+    await waitFor(() => expect(shownRule()).toHaveLength(0));
   });
 
   // US-02 AC8 (Brad 2026-10-30, adversary N1): the plan judges a pair only
@@ -859,7 +878,7 @@ describe('US-03 AC5: a matrix commits what is typed when you leave it; the page 
     const adapter = new HangingAdapter(cloud);
     await adapter.connect();
     await initRoadmapStore(adapter);
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {});
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
     await addMeasurement('weight', 82, '2026-09-01');
     await flushRoadmapStore();
     const view = render(<HealthTool />);
@@ -1112,6 +1131,7 @@ describe('US-03 AC3: a first-time value the form was built again without', () =>
     await wait(600);
     expect(await rowsOf('waist')).toEqual([]);
 
+    fireEvent.click(view.getByRole('tab', { name: 'My plan' })); // Save as PDF is on the plan tab
     savePdf(view);
     await waitFor(async () => expect(await activeOn('waist')).toEqual([[90, TODAY]]));
   });
@@ -1121,6 +1141,7 @@ describe('US-03 AC3: a first-time value the form was built again without', () =>
   it('survives a matrix saving the same number for another day, and is written by the next save of the fields', async () => {
     const turnPhone = rotatablePhone();
     await guest();
+    await addMeasurement('ldl', 3.0, RIGHT_DAY); // a saved blood test opens the whole form: the first-time fields (US-62 AC13)
     const view = render(<HealthTool />);
     await typeAndLeave(await shown<HTMLInputElement>(view.container, '#waistCm'), '90');
     await waitFor(async () => expect(await activeOn('waist')).toEqual([[90, TODAY]]));
@@ -1461,11 +1482,12 @@ describe('US-03: what the plan and the chat read of a draft', () => {
     expect(await printedLdl(view)).toBe('3.9 mmol/L');
   });
 
-  // Round 5 (a test the batch lacked): the matrix leaving the form with no
-  // other built in its place, as when the weight that opened the blood tests
-  // is taken back, takes back what it lent the plan and the chat.
-  it('a draft value stands in while its matrix shows; the matrix leaving the form leaves the plan and the chat to the record', async () => {
-    await guest(); // stage 2: the first-time weight field
+  // Round 5 (a test the batch lacked), amended by US-62 AC13: the weight that
+  // finished the onboarding, taken back, no longer takes the blood tests
+  // away. The form stays open on this record while an answer is retyped, and
+  // the draft keeps standing in for the plan and the chat.
+  it('a draft value stands in while its matrix shows; the weight taken back leaves the matrix, and the draft, in place', async () => {
+    await guest(); // the onboarding's last answer missing: the weight
     const view = render(<HealthTool />);
     const weight = await shown<HTMLInputElement>(view.container, '#weightKg');
     typeInto(weight, '82'); // the blood tests appear
@@ -1474,10 +1496,11 @@ describe('US-03: what the plan and the chat read of a draft', () => {
     await waitFor(() => expect(ldlTile(view.container)).toBe('2.0 mmol/L'));
     expect(chat.context?.ldlC).toBe(2);
 
-    fireEvent.change(weight, { target: { value: '' } }); // the weight taken back: the blood tests go
-    await waitFor(() => expect(view.container.querySelector('.bt-timeline-title')).toBeNull());
-    expect(ldlTile(view.container)).toBeUndefined();
-    expect(chat.context?.ldlC).toBeUndefined();
+    fireEvent.change(weight, { target: { value: '' } }); // the weight taken back
+    expect(view.container.querySelector('#weightKg')).toBe(weight); // the field was never moved
+    expect(view.container.querySelector('.bt-timeline-title')).toBeTruthy();
+    expect(ldlTile(view.container)).toBe('2.0 mmol/L');
+    expect(chat.context?.ldlC).toBe(2);
   });
 
   // Round 5 (scoped back from round 4): what an earlier load of the page left
@@ -1620,7 +1643,7 @@ describe('US-11: an erase made here', () => {
     const adapter = new HeldWrite(cloud);
     await adapter.connect();
     await initRoadmapStore(adapter);
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {});
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
     await addMeasurement('weight', 82, '2026-09-01');
     await flushRoadmapStore();
     const view = await secondVisit();
@@ -1681,7 +1704,7 @@ describe('US-11: an erase made on another device', () => {
     const adapter = new MemoryAdapter(cloud);
     await adapter.connect();
     await initRoadmapStore(adapter);
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {});
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
     await addMeasurement('weight', 82, '2026-09-01');
     await flushRoadmapStore();
     const view = render(<HealthTool />);
@@ -1703,7 +1726,7 @@ describe('US-11: an erase made on another device', () => {
     expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY)).toBeNull();
 
     // The user starts again here, and the page loads again.
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {});
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
     await addMeasurement('weight', 80, TODAY);
     view.unmount();
     const again = render(<HealthTool />);
@@ -1720,7 +1743,7 @@ describe('US-11: an erase made on another device', () => {
     const adapter = new MemoryAdapter(cloud);
     await adapter.connect();
     await initRoadmapStore(adapter);
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {});
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
     await addMeasurement('weight', 82, '2026-09-01');
     await flushRoadmapStore();
     const view = render(<HealthTool />);
@@ -1735,7 +1758,7 @@ describe('US-11: an erase made on another device', () => {
     const other = await RoadmapStore.create(new MemoryAdapter(cloud));
     await other.deleteAllData();
     localStorage.setItem(BT_TIMELINE_DRAFT_KEY, kept); // one localStorage for both devices
-    other.saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {});
+    other.saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
     other.addMeasurement('weight', 80, `${TODAY}T00:00:00.000Z`);
     await other.flush();
     await wait(6000);
@@ -1791,7 +1814,7 @@ describe('US-34 AC6: another tab of this browser saves', () => {
     const adapter = new MemoryAdapter(cloud);
     await adapter.connect();
     await initRoadmapStore(adapter);
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {});
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
     await addMeasurement('weight', 82, '2026-09-01');
     await flushRoadmapStore();
     const view = render(<HealthTool />);
