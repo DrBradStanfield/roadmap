@@ -64,6 +64,16 @@ describe('US-15 AC6b: a guest session token that is not a string is not kept', (
     expect(stored.get(KEY)).toBe('old-tok');
   });
 
+  it.each(MALFORMED)('sendMessage, a guest 404 and its resend (AC6a): %s', async (_name, token) => {
+    fetchMock
+      .mockResolvedValueOnce(json(404, { success: false, error: 'Conversation not found', sessionToken: token, isGuest: true }))
+      .mockResolvedValueOnce(json(200, { success: true, conversationId: 'c2', messageId: 'm1', content: 'hi' }));
+    const { result } = await sendMessage('hello', 'c1', null);
+    expect(result?.conversationId).toBe('c2');
+    expect(stored.get(KEY)).toBe('old-tok');
+    expect(sentToken(1)).toBe('old-tok');
+  });
+
   it('a string token is still kept and sent back (control)', async () => {
     fetchMock
       .mockResolvedValueOnce(json(200, { success: true, conversations: [], sessionToken: 'new-tok', isGuest: true }))
