@@ -284,6 +284,23 @@ describe('METRIC_GUIDES (US-58)', () => {
     }
   });
 
+  it('AC7: the four claims narrowed in review (2026-10-31) keep their shipped wording', () => {
+    const hr = METRIC_GUIDES.heart_rate.whatItIs;
+    expect(hr).not.toContain('green light');
+    expect(hr).not.toContain('more often during a workout');
+    // Apple's pages back only "a good fit helps": no guide tells the reader to wear it "snug on"
+    // the wrist (the waist guide's tape tip is not about a watch).
+    for (const [key, g] of Object.entries(METRIC_GUIDES)) {
+      if (key === 'waist') continue;
+      for (const point of g.howTo.points) expect(point, key).not.toMatch(/snug on/);
+    }
+    // Paluch 2022 is observational: the plateau is of lower risk, not of a benefit.
+    expect(METRIC_GUIDES.steps.whyItMatters).toContain('lower risk of death levelled off');
+    expect(METRIC_GUIDES.steps.whyItMatters).not.toContain('benefit levelled off');
+    // Watson's advice is for adults aged 18 to 60.
+    expect(FILES.html).toContain('advise adults aged 18 to 60 to sleep at least 7 hours a night on a regular basis.[');
+  });
+
   it('AC7: the Apple Health guides have their headings, parts and sources', () => {
     const headings = { heart_rate: 'How to read it', resting_heart_rate: 'How to read it', sleep: 'How to sleep well',
       vo2_max: 'How to get a good estimate', steps: 'How to add steps' };
