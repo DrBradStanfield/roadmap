@@ -139,3 +139,78 @@ describe('US-52 AC6 / US-15 AC7: a saved conversation keeps each question above 
     expect(s.getMessages('old').map((m) => m.content)).toEqual(['q1', 'a1']);
   });
 });
+
+describe('US-10 AC10: the 50-conversation cap evicts by the merged copy', () => {
+  const seed = async (s: ChatSession) => { for (let i = 0; i < 50; i++) await exchange(s, `c${String(i).padStart(2, '0')}`); };
+  const hosts = {
+    cloud: () => { const cloud = new MemoryCloud(); return () => cloudHost(new MemoryAdapter(cloud)); },
+    device: () => { const store = new DeviceStore(); const fence = { value: null }; return () => deviceHost(store, fence); },
+  };
+
+  for (const [tier, shared] of Object.entries(hosts)) {
+    it(`${tier}: a conversation another page just continued survives this page's new one`, async () => {
+      const host = shared();
+      await seed(await ChatSession.open(host()));
+      const laptop = await ChatSession.open(host()); // opened, then left open
+      const phone = await ChatSession.open(host());
+      await phone.recordExchange({ conversationId: 'c00', isNew: false, userText: 'a follow-up', assistantText: 'ok' });
+      await exchange(laptop, 'new');
+      const ids = (await ChatSession.open(host())).listConversations().map((c) => c.id);
+      expect(ids).toHaveLength(50);
+      expect(ids).toContain('c00');
+      expect(ids).toContain('new');
+      expect(ids).not.toContain('c01'); // the oldest by the merged copy goes
+      expect(laptop.listConversations().map((c) => c.id)).toEqual(ids);
+    });
+
+    it(`${tier}: with no other page, a new conversation past 50 still evicts the oldest`, async () => {
+      const host = shared();
+      const s = await ChatSession.open(host());
+      await seed(s);
+      await exchange(s, 'new');
+      const ids = (await ChatSession.open(host())).listConversations().map((c) => c.id);
+      expect(ids).toHaveLength(50);
+      expect(ids).not.toContain('c00');
+      expect(s.listConversations().map((c) => c.id)).toEqual(ids);
+    });
+
+    it(`${tier}: continuing a conversation in a file already over 50 brings it back to 50`, async () => {
+      const host = shared();
+      const at = (i: number) => new Date(Date.parse('2026-10-01T00:00:00.000Z') + i * 60_000).toISOString();
+      const conversations = Array.from({ length: 51 }, (_, i) => ({
+        id: `c${String(i).padStart(2, '0')}`, title: 't', createdAt: at(i), updatedAt: at(i),
+        messages: [{ id: `m${i}`, role: 'user', content: 'q', createdAt: at(i) }],
+      }));
+      const raw = { schemaVersion: 1, meta: { createdAt: at(0), updatedAt: at(50), lastDeviceId: 'old', lamport: 1 }, conversations };
+      const h = host(); // a file left over the cap (an older app, or two devices at once)
+      if (h.tier === 'device') h.sync.writeSync('chat-history.json', raw, null);
+      else await h.store.write('chat-history.json', raw, null);
+      const s = await ChatSession.open(host());
+      expect(s.listConversations()).toHaveLength(51);
+      await s.recordExchange({ conversationId: 'c10', isNew: false, userText: 'a follow-up', assistantText: 'ok' });
+      const ids = (await ChatSession.open(host())).listConversations().map((c) => c.id);
+      expect(ids).toHaveLength(50);
+      expect(ids[0]).toBe('c10');
+      expect(ids).not.toContain('c00');
+    });
+  }
+});
+
+describe('US-10 AC10: conversations saved in the same millisecond keep their file order', () => {
+  it('lists equal updatedAt in file order, and the cap evicts the later of them first', async () => {
+    const at = (i: number) => new Date(Date.parse('2026-10-01T00:00:00.000Z') + i * 60_000).toISOString();
+    // c00..c49 at distinct times; t1 and t2 tie with each other at the oldest time.
+    const row = (id: string, t: number) => ({ id, title: 't', createdAt: at(t), updatedAt: at(t), messages: [{ id: `m-${id}`, role: 'user', content: 'q', createdAt: at(t) }] });
+    const conversations = [row('t1', 0), row('t2', 0), ...Array.from({ length: 49 }, (_, i) => row(`c${String(i + 1).padStart(2, '0')}`, i + 1))];
+    const store = new DeviceStore();
+    store.writeSync('chat-history.json', { schemaVersion: 1, meta: { createdAt: at(0), updatedAt: at(49), lastDeviceId: 'old', lamport: 1 }, conversations }, null);
+    const host = () => deviceHost(store, { value: null });
+    const s = await ChatSession.open(host());
+    expect(s.listConversations().slice(-2).map((c) => c.id)).toEqual(['t1', 't2']);
+    await s.recordExchange({ conversationId: 'c49', isNew: false, userText: 'again', assistantText: 'ok' });
+    const ids = (await ChatSession.open(host())).listConversations().map((c) => c.id);
+    expect(ids).toHaveLength(50);
+    expect(ids.at(-1)).toBe('t1');
+    expect(ids).not.toContain('t2');
+  });
+});
