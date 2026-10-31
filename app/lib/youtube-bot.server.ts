@@ -27,7 +27,7 @@
  */
 import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin } from './supabase.server';
-import { classifyMessage, shouldFireRouter } from './chat-classifier.server';
+import { classifyMessage, isUnreadableAnswer, shouldFireRouter } from './chat-classifier.server';
 import { routeQuery, sanitizeForRouter, ROUTER_VERSION, type RouterResult } from './chat-router.server';
 import { cutText } from '../../packages/health-core/src/chat-history';
 import { SILENT_ON_YOUTUBE } from '../../packages/health-core/src/models';
@@ -597,7 +597,7 @@ export async function persistYouTubeTurn(p: {
     }
 
     // The assistant half. Only when the LLM actually produced output: a
-    // classifier silent skip (GREETING or SPAM) never reached the model, and a fallback
+    // classifier silent skip (GREETING, SPAM or an unreadable answer) never reached the model, and a fallback
     // produced no genuine answer, so neither gets a fabricated assistant row.
     let assistantMessageId: string | null = null;
     if (outcome.llmOutput) {
@@ -897,10 +897,12 @@ export async function runPipeline(
 
   const classifierResult = await classifyMessage(sanitized);
   const { classification } = classifierResult;
-  if (SILENT_ON_YOUTUBE.has(classification)) {
+  const unreadable = isUnreadableAnswer(classifierResult);
+  if (SILENT_ON_YOUTUBE.has(classification) || unreadable) {
     return {
       posted: false,
-      skipReason: `classifier=${classification}`,
+      // 'refusal' or 'unparseable' only; the raw model text stays out of the reason.
+      skipReason: unreadable ? `classifier=ERROR (${classifierResult.error!.split(':')[0]})` : `classifier=${classification}`,
       classification,
       routerHandles: [],
       routerResult: null,
@@ -1162,8 +1164,9 @@ async function tick(): Promise<void> {
 
       // Main-LLM failure (fallback path inside getChatCompletion) is transient —
       // un-claim so the next tick can retry once Anthropic recovers. Genuine
-      // SKIP_NO_REPLY / GREETING or SPAM / blog-missing / refusal cases leave the claim
-      // intact so we don't waste LLM tokens re-evaluating the same comment.
+      // SKIP_NO_REPLY / GREETING or SPAM / unreadable classifier answer (US-15
+      // AC48) / blog-missing / refusal cases leave the claim intact so we don't
+      // waste LLM tokens re-evaluating the same comment.
       if (shouldUnclaim(outcome)) await unclaimComment(thread.topLevelCommentId);
       skippedThisTick++;
       continue;

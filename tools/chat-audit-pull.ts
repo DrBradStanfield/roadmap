@@ -207,8 +207,9 @@ async function pullRouting(): Promise<RoutingEvent[]> {
  *  imports nothing from the server, so the string is repeated, not shared. */
 const PURGED_TEXT = '[removed after 30 days]';
 
-/** Routing rows join messages by message_id; a row with none (the widget, or a
- *  YouTube turn the LLM never answered) gets a key of its own. */
+/** Routing rows join messages by message_id; a row with none (the widget, a
+ *  YouTube turn the LLM never answered, or a silent Discord SPAM turn, US-15
+ *  AC48) gets a key of its own. */
 const routingKey = (r: RoutingEvent) => r.message_id ?? `routing-${r.created_at}-${r.conversation_id}`;
 
 /**
