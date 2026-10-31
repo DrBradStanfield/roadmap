@@ -64,7 +64,7 @@ const CRISIS = /\b(die|suicid\w*|kill (myself|me)|chest pain|can'?t breathe|cann
 const FOLLOWUP_MIN_WORDS = 3;             // follow-ups are naturally shorter ("does it cause blindness?")
 const MAX_CHANNEL_REPLIES_PER_THREAD = 2; // hard cap: initial reply + at most ONE follow-up (screenshot-risk control)
 const FOLLOWUP_THREADS_PER_TICK = 25;     // bound the per-tick comments.list calls
-const YOUTUBE_TIMEOUT_MS = 15_000;        // per Google call; a stalled socket must not hold the tick (US-09 AC30)
+const YOUTUBE_TIMEOUT_MS = 15_000;        // per Google call; a stalled socket must not hold the tick (US-09 AC31)
 
 const PLATFORM_YOUTUBE = 'youtube';
 

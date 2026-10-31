@@ -1,5 +1,5 @@
 /**
- * US-09 AC30: every call the server makes to another service carries a
+ * US-09 AC31: every call the server makes to another service carries a
  * deadline. A provider that accepts the socket and then says nothing must not
  * hold a route, a webhook or the YouTube tick for the socket's own timeout.
  *
@@ -66,7 +66,7 @@ function fetchCalls(source: string): string[] {
   return calls;
 }
 
-describe('US-09 AC30: every server fetch passes a signal', () => {
+describe('US-09 AC31: every server fetch passes a signal', () => {
   it('finds the calls it is meant to check', () => {
     expect(fetchCalls("await fetch(url, {\n  method: 'POST',\n  signal: AbortSignal.timeout(1),\n});")).toHaveLength(1);
     expect(fetchCalls('await fetch(`${base}?q=${encodeURIComponent(x)}`)')).toEqual(['`${base}?q=${encodeURIComponent(x)}`']);
@@ -88,7 +88,7 @@ describe('US-09 AC30: every server fetch passes a signal', () => {
   });
 });
 
-describe('US-09 AC30: a stalled provider is abandoned at the deadline', () => {
+describe('US-09 AC31: a stalled provider is abandoned at the deadline', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     // The fake clock drives the deadline, as in the widget's deadline tests.

@@ -22,7 +22,7 @@ import { ALLOWED_ORIGINS, BODY_TOO_LARGE, corsHeaders, getClientIp, parseSimpleR
  */
 
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
-// Google gets this long to answer before the exchange fails (US-09 AC30).
+// Google gets this long to answer before the exchange fails (US-09 AC31).
 const GOOGLE_TIMEOUT_MS = 10_000;
 
 // Generous: a real user exchanges ~once an hour; connects are rare.
@@ -109,7 +109,7 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   // A 2xx whose body could not be read is a failed exchange, never a 200
-  // without tokens (US-09 AC30). 502, not 400/401: the browser reads those
+  // without tokens (US-09 AC31). 502, not 400/401: the browser reads those
   // as a revoked refresh token and clears it.
   if (payload === null) {
     return Response.json({ error: 'exchange_failed', errorDescription: 'unreadable_response' }, { status: 502, headers });
