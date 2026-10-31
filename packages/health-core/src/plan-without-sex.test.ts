@@ -79,6 +79,42 @@ describe('US-07 AC8: the plan without sex', () => {
     const r = calculateHealthResults({ ...NO_SEX, sex: 'female', hdlC: 1.2 }, 'si', undefined, undefined, undefined, NOW);
     expect(r.idealBodyWeight).toBeGreaterThan(0);
     expect(r.suggestions.map((s) => s.id)).toEqual(expect.arrayContaining(['protein-target', 'hdl-low']));
+    // The control for the screening gate: the same 66-year-old, female, gets the sexed screenings.
+    const female66 = ids({ ...NO_SEX, sex: 'female', birthYear: 1960 }, {});
+    expect(female66.some((g) => g.startsWith('screening-breast'))).toBe(true);
+    expect(female66.some((g) => g.startsWith('screening-dexa'))).toBe(true);
+  });
+});
+
+describe('US-07 AC8: potassium advice needs an eGFR no newer creatinine has outdated', () => {
+  const lab = { labEgfr: 70, labEgfrDate: '2026-06-01' };
+  const bp = { systolicBp: 145, diastolicBp: 92 };
+  const plan = (inputs: Partial<HealthInputs>) => calculateHealthResults(inputs as HealthInputs, 'si', undefined, undefined, undefined, NOW);
+  const potassium = (r: ReturnType<typeof plan>) => ({
+    card: r.suggestions.some((s) => s.id === 'high-potassium'),
+    bp: r.suggestions.some((s) => /potassium/i.test(s.description) && s.category === 'blood_pressure'),
+  });
+
+  it('no sex and a newer creatinine: the lab eGFR shows, but no potassium card or BP sentence', () => {
+    const inputs = withLabEgfr<Partial<HealthInputs>>({ heightCm: 170, birthYear: 1960, creatinine: 80, ...bp }, '2026-08-01', lab, '2026-09-01');
+    expect(inputs.labEgfrOutdated).toBe(true);
+    const r = plan(inputs);
+    expect(r.eGFR).toBe(70);
+    expect(potassium(r)).toEqual({ card: false, bp: false });
+  });
+
+  it('no birth year and a newer creatinine: the same', () => {
+    const inputs = withLabEgfr<Partial<HealthInputs>>({ heightCm: 170, sex: 'male', creatinine: 80, ...bp }, '2026-08-01', lab, '2026-09-01');
+    expect(inputs.labEgfrOutdated).toBe(true);
+    expect(potassium(plan(inputs))).toEqual({ card: false, bp: false });
+  });
+
+  it('no newer creatinine: the lab eGFR opens the potassium card and BP sentence, sex or not', () => {
+    for (const sex of [undefined, 'male'] as const) {
+      const inputs = withLabEgfr<Partial<HealthInputs>>({ heightCm: 170, sex, birthYear: 1960, creatinine: 80, ...bp }, '2026-05-01', lab, '2026-09-01');
+      expect(inputs.labEgfrOutdated).toBeUndefined();
+      expect(potassium(plan(inputs))).toEqual({ card: true, bp: true });
+    }
   });
 });
 
@@ -113,6 +149,26 @@ function fileWithoutSex(): RoadmapFile {
 }
 
 describe('US-07 AC8, US-32: get_plan without sex', () => {
+  it('an invalid stored sex is no sex, not female, and the record is not changed', () => {
+    const file = fileWithoutSex();
+    file.profile.sex = 'unknown' as unknown as 'female';
+    const payload = planPayload(computePlan(file, NOW));
+    expect(payload.profile.sex).toBeNull();
+    expect(payload.profile.idealBodyWeightKg).toBeNull();
+    expect(payload.profile.proteinTargetG).toBeNull();
+    expect(payload.profile.eGFR).toBe(52);
+    expect(payload.missingInputs).toContain('sex');
+    expect(payload.profile.needsSex).toEqual(NEEDS_SEX);
+    expect(file.profile.sex).toBe('unknown');
+  });
+
+  it('due keeps its unsexed items with no sex: an overdue lipid still shows', () => {
+    const file = fileWithoutSex();
+    file.measurements.push(createMeasurement({ id: 'ldl', metricType: 'ldl', value: 3.2, recordedAt: '2025-01-01T00:00:00.000Z', createdAt: '2025-01-01T00:00:00.000Z' }));
+    const { due } = planPayload(computePlan(file, NOW));
+    expect(due.overdue.map((i) => i.category)).toContain('blood_test_lipids');
+  });
+
   it('computePlan plans a record with height and no sex, keeping the older lab eGFR', () => {
     const plan = computePlan(fileWithoutSex(), NOW);
     expect(plan.results.bmi).toBe(27.7);

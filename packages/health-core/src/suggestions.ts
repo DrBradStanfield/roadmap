@@ -287,8 +287,10 @@ export function generateSuggestions(
     });
   }
 
-  // High-potassium diet — only when eGFR ≥ 45 (safe kidney function)
-  if (results.eGFR !== undefined && results.eGFR >= EGFR_THRESHOLDS.mildlyDecreased) {
+  // High-potassium diet — only when eGFR ≥ 45 (safe kidney function), from an eGFR no newer
+  // creatinine has outdated (US-07 AC8): potassium advice errs on the cautious side.
+  const potassiumSafe = results.eGFR !== undefined && results.eGFR >= EGFR_THRESHOLDS.mildlyDecreased && !inputs.labEgfrOutdated;
+  if (potassiumSafe) {
     suggestions.push({
       id: 'high-potassium',
       category: 'nutrition',
@@ -688,7 +690,7 @@ export function generateSuggestions(
 
     // Build conditional lifestyle paragraphs for stage 1 & 2
     const bpExtraParagraphs: string[] = [];
-    if (results.eGFR !== undefined && results.eGFR >= EGFR_THRESHOLDS.mildlyDecreased) {
+    if (potassiumSafe) {
       bpExtraParagraphs.push('Increase potassium-rich foods (3,500–5,000mg/day).');
     }
     if (weightMeds.on) {

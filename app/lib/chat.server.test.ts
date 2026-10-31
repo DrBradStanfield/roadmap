@@ -13,7 +13,7 @@ import {
   FALLBACK_RESPONSE,
 } from './chat.server';
 import { REFUSAL_RESPONSES } from '../../packages/health-core/src/models';
-import { chatContextOf, MINOR_CHAT_RULE, NO_PLAN_CHAT_RULE } from '../../packages/health-core/src/chat-context';
+import { chatContextOf, MINOR_CHAT_RULE, NO_PLAN_CHAT_RULE, NO_SEX_CHAT_RULE } from '../../packages/health-core/src/chat-context';
 import { MAX_HISTORY_TURN_CHARS } from '../../packages/health-core/src/chat-history';
 import { CHAT_EDIT_TOOLS, EDITABLE_FIELDS } from '../../packages/health-core/src/chat-edits';
 import { loadBlogIndex } from './blog-index.server';
@@ -171,12 +171,20 @@ describe('buildSystemBlocks', () => {
     // Review R2 (2026-10-20): a plan computed this turn from stated values wins (AC33), without naming the tool.
     expect(NO_PLAN_CHAT_RULE).toMatch(/and no tool result this turn holds a plan/);
     expect(NO_PLAN_CHAT_RULE).not.toContain('run_roadmap');
-    // Review R4: eGFR needs more than sex.
-    expect(NO_PLAN_CHAT_RULE).toMatch(/calculated eGFR \(it needs sex, age and creatinine\)/);
-    // US-07 AC8: no sex is a plan without its sex parts; the model never fills them in.
-    expect(NO_PLAN_CHAT_RULE).toMatch(/When `missingInputs` names `sex`, the plan has no ideal body weight, protein target/);
-    expect(NO_PLAN_CHAT_RULE).toMatch(/never work them out yourself; say they need sex, and ask for it/);
     expect(NO_PLAN_CHAT_RULE).not.toMatch(/\u2014/);
+  });
+
+  // US-07 AC8: no sex is a plan with cards but none of the sex parts; its own rule, on every surface.
+  it('US-07 AC8: the base prompt carries the no-sex rule on every surface, byte-identical to health-core\'s', () => {
+    for (const surfaceContext of [undefined, 'DOCTOR', 'BRAND']) {
+      expect(buildSystemBlocks('{}', { surfaceContext })[0].text).toContain(NO_SEX_CHAT_RULE);
+    }
+    expect(NO_SEX_CHAT_RULE).toMatch(/`missingInputs` naming `sex`, the plan has no ideal body weight, protein target/);
+    // Review R4: eGFR needs more than sex.
+    expect(NO_SEX_CHAT_RULE).toMatch(/calculated eGFR \(it needs sex, age and creatinine\)/);
+    expect(NO_SEX_CHAT_RULE).toMatch(/never work them out yourself or assume a sex; say they need sex, and ask for it/);
+    expect(NO_PLAN_CHAT_RULE).not.toMatch(/names `sex`/);
+    expect(NO_SEX_CHAT_RULE).not.toMatch(/\u2014/);
   });
 
   // US-16 AC2 (2026-10-20, Brad: "the chatbot should be asking the user to input the missing values,

@@ -157,17 +157,19 @@ export function labEgfrOf(labValues: readonly LabRowLike[]): LabEgfr | null {
  * creatinine the schema keeps, a birth year and a sex (AC8). The newer by day wins; on
  * the same day the lab's does, since ours may come from a misread creatinine.
  * A creatinine with no date (typed, not yet saved: `null`) is `today`'s, the
- * day it would be saved with.
+ * day it would be saved with. A newer creatinine the plan cannot calculate
+ * from (no sex or no birth year) keeps the lab's, with `labEgfrOutdated` (AC8).
  */
 export function withLabEgfr<T extends Partial<HealthInputs>>(
   inputs: T, creatinineDay: string | null, lab: LabEgfr | null, today: string,
 ): T {
-  const { labEgfr: _value, labEgfrDate: _day, ...rest } = inputs;
+  const { labEgfr: _value, labEgfrDate: _day, labEgfrOutdated: _outdated, ...rest } = inputs;
   if (!lab) return rest as T;
   const usable = sanitizeInputs({ creatinine: inputs.creatinine, birthYear: inputs.birthYear, sex: inputs.sex });
-  const crDay = usable.creatinine === undefined || usable.birthYear === undefined || usable.sex === undefined
-    ? null : creatinineDay ?? today;
-  return crDay !== null && crDay > lab.labEgfrDate ? rest as T : { ...rest, ...lab } as T;
+  const newer = usable.creatinine !== undefined && (creatinineDay ?? today) > lab.labEgfrDate;
+  if (newer && usable.birthYear !== undefined && usable.sex !== undefined) return rest as T;
+  // AC8: a newer creatinine the plan cannot read yet leaves the lab eGFR standing, marked outdated.
+  return { ...rest, ...lab, ...(newer ? { labEgfrOutdated: true } : {}) } as T;
 }
 
 export interface PlanLab {
@@ -312,9 +314,9 @@ export function dueSplit(plan: Plan): { overdue: ReminderScheduleItem[]; upcomin
  */
 export const NEEDS_SEX: readonly string[] = [
   'profile.idealBodyWeightKg and profile.proteinTargetG (null) and the protein-target suggestion',
-  'profile.eGFR when it would be calculated from creatinine (a lab-printed eGFR still shows)',
+  'profile.eGFR when it would be calculated from creatinine (a lab-printed eGFR still shows, but with a newer creatinine it opens no potassium advice)',
   'the low-HDL suggestion: its line differs by sex',
-  'the sex-specific screening suggestions: breast, cervical, prostate, endometrial and bone density',
+  'the sex-specific screening suggestions and reminders: breast, cervical, prostate, endometrial and bone density',
 ];
 
 /** The agent-facing shape. Field names are stable; add, never rename. */

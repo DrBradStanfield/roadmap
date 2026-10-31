@@ -313,6 +313,7 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   if (creatinineDay !== undefined && !(creatinineDay <= String(base.labEgfrDate ?? ''))) {
     delete payload.labEgfr;
     delete payload.labEgfrDate;
+    delete payload.labEgfrOutdated;
   }
   if (unusable.size > 0 && base.measurementHistory !== undefined) {
     const gone = new Set([...unusable].map(f => FIELD_TO_METRIC[f]));

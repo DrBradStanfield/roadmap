@@ -20,7 +20,7 @@ struct ChatClient: Sendable {
     static let contextKeys: Set<String> = [
         "heightCm", "weightKg", "waistCm", "sex", "birthYear", "birthMonth",
         "hba1c", "ldlC", "totalCholesterol", "hdlC", "triglycerides", "apoB", "creatinine", "psa", "lpa",
-        "systolicBp", "diastolicBp", "labEgfr", "labEgfrDate", "unitSystem", "alcohol",
+        "systolicBp", "diastolicBp", "labEgfr", "labEgfrDate", "labEgfrOutdated", "unitSystem", "alcohol",
         "medications", "screenings", "measurementHistory",
     ]
 

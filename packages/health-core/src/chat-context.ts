@@ -25,8 +25,8 @@
  *   - latestValues: the longitudinal fields that pass the input schema, or
  *     the newest history point, printed from numbers; units: each of those
  *     fields' SI unit, from FIELD_UNITS.
- *   - labEgfr, labEgfrDate (US-07 AC7): the input schema (ranged number;
- *     YYYY-MM-DD); the plan reads them, and only derivedValues.eGFR prints.
+ *   - labEgfr, labEgfrDate, labEgfrOutdated (US-07 AC7, AC8): the input schema (ranged number;
+ *     YYYY-MM-DD; true or absent); the plan reads them, and only derivedValues.eGFR prints.
  *   - excludedFields: input-schema field names only, never their values.
  *   - measurementHistory: metric keys on METRIC_TO_FIELD, YYYY-MM-DD dates,
  *     values that pass their field's schema, HISTORY_CAP_PER_METRIC points a
@@ -125,7 +125,7 @@ export const MINOR_CHAT_RULE =
  * The rule every chat's prompt carries for a context with values and no plan
  * (US-15 AC36): no usable height. Verdicts come only from the plan (AC31), so
  * the model grades nothing and asks for what the plan needs. A plan without
- * sex lacks every sex-dependent part (US-07 AC8): the model asks for sex too.
+ * sex has its own rule, NO_SEX_CHAT_RULE (US-07 AC8).
  * Once stated, the chat proposes saving them where it has the tool (US-16 AC2).
  */
 export const NO_PLAN_CHAT_RULE =
@@ -133,11 +133,20 @@ export const NO_PLAN_CHAT_RULE =
   '`heightCm`, and no tool result this turn holds a plan, the roadmap has no plan yet. Use and mention the values ' +
   'they have saved, without grading them, ask them for the missing height (and sex, if `missingInputs` names it), ' +
   'and say in one plain sentence why: the roadmap needs height to work out the plan (BMI and waist-to-height ' +
-  'ratio), and with it it can run their plan. When `missingInputs` names `sex`, the plan has no ideal body weight, ' +
-  'protein target, calculated eGFR (it needs sex, age and creatinine), HDL verdict or sex-specific screening: never ' +
-  'work them out yourself; say they need sex, and ask for it. Once they state them, propose saving them with ' +
+  'ratio), and with it it can run their plan. Once they state them, propose saving them with ' +
   '`propose_profile_edit` when you have that tool (they confirm before anything is saved); they can also enter ' +
   'them in the roadmap tool.';
+
+/**
+ * The rule every chat's prompt carries for a plan without sex (US-07 AC8):
+ * the plan has cards, but none of the parts that need sex, and the model must
+ * not fill them in.
+ */
+export const NO_SEX_CHAT_RULE =
+  "When the user's health data has `missingInputs` naming `sex`, the plan has no ideal body weight, protein target, " +
+  'calculated eGFR (it needs sex, age and creatinine), HDL verdict or sex-specific screening: never work them out ' +
+  'yourself or assume a sex; say they need sex, and ask for it. Once they state it, propose saving it with ' +
+  '`propose_profile_edit` when you have that tool; they can also enter it in the roadmap tool.';
 
 /**
  * The JSON the model reads for a payload, or null when it holds nothing:

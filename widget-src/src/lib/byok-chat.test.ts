@@ -94,7 +94,7 @@ describe('BYOK chat context — per-field sanitizing', () => {
     expect(state.sent!.system).toMatch(/propose saving them with `propose_profile_edit`.*enter them in the roadmap tool/);
     expect(state.sent!.system).toMatch(/needs height to work out the plan/);
     // US-07 AC8: a plan without sex lacks its sex parts; the model asks rather than works them out.
-    expect(state.sent!.system).toMatch(/When `missingInputs` names `sex`.*never work them out yourself/);
+    expect(state.sent!.system).toMatch(/`missingInputs` naming `sex`.*never work them out yourself/);
   });
 
   it('US-15 AC36: an empty form still sends no context', async () => {

@@ -25,7 +25,7 @@ function producible(): Set<string> {
 
 describe('chat context allow-list (Codex R3)', () => {
   it('is exactly the keys chatContextOf can produce', () => {
-    expect(allowed.size).toBe(24);
+    expect(allowed.size).toBe(25);
     expect([...allowed].sort()).toEqual([...producible()].sort());
   });
 

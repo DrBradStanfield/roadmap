@@ -102,7 +102,7 @@ Rounded to nearest integer (mL/min/1.73m^2).
 - (a) the eGFR above, calculated from the latest active creatinine and dated by that row;
 - (b) the latest active lab `egfr` row: the creatinine eGFR the lab printed, stored in mL/min/1.73m². `egfr_cystatin` and `egfr_combined` are never used.
 
-The newer by measurement day wins. On the same day the lab's eGFR wins: the lab worked it out from a real serum creatinine, and ours may come from a misread row. Only one exists: that one. Candidate (a) exists only when the plan can calculate it: a known birth year, a known sex (US-07 AC8) and a creatinine inside its input range (10–2650 µmol/L). Otherwise the lab eGFR stands, whatever the creatinine's day. Neither: no eGFR. A creatinine with no date (typed and not yet saved, or stated in the chat without a date) counts as today's, the day it would be saved with; an unsaved blood-test draft counts on the day it is dated. A creatinine is never worked back from an eGFR. The lab eGFR needs no age, and is rounded to the nearest integer. It drives the same rules as the calculated one: the CKD protein target, the potassium gate and the eGFR tile. A known minor's eGFR is withheld either way (section on adult readings). With a lab eGFR, creatinine is not a missing plan input.
+The newer by measurement day wins. On the same day the lab's eGFR wins: the lab worked it out from a real serum creatinine, and ours may come from a misread row. Only one exists: that one. Candidate (a) exists only when the plan can calculate it: a known birth year, a known sex (US-07 AC8) and a creatinine inside its input range (10–2650 µmol/L). Otherwise the lab eGFR stands, whatever the creatinine's day. Neither: no eGFR. A creatinine with no date (typed and not yet saved, or stated in the chat without a date) counts as today's, the day it would be saved with; an unsaved blood-test draft counts on the day it is dated. A creatinine is never worked back from an eGFR. The lab eGFR needs no age, and is rounded to the nearest integer. It drives the same rules as the calculated one: the CKD protein target, the potassium gate and the eGFR tile. One exception (US-07 AC8, orchestrator's call 2026-11-01, the cautious side): when a creatinine newer than the lab eGFR exists but the plan cannot calculate from it (no sex or no birth year), the lab eGFR still shows and still sets the protein target, but it does not open the potassium advice (`labEgfrOutdated`). Potassium advice needs an eGFR that no newer creatinine has outdated. A known minor's eGFR is withheld either way (section on adult readings). With a lab eGFR, creatinine is not a missing plan input.
 
 ### Non-HDL Cholesterol
 
@@ -630,7 +630,7 @@ The plan is built for adults aged 18 and over (US-07 AC6, 2026-10-14; amended th
 | 18 or over | The plan below, unchanged. |
 | Unknown (no birth year) | The plan below, except the medicine cards. Medicine cards need a known age of 18 or over. When the plan would show any, they give way to one card where the first stood: `add-birth-year` (general, info), "Add your birth year": "Medicine suggestions need your age. Add your birth year to see them." Every other card is unchanged. The standalone lipid cards (`apob-*`, `non-hdl-*`, `ldl-*`, `total-chol-*`) never give way to the lipid cascade here, because the cascade is not shown. No weight card gives way to the weight cascade, at any age. The kept cards suggest no medicine in their own text: `apob-very-high` ends "Discuss treatment, including lifestyle changes, with your doctor." and `ldl-very-high` "Discuss treatment with your doctor." in place of their statin sentence, `bp-stage2` says "Discuss treatment with your doctor." in place of "Medication is typically recommended at this level.", `bp-stage1` and `bp-stage2` keep their weight-loss sentences but leave out "GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.", and the `lpa-elevated` checklist leaves out its "not started" medicine lines. One exception, by decision: `ldl-high` keeps "Consider lifestyle modifications and discuss medication options." It names no medicine, and discussing is not suggesting. |
 
-**Unknown sex (US-07 AC8, Brad 2026-10-31).** The plan needs only a height. With no sex on record it is the plan above, minus every part that needs sex: the ideal body weight, the protein target and its `protein-target` card, a calculated eGFR (a lab-printed one still stands, and a calculated one cannot outrank it), the `hdl-low` card, and the sex-specific screenings (breast, cervical, prostate, endometrial, bone density). Nothing falls back to a male or female default. BMI, the waist-to-height ratio and every unsexed card are unchanged. `get_plan` returns `profile.sex`, `idealBodyWeightKg` and `proteinTargetG` as `null`, names `sex` in `missingInputs`, and lists the missing parts in `profile.needsSex`. No usable height is still no plan.
+**Unknown sex (US-07 AC8, Brad 2026-10-31).** The plan needs only a height. A stored sex that is not male or female counts as none (the record is not changed). With no sex on record it is the plan above, minus every part that needs sex: the ideal body weight, the protein target and its `protein-target` card, a calculated eGFR (a lab-printed one still stands, and a calculated one cannot outrank it; when a newer creatinine exists, that lab eGFR opens no potassium advice), the `hdl-low` card, and the sex-specific screenings (breast, cervical, prostate, endometrial, bone density), as cards and as reminders in `due` (section 11). Nothing falls back to a male or female default. BMI, the waist-to-height ratio and every unsexed card are unchanged. `get_plan` returns `profile.sex`, `idealBodyWeightKg` and `proteinTargetG` as `null`, names `sex` in `missingInputs`, and lists the missing parts in `profile.needsSex`. No usable height is still no plan.
 
 Three-file sync for US-07 AC8: `evidence.ts` needs no change. No card's reason, guideline tag or citation changes, and the sex-specific "why" texts (ideal body weight, BMI) are built only when sex is known. `roadmap_text.html` needs no change. It describes how each number is worked out, which is unchanged when sex is known, and its eGFR sentence ("uses your creatinine level along with your age and sex") stays true: with no sex there is no calculated eGFR.
 
@@ -667,7 +667,7 @@ Three-file sync for this section's 2026-10-14 amendments (the strict missing-mon
 | ID | Condition | Priority | Notes |
 |----|-----------|----------|-------|
 | `low-salt` | systolicBp > 120 (age < 65) or > 130 (age >= 65) | info | Target: <1,500 mg/day (ACC/AHA 2017) |
-| `high-potassium` | eGFR >= 45 (safe kidney function) | info | |
+| `high-potassium` | eGFR >= 45 (safe kidney function), from an eGFR no newer creatinine has outdated (US-07 AC8, section 1) | info | |
 | `trig-nutrition` | triglycerides 150 mg/dL (about 1.7 mmol/L) or more | attention | Its text names "limit alcohol" among the key measures, except for someone who answered "I don't drink": then "Key measures: reduce sugar intake, and reduce total fat and calorie intake." (US-60, Brad 2026-10-31). Its evidence reason is one text for everyone: "reducing sugar and total calorie intake, and reducing alcohol for people who drink." |
 | `reduce-alcohol` | (BMI >= 30, OR (BMI >= 25 AND WHtR >= 0.5), OR triglycerides 150 mg/dL (about 1.7 mmol/L) or more), and the person has not answered "I don't drink" | attention | "I drink" or no answer keeps the card (US-60) |
 
@@ -743,7 +743,7 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 Stage 1 shows age-dependent target: < 120/80 for age < 65, < 130/80 for age >= 65.
 
 Stage 1 and 2 include conditional extra paragraphs:
-- If eGFR >= 45: potassium recommendation
+- If eGFR >= 45, from an eGFR no newer creatinine has outdated (US-07 AC8, section 1): potassium recommendation
 - If the weight-medication trigger is on (section 6): weight loss + GLP-1 mention (the GLP-1 sentence only for a known age of 18 or over; US-07 AC6)
 
 ---
@@ -1160,6 +1160,10 @@ Triggers when ANY active medication (drug name not in `['none', 'not_yet', 'not_
 ### Screening Reminders
 
 Same eligibility criteria as the suggestion algorithm (section 8). Checks both initial screening overdue and post-follow-up overdue. Only triggers for screenings the user has started (not `'not_yet_started'`).
+
+### Missing Profile Fields
+
+The schedule needs a birth year: without one it holds only the annual check-in floor. It does not need a sex (US-07 AC8): with no sex on record (or one that is not male or female) the blood-test, medication-review, colorectal and lung reminders run as usual, and only the sexed screenings (breast, cervical, prostate, bone density) drop out.
 
 ### Preference Filtering
 

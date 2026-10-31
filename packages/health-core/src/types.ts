@@ -32,6 +32,9 @@ export interface HealthInputs {
    *  creatinine, or from the same day). */
   labEgfr?: number;
   labEgfrDate?: string; // YYYY-MM-DD
+  /** US-07 AC8: a newer creatinine the plan cannot read yet (no sex or no age) outdates the lab eGFR.
+   *  It still shows and sets the protein target, but opens no potassium advice. */
+  labEgfrOutdated?: true;
   // User preference (stored as 1=si, 2=conventional in DB)
   unitSystem?: 'si' | 'conventional';
   /** US-60: "Do you drink alcohol?", from `profile.alcohol`. Absent: not answered. */

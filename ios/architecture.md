@@ -1568,3 +1568,8 @@ is. Spec: docs/user-stories.md US-61.
 - **Hardware:** the build Mac is Intel. macOS 26 is the last Intel release, so a later
   required Xcode may need Apple silicon.
 - **Two release paths:** binary changes still go through App Review; plan for it.
+- **Follow-up: the "cannot plan" sentence (US-07 AC8, 2026-11-01).** Since the engine plans
+  without sex, health-core's `PlanError` means no usable height only, but `PlanView`'s
+  `.needsDetails` text still says "Add your sex and height on My data". It is left as it is
+  until an app release that ships with the new engine, so a new app on an old engine never
+  under-asks. Then build the sentence from the profile, naming only what is missing.
