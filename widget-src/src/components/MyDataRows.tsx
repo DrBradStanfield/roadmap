@@ -70,11 +70,11 @@ const LINE_WORD: Record<string, string> = {
 };
 
 /** A grade as a screen reader hears it beside the value ("3.4, above optimal,
- *  previous 2.9"): the colour says it on screen. Weight's amber covers both
- *  sides of its target, and HDL is better higher. */
+ *  previous 2.9"): the colour says it on screen. Said only off target, so no
+ *  word can contradict the printed target. Weight's amber covers both sides
+ *  of its target, and HDL is better higher. */
 export function gradeWords(status: Status, metric: string): string | null {
-  if (!status) return null;
-  if (status === 'ok') return 'in range';
+  if (!status || status === 'ok') return null;
   if (metric === 'hdl') return status === 'bad' ? 'low' : 'below optimal';
   if (metric === 'weight') return status === 'bad' ? 'above target' : 'outside target';
   return status === 'bad' ? 'high' : `above ${LINE_WORD[metric] ?? 'target'}`;

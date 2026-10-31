@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useState, useEffect, useRef, type MutableRefObject } from 'react';
+import { Fragment, useState, useEffect, useRef, type MutableRefObject } from 'react';
 import { ColumnHeader } from './ColumnHeader';
 import { InfoTooltip } from './InfoTooltip';
 import { DocumentLightbox } from './DocumentLightbox';
@@ -80,7 +80,7 @@ import {
 } from '@roadmap/health-core';
 import { formatShortDate, MONTHS_FULL } from '../lib/constants';
 import { InlineDatePicker, getCurrentDateValue, type DateValue } from './DatePicker';
-import { BloodTestTimeline, type BloodTestPrefillFn } from './BloodTestTimeline';
+import { BloodTestTimeline, useLiveRegion, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
 import { useMoveTest, type MoveTestApi } from './MoveTestPanel';
 import { StartingInfoVitals, type VitalsPrefillFn } from './StartingInfoVitals';
@@ -95,8 +95,8 @@ import { ValuePage } from './ValuePage';
 /** The history-state key a phone value page's entry carries (US-62 AC10). */
 const VALUE_PAGE_STATE = 'hrValuePage';
 const LEAVE_UNSAVED = 'Leave without saving the value you typed?';
-/** The vitals grid's draft fields; the blood-test grid's are every other. */
-const VITALS_DRAFT_FIELDS: ReadonlySet<string> = new Set(['weightKg', 'waistCm', 'systolicBp', 'diastolicBp']);
+/** Said when a chat edit closes a page that held typed input. */
+const TYPED_NOT_SAVED = 'Your typed value was not saved.';
 
 interface FieldConfig {
   field: keyof HealthInputs;
@@ -369,7 +369,8 @@ export function InputPanel({
   useEffect(() => {
     if (!valuePage) return;
     const onPop = () => {
-      if (onPageEntry()) return;
+      // A page left open on My data while another tab shows does not answer Back.
+      if (onPageEntry() || panelRef.current?.closest('[hidden]')) return;
       // Back from a page holding typed input, declined: stay, and keep the entry.
       if (!mayLeave()) { window.history.pushState({ ...window.history.state, [VALUE_PAGE_STATE]: true }, ''); return; }
       finishClose();
@@ -391,29 +392,24 @@ export function InputPanel({
   const valuePageRef = useRef(valuePage);
   valuePageRef.current = valuePage;
   // A chat edit that fills a grid cell closes any open page, so the table shows.
+  const [sayPanel, panelMessages] = useLiveRegion('md-panel-messages');
+  // Read as the reveal renders: the page unmounts in this commit, and its form clears the mark as it goes.
+  const revealDropsTyping = useRef(false);
+  if (revealing && valuePage && pageDirty.current) revealDropsTyping.current = true;
   useEffect(() => {
     if (!revealing || !valuePage) return;
+    if (revealDropsTyping.current) sayPanel(TYPED_NOT_SAVED);
+    revealDropsTyping.current = false;
     setValuePage(null);
     pageDirty.current = false;
     if (onPageEntry()) window.history.back();
   }, [revealing]);
-  // A grid's typed values not yet saved: the plan and the chat read them, and
-  // an upload saves them first, so on a phone, where the grids sit hidden
-  // under the rows, each card says so and opens the table (US-62 AC11).
-  const [drafted, setDrafted] = useState<ReadonlySet<string>>(new Set());
-  const onDraftValueRef = useRef(onDraftValue);
-  onDraftValueRef.current = onDraftValue;
-  const trackDraft = useCallback((field: keyof HealthInputs, value: number | undefined, day?: string) => {
-    setDrafted(prev => {
-      if ((value !== undefined) === prev.has(field)) return prev;
-      const next = new Set(prev);
-      if (value !== undefined) next.add(field); else next.delete(field);
-      return next;
-    });
-    if (day === undefined) onDraftValueRef.current(field, value); else onDraftValueRef.current(field, value, day);
-  }, []);
-  const draftedVitals = [...drafted].some(f => VITALS_DRAFT_FIELDS.has(f));
-  const draftedBlood = [...drafted].some(f => !VITALS_DRAFT_FIELDS.has(f));
+  // A grid's typed text not yet saved, valid or not (the plan and the chat
+  // read the valid part, and an upload saves it first): on a phone, where the
+  // grids sit hidden under the rows, each card says so and opens the table
+  // (US-62 AC11). Each grid reports what it keeps.
+  const [draftedVitals, setDraftedVitals] = useState(false);
+  const [draftedBlood, setDraftedBlood] = useState(false);
   const unsavedCue = (shown: boolean) => isPhone && !tableShown && shown && (
     <button type="button" className="md-unsaved" onClick={() => showTable(true)}>Unsaved values: review</button>
   );
@@ -1077,7 +1073,8 @@ export function InputPanel({
         unitSystem={unitSystem}
         onSave={onSaveBloodTestBatch}
         onCorrectValue={onCorrectValue}
-        onDraftValue={trackDraft}
+        onDraftValue={onDraftValue}
+        onHoldsText={setDraftedVitals}
         formStage={formStage}
         plan={planBasis}
         knownMinor={knownMinor}
@@ -1270,7 +1267,8 @@ export function InputPanel({
       onSaveBatch={onSaveBloodTestBatch}
       onCorrectValue={onCorrectValue}
       move={move.headers}
-      onDraftValue={trackDraft}
+      onDraftValue={onDraftValue}
+      onHoldsText={setDraftedBlood}
       isSaving={isSavingLongitudinal}
       grading={grading}
       onUploadClick={() => setShowUploadModal?.(true)}
@@ -2247,6 +2245,7 @@ export function InputPanel({
                    ctx={rowCtx} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} dirtyRef={pageDirty}/>
       )}
       <ColumnHeader step={1} title="Your information" meta={storageBar} actions={!!storageBar} />
+      {panelMessages}
       {/* Card 1: Units + Basic Info + Vitals + Birth Info (stage 2+). On a
           phone with sex and height in, About you moves to the foot (US-62 AC12). */}
       <div className="section-card">

@@ -5,7 +5,7 @@
 // value already there can be replaced: a correction through the same door as
 // the cell editor, never a second row (AC13).
 
-import { useState } from 'react';
+import { useEffect, useState, type MutableRefObject } from 'react';
 import { commaQuestion, displayLabUnit, LAB_CATALOG, LAB_GROUPS, localDay, parseLocalisedNumber, slotKey } from '@roadmap/health-core';
 import { UnitChip } from './UnitChip';
 import { SAVE_ERRORS } from './BloodTestTimeline';
@@ -16,7 +16,7 @@ import { labUnitRefusalLine } from '../lib/lab-value-labels';
 import type { CorrectFn } from '../lib/matrix-save';
 import type { ApiLabValue } from '../lib/api-types';
 
-export function AddLabTest({ onAdded, labValues = [], onCorrect, preset }: {
+export function AddLabTest({ onAdded, labValues = [], onCorrect, preset, dirtyRef }: {
   onAdded: () => void;
   /** The saved values, to name the one a duplicate collides with. */
   labValues?: ApiLabValue[];
@@ -25,6 +25,8 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect, preset }: {
   /** One test, fixed: a phone value page's Add (US-62 AC10). The test is
    *  not chosen, and the form adds a value to it under the same rules. */
   preset?: { metricName: string; unit: string };
+  /** Set while the form holds a typed value not yet saved (a value page asks before leaving it). */
+  dirtyRef?: MutableRefObject<boolean>;
 }) {
   const presetKey = preset && (LAB_CATALOG.some(e => e.key === preset.metricName) ? preset.metricName : 'custom');
   const [open, setOpen] = useState(false);
@@ -37,6 +39,8 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect, preset }: {
   const [notice, setNotice] = useState<string | null>(null);
   // The saved value a Replace would correct.
   const [held, setHeld] = useState<ApiLabValue | null>(null);
+  if (dirtyRef) dirtyRef.current = open && valueStr.trim() !== '';
+  useEffect(() => () => { if (dirtyRef) dirtyRef.current = false; }, []);
 
   if (!open) {
     return (

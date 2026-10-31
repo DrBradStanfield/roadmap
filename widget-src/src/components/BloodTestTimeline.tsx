@@ -125,6 +125,8 @@ export function Sparkline({ points, width = 44, height = 18 }: { points: number[
 }
 
 export interface BloodTestTimelineProps {
+  /** Told whether the grid keeps any typed text, valid or not (US-62 AC11). */
+  onHoldsText?: (holds: boolean) => void;
   bloodTestHistory: ApiMeasurement[]; // full history, blood-test metrics only
   unitSystem: UnitSystem;
   unitOverrides: Record<string, UnitSystem>;
@@ -182,7 +184,7 @@ const MONTH_LABELS = MONTHS_SHORT.map(m => m.label);
 export function BloodTestTimeline({
   bloodTestHistory, unitSystem, unitOverrides, onToggleFieldUnit,
   onSaveBatch, onCorrectValue, move, onDraftValue, isSaving, grading, onUploadClick, uploadDisabled, loginUrl,
-  hasApiResponse, flushRef, prefillRef,
+  hasApiResponse, flushRef, prefillRef, onHoldsText,
 }: BloodTestTimelineProps) {
   const batches = useMemo(() => groupByBatch(bloodTestHistory), [bloodTestHistory]);
   // Typed values, in the unit they were typed in: a draft, kept on the device.
@@ -194,8 +196,11 @@ export function BloodTestTimeline({
   const rowsUnder = (day: string, metric: MetricType) => ({ [metric]: batches.find(b => b.date === day)?.ids[metric] ?? null });
   const latestDay = (metric: MetricType) => [...batches].reverse().find(b => b.values[metric] != null)?.date;
   const {
+    holdsText,
     draft, backfills, type, setDate: setDraftDate, lpaUnitOf, restamp, expected, clashes, taken, lends, settle, refusal,
   } = useMatrixDraft<MetricType>(BT_TIMELINE_DRAFT_KEY, { onScreen, rowsUnder, latestDay });
+  // On a phone the grid sits hidden under rows: tell the page it holds typed text (US-62 AC11).
+  useEffect(() => { onHoldsText?.(holdsText); }, [holdsText]);
   const [activeCell, setActiveCell] = useState<string | null>(null);
   // A cell leaving clears only its own mark: another may have taken it since
   // (an editor opened from it, the chat's flash).

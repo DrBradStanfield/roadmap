@@ -57,6 +57,22 @@ afterEach(async () => {
 const tab = (view: ReturnType<typeof render>, name: string) => within(view.getByRole('tablist')).getByRole('tab', { name });
 
 describe('US-16 AC2 on a phone: a chat edit lands on My data, on the cell it filled', () => {
+  it('a chat edit closes an open value page that held typed input, and says it was not saved (US-62 AC11)', async () => {
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
+    await addMeasurement('weight', 82, '2026-09-01');
+    await addMeasurement('ldl', 3.0, '2026-09-01');
+    await flushRoadmapStore();
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    const ldlRow = await waitFor(() => [...view.container.querySelectorAll<HTMLButtonElement>('.md-row')].find(b => b.textContent!.startsWith('LDL'))!);
+    fireEvent.click(ldlRow);
+    const page = view.container.querySelector<HTMLElement>('.md-page')!;
+    fireEvent.change(within(page).getByLabelText(/Value/), { target: { value: '2.2' } });
+    act(() => chat.proposeEdit!([{ kind: 'field', field: 'ldlC', displayValue: 3.2, unitSystem: 'si', date: null }]));
+    await waitFor(() => expect(view.container.querySelector('.md-page')).toBeNull());
+    await waitFor(() => expect(view.container.querySelector('.md-panel-messages')!.textContent).toBe('Your typed value was not saved.'));
+  });
+
   it('a blood test: My data shows, and the matrix cell holding the value is in view and focused', async () => {
     await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
     await addMeasurement('weight', 82, '2026-09-01');

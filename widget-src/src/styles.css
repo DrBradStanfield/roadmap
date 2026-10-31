@@ -5046,8 +5046,10 @@ input[type="number"] {
 .lpa-check-wait { align-self: center; }
 .lpa-check-status { margin: 8px 0 0; }
 /* US-04 AC1: a matrix's live region for its cells' messages; each shows in its cell.
-   US-13 AC10: a review cell's new value, mirrored as text for its Replace box. */
+   US-13 AC10: a review cell's new value, mirrored as text for its Replace box.
+   US-62 AC11: what the phone's My data says when a chat edit closes a value page. */
 .bt-cell-messages,
+.md-panel-messages,
 .bt-cell-heard {
   position: absolute;
   width: 1px;

@@ -57,6 +57,8 @@ import { DraftDateCell } from './DraftDateCell';
 import { UnitChip } from './UnitChip';
 
 interface StartingInfoVitalsProps {
+  /** Told whether the grid keeps any typed text, valid or not (US-62 AC11). */
+  onHoldsText?: (holds: boolean) => void;
   /** Full per-metric history (filtered to vitals metrics). Latest-per-metric
    *  is insufficient — the matrix needs the timeline. */
   vitalsHistory: ApiMeasurement[];
@@ -261,7 +263,7 @@ export function vitalsCellsOf(
 export function StartingInfoVitals({
   vitalsHistory, unitSystem, onSave, onCorrectValue,
   onDraftValue, formStage, plan, knownMinor, onAutoFocusEmail, unitOverrides, onToggleFieldUnit,
-  prefillRef, flushRef,
+  prefillRef, flushRef, onHoldsText,
 }: StartingInfoVitalsProps) {
   // The plan's systolic target; none, and no BP colours, with no plan. A known
   // minor gets no adult weight or BP target or colour (US-07 AC6); the waist
@@ -300,8 +302,11 @@ export function StartingInfoVitals({
   };
   const latestDay = (key: VitalsKey) => [...dateColumns].reverse().find(c => c[key] != null)?.date;
   const {
+    holdsText,
     draft, backfills, type, setDate, unitOf, expected, clashes, taken, lends, settle, refusal,
   } = useMatrixDraft<VitalsKey>(VITALS_DRAFT_KEY, { onScreen, rowsUnder, latestDay, cellOf: key => (key === 'dia' ? 'sys' : key) });
+  // On a phone the grid sits hidden under rows: tell the page it holds typed text (US-62 AC11).
+  useEffect(() => { onHoldsText?.(holdsText); }, [holdsText]);
   const [activeCell, setActiveCell] = useState<string | null>(null);
   // A cell leaving clears only its own mark: another may have taken it since.
   const unmark = (cellId: string) => () => setActiveCell(prev => (prev === cellId ? null : prev));

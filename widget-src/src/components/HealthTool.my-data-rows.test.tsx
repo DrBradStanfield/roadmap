@@ -119,7 +119,8 @@ describe('US-62 AC8: one row per value on a phone', () => {
     const view = await renderTool();
     const hba1c = row(view, 'HbA1c');
     expect(hba1c.querySelector('.md-row-value')!.textContent).toBe('36');
-    expect(hba1c.querySelector('.hr-sr-only')!.textContent).toBe('36, in range');
+    // A grade is said only off target, so no word contradicts the printed one.
+    expect(hba1c.querySelector('.hr-sr-only')!.textContent).toBe('36');
     expect(hba1c.querySelector('svg.md-row-trend')).toBeNull();
     expect(row(view, 'Vitamin D (25-OH)').querySelector('.md-row-meta')!.textContent).toBe('Oct 2026');
     const apob = row(view, 'ApoB');
@@ -341,8 +342,30 @@ describe('US-62 AC10 review fixes: what Add expects is frozen when entry begins 
     fireEvent.click(within(page(view)).getByRole('button', { name: 'Add' }));
     await waitFor(() => expect(within(page(view)).getByRole('alert').textContent).toBe('This value changed on another device, so your edit was not saved.'));
     await flushRoadmapStore();
+    const remote = fileRows('ldl').find(r => r.recordedAt.startsWith('2026-10-30'))!;
     expect(fileRows('ldl').filter(r => r.recordedAt.startsWith('2026-10-30')).map(r => [r.value, r.status, r.correctsId]))
       .toEqual([[5.0, 'active', null]]);
+    // The form now names what is there: the next press is a deliberate correction of it.
+    expect(page(view).querySelector('.md-add-note')!.textContent).toBe('This day has 5.0 mmol/L already. Saving corrects it.');
+    fireEvent.click(within(page(view)).getByRole('button', { name: 'Save correction' }));
+    await waitFor(() => expect(fileRows('ldl').find(r => r.correctsId === remote.id)).toMatchObject({ value: 2.2, status: 'active' }));
+    expect(fileRows('ldl').find(r => r.id === remote.id)!.status).toBe('entered-in-error');
+  });
+
+  it('a held day corrected on another device while a correction is typed: refused, only the other device\'s correction stands', async () => {
+    await seed();
+    const view = await renderTool();
+    fireEvent.click(row(view, 'LDL Cholesterol'));
+    fireEvent.change(page(view).querySelector('input[type="date"]')!, { target: { value: '2026-10-12' } });
+    fireEvent.change(within(page(view)).getByLabelText(/Value/), { target: { value: '3.1' } });
+    const old = fileRows('ldl').find(r => r.recordedAt.startsWith('2026-10-12'))!;
+    await remoteWrite(() => correctValue(old.id, 3.6));
+    await waitFor(() => expect(page(view).querySelector('.md-history')!.textContent).toContain('3.6'));
+    fireEvent.click(within(page(view)).getByRole('button', { name: 'Save correction' }));
+    await waitFor(() => expect(within(page(view)).getByRole('alert').textContent).toMatch(/changed on another device/));
+    await flushRoadmapStore();
+    expect(fileRows('ldl').filter(r => r.recordedAt.startsWith('2026-10-12') && r.status === 'active').map(r => r.value)).toEqual([3.6]);
+    expect(fileRows('ldl').some(r => r.value === 3.1)).toBe(false);
   });
 
   it('a blood pressure on an empty day, its systolic filled elsewhere while typed: refused, nothing written', async () => {
@@ -447,5 +470,52 @@ describe('US-62 AC11 review fix: unsaved grid values under the rows', () => {
     const cue = await waitFor(() => view.getByRole('button', { name: 'Unsaved values: review' }));
     fireEvent.click(cue);
     expect([...view.container.querySelectorAll<HTMLElement>('.md-table')].every(t => !t.hidden)).toBe(true);
+  });
+});
+
+describe('US-62 AC11 review re-check: the cue reports what each grid keeps', () => {
+  it('a value the grid cannot save (out of range) still shows the cue', async () => {
+    await seed();
+    const view = await renderTool();
+    fireEvent.click(view.getByRole('button', { name: 'All results as a table' }));
+    const draft = view.container.querySelector<HTMLInputElement>('.md-table .bt-timeline:not(.alr-matrix) .bt-row[data-metric="ldl"] input')!;
+    fireEvent.focus(draft);
+    fireEvent.change(draft, { target: { value: '999' } });
+    fireEvent.click(within(view.container.querySelectorAll<HTMLElement>('.md-table')[1]).getByRole('button', { name: '‹ Show as rows' }));
+    expect(await waitFor(() => view.getByRole('button', { name: 'Unsaved values: review' }))).toBeTruthy();
+  });
+
+  it('a draft restored from the device shows the cue as the page opens', async () => {
+    await seed();
+    localStorage.setItem('health_roadmap_bt_timeline_draft', JSON.stringify({ draft: { values: { ldl: '2.6' } }, backfills: {}, meta: {} }));
+    const view = await renderTool();
+    expect(await waitFor(() => view.getByRole('button', { name: 'Unsaved values: review' }))).toBeTruthy();
+  });
+});
+
+describe('US-62 AC10 review re-check: a lab page\'s typed value', () => {
+  it('Back with a typed lab value asks first; declining keeps it', async () => {
+    await seed();
+    const view = await renderTool();
+    const confirm = vi.fn(() => false);
+    vi.stubGlobal('confirm', confirm);
+    fireEvent.click(row(view, 'Sodium'));
+    fireEvent.click(within(page(view)).getByRole('button', { name: '+ Add a value' }));
+    fireEvent.change(within(page(view)).getByLabelText('Value'), { target: { value: '141' } });
+    act(() => { history.back(); });
+    await waitFor(() => expect(confirm).toHaveBeenCalledWith('Leave without saving the value you typed?'));
+    expect((within(page(view)).getByLabelText('Value') as HTMLInputElement).value).toBe('141');
+  });
+});
+
+describe('US-62 AC10 review re-check: Back on another tab', () => {
+  it('a page left open on My data does not answer Back while My plan shows', async () => {
+    await seed();
+    const view = await renderTool();
+    fireEvent.click(row(view, 'LDL Cholesterol'));
+    fireEvent.click(view.getByRole('tab', { name: 'My plan' }));
+    act(() => { history.back(); });
+    await new Promise(r => setTimeout(r, 30));
+    expect(view.container.querySelector('.md-page')).not.toBeNull();
   });
 });

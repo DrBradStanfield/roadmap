@@ -111,7 +111,7 @@ export function ValuePage({ subject, history, labValues, ctx, onSave, onCorrect,
       <h4 className="md-page-subtitle">Add a value</h4>
       {subject.kind === 'lab'
         ? latestLab && <AddLabTest onAdded={onLabAdded ?? (() => {})} labValues={labValues} onCorrect={onCorrect}
-                                   preset={{ metricName: latestLab.metricName, unit: lab!.unit }}/>
+                                   preset={{ metricName: latestLab.metricName, unit: lab!.unit }} dirtyRef={dirtyRef}/>
         : <AddValue key={correcting?.id ?? 'new'} metric={metric} history={history} unit={unit} start={correcting}
                     onSave={onSave} say={say} onDone={() => setCorrecting(null)} dirtyRef={dirtyRef}/>}
 
@@ -222,11 +222,15 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef 
       return metric ? sameAsSaved(readTypedValue(m, text, unit)!, cellText(m, row.value, unit), values[m], row.value)
         : Math.round(row.value) === values[m];
     });
-    if (typedIn && typedIn !== unit) { setText(''); setDia(''); setTypedIn(null); setError(UNIT_CHANGED); return; }
     const refused = await onSave([{ date, values, expected, unit }], seen?.erase ?? getShownErase());
     setSaving(false);
     const [why] = refused.values();
-    if (why) { setError(SAVE_ERRORS[why]); return; }
+    if (why) {
+      setError(SAVE_ERRORS[why]);
+      // The form now shows what is there, so the next press is a deliberate correction of it.
+      if (why === 'changed') setSeen({ day: date, rows: rowsOn(date), erase: seen?.erase ?? getShownErase() });
+      return;
+    }
     say(unchanged ? 'No change.' : taken ? 'Corrected.' : 'Added.');
     setText(''); setDia(''); setDate(today); setSeen(null); setTypedIn(null);
     dirtyRef.current = false;
