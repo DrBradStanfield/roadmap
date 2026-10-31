@@ -771,7 +771,13 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       .eq('is_fallback', true)
       .gte('created_at', windowStart),
     // v2 reminder opt-ins (provider, last_sent, schedule aggregated in JS).
-    supabaseAdmin.from('reminder_optin_v2').select('provider, last_sent, schedule'),
+    // Live rows only: a tombstone (schedule [], kept 90 days, US-17 AC1b) is
+    // not an opt-in. The exact count is the headline; the rows feeding the
+    // breakdown stop at PostgREST's 1000-row page.
+    supabaseAdmin
+      .from('reminder_optin_v2')
+      .select('provider, last_sent, schedule', { count: 'exact' })
+      .neq('schedule', '[]'),
     // Recent chat activity — platform + timestamp only, NO content (PHI-safe).
     supabaseAdmin
       .from('chat_conversations')
@@ -800,7 +806,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     optinRes.data as ReminderOptinRow[] | null,
     todayStr,
   );
-  const activeOptins = optinRes.data?.length ?? 0;
+  const activeOptins = optinRes.count ?? optinRes.data?.length ?? 0;
 
   // A/B headline numbers for the active test (or zeros if none).
   let abImpressions = 0;
