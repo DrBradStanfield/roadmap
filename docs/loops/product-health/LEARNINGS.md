@@ -155,7 +155,7 @@ duplicates.
   back only in the browser that made it, and mostly lands elsewhere: 14 of 17
   W40 clicks fired `email_landing_empty` within ~3.4 s (16 of 21 since 09-24);
   1 of 8 visitors clearly recovered. W41: 9 of 20, about 8 clicks opened a plan,
-  2 of 9 recovered; W42: 11 of 30, 3 of 10. None of the landing ids had any earlier event (an unused browser). A connect is not a recovery: require
+  2 of 9 recovered; W42: 11 of 30, 3 of 10; W44: 10 of 43, 2 of 10. None of the landing ids had any earlier event (an unused browser). A connect is not a recovery: require
   `results_viewed` after it (W39's "recovered" visitor connected, saw nothing,
   and kept looking). Pair clicks to landings by timestamp; the email events'
   constant `visitor_id` cannot.
@@ -175,22 +175,17 @@ duplicates.
   TAB per PROVIDER (was per tab): a tab trying Dropbox then Drive now sends both starts. New
   `cloud_connect_cancelled` counts only the provider's Cancel/Deny (redirect path); browser Back and
   GIS-popup cancels stay silent. Read the funnel per visitor, never starts minus outcomes (US-09 AC22).
-  Baseline before the break: 29 of 86 Drive visitors reached no outcome (07-22..10-18).
-- **2026-10-25 [instrumentation]** `lab_unit_refused` drops any unit `isLabUnitWord` distrusts
-  (roadmap-data.ts:206), so the counter goes blind where it matters: W43 had 27 unit-less
-  blood-count refusals from 4 visitors (W42: 3). A rise means a blank unit or an unknown spelling;
-  probe with labUnitTaken first (a taken spelling never fires), never read it as noise.
-- **2026-10-27 [instrumentation, W43 follow-up]** Once the widget ships (blocked 10-27 until Brad bumps the pinned Shopify CLI; the server got be7b1b58 via a fly-only deploy), `lab_unit_refused` sends
-  `(blank)` for a blank or missing unit and keeps bracketed powers of ten (`x10(3)/uL`): a unit-less
-  row now means an untrusted spelling only, never a blank. The 27 W43 rows' likely cause, bracketed
-  exponents, is folded into the catalogue (US-21 AC22), but it is a hypothesis: if count refusals with
-  `(blank)` appear, the extractor is blanking units; if bracketed units still appear, it's another test.
-- **2026-10-27 [W43 follow-up, main session]** Status of the W43 asks when W44 runs:
-  CI red: fixed 10-26 (zod 4.6.7 upgrade + body-parser/undici/fast-uri, 2be7879e/69b6b78b; deployed).
-  Nine stale "Deploying" issues: closed. Duplicate US-49: the subscription story is US-59 (US-57/58 were
-  taken; ef3b226f). Auto-ship exit-141: patch written for Brad (both `| head` pipes → jq slices);
-  workflow files are Brad-only, so check whether he applied it. #167: PR #158 merged 10-18, nothing
-  left to decide; awaiting Brad's close. Urine-creatinine user: her 10-21 reply holds one build need
-  (lab-printed eGFR when no serum creatinine: #166 option 6, plus a way to retire wrong rows without a
-  replacement, option 5) and two clinical questions for Brad (body-fat-aware weight target; lipid
-  targets without CAC/CIMT inputs); still unanswered: Brad's to reply. Referrer key: not picked up. Shopify extension deploys fail since 10-26 (Shopify's new server-side [events] check vs CLI 3.90.0): patch to pin 4.9.4 is with Brad; widget changes wait for it.
+  Baseline before the break: 29 of 86 Drive visitors reached no outcome (07-22..10-18). Refused
+  share of Drive visitors: W42 41%, W43 33%, W44 52% (no reason key on the row).
+- **2026-10-25 [instrumentation]** `lab_unit_refused` omits any unit `isLabUnitWord` distrusts
+  (roadmap-data.ts:206) and fires only when `labUnitTaken` is false. Since be7b1b58 reached the
+  widget (first `(blank)` row 10-28T21:48Z), an absent unit means an untrusted spelling and
+  `(blank)` means a blank one. W43's guess, bracketed exponents, scored 0 in W44 while unit-less
+  blood counts kept coming (20 rows, 5 visitors): probe real CBC spellings, never assume.
+- **2026-10-31 [tooling]** The mutation check (US-48 AC7) cannot run as a cloud worker does by
+  default. Two workers' parallel `npm ci` in one checkout left node_modules broken ("stryker: not
+  found"), and as root the US-31 AC8 unwritable-folder test passes its write, so Stryker's dry run
+  aborts. Run it alone, as a non-root user, in a copy of the checkout; start it first (~1 h).
+- **2026-10-31 [fleet]** A loop's ledger can silently skip a range: repo-health's had no rows from
+  #263 on, so W44's pass logged 98 items at once and the median fell for a batch-merge reason.
+  Check the last ledgered ref against the newest external item before computing a median.
