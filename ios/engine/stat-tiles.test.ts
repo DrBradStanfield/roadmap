@@ -36,7 +36,7 @@ describe('statTiles (US-25 AC22)', () => {
     // BMI 25-29.9 with no waist: no label, the plan asks for the waist instead.
     expect(t.bmi).toMatchObject({ label: 'BMI', value: '25.2', unit: '' });
     expect(t.bmi.status).toBeUndefined();
-    expect(t.ibw).toMatchObject({ label: 'Ideal Body Weight', value: '60.0', unit: 'kg', status: { label: 'for 165 cm height' } });
+    expect(t.ibw).toMatchObject({ label: 'Ideal Body Weight (IBW)', value: '60.0', unit: 'kg', status: { label: 'for 165 cm height' } });
     // A fact, not a grade: no tone, so the app draws it gray (Brad 2026-10-31).
     expect(t.ibw.status?.tone).toBeUndefined();
     expect(t.ibw.evidence).toEqual(getIbwEvidence('female'));
