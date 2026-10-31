@@ -301,6 +301,13 @@ export interface GuestSessionResult {
   sessionToken: string;
 }
 
+/** Each failed guest-cleanup step leaves an orphan, so it is reported (US-15 AC7c). */
+function reportCleanupFailures(errors: unknown[]): void {
+  for (const error of errors) {
+    if (error) Sentry.captureException(error, { tags: { feature: 'guest_chat', subsystem: 'guest_session_cleanup' } });
+  }
+}
+
 /**
  * Get or create a guest chat session. Creates a ghost profile if needed.
  * Uses supabaseAdmin for session management (same pattern as getOrCreateSupabaseUser).
@@ -378,9 +385,7 @@ export async function getOrCreateGuestSession(
     const { error: profileDeleteError } = await supabaseAdmin.from('profiles').delete().eq('id', sessionId);
     const { error: userDeleteError } = await supabaseAdmin.auth.admin.deleteUser(sessionId)
       .catch((error: unknown) => ({ error }));
-    for (const error of [profileDeleteError, userDeleteError]) {
-      if (error) Sentry.captureException(error, { tags: { feature: 'guest_chat', subsystem: 'guest_session_cleanup' } });
-    }
+    reportCleanupFailures([profileDeleteError, userDeleteError]);
     console.error('Failed to create guest session:', sessionError);
     throw new Error('Failed to create guest session');
   }

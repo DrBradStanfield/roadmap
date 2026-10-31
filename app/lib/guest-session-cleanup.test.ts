@@ -76,6 +76,7 @@ describe('US-15 AC7c: a failed guest-session cleanup is reported', () => {
     db.profileDelete = { error: failure };
     await expect(create()).rejects.toThrow('Failed to create guest session');
     expect(cleanupReports().map(([error]) => error)).toEqual([failure]);
+    expect(cleanupReports()[0][1]).toMatchObject({ tags: { feature: 'guest_chat' } });
   });
 
   it('an auth-user delete that answers with an error is reported', async () => {
