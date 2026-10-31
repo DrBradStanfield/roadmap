@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * US-20 AC8: on a phone every input in the vitals matrix is at least 16px, so
+ * US-20 AC8: on a phone every value box in the vitals matrix is at least 16px, so
  * iOS Safari does not zoom the page when one is tapped. The blood pressure
  * pair is the case that broke: its 13px rule has two classes and beat the
  * one-class phone guard. jsdom ignores media queries and computes no cascade,
@@ -140,7 +140,7 @@ describe('US-20 AC8: on a phone the vitals inputs are 16px, so iOS does not zoom
     }
   });
 
-  it('every input in the vitals matrix is at least 16px on a phone', () => {
+  it('every value box in the vitals matrix is at least 16px on a phone', () => {
     const view = renderVitals();
     const inputs = [...view.container.querySelectorAll('input.bt-input')];
     expect(inputs.length).toBeGreaterThanOrEqual(4); // weight, waist, systolic, diastolic
