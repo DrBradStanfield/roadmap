@@ -124,9 +124,9 @@ declares the three rows below; declare them as written.
   code, the hosts the app can reach on the network and its purpose never change without
   an App Store update. On the US plan (next item) the engine can choose among the
   product links the app pins to https://microvitamin.com, and nothing else.
-- Dr Brad's products (for the next version; US-61, guideline 3.1.5(a)): US App Store
+- Dr Brad's products (for the next version; US-61, guideline 3.1.3(e)): US App Store
   storefront only, for adults; links to physical products sold by the developer's
-  company (3.1.5(a)); an ownership line says so. On a US storefront, an adult's
+  company (3.1.3(e)); an ownership line says so. On a US storefront, an adult's
   supplement cards show MicroVitamin+ (or Sleep on the sleep card) with a link that
   opens microvitamin.com in the browser, and one line under the Supplements section says
   Brad Stanfield founded and owns the company that sells them. Nothing is sold in the
