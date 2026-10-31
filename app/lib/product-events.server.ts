@@ -131,6 +131,8 @@ const EVENT_REQUIRED_KEY: Partial<Record<string, string>> = {
   tool_opened: 'device',
   onboarding_step: 'step',
   signin_opened: 'placement',
+  us_product_shown: 'product', // US-61 AC8: a row without its product counts nothing
+  us_product_link_clicked: 'product',
 };
 
 /** Events whose metadata is ONLY their own keys: a shared key such as

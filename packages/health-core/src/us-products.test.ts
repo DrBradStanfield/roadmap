@@ -7,8 +7,6 @@ import { describe, it, expect } from 'vitest';
 import { generateSuggestions, medicinesShown, US_SUPPLEMENT_DESCRIPTIONS } from './suggestions';
 import { SUGGESTION_EVIDENCE, US_SUPPLEMENT_REFERENCES } from './evidence';
 import { calculateHealthResults } from './calculations';
-import { runRoadmap } from './run-roadmap';
-import { buildChatContextJson } from './chat-context';
 import { createEmptyFile } from './roadmap-file';
 import { computePlan, renderJson } from './plan';
 import { usProductBlocks, usProductUrl, US_OWNERSHIP_LINE, US_PRODUCT_LINES } from './us-products';
@@ -53,14 +51,16 @@ describe('US-61 AC1: the two new supplement cards, in every market', () => {
     ]);
     const tmg = suggestions.find((s) => s.id === 'supplement-tmg')!;
     expect(tmg).toMatchObject({ category: 'supplements', priority: 'info', title: 'TMG (trimethylglycine)' });
-    expect(tmg.description).toBe('TMG lowers blood homocysteine, according to a meta-analysis of randomized trials. Small trials suggest it may improve strength and power.');
-    expect(tmg.references!.map((r) => r.label.split(' ')[0])).toEqual(['McRae', 'Lee', 'Pryor', 'Nobari']);
+    expect(tmg.description).toBe('TMG lowers blood homocysteine, according to a meta-analysis of randomized trials. Small trials suggest it may improve strength and power. At 4 g a day or more, the doses used in the homocysteine trials, it may modestly raise total cholesterol.');
+    expect(tmg.references!.map((r) => r.label.split(' ')[0])).toEqual(['McRae', 'Lee', 'Pryor', 'Nobari', 'Zawieja']);
+    expect(tmg.references!.at(-1)!.url).toBe('https://doi.org/10.1080/19390211.2019.1699223');
   });
 
   it('US-61 AC1: the lutein card never says adding lutein and zeaxanthin did not slow progression (Brad\'s AREDS2 framing)', () => {
     const text = `${plan(adult).suggestions.find((s) => s.id === 'supplement-lutein-zeaxanthin')!.description} ${SUGGESTION_EVIDENCE['supplement-lutein-zeaxanthin'].reason}`;
     expect(text).not.toMatch(/did not (significantly )?slow/i);
     expect(SUGGESTION_EVIDENCE['supplement-tmg'].reason).not.toMatch(/dementia|alzheimer/i);
+    expect(SUGGESTION_EVIDENCE['supplement-lutein-zeaxanthin'].reason).toContain('slowed progression in people with intermediate macular degeneration, or advanced disease in one eye');
   });
 
   it('US-61 AC1: a known minor gets neither new card (adults only, like every supplement card)', () => {
@@ -81,19 +81,16 @@ describe('US-61 AC2-AC3: engine output never carries a product or a US variant, 
     }
   });
 
-  it('US-61 AC3: runRoadmap and the chat context carry no product name and no US variant text', () => {
-    const profile = { unitSystem: 'conventional', medications: [], screenings: [], sex: 'female', heightCm: 160, weightKg: 92, birthYear: 1950, birthMonth: 1, ldlC: 4.9 };
-    const run = runRoadmap(profile, { values: [{ field: 'systolicBp', value: 152, unit: 'mmHg' }, { field: 'diastolicBp', value: 94, unit: 'mmHg' }] }, NOW);
-    for (const json of [run.contextJson!, buildChatContextJson(profile)]) {
-      expect(json).not.toMatch(PRODUCT_TEXT);
-      expect(json).not.toContain(US_SUPPLEMENT_DESCRIPTIONS['supplement-creatine-us'] + '"');
-    }
-  });
-
-  it('US-61 AC3: get_plan and the CLI (renderJson of computePlan) carry no product name and no -us id', () => {
+  // No runRoadmap or chat-context test here: the chat context (runRoadmap's
+  // contextJson) never holds supplement text, so a check on it proves nothing.
+  it('US-61 AC3: get_plan and the CLI (renderJson of computePlan) carry the generic supplement cards, with no product name and no -us text', () => {
     const file = createEmptyFile({ deviceId: 'dev_us', now: '2026-10-01T00:00:00Z' });
     file.profile = { sex: 'male', heightCm: 178, birthYear: 1970, unitSystem: 'conventional', updatedAt: '2026-10-01T00:00:00Z', lamport: 1 };
-    expect(renderJson(computePlan(file, NOW))).not.toMatch(PRODUCT_TEXT);
+    const json = renderJson(computePlan(file, NOW));
+    for (const id of Object.keys(US_PRODUCT_LINES)) expect(json).toContain(`"${id}"`);
+    expect(json).not.toMatch(PRODUCT_TEXT);
+    expect(json).not.toContain(US_SUPPLEMENT_DESCRIPTIONS['supplement-creatine-us'] + '"');
+    expect(json).not.toContain(US_SUPPLEMENT_DESCRIPTIONS['supplement-lutein-zeaxanthin-us'] + '"');
   });
 
   it('US-61 AC3: each variant is its card\'s text minus what it drops, with no product name', () => {
