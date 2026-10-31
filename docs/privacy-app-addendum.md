@@ -14,7 +14,7 @@ the cards' readings on the phone (US-56 AC2, not yet committed; commit: to fill 
 2026-10-30 the text was brought in line with docs/writing-style.md and the line on the
 website's chat was corrected (it keeps replies too, on the blog bubble). Republished
 30 October 2026. Re-audited 2026-10-30 for US-15 AC44 (the website keeps a copy of health
-questions). Not yet republished.
+questions). Republished 31 October 2026, when the archive was switched on.
 
 This policy covers the Health Roadmap iPhone app, made by DR BRAD, INC. It adds to our
 main [privacy policy](https://drstanfield.com/policies/privacy-policy). The website has its

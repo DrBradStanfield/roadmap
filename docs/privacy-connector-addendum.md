@@ -8,7 +8,7 @@ Written 2026-09-02, re-audited 2026-09-07 and 2026-09-10, from the code at
 `app/lib/chat-router.server.ts` (`redactForWidget`), `app/lib/chat-purge-cron.server.ts`,
 `app/lib/discord-bot.server.ts` and the YouTube bot, after a contributor found claims the code
 contradicted; the text was also brought in line with docs/writing-style.md. Re-audited
-2026-10-30 for US-15 AC44 (the kept copy of health questions). Not yet republished.
+2026-10-30 for US-15 AC44 (the kept copy of health questions). Republished 31 October 2026, when the archive was switched on.
 
 > Assistant-side extraction shipped 2026-09-07 (US-36): a file you drop into the chat is
 > read by your assistant, and the sentences below say so. The folder route still sends
