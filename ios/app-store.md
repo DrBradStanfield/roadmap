@@ -121,8 +121,16 @@ declares the three rows below; declare them as written.
 - Over-the-air engine updates: the app downloads updates to its JavaScript engine (run
   in JavaScriptCore) from GitHub, signed with our key and checked before use. They
   change computation and text only (thresholds, suggestions, wording); the native
-  code, what the app can reach on the network and its purpose never change without
-  an App Store update.
+  code, the hosts the app can reach on the network and its purpose never change without
+  an App Store update. On the US plan (next item) the engine can choose among the
+  product links the app pins to https://microvitamin.com, and nothing else.
+- Dr Brad's products (for the next version; US-61, guideline 3.1.5(a)): US App Store
+  storefront only, for adults; links to physical products sold by the developer's
+  company (3.1.5(a)); an ownership line says so. On a US storefront, an adult's
+  supplement cards show MicroVitamin+ (or Sleep on the sleep card) with a link that
+  opens microvitamin.com in the browser, and one line under the Supplements section says
+  Brad Stanfield founded and owns the company that sells them. Nothing is sold in the
+  app; there is no in-app purchase.
 - Guideline 1.4.1: the app gives educational information drawn from published
   guidelines (each step cites them), shows a medical disclaimer on the first screen
   and under every plan, and tells users to talk to their doctor. It does not diagnose,

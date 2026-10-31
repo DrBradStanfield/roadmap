@@ -2,6 +2,7 @@
 // contract (bridge-contract.json). The contract's hash is the bridge id a
 // downloaded engine must match, so drift here would let an engine reach an app
 // that cannot serve it. The Swift side: EngineBridgeContractTests.swift.
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -13,6 +14,11 @@ const contract = JSON.parse(readFileSync(join(__dirname, 'bridge-contract.json')
   values: Record<string, string>;
   doors: Record<string, { args: string[]; returns?: string }>;
 };
+// Both-way additions that keep the bridge id (D14): never hashed.
+const optional = JSON.parse(readFileSync(join(__dirname, 'bridge-optional.json'), 'utf8')) as {
+  doors: Record<string, { optionalArgs: string[]; optionalReturns?: string }>;
+};
+const arity = (name: string) => contract.doors[name].args.length + (optional.doors[name]?.optionalArgs.length ?? 0);
 
 /** The member names of an exported interface, read from the source. */
 function members(file: string, name: string): string[] {
@@ -26,7 +32,26 @@ describe('bridge contract (US-25 AC18)', () => {
   it('every door the engine exports is in the contract, with its arity', () => {
     const doors = Object.entries(entry).filter(([, v]) => typeof v === 'function');
     expect(doors.map(([k]) => k).sort()).toEqual(Object.keys(contract.doors).sort());
-    for (const [name, fn] of doors) expect((fn as (...a: unknown[]) => unknown).length, name).toBe(contract.doors[name].args.length);
+    for (const [name, fn] of doors) expect((fn as (...a: unknown[]) => unknown).length, name).toBe(arity(name));
+  });
+
+  // US-61 / D14: an optional trailing argument or return field keeps the bridge id, so
+  // over-the-air engines still reach builds 3 and 4 (bridge 2d467ff50c66c42d).
+  it('optional additions name only contract doors, add only arguments and returns, and never repeat a contract arg', () => {
+    expect(Object.keys(optional).sort()).toEqual(['about', 'doors']);
+    for (const [name, door] of Object.entries(optional.doors)) {
+      expect(contract.doors[name], name).toBeDefined();
+      expect(Object.keys(door).every((k) => k === 'optionalArgs' || k === 'optionalReturns'), name).toBe(true);
+      expect(door.optionalArgs.length, name).toBeGreaterThan(0);
+      for (const arg of door.optionalArgs) expect(contract.doors[name].args, name).not.toContain(arg);
+    }
+  });
+
+  it('the contract keeps the bridge id builds 3 and 4 carry (US-61 adds isUS and usProducts as optional)', () => {
+    const bytes = readFileSync(join(__dirname, 'bridge-contract.json'));
+    expect(createHash('sha256').update(bytes).digest('hex').slice(0, 16)).toBe('2d467ff50c66c42d');
+    expect(contract.doors.screenJson.args).toEqual(['recordJson', 'nowIso', 'deviceId', 'unitsJson']);
+    expect(optional.doors.screenJson.optionalArgs).toEqual(['isUS']);
   });
 
   it('every value the engine exports is in the contract', () => {

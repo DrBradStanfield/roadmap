@@ -93,27 +93,39 @@ struct USProducts: Decodable, Sendable {
 
     /// The sections with each block on its card, the card's US text and references in place
     /// of its own when it has them, and the ownership line on the Supplements section once,
-    /// when a card there shows a block. No blocks: the sections as they came.
+    /// when a card there shows a block. Only the Supplements section's single cards take a
+    /// block, the web's rule (ResultsPanel's `renderCards`). No blocks: the sections as they came.
     func applied(to sections: [PlanSection]) -> [PlanSection] {
         guard !blocks.isEmpty else { return sections }
         let byCard = Dictionary(blocks.map { ($0.suggestionId, $0) }) { first, _ in first }
         return sections.map { section in
+            guard section.key == "supplements" else { return section }
             var section = section
-            for c in section.cards.indices {
-                for s in section.cards[c].suggestions.indices {
-                    guard let block = byCard[section.cards[c].suggestions[s].id] else { continue }
-                    section.cards[c].suggestions[s].usProduct = block
-                    if let description = block.description {
-                        section.cards[c].suggestions[s].description = description
-                        section.cards[c].suggestions[s].references = block.references
-                    }
+            for c in section.cards.indices where section.cards[c].suggestions.count == 1 {
+                guard let block = byCard[section.cards[c].suggestions[0].id] else { continue }
+                section.cards[c].suggestions[0].usProduct = block
+                if let description = block.description {
+                    section.cards[c].suggestions[0].description = description
+                    section.cards[c].suggestions[0].references = block.references
                 }
             }
-            if section.key == "supplements", section.cards.contains(where: { $0.suggestions.contains { $0.usProduct != nil } }) {
+            if section.cards.contains(where: { $0.suggestions.contains { $0.usProduct != nil } }) {
                 section.ownershipLine = ownershipLine
             }
             return section
         }
+    }
+}
+
+extension USProducts {
+    private enum CodingKeys: CodingKey { case blocks, ownershipLine }
+
+    /// Keeps a block only when its link is https on microvitamin.com, so a signed engine
+    /// cannot point one anywhere else (US-61).
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        blocks = try c.decode([Block].self, forKey: .blocks).filter { $0.url.scheme == "https" && $0.url.host() == "microvitamin.com" }
+        ownershipLine = try c.decodeIfPresent(String.self, forKey: .ownershipLine)
     }
 }
 

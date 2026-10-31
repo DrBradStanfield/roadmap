@@ -56,6 +56,14 @@ describe('screenJson usProducts (US-61)', () => {
     }
   });
 
+  // D14: the old app (builds 3 and 4, bridge 2d46) calls with four arguments; the new engine
+  // then answers as it did before US-61, with no block and no line.
+  it('gives an old app that sends four arguments no block and no line', () => {
+    const plan = JSON.parse(screenJson(sample, NOW, 'phone', '{}')).plan;
+    expect(plan.usProducts).toEqual({ blocks: [], ownershipLine: null });
+    expect(plan.sections).toEqual(planOf(sample, true).sections);
+  });
+
   it('gives a known minor and an unknown age no block, even in the US (medicinesShown)', () => {
     expect(planOf(record({ birthYear: 2012, birthMonth: 1 }), true).usProducts).toEqual({ blocks: [], ownershipLine: null });
     expect(planOf(record({}), true).usProducts).toEqual({ blocks: [], ownershipLine: null });
