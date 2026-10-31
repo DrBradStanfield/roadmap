@@ -62,28 +62,52 @@ export interface ThemeShell {
 
 const VOID = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']);
 
-/** Drop event-handler and inline-script attributes: the live page is data. */
-const safeAttrs = (attrs: string): string =>
-  attrs.replace(/\s+on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '').replace(/\s+/g, ' ').trimEnd();
+/** Wrapper elements are rebuilt as one of these; anything else becomes a div. */
+const WRAPPERS = new Set(['div', 'main', 'section', 'article', 'aside', 'header', 'footer', 'nav', 'span']);
+/** A tag, its quoted attribute values allowed to hold `>`. */
+const TAG = /<(\/?)([a-zA-Z][a-zA-Z0-9-]*)((?:[^>"']|"[^"]*"|'[^']*')*)>/g;
 
+/** One attribute's value, or undefined. `/` counts as a separator, as browsers read `<div/id=x>`. */
+function attr(attrs: string, name: 'id' | 'class' | 'rel' | 'href'): string | undefined {
+  const m = new RegExp(`(?:^|[\\s/])${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s"'=<>\`]+))`, 'i').exec(attrs);
+  return m ? (m[1] ?? m[2] ?? m[3]) : undefined;
+}
+const escape = (v: string): string => v.replace(/[&"<>]/g, (c) => `&#${c.charCodeAt(0)};`);
+const stripScripts = (html: string): string =>
+  html.replace(/<!--[\s\S]*?-->/g, '').replace(/<(script|style)\b[\s\S]*?<\/\1\s*>/gi, '');
+
+/** An http(s) stylesheet URL, or null. */
+function stylesheetUrl(href: string): string | null {
+  try {
+    const url = new URL(href.startsWith('//') ? `https:${href}` : href);
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The live page is data, so nothing from it is copied whole. Each stylesheet is
+ * rebuilt from its href alone (http or https only); each inline style keeps its
+ * CSS text with every `<` removed, so nothing can end it early; each wrapper is
+ * rebuilt from its tag, id and class alone. No handler or script survives.
+ */
 export function themeShell(liveHtml: string, rootId = 'health-tool-root'): ThemeShell {
   const headEnd = liveHtml.search(/<\/head>/i);
-  const head = headEnd === -1 ? '' : liveHtml.slice(0, headEnd);
-  const links = [...head.matchAll(/<link\b[^>]*>/gi)]
-    .map((m) => m[0])
+  const head = headEnd === -1 ? '' : liveHtml.slice(0, headEnd).replace(/<!--[\s\S]*?-->/g, '');
+  const links = [...stripScripts(head).matchAll(TAG)]
+    .filter(([, closing, name, attrs]) => !closing && name.toLowerCase() === 'link' && /(^|\s)stylesheet(\s|$)/i.test(attr(attrs, 'rel') ?? ''))
+    .map(([, , , attrs]) => stylesheetUrl(attr(attrs, 'href') ?? ''))
     // Theme stylesheets only: the widget's own CSS comes from this checkout.
-    .filter((l) => /rel=["']?stylesheet/i.test(l) && !/health-(plan-v2|site-chat|chatbot)/.test(l))
-    .map((l) => l.replace(/href="\/\//, 'href="https://'));
-  const styles = [...head.matchAll(/<style\b[^>]*>[\s\S]*?<\/style>/gi)].map((m) => m[0]);
+    .filter((href): href is string => href !== null && !/health-(plan-v2|site-chat|chatbot)/.test(href))
+    .map((href) => `<link rel="stylesheet" href="${escape(href)}">`);
+  const styles = [...head.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi)]
+    .map((m) => `<style>${m[1].replace(/</g, '')}</style>`);
 
   const at = liveHtml.indexOf(`id="${rootId}"`);
   if (at === -1) throw new Error(`the live page has no #${rootId}`);
-  const before = liveHtml
-    .slice(0, at)
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, '');
   const stack: Array<{ tag: string; attrs: string }> = [];
-  for (const m of before.matchAll(/<(\/?)([a-zA-Z][a-zA-Z0-9-]*)([^>]*)>/g)) {
+  for (const m of stripScripts(liveHtml.slice(0, at)).matchAll(TAG)) {
     const [, closing, name, attrs] = m;
     const tag = name.toLowerCase();
     if (VOID.has(tag) || attrs.trimEnd().endsWith('/')) continue;
@@ -93,13 +117,44 @@ export function themeShell(liveHtml: string, rootId = 'health-tool-root'): Theme
   }
   // The root's own `<div` is cut off before its `>`, so the stack ends at its parent.
   const body = stack.find((s) => s.tag === 'body');
-  const inner = stack.slice(stack.indexOf(body!) + 1);
+  const inner = stack.slice(stack.indexOf(body!) + 1).map(({ tag, attrs }) => {
+    const name = WRAPPERS.has(tag) ? tag : 'div';
+    const id = attr(attrs, 'id');
+    const cls = attr(attrs, 'class');
+    return { name, open: `<${name}${id ? ` id="${escape(id)}"` : ''}${cls ? ` class="${escape(cls)}"` : ''}>` };
+  });
   return {
     head: [...links, ...styles].join('\n'),
-    bodyClass: /class="([^"]*)"/.exec(body?.attrs ?? '')?.[1] ?? '',
-    open: inner.map((s) => `<${s.tag}${safeAttrs(s.attrs)}>`).join('\n'),
-    close: inner.map((s) => `</${s.tag}>`).reverse().join(''),
+    bodyClass: escape(attr(body?.attrs ?? '', 'class') ?? ''),
+    open: inner.map((w) => w.open).join('\n'),
+    close: inner.map((w) => `</${w.name}>`).reverse().join(''),
   };
+}
+
+/** Brad's server, wherever widget source names it absolutely (the Google token
+ *  exchange, reminders). The dev build rewrites these to a local prefix that the
+ *  dev server stubs, so nothing reaches production. The production builds never
+ *  load this file. */
+const BRAD_SERVER = /https:\/\/(?:health-tool-(?:app|edu)\.fly\.dev|mcp\.drstanfield\.com)(?=\/)/g;
+export const LOCAL_BRAD_SERVER = '/__brad-server';
+
+export function localiseBradServer(code: string): string {
+  return code.replace(BRAD_SERVER, LOCAL_BRAD_SERVER);
+}
+
+export const PROXY = '/apps/health-tool-1';
+
+/** What a stubbed route answers (the app proxy, and Brad's server), or null to pass on. */
+export function stubResponse(method: string, path: string): { status: number; body: unknown } | null {
+  const stubbed = { status: 503, body: { success: false, error: 'Stubbed on the Shopify-like localhost.' } };
+  if (path.startsWith(LOCAL_BRAD_SERVER + '/')) return stubbed;
+  if (!path.startsWith(PROXY + '/')) return null;
+  const route = path.slice(PROXY.length);
+  if (route === '/api/events' || route === '/api/ab' || route === '/api/feedback') return { status: 200, body: { success: true } };
+  // The guest email box (US-18): accepted, so the captured state and Save as PDF can be checked.
+  if (route === '/api/measurements' && method === 'POST') return { status: 200, body: { success: true } };
+  if (route === '/api/chat' && method === 'GET') return { status: 200, body: { success: true, conversations: [], isGuest: true } };
+  return stubbed;
 }
 
 export const EMPTY_SHELL: ThemeShell = { head: '', bodyClass: '', open: '', close: '' };

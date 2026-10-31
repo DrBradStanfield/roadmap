@@ -78,6 +78,17 @@ describe('web redesign §1 — each use is on the right token', () => {
     expect(textInBrand).toEqual([]);
   });
 
+  // Opacity blends the text green into its background: 0.7 over white is about 3:1.
+  it.each([['styles.css', css], ['standalone.css', standaloneCss]])('%s never fades brand-green text with opacity', (_, sheet) => {
+    const selectorsOf = (test: (body: string) => boolean) => new Set(rules(sheet)
+      .map((r) => r.split('{'))
+      .filter(([, body]) => body !== undefined && test(body))
+      .flatMap(([sel]) => sel.split(',').map((x) => x.trim())));
+    const green = selectorsOf((b) => /(^|[; ])color:\s*var\(--color-brand-text/.test(b));
+    const faded = selectorsOf((b) => /(^|[; ])opacity:\s*0?\.\d/.test(b));
+    expect([...green].filter((sel) => faded.has(sel))).toEqual([]);
+  });
+
   it.each([['styles.css', css], ['standalone.css', standaloneCss]])('%s never puts a white label on the brand green', (_, sheet) => {
     const whiteOnBrand = rules(sheet).filter((r) =>
       /background(-color)?:\s*(var\(--color-brand\)|#00a38b)/i.test(r) && /(^|[;{ ])color:\s*(#fff\b|#ffffff|white)/i.test(r));

@@ -86,3 +86,41 @@ describe('themeShell: the live theme around the block', () => {
     expect(doc.body.className).toBe('page-width-narrow card-hover-effect-none');
   });
 });
+
+describe('themeShell: nothing from the live page runs', () => {
+  const page = (head: string, wrapper: string) =>
+    `<html><head>${head}</head><body class="b">${wrapper}<div id="health-tool-root"></div></div></body></html>`;
+
+  it('rebuilds a stylesheet link from its href alone, so an onload cannot ride along', () => {
+    const shell = themeShell(page(
+      `<link rel="stylesheet" href="//cdn.example/a.css" onload="steal()" media="print">
+       <link rel="stylesheet" href="javascript:alert(1)">
+       <link rel="stylesheet" href="data:text/css,body{}">`,
+      '<div>',
+    ));
+    expect(shell.head).toBe('<link rel="stylesheet" href="https://cdn.example/a.css">');
+  });
+
+  it('keeps inline style text only, with every < removed, so it cannot close itself early', () => {
+    const shell = themeShell(page('<style onload="x()">a{color:red}</style ><img src=x onerror=steal()><style>b{}</style>', '<div>'));
+    expect(shell.head).toBe('<style>a{color:red}</style>\n<style>b{}</style>');
+    const shell2 = themeShell(page('<style>a{}</stylex><script>steal()</script></style>', '<div>'));
+    expect(shell2.head).not.toMatch(/<script|<\/stylex/);
+  });
+
+  it('rebuilds a wrapper from tag, id and class alone: <div/onclick=…>', () => {
+    const shell = themeShell(page('', '<div/onclick=steal() id=w class="c">'));
+    expect(shell.open).toBe('<div id="w" class="c">');
+  });
+
+  it('a quoted > in an attribute neither ends the tag nor leaks what follows', () => {
+    const shell = themeShell(page('', '<div data-x="a>b onclick=steal()" class="c" onmouseover="steal()">'));
+    expect(shell.open).toBe('<div class="c">');
+    expect(shell.close).toBe('</div>');
+  });
+
+  it('an unknown wrapper element becomes a div, and values are escaped', () => {
+    const shell = themeShell(page('', '<iframe-ish class=\'a"><script>\'>'));
+    expect(shell.open).toBe('<div class="a&#34;&#62;&#60;script&#62;">');
+  });
+});

@@ -53,15 +53,46 @@ function storageBarLabel(backend: Backend, reconnect: Exclude<Backend, 'local'> 
   return pendingSync ? 'Saving…' : PROVIDER_LABELS[backend];
 }
 
+/** US-09 AC13: the way back to a provider that could not be read this session,
+ *  shared by the plan panel and the top bar so the two cannot drift. Drive
+ *  re-auths through the GIS popup FALLBACK (~1 h token), which works even with
+ *  the exchange endpoint down and needs this click's user gesture, so it starts
+ *  synchronously inside the click; local edits made while signed out merge up
+ *  before the reload. The others can only try the read again. */
+function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
+  const { busy, error, run } = useBusyRun();
+  const reconnectNow = (): void => {
+    if (reconnect !== 'google-drive') { location.reload(); return; }
+    void run(async () => {
+      const gd = new GoogleDriveAdapter(googleDriveConfig());
+      await gd.connectViaPopup().catch((error: unknown) => { connectRefusal(error); throw error; });
+      await liftLocalInto(gd, 'google-drive');
+      rememberBackend('google-drive');
+      location.reload();
+    });
+  };
+  return { busy, error, run, reconnectNow };
+}
+
 /** US-09 AC30: the top bar's storage button, where "Supercharge this tool" sat.
- *  Every state opens the one picker, which SyncControl hosts with
- *  `current={reconnect ?? backend}` (AC13). */
+ *  A record that could not be read runs the panel's own reconnect; every other
+ *  state opens the one picker, which SyncControl hosts (AC13). */
 export function StorageBar({ backend, reconnect }: { backend: Backend; reconnect?: Exclude<Backend, 'local'> }) {
   const pendingSync = usePendingSync(backend);
+  const { busy, error, reconnectNow } = useReconnect(reconnect);
   return (
-    <button type="button" className="action-btn-small" aria-haspopup="dialog" onClick={openBackendPicker}>
-      {storageBarLabel(backend, reconnect, pendingSync)}
-    </button>
+    <>
+      <button
+        type="button"
+        className="action-btn-small"
+        aria-haspopup={reconnect ? undefined : 'dialog'}
+        disabled={busy}
+        onClick={reconnect ? reconnectNow : openBackendPicker}
+      >
+        {busy ? 'Reconnecting…' : storageBarLabel(backend, reconnect, pendingSync)}
+      </button>
+      {error && <span className="hr-sync-error" role="alert">{error}</span>}
+    </>
   );
 }
 
@@ -78,7 +109,7 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
   const [pickerOpen, setPickerOpen] = useState(false);
   // Unreadable storage counts as unseen, so the pulse lasts only this page's life.
   const [ctaSeen, setCtaSeen] = useState(() => storageCtaSeen || !!safeGetItem(STORAGE_CTA_SEEN_KEY));
-  const { busy, error, run } = useBusyRun();
+  const { busy, error, run, reconnectNow } = useReconnect(reconnect);
 
   // Every route to the picker passes here, so any opening stops the pulse.
   useEffect(() => {
@@ -93,18 +124,6 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
   }, []);
 
   const pendingSync = usePendingSync(backend);
-
-  // Reconnect via the GIS popup FALLBACK (~1 h token) — works even with the
-  // exchange endpoint down; needs this click's user gesture. Local edits made
-  // while signed out merge up before the reload.
-  const reconnectDrive = (): Promise<void> =>
-    run(async () => {
-      const gd = new GoogleDriveAdapter(googleDriveConfig());
-      await gd.connectViaPopup().catch((error: unknown) => { connectRefusal(error); throw error; });
-      await liftLocalInto(gd, 'google-drive');
-      rememberBackend('google-drive');
-      location.reload();
-    });
 
   // Forget the unreachable connection (no copy-down needed — this session
   // already runs on the device copy; the cloud file stays put).
@@ -132,7 +151,7 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
         <button
           className="hr-sync-btn"
           disabled={busy}
-          onClick={() => (drive ? void reconnectDrive() : location.reload())}
+          onClick={reconnectNow}
         >
           {drive ? (busy ? 'Reconnecting…' : `Reconnect ${label}`) : 'Retry'}
         </button>
@@ -197,7 +216,7 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
       {/* An unreachable provider is still the CURRENT one: the picker must copy
           it down (and fail loudly if it cannot) before any switch, or the
           record is orphaned there (US-09 AC13). */}
-      {pickerOpen && <BackendPickerModal current={reconnect ?? backend} onClose={() => setPickerOpen(false)} />}
+      {pickerOpen && <BackendPickerModal current={reconnect ?? backend} unreachable={!!reconnect} onClose={() => setPickerOpen(false)} />}
     </>
   );
 }

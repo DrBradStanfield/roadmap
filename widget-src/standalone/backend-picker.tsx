@@ -115,7 +115,14 @@ const OPTIONS: Option[] = [
 export const PICKER_GUEST_LEAD =
   'Saved your record to Dropbox, Google Drive or GitHub before? Open it here. If not, it is in this browser, and you can choose a home for it now.';
 
-export function BackendPickerModal({ current, onClose }: { current: Backend; onClose: () => void }) {
+export function BackendPickerModal({ current, unreachable = false, onClose }: {
+  current: Backend;
+  /** `current` could not be read this session (US-09 AC13): it is still the
+   *  record's home, but never shown as connected, and this device cannot log off
+   *  it, because its unsynced edits live only in this browser. */
+  unreachable?: boolean;
+  onClose: () => void;
+}) {
   const [step, setStep] = useState<'list' | 'github' | 'self-host' | 'log-off'>('list');
   const { busy, error, setError, run } = useBusyRun();
   const [gh, setGh] = useState({ token: '', owner: '', repo: '' });
@@ -193,7 +200,7 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
                   <span className="hr-opt-text">
                     <span className="hr-opt-name">
                       {o.name}
-                      {current === o.id && (
+                      {current === o.id && !unreachable && (
                         <span className="hr-opt-connected">✓ {o.local ? 'Current' : 'Connected'}</span>
                       )}
                     </span>
@@ -204,7 +211,7 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
                 </button>
               </React.Fragment>
             ))}
-            {current !== 'local' && (
+            {current !== 'local' && !unreachable && (
               <div className="hr-modal-logoff">
                 <button type="button" className="hr-sync-link" disabled={busy} onClick={() => { setError(null); setStep('log-off'); }}>
                   Log off this device

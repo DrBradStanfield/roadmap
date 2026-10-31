@@ -80,6 +80,20 @@ describe.each([['desktop', false], ['phone', true]] as const)('on %s', (_, isPho
     expect(order(card)).toBeLessThan(order(panel.querySelector('.privacy-notice-link')));
   });
 
+  it('US-38 AC1: before a plan exists, the empty plan still ends with the card', async () => {
+    localStorage.clear();
+    await act(async () => { await initRoadmapStore(new LocalStorageAdapter()); });
+    const view = render(<HealthTool />);
+    const card = await waitFor(() => {
+      const link = view.container.querySelector('.health-results-panel .hr-guide-card');
+      expect(link).not.toBeNull();
+      return link!;
+    });
+    expect(view.container.querySelector('.plan-empty-preview')).not.toBeNull(); // the empty branch
+    expect(card.textContent).toContain('Supercharge this tool');
+    expect(card.getAttribute('href')).toBe(GUIDE_URL);
+  });
+
   it('without a storage button (no picker host), the input header stays hidden on a phone', async () => {
     const view = render(<HealthTool />);
     await act(async () => {});

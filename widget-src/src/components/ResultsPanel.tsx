@@ -663,6 +663,8 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
             </div>
           </div>
         </div>
+        {/* US-38 AC1: the open-source link shows before a plan exists too. */}
+        <GuideLink />
       </div>
     );
   }

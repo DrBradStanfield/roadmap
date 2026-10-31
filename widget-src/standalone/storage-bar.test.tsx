@@ -1,15 +1,16 @@
 // @vitest-environment jsdom
 /**
  * US-09 AC30: the top bar's storage button, where "Supercharge this tool" sat.
- * Its label comes from the real storage state, and every state opens the one
- * picker with `current={reconnect ?? backend}` (AC13).
+ * Its label comes from the real storage state. A record that could not be read
+ * runs the panel's own reconnect; every other state opens the one picker, which
+ * never shows an unreachable provider as connected (AC13).
  */
 import { describe, it, expect, vi, afterEach, beforeAll } from 'vitest';
 import { render, fireEvent, cleanup, act } from '@testing-library/react';
 
-const sync = vi.hoisted(() => ({ pending: false }));
+const sync = vi.hoisted(() => ({ pending: false, popup: vi.fn(async () => {}) }));
 vi.mock('../src/storage', () => ({
-  GoogleDriveAdapter: class {},
+  GoogleDriveAdapter: class { connectViaPopup = sync.popup; },
   GitHubAdapter: class {},
   WebDavAdapter: class {},
   isSyncPending: () => sync.pending,
@@ -28,18 +29,23 @@ vi.mock('./connect', () => ({
   adapterFor: () => null,
   finishFormConnect: vi.fn(),
   logOff: vi.fn(),
-  useBusyRun: () => ({ busy: false, error: null, setError: vi.fn(), run: vi.fn() }),
+  connectRefusal: () => null,
+  rememberBackend: vi.fn(),
+  forgetBackend: vi.fn(),
+  // Runs the action at once, inside the click, as the real one does up to its first await.
+  useBusyRun: () => ({ busy: false, error: null, setError: vi.fn(), run: (fn: () => Promise<void>) => fn() }),
 }));
 
 import { StorageBar, SyncControl } from './sync-control';
 import { PICKER_GUEST_LEAD } from './backend-picker';
+import { openBackendPicker } from '../src/lib/storage-notice';
 import type { Backend } from './connect';
 
 beforeAll(() => {
   HTMLDialogElement.prototype.showModal = vi.fn();
   HTMLDialogElement.prototype.close = vi.fn();
 });
-afterEach(() => { cleanup(); sync.pending = false; });
+afterEach(() => { cleanup(); sync.pending = false; sync.popup.mockClear(); vi.unstubAllGlobals(); });
 
 type Cloud = Exclude<Backend, 'local'>;
 /** The bar as app.tsx mounts it, beside the plan's SyncControl, which hosts the picker. */
@@ -90,7 +96,29 @@ describe('US-09 AC30 — the label says the real storage state', () => {
   });
 });
 
-describe('US-09 AC30 — every state opens the one picker, current={reconnect ?? backend}', () => {
+describe('US-09 AC30 — a reconnect label runs the reconnect, never the picker', () => {
+  it('Sign in to Google again starts the Drive popup inside the click', () => {
+    vi.stubGlobal('location', { reload: vi.fn() });
+    mount('local', 'google-drive');
+    fireEvent.click(bar());
+    expect(sync.popup).toHaveBeenCalledTimes(1); // the click's user gesture reaches the GIS popup
+    expect(dialog()).toBeNull();
+  });
+
+  it.each([['dropbox', 'Reconnect Dropbox'], ['github', 'Retry'], ['self-host', 'Retry']] as const)(
+    '%s: "%s" tries the read again', (provider, label) => {
+      vi.stubGlobal('location', { reload: vi.fn() });
+      mount('local', provider);
+      expect(bar().textContent).toBe(label);
+      fireEvent.click(bar());
+      expect(location.reload).toHaveBeenCalledTimes(1);
+      expect(sync.popup).not.toHaveBeenCalled();
+      expect(dialog()).toBeNull();
+    },
+  );
+});
+
+describe('US-09 AC30 — the other states open the one picker, current={reconnect ?? backend}', () => {
   it('a guest opens the picker with the browser as current, and the first line for guests', () => {
     mount('local');
     fireEvent.click(bar());
@@ -110,11 +138,21 @@ describe('US-09 AC30 — every state opens the one picker, current={reconnect ??
     expect(dialog()!.textContent).not.toContain(PICKER_GUEST_LEAD);
   });
 
-  it('AC13: a reconnect session runs on the browser, yet the picker treats the unread provider as current', () => {
+  it('AC13: opened in a reconnect session, the picker never calls the unread provider connected, nor the browser current', () => {
     mount('local', 'dropbox');
-    fireEvent.click(bar());
-    expect(option('Dropbox').textContent).toContain('✓ Connected');
+    act(() => openBackendPicker()); // e.g. from the email step
+    expect(option('Dropbox').textContent).not.toContain('✓');
     expect(option('This browser only').textContent).not.toContain('✓');
     expect(dialog()!.textContent).not.toContain(PICKER_GUEST_LEAD);
+  });
+
+  it('AC13: a reconnect session offers no log-off, which would wipe edits that never reached the cloud', () => {
+    mount('local', 'dropbox');
+    act(() => openBackendPicker());
+    expect(dialog()!.textContent).not.toContain('Log off this device');
+    cleanup();
+    mount('dropbox'); // connected and reachable: log-off stays
+    act(() => openBackendPicker());
+    expect(dialog()!.textContent).toContain('Log off this device');
   });
 });

@@ -2,20 +2,22 @@ import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
-import { composePage, EMPTY_SHELL, renderAppBlock, themeShell, type ThemeShell } from './shopify-dev/storefront';
+import { composePage, EMPTY_SHELL, localiseBradServer, renderAppBlock, stubResponse, themeShell, type ThemeShell } from './shopify-dev/storefront';
 
 // The Shopify-like localhost (`npm run dev:shopify`, port 5174). It runs the
 // storefront widget's own entry with VITE_SHOPIFY_SURFACE, so the email box,
 // Save as PDF gating, the feedback form and the US-61 product blocks render,
 // inside drstanfield.com's live theme CSS and wrapper markup, against a STUBBED
 // app proxy. Never `shopify app dev` (it overrides production). Nothing here
-// reaches Brad's server: every /apps/health-tool-1 call is answered locally.
+// reaches Brad's server: every /apps/health-tool-1 call is answered locally, and
+// the absolute Brad-server URLs in widget source (the Google token exchange,
+// reminders) are rewritten, in this dev build only, to a stubbed local prefix.
+// Sentry is off on every loopback host (src/lib/sentry.ts).
 //
 // Query: ?skip_email_gate=true (the /pages/start setting), ?country=NZ
 // (anything but US hides the product blocks), ?theme=off (no live theme CSS).
 
 const LIVE_PAGE = 'https://drstanfield.com/pages/roadmap';
-const PROXY = '/apps/health-tool-1';
 const BLOCK = resolve(__dirname, '../extensions/health-tool-widget/blocks/app-block.liquid');
 const UPLOAD_BUNDLE = resolve(__dirname, '../extensions/health-tool-widget/assets/health-upload.js');
 
@@ -33,23 +35,22 @@ function liveShell(): Promise<ThemeShell> {
   return shell;
 }
 
-/** What each proxy route answers. Paths only are logged: bodies can hold an email or health values. */
-function stub(method: string, path: string): { status: number; body: unknown } {
-  if (path === '/api/events' || path === '/api/ab' || path === '/api/feedback') return { status: 200, body: { success: true } };
-  // The guest email box (US-18): accepted, so the captured state and Save as PDF can be checked.
-  if (path === '/api/measurements' && method === 'POST') return { status: 200, body: { success: true } };
-  if (path === '/api/chat' && method === 'GET') return { status: 200, body: { success: true, conversations: [], isGuest: true } };
-  return { status: 503, body: { success: false, error: 'Stubbed on the Shopify-like localhost.' } };
-}
-
-function shopifyDev(): Plugin {
+export function shopifyDev(): Plugin {
   return {
     name: 'shopify-dev',
+    enforce: 'pre',
+    transform(code, id) {
+      if (id.includes('/node_modules/') || !/\.[jt]sx?$/.test(id.split('?')[0])) return null;
+      const local = localiseBradServer(code);
+      return local === code ? null : { code: local, map: null };
+    },
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
         const url = new URL(req.url ?? '/', 'http://localhost');
-        if (url.pathname.startsWith(PROXY + '/')) {
-          const { status, body } = stub(req.method ?? 'GET', url.pathname.slice(PROXY.length));
+        const stubbed = stubResponse(req.method ?? 'GET', url.pathname);
+        if (stubbed) {
+          const { status, body } = stubbed;
+          // Paths only: bodies can hold an email or health values.
           console.info(`[dev:shopify] stub ${req.method} ${url.pathname} -> ${status}`);
           res.statusCode = status;
           res.setHeader('Content-Type', 'application/json');
