@@ -11,6 +11,8 @@ import * as Sentry from '@sentry/react-router';
 import { getAuthenticatedUser, getCustomerId, checkSubscriptionFromTags, getCustomerOrders, isValidUuid } from '../lib/route-helpers.server';
 import { getClientIp } from '../lib/local-first-route.server';
 import { cappedBody } from '../lib/capped-body.server';
+import { takeWebChatTurn } from '../lib/rate-limiter';
+import { ipBucket } from '../lib/app-gate.server';
 import { authenticate } from '../shopify.server';
 import { logAudit, getProfile, updateSubscriptionPlan, createUserClient, getOrCreateGuestSession, GuestRateLimitError, type DbProfile } from '../lib/supabase.server';
 import {
@@ -337,6 +339,22 @@ const APP_ATTESTED = Symbol.for('roadmap.us52.app-attested');
  *  (api.app.v1.chat.ts). It has no Shopify session and no guest session. */
 const APP_AUTH: AuthResult = { client: null, userId: 'app', customerId: null, admin: null, isGuest: true };
 
+/** The message checks, then US-15 AC45's turn cap, in that order; null when the turn may run. */
+function refuseTurn(message: unknown, request: Request, app: boolean): Response | null {
+  if (!message || typeof message !== 'string') {
+    return Response.json({ success: false, error: 'message required' }, { status: 400 });
+  }
+  if (message.length > MAX_MESSAGE_LENGTH) {
+    return Response.json({ success: false, error: `Message too long (max ${MAX_MESSAGE_LENGTH} chars)` }, { status: 400 });
+  }
+  // US-15 AC45: a web turn counts against its IP's day and the machine's,
+  // whatever session it carries. The app's turn was counted by its gate.
+  if (!app && !takeWebChatTurn(ipBucket(getClientIp(request, 'shopify')))) {
+    return Response.json({ success: false, error: 'rate_limited' }, { status: 429 });
+  }
+  return null;
+}
+
 /**
  * The send-a-message action. `app`: the iPhone app's turn (US-52 AC5), which
  * runs the widget's path (history and context in the body, no transcript stored)
@@ -407,12 +425,8 @@ async function chatAction(request: Request, app: boolean) {
     // ----- POST — send message -----
     const { message, conversationId } = body;
 
-    if (!message || typeof message !== 'string') {
-      return Response.json({ success: false, error: 'message required' }, { status: 400 });
-    }
-    if (message.length > MAX_MESSAGE_LENGTH) {
-      return Response.json({ success: false, error: `Message too long (max ${MAX_MESSAGE_LENGTH} chars)` }, { status: 400 });
-    }
+    const refused = refuseTurn(message, request, app);
+    if (refused) return refused;
 
     // Sanitize message for router (strips control chars, caps at 2000 chars)
     const sanitizedCurrent = sanitizeForRouter(message);

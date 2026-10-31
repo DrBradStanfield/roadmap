@@ -286,6 +286,9 @@ Moved out of CLAUDE.md 2026-09-24 (entropy pass). `.env` has all of them.
 - **Chat switches** (optional, both default on): `CHAT_ENABLED=false` answers
   every chat POST 503; `CHAT_STREAMING=false` makes `/api/chat` ignore
   `stream: true` and answer JSON, which the widget reads unchanged (US-15 AC16).
+- **Web chat cap** (optional): `WEB_CHAT_DAILY_CAP` (default 10000 turns/machine/day,
+  0 turns web chat off; a value that is not a number of 0 or more uses the default). Each
+  shopper IP also gets 200 turns a day (US-15 AC45).
 - **Subscription changes in the chat (US-59), commerce app ONLY**:
   `CHAT_SUBSCRIPTION_ACTIONS=on` (default off), `CS_GATEWAY_CHAT_URL` (the
   gateway's private address: see the private customer-service spec) and
