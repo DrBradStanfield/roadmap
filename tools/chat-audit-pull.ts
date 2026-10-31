@@ -374,6 +374,12 @@ function escapeHtml(s: string): string {
     .replace(/'/g, '&#39;');
 }
 
+// A markdown link [label](url) as an anchor. Web and mail addresses only: a
+// javascript: link from a chat would run on click.
+function linkHtml(link: string, label: string, url: string): string {
+  return /^(https?:|mailto:)/i.test(url) ? `<a href="${url}" target="_blank" rel="noopener">${label}</a>` : link;
+}
+
 // Tiny markdown → HTML for bot responses. Handles: ```code blocks```, `inline code`,
 // **bold**, *italic*, # / ## / ### headers, - / * bullets, [link](url), paragraphs.
 // Anything else is escaped as plain text. Not a full MD parser — bot replies use a
@@ -400,9 +406,7 @@ function renderMessageContent(raw: string): string {
     // pulled the line through bullet handling
     s = s.replace(/(^|[^*])\*([^*\n]+)\*([^*]|$)/g, '$1<em>$2</em>$3');
     // links — [text](url)
-    s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (link, label, url) =>
-      // Web and mail addresses only: a javascript: link from a chat would run on click.
-      /^(https?:|mailto:)/i.test(url) ? `<a href="${url}" target="_blank" rel="noopener">${label}</a>` : link);
+    s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, linkHtml);
     return s;
   };
 

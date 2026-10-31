@@ -44,7 +44,7 @@ beforeAll(() => {
   dir = mkdtempSync(join(tmpdir(), 'chat-audit-'));
   const messages = [
     message('m1', 'user', `Hi ${HOSTILE}\n# ${HOSTILE}\n- ${HOSTILE}\n\`${HOSTILE}\`\n\`\`\`${BREAKOUT}\n${HOSTILE}\n\`\`\``),
-    message('m2', 'assistant', `**${HOSTILE}** *${HOSTILE}* [see this](javascript:alert(1)) [and](JavaScript:alert(1)) [ok](https://drstanfield.com/x)`),
+    message('m2', 'assistant', `**${HOSTILE}** *${HOSTILE}* [see this](javascript:alert(1)) [and](JavaScript:alert(1)) [ok](https://drstanfield.com/x) [sneaky](javascript:location='https://drstanfield.com') [upper](HTTPS://drstanfield.com/y) [plain](http://example.com/z) [mail](mailto:brad@example.com)`),
   ];
   const routing = [{
     created_at: '2026-10-01T10:00:00Z', message_id: 'm1', conversation_id: 'conv-1', user_id: 'user-1', message: HOSTILE,
@@ -78,5 +78,12 @@ describe('chat-audit-pull conversations.html', () => {
   it('links only to web addresses, never javascript:', () => {
     expect(html).not.toMatch(/href="\s*javascript:/i);
     expect(html).toContain('href="https://drstanfield.com/x"');
+  });
+
+  it('links http, https and mailto in any case, and leaves any other link as typed', () => {
+    expect(html).toContain('href="HTTPS://drstanfield.com/y"');
+    expect(html).toContain('href="http://example.com/z"');
+    expect(html).toContain('href="mailto:brad@example.com"');
+    expect(html).toContain('[see this](javascript:alert(1))');
   });
 });
