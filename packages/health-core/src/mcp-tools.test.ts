@@ -3603,7 +3603,7 @@ describe('US-03 AC7 — the import preview refuses a lipid of 0, never files it'
       row('lpa', 'Lipoprotein(a)', 0, 'nmol/L'),
     ]));
     expect(out.unrecognized).toEqual([
-      'LDL Cholesterol 0 mmol/L: LDL-c must be above 0 (got 0) (above 0, up to 12.9 mmol/L; above 0, up to 500 mg/dL). Check the unit; if the report really says that, tell the user and do not file it.',
+      'LDL Cholesterol 0 mmol/L: LDL-c must be above 0 (got 0) (above 0, up to 12.9 mmol/L; above 0, up to 498 mg/dL). Check the unit; if the report really says that, tell the user and do not file it.',
       expect.stringMatching(/^HDL Cholesterol 0 mg\/dL: HDL must be above 0 \(got 0\) \(above 0, up to 5.2 mmol\/L; above 0, up to 200 mg\/dL\)/),
     ]);
     expect(out.unrecognized.join('\n')).not.toContain('0–');

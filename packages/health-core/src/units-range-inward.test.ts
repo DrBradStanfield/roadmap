@@ -20,8 +20,9 @@ const CASES: Array<[MetricType, keyof typeof healthInputSchema.shape]> = [
 
 describe('US-05 AC2b: US-unit input range ends convert inside the SI schema', () => {
   it.each(CASES)('%s: both conventional ends pass %s', (metric, field) => {
-    const { min, max } = getDisplayRange(metric, 'conventional');
-    for (const end of [min, max]) {
+    const { min, max, minExclusive } = getDisplayRange(metric, 'conventional');
+    // An exclusive floor (US-03 AC7) is refused by design; its ceiling still counts.
+    for (const end of minExclusive ? [max] : [min, max]) {
       const si = toCanonicalValue(metric, end, 'conventional');
       // Before US-05 AC2b: 44 lb -> 19.958 kg, 79 in -> 200.66 cm, 20 % -> 195.10 mmol/mol,
       // 500 mg/dL -> 12.930 mmol/L, 0.1 / 30 mg/dL -> 8.84 / 2652 µmol/L.
