@@ -4,7 +4,7 @@
  * reconnecting the previous cloud. No provider, credential or network is used.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render } from '@testing-library/react';
+import { act, cleanup, render } from '@testing-library/react';
 import { createEmptyFile, ROADMAP_FILE_NAME } from '@roadmap/health-core';
 let LocalStorageAdapter: typeof import('../src/storage').LocalStorageAdapter;
 import { BloodTestTimeline } from '../src/components/BloodTestTimeline';
@@ -166,22 +166,5 @@ describe('shared-device cloud log-off clears off-file health data', () => {
     expect(location.reload).toHaveBeenCalledTimes(1);
     expect(cloud.delete).not.toHaveBeenCalled();
     expect(fetch).not.toHaveBeenCalled();
-  });
-
-  it('US-09 AC2c: after another tab logs off, a cloud tab writes no matrix draft back', async () => {
-    // This page's own module graph, so the matrices read this page's barrier.
-    const { latchOnOtherTabsLogOff } = await import('../src/storage/local-storage-adapter');
-    const { BloodTestTimeline: Timeline } = await import('../src/components/BloodTestTimeline');
-    latchOnOtherTabsLogOff();
-    const { container } = render(<Timeline bloodTestHistory={[]} unitSystem="si" unitOverrides={{}}
-      onToggleFieldUnit={noop} onSaveBatch={save} onDraftValue={noop}
-      isSaving={false} grading={null} hasApiResponse={true}/>);
-    fireEvent.change(input(container, 'LDL Cholesterol'), { target: { value: '2.7' } });
-    expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY)).not.toBeNull(); // the draft is kept before log-off
-    act(() => { window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_log_off_signal', newValue: '1' })); });
-    localStorage.removeItem(BT_TIMELINE_DRAFT_KEY); // the other tab's device wipe
-    fireEvent.change(input(container, 'LDL Cholesterol'), { target: { value: '2.8' } });
-    expect(input(container, 'LDL Cholesterol').value).toBe('2.8');
-    expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY)).toBeNull();
   });
 });

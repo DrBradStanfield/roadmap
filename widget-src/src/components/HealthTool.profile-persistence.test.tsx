@@ -221,6 +221,7 @@ it.each(['departure', 'debounce'] as const)(
     const { year } = await form();
     // The cloud tab receives the real content-free cross-tab signal.
     window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_log_off_signal', newValue: '1' }));
+    expect((await import('../lib/storage')).localHealthWritesStopped()).toBe(true);
     localStorage.clear();
     fireEvent.change(year, { target: { value: '1975' } });
     if (mode === 'departure') depart('visibilitychange');
@@ -346,7 +347,10 @@ it('US-09 AC2c: a held remote update released after another tab logs off does no
   fireEvent.change(year, { target: { value: '1975' } });
   await remoteMonth();
   expect(await appliedRemote()).toBe(0);
+  const { localHealthWritesStopped } = await import('../lib/storage');
+  expect(localHealthWritesStopped()).toBe(false);
   window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_log_off_signal', newValue: '1' }));
+  expect(localHealthWritesStopped()).toBe(true); // #318's barrier (US-09 AC2e)
   localStorage.clear();
   await act(async () => { await vi.advanceTimersByTimeAsync(1500); await data.flushRoadmapStore(); });
   expect((await cloud.read(ROADMAP_FILE_NAME)).body).toMatchObject({ profile: { birthYear: 1975, birthMonth: 6 } });

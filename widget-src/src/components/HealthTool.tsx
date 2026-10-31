@@ -59,7 +59,6 @@ import { listConversations } from '../lib/chat-api';
 import { UploadModal } from './UploadModal';
 import { useIsMobile, useIsWideDesktop } from '../lib/useIsMobile';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
-import { roadmapLocalWritesStopped } from '../storage/local-storage-adapter';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { MobileTabBar, type TabId } from './MobileTabBar';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -74,6 +73,7 @@ import {
   loadUnitPreference,
   safeSetItem,
   safeRemoveItem,
+  localHealthWritesStopped,
 } from '../lib/storage';
 import {
   loadLatestMeasurements,
@@ -532,7 +532,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // Save any unsaved profile/demographic fields (height, sex, birthYear, birthMonth, unitSystem).
   // Returns true if saved or nothing to save; false on failure.
   async function flushPendingProfileSave(erase?: string): Promise<boolean> {
-    if (getBackendKind() === 'local' && roadmapLocalWritesStopped()) return true;
+    if (getBackendKind() === 'local' && localHealthWritesStopped()) return true;
     const autoSaveFields = [...PREFILL_FIELDS, 'unitSystem' as keyof HealthInputs];
     const currentPrefill: Partial<HealthInputs> = {};
     const previousPrefill: Partial<HealthInputs> = {};
@@ -555,7 +555,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     }
 
     const success = await saveChangedMeasurements(currentPrefill, previousPrefill, erase);
-    if (getBackendKind() === 'local' && roadmapLocalWritesStopped()) return success;
+    if (getBackendKind() === 'local' && localHealthWritesStopped()) return success;
     if (success) {
       for (const field of autoSaveFields) {
         if (field in currentPrefill || field in previousPrefill) {
