@@ -10,13 +10,14 @@ import { docxToText } from './lib/docx-extract';
 
 export { extractFromPdf, isPdf, getZipEntries, isZip, resizeImage, isImage, docxToText };
 
+const api = { extractFromPdf, isPdf, getZipEntries, isZip, resizeImage, isImage, docxToText };
+
+/** What the main widget bundle reads from `window.HealthUpload` (UploadModal), typed from this bundle's own functions. */
+export type HealthUploadAPI = typeof api;
+
+declare global {
+  interface Window { HealthUpload?: HealthUploadAPI }
+}
+
 // Expose on window for the main widget bundle to access
-(window as any).HealthUpload = {
-  extractFromPdf,
-  isPdf,
-  getZipEntries,
-  isZip,
-  resizeImage,
-  isImage,
-  docxToText,
-};
+window.HealthUpload = api;
