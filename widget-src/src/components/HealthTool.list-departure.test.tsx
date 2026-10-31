@@ -104,6 +104,15 @@ describe('US-06 AC13: a list change made just before the tab goes away is saved'
     expect(onDevice().supplements.find(s => s.supplementKey === 'custom_test_supplement')?.status).toBe('stopped');
   });
 
+  it('an unmounted page stops listening: a later hide writes nothing from it', async () => {
+    const view = await page('#glp1-dose');
+    fireEvent.change(view.container.querySelector('#glp1-dose')!, { target: { value: '1.7' } });
+    view.unmount();
+    const before = localStorage.getItem('health_roadmap_file_v2');
+    act(() => leave['visibilitychange: hidden']());
+    expect(localStorage.getItem('health_roadmap_file_v2')).toBe(before);
+  });
+
   it('a page that stays visible keeps the 300 ms wait', async () => {
     const view = await page('#glp1-dose');
     fireEvent.change(view.container.querySelector('#glp1-dose')!, { target: { value: '1.7' } });
