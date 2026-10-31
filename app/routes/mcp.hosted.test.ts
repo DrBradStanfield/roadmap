@@ -2196,6 +2196,25 @@ describe('the OAuth funnel counts refusals, not only successes (US-32 AC34)', ()
     expect(funnel().at(-1)).toEqual(['mcp_connect_failed', { client: 'claude', provider: 'dropbox', reason: 'nonce-mismatch' }]);
   });
 
+  // The nonce compare is pinned: an equal length goes through timingSafeEqual,
+  // any other length is a mismatch without it and never throws.
+  it('compares a returned state of the nonce\'s length in constant time and refuses another length', async () => {
+    const { nonce, cookie } = await pressConnect(await consentScreen(CLAUDE_CIMD));
+    const forged = (nonce[0] === 'A' ? 'B' : 'A') + nonce.slice(1);
+    const tse = vi.spyOn(crypto, 'timingSafeEqual');
+    const nonceCalls = () => tse.mock.calls.filter(([, b]) => Buffer.from(nonce).equals(b as Buffer));
+    try {
+      for (const state of [forged, nonce.slice(1), `${nonce}A`]) {
+        const res = await get(`/mcp/callback?code=dropbox-code&state=${encodeURIComponent(state)}`, { cookie });
+        expect(res.status).toBe(400);
+        expect(funnel().at(-1)).toEqual(['mcp_connect_failed', { client: 'claude', provider: 'dropbox', reason: 'nonce-mismatch' }]);
+      }
+      expect(nonceCalls()).toEqual([[Buffer.from(forged), Buffer.from(nonce)]]);
+    } finally {
+      tse.mockRestore();
+    }
+  });
+
   it('counts the user saying no at the provider', async () => {
     const { nonce, cookie } = await pressConnect(await consentScreen(CLAUDE_CIMD));
     const res = await get(`/mcp/callback?error=access_denied&state=${encodeURIComponent(nonce)}`, { cookie });
