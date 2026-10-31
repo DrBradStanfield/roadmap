@@ -21,6 +21,8 @@ import {
   screeningsToInputs,
   chatContextOf,
   computeFormStage,
+  opensFullForm,
+  statTiles,
   FIELD_METRIC_MAP,
   METRIC_TO_FIELD,
   localDay,
@@ -59,6 +61,7 @@ import { useIsMobile, useIsWideDesktop } from '../lib/useIsMobile';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { BottomTabBar, panelDomId, tabDomId, type TabId } from './BottomTabBar';
+import { ONBOARDING_STEPS } from '@roadmap/health-core/product-events';
 import {
   saveToLocalStorage,
   loadFromLocalStorage,
@@ -233,7 +236,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const [lent, setLent] = useState<Partial<HealthInputs>>({});
   // The day each lent value is dated, when its draft has one (US-07 AC7).
   const [lentDays, setLentDays] = useState<Partial<Record<keyof HealthInputs, string>>>({});
-  const [previousMeasurements, setPreviousMeasurements] = useState<ApiMeasurement[]>([]);
+  // Read at mount too, so a returning user resumes at their step with no
+  // flash of step 1 (US-62 AC13); the load below replaces it.
+  const [previousMeasurements, setPreviousMeasurements] = useState<ApiMeasurement[]>(() => loadLatestMeasurementsSync()?.previousMeasurements ?? []);
   // Every active measurement, re-read after each save. The blood-test matrix
   // and the vitals matrix (StartingInfoVitals) each read their own metrics.
   const [history, setHistory] = useState<ApiMeasurement[]>([]);
@@ -502,17 +507,38 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     };
   }, [inputDay]);
 
-  // Progressive disclosure: which stage of the form to show. The chatbot
-  // embed reads the same rule.
+  // The form is the onboarding (US-62 AC13): the first answer the record
+  // lacks. The chatbot embed reads the same rule. A saved blood test opens
+  // the whole form at once, with the missing questions at the top.
   const formStage = useMemo(
     () => computeFormStage(effectiveInputs, previousMeasurements),
     [effectiveInputs, previousMeasurements],
   );
+  // Once open, the whole form stays open on this record while a profile
+  // answer is edited (a height cleared to retype), so nothing vanishes mid-
+  // typing; an erase starts the onboarding again.
+  const formOpenedFor = useRef<string | null>(null);
+  const fullForm = opensFullForm(formStage, previousMeasurements) || formOpenedFor.current === getShownErase();
+  if (fullForm) formOpenedFor.current = getShownErase();
 
-  // Pre-fetch chat conversations in background when chat becomes visible (stage 3)
-  // So messages are ready instantly when the user clicks the chat bubble
+  // US-62 AC13: each step answered in this tab, once, and the end. Counted
+  // from the stage the loaded record was at, so a returning user sends none.
+  // The step's name only, never its answer.
+  const stageSeen = useRef<number | null>(null);
   useEffect(() => {
-    if (formStage < 3 || chatPrefetch) return;
+    if (!hasApiResponse) return;
+    const from = stageSeen.current ?? formStage;
+    stageSeen.current = Math.max(from, formStage);
+    for (let step = from; step < formStage; step++) {
+      trackProductEvent('onboarding_step', { step: ONBOARDING_STEPS[step - 1] }); // stage 1 asks the measurements, 2 sex, 3 the birth date
+    }
+    if (from < 4 && formStage === 4) trackProductEvent('onboarding_done');
+  }, [formStage, hasApiResponse]);
+
+  // Pre-fetch chat conversations in background once the chat unmutes,
+  // so messages are ready instantly when the user clicks the chat bubble
+  useEffect(() => {
+    if (formStage < 4 || chatPrefetch) return;
     listConversations().then((result) => {
       if (!result) return;
       setChatPrefetch({
@@ -777,7 +803,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
 
   // Calculate results using effective inputs (form + fallback to previous)
   const { results, isValid, validationErrors, planBasis } = useMemo(() => {
-    if (!planInputs.heightCm || !planInputs.sex) {
+    // The plan needs a height; what needs sex waits for it (US-07 AC8).
+    if (!planInputs.heightCm) {
       return { results: null, isValid: false, validationErrors: null, planBasis: null };
     }
 
@@ -792,7 +819,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       errors = convertValidationErrorsToUnits(rawErrors, unitSystem);
       // Strip invalid fields (all optional) so remaining suggestions still show
       const invalidFields = new Set(validation.errors.issues.map((i) => i.path[0] as string));
-      if (invalidFields.has('heightCm') || invalidFields.has('sex')) {
+      if (invalidFields.has('heightCm')) {
         return { results: null, isValid: false, validationErrors: errors, planBasis: null };
       }
       const sanitized = { ...planInputs };
@@ -867,6 +894,13 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       if (visible) trackProductEvent('results_viewed');
     }, { rootMargin: '0px 0px -25% 0px' });
   }, [hasSuggestions, isMobile, activeTab]);
+
+  // US-62 AC13: on a phone, a dot on My plan when a tile appears that the
+  // person has not seen there. What My plan last showed is what was seen.
+  const tileKeys = useMemo(() => (results ? statTiles(results, { unitSystem }).map(t => t.key) : []), [results, unitSystem]);
+  const seenTiles = useRef<string[] | null>(null);
+  if (hasApiResponse && (seenTiles.current === null || activeTab === 'plan')) seenTiles.current = tileKeys;
+  const planDot = activeTab !== 'plan' && tileKeys.some(k => !seenTiles.current?.includes(k));
 
   // US-20 AC6: each tab keeps its own scroll position. The page scrolls, not
   // the panel, so leaving a tab records the page's offset and coming back
@@ -1255,6 +1289,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     bloodTestPrefillRef,
     vitalsPrefillRef,
     formStage,
+    fullForm,
     setShowUploadModal,
     planBasis,
     grading,
@@ -1326,12 +1361,12 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
               <ChatEmbed
                 isLoggedIn={chatSectionProps.isLoggedIn}
                 guestInputs={chatSectionProps.guestInputs}
-                muted={formStage < 3}
+                muted={formStage < 4}
                 onProposeEdit={handleProposeEdit}
               />
             </div>
           ))}
-          <BottomTabBar activeTab={activeTab} onTabChange={selectTab} idPrefix={tabIds} />
+          <BottomTabBar activeTab={activeTab} onTabChange={selectTab} idPrefix={tabIds} dot={planDot ? 'plan' : null} />
         </>
       ) : (
         <div className="health-tool-content">
@@ -1346,7 +1381,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
               <ChatEmbed
                 isLoggedIn={chatSectionProps.isLoggedIn}
                 guestInputs={chatSectionProps.guestInputs}
-                muted={formStage < 3}
+                muted={formStage < 4}
                 onProposeEdit={handleProposeEdit}
               />
             </div>

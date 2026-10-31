@@ -35,7 +35,7 @@ const renderPanel = () => {
       { id: 's3', screeningKey: 'lung_pack_years', value: '25', updatedAt: '' },
     ],
     onSupplementDelete: vi.fn(), scheduleLongitudinalSave, flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
-    fieldsSaved: 0, hasApiResponse: true, formStage: 3 as const, planBasis: { age: 66 }, grading: {},
+    fieldsSaved: 0, hasApiResponse: true, formStage: 4 as const, fullForm: true, planBasis: { age: 66 }, grading: {},
   };
   const view = render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />);
   const box = (id: string) => view.container.querySelector<HTMLInputElement>(`#${id}`)!;

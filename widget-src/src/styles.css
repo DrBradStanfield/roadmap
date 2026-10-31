@@ -187,6 +187,7 @@ input[type="number"] {
   }
 
   .hr-tab {
+    position: relative;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -204,6 +205,17 @@ input[type="number"] {
 
   .hr-tab--active {
     color: var(--color-brand-text);
+  }
+
+  /* US-62 AC13: something new on this tab (a tile on My plan). */
+  .hr-tab-dot {
+    position: absolute;
+    top: 6px;
+    left: calc(50% + 10px);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-brand);
   }
 
   .hr-tab-icon {
@@ -513,6 +525,27 @@ input[type="number"] {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+}
+
+/* US-62 AC13: each profile question below the height row. */
+.profile-step {
+  margin-top: 16px;
+}
+
+/* US-62 AC13: why a question is asked, shown under it (it was a tooltip). */
+.field-why {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--color-gray-medium);
+}
+
+.profile-step .health-field-group .health-field {
+  margin-bottom: 0;
+}
+
+.profile-step + .health-field {
+  margin-top: 16px;
 }
 
 /* A drug name and its dose. The name keeps room for its longest label

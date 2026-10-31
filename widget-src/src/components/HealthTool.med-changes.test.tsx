@@ -40,7 +40,7 @@ useHealthToolLifecycle();
 type Med = [key: string, drug: string, dose?: number];
 /** 178 cm, 101.4 kg: BMI 32, so the weight cascade is on. Born 1980: medicine
  *  cards need a known adult age (US-07 AC6). */
-const BMI_32 = { sex: 'male' as const, heightCm: 178, birthYear: 1980 };
+const BMI_32 = { sex: 'male' as const, heightCm: 178, birthYear: 1980, birthMonth: 1 };
 const WEIGHT: Array<[string, number]> = [['weight', 101.4]];
 /** LDL 3.0 mmol/L at BMI 25: the cholesterol cascade is on, the weight one off. */
 const LDL_3: Array<[string, number]> = [['weight', 80], ['ldl', 3]];

@@ -64,11 +64,13 @@ interface GuestRecord {
 }
 
 /** A guest whose record holds these values, and the page showing it. Born
- *  1980 unless the record says otherwise: medicine cards need a known adult
- *  age (US-07 AC6). `birthYear: undefined` is a guest with no birth year. */
+ *  January 1980 unless the record says otherwise: medicine cards need a known
+ *  adult age (US-07 AC6), and the whole form a birth month and year (US-62
+ *  AC13). `birthYear: undefined` is a guest with no birth year. */
 async function guestWith(r: GuestRecord): Promise<RenderResult> {
   const day = '2026-09-01';
   const birthYear = 'birthYear' in r ? r.birthYear : 1980;
+  if (!('birthYear' in r) && !r.birthMonth) r = { ...r, birthMonth: 1 };
   await initRoadmapStore(new LocalStorageAdapter());
   await saveChangedMeasurements({
     ...(r.sex ? { sex: r.sex } : {}), ...(birthYear ? { birthYear } : {}),
@@ -211,8 +213,9 @@ describe('US-06 AC5: the form recommends a weight medication only when the plan 
     expect(await weightMedsIntro(view.container)).toBe(recommends('26', 'elevated waist-to-height ratio'));
   });
 
-  it('before there is a plan (no sex yet), the section is neutral', async () => {
-    const view = await guestWith({ weight: 95 }); // BMI 30.0
+  it('before there is a plan (no height yet), the section is neutral', async () => {
+    // A saved blood test opens the whole form before the onboarding is done (US-62 AC13).
+    const view = await guestWith({ sex: 'male', height: 0, weight: 95, lipids: { ldl: 2 } });
     expect(await weightMedsIntro(view.container)).toBe(NEUTRAL);
   });
 
@@ -367,7 +370,8 @@ describe('US-06 AC5: the form\'s age-based targets and sections follow the plan\
   });
 
   it('born 1958 with no month and BP 135/85: the plan and the form both say <130/80', async () => {
-    const view = await guestWith({ sex: 'male', birthYear: 1958, weight: 80, bp: [135, 85] });
+    // No birth month: the onboarding is not done, and a saved blood test opens the whole form (US-62 AC13).
+    const view = await guestWith({ sex: 'male', birthYear: 1958, weight: 80, bp: [135, 85], lipids: { ldl: 2 } });
     await waitFor(() => expect(Array.from(view.container.querySelectorAll('.suggestion-desc'))
       .some((d) => d.textContent?.includes('Target is <130/80'))).toBe(true));
     expect(await bpHint(view.container)).toBe('Target: <130/80 mmHg');
@@ -376,7 +380,7 @@ describe('US-06 AC5: the form\'s age-based targets and sections follow the plan\
   it('the returning-user vitals matrix reads the plan\'s age too: an invalid birth year gives <120/80', async () => {
     // A saved weight in the legacy mirror opens the matrix at mount.
     localStorage.setItem('health_roadmap_data', SAVED_WEIGHT_MIRROR);
-    const view = await guestWith({ sex: 'male', birthYear: 1899, weight: 80, bp: [135, 85] });
+    const view = await guestWith({ sex: 'male', birthYear: 1899, weight: 80, bp: [135, 85], lipids: { ldl: 2 } }); // the blood test opens the whole form
     await waitFor(() => expect(Array.from(view.container.querySelectorAll('.suggestion-desc'))
       .some((d) => d.textContent?.includes('Target is <120/80'))).toBe(true));
     const matrixBpTarget = await waitFor(() => {
@@ -389,7 +393,7 @@ describe('US-06 AC5: the form\'s age-based targets and sections follow the plan\
 
   // Codex R1 (2026-09-28): with no plan, blood pressure stays neutral, like weight and waist.
   it('with no plan (no height), the form states no blood-pressure target', async () => {
-    const view = await guestWith({ sex: 'male', height: 0, weight: 80, bp: [135, 85] });
+    const view = await guestWith({ sex: 'male', height: 0, weight: 80, bp: [135, 85], lipids: { ldl: 2 } }); // the blood test opens the whole form
     await waitFor(() => expect(Array.from(view.container.querySelectorAll('.collapsed-field-value'))
       .some((v) => v.textContent?.includes('135/85'))).toBe(true));
     expect(Array.from(view.container.querySelectorAll('.field-hint')).map((h) => h.textContent)
@@ -398,12 +402,13 @@ describe('US-06 AC5: the form\'s age-based targets and sections follow the plan\
 
   it('a returning user who clears their height: the matrix states no BP target and colours no BP status', async () => {
     localStorage.setItem('health_roadmap_data', SAVED_WEIGHT_MIRROR);
-    const view = await guestWith({ sex: 'male', birthYear: 1970, weight: 80, bp: [135, 85] });
+    const view = await guestWith({ sex: 'male', birthYear: 1970, birthMonth: 1, weight: 80, bp: [135, 85] });
     const bpRow = () => Array.from(view.container.querySelectorAll('.bt-row')).find((r) => r.textContent?.includes('Blood Pressure'));
     await waitFor(() => expect(bpRow()?.querySelector('.bt-ref-label')?.textContent).toBe('Target: <120/80 mmHg'));
     expect(Array.from(bpRow()!.querySelectorAll('.bt-status-tick')).map((t) => t.className)).toContain('bt-status-tick bt-status-bad');
     fireEvent.change(view.container.querySelector('#heightCm')!, { target: { value: '' } });
-    await waitFor(() => expect(bpRow()?.querySelector('.bt-ref-label')?.textContent).toBe('Set sex + height to see target'));
+    // The form stays open while the height is retyped (US-62 AC13).
+    await waitFor(() => expect(bpRow()?.querySelector('.bt-ref-label')?.textContent).toBe('Set height to see target'));
     expect(Array.from(bpRow()!.querySelectorAll('.bt-status-tick')).map((t) => t.className.replace('bt-status-tick ', ''))
       .filter((c) => c !== 'bt-status-none')).toEqual([]);
   });
@@ -423,7 +428,7 @@ describe('US-06 AC5: the form\'s age-based targets and sections follow the plan\
   });
 
   it('a birth year the plan sets aside as invalid gives the form no age: no screening or bone density sections', async () => {
-    const view = await guestWith({ sex: 'male', birthYear: 1899, weight: 80 }); // before the 1900 bound
+    const view = await guestWith({ sex: 'male', birthYear: 1899, weight: 80, lipids: { ldl: 2 } }); // before the 1900 bound; the blood test opens the whole form
     await waitFor(() => expect(bmiTile(view.container)).toBe('25.2'));
     await weightMedsIntro(view.container); // the medication sections are on the page
     const titles = Array.from(view.container.querySelectorAll('.health-section-title')).map((t) => t.textContent);
@@ -476,9 +481,9 @@ describe('US-06 AC5: the vitals matrix takes its weight and waist targets from t
   });
 
   it('a height the plan sets aside as invalid gives the matrix no weight or waist target', async () => {
-    const view = await guestWith({ sex: 'male', height: 260, weight: 80, waist: 85 }); // above the 250 cm bound
-    expect(await matrixTarget(view.container, 'Weight')).toBe('Set sex + height to see target');
-    expect(await matrixTarget(view.container, 'Waist Circumference')).toBe('Set sex + height to see target');
+    const view = await guestWith({ sex: 'male', height: 260, weight: 80, waist: 85, lipids: { ldl: 2 } }); // above the 250 cm bound; the blood test opens the whole form
+    expect(await matrixTarget(view.container, 'Weight')).toBe('Set height to see target');
+    expect(await matrixTarget(view.container, 'Waist Circumference')).toBe('Set height to see target');
   });
 });
 
@@ -576,21 +581,22 @@ describe('US-07 AC6: the form withholds its medicine wording when the plan does'
       expect(view.container.textContent).not.toMatch(/Target: <\d+\/80/);
     });
 
-    // Codex R1 (2026-10-14): with no plan (no height, no sex, or a height the
-    // plan sets aside) the blood-test matrix still shows, and the gate must
-    // hold there too: it reads the birth year, not whether a plan exists.
+    // Codex R1 (2026-10-14): with no plan (no height, or a height the plan
+    // sets aside) the blood-test matrix still shows, and the gate must hold
+    // there too: it reads the birth year, not whether a plan exists. With no
+    // sex there is a plan now (US-07 AC8), and the gate holds the same.
     it.each([
-      ['no height', { height: 0 }],
-      ['no sex', { sex: undefined }],
-      ['an invalid height', { height: 260 }],
-    ] as const)('with %s, a saved LDL shows with no hint and no colour', async (_, gap) => {
+      ['no height', { height: 0 }, true],
+      ['no sex', { sex: undefined }, false],
+      ['an invalid height', { height: 260 }, true],
+    ] as const)('with %s, a saved LDL shows with no hint and no colour', async (_, gap, noPlan) => {
       const view = await guestWith({ ...MINOR, ...gap });
       const ldl = await waitFor(() => {
         const r = view.container.querySelector('.bt-row[data-metric="ldl"]');
         if (!r?.querySelector('.bt-value-num')) throw new Error('no LDL value on the page');
         return r;
       });
-      expect(view.container.querySelector('.plan-empty-preview')).not.toBeNull(); // no plan
+      expect(!!view.container.querySelector('.plan-empty-preview')).toBe(noPlan);
       expect(ldl.querySelector('.bt-ref-label')).toBeNull();
       expect(colours(ldl)).toEqual([]);
     });

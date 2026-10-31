@@ -180,7 +180,9 @@ export function statusOf(metric: MetricType, siValue: number, grading: Grading):
       return 'ok';
     case 'hdl': {
       // Higher is better. lowFemale (~1.29) is the more conservative "ok"
-      // gate. Below lowMale (~1.03) = bad. Between = warn.
+      // gate. Below lowMale (~1.03) = bad. Between = warn. With no sex, no
+      // grade: never assume one (US-62 AC13).
+      if (!sex) return null;
       const okGate = sex === 'male' ? HDL_THRESHOLDS.lowMale : HDL_THRESHOLDS.lowFemale;
       if (siValue >= okGate) return 'ok';
       if (siValue >= HDL_THRESHOLDS.lowMale) return 'warn';
@@ -204,6 +206,7 @@ export function statusOf(metric: MetricType, siValue: number, grading: Grading):
       // No formal threshold (eGFR is the clinical gate). Use the adult
       // reference range as the ok ceiling, mild elevation → warn,
       // significant elevation (≥30% over) → bad.
+      if (!sex) return null; // the ceiling differs by sex; never assume one (US-62 AC13)
       const max = sex === 'female' ? 90 : 110; // µmol/L
       if (siValue >= max * 1.3) return 'bad';
       if (siValue > max) return 'warn';

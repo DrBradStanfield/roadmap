@@ -11,6 +11,7 @@ import type { AlcoholAnswer, HealthInputs } from './types';
 import { encodeSex, decodeSex, encodeUnitSystem, decodeUnitSystem, isAlcoholAnswer } from './types';
 import { CANONICAL_UNITS, rangeFault, UNIT_DEFS, type MetricType, type ValidationRange } from './units';
 import { parseLocalisedNumber } from './parseNumber';
+import { birthInFuture, validateInputValue } from './validation';
 
 /**
  * Maps HealthInputs field names to metric_type values for storage in the
@@ -552,32 +553,45 @@ export function diffProfileFields(
   return Object.keys(changes).length > 0 ? changes : null;
 }
 
+/** The onboarding step the form is on: 1–3, or 4 once it is done. */
+export type FormStage = 1 | 2 | 3 | 4;
+
 /**
- * The progressive disclosure stage (1–3). The widget shows it, and the
- * chatbot embed unmutes at 3, so both read this one rule (US-15 AC10).
+ * The form is the onboarding (US-01 AC1, US-62 AC13): the stage is the first
+ * answer the record lacks. The widget shows it, and the chatbot embed unmutes
+ * at 4, so both read this one rule (US-15 AC10).
  *
- * Stage 1: Always (units, sex, height shown)
- * Stage 2: sex AND a plausible heightCm (weight, waist, BP, birth month/year shown)
- * Stage 3: a plausible weightKg (blood tests, medications, screening shown),
- *          or any saved blood test (a lab import with no weight still opens
- *          the whole form)
+ * Stage 1: a plausible height and weight (the BMI tile)
+ * Stage 2: sex (the healthy weight and the protein target)
+ * Stage 3: the birth month and year (the age-based plan)
+ * Stage 4: all four known: the rest of the form, the chat and the embed
  *
  * `saved` holds the newest saved row per metric; they fill the fields the
  * inputs leave empty (mergeLongitudinalInputs), so a typed value wins.
  * "Plausible" = inside the canonical SI validation range (UNIT_DEFS in
  * units.ts) — a half-typed "1" of "180" must NOT open the next stage; the
- * gate opens only once the value could be a real measurement.
- *
- * Checks from stage 3 downward so returning users with data skip to full form.
+ * gate opens only once the value could be a real measurement. The birth date
+ * counts once the plan would keep it: a year from 1900 and a month not in
+ * the future.
  */
 export function computeFormStage(
   inputs: Partial<HealthInputs>,
   saved: ReadonlyArray<Pick<ApiMeasurement, 'metricType' | 'value'>> = [],
-): 1 | 2 | 3 {
+): FormStage {
   const merged = mergeLongitudinalInputs(inputs, saved);
   const plausible = (v: number | undefined, r: ValidationRange) => v !== undefined && !rangeFault(r, v);
-  if (plausible(merged.weightKg, UNIT_DEFS.weight.validationRange.si)) return 3;
-  if (saved.some(m => BLOOD_TEST_METRICS.includes(m.metricType))) return 3;
-  if (merged.sex !== undefined && plausible(merged.heightCm, UNIT_DEFS.height.validationRange.si)) return 2;
-  return 1;
+  if (!plausible(merged.heightCm, UNIT_DEFS.height.validationRange.si)) return 1;
+  if (!plausible(merged.weightKg, UNIT_DEFS.weight.validationRange.si)) return 1;
+  if (merged.sex !== 'male' && merged.sex !== 'female') return 2;
+  const year = validateInputValue('birthYear', merged.birthYear);
+  const month = validateInputValue('birthMonth', merged.birthMonth);
+  if (year === undefined || month === undefined || birthInFuture(year, month, new Date())) return 3;
+  return 4;
+}
+
+/** The whole form shows once the onboarding is done, or at once for a record
+ *  holding a saved blood test, with the missing questions pinned at the top
+ *  (US-01 AC3). */
+export function opensFullForm(stage: FormStage, saved: ReadonlyArray<Pick<ApiMeasurement, 'metricType'>>): boolean {
+  return stage === 4 || saved.some(m => BLOOD_TEST_METRICS.includes(m.metricType));
 }

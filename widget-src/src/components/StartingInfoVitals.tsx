@@ -20,6 +20,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import {
   type ApiMeasurement,
+  type FormStage,
   type HealthInputs,
   type MetricType,
   type UnitSystem,
@@ -75,10 +76,9 @@ interface StartingInfoVitalsProps {
   /** The draft values the plan and the chat may read, in SI; undefined
    *  leaves the field to the record. */
   onDraftValue: (field: keyof HealthInputs, value: number | undefined) => void;
-  /** Used to pulse the weight draft cell at stage 2 (the progressive-
-   *  disclosure gate that unlocks the blood-test panel): no weight in what
-   *  the plan reads, the draft's own included. */
-  formStage: 1 | 2 | 3;
+  /** Used to pulse the weight draft cell at stage 1 (US-62 AC13: no weight
+   *  in what the plan reads, the draft's own included). */
+  formStage: FormStage;
   /** What the plan was computed from (US-06 AC5): its age sets the
    *  blood-pressure target, its weight target (kg) the weight line and its
    *  validated height (cm) the waist line. Null until there is a plan. */
@@ -555,7 +555,7 @@ export function StartingInfoVitals({
                             validationResult={typedError(null, row.metric)}
                             externalError={clashes(row.metric) || taken(row.metric) ? SAME_SLOT : refusal([null, row.metric])}
                             placeholder="—"
-                            wrapperClass={`bt-cell-input bt-cell-draft${formStage === 2 && row.metric === 'weight' ? ' field-attention' : ''}`}
+                            wrapperClass={`bt-cell-input bt-cell-draft${formStage === 1 && row.metric === 'weight' ? ' field-attention' : ''}`}
                             active={activeCell === cellId}
                             onChange={v => setSimpleDraft(row.metric, v)}
                             onFocus={() => setActiveCell(cellId)}

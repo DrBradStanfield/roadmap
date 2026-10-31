@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rowTarget, healthyWaistBelow, TARGET_NEEDS_PROFILE } from './row-target';
+import { rowTarget, healthyWaistBelow, TARGET_NEEDS_HEIGHT, TARGET_NEEDS_SEX } from './row-target';
 import { REFERENCE_HINTS } from './reference-hints';
 import { getDisplayLabel, isWaistToHeightElevated, toCanonicalValue, waistToHeightRatio, type MetricType, type UnitSystem } from './units';
 
@@ -70,10 +70,19 @@ describe('rowTarget: the plan’s vitals targets (US-06 AC5)', () => {
     expect(rowTarget('waist', 'conventional', adult, plan)?.bare).toBe('Target <34.7');
   });
 
-  it('before there is a plan, the grid asks for sex and height and the row prints no target', () => {
+  it('before there is a plan, the grid asks for the height (asked first, US-62 AC13) and the row prints no target', () => {
+    expect(TARGET_NEEDS_HEIGHT).toBe('Set height to see target');
     for (const metric of ['blood_pressure', 'weight', 'waist'] as const) {
-      expect(rowTarget(metric, 'si', adult, null)).toEqual({ full: TARGET_NEEDS_PROFILE, bare: null });
+      expect(rowTarget(metric, 'si', adult, null)).toEqual({ full: TARGET_NEEDS_HEIGHT, bare: null });
     }
+  });
+
+  it('a plan without sex has no healthy weight: the weight line asks for sex, the others print their targets (US-62 AC13)', () => {
+    const noSex = { age: 50, heightCm: 178 };
+    expect(TARGET_NEEDS_SEX).toBe('Set sex to see target');
+    expect(rowTarget('weight', 'si', adult, noSex)).toEqual({ full: TARGET_NEEDS_SEX, bare: null });
+    expect(rowTarget('waist', 'si', adult, noSex)?.bare).toBe('Target <89');
+    expect(rowTarget('blood_pressure', 'si', adult, noSex)?.bare).toBe('Target <120/80');
   });
 });
 
@@ -96,13 +105,13 @@ describe('rowTarget: a known minor (US-07 AC6)', () => {
     expect(rowTarget('lpa', 'mg/dL', null, plan)).toBeNull();
     expect(rowTarget('weight', 'si', null, plan)).toBeNull();
     expect(rowTarget('blood_pressure', 'si', null, plan)).toBeNull();
-    // With no plan either: no "Set sex + height" prompt for a target they will not get.
+    // With no plan either: no "Set height" prompt for a target they will not get.
     expect(rowTarget('weight', 'si', null, null)).toBeNull();
   });
 
   it('keeps the waist target, which applies to children too, and a lab’s printed range', () => {
     expect(rowTarget('waist', 'si', null, plan)).toEqual({ full: 'Target: <89 cm', bare: 'Target <89' });
-    expect(rowTarget('waist', 'si', null, null)?.full).toBe(TARGET_NEEDS_PROFILE);
+    expect(rowTarget('waist', 'si', null, null)?.full).toBe(TARGET_NEEDS_HEIGHT);
     expect(rowTarget({ referenceLow: 3, referenceHigh: 5 }, 'si', null, null)?.bare).toBe('Ref 3–5');
   });
 });

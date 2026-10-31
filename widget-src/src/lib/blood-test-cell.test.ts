@@ -235,7 +235,30 @@ describe('statusOf — a value out of range (US-03 AC7)', () => {
   });
 
   it('an in-range value is still graded, and PSA 0 (in range) still is', () => {
-    expect([statusOf('ldl', 1.0, {}), statusOf('hdl', 0.5, {}), statusOf('psa', 0, {})]).toEqual(['ok', 'bad', 'ok']);
+    expect([statusOf('ldl', 1.0, {}), statusOf('hdl', 0.5, { sex: 'male' }), statusOf('psa', 0, {})]).toEqual(['ok', 'bad', 'ok']);
+  });
+});
+
+// US-62 AC13 (adversary N1 on PR 402): with no sex on record, nothing whose
+// line depends on sex is graded, and no sex is assumed. The creatinine ceiling
+// used to fall back to the male 110, so a woman's 100 read green.
+describe('statusOf — no sex grades nothing sex-dependent (US-62 AC13)', () => {
+  it('HDL and creatinine have no status without sex', () => {
+    for (const [metric, value] of [['hdl', 0.5], ['hdl', 1.1], ['hdl', 2.0], ['creatinine', 100], ['creatinine', 200], ['creatinine', 60]] as const) {
+      expect(statusOf(metric, value, {}), `${metric} ${value}`).toBeNull();
+      expect(previewStatus(metric, String(value), 'si', {}), `${metric} ${value}`).toBeNull();
+    }
+  });
+
+  it('with sex, each is graded on its own line', () => {
+    expect(statusOf('creatinine', 100, { sex: 'female' })).toBe('warn');
+    expect(statusOf('creatinine', 100, { sex: 'male' })).toBe('ok');
+    expect(statusOf('hdl', 1.1, { sex: 'female' })).toBe('warn');
+    expect(statusOf('hdl', 1.1, { sex: 'male' })).toBe('ok');
+  });
+
+  it('the unsexed tests are still graded without sex', () => {
+    expect([statusOf('hba1c', 50, {}), statusOf('ldl', 4.2, {}), statusOf('triglycerides', 1.0, {})]).toEqual(['bad', 'bad', 'ok']);
   });
 });
 

@@ -1109,21 +1109,24 @@ only; `supplement-lutein-zeaxanthin-us` keeps the macular pigment sentences and 
 
 ## 10. Progressive Disclosure
 
-Source: `mappings.ts` -> `computeFormStage(inputs, saved)`
+Source: `mappings.ts` -> `computeFormStage(inputs, saved)` and `opensFullForm(stage, saved)`
 
-New users see fields revealed in 3 stages. Returning users with a saved weight or any saved blood test skip to stage 3. The widget shows this stage, and the storefront chatbot embed stays muted below stage 3; both call the same function, the embed on the widget's saved copy (US-15 AC10).
+The form is the onboarding (US-62 AC13, Brad 2026-10-31): the stage is the first answer the record lacks. Each answer saves as it lands (the weight when its field is left, one active row per day), so a reload resumes at the first missing answer. Every step is required; there is no Skip. The widget shows the stage, and the storefront chatbot embed stays muted below stage 4; both call the same function, the embed on the widget's saved copy (US-15 AC10).
 
 `saved` is the newest saved row per metric. Its values fill the longitudinal fields the form leaves empty (`mergeLongitudinalInputs`), so a value typed in the form wins over the saved one.
 
-A value opens a stage only when it is plausible: inside its SI validation range in `UNIT_DEFS` (height 50–250 cm, weight 20–300 kg). A half-typed "1" of "180" does not open stage 2.
+A value opens a stage only when it is plausible: inside its SI validation range in `UNIT_DEFS` (height 50–250 cm, weight 20–300 kg). A half-typed "1" of "180" does not open the next stage. Sex counts only as male or female. The birth date counts once the plan would keep it: a year from 1900 to this year, a month 1–12, and not a month in the future (`validateInputValue`, `birthInFuture`).
 
-| Stage | Gate Condition | Fields Visible | Attention Glow |
-|-------|---------------|----------------|----------------|
-| 1 | Always | Units, Sex, Height | Sex |
-| 2 | `sex` set AND a plausible `heightCm` | Weight, Waist, BP, Birth Month/Year | Weight |
-| 3 | a plausible `weightKg`, typed or saved; OR any saved blood test (`BLOOD_TEST_METRICS`) | Blood Tests, Medications, Screening, Bone Density, Supplements | None (Email for guests) |
+| Stage | The record lacks | Asks (with the why-text under the question) | The plan then shows | Attention Glow |
+|-------|------------------|---------------------------------------------|---------------------|----------------|
+| 1 | a plausible `heightCm` or `weightKg`, typed or saved | Height and weight | (after it) the BMI tile | Height, then Weight |
+| 2 | `sex` | Sex | (after it) ideal body weight and the protein target | Sex |
+| 3 | `birthMonth` and `birthYear` | Birth month and year | (after it) the age-based plan | Birth month, year |
+| 4 | nothing | The rest of the form: vitals, blood tests, medications, screening, bone density, supplements, alcohol | Everything; the chat and the embed unmute | None (Email for guests) |
 
-Logic checks from stage 3 down (short-circuit), so returning users skip to full form. The blood-test rule lets a lab import with no weight open the whole form.
+A record with any saved blood test (`BLOOD_TEST_METRICS`) opens the whole form at any stage (`opensFullForm`), with the missing profile questions pinned at the top and glowing; the chat and the embed still wait for stage 4. Once the whole form is open on a record, it stays open while a profile answer is edited (a height cleared to retype); an erase starts the onboarding again.
+
+The plan needs only a height (US-07 AC8), so it computes from step 1; what needs sex or age waits for those answers. Children (B9): no new rule before the birth date; once it arrives, a known minor gets today's handling (`knownMinorOf`).
 
 ### Field Categories
 

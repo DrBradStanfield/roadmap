@@ -33,10 +33,12 @@ export const panelDomId = (prefix: string, tab: TabId) => `${prefix}-panel-${tab
  * fixed to the viewport: a sticky child cannot leave its container, so it never
  * floats over the page around the widget.
  */
-export function BottomTabBar({ activeTab, onTabChange, idPrefix }: {
+export function BottomTabBar({ activeTab, onTabChange, idPrefix, dot = null }: {
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
   idPrefix: string;
+  /** The tab that holds something new (US-62 AC13: a new tile on My plan). */
+  dot?: TabId | null;
 }) {
   // Arrow keys move along the tabs and wrap; Home and End jump to the ends.
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -64,6 +66,7 @@ export function BottomTabBar({ activeTab, onTabChange, idPrefix }: {
         >
           <svg className="hr-tab-icon" viewBox="0 0 24 24" aria-hidden="true">{icon}</svg>
           <span className="hr-tab-label">{label}</span>
+          {dot === id && <span className="hr-tab-dot" aria-hidden="true" />}
         </button>
       ))}
     </div>

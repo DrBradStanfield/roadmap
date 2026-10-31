@@ -36,9 +36,12 @@ export type RowSubject = MetricType | 'blood_pressure' | { referenceLow?: number
  *  nothing to print yet, so the row shows its date alone. */
 export type RowTarget = { full: string; bare: string | null };
 
-/** What the vitals grid says in place of a plan target before there is a plan. */
-export const TARGET_NEEDS_PROFILE = 'Set sex + height to see target';
-const needsProfile: RowTarget = { full: TARGET_NEEDS_PROFILE, bare: null };
+/** What the vitals grid says in place of a plan target, in the form's order
+ *  (US-62 AC13): the plan needs a height, and the weight target needs sex. */
+export const TARGET_NEEDS_HEIGHT = 'Set height to see target';
+export const TARGET_NEEDS_SEX = 'Set sex to see target';
+const needsHeight: RowTarget = { full: TARGET_NEEDS_HEIGHT, bare: null };
+const needsSex: RowTarget = { full: TARGET_NEEDS_SEX, bare: null };
 
 /** The waist target's number, in the display unit: the first waist, at the
  *  unit's display step, that the plan grades elevated at this height. A waist
@@ -59,18 +62,19 @@ export function healthyWaistBelow(heightCm: number, unit: UnitSystem): string {
 export function rowTarget(metric: RowSubject, unit: CellUnit, grading: Grading, plan: RowTargetPlan | null): RowTarget | null {
   if (typeof metric === 'object') return printedRange(metric.referenceLow ?? null, metric.referenceHigh ?? null);
   if (metric === 'waist') {
-    if (plan?.heightCm == null) return needsProfile;
+    if (plan?.heightCm == null) return needsHeight;
     const line = `<${healthyWaistBelow(plan.heightCm, unit as UnitSystem)}`;
     return { full: `Target: ${line} ${getDisplayLabel('waist', unit as UnitSystem)}`, bare: `Target ${line}` };
   }
   if (!grading) return null;
   if (metric === 'blood_pressure') {
-    if (!plan) return needsProfile;
+    if (!plan) return needsHeight;
     const line = `<${bpTargetFor(plan.age)}/80`;
     return { full: `Target: ${line} mmHg`, bare: `Target ${line}` };
   }
   if (metric === 'weight') {
-    if (plan?.idealBodyWeight == null) return needsProfile;
+    if (!plan) return needsHeight;
+    if (plan.idealBodyWeight == null) return needsSex;
     const line = formatDisplayValue('weight', plan.idealBodyWeight, unit as UnitSystem);
     return { full: `Target: ${line} ${getDisplayLabel('weight', unit as UnitSystem)}`, bare: `Target ${line}` };
   }

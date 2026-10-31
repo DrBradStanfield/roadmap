@@ -448,7 +448,7 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
   if (hook.gateSkipped) return <ReminderSignup hook={hook} />;
 
   return (
-    <div className={`email-capture no-print${formStage === 3 ? ' field-attention' : ''}`}>
+    <div className={`email-capture no-print${formStage === 4 ? ' field-attention' : ''}`}>
       <p className="email-guest-helper">{helperText}</p>
       <div className="email-capture-row">
         <input

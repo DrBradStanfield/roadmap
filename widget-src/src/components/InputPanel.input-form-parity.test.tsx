@@ -47,7 +47,7 @@ function renderPanel(state: State): HTMLElement {
     screenings: screeningRows(state.screenings), onScreeningChange: vi.fn(),
     supplements: [], onSupplementChange: vi.fn(), onSupplementDelete: vi.fn(),
     scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false, fieldsSaved: 0,
-    hasApiResponse: false, formStage: 3 as const, planBasis: state.basis, grading: {},
+    hasApiResponse: false, formStage: 4 as const, fullForm: true, planBasis: state.basis, grading: {},
   };
   return render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />).container;
 }
