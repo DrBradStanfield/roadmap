@@ -47,6 +47,7 @@ import {
 } from '@roadmap/health-core';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import type { MoveTestApi } from './MoveTestPanel';
+import type { DateValue } from './DatePicker';
 import { routeVitalsEdit, type VitalsPrefillFn } from './StartingInfoVitals';
 import type { ApiSupplement, ApiLabValue } from '../lib/api-types';
 import { InputPanel, type PlanBasis } from './InputPanel';
@@ -246,6 +247,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const [labValueHistory, setLabValueHistory] = useState<ApiLabValue[]>([]);
   const [medications, setMedications] = useState<ApiMedication[]>([]);
   const [screenings, setScreenings] = useState<ApiScreening[]>([]);
+  // The prostate section's PSA month and year; null until one is picked (US-06 AC15).
+  const [psaDate, setPsaDate] = useState<DateValue | null>(null);
   const [supplements, setSupplements] = useState<ApiSupplement[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hasApiResponse, setHasApiResponse] = useState(false);
@@ -606,11 +609,14 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     // it was typed in (mmHg either way). What a matrix's draft lends the plan
     // is kept apart (`lent`), and only that matrix saves it, on the day the
     // draft is dated (review of 2026-09-24). So what `inputs` holds here was
-    // typed into these fields, by the user or the chat.
+    // typed into these fields, by the user or the chat. The prostate section's
+    // PSA takes the 1st of the month its picker shows, or today until one is
+    // picked (US-06 AC15).
     const fromForm = (): SaveTask[] => {
-      const date = localDay(new Date());
+      const today = localDay(new Date());
       const shown = activeRowIndex(history);
-      return [['weight'], ['waist'], ['systolic_bp', 'diastolic_bp']].flatMap((metrics): SaveTask[] => {
+      return [['weight'], ['waist'], ['systolic_bp', 'diastolic_bp'], ['psa']].flatMap((metrics): SaveTask[] => {
+        const date = metrics[0] === 'psa' && psaDate ? `${psaDate.year}-${psaDate.month}-01` : today;
         const field = METRIC_TO_FIELD[metrics[0]];
         const typed = typedIn.current[field];
         const unit = typed && typed.value === inputs[field] ? typed.unit : unitOverrides[field] ?? unitSystem;
@@ -678,7 +684,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     const run = savesRef.current.then(save);
     savesRef.current = run.catch(() => {});
     return run;
-  }, [inputs, history, unitOverrides, unitSystem, reloadValues]);
+  }, [inputs, history, unitOverrides, unitSystem, psaDate, reloadValues]);
 
   // Auto-save on blur / Enter for InputPanel longitudinal fields. The
   // 500ms debounce batches systolic→diastolic tab transitions into one
@@ -698,6 +704,24 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   }, [longitudinalDebounce]);
   const flushLongitudinalSave = useCallback(() => {
     longitudinalDebounce.commit(() => { void handleSaveLongitudinalRef.current(); });
+  }, [longitudinalDebounce]);
+  // The PSA row saves only once focus leaves the whole row, and a closing tab
+  // fires no blur. So on departure, focus still in that row is moved out: the
+  // row's blur queues its save, with its own checks, and it runs now. A second
+  // departure event finds focus gone and nothing waiting (US-06 AC15).
+  useEffect(() => {
+    const onLeave = () => {
+      const focused = document.activeElement;
+      if (!(focused instanceof HTMLElement) || !focused.closest('.psa-inline-row')) return;
+      focused.blur();
+      longitudinalDebounce.flush();
+    };
+    window.addEventListener('beforeunload', onLeave);
+    window.addEventListener('pagehide', onLeave);
+    return () => {
+      window.removeEventListener('beforeunload', onLeave);
+      window.removeEventListener('pagehide', onLeave);
+    };
   }, [longitudinalDebounce]);
 
   // Tab-close safety net for the first-time vitals fields: a field the user
@@ -1242,6 +1266,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     onMedicationChange: handleMedicationChange,
     screenings,
     onScreeningChange: handleScreeningChange,
+    psaDate,
+    onPsaDateChange: setPsaDate,
     supplements,
     onSupplementChange: handleSupplementChange,
     onSupplementDelete: handleSupplementDelete,
