@@ -113,26 +113,9 @@ input[type="number"] {
   }
 }
 
-/* Mobile Tab Bar — hidden on desktop, shown on mobile */
-.mobile-tab-bar {
-  display: none;
-}
-.mobile-view-plan-btn {
-  display: none;
-}
-
 @media (max-width: 768px) {
   .health-tool {
-    padding: 0 0 16px;
-  }
-
-  /* 76px bottom clearance while the fixed "See Your Personalized Plan" bar
-     (.mobile-view-plan-btn, ~60px tall at bottom:12px) is rendered — without it
-     the bar sits over the last form rows and intercepts taps meant for inputs
-     (2026-08 audit, US-02/US-20). Gated by HealthTool so the plan/chat tabs
-     don't pay a blank strip. */
-  .health-tool--plan-bar {
-    padding-bottom: 76px;
+    padding: 0;
   }
 
   .stats-grid {
@@ -160,80 +143,81 @@ input[type="number"] {
     margin: 0 10px;
   }
 
-  .mobile-tab-bar-container {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: #fff;
-  }
-
-  .mobile-tab-bar {
+  /* US-20 AC6: the top bar holds the storage button above every tab, with
+     the cards' 10px gutter. */
+  .hr-top-bar {
     display: flex;
-    padding-top: 8px;
-    border-bottom: 1px solid var(--color-gray-border);
+    justify-content: flex-end;
+    padding: 8px 10px 0;
   }
 
-  .mobile-tab {
-    flex: 1;
-    padding: 8px 16px;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--color-gray-medium);
-    background: none;
-    border: none;
-    border-bottom: 2px solid transparent;
-    cursor: pointer;
-    text-align: center;
-    transition: color 0.2s, border-color 0.2s;
-  }
-
-  .mobile-tab--active {
-    color: var(--color-brand-text);
-    border-bottom-color: var(--color-brand);
-  }
-
-  /* Swiper handles the 2-tab layout (autoHeight, swipe, slide sync).
-     These styles override the desktop results panel for mobile context. */
-  .swiper {
+  /* The phone's panels; only the active one shows (the others are [hidden]). */
+  .hr-tabpanel {
     padding-top: 16px;
-  }
-
-  .swiper-slide {
+    padding-bottom: 16px;
     min-width: 0;
     overflow-x: hidden;
   }
 
-  .swiper-slide .section-card {
+  .hr-tabpanel .section-card {
     margin-bottom: 0;
   }
 
-  .swiper-slide .health-tool-right {
+  .hr-tabpanel .health-tool-right {
     position: static;
     max-height: none;
     overflow-y: visible;
   }
 
-
-  .btn-primary.mobile-view-plan-btn,
-  .btn-primary.mobile-view-plan-btn:hover,
-  .btn-primary.mobile-view-plan-btn:active {
-    display: block;
-    position: fixed;
-    bottom: 12px;
-    left: 15px;
-    right: 15px;
-    width: auto;
-    box-sizing: border-box;
-    padding: 14px 20px;
-    font-size: 16px;
-    border-radius: 8px;
-    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
-    background: var(--color-brand-text);
-    border-color: var(--color-brand-text);
+  /* US-20 AC6: the bottom tab bar, as on the iPhone. Sticky at the widget's
+     foot, never fixed: it cannot leave the widget, so it never floats over the
+     page above or below. Off screen it hides but keeps its height, so the page
+     under the widget does not move. */
+  .hr-tabbar {
+    position: sticky;
+    bottom: 0;
     z-index: 20;
+    display: flex;
+    background: rgba(248, 248, 250, 0.97);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--color-gray-border);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
+  .hr-tabbar--offscreen {
+    visibility: hidden;
+  }
 
+  .hr-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-height: 49px;
+    padding: 6px 4px 4px;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--color-gray-medium);
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+
+  .hr-tab--active {
+    color: var(--color-brand-text);
+  }
+
+  .hr-tab-icon {
+    width: 26px;
+    height: 26px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
 }
 
 /* The form, locked while this tab's erase runs (US-16 AC2a): a plain box. */
@@ -1958,21 +1942,25 @@ input[type="number"] {
 }
 /* Mobile-only tab-bar strip (shown only inside the ≤768px block below). */
 .hr-skel-tabbar { display: none; }
-/* ≤768px: single column + a tab-bar strip, matching the mobile widget. */
+/* ≤768px: single column + the bottom tab bar's strip, matching the mobile widget. */
 @media (max-width: 768px) {
-  .hr-skeleton { padding: 0 0 16px; }
+  .hr-skeleton { padding: 0; }
   .hr-skeleton-content {
     grid-template-columns: 1fr;
     gap: 0;
-    padding: 0 10px;
+    /* 49px: the top bar (33px, Sign in) and the panel's 16px. */
+    padding: 49px 10px 16px;
   }
   .hr-skeleton-col:not(:first-child) { display: none; }
   .hr-skel-colhead { display: none; }
   .hr-skel-tabbar {
     display: block;
-    height: 43px;
-    margin: 0 -10px 16px;
-    border-bottom: 1px solid var(--color-gray-border);
+    position: sticky;
+    bottom: 0;
+    height: 51px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: rgba(248, 248, 250, 0.97);
+    border-top: 1px solid var(--color-gray-border);
   }
 }
 
@@ -3957,9 +3945,8 @@ input[type="number"] {
 
 @media (max-width: 768px) {
   .hr-col-header { display: none; }
-  /* US-44 AC6 and US-09 AC30: a header's actions stay (Save as PDF on the plan,
-     Sign in on the input column; the tabs name the column), right-aligned with
-     the cards, clear of the tabs. */
+  /* US-44 AC6: a header's actions stay (Save as PDF on the plan; the tabs
+     name the column), right-aligned with the cards' 10px gutter. */
   .hr-col-header--actions { display: flex; justify-content: flex-end; padding: 8px 10px 0; }
   .hr-col-header--actions .hr-col-title { display: none; }
 }
@@ -4034,21 +4021,22 @@ input[type="number"] {
   .chat-fab { display: none; }
 }
 
-/* Mobile: chat slide keeps inline variant but needs a sensible height
-   so Swiper's autoHeight doesn't collapse it to 0 */
+/* Mobile: the chat tab is a screen tall, less the top and tab bars, so its
+   tab bar sits at the foot of the screen as on the iPhone. */
 @media (max-width: 768px) {
   .health-tool-chat {
     position: static;
     max-height: none;
     overflow-y: visible;
   }
-  .chat-expanded.chat-expanded--inline {
-    min-height: 70vh;
-  }
   .chat-embed,
   .health-tool-chat .chat-embed {
     margin: 0 10px;
     min-height: 300px;
+  }
+  .hr-tabpanel .health-tool-chat .chat-embed {
+    min-height: calc(100vh - 150px);
+    min-height: calc(100svh - 150px);
   }
 
   .chat-embed .chat-header-sub {
@@ -4238,9 +4226,7 @@ input[type="number"] {
   scrollbar-width: none;
   /* `pan-x` scrolls the matrix horizontally; `pan-y` lets vertical
      gestures bubble through to the page so users can scroll the page
-     down even when the touch starts on the matrix. Swiper's
-     `noSwipingSelector=".bt-cell-strip, .bt-timeline-scroll"` blocks
-     tab swipes here independently of touch-action. */
+     down even when the touch starts on the matrix. */
   touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
 }
@@ -4424,9 +4410,7 @@ input[type="number"] {
      gestures bubble through to the page so users can scroll the page
      up/down even when the touch starts on a strip — without this, a
      touch starting on Weight/Waist/BP rows freezes the page (mirrors
-     the `.bt-timeline-scroll` rule). Swiper's `noSwipingSelector=
-     ".bt-cell-strip, .bt-timeline-scroll"` still blocks tab swipes
-     independently of touch-action. */
+     the `.bt-timeline-scroll` rule). */
   touch-action: pan-x pan-y;
 }
 .bt-cell-strip::-webkit-scrollbar { display: none; }

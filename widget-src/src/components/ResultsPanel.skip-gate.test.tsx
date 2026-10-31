@@ -179,7 +179,6 @@ describe('US-18 AC6 — a refused print window is never silent', () => {
   // that refused storage runs from memory), and never "use another browser":
   // that browser would not hold this plan.
   const BLOCKED = "The PDF window didn't open. Try Save as PDF again. Some apps' built-in browsers block it.";
-  const opens = () => vi.mocked(window.open).mockImplementation(() => ({ document: { write: vi.fn(), close: vi.fn() }, print }) as unknown as Window);
   const refuseWindow = () => vi.mocked(window.open).mockImplementation(() => null);
   const blockedEvents = () => mocks.trackProductEvent.mock.calls.filter(([name]) => name === 'pdf_window_blocked');
 
@@ -246,23 +245,6 @@ describe('US-18 AC6 — a refused print window is never silent', () => {
     await waitFor(() => expect(note.textContent).toBe(BLOCKED));
     expect(view.getByText(BLOCKED)).toBe(note);
     expect(blockedEvents()).toHaveLength(2); // trackProductEvent itself sends once per tab session
-  });
-
-  it('on a phone the Plan tab re-measures its height when the note comes and goes', async () => {
-    const onLayoutChange = vi.fn();
-    refuseWindow();
-    const view = showPlan({ onLayoutChange });
-    onLayoutChange.mockClear();
-    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
-    await waitFor(() => expect(view.getByText(BLOCKED)).toBeTruthy());
-    expect(onLayoutChange).toHaveBeenCalled();
-    onLayoutChange.mockClear();
-    opens();
-    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
-    await waitFor(() => expect(view.queryByText(BLOCKED)).toBeNull());
-    expect(onLayoutChange).toHaveBeenCalled();
-    const tool = readFileSync(resolve(__dirname, 'HealthTool.tsx'), 'utf8');
-    expect(tool).toContain('onLayoutChange: () => liveSwiper()?.updateAutoHeight(),');
   });
 
   it('a refusal on a capture that then fails to send shows beside that error', async () => {

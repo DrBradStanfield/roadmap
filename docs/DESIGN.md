@@ -183,11 +183,11 @@ System font stack — renders native on every OS with zero FOIT/FOUT:
 - Hover: `rgba(0,163,139,0.08)` background, `#00a38b` border
 - Use: Switch individual field units (e.g., lbs ↔ kg)
 
-### Mobile Tab Bar (`.mobile-tab-bar`)
-- Sticky at top, white background, `border-bottom: 1px solid #ddd`
-- Each tab: `flex: 1`, `14px` font, weight `500`, `#666` default
-- Active (`.mobile-tab--active`): color `#00a38b`, `border-bottom: 2px solid #00a38b`
-- Hidden on desktop (shown only at ≤768px)
+### Bottom Tab Bar (`.hr-tabbar`, `BottomTabBar.tsx`)
+- Sticky at the widget's foot (never fixed), frosted light grey, `border-top: 1px solid` the grey border
+- Each tab: `flex: 1`, a 26px line icon over a `10px` label, weight `500`, `--color-gray-medium` default
+- Active (`.hr-tab--active`): `--color-brand-text`
+- Hidden on desktop (shown only at ≤768px), and while the widget is off screen
 
 ### Pill Badges
 - Radius: `9999px`
@@ -243,14 +243,14 @@ Desktop: `grid-template-columns: 5fr 6fr; gap: 32px`
 ### Breakpoints
 | Name | Width | Key Changes |
 |------|-------|-------------|
-| Mobile | ≤768px | Single column, tab bar visible, cards compact (12px padding), hero image hidden |
+| Mobile | ≤768px | Single column, bottom tab bar visible, cards compact (12px padding), hero image hidden |
 | Desktop | >768px | Two-panel grid (5fr/6fr), tab bar hidden, results panel sticky |
 
 ### Mobile Specifics
-- Tab bar: sticky at top, `z-index: 10`, white background
-- Two tabs: "Enter Data" / "View Plan" (or similar)
-- Swiper handles tab switching — CSS scroll-snap, no JS touch handlers
-- Fixed "View Plan" button at bottom (`position: fixed; bottom: 12px; left: 15px; right: 15px`)
+- Bottom tab bar, as on the iPhone: My data, My plan, Chat; icons over labels, the active tab in `--color-brand-text`
+- Sticky at the widget's foot, never fixed, hidden while the widget is off screen; pads for `env(safe-area-inset-bottom)`
+- Plain React state picks the tab; the other panels stay mounted but hidden, and each tab keeps its scroll position
+- A slim top bar holds the storage button (Sign in) above every tab
 - Stats grid: `repeat(2, 1fr)` on mobile
 - Hero: single column, image hidden, heading centered
 
