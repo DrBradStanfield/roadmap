@@ -45,6 +45,42 @@ export function collectMatrixLayout(root) {
   };
 }
 
+// US-20 AC6: on a phone, the bottom tab bar is inside the widget, sticky (never
+// fixed), opaque, on screen while the widget is, and the tab picks the one panel shown.
+export function assertTabBar(data) {
+  assert(data.insideWidget, 'tab bar outside the widget');
+  assert.equal(data.position, 'sticky', 'tab bar is not sticky');
+  assert(/^rgb\(/.test(data.background) || /^rgba\(.*,\s*1\)$/.test(data.background), `tab bar is see-through (${data.background})`);
+  assert(!data.backdropFilter || data.backdropFilter === 'none', 'tab bar blurs what is behind it');
+  assert(!data.oldPlanButton, 'the old fixed plan button is back');
+  assert(data.visible && data.bottom <= data.viewportHeight + 1 && data.top >= 0, 'tab bar not on screen with the widget');
+  assert.deepEqual(data.tabs, ['My data', 'My plan', 'Chat'], 'tab labels changed');
+  assert.deepEqual(data.shownAfterPlanTap, ['My plan'], 'My plan did not show its panel alone');
+}
+
+// Passed directly to Playwright's evaluate; keep this function self-contained.
+export function collectTabBar(bar) {
+  const rect = bar.getBoundingClientRect();
+  const data = {
+    insideWidget: !!bar.closest('.health-tool'),
+    position: getComputedStyle(bar).position,
+    background: getComputedStyle(bar).backgroundColor,
+    backdropFilter: getComputedStyle(bar).backdropFilter || getComputedStyle(bar).webkitBackdropFilter,
+    visible: getComputedStyle(bar).visibility === 'visible',
+    top: rect.top, bottom: rect.bottom, viewportHeight: window.innerHeight,
+    oldPlanButton: !!document.querySelector('.mobile-view-plan-btn'),
+    tabs: [...bar.querySelectorAll('[role="tab"]')].map(tab => tab.textContent.trim()),
+  };
+  return data;
+}
+
+// Passed directly to Playwright's evaluate: the tabs whose panel shows.
+export function shownPanels(bar) {
+  return [...bar.querySelectorAll('[role="tab"]')]
+    .filter(tab => !document.getElementById(tab.getAttribute('aria-controls')).hidden)
+    .map(tab => tab.textContent.trim());
+}
+
 async function inspect(browser, deviceName, viewport) {
   const ctx = await browser.newContext({
     ...(deviceName ? devices[deviceName] : { viewport }),
@@ -87,6 +123,14 @@ async function inspect(browser, deviceName, viewport) {
     assertMatrixLayout(data);
     console.log(`${deviceName ?? 'desktop'}: matrix verified`, JSON.stringify(data));
     await page.screenshot({ path: `/tmp/webkit-${deviceName ?? 'desktop'}.png` });
+    if (deviceName) {
+      const bar = page.locator('.hr-tabbar');
+      const tabBar = await bar.evaluate(collectTabBar);
+      await bar.getByRole('tab', { name: 'My plan' }).tap();
+      tabBar.shownAfterPlanTap = await bar.evaluate(shownPanels);
+      assertTabBar(tabBar);
+      console.log(`${deviceName}: tab bar verified`, JSON.stringify(tabBar));
+    }
   } finally {
     await ctx.close();
   }
