@@ -106,39 +106,12 @@ export function getChatGate(): ChatGate | null {
 
 const GUEST_SESSION_KEY = 'health_roadmap_guest_session';
 
-export function getGuestSessionToken(): string | null {
+function getGuestSessionToken(): string | null {
   try { return localStorage.getItem(GUEST_SESSION_KEY); } catch { return null; }
 }
 
-export function setGuestSessionToken(token: string): void {
+function setGuestSessionToken(token: string): void {
   try { localStorage.setItem(GUEST_SESSION_KEY, token); } catch { /* noop */ }
-}
-
-export function clearGuestSessionToken(): void {
-  try { localStorage.removeItem(GUEST_SESSION_KEY); } catch { /* noop */ }
-}
-
-/**
- * On Shopify login, hand any guest chat history to the customer record and
- * drop the guest token (sync-embed mirrors this on non-widget pages). Returns
- * true when a migration was kicked off, so callers can clear stale guest UI.
- *
- * NEVER on local-first builds: there "logged in" is storage UX only and the
- * guest session IS the chat identity — clearing it orphaned the user's
- * conversations on every page load, and the migrate POST hit the data API as
- * an unauthed 401. The standalone build swaps in byok-chat's no-op.
- */
-export function migrateGuestChatOnLogin(): boolean {
-  if (LOCAL_FIRST) return false;
-  const guestToken = getGuestSessionToken();
-  if (!guestToken) return false;
-  clearGuestSessionToken();
-  fetch(`${PROXY_PATH}/api/measurements`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ migrateGuestChat: guestToken }),
-  }).catch(() => {});
-  return true;
 }
 
 // ---------------------------------------------------------------------------
