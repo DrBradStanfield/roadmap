@@ -19,6 +19,8 @@ vi.mock('../src/storage', () => ({
   WebDavAdapter: class {},
   isSyncPending: () => false,
   SYNC_PENDING_EVENT: 'hr:sync-pending',
+  gisReady: () => true,
+  preloadGis: () => undefined,
 }));
 vi.mock('./google-config', () => ({ googleDriveConfig: () => ({}) }));
 vi.mock('../src/lib/server-api', () => ({ trackProductEvent: vi.fn() }));

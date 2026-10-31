@@ -1,6 +1,5 @@
 import { Fragment, useState, useEffect, useRef, type MutableRefObject } from 'react';
 import { ColumnHeader } from './ColumnHeader';
-import { GuideLink } from './GuideLink';
 import { InfoTooltip } from './InfoTooltip';
 import { DocumentLightbox } from './DocumentLightbox';
 import { DOCUMENT_TYPE_LABELS, formatDocumentDate } from '../lib/document-format';
@@ -119,6 +118,8 @@ export type PlanBasis = Pick<HealthResults, 'age' | 'bmi' | 'idealBodyWeight' | 
 };
 
 interface InputPanelProps {
+  /** US-09 AC30: the Sign in button, in the header on desktop and on a phone. */
+  storageBar?: React.ReactNode;
   inputs: Partial<HealthInputs>;
   /** What the plan reads: the form, the drafts that stand in over it, and
    *  the record's latest values under both. The medication cascades follow it. */
@@ -208,7 +209,7 @@ function useAutoAdvance(): (opts: { ambiguous: boolean; advance: () => void }) =
 }
 
 export function InputPanel({
-  inputs, effectiveInputs, onChange: updateField, errors, unitSystem, onUnitSystemChange,
+  storageBar, inputs, effectiveInputs, onChange: updateField, errors, unitSystem, onUnitSystemChange,
   unitOverrides, onToggleFieldUnit,
   previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onLabValueAdded, onSaveBloodTestBatch,
   onCorrectValue, moveTest, onDraftValue,
@@ -2085,7 +2086,7 @@ export function InputPanel({
   // ── Render all sections with progressive disclosure (both mobile and desktop) ──
   return (
     <div className="health-input-panel">
-      <ColumnHeader step={1} title="Your information" meta={<GuideLink placement="header" />} />
+      <ColumnHeader step={1} title="Your information" meta={storageBar} actions={!!storageBar} />
       {/* Card 1: Units + Basic Info + Vitals + Birth Info (stage 2+) */}
       <div className="section-card">
         {renderProfile()}
@@ -2127,7 +2128,6 @@ export function InputPanel({
       )}
       {/* US-09 AC5: stage 2 is the first moment a value exists. */}
       {formStage >= 2 && <StorageNotice surface="input" />}
-      <GuideLink placement="footer" />
     </div>
   );
 }

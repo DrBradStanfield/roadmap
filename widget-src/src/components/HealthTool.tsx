@@ -221,7 +221,12 @@ function debounceSave(timers: Map<string, ReturnType<typeof setTimeout>>, key: s
   }, 300));
 }
 
-export function HealthTool({ syncControl, remindersSection }: { syncControl?: (ctx: { hasData: boolean; attention: boolean }) => ReactNode; remindersSection?: ReactNode } = {}) {
+export function HealthTool({ syncControl, remindersSection, storageBar }: {
+  syncControl?: (ctx: { hasData: boolean; attention: boolean }) => ReactNode;
+  remindersSection?: ReactNode;
+  /** US-09 AC30: the Sign in button, in the input column's header. */
+  storageBar?: ReactNode;
+} = {}) {
   // The store is ready before render, so returning users see their saved prefill immediately.
   const [inputs, setInputs] = useState<Partial<HealthInputs>>(getInitialInputsSync);
   // What the matrices' drafts lend the plan and the chat, by field (US-03
@@ -1174,6 +1179,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   );
 
   const inputPanelProps = {
+    storageBar,
     inputs,
     effectiveInputs,
     onChange: handleInputChange,
