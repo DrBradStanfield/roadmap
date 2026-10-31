@@ -6,21 +6,13 @@
  * which acts as a dumb scheduler: it stores only each item's label + due date
  * and emails when the date arrives — even if the user never reopens the app.
  *
- * Contrast with `reminders.ts` (v1): that answers "what is overdue right now"
- * for the server-side cron that re-computes daily from Supabase. The v2 server
- * cannot re-compute anything (it has no health data), so this function must
- * emit future dates. Eligibility rules and intervals are kept 1:1 with v1:
- * an item is overdue in v1 exactly when its earliest candidate due date here
- * is in the past.
+ * The server cannot re-compute anything (it has no health data), so this
+ * function must emit future dates: an item is overdue exactly when its
+ * earliest candidate due date is in the past.
  *
  * Privacy invariant: `label` + `dueAt` are EVERYTHING the server learns about
  * the user's health. Labels name the procedure ("Colonoscopy") — personalised
  * and specific is the point — but never carry results, values, or reasoning.
- *
- * TODO (convergence, once v2 is proven in prod): re-express v1's
- * computeDueReminders as computeNextDueDates(...).filter(dueAt <= today) so
- * the eligibility rules live ONCE — the v1-parity test is the gate for that
- * refactor. Until then any guideline change must be applied to BOTH files.
  */
 import type { ScreeningInputs } from './types';
 import { getPostFollowupDueDate, getScreeningNextDueDate } from './types';

@@ -1090,7 +1090,7 @@ Logic checks from stage 3 down (short-circuit), so returning users skip to full 
 
 ## 11. Reminder System
 
-Source: `reminders.ts`
+Source: `reminder-schedule.ts` (what is due, and when) and `reminders.ts` (categories, groups, cooldowns)
 
 ### Categories and Groups
 
@@ -1118,7 +1118,7 @@ Same eligibility criteria as the suggestion algorithm (section 8). Checks both i
 
 ### Preference Filtering
 
-`filterByPreferences()` removes reminders for categories the user has opted out of. Global opt-out via `profiles.reminders_global_optout`.
+`computeReminderSchedule()` leaves out the categories the user has turned off (`reminderPreferences` in the record).
 
 ---
 

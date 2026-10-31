@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { migrateFile } from './migrate';
 import { createEmptyFile } from './roadmap-file';
 import { computeReminderSchedule, computeNextDueDates } from './reminder-schedule';
-import { computeDueReminders, MEDICATION_REVIEW_STALE_MONTHS } from './reminders';
+import { MEDICATION_REVIEW_STALE_MONTHS } from './reminders';
 
 const opts = { deviceId: 'synthetic', now: '2026-06-15T12:00:00Z' };
 const now = new Date(opts.now);
@@ -41,7 +41,7 @@ describe('medication review dates at the migrated-file boundary', () => {
     });
   }
 
-  it('selects the oldest valid active day, keeps v1 parity and the 12-month interval', () => {
+  it('selects the oldest valid active day and keeps the 12-month interval', () => {
     const meds = [
       { ...valid, updatedAt: '2026-01-15T00:00:00Z' }, valid,
       { ...valid, medicationKey: 'glp1', drugName: 'none', updatedAt: '2020-01-01T00:00:00Z' },
@@ -49,7 +49,6 @@ describe('medication review dates at the migrated-file boundary', () => {
     expect(MEDICATION_REVIEW_STALE_MONTHS).toBe(12);
     const v2 = computeNextDueDates({ sex: 'male', age: 60 }, undefined, {}, meds);
     expect(v2).toEqual([{ category: 'medication_review', group: 'medication_review', label: 'Medication review', dueAt: '2026-01-15' }]);
-    expect(computeDueReminders({ sex: 'male', age: 60 }, undefined, {}, meds, now).reminders.map((r) => r.category)).toContain('medication_review');
   });
 
   it('retains the annual floor alongside a valid review beyond its horizon', () => {
