@@ -592,7 +592,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // US-61: AREDS framing (Brad): beta-carotene in AREDS slowed progression; in
   // AREDS2 lutein and zeaxanthin worked as well, without the lung cancer signal.
   'supplement-lutein-zeaxanthin': {
-    reason: 'Lutein and zeaxanthin are the pigments of the macula, the part of the eye that sees fine detail. A meta-analysis of 46 studies in adults with healthy eyes found that lutein and zeaxanthin supplements raise macular pigment optical density, more at higher doses. In the AREDS trial, a formula of vitamins C and E, beta-carotene and zinc slowed the progression of macular degeneration in people at risk of it. In AREDS2, 10 mg of lutein and 2 mg of zeaxanthin worked as well as beta-carotene in that formula. Beta-carotene brought more lung cancers, mostly in former smokers; lutein and zeaxanthin did not.',
+    reason: 'Lutein and zeaxanthin are the pigments of the macula, the part of the eye that sees fine detail. A meta-analysis of 46 studies in adults with healthy eyes found that lutein and zeaxanthin supplements raise macular pigment optical density, more at higher doses. In the AREDS trial, a formula of vitamins C and E, beta-carotene and zinc slowed the progression of macular degeneration in people with intermediate macular degeneration. In AREDS2, 10 mg of lutein and 2 mg of zeaxanthin worked as well as beta-carotene in that formula. Beta-carotene brought more lung cancers, mostly in former smokers; lutein and zeaxanthin did not.',
     guidelines: [],
     references: [
       REF_MPOD,
@@ -611,6 +611,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
       { label: 'Lee 2010 – Betaine supplementation and strength and power performance (J Int Soc Sports Nutr)', url: 'https://doi.org/10.1186/1550-2783-7-27' },
       { label: 'Pryor 2012 – Betaine supplementation and cycling sprint performance (J Int Soc Sports Nutr)', url: 'https://doi.org/10.1186/1550-2783-9-12' },
       { label: 'Nobari 2021 – Chronic betaine supplementation in young soccer players: RCT (J Int Soc Sports Nutr)', url: 'https://doi.org/10.1186/s12970-021-00464-y' },
+      { label: 'Zawieja 2021 – Betaine supplementation moderately increases total cholesterol: meta-analysis (J Diet Suppl)', url: 'https://doi.org/10.1080/19390211.2019.1699223' },
     ],
   },
 

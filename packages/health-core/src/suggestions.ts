@@ -1081,7 +1081,7 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'TMG (trimethylglycine)',
-      description: 'TMG lowers blood homocysteine, according to a meta-analysis of randomized trials. Small trials suggest it may improve strength and power.',
+      description: 'TMG lowers blood homocysteine, according to a meta-analysis of randomized trials. Small trials suggest it may improve strength and power. At the higher doses used in these trials, it slightly raised total cholesterol.',
     },
     {
       id: 'supplement-omega3',

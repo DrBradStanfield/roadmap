@@ -127,6 +127,12 @@ const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   us_product_link_clicked: ['product'],
 };
 
+/** Keys an event must carry: a US product row without its product counts nothing (US-61 AC8). */
+const EVENT_REQUIRED_KEYS: Partial<Record<string, readonly string[]>> = {
+  us_product_shown: ['product'],
+  us_product_link_clicked: ['product'],
+};
+
 /**
  * Metadata held against the EVENT that carries it — the pairing both schemas
  * check, because neither a `reason` nor a `unit` means anything on its own. A
@@ -139,6 +145,9 @@ function checkEventKeys(
   ctx: z.RefinementCtx,
 ): void {
   const metadata = event.metadata;
+  for (const key of EVENT_REQUIRED_KEYS[event.eventName] ?? []) {
+    if (metadata?.[key] === undefined) ctx.addIssue({ code: 'custom', path: ['metadata', key], message: 'key is required on this event' });
+  }
   if (!metadata) return;
   for (const [key, owners] of Object.entries(EVENT_KEY_OWNERS)) {
     if (metadata[key] !== undefined && !owners.includes(event.eventName)) {

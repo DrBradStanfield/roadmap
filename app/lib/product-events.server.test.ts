@@ -33,9 +33,12 @@ describe('parseProductEvent', () => {
   it('accepts every client-emittable event name', () => {
     for (const eventName of PRODUCT_EVENT_NAMES) {
       if (SERVER_ONLY.has(eventName)) continue;
-      expect(parseProductEvent({ eventName, visitorId: VISITOR })).toEqual({
+      // US-61 AC8: the two US product events need their product.
+      const metadata = eventName.startsWith('us_product_') ? { metadata: { product: 'sleep' } } : {};
+      expect(parseProductEvent({ eventName, visitorId: VISITOR, ...metadata })).toEqual({
         eventName,
         visitorId: VISITOR,
+        ...metadata,
       });
     }
   });
@@ -258,6 +261,13 @@ describe('the email-arrival counters', () => {
       ]) {
         expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata })).toBeNull();
       }
+    }
+  });
+
+  it('US-61 AC8: refuses the two US product events without a product', () => {
+    for (const eventName of ['us_product_shown', 'us_product_link_clicked']) {
+      expect(parseProductEvent({ eventName, visitorId: VISITOR })).toBeNull();
+      expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata: {} })).toBeNull();
     }
   });
 
