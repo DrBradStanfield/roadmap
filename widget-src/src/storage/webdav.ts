@@ -106,7 +106,7 @@ export class WebDavAdapter implements StorageAdapter {
     // Create only if absent; an existing no-ETag resource ('') stays LWW.
     if (expectedVersion === null) headers['If-None-Match'] = '*';
     else if (expectedVersion) headers['If-Match'] = expectedVersion;
-    const res = await fetch(this.urlFor(fileName), { method: 'PUT', headers, body: JSON.stringify(body) });
+    const res = await fetchOrFail('Self-host', this.urlFor(fileName), { method: 'PUT', headers, body: JSON.stringify(body), mayHaveWritten: true });
     if (res.status === 412) {
       throw new ConflictError('Self-host write conflict: the file changed since last read.');
     }
@@ -116,7 +116,7 @@ export class WebDavAdapter implements StorageAdapter {
     let etag = res.headers.get('etag');
     if (!etag) {
       try {
-        const head = await fetch(this.urlFor(fileName), { method: 'HEAD', headers: this.authHeaders() });
+        const head = await fetchOrFail('Self-host', this.urlFor(fileName), { method: 'HEAD', headers: this.authHeaders() });
         etag = head.headers.get('etag');
       } catch {
         /* HEAD unsupported/blocked — degrade to LWW */
