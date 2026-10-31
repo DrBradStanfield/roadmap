@@ -301,11 +301,23 @@ export interface GuestSessionResult {
   sessionToken: string;
 }
 
-/** Each failed guest-cleanup step leaves an orphan, so it is reported (US-15 AC7c). */
-function reportCleanupFailures(errors: unknown[]): void {
-  for (const error of errors) {
-    if (error) Sentry.captureException(error, { tags: { feature: 'guest_chat', subsystem: 'guest_session_cleanup' } });
+/** Runs one guest-cleanup step. A failed step leaves an orphan, so it is
+ *  reported (US-15 AC7c), and never thrown, so the next step still runs. The
+ *  report is a fixed Error with closed tags, never the raw error: a Postgres
+ *  error's details can echo the guest id (US-15 AC6). */
+async function cleanupStep(step: 'profile' | 'auth_user', run: () => PromiseLike<{ error: unknown }>): Promise<void> {
+  let code: string;
+  try {
+    const { error } = await run();
+    if (!error) return;
+    const raw = (error as { code?: unknown }).code;
+    code = typeof raw === 'string' && /^\w{1,32}$/.test(raw) ? raw : 'unknown';
+  } catch {
+    code = 'thrown';
   }
+  Sentry.captureException(new Error('Guest session cleanup failed'), {
+    tags: { feature: 'guest_chat', subsystem: 'guest_session_cleanup', step, code },
+  });
 }
 
 /**
@@ -380,12 +392,10 @@ export async function getOrCreateGuestSession(
     .single();
 
   if (sessionError || !newSession) {
-    // Clean up both the ghost profile and auth user. A failed step leaves an
-    // orphan, so report it (US-15 AC7c).
-    const { error: profileDeleteError } = await supabaseAdmin.from('profiles').delete().eq('id', sessionId);
-    const { error: userDeleteError } = await supabaseAdmin.auth.admin.deleteUser(sessionId)
-      .catch((error: unknown) => ({ error }));
-    reportCleanupFailures([profileDeleteError, userDeleteError]);
+    // Clean up both the ghost profile and auth user, each attempted whatever
+    // the other did. A failed step leaves an orphan, so it is reported (US-15 AC7c).
+    await cleanupStep('profile', () => supabaseAdmin.from('profiles').delete().eq('id', sessionId));
+    await cleanupStep('auth_user', () => supabaseAdmin.auth.admin.deleteUser(sessionId));
     console.error('Failed to create guest session:', sessionError);
     throw new Error('Failed to create guest session');
   }
