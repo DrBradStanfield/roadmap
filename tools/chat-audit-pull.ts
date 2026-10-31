@@ -400,7 +400,9 @@ function renderMessageContent(raw: string): string {
     // pulled the line through bullet handling
     s = s.replace(/(^|[^*])\*([^*\n]+)\*([^*]|$)/g, '$1<em>$2</em>$3');
     // links — [text](url)
-    s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (link, label, url) =>
+      // Web and mail addresses only: a javascript: link from a chat would run on click.
+      /^(https?:|mailto:)/i.test(url) ? `<a href="${url}" target="_blank" rel="noopener">${label}</a>` : link);
     return s;
   };
 
@@ -529,7 +531,7 @@ function renderHtml(messages: Message[], routingById: Map<string, RoutingEvent>)
           const title = skipped
             ? `Classifier said ${route.classification} — router was bypassed (HONOR_SKIP=true)`
             : `Classifier said ${route.classification} — router fired as normal`;
-          classifierHtml = `<span class="classifier-badge ${cls}" title="${title}">${escapeHtml(route.classification)}${skipped ? ' · skip' : ''}</span>`;
+          classifierHtml = `<span class="classifier-badge ${cls}" title="${escapeHtml(title)}">${escapeHtml(route.classification)}${skipped ? ' · skip' : ''}</span>`;
         }
         routerLine = `<div class="router-meta">${classifierHtml}→ ${handles} <span class="muted">(${route.router_latency_ms ?? '?'}ms, ${cacheStr})</span>${errorHtml}</div>`;
       }
@@ -597,7 +599,7 @@ function renderHtml(messages: Message[], routingById: Map<string, RoutingEvent>)
             <span>Conv ID: ${convId}</span>
             <span>User ID: ${msgs[0].user_id || 'undefined'}</span>
             <span>Started: ${msgs[0].created_at}</span>
-            ${externalId ? `<span>Discord: ${externalId}</span>` : ''}
+            ${externalId ? `<span>Discord: ${escapeHtml(externalId)}</span>` : ''}
           </div>
           ${turnsHtml}
         </div>
