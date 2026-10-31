@@ -6,10 +6,19 @@
  * connected Dropbox in the app arrives on it already connected. The real page
  * code and the real SyncManager run over an in-memory Dropbox. Synthetic values.
  */
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createEmptyFile, createMeasurement, ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
 
-const { cloud } = vi.hoisted(() => ({ cloud: { current: null as unknown } }));
+const { cloud } = vi.hoisted(() => ({
+  cloud: {
+    current: null as unknown,
+    /** Set once a SyncManager save has returned, so the reads after it are the read-back. */
+    saved: false,
+    readsAfterSave: [] as string[],
+    /** The read-back comes back without the test row, as a lost write would. */
+    loseTestRow: false,
+  },
+}));
 
 vi.mock('../src/storage', async (importOriginal) => {
   const real = await importOriginal<typeof import('../src/storage')>();
@@ -20,14 +29,31 @@ vi.mock('../src/storage', async (importOriginal) => {
     isConnected() { return true; }
     async connect() {}
     async disconnect() {}
+    async read(fileName: string, signal?: AbortSignal) {
+      const result = await super.read(fileName, signal);
+      if (!cloud.saved) return result;
+      cloud.readsAfterSave.push(fileName);
+      if (!cloud.loseTestRow || result.body == null) return result;
+      const body = result.body as RoadmapFile;
+      return { ...result, body: { ...body, measurements: body.measurements.filter(m => !m.id.startsWith('dbx_test_')) } };
+    }
   }
   return { ...real, DropboxAdapter: InMemoryDropbox };
 });
 
-const { MemoryAdapter, MemoryCloud } = await import('../src/storage');
+const { MemoryAdapter, MemoryCloud, SyncManager } = await import('../src/storage');
 const { initDropboxTest } = await import('./dropbox-test');
 
-afterEach(() => { document.body.replaceChildren(); localStorage.clear(); });
+beforeEach(() => {
+  Object.assign(cloud, { saved: false, readsAfterSave: [], loseTestRow: false });
+  const save = SyncManager.prototype.save;
+  vi.spyOn(SyncManager.prototype, 'save').mockImplementation(async function (this: InstanceType<typeof SyncManager>, ...args) {
+    const result = await save.apply(this, args);
+    cloud.saved = true;
+    return result;
+  });
+});
+afterEach(() => { vi.restoreAllMocks(); document.body.replaceChildren(); localStorage.clear(); });
 
 /** The person's record in their Dropbox: one LDL of their own. */
 async function seededCloud() {
@@ -61,14 +87,22 @@ describe('US-09 AC32: the Dropbox round-trip on test.html leaves the health reco
     expect(memory.files.get(ROADMAP_FILE_NAME)!.json).toBe(before);
   });
 
-  it('it writes and reads back its own file, which the page names', async () => {
+  it('it writes its own file, which the page names, and reads that file back after the save', async () => {
     const memory = await seededCloud();
     const result = await runRoundTrip();
     const own = [...memory.files.keys()].filter(name => name !== ROADMAP_FILE_NAME);
     expect(own).toHaveLength(1);
     const written = JSON.parse(memory.files.get(own[0])!.json) as RoadmapFile;
     expect(written.measurements.map(m => [m.metricType, m.value])).toEqual([['ldl', 2.1]]);
+    expect(cloud.readsAfterSave).toEqual([own[0]]);
     expect(result).toContain(own[0]);
     expect(result).not.toContain(ROADMAP_FILE_NAME);
+  });
+
+  it('a read-back without the test row reports FAIL, not PASS', async () => {
+    await seededCloud();
+    cloud.loseTestRow = true;
+    const result = await runRoundTrip();
+    expect(result).toMatch(/^✗ FAIL — record not found after reload/);
   });
 });
