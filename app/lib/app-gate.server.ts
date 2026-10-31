@@ -11,7 +11,7 @@ import { createQuotaCounter, DAY_MS } from './rate-limiter';
 import { supabaseAdmin } from './supabase.server';
 import {
   assertionSignatureValid, attestConfig, AttestError, devBypassAllowed, parseAssertion,
-  requestClientData, validKeyId, type AttestEnvironment, type AttestedKey,
+  requestClientData, validKeyId, CHALLENGE_TTL_MS, type AttestEnvironment, type AttestedKey,
 } from './app-attest.server';
 
 export type AppUseKind = 'chat' | 'lab';
@@ -26,7 +26,7 @@ export interface KeyStore {
   get(keyId: string): Promise<{ publicKey: string; environment: AttestEnvironment } | null>;
   /** 'exists' when the key id is already stored: a replayed attestation never resets a counter. */
   insert(key: AttestedKey): Promise<'ok' | 'exists'>;
-  /** Advance the counter if higher and count one use against the key's daily cap, atomically (`app_attest_use`). */
+  /** Advance the counter if higher and count one use against the key's daily cap, atomically (`app_attest_use`). A cap of 0 advances the counter alone ('limit'). */
   use(keyId: string, counter: number, kind: AppUseKind, cap: number): Promise<UseOutcome>;
 }
 
@@ -92,6 +92,8 @@ export const appLimits = {
   failures: createQuotaCounter(50, DAY_MS, 30 * 60_000),
   /** Registration attempts per IP per day, counted before verifying (R11). */
   register: createQuotaCounter(10, DAY_MS, 30 * 60_000),
+  /** Challenges used, each once, success or failure (US-52 AC1a). A minute longer than a challenge lives, for clock skew between machines. */
+  challenges: createQuotaCounter(1, CHALLENGE_TTL_MS + 60_000, 60_000),
   /** The dev bypass's per-key count, since no key row exists for it. */
   dev: { chat: createQuotaCounter(PER_KEY_DAILY.chat, DAY_MS, 30 * 60_000), lab: createQuotaCounter(PER_KEY_DAILY.lab, DAY_MS, 30 * 60_000) },
 };
@@ -129,7 +131,7 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
     const body = await readBody(request, opts.bodyCap);
     if (!body || body === 'too_large') return refuse(413, 'too_large', 'Request too large');
     if (!appLimits.dev[kind].take(dev, 1)) return overLimit();
-    return takeShared(kind, ip) ? { body } : overLimit();
+    return reserveShared(kind, ip) ? { body } : overLimit();
   }
 
   const config = attestConfig(env);
@@ -176,29 +178,30 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
     if (!body) { logRefusal(kind, 'body_read_failed'); return refuse(400, 'body_read_failed', 'The request did not arrive whole. Please try again.'); }
     if (!assertionSignatureValid(assertion, requestClientData(request.method, path, body), key.publicKey)) return failed('bad_signature');
 
-    let outcome: UseOutcome;
-    try {
-      outcome = await store.use(keyId, assertion.counter, kind, PER_KEY_DAILY[kind]);
-    } catch {
-      logRefusal(kind, 'store_unavailable');
-      return unavailable();
-    }
+    // The shared units are reserved before the key's use, so a request they refuse
+    // spends none of the key's day; the counter still advances, through a cap of 0 (US-52 AC4b).
+    const shared = reserveShared(kind, ip);
+    const outcome: UseOutcome | null = await store.use(keyId, assertion.counter, kind, shared ? PER_KEY_DAILY[kind] : 0).catch(() => null);
+    if (outcome !== 'ok') shared?.();
+    if (!outcome) { logRefusal(kind, 'store_unavailable'); return unavailable(); }
     if (outcome === 'unknown') return failed('unknown_key');
     if (outcome === 'stale') return failed('stale_counter');
-    if (outcome === 'limit') { logRefusal(kind, 'key_limit'); return overLimit(); }
-    return takeShared(kind, ip) ? { body } : overLimit();
+    if (outcome === 'limit') { if (shared) logRefusal(kind, 'key_limit'); return overLimit(); }
+    return { body };
   } finally {
     if (!charged) refund();
   }
 }
 
-/** The per-IP and per-machine counts, all or nothing. */
-function takeShared(kind: AppUseKind, ip: string): boolean {
-  if (!appLimits.ip[kind].take(ip, 1)) { logRefusal(kind, 'ip_limit'); return false; }
-  if (appLimits.machine[kind].take('machine', 1)) return true;
-  appLimits.ip[kind].refund(ip, 1);
+/** The per-IP and per-machine counts, all or nothing: their refund, or null when either is full. */
+function reserveShared(kind: AppUseKind, ip: string): (() => void) | null {
+  const ipBack = appLimits.ip[kind].reserve(ip, 1);
+  if (!ipBack) { logRefusal(kind, 'ip_limit'); return null; }
+  const machineBack = appLimits.machine[kind].reserve('machine', 1);
+  if (machineBack) return () => { ipBack(); machineBack(); };
+  ipBack();
   logRefusal(kind, 'machine_limit');
-  return false;
+  return null;
 }
 
 /** The raw bytes, as the app hashed them (R2: never a UTF-8 round trip): 'too_large' past the cap, null when the stream failed. */

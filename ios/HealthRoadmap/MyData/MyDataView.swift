@@ -147,18 +147,6 @@ struct MyDataView: View {
         }
     }
 
-    /// A section title with controls at its trailing end, large enough to hit easily.
-    private func header(_ title: SectionTitle, @ViewBuilder trailing: () -> some View) -> some View {
-        HStack(spacing: 14) {
-            title
-            Spacer()
-            trailing()
-                .labelStyle(.iconOnly)
-                .font(.title3)
-                .textCase(nil)
-        }
-    }
-
     /// Metric or US, compact, a row in About you (AC17).
     private func units(_ data: MyData) -> some View {
         Picker("Units", selection: binding(data.unitSystem) { .units($0) }) {
@@ -188,7 +176,7 @@ struct MyDataView: View {
                 metric(row, card: row.latest != nil)
             } header: {
                 if index == 0 {
-                    header(.vitals()) {
+                    ControlsHeader(title: .vitals()) {
                         Button { addingLabs = true } label: {
                             Label("Add medical records", systemImage: "plus")
                         }
@@ -255,5 +243,34 @@ struct MyDataView: View {
     private func saved(_ result: RecordStore.ApplyResult) -> RecordStore.ApplyResult {
         if result == .saved { saves += 1 }
         return result
+    }
+}
+
+/// A section title with controls at its trailing end, large enough to hit easily.
+struct ControlsHeader<Trailing: View>: View {
+    let title: SectionTitle
+    @ViewBuilder let trailing: Trailing
+
+    var body: some View {
+        // The buttons go under the title when both do not fit on one line: beside them at the
+        // largest text sizes, "Vitals" broke mid-word as "Vi-tals" (US-25 AC17g, break-it 2026-10-30).
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 14) {
+                title.fixedSize()
+                Spacer()
+                buttons
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                title
+                HStack(spacing: 14) { buttons }
+            }
+        }
+    }
+
+    private var buttons: some View {
+        trailing
+            .labelStyle(.iconOnly)
+            .font(.title3)
+            .textCase(nil)
     }
 }

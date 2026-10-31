@@ -267,17 +267,20 @@ struct LabUploadSheet: View {
 }
 
 /// One way in to "Add medical records": a symbol, a title and a few words on what happens.
-private struct SourceRow: View {
+struct SourceRow: View {
     let title: String
     let symbol: String
     let detail: String
+    /// Grows with the text: a fixed 30 points let the icon touch its words at the
+    /// largest text sizes (US-52 AC10b, break-it 2026-10-30).
+    @ScaledMetric(relativeTo: .title3) private var iconWidth = 30.0
 
     var body: some View {
         HStack(spacing: 14) {
             Image(systemName: symbol)
                 .font(.title3)
                 .foregroundStyle(.tint)
-                .frame(width: 30)
+                .frame(width: iconWidth)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).foregroundStyle(Color.primary)
