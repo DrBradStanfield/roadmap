@@ -189,6 +189,7 @@ export function medicinesShown(results: Pick<HealthResults, 'age' | 'knownMinor'
  *
  * All input values and thresholds are in SI canonical units.
  * The `unitSystem` parameter controls how values are formatted in suggestion text.
+ * `now` is the moment screening due dates are measured against (US-31 AC11).
  */
 export function generateSuggestions(
   inputs: HealthInputs,
@@ -197,6 +198,7 @@ export function generateSuggestions(
   medications?: MedicationInputs,
   screenings?: ScreeningInputs,
   unitOverrides?: Partial<Record<MetricType, UnitSystem>>,
+  now = new Date(),
 ): Suggestion[] {
   // Who the plan is for (US-07 AC6): its suggestions, medicines among them,
   // are built for adults. A known age under 18 gets this one card instead.
@@ -724,7 +726,7 @@ export function generateSuggestions(
     function screeningStatus(lastDate: string | undefined, method: string | undefined): 'overdue' | 'upcoming' | 'unknown' {
       const nextDue = getScreeningNextDueDate(lastDate, method);
       if (!nextDue) return 'unknown';
-      return new Date() > nextDue ? 'overdue' : 'upcoming';
+      return now > nextDue ? 'overdue' : 'upcoming';
     }
 
     function nextDueStr(lastDate: string, method: string): string {
@@ -791,7 +793,7 @@ export function generateSuggestions(
         if (year && month) {
           const nextDue = new Date(year, month - 1 + postInterval);
           const nextDueLabel = `${months[nextDue.getMonth()]} ${nextDue.getFullYear()}`;
-          if (new Date() > nextDue) {
+          if (now > nextDue) {
             return {
               id: `screening-${type}-followup`,
               category: 'screening',
