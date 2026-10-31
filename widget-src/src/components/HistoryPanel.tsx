@@ -89,7 +89,7 @@ function showSelectedEvent(labels: Record<string, { display: boolean }>, selecte
 }
 
 // Generic time-series line chart — used for both core metrics and additional lab values
-function TimeSeriesChart({
+export function TimeSeriesChart({
   title,
   data,
   unit,
@@ -238,7 +238,7 @@ interface HistoryPanelProps {
 }
 
 /** US-21 AC3a: a test reported in more than one unit is listed, not charted. */
-function MixedUnitsNote({ label, units }: { label: string; units: string[] }) {
+export function MixedUnitsNote({ label, units }: { label: string; units: string[] }) {
   return (
     <div className="metric-chart-container">
       <h3>{label}</h3>

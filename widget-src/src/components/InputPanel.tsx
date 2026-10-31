@@ -80,13 +80,23 @@ import {
 } from '@roadmap/health-core';
 import { formatShortDate, MONTHS_FULL } from '../lib/constants';
 import { InlineDatePicker, getCurrentDateValue, type DateValue } from './DatePicker';
-import { BloodTestTimeline, type BloodTestPrefillFn } from './BloodTestTimeline';
+import { BloodTestTimeline, useLiveRegion, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
 import { useMoveTest, type MoveTestApi } from './MoveTestPanel';
 import { StartingInfoVitals, type VitalsPrefillFn } from './StartingInfoVitals';
 import { CommitTickButton } from './CommitTickButton';
 import { ALCOHOL_OPTIONS } from './AlcoholQuestion';
 import { StorageNotice } from '../lib/storage-notice';
+import { useIsMobile } from '../lib/useIsMobile';
+import { useLpaUnit } from '../lib/lpa-unit';
+import { BloodTestRows, VitalsRows, type RowContext, type ValueSubject } from './MyDataRows';
+import { ValuePage } from './ValuePage';
+
+/** The history-state key a phone value page's entry carries (US-62 AC10). */
+const VALUE_PAGE_STATE = 'hrValuePage';
+const LEAVE_UNSAVED = 'Leave without saving the value you typed?';
+/** Said when a chat edit closes a page that held typed input. */
+const TYPED_NOT_SAVED = 'Your typed value was not saved.';
 
 interface FieldConfig {
   field: keyof HealthInputs;
@@ -141,7 +151,8 @@ interface InputPanelProps {
   labValues: ApiLabValue[];
   /** US-21 phase 2: present = manual add enabled; called after a saved add. */
   onLabValueAdded?: () => void;
-  onSaveBloodTestBatch: (tasks: SaveTask[]) => Promise<Refused>;
+  /** `erase`: the erase the values were typed under (US-16 AC2a); the page's shown one by default. */
+  onSaveBloodTestBatch: (tasks: SaveTask[], erase?: string) => Promise<Refused>;
   // Click-to-correct handler for saved cells in every matrix: blood tests,
   // vitals and the additional lab rows.
   onCorrectValue?: CorrectFn;
@@ -188,6 +199,9 @@ interface InputPanelProps {
   healthDocuments?: ApiDocument[];
   onDocumentDeleted?: (docId: string) => void;
   onAutoFocusEmail?: () => void;
+  /** A chat edit that filled a grid cell on a phone (US-16 AC2): the table
+   *  opens so the filled cell shows. Each new edit is a new object. */
+  revealCell?: { field: string } | null;
 }
 
 /**
@@ -221,7 +235,7 @@ export function InputPanel({
   bloodTestFlushRef, vitalsFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
   formStage,
   setShowUploadModal, planBasis, grading,
-  healthDocuments, onDocumentDeleted, onAutoFocusEmail,
+  healthDocuments, onDocumentDeleted, onAutoFocusEmail, revealCell = null,
 }: InputPanelProps) {
   const [prefillExpanded, setPrefillExpanded] = useState(false);
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
@@ -301,6 +315,117 @@ export function InputPanel({
   const isReturningUser = useRef(prefillComplete);
   const canCollapse = isReturningUser.current && prefillComplete;
   const [collapsed, setCollapsed] = useState(isReturningUser.current);
+
+  // ── The phone's My data (US-62 AC8-AC12) ──
+  // Rows replace the grids, which stay mounted but hidden: their drafts, the
+  // chat's prefill (US-16 AC2) and the save before an upload all keep working.
+  // "All results as a table" shows them; so does a chat edit that filled one.
+  const isPhone = useIsMobile();
+  const [lpaUnit] = useLpaUnit(unitSystem);
+  const rowCtx: RowContext = {
+    grading,
+    plan: planBasis,
+    unitOf: m => (m === 'lpa' ? lpaUnit : unitOverrides[METRIC_TO_FIELD[m]] ?? unitSystem),
+  };
+  const [valuePage, setValuePage] = useState<ValueSubject | null>(null);
+  const [tableOpen, setTableOpen] = useState(false);
+  const [seenReveal, setSeenReveal] = useState<{ field: string } | null>(null);
+  const revealing = !!revealCell && revealCell !== seenReveal;
+  const tableShown = !isPhone || tableOpen || revealing;
+  const pageShown = isPhone && !revealing ? valuePage : null;
+  // A page is a history entry (a state marker, no URL change), so the phone's
+  // back gesture closes it, and "‹ My data" goes back. Typed, unsaved Add
+  // input is never dropped silently: leaving asks first. Back returns to the
+  // row it opened from, scrolled and focused as it was.
+  const cameFrom = useRef<{ el: Element | null; y: number }>({ el: null, y: 0 });
+  const pageDirty = useRef(false);
+  const onPageEntry = () => !!window.history.state?.[VALUE_PAGE_STATE];
+  const mayLeave = () => !pageDirty.current || window.confirm(LEAVE_UNSAVED);
+  const openPage = (subject: ValueSubject) => {
+    cameFrom.current = { el: document.activeElement, y: window.scrollY };
+    setSeenReveal(revealCell);
+    setValuePage(subject);
+    if (!onPageEntry()) window.history.pushState({ ...window.history.state, [VALUE_PAGE_STATE]: true }, '');
+    window.scrollTo?.(0, panelTop());
+  };
+  const finishClose = () => {
+    pageDirty.current = false;
+    setValuePage(null);
+    requestAnimationFrame(() => {
+      window.scrollTo?.(0, cameFrom.current.y);
+      if (cameFrom.current.el instanceof HTMLElement) cameFrom.current.el.focus({ preventScroll: true });
+    });
+  };
+  const closePage = () => {
+    if (!mayLeave()) return;
+    pageDirty.current = false;
+    if (onPageEntry()) window.history.back(); // its popstate closes the page
+    else finishClose();
+  };
+  // A reload on a page's entry opens on the rows: drop the stale marker, so the next page pushes its own.
+  useEffect(() => {
+    if (onPageEntry()) window.history.replaceState({ ...window.history.state, [VALUE_PAGE_STATE]: undefined }, '');
+  }, []);
+  useEffect(() => {
+    if (!valuePage) return;
+    const onPop = () => {
+      // A page left open on My data while another tab shows does not answer Back.
+      if (onPageEntry() || panelRef.current?.closest('[hidden]')) return;
+      // Back from a page holding typed input, declined: stay, and keep the entry.
+      if (!mayLeave()) { window.history.pushState({ ...window.history.state, [VALUE_PAGE_STATE]: true }, ''); return; }
+      finishClose();
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [valuePage]);
+  // An erase, here or on another device, closes an open page and drops what it held (US-16 AC2a).
+  useEffect(() => {
+    const drop = () => {
+      if (!valuePageRef.current) return;
+      setValuePage(null);
+      pageDirty.current = false;
+      if (onPageEntry()) window.history.back();
+    };
+    window.addEventListener(DRAFTS_CLEARED_EVENT, drop);
+    return () => window.removeEventListener(DRAFTS_CLEARED_EVENT, drop);
+  }, []);
+  const valuePageRef = useRef(valuePage);
+  valuePageRef.current = valuePage;
+  // A chat edit that fills a grid cell closes any open page, so the table shows.
+  const [sayPanel, panelMessages] = useLiveRegion('md-panel-messages');
+  // Read as the reveal renders: the page unmounts in this commit, and its form clears the mark as it goes.
+  const revealDropsTyping = useRef(false);
+  if (revealing && valuePage && pageDirty.current) revealDropsTyping.current = true;
+  useEffect(() => {
+    if (!revealing || !valuePage) return;
+    if (revealDropsTyping.current) sayPanel(TYPED_NOT_SAVED);
+    revealDropsTyping.current = false;
+    setValuePage(null);
+    pageDirty.current = false;
+    if (onPageEntry()) window.history.back();
+  }, [revealing]);
+  // A grid's typed text not yet saved, valid or not (the plan and the chat
+  // read the valid part, and an upload saves it first): on a phone, where the
+  // grids sit hidden under the rows, each card says so and opens the table
+  // (US-62 AC11). Each grid reports what it keeps.
+  const [draftedVitals, setDraftedVitals] = useState(false);
+  const [draftedBlood, setDraftedBlood] = useState(false);
+  const unsavedCue = (shown: boolean) => isPhone && !tableShown && shown && (
+    <button type="button" className="md-unsaved" onClick={() => showTable(true)}>Unsaved values: review</button>
+  );
+  const showTable = (open: boolean) => { setSeenReveal(revealCell); setTableOpen(open); };
+  const panelRef = useRef<HTMLDivElement>(null);
+  const panelTop = () => (panelRef.current ? panelRef.current.getBoundingClientRect().top + window.scrollY - 60 : window.scrollY);
+  // A grid mounted hidden never scrolled to its newest column: do it on showing.
+  useEffect(() => {
+    if (!isPhone || !tableShown) return;
+    panelRef.current?.querySelectorAll<HTMLElement>('.md-table .bt-timeline-scroll').forEach(el => { el.scrollLeft = el.scrollWidth; });
+  }, [isPhone, tableShown]);
+  // About you sits low, as on the iPhone, once sex and height are in. Decided
+  // at mount, so the section never jumps away while someone is typing; until
+  // the onboarding (a later phase) it stays first for a new user.
+  const profileAtMount = useRef(!!(inputs.sex && inputs.heightCm));
+  const aboutYouLow = isPhone && profileAtMount.current && !!(inputs.sex && inputs.heightCm);
   const [collapseAnimating, setCollapseAnimating] = useState(false);
   const hasMountedRef = useRef(false);
 
@@ -751,7 +876,7 @@ export function InputPanel({
             className={`health-section-title${canCollapse ? ' health-section-title--collapsible' : ''}`}
             onClick={canCollapse ? () => setPrefillExpanded(!prefillExpanded) : undefined}
           >
-            Starting Info
+            {aboutYouLow ? 'About you' : 'Starting Info'}
             {canCollapse && (
               <span className={`collapse-chevron${prefillExpanded ? ' expanded' : ''}`}>{'\u25B8'}</span>
             )}
@@ -949,6 +1074,7 @@ export function InputPanel({
         onSave={onSaveBloodTestBatch}
         onCorrectValue={onCorrectValue}
         onDraftValue={onDraftValue}
+        onHoldsText={setDraftedVitals}
         formStage={formStage}
         plan={planBasis}
         knownMinor={knownMinor}
@@ -1055,8 +1181,23 @@ export function InputPanel({
     );
   };
 
-  const renderVitals = () =>
-    vitalsViewMode === 'matrix' ? renderVitalsMatrix() : renderVitalsLegacy();
+  const renderVitals = () => {
+    // A phone shows rows for any saved vitals, the mirror's or the record's
+    // (a new device), unless the plain fields saved one this visit: those
+    // stay, so nothing moves under someone typing.
+    const phoneRows = isPhone && (vitalsViewMode === 'matrix' || (vitalsHistory.length > 0 && fieldsSaved === 0));
+    if (!phoneRows) return vitalsViewMode === 'matrix' ? renderVitalsMatrix() : renderVitalsLegacy();
+    return (
+      <>
+        {!tableShown && <VitalsRows history={vitalsHistory} ctx={rowCtx} onOpen={openPage}/>}
+        {unsavedCue(draftedVitals)}
+        <div className="md-table" hidden={!tableShown}>
+          <button type="button" className="md-back md-table-back" onClick={() => showTable(false)}>‹ Show as rows</button>
+          {renderVitalsMatrix()}
+        </div>
+      </>
+    );
+  };
 
   const renderBirthInfo = () => (
     <div className="health-field-group">
@@ -1127,6 +1268,7 @@ export function InputPanel({
       onCorrectValue={onCorrectValue}
       move={move.headers}
       onDraftValue={onDraftValue}
+      onHoldsText={setDraftedBlood}
       isSaving={isSavingLongitudinal}
       grading={grading}
       onUploadClick={() => setShowUploadModal?.(true)}
@@ -2084,23 +2226,37 @@ export function InputPanel({
   };
 
   // ── Render all sections with progressive disclosure (both mobile and desktop) ──
+  const birthBelow = formStage >= 2 && !canCollapse && (
+    <div className={`prefill-fields-wrapper${collapseAnimating && !prefillExpanded ? ' collapsing' : ''}${collapsed && !prefillExpanded ? ' collapsed' : ''}`}>
+      <div>{renderBirthInfo()}</div>
+    </div>
+  );
+  const bloodTestGrids = (
+    <>
+      {renderBloodTests()}
+      {move.panel}
+      <AdditionalLabRows labValues={labValues} onAdded={onLabValueAdded} onCorrect={onCorrectValue} move={move.headers}/>
+    </>
+  );
   return (
-    <div className="health-input-panel">
+    <div ref={panelRef} className={`health-input-panel${pageShown ? ' md-page-open' : ''}`}>
+      {pageShown && (
+        <ValuePage key={JSON.stringify(pageShown)} subject={pageShown} history={[...vitalsHistory, ...bloodTestHistory]} labValues={labValues}
+                   ctx={rowCtx} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} dirtyRef={pageDirty}/>
+      )}
       <ColumnHeader step={1} title="Your information" meta={storageBar} actions={!!storageBar} />
-      {/* Card 1: Units + Basic Info + Vitals + Birth Info (stage 2+) */}
+      {panelMessages}
+      {/* Card 1: Units + Basic Info + Vitals + Birth Info (stage 2+). On a
+          phone with sex and height in, About you moves to the foot (US-62 AC12). */}
       <div className="section-card">
-        {renderProfile()}
+        {!aboutYouLow && renderProfile()}
         {formStage >= 2 && <div className="stage-reveal">{renderVitals()}</div>}
         {/* Birth info placement is split by user type:
             - Returning (canCollapse): rendered inside renderProfile, under
               Sex + Height (the other PREFILL demographics).
             - Fresh (!canCollapse): rendered HERE, below the vitals matrix —
               the progressive-disclosure order Brad confirmed is correct. */}
-        {formStage >= 2 && !canCollapse && (
-          <div className={`prefill-fields-wrapper${collapseAnimating && !prefillExpanded ? ' collapsing' : ''}${collapsed && !prefillExpanded ? ' collapsed' : ''}`}>
-            <div>{renderBirthInfo()}</div>
-          </div>
-        )}
+        {!aboutYouLow && birthBelow}
         {formStage === 2 && (
           <p className="field-hint-attention field-hint-attention--centered">
             Fill in the above — then more fields will appear.
@@ -2110,12 +2266,25 @@ export function InputPanel({
 
       {/* Card 2: Blood Tests (stage 3+). `section-card--bt` zeros the
           card's inner padding so the timeline matrix sits flush against
-          the card edges (column-fit math expects no inner padding). */}
+          the card edges (column-fit math expects no inner padding). On a
+          phone, rows, with the grids one tap away (US-62 AC11). */}
       {formStage >= 3 && (
         <div className="section-card section-card--bt stage-reveal">
-          {renderBloodTests()}
-          {move.panel}
-          <AdditionalLabRows labValues={labValues} onAdded={onLabValueAdded} onCorrect={onCorrectValue} move={move.headers}/>
+          {isPhone && !tableShown && (
+            <BloodTestRows history={bloodTestHistory} labValues={labValues} ctx={rowCtx} onOpen={openPage}>
+              {unsavedCue(draftedBlood)}
+              <div className="md-foot">
+                <button type="button" className="md-foot-btn" onClick={() => showTable(true)}>All results as a table</button>
+                {setShowUploadModal && <button type="button" className="md-foot-btn" onClick={() => setShowUploadModal(true)}>Upload lab results</button>}
+              </div>
+            </BloodTestRows>
+          )}
+          {isPhone ? (
+            <div className="md-table" hidden={!tableShown}>
+              <button type="button" className="md-back md-table-back" onClick={() => showTable(false)}>‹ Show as rows</button>
+              {bloodTestGrids}
+            </div>
+          ) : bloodTestGrids}
         </div>
       )}
 
@@ -2123,6 +2292,12 @@ export function InputPanel({
       {formStage >= 3 && renderScreening()}
       {formStage >= 3 && renderBoneDensity()}
       {formStage >= 3 && renderSupplements()}
+      {aboutYouLow && (
+        <div className="section-card md-about-you">
+          {renderProfile()}
+          {birthBelow}
+        </div>
+      )}
       {healthDocuments && healthDocuments.length > 0 && (
         <HealthRecordsSection documents={healthDocuments} onDeleted={onDocumentDeleted} />
       )}

@@ -45,6 +45,28 @@ export function collectMatrixLayout(root) {
   };
 }
 
+// US-62 AC8: on a phone, each seeded blood test is one row, inside the screen,
+// its value with the previous in brackets.
+export function assertRows(data) {
+  assert(data.documentWidth <= data.viewportWidth + 1, 'page overflows horizontally');
+  const hba1c = data.rows.find(row => row.label === 'HbA1c');
+  assert(hba1c, 'HbA1c row missing');
+  assert.equal(hba1c.value, '36 (35)', 'HbA1c row lost its previous value');
+  for (const row of data.rows) assert(row.right <= data.viewportWidth + 1 && row.height > 0, `${row.label} row off screen or collapsed`);
+}
+
+// Passed directly to Playwright's evaluate; keep this function self-contained.
+export function collectRows() {
+  return {
+    viewportWidth: window.innerWidth,
+    documentWidth: document.documentElement.scrollWidth,
+    rows: [...document.querySelectorAll('.md-row')].map(row => {
+      const rect = row.getBoundingClientRect();
+      return { label: row.querySelector('.md-row-label')?.textContent, value: row.querySelector('.md-row-value')?.textContent ?? null, right: rect.right, height: rect.height };
+    }),
+  };
+}
+
 // US-20 AC6: on a phone, the bottom tab bar is inside the widget, sticky (never
 // fixed), opaque, on screen while the widget is, and the tab picks the one panel shown.
 export function assertTabBar(data) {
@@ -116,6 +138,14 @@ async function inspect(browser, deviceName, viewport) {
       localStorage.setItem('health_roadmap_file_v2_rev', '0');
     });
     await page.goto(process.env.WEBKIT_VERIFY_URL || 'https://drstanfield.com/pages/roadmap', { waitUntil: 'domcontentloaded' });
+    if (deviceName) {
+      // US-62 AC8, AC11: a phone shows rows; the grid is one tap away.
+      await page.locator('.md-row').first().waitFor({ state: 'visible', timeout: 30000 });
+      const rows = await page.evaluate(collectRows);
+      assertRows(rows);
+      console.log(`${deviceName}: rows verified`, JSON.stringify(rows));
+      await page.getByRole('button', { name: 'All results as a table' }).tap();
+    }
     const matrix = page.locator('.bt-timeline').first();
     await matrix.waitFor({ state: 'visible', timeout: 30000 });
     await matrix.scrollIntoViewIfNeeded();
