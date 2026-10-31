@@ -55,7 +55,7 @@ ref,kind,origin,opened_utc,loop_replied_utc,brad_replied_utc,status,note
 #278,pr,external,2026-10-26T22:03Z,,2026-10-26T22:33:57Z,triaged,"new: persist queued birth-year edits before page departure; open, Brad reviewed"
 #279,pr,external,2026-10-26T22:10Z,,2026-10-26T22:34:00Z,closed,"new: refuse ambiguous pasted lab values; reviewed, merged by Brad"
 #280,pr,external,2026-10-26T22:10Z,,2026-10-26T22:33:59Z,closed,"new: enforce supplement dose bounds before autosave; reviewed, merged by Brad"
-#285,issue,external,2026-10-27T15:34Z,,,triaged,"new bug report: plan and form use different smoking-history cut-offs for lung screening (clinical-adjacent, spec call is Brad's); open, no maintainer reply; no health data in thread"
+#285,issue,external,2026-10-27T15:34Z,,,escalated,"new bug report: plan and form use different smoking-history cut-offs for lung screening (clinical-adjacent, spec call is Brad's); open, no maintainer reply; no health data in thread"
 #286,pr,external,2026-10-27T15:57Z,,2026-10-29T20:59:45Z,closed,"new: pin screening reminder eligibility at document boundaries (test only); merged by Brad, no comment"
 #290,pr,external,2026-10-27T17:49Z,,2026-10-29T20:59:44Z,closed,new: chat never replays an error line to the model; merged by Brad
 #293,pr,external,2026-10-28T17:36Z,,2026-10-29T20:59:44Z,closed,"new: Discord bot logs failed-send kind, never the reply; merged by Brad"
