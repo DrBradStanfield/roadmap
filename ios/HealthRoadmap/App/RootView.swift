@@ -3,7 +3,7 @@ import UIKit
 import SwiftUI
 
 /// The tabs, in the web's mobile order (US-25 AC3): My data, My plan, then Chat (US-52).
-/// The app opens on My data. The web twin is widget-src/src/components/MobileTabBar.tsx.
+/// The app opens on My data. The web twin is widget-src/src/components/BottomTabBar.tsx.
 /// Each tab sits in a navigation stack. My plan has a small title, whose bar turns
 /// to frosted glass as content scrolls under it; My data has no bar (Brad
 /// 2026-10-22, US-25 AC17), and a strip of its background keeps rows from the clock.

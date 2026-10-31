@@ -45,6 +45,64 @@ export function collectMatrixLayout(root) {
   };
 }
 
+// US-62 AC8: on a phone, each seeded blood test is one row, inside the screen,
+// its value with the previous in brackets.
+export function assertRows(data) {
+  assert(data.documentWidth <= data.viewportWidth + 1, 'page overflows horizontally');
+  const hba1c = data.rows.find(row => row.label === 'HbA1c');
+  assert(hba1c, 'HbA1c row missing');
+  assert.equal(hba1c.value, '36 (35)', 'HbA1c row lost its previous value');
+  for (const row of data.rows) assert(row.right <= data.viewportWidth + 1 && row.height > 0, `${row.label} row off screen or collapsed`);
+}
+
+// Passed directly to Playwright's evaluate; keep this function self-contained.
+export function collectRows() {
+  return {
+    viewportWidth: window.innerWidth,
+    documentWidth: document.documentElement.scrollWidth,
+    rows: [...document.querySelectorAll('.md-row')].map(row => {
+      const rect = row.getBoundingClientRect();
+      return { label: row.querySelector('.md-row-label')?.textContent, value: row.querySelector('.md-row-value')?.textContent ?? null, right: rect.right, height: rect.height };
+    }),
+  };
+}
+
+// US-20 AC6: on a phone, the bottom tab bar is inside the widget, sticky (never
+// fixed), opaque, on screen while the widget is, and the tab picks the one panel shown.
+export function assertTabBar(data) {
+  assert(data.insideWidget, 'tab bar outside the widget');
+  assert.equal(data.position, 'sticky', 'tab bar is not sticky');
+  assert(/^rgb\(/.test(data.background) || /^rgba\(.*,\s*1\)$/.test(data.background), `tab bar is see-through (${data.background})`);
+  assert(!data.backdropFilter || data.backdropFilter === 'none', 'tab bar blurs what is behind it');
+  assert(!data.oldPlanButton, 'the old fixed plan button is back');
+  assert(data.visible && data.bottom <= data.viewportHeight + 1 && data.top >= 0, 'tab bar not on screen with the widget');
+  assert.deepEqual(data.tabs, ['My data', 'My plan', 'Chat'], 'tab labels changed');
+  assert.deepEqual(data.shownAfterPlanTap, ['My plan'], 'My plan did not show its panel alone');
+}
+
+// Passed directly to Playwright's evaluate; keep this function self-contained.
+export function collectTabBar(bar) {
+  const rect = bar.getBoundingClientRect();
+  const data = {
+    insideWidget: !!bar.closest('.health-tool'),
+    position: getComputedStyle(bar).position,
+    background: getComputedStyle(bar).backgroundColor,
+    backdropFilter: getComputedStyle(bar).backdropFilter || getComputedStyle(bar).webkitBackdropFilter,
+    visible: getComputedStyle(bar).visibility === 'visible',
+    top: rect.top, bottom: rect.bottom, viewportHeight: window.innerHeight,
+    oldPlanButton: !!document.querySelector('.mobile-view-plan-btn'),
+    tabs: [...bar.querySelectorAll('[role="tab"]')].map(tab => tab.textContent.trim()),
+  };
+  return data;
+}
+
+// Passed directly to Playwright's evaluate: the tabs whose panel shows.
+export function shownPanels(bar) {
+  return [...bar.querySelectorAll('[role="tab"]')]
+    .filter(tab => !document.getElementById(tab.getAttribute('aria-controls')).hidden)
+    .map(tab => tab.textContent.trim());
+}
+
 async function inspect(browser, deviceName, viewport) {
   const ctx = await browser.newContext({
     ...(deviceName ? devices[deviceName] : { viewport }),
@@ -55,7 +113,7 @@ async function inspect(browser, deviceName, viewport) {
     await ctx.route('**/*', route => {
       const request = route.request();
       const url = new URL(request.url());
-      const tracking = /sentry|clarity|google-analytics|googletagmanager|facebook|hotjar/.test(url.hostname);
+      const tracking = /sentry|clarity|google-analytics|googletagmanager|facebook|hotjar|klaviyo/.test(url.hostname);
       return tracking || !['GET', 'HEAD'].includes(request.method()) ? route.abort() : route.continue();
     });
     const page = await ctx.newPage();
@@ -80,6 +138,14 @@ async function inspect(browser, deviceName, viewport) {
       localStorage.setItem('health_roadmap_file_v2_rev', '0');
     });
     await page.goto(process.env.WEBKIT_VERIFY_URL || 'https://drstanfield.com/pages/roadmap', { waitUntil: 'domcontentloaded' });
+    if (deviceName) {
+      // US-62 AC8, AC11: a phone shows rows; the grid is one tap away.
+      await page.locator('.md-row').first().waitFor({ state: 'visible', timeout: 30000 });
+      const rows = await page.evaluate(collectRows);
+      assertRows(rows);
+      console.log(`${deviceName}: rows verified`, JSON.stringify(rows));
+      await page.getByRole('button', { name: 'All results as a table' }).tap();
+    }
     const matrix = page.locator('.bt-timeline').first();
     await matrix.waitFor({ state: 'visible', timeout: 30000 });
     await matrix.scrollIntoViewIfNeeded();
@@ -87,6 +153,14 @@ async function inspect(browser, deviceName, viewport) {
     assertMatrixLayout(data);
     console.log(`${deviceName ?? 'desktop'}: matrix verified`, JSON.stringify(data));
     await page.screenshot({ path: `/tmp/webkit-${deviceName ?? 'desktop'}.png` });
+    if (deviceName) {
+      const bar = page.locator('.hr-tabbar');
+      const tabBar = await bar.evaluate(collectTabBar);
+      await bar.getByRole('tab', { name: 'My plan' }).tap();
+      tabBar.shownAfterPlanTap = await bar.evaluate(shownPanels);
+      assertTabBar(tabBar);
+      console.log(`${deviceName}: tab bar verified`, JSON.stringify(tabBar));
+    }
   } finally {
     await ctx.close();
   }

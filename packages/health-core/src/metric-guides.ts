@@ -279,11 +279,11 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
   // Apple's pages are cited only for how its devices measure, never for a clinical claim.
   heart_rate: {
     title: 'Heart rate',
-    whatItIs: 'How many times your heart beats each minute (bpm). Apple Watch reads it through the skin with green light, at times through the day and more often during a workout.',
+    whatItIs: 'How many times your heart beats each minute (bpm). Apple Watch measures your pulse with light sensors on its back, through the day and during workouts.',
     whyItMatters: 'Heart rate rises with activity, stress, caffeine, heat, dehydration and illness, and falls as you rest. The pattern over days tells you more than any one reading. A racing or very slow pulse with chest pain, fainting, dizziness or breathlessness needs prompt medical care.',
     howTo: { heading: READ, points: [
       'Compare readings taken at rest with each other, not with readings taken just after moving.',
-      'Wear the watch snug on top of your wrist. A loose band gives poorer readings.',
+      'Wear the watch so it fits well. A good fit helps the reading.',
       'If your watch warns of a high, low or irregular heart rate, tell your doctor.',
     ] },
     sources: [ref('Apple 2026 – Monitor your heart rate')],
@@ -317,7 +317,7 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
     whatItIs: 'The most oxygen your body can use during hard exercise, in mL/kg/min: a measure of cardiorespiratory fitness. Apple Watch estimates it during outdoor walks, runs and hikes, from your heart rate and how fast you move. A lab measures it directly on a treadmill, so the watch\'s value is an estimate.',
     whyItMatters: 'Fitness is one of the strongest predictors of how long people live. In a meta-analysis of 33 studies, people with low fitness had a higher risk of death and heart disease than fitter people. The bands on the chart compare you with people of your age and sex; from age 60, Low uses Apple\'s fixed line. Treat your band as a rough guide.',
     howTo: { heading: 'How to get a good estimate', points: [
-      'Record outdoor walks, runs or hikes in the Workout app, with the watch snug on your wrist.',
+      'Record outdoor walks, runs or hikes in the Workout app.',
       'Keep your age, sex, height, weight and any heart rate medicines up to date in the Health app. The estimate uses them.',
       'To raise it, do regular aerobic exercise. In trials, interval training raised fitness at least as much as steady, moderate exercise.',
     ] },
@@ -326,7 +326,7 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
   steps: {
     title: 'Steps',
     whatItIs: 'The steps your iPhone or Apple Watch counts each day with its motion sensors. A phone left on a desk counts nothing, so the watch usually gives the fuller count.',
-    whyItMatters: 'In a meta-analysis of 15 studies of about 47,000 adults, people who took more steps a day had a lower risk of dying early. The benefit levelled off at about 6,000 to 8,000 steps a day in people aged 60 and over, and 8,000 to 10,000 in younger adults. Brisk walking also counts toward the plan\'s 150 minutes of moderate activity a week.',
+    whyItMatters: 'In a meta-analysis of 15 studies of about 47,000 adults, people who took more steps a day had a lower risk of dying early. The lower risk of death levelled off at about 6,000 to 8,000 steps a day in people aged 60 and over, and 8,000 to 10,000 in younger adults. Brisk walking also counts toward the plan\'s 150 minutes of moderate activity a week.',
     howTo: { heading: 'How to add steps', points: [
       'Park further away and walk the last 10 minutes.',
       'Take a short walk before lunch.',

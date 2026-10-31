@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { lpaRefHint, refHintFor } from './reference-hints';
+import { lpaRefHint } from './reference-hints';
+import { rowTarget } from './row-target';
 import {
   lookupUnit,
   reportedToCanonical,
@@ -642,8 +643,8 @@ describe('lipid reference hints (US-07 AC5)', () => {
     ['ldl', 'Optimal: <1.4 mmol/L', 'Optimal: <55 mg/dL'],
     ['apob', 'Optimal: <0.50 g/L', 'Optimal: <50 mg/dL'],
   ] as const)('%s', (metric, si, conv) => {
-    expect(refHintFor(metric, 'si')).toBe(si);
-    expect(refHintFor(metric, 'conventional')).toBe(conv);
+    expect(rowTarget(metric, 'si', {}, null)?.full).toBe(si);
+    expect(rowTarget(metric, 'conventional', {}, null)?.full).toBe(conv);
   });
 });
 
