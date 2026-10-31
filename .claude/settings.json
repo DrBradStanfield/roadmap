@@ -11,7 +11,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "input=$(cat); case \"$input\" in *push*) printf '%s' \"$input\" | node \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-push-guard.js\";; esac"
+            "command": "input=$(cat); case \"$input\" in *push*) printf '%s' \"$input\" | node \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-push-guard.cjs\";; esac"
           }
         ]
       },

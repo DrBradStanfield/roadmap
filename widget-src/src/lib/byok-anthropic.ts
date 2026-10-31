@@ -36,12 +36,12 @@ export interface AnthropicContentBlock {
 }
 
 /** Pull the `content` block array out of a raw Messages response. */
-export function extractContentBlocks(data: unknown): AnthropicContentBlock[] {
+function extractContentBlocks(data: unknown): AnthropicContentBlock[] {
   return (data as { content?: AnthropicContentBlock[] })?.content ?? [];
 }
 
 /** Join the text blocks of an Anthropic Messages response into one string. */
-export function extractResponseText(data: unknown): string {
+function extractResponseText(data: unknown): string {
   return extractContentBlocks(data)
     .filter((b) => b.type === 'text')
     .map((b) => b.text ?? '')

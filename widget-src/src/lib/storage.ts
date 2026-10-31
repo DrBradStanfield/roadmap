@@ -14,6 +14,19 @@ export const MIRROR_KEY = 'health_roadmap_data';
 export const MIRROR_CHANGED_EVENT = 'hr:inputs-changed';
 const UNIT_PREF_KEY = 'health_roadmap_unit_system';
 
+/** Set once this page must stop writing health data to the device: its own
+ *  log-off, or, in a cloud-mode page, another tab's (US-09 AC2c). It lives in
+ *  this module, which every device writer imports, so the mirror and the
+ *  matrix drafts check the same latch as the record's device copy (US-09 AC2e).
+ *  Never reset in the page: log-off navigates away. */
+let healthWritesStopped = false;
+export function stopLocalHealthWrites(): void {
+  healthWritesStopped = true;
+}
+export function localHealthWritesStopped(): boolean {
+  return healthWritesStopped;
+}
+
 interface StoredData {
   inputs: Partial<HealthInputs>;
   previousMeasurements?: ApiMeasurement[];
@@ -40,6 +53,9 @@ export interface LoadedData {
  * (labEgfrOf over the record's lab rows). Tells the page.
  */
 export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasurements?: ApiMeasurement[], medications?: ApiMedication[], screenings?: ApiScreening[], reminderPreferences?: ApiReminderPreference[], labEgfr?: LabEgfr | null): void {
+  // After log-off the mirror stays gone: a cloud tab's later saves end here
+  // (patchMirror too) and would put the health copy back (US-09 AC2e).
+  if (healthWritesStopped) return;
   try {
     const data: StoredData = {
       inputs,
@@ -161,7 +177,7 @@ export const DRAFTS_CLEARED_EVENT = 'hr:drafts-cleared';
 
 /** Remove both matrices' unsaved drafts: an erase, made here or on another
  *  device, leaves none behind (US-11). */
-export function clearMatrixDrafts(): void {
+function clearMatrixDrafts(): void {
   safeRemoveItem(BT_TIMELINE_DRAFT_KEY);
   safeRemoveItem(VITALS_DRAFT_KEY);
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(DRAFTS_CLEARED_EVENT));

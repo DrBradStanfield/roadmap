@@ -74,6 +74,18 @@ function saveTokens(tokens: DropboxTokens): void {
   setJson(TOKEN_KEY, tokens);
 }
 
+/** A token reply holds a non-empty access token and a finite expiry, and at
+ *  connect a refresh token; otherwise it is refused and nothing is kept
+ *  (US-09 AC1a). Unchecked, it stored `undefined` or a NaN expiry. */
+function tokenReply(json: unknown, needsRefresh: boolean): { access_token: string; refresh_token: string; expires_in: number } {
+  const t = (json ?? {}) as { access_token?: unknown; refresh_token?: unknown; expires_in?: unknown };
+  const ok = (v: unknown) => typeof v === 'string' && v !== '';
+  if (!ok(t.access_token) || !Number.isFinite(t.expires_in) || (needsRefresh && !ok(t.refresh_token))) {
+    throw new StorageError('Dropbox sent an incomplete sign-in reply. Please reconnect.');
+  }
+  return t as { access_token: string; refresh_token: string; expires_in: number };
+}
+
 export class DropboxAdapter implements StorageAdapter {
   readonly id = 'dropbox' as const;
   readonly label = 'Dropbox';
@@ -144,7 +156,7 @@ export class DropboxAdapter implements StorageAdapter {
     if (!res.ok) {
       throw new StorageError(`Dropbox token exchange failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
     }
-    const json = (await res.json()) as { access_token: string; refresh_token: string; expires_in: number };
+    const json = tokenReply(await res.json(), true);
     saveTokens({
       accessToken: json.access_token,
       refreshToken: json.refresh_token,
@@ -302,7 +314,7 @@ export class DropboxAdapter implements StorageAdapter {
     if (!res.ok) {
       throw new StorageError(`Dropbox token refresh failed (${res.status}) — please reconnect.`, undefined, undefined, res.status);
     }
-    const json = (await res.json()) as { access_token: string; expires_in: number };
+    const json = tokenReply(await res.json(), false);
     this.tokens = {
       ...this.tokens,
       accessToken: json.access_token,

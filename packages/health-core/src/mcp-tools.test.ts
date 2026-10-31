@@ -2860,7 +2860,7 @@ describe('US-36 AC2 — every row runs the record’s own dry run; a bad row is 
       row('ferritin', 'Ferritin', 210, 'ug/L'),
     ]));
     expect(out.unrecognized).toEqual([
-      expect.stringMatching(/^LDL Cholesterol 320 mmol\/L: LDL-c must be at most 12.9 mmol\/L \(got 320\) \(above 0, up to 12.9 mmol\/L; above 0, up to 500 mg\/dL\)\. Check the unit; if the report really says that, tell the user and do not file it\.$/),
+      expect.stringMatching(/^LDL Cholesterol 320 mmol\/L: LDL-c must be at most 12.9 mmol\/L \(got 320\) \(above 0, up to 12.9 mmol\/L; above 0, up to 498 mg\/dL\)\. Check the unit; if the report really says that, tell the user and do not file it\.$/),
       expect.stringMatching(/^HDL Cholesterol 1.3 mmol\/L: .*2030-01-01.*Ask the user for the date, then re-send\.$/),
       'LDL Cholesterol 2.8 mmol/L: printed name LDL Cholesterol is the core metric ldl. Re-send it with metric ldl.',
     ]);
@@ -3603,7 +3603,7 @@ describe('US-03 AC7 — the import preview refuses a lipid of 0, never files it'
       row('lpa', 'Lipoprotein(a)', 0, 'nmol/L'),
     ]));
     expect(out.unrecognized).toEqual([
-      'LDL Cholesterol 0 mmol/L: LDL-c must be above 0 (got 0) (above 0, up to 12.9 mmol/L; above 0, up to 500 mg/dL). Check the unit; if the report really says that, tell the user and do not file it.',
+      'LDL Cholesterol 0 mmol/L: LDL-c must be above 0 (got 0) (above 0, up to 12.9 mmol/L; above 0, up to 498 mg/dL). Check the unit; if the report really says that, tell the user and do not file it.',
       expect.stringMatching(/^HDL Cholesterol 0 mg\/dL: HDL must be above 0 \(got 0\) \(above 0, up to 5.2 mmol\/L; above 0, up to 200 mg\/dL\)/),
     ]);
     expect(out.unrecognized.join('\n')).not.toContain('0–');

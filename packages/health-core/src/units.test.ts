@@ -280,7 +280,8 @@ describe('getDisplayRange', () => {
 
   it('returns conventional range for weight', () => {
     const range = getDisplayRange('weight', 'conventional');
-    expect(range.min).toBe(44);
+    // 20 kg is 44.09 lbs: 44 would store 19.96 kg, under the record's floor (US-05 AC2b).
+    expect(range.min).toBe(45);
     expect(range.max).toBe(661);
   });
 });

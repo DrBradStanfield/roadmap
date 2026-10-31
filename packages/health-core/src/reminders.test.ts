@@ -1,7 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-  computeDueReminders,
-  filterByPreferences,
   getCategoryGroup,
   formatReminderDate,
   GROUP_COOLDOWNS,
@@ -12,10 +10,10 @@ import type {
   ReminderProfile,
   MeasurementDates,
   MedicationRecord,
-  ReminderCategory,
 } from './reminders';
 import type { ScreeningInputs } from './types';
 import { getScreeningNextDueDate } from './types';
+import { computeNextDueDates } from './reminder-schedule';
 
 // Helper to create a date string N months ago from a reference date
 function monthsAgo(months: number, from: Date = new Date('2026-02-01')): string {
@@ -35,21 +33,35 @@ function monthsAgoYYYYMM(months: number, from: Date = new Date('2026-02-01')): s
 
 const NOW = new Date('2026-02-01');
 
+/** What the schedule has due on or before the UTC day of `now`, as the cron reads it.
+ *  These cases were written for the retired v1 engine, computeDueReminders, which
+ *  matched the schedule item for item; they now run against the schedule itself. */
+function dueReminders(
+  profile: ReminderProfile,
+  screenings: ScreeningInputs | undefined,
+  measurementDates: MeasurementDates,
+  medications: MedicationRecord[],
+  now: Date,
+) {
+  const today = now.toISOString().slice(0, 10);
+  return { reminders: computeNextDueDates(profile, screenings, measurementDates, medications).filter((i) => i.dueAt <= today) };
+}
+
 const maleProfile: ReminderProfile = { sex: 'male', age: 55 };
 const femaleProfile: ReminderProfile = { sex: 'female', age: 55 };
 
-describe('computeDueReminders', () => {
+describe('due reminders on the schedule', () => {
   describe('Screening reminders', () => {
     it('returns colorectal screening reminder when FIT is overdue (male, age 55)', () => {
       const screenings: ScreeningInputs = {
         colorectalMethod: 'fit_annual',
         colorectalLastDate: monthsAgoYYYYMM(14), // 14 months ago, overdue for annual
       };
-      const result = computeDueReminders(maleProfile, screenings, {}, [], NOW);
+      const result = dueReminders(maleProfile, screenings, {}, [], NOW);
       const reminder = result.reminders.find(r => r.category === 'screening_colorectal');
       expect(reminder).toBeDefined();
       expect(reminder?.group).toBe('screening');
-      expect(reminder?.title).toContain('Colorectal');
+      expect(reminder?.label).toContain('Colorectal');
     });
 
     it('does not return colorectal reminder when FIT is up to date', () => {
@@ -57,7 +69,7 @@ describe('computeDueReminders', () => {
         colorectalMethod: 'fit_annual',
         colorectalLastDate: monthsAgoYYYYMM(6), // 6 months ago, not overdue
       };
-      const result = computeDueReminders(maleProfile, screenings, {}, [], NOW);
+      const result = dueReminders(maleProfile, screenings, {}, [], NOW);
       expect(result.reminders.find(r => r.category === 'screening_colorectal')).toBeUndefined();
     });
 
@@ -65,7 +77,7 @@ describe('computeDueReminders', () => {
       const screenings: ScreeningInputs = {
         colorectalMethod: 'not_yet_started',
       };
-      const result = computeDueReminders(maleProfile, screenings, {}, [], NOW);
+      const result = dueReminders(maleProfile, screenings, {}, [], NOW);
       expect(result.reminders.find(r => r.category === 'screening_colorectal')).toBeUndefined();
     });
 
@@ -74,7 +86,7 @@ describe('computeDueReminders', () => {
         colorectalMethod: 'fit_annual',
         colorectalLastDate: monthsAgoYYYYMM(14),
       };
-      const result = computeDueReminders({ sex: 'male', age: 30 }, screenings, {}, [], NOW);
+      const result = dueReminders({ sex: 'male', age: 30 }, screenings, {}, [], NOW);
       expect(result.reminders.find(r => r.category === 'screening_colorectal')).toBeUndefined();
     });
 
@@ -83,7 +95,7 @@ describe('computeDueReminders', () => {
         colorectalMethod: 'fit_annual',
         colorectalLastDate: monthsAgoYYYYMM(14),
       };
-      const result = computeDueReminders({ sex: 'male', age: 80 }, screenings, {}, [], NOW);
+      const result = dueReminders({ sex: 'male', age: 80 }, screenings, {}, [], NOW);
       expect(result.reminders.find(r => r.category === 'screening_colorectal')).toBeUndefined();
     });
 
@@ -92,7 +104,7 @@ describe('computeDueReminders', () => {
         colorectalMethod: 'colonoscopy_10yr',
         colorectalLastDate: monthsAgoYYYYMM(125), // ~10.4 years
       };
-      const result = computeDueReminders(maleProfile, screenings, {}, [], NOW);
+      const result = dueReminders(maleProfile, screenings, {}, [], NOW);
       expect(result.reminders.find(r => r.category === 'screening_colorectal')).toBeDefined();
     });
 
@@ -101,7 +113,7 @@ describe('computeDueReminders', () => {
         colorectalMethod: 'colonoscopy_10yr',
         colorectalLastDate: monthsAgoYYYYMM(60), // 5 years
       };
-      const result = computeDueReminders(maleProfile, screenings, {}, [], NOW);
+      const result = dueReminders(maleProfile, screenings, {}, [], NOW);
       expect(result.reminders.find(r => r.category === 'screening_colorectal')).toBeUndefined();
     });
 
@@ -113,7 +125,7 @@ describe('computeDueReminders', () => {
         colorectalFollowupStatus: 'completed',
         colorectalFollowupDate: monthsAgoYYYYMM(40), // follow-up 40 months ago (overdue for 36-month repeat)
       };
-      const result = computeDueReminders(maleProfile, screenings, {}, [], NOW);
+      const result = dueReminders(maleProfile, screenings, {}, [], NOW);
       expect(result.reminders.find(r => r.category === 'screening_colorectal')).toBeDefined();
     });
 
@@ -122,10 +134,10 @@ describe('computeDueReminders', () => {
         breastFrequency: 'annual',
         breastLastDate: monthsAgoYYYYMM(14),
       };
-      const result = computeDueReminders(femaleProfile, screenings, {}, [], NOW);
+      const result = dueReminders(femaleProfile, screenings, {}, [], NOW);
       const reminder = result.reminders.find(r => r.category === 'screening_breast');
       expect(reminder).toBeDefined();
-      expect(reminder?.title).toContain('Mammogram');
+      expect(reminder?.label).toContain('Mammogram');
     });
 
     it('does not return mammogram reminder for male', () => {
@@ -133,7 +145,7 @@ describe('computeDueReminders', () => {
         breastFrequency: 'annual',
         breastLastDate: monthsAgoYYYYMM(14),
       };
-      const result = computeDueReminders(maleProfile, screenings, {}, [], NOW);
+      const result = dueReminders(maleProfile, screenings, {}, [], NOW);
       expect(result.reminders.find(r => r.category === 'screening_breast')).toBeUndefined();
     });
 
@@ -142,7 +154,7 @@ describe('computeDueReminders', () => {
         breastFrequency: 'annual',
         breastLastDate: monthsAgoYYYYMM(14),
       };
-      const result = computeDueReminders({ sex: 'female', age: 35 }, screenings, {}, [], NOW);
+      const result = dueReminders({ sex: 'female', age: 35 }, screenings, {}, [], NOW);
       expect(result.reminders.find(r => r.category === 'screening_breast')).toBeUndefined();
     });
 
@@ -151,7 +163,7 @@ describe('computeDueReminders', () => {
         cervicalMethod: 'hpv_every_5yr',
         cervicalLastDate: monthsAgoYYYYMM(65), // overdue for 60-month interval
       };
-      const result = computeDueReminders({ sex: 'female', age: 30 }, screenings, {}, [], NOW);
+      const result = dueReminders({ sex: 'female', age: 30 }, screenings, {}, [], NOW);
       expect(result.reminders.find(r => r.category === 'screening_cervical')).toBeDefined();
     });
 
@@ -160,7 +172,7 @@ describe('computeDueReminders', () => {
         cervicalMethod: 'hpv_every_5yr',
         cervicalLastDate: monthsAgoYYYYMM(65),
       };
-      const result = computeDueReminders(maleProfile, screenings, {}, [], NOW);
+      const result = dueReminders(maleProfile, screenings, {}, [], NOW);
       expect(result.reminders.find(r => r.category === 'screening_cervical')).toBeUndefined();
     });
 
@@ -171,7 +183,7 @@ describe('computeDueReminders', () => {
         lungScreening: 'annual_ldct',
         lungLastDate: monthsAgoYYYYMM(14),
       };
-      const result = computeDueReminders(maleProfile, screenings, {}, [], NOW);
+      const result = dueReminders(maleProfile, screenings, {}, [], NOW);
       expect(result.reminders.find(r => r.category === 'screening_lung')).toBeDefined();
     });
 
@@ -181,7 +193,7 @@ describe('computeDueReminders', () => {
         lungScreening: 'annual_ldct',
         lungLastDate: monthsAgoYYYYMM(14),
       };
-      const result = computeDueReminders(maleProfile, screenings, {}, [], NOW);
+      const result = dueReminders(maleProfile, screenings, {}, [], NOW);
       expect(result.reminders.find(r => r.category === 'screening_lung')).toBeUndefined();
     });
 
@@ -192,7 +204,7 @@ describe('computeDueReminders', () => {
         lungScreening: 'annual_ldct',
         lungLastDate: monthsAgoYYYYMM(14),
       };
-      const result = computeDueReminders(maleProfile, screenings, {}, [], NOW);
+      const result = dueReminders(maleProfile, screenings, {}, [], NOW);
       expect(result.reminders.find(r => r.category === 'screening_lung')).toBeUndefined();
     });
 
@@ -201,7 +213,7 @@ describe('computeDueReminders', () => {
         prostateDiscussion: 'will_screen',
         prostateLastDate: monthsAgoYYYYMM(14),
       };
-      const result = computeDueReminders(maleProfile, screenings, {}, [], NOW);
+      const result = dueReminders(maleProfile, screenings, {}, [], NOW);
       expect(result.reminders.find(r => r.category === 'screening_prostate')).toBeDefined();
     });
 
@@ -209,7 +221,7 @@ describe('computeDueReminders', () => {
       const screenings: ScreeningInputs = {
         prostateDiscussion: 'elected_not_to',
       };
-      const result = computeDueReminders(maleProfile, screenings, {}, [], NOW);
+      const result = dueReminders(maleProfile, screenings, {}, [], NOW);
       expect(result.reminders.find(r => r.category === 'screening_prostate')).toBeUndefined();
     });
 
@@ -218,12 +230,12 @@ describe('computeDueReminders', () => {
         prostateDiscussion: 'will_screen',
         prostateLastDate: monthsAgoYYYYMM(14),
       };
-      const result = computeDueReminders(femaleProfile, screenings, {}, [], NOW);
+      const result = dueReminders(femaleProfile, screenings, {}, [], NOW);
       expect(result.reminders.find(r => r.category === 'screening_prostate')).toBeUndefined();
     });
 
     it('returns no screening reminders when screenings is undefined', () => {
-      const result = computeDueReminders(maleProfile, undefined, {}, [], NOW);
+      const result = dueReminders(maleProfile, undefined, {}, [], NOW);
       const screeningReminders = result.reminders.filter(r => r.group === 'screening');
       expect(screeningReminders).toHaveLength(0);
     });
@@ -234,10 +246,10 @@ describe('computeDueReminders', () => {
       const dates: MeasurementDates = {
         ldl: monthsAgo(14),
       };
-      const result = computeDueReminders(maleProfile, undefined, dates, [], NOW);
+      const result = dueReminders(maleProfile, undefined, dates, [], NOW);
       const reminder = result.reminders.find(r => r.category === 'blood_test_lipids');
       expect(reminder).toBeDefined();
-      expect(reminder?.title).toContain('Lipid');
+      expect(reminder?.label).toContain('Lipid');
     });
 
     it('does not return lipid reminder when lipid panel is recent', () => {
@@ -245,7 +257,7 @@ describe('computeDueReminders', () => {
         ldl: monthsAgo(6),
         hdl: monthsAgo(6),
       };
-      const result = computeDueReminders(maleProfile, undefined, dates, [], NOW);
+      const result = dueReminders(maleProfile, undefined, dates, [], NOW);
       expect(result.reminders.find(r => r.category === 'blood_test_lipids')).toBeUndefined();
     });
 
@@ -254,13 +266,13 @@ describe('computeDueReminders', () => {
         ldl: monthsAgo(14), // old
         hdl: monthsAgo(6),  // recent
       };
-      const result = computeDueReminders(maleProfile, undefined, dates, [], NOW);
+      const result = dueReminders(maleProfile, undefined, dates, [], NOW);
       // Most recent lipid is 6 months ago, not overdue
       expect(result.reminders.find(r => r.category === 'blood_test_lipids')).toBeUndefined();
     });
 
     it('does not return lipid reminder when user has never tracked lipids', () => {
-      const result = computeDueReminders(maleProfile, undefined, {}, [], NOW);
+      const result = dueReminders(maleProfile, undefined, {}, [], NOW);
       expect(result.reminders.find(r => r.category === 'blood_test_lipids')).toBeUndefined();
     });
 
@@ -268,7 +280,7 @@ describe('computeDueReminders', () => {
       const dates: MeasurementDates = {
         hba1c: monthsAgo(14),
       };
-      const result = computeDueReminders(maleProfile, undefined, dates, [], NOW);
+      const result = dueReminders(maleProfile, undefined, dates, [], NOW);
       expect(result.reminders.find(r => r.category === 'blood_test_hba1c')).toBeDefined();
     });
 
@@ -276,7 +288,7 @@ describe('computeDueReminders', () => {
       const dates: MeasurementDates = {
         hba1c: monthsAgo(6),
       };
-      const result = computeDueReminders(maleProfile, undefined, dates, [], NOW);
+      const result = dueReminders(maleProfile, undefined, dates, [], NOW);
       expect(result.reminders.find(r => r.category === 'blood_test_hba1c')).toBeUndefined();
     });
 
@@ -284,23 +296,20 @@ describe('computeDueReminders', () => {
       const dates: MeasurementDates = {
         creatinine: monthsAgo(14),
       };
-      const result = computeDueReminders(maleProfile, undefined, dates, [], NOW);
+      const result = dueReminders(maleProfile, undefined, dates, [], NOW);
       expect(result.reminders.find(r => r.category === 'blood_test_creatinine')).toBeDefined();
     });
 
-    it('includes blood test dates context for all tracked tests', () => {
+    it('dates every tracked test, due or not', () => {
       const dates: MeasurementDates = {
         ldl: monthsAgo(14), // overdue
         hba1c: monthsAgo(6), // recent
       };
-      const result = computeDueReminders(maleProfile, undefined, dates, [], NOW);
-      expect(result.bloodTestDates).toHaveLength(2);
-
-      const lipids = result.bloodTestDates.find(d => d.type === 'lipids');
-      expect(lipids?.isOverdue).toBe(true);
-
-      const hba1c = result.bloodTestDates.find(d => d.type === 'hba1c');
-      expect(hba1c?.isOverdue).toBe(false);
+      const items = computeNextDueDates(maleProfile, undefined, dates, []);
+      expect(items.filter(i => i.group === 'blood_test')).toHaveLength(2);
+      const today = NOW.toISOString().slice(0, 10);
+      expect(items.find(i => i.category === 'blood_test_lipids')!.dueAt <= today).toBe(true);
+      expect(items.find(i => i.category === 'blood_test_hba1c')!.dueAt <= today).toBe(false);
     });
   });
 
@@ -309,17 +318,17 @@ describe('computeDueReminders', () => {
       const medications: MedicationRecord[] = [
         { medicationKey: 'statin', drugName: 'atorvastatin', updatedAt: monthsAgo(14) },
       ];
-      const result = computeDueReminders(maleProfile, undefined, {}, medications, NOW);
+      const result = dueReminders(maleProfile, undefined, {}, medications, NOW);
       const reminder = result.reminders.find(r => r.category === 'medication_review');
       expect(reminder).toBeDefined();
-      expect(reminder?.title).toContain('Medication review');
+      expect(reminder?.label).toContain('Medication review');
     });
 
     it('does not return medication review when medication is recently updated', () => {
       const medications: MedicationRecord[] = [
         { medicationKey: 'statin', drugName: 'atorvastatin', updatedAt: monthsAgo(6) },
       ];
-      const result = computeDueReminders(maleProfile, undefined, {}, medications, NOW);
+      const result = dueReminders(maleProfile, undefined, {}, medications, NOW);
       expect(result.reminders.find(r => r.category === 'medication_review')).toBeUndefined();
     });
 
@@ -330,12 +339,12 @@ describe('computeDueReminders', () => {
         { medicationKey: 'pcsk9i', drugName: 'not_tolerated', updatedAt: monthsAgo(14) },
         { medicationKey: 'glp1', drugName: 'no', updatedAt: monthsAgo(14) },
       ];
-      const result = computeDueReminders(maleProfile, undefined, {}, medications, NOW);
+      const result = dueReminders(maleProfile, undefined, {}, medications, NOW);
       expect(result.reminders.find(r => r.category === 'medication_review')).toBeUndefined();
     });
 
     it('does not return medication review when no medications', () => {
-      const result = computeDueReminders(maleProfile, undefined, {}, [], NOW);
+      const result = dueReminders(maleProfile, undefined, {}, [], NOW);
       expect(result.reminders.find(r => r.category === 'medication_review')).toBeUndefined();
     });
   });
@@ -352,34 +361,12 @@ describe('computeDueReminders', () => {
       const medications: MedicationRecord[] = [
         { medicationKey: 'statin', drugName: 'atorvastatin', updatedAt: monthsAgo(14) },
       ];
-      const result = computeDueReminders(maleProfile, screenings, dates, medications, NOW);
+      const result = dueReminders(maleProfile, screenings, dates, medications, NOW);
 
       expect(result.reminders.find(r => r.group === 'screening')).toBeDefined();
       expect(result.reminders.find(r => r.group === 'blood_test')).toBeDefined();
       expect(result.reminders.find(r => r.group === 'medication_review')).toBeDefined();
     });
-  });
-});
-
-describe('filterByPreferences', () => {
-  it('filters out disabled categories', () => {
-    const reminders = [
-      { category: 'screening_colorectal' as ReminderCategory, group: 'screening' as const, title: '', description: '' },
-      { category: 'screening_breast' as ReminderCategory, group: 'screening' as const, title: '', description: '' },
-      { category: 'blood_test_lipids' as ReminderCategory, group: 'blood_test' as const, title: '', description: '' },
-    ];
-    const disabled = new Set<ReminderCategory>(['screening_breast']);
-    const filtered = filterByPreferences(reminders, disabled);
-    expect(filtered).toHaveLength(2);
-    expect(filtered.find(r => r.category === 'screening_breast')).toBeUndefined();
-  });
-
-  it('returns all reminders when no categories are disabled', () => {
-    const reminders = [
-      { category: 'screening_colorectal' as ReminderCategory, group: 'screening' as const, title: '', description: '' },
-    ];
-    const filtered = filterByPreferences(reminders, new Set());
-    expect(filtered).toHaveLength(1);
   });
 });
 
@@ -438,7 +425,7 @@ describe('DEXA screening reminders', () => {
       dexaLastDate: monthsAgoYYYYMM(65), // 65 months ago > 60 month interval
       dexaResult: 'normal',
     };
-    const result = computeDueReminders(femaleProfile, screenings, {}, [], NOW);
+    const result = dueReminders(femaleProfile, screenings, {}, [], NOW);
     const dexa = result.reminders.find(r => r.category === 'screening_dexa');
     expect(dexa).toBeDefined();
     expect(dexa?.group).toBe('screening');
@@ -450,7 +437,7 @@ describe('DEXA screening reminders', () => {
       dexaLastDate: monthsAgoYYYYMM(28), // 28 months ago > 24 month interval
       dexaResult: 'osteopenia',
     };
-    const result = computeDueReminders(femaleProfile, screenings, {}, [], NOW);
+    const result = dueReminders(femaleProfile, screenings, {}, [], NOW);
     expect(result.reminders.find(r => r.category === 'screening_dexa')).toBeDefined();
   });
 
@@ -460,7 +447,7 @@ describe('DEXA screening reminders', () => {
       dexaLastDate: monthsAgoYYYYMM(12), // 12 months ago < 60 month interval
       dexaResult: 'normal',
     };
-    const result = computeDueReminders(femaleProfile, screenings, {}, [], NOW);
+    const result = dueReminders(femaleProfile, screenings, {}, [], NOW);
     expect(result.reminders.find(r => r.category === 'screening_dexa')).toBeUndefined();
   });
 
@@ -471,7 +458,7 @@ describe('DEXA screening reminders', () => {
       dexaLastDate: monthsAgoYYYYMM(65),
       dexaResult: 'normal',
     };
-    const result = computeDueReminders(youngFemale, screenings, {}, [], NOW);
+    const result = dueReminders(youngFemale, screenings, {}, [], NOW);
     expect(result.reminders.find(r => r.category === 'screening_dexa')).toBeUndefined();
   });
 
@@ -482,7 +469,7 @@ describe('DEXA screening reminders', () => {
       dexaLastDate: monthsAgoYYYYMM(65),
       dexaResult: 'normal',
     };
-    const result = computeDueReminders(olderMale, screenings, {}, [], NOW);
+    const result = dueReminders(olderMale, screenings, {}, [], NOW);
     expect(result.reminders.find(r => r.category === 'screening_dexa')).toBeDefined();
   });
 
@@ -493,7 +480,7 @@ describe('DEXA screening reminders', () => {
       dexaLastDate: monthsAgoYYYYMM(65),
       dexaResult: 'normal',
     };
-    const result = computeDueReminders(youngMale, screenings, {}, [], NOW);
+    const result = dueReminders(youngMale, screenings, {}, [], NOW);
     expect(result.reminders.find(r => r.category === 'screening_dexa')).toBeUndefined();
   });
 
@@ -501,7 +488,7 @@ describe('DEXA screening reminders', () => {
     const screenings: ScreeningInputs = {
       dexaScreening: 'not_yet_started',
     };
-    const result = computeDueReminders(femaleProfile, screenings, {}, [], NOW);
+    const result = dueReminders(femaleProfile, screenings, {}, [], NOW);
     expect(result.reminders.find(r => r.category === 'screening_dexa')).toBeUndefined();
   });
 
@@ -513,7 +500,7 @@ describe('DEXA screening reminders', () => {
       dexaFollowupStatus: 'completed',
       dexaFollowupDate: monthsAgoYYYYMM(15), // 15 months > 12 month post-followup
     };
-    const result = computeDueReminders(femaleProfile, screenings, {}, [], NOW);
+    const result = dueReminders(femaleProfile, screenings, {}, [], NOW);
     expect(result.reminders.find(r => r.category === 'screening_dexa')).toBeDefined();
   });
 
@@ -525,7 +512,7 @@ describe('DEXA screening reminders', () => {
       dexaFollowupStatus: 'completed',
       dexaFollowupDate: monthsAgoYYYYMM(2), // followup only 2 months ago (not overdue)
     };
-    const result = computeDueReminders(femaleProfile, screenings, {}, [], NOW);
+    const result = dueReminders(femaleProfile, screenings, {}, [], NOW);
     expect(result.reminders.find(r => r.category === 'screening_dexa')).toBeUndefined();
   });
 });

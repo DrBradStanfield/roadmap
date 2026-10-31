@@ -34,7 +34,7 @@ export interface ChatConversationSummary {
 const CHAT_HISTORY_DOC: DocumentSpec<ChatHistoryFile> = {
   fileName: 'chat-history.json',
   migrate: migrateChatHistoryFile,
-  merge: mergeChatHistoryFiles,
+  merge: mergeWithinCap,
   // History is best-effort at every call site — skip the verify-after-write
   // re-read (H5 protects health-record integrity; here it would spend a full
   // file transfer per exchange guarding data whose loss is already tolerated).
@@ -48,6 +48,22 @@ function tombstone(conv: ChatFileConversation, now?: string): void {
   conv.messages = [];
   conv.title = '';
   if (now) conv.updatedAt = now;
+}
+
+function liveOf(file: ChatHistoryFile): ChatFileConversation[] {
+  return file.conversations
+    .filter((c) => !c.deleted)
+    .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : a.updatedAt > b.updatedAt ? -1 : 0));
+}
+
+/** Every save's merge: the oldest live conversations beyond the cap are
+ *  tombstoned by the MERGED copy's updatedAt, never this page's stale one, so
+ *  a conversation another device just continued stays (US-10 AC10). A plain
+ *  slice would just resurrect on the next cloud merge; tombstones converge. */
+function mergeWithinCap(local: ChatHistoryFile, remote: ChatHistoryFile, ctx: SyncContext): ChatHistoryFile {
+  const merged = mergeChatHistoryFiles(local, remote, ctx);
+  for (const conv of liveOf(merged).slice(CHAT_HISTORY_MAX_CONVERSATIONS)) tombstone(conv);
+  return merged;
 }
 
 /** The device tier's synchronous store and its erase fence. */
@@ -89,7 +105,7 @@ export class ChatSession {
   /** Live (non-deleted) conversation summaries, newest first. */
   listConversations(): ChatConversationSummary[] {
     this.refreshAfterDeviceErase();
-    return this.liveConversations().map(({ id, title, createdAt, updatedAt }) => ({ id, title, createdAt, updatedAt }));
+    return liveOf(this.file).map(({ id, title, createdAt, updatedAt }) => ({ id, title, createdAt, updatedAt }));
   }
 
   getMessages(conversationId: string): ChatFileMessage[] {
@@ -104,7 +120,7 @@ export class ChatSession {
    * Persist one chat exchange (the shared tail of both transports): mints the
    * message ids and timestamps, applies the title rule (first user message,
    * truncated, only when the conversation is new), creates the conversation if
-   * needed, enforces the cap, and saves.
+   * needed, and saves; the save's merge enforces the cap.
    */
   async recordExchange(opts: {
     conversationId: string;
@@ -145,7 +161,6 @@ export class ChatSession {
         updatedAt: now,
         messages,
       });
-      this.enforceCap();
     }
     await this.persist();
   }
@@ -172,18 +187,6 @@ export class ChatSession {
     const now = new Date(this.host.clock.now()).toISOString();
     for (const conv of this.file.conversations) tombstone(conv, now);
     await this.persist();
-  }
-
-  private liveConversations(): ChatFileConversation[] {
-    return this.file.conversations
-      .filter((c) => !c.deleted)
-      .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : a.updatedAt > b.updatedAt ? -1 : 0));
-  }
-
-  /** Tombstone the oldest live conversations beyond the cap (a plain slice
-   *  would just resurrect on the next cloud merge — tombstones converge). */
-  private enforceCap(): void {
-    for (const conv of this.liveConversations().slice(CHAT_HISTORY_MAX_CONVERSATIONS)) tombstone(conv);
   }
 
   /** After a device erase, replace the entire stale working copy before
@@ -214,7 +217,7 @@ export class ChatSession {
       this.refreshAfterDeviceErase();
       const { body, version } = sync.readSync(CHAT_HISTORY_DOC.fileName);
       const ctx = contextOf(this.host);
-      const merged = mergeChatHistoryFiles(this.file, migrateChatHistoryFile(body, ctx), ctx);
+      const merged = mergeWithinCap(this.file, migrateChatHistoryFile(body, ctx), ctx);
       try {
         sync.writeSync(CHAT_HISTORY_DOC.fileName, merged, version);
         this.file = merged;

@@ -18,6 +18,7 @@ import { recordFailure } from '../lib/error-diagnostics';
 import { openBackendPicker, UPLOAD_STORAGE_NOTICE } from '../lib/storage-notice';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { isDocx, isLegacyDoc } from '../lib/file-kinds';
+import type { HealthUploadAPI } from '../upload-entry';
 
 class UploadError extends Error {
   constructor(message: string, public code: UploadErrorCode) {
@@ -119,17 +120,6 @@ const PROGRESS_MESSAGES = [
   'Identifying blood test values...',
   'Reviewing scan results...',
 ];
-
-// Types for the upload processing bundle (loaded lazily)
-interface HealthUploadAPI {
-  extractFromPdf: (file: File) => Promise<{ pages: PageContent[]; truncated: boolean }>;
-  isPdf: (file: File) => boolean;
-  getZipEntries: (file: File) => Promise<Array<{ name: string; entry: { async: (type: 'blob') => Promise<Blob> } }>>;
-  isZip: (file: File) => boolean;
-  resizeImage: (file: File, maxDim: number) => Promise<string>;
-  isImage: (file: File) => boolean;
-  docxToText: (data: ArrayBuffer) => Promise<{ text: string; truncated: boolean; picturesOnly: boolean }>;
-}
 
 const MAX_FILES = IMPORT_LIMITS.websiteFiles; // also the server's per-IP daily limit (US-12 AC17)
 const MAX_FILE_SIZE = IMPORT_LIMITS.websiteFileMb * 1024 * 1024; // the connector's hint names this number
@@ -355,7 +345,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   // Load the upload bundle lazily — cached promise prevents duplicate script injection
   const loadPromiseRef = useRef<Promise<HealthUploadAPI> | null>(null);
   const loadUploadBundle = useCallback((): Promise<HealthUploadAPI> => {
-    if ((window as any).HealthUpload) return Promise.resolve((window as any).HealthUpload);
+    if (window.HealthUpload) return Promise.resolve(window.HealthUpload);
     if (loadPromiseRef.current) return loadPromiseRef.current;
 
     const root = document.getElementById('health-tool-root');
@@ -366,8 +356,9 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       const script = document.createElement('script');
       script.src = src;
       script.onload = () => {
-        if ((window as any).HealthUpload) {
-          resolve((window as any).HealthUpload);
+        const upload = window.HealthUpload;
+        if (upload) {
+          resolve(upload);
         } else {
           loadPromiseRef.current = null;
           reject(new Error('Upload bundle loaded but HealthUpload not found'));

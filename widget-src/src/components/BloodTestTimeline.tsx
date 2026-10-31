@@ -175,7 +175,7 @@ export type BloodTestPrefillFn = (
 export const SAME_SLOT = 'This test already has a value on that day in another column.';
 
 /** What an Lp(a) cell restored from before its unit was kept says (US-05 AC2). */
-export const UNCLEAR_UNIT = 'Re-enter this value: its unit is unclear after an update.';
+const UNCLEAR_UNIT = 'Re-enter this value: its unit is unclear after an update.';
 
 const MONTH_LABELS = MONTHS_SHORT.map(m => m.label);
 

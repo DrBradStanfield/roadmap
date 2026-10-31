@@ -71,9 +71,9 @@ describe('validateTypedValue — weight bounds evaluated in the active unit', ()
   });
 
   it('rejects a value below the conventional minimum, expressed in lbs', () => {
-    // 30 lbs is below the 44 lbs (≈20 kg) floor.
+    // 30 lbs is below the 45 lbs floor (20 kg is 44.09 lbs, rounded inward).
     const { error } = validateTypedValue('weight', '30', 'conventional');
-    expect(error).toBe('Min 44 lbs');
+    expect(error).toBe('Min 45 lbs');
   });
 
   it('rejects a value below the SI minimum, expressed in kg', () => {
