@@ -218,6 +218,16 @@ interface HistoryPanelProps {
   initialMetric?: string;
 }
 
+/** US-21 AC3a: a test reported in more than one unit is listed, not charted. */
+function MixedUnitsNote({ label, units }: { label: string; units: string[] }) {
+  return (
+    <div className="metric-chart-container">
+      <h3>{label}</h3>
+      <p className="history-note">Units vary between reports ({units.map((u) => u || 'no unit').join(', ')}), so this test is not charted.</p>
+    </div>
+  );
+}
+
 export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
   const [measurements, setMeasurements] = useState<ApiMeasurement[]>([]);
   const [labVals, setLabVals] = useState<ApiLabValue[]>([]);
@@ -392,8 +402,10 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
               {labMetricNames
                 .filter((name) => selectedLabMetrics.has(name))
                 .map((name) => {
-                  // Use the unit from the first value (consistent per metric)
-                  const unit = labSeries[name].rows[0]?.unit || '';
+                  const { units } = labSeries[name];
+                  // One line through values in different units would be a false trend (US-21 AC3a).
+                  if (units.length > 1) return <MixedUnitsNote key={name} label={labSeries[name].label} units={units} />;
+                  const [unit] = units;
                   return (
                     <TimeSeriesChart
                       key={name}
