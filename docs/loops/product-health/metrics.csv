@@ -379,3 +379,56 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W43,clarity_roadmap_visits_3d,140,124,13,clarity,"drstanfield 5,494 sessions/3d (+46%), bot-flagged 20.9% (W42 89.8%); google 1,963 referrals; /pages/start 214 (rank 3), /pages/roadmap 140 (rank 6); script errors 11.16% (W42 0.69%), untraced; dead clicks 4.84%; microvitamin 2,280 (+8%), bot 23.5%, script errors 8.2% (11.24%)"
 2026-W43,feedback_organic,2,6,-67,gmail+supabase+github,"1 feedback_submissions row 10-23 (a medication note, no question; unanswered) + 1 reply 10-21 from the W42 urine-creatinine user to Brad's 10-20 answer (three clinical questions; unanswered ~3 days); 0 from-connector issues"
 2026-W43,ci_main_red,2,0,,github,"NEW SERIES: CI on main failed 10-24T17:16Z and 17:21Z (2adab025, 976fb315, docs-only): npm audit found 3 high advisories (body-parser GHSA-27r3-jxmh-p828, zod GHSA-mrhx-c7xc-m3w5, undici GHSA-xjj6-f33q-929c); green through ab535f04 10-23T17:19Z"
+2026-W44,product_events_total,1517,1165,30,supabase,"2682 rows paged = count=exact across both windows; W43 reproduced (landing gaps 6.0/22.5 s vs 5.7/21.7 recorded); new names tool_opened, us_product_shown, chat_question_archived, blood_test_moved"
+2026-W44,results_viewed,823,530,55,supabase,"536 visitors (W43 339); daily UTC 10-25 108, 10-26 143, 10-27 147, 10-28 119, 10-29 123, 10-30 108, 10-31 64 (to 20:47Z); median 119/day, no spike; US-62 AC5 redefinition (fefa6b8) live from ~10-31T12:40Z (tool_opened's first row), so the last ~8 h count a plan on screen"
+2026-W44,tool_opened,80,0,,supabase,"NEW SERIES (US-62 AC4): first 10-31T12:40Z; 73 visitors; desktop 50 / phone 30; day one: phone 2 of 28 visitors and desktop 8 of 45 reached results_viewed"
+2026-W44,upload_started,12,17,-29,supabase,per tab
+2026-W44,upload_saved,9,13,-31,supabase,per tab
+2026-W44,upload_extract_failed,0,1,-100,supabase,plausible (UploadModal.tsx:513); the 5 serverError outcomes take another path
+2026-W44,upload_outcome_runs,33,35,-6,supabase,"11 visitors, one made 11 runs; picked 64 = withValues 55 + noValues 1 + openFailed 3 + serverError 5; valuesDropped 58 (W43 1: 47 from two visitors 10-27 and 10-29), unitsGuessed 9, docx 1; serverError 5 from one visitor 10-26T17:55-18:00Z, inside the Anthropic 400 outage; documentOnly 0 (20), limitError 0"
+2026-W44,cloud_connect_started,31,12,158,supabase,google-drive 25 / dropbox 6 / github 0
+2026-W44,cloud_connect_success,14,9,56,supabase,"google-drive 11 / dropbox 3; Drive over 23 visitors: 8 straight success, 2 refused then success, 10 refused only, 3 abandoned"
+2026-W44,cloud_connect_refused,12,4,200,supabase,"all google-drive; 12 of 23 Drive visitors (52%; W43 33%, W42 41%) refused at least once"
+2026-W44,cloud_connect_cancelled,1,0,,supabase,"first row ever: dropbox 10-30T17:03Z; the W43 zero is now verified live"
+2026-W44,chat_opened,24,49,-51,supabase,
+2026-W44,correction_made,76,48,58,supabase,
+2026-W44,lab_rows_viewed,57,34,68,supabase,
+2026-W44,lab_row_added,11,7,57,supabase,
+2026-W44,lab_unit_refused,50,62,-19,supabase,"9 visitors, 40 key+unit labels; unit absent 20 (5 visitors, blood counts + 1 each glucose/globulin/egfr), (blank) 2 (first 10-28T21:48Z), bracketed 0, named 28 (giga/L 7, % 5, mg/dL 3, K/UL and M/UL variants, Tera/L)"
+2026-W44,measurement_refused,0,0,,supabase,"plausible true zero (roadmap-data.ts:203-205); upload_outcome refused 0"
+2026-W44,medication_history_viewed,0,0,,supabase,"0 all-time, eighth carry; HistoryPanel.tsx:318; suspect dead"
+2026-W44,reminder_optin_events,66,35,89,supabase,typed 56 / google-drive 7 / dropbox 3; 65 rows created in window (typed 54 / drive 8 / dropbox 3)
+2026-W44,reminder_optout_events,1,0,,supabase,dropbox 10-28T21:51Z
+2026-W44,reminder_optin_total,395,330,20,supabase,"typed 337 / google-drive 48 / dropbox 10; 389 live, 6 tombstoned"
+2026-W44,reminder_sent,2,1,100,supabase,"10-25T08:28Z drive, 10-29T08:44Z typed, 1 send each; matches 2 nested last_sent dates (2 = 2); next due 11-01 x2, 11-05 x2"
+2026-W44,report_email_sent,66,35,89,supabase,
+2026-W44,report_email_clicked,43,14,207,supabase,"65% click:send EVENT ratio (uncohorted, constant visitor_id)"
+2026-W44,report_email_bounced,1,0,,supabase,10-27T01:36Z; 0 complained (true zero: the bounce proves the webhook path)
+2026-W44,reminder_email_clicked,0,0,,supabase,"0 all-time (roadmap.open.tsx:36); 2 sends, plausible"
+2026-W44,email_landing_empty,10,5,100,supabase,"10 visitors, each 0.8-8.3 s after a click, none with earlier events; recovery 2 of 10"
+2026-W44,email_landing_link_copied,0,0,,supabase,unverified (standalone/email-landing.tsx:83; 0 ever)
+2026-W44,pdf_window_blocked,3,0,,supabase,10-26 x2 / 10-27
+2026-W44,chat_thinking_opened,0,0,,supabase,"unverified (ChatMessageBubble.tsx:25); 1 row ever"
+2026-W44,lpa_unit_selected,22,18,22,supabase,"2.7% of results_viewed; nmol/L->mg/dL 12, mg/dL->nmol/L 8, ->mg/L 2"
+2026-W44,lpa_check_answered,0,0,,supabase,plausible true zero (BloodTestTimeline.tsx:656)
+2026-W44,chat_run_roadmap,0,0,,supabase,"unverified (api.chat.ts:632); 0 ever"
+2026-W44,chat_profile_edit,0,0,,supabase,"unverified (HealthTool.tsx:1152, :1183); 0 ever"
+2026-W44,subscription_action_confirmed,0,3,-100,supabase,plausible (api.subscription-action.ts:61; W43's 3 were Brad's pilot)
+2026-W44,onboarding_step,0,0,,supabase,"NEW SERIES (US-62): dead instrumentation, no emit site in widget-src; only the allow-lists (product-events.ts:137-139, product-events.server.ts:153-154)"
+2026-W44,onboarding_done,0,0,,supabase,NEW SERIES (US-62): dead instrumentation (as onboarding_step)
+2026-W44,signin_opened,0,0,,supabase,NEW SERIES (US-62): dead instrumentation (as onboarding_step)
+2026-W44,mcp_authorize_shown,4,3,33,supabase,"claude 10-26T12:09Z, claude 10-27T03:13Z and 03:16Z, chatgpt 10-28T18:26Z; no burst"
+2026-W44,mcp_authorize_refused,2,2,0,supabase,"unknown-client cimd-redirect-refused x2 (10-27T21:15Z, 10-29T05:55Z)"
+2026-W44,mcp_consent_posted,0,2,-100,supabase,true zero (mcp.$.tsx:351; no non-reviewer flow)
+2026-W44,mcp_connect,0,2,-100,supabase,"non-reviewer 0; via=reviewer 1 excluded (chatgpt/dropbox 10-28T18:26Z, minutes before OpenAI's 18:37Z rejection mail)"
+2026-W44,mcp_connect_failed,1,3,-67,supabase,"reviewer-credentials, claude/dropbox 10-27T03:14Z (likely the Anthropic reviewer)"
+2026-W44,mcp_tool_call,1,182,-99,supabase,"chatgpt read_record ok 10-28T18:29Z (the reviewer)"
+2026-W44,mcp_import,0,4,-100,supabase,plausible (mcp-import.server.ts:282)
+2026-W44,remote_change_applied,12,8,50,supabase,local 10 / cloud 2
+2026-W44,guide_opened,40,26,54,supabase,header 40 / footer 0 / plan_footer 0; 4.9% of results_viewed
+2026-W44,chat_messages,370,175,111,supabase,"299 user / 71 assistant, all claude-sonnet-5-5; 2 fallbacks, both api-error 10-26T15:42-43Z"
+2026-W44,chat_match_events,316,115,175,supabase,"youtube 270 / shopify 28 / widget 17 / discord 1; router_error 212 (W43 1), all the 10-26T10:38-18:48Z Anthropic 400 outage (youtube 209, mostly retries); true misses 19/62 ROUTE = 31% (W43 34%): youtube 10/40, shopify 6/11, widget 3/11 ('are my numbers OK', a menopause note, a layout complaint)"
+2026-W44,sentry_new_issues,7,6,17,sentry,"7E (not-ours), 7B + 7C (scanners, wontfix), 7D (trending cron timeout, triaged-ours), 77 (device persist, PR #295, resolved), 78 + 79 (10-26 outage, fixed); 21 unresolved, userCount 0 on all (twelfth week); movers 4E 257, 72 237, 6X 152; all ledgered; counts soft"
+2026-W44,clarity_roadmap_visits_3d,155,140,11,clarity,"drstanfield 4,338 sessions/3d (-21%), bot-flagged 13.0%, organic shape (mobile 50%, google 2,052, youtube 323); /pages/start 259 (rank 1), /pages/roadmap 155 (rank 5); script errors 3.48% (W43 11.16%); dead clicks 6.92%; microvitamin 1,906 (-16%), bot 31.5%, script errors 6.14% (8.2%)"
+2026-W44,feedback_organic,3,2,50,gmail+supabase+github,"0 feedback_submissions rows; 1 direct email 10-30 after a call with Brad (six product points; unanswered, unread); 2 replies 10-28 and 10-29 from the urine-creatinine user (lipid targets and alarm wording; Brad answered 10-28 and 10-29T06:31Z, the 10-29T11:02Z reply is unanswered); 0 from-connector issues"
+2026-W44,ci_main_red,32,2,1500,github,"33 red push runs, 32 on main: 10-24T20:52Z-10-25T09:42Z 26 (W43 npm audit, green from 2be7879 10-25T11:09Z); 10-26T07:01-07:21Z 6 (codex-review.test.ts:2038 asserts Brad's local paths); 10-31T15:00Z 1 (app-routes.server.test.ts:239 429 vs 401 flake, PR #422 open); green at bf820a6 10-31T17:15Z"
