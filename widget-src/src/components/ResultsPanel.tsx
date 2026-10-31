@@ -534,13 +534,6 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
     return () => clearTimeout(timer);
   }, []);
 
-  // Funnel signal: the user reached actual results (suggestions rendered).
-  // trackProductEvent self-throttles to once per tab session.
-  const hasSuggestions = (results?.suggestions?.length ?? 0) > 0;
-  useEffect(() => {
-    if (hasSuggestions) trackProductEvent('results_viewed');
-  }, [hasSuggestions]);
-
   // Detect new/changed suggestions
   useEffect(() => {
     const suggestions = results?.suggestions ?? [];

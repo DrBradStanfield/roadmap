@@ -96,6 +96,7 @@ import {
   getBackendKind,
 } from '../lib/roadmap-data';
 import { trackABImpression, trackABConversion, trackProductEvent } from '../lib/server-api';
+import { observeVisibility } from '../lib/observe-visibility';
 import { activeRowIndex, routeTasksToSaves, slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import type { Grading } from '../lib/blood-test-cell';
 import type { ApiDocument } from '../lib/api-types';
@@ -844,6 +845,32 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
 
 
 
+  // US-62 AC4: the redesign's denominator, once per tab, with the layout chosen
+  // at mount (a later resize does not change it). Shopify only, like every event.
+  useEffect(() => {
+    trackProductEvent('tool_opened', { device: isMobile ? 'phone' : 'desktop' });
+  }, []); // at mount only
+
+  // US-62 AC5: `results_viewed` once the plan is on screen, not when it mounts
+  // (all three phone slides mount). On a phone, the Plan tab is active; this
+  // reads activeTab, not Swiper, so it outlives Swiper. On desktop, the plan
+  // column's top is in the upper three quarters of the viewport (a margin, not
+  // a ratio: a tall plan never reaches 25% visible). Once per tab by the throttle.
+  const hasSuggestions = (results?.suggestions?.length ?? 0) > 0;
+  const planColumnRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!hasSuggestions) return;
+    if (isMobile) {
+      if (activeTab === 'plan') trackProductEvent('results_viewed');
+      return;
+    }
+    const el = planColumnRef.current;
+    if (!el) return;
+    return observeVisibility(el, (visible) => {
+      if (visible) trackProductEvent('results_viewed');
+    }, { rootMargin: '0px 0px -25% 0px' });
+  }, [hasSuggestions, isMobile, activeTab]);
+
   // Swiper ref for programmatic slide control (tab button clicks)
   const swiperRef = useRef<SwiperType | null>(null);
   // The Swiper renders only under isMobile: a viewport crossing the
@@ -1314,7 +1341,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
           <div className="health-tool-left">
             <fieldset className="health-form-lock" disabled={isDeleting}><InputPanel {...inputPanelProps} /></fieldset>
           </div>
-          <div className="health-tool-right">
+          <div className="health-tool-right" ref={planColumnRef}>
             <ResultsPanel {...resultsPanelProps} />
           </div>
           {isWideDesktop && (
