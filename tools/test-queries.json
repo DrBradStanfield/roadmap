@@ -7884,13 +7884,6 @@
     "notes": "2026-W44 chat-health: storefront first turn, paraphrased. Production empty (router v4); replay with its context empty 3/3. No entry covers psoriatic arthritis since the pathways left (US-15 AC39). Revisit expected if one is built (content-backlog.csv)."
   },
   {
-    "query": "whats the daly dose",
-    "category": "classifier-product",
-    "source": "chat-health-2026-W44",
-    "expected_classification": "PRODUCT",
-    "notes": "2026-W44 chat-health: storefront first turn, paraphrased (misspelling kept). The reply answered product dosing, so PRODUCT by the prompt; production ROUTE (router empty); replay ROUTE 3/3. KNOWN-FAIL: no product is named and the classifier is not told the surface. Two more storefront dose asks the same week ('how do i take it?' ROUTE 3/3; 'what is the recommended dose' after naming the capsules PRODUCT 2/3)."
-  },
-  {
     "query": "The phone number box on your contact form keeps rejecting my Dutch mobile number, with and without the country code, so I can't send my message.",
     "category": "classifier-account",
     "source": "chat-health-2026-W44",

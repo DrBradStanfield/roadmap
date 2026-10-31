@@ -69,9 +69,9 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   comments GREETING (W41: 35 of 55 events; 16 substantive health claims and
   one direct question among them, the rest reactions, thanks and spam).
   First-person vendor spam read as a health claim (W43: 19-comment burst, ROUTE
-  14, three replies); SPAM label since 10-29 (AC41), yet W44 logged 0 SPAM rows: a
-  10-29 book-promo trio got GREETING (no reply either way), and a lab's
-  self-promotion without a question got ROUTE 5/5 and a reply.
+  14, three replies); SPAM label from 10-29T22:01Z (AC41). Check commit times
+  before reading a label count: W44's book-promo trio came 10 h before it. A lab's
+  self-promotion with no question still gets ROUTE 5/5 and a reply.
 - **2026-08-10 [retrieval]** Term presence in the visible summary is necessary
   but NOT sufficient: before any summary edit, check what the router picked
   INSTEAD. On the Haiku router, steals (a theme neighbour beating the named
@@ -145,7 +145,8 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   with and without error rows (nearest-rank from W37 on). Classifier ERROR
   fails open to the router by design; router failures reach Sentry only as
   `warning`-level events (`reportRouterFailure`), so a burst raises no alert.
-  10-26 (W44): an 8-hour Anthropic 400 outage wrote 212 ERROR rows at ~130 ms.
+  10-26 (W44): our own spend limit made every call 400 for 8 h (Brad raised it;
+  sentry-fix ledger): check the cap first. 212 ERROR rows at ~130 ms.
   They collapse the all-rows median to 134.5 ms: report latency and cache hit on
   non-error rows. YouTube retries each failed comment every tick (64 → 209 rows).
 - **2026-09-29 [content]** Weekly knowledge lint (US-43): steps, rules, schemas, cost and baseline in [notes/weekly-lint.md](notes/weekly-lint.md).
