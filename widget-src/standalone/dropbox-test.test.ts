@@ -23,7 +23,7 @@ const { cloud } = vi.hoisted(() => ({
 vi.mock('../src/storage', async (importOriginal) => {
   const real = await importOriginal<typeof import('../src/storage')>();
   /** A connected Dropbox whose files live in memory. */
-  class InMemoryDropbox extends real.MemoryAdapter {
+  class FakeDropboxAdapter extends real.MemoryAdapter {
     static async completeRedirect() { return null; }
     constructor() { super(cloud.current as InstanceType<typeof real.MemoryCloud>); }
     isConnected() { return true; }
@@ -38,7 +38,7 @@ vi.mock('../src/storage', async (importOriginal) => {
       return { ...result, body: { ...body, measurements: body.measurements.filter(m => !m.id.startsWith('dbx_test_')) } };
     }
   }
-  return { ...real, DropboxAdapter: InMemoryDropbox };
+  return { ...real, DropboxAdapter: FakeDropboxAdapter };
 });
 
 const { MemoryAdapter, MemoryCloud, SyncManager } = await import('../src/storage');
