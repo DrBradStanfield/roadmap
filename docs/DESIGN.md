@@ -101,11 +101,6 @@ System font stack — renders native on every OS with zero FOIT/FOUT:
 - Full-width, `10px 16px` padding, `14px` font, `6px` radius (slightly tighter than base)
 - Used at top of input panel on mobile
 
-**Mobile View Plan (`.mobile-view-plan-btn`)**
-- Fixed, full-width, bottom of screen on mobile
-- Background: `var(--color-brand)` (#00a38b), radius 8px, padding 14px 20px
-- `box-shadow: 0 -2px 12px rgba(0,0,0,0.15)` — lifts above page
-
 **Ghost / Link**
 - No background, `#0066cc` text, underline on hover
 - Use: Tertiary actions, "View history" links
@@ -184,10 +179,10 @@ System font stack — renders native on every OS with zero FOIT/FOUT:
 - Use: Switch individual field units (e.g., lbs ↔ kg)
 
 ### Bottom Tab Bar (`.hr-tabbar`, `BottomTabBar.tsx`)
-- Sticky at the widget's foot (never fixed), frosted light grey, `border-top: 1px solid` the grey border
+- Sticky at the widget's foot (never fixed), opaque `#f8f8fa` (no blur: text must not show through), `border-top: 1px solid` the grey border
 - Each tab: `flex: 1`, a 26px line icon over a `10px` label, weight `500`, `--color-gray-medium` default
 - Active (`.hr-tab--active`): `--color-brand-text`
-- Hidden on desktop (shown only at ≤768px), and while the widget is off screen
+- Hidden on desktop (shown only at ≤768px); a sticky child never leaves the widget, so it never floats over the page
 
 ### Pill Badges
 - Radius: `9999px`
@@ -248,7 +243,7 @@ Desktop: `grid-template-columns: 5fr 6fr; gap: 32px`
 
 ### Mobile Specifics
 - Bottom tab bar, as on the iPhone: My data, My plan, Chat; icons over labels, the active tab in `--color-brand-text`
-- Sticky at the widget's foot, never fixed, hidden while the widget is off screen; pads for `env(safe-area-inset-bottom)`
+- Sticky at the widget's foot, never fixed, so it shows only with the widget; pads for `env(safe-area-inset-bottom)`
 - Plain React state picks the tab; the other panels stay mounted but hidden, and each tab keeps its scroll position
 - A slim top bar holds the storage button (Sign in) above every tab
 - Stats grid: `repeat(2, 1fr)` on mobile

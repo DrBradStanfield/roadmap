@@ -118,10 +118,6 @@ input[type="number"] {
     padding: 0;
   }
 
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .section-card {
     padding: 12px !important;
     margin-left: 10px;
@@ -147,8 +143,12 @@ input[type="number"] {
      the cards' 10px gutter. */
   .hr-top-bar {
     display: flex;
+    flex-wrap: wrap;
+    align-items: center;
     justify-content: flex-end;
+    gap: 8px;
     padding: 8px 10px 0;
+    font-size: 12px;
   }
 
   /* The phone's panels; only the active one shows (the others are [hidden]). */
@@ -170,23 +170,17 @@ input[type="number"] {
   }
 
   /* US-20 AC6: the bottom tab bar, as on the iPhone. Sticky at the widget's
-     foot, never fixed: it cannot leave the widget, so it never floats over the
-     page above or below. Off screen it hides but keeps its height, so the page
-     under the widget does not move. */
+     foot, never fixed: a sticky child cannot leave its container, so it never
+     floats over the page above or below the widget. Opaque, so nothing shows
+     through it. */
   .hr-tabbar {
     position: sticky;
     bottom: 0;
     z-index: 20;
     display: flex;
-    background: rgba(248, 248, 250, 0.97);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
+    background: #f8f8fa;
     border-top: 1px solid var(--color-gray-border);
     padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
-
-  .hr-tabbar--offscreen {
-    visibility: hidden;
   }
 
   .hr-tab {
@@ -685,6 +679,17 @@ input[type="number"] {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
+}
+
+/* Two tiles a row on a phone. After the base rule, or the base rule wins. A
+   long title ("Ideal Body Weight (IBW)") wraps rather than spill at 320px. */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .stats-grid .stat-label {
+    white-space: normal;
+  }
 }
 
 .stat-card {
@@ -1959,7 +1964,7 @@ input[type="number"] {
     bottom: 0;
     height: 51px;
     padding-bottom: env(safe-area-inset-bottom, 0px);
-    background: rgba(248, 248, 250, 0.97);
+    background: #f8f8fa;
     border-top: 1px solid var(--color-gray-border);
   }
 }
@@ -2532,10 +2537,11 @@ input[type="number"] {
 }
 
 @media (max-width: 768px) {
+  /* Clear of the bottom tab bar (US-20 AC6). */
   .floating-upload-indicator {
     left: 16px;
     right: 16px;
-    bottom: 16px;
+    bottom: calc(66px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -4034,9 +4040,13 @@ input[type="number"] {
     margin: 0 10px;
     min-height: 300px;
   }
+  /* A fixed height: the messages scroll inside, so the chat's auto-scroll
+     works and the composer stays on screen. */
   .hr-tabpanel .health-tool-chat .chat-embed {
-    min-height: calc(100vh - 150px);
-    min-height: calc(100svh - 150px);
+    flex: none;
+    height: calc(100vh - 150px - env(safe-area-inset-bottom, 0px));
+    height: calc(100svh - 150px - env(safe-area-inset-bottom, 0px));
+    min-height: 300px;
   }
 
   .chat-embed .chat-header-sub {
@@ -5236,5 +5246,20 @@ input[type="number"] {
   .us-product,
   .us-ownership {
     display: none !important;
+  }
+}
+
+/* US-20 AC6: on a phone, what scrolls into view stops clear of the bottom tab
+   bar, and pop-overs open above it (the bar is z-index 20). After the base
+   rules, so these win. */
+@media (max-width: 768px) {
+  .feedback-form,
+  .bt-move-panel {
+    scroll-margin-bottom: 60px;
+  }
+  .supplement-dropdown,
+  .bp-info-tooltip,
+  .upload-lab-tooltip {
+    z-index: 21;
   }
 }

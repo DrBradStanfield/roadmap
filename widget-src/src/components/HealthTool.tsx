@@ -890,12 +890,18 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     else if (top < 0) window.scrollTo(0, window.scrollY + top);
   }, [activeTab]);
 
-  // US-20 AC6: the tab bar shows only while the widget is on screen.
-  const [widgetOnScreen, setWidgetOnScreen] = useState(true);
+  // US-16 AC2 on a phone: after a chat edit switches to My data, the filled
+  // cell (a matrix's highlighted cell, or the plain field) is scrolled to the
+  // middle, clear of the tab bar, and focused. After the commit, so after the
+  // tab's own scroll restore.
+  const [revealCell, setRevealCell] = useState<{ field: string } | null>(null);
   useEffect(() => {
-    if (!isMobile || !rootRef.current) return;
-    return observeVisibility(rootRef.current, setWidgetOnScreen);
-  }, [isMobile]);
+    if (!revealCell) return;
+    const panel = rootRef.current?.querySelector('.health-input-panel');
+    const cell = panel?.querySelector<HTMLElement>('.bt-input-active') ?? document.getElementById(revealCell.field);
+    cell?.scrollIntoView({ block: 'center' });
+    cell?.focus({ preventScroll: true });
+  }, [revealCell]);
 
   // US-16 AC2: a sex or height the chat proposed, waiting for the user's Save.
   // The form writes these on change, so nothing reaches the form until then.
@@ -1151,14 +1157,14 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     // While the store holds an erase the screen does not show, the reply comes
     // from the conversation the erase tombstones: none of it applies (US-16 AC2a).
     if (eraseUnshown()) return;
-    let hasFieldEdit = false;
+    let editedField: string | null = null;
     const stated = new Set(edits.flatMap(e => (e.kind === 'medication' ? [e.medicationKey] : [])));
     // Undo restores every medication row the reply changed, the last edit
     // first. Field edits are drafts the person saves or discards.
     const undo: NonNullable<typeof medUndo> = [];
     for (const edit of edits) {
       switch (edit.kind) {
-        case 'field': applyFieldEdit(edit); hasFieldEdit = true; break;
+        case 'field': applyFieldEdit(edit); editedField ??= edit.field; break;
         case 'medication': undo.unshift(...applyMedicationEdit(edit, stated)); break;
         case 'profile': break; // merged below
         // A kind this build does not know writes nothing (an older server's reply, or a newer one's).
@@ -1178,7 +1184,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     }
     // Mobile hand-off: bring the user to the form so they SEE the pre-filled
     // cell + Save button (they were on the chat tab). Mirror handleAutoFocusEmail.
-    if (hasFieldEdit && isMobileRef.current) selectTab('input');
+    if (editedField && isMobileRef.current) {
+      selectTab('input');
+      setRevealCell({ field: editedField });
+    }
   }, [applyFieldEdit, applyMedicationEdit, unitSystem, eraseUnshown, selectTab]);
 
   const undoMedEdit = useCallback(() => {
@@ -1320,7 +1329,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
               />
             </div>
           ))}
-          <BottomTabBar activeTab={activeTab} onTabChange={selectTab} idPrefix={tabIds} onScreen={widgetOnScreen} />
+          <BottomTabBar activeTab={activeTab} onTabChange={selectTab} idPrefix={tabIds} />
         </>
       ) : (
         <div className="health-tool-content">

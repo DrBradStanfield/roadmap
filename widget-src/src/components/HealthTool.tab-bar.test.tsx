@@ -2,10 +2,12 @@
 /**
  * US-20 AC6, the phone's bottom tab bar, as the person sees the whole widget:
  * three tabs (My data, My plan, Chat) pick one panel each; arrow keys move
- * between them; each tab keeps its own scroll position; the bar hides while the
- * widget is off screen and is never fixed to the viewport; the chat's draft
- * survives a switch. US-20 AC7: the storage button sits in a top bar seen from
- * every tab. (Swiper, the old carousel, is gone: US-20 AC2's hazard with it.)
+ * between them; each tab keeps its own scroll position; the bar is sticky inside
+ * the widget, opaque, never fixed to the viewport; the chat's draft survives a
+ * switch. US-20 AC2: crossing the breakpoint mid-session never crashes. US-20
+ * AC7: the storage button sits in a top bar seen from every tab. jsdom ignores
+ * media queries, so the phone CSS is checked as text here and by computed style
+ * in tools/webkit-verify.mjs.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -26,38 +28,32 @@ vi.mock('../lib/chat-api', async original => ({
 }));
 import { HealthTool } from './HealthTool';
 
-/** IntersectionObserver stand-in: the test decides when the widget is on screen. */
-const observers: Array<{ el: Element; cb: IntersectionObserverCallback }> = [];
-class FakeObserver {
-  constructor(private cb: IntersectionObserverCallback) {}
-  observe(el: Element) { observers.push({ el, cb: this.cb }); }
-  disconnect() {}
-  unobserve() {}
-  takeRecords() { return []; }
-}
-function widgetOnScreen(visible: boolean) {
-  const watched = observers.filter((o) => o.el.matches('.health-tool'));
-  expect(watched.length).toBeGreaterThan(0);
-  act(() => {
-    for (const o of watched) o.cb([{ isIntersecting: visible, target: o.el } as IntersectionObserverEntry], {} as IntersectionObserver);
-  });
-}
-
 const stops: Array<() => void> = [];
 let phone = true;
 let scrollY = 0;
+const heard = new Set<{ q: string; listener: (e: { matches: boolean }) => void }>();
+function turn(toPhone: boolean) {
+  act(() => {
+    phone = toPhone;
+    for (const h of [...heard]) h.listener({ matches: h.q.includes('max-width') ? phone : !phone });
+  });
+}
 const scrollTo = vi.fn((_x: number, y: number) => { scrollY = y; });
 
 beforeEach(async () => {
   phone = true;
   scrollY = 0;
   scrollTo.mockClear();
-  observers.length = 0;
   localStorage.clear(); sessionStorage.clear();
+  // A live matchMedia: flipping `phone` and calling `turn()` crosses 768px.
+  heard.clear();
   vi.stubGlobal('matchMedia', (q: string) => ({
-    matches: q.includes('max-width') ? phone : !phone, media: q, addEventListener() {}, removeEventListener() {},
+    get matches() { return q.includes('max-width') ? phone : !phone; }, media: q,
+    addEventListener: (_: string, listener: (e: { matches: boolean }) => void) => heard.add({ q, listener }),
+    removeEventListener: (_: string, listener: (e: { matches: boolean }) => void) => {
+      for (const h of heard) if (h.listener === listener) heard.delete(h);
+    },
   }));
-  vi.stubGlobal('IntersectionObserver', FakeObserver);
   vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('Synthetic test: no network'); }));
   vi.spyOn(window, 'scrollY', 'get').mockImplementation(() => scrollY);
   vi.stubGlobal('scrollTo', scrollTo);
@@ -165,17 +161,7 @@ describe('US-20 AC6: the bottom tab bar', () => {
     expect(scrollTo).not.toHaveBeenCalled();
   });
 
-  it('the bar hides while the widget is off screen, and comes back with it', async () => {
-    const view = await renderPhone();
-    const bar = view.getByRole('tablist');
-    expect(bar.classList.contains('hr-tabbar--offscreen')).toBe(false);
-    widgetOnScreen(false);
-    expect(bar.classList.contains('hr-tabbar--offscreen')).toBe(true);
-    widgetOnScreen(true);
-    expect(bar.classList.contains('hr-tabbar--offscreen')).toBe(false);
-  });
-
-  it('the bar lives inside the widget, sticky, never fixed; the old fixed plan button is gone', async () => {
+  it('the bar lives inside the widget, sticky, opaque, never fixed; the old fixed plan button is gone', async () => {
     const view = await renderPhone();
     expect(view.getByRole('tablist').closest('.health-tool')).not.toBeNull();
     expect(view.queryByText('See Your Personalized Plan')).toBeNull();
@@ -189,8 +175,8 @@ describe('US-20 AC6: the bottom tab bar', () => {
     expect(rule('.hr-tabbar')).toContain('bottom: 0;');
     expect(rule('.hr-tabbar')).toContain('padding-bottom: env(safe-area-inset-bottom, 0px);');
     expect(rule('.hr-tabbar')).not.toContain('fixed');
-    // Hidden off screen without losing its height, so the page below never moves.
-    expect(rule('.hr-tabbar--offscreen')).toContain('visibility: hidden;');
+    expect(rule('.hr-tabbar')).toContain('background: #f8f8fa;'); // opaque: nothing shows through
+    expect(css).not.toContain('backdrop-filter');
     expect(rule('.hr-tab--active')).toContain('color: var(--color-brand-text);');
     expect(css).not.toMatch(/swiper|mobile-view-plan-btn|mobile-tab/i);
   });
@@ -205,6 +191,19 @@ describe('US-20 AC6: the bottom tab bar', () => {
     fireEvent.click(tabs.getByRole('tab', { name: 'Chat' }));
     expect(view.getByPlaceholderText('Ask a follow-up…')).toBe(box);
     expect(box.value).toBe('What about my LDL?');
+  });
+
+  it('US-20 AC2: crossing the breakpoint mid-session never crashes, and the tab survives', async () => {
+    const view = await renderPhone();
+    fireEvent.click(within(view.getByRole('tablist')).getByRole('tab', { name: 'My plan' }));
+    turn(false); // widened past 768px: the desktop columns
+    expect(view.queryByRole('tablist')).toBeNull();
+    expect(view.container.querySelector('.health-tool-content .health-results-panel')).not.toBeNull();
+    turn(true); // and back
+    const plan = within(view.getByRole('tablist')).getByRole('tab', { name: 'My plan' });
+    expect(plan.getAttribute('aria-selected')).toBe('true');
+    expect(panelOf(view, plan).hidden).toBe(false);
+    expect(panelOf(view, plan).querySelector('.health-results-panel')).not.toBeNull();
   });
 
   it('desktop has no tab bar and no tab panels', async () => {
@@ -228,7 +227,8 @@ describe('US-20 AC7: the top bar', () => {
     }
     expect(view.getAllByRole('button', { name: 'Sign in' })).toHaveLength(1); // not in the input header too
     const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8').replace(/\s+/g, ' ');
-    expect(css).toContain('.hr-top-bar { display: flex; justify-content: flex-end; padding: 8px 10px 0; }'); // the cards' 10px gutter
+    // The cards' 10px gutter, and the header's layout, so a long reconnect label wraps.
+    expect(css).toContain('.hr-top-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; padding: 8px 10px 0; font-size: 12px; }');
   });
 
   it('without a storage button, no top bar', async () => {

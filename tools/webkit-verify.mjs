@@ -46,11 +46,12 @@ export function collectMatrixLayout(root) {
 }
 
 // US-20 AC6: on a phone, the bottom tab bar is inside the widget, sticky (never
-// fixed), on screen while the widget is, and the tab picks the one panel shown.
+// fixed), opaque, on screen while the widget is, and the tab picks the one panel shown.
 export function assertTabBar(data) {
-  assert(!data.error, data.error);
   assert(data.insideWidget, 'tab bar outside the widget');
   assert.equal(data.position, 'sticky', 'tab bar is not sticky');
+  assert(/^rgb\(/.test(data.background) || /^rgba\(.*,\s*1\)$/.test(data.background), `tab bar is see-through (${data.background})`);
+  assert(!data.backdropFilter || data.backdropFilter === 'none', 'tab bar blurs what is behind it');
   assert(!data.oldPlanButton, 'the old fixed plan button is back');
   assert(data.visible && data.bottom <= data.viewportHeight + 1 && data.top >= 0, 'tab bar not on screen with the widget');
   assert.deepEqual(data.tabs, ['My data', 'My plan', 'Chat'], 'tab labels changed');
@@ -63,6 +64,8 @@ export function collectTabBar(bar) {
   const data = {
     insideWidget: !!bar.closest('.health-tool'),
     position: getComputedStyle(bar).position,
+    background: getComputedStyle(bar).backgroundColor,
+    backdropFilter: getComputedStyle(bar).backdropFilter || getComputedStyle(bar).webkitBackdropFilter,
     visible: getComputedStyle(bar).visibility === 'visible',
     top: rect.top, bottom: rect.bottom, viewportHeight: window.innerHeight,
     oldPlanButton: !!document.querySelector('.mobile-view-plan-btn'),

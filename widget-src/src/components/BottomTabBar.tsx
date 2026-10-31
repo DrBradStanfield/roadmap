@@ -30,15 +30,13 @@ export const panelDomId = (prefix: string, tab: TabId) => `${prefix}-panel-${tab
 
 /**
  * US-20 AC6: the phone's bottom tab bar. Sticky at the foot of the widget, never
- * fixed to the viewport, so it cannot float over the page around the widget;
- * `onScreen` (an IntersectionObserver on the widget) hides it while the widget
- * is off screen, without changing its height, so nothing below the widget moves.
+ * fixed to the viewport: a sticky child cannot leave its container, so it never
+ * floats over the page around the widget.
  */
-export function BottomTabBar({ activeTab, onTabChange, idPrefix, onScreen }: {
+export function BottomTabBar({ activeTab, onTabChange, idPrefix }: {
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
   idPrefix: string;
-  onScreen: boolean;
 }) {
   // Arrow keys move along the tabs and wrap; Home and End jump to the ends.
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -51,7 +49,7 @@ export function BottomTabBar({ activeTab, onTabChange, idPrefix, onScreen }: {
     document.getElementById(tabDomId(idPrefix, tab))?.focus();
   };
   return (
-    <div className={`hr-tabbar no-print${onScreen ? '' : ' hr-tabbar--offscreen'}`} role="tablist" aria-label="Sections" onKeyDown={onKeyDown}>
+    <div className="hr-tabbar no-print" role="tablist" aria-label="Sections" onKeyDown={onKeyDown}>
       {TABS.map(({ id, label, icon }) => (
         <button
           key={id}
