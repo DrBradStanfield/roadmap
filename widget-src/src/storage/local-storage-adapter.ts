@@ -8,7 +8,9 @@
  * Caveat (surfaced to the user elsewhere): localStorage is device-only and can
  * be evicted by the browser. The cloud file is the durable store; this is a cache.
  */
-import { DOC_KEY_PREFIX, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
+import {
+  DOC_KEY_PREFIX, localHealthWritesStopped, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem, stopLocalHealthWrites,
+} from '../lib/storage';
 import {
   ConflictError,
   ROADMAP_FILE_NAME,
@@ -34,9 +36,9 @@ export const NAMED_FILE_PREFIX = 'health_roadmap_file_v2:';
 // content-free key set and removed at once reaches them as `storage` events,
 // leaving no residue.
 const LOG_OFF_SIGNAL_KEY = 'health_roadmap_log_off_signal';
-let roadmapWritesStopped = false;
+// The flag itself is in lib/storage, shared with the mirror and the drafts.
 export function stopRoadmapLocalWrites(): void {
-  roadmapWritesStopped = true;
+  stopLocalHealthWrites();
   signalLogOff();
 }
 /** Tell the other tabs. A full localStorage drops the write silently, so
@@ -46,7 +48,7 @@ export function signalLogOff(): void {
   safeRemoveItem(LOG_OFF_SIGNAL_KEY);
 }
 function latchOnLogOffSignal(event: Event): void {
-  if ((event as StorageEvent).key === LOG_OFF_SIGNAL_KEY) roadmapWritesStopped = true;
+  if ((event as StorageEvent).key === LOG_OFF_SIGNAL_KEY) stopLocalHealthWrites();
 }
 /** Only a cloud-mode page listens: there the device copy is a mirror. A local
  *  page's device copy is its only store, so latching would lose its edits.
@@ -55,7 +57,7 @@ export function latchOnOtherTabsLogOff(): void {
   if (typeof window !== 'undefined') window.addEventListener('storage', latchOnLogOffSignal);
 }
 export function roadmapLocalWritesStopped(): boolean {
-  return roadmapWritesStopped;
+  return localHealthWritesStopped();
 }
 
 // Content-free invalidation only: no message ids, text, health values or times.
