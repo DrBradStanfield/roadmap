@@ -2,7 +2,7 @@
  * Discord bot — reuses the Health Roadmap chat pipeline to answer questions in
  * Brad's Discord server.
  *
- * Auto-starts on module import (same pattern as reminder-cron.server.ts).
+ * Auto-starts on module import (same pattern as reminder-v2-cron.server.ts).
  * Gated by `DISCORD_BOT_TOKEN` AND (`FLY_APP_NAME` OR `DISCORD_FORCE_START=true`).
  * The `FLY_APP_NAME` gate prevents Remix dev hot-reloads from spawning duplicate
  * WebSocket connections during `npm run dev`.
@@ -810,5 +810,5 @@ export async function persistConversation(p: PersistParams): Promise<void> {
     .eq('id', conversationId);
 }
 
-// Auto-start on module import (same pattern as reminder-cron.server.ts)
+// Auto-start on module import (same pattern as reminder-v2-cron.server.ts)
 startDiscordBot();

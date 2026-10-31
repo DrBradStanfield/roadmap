@@ -10,7 +10,7 @@
  * The storefront (Liquid section blog-newspaper-header) reads the metafield
  * to render a "Trending" sidebar.
  *
- * Mirrors the architecture of reminder-cron.server.ts: setInterval at hourly
+ * Mirrors the architecture of reminder-v2-cron.server.ts: setInterval at hourly
  * cadence, processes on first tick ≥ TARGET_HOUR_NZ, distributed lock via Supabase.
  */
 import * as Sentry from '@sentry/react-router';
