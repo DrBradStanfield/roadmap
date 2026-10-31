@@ -13,6 +13,8 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DOCS = ['CLAUDE.md', 'docs/deploy-runbook.md'];
+// Everything else that tells a reader how the Shopify deploy is run.
+const FLAG_DOCS = [...DOCS, 'docs/architecture-v2/ops-deployment.md', 'docs/reference.md', 'widget-src/vite.config.shopify-prod.ts'];
 const read = (f: string) => readFileSync(join(ROOT, f), 'utf8').split('\n');
 
 // Paths in this repo's scripts/ and extensions/ named inside `code` spans.
@@ -37,9 +39,11 @@ describe('deploy docs name what exists', () => {
   it('the Shopify deploy commands use the flag deploy.yml uses, not --force', () => {
     const workflow = readFileSync(join(ROOT, '.github/workflows/deploy.yml'), 'utf8');
     expect(workflow).toMatch(/shopify app deploy --allow-updates/);
-    // Each command as written: from `shopify app deploy` to the end of its code span or line.
-    const commands = DOCS.flatMap((doc) =>
-      read(doc).flatMap((text, i) => [...text.matchAll(/shopify app deploy[^`\n]*/g)].map(([c]) => `${doc}:${i + 1} ${c.trim()}`)),
+    // Each command as written: from `shopify app deploy` (or the diagram's bare
+    // `deploy --flag`) to the end of its code span or line.
+    const commands = FLAG_DOCS.flatMap((doc) =>
+      read(doc).flatMap((text, i) =>
+        [...text.matchAll(/shopify app deploy[^`\n]*|\bdeploy --[\w-]+/g)].map(([c]) => `${doc}:${i + 1} ${c.trim()}`)),
     );
     expect(commands.length).toBeGreaterThan(0);
     expect(commands.filter((c) => /--force\b/.test(c))).toEqual([]);
