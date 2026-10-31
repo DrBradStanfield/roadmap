@@ -6,6 +6,7 @@ import {
   labReviewJson, labSaveSummaryJson, settledJson,
 } from './app-doors';
 import { applyEdit, newRecord } from './my-data';
+import { erasePhoneJson } from './erase';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { chatContextOf } from '../../packages/health-core/src/chat-context';
 
@@ -222,5 +223,13 @@ describe('US-52 AC13d / US-14 AC4: a held metadata-only row, as the web\'s card 
     other.documents.push(heldRow({ type: 'pathology_report', title: 'Blood test results', extractedText: '', metadata: { labArchive: true } }), heldRow({ fileRef: 'Clinic letters/x.pdf', contentHash: 'sha256-cc' }));
     expect(JSON.parse(reviewOf(letter, other, 'Letter.pdf', 'sha256-aa')).document.held).toBe(false);
     expect(JSON.parse(reviewOf(letter, other, 'Letter.pdf', 'sha256-cc')).document.held).toBe(false);
+  });
+});
+
+describe('US-25 AC6b: a settled door marks words meant for the person (review R8)', () => {
+  it('a Refusal settles as refused; any other failure does not', async () => {
+    expect(await door(() => erasePhoneJson('[]', null, NOW, DEVICE)))
+      .toEqual({ ok: false, message: 'This file is not a health record.', refused: true });
+    expect(await door(() => erasePhoneJson('{"hello":1}', null, NOW, DEVICE))).toMatchObject({ ok: false, refused: false });
   });
 });

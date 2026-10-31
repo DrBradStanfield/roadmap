@@ -12,6 +12,10 @@ vi.mock('../lib/server-api', async importOriginal => ({ ...await importOriginal<
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
 afterEach(cleanup);
+// InputPanel reads the phone breakpoint (US-62 AC8); jsdom has no matchMedia. Desktop unless a test sets `phone`.
+let phone = false;
+vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('max-width') ? phone : !phone, media: q, addEventListener() {}, removeEventListener() {} }));
+afterEach(() => { phone = false; });
 
 describe('US-35 AC17 — the PSA input takes the unit table range', () => {
   const renderPanel = (unitSystem: 'si' | 'conventional', psa?: number) => {
@@ -48,4 +52,22 @@ describe('US-35 AC17 — the PSA input takes the unit table range', () => {
     fireEvent.blur(over.psa!);
     expect(over.onChange).toHaveBeenCalledWith('psa', undefined);
   });
+});
+
+// US-62 AC12: on a phone the PSA field sits where it did, with the same range.
+it('on a phone too, the PSA input keeps the unit table range', () => {
+  phone = true;
+  const inputs = { sex: 'male' as const, heightCm: 180, birthYear: 1960, birthMonth: 1 };
+  const props = {
+    inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si', onUnitSystemChange: vi.fn(),
+    unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
+    labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
+    onMedicationChange: vi.fn(), screenings: [{ id: 's1', screeningKey: 'prostate_discussion', value: 'will_screen', updatedAt: '' }],
+    onScreeningChange: vi.fn(), supplements: [], onSupplementChange: vi.fn(), onSupplementDelete: vi.fn(),
+    scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false, fieldsSaved: 0,
+    hasApiResponse: false, formStage: 3 as const, planBasis: { age: 66 }, grading: {},
+  };
+  const { container } = render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />);
+  expect(container.querySelector('.md-row')).not.toBeNull(); // the phone layout is the one rendered
+  expect(container.querySelector<HTMLInputElement>('#psa-input')!.max).toBe(String(UNIT_DEFS.psa.validationRange.si.max));
 });

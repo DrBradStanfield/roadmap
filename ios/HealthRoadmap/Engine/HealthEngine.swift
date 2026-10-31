@@ -11,13 +11,24 @@ actor HealthEngine {
         case missingBundle
         case loadFailed(String)
         case callFailed(String)
+        /// The engine's words for the person (its `Refusal`, ios/engine/my-data.ts), shown as they are.
+        case refused(String)
 
         var errorDescription: String? {
             switch self {
             case .missingBundle: "The engine is missing. Run `node ios/scripts/build-engine.mjs`, then build again."
-            case .loadFailed(let why): "The engine failed to load: \(why)"
-            case .callFailed(let why): "The engine failed: \(why)"
+            // Plain words only: the reason is the engine's exception text, for code (SyncProblem, tests), never the person (US-25 AC6b).
+            case .loadFailed: "Something went wrong as the app started. Close it and open it again."
+            case .callFailed: "Something went wrong inside the app."
+            case .refused(let words): words
             }
+        }
+
+        /// A thrown JavaScript `Refusal`, whose words stay visible; nil for any other (review R8).
+        static func refusal(_ error: JSValue) -> EngineError? {
+            guard error.isObject, error.objectForKeyedSubscript("name")?.toString() == "Refusal",
+                  let words = error.objectForKeyedSubscript("message")?.toString() else { return nil }
+            return .refused(words)
         }
     }
 
@@ -218,7 +229,10 @@ actor HealthEngine {
     func settled<T: Decodable>(_ type: T.Type, _ name: String, _ arguments: [Any]) throws -> T {
         _ = try call(name, arguments)
         let answer = try JSONDecoder().decode(Settled<T>.self, from: Data(call("settledJson", []).utf8))
-        guard answer.ok, let value = answer.value else { throw EngineError.callFailed(answer.message ?? "no answer") }
+        guard answer.ok, let value = answer.value else {
+            if answer.refused == true, let words = answer.message { throw EngineError.refused(words) }
+            throw EngineError.callFailed(answer.message ?? "no answer")
+        }
         return value
     }
 
@@ -226,6 +240,7 @@ actor HealthEngine {
         let ok: Bool
         let value: T?
         let message: String?
+        let refused: Bool?
     }
 
     /// Calls an engine function that returns a Promise of text, and waits for it.
@@ -270,7 +285,7 @@ actor HealthEngine {
             let fulfilled: @convention(block) (JSValue) -> Void = { done.resume(returning: read($0)) }
             let rejected: @convention(block) (JSValue) -> Void = { error in
                 let message = error.isObject ? error.objectForKeyedSubscript("message")?.toString() : nil
-                done.resume(throwing: EngineError.callFailed(message ?? error.toString()))
+                done.resume(throwing: EngineError.refusal(error) ?? EngineError.callFailed(message ?? error.toString()))
             }
             let promise = context.objectForKeyedSubscript("Promise").invokeMethod("resolve", withArguments: [value])
             promise?.invokeMethod("then", withArguments: [unsafeBitCast(fulfilled, to: AnyObject.self), unsafeBitCast(rejected, to: AnyObject.self)])
@@ -285,7 +300,7 @@ actor HealthEngine {
         let result = function.call(withArguments: arguments)
         if let exception = context.exception {
             context.exception = nil
-            throw EngineError.callFailed(exception.toString())
+            throw EngineError.refusal(exception) ?? EngineError.callFailed(exception.toString())
         }
         return result ?? JSValue(undefinedIn: context)
     }

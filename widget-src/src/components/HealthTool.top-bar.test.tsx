@@ -2,7 +2,8 @@
 /**
  * Web redesign phase 1, as the person sees the whole widget:
  * US-09 AC30 — the storage button sits in the input column's header, where
- * "Supercharge this tool" was, on desktop and on a phone.
+ * "Supercharge this tool" was, on desktop; on a phone it moved to the top bar
+ * above the tabs (US-20 AC7, HealthTool.tab-bar.test.tsx).
  * US-38 AC1 — "Supercharge this tool" is one card at the foot of the plan.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -51,15 +52,22 @@ afterEach(async () => {
 describe.each([['desktop', false], ['phone', true]] as const)('on %s', (_, isPhone) => {
   beforeEach(() => { phone = isPhone; });
 
-  it('US-09 AC30: the input header holds the storage button and keeps it on a phone; no Supercharge there', async () => {
+  it('US-09 AC30: the input header holds the storage button on desktop, the top bar on a phone; no Supercharge there', async () => {
     const view = render(<HealthTool storageBar={<button type="button">Sign in</button>} />);
     const header = await waitFor(() => {
       const el = view.container.querySelector('.health-input-panel > .hr-col-header');
       expect(el).not.toBeNull();
       return el!;
     });
-    expect(header.querySelector('.hr-col-meta')?.textContent).toBe('Sign in');
-    expect(header.classList.contains('hr-col-header--actions')).toBe(true); // the 768px rule keeps it
+    if (isPhone) {
+      expect(header.querySelector('.hr-col-meta')?.textContent).toBe('');
+      expect(header.classList.contains('hr-col-header--actions')).toBe(false); // the 768px rule hides it
+      expect(view.container.querySelector('.hr-top-bar')?.textContent).toBe('Sign in');
+    } else {
+      expect(header.querySelector('.hr-col-meta')?.textContent).toBe('Sign in');
+      expect(header.classList.contains('hr-col-header--actions')).toBe(true);
+      expect(view.container.querySelector('.hr-top-bar')).toBeNull();
+    }
     expect(view.container.querySelector('.health-input-panel')?.textContent).not.toContain('Supercharge');
   });
 

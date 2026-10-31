@@ -116,7 +116,7 @@ struct MyDataView: View {
             .pickerStyle(.segmented)
             .disabled(picking)
 
-            Picker("Birth year", selection: binding(data.profile.birthYear ?? 0) { .profile(birthYear: $0) }) {
+            Picker("Birth year", selection: binding(data.profile.birthYear ?? 0) { .birthYear($0, storedMonth: data.profile.birthMonth, now: .now) }) {
                 if data.profile.birthYear == nil { Text("Not set").tag(0) }
                 ForEach(DayText.birthYears(now: .now), id: \.self) { Text(String($0)).tag($0) }
             }
@@ -124,7 +124,7 @@ struct MyDataView: View {
 
             Picker("Birth month", selection: binding(data.profile.birthMonth ?? 0) { .profile(birthMonth: $0) }) {
                 if data.profile.birthMonth == nil { Text("Not set").tag(0) }
-                ForEach(1...12, id: \.self) { Text(DayText.monthName($0)).tag($0) }
+                ForEach(DayText.birthMonths(year: data.profile.birthYear ?? 0, now: .now, keeping: data.profile.birthMonth), id: \.self) { Text(DayText.monthName($0)).tag($0) }
             }
             .disabled(picking)
 
@@ -192,6 +192,7 @@ struct MyDataView: View {
                         Button { addingLabs = true } label: {
                             Label("Add medical records", systemImage: "plus")
                         }
+                        .accessibilityHint("Upload a lab report or clinic letter")
                         Button { showSync = true } label: {
                             Label("Sync", systemImage: SyncStatusText.symbol(sync.status, provider: sync.provider))
                         }

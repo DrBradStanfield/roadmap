@@ -53,7 +53,7 @@ import { DROPBOX_APP_FOLDER, IMPORT_ACCEPTED_TYPES, IMPORT_FILE_REASONS, IMPORT_
 import { type McpImportRoute, type McpRefusalReason } from './product-events';
 import { LAB_ARCHIVE_TITLE } from './document-path';
 import { documentRow, labArchiveFields, type DocumentFields } from './document-rows';
-import { DOCUMENT_TYPES, type DocumentType, healthInputSchema, METRIC_TYPES, PRESSURE_ORDER, pressureInverted, zod3Message } from './validation';
+import { BIRTH_IN_FUTURE, birthInFuture, DOCUMENT_TYPES, type DocumentType, healthInputSchema, METRIC_TYPES, PRESSURE_ORDER, pressureInverted, zod3Message } from './validation';
 import * as z from './zod';
 
 /**
@@ -517,7 +517,7 @@ export const importDocumentsOutput = z.object({
  */
 export type ToolOutcome =
   | { status: 'ok'; text: string; data: unknown; file?: RoadmapFile }
-  | { status: 'rejected'; text: string; reason?: McpRefusalReason }
+  | { status: 'rejected'; text: string; reason?: McpRefusalReason; /** The person's words, for a surface a person reads; never sent to an agent. */ message?: string }
   | { status: 'invalid-args'; text: string };
 
 /** Per-row sync bookkeeping and device identifiers: the merge's, never what the record says. */
@@ -735,6 +735,29 @@ export function correctValueTool(
 }
 
 /**
+ * The first profile value a person at the form could not type, in plain words
+ * ending with a full stop: the app's own ranges, then a birth month after this
+ * one (US-54 AC5b, `birthInFuture`). A year alone is judged with the stored
+ * month, and a month alone with the stored year.
+ */
+function profileFault(
+  file: RoadmapFile,
+  request: Partial<Record<(typeof PROFILE_FIELDS)[number], unknown>>,
+  now: string,
+): { field: (typeof PROFILE_FIELDS)[number]; message: string } | undefined {
+  for (const field of PROFILE_FIELDS) {
+    if (request[field] === undefined) continue;
+    const parsed = healthInputSchema.shape[field].safeParse(request[field], { error: zod3Message });
+    if (!parsed.success) return { field, message: `${oneLine(parsed.error.issues[0]?.message ?? 'out of range')}.` };
+  }
+  if (request.birthYear === undefined && request.birthMonth === undefined) return undefined;
+  const year = (request.birthYear ?? file.profile.birthYear) as number | undefined;
+  const month = (request.birthMonth ?? file.profile.birthMonth ?? 1) as number;
+  if (year === undefined || !birthInFuture(year, month, now)) return undefined;
+  return { field: request.birthMonth === undefined ? 'birthYear' : 'birthMonth', message: BIRTH_IN_FUTURE };
+}
+
+/**
  * Change who the record is about: sex, birth year, birth month, height (US-34).
  *
  * Each profile field is last-write-wins: `mergeFiles` picks each field's
@@ -757,15 +780,6 @@ export function updateProfile(
     return { status: 'rejected', text: `Name at least one of ${PROFILE_FIELDS.join(', ')}. Nothing was written.` };
   }
 
-  // The app's own ranges, with the app's own words: a connector cannot write
-  // what a person sitting at the form could not type.
-  for (const field of named) {
-    const parsed = healthInputSchema.shape[field].safeParse(request[field], { error: zod3Message });
-    if (!parsed.success) {
-      return { status: 'rejected', text: `${field}: ${oneLine(parsed.error.issues[0]?.message ?? 'out of range')}. Nothing was written.` };
-    }
-  }
-
   const stored = file.profile;
   for (const field of PROFILE_FIELDS) {
     const claim = request.expected?.[field] ?? undefined;
@@ -775,6 +789,11 @@ export function updateProfile(
       return { status: 'rejected', text: `The record does not hold the ${field} you expected. Read the record, then update. Nothing was written.` };
     }
   }
+
+  // After the expectations: the future-month rule reads stored fields (US-32 AC5/AC22).
+  // The agent gets the field key and tail; the iPhone shows `message` as it is (US-54 AC5c).
+  const fault = profileFault(file, request, now);
+  if (fault) return { status: 'rejected', text: `${fault.field}: ${fault.message} Nothing was written.`, message: fault.message };
 
   const changed = named.filter((field) => request[field] !== stored[field]);
   if (changed.length === 0) {

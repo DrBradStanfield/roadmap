@@ -245,7 +245,8 @@ export { STAT_CARD_EVIDENCE, getIbwEvidence, getProteinEvidence, getBmiEvidence 
 
 // Reference-range hints (blood-test matrix + legacy form labels)
 export type { RefHint, SexedRefHint } from './reference-hints';
-export { REFERENCE_HINTS, refHintFor, refLineFor, lpaRefHint } from './reference-hints';
+export { REFERENCE_HINTS, refLineFor } from './reference-hints';
+export { type Grading, type RowTarget, type RowTargetPlan, type RowSubject, TARGET_NEEDS_PROFILE, healthyWaistBelow, rowTarget } from './row-target';
 export { type CellUnit, isLpaUnit, recordLpaUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel, cellRange } from './cell-unit';
 
 // Sentry PII/PHI scrubbing
