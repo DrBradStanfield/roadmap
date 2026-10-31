@@ -469,6 +469,9 @@ export async function getOptinsBatch(
 /** How long a switched-off row keeps its address and token before deletion. */
 export const TOMBSTONE_TTL_DAYS = 90;
 
+/** Ids per tombstone DELETE: 100 uuids keep its URL near 4 KB. */
+const TOMBSTONE_DELETE_BATCH = 100;
+
 /**
  * Delete tombstones — rows a toggle-off, an erase or an email-link unsubscribe
  * emptied (US-17 AC1b) — once they are older than {@link TOMBSTONE_TTL_DAYS}.
@@ -476,9 +479,13 @@ export const TOMBSTONE_TTL_DAYS = 90;
  * delete let optin → cancel → optin mint a fresh plan-ready email each cycle;
  * keeping it FOREVER, address and token included, is what this bounds.
  *
- * The emptiness test runs here rather than in the filter: `schedule` is jsonb
- * and PostgREST has no length operator, so the query narrows by age and the
- * rows are checked in JS. A row with no `updated_at` is never taken.
+ * The query asks for emptied rows only (`schedule` equals the jsonb `[]`), not
+ * just old ones: a live row whose user has not been back in 90 days is old
+ * too, and PostgREST answers at most 1000 rows, so 1000 of those used to fill
+ * the page ahead of every tombstone. A larger backlog clears 1000 a day. The
+ * JS check stays as a second guard. Deletes go {@link TOMBSTONE_DELETE_BATCH}
+ * ids per request, since the ids ride in the URL. A row with no `updated_at`
+ * is never taken.
  *
  * Residual, stated: past the window a replayed optin on that address is `isNew`
  * again and earns one more plan-ready email — at most one per address per 90
@@ -490,7 +497,8 @@ export async function purgeTombstones(nowMs: number): Promise<number> {
   const { data, error } = await admin
     .from('reminder_optin_v2')
     .select('id, schedule')
-    .lt('updated_at', cutoff);
+    .lt('updated_at', cutoff)
+    .eq('schedule', '[]');
   if (error) throw new Error(`reminder_optin_v2 tombstone select failed: ${error.message}`);
 
   const ids = (data ?? [])
@@ -498,11 +506,13 @@ export async function purgeTombstones(nowMs: number): Promise<number> {
     .map((row) => row.id as string);
   if (ids.length === 0) return 0;
 
-  const { error: delError } = await admin
-    .from('reminder_optin_v2')
-    .delete()
-    .in('id', ids);
-  if (delError) throw new Error(`reminder_optin_v2 tombstone delete failed: ${delError.message}`);
+  for (let i = 0; i < ids.length; i += TOMBSTONE_DELETE_BATCH) {
+    const { error: delError } = await admin
+      .from('reminder_optin_v2')
+      .delete()
+      .in('id', ids.slice(i, i + TOMBSTONE_DELETE_BATCH));
+    if (delError) throw new Error(`reminder_optin_v2 tombstone delete failed: ${delError.message}`);
+  }
   return ids.length;
 }
 
