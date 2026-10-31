@@ -19,7 +19,7 @@ final class EngineBridgeContractTests: XCTestCase {
     /// Both-way additions that keep the bridge id (D14), never hashed.
     private struct Additions: Decodable {
         let doors: [String: Door]
-        struct Door: Decodable { let optionalArgs: [String] }
+        struct Door: Decodable { let optionalArgs: [String]? }
     }
 
     private func contractBytes() throws -> Data {
@@ -50,7 +50,7 @@ final class EngineBridgeContractTests: XCTestCase {
         let extra = try additions()
         let engine = try HealthEngine()
         for (name, door) in contract.doors {
-            let arity = door.args.count + (extra.doors[name]?.optionalArgs.count ?? 0)
+            let arity = door.args.count + (extra.doors[name]?.optionalArgs?.count ?? 0)
             XCTAssertEqual(try engine.blocking { try $0.evaluate("HealthEngine.\(name).length").toInt32() }, Int32(arity), name)
         }
         XCTAssertTrue(Set(extra.doors.keys).isSubset(of: contract.doors.keys))

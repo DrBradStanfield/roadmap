@@ -215,8 +215,10 @@ A signature means "the key holder approved this bundle", nothing more.
   never hashed, holds only an optional trailing argument (an older app sends one fewer and
   the engine answers as before) or an optional return field (an older engine leaves it out
   and the app reads none). Both tests count a door's arity as its contract args plus its
-  optional ones; each entry has tests for both directions. Anything an older app cannot do
-  without stays in the contract and moves the id.
+  optional ones; `bridge.test.ts` also checks each optional argument trails the contract ones
+  by name in `entry.ts`, and that every optional door, called with only its contract args,
+  answers as it does with them undefined. A missing return field is tested per feature. Anything
+  an older app cannot do without stays in the contract and moves the id.
 - **The schema is the app's (R7).** A bundle whose record `schemaVersion` differs from the
   bundled engine's is refused. A schema change always needs an app update, so an over-the-
   air engine can never write a record the web or an older phone cannot read.
@@ -1524,6 +1526,9 @@ is. Spec: docs/user-stories.md US-61.
   `isUS` and `usProducts` are recorded in `bridge-optional.json`, not the hashed contract
   (D3). A first cut moved the id to `d0ffd9e53f8499b3`, which would have cut builds 3 and 4
   off every later engine; it never shipped.
+  **The rule:** `bridge.test.ts` pins the id as a literal. A real bridge change (anything an
+  older app cannot do without) moves the id and updates that literal; `bridge-optional.json`
+  is never a way around one, only a place for additions that work both ways.
 - **Taps only, no new Clarity word.** The links carry `utm_source=health-tool&utm_medium=ios`,
   so taps and orders show in Shopify, and nothing from the record enters a URL. No impression
   is counted: a Clarity event would add a word to D9's fixed list, which US-61 leaves as it is.

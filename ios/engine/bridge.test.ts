@@ -16,9 +16,26 @@ const contract = JSON.parse(readFileSync(join(__dirname, 'bridge-contract.json')
 };
 // Both-way additions that keep the bridge id (D14): never hashed.
 const optional = JSON.parse(readFileSync(join(__dirname, 'bridge-optional.json'), 'utf8')) as {
-  doors: Record<string, { optionalArgs: string[]; optionalReturns?: string }>;
+  doors: Record<string, { optionalArgs?: string[]; optionalReturns?: string }>;
 };
-const arity = (name: string) => contract.doors[name].args.length + (optional.doors[name]?.optionalArgs.length ?? 0);
+const optionalArgs = (name: string) => optional.doors[name]?.optionalArgs ?? [];
+const arity = (name: string) => contract.doors[name].args.length + optionalArgs(name).length;
+
+/** A door's parameter names, in order, read from entry.ts's signature. */
+function parameters(name: string): string[] {
+  const source = readFileSync(join(__dirname, 'entry.ts'), 'utf8');
+  const signature = source.match(new RegExp(`export (?:async )?function ${name}\\(([^)]*)\\)`))?.[1];
+  if (signature === undefined) throw new Error(`no signature for ${name} in entry.ts`);
+  return [...signature.matchAll(/(?:^|,)\s*(\w+)\??\s*:/g)].map((m) => m[1]);
+}
+
+/** Contract arguments to call each optional door with (one entry per door in bridge-optional.json). */
+const NOW = '2026-10-21T08:00:00.000Z';
+const SAMPLE_ARGS: Record<string, unknown[]> = {
+  screenJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'), NOW, 'phone', '{}'],
+};
+/** A door's answer with its timing fields (`ms`) left out, which differ call to call. */
+const untimed = (text: string) => JSON.stringify(JSON.parse(text, (key, value) => (key === 'ms' ? undefined : value)));
 
 /** The member names of an exported interface, read from the source. */
 function members(file: string, name: string): string[] {
@@ -42,11 +59,35 @@ describe('bridge contract (US-25 AC18)', () => {
     for (const [name, door] of Object.entries(optional.doors)) {
       expect(contract.doors[name], name).toBeDefined();
       expect(Object.keys(door).every((k) => k === 'optionalArgs' || k === 'optionalReturns'), name).toBe(true);
-      expect(door.optionalArgs.length, name).toBeGreaterThan(0);
-      for (const arg of door.optionalArgs) expect(contract.doors[name].args, name).not.toContain(arg);
+      expect((door.optionalArgs?.length ?? 0) > 0 || !!door.optionalReturns, `${name}: optionalArgs or optionalReturns`).toBe(true);
+      for (const arg of optionalArgs(name)) expect(contract.doors[name].args, name).not.toContain(arg);
     }
   });
 
+  // PR 399 re-check R1: the count alone let an optional argument move ahead of a contract one.
+  it('each optional argument trails the contract ones, by name and in order, in entry.ts', () => {
+    for (const name of Object.keys(optional.doors)) {
+      expect(parameters(name), name).toEqual([...contract.doors[name].args, ...optionalArgs(name)]);
+    }
+  });
+
+  // An older app sends only the contract arguments: the door must answer, and answer as if
+  // each optional argument were passed as undefined.
+  it('every optional door answers an older app\'s call as it answers undefined optional arguments', () => {
+    for (const name of Object.keys(optional.doors)) {
+      const args = SAMPLE_ARGS[name];
+      expect(args, `${name}: add its contract arguments to SAMPLE_ARGS`).toBeDefined();
+      expect(args.length, name).toBe(contract.doors[name].args.length);
+      const door = (entry as unknown as Record<string, (...a: unknown[]) => string>)[name];
+      const older = door(...args);
+      const undefinedOptional = door(...args, ...optionalArgs(name).map(() => undefined));
+      expect(untimed(older), name).toBe(untimed(undefinedOptional));
+    }
+  });
+
+  // The id builds 3 and 4 carry. A real bridge change (anything an older app cannot do
+  // without) moves the id and updates this literal; bridge-optional.json is never a way
+  // around that, only for additions that work both ways (D3, D14).
   it('the contract keeps the bridge id builds 3 and 4 carry (US-61 adds isUS and usProducts as optional)', () => {
     const bytes = readFileSync(join(__dirname, 'bridge-contract.json'));
     expect(createHash('sha256').update(bytes).digest('hex').slice(0, 16)).toBe('2d467ff50c66c42d');
