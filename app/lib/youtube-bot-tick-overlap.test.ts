@@ -71,4 +71,16 @@ describe('US-27 AC3: one tick at a time', () => {
     await vi.advanceTimersByTimeAsync(TICK_MS);
     expect(tokenCalls()).toBe(2);
   });
+
+  it('a tick that throws still lets the next one run', async () => {
+    const Sentry = await import('@sentry/react-router');
+    // The first tick's error report throws, so that tick rejects instead of returning.
+    vi.mocked(Sentry.captureException).mockImplementationOnce(() => { throw new Error('synthetic report failure'); });
+    (await import('./youtube-bot.server')).startYouTubeBot();
+    await vi.advanceTimersByTimeAsync(FIRST_TICK_MS);
+    releases.forEach((release) => release()); // the refresh fails; its report throws
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(TICK_MS);
+    expect(tokenCalls()).toBe(2);
+  });
 });
