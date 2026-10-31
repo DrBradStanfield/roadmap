@@ -46,8 +46,17 @@ describe('US-09 AC1a: connect refuses an incomplete token reply', () => {
     ['no refresh token', { access_token: 'at', expires_in: 14400 }],
     ['no expiry', { access_token: 'at', refresh_token: 'rt' }],
     ['an expiry that is not a number', { access_token: 'at', refresh_token: 'rt', expires_in: '14400' }],
+    ['an access token that is not a string', { access_token: null, refresh_token: 'rt', expires_in: 14400 }],
+    ['a null reply', null],
   ])('%s', async (_name, reply) => {
     vi.stubGlobal('fetch', vi.fn(async () => json(reply)));
+    await expect(DropboxAdapter.completeRedirect(CONFIG)).rejects.toBeInstanceOf(StorageError);
+    expect(local.has(TOKEN_KEY)).toBe(false);
+  });
+
+  it('an expiry too large to be finite', async () => {
+    const raw = '{"access_token":"at","refresh_token":"rt","expires_in":1e999}'; // parses to Infinity
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(raw, { status: 200, headers: { 'Content-Type': 'application/json' } })));
     await expect(DropboxAdapter.completeRedirect(CONFIG)).rejects.toBeInstanceOf(StorageError);
     expect(local.has(TOKEN_KEY)).toBe(false);
   });
