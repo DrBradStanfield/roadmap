@@ -16,6 +16,7 @@ import {
   measurementsToInputs,
   medicationsToInputs,
   screeningsToInputs,
+  withPsaMeasurement,
   type ApiMeasurement,
 } from './mappings';
 import { latestActivePerMetric } from './measurement-history';
@@ -250,7 +251,10 @@ export function computePlan(file: RoadmapFile, now = new Date(), unitOverrides?:
     ...(validation.errors?.issues.some((i) => i.message === PRESSURE_ORDER) ? { pressureOrder: true } : {}),
     generatedAt: now.toISOString(),
     today: localDay(now),
-    results: calculateHealthResults(inputs as HealthInputs, derived.unitSystem, derived.medications, derived.screenings, unitOverrides, now),
+    // US-06 AC14: the prostate cards read the newest saved PSA; `screenings` above stays the record's answers.
+    results: calculateHealthResults(inputs as HealthInputs, derived.unitSystem, derived.medications,
+      withPsaMeasurement(derived.screenings, derived.currentRows.find((r) => r.metricType === 'psa')),
+      unitOverrides, now),
     due: computeReminderSchedule(file, now),
     labs: derivePlanLabs(file),
   };
