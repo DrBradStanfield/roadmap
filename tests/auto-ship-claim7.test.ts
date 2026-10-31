@@ -38,7 +38,7 @@ case "$p" in
   pulls/7/files) jq -c '.prFiles // []' "$SCEN" | out;;
   pulls/7) jq -c --argjson u $upd '{state:"open",title:"t",body:(.prBody // "b"),user:{login:"u"},labels:[],
     head:{ref:"claude/x",repo:{full_name:"o/r"},sha:(if $u==1 then .newSha else .head end)}}' "$SCEN" | out;;
-  issues/7/comments*) jq -c '[{user:{type:"Bot",login:"github-actions[bot]"},body:("VERDICT: APPROVE "+.head)}]' "$SCEN" | out;;
+  issues/7/comments*) jq -c '.comments // [{user:{type:"Bot",login:"github-actions[bot]"},body:("VERDICT: APPROVE "+.head)}]' "$SCEN" | out;;
   commits/main) jq -c '{sha:.main}' "$SCEN" | out;;
   commits/*/check-runs*) sha=\${p#commits/}; sha=\${sha%%/*}
     jq -c --arg s "$sha" 'if $s==.head then {check_runs:[{app:{slug:"github-actions"},conclusion:"success",check_suite:{id:1}}]}
@@ -138,6 +138,78 @@ describe("auto-ship claim 7 (US-46 AC5)", { timeout: 60_000 }, () => {
     expect(merged(r.calls)).toEqual([]);
     expect(closed(r.calls)[0]).toContain("could not compare with main");
   });
+  // US-46 AC7: a comment counts only when exactly one line contains "VERDICT:",
+  // that line is the head-sha APPROVE, and no line has "verdict ... reject" in any
+  // case. The reviewer is told to choose between the two verdict lines, so a
+  // REJECT that repeats the APPROVE line must not ship, while a branch link or a
+  // prose "Verdict: approve." written next to the verdict is fine.
+  describe("verdict comment (US-46 AC7)", () => {
+    const bot = (body: string, login = "claude[bot]") => ({ user: { type: "Bot", login }, body });
+    const header = "**Claude finished @u's task in 1m 20s** —— [View job](https://x/runs/1)\n\n---\n";
+    const refused = (comments: unknown[]) => {
+      const r = run({ comments });
+      expect(r.code).toBe(0);
+      expect(merged(r.calls)).toEqual([]);
+      expect(r.out).toContain("No trusted APPROVE verdict for aaaa");
+    };
+
+    it("the action's comment ending in the APPROVE line merges", () => {
+      const r = run({ comments: [bot(`${header}All ACs hold.\n\nVERDICT: APPROVE aaaa\n`)] });
+      expect(merged(r.calls)).toEqual(["pr merge 7 -R o/r --merge --match-head-commit aaaa"]);
+    });
+    it("an older REJECT comment does not block a later clean APPROVE comment", () => {
+      const r = run({ comments: [bot("VERDICT: REJECT — no test"), bot("Fixed.\n\nVERDICT: APPROVE aaaa")] });
+      expect(merged(r.calls)).toHaveLength(1);
+    });
+    it("a REJECT that quotes the APPROVE line inside a sentence is not an approval", () => {
+      refused([bot(`${header}I must end with "VERDICT: APPROVE aaaa" or a reject.\n\nVERDICT: REJECT — edits ci.yml`)]);
+    });
+    it("a REJECT that repeats the APPROVE line on its own line is not an approval", () => {
+      refused([bot("VERDICT: APPROVE aaaa\n\nVERDICT: REJECT — edits ci.yml")]);
+    });
+    it("an APPROVE followed by the reviewer's branch-link line merges", () => {
+      for (const footer of [" · branch `claude/x`", "--- · branch [`claude/x`](https://x/tree/claude/x)"]) {
+        const r = run({ comments: [bot(`${header}All ACs hold.\n\nVERDICT: APPROVE aaaa\n${footer}`)] });
+        expect(merged(r.calls)).toEqual(["pr merge 7 -R o/r --merge --match-head-commit aaaa"]);
+      }
+    });
+    it("a prose 'Verdict: approve.' summary above the APPROVE line merges", () => {
+      const r = run({ comments: [bot(`${header}**Verdict: approve.** No defects at \`aaaa\`.\n\nVERDICT: APPROVE aaaa`)] });
+      expect(merged(r.calls)).toEqual(["pr merge 7 -R o/r --merge --match-head-commit aaaa"]);
+    });
+    it("a lowercase 'Verdict: reject' line next to the APPROVE line is not an approval", () => {
+      refused([bot(`${header}Verdict: reject, AC2 fails\n\nVERDICT: APPROVE aaaa`)]);
+      refused([bot(`${header}VERDICT REJECT, AC2 fails\n\nVERDICT: APPROVE aaaa`)]);
+    });
+    it("a 'Verdict: reject' in Markdown emphasis next to the APPROVE line is not an approval", () => {
+      for (const reject of ["_reject_", "__reject__", "*reject*", "**reject**", "___reject___"]) {
+        refused([bot(`${header}Verdict: ${reject}\n\nVERDICT: APPROVE aaaa`)]);
+      }
+      refused([bot(`${header}**Verdict**: __REJECT__ (AC2 fails)\n\nVERDICT: APPROVE aaaa`)]);
+    });
+    it("'the verdict is (still) REJECT' next to the APPROVE line is not an approval", () => {
+      // The reviewer's own wording in real REJECT comments.
+      refused([bot(`${header}**Result: the code is sound, but the verdict is still REJECT.**\n\nVERDICT: APPROVE aaaa`)]);
+      refused([bot(`${header}The verdict was: reject.\n\nVERDICT: APPROVE aaaa`)]);
+    });
+    it("a verdict line naming another word before 'rejected' still merges", () => {
+      const r = run({ comments: [bot(`${header}The verdict is APPROVE; rejected alternatives are listed below.\n\nVERDICT: APPROVE aaaa`)] });
+      expect(merged(r.calls)).toEqual(["pr merge 7 -R o/r --merge --match-head-commit aaaa"]);
+    });
+    it("a 'verdict' at a line end with 'Rejected' starting the next line still merges", () => {
+      const r = run({ comments: [bot(`${header}- [x] Publish verdict\n\n---\n### Rejected alternatives\nNone.\n\nVERDICT: APPROVE aaaa`)] });
+      expect(merged(r.calls)).toEqual(["pr merge 7 -R o/r --merge --match-head-commit aaaa"]);
+    });
+    it("an APPROVE last line with any other VERDICT text in the comment is not an approval", () => {
+      refused([bot("**VERDICT: REJECT** (AC2 contradicted)\n\nVERDICT: APPROVE aaaa")]);
+      refused([bot("> VERDICT: APPROVE aaaa\n\nVERDICT: APPROVE aaaa")]);
+    });
+    it("who may approve and the sha pin are unchanged", () => {
+      refused([bot("VERDICT: APPROVE aaaa", "someone")]);
+      refused([bot("VERDICT: APPROVE bbbb")]);
+    });
+  });
+
   // US-46 AC6: the notification caps come from jq slices, not `| head`, so
   // pipefail cannot kill the step with 141 when a big body or file list fills the pipe.
   describe("notification truncation (US-46 AC6)", () => {
