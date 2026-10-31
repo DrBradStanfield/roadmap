@@ -60,7 +60,7 @@ describe('US-61 AC1: the two new supplement cards, in every market', () => {
     const text = `${plan(adult).suggestions.find((s) => s.id === 'supplement-lutein-zeaxanthin')!.description} ${SUGGESTION_EVIDENCE['supplement-lutein-zeaxanthin'].reason}`;
     expect(text).not.toMatch(/did not (significantly )?slow/i);
     expect(SUGGESTION_EVIDENCE['supplement-tmg'].reason).not.toMatch(/dementia|alzheimer/i);
-    expect(SUGGESTION_EVIDENCE['supplement-lutein-zeaxanthin'].reason).toContain('slowed the progression of macular degeneration in people with intermediate macular degeneration');
+    expect(SUGGESTION_EVIDENCE['supplement-lutein-zeaxanthin'].reason).toContain('slowed progression in people with intermediate macular degeneration');
   });
 
   it('US-61 AC1: a known minor gets neither new card (adults only, like every supplement card)', () => {

@@ -592,7 +592,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // US-61: AREDS framing (Brad): beta-carotene in AREDS slowed progression; in
   // AREDS2 lutein and zeaxanthin worked as well, without the lung cancer signal.
   'supplement-lutein-zeaxanthin': {
-    reason: 'Lutein and zeaxanthin are the pigments of the macula, the part of the eye that sees fine detail. A meta-analysis of 46 studies in adults with healthy eyes found that lutein and zeaxanthin supplements raise macular pigment optical density, more at higher doses. In the AREDS trial, a formula of vitamins C and E, beta-carotene and zinc slowed the progression of macular degeneration in people with intermediate macular degeneration. In AREDS2, 10 mg of lutein and 2 mg of zeaxanthin worked as well as beta-carotene in that formula. Beta-carotene brought more lung cancers, mostly in former smokers; lutein and zeaxanthin did not.',
+    reason: 'Lutein and zeaxanthin are the pigments of the macula, the part of the eye that sees fine detail. A meta-analysis of 46 studies in adults with healthy eyes found that lutein and zeaxanthin supplements raise macular pigment optical density, more at higher doses. In the AREDS trial, a formula of vitamins C and E, beta-carotene and zinc slowed progression in people with intermediate macular degeneration. In AREDS2, 10 mg of lutein and 2 mg of zeaxanthin worked as well as beta-carotene in that formula. Beta-carotene brought more lung cancers, mostly in former smokers; lutein and zeaxanthin did not.',
     guidelines: [],
     references: [
       REF_MPOD,
