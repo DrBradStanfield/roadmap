@@ -1,6 +1,6 @@
 /** Shopify services only. Health records are read and written by roadmap-data. */
 import type { GUIDE_PLACEMENTS, LPA_CHECK_ANSWERS, LpaUnit, MeasurementRefusal, MetricType, ProductEventName, REMOTE_CHANGE_BACKENDS } from '@roadmap/health-core';
-import { PER_ACTION_EVENT_NAMES, type CHAT_PROFILE_CHOICES, type CHAT_PROFILE_FIELDS, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
+import { PER_ACTION_EVENT_NAMES, type CHAT_PROFILE_CHOICES, type ONBOARDING_STEPS, type SIGNIN_PLACEMENTS, type CHAT_PROFILE_FIELDS, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import type { UsProduct } from '@roadmap/health-core/us-products';
 import { safeGetItem, safeSetItem } from './storage';
 import { SHOPIFY_SURFACE } from './build-flags';
@@ -134,7 +134,9 @@ export function trackABConversion(): void { trackABEvent('conversion'); }
 export interface ProductEventMetadata extends Partial<Record<UploadOutcomeKey, number>> {
   provider?: 'google-drive' | 'dropbox' | 'github' | 'webdav' | 'local' | 'typed';
   count?: number;
-  placement?: (typeof GUIDE_PLACEMENTS)[number];
+  placement?: (typeof GUIDE_PLACEMENTS)[number] | (typeof SIGNIN_PLACEMENTS)[number];
+  /** `onboarding_step` (US-62 AC1): the question's name, never its answer. */
+  step?: (typeof ONBOARDING_STEPS)[number];
   backend?: (typeof REMOTE_CHANGE_BACKENDS)[number];
   /** `lab_unit_refused` (US-21 phase 3): the catalogue key of the test and the
    *  unit spelling the record would not take. Never a value. */
@@ -182,6 +184,9 @@ export function trackProductEvent(
         : metadata?.choice ? `_${metadata.field}_${metadata.choice}`
         // US-61 AC8: once per product, so one product seen does not swallow the other.
         : metadata?.product ? `_${metadata.product}`
+        // US-62 AC2: once per step and per placement, so the first does not swallow the rest.
+        : metadata?.step ? `_${metadata.step}`
+        : metadata?.placement ? `_${metadata.placement}`
         // Per provider, so a tab that tries Dropbox then Drive counts both (US-09 AC22).
         : eventName.startsWith('cloud_connect_') && metadata?.provider ? `_${metadata.provider}` : '';
       const sentKey = `hr_pe_${eventName}${detail}`;

@@ -1,4 +1,3 @@
-import type { GUIDE_PLACEMENTS } from '@roadmap/health-core';
 import { trackProductEvent } from '../lib/server-api';
 
 /** US-38: the open-source hub — how to reach this record from an AI assistant. */
@@ -19,7 +18,7 @@ const VARIANT = {
   },
 } as const;
 
-export function GuideLink({ placement }: { placement: (typeof GUIDE_PLACEMENTS)[number] }) {
+export function GuideLink({ placement }: { placement: keyof typeof VARIANT }) {
   const variant = VARIANT[placement];
   return (
     <a

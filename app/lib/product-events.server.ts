@@ -3,7 +3,7 @@ import * as z from '../../packages/health-core/src/zod';
 // Deep relative import (not '@roadmap/health-core'): the Docker build runs
 // `npm ci` before COPY, so the workspace symlink never exists in the image —
 // same reason chat.server.ts / email.server.ts import health-core this way.
-import { CHAT_PROFILE_CHOICES, CHAT_PROFILE_FIELDS, EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, LPA_CHECK_ANSWERS, isLabUnitWord, LAB_UNIT_BLANK, MCP_IMPORT_FILE_BUCKETS, MCP_OAUTH_DETAILS, MEASUREMENT_REFUSAL_REASONS, MEASUREMENT_REFUSALS_WITH_METRIC, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_KNOWLEDGE_TOOL_NAMES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type McpOAuthDetail, type McpOAuthReason, type McpRefusalReason, type ProductEventName, type UploadOutcomeKey } from '../../packages/health-core/src/product-events';
+import { CHAT_PROFILE_CHOICES, CHAT_PROFILE_FIELDS, EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, LPA_CHECK_ANSWERS, isLabUnitWord, LAB_UNIT_BLANK, MCP_IMPORT_FILE_BUCKETS, MCP_OAUTH_DETAILS, MEASUREMENT_REFUSAL_REASONS, MEASUREMENT_REFUSALS_WITH_METRIC, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_KNOWLEDGE_TOOL_NAMES, MCP_TOOL_NAMES, ONBOARDING_STEPS, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, SIGNIN_PLACEMENTS, TOOL_DEVICES, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type McpOAuthDetail, type McpOAuthReason, type McpRefusalReason, type ProductEventName, type UploadOutcomeKey } from '../../packages/health-core/src/product-events';
 import { LPA_UNITS } from '../../packages/health-core/src/units';
 import { US_PRODUCTS, type UsProduct } from '../../packages/health-core/src/us-products';
 import { METRIC_TYPES } from '../../packages/health-core/src/validation';
@@ -30,8 +30,12 @@ const metadataSchema = z
     files: z.enum(MCP_IMPORT_FILE_BUCKETS).optional(),
     /** US-37: this extract followed a read's folder nudge — the retirement query. */
     fromNudge: z.literal(true).optional(),
-    /** US-38: which guide-link surface was clicked. */
-    placement: z.enum(GUIDE_PLACEMENTS).optional(),
+    /** US-38, US-62 AC1: which guide-link or sign-in surface was clicked, judged against its event in checkEventKeys. */
+    placement: z.enum([...GUIDE_PLACEMENTS, ...SIGNIN_PLACEMENTS]).optional(),
+    /** US-62 AC1: the device a tool tab opened on. Owned by `tool_opened`. */
+    device: z.enum(TOOL_DEVICES).optional(),
+    /** US-62 AC1: which onboarding question was answered, never the answer. Owned by `onboarding_step`. */
+    step: z.enum(ONBOARDING_STEPS).optional(),
     /** US-34: the tier a remote change came in on — another tab, or a cloud. */
     backend: z.enum(REMOTE_CHANGE_BACKENDS).optional(),
     /**
@@ -60,6 +64,9 @@ const metadataSchema = z
   })
   .strict();
 
+/** US-36 AC9: the two halves of a two-phase write, on `mcp_tool_call`. */
+const MCP_TOOL_STEPS = ['propose', 'confirm'] as const;
+
 /**
  * US-32 AC29's refusal word, on the server list only: it can ride on
  * `mcp_tool_call`, which SERVER_ONLY_EVENT_NAMES already keeps out of the
@@ -77,8 +84,8 @@ const serverMetadataSchema = metadataSchema.extend({
   detail: z.string().optional(),
   /** US-32 AC38: a connection made through the reviewer sign-in. Server-only, owned by `mcp_connect`. */
   via: z.enum(['reviewer']).optional(),
-  /** US-36 AC9: which half of a two-phase write a tool call was. Server-only, owned by `mcp_tool_call`. */
-  step: z.enum(['propose', 'confirm']).optional(),
+  /** US-36 AC9: which half of a two-phase write a tool call was, on `mcp_tool_call`; the browser's onboarding steps too, so its rows survive this list (checkEventKeys). */
+  step: z.enum([...ONBOARDING_STEPS, ...MCP_TOOL_STEPS]).optional(),
   /** US-15 AC33: how many stated values run_roadmap refused. A count only. Server-only, owned by `chat_run_roadmap`. */
   rejected: z.number().int().min(0).max(1000).optional(),
   /** US-15 AC44: one purge run's question archive. Counts only. Server-only, owned by `chat_question_archived`. */
@@ -99,7 +106,6 @@ const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
   refusal: ['measurement_refused'],
   via: ['mcp_connect'],
   detail: ['mcp_authorize_refused', 'mcp_connect_failed'],
-  step: ['mcp_tool_call'],
   rejected: ['chat_run_roadmap'],
   eligible: ['chat_question_archived'],
   kept: ['chat_question_archived'],
@@ -107,7 +113,26 @@ const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
   field: ['chat_profile_edit'],
   choice: ['chat_profile_edit'],
   product: ['us_product_shown', 'us_product_link_clicked'],
+  device: ['tool_opened'],
   ...Object.fromEntries(UPLOAD_OUTCOME_KEYS.map(k => [k, ['upload_outcome']])),
+};
+
+/** Keys whose words depend on the event that carries them: a sign-in
+ *  placement on a guide row, or a connector step on an onboarding row, would
+ *  split both counts. The key is owned by exactly the events listed. */
+const EVENT_WORDS: Record<string, Partial<Record<string, readonly string[]>>> = {
+  placement: { guide_opened: GUIDE_PLACEMENTS, signin_opened: SIGNIN_PLACEMENTS },
+  step: { mcp_tool_call: MCP_TOOL_STEPS, onboarding_step: ONBOARDING_STEPS },
+};
+
+/** Events that mean nothing without their key: a tool tab with no device, or
+ *  a step with no name, would be a row no breakdown can place (US-62 AC1). */
+const EVENT_REQUIRED_KEY: Partial<Record<string, string>> = {
+  tool_opened: 'device',
+  onboarding_step: 'step',
+  signin_opened: 'placement',
+  us_product_shown: 'product', // US-61 AC8: a row without its product counts nothing
+  us_product_link_clicked: 'product',
 };
 
 /** Events whose metadata is ONLY their own keys: a shared key such as
@@ -125,12 +150,11 @@ const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   alcohol_question_answered: [], // US-60: the name alone, never the answer
   us_product_shown: ['product'], // US-61 AC8: the product alone, never the card
   us_product_link_clicked: ['product'],
-};
-
-/** Keys an event must carry: a US product row without its product counts nothing (US-61 AC8). */
-const EVENT_REQUIRED_KEYS: Partial<Record<string, readonly string[]>> = {
-  us_product_shown: ['product'],
-  us_product_link_clicked: ['product'],
+  tool_opened: ['device'], // US-62 AC1
+  onboarding_step: ['step'],
+  onboarding_done: [],
+  signin_opened: ['placement'],
+  guide_opened: ['placement'],
 };
 
 /**
@@ -145,13 +169,19 @@ function checkEventKeys(
   ctx: z.RefinementCtx,
 ): void {
   const metadata = event.metadata;
-  for (const key of EVENT_REQUIRED_KEYS[event.eventName] ?? []) {
-    if (metadata?.[key] === undefined) ctx.addIssue({ code: 'custom', path: ['metadata', key], message: 'key is required on this event' });
+  const required = EVENT_REQUIRED_KEY[event.eventName];
+  if (required && metadata?.[required] === undefined) {
+    ctx.addIssue({ code: 'custom', path: ['metadata', required], message: 'this event needs its key' });
   }
   if (!metadata) return;
   for (const [key, owners] of Object.entries(EVENT_KEY_OWNERS)) {
     if (metadata[key] !== undefined && !owners.includes(event.eventName)) {
       ctx.addIssue({ code: 'custom', path: ['metadata', key], message: 'key is not one this event may carry' });
+    }
+  }
+  for (const [key, byEvent] of Object.entries(EVENT_WORDS)) {
+    if (metadata[key] !== undefined && !(byEvent[event.eventName] ?? []).includes(metadata[key] as string)) {
+      ctx.addIssue({ code: 'custom', path: ['metadata', key], message: 'word is not one this event may carry' });
     }
   }
   const only = EVENT_ONLY_KEYS[event.eventName];
@@ -216,7 +246,8 @@ export const SERVER_VISITOR_ID = '00000000-0000-0000-0000-000000000000';
 /** Fire-and-forget server-side counter. Never throws — callers are hot paths. */
 export async function recordServerEvent(
   eventName: ServerProductEvent['eventName'],
-  metadata?: ServerProductEvent['metadata'],
+  // A server producer's `step` is only a tool call's half; the onboarding words are the browser's (US-62 AC1).
+  metadata?: Omit<ServerEventMetadata, 'step'> & { step?: (typeof MCP_TOOL_STEPS)[number] },
 ): Promise<void> {
   try {
     await recordProductEvent({ eventName, visitorId: SERVER_VISITOR_ID, metadata });
