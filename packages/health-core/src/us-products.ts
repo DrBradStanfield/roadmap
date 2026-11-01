@@ -100,7 +100,7 @@ export function usProductSections(
   const overlaid = sections.map((section): UsPlanSection => {
     if (section.key !== 'supplements') return section;
     // Single cards only: a grouped card has no block to draw on the web.
-    const cards = section.cards.map((card) => card.suggestions.length === 1 ? { ...card, suggestions: [withProduct(card.suggestions[0], medium)] } : card);
+    const cards = section.cards.map((card): UsPlanCard => card.suggestions.length === 1 ? { ...card, suggestions: [withProduct(card.suggestions[0], medium)] } : card);
     if (!cards.some((c) => c.suggestions.some((s) => s.usProduct))) return section;
     shown = true;
     return { ...section, cards, ownershipLine: US_OWNERSHIP_LINE };
