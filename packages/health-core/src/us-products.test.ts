@@ -65,6 +65,8 @@ describe('US-61 AC1: the two new supplement cards, in every market', () => {
     // Brad 2026-11-01: no cholesterol line and no dose caveat for TMG.
     expect(SUGGESTION_EVIDENCE['supplement-tmg'].reason).not.toMatch(/cholesterol/i);
     expect(US_PRODUCT_LINES['supplement-tmg'].line).toBe('MicroVitamin+ contains 500 mg of TMG.');
+    // The v9 powder's dose (Brad 2026-11-02: the US block moves to v9).
+    expect(US_PRODUCT_LINES['supplement-collagen'].line).toBe('MicroVitamin+ contains 10 g of collagen peptides.');
     expect(SUGGESTION_EVIDENCE['supplement-lutein-zeaxanthin'].reason).toContain('slowed progression in people with intermediate macular degeneration, or advanced disease in one eye');
   });
 
