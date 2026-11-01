@@ -70,7 +70,7 @@ import {
   type RoadmapFile,
   type RoadmapProfile,
 } from '@roadmap/health-core';
-import { isAlcoholAnswer, ROADMAP_DOC } from '@roadmap/health-core';
+import { isAlcoholAnswer, readableView, ROADMAP_DOC } from '@roadmap/health-core';
 import { type EraseResult, type EraseSteps, type RecordHost, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { webRecordHost } from './web-record-host';
@@ -217,6 +217,22 @@ export class RoadmapStore {
     return this.session.file;
   }
 
+  /** The readers' view: rows and profile fields this build cannot read left
+   *  out; they stay in the file (US-65). Edits use `file`. */
+  private get readable() {
+    return readableView(this.session.file);
+  }
+
+  /** The record as screens read it. */
+  private get view(): RoadmapFile {
+    return this.readable.file;
+  }
+
+  /** How many entries this build could not read; kept, never shown (US-65). */
+  get unreadableCount(): number {
+    return this.readable.count;
+  }
+
   get backendId() {
     return this.session.backendId;
   }
@@ -243,8 +259,8 @@ export class RoadmapStore {
   // ===================================================================== reads
 
   loadLatestMeasurements(): LatestMeasurementsResult {
-    const measurements = activeOnly(this.file.measurements);
-    const allInputs = measurementsToInputs(measurements as ApiMeasurement[], fileProfileToApi(this.file.profile));
+    const measurements = activeOnly(this.view.measurements);
+    const allInputs = measurementsToInputs(measurements as ApiMeasurement[], fileProfileToApi(this.view.profile));
 
     const inputs: Partial<HealthInputs> = {};
     for (const field of PREFILL_FIELDS) {
@@ -255,10 +271,10 @@ export class RoadmapStore {
     return {
       inputs,
       previousMeasurements: latestActivePerMetric(measurements) as ApiMeasurement[],
-      medications: this.file.medications as ApiMedication[],
-      screenings: fileScreeningRows(this.file.screenings),
-      supplements: this.file.supplements as ApiSupplement[],
-      reminderPreferences: this.file.reminderPreferences.map((p) => ({
+      medications: this.view.medications as ApiMedication[],
+      screenings: fileScreeningRows(this.view.screenings),
+      supplements: this.view.supplements as ApiSupplement[],
+      reminderPreferences: this.view.reminderPreferences.map((p) => ({
         reminderCategory: p.category,
         enabled: p.enabled,
       })),
@@ -267,20 +283,20 @@ export class RoadmapStore {
   }
 
   loadAllHistory(): ApiMeasurement[] {
-    return activeOnly(this.file.measurements) as ApiMeasurement[];
+    return activeOnly(this.view.measurements) as ApiMeasurement[];
   }
 
   loadMedicationHistory(): ApiMedicationHistory[] {
-    return medicationChanges(this.file.medicationHistory);
+    return medicationChanges(this.view.medicationHistory);
   }
 
   loadLabValues(): ApiLabValue[] {
-    return activeOnly(this.file.labValues) as ApiLabValue[];
+    return activeOnly(this.view.labValues) as ApiLabValue[];
   }
 
   /** Non-tombstoned documents — the ONE place the deleted-filter invariant lives. */
   private liveDocuments(): FileDocument[] {
-    return this.file.documents.filter((d) => !d.deleted);
+    return this.view.documents.filter((d) => !d.deleted);
   }
 
   // ================================================================= mutations
@@ -448,7 +464,7 @@ export class RoadmapStore {
    * of its output.
    */
   getPrefillInputs(): Partial<HealthInputs> {
-    const p = this.file.profile;
+    const p = this.view.profile;
     const out: Partial<HealthInputs> = {};
     for (const field of PREFILL_FIELDS) {
       const v = (p as unknown as Record<string, unknown>)[field];
@@ -462,7 +478,7 @@ export class RoadmapStore {
 
   /** Has the user completed the Shopify-surface email-capture step? */
   getReportEmailCaptured(): boolean {
-    return this.file.profile.reportEmailCaptured ?? false;
+    return this.view.profile.reportEmailCaptured ?? false;
   }
 
   /** Mark the email-capture step done (monotonic, stamped + persisted). */
@@ -471,9 +487,9 @@ export class RoadmapStore {
     return this.session.edit((file) => stampProfile(file, { reportEmailCaptured: true }, new Date().toISOString()));
   }
 
-  /** The unit the user chose for Lp(a)'s field (US-05 AC2), as the record holds it: unchecked. */
+  /** The unit the user chose for Lp(a)'s field (US-05 AC2), as readers see it. */
   getLpaUnit(): unknown {
-    return this.file.profile.lpaUnit;
+    return this.view.profile.lpaUnit;
   }
 
   /** Remember Lp(a)'s field unit: a profile preference, stamped like the others so it syncs (US-05 AC2). */
@@ -493,7 +509,7 @@ export class RoadmapStore {
 
   /** The client-computed forward schedule that gets pushed to the server (§10). */
   computeReminderScheduleNow(): ReminderScheduleItem[] {
-    return computeReminderSchedule(this.file, new Date());
+    return computeReminderSchedule(this.view, new Date());
   }
 
   /** "Delete all my data": the stored record is read first, then the server
@@ -560,7 +576,7 @@ export class RoadmapStore {
         ? { birthYear: p.birthYear, birthMonth: p.birthMonth ?? undefined }
         : null;
     const refused = 'birthYear' in changes || 'birthMonth' in changes
-      ? future(current) ?? future({ ...this.file.profile, ...changes })
+      ? future(current) ?? future({ ...this.view.profile, ...changes })
       : null;
     if (refused) { delete changes.birthYear; delete changes.birthMonth; }
     if (Object.keys(changes).length === 0) return refused;

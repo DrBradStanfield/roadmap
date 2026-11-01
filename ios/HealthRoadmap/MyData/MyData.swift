@@ -67,6 +67,9 @@ struct MyData: Decodable {
     let lpaUnit: String?
     /// The record's erase count; nil from an engine older than US-54 AC7.
     let eraseEpoch: Int?
+    /// US-65: how many entries the engine could not read and kept unchanged, as one line;
+    /// nil when there are none, or from an older engine.
+    var unreadableNote: String? = nil
     let profile: Profile
     let vitals: [Row]
     let bloodTests: [Row]

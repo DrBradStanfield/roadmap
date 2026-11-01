@@ -30,7 +30,14 @@ export type MetricType =
   | 'lpa';
 
 /** SI = metric + mmol/L (NZ, UK, AU, EU). Conventional = imperial + mg/dL (US). */
-export type UnitSystem = 'si' | 'conventional';
+export const UNIT_SYSTEMS = ['si', 'conventional'] as const;
+export type UnitSystem = (typeof UNIT_SYSTEMS)[number];
+
+/** The record's unit system, read by the same rule as every reader (US-65): a
+ *  value this build does not know reads as absent, so as the default 'si'. */
+export function unitSystemOf(profile: { unitSystem?: unknown }): UnitSystem {
+  return (UNIT_SYSTEMS as readonly unknown[]).includes(profile.unitSystem) ? (profile.unitSystem as UnitSystem) : 'si';
+}
 
 export interface UnitDef {
   /** Label of the canonical (stored) unit, e.g. "mmol/L" */

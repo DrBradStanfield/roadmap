@@ -10,7 +10,6 @@ import { appGate, appLimits, appRoutesOff, ipBucket, supabaseKeyStore, type KeyS
 import { SMALL_BODY_CAP } from './capped-body.server';
 import { extractOneFile } from './lab-extract-one.server';
 import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson } from './local-first-route.server';
-import { machineFiles } from './rate-limiter';
 
 /** 2 MB, the web chat's own cap (api.chat.ts). */
 const APP_CHAT_BODY_CAP = 2 * 1024 * 1024;
@@ -87,7 +86,7 @@ export async function appChat(request: Request, store?: KeyStore): Promise<Respo
   return webChatAction({ request: inner, params: {}, context } as unknown as Parameters<typeof webChatAction>[0]);
 }
 
-/** POST lab-import: the gate, then the web's single-file extraction; proposed values back, nothing stored (AC7). */
+/** POST lab-import: the gate (which also spends the web's file cap, AC4d), then the web's single-file extraction; proposed values back, nothing stored (AC7). */
 export async function appLabImport(request: Request, store?: KeyStore): Promise<Response> {
   if (appRoutesOff()) return unavailable();
   const gate = await appGate(request, { kind: 'lab', bodyCap: APP_LAB_BODY_CAP, store });
@@ -100,9 +99,5 @@ export async function appLabImport(request: Request, store?: KeyStore): Promise<
   }
   const validation = labImportRequestSchema.safeParse(parsed);
   if (!validation.success) return json(400, { success: false, error: 'Invalid request' });
-  // The web's and the connector's dollar ceiling, spent here too (AC4).
-  if (!machineFiles.take('machine', 1)) {
-    return json(429, { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.', reason: 'limit' });
-  }
   return extractOneFile(validation.data);
 }

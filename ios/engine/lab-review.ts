@@ -8,6 +8,7 @@ import { METRIC_LABELS } from '../../packages/health-core/src/mappings';
 import { documentView, pendingRowsFor } from '../../packages/health-core/src/document-save';
 import { unreadLines, type AdditionalLabValue, type DocumentResult, type ExtractedValue, type RefusedLabValue, type UnreadLabValue } from '../../packages/health-core/src/lab-extraction';
 import { labTestLabel } from '../../packages/health-core/src/lab-catalog';
+import { isReadableRow } from '../../packages/health-core/src/readable-rows';
 
 /** The server's answer (`data` of POST /api/app/v1/lab-import). */
 export interface Extraction {
@@ -80,14 +81,19 @@ function alreadySaved(file: RoadmapFile | null, sourceFileName: string | null): 
 function documentReview(document: DocumentResult, now: string, file: RoadmapFile | null, sourceFileName: string | null, contentHash: string | null): DocumentReview {
   const text = document.contentMarkdown ?? '';
   // The newest metadata-only shown-document row for these bytes, as the web's card reads it.
-  const held = file ? pendingRowsFor(file.documents.filter((d) => !d.deleted).map(documentView), contentHash, false)[0] : undefined;
+  // Found among every row, as the save finds it; its title and date are shown only when
+  // a reader can read it (US-65), else the extraction's own.
+  const live = file ? file.documents.filter((d) => !d.deleted) : [];
+  const found = pendingRowsFor(live.map(documentView), contentHash, false)[0];
+  const readable = found && isReadableRow('documents', live.find((d) => d.id === found.id));
+  const held = readable ? found : undefined;
   return {
     classification: document.classification,
     title: held?.title ?? document.title,
     documentDate: ownDay((held ? held.documentDate : document.documentDate) ?? undefined, now),
     preview: text.length > 300 ? `${text.slice(0, 300)}...` : text,
     alreadySaved: alreadySaved(file, sourceFileName),
-    held: !!held,
+    held: !!found,
   };
 }
 

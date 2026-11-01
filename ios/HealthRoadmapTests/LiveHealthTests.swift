@@ -599,6 +599,22 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertEqual(unknown, .settings, "iOS cannot say: Settings")
     }
 
+    /// AC5c (Brad 2026-11-01): iOS asks only once, so after the sheet the button opens
+    /// Settings. It says "Open Settings", not "Reconnect". The path to Apple Health's settings
+    /// depends on the iOS version: iOS 18 moved Health under Settings › Apps, and the app runs
+    /// from iOS 17. The row on screen is checked by
+    /// `OnboardingUITests.testAfterDontAllowTheRowSaysOpenSettings_US56_AC5c`.
+    func testTheRowSaysOpenSettingsWithThePathForThisIOS_AC5c() {
+        XCTAssertEqual(LiveReconnectRow.title(turnOn: false), "Open Settings")
+        XCTAssertEqual(LiveReconnectRow.title(turnOn: true), "Turn On", "before the sheet, Turn On is unchanged")
+        XCTAssertEqual(LiveFooter.healthPath(appsMenu: true), "Settings › Apps › Health › Data Access & Devices › Health Roadmap", "iOS 18 and later")
+        XCTAssertEqual(LiveFooter.healthPath(appsMenu: false), "Settings › Health › Data Access & Devices › Health Roadmap", "iOS 17")
+        let here: String
+        if #available(iOS 18, *) { here = LiveFooter.healthPath(appsMenu: true) } else { here = LiveFooter.healthPath(appsMenu: false) }
+        XCTAssertTrue(LiveFooter.healthSettings.hasSuffix(" \(here)."), "the path for the iOS this runs on")
+        XCTAssertTrue(LiveFooter.access.hasSuffix(" \(here)."), "AC4's footer names the same path")
+    }
+
     /// N1: a page read cancelled mid-flight throws, so the page never keeps it as "read,
     /// empty"; the next read reads again.
     func testACancelledPageReadIsNotKeptAsEmpty_N1() async throws {
