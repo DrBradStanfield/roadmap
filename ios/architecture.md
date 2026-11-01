@@ -62,6 +62,26 @@ R1):** from 60 its `p20`, the Low line, is Apple's Low Cardio Fitness alert line
 `2d467ff50c66c42d` (D3) and an older app refuses any engine that serves it; `bridge.test.ts`
 fails if the contract stops naming it.
 
+**The engine without sex moves the bridge (2026-11-01, US-07 AC8, Codex R1 on PR 402).** The
+engine's chat context gained a key, `labEgfrOutdated`: true when a creatinine newer than the
+lab eGFR exists but cannot be used yet (no sex or no birth year), so the server's chat plan
+withholds potassium advice as the engine's own plan does. The app forwards only the keys in
+`ChatClient.contextKeys`. A binary built before the key would take the new engine over the air
+and strip it, and its chat would give the advice the plan withheld. So `chatContextJson`'s
+returns in `bridge-contract.json` name the key and the rule (an app whose allow-list lacks a
+key the engine produces must not run it), the bridge id moved from `d0ffd9e53f8499b3` to
+`dc156e7c19dc8573`, and `EngineRelease.bridge` and the allow-list moved with it. Older binaries
+keep their bridge's engines and never read the new one's releases; the change needs an App
+Store build. `ios/engine/chat-context-keys.test.ts` holds the previous binary's bridge and
+allow-list, and fails if the engine produces a key that list lacks while the bridge id is
+unchanged.
+**Bridge moved again, 2026-11-01 (Brad: "We don't have any downloads yet, and we're still in
+beta, so it's fine").** Main had kept `2d467ff50c66c42d` so US-61's engine (its optional
+`isUS` and `usProducts`) could reach builds 3 and 4 over the air; merged with the change
+above, the contract hashes to `8dee92d80c028ed3`, which `EngineRelease.bridge` and
+`bridge.test.ts` now carry. Builds 3 and 4 stop receiving over-the-air engines: the US-61
+engine and this one reach them only through the next App Store build.
+
 Speed, measured 2026-10-21 (Node 22, esbuild bundle, an Intel iMac, the sample record
 padded to 526 rows; `--jitless` stands in for an app's JavaScriptCore, which runs without a
 JIT): build the plan 1.3 ms with JIT, 1.6 ms without; merge two copies 3.2 ms vs 4.6 ms.
@@ -266,7 +286,7 @@ A signature means "the key holder approved this bundle", nothing more.
   confirms in one place, `RecordStore.display`, whenever a draw of the user's record
   (launch, an edit, a unit switch, a cloud record, a return to the app) planned it; orchestrator's
   call, 2026-10-22, moved into the store 2026-10-25. It confirms only when the plan worked
-  or met health-core's own PlanError (no height or sex), never when the engine threw
+  or met health-core's own PlanError (no height; US-07 AC8), never when the engine threw
   (review R5, N1), and a later draw that plans re-checks a trial the first draw left open.
   So a crash or hang on the real record counts, not only one on the self-test's fixture,
   while quitting does not: the store draws the record before the first screen. What that
@@ -1001,7 +1021,9 @@ later.
 **Limits.**
 - Per key, exact and shared across machines (in `app_attest_use`, R4): 60 chat turns and
   30 lab files per UTC day.
-- Per IP, in memory: 10 registration attempts, 200 turns, 200 files a day. IPv6 is keyed
+- Per IP, in memory: 10 failed registration attempts and 50 successful registrations
+  (US-52 AC1b; a success hands its attempt back, and a store outage or a 409 hands the
+  success unit back, an outage the attempt too), 200 turns, 200 files a day. IPv6 is keyed
   on its /64, which one subscriber holds whole, so rotating addresses inside it buys
   nothing. IPv4 is keyed on the address, so phones behind one carrier NAT share a bucket:
   the price of having one; 200 is set high for that reason.
@@ -1010,8 +1032,19 @@ later.
   (`machineFiles`, `AI_DAILY_FILE_CAP`, 2000), but the app's own cap is smaller, so the
   app can never use up the web's and the connector's uploads (R5); the code also holds it
   at or under 15% of `AI_DAILY_FILE_CAP` whatever the env says.
-- Per IP, refused signed requests: 50 a day. Past that, the gate reads neither the key nor
-  the body (code review R3).
+- Per IP, signed requests refused before their signature verifies (a bad or garbage
+  assertion, an unknown key, a development key refused, an oversized body, a bad
+  signature): 200 a day. Past that, the gate reads neither the key nor the body (code
+  review R3).
+- Per key, in memory, refusals after the signature verifies (a stale counter, or a key
+  gone at the counter step): 20 a day, each handing the IP's unit back, so a broken phone
+  whose requests verify stops only itself (US-52 AC4c, 2026-11-01). A key past its 20 is
+  refused before the key read, by the header's key id, read-only: no key or body read,
+  and the IP's unit goes back. A parallel burst of one key's replays still does its key
+  reads, body reads and signature checks before 20 win the reserve. Residual: unverified
+  refusals from any client share the IP's 200, so a hostile client behind one IP can still
+  lock its neighbours out, after 200 instead of 50. Brad to decide: let a key id that
+  verified successfully on this machine in this window skip the IP backstop.
 - In memory means cap x machines, reset whenever a machine restarts: on deploy and on
   Fly's idle stop and start (`auto_stop_machines`). The per-key cap holds exactly; the
   machine caps bound the worst case.
@@ -1599,3 +1632,8 @@ is. Spec: docs/user-stories.md US-61.
 - **Hardware:** the build Mac is Intel. macOS 26 is the last Intel release, so a later
   required Xcode may need Apple silicon.
 - **Two release paths:** binary changes still go through App Review; plan for it.
+- **Follow-up: the "cannot plan" sentence (US-07 AC8, 2026-11-01).** Since the engine plans
+  without sex, health-core's `PlanError` means no usable height only, but `PlanView`'s
+  `.needsDetails` text still says "Add your sex and height on My data". It is left as it is
+  until an app release that ships with the new engine, so a new app on an old engine never
+  under-asks. Then build the sentence from the profile, naming only what is missing.

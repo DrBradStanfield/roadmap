@@ -53,7 +53,7 @@ describe('bridge contract (US-25 AC18)', () => {
   });
 
   // US-61 / D14: an optional trailing argument or return field keeps the bridge id, so
-  // over-the-air engines still reach builds 3 and 4 (bridge 2d467ff50c66c42d).
+  // over-the-air engines keep reaching the builds that serve it.
   it('optional additions name only contract doors, add only arguments and returns, and never repeat a contract arg', () => {
     expect(Object.keys(optional).sort()).toEqual(['about', 'doors']);
     for (const [name, door] of Object.entries(optional.doors)) {
@@ -85,12 +85,14 @@ describe('bridge contract (US-25 AC18)', () => {
     }
   });
 
-  // The id builds 3 and 4 carry. A real bridge change (anything an older app cannot do
-  // without) moves the id and updates this literal; bridge-optional.json is never a way
-  // around that, only for additions that work both ways (D3, D14).
-  it('the contract keeps the bridge id builds 3 and 4 carry (US-61 adds isUS and usProducts as optional)', () => {
+  // The id the app serves (EngineRelease.bridge). A real bridge change (anything an older
+  // app cannot do without) moves the id and updates this literal; bridge-optional.json is
+  // never a way around that, only for additions that work both ways (D3, D14). Moved
+  // 2026-11-01 (Brad: still in beta, no downloads): US-07 AC8's labEgfrOutdated plus
+  // US-61's optional isUS and usProducts; builds 3 and 4 no longer take OTA engines.
+  it('the contract hashes to exactly the bridge id the app serves (8dee92d80c028ed3)', () => {
     const bytes = readFileSync(join(__dirname, 'bridge-contract.json'));
-    expect(createHash('sha256').update(bytes).digest('hex').slice(0, 16)).toBe('2d467ff50c66c42d');
+    expect(createHash('sha256').update(bytes).digest('hex').slice(0, 16)).toBe('8dee92d80c028ed3');
     expect(contract.doors.screenJson.args).toEqual(['recordJson', 'nowIso', 'deviceId', 'unitsJson']);
     expect(optional.doors.screenJson.optionalArgs).toEqual(['isUS']);
   });
