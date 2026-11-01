@@ -62,9 +62,10 @@ describe('screening reminder eligibility (US-06, algorithm doc table)', () => {
     expect(scheduled(sex, age).has(category)).toBe(expected);
   });
 
-  it('lung needs a smoking history and at least 20 pack-years (ACS 2023, US-06 AC9)', () => {
-    expect(scheduled('male', 60, { ...ALL_STARTED, lungPackYears: 19 }).has('screening_lung')).toBe(false);
-    expect(scheduled('male', 60, { ...ALL_STARTED, lungPackYears: undefined }).has('screening_lung')).toBe(false);
+  it('lung needs a smoking history; a recorded screening is reminded at any pack-years (ACS 2023, US-06 AC9)', () => {
+    expect(scheduled('male', 60, { ...ALL_STARTED, lungPackYears: 19 }).has('screening_lung')).toBe(true);
+    expect(scheduled('male', 60, { ...ALL_STARTED, lungPackYears: undefined }).has('screening_lung')).toBe(true);
+    expect(scheduled('male', 60, { ...ALL_STARTED, lungScreening: 'not_yet_started' }).has('screening_lung')).toBe(false);
     expect(scheduled('male', 60, { ...ALL_STARTED, lungSmokingHistory: 'never_smoked' }).has('screening_lung')).toBe(false);
     expect(scheduled('male', 60, { ...ALL_STARTED, lungSmokingHistory: 'current_smoker' }).has('screening_lung')).toBe(true);
   });

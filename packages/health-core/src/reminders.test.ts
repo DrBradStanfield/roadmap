@@ -197,7 +197,7 @@ describe('due reminders on the schedule', () => {
       expect(result.reminders.find(r => r.category === 'screening_lung')).toBeUndefined();
     });
 
-    it('does not return lung reminder for smoker with < 20 pack-years (US-06 AC9)', () => {
+    it('returns lung reminder for a recorded screening below 20 pack-years (US-06 AC9)', () => {
       const screenings: ScreeningInputs = {
         lungSmokingHistory: 'former_smoker',
         lungPackYears: 19,
@@ -205,7 +205,7 @@ describe('due reminders on the schedule', () => {
         lungLastDate: monthsAgoYYYYMM(14),
       };
       const result = dueReminders(maleProfile, screenings, {}, [], NOW);
-      expect(result.reminders.find(r => r.category === 'screening_lung')).toBeUndefined();
+      expect(result.reminders.find(r => r.category === 'screening_lung')).toBeDefined();
     });
 
     it('returns PSA reminder for male age 50 who elected to screen and is overdue', () => {

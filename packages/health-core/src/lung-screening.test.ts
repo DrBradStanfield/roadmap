@@ -1,8 +1,10 @@
 // US-06 AC9 (Brad, 2026-11-01, issue #285): lung screening follows the American
 // Cancer Society's 2023 guideline. Ages 50 to 80, current or former smoker, at
-// least 20 pack-years, however long ago they quit. The plan's card, the emailed
-// reminder and the form's "Lung screening" question share one threshold, so a
-// person shown the card can always record that they have started.
+// least 20 pack-years, however long ago they quit. The plan's "Start" card and
+// the form's first "Lung screening" ask share one threshold, so a person shown
+// the card can always record that they have started. Once a screening is
+// recorded, its follow-up, status cards, reminder and stored answers show at
+// any pack-years (adversary R2, 2026-11-01).
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -29,13 +31,12 @@ const formAsksLungScreening = (age: number, s: ScreeningInputs) =>
 describe('US-06 AC9: lung screening at 20 pack-years (ACS 2023)', () => {
   it('a 60-year-old former smoker with 17 pack-years gets no card, no reminder and no screening question', () => {
     expect(lungCard(60, former(17))).toBeUndefined();
-    expect(lungReminder(60, started(17))).toBe(false);
+    expect(lungReminder(60, former(17))).toBe(false);
     expect(formAsksLungScreening(60, former(17))).toBe(false);
   });
 
   it('at 19 nothing; at 20 the card, the reminder and the form question all appear', () => {
     expect(lungCard(60, former(19))).toBeUndefined();
-    expect(lungReminder(60, started(19))).toBe(false);
     expect(formAsksLungScreening(60, former(19))).toBe(false);
 
     const card = lungCard(60, former(20));
@@ -49,8 +50,32 @@ describe('US-06 AC9: lung screening at 20 pack-years (ACS 2023)', () => {
     // At 80, someone with 40 pack-years who quit at 50 (30 years ago) still qualifies.
     expect(lungCard(80, former(40))).toBeDefined();
     expect(lungReminder(80, started(40))).toBe(true);
+    // The form asks exactly these three: a quit-date or quit-window question would break this.
     const lung = screeningForm(80, 'male', former(40)).flatMap((sec) => sec.groups).find((g) => g.id === 'lung')!;
-    expect(lung.fields.map((f) => ('key' in f ? f.key : f.metric))).not.toContain('lung_quit_year');
+    expect(lung.fields.map((f) => ('key' in f ? f.key : f.metric))).toEqual(['lung_smoking_history', 'lung_pack_years', 'lung_screening']);
+  });
+
+  it('a screening already recorded below 20 pack-years keeps its follow-up, reminder and stored answers', () => {
+    const recorded: ScreeningInputs = {
+      ...started(18), lungLastDate: '2026-03', lungResult: 'abnormal', lungFollowupStatus: 'not_organized',
+    };
+    const plan = calculateHealthResults(bornAged(60), 'si', undefined, recorded, undefined, NOW).suggestions;
+    expect(plan.find((x) => x.id === 'screening-lung')).toBeUndefined();
+    const followup = plan.find((x) => x.id === 'screening-lung-followup');
+    expect(followup?.priority).toBe('urgent');
+    expect(lungReminder(60, recorded)).toBe(true);
+    const lung = screeningForm(60, 'male', recorded).flatMap((sec) => sec.groups).find((g) => g.id === 'lung')!;
+    expect(lung.fields.map((f) => ('key' in f ? f.key : f.metric))).toEqual([
+      'lung_smoking_history', 'lung_pack_years', 'lung_screening', 'lung_last_date', 'lung_result', 'lung_followup_status',
+    ]);
+
+    // An up-to-date annual LDCT at 18 pack-years shows its status card.
+    const upToDate = calculateHealthResults(bornAged(60), 'si', undefined, { ...started(18), lungLastDate: '2026-03' }, undefined, NOW).suggestions;
+    expect(upToDate.find((x) => x.id === 'screening-lung-upcoming')?.title).toBe('Lung screening up to date');
+
+    // The age window and smoking history still apply.
+    expect(lungReminder(81, recorded)).toBe(false);
+    expect(lungReminder(60, { ...recorded, lungSmokingHistory: 'never_smoked' })).toBe(false);
   });
 
   it('ages 49 and 81 get no card and no reminder, even at 30 pack-years', () => {
@@ -74,6 +99,9 @@ describe('US-06 AC9: lung screening at 20 pack-years (ACS 2023)', () => {
     expect(ev.reason).toContain('20 pack-years');
     expect(ev.reason).not.toContain('15 pack-years');
     expect(ev.guidelines).toEqual(['ACS 2023']);
+    // The card's Why panel carries the guideline's two caveats (adversary R3).
+    expect(ev.reason).toContain('help to quit');
+    expect(ev.reason).toContain('serious illness limits life expectancy');
     expect(ev.references.map((r) => r.url)).toContain('https://doi.org/10.3322/caac.21811');
 
     const root = join(dirname(fileURLToPath(import.meta.url)), '../../..');
@@ -84,6 +112,9 @@ describe('US-06 AC9: lung screening at 20 pack-years (ACS 2023)', () => {
     expect(lungSection).toContain('at least a 20 pack-year smoking history');
     expect(lungSection).not.toContain('15 pack-year');
     expect(lungSection).not.toContain('quit within the past 15 years');
+    // ACS 2023 does not say screening stops at 80 (adversary R1); the plan's window still ends there.
+    expect(lungSection).not.toContain('Regular screenings are no longer recommended');
+    expect(lungSection).toContain('evidence suggests it may still help people in good health [132]');
     expect(text).toContain('10.3322/caac.21811');
   });
 });

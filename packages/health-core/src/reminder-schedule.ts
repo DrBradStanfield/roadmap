@@ -15,7 +15,7 @@
  * and specific is the point — but never carry results, values, or reasoning.
  */
 import type { ScreeningInputs } from './types';
-import { getPostFollowupDueDate, getScreeningNextDueDate, LUNG_SCREENING_MIN_PACK_YEARS } from './types';
+import { getPostFollowupDueDate, getScreeningNextDueDate } from './types';
 import type {
   MeasurementDates,
   MedicationRecord,
@@ -139,11 +139,11 @@ function screeningSchedule(
     ));
   }
 
-  // Lung (age 50-80, current or former smoker with 20+ pack-years — ACS 2023)
+  // Lung (age 50-80, current or former smoker — ACS 2023). A recorded screening is reminded at any
+  // pack-years: the threshold gates only the plan's start card and the form's first ask (US-06 AC9).
   if (
     age >= 50 && age <= 80 &&
     (s.lungSmokingHistory === 'former_smoker' || s.lungSmokingHistory === 'current_smoker') &&
-    s.lungPackYears !== undefined && s.lungPackYears >= LUNG_SCREENING_MIN_PACK_YEARS &&
     s.lungScreening && s.lungScreening !== 'not_yet_started'
   ) {
     push('screening_lung', 'Lung screening (low-dose CT)', earliest(

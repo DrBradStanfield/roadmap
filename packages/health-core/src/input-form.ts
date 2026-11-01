@@ -435,7 +435,8 @@ export function screeningForm(age: number | undefined, sex: string | undefined, 
       if (history === 'former_smoker' || history === 'current_smoker') {
         fields.push({ kind: 'number', key: 'lung_pack_years', label: X.packYearsLabel, hint: X.packYearsHint, value: str('lung_pack_years'), min: 0, max: 200 });
         const packYears = scr.lungPackYears;
-        if (packYears !== undefined && packYears >= LUNG_SCREENING_MIN_PACK_YEARS) {
+        // The threshold opens the first ask; a stored answer always shows (US-06 AC9).
+        if ((packYears !== undefined && packYears >= LUNG_SCREENING_MIN_PACK_YEARS) || str('lung_screening')) {
           fields.push(choice('lung_screening', L.lungScreening, O.lung_screening));
           if (str('lung_screening') === 'annual_ldct') fields.push(month('lung_last_date', L.lastLdct), ...resultChain('lung', 'annual_ldct'));
         }

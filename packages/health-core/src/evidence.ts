@@ -513,7 +513,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'screening-lung': {
-    reason: 'The American Cancer Society (2023) recommends yearly low-dose CT screening for people aged 50–80 who smoke or used to smoke and have a smoking history of ≥20 pack-years, however long ago they quit. Low-dose CT can detect lung cancer at an early, treatable stage, significantly reducing lung cancer mortality. Before deciding, discuss the benefits, limits and possible harms of screening with your doctor.',
+    reason: 'The American Cancer Society (2023) recommends yearly low-dose CT screening for people aged 50–80 who smoke or used to smoke and have a smoking history of ≥20 pack-years, however long ago they quit. Low-dose CT can detect lung cancer at an early, treatable stage, significantly reducing lung cancer mortality. Before deciding, discuss the benefits, limits and possible harms of screening with your doctor. Current smokers should be offered help to quit, and screening is not advised when serious illness limits life expectancy or the person could not or would not have treatment.',
     guidelines: ['ACS 2023'],
     references: [
       ...REFS_SCREENING_ACS,

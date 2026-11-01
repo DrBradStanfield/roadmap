@@ -918,12 +918,12 @@ export function generateSuggestions(
       }
     }
 
-    // Lung (age 50-80, current or former smokers with 20+ pack-years, no quit-window limit — ACS 2023)
+    // Lung (age 50-80, current or former smokers, no quit-window limit — ACS 2023). The pack-year
+    // threshold gates only the start card; a recorded screening keeps its follow-up at any pack-years.
     if (age >= 50 && age <= 80 &&
-        (screenings.lungSmokingHistory === 'former_smoker' || screenings.lungSmokingHistory === 'current_smoker') &&
-        screenings.lungPackYears !== undefined && screenings.lungPackYears >= LUNG_SCREENING_MIN_PACK_YEARS) {
+        (screenings.lungSmokingHistory === 'former_smoker' || screenings.lungSmokingHistory === 'current_smoker')) {
       if (!screenings.lungScreening || screenings.lungScreening === 'not_yet_started') {
-        suggestions.push({
+        if (screenings.lungPackYears !== undefined && screenings.lungPackYears >= LUNG_SCREENING_MIN_PACK_YEARS) suggestions.push({
           id: 'screening-lung',
           category: 'screening',
           priority: 'attention',

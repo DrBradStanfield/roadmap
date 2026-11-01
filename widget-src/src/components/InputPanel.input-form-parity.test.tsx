@@ -114,6 +114,13 @@ describe('US-06 AC9 — the web form asks about lung screening from 20 pack-year
     expect(container.querySelector('#lung-pack-years')).not.toBeNull();
     expect(container.querySelector('#lung-screening') !== null).toBe(shown);
   });
+
+  it('a screening recorded at 18 pack-years still shows its stored answer', () => {
+    const container = renderPanel({ sex: 'male', basis: { age: 60 }, screenings: {
+      lung_smoking_history: 'former_smoker', lung_pack_years: '18', lung_screening: 'annual_ldct',
+    } });
+    expect(container.querySelector<HTMLSelectElement>('#lung-screening')?.value).toBe('annual_ldct');
+  });
 });
 
 describe('US-25 AC8, US-06 — the web medication cards are medicationForm', () => {

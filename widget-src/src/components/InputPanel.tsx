@@ -1832,7 +1832,7 @@ export function InputPanel({
                       <span className="field-hint">{SCREENING_TEXT.packYearsHint}</span>
                     </div>
 
-                    {scr.lungPackYears !== undefined && scr.lungPackYears >= LUNG_SCREENING_MIN_PACK_YEARS && (
+                    {((scr.lungPackYears !== undefined && scr.lungPackYears >= LUNG_SCREENING_MIN_PACK_YEARS) || readScreening(scr, 'lung_screening')) && (
                       <>
                         <div className="health-field">
                           <label htmlFor="lung-screening">{SCREENING_LABELS.lungScreening}</label>
