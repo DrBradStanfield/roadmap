@@ -49,6 +49,7 @@ import {
   type RecordHoldings,
   isSex,
   formatHeightDisplay,
+  birthRefusedMessage,
 } from '@roadmap/health-core';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import type { MoveTestApi } from './MoveTestPanel';
@@ -287,6 +288,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const [screenings, setScreenings] = useState<ApiScreening[]>([]);
   const [supplements, setSupplements] = useState<ApiSupplement[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // US-54 AC5b: the birth month a save refused, in words, until the next birth edit.
+  const [birthRefused, setBirthRefused] = useState<string | null>(null);
   const [hasApiResponse, setHasApiResponse] = useState(false);
   // The relay is created once; the load path it calls changes identity on
   // most renders, so it is reached through a ref (US-34 AC4).
@@ -615,21 +618,32 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     const hasChanges = autoSaveFields.some(f => inputs[f] !== previousInputsRef.current[f]);
     if (!hasChanges) return true;
 
-    const success = await saveChangedMeasurements(currentPrefill, previousPrefill, erase);
-    if (success) {
-      for (const field of autoSaveFields) {
-        (previousInputsRef.current as any)[field] = inputs[field];
-      }
-      // The chat copy holds the saved profile beside the saved values it
-      // already has (US-15 AC10).
-      patchMirror({ profile: { ...previousInputsRef.current } });
-      // The form is clean again — apply any remote change held back while it
-      // was dirty (US-34 AC4).
-      remoteRelay.saved();
-    } else {
+    const result = await saveChangedMeasurements(currentPrefill, previousPrefill, erase);
+    if (!result.ok) {
       writeRefused();
+      return false;
     }
-    return success;
+    const refused = result.birthRefused;
+    const kept = new Set<keyof HealthInputs>(refused ? ['birthYear', 'birthMonth'] : []);
+    for (const field of autoSaveFields) {
+      if (!kept.has(field)) (previousInputsRef.current as any)[field] = inputs[field];
+    }
+    if (refused) {
+      // US-54 AC5b: the form shows the record's pair again, unless typed over
+      // since, so it is clean and a remote change still applies (US-34 AC4).
+      const saved = previousInputsRef.current;
+      setInputs(prev => (prev.birthYear === inputs.birthYear && prev.birthMonth === inputs.birthMonth
+        ? { ...prev, birthYear: saved.birthYear, birthMonth: saved.birthMonth }
+        : prev));
+      setBirthRefused(birthRefusedMessage(refused.birthYear, refused.birthMonth));
+    }
+    // The chat copy holds the saved profile beside the saved values it
+    // already has (US-15 AC10).
+    patchMirror({ profile: { ...previousInputsRef.current } });
+    // The form is clean again — apply any remote change held back while it
+    // was dirty (US-34 AC4).
+    remoteRelay.saved();
+    return true;
   }
 
   // Auto-save demographics + height only (debounced)
@@ -1059,6 +1073,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     if (unit) typedIn.current[field] = { value, unit };
     // The user's own sex or height outranks a chat proposal for it (US-16 AC2).
     if (field === 'sex' || field === 'heightCm') setProfileProposal(null);
+    if (field === 'birthYear' || field === 'birthMonth') setBirthRefused(null);
     setInputs(prev => ({ ...prev, [field]: value }));
   }, []);
   // US-60: the plan card's answer saves as a profile field, as Starting Info's
@@ -1321,7 +1336,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     inputs,
     effectiveInputs,
     onChange: handleInputChange,
-    errors,
+    errors: birthRefused ? { ...errors, birthMonth: birthRefused } : errors,
     unitSystem,
     onUnitSystemChange: handleUnitSystemChange,
     unitOverrides,

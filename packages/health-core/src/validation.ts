@@ -16,6 +16,12 @@ export const METRIC_TYPES = [
 
 export type MetricTypeValue = typeof METRIC_TYPES[number];
 
+/** This year in the zone furthest ahead (UTC+14), as `birthInFuture` judges the
+ *  month. Read at each check, so a tab or server left running across New Year
+ *  takes the new year. */
+const latestYear = () => Number(latestDayOnEarth(new Date()).slice(0, 4));
+const notFutureYear = (year: number) => year <= latestYear();
+
 /**
  * Schema for validating health inputs.
  *
@@ -48,7 +54,7 @@ export const healthInputSchema = z.object({
   birthYear: z
     .number()
     .min(1900, 'Birth year must be after 1900')
-    .max(new Date().getFullYear(), 'Birth year cannot be in the future')
+    .refine(notFutureYear, 'Birth year cannot be in the future')
     .optional(),
   birthMonth: z
     .number()
@@ -198,6 +204,17 @@ export function inputsPressureInverted(inputs: Partial<HealthInputs>, days: Pres
 
 /** US-54 AC5b. */
 export const BIRTH_IN_FUTURE = 'Your birth month cannot be in the future.';
+
+/**
+ * US-54 AC5b: what the web says under Birth Month after a save refused a
+ * birth month. The iPhone and the agents refuse before anything changes and
+ * say BIRTH_IN_FUTURE; the web has already put the record's pair back in the
+ * form, so it names what it did not save.
+ */
+export function birthRefusedMessage(year: number, month?: number): string {
+  const name = month ? `${new Date(Date.UTC(2000, month - 1)).toLocaleString('en-US', { month: 'long', timeZone: 'UTC' })} ` : '';
+  return `${name}${year} is in the future, so it was not saved.`;
+}
 
 /**
  * US-54 AC5b: a birth month after this one. "This month" is the one the zone
@@ -383,7 +400,7 @@ export const profileUpdateSchema = z.object({
     .number()
     .int()
     .min(1900, 'Birth year must be after 1900')
-    .max(new Date().getFullYear(), 'Birth year cannot be in the future')
+    .refine(notFutureYear, 'Birth year cannot be in the future')
     .optional(),
   birthMonth: z
     .number()
@@ -548,7 +565,7 @@ export type DocumentType = typeof DOCUMENT_TYPES[number];
  * boundary values slightly outside SI ranges, causing false rejections.
  */
 const IDENTITY_FIELD_RANGES: Record<string, { min: number; max: number }> = {
-  birthYear: { min: 1900, max: new Date().getFullYear() },
+  birthYear: { min: 1900, get max() { return latestYear(); } },
   birthMonth: { min: 1, max: 12 },
   systolicBp: { min: 60, max: 250 },
   diastolicBp: { min: 40, max: 150 },

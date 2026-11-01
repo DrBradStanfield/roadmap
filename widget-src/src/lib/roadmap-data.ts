@@ -15,7 +15,7 @@ import {
   resolveLabCatalogEntry,
 } from '@roadmap/health-core';
 import { MEASUREMENT_REFUSALS_WITH_METRIC } from '@roadmap/health-core/product-events';
-import { RoadmapStore, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome } from '../storage/roadmap-store';
+import { RoadmapStore, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
 import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
@@ -178,8 +178,8 @@ export function previewMove(from: string, to: string): MovePlan | MoveRejection 
 export async function moveBloodTest(from: string, to: string, expectedIds: string[], keep: MoveKeep, erase?: string): Promise<MoveOutcome> {
   return store ? store.moveBloodTest(from, to, expectedIds, keep, erase) : { status: 'error' };
 }
-export async function saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): Promise<boolean> {
-  return store ? store.saveChangedMeasurements(current, previous, erase) : false;
+export async function saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): Promise<ProfileSave> {
+  return store ? store.saveChangedMeasurements(current, previous, erase) : { ok: false };
 }
 export async function saveMedication(medicationKey: string, drugName: string, doseValue: number | null = null, doseUnit: string | null = null, erase?: string): Promise<boolean> {
   return store ? store.saveMedication(medicationKey, drugName, doseValue, doseUnit, erase) : false;
