@@ -33,6 +33,12 @@ enum DayText {
         date(day)?.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, timeZone: .gmt)) ?? day
     }
 
+    /// "Oct 2026" from YYYY-MM-DD, a My data row's date as the web's rows print it (US-62 AC8);
+    /// the text as given if it is not a day.
+    static func monthYear(_ day: String) -> String {
+        date(day)?.formatted(Date.FormatStyle(timeZone: .gmt).month(.abbreviated).year()) ?? day
+    }
+
     /// A card's day or time, as Apple Health writes it on its cards (US-25 AC17, US-56 AC6):
     /// "Today" (or, with `time`, the time of a reading today), "Yesterday", then the short date.
     static func when(_ date: Date, time: Bool = false, now: Date, calendar: Calendar) -> String {

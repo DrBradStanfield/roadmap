@@ -6,7 +6,9 @@
 # a branch that never got a PR; nothing caught a PR that was opened and then
 # left. This daily audit lists every open PR with no activity for 48h in ONE
 # issue, refreshed each run, so a burst of idle PRs is one email, not dozens.
-# github-actions[bot] is the author, so the issue emails Brad natively. When
+# The issue is assigned to Brad, which emails him (a bot issue alone emails
+# nobody; GHSA-rmrp-qfvm-jf2p). Only the bot's own issue is ever updated, and PR
+# titles are escaped so an outsider's title cannot ping or link from it. When
 # nothing is stale, the issue is closed with a note.
 name: Stale PR watch
 
@@ -44,7 +46,12 @@ jobs:
             const found = await github.rest.search.issuesAndPullRequests({
               q: `repo:${owner}/${repo} is:issue is:open in:title "Stale pull requests"`,
             });
-            const open = found.data.items.find(i => i.title === TITLE);
+            // The bot's own issue only: anyone can open one with the same title.
+            const open = found.data.items.find(i => i.title === TITLE && i.user?.login === 'github-actions[bot]');
+            // A PR title is outsider text: escape table and markdown syntax, defuse @mentions.
+            // Bare URLs autolink in GitHub Markdown, so break "://" and "www." too.
+            const cell = t => t.replace(/[\\|`*_~[\]<>]/g, c => '\\' + c).replace(/@/g, '@\u200b')
+              .replace(/:\/\//g, ':\u200b//').replace(/\bwww\./gi, m => m.slice(0, 3) + '\u200b.');
             if (stale.length === 0) {
               if (open) {
                 await github.rest.issues.createComment({ owner, repo, issue_number: open.number, body: 'No PR is idle over 48h now. Closing.' });
@@ -58,7 +65,7 @@ jobs:
               '',
               '| PR | Idle | Branch | Author |',
               '|---|---|---|---|',
-              ...stale.map(p => `| #${p.number} ${p.title.replace(/\|/g, '/')} | ${days(p)}d | \`${p.head.ref}\` | ${p.user.login} |`),
+              ...stale.map(p => `| #${p.number} ${cell(p.title)} | ${days(p)}d | ${cell(p.head.ref)} | ${p.user.login} |`),
               '',
               'What to do with each: merge it (CI green, main merged in, its review gates passed), close it with a note on where its work went, or, if Brad is still deciding, say so in a comment (that resets the clock).',
               '',
@@ -66,7 +73,11 @@ jobs:
             ].join('\n');
             if (open) {
               await github.rest.issues.update({ owner, repo, issue_number: open.number, body });
+              // An issue opened before assignment existed gets Brad now.
+              if (!open.assignees?.some(a => a.login === 'DrBradStanfield')) {
+                await github.rest.issues.addAssignees({ owner, repo, issue_number: open.number, assignees: ['DrBradStanfield'] });
+              }
               await github.rest.issues.createComment({ owner, repo, issue_number: open.number, body: `Still ${stale.length} stale PR(s); the list above is refreshed.` });
             } else {
-              await github.rest.issues.create({ owner, repo, title: TITLE, body });
+              await github.rest.issues.create({ owner, repo, title: TITLE, body, assignees: ['DrBradStanfield'] });
             }
