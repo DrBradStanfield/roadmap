@@ -5114,6 +5114,38 @@
     "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-10-23 (masters-new-1); not run. Key safety points: \"In 5 healthy men, the antidepressant fluvoxamine raised exposure to a melatonin dose 17-fold [126]. If you take fluvoxamine, check with your doctor or pharmacist before using melatonin.\" The old text said only \"significantly increases melatonin absorption\", with no size."
   },
   {
+    "category": "masters-cleanup-5",
+    "source": "us-42-ac5-masters-cleanup-5-2026-11-01",
+    "pending": "masters-cleanup-5 not deployed",
+    "surface": "doctor",
+    "query": "How long before bed should I take melatonin?",
+    "answer_handles": [
+      "melatonin-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "\\b3 ?(?:to|-|–) ?4 hours\\b|\\bthree to four hours\\b"
+    ],
+    "must_not_match": [
+      "\\b(?:[Bb]rad|[Hh]e|I) (?:now |currently )?(?:suggests?|recommends?|advises?) (?:taking (?:it|melatonin) )?(?:about |around )?2 ?(?:to|-|–) ?4 hours"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, pre-registered 2026-11-01 (masters-cleanup-5, issue #437); not run. How and When to Take: \"Brad suggests taking melatonin 3 to 4 hours before you want to fall asleep (Brad's current guidance, 26 Oct 2026).\" Fails on the base, which gave 2 to 4 hours as his current guidance. Trial timings (1 hour before bed) may still be quoted, and so may the March 2026 \"around 2 to 4 hours\" as history: must_not_match needs the old range straight after the verb (Codex R1 2026-11-01). Passes: \"Brad now suggests 3 to 4 hours, rather than 2 to 4 hours as before.\" Fails: \"Brad suggests taking melatonin about 2 to 4 hours before bed.\""
+  },
+  {
+    "category": "masters-cleanup-5",
+    "source": "us-42-ac5-masters-cleanup-5-2026-11-01",
+    "pending": "masters-cleanup-5 not deployed",
+    "surface": "brand",
+    "query": "When should I take Sleep by Dr Brad?",
+    "answer_handles": [],
+    "must_match": [
+      "\\b3 ?(?:to|-|–) ?4 hours\\b|\\bthree to four hours\\b"
+    ],
+    "must_not_match": [
+      "(?:[Tt]ake|[Tt]aking) (?:it|them|Sleep|4 capsules|the capsules|four capsules) (?:about |around )?(?:1|one|2|two) hours? before"
+    ],
+    "notes": "US-42 AC5, pre-registered 2026-11-01 (masters-cleanup-5, issue #437); not run. products.md Sleep timing: \"4 capsules 3 to 4 hours before you want to fall asleep. The label says 3 hours, which sits inside that range.\" Fails on the base, which said about 3 hours. answer_handles = [] (product answers come from products.md, not an article)."
+  },
+  {
     "category": "masters-new-1",
     "source": "us-42-ac5-masters-new-1-2026-10-23",
     "pending": "masters-new-1 not deployed",
