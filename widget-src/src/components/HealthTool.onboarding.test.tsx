@@ -12,12 +12,13 @@
  * real `trackProductEvent` runs, so the event tests read the POSTs.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, waitFor, type RenderResult } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, waitFor, within, type RenderResult } from '@testing-library/react';
 import { localDay, ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveDocuments, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
 import { MIRROR_KEY } from '../lib/storage';
+import { openAboutYou } from '../testing/health-tool-harness';
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -88,11 +89,13 @@ async function recordOnDisk(): Promise<RoadmapFile> {
 const activeWeights = async () => (await recordOnDisk()).measurements
   .filter((m) => m.metricType === 'weight' && m.status === 'active').map((m) => [m.value, m.recordedAt.slice(0, 10)]);
 
-/** The tool, once the record has loaded (the profile card shows Height). */
+/** The tool, once the record has loaded (the profile card shows Height), with
+ *  a complete record's About you rows opened, so each field shows (US-62 AC12). */
 async function open(): Promise<RenderResult> {
   const view = render(<HealthTool />);
-  await waitFor(() => expect(view.container.querySelector('#heightCm')).toBeTruthy());
+  await waitFor(() => expect(view.container.querySelector('#heightCm, .about-row')).toBeTruthy());
   await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+  openAboutYou(view.container);
   return view;
 }
 const q = (view: RenderResult, sel: string) => view.container.querySelector(sel);
@@ -181,6 +184,51 @@ describe('US-62 AC13: the weight saves when its field is left (B10)', () => {
     await waitFor(async () => expect(await activeWeights()).toEqual([[79, TODAY]]), { timeout: 2000 });
     const rows = (await recordOnDisk()).measurements.filter((m) => m.metricType === 'weight');
     expect(rows.map((r) => r.status).sort()).toEqual(['active', 'entered-in-error']);
+  });
+});
+
+describe('US-62 AC12, AC13 (Brad 2026-11-02): boxes while typing, rows after', () => {
+  const sectionOrder = (view: RenderResult) =>
+    [...view.container.querySelectorAll('.health-input-panel h3')].map(h => h.textContent!.replace('\u25B8', '').trim())
+      .filter(t => ['Vitals', 'Blood tests', 'Supplements', 'About you', 'Starting Info'].includes(t));
+  const aboutRows = (view: RenderResult) => [...view.container.querySelectorAll('.about-row')]
+    .map(r => [r.querySelector('.about-row-label')!.textContent, r.querySelector('.about-row-value, .md-row-add')!.textContent]);
+
+  it('at desktop width a saved weight stays a plain box beside the height, holding its value, never a saved-value row', async () => {
+    const view = await open();
+    await measurements(view, '185', '90');
+    const boxes = q(view, '.sex-height-row')!;
+    expect([...boxes.querySelectorAll('input')].map(i => [i.id, i.value])).toEqual([['heightCm', '185'], ['weightKg', '90']]);
+    expect(boxes.querySelector('.collapsed-field-row')).toBeNull();
+    expect(boxes.children).toHaveLength(2);
+  });
+
+  it('the onboarding finished in this visit stays at the top as boxes; the next visit shows About you low, as rows, on desktop', async () => {
+    const view = await open();
+    await measurements(view, '185', '90');
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    birth(view, '6', '1985');
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    expect(sectionOrder(view)[0]).toBe('Starting Info');
+    expect(q(view, '#weightKg')).toBeTruthy(); // typed here, it stays beside the height for the visit
+    expect(q(view, '.about-row')).toBeNull();
+    await waitFor(async () => expect((await recordOnDisk()).profile.birthYear).toBe(1985), { timeout: 2000 });
+    view.unmount();
+
+    const again = render(<HealthTool />);
+    await waitFor(() => expect(q(again, '.about-row')).toBeTruthy());
+    expect(sectionOrder(again)).toEqual(['Vitals', 'Blood tests', 'Supplements', 'About you']);
+    expect(aboutRows(again)).toEqual([['Height', '185 cm'], ['Sex', 'Male'], ['Birth', 'June 1985']]);
+    expect(q(again, '#heightCm')).toBeNull();
+    expect(q(again, '.md-about-you #weightKg')).toBeNull(); // the weight lives in the vitals rows
+    // A tap opens the field itself, its why-line with it; Done gives the row back.
+    fireEvent.click(q(again, '#about-sex')!);
+    expect(within(q(again, '[data-about="sex"]') as HTMLElement).getByText(WHY_SEX)).toBeTruthy();
+    fireEvent.click(q(again, '#about-height')!);
+    expect((q(again, '#heightCm') as HTMLInputElement).value).toBe('185');
+    fireEvent.click(within(q(again, '[data-about="height"]') as HTMLElement).getByRole('button', { name: 'Done' }));
+    expect(q(again, '#heightCm')).toBeNull();
+    expect(q(again, '#about-height')).toBeTruthy();
   });
 });
 
