@@ -440,8 +440,8 @@ describe('US-52 AC4c: a verified key\'s failures are its own', () => {
     for (let i = 0; i < 20; i++) expect((await (await appChat(signed('/api/app/v1/chat', chatBody, { counter: 5 }), store)).json()).reason).toBe('stale_counter');
     // Its 20 failures handed the IP's units back.
     expect(appLimits.failures.remaining(ipBucket(IP))).toBe(200);
-    // Locked, its next request is the over-limit 429 with no key read and no body read; nothing
-    // is verified, so the IP's unit is kept. A forged request naming it gets the same.
+    // Locked, its next request is the over-limit 429 with no key read and no body read, and it
+    // hands the IP's unit back, so a retry loop cannot burn the neighbours' backstop. A forged request naming it gets the same.
     let reads = 0;
     const get = store.get.bind(store);
     store.get = async (keyId: string) => { reads++; return get(keyId); };
@@ -454,7 +454,7 @@ describe('US-52 AC4c: a verified key\'s failures are its own', () => {
     expect(reads).toBe(0);
     expect(lockedReq.bodyUsed).toBe(false);
     expect(forgedReq.bodyUsed).toBe(false);
-    expect(appLimits.failures.remaining(ipBucket(IP))).toBe(198);
+    expect(appLimits.failures.remaining(ipBucket(IP))).toBe(200);
     // The neighbour behind the same IP is untouched.
     expect((await appChat(signed('/api/app/v1/chat', { ...chatBody, stream: false }, { counter: 1, by: other }), store)).status).toBe(200);
     // The locked key's refusal reserved no shared unit: only the two passes spent one.
