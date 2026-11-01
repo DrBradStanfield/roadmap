@@ -1,125 +1,186 @@
-# Lifestyle change markers on the charts: plan (draft, 2026-11-02)
+# Change markers on the charts: the full plan (draft, 2026-11-02, revision 2)
 
-Planning only. Nothing here is built. Raised by Brad on 2026-11-02: when someone starts
-something new (more protein, a new exercise routine, a diet change), they note it, and the
-metric charts show a marker on that date so they can see whether the numbers moved. Brad's
-own words: "I don't actually know how this tracking would work... we need to thoroughly plan
-this out, and if this is even a good idea in the first place or not."
+Planning only. Nothing here is built. Brad raised the idea on 2026-11-02: when someone
+starts something new (more protein, a new exercise routine, a diet change), they note it,
+and the metric charts mark that date, so they can see whether the numbers moved.
 
-Review: one fresh adversary and one Codex (gpt-6.1-sol) pass on 2026-11-02; every finding is
-folded in below. The biggest: schema 3 is already claimed by the one-blood-table draft (Q8).
+**Revision 2** folds in Brad's answers to revision 1 (same day) and turns the plan into
+phases with full stories. Revision 1 was reviewed by a fresh adversary and Codex
+(gpt-6.1-sol); their findings are kept below. Revision 2 has had one fix-scoped re-check.
 
-Short answer: worth building in a small, honest form, mostly for the measures people take
-often (weight, waist, home blood pressure, and on the iPhone the Apple Health metrics).
-Weak for blood tests, where most people have two or three results a year and one result
-after a change says very little. The risk is not the marker. It is the conclusion a person
-draws from it. The design below keeps the marker and refuses to draw the conclusion for them.
+## 0. Brad's decisions so far, and what I make of them
 
-## 1. Is it worth building?
+| # | Brad (2026-11-02) | What the plan now does | Where I push back |
+| --- | --- | --- | --- |
+| D1 | Blood tests do respond: exercise and better eating change HbA1c and cholesterol. | Agreed; revision 1 was wrong to call blood tests a weak case. Markers draw on every blood-test chart. | Only the narrower point stays: one result after a change is noisy, and a second result is what shows a trend (section 1). |
+| D2 | We have steps and VO2 max, so put in automatic markers. | Phase 4: the iPhone spots a sustained change in steps and offers it as a marker. | Steps are behaviour; VO2 max and resting heart rate are outcomes, like LDL. Outcomes get markers; they should not create them. And a fully automatic marker would fire on a holiday, an illness or a phone left in a drawer. I recommend "suggest, then the person confirms" (F3). |
+| D3 | The risk is getting the markers wrong. Changes made within two or three months of each other, a statin included, become one marker that lists them all. | Section 3: **one marker per period.** Changes within 90 days of a period's first change join it. Medication changes join the same periods. | Agreed: grouping shows the person that several things changed at once, which is the confounding problem made visible. It does not cure regression to the mean, so I still suggest one quiet caption (F5). Grouping also replaces the approved rule that each medication change has its own pin (US-06 AC4), so I ask you to confirm that (F2). |
+| D4 | Check the medication marker counter first: yes. | Phase 0, its own small story. | None. |
+| D5 | Chat and assistants: good, needs a proper story. | Phases 1 and 5, each with a story below. | None. |
+| D6 | Every chart, but tasteful, without clutter. | Section 3 sets the look: one neutral marker style, no words on the chart, grouping keeps the count low. | None. |
+| D7 | Schema bump: yes. | Phase 2. | The version number still clashes with the one-blood-table plan (F6). |
+| D8 | The iPhone chat must edit the record ("my blood pressure is now XYZ"). | Phase 1, a story of its own: the iPhone chat proposes every edit the web chat proposes. It ships before markers and does not wait for them. | Agreed. It is worth more than markers on its own, so I put it first (F7). |
 
-### Who benefits
+Still open from revision 1, and asked again in section 8: the start date (F8), the caption
+(F5), what Remove deletes (F9) and the success bar (F10).
 
-- **People who measure often.** Weight, waist and home blood pressure can show a trend
-  within weeks. A marker on "started walking 30 minutes a day" next to eight weekly weights
-  is a fair picture. On the iPhone, steps, sleep and resting heart rate (US-56) move fastest
-  of all, and they are the measures a lifestyle change most directly shows up in. Those
-  pages are iPhone-only (Apple Health data never enters the record), so markers there have
-  no web twin. See section 3.
-- **People who recheck blood tests on purpose.** Someone who changed their diet after a
-  high LDL and rechecks in two or three months. For them the marker answers "what was I
-  doing between these two tests?", which memory does badly.
-- **Brad's video audience.** The plan already tells people what to change. A marker closes
-  the loop the plan opens ("you started this on 12 October") and gives the person a reason
-  to come back and add the next reading. That is the retention case, and it is plausible,
-  not proven.
-- **The chat and agents.** A dated list of what the person changed is context the chatbot
-  lacks today. "Your LDL fell after you started the oats in August" is only possible if the
-  record knows about the oats.
+## 1. Why build it
 
-Who does not benefit much: a person with one blood test a year. A marker between two
-results a year apart, with five other things changed in between, tells them nothing.
+- **People who measure often.** Weight, waist and home blood pressure show a trend within
+  weeks. On the iPhone, steps, sleep and resting heart rate (US-56) move fastest of all.
+- **People who recheck blood tests.** Diet and exercise do move LDL and HbA1c (D1). Someone
+  who changed their eating after a high LDL and rechecks in two or three months gets the
+  answer to "what was I doing between these two tests?", which memory does badly.
+- **Retention.** The plan tells people what to change. A marker closes the loop ("you
+  started this on 12 October") and gives a reason to come back with the next reading.
+  Plausible, not proven.
+- **The chat and assistants.** A dated list of what the person changed is context the
+  chatbot lacks today.
 
-### What the evidence says
+The evidence is consistent with this helping a little. Self-monitoring of behaviour and
+outcomes is a standard behaviour-change technique; a meta-regression of healthy-eating and
+physical-activity interventions (Michie et al., Health Psychology, 2009) found
+self-monitoring combined with another self-regulation technique (goals, feedback) went with
+larger effects. A dated note is a lighter thing than that ongoing monitoring, so this is
+support, not proof.
 
-Self-monitoring helps behaviour change. Self-monitoring of behaviour and of outcomes, and
-feedback on outcomes, are standard behaviour-change techniques; a meta-regression of
-healthy-eating and physical-activity interventions (Michie et al., Health Psychology, 2009)
-found that self-monitoring combined with at least one other self-regulation technique was
-associated with larger effects. That finding is about ongoing monitoring tied to goals and
-feedback; a one-off dated note is a much lighter thing. So the evidence is consistent with a
-marker helping a little, through the habit of recording, not proof that it will. It does not
-support a chart that tells the person their change worked.
+### What still misleads, and what the design does about each
 
-Reading one person's chart as an experiment misleads in four known ways:
+1. **Test-to-test variation.** Results move with nothing changed: within-person variation
+   is roughly 1 to 3% for HbA1c, 5 to 10% for LDL and 20% or more for triglycerides
+   (approximate; check against the EFLM biological variation database before any of it
+   reaches users). *Design:* no before/after number anywhere; the person sees the dots.
+2. **Regression to the mean.** People change things after a bad result, and the next result
+   tends back toward their usual value whatever they did. *Design:* the caption (F5). No
+   marker style can fix this one.
+3. **Several changes at once.** A statin and a diet change in the same month. *Design:*
+   grouping (D3) puts them in one marker, so the chart cannot credit one alone.
+4. **Timing.** LDL responds to diet within a few weeks; HbA1c reflects roughly the previous
+   two to three months. *Design:* none in this plan. A "recheck in 8 to 12 weeks" nudge
+   would be clinical timing advice for the algorithm doc, a separate decision.
 
-1. **Biological and analytical variation.** A result moves from one test to the next with
-   nothing changed. Within-person variation is roughly 1 to 3% for HbA1c, 5 to 10% for LDL
-   and 20% or more for triglycerides (approximate; check against the EFLM biological
-   variation database before any of this reaches users). The difference two results must
-   show before it is likely real (the "reference change value") is larger again: for LDL,
-   on the order of 20%; for triglycerides, more than 50%. A 10% drop in LDL after a diet
-   change is inside the noise.
-2. **Regression to the mean.** People change things after a bad result. The next result
-   tends to be closer to their usual value whether or not the change did anything. This is
-   the trap most likely to make a person credit a change that did nothing.
-3. **Confounding.** People change several things at once, and other things change around
-   them: weight, season, illness, a new medication, fasting or not, a different lab. A
-   statin started the same month as more protein will make the protein look powerful.
-4. **Timing.** LDL responds to a diet change within a few weeks, though one early result
-   still carries all the noise in point 1. HbA1c reflects average glucose over roughly the
-   previous two to three months, so an HbA1c a few weeks after a change measures mostly the
-   time before it.
+### Our own data, a warning
 
-A proper n-of-1 trial deals with these by repeating the switch on and off, measuring many
-times, and ideally blinding. A marker on a chart with three blood tests is none of that. It
-is an observation, and the app must present it as one.
+The medication markers already on the web's charts (US-06 AC4) have logged **zero**
+`medication_history_viewed` events in eight weeks. Product-health W43 and W44 mark the
+counter Suspect. We cannot tell whether people never open those charts or the counter is
+broken. Phase 0 settles it first (D4), because the new marker counter would copy the same
+pattern.
 
-### The real harm
+We also cannot count how many people have three or more readings of a metric: the data is
+local-first and never reaches the server. I don't know that number, and it decides much of
+the value.
 
-Over-reading in both directions:
+## 2. The phases
 
-- **False credit.** LDL drops after "more protein" because of regression to the mean or the
-  statin, and the person stops the statin because "diet worked". This is the serious one.
-- **False discouragement.** LDL rises 8% after a sensible diet change, inside the noise, and
-  the person abandons a change that would have helped over a year.
+| Phase | What | Depends on | Ships to |
+| --- | --- | --- | --- |
+| 0 | Prove or fix the medication marker counter | nothing | web |
+| 1 | The iPhone chat proposes record edits (values, medicines, profile) | nothing | server + iPhone binary |
+| 2 | The `changes` array and the schema bump, readers first | the version ladder (F6) | health-core, iPhone binary first, then web |
+| 3 | Noting changes, grouped markers on every chart, both clients | 2 | web + iPhone |
+| 4 | The iPhone suggests a change from Apple Health steps | 3 | iPhone |
+| 5 | Chat and assistants note changes | 1 and 3 | server, web, iPhone, MCP, CLI |
 
-Both are worse if the app computes a before/after number. A drawn line on a date is
-neutral. "LDL down 12% since you started" is a claim the data cannot support.
+Phases 0 and 1 can run now and in parallel. Phase 2's iPhone binary can ride the same
+TestFlight build as phase 1, which saves a release.
 
-### One warning from our own data
+## 3. How the markers work (phase 3)
 
-The closest thing we have already built, medication changes on the web's charts (US-06
-AC4), has logged **zero** `medication_history_viewed` events in eight weeks. Product-health
-2026-W43 and W44 class the counter as **Suspect**: the emit (`HistoryPanel.tsx`) is gated on
-a chart that carries a post-AC4 medication change, and nobody has made a deliberate
-production view to test it (W38 backlog #4). So the check is more likely to find a broken
-counter than an answer about demand. It is still worth doing first, for two reasons: this
-plan's own `change_marker_viewed` would copy the same emit pattern, and until a working
-counter shows whether people open annotated charts at all, we are guessing at demand for a
-second kind of annotation. It costs an afternoon, plus a fix if the emit is broken.
+### One marker per period (D3)
 
-We also do not know how many people have three or more readings of any one metric. The
-health data is local-first and never reaches the server, so there is no way to count. That
-is the question that decides most of the value, and I don't know the answer.
+For each chart, the app collects the events that chart shows:
 
-### The simplest version that would still be useful
+- every change the person noted, and its end if they ended it (on every chart, D6);
+- every recorded medication change the existing map puts on that metric (a statin on LDL,
+  ApoB and total cholesterol; a GLP-1 on HbA1c, weight and triglycerides; and so on, as
+  `medication-annotations.ts` has it today);
+- every confirmed Apple Health suggestion (phase 4).
 
-A dated note ("30 g more protein a day", started 12 October) drawn as a marker on the
-charts, listed with its date under each chart, editable and removable, ended when the
-person stops. No before/after arithmetic, no "it worked" verdict, one plain caption. This is
-option B below.
+It sorts them by date and groups them: a period opens at its first event, and every event
+within 90 days of that first event joins it. The next event after that opens a new period.
+Anchoring on the first event (rather than chaining each event to the last) keeps a run of
+changes a few weeks apart from becoming one year-long period.
 
-## 2. Data model in the record
+So the LDL chart of someone who started atorvastatin on 10 September, noted "more walking" on
+1 October and "cut saturated fat" on 20 October shows **one** marker, on 10 September,
+reading "3 changes". The weight chart of the same person shows one marker of 2 changes (the
+statin is not mapped to weight).
+
+### The look (D6: tasteful, no clutter)
+
+- **One marker style for every kind**, medication or lifestyle: a thin dashed rule in a
+  neutral tint on the period's first day, with a small round tab at the top holding the
+  count ("3"), or a dot for a single change. No words on the chart. This replaces the
+  medication-only indigo rule.
+- **A period that spans weeks** gets a faint tick on the axis at its last event, nothing
+  more. Revision 1's shaded bands are dropped: with grouping they made the chart busy, and an
+  ended change is now its own event ("Stopped: low-carb diet").
+- **Tap or select** the tab, or its entry in the list: a small callout lists the period's
+  changes with their dates, and the rule darkens. A scrub along the chart still picks only
+  values.
+- **The list below the chart** shows one entry per period: "10 Sep to 20 Oct · Started
+  atorvastatin 10 mg, more walking, cut saturated fat". It expands to the dated items.
+- **Density.** With 90-day periods a five-year chart holds at most about 20, and real
+  records far fewer. If the visible range would draw more than six, the oldest merge into a
+  single "+N earlier" tab at the left edge, still listed below.
+- **The range** reaches the newest marker, as it does for medications now.
+- **Words.** "You noted: started more walking" for a note; "Recorded start: Atorvastatin
+  10mg" for a medication, as now (US-06 AC4). The note's day is the person's claim (F8); the
+  medication's is the day it was recorded.
+
+### Where a change is noted
+
+One sheet, three ways in:
+
+1. **The plan card (Brad's idea).** The lifestyle cards only: `protein-target`, `exercise`,
+   `fiber`, `lipid-diet`, `low-salt`, `high-potassium`, `trig-nutrition`, `sleep`, and
+   `reduce-alcohol` while it shows. A quiet "I've started this" link at the card's foot opens
+   the sheet with the title filled from the card and today's date. Afterwards the card says
+   "Started 12 Oct". Not on medication, screening or supplement cards: those have their own
+   start records.
+2. **The metric page.** "Note a change" under the chart's list, for changes no card covers.
+3. **The chat** (phase 5).
+
+The sheet holds a title, a category, "Started" (default today, never later, at most a year
+back) and Save. Tapping a change in a list opens it with Edit, "I've stopped" and Remove.
+A short "Changes you noted" list at the foot of My data, on both clients, finds changes
+that no chart shows yet.
+
+### Both clients, one rule
+
+The grouping, the words and the medication map live in one health-core projection
+(`changeMarkers(file, metric)`), beside `medication-annotations.ts`, which it absorbs. The
+web's `HistoryPanel` imports it; the iPhone engine serves it on `historyJson` in place of
+today's `markers`, so an over-the-air engine can change it. The iPhone's Apple Health pages
+draw their own charts (`LiveMetricPage.swift`, `SleepPage.swift`) and need a new engine
+field for the change list; the web has no such pages, so that is the one place the clients
+differ, by data, not by design.
+
+### Accessibility and masking
+
+- Screen readers read the list, not the rules (as US-25 AC9b does now): "Period 1, 10
+  September to 20 October, 3 changes: started atorvastatin 10 milligrams, more walking, cut
+  saturated fat".
+- The marker never relies on colour: the count and the list carry it.
+- Reduced motion: no draw-in (US-06 AC4a). Controls meet 44 pt on the phone and are
+  keyboard-reachable on the web.
+- The sheet, lists, callouts and tab labels show the person's own words. Every new web
+  surface carries `data-clarity-mask="true"`, with a case in `clarity-masking.test.tsx`
+  (portalled panels escape the tool root's mask). On the iPhone the window is already
+  masked (D9) and the text field carries `analyticsMasked()`.
+
+## 4. The record (phase 2)
 
 ### The shape
 
 One new append-only array in `RoadmapFile`, `changes`:
 
 ```ts
-/** A lifestyle change the person noted (story TBD). Append-only; edits are corrections. */
+/** A change the person noted (story B). Append-only; edits are corrections. */
 export interface FileChange {
   id: string;
-  /** Closed list; drives the icon and which plan card it links to. */
+  /** Closed list; picks the icon and links to a plan card. */
   category: 'nutrition' | 'protein' | 'exercise' | 'sleep' | 'alcohol' | 'weight' | 'other';
   /** The person's words, trimmed, at most 80 characters. */
   title: string;
@@ -129,7 +190,7 @@ export interface FileChange {
   endedOn: string | null;
   /** The plan card it was noted from, e.g. 'protein-target'; null otherwise. */
   suggestionId: string | null;
-  source: 'manual' | 'chat' | 'agent';
+  source: 'manual' | 'chat' | 'agent' | 'apple-health';
   createdAt: string;            // ISO instant of this row's write
   status: 'active' | 'entered-in-error';
   correctsId: string | null;    // the row this one replaces
@@ -138,423 +199,321 @@ export interface FileChange {
 }
 ```
 
-Why not reuse what exists:
-
-- **Not `supplementHistory` or `medicationHistory`.** Those are keyed by a product or drug
-  slot and drive the medication cascade. A lifestyle note in them would leak into plan logic.
-- **Not the profile.** LWW fields hold one current answer. A person can have several changes
-  over years, and the history is the point.
-- **Not `startedAt` semantics from medications.** US-06 AC4 deliberately marks the day a
-  medication change was *recorded*, never a claimed start. A lifestyle change is the
-  opposite case: the person often notes it a week later ("I started last Monday"), and the
-  claimed start is what makes the marker useful. So `startedOn` is the person's day, kept
-  apart from `createdAt`. The list says "You noted: started ..." so nobody reads it as a
-  measured fact. Back-dating is allowed up to a limit (proposed: one year; question Q4).
+Not `medicationHistory` or `supplementHistory` (they are keyed by drug or product and drive
+the cascade) and not the profile (one current answer, where a person has many changes over
+years).
 
 ### Create, edit, end, remove
 
-All writes append. No row is ever changed in place, as with measurements (FHIR invariant).
+Every write appends; no row changes in place (the FHIR rule the record already follows).
 
 | Action | What is written |
 | --- | --- |
 | Note a change | a new row, `correctsId: null` |
 | Edit (title, dates, category) | a new row with `correctsId` = the current row; the old row flips to `entered-in-error` |
-| End ("I stopped") | the same as an edit, with `endedOn` set |
-| Restart | a new change, not an edit; the old one keeps its end |
+| End ("I've stopped") | the same as an edit, with `endedOn` set |
+| Restart | a new change; the old one keeps its end |
 | Remove | a successor row with `removed: true`; the old row flips. Nothing shows. |
-
-Removal is a row, not a status flip, so a removal and an edit made on two devices resolve by
-the same last-write-wins rule as everything else (below), rather than by an accident of
-which flip arrived first.
 
 ### Merge across devices
 
-- Union by id through `unionRows`, so an id reused with different content is quarantined,
-  as for every other append-only array.
-- `status` is monotonic, as in `unionSlotRows`: once `entered-in-error`, never back.
-- **One active row per chain.** A chain is a row and every row that corrects it, followed to
-  its root. Two devices editing the same change offline each append a successor, which
-  leaves two active heads. The merge keeps the newer and flips the other. A head with
-  `removed: true` shows nothing.
-  - **Ordering:** compare `createdAt` as an instant (`stampInstant`), then id, so every
-    device lands on the same answer. Not raw string order (`rowIsNewer` compares strings,
-    so two offset spellings misorder). This is still clock-based: an edit made on a device
-    whose clock runs fast can beat a removal made later in real time. Medications have the
-    same weakness; `laterStamp`'s skew guard should stamp every change write.
-  - **Cycle-safe roots.** `correctsId` links are never verified (merge.ts header). A hand
-    edit or agent could write A corrects B and B corrects A. Root resolution must keep a
-    visited set and a depth cap, or every save on every writer hangs. A row in a cycle is
-    its own root.
-  - **Orphans.** A row whose `correctsId` names a row not in the file is its own root. This
-    happens after an erase: a stale device's edit of an erased change is rescued (a listing
-    erase admits unlisted rows; an unlisted erase rescues rows created after it), and the
-    change comes back in its edited form. That is the residual, the same one measurements
-    accept for a value typed after an erase. State it in the story.
-  - **Quarantined copies.** A `#dup-` copy from `unionRows` is a separate root. It shows as a
-    second change, which the person can remove.
-- **Duplicates and retries.** Changes have no natural slot, and the repo rule forbids deduping
-  on free text. So the writer makes the id once, before any retry: the sheet when it opens,
-  the chat banner when it shows, an agent tool from a caller-supplied `requestId`. A
-  double-pressed Save or a retried tool call then writes the same id twice, which
-  `unionRows` folds to one row.
-- **Erase.** Add `changes` to `ROW_STAMPS` (stamp `createdAt`) and to `CREATED_STAMPS`, so
-  "Delete all my data" lists and drops these rows and the post-erase rescue works (US-09
-  AC20, AC23). Miss this and an erased note returns from another device.
-- **US-65.** An unknown `category` from a newer build should read as `other` rather than hide
-  the row: the category only picks an icon. A row with a broken date is unreadable and
-  hidden, as US-65 does for any row a reader would crash on.
+- Union by id through `unionRows` (an id reused with different content is quarantined);
+  `status` monotonic as in `unionSlotRows`.
+- **One active row per chain** (a row and every row correcting it, followed to its root).
+  Two offline edits of one change leave two heads; the merge keeps the newer by `createdAt`
+  read as an instant (`stampInstant`), then by id, and flips the other. A `removed` head
+  shows nothing. This is clock-based like the medications' last-write-wins: a fast clock can
+  beat a removal made later in real time. `laterStamp`'s skew guard stamps every write.
+- **Cycle-safe roots.** `correctsId` is never verified (merge.ts header). Root resolution
+  keeps a visited set and a depth cap; a row in a cycle is its own root, so a hand edit can
+  never hang a save.
+- **Orphans** (a `correctsId` naming a row not in the file) are their own root. After an
+  erase, a stale device's edit of an erased change is rescued and comes back edited: the
+  same residual measurements accept for a value typed after an erase.
+- **Retries.** No natural slot, and no dedup on free text. The writer makes the id once,
+  before any retry (the sheet when it opens, the chat banner when it shows, an agent tool
+  from a caller's `requestId`), so a double Save or a retried call folds into one row.
+- **Erase.** `changes` joins `ROW_STAMPS` and `CREATED_STAMPS`, so "Delete all my data" lists
+  and drops them and the post-erase rescue works (US-09 AC20, AC23).
+- **US-65.** An unknown `category` reads as `other`; a broken date makes the row unreadable
+  and hidden.
 
-### The old-build trap (must fix before shipping)
+### The schema bump (D7) and the old-build trap
 
-An older build keeps unknown top-level fields when it reads the file (`migrate.ts` rule 1).
-But its merge mishandles them on both paths:
+An older build keeps unknown top-level fields on read, but its merge overwrites them: on
+equal epochs `...remote, ...local` makes its own copy of `changes` win whole, and the erase
+gate takes the winner's copy whole. A note made on the web would vanish the next time a
+stale build saved. Stale writers: iPhone builds 3 and 4 (no over-the-air engines), an
+un-updated stdio MCP or CLI, a self-hosted Pages fork, a tab left open across a deploy.
 
-- Equal epochs: it spreads `...remote, ...local`, so **its own copy of `changes` replaces
-  the remote one whole**. A note added on the web vanishes the next time a stale build saves.
-- Different epochs: the erase gate takes the winner's copy whole (`{ ...top, ...listing }`),
-  and `rowsSince` rescues only the arrays in `ROW_STAMPS`, so the losing copy's changes are
-  dropped.
+The fix follows the `erasedRows` precedent (US-09 AC23): stamp a new `schemaVersion` only on
+files that hold a change row, so an older build refuses exactly the files it would damage.
+Three conditions:
 
-Four kinds of writer can lag: an iPhone build that no longer receives over-the-air engines
-(builds 3 and 4), a stdio MCP or CLI the person installed and never updated, a self-hosted
-Pages fork, and a browser tab left open across a deploy.
+1. **The number** (F6): the one-blood-table plan (PR #551, its own proposed US-66) already
+   claims 3. Two meanings for one number reopen the trap.
+2. **Erase gets its own constant.** `CURRENT_SCHEMA_VERSION` doubles as the erase list's
+   version today (`migrate.ts:327`, `merge.ts:753`, `erase.ts:74`); bumped as is, every
+   erased file would jump to the new version with no change in it. The erase list keeps 2.
+3. **The lockout is total.** `migrate.ts` refuses a too-new file on read (US-65 AC5), so a
+   stale build cannot even show the record. Hence the order: the iPhone binary that reads
+   the new version ships through TestFlight first (iOS D3: an over-the-air engine may not
+   change the schema), and no client writes a change until it is out. Brad's phone holds real
+   data since 2026-11-02, so this order protects his record too.
 
-The fix has a precedent. US-09 AC23 stamps `schemaVersion` up only when a file actually
-carries `erasedRows`, so an older reader refuses that file and cannot damage it. Do the same,
-with three corrections the review found:
+### Every hard-coded array list
 
-1. **The version number is not free.** The one-blood-table draft (branch
-   `claude/one-blood-table`, its own proposed US-66) already claims schema 3 for "a record
-   whose `labValues` holds a core row". Two meanings for one number would let a build that
-   knows one feature read a file holding the other without refusing it, which is exactly the
-   trap. The two plans need one ladder (say, 3 for blood tests, 4 for changes) or one
-   combined bump. That is a decision for Brad (Q8).
-2. **Erase needs its own constant.** Today `CURRENT_SCHEMA_VERSION` doubles as the erase
-   list's version (`migrate.ts:327`, `merge.ts:753`, `erase.ts:74`). Bump it as written and
-   every file that ever had a listed erase becomes the new version on its next read, with no
-   change rows in it. The erase list keeps its own constant (2), as the one-blood-table draft
-   also proposes, and a changes-aware stamp goes into migrate, merge and every writer
-   (RoadmapStore, file-adapter, the hosted REST paths).
-3. **The lockout is total, not write-only.** `migrate.ts` refuses a too-new file on read
-   (US-65 AC5), so a stale build cannot even show the record. Only files that hold a change
-   are affected, but for those the person must update the app or CLI to see anything.
+Each needs `changes` and a test: `merge.ts` `ROW_STAMPS`/`CREATED_STAMPS`; `roadmap-doc.ts`
+`ROW_ARRAYS` (the shape gate) and `rowIds` (verify-after-write); `readable-rows.ts` `ROWS`;
+`migrate.ts` `recoveredClock`; `mcp-tools.ts` `readRecordOutput` and `RECORD_SECTIONS`
+(US-32 AC41); `docs/health-roadmap-file.schema.json` and `docs/agent-access.md`;
+`roadmap-data.ts`/`RoadmapStore` and the iPhone engine's edit entry.
 
-**Rollout order follows from 3.** iOS D3 forbids an over-the-air engine from changing the
-schema (`ios/engine/entry.ts`, `EngineManifest.swift` refuses a mismatch). So the iPhone
-binary that reads the new version ships through TestFlight first, and the web write path
-deploys only after it. Brad's phone has held real data since 2026-11-02: a change noted on
-the web before his build updates would lock his phone out of his record.
+### Removal and the person's words
 
-### Removal and the person's own words
+A removed note's title stays in the file until "Delete all my data", as a deleted
+measurement's value does. Whatever F9 decides: removed chains and superseded titles never
+reach `read_record`, the chat context or the readable view, and the Remove confirm says
+"Removed from your charts. Delete all my data erases it from your record file."
 
-A removal appends a row, so the removed note's title stays in the file, as a deleted
-measurement's value does. For a clinical value that is the FHIR rule. A change note is the
-person's free text ("stopped drinking"), and documents set the other precedent: "a deleted
-document is gone, text and all" to every reader. Whatever Brad picks (Q9), these hold:
+Merge, FHIR and the agent contract all change here: the orchestrator decides, a fresh
+adversary and Codex review before commit, and `merge.test.ts` covers two devices,
+concurrent edit, edit against remove, a cycle, an orphan after each kind of erase, a retried
+id, and old-build refusal.
 
-- Removed chains and superseded titles never reach `read_record`, the chat context or the
-  readable view. Only the current head of a live chain is read.
-- The Remove confirm says so plainly: "Removed from your charts. Delete all my data erases it
-  from your record file."
+## 5. Apple Health suggests a change (phase 4, iPhone only)
 
-### Every surface that lists the record's arrays
+**What triggers it: steps, and only steps, in v1.** Steps measure what the person does.
+VO2 max and resting heart rate measure what it did to them; they are outcomes, like LDL, so
+they get markers on their pages and never create one (D2). Sleep duration is behaviour too,
+but nights vary more and "I slept more" is rarely a deliberate change; leave it for v2.
 
-A new array is silently dropped or unchecked wherever a list of arrays is hard-coded. Each
-needs `changes` and a test:
+**The rule (thresholds for Brad, F4):** on app open, compare the average daily steps over
+the last 28 days (at least 21 days with data) with the 90 days before. A rise or fall of at
+least 25% and at least 1,500 steps a day is a candidate. Its start day is the first day of
+the first week whose average crossed halfway to the new level. At most one suggestion per
+90 days, and none within 90 days of a change the person noted in the exercise category.
 
-- `merge.ts` `ROW_STAMPS` and `CREATED_STAMPS` (erase).
-- `roadmap-doc.ts` `ROW_ARRAYS` (the shape gate: a non-list `changes` from a hand edit must be
-  refused, not migrated to an empty list) and `rowIds` (verify-after-write: without it, a
-  change lost to another writer is never noticed).
-- `readable-rows.ts` `ROWS` (the view cache keys on array lengths; US-65).
-- `migrate.ts` `recoveredClock`.
-- `mcp-tools.ts` `readRecordOutput` and `RECORD_SECTIONS` (US-32 AC41: every section, always).
-- `docs/health-roadmap-file.schema.json` and `docs/agent-access.md` (the published file
-  contract).
-- `roadmap-data.ts` / `RoadmapStore` (the web's write API) and the iPhone engine's edit entry.
+**What the person sees:** a card at the top of the steps page and in My data's Fitness
+section: "Your steps rose to about 8,900 a day since 3 September. Add it to your charts?"
+with Add, Not now and Don't suggest this. Add writes a normal change (`source:
+'apple-health'`, category exercise) that the person can edit or remove like any other.
 
-This is merge and FHIR code. It needs the orchestrator's call, a fresh adversary and Codex
-at build time, and round-trip tests in `merge.test.ts`: two devices, concurrent edit,
-edit-versus-remove, a correction cycle, an orphan after each kind of erase, a retried write
-with one id, and old-build refusal.
+**Why suggest and not just draw it (F3):** a step count also jumps on a holiday, falls in an
+illness, drops when the phone sits in a drawer, and shifts with a new watch. An automatic
+marker would draw every one of those on every chart, the clutter D6 rules out. A confirmed
+one is the person's own statement, and it syncs to the web like any note, so both clients
+show it.
 
-## 3. The interface, web and iPhone alike
+**What enters the record (F4b):** US-56 AC1 and AC3 promise that Apple Health's steps never
+enter the record and that the website, the CLI, the MCP and the chatbot never see them. A
+confirmed change is a row in the record, so its words must not carry the step count. The
+title says "Walking more (from Apple Health)"; the number shows only on the phone's card
+and is never stored. That keeps US-56's promise in letter and spirit, but the story still
+amends US-56 AC1 to say a confirmed change may come from Apple Health. "Not now" and "Don't
+suggest this" are kept on the phone with the kept cards (US-56 AC2), never in the record.
 
-Both clients read one health-core projection, `changeAnnotations(file, metric)`, beside
-`medication-annotations.ts`, so the words and the rules live in one place. The iPhone engine
-serves it on `historyJson` as it serves medication `markers` today (US-25 AC9b), so an
-over-the-air engine can change it.
+## 6. Chat and assistants
 
-### Where a change is noted
+### Phase 1: the iPhone chat edits the record (D8)
 
-Two entry points, one sheet:
+Today the iPhone chat proposes nothing (US-52 AC5: "No form edits are proposed to the app").
+The server turns the form tools off for app requests (`api.chat.ts`: `canApplyEdits` needs
+`!app`), `ChatClient.swift` advertises no capability and `ChatModels.swift` decodes no
+proposals. Phase 1 brings the web's three form tools to the phone, unchanged:
+`propose_field_edit` (values: "my blood pressure is 128/82"), `propose_medication_edit` and
+`propose_profile_edit`.
 
-1. **The plan card (Brad's idea).** On the lifestyle cards only: `protein-target`,
-   `exercise`, `fiber`, `lipid-diet`, `low-salt`, `high-potassium`, `trig-nutrition`, `sleep`
-   and, while it shows, `reduce-alcohol`. A quiet "I've started this" link at the foot of the
-   card. It opens the sheet with the category and title filled from the card ("More protein")
-   and today's date. Not on medication, screening or supplement cards: medications and
-   supplements already have their own start records.
-2. **The metric page.** "Note a change" under the chart's list. This catches changes no card
-   covers ("stopped drinking soft drinks").
+- **Server:** the app sends a capability (`edits: 1`); only then does the server offer the
+  tools, so an older app never gets a proposal it cannot show (the US-16 AC2 pattern). App
+  requests still store nothing (US-52 AC5, D9).
+- **Phone:** the engine parses proposals with health-core's `chat-edits.ts`, the web's one
+  parser. A banner under the reply shows them in the person's units ("Save: blood pressure
+  128/82 today?") with Save and Not now. Save writes through the engine's existing edit entry
+  (`applyEditJson`), the same path as typing the value, so the slot rule, corrections and
+  units are the ones the phone already uses. Nothing is written without Save.
+- **Erase:** a banner made before an erase dies with it (the US-16 AC2a rule).
 
-The sheet: a title (filled or typed), a category (picker), "Started" (a date, default today,
-no later than today, no earlier than a year ago), and Save. Nothing else. After saving, a
-card with an open change says "Started 12 Oct" under its link, so the person sees it took.
+### Phase 5: chat and assistants note changes
 
-Managing: tapping a change in a chart's list opens it with Edit, "I've stopped", and Remove
-(with a confirm). A small "Changes you noted" list sits at the foot of My data on both
-clients, so changes are findable when no chart shows them yet.
+- **Chat:** a fourth form tool, `propose_change_note` {title, category, startedOn}, on the web
+  and, through phase 1's capability (`edits: 2`), the iPhone. "I started eating 30 g more
+  protein last week" becomes "Note a change: more protein, started 26 Oct?" with Save and Not
+  now. The parser refuses a day in the future (by `latestDayOnEarth`, US-31 AC6) or more than
+  a year back. The banner makes the row's id when it shows.
+- **Chat context:** the widget's chat and the iPhone chat see the current head of each open
+  or recently ended change. The blog bubble and the chatbot embed do not (US-15 AC10 lists
+  what they send, and they keep transcripts). The chatbot never tells a person a change
+  worked from one result; that rule goes in the knowledge pipeline in claude_business.
+- **Assistants (MCP and CLI):** `read_record` returns the live changes; two write tools,
+  `note_change` {title, category, startedOn, requestId} and `end_change` {id, endedOn},
+  through `SyncManager` (merge on conflict, verify after write); the CLI's `note-change`.
+  Edit and remove stay in the apps. An agent-contract change: adversary plus Codex.
 
-### How markers draw
+## 7. Measurement and the stories
 
-- **Which charts.** Recommendation: every value chart, because the app makes no claim about
-  which change affects which number. Drawing protein only on weight would be a clinical
-  mapping the evidence does not support well (option C, section 6). Medication markers keep
-  their own mapping, unchanged.
-- **The mark.** A thin vertical rule on the start day, in a colour distinct from the
-  medication indigo, with a small numbered tab at the top. An ended change also draws a faint
-  shaded band from start to end, so "while I was doing this" reads at a glance. An ongoing
-  change shades to the chart's right edge.
-- **The range.** As for medications, the chart's range reaches the marker, so a change noted
-  after the last reading still shows.
-- **The list.** Under the chart, merged with the medication list by date: "1 · You noted:
-  started More protein · 12 Oct 2026". Selecting an entry highlights its marker (the US-06
-  AC4 behaviour, reused). A scrub still picks only values.
-- **Clutter.** At most three change markers drawn per chart range; past three, the oldest
-  draw as a single tick with "+N" and live in the list only. Weekly-scale charts rarely hit
-  this; a five-year LDL chart will.
-- **The caption.** One line under any chart that carries a change marker, fixed text, both
-  clients: "Markers show when you noted a change. Numbers vary from test to test, so one
-  result after a change rarely shows whether it worked." This is user-facing health wording:
-  Brad approves the exact words (Q5), and if it cites anything it goes through the three-file
-  sync.
+### Usage signals
 
-### Phone and desktop
+- **Phase 0:** the existing `medication_history_viewed`, proven by one deliberate production
+  view.
+- **Phase 1:** iPhone Clarity words "Chat edit proposed" and "Chat edit saved" (a D9 list
+  change). The save rate over the proposal rate says whether the proposals are right.
+- **Phases 3 to 5, web `product_events` (Shopify only):** `change_noted` {`entry`:
+  `plan_card` | `metric_page` | `chat` | `agent`} and `change_marker_viewed` (name only, once
+  per tab session, when a chart with a marker is on screen). Never a title, category, date
+  or count.
+- **iPhone Clarity words:** "Change noted", "Change marker seen", "Steps change suggested",
+  "Steps change added".
+- **Success, read 60 days after phase 3 (F10):** events carry a visitor id but no tab id, so
+  count by visitor and day. Of visitors with `results_viewed` on two or more days, at least
+  5% send `change_noted`, and half of those later send `change_marker_viewed`. Below 1%,
+  remove the feature. On the iPhone, at least a third of steps suggestions added.
 
-- iPhone: Swift Charts `RuleMark` and `RectangleMark` in `MetricChart.swift`, the list and
-  the sheet in `MetricDetailView.swift`, the card link in `PlanCardView.swift`. The tab label
-  must not collide with the medication rule; test in a 320 pt width.
-- Web: `HistoryPanel.tsx` today; whatever metric page US-62 lands by the time this builds.
-  Desktop has room for the band and the list side by side; a phone web view stacks them.
-- Apple Health pages (iPhone only): markers should draw there too, but those pages do not go
-  through `historyJson` or `MetricChart.swift`. They draw their own charts
-  (`LiveMetricPage.swift`, `SleepPage.swift`). They need a new engine field or door for the
-  change list (a bridge-contract question under D3) and their own chart work. Since the
-  "who benefits" case leans on these pages, this is not optional polish: without it, the
-  measures that move fastest show no markers. The web has no such pages, so this is the one
-  place the clients differ, by data, not by design. The story says so.
+### Story drafts (proposals; ids assigned when they land, US-66 is taken)
 
-### Accessibility
+> **Story 0 · The medication marker counter is proven (US-06 usage signal, Lane A)**
+> - AC1: one deliberate production view of a chart with a recorded medication change sends
+>   exactly one `medication_history_viewed`, seen in `product_events`.
+> - AC2: if it does not, the emit is fixed with a failing test first (`HistoryPanel.test.tsx`
+>   on a real store with a post-AC4 change), deployed, and the view repeated.
+> - AC3: the product-health loop's Suspect flag is cleared, or the counter is reported broken
+>   with its cause.
 
-- VoiceOver and screen readers read the list, not the rules, as US-25 AC9b does for
-  medications. Each list entry reads "Change 1, you noted, started More protein, 12 October
-  2026, ongoing".
-- The marker is never colour alone: the numbered tab and the list carry it.
-- Reduced motion: no draw-in for markers (US-06 AC4a).
-- The sheet's controls meet the 44 pt target on the phone and are keyboard-reachable on the
-  web.
+> **Story A · The iPhone chat saves what I tell it, after I confirm (amends US-52 AC5)**
+> As an iPhone user, when I tell the chat a value, a medicine or my height, it offers to save
+> it, and nothing is saved until I press Save, as on the website (US-16).
+> - AC1 (capability): the app sends `edits: 1`; the server offers `propose_field_edit`,
+>   `propose_medication_edit` and `propose_profile_edit` only then. An app without it gets
+>   none, as today. App requests still store nothing.
+> - AC2 (one parser): the engine parses proposals with `chat-edits.ts`; what the web refuses,
+>   the phone refuses, with the same "Not applied" tool result.
+> - AC3 (banner): proposals show under the reply in my units, naming any value they replace,
+>   with Save and Not now. VoiceOver reads the banner as one element, then its buttons.
+> - AC4 (write): Save writes through `applyEditJson`, so a held day offers a correction as
+>   typing does; Not now writes nothing.
+> - AC5 (erase): an erase on any device drops an unanswered banner.
+> - AC6 (signal): "Chat edit proposed" and "Chat edit saved", no value or field name.
+> - Gate check: a live write path and the chat server: adversary plus Codex. No clinical
+>   change.
 
-### Masking
+> **Story B · I note a change and see it on my charts, grouped with my medicines**
+> As someone following my plan, I note when I started a change, so my charts show what I was
+> doing when my numbers moved, without the app saying what caused what.
+> - AC1 (note): from a lifestyle plan card, a metric page or My data I note a change: title,
+>   category, start day (default today, never later, at most a year back). The card then
+>   shows "Started <date>". Web and iPhone alike.
+> - AC2 (record): a row in `changes`, in my cloud file only; edit, end and remove append rows
+>   and flip the replaced row; no row changes in place. A retried write is one row.
+> - AC3 (merge): devices converge: one active row per chain, the newer write wins, a removal
+>   is a write, a correction cycle cannot hang a save, an orphan is its own root. Erase removes
+>   changes and they do not come back, except a stale device's edit made after the erase.
+> - AC4 (schema): a file holding a change carries the version F6 settles and an older build
+>   refuses it; a file without changes keeps its version, an erased one included. The iPhone
+>   binary that reads it ships before any client writes one.
+> - AC5 (periods): each chart groups the events it shows (my changes and their ends on every
+>   chart; medication changes on their mapped metrics) into periods that open at an event and
+>   take every event within 90 days of it. One marker per period, the count on its tab; more
+>   than six in view fold the oldest into "+N earlier". Supersedes US-06 AC4's one pin per
+>   medication change and US-25 AC9b's indigo rule.
+> - AC6 (no verdict): nothing computes a before/after difference or says a change worked.
+>   Charts with a marker show the approved caption (F5).
+> - AC7 (removal): a removed change and every superseded title reach no chart, `read_record`,
+>   chat context or readable view.
+> - AC8 (access): screen readers read the list; nothing relies on colour; reduced motion
+>   draws no animation; every web surface showing a note is Clarity-masked, with a test.
+> - AC9 (chat and assistants, phase 5): the chat proposes a change and saves only on Save, on
+>   the web and the iPhone; `read_record` returns live changes; `note_change` and
+>   `end_change` write through `SyncManager`.
+> - AC10 (signal): `change_noted` {entry}, `change_marker_viewed`; on the iPhone "Change
+>   noted" and "Change marker seen". No title, category or date in any event, log or report.
+> - Gate check: merge/FHIR, schema and agent contract: adversary plus Codex. The caption is
+>   health wording Brad approves; if it cites evidence, the three-file sync.
 
-The sheet, the chart list, the SVG tab labels and "Changes you noted" all show the person's
-own words. On the web, Clarity keeps rendered text unless the element is masked, and
-portalled panels escape the tool root's mask (docs/reference.md gotcha, 2026-09-10). Every
-new web surface carries `data-clarity-mask="true"`, with a case in `clarity-masking.test.tsx`.
-On the iPhone, the whole window is already masked (D9); the sheet's text field also carries
-`analyticsMasked()`.
+> **Story C · My iPhone notices when I start walking more (amends US-56 AC1)**
+> - AC1 (rule): a sustained change in daily steps by the thresholds F4 settles offers one
+>   card on the steps page and in Fitness, at most once per 90 days, never within 90 days of
+>   an exercise change I noted.
+> - AC2 (confirm): Add writes a change (`source: 'apple-health'`) I can edit or remove; Not
+>   now and Don't suggest this are kept on the phone only.
+> - AC3 (no numbers in the record): the change's words carry no step count; the count shows
+>   only on the card and is never stored. VO2 max, resting heart rate and sleep never create
+>   a suggestion.
+> - AC4 (markers on Apple Health pages): the steps, heart rate, VO2 max and sleep pages draw
+>   the same period markers as the record's charts.
+> - AC5 (signal): "Steps change suggested" and "Steps change added".
+> - Gate check: a threshold shown to the person is close to clinical: Brad sets it; not a
+>   three-file change unless it is presented as health advice.
 
-## 4. Agents and the chatbot
+### Cost (rough, production code)
 
-### MCP and CLI (docs/agent-access.md)
+Phase 0: under 20 lines, if anything is broken. Phase 1: about 300 (server gating, Swift
+decoding and banner, engine glue). Phase 2: about 200 (type, migrate, merge with safe
+chains, version stamp, the array lists). Phase 3: about 650 (projection with grouping, web
+and iPhone marks, lists, sheet, card links). Phase 4: about 250 (detection, card, Apple
+Health page markers). Phase 5: about 350 (chat tool on both clients, agent tools, CLI).
+Deletion: the projection absorbs `medication-annotations.ts`'s marker half and HistoryPanel's
+separate medication pin code, roughly 100 lines. This draft itself: docs only, net
+production LOC 0, nothing deleted.
 
-- `read_record` returns `changes` through the readable view (US-65 AC3), so an assistant can
-  say what the person changed and when.
-- Two write tools, behind the same rules as `add_measurement`: `note_change` {title, category,
-  startedOn, suggestionId?} and `end_change` {id, endedOn}. Edit and remove stay in the app
-  for v1: they are rarer and easier to get wrong by voice. Both go through `SyncManager`
-  (merge on conflict, verify after write). This is an agent-contract change: Codex and a
-  fresh adversary before commit.
-- The CLI gets the matching `note-change` command.
-
-### The chat
-
-Yes, the chat can propose one, never write one silently (US-16). "I started eating 30 g more
-protein last week" becomes a fourth form tool, `propose_change_note` {title, category,
-startedOn}, parsed in `chat-edits.ts`, shown as a banner: "Note a change: More protein,
-started 26 Oct?" with Save and Not now. The model passes the date it understood; the parser
-refuses a date in the future (judged by `latestDayOnEarth`, US-31 AC6, when it runs on the
-server) or more than a year back. The banner makes the row's id when it shows (section 2,
-duplicates).
-
-**Web:** the tool goes wherever the other form tools go: the widget's chat and the Pages
-chat.
-
-**iPhone (more work than it looks):** the iPhone chat (US-52) does not get the form tools
-today. The server turns them off for app requests (`api.chat.ts`: `canApplyEdits` needs
-`!app`), `ChatClient.swift` advertises no edit capability, and `ChatModels.swift` decodes no
-proposed edits. Parity needs a change-note capability flag the app sends, server gating on
-it (so older app builds never get a proposal they cannot show, as US-16 AC2 requires), Swift
-decoding, and the banner in SwiftUI. Phase 2, and a parity gap until it ships.
-
-**Chat context:** the widget's chat and the iPhone chat gain the current head of each open
-or recently ended change, so answers can mention them. Not the blog bubble or the chatbot
-embed: US-15 AC10 lists exactly what those send, and they store transcripts. That context
-already carries health values to Brad's server and to the model under the existing chat
-rules (US-15); change notes add the person's own words, so the US-15 retention note covers
-them. The chatbot must not tell the person a change worked from one result; that rule goes
-into the chat's knowledge pipeline (claude_business), not this repo.
-
-## 5. Measurement and the story
-
-### Usage signal
-
-- **Web (`product_events`, Shopify surface only):**
-  - `change_noted`, metadata `{ entry: 'plan_card' | 'metric_page' | 'chat' }` only. Never the
-    category, the title, the date or the card. Category is behaviour, and behaviour next to a
-    plan is health-adjacent; the entry point is enough to learn from.
-  - `change_marker_viewed`, the name alone, once per tab session, when a chart carrying a
-    change marker is on screen.
-- **iPhone (D9, Clarity words):** "Change noted" and "Change marker seen". A D9 change and an
-  `AnalyticsMaskingTests` change.
-- **Success, read 60 days after ship:** events carry a persistent `visitorId` but no tab or
-  visit id, so the cohort is counted by visitor and by day. Denominator: visitors who sent
-  `results_viewed` on two or more different days in the window. Numerator: those who also
-  sent `change_noted`. Target at least 5%, and at least half of the noters later sending
-  `change_marker_viewed` on a later day. Below 1% at 60 days, remove it (deletion-first).
-  The numbers are a starting proposal, not derived from anything (Q10). The iPhone's Clarity
-  words give a rough second read, not a matched cohort.
-
-### Draft story (proposal, not yet in docs/user-stories.md)
-
-> **US-xx (next free id; US-66 is claimed by the one-blood-table draft) · I note a change I made and see it on my charts** (proposed 2026-11-02)
-> As someone following my plan, I note the day I started a change (more protein, a new
-> exercise routine, a diet change), so my charts show what I was doing when my numbers moved,
-> without the app claiming the change caused it.
->
-> - AC1 (note): from a lifestyle plan card or a metric page I note a change with a title, a
->   category and a start day (today by default, never in the future, at most a year back).
->   The card then shows "Started <date>". Web and iPhone alike.
-> - AC2 (record): the change is a row in the record's `changes` array, in my cloud file only.
->   Edit, end and remove append rows and flip the replaced row to `entered-in-error`; no row
->   is changed in place.
-> - AC3 (merge): two devices converge on the same changes: one active row per chain, newest
->   write wins, a removal is a write. "Delete all my data" removes them and they never come
->   back. Root resolution survives a correction cycle; an orphaned edit is its own root. A
->   retried write with the same id is one row. A file holding a change is stamped the
->   schema version Q8 settles, and an older build refuses it; a file without changes keeps
->   its version, an erased one included. The iPhone binary that reads it ships before the
->   web writes it.
-> - AC3a (removal): a removed change, and every superseded title, never reaches the charts,
->   `read_record`, the chat context or the readable view.
-> - AC4 (charts): every value chart draws each change as a rule on its start day, a band
->   while it ran, and a numbered entry in the dated list below, merged with medication
->   changes. At most three markers draw per range; the rest show in the list. Screen readers
->   read the list.
-> - AC5 (no verdict): no chart, list, card or chat reply computes a before/after difference
->   or says a change worked. Charts with a marker show the approved caption.
-> - AC6 (chat): the chat proposes a change from what I say; nothing is saved until I press
->   Save.
-> - AC7 (agents): `read_record` returns my changes; `note_change` and `end_change` write
->   them through `SyncManager`.
-> - AC8 (usage signal): `change_noted` {entry} and `change_marker_viewed` on the web;
->   "Change noted" and "Change marker seen" on the iPhone. No title, category or date in any
->   event, log or Sentry report. Every new web surface showing a note is Clarity-masked,
->   with a test.
-> - Gate check: merge/FHIR and agent contract (adversary + Codex). Clinical: the caption and
->   any timing guidance go through the three-file sync if they cite evidence.
-
-## 6. Options
-
-| Option | What | For | Against |
-| --- | --- | --- | --- |
-| **A. Don't build** | Add a short "how long changes take to show" line to the metric guides (US-58) instead | Cheapest; no schema change; little over-reading risk | It is clinical timing advice, so it still needs Brad's words and the three-file sync (US-58 AC2 bounds guides to claims already in the three files); loses the retention loop and the chat context; Brad's idea unanswered |
-| **B. Lean markers (recommended)** | Section 2 to 5: note, edit, end, remove; every chart; no arithmetic; caption | Useful for frequent measures; honest; reuses the medication marker path | A schema bump tied to the one-blood-table plan, with iPhone-first rollout; one more thing on small charts; value for blood tests is low |
-| **C. B + mapped charts** | A change shows only on the metrics its category plausibly moves (protein on weight, fibre on LDL) | Less clutter; feels smarter | A clinical mapping the evidence supports unevenly; needs the three-file sync and Brad's sign-off on every pair; wrong pairs mislead |
-| **D. C + "did it work?"** | Before/after averages, a "real change" verdict from reference change values, and a reminder to retest at the right time ("recheck LDL 6 to 8 weeks after a diet change") | The clinically useful version; the retest reminder is the best part | Most build; a verdict on two or three results is exactly the over-reading risk; clinical content end to end |
-
-**Recommendation: B, after the medication-marker check.** First, one deliberate production
-view to settle whether `medication_history_viewed` fires (an afternoon). If annotated charts
-are seen, build B in two phases: phase 1 the record, merge and the web and iPhone charts and
-sheet; phase 2 the chat tool and the agent tools. Treat D's retest reminder as a separate,
-later idea: it is the best piece of D and needs no verdict, but it is clinical timing advice
-and belongs in the algorithm doc first.
-
-Why not C: the step from "the app shows when you changed something" to "the app says which
-numbers this change affects" is a clinical claim on every pair, and most lifestyle-to-marker
-links are modest, slow and individual. B lets the person look; C would tell them where to
-look and imply what to expect.
-
-Cost of B in production code (rough, and likely low): health-core `changes` type, migrate,
-merge with cycle-safe chains, the version stamp and the array lists in section 2 (about
-200 lines), the projection (about 60), the web sheet, list and marks (about 250), the iPhone
-sheet, list and marks on the metric pages (about 250), the Apple Health pages' engine door
-and marks (about 150). Phase 2: the web chat tool (about 60), the iPhone chat capability,
-decoding and banner (about 150), the two agent tools and the CLI command (about 150).
-Nothing deletable found; the chart list merge may let `HistoryPanel`'s medication list code
-be shared rather than added. This draft itself is docs only: net production LOC 0, nothing
-deleted.
-
-## 7. Questions for Brad
+## 8. Questions for Brad
 
 Each carries its own context.
 
-1. **Build it at all, and which option?** The idea: let a person note a lifestyle change and
-   see it on their charts. The issue: it helps people who measure often, helps little with
-   blood tests, and invites over-reading. Options: A (don't build; add a timing line to the
-   guides), B (lean markers, no verdict), C (markers only on "related" metrics, a clinical
-   mapping), D (before/after verdicts and retest reminders). Recommendation: B, because it
-   gives the useful part and makes no claim the data cannot back.
-2. **Check medication markers first?** The issue: the medication markers we already built
-   have logged zero views in eight weeks, and the product-health loop now calls the counter
-   Suspect (probably broken). Options: settle it first (an afternoon, plus a fix if the emit
-   is broken), or build B regardless. Recommendation: settle it first. B's own view counter
-   would copy the same pattern, and if annotated charts are not opened, B needs a different
-   entry point, not more markers.
-3. **Every chart, or only related ones?** Options: every value chart (no clinical claim,
-   more clutter) or a category-to-metric map (less clutter, a clinical claim per pair).
-   Recommendation: every chart, capped at three drawn markers per range.
-4. **Whose date?** Medications mark the day a change was recorded, never a claimed start
-   (US-06 AC4). For lifestyle, the person's own start day is the useful one. Options: their
-   claimed day (back-dated up to a year) or the recorded day only. Recommendation: their
-   claimed day, labelled "You noted", because "I started last Monday" is how people report
-   these.
-5. **The caption's words.** Proposed: "Markers show when you noted a change. Numbers vary
-   from test to test, so one result after a change rarely shows whether it worked." Options:
-   this, your own words, or no caption. Recommendation: a caption, in words you approve; it
-   is user-facing health wording.
-6. **The schema bump.** The issue: an old build would silently drop notes made elsewhere.
-   Options: stamp a new schema version on files with a change (old builds refuse to open
-   those files at all, read and write, until updated), or ship without it and accept lost
-   notes from stale builds. Recommendation: the bump, as `erasedRows` already does. The cost
-   is asking a few people to update, and shipping the iPhone binary through TestFlight
-   before the web can write a change, so your own phone is never locked out.
-7. **Chat and agents.** Options: the chat proposes changes (banner, Save, Not now) and
-   agents get `note_change` and `end_change`, or the app alone writes them. The web chat is
-   cheap; the iPhone chat has no form tools today and needs a capability flag, server
-   gating and a SwiftUI banner. Recommendation: both, in phase 2, because "I started X last
-   week" is the most natural way to say it.
-8. **One version ladder with the one-blood-table plan.** The issue: that draft (its own
-   proposed US-66) already claims schema 3 for files holding core blood rows. If both use 3,
-   a build that knows one feature reads a file holding the other without refusing it, and
-   loses data. Options: one ladder (3 blood tests, 4 changes, each stamped only when its rows
-   exist), or one combined bump shipped together. Recommendation: one ladder, so the two
-   features ship independently; decide it before either builds.
-9. **Does Remove really delete the words?** The issue: rows are append-only, so a removed
-   note's text ("stopped drinking") stays in the file until "Delete all my data". Clinical
-   values follow that FHIR rule; documents do not ("gone, text and all"). Options: keep
-   append-only and hide removed text from every reader (simple, merge-safe), or blank the
-   title on removal like a document tombstone (the words really go; a small merge special
-   case). Recommendation: hide from every reader now, as section 2 specifies; revisit if
-   people put sensitive things in notes.
-10. **The success bar.** Proposed: at least 5% of returning visitors note a change within 60
-   days, and half of those later view a marker; below 1%, remove it. These are guesses, not
-   derived from anything. Options: accept, set your own, or measure for 60 days and decide
-   then. Recommendation: accept the 1% removal floor now, so the feature cannot linger
-   unused.
+- **F1. Start with phases 0 and 1 now, in parallel?** Phase 0 checks whether the medication
+  marker counter works (you said yes). Phase 1 lets the iPhone chat save values after a
+  Save tap (you said it must). Neither waits on the rest. Recommendation: start both now;
+  phases 2 to 5 wait for F6 and your review of this plan.
+- **F2. Medication changes join the grouped markers.** Today each medication change has its
+  own indigo pin at its exact date (US-06 AC4, US-25 AC9b, both approved). Your one-marker
+  rule (D3) puts "started statin" inside the same period marker as "more walking". Options:
+  one marker style for everything (simplest chart, matches your example), or keep
+  medications separate (two kinds of marker on one chart, the clutter you want to avoid).
+  Recommendation: one style; the list still names each change and its date.
+- **F3. Apple Health markers: suggest or automatic?** You suggested automatic markers from
+  steps and VO2 max. Options: automatic (no effort for the person, but holidays, illness,
+  a phone in a drawer or a new watch all draw markers, and the web never sees them), or the
+  phone suggests and the person taps Add (one tap, no false markers, syncs to the web).
+  Recommendation: suggest, then confirm.
+- **F4. What starts a suggestion.** Proposed: steps only, a 28-day average at least 25% and
+  1,500 steps a day away from the 90 days before, at most once per 90 days. VO2 max and
+  resting heart rate are results of exercise, so they show markers but never create them.
+  Options: accept, change the numbers, or add sleep now. Recommendation: accept; tune after
+  a month on TestFlight.
+- **F4b. The step count stays off the record.** US-56 promised the website and chatbot never
+  see Apple Health's steps. Options: the saved change says "Walking more (from Apple
+  Health)" with no number (keeps the promise), or it carries "about 8,900 a day" (more
+  useful on the web, breaks the promise). Recommendation: no number.
+- **F5. The caption.** Grouping handles several changes at once; it cannot handle the next
+  result drifting back toward normal on its own (regression to the mean). Proposed, under
+  any chart with a marker: "Markers show when things changed. Results vary from test to
+  test, so look for a trend over several results." Options: this, your words, or none.
+  Recommendation: a caption, in words you approve.
+- **F6. One version ladder with the one-blood-table plan.** PR #551 (still open) claims
+  schema 3 for core blood rows. If both use 3, a build that knows one feature reads a file
+  holding the other without refusing it, and loses data. Options: one ladder (3 blood
+  tests, 4 changes, each stamped only when its rows exist) or one combined bump.
+  Recommendation: one ladder, so either can ship first.
+- **F7. Phase 1 first.** The iPhone chat editing the record is useful on day one for every
+  user who chats; markers help those who measure often. Recommendation: phase 1 before
+  phase 3, as the table has it.
+- **F8. Which date a note carries** (open from revision 1). Medications use the day the
+  change was recorded (US-06 AC4). For a note, the person's own start day ("I started last
+  Monday") is the useful one. Options: their day, back-dated up to a year, labelled "You
+  noted"; or the recorded day only. Recommendation: their day.
+- **F9. Does Remove delete the words?** (open from revision 1). Rows are append-only, so a
+  removed note's text stays in the file until "Delete all my data", hidden from every
+  reader. Options: keep append-only and hidden (simple, merge-safe) or blank the words on
+  removal like a deleted document (gone for real, a small merge special case).
+  Recommendation: hidden now; revisit if people write sensitive things.
+- **F10. The success bar** (open from revision 1). Proposed: 5% of returning web visitors note
+  a change within 60 days, half of them later view a marker, a third of iPhone step
+  suggestions added; below 1% noting, remove the feature. These are guesses. Recommendation:
+  accept the 1% removal floor now.
 
 ## Out of scope
 
 - Moving medication markers to a claimed start date.
 - Supplements on the charts (they have start dates; a separate decision).
+- "Recheck in 8 to 12 weeks" reminders after a change: clinical timing advice for the
+  algorithm doc first.
 - Any change to the plan or the suggestion rules: a noted change never alters the plan.
