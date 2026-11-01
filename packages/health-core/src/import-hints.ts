@@ -69,7 +69,7 @@ const FILE_HINTS: Record<ImportFileReason, string> = {
   unreadable:
     'The file could not be read as a document. A clearer scan or the original PDF usually works; the website’s upload is another route.',
   too_many:
-    'A ZIP is read twenty files at a time and this entry was past the twentieth. Split the ZIP and import the rest.',
+    'One call opens at most twenty files inside ZIPs, and this entry was past the twentieth. A ZIP named in `remaining` can be asked for again by name once this batch is committed; a ZIP holding more than twenty files has to be split to import the rest.',
   // The same request stops the same way again (US-15 AC34), so neither invites a retry of this file.
   too_long:
     'This file is too long to read in one go. Upload it on drstanfield.com/pages/roadmap, which reads longer reports, or split it into smaller files and import those.',

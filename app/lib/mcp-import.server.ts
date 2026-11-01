@@ -131,20 +131,39 @@ export interface ZipEntryBytes {
   mimeType: SniffedType;
 }
 
+/** Skipped members a ZIP names one by one; past these, one count per reason (AC5b). */
+const MAX_SKIPPED_ROWS = 20;
+
 /**
  * Open a ZIP under the caps (AC5): it opens at most `MAX_IMPORT_FILES_PER_CALL`
  * importable entries, kept or skipped (AC5a), each at most `MAX_IMPORT_FILE_BYTES` INFLATED — the
  * bytes are counted as they inflate and the stream is stopped past the cap,
- * so a bomb declaring 1 MB never fills memory. Entries are taken by position;
+ * so a bomb declaring 1 MB never fills memory. `budget` is the CALL's: every
+ * ZIP in one call draws on it, so a call inflates at most that many members
+ * in all (AC5b). A ZIP the budget cut short before its own cap is `deferred`,
+ * and the caller hands it back in `remaining`. Entries are taken by position;
  * a name is a label (the entry's path inside the ZIP), never a path anything
  * is read from. Nested zips and anything the junk filter drops are skipped by name.
  * A name is one line but NOT cut: `zipMemberName` does the only cut, from the
  * whole path, as the website's upload does, so both file it under one name.
+ * Past `MAX_SKIPPED_ROWS` skipped members are counted by reason in `more`, not named.
  */
-export async function unzip(bytes: Uint8Array): Promise<{ entries: ZipEntryBytes[]; skipped: Array<{ name: string; reason: string }> }> {
+export async function unzip(bytes: Uint8Array, budget = { left: MAX_IMPORT_FILES_PER_CALL }): Promise<{
+  entries: ZipEntryBytes[];
+  skipped: Array<{ name: string; reason: string }>;
+  more: Array<{ reason: string; count: number }>;
+  deferred: boolean;
+}> {
   const zip = await JSZip.loadAsync(bytes);
   const entries: ZipEntryBytes[] = [];
   const skipped: Array<{ name: string; reason: string }> = [];
+  const more: Array<{ reason: string; count: number }> = [];
+  const skip = (name: string, reason: string) => {
+    if (skipped.length < MAX_SKIPPED_ROWS) return void skipped.push({ name, reason });
+    const counted = more.find((m) => m.reason === reason);
+    if (counted) counted.count++;
+    else more.push({ reason, count: 1 });
+  };
   const listed: Array<{ name: string; entry: JSZip.JSZipObject }> = [];
   zip.forEach((relativePath, entry) => {
     if (entry.dir) return;
@@ -153,28 +172,32 @@ export async function unzip(bytes: Uint8Array): Promise<{ entries: ZipEntryBytes
   // Every member opened counts, kept or skipped, so oversized or unreadable
   // members cannot keep it inflating (US-35 AC5a).
   let opened = 0;
+  let deferred = false;
   for (const { name, entry } of listed) {
     if (!isImportableEntryName(name)) {
-      if (name.toLowerCase().endsWith('.zip')) skipped.push({ name, reason: 'nested_zip' });
+      if (name.toLowerCase().endsWith('.zip')) skip(name, 'nested_zip');
       continue;
     }
-    if (opened++ >= MAX_IMPORT_FILES_PER_CALL) {
-      skipped.push({ name, reason: 'too_many' });
+    if (opened >= MAX_IMPORT_FILES_PER_CALL || budget.left <= 0) {
+      if (opened < MAX_IMPORT_FILES_PER_CALL) deferred = true;
+      skip(name, 'too_many');
       continue;
     }
+    opened++;
+    budget.left--;
     const inflated = await inflateCapped(entry, MAX_IMPORT_FILE_BYTES);
     if (!inflated) {
-      skipped.push({ name, reason: 'too_large' });
+      skip(name, 'too_large');
       continue;
     }
     const mimeType = sniff(inflated);
     if (!mimeType || mimeType === 'application/zip') {
-      skipped.push({ name, reason: mimeType ? 'nested_zip' : 'unsupported' });
+      skip(name, mimeType ? 'nested_zip' : 'unsupported');
       continue;
     }
     entries.push({ name, bytes: inflated, mimeType });
   }
-  return { entries, skipped };
+  return { entries, skipped, more, deferred };
 }
 
 function sha256Hex(bytes: Uint8Array | string): string {
@@ -374,6 +397,12 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       // download overlaps another's model call, and a ZIP's entries join the
       // queue so idle runners share them. Results keep the listing's order.
       const results: Array<ExtractedFile | ExtractedFile[]> = [];
+      /** ZIP members this call may still inflate, across every ZIP it opens (AC5b). */
+      const zipBudget = { left: MAX_IMPORT_FILES_PER_CALL };
+      // ZIPs open one at a time: two sharing the budget side by side could each be cut short, and
+      // asking again for both would open the same members again. Taken in turn, the first ZIP of
+      // any call gets the whole budget, so asking again for `remaining` always finishes one.
+      let zipTurn: Promise<unknown> = Promise.resolve();
       const queue: Array<() => Promise<void>> = units.map((unit, i) => async () => {
         if (signal.aborted) {
           remaining.push(unit.name);
@@ -402,7 +431,9 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
           }
           let opened: Awaited<ReturnType<typeof unzip>>;
           try {
-            opened = await unzip(bytes);
+            const turn = zipTurn.then(() => unzip(bytes, zipBudget));
+            zipTurn = turn.catch(() => undefined);
+            opened = await turn;
           } catch {
             results[i] = fail(unit.name, 'failed', 'unreadable');
             return;
@@ -414,6 +445,8 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
           results[i] = inside;
           opened.entries.forEach((entry, k) => queue.push(async () => { inside[k] = await extractOne(member(entry.name), entry.bytes, entry.mimeType); }));
           for (const skip of opened.skipped) inside.push(fail(member(skip.name), 'skipped', skip.reason));
+          for (const { reason, count } of opened.more) inside.push(fail(member(`(and ${count} more)`), 'skipped', reason));
+          if (opened.deferred && !remaining.includes(unit.name)) remaining.push(unit.name);
           return;
         }
         if (!mimeType) {
