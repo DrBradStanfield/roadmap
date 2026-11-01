@@ -4,7 +4,7 @@
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -65,6 +65,21 @@ describe('tools/release-checkout.sh (US-63 AC6)', () => {
     expect(r.status).not.toBe(0);
     expect(r.stderr).toMatch(/main checkout's root/);
     expect(existsSync(join(S, 'rel2'))).toBe(false);
+  });
+  it('refuses a folder inside the main checkout, directly or through a symlinked parent (re-check R6, N1)', () => {
+    for (const dest of [join(MAIN, 'rel-in'), join(S, 'alias', 'rel-in')]) {
+      if (dest.includes('alias') && !existsSync(join(S, 'alias'))) symlinkSync(MAIN, join(S, 'alias'));
+      const r = release(MAIN, dest);
+      expect(r.status, dest).not.toBe(0);
+      expect(r.stderr, dest).toMatch(/inside the main checkout/);
+      expect(existsSync(join(MAIN, 'rel-in')), dest).toBe(false);
+    }
+  });
+  it('refuses a relative TMPDIR when no folder is given', () => {
+    const r = spawnSync('bash', [SCRIPT], { cwd: MAIN, encoding: 'utf8', env: { ...ENV, TMPDIR: 'tmp' } });
+    expect(r.status).not.toBe(0);
+    expect(r.stderr).toMatch(/TMPDIR .* not an absolute path/);
+    expect(existsSync(join(MAIN, 'tmp'))).toBe(false);
   });
   it('stops, printing nothing, when npm ci fails', () => {
     writeFileSync(join(S, 'bin/npm'), '#!/bin/sh\nexit 1\n');

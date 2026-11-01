@@ -331,6 +331,14 @@ describe('package clones: new worktrees, failures, races and orphans (US-63 AC3,
     sh(older, 'rm -rf node_modules/');
     expect(existsSync(join(MAIN, 'node_modules/pkg'))).toBe(true);
   });
+  it('swaps the link when the guard runs from inside an older worktree (a session started there) (re-check R4)', () => {
+    const ext = join(S, 'ext');
+    sh(MAIN, `git worktree add -q --detach "${ext}" origin/main`);
+    const guard = installGuard(ext);
+    symlinkSync(join(MAIN, 'node_modules'), join(ext, 'node_modules'));
+    expect(hook({ hook_event_name: 'PreToolUse', tool_name: 'Bash', cwd: ext, tool_input: { command: 'ls' } }, {}, guard)).toBeNull();
+    expect(readlinkSync(join(ext, 'node_modules'))).toBe(join(cacheDir(ext), 'node_modules'));
+  });
   it('leaves a link alone in a folder that is not a registered worktree', () => {
     const fake = join(MAIN, '.claude/worktrees/notreg');
     mkdirSync(fake, { recursive: true });
@@ -377,15 +385,18 @@ describe('package clones: new worktrees, failures, races and orphans (US-63 AC3,
     expect(bash(w, 'ls')).toBeNull();
     const clones = cacheDir(w);
     sh(MAIN, `git worktree remove -f -f "${w}"`);
-    const leftover = join(dirname(clones), 'gone-0123456789ab.deleting-1');
-    mkdirSync(join(leftover, 'x'), { recursive: true });
+    const cache = dirname(clones);
+    // A live clone whose name merely contains `.deleting-` stays (re-check N3); an earlier run's tombstone goes.
+    const live = join(cache, 'x.deleting-1-0123456789ab');
+    mkdirSync(live);
+    writeFileSync(join(live, '.owner'), MAIN); // MAIN has a .git: alive
+    mkdirSync(join(cache, '.tombstones/old-1/x'), { recursive: true });
     hook({ hook_event_name: 'SessionStart', cwd: MAIN });
-    expect(existsSync(clones)).toBe(false); // renamed away at once; a detached process deletes it
+    expect(existsSync(clones)).toBe(false); // moved to .tombstones at once; a detached process deletes it
     const deadline = Date.now() + 20_000;
-    while (readdirSync(dirname(clones)).some((d) => d.includes('.deleting-')) && Date.now() < deadline) {
-      spawnSync('sleep', ['0.2']);
-    }
-    expect(readdirSync(dirname(clones)).filter((d) => d.includes('.deleting-'))).toEqual([]);
+    while (existsSync(join(cache, '.tombstones')) && Date.now() < deadline) spawnSync('sleep', ['0.2']);
+    expect(existsSync(join(cache, '.tombstones'))).toBe(false);
+    expect(existsSync(join(live, '.owner'))).toBe(true);
     expect(existsSync(join(MAIN, 'node_modules/pkg'))).toBe(true);
   }, 60_000);
 });

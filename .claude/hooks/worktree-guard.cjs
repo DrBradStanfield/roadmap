@@ -41,10 +41,13 @@ try { input = JSON.parse(fs.readFileSync(0, 'utf8')); } catch { process.exit(0);
 if (process.env.CLAUDE_CODE_REMOTE === 'true' || process.env.CLAUDE_MAIN_CHECKOUT_WRITES === '1') process.exit(0);
 const cwd = input.cwd || process.cwd();
 const event = input.hook_event_name;
-// Hot path: a Bash call in the checkout this hook lives in (outside .claude/worktrees/) has nothing to link, so
-// skip every git call. Anywhere else (a session worktree, an older ../roadmap-* worktree) goes on.
+// Hot path: a Bash call in the main checkout (outside .claude/worktrees/) has nothing to link, so skip every git
+// call. Only when this hook lives in the main checkout (its .git is a folder): a hook in an older ../roadmap-*
+// worktree (a session started there) must still swap that worktree's links.
 const HOME_CHECKOUT = path.resolve(__dirname, '..', '..');
-if (event === 'PreToolUse' && input.tool_name === 'Bash' && !/\/\.claude\/worktrees\//i.test(cwd + '/')
+let homeIsMain = false;
+try { homeIsMain = fs.statSync(path.join(HOME_CHECKOUT, '.git')).isDirectory(); } catch { /* not a checkout */ }
+if (event === 'PreToolUse' && input.tool_name === 'Bash' && homeIsMain && !/\/\.claude\/worktrees\//i.test(cwd + '/')
   && (cwd + '/').toLowerCase().startsWith(HOME_CHECKOUT.toLowerCase() + '/')) process.exit(0);
 
 // The Stop hook has 45 s (settings.json) for up to seven git calls, a fetch and a gh call: 3 s each, 8 s for the
@@ -228,20 +231,22 @@ if (event === 'SessionStart') {
     } catch { /* one unreadable worktree must not hide the rest */ }
   }
   // Delete package clones whose worktree is gone (removed by ExitWorktree, git worktree remove, agent isolation).
-  // Each is first renamed to a `.deleting-` name (atomic, so it never sits half-deleted under its own name without
-  // its .owner), then deleted by a detached process, so a big tree never runs this hook past its timeout. A
-  // `.deleting-` folder left by an earlier run is deleted again.
-  const purge = (dir) => { try { spawn('rm', ['-rf', dir], { detached: true, stdio: 'ignore' }).unref(); } catch { /* next session */ } };
+  // Each is first moved into PKG_CACHE/.tombstones/ (an atomic rename, so it never sits half-deleted under its own
+  // name without its .owner), then deleted by a detached process, so a big tree never runs this hook past its
+  // timeout. Only that folder is ever purged (an earlier run's leftovers too), never a live cache name.
+  const TOMBS = path.join(PKG_CACHE, '.tombstones');
+  const purge = () => { try { spawn('rm', ['-rf', TOMBS], { detached: true, stdio: 'ignore' }).unref(); } catch { /* next session */ } };
   try {
+    let doomed = fs.existsSync(TOMBS);
     for (const d of fs.readdirSync(PKG_CACHE)) {
+      if (d.startsWith('.')) continue;
       const dir = path.join(PKG_CACHE, d);
-      if (d.includes('.deleting-')) { purge(dir); continue; }
       let owner = null;
       try { owner = fs.readFileSync(path.join(dir, '.owner'), 'utf8').trim(); } catch { continue; } // mid-clone or not ours
       if (!owner || fs.existsSync(path.join(owner, '.git'))) continue;
-      const doomed = `${dir}.deleting-${process.pid}`;
-      try { fs.renameSync(dir, doomed); purge(doomed); } catch { /* raced */ }
+      try { fs.mkdirSync(TOMBS, { recursive: true }); fs.renameSync(dir, path.join(TOMBS, `${d}-${process.pid}`)); doomed = true; } catch { /* raced */ }
     }
+    if (doomed) purge();
   } catch { /* no cache yet */ }
   try {
     const mainDirty = git(main, ['status', '--porcelain']).split('\n').filter(Boolean);

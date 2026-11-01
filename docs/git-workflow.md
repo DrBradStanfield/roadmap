@@ -39,8 +39,9 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    Codex where required, clinical citation numbering). The project settings allow exactly
    `gh pr merge <n> --merge --match-head-commit <sha>` and deny `--admin`, `--squash`, `--rebase` and `--auto`;
    the push guard refuses any other form (Brad 2026-11-01): the sha must be 7-40 hex, each option once, no
-   `-d`/`--delete-branch` (branch deletes are Brad's), and no merge through `gh api` (a gh alias is invisible to
-   it). Nothing on GitHub enforces the reviews, so you do.
+   `-d`/`--delete-branch` (branch deletes are Brad's), and no merge or write to main through `gh api`. It is a
+   policy guard, not a complete one: a gh alias, another tool or the web UI is invisible to it. Nothing on
+   GitHub enforces the reviews, so you do.
    First `git fetch origin main`, then (its own command) `git merge --no-edit origin/main`, re-run `test:all`,
    re-review if main touched your files (PR 150), push, wait for CI, then merge. Or let auto-ship merge it. Use
    merge commits, not squash: the cleanup script proves the work reached `main` by ancestry. Brad's account
@@ -102,7 +103,11 @@ Tests: `tests/worktree-guard.test.ts`, `tests/git-push-guard.test.ts` (runs `.cl
   `tools/backfill-shopify-link-proof.ts --execute`, `tools/repair-trigger-first-links.ts --execute`,
   `tools/mcp-reviewer-token.ts`) run from the main checkout or a session worktree, and only when its HEAD is
   exactly `origin/main` with no tracked change (none hidden by skip-worktree). `tools/write-gate.mjs` refuses
-  anything else, the main checkout included: `git pull --ff-only` there first and land or set aside its edits. Recipe: merge any tool or content change first; then in
+  anything else, the main checkout included: `git pull --ff-only` there first and land or set aside its edits.
+  claude_business's uncommitted writes there (`docs/products.md` through its symlink, `docs/chatbot/` and
+  `docs/writing-style.md` from its sync) count as tracked changes, so they block publishing until swept into
+  their own PR; to publish meanwhile, `git stash` them, publish, then `git stash pop`. docs/deploy-runbook.md's
+  account-link step (c) runs from the main checkout under the same rule. Recipe: merge any tool or content change first; then in
   a fresh worktree (`tools/worktree-new.sh` already qualifies), or in your own after `git fetch origin main` and
   `git merge --ff-only origin/main`, run the write.
 

@@ -13,9 +13,18 @@ refuse() { echo "REFUSED: $*" >&2; exit 1; }
 [ "$(git rev-parse --show-toplevel 2>/dev/null)" = "$MAIN" ] \
   && [ "$(git rev-parse --path-format=absolute --git-common-dir)" = "$MAIN/.git" ] \
   || refuse "run this from the main checkout's root, never a session worktree"
+if [ -z "${1:-}" ]; then
+  case "${TMPDIR:-/tmp}" in /*) ;; *) refuse "TMPDIR ($TMPDIR) is not an absolute path; pass the folder explicitly";; esac
+fi
 DEST="${1:-${TMPDIR:-/tmp}/deploy-checkout}"
 DEST="${DEST%/}"
 [ ! -e "$DEST" ] && [ ! -L "$DEST" ] || refuse "$DEST already exists; remove it first (git worktree remove --force \"$DEST\")"
+# Resolve through its existing parent (a symlinked parent included): never inside the main checkout, where
+# `shopify app deploy` would find two apps and the main checkout's own files could be mixed in.
+PARENT="$(cd "$(dirname "$DEST")" 2>/dev/null && pwd -P)" || refuse "the parent folder of $DEST does not exist"
+DEST="$PARENT/$(basename "$DEST")"
+lc() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }   # the Mac disk ignores case
+case "$(lc "$DEST")/" in "$(lc "$MAIN")"/*) refuse "$DEST is inside the main checkout; release from a folder outside it";; esac
 git fetch -q origin main
 git worktree add -q --detach "$DEST" origin/main
 cd "$DEST"

@@ -88,6 +88,22 @@ t "$S/b" "git -c branch.claude/x.merge=refs/heads/main push origin" DENY
 t "$S/b" "git push origin HEAD:\$D" DENY
 t "$S/b" "git push origin \"HEAD:\$(echo main)\"" DENY
 t "$S/b" "git -c branch.claude/x.merge=refs/heads/claude/x push origin claude/x" allow
+# PR 415 re-check: option values are not the remote (Codex R2); any shell -c cluster and any quoted script are
+# parsed (Codex R1, adversary S1).
+t "$S/b" "git push --repo=origin HEAD:main" DENY
+t "$S/b" "git push --repo origin HEAD:main" DENY
+t "$S/b" "git push -o ci.skip origin HEAD:main" DENY
+t "$S/b" "git push -o ci.skip origin claude/x" allow
+t "$S/b" "bash -cl 'git push --force'" DENY
+t "$S/b" "bash -lc 'git push origin HEAD:main'" DENY
+t "$S/b" "bash -l -c 'git push -f'" DENY
+t "$S/b" "python3 -c \"import os; os.system('git push --force')\"" DENY
+t "$S/b" "node -e \"require('child_process').execSync('git push -f')\"" DENY
+t "$S/b" "watch -n 60 'git push --force'" DENY
+t "$S/b" "script -q -c 'git push --force' /dev/null" DENY
+t "$S/b" "ssh host 'cd repo && git push --force'" DENY
+t "$S/b" $'git commit -m "$(cat <<\'EOF\'\nNever git push --force; never gh pr merge 5 --squash.\nEOF\n)"' allow
+t "$S/b" $'gh pr create --title "Push guard" --body "$(cat <<\'EOF\'\nRefuses git push --force and gh pr merge 5 --squash.\nEOF\n)"' allow
 (cd b && git checkout -q main)
 t "$S/b" "git push origin @" DENY
 (cd a && git config remote.origin.push +refs/heads/main:refs/heads/main); t "$S/b" "cd ../a && git push" DENY
@@ -99,6 +115,10 @@ t "$S/b" "git push origin @" DENY
 t "$S/b" "git push origin claude/x:main" DENY
 t "$S/b" "git push origin HEAD~1:refs/heads/main" DENY
 t "$S/b" "git push origin main:main" allow
+# An unresolved source is never taken for main (adversary B1, Codex R3).
+t "$S/b" "git push origin \"\$B\":main" DENY
+t "$S/b" "git push origin \"\$(git rev-parse HEAD)\":main" DENY
+t "$S/b" "git push origin \`git rev-parse HEAD\`:main" DENY
 (cd b && git checkout -q --detach)
 t "$S/b" "git push origin HEAD:main" DENY
 (cd b && git checkout -q main)
@@ -127,6 +147,11 @@ t "$S/b" "gh pr merge 32 --merge --delete-branch --match-head-commit abc1234" DE
 t "$S/b" "gh api -X PUT repos/o/r/pulls/32/merge" DENY
 t "$S/b" "gh api graphql -f query='mutation { mergePullRequest(input: {}) { clientMutationId } }'" DENY
 t "$S/b" "gh api repos/o/r/pulls/32" allow
+t "$S/b" "gh api repos/o/r/merges -f base=main -f head=x" DENY
+t "$S/b" "gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234" DENY
+t "$S/b" "gh api repos/o/r/git/refs/heads/main" allow
+t "$S/b" "gh api graphql -f query='mutation { updateRef(input: {}) { clientMutationId } }'" DENY
+t "$S/b" "gh api graphql -f query='mutation { mergeBranch(input: {}) { clientMutationId } }'" DENY
 t "$S/b" "git commit -m 'Later: gh pr merge 32 --squash'" allow
 t "$S/b" "gh pr create --title 'gh pr merge --squash' --body '-s'" allow
 t "$S/b" "gh pr merge 32 --merge --match-head-commit abc1234 --body '-s' -t '--squash'" allow

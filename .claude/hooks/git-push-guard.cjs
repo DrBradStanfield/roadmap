@@ -65,21 +65,42 @@ function gitCall(seg, base) {
   return { sub: seg[i], args: seg.slice(i + 1), dir, cfg };
 }
 
-// Every simple command, recursing into quoted strings that run one: a shell's -c script (`bash -c 'git push ...'`),
-// eval's argument, or a command substitution. Other quoted text (a commit message or PR body that mentions
-// `gh pr merge --squash`) is data, not a command.
-const SHELLS = /(^|\/)(ba|z|da|k)?sh$/;
+// The indexes of a command's message values: the text of git commit/tag -m/--message/-F/--file, and of gh pr|issue
+// create/comment/edit/merge --body/--title/--subject/-b/-t/-F (a `$(cat <<'EOF' ... EOF)` heredoc there too). Such
+// text is data, so a commit message or PR body that mentions `gh pr merge --squash` is not a command.
+function messageValues(seg) {
+  const skip = new Set();
+  const g = seg.findIndex((t) => t === 'git' || t.endsWith('/git'));
+  const h = seg.findIndex((t) => t === 'gh' || t.endsWith('/gh'));
+  let from = -1, opts = null, inline = null;
+  if (g >= 0) {
+    const c = gitCall(seg.slice(g), '.');
+    if (c && (c.sub === 'commit' || c.sub === 'tag')) {
+      from = seg.length - c.args.length; opts = /^(-m|--message|-F|--file)$/; inline = /^(-m.|--message=|-F.|--file=)/;
+    }
+  }
+  if (h >= 0 && /^(pr|issue)$/.test(seg[h + 1] || '') && /^(create|comment|edit|merge)$/.test(seg[h + 2] || '')) {
+    from = h + 3; opts = /^(-b|-t|-F|--body|--title|--subject|--body-file)$/; inline = /^--(body|title|subject|body-file)=/;
+  }
+  if (from < 0) return skip;
+  for (let k = from; k < seg.length; k++) {
+    if (opts.test(seg[k])) skip.add(++k);
+    else if (inline.test(seg[k])) skip.add(k);
+  }
+  return skip;
+}
+// Every simple command, recursing into every quoted string that may hold one (`bash -lc 'git push ...'`,
+// `python -c`, `node -e`, `watch`, `ssh host '...'`), except message values (above).
 function allSegments(s, depth = 0) {
   const segs = segments(s);
   if (segs === null) return null;
   const out = [];
   for (const seg of segs) {
     out.push(seg);
+    const skip = messageValues(seg);
     for (let k = 0; k < seg.length; k++) {
       const t = seg[k];
-      const runs = (k > 0 && /^-[a-z]*c$/.test(seg[k - 1]) && seg.slice(0, k).some((w) => SHELLS.test(w)))
-        || seg[0] === 'eval' || /\$\(|`/.test(t);
-      if (runs && depth < 3 && /\s/.test(t) && /\b(git|gh)\b/.test(t) && /\b(push|pull|merge)\b/.test(t)) {
+      if (!skip.has(k) && depth < 3 && /\s/.test(t) && /\b(git|gh)\b/.test(t) && /\b(push|pull|merge)\b/.test(t)) {
         const inner = allSegments(t, depth + 1);
         if (inner === null) return null;
         out.push(...inner);
@@ -139,10 +160,18 @@ for (const seg of segs) {
     }
     continue;
   }
-  // The same merge through the REST or GraphQL API skips those checks. (A gh alias cannot be seen here.)
-  if (gh >= 0 && seg[gh + 1] === 'api' && seg.slice(gh + 2).some((t) => /pulls\/[^/\s]+\/merge\b|mergePullRequest/i.test(t))) {
-    deny('Merge PRs only with `gh pr merge <n> --merge --match-head-commit <reviewed sha>`, never through `gh api` '
-      + '(docs/git-workflow.md step 4).');
+  // The same merge, or a write to main, through the REST or GraphQL API skips those checks: a PR merge, a branch
+  // merge (/merges), a write to refs/heads/main, GraphQL mergePullRequest/mergeBranch/updateRef. A policy guard,
+  // not a wall: a gh alias or another tool cannot be seen here.
+  if (gh >= 0 && seg[gh + 1] === 'api') {
+    const a = seg.slice(gh + 2);
+    const writes = a.some((t, k) => (/^(-X|--method)$/.test(a[k - 1] || '') || /^(-X|--method=)/.test(t)) && /(PATCH|POST|PUT)$/i.test(t))
+      || a.some((t) => /^(-f|-F|--field|--raw-field|--input)(=|$)/.test(t));
+    if (a.some((t) => /pulls\/[^/\s]+\/merge\b|\/merges\b|mergePullRequest|mergeBranch|updateRef/i.test(t))
+        || (writes && a.some((t) => /git\/refs\/heads\/main\b/.test(t)))) {
+      deny('Merge PRs only with `gh pr merge <n> --merge --match-head-commit <reviewed sha>`, never through `gh api`, '
+        + 'and never write main through it (docs/git-workflow.md step 4).');
+    }
   }
   const g = gitCall(seg, here);
   if (!g) continue;
@@ -164,14 +193,27 @@ for (const seg of segs) {
     .map((l) => l.replace(' ', '=')), ...g.cfg];
   const badConf = conf.filter((l) => /^remote\./i.test(l)).find(badConfig);
   if (badConf) deny(`Repo config "${badConf}" makes every push a force or mirror push. Remove it, then push normally.`);
-  const positional = g.args.filter((a) => !a.startsWith('-'));
+  // The repository and refspecs, without option values: `--repo origin`, `-o x`, `--receive-pack x` take one. With
+  // --repo, every positional may be a refspec.
+  const positional = [];
+  let repoOpt = false;
+  for (let k = 0; k < g.args.length; k++) {
+    const a = g.args[k];
+    if (/^--repo(=|$)/.test(a)) repoOpt = true;
+    if (/^(--repo|--receive-pack|--exec|-o|--push-option)$/.test(a)) { k++; continue; }
+    if (!a.startsWith('-')) positional.push(a);
+  }
+  const refspecs = repoOpt ? positional : positional.slice(1);
   const current = gitq(['rev-parse', '--abbrev-ref', 'HEAD']);
   // A ref as a branch name: HEAD and @ are the current branch; refs/heads/ and heads/ are dropped. A variable or
   // command substitution ($D, `...`) cannot be resolved here, so it counts as main.
   const asBranch = (r) => (/[$`]/.test(r) ? 'main' : r === 'HEAD' || r === '@' || r === '' ? current
     : r.replace(/^refs\//, '').replace(/^heads\//, ''));
   const toDst = (s) => asBranch(s.includes(':') ? s.split(':').pop() : s);
-  const toSrc = (s) => asBranch(s.includes(':') ? s.slice(0, s.indexOf(':')) : s);
+  // A source that cannot be resolved here ($VAR, $(...), a backtick) is '?', never main.
+  const toSrc = (s) => { const r = s.includes(':') ? s.slice(0, s.indexOf(':')) : s; return /[$`]/.test(r) ? '?' : asBranch(r); };
+  const hint = (r) => (/[$`]/.test(r) ? ' A variable or substitution cannot be checked here: push your branch with '
+    + '`git push -u origin HEAD`.' : '');
   const pushConf = conf.filter((l) => /^remote\..*\.push=/i.test(l)).map((l) => toDst(l.slice(l.indexOf('=') + 1)));
   const configured = pushConf.length > 0 || conf.some((l) => /^push\.default=(upstream|tracking)$/i.test(l));
   // A claude/ branch reaches main only through its PR: a push of it to main is refused, even right after a pull
@@ -181,28 +223,28 @@ for (const seg of segs) {
   // Whatever the current branch (the main checkout, a detached HEAD), an explicit refspec onto main must push main
   // itself: `<other>:main` lands unreviewed commits.
   if (process.env.CLAUDE_CODE_REMOTE !== 'true') {
-    const onto = positional.slice(1).find((r) => toDst(r) === 'main' && toSrc(r) !== 'main');
+    const onto = refspecs.find((r) => toDst(r) === 'main' && toSrc(r) !== 'main');
     if (onto) deny(`"${onto}" pushes something other than main onto main, skipping a PR (docs/git-workflow.md). `
-      + 'Push your branch (`git push -u origin <branch>`), then merge its PR.');
+      + `Push your branch (\`git push -u origin <branch>\`), then merge its PR.${hint(onto)}`);
   }
   if (current && current !== 'HEAD' && current !== 'main' && process.env.CLAUDE_CODE_REMOTE !== 'true') {
-    const bare = positional.length < 2;
+    const bare = refspecs.length === 0;
     // The effective upstream: this command's -c branch.<current>.merge wins over the repo's (the last one counts).
     const inline = g.cfg.filter((kv) => kv.toLowerCase().startsWith(`branch.${current.toLowerCase()}.merge=`));
     const merge = inline.length ? inline[inline.length - 1].slice(inline[inline.length - 1].indexOf('=') + 1)
       : gitq(['config', `branch.${current}.merge`]);
     const upstreamMain = merge === '?' || toDst(merge || '-') === 'main';
-    if (positional.slice(1).map(toDst).includes('main')
+    if (refspecs.map(toDst).includes('main')
         || (bare && (upstreamMain || pushConf.some((d) => d === 'main' || d === '?')))) {
       deny(`This pushes branch ${current} straight to main, skipping its PR (docs/git-workflow.md). Push the branch `
-        + '(`git push -u origin <branch>`), then merge the PR.');
+        + `(\`git push -u origin <branch>\`), then merge the PR.${hint(refspecs.find((r) => /[$\`]/.test(r)) || '')}`);
     }
   }
   if (synced.has(dir)) continue;
   // A push that cannot land on main (a claude/ branch push, docs/git-workflow.md) skips the behind-main check:
   // that branch merges origin/main at PR time. Unknown, --all, or a bare push whose destination comes from
   // config (remote.*.push, push.default upstream/tracking, from the repo or -c) counts as main-bound.
-  const specs = positional.length >= 2 ? positional.slice(1) : [configured ? 'main' : (current || 'main')];
+  const specs = refspecs.length ? refspecs : [configured ? 'main' : (current || 'main')];
   if (!g.args.some((a) => a === '--all' || a === '--branches') && specs.map(toDst).every((d) => d && d !== 'main')) continue;
 
   let behind = 0;
