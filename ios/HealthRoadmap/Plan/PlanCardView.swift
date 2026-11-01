@@ -127,17 +127,14 @@ private struct USProductBlock: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(block.name)
-                .font(.subheadline.weight(.semibold))
             Text(block.line)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            Link(destination: block.url) {
-                Label(block.url.host() ?? block.name, systemImage: "arrow.up.right.square")
-                    .font(.footnote.weight(.medium))
-            }
-            .accessibilityLabel("\(block.name) on \(block.url.host() ?? "its website")")
+            // The web's wording, "MicroVitamin+ ↗" (Brad 2026-11-01).
+            Link("\(block.name) ↗", destination: block.url)
+                .font(.footnote.weight(.medium))
+                .accessibilityLabel(block.name)
             .accessibilityHint("Opens in your browser")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
