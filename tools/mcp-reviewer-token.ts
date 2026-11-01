@@ -29,6 +29,7 @@ import crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
 import readline from 'node:readline';
 import { pathToFileURL } from 'node:url';
+import { requireMergedCode } from './write-gate.mjs';
 import { ROADMAP_FILE_NAME } from '../packages/health-core/src/adapter';
 import { DROPBOX_TOKEN_URL, dropboxRead } from '../packages/health-core/src/dropbox-rest';
 import { DROPBOX_SCOPE } from '../app/lib/mcp-providers.server';
@@ -258,6 +259,7 @@ async function main(args: string[]): Promise<number> {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  requireMergedCode('mcp-reviewer-token'); // it stages live Fly secrets
   main(process.argv.slice(2)).then(
     (status) => process.exit(status),
     (error: Error) => {

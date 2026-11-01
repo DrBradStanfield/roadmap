@@ -31,6 +31,7 @@ import { FIELD_METRIC_MAP } from '../packages/health-core/src/mappings';
 import { updateProfile } from '../packages/health-core/src/mcp-tools';
 import { appendLabValue, appendMeasurement } from '../packages/health-core/src/record-edits';
 import { recordSync } from '../packages/health-core/src/roadmap-doc';
+import { readableView } from '../packages/health-core/src/readable-rows';
 import { describeStorageFailure, isStorageFailure } from '../packages/health-core/src/sync-manager';
 import {
   computePlan,
@@ -62,7 +63,8 @@ import { zod3Message } from '../packages/health-core/src/validation';
  */
 export async function loadRecord(path: string, now = new Date()): Promise<RoadmapFile> {
   try {
-    return await recordSync(new FileAdapter(path), 'get-plan-cli', now.toISOString()).load();
+    // Read-only, so the plan reads what this build can read (US-65).
+    return readableView(await recordSync(new FileAdapter(path), 'get-plan-cli', now.toISOString()).load()).file;
   } catch (error) {
     if (!isStorageFailure(error)) throw error;
     const failed = describeStorageFailure(error, path);

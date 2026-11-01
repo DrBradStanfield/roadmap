@@ -802,7 +802,7 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   atomically, `.completeFileProtectionUntilFirstUserAuthentication` (a launch after the first unlock
   reads it). Read synchronously in `init` (a few hundred bytes), so the first frame has the cards;
   a missing, damaged or other-version file is none. Kept cards count as access granted and read, so
-  `LiveCardsSection.shown` draws them, never Turn On or Reconnect, until the first read. A read that
+  `LiveCardsSection.shown` draws them, never the Turn On or Open Settings row, until the first read. A read that
   changes the cards replaces the file (`keep`), one with none always deletes it (even a file the
   launch could not read, adversary R3), a locked or cancelled read changes nothing, a sheet due
   again deletes it, and `DataEraser` calls `forget()` (file gone, cards empty, nothing shown until
@@ -833,7 +833,7 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   `SleepPage` (D's stages over the night, W/M/6M stacked nights with stage averages, its chart its
   own view, E3). Both pages share `LivePageFrame` (picker, empty line, footnote, read, range
   reset), `ScrollingChart` (axes, scroll, scrub, haptic, calendar) with `SelectionRule`, and
-  `PageHeadline`, which `MetricDetailView` uses too. Every metric page, MetricDetailView's included, takes `metricPageList` (inset grouped, inline title, an 8 pt top margin so the picker sits under the title; Brad 2026-10-25). While the sheet is still due for the five and Apple Health is connected (so only for someone connected before 2026-10-26) Vitals shows `LiveReconnectRow` with **Turn On** (US-56 AC5; the "Show from Apple Health" card is gone; not connected, My data's Apple Health row is the one way in), and after "Don't Allow" (or an empty Health) the same row with **Reconnect** (AC5b). Turn On runs `connect()` on the known answer; Reconnect checks the status afresh and runs it while the sheet is due, else opens Settings (`LiveReconnectRow.action`); iOS 27's app page in Settings has no Health row, so the row names Settings › Apps › Health › Data Access & Devices. **A page always shows its card's reading
+  `PageHeadline`, which `MetricDetailView` uses too. Every metric page, MetricDetailView's included, takes `metricPageList` (inset grouped, inline title, an 8 pt top margin so the picker sits under the title; Brad 2026-10-25). While the sheet is still due for the five and Apple Health is connected (so only for someone connected before 2026-10-26) Vitals shows `LiveReconnectRow` with **Turn On** (US-56 AC5; the "Show from Apple Health" card is gone; not connected, My data's Apple Health row is the one way in), and after "Don't Allow" (or an empty Health) the same row with **Open Settings** (AC5b; "Reconnect" until 2026-11-01, AC5c). Turn On runs `connect()` on the known answer; Open Settings checks the status afresh and runs it while the sheet is due, else opens Settings (`LiveReconnectRow.action`); Settings opens at its top and iOS 27's app page there has no Health row, so the row names the path, chosen by OS (`LiveFooter.healthPath`: Settings › Apps › Health › Data Access & Devices › Health Roadmap from iOS 18, Settings › Health › … on iOS 17). **A page always shows its card's reading
   (Codex R2, adversary R7):** it reads 400 days (sleep 200) or back to the reading, opens with it in
   view (`LiveChartGeometry.opening`, the window's own length so a 31-day month still holds it),
   reads D's hours a day at a time as the scroll reaches a day (D scrolls a week back, or to the reading's day: a 400-day hourly domain took Swift Charts several seconds to lay out on the simulator), and reads the days only once the
@@ -1031,7 +1031,9 @@ later.
   files (default 300). Lab files also spend the web's per-machine file cap
   (`machineFiles`, `AI_DAILY_FILE_CAP`, 2000), but the app's own cap is smaller, so the
   app can never use up the web's and the connector's uploads (R5); the code also holds it
-  at or under 15% of `AI_DAILY_FILE_CAP` whatever the env says.
+  at or under 15% of `AI_DAILY_FILE_CAP` whatever the env says. The gate reserves the
+  per-IP, per-machine and file-cap units together, all or nothing, before the key's use,
+  so the file cap refusing spends no other count (US-52 AC4d, 2026-11-01).
 - Per IP, signed requests refused before their signature verifies (a bad or garbage
   assertion, an unknown key, a development key refused, an oversized body, a bad
   signature): 200 a day. Past that, the gate reads neither the key nor the body (code
@@ -1503,9 +1505,15 @@ A new user answers sex, birth month and year, height and weight, one per screen,
 ### D13 · "Do you drink alcohol?": one profile answer, the engine drops the card (Brad, 2026-10-31, US-60)
 
 Only the reduce-alcohol suggestion has a Dismiss button (keyed off its id in
-`PlanCardView`), shown only while the answer is unanswered. It opens the app's usual
-confirmation dialog, attached to the button so its arrow points there, "I don't drink"
-or "I drink"; the answer is checked against the screen recorded at the tap. Plan:
+`PlanCardView`), shown while the card is on the plan. It opens the app's usual
+confirmation dialog, attached to the button so its arrow points there. Unanswered:
+"Do you drink alcohol?", "I don't drink" or "I drink". A drinker (Brad 2026-11-01): "Do
+you still drink alcohol?", "I've stopped" (saves `none`) or "I still drink", which saves
+nothing and shows one line in an alert on the same button (`messageAlert`, no title):
+the card stays because its advice applies to anyone who drinks, and About you changes the
+answer. `AlcoholQuestion` holds the prompt per answer and is nil for a non-drinker, whose
+card the engine has already dropped. Any save is checked against the screen recorded at
+the tap. Plan:
 [docs/drafts/alcohol-question.md](../docs/drafts/alcohol-question.md).
 - **The answer is a profile field** (`profile.alcohol`), written by the engine's own edit
   (`{kind: 'alcohol'}` in `engine/my-data.ts`, health-core's `stampProfile`), so it merges
@@ -1515,12 +1523,14 @@ or "I drink"; the answer is checked against the screen recorded at the tap. Plan
   the card. The plan animates on the answer alone (`.animation(value:)` on it: the save
   lands after an await, outside any `withAnimation`), so the card fades out and the rest
   close up while nothing else on the plan animates.
-- **Never re-asked.** "I drink" keeps the card, without its Dismiss; About you is the only
-  place to change it.
+- **Asked again only on a tap.** "I drink" keeps the card; its Dismiss now asks whether
+  they still drink (it once vanished, which left a drinker who had stopped no way off the
+  card but About you).
 - **No new bridge.** The edit and the field ride the existing `applyEditJson`/`screenJson`
   doors; the contract file is unchanged. Swift reads the field leniently, so a value it
   does not know shows as "Not answered", never a broken My data.
-- **Usage signal:** Clarity's "Alcohol answered", sent from the plan's dialog only, never
+- **Usage signal:** Clarity's "Alcohol answered", sent from the plan's dialog only, once
+  saved ("I've stopped" counts; "I still drink" saves nothing and sends nothing), never
   the answer (D9). The chat allow-list (`ChatClient.contextKeys`) carries health-core's
   new `alcohol` key, so the chat knows a non-drinker.
 

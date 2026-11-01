@@ -137,6 +137,10 @@ export const PRODUCT_EVENT_NAMES = [
   'onboarding_step',
   'onboarding_done',
   'signin_opened',
+  // US-65 AC6: the record opened with entries this build could not read, so
+  // the page showed the kept-unchanged line. Metadata `{ count }` only, capped
+  // at 1000: never a row, a field name or a value. Once per tab session.
+  'record_unreadable_kept',
 ] as const;
 
 /** The `chat_profile_edit` counter's words (US-16 AC2): which profile field, and what the user did. */
