@@ -7,7 +7,7 @@
 //   node tools/agent-channel.mjs read [--limit N]
 //   node tools/agent-channel.mjs post <text>        (or the text on stdin)
 import { randomBytes } from 'node:crypto';
-import { chmodSync, existsSync, linkSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -36,7 +36,6 @@ const LOCAL_PATTERNS = { fly_token: '(?<![A-Za-z0-9])(?:FlyV1\\s+)?fm2_[A-Za-z0-
 const SHAPES = Object.entries({ ...PATTERNS, ...LOCAL_PATTERNS }).map(([name, re]) => [name, new RegExp(re)]);
 // Other files whose values are refused, besides the main checkout's root .env*: `~/` is HOME; a folder means its .env* files.
 const OTHER_SECRET_SOURCES = ['~/.fly/config.yml', '~/Documents/claude_business.nosync', '~/Documents/claude_business.nosync/claude-integration'];
-const LOCK_STALE = 30_000;
 
 /** A refusal: printed on stderr as is, exit 1. Its text never holds a value. */
 class Refused extends Error {}
@@ -168,18 +167,6 @@ function lockSeen(path) {
 }
 
 /**
- * Takes over a lock older than 30 s (a crashed run's). Only the run whose rename wins goes on; if what it renamed is
- * not the lock it saw stale (a fresh one took its place), it puts that back if the path is still free.
- */
-function takeOverStale(lock, seen) {
-  const moved = `${lock}.stale.${process.pid}.${randomBytes(6).toString('hex')}`;
-  try { renameSync(lock, moved); } catch (e) { if (e?.code === 'ENOENT') return; throw e; }
-  const got = lockSeen(moved);
-  if (got && got.token === seen.token && got.mtimeMs === seen.mtimeMs) { rmSync(moved, { force: true }); return; }
-  try { linkSync(moved, lock); rmSync(moved, { force: true }); } catch (e) { if (e?.code !== 'EEXIST') throw e; }
-}
-
-/**
  * Runs `change(state)` on a fresh load and saves it, under an exclusive lockfile, so two runs never interleave a
  * load and a save (the cap holds across processes). The lock holds a random owner token; release deletes it only
  * if it still holds ours.
@@ -191,10 +178,9 @@ async function withState(home, change) {
   for (let tries = 0; ; tries++) {
     try { writeFileSync(lock, token, { flag: 'wx', mode: 0o600 }); break; } catch (e) {
       if (e?.code !== 'EEXIST') throw e;
-      const seen = lockSeen(lock);
-      if (!seen) continue;
-      if (Date.now() - seen.mtimeMs > LOCK_STALE) { takeOverStale(lock, seen); continue; }
-      if (tries >= 100) throw new Refused(`${lock} is held by another run; try again (delete it if no run is going)`);
+      // Never taken over automatically: any takeover of a crashed run's lock can race a second takeover (Codex R3).
+      // A lock that outlives its run (SIGKILL, power loss) stops the tool until someone deletes it by hand.
+      if (tries >= 100) throw new Refused(`${lock} is held by another run, or left by one that stopped; if no run is going, delete it and try again`);
       await new Promise((r) => setTimeout(r, 50));
     }
   }

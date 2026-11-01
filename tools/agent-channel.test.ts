@@ -390,24 +390,21 @@ describe('US-63 C3/R7: the cap holds across overlapping runs', () => {
     expect((await go(['post', 'after the jump'])).stderr).toContain('10 posts in the last hour');
     expect(fetchMock).toHaveBeenCalledTimes(10);
   });
-  it('takes over a lock left by a crashed run, and never leaves its own behind', async () => {
-    const lock = join(home, '.health-roadmap', 'agent-channel-state.json.lock');
-    mkdirSync(join(home, '.health-roadmap'), { recursive: true });
-    writeFileSync(lock, '');
-    const old = new Date(Date.now() - 60_000);
-    utimesSync(lock, old, old);
-    expect((await go(['post', 'hi'])).code).toBe(0);
-    expect((await go(['post', ''])).code).toBe(1);
-    expect(existsSync(lock)).toBe(false);
-    expect(readdirSync(dirname(lock)).filter((n) => n.includes('.lock'))).toEqual([]);
-  });
-  it('US-63 X4: separate processes racing a stale lock lose no update', async () => {
-    // Real processes, not promises in one: the takeover is a rename only one of them can win.
+  it('US-63 AC7: a lock left by a stopped run refuses, sends nothing and is left for a person to delete', async () => {
     const lock = join(home, '.health-roadmap', 'agent-channel-state.json.lock');
     mkdirSync(join(home, '.health-roadmap'), { recursive: true });
     writeFileSync(lock, 'crashed-owner');
-    const old = new Date(Date.now() - 60_000);
+    const old = new Date(Date.now() - 3_600_000);
     utimesSync(lock, old, old);
+    const r = await go(['post', 'hi']);
+    expect(r.code).toBe(1);
+    expect(r.stderr).toContain('delete it and try again');
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(readFileSync(lock, 'utf8')).toBe('crashed-owner');
+  }, 15_000);
+  it('US-63 X4: separate processes sharing the lock lose no update and leave no lock', async () => {
+    const lock = join(home, '.health-roadmap', 'agent-channel-state.json.lock');
+    mkdirSync(join(home, '.health-roadmap'), { recursive: true });
     const mod = join(dirname(fileURLToPath(import.meta.url)), 'agent-channel.mjs');
     const child = `const { run } = await import(${JSON.stringify(`file://${mod}`)});
       const deps = { env: {}, home: process.env.AC_HOME, root: process.env.AC_ROOT, stdin: async () => '', fetch: async () => new Response('[]') };
