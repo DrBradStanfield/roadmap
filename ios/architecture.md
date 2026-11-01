@@ -211,6 +211,14 @@ A signature means "the key holder approved this bundle", nothing more.
   events. `bridge.test.ts` (Node) and `EngineBridgeContractTests` (XCTest) fail if either
   side drifts from the file, so an engine that needs a new native cannot reach an app
   without it: it lands in a new `bridge-<id>` folder that old apps never read.
+  **Both-way additions keep the id (2026-10-31, US-61, D14):** `ios/engine/bridge-optional.json`,
+  never hashed, holds only an optional trailing argument (an older app sends one fewer and
+  the engine answers as before) or an optional return field (an older engine leaves it out
+  and the app reads none). Both tests count a door's arity as its contract args plus its
+  optional ones; `bridge.test.ts` also checks each optional argument trails the contract ones
+  by name in `entry.ts`, and that every optional door, called with only its contract args,
+  answers as it does with them undefined. A missing return field is tested per feature. Anything
+  an older app cannot do without stays in the contract and moves the id.
 - **The schema is the app's (R7).** A bundle whose record `schemaVersion` differs from the
   bundled engine's is refused. A schema change always needs an app update, so an over-the-
   air engine can never write a record the web or an older phone cannot read.
@@ -1127,10 +1135,10 @@ health tool (`data-clarity-mask` on `HealthTool.tsx`'s root). The app matches th
   never a navigation title, which can carry a supplement's name. Nothing is ever unmasked.
 - `AnalyticsMaskingTests` (US-25 AC19) fails if the window is not masked first, if any code
   unmasks, if a text input lacks its mask, or if any file but Analytics.swift calls Clarity.
-- **Custom events, exactly thirteen fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58):**
+- **Custom events, exactly fourteen fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58; "Alcohol answered" for US-60):**
   `Analytics.event` sends `ClaritySDK.sendCustomEvent` with a word from one enum,
   `Analytics.Event`: "Tour started", "Tour tip closed 1/2/3", "Tour skipped 1/2/3", "Tile
-  explainer opened", "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened".
+  explainer opened", "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened", "Alcohol answered".
   Never a value, a tile's name or any other text; nothing before Clarity starts.
   `AnalyticsMaskingTests` pins the list, so a new word is a test change and a D9 change.
   Views reach the one `Analytics` through the environment (`\.analytics`, set by RootView).
@@ -1289,6 +1297,7 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
 - `scripts/release-engine.mjs` (`npm run engine:build`, loading `release-build.mjs`), `scripts/sign-engine.mjs` (run directly), `scripts/engine-keygen.mjs`,
   `scripts/engine-signing.mjs`: signed over-the-air releases into `engine-release/` (D3).
   `engine/bridge-contract.json` is the native bridge's contract; its hash is the bridge id.
+  `engine/bridge-optional.json` holds the both-way additions that keep it (D3, D14).
   Tested by `scripts/release-engine.test.ts`, `scripts/signing-key-guard.test.ts` and
   `engine/bridge.test.ts`.
 - `scripts/ui-test.sh`: the UI tests, one at a time, each on a fresh install (US-54).
@@ -1491,27 +1500,49 @@ is. Spec: docs/user-stories.md US-61.
 - **Why the storefront.** StoreKit's `Storefront.current` is the App Store country of the
   Apple ID, the same market the app is sold in, and needs no permission, no location and no
   network call of ours. The phone's region is a display setting anyone changes; the record's
-  units say nothing about the market. Nil (no Apple ID, StoreKit cannot say) is not the US.
+  units say nothing about the market. Nil (no Apple ID, StoreKit cannot say) keeps the saved
+  answer and writes nothing; with nothing ever saved it is not the US (`AppStoreCountry.remember`).
   `AppStoreCountry` keeps the last answer in the app's defaults, so a launch draws the plan
   at once with it; each return to the app asks StoreKit again (the storefront changes only in
   Settings) and a change redraws (`RecordStore.follow(storefrontIsUS:)`). Under the tests it
   is always false. DEBUG only, compiled out of Release: the launch argument
   `-StorefrontCountry USA` (or `NZL`) stands in for StoreKit, for simulator checks.
 - **The engine stays the one source.** `screenJson` takes `isUS` as a new last argument and
-  answers `plan.usProducts`, health-core's `usProductBlocks` (us-products.ts, the web's own
-  overlay) with the adult rule `medicinesShown`, the web's. Only `true` counts. Every word,
-  link and card choice is the engine's, so a wording or mapping change ships over the air
-  (D3), and an engine release that empties the mapping removes the blocks (no kill switch,
-  Brad). The sections stay the web's `planSections`, product-free; Swift places each block on
-  its card, swaps in the card's US text and references when the block has them
-  (`USProducts.applied`), and draws the ownership line on the Supplements section once.
-- **Bridge change.** The new argument moved the bridge id from `2d467ff50c66c42d` to
-  `d0ffd9e53f8499b3` (D3), so the overlay needs an App Store build: an older app keeps its
-  bridge's engines and never reads the new one's releases.
+  answers `plan.usProducts`: health-core's `usProductSections` (us-products.ts, the web's own
+  overlay), the sections ready to draw. It applies the adult rule `medicinesShown` itself, the
+  web's. Only `true` counts. Every word, link, card choice and place is the engine's, so a
+  wording or mapping change ships over the air (D3), and an engine release that empties the
+  mapping removes the blocks (no kill switch, Brad). `plan.sections` stays the web's
+  `planSections`, product-free; `usProducts` is left out when no block shows. Swift decides
+  nothing: it draws `usProducts` when present, else `sections` (simplified 2026-11-01; the
+  first cut had Swift and the web each place blocks, swap text and add the line).
+  **Host pin:** decoding refuses a block whose link is not https on `microvitamin.com` (host
+  compared without case), and then the whole `usProducts`, so the plan shows plain: a signed
+  engine can choose among those product pages but cannot point a link anywhere else.
+- **No bridge change (corrected 2026-10-31, adversary review).** The change works both ways,
+  so the id stays `2d467ff50c66c42d` and over-the-air engines keep reaching builds 3 and 4.
+  An older app sends four arguments: `isUS` is undefined, so it gets no blocks. An older
+  engine ignores the fifth argument and sends no `usProducts`, which Swift decodes as none.
+  `isUS` and `usProducts` are recorded in `bridge-optional.json`, not the hashed contract
+  (D3). `usProducts` changed shape on 2026-11-01, from `{blocks, ownershipLine}` to the
+  sections ready to draw; no build before US-61 reads it, so the change is safe for builds 3
+  and 4. A first cut moved the id to `d0ffd9e53f8499b3`, which would have cut builds 3 and 4
+  off every later engine; it never shipped.
+  **The rule:** `bridge.test.ts` pins the id as a literal. A real bridge change (anything an
+  older app cannot do without) moves the id and updates that literal; `bridge-optional.json`
+  is never a way around one, only a place for additions that work both ways.
+- **Costs, accepted (2026-11-01, review of the /simplify change):** for a US adult, `screenJson`
+  ships the sections twice (`sections`, product-free, plus `usProducts`, ready to draw), and the
+  plan's `ms` timing includes the overlay. A product link that fails the https microvitamin.com pin
+  drops the whole overlay, so the plan draws plain and nothing records it; only a bad signed engine
+  can cause that, and plain is the approved non-US view.
 - **Taps only, no new Clarity word.** The links carry `utm_source=health-tool&utm_medium=ios`,
   so taps and orders show in Shopify, and nothing from the record enters a URL. No impression
   is counted: a Clarity event would add a word to D9's fixed list, which US-61 leaves as it is.
-- **Tests:** `ios/engine/us-products.test.ts` (Node), `USProductsTests.swift` (XCTest).
+- **Tests:** `ios/engine/us-products.test.ts` and `bridge.test.ts` (Node), `USProductsTests.swift`
+  and `EngineBridgeContractTests.swift` (XCTest). Both directions: the Node test calls
+  `screenJson` with an old app's four arguments; the XCTest runs the plan on a stand-in for an
+  engine before US-61 (four arguments, no `usProducts`).
 
 ## Phases
 

@@ -13,6 +13,7 @@
  * DOI STATUS:
  * - All DOIs verified via web lookup against roadmap_text.html citations
  */
+import type { UsProductCardId } from './types';
 
 export interface SuggestionReference {
   label: string;
@@ -125,17 +126,17 @@ const REF_CREATINE_STRENGTH: SuggestionReference = { label: 'Kreider 2017 – IS
 const REF_MPOD: SuggestionReference = { label: 'Wilson 2021 – Lutein/zeaxanthin intake & macular pigment optical density: meta-analysis (Adv Nutr)', url: 'https://doi.org/10.1093/advances/nmab071' };
 
 /**
- * The references of the US variants (US-61 AC3), keyed `<id>-us` like
+ * The references of the US variants (US-61 AC3), keyed by card id like
  * suggestions.ts's US_SUPPLEMENT_DESCRIPTIONS. Read only by the US product
  * overlay (us-products.ts); never attached by the engine.
  */
-export const US_SUPPLEMENT_REFERENCES: Readonly<Record<string, SuggestionReference[]>> = {
+export const US_SUPPLEMENT_REFERENCES: Readonly<Partial<Record<UsProductCardId, SuggestionReference[]>>> = {
   // No WHO dementia guideline.
-  'supplement-micronutrient-base-us': [...REFS_COSMOS, REF_K2_VKA],
+  'supplement-micronutrient-base': [...REFS_COSMOS, REF_K2_VKA],
   // No cognition or memory references.
-  'supplement-creatine-us': [REF_CREATINE_STRENGTH],
+  'supplement-creatine': [REF_CREATINE_STRENGTH],
   // No macular degeneration trials.
-  'supplement-lutein-zeaxanthin-us': [REF_MPOD],
+  'supplement-lutein-zeaxanthin': [REF_MPOD],
 };
 
 // ============================================================
@@ -604,14 +605,13 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // US-61: the muscle evidence is small trials with mixed results, far weaker
   // than creatine's. Homocysteine and dementia stay off the card.
   'supplement-tmg': {
-    reason: 'TMG (trimethylglycine, also called betaine) lowers blood homocysteine: a meta-analysis of randomized trials in healthy adults found that at least 4 g a day for 6 to 24 weeks lowered it. Small trials suggest it may improve strength and power, though results are mixed and the evidence is much weaker than for creatine. At 4 g a day or more, a meta-analysis of 6 randomized trials found it may modestly raise total cholesterol (by 0.34 mmol/L), and found no significant effect on LDL, HDL or triglycerides.',
+    reason: 'TMG (trimethylglycine, also called betaine) lowers blood homocysteine: a meta-analysis of randomized trials in healthy adults found that at least 4 g a day for 6 to 24 weeks lowered it. Small trials suggest it may improve strength and power, though results are mixed and the evidence is much weaker than for creatine.',
     guidelines: [],
     references: [
       { label: 'McRae 2013 – Betaine supplementation decreases plasma homocysteine: meta-analysis (J Chiropr Med)', url: 'https://doi.org/10.1016/j.jcm.2012.11.001' },
       { label: 'Lee 2010 – Betaine supplementation and strength and power performance (J Int Soc Sports Nutr)', url: 'https://doi.org/10.1186/1550-2783-7-27' },
       { label: 'Pryor 2012 – Betaine supplementation and cycling sprint performance (J Int Soc Sports Nutr)', url: 'https://doi.org/10.1186/1550-2783-9-12' },
       { label: 'Nobari 2021 – Chronic betaine supplementation in young soccer players: RCT (J Int Soc Sports Nutr)', url: 'https://doi.org/10.1186/s12970-021-00464-y' },
-      { label: 'Zawieja 2021 – Betaine supplementation moderately increases total cholesterol: meta-analysis (J Diet Suppl)', url: 'https://doi.org/10.1080/19390211.2019.1699223' },
     ],
   },
 
