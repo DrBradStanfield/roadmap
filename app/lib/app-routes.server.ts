@@ -21,7 +21,7 @@ const json = (status: number, body: object) => Response.json(body, { status, hea
 const unavailable = () => json(503, { success: false, error: 'This is not available right now. Please try again later.', reason: 'unavailable' });
 export const postOnly = () => json(405, { success: false, error: 'POST only' });
 
-/** POST attest/challenge: stateless (HMAC'd, 5 minutes), so it costs no storage. */
+/** POST attest/challenge: HMAC'd, 5 minutes, so issuing one stores nothing; using one spends it (AC1a). */
 export function appChallenge(request: Request): Response {
   if (request.method !== 'POST') return postOnly();
   if (appRoutesOff() || !attestConfig()) return unavailable();
@@ -42,12 +42,15 @@ export async function appRegister(request: Request, store: KeyStore = supabaseKe
 
   const body = await parseSimpleRequestJson(request, SMALL_BODY_CAP) as { keyId?: unknown; attestation?: unknown; challenge?: unknown } | typeof BODY_TOO_LARGE | null;
   if (body === BODY_TOO_LARGE) return registerRefused(413, 'too_large');
-  if (!body || typeof body !== 'object' || !validKeyId(body.keyId) || typeof body.attestation !== 'string') return registerRefused(400, 'bad_request');
-  if (!challengeValid(body.challenge)) return registerRefused(401, 'bad_challenge');
+  if (!body || typeof body !== 'object') return registerRefused(400, 'bad_request');
+  // Checked and spent with no await between, so two requests cannot both use it, and
+  // before the other fields, so a malformed attempt spends it too (AC1a, Codex R1).
+  if (!challengeValid(body.challenge) || !appLimits.challenges.take(body.challenge, 1)) return registerRefused(401, 'bad_challenge');
+  if (!validKeyId(body.keyId) || typeof body.attestation !== 'string') return registerRefused(400, 'bad_request');
 
   let key;
   try {
-    key = verifyAttestation({ keyId: body.keyId, attestation: Buffer.from(body.attestation, 'base64'), challenge: body.challenge as string, config });
+    key = verifyAttestation({ keyId: body.keyId, attestation: Buffer.from(body.attestation, 'base64'), challenge: body.challenge, config });
   } catch (error) {
     return registerRefused(401, error instanceof AttestError ? error.reason : 'bad_attestation');
   }

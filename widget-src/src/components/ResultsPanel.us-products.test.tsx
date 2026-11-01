@@ -144,6 +144,38 @@ describe('US-61 AC2: the US card text replaces the base text on the US cards onl
     }
   });
 
+  // Supplement cards carry no `reason` (withEvidence), so the Why panel is the
+  // reference labels alone: the swap must keep these outcomes off US cards.
+  const WHY_BANNED: Record<string, RegExp> = {
+    'supplement-micronutrient-base': /WHO|dementia/i,
+    'supplement-creatine': /memory/i,
+    'supplement-lutein-zeaxanthin': /AREDS|macular degeneration/i,
+  };
+  const whyPanel = (container: HTMLElement, id: string) => {
+    const card = cardById(container, id);
+    fireEvent.click(card.querySelector('.evidence-toggle')!);
+    return card.querySelector('.evidence-content')!;
+  };
+
+  it('a US adult\'s Why panels name no dementia, memory or macular degeneration outcome', () => {
+    const { container } = show();
+    for (const [id, banned] of Object.entries(WHY_BANNED)) {
+      const panel = whyPanel(container, id);
+      expect(panel.querySelectorAll('.evidence-refs a').length).toBeGreaterThan(0);
+      expect(panel.textContent).not.toMatch(banned);
+    }
+  });
+
+  it('outside the US the Why panels keep every reference', () => {
+    mocks.country.value = 'GB';
+    const { container } = show();
+    for (const [id, banned] of Object.entries(WHY_BANNED)) {
+      const panel = whyPanel(container, id);
+      expect(panel.textContent).toMatch(banned);
+      expect(panel.querySelectorAll('.evidence-refs a')).toHaveLength(adult.suggestions.find((s) => s.id === id)!.references!.length);
+    }
+  });
+
   it('outside the US every card keeps its base text', () => {
     mocks.country.value = 'GB';
     const { container } = show();
