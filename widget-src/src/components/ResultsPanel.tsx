@@ -681,11 +681,7 @@ export function ResultsPanel({ results, isValid, hasUnsavedLongitudinal, onSaveL
   return (
     <div className="health-results-panel">
       <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={planHeaderMeta} actions={planHeaderMeta !== null} />
-      {/* Cloud connection */}
-      {syncControl?.({ hasData: true, attention })}
-      {emailCapture && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />}
-
-      {/* Quick Stats */}
+      {/* Quick Stats: the snapshot tiles lead the plan */}
       <section className="quick-stats">
         <div className="stats-grid">
           {tiles.map((tile) => (
@@ -699,6 +695,10 @@ export function ResultsPanel({ results, isValid, hasUnsavedLongitudinal, onSaveL
           ))}
         </div>
       </section>
+
+      {/* The numbers first, then where the record lives and the PDF (Brad 2026-11-02). */}
+      {syncControl?.({ hasData: true, attention })}
+      {emailCapture && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />}
 
       {/* Suggestions */}
       <section className="suggestions-section">

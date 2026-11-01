@@ -403,7 +403,7 @@ input[type="number"] {
   min-height: var(--control-height);
   border: var(--control-border);
   border-radius: var(--control-radius);
-  background: #fff;
+  background-color: #fff;
 }
 
 .health-tool .health-field input,
@@ -413,6 +413,20 @@ input[type="number"] {
   font-size: var(--control-font-size);
   line-height: normal;
   transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+/* Every drop-down draws one chevron, inset from the right edge, in place of
+   the browser's own arrow, which WebKit and the theme push flush against the
+   border (Brad 2026-11-02). Specificity 0,3,1 beats the theme's select rules
+   and the padding shorthands above. */
+.health-tool select:not([multiple]):not([size]) {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%236b7280' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px 8px;
+  padding-right: 36px;
 }
 
 .health-tool .health-field input:focus,
