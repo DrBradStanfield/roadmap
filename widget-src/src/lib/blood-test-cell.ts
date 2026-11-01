@@ -13,7 +13,8 @@ import {
   LDL_THRESHOLDS,
   getLipidStatus,
   TOTAL_CHOLESTEROL_THRESHOLDS,
-  HDL_THRESHOLDS,
+  HDL_GRID_BANDS,
+  CREATININE_GRID_BANDS,
   TRIGLYCERIDES_THRESHOLDS,
   APOB_THRESHOLDS,
   LPA_THRESHOLDS,
@@ -179,11 +180,11 @@ export function statusOf(metric: MetricType, siValue: number, grading: Grading):
       if (siValue >= TOTAL_CHOLESTEROL_THRESHOLDS.borderline) return 'warn';
       return 'ok';
     case 'hdl': {
-      // Higher is better. lowFemale (~1.29) is the more conservative "ok"
-      // gate. Below lowMale (~1.03) = bad. Between = warn.
-      const okGate = sex === 'male' ? HDL_THRESHOLDS.lowMale : HDL_THRESHOLDS.lowFemale;
-      if (siValue >= okGate) return 'ok';
-      if (siValue >= HDL_THRESHOLDS.lowMale) return 'warn';
+      // Higher is better. No sex, no grade: never assume one (US-62 AC13).
+      if (!sex) return null;
+      const { okFrom, badBelow } = HDL_GRID_BANDS[sex];
+      if (siValue >= okFrom) return 'ok';
+      if (siValue >= badBelow) return 'warn';
       return 'bad';
     }
     case 'triglycerides':
@@ -201,12 +202,10 @@ export function statusOf(metric: MetricType, siValue: number, grading: Grading):
     case 'psa':
       return siValue >= PSA_THRESHOLDS.normal ? 'warn' : 'ok';
     case 'creatinine': {
-      // No formal threshold (eGFR is the clinical gate). Use the adult
-      // reference range as the ok ceiling, mild elevation → warn,
-      // significant elevation (≥30% over) → bad.
-      const max = sex === 'female' ? 90 : 110; // µmol/L
-      if (siValue >= max * 1.3) return 'bad';
-      if (siValue > max) return 'warn';
+      if (!sex) return null; // the ceiling differs by sex; never assume one (US-62 AC13)
+      const { okMax, badFrom } = CREATININE_GRID_BANDS[sex];
+      if (siValue >= badFrom) return 'bad';
+      if (siValue > okMax) return 'warn';
       return 'ok';
     }
     default:

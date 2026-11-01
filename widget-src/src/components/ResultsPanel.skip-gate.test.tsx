@@ -8,6 +8,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { statTiles } from '@roadmap/health-core';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { calculateHealthResults } from '@roadmap/health-core';
 
@@ -39,7 +40,7 @@ const results = calculateHealthResults({ heightCm: 175, sex: 'male' });
 function plan(props: Partial<React.ComponentProps<typeof ResultsPanel>> = {}) {
   return (
     <StorageNoticeContext.Provider value>
-      <ResultsPanel results={results} isValid unitSystem="si" showEmailCapture formStage={3} {...props} />
+      <ResultsPanel results={results} isValid tiles={results ? statTiles(results, { unitSystem: 'si' }) : []} showEmailCapture formStage={3} {...props} />
     </StorageNoticeContext.Provider>
   );
 }
@@ -339,7 +340,7 @@ describe('US-44 AC6 — Save as PDF shows on a phone', () => {
   // The input header keeps its actions only when it holds the storage button
   // (US-09 AC30, HealthTool.top-bar.test.tsx).
   it('the empty-plan placeholder header stays fully hidden on a phone', () => {
-    const view = render(<ResultsPanel results={null} isValid={false} unitSystem="si" />);
+    const view = render(<ResultsPanel results={null} isValid={false} tiles={[]} />);
     expect(planHeader(view as ReturnType<typeof showPlan>).classList.contains('hr-col-header--actions')).toBe(false);
   });
 

@@ -1,11 +1,9 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { HealthResults, Suggestion } from '@roadmap/health-core';
 import {
-  type UnitSystem,
-  type MetricType,
   type SuggestionEvidence,
-  statTiles,
   statTileText,
+  type StatTile,
   planSections,
   type PlanCard,
 } from '@roadmap/health-core';
@@ -26,14 +24,13 @@ import { observeVisibility } from '../lib/observe-visibility';
 interface ResultsPanelProps {
   results: HealthResults | null;
   isValid: boolean;
-  unitSystem: UnitSystem;
-  unitOverrides?: Partial<Record<MetricType, UnitSystem>>;
   hasUnsavedLongitudinal?: boolean;
   onSaveLongitudinal?: () => Promise<unknown>;
   /** Resolves true once the data is erased (false if cancelled or failed). */
   onDeleteData?: () => Promise<boolean>;
   isDeleting?: boolean;
-  sex?: 'male' | 'female';
+  /** The plan's tiles, computed once in HealthTool (`statTiles`). */
+  tiles: StatTile[];
   showEmailCapture?: boolean;
   formStage?: number;
   /** Cloud connection controls shared by Shopify and Pages. Hidden for new users
@@ -438,7 +435,7 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
   if (hook.gateSkipped) return <ReminderSignup hook={hook} />;
 
   return (
-    <div className={`email-capture no-print${formStage === 3 ? ' field-attention' : ''}`}>
+    <div className={`email-capture no-print${formStage === 4 ? ' field-attention' : ''}`}>
       <p className="email-guest-helper">{helperText}</p>
       <div className="email-capture-row">
         <input
@@ -476,7 +473,7 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
   );
 }
 
-export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, onDeleteData, isDeleting, sex, showEmailCapture, formStage, syncControl, remindersSection, alcoholQuestion }: ResultsPanelProps) {
+export function ResultsPanel({ results, isValid, hasUnsavedLongitudinal, onSaveLongitudinal, onDeleteData, isDeleting, tiles, showEmailCapture, formStage, syncControl, remindersSection, alcoholQuestion }: ResultsPanelProps) {
   // Track highlighted (new/changed) suggestion IDs
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
   const [fadingOutIds, setFadingOutIds] = useState<Set<string>>(new Set());
@@ -576,7 +573,6 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
   const guestEmailHook = useGuestEmailCapture(() => printReport('capture'));
 
   // Above the early return, as hooks must be; worked out again only when their inputs change.
-  const tiles = useMemo(() => (results ? statTiles(results, { unitSystem, unitOverrides, sex }) : []), [results, unitSystem, unitOverrides, sex]);
 
   // US-61 AC5: Brad's products for a known adult in the US, on the Shopify build only.
   const sections = useMemo((): UsPlanSection[] => {

@@ -233,8 +233,9 @@ function RowSection({ title, rows, onOpen, children }: { title: string; rows: Ro
   );
 }
 
-export function VitalsRows({ history, ctx, onOpen }: { history: ApiMeasurement[]; ctx: RowContext; onOpen: (s: ValueSubject) => void }) {
-  const rows = [coreRow('weight', history, ctx), coreRow('waist', history, ctx), pressureRow(history, ctx)];
+export function VitalsRows({ history, ctx, onOpen, withoutWeight }: { history: ApiMeasurement[]; ctx: RowContext; onOpen: (s: ValueSubject) => void; withoutWeight?: boolean }) {
+  // The weight asked beside the height shows there alone (US-62 AC13).
+  const rows = [...(withoutWeight ? [] : [coreRow('weight', history, ctx)]), coreRow('waist', history, ctx), pressureRow(history, ctx)];
   return <RowSection title="Vitals" rows={rows} onOpen={onOpen}/>;
 }
 

@@ -73,10 +73,10 @@ describe('IBW and protein tiles', () => {
   });
 
   it('lowers the protein rate below eGFR 45', () => {
-    expect(tile({}, 'protein')).toMatchObject({ label: 'Protein Target', value: '85', unit: 'g/day', status: { label: '1.2 g per kg ideal weight' } });
+    expect(tile({}, 'protein')).toMatchObject({ label: 'Protein Target', value: '85', unit: 'g/day', status: { label: '1.2 g/kg ideal weight' } });
     expect(tile({}, 'protein')?.status?.tone).toBeUndefined();
     expect(tile({}, 'protein').evidence).toEqual(getProteinEvidence(70.5, 1.2, undefined));
-    expect(tile({ eGFR: 40 }, 'protein').status?.label).toBe('1.0 g per kg ideal weight');
+    expect(tile({ eGFR: 40 }, 'protein').status?.label).toBe('1.0 g/kg ideal weight');
   });
 });
 

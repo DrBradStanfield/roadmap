@@ -40,7 +40,7 @@ describe('statTiles (US-25 AC22)', () => {
     // A fact, not a grade: no tone, so the app draws it gray (Brad 2026-10-31).
     expect(t.ibw.status?.tone).toBeUndefined();
     expect(t.ibw.evidence).toEqual(getIbwEvidence('female'));
-    expect(t.protein).toMatchObject({ label: 'Protein Target', value: '72', unit: 'g/day', status: { label: '1.2 g per kg ideal weight' } });
+    expect(t.protein).toMatchObject({ label: 'Protein Target', value: '72', unit: 'g/day', status: { label: '1.2 g/kg ideal weight' } });
     expect(t.protein.status?.tone).toBeUndefined();
     expect(t.ldl).toMatchObject({ label: 'LDL Cholesterol', value: '3.6', unit: 'mmol/L', status: { label: 'Borderline', tone: 'info' } });
     expect(t.ldl.evidence).toEqual(STAT_CARD_EVIDENCE['ldl']);

@@ -9,8 +9,15 @@ import SwiftUI
 /// The values are made up, in the region's units, and no scene gives advice.
 struct WelcomeStory: View {
     /// The story in words: what VoiceOver reads, and what the welcome screen shows in its
-    /// place at accessibility text sizes, where the scenes cannot fit.
+    /// place wherever the scenes cannot fit (larger text, a narrow phone).
     static let summary = "Add your numbers: Apple Health and lab reports can fill them in. Get your plan, built from published guidelines. Your data stays yours: on this iPhone or in your own Dropbox or Google Drive, never on our servers."
+    /// The card's height: every scene must fit it whole (US-54 AC8b).
+    static let height = 236.0
+    /// All three scenes at once, fully shown: the size the card needs. WelcomeView shows
+    /// the story only where this fits, so no row is cut or wrapped.
+    static var needs: some View {
+        ZStack { NumbersScene(still: true); PlanScene(still: true); PrivateScene(still: true) }.fixedSize()
+    }
     @State private var scene = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -23,7 +30,7 @@ struct WelcomeStory: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .frame(height: 236)
+        .frame(height: Self.height)
         .background(
             LinearGradient(colors: [Color.accentColor.opacity(0.10), Color.accentColor.opacity(0.03)], startPoint: .top, endPoint: .bottom),
             in: RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -62,7 +69,11 @@ private struct Heading: View {
 
 /// Values arrive one by one, as Apple Health or a lab report would fill them in.
 private struct NumbersScene: View {
+    /// Every row at once, without the reveal: the size the scene needs.
+    var still = false
     @State private var shown = 0
+    /// The icon column grows with the text, as SourceRow's (US-52 AC10b).
+    @ScaledMetric(relativeTo: .subheadline) private var iconWidth = 22.0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let rows = Sample.rows
 
@@ -70,10 +81,10 @@ private struct NumbersScene: View {
         VStack(alignment: .leading, spacing: 8) {
             Heading(title: "Add your numbers", symbol: "list.bullet.clipboard", bounce: shown)
             ForEach(rows.indices, id: \.self) { index in
-                if index < shown {
+                if still || index < shown {
                     let row = rows[index]
                     HStack(spacing: 10) {
-                        Image(systemName: row.symbol).foregroundStyle(row.tint.softInDark).frame(width: 22)
+                        Image(systemName: row.symbol).foregroundStyle(row.tint.softInDark).frame(width: iconWidth)
                         Text(row.label).font(.subheadline)
                         Spacer()
                         Text(row.value).font(.subheadline.weight(.semibold)).monospacedDigit()
@@ -89,13 +100,17 @@ private struct NumbersScene: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
-        .task { await reveal($shown, count: rows.count, at: reduceMotion) }
+        .task { if !still { await reveal($shown, count: rows.count, at: reduceMotion) } }
     }
 }
 
 /// The plan builds itself: one step per area, each ticked as it lands.
 private struct PlanScene: View {
+    /// Every step at once, without the reveal: the size the scene needs.
+    var still = false
     @State private var shown = 0
+    /// The icon column grows with the text, as SourceRow's (US-52 AC10b).
+    @ScaledMetric(relativeTo: .subheadline) private var iconWidth = 22.0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let steps = [("heart.fill", Color.red, "Blood pressure"), ("drop.fill", Color.blue, "Cholesterol"), ("scalemass.fill", Color.purple, "Weight")]
 
@@ -103,10 +118,10 @@ private struct PlanScene: View {
         VStack(alignment: .leading, spacing: 8) {
             Heading(title: "Get your plan", symbol: "sparkles", bounce: shown)
             ForEach(steps.indices, id: \.self) { index in
-                if index < shown {
+                if still || index < shown {
                     let step = steps[index]
                     HStack(spacing: 10) {
-                        Image(systemName: step.0).foregroundStyle(step.1.softInDark).frame(width: 22)
+                        Image(systemName: step.0).foregroundStyle(step.1.softInDark).frame(width: iconWidth)
                         Text(step.2).font(.subheadline.weight(.medium))
                         Spacer()
                         Text("Next step").font(.caption).foregroundStyle(.secondary)
@@ -122,14 +137,22 @@ private struct PlanScene: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
-        .task { await reveal($shown, count: steps.count, at: reduceMotion, first: 0.45) }
+        .task { if !still { await reveal($shown, count: steps.count, at: reduceMotion, first: 0.45) } }
     }
 }
 
 /// The record settles on the phone and the person's own cloud, and a lock closes on it.
 private struct PrivateScene: View {
-    @State private var locked = false
-    @State private var linked = false
+    /// Linked and locked from the start, without the task or its haptic: the size it needs.
+    var still = false
+    @State private var locked: Bool
+    @State private var linked: Bool
+
+    init(still: Bool = false) {
+        self.still = still
+        _locked = State(initialValue: still)
+        _linked = State(initialValue: still)
+    }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -157,6 +180,7 @@ private struct PrivateScene: View {
         }
         .padding(20)
         .task {
+            if still { return }
             if reduceMotion {
                 linked = true
                 locked = true
@@ -167,7 +191,7 @@ private struct PrivateScene: View {
             try? await Task.sleep(for: .seconds(0.7))
             withAnimation(.spring(duration: 0.4, bounce: 0.5)) { locked = true }
         }
-        .sensoryFeedback(.impact(weight: .light), trigger: locked) { _, new in new && !reduceMotion }
+        .sensoryFeedback(.impact(weight: .light), trigger: locked) { _, new in new && !reduceMotion && !still }
     }
 
     private func place(_ symbol: String, _ name: String) -> some View {

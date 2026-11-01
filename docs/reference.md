@@ -139,6 +139,8 @@ Compact inventory. Tests sit beside their file (`*.test.ts`) and are not listed.
 
 **CLI + agent surfaces (`tools/`, shipped):** `mcp-server.ts` (stdio MCP over one file path; no network, no model, so `import_documents` is listed but refuses; `file_results` runs with its receipt in process memory) · `edit-record.ts` (`add` / `correct`, one value per call; rules in `record-edits.ts`) · `get-plan.ts` (prose, `--json`, `--html`; offline, read-only). Brad-run (US-32 AC38, runbook-mcp): `mcp-reviewer-token.ts` (`--password` makes and stages the reviewer username and password hash; `--mint [--expect <account_id>]` mints the reviewer Dropbox token, stages it only when `get_current_account` returns the typed, verified email (and the `--expect` id, if given) and the record is synthetic, revokes otherwise; values go to `flyctl secrets import --stage` on stdin, never to disk or argv) · `mcp-reviewer-check.mjs` (run inside the edu machine over `fly ssh console`; prints `ok` or `fail` for the reviewer secrets, token refresh and folder list). Internal: `webkit-verify*.mjs`, `test-queries.json` / `test-chatbot-matching.ts` / `test-classifier.ts` (router fixtures), `test-tool-edits.{json,ts}` (tool-use harness), `chat-audit-pull.ts`, `youtube-comment-dryrun.ts`.
 
+**Agent channel (`tools/agent-channel.mjs`, Brad's Mac only, US-63):** `read` / `post` in the one Discord channel shared with Austin Bell's Hermes agent, through its own bot (`DISCORD_AGENT_BOT_TOKEN`); setup and the session's rules: [agent-channel.md](agent-channel.md).
+
 **Demo videos (`demo-video/`, repo root):** a standalone Remotion project — ChatGPT-style connector demo plus the import explainer. `renders/` holds the mp4s; own `package.json`, own `node_modules`, excluded from the root `tsconfig.json`. It is not a tool, so it does not live in `tools/` (moved 2026-09-09).
 
 **Scripts (`scripts/`):** `build-guide-html.mjs` (guide markdown to Shopify article HTML; copy-box fences get a clipboard button, `--no-script` degrades to select-all) · `build-user-stories-html.ts` · `build-fleet-dashboard.mjs` · `check-symlinks.mjs` (products.md guard) · `rebuild-blog-index.ts`.
@@ -211,15 +213,16 @@ Results use `effectiveInputs` (current form + fallback to previous measurements)
 
 ### Progressive Disclosure
 
-First-time users see fields revealed in 3 stages. Returning users with data see full form immediately. `computeFormStage(inputs, saved)` in `mappings.ts` returns 1–3. Saved values fill the empty fields, and any saved blood-test value means stage 3. The widget and the chatbot embed both call it (US-15 AC10).
+The form is the onboarding (US-62 AC13). `computeFormStage(inputs, saved)` in `mappings.ts` returns the first answer the record lacks, 1–4; saved values fill the empty fields. `opensFullForm(stage, saved, otherRecords)` opens the whole form at stage 4, or at once for a record holding more than the four answers (any saved value but the weight, or a medication, screening, supplement, lab test or document), with the missing questions pinned at the top. The widget and the chatbot embed both call `computeFormStage` (US-15 AC10); the chats unmute at 4. Full table: `health_roadmap_algorithm.md` §10.
 
-| Stage | Gate | Fields shown |
-|-------|------|-------------|
-| 1 | Always | Units, Sex, Height |
-| 2 | Sex + Height filled | Weight, Waist, Blood Pressure, Birth Month (Birth Year is sub-gated by Birth Month being filled) |
-| 3 | Weight filled | Blood Tests, Medications, Screening, Bone Density, Supplements (logged-in) |
+| Stage | Asks | Then shows |
+|-------|------|------------|
+| 1 | Height and weight | The BMI tile |
+| 2 | Sex | Ideal body weight, protein target |
+| 3 | Birth month and year (a year alone passes) | The age-based plan |
+| 4 | Nothing | Vitals, Blood Tests, Medications, Screening, Bone Density, Supplements; the chats |
 
-Pulsing `.field-attention` CSS class highlights the next field to fill. On mobile, tab visibility gated by `formStage`.
+Pulsing `.field-attention` CSS class highlights the next field to fill. Once open on a record the whole form stays open while an answer is retyped; an erase starts the onboarding again.
 
 ## API Endpoints
 

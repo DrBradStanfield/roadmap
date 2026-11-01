@@ -133,7 +133,7 @@ export function statTiles(results: HealthResults, { unitSystem, unitOverrides, s
     const rate = getProteinRate(results.eGFR);
     tiles.push({
       key: 'protein', label: 'Protein Target', value: String(results.proteinTarget), unit: 'g/day',
-      status: { label: `${rate.toFixed(1)} g per kg ideal weight` },
+      status: { label: `${rate.toFixed(1)} g/kg ideal weight` },
       evidence: getProteinEvidence(results.idealBodyWeight, rate, results.eGFR),
     });
   }
