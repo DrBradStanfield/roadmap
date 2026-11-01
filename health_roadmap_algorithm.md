@@ -32,7 +32,7 @@ Source: `calculations.ts`
 
 ### Ideal Body Weight (Peterson Formula, 2016)
 
-`IBW = 2.2 × BMI_target + 3.5 × BMI_target × (height_m − 1.5)` kg
+`Ideal Body Weight = 2.2 × BMI_target + 3.5 × BMI_target × (height_m − 1.5)` kg
 
 Sex-specific target BMIs (based on mortality meta-analyses):
 - **Male:** BMI target = 24 (optimal mortality range 23–26)
@@ -43,8 +43,8 @@ Sex-specific target BMIs (based on mortality meta-analyses):
 
 ### Daily Protein Target
 
-- **Normal:** `round(IBW * 1.2)` grams/day
-- **CKD (eGFR < 45):** `round(IBW * 1.0)` grams/day
+- **Normal:** `round(Ideal Body Weight * 1.2)` grams/day
+- **CKD (eGFR < 45):** `round(Ideal Body Weight * 1.0)` grams/day
 
 The CKD adjustment uses strict less-than: at exactly eGFR 45, the normal 1.2 multiplier applies.
 

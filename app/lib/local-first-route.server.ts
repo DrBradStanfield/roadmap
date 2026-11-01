@@ -65,7 +65,10 @@ export function verifyAppProxySignature(request: Request, nowSeconds = Date.now(
   // Freshness first: stale/garbage timestamps are rejected before paying for
   // the HMAC. The timestamp is itself signed, so check order can't widen the
   // accept set.
-  const ts = Number(url.searchParams.get('timestamp') || 0);
+  // Plain digits only: Number() also reads "0…", "1e9" and padded forms (US-09 AC24b).
+  const rawTs = url.searchParams.get('timestamp') ?? '';
+  if (!/^[1-9]\d{0,11}$/.test(rawTs)) return false;
+  const ts = Number(rawTs);
   if (!(Math.abs(nowSeconds - ts) < PROXY_TIMESTAMP_WINDOW_SECONDS)) return false;
 
   const params = new Map<string, string[]>();
@@ -80,10 +83,11 @@ export function verifyAppProxySignature(request: Request, nowSeconds = Date.now(
     .map((k) => `${k}=${params.get(k)!.join(',')}`)
     .join('');
   // No separator between pairs means a signed query can be re-split into other
-  // pairs with the same message (US-09 AC24a). Shopify sends its own id on every
-  // proxied request, so a message that spells the id key twice may hide a forged
-  // copy; with it spelled once, the sent id is the digits Shopify signed.
-  if (message.split('logged_in_customer_id=').length > 2) return false;
+  // pairs with the same message. Shopify sends each of its own keys once, so a
+  // message that spells one twice may hide a forged copy: an id (US-09 AC24a) or
+  // an old query's timestamp made to read as fresh (AC24b). Spelled once, the
+  // sent value sits where Shopify put it.
+  if (SHOPIFY_PROXY_PARAMS.some((k) => message.split(`${k}=`).length > 2)) return false;
   const digest = crypto.createHmac('sha256', secret).update(message).digest('hex');
   return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(signature));
 }

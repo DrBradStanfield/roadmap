@@ -801,7 +801,7 @@ export function getIbwEvidence(sex: 'male' | 'female'): SuggestionEvidence {
   const bmiTarget = sex === 'male' ? 24 : 22;
   const range = sex === 'male' ? '23-26' : '20-23';
   return {
-    reason: `Ideal Body Weight is calculated using the Peterson formula (2016): IBW = 2.2 × BMI_target + 3.5 × BMI_target × (height_m − 1.5). The target BMI is ${bmiTarget} for ${sex}s, derived from large mortality meta-analyses showing this BMI is associated with the lowest all-cause mortality (optimal range: ${range}). Unlike older formulas such as Devine (1974), which over- or underestimate at the short and tall ends, the Peterson formula follows BMI at every height. The app sets a different target BMI for men and women.`,
+    reason: `Ideal Body Weight is calculated using the Peterson formula (2016): Ideal Body Weight = 2.2 × BMI_target + 3.5 × BMI_target × (height_m − 1.5). The target BMI is ${bmiTarget} for ${sex}s, derived from large mortality meta-analyses showing this BMI is associated with the lowest all-cause mortality (optimal range: ${range}). Unlike older formulas such as Devine (1974), which over- or underestimate at the short and tall ends, the Peterson formula follows BMI at every height. The app sets a different target BMI for men and women.`,
     guidelines: [],
     references: REFS_IBW,
   };
