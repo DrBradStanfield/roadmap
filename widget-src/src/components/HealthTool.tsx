@@ -49,7 +49,8 @@ import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import type { MoveTestApi } from './MoveTestPanel';
 import { routeVitalsEdit, type VitalsPrefillFn } from './StartingInfoVitals';
 import type { ApiSupplement, ApiLabValue } from '../lib/api-types';
-import { InputPanel, profileTitle, type PlanBasis } from './InputPanel';
+import { InputPanel, type PlanBasis } from './InputPanel';
+import { profileTitle } from '../lib/profile-title';
 import { ResultsPanel } from './ResultsPanel';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
 import { ChatEmbed } from './ChatEmbed';
@@ -839,7 +840,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const isMobile = useIsMobile();
   // About you sits low, as on the iPhone, once sex and height are in. Decided
   // at mount, so the section never jumps away while someone is typing; until
-  // the onboarding (a later phase) it stays first for a new user.
+  // the onboarding (a later phase) it stays first for a new user. Decided once
+  // per page load: crossing the phone width later does not move it (US-60).
   const profileAtMount = useRef(!!(inputs.sex && inputs.heightCm));
   const aboutYouLow = isMobile && profileAtMount.current && !!(inputs.sex && inputs.heightCm);
   const isWideDesktop = useIsWideDesktop(1200);

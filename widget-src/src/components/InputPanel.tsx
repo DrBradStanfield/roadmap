@@ -1,3 +1,4 @@
+import { profileTitle } from '../lib/profile-title';
 import { Fragment, useState, useEffect, useRef, type MutableRefObject } from 'react';
 import { ColumnHeader } from './ColumnHeader';
 import { InfoTooltip } from './InfoTooltip';
@@ -127,9 +128,6 @@ export type PlanBasis = Pick<HealthResults, 'age' | 'bmi' | 'idealBodyWeight' | 
   lipidMarker: LipidMarker | null;
 };
 
-/** The profile section's title: "About you" where it sits low (US-62 AC12), else
- *  "Starting Info". The alcohol question's "I still drink" line names it too (US-60). */
-export const profileTitle = (aboutYouLow: boolean) => (aboutYouLow ? 'About you' : 'Starting Info');
 
 interface InputPanelProps {
   /** US-09 AC30: the Sign in button, in the header on desktop and on a phone. */

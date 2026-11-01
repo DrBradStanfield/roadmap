@@ -16,7 +16,7 @@ export const ALCOHOL_OPTIONS: ReadonlyArray<{ value: AlcoholAnswer | ''; label: 
 ];
 
 /** US-60 AC3: the card's question, with the answer the profile holds now and
- *  the title My data's profile section shows (`profileTitle`, InputPanel.tsx). */
+ *  the title My data's profile section shows (`profileTitle`, lib/profile-title.ts). */
 export type AlcoholQuestion = { answer?: AlcoholAnswer; onAnswer: (answer: AlcoholAnswer) => void; section: string };
 
 /** Shown in the dialog's place after "I still drink", which saves nothing. */
