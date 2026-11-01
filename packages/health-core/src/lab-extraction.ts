@@ -585,7 +585,7 @@ const labBound = z.preprocess(readModelNumber, z.number().nullable()).optional()
 export const MAX_NAME_LENGTH = 120;
 /** The test's name as the report printed it (US-07 AC10): one line, control codes gone, bounded. */
 const printedNameField = z.unknown().transform(n => {
-  const line = typeof n === 'string' ? fileNameLine(n).replace(/\s+/g, ' ').trim() : '';
+  const line = typeof n === 'string' ? fileNameLine(n.replace(/\s+/g, ' ')).trim() : '';
   return line ? cutText(line, MAX_NAME_LENGTH) : undefined;
 }).optional();
 

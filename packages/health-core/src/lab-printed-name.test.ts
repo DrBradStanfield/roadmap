@@ -115,5 +115,11 @@ describe('US-07 AC10: creatinine (Brad 2026-11-02)', () => {
     expect(result.values).toEqual([]);
     expect(result.refusedValues?.map((r) => r.metric)).toEqual(['creatinine']);
   });
+
+  it('a tab or line break between printed words is a space, so "Creatinine<TAB>Urine" still says urine (Codex R2)', () => {
+    const result = extract({ values: [core('creatinine', 'Creatinine\tUrine', 4, 'mg/dL')] });
+    expect(result.values).toEqual([]);
+    expect(result.additionalValues.map((r) => r.name)).toEqual(['Creatinine Urine']);
+  });
 });
 
