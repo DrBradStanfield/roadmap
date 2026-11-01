@@ -29,19 +29,15 @@
  * rewind mutable ordering clocks, but cannot fork immutable content identities.
  */
 import { canonicalLabRow, resolveLabCatalogEntry } from './lab-catalog';
-import { isCalendarDay } from './measurement-history';
-import { explicitFieldStamps, liveParkedFields, MAX_COUNTER, stampInstant, withoutListed } from './merge';
-import { isReadableProfileField, isReadableRow, PROFILE_FIELDS, type RowArray } from './readable-rows';
+import { isCalendarDay, isClinicalDay } from './measurement-history';
+import { MAX_COUNTER, stampInstant, withoutListed } from './merge';
 import {
   BASE_SCHEMA_VERSION,
   CURRENT_SCHEMA_VERSION,
   createEmptyFile,
   type ErasedRows,
   type FileLabValue,
-  type ParkedField,
   type RoadmapFile,
-  type RoadmapProfile,
-  type UnreadableEntries,
 } from './roadmap-file';
 
 /** Thrown when a file was written by a newer app version than this one. */
@@ -232,34 +228,6 @@ function erasedRowsOf(value: unknown, eraseEpoch: number): ErasedRows | undefine
 }
 
 /**
- * US-65: a profile field this build cannot read (a height that is a word, a
- * sex it does not know) leaves the profile, so it reads as absent, and is
- * parked with the clock it was written at; its stamp stays, so the merge
- * still sees when it was written. A parked field this build can read comes
- * back, unless a later write superseded it. Untouched when nothing is parked.
- */
-function parkProfile(profile: RoadmapProfile, parkedBefore: unknown): { profile: RoadmapProfile; parked?: Record<string, ParkedField> } {
-  const fields = profile as unknown as Record<string, unknown>;
-  const bad = PROFILE_FIELDS.filter((f) => Object.prototype.hasOwnProperty.call(fields, f) && !isReadableProfileField(f, fields[f]));
-  const before = isObject(parkedBefore) ? (parkedBefore as Record<string, ParkedField>) : undefined;
-  if (bad.length === 0 && !before) return { profile };
-  const stamped = explicitFieldStamps(profile);
-  const parkedNow = Object.fromEntries(bad.map((f): [string, ParkedField] => {
-    const { updatedAt, lamport } = stamped.fieldStamps?.[f] ?? stamped;
-    return [f, { value: fields[f], updatedAt, ...(lamport === undefined ? null : { lamport }) }];
-  }));
-  const kept = Object.entries(stamped).filter(([f]) => !bad.includes(f));
-  const live = liveParkedFields(Object.fromEntries(kept) as unknown as RoadmapProfile, before, parkedNow) ?? {};
-  for (const [f, entry] of Object.entries(live)) {
-    if (!(f in parkedNow) && isObject(entry) && entry.value !== undefined && isReadableProfileField(f, entry.value)) {
-      kept.push([f, entry.value]);
-      delete live[f];
-    }
-  }
-  return { profile: Object.fromEntries(kept) as unknown as RoadmapProfile, ...(Object.keys(live).length > 0 ? { parked: live } : null) };
-}
-
-/**
  * Normalise raw parsed JSON into a complete RoadmapFile.
  *
  * @param raw    The result of JSON.parse on the file bytes (or null/garbage).
@@ -318,31 +286,22 @@ export function migrateFile(
   // The file's own last write anchors mutable row and field updatedAt clamps.
   // Immutable measurement/lab createdAt and document addedAt stay as written.
   const anchor = after(meta.createdAt, meta.updatedAt) ? meta.createdAt : meta.updatedAt;
-  // US-65 (Brad 2026-11-01): a row this build cannot read — a `null`, no id,
-  // a malformed clinical day (US-29 AC4a), a newer app's metric, a wrongly
-  // typed field — is parked verbatim in `unreadable` under its array's key,
-  // never shown, computed with or changed, and written back by every save.
-  // Parked rows a build CAN read come back out here, so a newer app's rows
-  // return to it after an older one saved the file. createdAt is immutable
-  // content identity, like document addedAt, and is never rewritten.
-  const rawUnreadable: Record<string, unknown> = raw.unreadable === undefined ? {}
-    : isObject(raw.unreadable) ? raw.unreadable : { other: raw.unreadable };
-  const unreadable: UnreadableEntries = {};
-  for (const [key, entries] of Object.entries(rawUnreadable)) {
-    if (key !== 'profile') unreadable[key] = Array.isArray(entries) ? entries : [entries];
-  }
-  const readable = <T>(key: RowArray): T[] => {
-    const rows: T[] = [];
-    const parked: unknown[] = [];
-    for (const row of [...asArray(raw[key]), ...asArray(rawUnreadable[key])]) {
-      if (isReadableRow(key, row)) rows.push(row as T);
-      else parked.push(row);
-    }
-    if (parked.length > 0) unreadable[key] = parked;
-    else delete unreadable[key];
-    return rows;
-  };
-  const stamped = <T>(key: RowArray): T[] => readable<T>(key).map((r) => sanitizeStamp(r, anchor));
+  // Non-object entries are dropped, not passed through: every consumer reads
+  // `.id` off a row, so one `null` in an array made every SAVE throw — the
+  // localStorage mirror the failure path falls back to included, leaving no
+  // way to persist anything again.
+  const rowsOf = <T>(rows: unknown): T[] => asArray<T>(rows).filter((r) => isObject(r));
+  // Only id-bearing arrays require IDs. Dropped rows are absent on a later
+  // save, not quarantined or assigned IDs.
+  const idRowsOf = <T>(rows: unknown): T[] => rowsOf<T>(rows)
+    .filter((r) => isObject(r) && typeof r.id === 'string' && r.id.length > 0);
+  const stamped = <T>(rows: unknown): T[] => rowsOf<T>(rows).map((r) => sanitizeStamp(r, anchor));
+  // US-29 AC4: omit malformed clinical days; never invent a date or move a
+  // valid observation to another slot. Keep the original timestamp and zone.
+  // createdAt is immutable content identity, like document addedAt. Rewriting
+  // it against different file anchors forks rows and prevents deletion absorption.
+  const dated = <T extends { recordedAt: string }>(rows: unknown): T[] => idRowsOf<T>(rows)
+    .filter((r) => isClinicalDay(r.recordedAt));
   // Profile and screenings: the object's own stamp, and each field's (US-10
   // AC6). A field stamp that is not a stamp is dropped, so its field reads the
   // object's stamp; a map with none left is dropped whole. A missing or
@@ -362,28 +321,25 @@ export function migrateFile(
   // A listed file is stamped the version that carries the list, so a reader
   // from before it refuses the file; any other keeps its own (US-09 AC23).
   const erasedRows = erasedRowsOf(raw.erasedRows, meta.eraseEpoch ?? 0);
-  const { erasedRows: _unchecked, unreadable: _parked, ...rest } = raw;
-  const profile = parkProfile(singleton(raw.profile) as RoadmapProfile, rawUnreadable.profile);
-  if (profile.parked) unreadable.profile = profile.parked;
+  const { erasedRows: _unchecked, ...rest } = raw;
   const file = {
     ...rest,
     schemaVersion: erasedRows || version >= CURRENT_SCHEMA_VERSION ? CURRENT_SCHEMA_VERSION : BASE_SCHEMA_VERSION,
     ...(erasedRows ? { erasedRows } : null),
     meta,
-    profile: profile.profile,
-    measurements: readable('measurements'),
-    medications: stamped('medications'),
-    medicationHistory: stamped('medicationHistory'),
-    supplements: stamped('supplements'),
-    supplementHistory: stamped('supplementHistory'),
+    profile: singleton(raw.profile),
+    measurements: dated(raw.measurements),
+    medications: stamped(idRowsOf(raw.medications)),
+    medicationHistory: stamped(idRowsOf(raw.medicationHistory)),
+    supplements: stamped(idRowsOf(raw.supplements)),
+    supplementHistory: stamped(idRowsOf(raw.supplementHistory)),
     screenings: singleton(raw.screenings),
-    labValues: withSiCorrections(readable<FileLabValue>('labValues')),
-    documents: readable('documents'),
-    reminderPreferences: stamped('reminderPreferences'),
-    recommendationSnapshots: readable('recommendationSnapshots'),
+    labValues: withSiCorrections(dated<FileLabValue>(raw.labValues)),
+    documents: idRowsOf(raw.documents),
+    reminderPreferences: stamped(raw.reminderPreferences),
+    recommendationSnapshots: rowsOf(raw.recommendationSnapshots),
     // Absent stays absent — present-beats-absent is how a cancellation wins.
     ...(isObject(raw.reminderOptIn) ? { reminderOptIn: sanitizeStamp(raw.reminderOptIn, anchor) } : null),
-    ...(Object.keys(unreadable).length > 0 ? { unreadable } : null),
   } as RoadmapFile;
   // Every reader drops the listed rows, so the widget, `read_record` and the
   // CLI agree on what the record holds.

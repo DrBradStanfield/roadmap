@@ -74,11 +74,7 @@
       "items": { "$ref": "#/$defs/RecommendationSnapshot" }
     },
     "reminderOptIn": { "$ref": "#/$defs/FileReminderOptIn" },
-    "erasedRows": { "$ref": "#/$defs/ErasedRows" },
-    "unreadable": {
-      "type": "object",
-      "description": "US-65: entries this app version could not read, kept verbatim and written back by every save. Each row array's unreadable rows sit under the same key; `profile` maps a field name to { value, updatedAt, lamport } for a profile field of the wrong type. Never shown or computed with; a newer version that reads an entry moves it back. Absent when empty. Do not write here."
-    }
+    "erasedRows": { "$ref": "#/$defs/ErasedRows" }
   },
   "if": { "required": ["erasedRows"] },
   "then": { "properties": { "schemaVersion": { "const": 2 } } },

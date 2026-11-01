@@ -226,16 +226,18 @@ Validate your result against the schema before you write it back.
   `entered-in-error`, and an id reused with different content becomes two rows, the extra
   one quarantined under `<id>#dup-…`, but that is a safety net for concurrent devices,
   not a licence to write sloppily. Rule 3 is yours to enforce.
-- **Malformed rows are set aside, never repaired; clocks may be rewritten.** The app
-  normalises an untrusted file on every read: a row array that is not a list refuses the
-  file (`reminderPreferences` and `recommendationSnapshots` become empty), out-of-range counters and mutable `updatedAt`
-  stamps beyond the file's last-write anchor are clamped (see the timestamps rule). A row
-  it cannot read (no id, a `recordedAt` that does not start with a real calendar day, a
-  metric it does not know, a field of the wrong type) and a profile field of the wrong type
-  move, verbatim, into the top-level `unreadable` section at the next sync (US-65). There
-  they are kept and written back, never shown or computed with; the app shows a one-line
-  count. A newer app that can read them moves them back. Fix a row by writing a corrected
-  row, not by editing `unreadable`.
+- **Malformed rows may be dropped, ignored, or have their clocks rewritten.** The app
+  normalises an untrusted file on every read, a non-array where an array belongs becomes
+  an empty array, out-of-range counters and mutable `updatedAt` stamps beyond the
+    file's last-write anchor are clamped (see the timestamps rule), and a row missing fields the UI needs simply will not render. Beyond
+  those clamps it does not repair rows, and it does not warn. A measurement or lab row
+  whose `recordedAt` does not start with a real calendar day (`YYYY-MM-DD`) is removed
+  at the next sync.
+- **A row or profile field the app cannot read stays in the file, unshown** (US-65). A
+  metric or medication key the app version does not know, or a wrong type on a field it
+  reads (a string `value`, a string `heightCm`), is left exactly where it is: every
+  version still merges, erases and corrects it, but the screens, `read_record` and
+  `get_plan` skip it, and the app shows a one-line count. Fix it by writing a corrected row.
 - **Unknown fields survive at the top level and inside rows**: migrate and merge both
   spread what they do not recognise, so an older app will not strip something a newer
   one added. **`meta` is the exception:** `mergeFiles` rebuilds it from its five known

@@ -63,8 +63,6 @@ import {
   type FileScreenings,
   type RecommendationSnapshot,
   type SyncStamp,
-  type ParkedField,
-  type UnreadableEntries,
 } from './roadmap-file';
 import type { MeasurementStatus } from './validation';
 import { labSlotKey } from './lab-catalog';
@@ -575,96 +573,6 @@ export function stampFields<T extends FieldStamped>(obj: T, changes: Partial<T>,
 }
 
 /**
- * The same object with every field's clock written out in `fieldStamps`, as
- * `fieldClock` reads it now, so removing a field's value keeps its clock: an
- * unreadable field parked by migrate reads as written then, not as never
- * written (US-65). Every field reads the same clock before and after.
- */
-export function explicitFieldStamps<T extends FieldStamped>(obj: T): T {
-  const at = fieldClock(obj);
-  const stamps = fieldNames(obj).flatMap((field): Array<[string, Clock]> => {
-    const clock = at(field);
-    return clock ? [[field, clock]] : [];
-  });
-  return stamps.length > 0 ? { ...obj, fieldStamps: Object.fromEntries(stamps) } : obj;
-}
-
-/** A parked field's clock; a hand-edited entry with none reads as unknown. */
-function parkedClock(entry: unknown): Clock {
-  const e = (entry && typeof entry === 'object' ? entry : {}) as Record<string, unknown>;
-  return {
-    updatedAt: typeof e.updatedAt === 'string' ? e.updatedAt : '',
-    lamport: typeof e.lamport === 'number' ? e.lamport : 0,
-  };
-}
-
-/**
- * The parked profile fields that still stand beside `profile` (US-65): for
- * each field the newest parked entry among `sides`, kept while the profile
- * holds no value for that field and no write since has stamped it later. A
- * value written, or cleared, after it supersedes it, as any newer write does.
- */
-export function liveParkedFields(
-  profile: FieldStamped,
-  ...sides: Array<Record<string, ParkedField> | undefined>
-): Record<string, ParkedField> | undefined {
-  const at = fieldClock(profile);
-  const best = new Map<string, ParkedField>();
-  for (const side of sides) {
-    for (const [field, entry] of Object.entries(side ?? {})) {
-      const seen = best.get(field);
-      const order = seen ? cmpClock(parkedClock(entry), parkedClock(seen)) : 1;
-      if (order > 0 || (order === 0 && stableStringify(entry) > stableStringify(seen))) best.set(field, entry);
-    }
-  }
-  const live = [...best].filter(([field, entry]) => {
-    if (fieldValue(profile, field) !== undefined) return false;
-    const clock = at(field);
-    return !clock || cmpClock(parkedClock(entry), clock) >= 0;
-  });
-  return live.length > 0 ? Object.fromEntries(live) : undefined;
-}
-
-/** The unreadable rows a record holds under one key (US-65). */
-export function unreadableRows(file: Pick<RoadmapFile, 'unreadable'>, key: string): unknown[] {
-  const rows = file.unreadable?.[key];
-  return key !== 'profile' && Array.isArray(rows) ? rows : [];
-}
-
-/** An unreadable row's id, when it has a string one. */
-function rawIdOf(row: unknown): string | undefined {
-  const id = row && typeof row === 'object' ? (row as { id?: unknown }).id : undefined;
-  return typeof id === 'string' ? id : undefined;
-}
-
-/**
- * Two records' unreadable sections as one (US-65). Rows are append-only like
- * their array's: the union, one copy of each exact content, so a row with an
- * id seen twice is one row and anything else stays a distinct entry. Never
- * rewritten: a reused id with different content keeps both copies as they
- * are. Profile fields stand only beside the merged `profile`.
- */
-function mergeUnreadable(local: RoadmapFile, remote: RoadmapFile, profile: RoadmapProfile): UnreadableEntries | undefined {
-  const out: UnreadableEntries = {};
-  const keys = new Set([...Object.keys(local.unreadable ?? {}), ...Object.keys(remote.unreadable ?? {})]);
-  for (const key of [...keys].sort()) {
-    if (key === 'profile') continue;
-    const rows = new Map<string, unknown>();
-    for (const row of [...unreadableRows(remote, key), ...unreadableRows(local, key)]) rows.set(stableStringify(row) ?? 'undefined', row);
-    if (rows.size > 0) out[key] = [...rows].sort(([a], [b]) => cmpStr(a, b)).map(([, row]) => row);
-  }
-  const parked = liveParkedFields(profile, local.unreadable?.profile, remote.unreadable?.profile);
-  if (parked) out.profile = parked;
-  return Object.keys(out).length > 0 ? out : undefined;
-}
-
-/** `file` with `unreadable` set, or left out when there is nothing in it. */
-function withUnreadable<T extends RoadmapFile>(file: T, unreadable: UnreadableEntries | undefined): T {
-  const { unreadable: _old, ...rest } = file;
-  return (unreadable ? { ...rest, unreadable } : rest) as T;
-}
-
-/**
  * The arrays whose rows carry an id, and the stamp that says when each row was
  * written. One table, so a new array is added here and nowhere else: an erase
  * lists these rows, and the merge drops them by it (US-09 AC23).
@@ -732,10 +640,8 @@ export function latestStamp(a: string, b: string): string {
 /** The root id of every row in the file: what an erase made now would list
  *  (US-09 AC23). A row whose id is not a string has no root, and is skipped. */
 export function rowRootIds(file: RoadmapFile): string[] {
-  // Unreadable rows too, so an erase lists them and no copy brings them back (US-65).
   return (Object.keys(ROW_STAMPS) as StampedArray[]).flatMap((key) =>
-    [...(file[key] as Array<{ id: unknown }>), ...unreadableRows(file, key)]
-      .flatMap((row) => { const id = rawIdOf(row); return id === undefined ? [] : [rootIdOf(id)]; }));
+    (file[key] as Array<{ id: unknown }>).flatMap((row) => (typeof row.id === 'string' ? [rootIdOf(row.id)] : [])));
 }
 
 /** `file` without the rows `listed` names, from every array that carries ids;
@@ -743,17 +649,10 @@ export function rowRootIds(file: RoadmapFile): string[] {
 export function withoutListed(file: RoadmapFile, listed: ReadonlySet<string>): RoadmapFile {
   if (listed.size === 0) return file;
   const out: Record<string, unknown> = { ...file };
-  const unlisted = (row: unknown) => { const id = rawIdOf(row); return id === undefined || !listed.has(rootIdOf(id)); };
   for (const key of Object.keys(ROW_STAMPS) as StampedArray[]) {
-    out[key] = (file[key] as Array<{ id: unknown }>).filter(unlisted);
+    out[key] = (file[key] as Array<{ id: unknown }>).filter((row) => typeof row.id !== 'string' || !listed.has(rootIdOf(row.id)));
   }
-  if (!file.unreadable) return out as unknown as RoadmapFile;
-  // The unreadable rows go by the same list (US-65).
-  const unreadable: UnreadableEntries = { ...file.unreadable };
-  for (const [key, rows] of Object.entries(unreadable)) {
-    if (key !== 'profile' && Array.isArray(rows)) unreadable[key] = rows.filter(unlisted);
-  }
-  return withUnreadable(out as unknown as RoadmapFile, unreadable);
+  return out as unknown as RoadmapFile;
 }
 
 /**
@@ -804,9 +703,6 @@ function rowsSince(
   admit: (key: StampedArray, stamp: string) => boolean,
 ): RoadmapFile | null {
   const kept: Record<string, unknown[]> = {};
-  // The loser's unreadable rows pass the same gate, read off the same stamp
-  // (US-65); one with no readable id or stamp has nothing to pass it with.
-  const raw: Record<string, unknown[]> = {};
   let wrote = false;
   // Carry rescued clocks into the file's last-write anchor so migration
   // does not rewind rescued mutable updatedAt stamps. Immutable createdAt
@@ -819,14 +715,11 @@ function rowsSince(
     for (const row of rows) if (stampInstant(stamp(row)) > stampInstant(latest)) latest = stamp(row);
     if (rows.length > 0) wrote = true;
     kept[key] = rows;
-    const parked = unreadableRows(loser, key).filter((row) => rawIdOf(row) !== undefined && admit(key, stamp(row)));
-    if (parked.length > 0) [wrote, raw[key]] = [true, parked];
   }
   // The higher lamport rides along, so the re-merge's max + 1 is over BOTH copies.
   const lamport = Math.max(loser.meta.lamport, winner.meta.lamport);
   return wrote
-    ? withUnreadable({ ...winner, ...kept, meta: { ...winner.meta, updatedAt: latest, lamport } } as RoadmapFile,
-      Object.keys(raw).length > 0 ? raw : undefined)
+    ? ({ ...winner, ...kept, meta: { ...winner.meta, updatedAt: latest, lamport } } as RoadmapFile)
     : null;
 }
 
@@ -910,8 +803,7 @@ export function mergeFiles(
     };
   }
 
-  const profile = mergeFields<RoadmapProfile>(local.profile, remote.profile);
-  return withUnreadable({
+  return {
     // Spread both first so unknown/future top-level fields are preserved at
     // runtime (H7). Known fields below overwrite these.
     ...remote,
@@ -935,7 +827,7 @@ export function mergeFiles(
         : laterErase((listsThisEpoch(local) ? remote : local).meta.erasedAt, undefined)),
     },
 
-    profile,
+    profile: mergeFields<RoadmapProfile>(local.profile, remote.profile),
     screenings: mergeFields<FileScreenings>(local.screenings, remote.screenings),
     reminderOptIn: pickNewerOptional<FileReminderOptIn>(
       local.reminderOptIn,
@@ -973,5 +865,5 @@ export function mergeFiles(
       local.recommendationSnapshots,
       remote.recommendationSnapshots,
     ),
-  } as RoadmapFile, mergeUnreadable(local, remote, profile));
+  } as RoadmapFile;
 }

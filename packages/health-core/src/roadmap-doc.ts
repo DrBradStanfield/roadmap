@@ -10,7 +10,7 @@
  *
  * why: mcp-architecture.md §7
  */
-import { fieldsBehind, mergeFiles, rowRootIds, unreadableRows } from './merge';
+import { fieldsBehind, mergeFiles, rowRootIds } from './merge';
 import { isObject, migrateFile, RecordShapeError } from './migrate';
 import type { RoadmapFile } from './roadmap-file';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
@@ -54,10 +54,10 @@ export const ROADMAP_DOC: DocumentSpec<RoadmapFile> = {
   // rewritten, so their ids are exactly what a write can be checked against
   // afterwards. (`recommendationSnapshots` are keyed by date, not id, and are
   // regenerated rather than appended — nothing to lose.)
-  // Unreadable rows with an id count too: a writer that dropped them lost data (US-65).
-  rowIds: (file) => (['measurements', 'labValues', 'documents', 'medicationHistory', 'supplementHistory'] as const)
-    .flatMap((key) => [...file[key], ...unreadableRows(file, key)])
-    .flatMap((row) => { const id = (row as { id?: unknown })?.id; return typeof id === 'string' ? [id] : []; }),
+  rowIds: (file) => [
+    ...file.measurements, ...file.labValues, ...file.documents,
+    ...file.medicationHistory, ...file.supplementHistory,
+  ].map((row) => row.id),
   // An erase and a profile or screening edit add no row, so `rowIds` cannot
   // see another writer replace them (US-10 AC6a, US-11 AC7). Compared after
   // the same migration the re-read went through, so its clock clamps match.

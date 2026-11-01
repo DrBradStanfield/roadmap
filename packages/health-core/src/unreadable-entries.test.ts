@@ -1,21 +1,24 @@
 /**
- * US-65 (Brad 2026-11-01): a record with entries this build cannot read still
- * opens, and every save carries those entries back verbatim. Synthetic values
- * only.
+ * US-65 (Brad 2026-11-01): a record holding rows or profile fields this build
+ * cannot read still opens. They stay where they are in the file, so every
+ * build, older ones included, merges, erases and corrects them as before;
+ * only readers skip them. Synthetic values only.
  */
 import { describe, it, expect } from 'vitest';
 import { ROADMAP_FILE_NAME } from './adapter';
 import { buildErasedFile } from './erase';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
-import { mergeFiles, stampFields } from './merge';
-import { migrateFile } from './migrate';
-import { unreadableCount } from './readable-rows';
-import { ROADMAP_DOC, recordSync } from './roadmap-doc';
-import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
+import { mergeFiles } from './merge';
+import { migrateFile, RecordShapeError, SchemaTooNewError } from './migrate';
+import { callTool } from './mcp-tools';
+import { readableView } from './readable-rows';
+import { correctValue } from './record-edits';
+import { recordSync } from './roadmap-doc';
+import { createEmptyFile, createMeasurement } from './roadmap-file';
 
 const DAY = '2026-09-01T00:00:00.000Z';
 const LATER = '2026-09-05T00:00:00.000Z';
-const CTX = { deviceId: 'dev_us64', now: LATER };
+const CTX = { deviceId: 'dev_us65', now: LATER };
 
 const WEIGHT = createMeasurement({ id: 'w1', metricType: 'weight', value: 82, recordedAt: DAY, createdAt: DAY });
 /** A newer app's metric: this build has no such metricType. */
@@ -28,148 +31,126 @@ function rawRecord(overrides: Record<string, unknown>): Record<string, unknown> 
   return { ...file, measurements: [WEIGHT], ...overrides };
 }
 
-function cloudWith(raw: unknown): { cloud: MemoryCloud; sync: ReturnType<typeof recordSync> } {
+function cloudWith(json: string): { cloud: MemoryCloud; sync: ReturnType<typeof recordSync> } {
   const cloud = new MemoryCloud();
-  cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(raw), version: 1 });
+  cloud.files.set(ROADMAP_FILE_NAME, { json, version: 1 });
   return { cloud, sync: recordSync(new MemoryAdapter(cloud), CTX.deviceId, LATER) };
 }
 
 const stored = (cloud: MemoryCloud) => JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as Record<string, any>;
+const ids = (rows: Array<{ id: string }>) => rows.map((r) => r.id).sort();
+const read = (raw: unknown) => migrateFile(raw, CTX);
 
-describe('US-65 AC1: an unknown metric row', () => {
-  it('opens the record, shows the other rows, and survives a save byte-equal', async () => {
-    const { cloud, sync } = cloudWith(rawRecord({ measurements: [WEIGHT, FUTURE] }));
+describe('US-65 AC1: an unreadable row stays where it is', () => {
+  it('an unknown metric row: the record opens, the row is hidden, and a save leaves it in measurements byte-equal', async () => {
+    const { cloud, sync } = cloudWith(JSON.stringify(rawRecord({ measurements: [WEIGHT, FUTURE] })));
     const file = await sync.load();
-    expect(file.measurements.map((m) => m.id)).toEqual(['w1']);
-    expect(unreadableCount(file)).toBe(1);
+    expect(ids(readableView(file).file.measurements)).toEqual(['w1']);
+    expect(readableView(file).count).toBe(1);
 
     file.measurements.push(createMeasurement({ id: 'w2', metricType: 'hdl', value: 1.4, recordedAt: LATER, createdAt: LATER }));
     await sync.save(file);
-    const after = stored(cloud);
-    expect(after.measurements.map((m: { id: string }) => m.id).sort()).toEqual(['w1', 'w2']);
-    expect(after.unreadable.measurements.map((r: unknown) => JSON.stringify(r))).toEqual([JSON.stringify(FUTURE)]);
+    const kept = stored(cloud).measurements.find((m: { id: string }) => m.id === 'f1');
+    expect(JSON.stringify(kept)).toBe(JSON.stringify(FUTURE));
+    expect(ids(stored(cloud).measurements)).toEqual(['f1', 'w1', 'w2']);
   });
 
-  it('a null, an id-less row and a malformed day are kept too, not dropped (supersedes US-10 AC7, US-29 AC4a)', async () => {
-    const noId = { ...WEIGHT, id: '' };
-    const badDay = { ...WEIGHT, id: 'd1', recordedAt: 'not-a-day' };
-    const { cloud, sync } = cloudWith(rawRecord({ measurements: [WEIGHT, null, noId, badDay] }));
-    await sync.save(await sync.load());
-    expect(stored(cloud).measurements.map((m: { id: string }) => m.id)).toEqual(['w1']);
-    expect(stored(cloud).unreadable.measurements).toHaveLength(3);
+  it('a wrongly typed value and a string height are hidden from readers and kept in the file', async () => {
+    const profile = { updatedAt: DAY, lamport: 3, sex: 'female', heightCm: 'synthetic-tall' };
+    const { cloud, sync } = cloudWith(JSON.stringify(rawRecord({ measurements: [WEIGHT, WORDY], profile })));
+    const file = await sync.load();
+    const view = readableView(file);
+    expect(ids(view.file.measurements)).toEqual(['w1']);
+    expect(view.file.profile.heightCm).toBeUndefined();
+    expect(view.file.profile.sex).toBe('female');
+    expect(view.count).toBe(2);
+    await sync.save(file);
+    expect(stored(cloud).profile.heightCm).toBe('synthetic-tall');
+    expect(stored(cloud).measurements.find((m: { id: string }) => m.id === 'v1')).toEqual(WORDY);
+  });
+
+  it('a readable record is its own view, and so is a view', () => {
+    const file = read(rawRecord({}));
+    expect(readableView(file)).toEqual({ file, count: 0 });
+    const hidden = readableView(read(rawRecord({ measurements: [WEIGHT, FUTURE] })));
+    expect(readableView(hidden.file)).toBe(hidden);
+  });
+
+  it('legacy shapes that opened on main stay visible: no status, a null source, null metadata, no createdAt', () => {
+    const { status: _s, createdAt: _c, ...bare } = WEIGHT;
+    const file = read(rawRecord({
+      measurements: [bare, { ...WEIGHT, id: 'w3', source: null }],
+      documents: [{ id: 'd1', title: 'Synthetic letter', addedAt: DAY, metadata: null }],
+      medications: [{ id: 'm1', medicationKey: 'statin', drugName: 'atorvastatin', updatedAt: DAY }],
+    }));
+    const view = readableView(file);
+    expect(view.count).toBe(0);
+    expect(view.file).toBe(file);
   });
 });
 
-describe('US-65 AC2: a wrongly typed field', () => {
-  it('a row with a wrongly typed value is parked, not computed with', () => {
-    const file = ROADMAP_DOC.migrate(rawRecord({ measurements: [WEIGHT, WORDY] }), CTX);
-    expect(file.measurements.map((m) => m.id)).toEqual(['w1']);
-    expect(file.unreadable?.measurements).toEqual([WORDY]);
-  });
-
-  it('a wrongly typed profile field reads as absent, keeps its clock, and is written back raw', async () => {
-    const profile = { updatedAt: DAY, lamport: 3, sex: 'female', heightCm: 'synthetic-tall' };
-    const { cloud, sync } = cloudWith(rawRecord({ profile }));
-    const file = await sync.load();
-    expect(file.profile.heightCm).toBeUndefined();
-    expect(file.profile.sex).toBe('female');
-    expect(unreadableCount(file)).toBe(1);
-    await sync.save(file);
-    expect(stored(cloud).unreadable.profile).toEqual({ heightCm: { value: 'synthetic-tall', updatedAt: DAY, lamport: 3 } });
-    expect(stored(cloud).profile.heightCm).toBeUndefined();
-  });
-
-  it('a later height written on this device supersedes the parked one', () => {
-    const file = migrateFile(rawRecord({ profile: { updatedAt: DAY, lamport: 1, heightCm: 'synthetic-tall' } }), CTX);
-    const edited = { ...file, profile: stampFields(file.profile, { heightCm: 170 }, LATER) };
-    const merged = mergeFiles(edited, file, CTX);
-    expect(merged.profile.heightCm).toBe(170);
-    expect(merged.unreadable).toBeUndefined();
-    expect(migrateFile(JSON.parse(JSON.stringify(merged)), CTX).unreadable).toBeUndefined();
-  });
-
-  it('a parked field still wins over an older readable value from another copy', () => {
-    const older = migrateFile(rawRecord({ profile: { updatedAt: DAY, lamport: 1, heightCm: 160 } }), CTX);
-    const newer = migrateFile(rawRecord({ profile: { updatedAt: LATER, lamport: 2, heightCm: 'synthetic-tall' } }), CTX);
-    for (const merged of [mergeFiles(older, newer, CTX), mergeFiles(newer, older, CTX)]) {
-      expect(merged.profile.heightCm).toBeUndefined();
-      expect(merged.unreadable?.profile?.heightCm?.value).toBe('synthetic-tall');
+describe('US-65 AC1: every build merges, erases and corrects them as before', () => {
+  it('a merge of two files each holding unreadable rows keeps both, in either order', () => {
+    const a = read(rawRecord({ measurements: [WEIGHT, FUTURE] }));
+    const b = read(rawRecord({ measurements: [WORDY] }));
+    for (const merged of [mergeFiles(a, b, CTX), mergeFiles(b, a, CTX)]) {
+      expect(ids(merged.measurements)).toEqual(['f1', 'v1', 'w1']);
+      expect(readableView(merged).count).toBe(2);
     }
   });
-});
 
-describe('US-65 AC3: merge of two files each holding unreadable rows', () => {
-  it('unions the rows, one copy of each, in either order, and leaves scalars and the epoch alone', () => {
-    const shared = { ...FUTURE, id: 'shared' };
-    const a = migrateFile(rawRecord({ measurements: [WEIGHT, FUTURE, shared], profile: { updatedAt: DAY, lamport: 1, sex: 'male' } }), CTX);
-    const b = migrateFile(rawRecord({ measurements: [WORDY, shared], profile: { updatedAt: LATER, lamport: 2, sex: 'female' } }), CTX);
-    const ab = mergeFiles(a, b, CTX);
-    const ba = mergeFiles(b, a, CTX);
-    expect(ab.unreadable).toEqual(ba.unreadable);
-    expect(ab.unreadable?.measurements).toHaveLength(3);
-    expect(ab.profile.sex).toBe('female');
-    expect(ab.meta.eraseEpoch ?? 0).toBe(0);
-    expect(ab.measurements.map((m) => m.id)).toEqual(['w1']);
-    // Re-merging changes nothing.
-    expect(mergeFiles(ab, b, CTX).unreadable).toEqual(ab.unreadable);
-  });
-
-  it('a reused id with different content keeps both raw copies untouched', () => {
-    const a = migrateFile(rawRecord({ measurements: [FUTURE] }), CTX);
-    const b = migrateFile(rawRecord({ measurements: [{ ...FUTURE, value: 6 }] }), CTX);
-    const rows = mergeFiles(a, b, CTX).unreadable?.measurements as Array<{ id: string; value: number }>;
-    expect(rows.map((r) => [r.id, r.value])).toEqual([['f1', 5], ['f1', 6]]);
-  });
-});
-
-describe('US-65 AC4: erasing still erases', () => {
-  it('the erased file holds no unreadable entries, lists their ids, and a stale copy cannot bring them back', () => {
-    const before = migrateFile(rawRecord({ measurements: [WEIGHT, FUTURE], profile: { updatedAt: DAY, heightCm: 'synthetic-tall' } }), CTX);
+  it('an erase lists and removes them, and a stale copy cannot bring them back', () => {
+    const before = read(rawRecord({ measurements: [WEIGHT, FUTURE, WORDY] }));
     const erased = buildErasedFile({ stored: before, own: before, device: null, ctx: CTX });
-    expect(erased.unreadable).toBeUndefined();
-    expect(erased.erasedRows?.ids).toContain('f1');
+    expect(erased.erasedRows?.ids).toEqual(expect.arrayContaining(['f1', 'v1', 'w1']));
     for (const merged of [mergeFiles(erased, before, CTX), mergeFiles(before, erased, CTX)]) {
-      expect(merged.unreadable).toBeUndefined();
       expect(merged.measurements).toEqual([]);
     }
   });
 
-  it('past an erase that listed nothing, a stale copy keeps no unreadable row from before it', () => {
-    const before = migrateFile(rawRecord({ measurements: [FUTURE] }), CTX);
-    const erased = migrateFile({ ...rawRecord({ measurements: [] }), meta: { ...createEmptyFile({ deviceId: 'x', now: LATER }).meta, eraseEpoch: 1, erasedAt: LATER } }, CTX);
-    expect(mergeFiles(erased, before, CTX).unreadable).toBeUndefined();
+  it('a correction chain whose corrected row is unreadable stays consistent', () => {
+    // A wrote 'synthetic' and was corrected by B; the view shows B, and correcting B appends C.
+    const a = { ...WORDY, id: 'a', status: 'entered-in-error' };
+    const b = createMeasurement({ id: 'b', metricType: 'hdl', value: 1.2, recordedAt: DAY, createdAt: LATER, correctsId: 'a', source: 'manual_correction' });
+    const file = read(rawRecord({ measurements: [a, b] }));
+    expect(ids(readableView(file).file.measurements)).toEqual(['b']);
+    const result = correctValue(file, { id: 'b', newValue: 1.3, now: LATER });
+    if (!result.ok) throw new Error(result.message);
+    const rows = Object.fromEntries(result.file.measurements.map((m) => [m.id, m]));
+    expect(rows.a).toEqual(a);
+    expect(rows.b.status).toBe('entered-in-error');
+    expect(result.row.correctsId).toBe('b');
+    expect(readableView(result.file).file.measurements.filter((m) => m.status === 'active').map((m) => m.value)).toEqual([1.3]);
   });
 });
 
-describe('US-65 AC6: an older device never drops a newer device\'s rows', () => {
-  it('rows parked by this build come back when a build can read them, and the record converges', async () => {
-    // A newer app wrote FUTURE; this build saves the record with an edit of its own.
-    const { cloud, sync } = cloudWith(rawRecord({ measurements: [WEIGHT, FUTURE] }));
-    const file = await sync.load();
-    file.measurements.push(createMeasurement({ id: 'w2', metricType: 'hdl', value: 1.4, recordedAt: LATER, createdAt: LATER }));
-    await sync.save(file);
-    expect(stored(cloud).unreadable.measurements).toEqual([FUTURE]);
-    // A build that reads the parked row (here, one this build reads) takes it back into its array.
-    const readableNow = createMeasurement({ id: 'n1', metricType: 'ldl', value: 3, recordedAt: DAY, createdAt: DAY });
-    const back = migrateFile({ ...stored(cloud), unreadable: { measurements: [FUTURE, readableNow] } }, CTX);
-    expect(back.measurements.map((m) => m.id).sort()).toEqual(['n1', 'w1', 'w2']);
-    expect(back.unreadable?.measurements).toEqual([FUTURE]);
-  });
-
-  it('a profile field parked here comes back to a build that reads it', () => {
-    const parked = migrateFile(rawRecord({ profile: { updatedAt: DAY, lamport: 1, heightCm: 'synthetic-tall' } }), CTX);
-    const json = JSON.parse(JSON.stringify(parked)) as RoadmapFile;
-    // A newer build reads the value: simulate it by a value this build reads.
-    json.unreadable!.profile!.heightCm.value = 171;
-    const back = migrateFile(json, CTX);
-    expect(back.profile.heightCm).toBe(171);
-    expect(back.unreadable).toBeUndefined();
-  });
-
-  it('a record with nothing unreadable is unchanged: no unreadable key, no added stamps', () => {
-    const raw = rawRecord({ profile: { updatedAt: DAY, lamport: 1, heightCm: 170 } });
-    const file = migrateFile(raw, CTX);
-    expect('unreadable' in file).toBe(false);
-    expect(file.profile).toEqual({ updatedAt: DAY, lamport: 1, heightCm: 170 });
+describe('US-65 AC3: agents never see them', () => {
+  it('read_record and get_plan leave out unreadable rows and profile fields', () => {
+    const file = read(rawRecord({ measurements: [WEIGHT, FUTURE, WORDY], profile: { updatedAt: DAY, sex: 'male', birthYear: 1970, heightCm: 'synthetic-tall' } }));
+    const out = callTool('read_record', {}, { file, now: LATER });
+    if (out.status !== 'ok') throw new Error(out.text);
+    expect(out.text).not.toContain('synthetic');
+    expect(JSON.stringify(out.data)).not.toContain('synthetic');
+    const plan = callTool('get_plan', {}, { file, now: LATER });
+    expect(JSON.stringify(plan)).not.toContain('synthetic_future_metric');
   });
 });
+
+describe('US-65 AC5: the refusals are unchanged, the file untouched', () => {
+  it.each([
+    ['not JSON', '{not json', /JSON/],
+    ['not an object', '[1, 2]', RecordShapeError],
+    ['no schemaVersion', JSON.stringify({ measurements: [] }), RecordShapeError],
+    ['a row array that is not a list', JSON.stringify(rawRecord({ measurements: 'synthetic' })), RecordShapeError],
+    ['a newer schema', JSON.stringify(rawRecord({ schemaVersion: 99 })), SchemaTooNewError],
+  ] as const)('%s', async (_, json, error) => {
+    const { cloud, sync } = cloudWith(json);
+    await expect(sync.load()).rejects.toThrow(error as never);
+    expect(cloud.files.get(ROADMAP_FILE_NAME)!.json).toBe(json);
+  });
+
+  it('the newer-version message is the one main shows', () => {
+    expect(new SchemaTooNewError(99, 2).message).toContain('Update the app before writing, or your newer data could be lost.');
+  });
+});
+

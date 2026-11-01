@@ -55,6 +55,7 @@ import { LAB_ARCHIVE_TITLE } from './document-path';
 import { documentRow, labArchiveFields, type DocumentFields } from './document-rows';
 import { BIRTH_IN_FUTURE, birthInFuture, DOCUMENT_TYPES, type DocumentType, healthInputSchema, METRIC_TYPES, PRESSURE_ORDER, pressureInverted, zod3Message } from './validation';
 import * as z from './zod';
+import { readableView } from './readable-rows';
 
 /**
  * Rows one `add_lab_values` call may write. A lab panel is the case this tool
@@ -109,11 +110,11 @@ export const OPEN_SOURCE_NOTE = REPO_PUBLIC
  * starts with a space: both servers append it to a sentence.
  */
 /**
- * The exception AC35 promises in words: a `measurements[]` row whose metricType
- * the catalogue does not know (an older or foreign writer) has no entry in
- * `units`, and no unit may be guessed for it.
+ * The exception AC35 promises in words. A `measurements[]` row whose metricType
+ * the catalogue does not know (a newer or foreign writer) is left out of the
+ * read tools and stays in the file (US-65); no unit may be guessed for it.
  */
-export const OFF_CATALOGUE_NOTE = ' A metric the `units` map does not name has no canonical unit: never infer one.';
+export const OFF_CATALOGUE_NOTE = ' A metric this version does not know is left out here and kept in the file; a metric the `units` map does not name has no canonical unit: never infer one.';
 
 export const SI_NOTE =
   ' Every value is stored in SI canonical units; the `units` map in read_record and get_plan names them.' +
@@ -2858,10 +2859,11 @@ export function callTool(
   switch (name) {
     case 'report_feedback':
       return reportFeedback(parsed.data as z.infer<typeof reportFeedbackInput>, now, context.dryRun, context.canFile);
+    // The read tools see only what this build reads; the rest stays in the file (US-65 AC3).
     case 'read_record':
-      return readRecord(record, parsed.data as z.infer<typeof readRecordInput>);
+      return readRecord(readableView(record).file, parsed.data as z.infer<typeof readRecordInput>);
     case 'get_plan':
-      return getPlan(record, now);
+      return getPlan(readableView(record).file, now);
     case 'add_measurement':
       return addMeasurement(record, parsed.data as z.infer<typeof addMeasurementInput>, context);
     case 'add_lab_values':

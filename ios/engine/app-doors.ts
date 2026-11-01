@@ -10,11 +10,11 @@ import type { ApiMedication } from '../../packages/health-core/src/mappings';
 import { derivePlanInputs } from '../../packages/health-core/src/plan';
 import type { RecordHost } from '../../packages/health-core/src/record-host';
 import { labReview, labRows, labSaveSummary, type Extraction } from './lab-review';
-import { readRecord, Refusal } from './my-data';
+import { readView, Refusal } from './my-data';
 
 /** What the chat sends with a question (US-52 AC5): the widget's payload, built from the record. */
 export function chatContextJson(recordJson: string, nowIso: string, deviceId: string): string {
-  const file = readRecord(recordJson, nowIso, deviceId);
+  const file = readView(recordJson, nowIso, deviceId);
   const { inputs, unitSystem } = derivePlanInputs(file);
   const dated = file.measurements.filter((m) => m.status === 'active');
   return JSON.stringify(chatContextOf(inputs, unitSystem, file.medications as unknown as ApiMedication[], fileScreeningRows(file.screenings), dated));
@@ -121,7 +121,7 @@ export async function eraseChatText(historyText: string | null, nowIso: string, 
 export function labReviewJson(extractionJson: string, nowIso: string, recordJson: string, sourceFileName: string, contentHash: string, deviceId: string): string {
   const extraction = JSON.parse(extractionJson) as Extraction;
   // The record is read only for a document's dedup: a lab report's card never needs it.
-  const file = recordJson && extraction.document ? readRecord(recordJson, nowIso, deviceId) : null;
+  const file = recordJson && extraction.document ? readView(recordJson, nowIso, deviceId) : null;
   return JSON.stringify(labReview(extraction, nowIso, file, sourceFileName || null, contentHash || null));
 }
 
@@ -129,5 +129,5 @@ export function labReviewJson(extractionJson: string, nowIso: string, recordJson
 export function labSaveSummaryJson(recordJson: string, extractionJson: string, refsJson: string, reportDay: string, nowIso: string, deviceId: string): string {
   const rows = labRows(JSON.parse(extractionJson) as Extraction, JSON.parse(refsJson) as string[], reportDay, nowIso);
   if (!rows.ok) return JSON.stringify(rows);
-  return JSON.stringify({ ok: true, summary: labSaveSummary(readRecord(recordJson, nowIso, deviceId), rows.rows, nowIso) });
+  return JSON.stringify({ ok: true, summary: labSaveSummary(readView(recordJson, nowIso, deviceId), rows.rows, nowIso) });
 }

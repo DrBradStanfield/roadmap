@@ -3,7 +3,7 @@
 // threw the whole screen call, and the person saw none of their record.
 // Synthetic values only.
 import { describe, expect, it } from 'vitest';
-import { applyEditJson, newRecordJson, screenJson } from './entry';
+import { applyEditJson, chatContextJson, healthWritesJson, historyJson, newRecordJson, planJson, remindersJson, screenJson } from './entry';
 
 const NOW = '2026-11-01T00:00:00.000Z';
 const DAY = '2026-10-01T00:00:00Z';
@@ -30,7 +30,15 @@ describe('US-65: the engine opens a record with unreadable entries', () => {
     const record = { ...base, profile, measurements: [weight, future] };
     const out = JSON.parse(applyEditJson(JSON.stringify(record), JSON.stringify({ kind: 'add', metric: 'weight', value: 81, day: '2026-10-31' }), NOW, 'phone'));
     expect(out.ok).toBe(true);
-    expect(JSON.parse(out.record).unreadable.measurements).toEqual([future]);
+    expect(JSON.parse(out.record).measurements).toContainEqual(future);
+  });
+
+  it('every other reader skips them too: plan, history, chat context, Health writes, reminders', () => {
+    const record = JSON.stringify({ ...base, profile: { ...profile, lpaUnit: 'synthetic' }, measurements: [weight, future, { ...weight, id: 'm3', value: 'synthetic' }] });
+    for (const read of [
+      () => planJson(record, NOW, 'phone'), () => historyJson(record, 'weight', NOW, 'phone'), () => chatContextJson(record, NOW, 'phone'),
+      () => healthWritesJson(record, NOW, 'phone'), () => remindersJson(record, NOW, 'phone'),
+    ]) expect(read()).not.toContain('synthetic');
   });
 
   it('a readable record carries no line', () => {

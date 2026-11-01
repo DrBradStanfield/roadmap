@@ -62,11 +62,11 @@ describe('US-65 AC1, AC5: the web opens a record holding an unreadable row', () 
     expect(trackProductEvent).toHaveBeenCalledWith('record_unreadable_kept', { count: 1 });
   });
 
-  it('a save writes the unreadable row back unchanged', async () => {
+  it('a save leaves the unreadable row in measurements, unchanged', async () => {
     expect(getUnreadableCount()).toBe(1);
     await saveChangedMeasurements({ weightKg: 65 }, { weightKg: 64 });
     await flushRoadmapStore();
     const stored = JSON.parse(localStorage.getItem('health_roadmap_file_v2')!);
-    expect(stored.unreadable.measurements.map((r: unknown) => JSON.stringify(r))).toEqual([JSON.stringify(FUTURE)]);
+    expect(JSON.stringify(stored.measurements.find((r: { id: string }) => r.id === 'f1'))).toBe(JSON.stringify(FUTURE));
   });
 });

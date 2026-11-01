@@ -24,7 +24,7 @@ import { METRIC_GUIDES, type MetricGuide } from '../../packages/health-core/src/
 import { APPLE_LOW_FROM_60, FRIEND_2022_TREADMILL, type Vo2MaxCutPoints } from '../../packages/health-core/src/vo2max-bands';
 import { calculateAge } from '../../packages/health-core/src/calculations';
 import { isAlcoholAnswer, type AlcoholAnswer } from '../../packages/health-core/src/types';
-import { unreadableCount, unreadableNote } from '../../packages/health-core/src/readable-rows';
+import { readableView, unreadableNote } from '../../packages/health-core/src/readable-rows';
 import {
   cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, getDisplayLabel, LPA_UNITS, toCanonicalValue, UNIT_DEFS,
   type LpaUnit, type MetricType, type UnitSystem,
@@ -53,8 +53,8 @@ export interface MyData {
   lpaUnit: LpaUnit;
   /** How many times the record was erased, anywhere: a rise starts the phone's questions again (US-54 AC7). */
   eraseEpoch: number;
-  /** US-65: the one line saying how many entries this engine could not read and kept
-   *  unchanged; null when there are none. The count only, never what they hold. */
+  /** US-65: the one line saying how many entries this engine could not read and left
+   *  in the file; null when there are none. The count only, never what they hold. */
   unreadableNote: string | null;
   profile: {
     sex: 'male' | 'female' | null;
@@ -125,6 +125,12 @@ export class Refusal extends Error {
  * with a broken part, is refused: the migration would quietly empty it, and
  * the app's next save would write over whatever the file held.
  */
+/** The record as the screens read it (US-65): `readRecord`, less the rows and profile
+ *  fields this engine cannot read. They stay in the file; edits and merges take `readRecord`. */
+export function readView(text: string, now: string, deviceId: string): RoadmapFile {
+  return readableView(readRecord(text, now, deviceId)).file;
+}
+
 export function readRecord(text: string, now: string, deviceId: string): RoadmapFile {
   if (kept && kept.text === text && kept.deviceId === deviceId) return kept.file;
   const raw: unknown = JSON.parse(text);
@@ -211,7 +217,7 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
     unitSystem: system,
     lpaUnit: lpaUnitOf(file),
     eraseEpoch: file.meta.eraseEpoch ?? 0,
-    unreadableNote: unreadableNote(unreadableCount(file)),
+    unreadableNote: unreadableNote(readableView(file).count),
     profile: {
       sex: sex ?? null,
       birthYear: birthYear ?? null,
