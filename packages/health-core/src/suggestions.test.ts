@@ -3068,6 +3068,36 @@ describe('Evidence attachment', () => {
     expect(sleepGuide).toContain('Brad\'s cut-off is 3 to 4 hours after waking');
   });
 
+  it('US-61 AC9: the page\'s Supplements section covers every supplement card, with no fiber disease claim (Brad 2026-11-02)', () => {
+    const root = join(dirname(fileURLToPath(import.meta.url)), '../../..');
+    const html = readFileSync(join(root, 'roadmap_text.html'), 'utf8');
+    const section = html.slice(html.indexOf('<h2 id="supplements">'), html.indexOf('<h3>Supplements/Medications Worth Watching'));
+    const watching = html.slice(html.indexOf('<h3>Supplements/Medications Worth Watching'), html.indexOf('<h3>Supplements Not Included Here'));
+    // Every supplement card has its entry, under the dose Brad takes.
+    for (const heading of ['Creatine Monohydrate 5g', 'Omega-3 1g', 'Low-dose Multivitamin', 'Lutein 10mg &amp; Zeaxanthin 2mg',
+      'Trimethylglycine 500mg', 'Collagen Peptides 12.5g', 'Hyaluronic Acid 200mg', 'Acacia Fiber 5g', 'Sleep support']) {
+      expect(section, heading).toContain(heading);
+    }
+    // Fiber is a gap in intake, never a cholesterol or blood pressure claim.
+    expect(section).not.toContain('Psyllium');
+    expect(section).toContain('about 95% of adults and children fall short.[139]');
+    expect(section).not.toMatch(/fib(?:er|re)[^<]*(?:cholesterol|blood pressure)/i);
+    // AREDS framing (Brad): never "did not significantly slow progression".
+    expect(section).toContain('In AREDS2, 10 mg of lutein and 2 mg of zeaxanthin worked as well as beta-carotene in that formula.');
+    expect(section).not.toMatch(/did not significantly/i);
+    // TMG: the card's words, and the Alzheimer's link as an open question.
+    expect(section).toContain('Small trials suggest it may improve strength and power.[64-66]');
+    expect(section).toContain('more research is needed.[63]');
+    expect(section).not.toContain('findings are inconsistent');
+    // Sleep lists the card's three ingredients, each with its trials.
+    expect(section).toContain('low-dose melatonin, glycine and magnesium glycinate');
+    expect(section).toContain('[140, 141]');
+    expect(section).toContain('[143]');
+    // GlyNAC is watched, not suggested.
+    expect(section).not.toContain('GlyNAC');
+    expect(watching).toContain('GlyNAC');
+  });
+
   it('US-07 AC1: omega-3 card and reason give VITACOG and the reverse FACIT finding, and the WHO 2026 note', () => {
     const { inputs, results } = createTestData({}, { bmi: 22 });
     const omega3 = generateSuggestions(inputs, results, 'si').find(s => s.id === 'supplement-omega3')!;
