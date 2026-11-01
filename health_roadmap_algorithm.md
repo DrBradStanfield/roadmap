@@ -1073,13 +1073,14 @@ the screen, so the US text below (which names no product) may appear. Only the s
 adds a product block (`us-products.ts`) for a known adult in the US: MicroVitamin+ on
 the micronutrient base, creatine, collagen, lutein and zeaxanthin and TMG cards; Sleep
 on the sleep card; none on omega-3 or fiber; one ownership line under the section. On
-three cards the overlay also swaps in a US text, kept beside the generic one under an
-explicit `-us` key (`US_SUPPLEMENT_DESCRIPTIONS` in suggestions.ts,
-`US_SUPPLEMENT_REFERENCES` in evidence.ts), so no disease outcome sits beside a named
-product: `supplement-micronutrient-base-us` drops the WHO 2026 dementia sentences and
+three cards the overlay also swaps in a US text, kept beside the generic one in maps
+keyed by card id (`US_SUPPLEMENT_DESCRIPTIONS` in suggestions.ts,
+`US_SUPPLEMENT_REFERENCES` in evidence.ts; the keys lost their `-us` suffix on
+2026-11-01, a rename only, with no text changed), so no disease outcome sits beside a named
+product: `supplement-micronutrient-base` drops the WHO 2026 dementia sentences and
 reference (COSMOS and the vitamin K2 / warfarin sentence stay);
-`supplement-creatine-us` keeps the strength and lean mass sentence and Kreider 2017
-only; `supplement-lutein-zeaxanthin-us` keeps the macular pigment sentences and Wilson
+`supplement-creatine` keeps the strength and lean mass sentence and Kreider 2017
+only; `supplement-lutein-zeaxanthin` keeps the macular pigment sentences and Wilson
 2021 only (no AREDS outcome). Supplement cards carry no `reason`, so their "Why this
 suggestion?" panel is the reference list alone, and the swapped US references cover it.
 
