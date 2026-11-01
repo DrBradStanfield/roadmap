@@ -14,17 +14,17 @@ struct WelcomeView: View {
     @State private var choosingCloud = false
     /// Signed in, but the cloud record did not open: say so, and stay (US-54 AC2).
     @State private var notOpened = false
-    @Environment(\.dynamicTypeSize) private var textSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// The size the story's scenes need (WelcomeStory.needs), and the width they get.
-    @State private var storyNeeds = CGSize.zero
+    /// The size the story's scenes need (WelcomeStory.needs), and the width they get. Unknown
+    /// until measured, so the first frame shows the words, never a cut story.
+    @State private var storyNeeds = CGSize(width: CGFloat.infinity, height: .infinity)
     @State private var width = CGFloat.zero
 
     /// The story shows only where every scene fits its card whole; elsewhere (larger text, a
     /// narrow phone) its words scroll above the buttons, which stay on screen (US-54 AC8b).
     private var showsStory: Bool {
-        !textSize.isAccessibilitySize && storyNeeds.width <= width && storyNeeds.height <= WelcomeStory.height
+        storyNeeds.width <= width && storyNeeds.height <= WelcomeStory.height
     }
 
     var body: some View {

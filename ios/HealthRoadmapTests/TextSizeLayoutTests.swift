@@ -117,6 +117,34 @@ final class TextSizeLayoutTests: XCTestCase {
         }
     }
 
+    /// US-54 AC8: at accessibility sizes the real Apple Health page keeps its buttons on
+    /// screen and at least 120 pt for its scrolling words, on an SE and a 17e. The scroll
+    /// region gets only what the buttons leave, so a block of buttons too tall for the
+    /// screen squeezes it to nothing and pushes "Not now" off the bottom.
+    func testTheAppleHealthPageKeepsRoomToScrollAboveItsButtons_US54_AC8() throws {
+        for screen in screens {
+            let room = CGSize(width: screen.size.width, height: screen.size.height - screen.insets)
+            for category in [UIContentSizeCategory.accessibilityExtraLarge, .accessibilityExtraExtraExtraLarge] {
+                let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+                let window = UIWindow(windowScene: scene)
+                window.frame = CGRect(origin: .zero, size: room)
+                window.traitOverrides.preferredContentSizeCategory = category
+                let host = UIHostingController(rootView: NavigationStack { OnboardingView.healthPage(connecting: false, allow: {}, notNow: {}) })
+                host.safeAreaRegions = []
+                window.rootViewController = host
+                window.makeKeyAndVisible()
+                defer { window.isHidden = true }
+                RunLoop.main.run(until: Date(timeIntervalSinceNow: 1))
+                host.view.layoutIfNeeded()
+                func scrollViews(in view: UIView) -> [UIScrollView] {
+                    (view as? UIScrollView).map { [$0] } ?? [] + view.subviews.flatMap(scrollViews)
+                }
+                let scroll = try XCTUnwrap(scrollViews(in: host.view).first, "\(screen.name) \(category.rawValue): the page scrolls")
+                XCTAssertGreaterThanOrEqual(scroll.frame.height, 120, "\(screen.name) \(category.rawValue): room to scroll above the buttons")
+            }
+        }
+    }
+
     /// US-54 AC8b: each Apple Health tile's name fits its tile, shrunk at most to the
     /// tile's 0.8 scale, at every size on both screens: the grid drops columns as text grows.
     /// (SwiftUI draws a text with a minimum scale factor outside the probe above, so this
@@ -149,7 +177,7 @@ final class TextSizeLayoutTests: XCTestCase {
                 // The words are one text of five lines or more; the story's texts take at most three.
                 let words = texts.lines > 4
                 let needs = try measure(WelcomeStory.needs, at: category)
-                let fits = !category.isAccessibilityCategory && needs.width <= card && needs.height <= WelcomeStory.height
+                let fits = needs.width <= card && needs.height <= WelcomeStory.height
                 XCTAssertEqual(words, !fits, "\(screen.name) \(category.rawValue): the story shows only where its \(needs) fits \(card) x 236")
                 XCTAssertLessThanOrEqual(try taken(by: welcome, in: room, at: category).height, room.height + 0.5,
                                          "\(screen.name) \(category.rawValue): Get started in view")

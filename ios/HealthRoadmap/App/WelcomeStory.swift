@@ -16,7 +16,7 @@ struct WelcomeStory: View {
     /// All three scenes at once, fully shown: the size the card needs. WelcomeView shows
     /// the story only where this fits, so no row is cut or wrapped.
     static var needs: some View {
-        ZStack { NumbersScene(still: true); PlanScene(still: true); PrivateScene() }.fixedSize()
+        ZStack { NumbersScene(still: true); PlanScene(still: true); PrivateScene(still: true) }.fixedSize()
     }
     @State private var scene = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -68,7 +68,7 @@ private struct Heading: View {
 }
 
 /// Values arrive one by one, as Apple Health or a lab report would fill them in.
-struct NumbersScene: View {
+private struct NumbersScene: View {
     /// Every row at once, without the reveal: the size the scene needs.
     var still = false
     @State private var shown = 0
@@ -105,7 +105,7 @@ struct NumbersScene: View {
 }
 
 /// The plan builds itself: one step per area, each ticked as it lands.
-struct PlanScene: View {
+private struct PlanScene: View {
     /// Every step at once, without the reveal: the size the scene needs.
     var still = false
     @State private var shown = 0
@@ -142,9 +142,17 @@ struct PlanScene: View {
 }
 
 /// The record settles on the phone and the person's own cloud, and a lock closes on it.
-struct PrivateScene: View {
-    @State private var locked = false
-    @State private var linked = false
+private struct PrivateScene: View {
+    /// Linked and locked from the start, without the task or its haptic: the size it needs.
+    var still = false
+    @State private var locked: Bool
+    @State private var linked: Bool
+
+    init(still: Bool = false) {
+        self.still = still
+        _locked = State(initialValue: still)
+        _linked = State(initialValue: still)
+    }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -172,6 +180,7 @@ struct PrivateScene: View {
         }
         .padding(20)
         .task {
+            if still { return }
             if reduceMotion {
                 linked = true
                 locked = true
@@ -182,7 +191,7 @@ struct PrivateScene: View {
             try? await Task.sleep(for: .seconds(0.7))
             withAnimation(.spring(duration: 0.4, bounce: 0.5)) { locked = true }
         }
-        .sensoryFeedback(.impact(weight: .light), trigger: locked) { _, new in new && !reduceMotion }
+        .sensoryFeedback(.impact(weight: .light), trigger: locked) { _, new in new && !reduceMotion && !still }
     }
 
     private func place(_ symbol: String, _ name: String) -> some View {

@@ -192,9 +192,10 @@ struct OnboardingView: View {
                 // US-56's five, named too (adversary R5): the sheet asks for them as well.
                 Text(liveLine).font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
+                AppleAsksNext(inPage: true)
             }
         } actions: {
-            appleAsksNext
+            AppleAsksNext()
             primary(connecting ? "Connecting…" : "Connect Apple Health", id: "onboarding.allow", action: allow)
                 .disabled(connecting)
             secondary("Not now", id: "onboarding.notNow", action: notNow)
@@ -205,20 +206,31 @@ struct OnboardingView: View {
     /// The last thing read before the tap: the two taps Apple's sheet asks for (AC3).
     /// A hint, never a switch: no app can turn that sheet's switches on. In the accent
     /// green, not pink: red read as something wrong (Brad 2026-10-25). Primary text on the
-    /// 12% wash; the icon in the accent clears 3:1 on it in both modes.
-    private static var appleAsksNext: some View {
-        Label {
-            Text(LocalizedStringKey(Self.appleAsksNextWords))
-        } icon: {
-            Image(systemName: "hand.tap.fill").foregroundStyle(Color.accentColor)
+    /// 12% wash; the icon in the accent clears 3:1 on it in both modes. Above the buttons,
+    /// except at accessibility sizes, where it would push them off an SE: there it ends the
+    /// scrolling page (US-54 AC8b).
+    private struct AppleAsksNext: View {
+        var inPage = false
+        @Environment(\.dynamicTypeSize) private var textSize
+
+        var body: some View {
+            if textSize.isAccessibilitySize == inPage { hint }
         }
-        .font(.subheadline)
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .padding(.bottom, 6)
-        .accessibilityElement(children: .combine)
+
+        private var hint: some View {
+            Label {
+                Text(LocalizedStringKey(OnboardingView.appleAsksNextWords))
+            } icon: {
+                Image(systemName: "hand.tap.fill").foregroundStyle(Color.accentColor)
+            }
+            .font(.subheadline)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .padding(.bottom, 6)
+            .accessibilityElement(children: .combine)
+        }
     }
 
     /// The number boxes with their unit switch beside them, or under them at accessibility
