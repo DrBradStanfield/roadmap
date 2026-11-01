@@ -2,7 +2,8 @@
 /**
  * US-60 AC3, AC4 on the web: the "Reduce alcohol intake" card's Dismiss asks
  * "Do you drink alcohol?"; the answer saves to the profile through the form's
- * own write path, and Starting Info's Alcohol toggle changes or clears it.
+ * own write path. The card is the only place to answer: Starting Info has no
+ * Alcohol row (Brad 2026-11-02).
  */
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
@@ -55,9 +56,6 @@ afterEach(async () => {
   vi.clearAllTimers(); vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals();
 });
 
-// About you's Alcohol toggle (US-60 AC4): the label of its checked answer, '' when none.
-const alcoholRow = (root: HTMLElement) => root.querySelector<HTMLElement>('#alcohol[role="group"]');
-const alcoholAnswer = (root: HTMLElement) => alcoholRow(root)?.querySelector('[aria-pressed="true"]')?.textContent ?? '';
 const alcoholCard = (root: HTMLElement) =>
   [...root.querySelectorAll('.suggestion-title')].find((t) => t.textContent === 'Reduce alcohol intake');
 const dialog = () => document.body.querySelector<HTMLElement>('[role="dialog"][aria-labelledby="alcohol-dialog-title"]');
@@ -82,7 +80,6 @@ it('US-60 AC3: "I don\'t drink" takes the card off the plan and saves the answer
   expect(alcoholCard(view.container)).toBeUndefined();
   await persist();
   expect(saved().profile.alcohol).toBe('none');
-  expect(alcoholAnswer(view.container)).toBe("I don't drink");
   expect(vi.mocked(trackProductEvent)).toHaveBeenCalledWith('alcohol_question_answered');
   for (const call of vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'alcohol_question_answered')) {
     expect(call).toHaveLength(1);
@@ -109,7 +106,6 @@ it('US-60 AC3 (Brad 2026-11-01): a drinker\'s Dismiss asks "Do you still drink a
   await saveChangedMeasurements({ alcohol: 'drinks' }, {});
   await flushRoadmapStore();
   const view = render(<HealthTool />);
-  await waitFor(() => expect(alcoholAnswer(view.container)).toBe('I drink'));
   expect(view.container.querySelectorAll('.suggestion-dismiss')).toHaveLength(1);
   await dismiss(view.container, 'Do you still drink alcohol?');
   expect([...dialog()!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(["I've stopped", 'I still drink', 'Cancel']);
@@ -119,9 +115,10 @@ it('US-60 AC3 (Brad 2026-11-01): a drinker\'s Dismiss asks "Do you still drink a
   expect(before.profile.alcohol).toBe('drinks');
   expect(before.profile.fieldStamps?.alcohol).toBeDefined();
   fireEvent.click(within(dialog()!).getByText('I still drink'));
-  // One line, in the dialog's place, never a browser alert. On desktop the
-  // profile section is titled "Starting Info", so the line names that.
-  expect(dialog()!.textContent).toBe(`${still('Starting Info')}OK`);
+  // One line, in the dialog's place, never a browser alert. A complete record's
+  // profile section is titled "About you" on desktop too (US-62 AC12, Brad
+  // 2026-11-02), so the line names that.
+  expect(dialog()!.textContent).toBe(`${still('About you')}OK`);
   expect(alert).not.toHaveBeenCalled();
   fireEvent.click(within(dialog()!).getByText('OK'));
   expect(dialog()).toBeNull();
@@ -144,7 +141,6 @@ it('US-60 AC3 (Brad 2026-11-01): on a phone with sex and height in, the "I still
   await saveChangedMeasurements({ alcohol: 'drinks' }, {});
   await flushRoadmapStore();
   const view = render(<HealthTool />);
-  await waitFor(() => expect(alcoholAnswer(view.container)).toBe('I drink'));
   const titles = [...view.container.querySelectorAll('.health-section-title')].map((h) => h.textContent!.replace('\u25B8', '').trim());
   expect(titles).toContain('About you');
   expect(titles).not.toContain('Starting Info');
@@ -157,7 +153,6 @@ it('US-60 AC3 (Brad 2026-11-01): a drinker\'s "I\'ve stopped" saves \'none\' thr
   await saveChangedMeasurements({ alcohol: 'drinks' }, {});
   await flushRoadmapStore();
   const view = render(<HealthTool />);
-  await waitFor(() => expect(alcoholAnswer(view.container)).toBe('I drink'));
   await dismiss(view.container, 'Do you still drink alcohol?');
   fireEvent.click(within(dialog()!).getByText("I've stopped"));
   expect(dialog()).toBeNull();
@@ -167,46 +162,17 @@ it('US-60 AC3 (Brad 2026-11-01): a drinker\'s "I\'ve stopped" saves \'none\' thr
   expect(vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'alcohol_question_answered')).toEqual([['alcohol_question_answered']]);
 });
 
-it('US-60 AC4 (M2): Starting Info\'s Alcohol toggle sets each answer with no usage event, and tapping the chosen one clears it with a stamp and brings the card back', async () => {
-  const view = render(<HealthTool />);
-  const row = await waitFor(() => { const r = alcoholRow(view.container); expect(r).not.toBeNull(); return r!; });
-  expect(row.getAttribute('aria-label')).toBe('Alcohol');
-  const radios = within(row).getAllByRole('button');
-  expect(radios.map((b) => b.textContent)).toEqual(["I don't drink", 'I drink']);
-  // Unanswered: neither is checked, and the row asks for no attention (optional).
-  expect(radios.map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'false']);
-  expect(row.closest('.health-field')!.classList.contains('field-attention')).toBe(false);
-  expect(row.closest('.health-field')!.querySelector('.field-why')?.textContent).toBe('Used to decide whether advice on alcohol applies to you.');
-
-  fireEvent.click(within(row).getByText('I drink'));
-  await persist();
-  expect(saved().profile.alcohol).toBe('drinks');
-  expect(radios.map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'true']);
-  expect(alcoholCard(view.container)).toBeDefined();
-
-  fireEvent.click(within(row).getByText("I don't drink"));
-  await persist();
-  expect(saved().profile.alcohol).toBe('none');
-  expect(radios.map((b) => b.getAttribute('aria-pressed'))).toEqual(['true', 'false']);
-  expect(radios[0].classList.contains('sex-toggle-btn--active')).toBe(true);
-  expect(alcoholCard(view.container)).toBeUndefined();
-
-  // Tapping the chosen answer clears it (M2): a stamped null, the card returns.
-  fireEvent.click(within(row).getByText("I don't drink"));
-  await persist();
-  expect(saved().profile.alcohol).toBeNull();
-  expect(saved().profile.fieldStamps?.alcohol).toBeDefined();
-  expect(radios.map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'false']);
-  await waitFor(() => expect(alcoholCard(view.container)).toBeDefined());
-  // The signal counts the card's question only (US-60 usage signal).
-  expect(vi.mocked(trackProductEvent)).not.toHaveBeenCalledWith('alcohol_question_answered');
-
-  // A fresh load reads the cleared answer as not answered.
-  view.unmount();
-  await act(async () => { await initRoadmapStore(new LocalStorageAdapter()); });
-  const reloaded = render(<HealthTool />);
-  await waitFor(() => expect(alcoholRow(reloaded.container)).not.toBeNull());
-  expect(alcoholAnswer(reloaded.container)).toBe('');
+it('US-60 AC4 (Brad 2026-11-02): card only, so the form has no Alcohol row, on desktop or a phone', async () => {
+  for (const phone of [false, true]) {
+    vi.stubGlobal('matchMedia', (q: string) => ({
+      matches: q.includes('max-width') ? phone : !phone, media: q, addEventListener() {}, removeEventListener() {},
+    }));
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(alcoholCard(view.container)).toBeDefined());
+    expect(view.container.querySelector('#alcohol')).toBeNull();
+    expect(within(view.container.querySelector('.health-input-panel')!).queryByText(/alcohol/i)).toBeNull();
+    view.unmount();
+  }
 });
 
 it('US-60 AC3 (C2): in a grouped Nutrition card the Dismiss sits on the alcohol section, and "I don\'t drink" also drops "limit alcohol" from the triglycerides card', async () => {

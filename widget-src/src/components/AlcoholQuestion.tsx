@@ -2,14 +2,14 @@
  * US-60: "Do you drink alcohol?" The plan's "Reduce alcohol intake" card
  * carries a Dismiss button that asks it in a small dialog. The answer goes to
  * the profile through the form's own write path (HealthTool's input change,
- * then the profile autosave), so About you shows it and can change it.
+ * then the profile autosave). Web has no Starting Info row for it (US-60, Brad 2026-11-02).
  */
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { REDUCE_ALCOHOL_ID, type AlcoholAnswer, type Suggestion } from '@roadmap/health-core';
 
-/** The two answers, for About you's toggle and the card's first question. */
-export const ALCOHOL_OPTIONS: ReadonlyArray<{ value: AlcoholAnswer; label: string }> = [
+/** The two answers to the card's first question. */
+const ALCOHOL_OPTIONS: ReadonlyArray<{ value: AlcoholAnswer; label: string }> = [
   { value: 'none', label: "I don't drink" },
   { value: 'drinks', label: 'I drink' },
 ];
