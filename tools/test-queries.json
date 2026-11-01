@@ -7877,6 +7877,20 @@
     "notes": "US-15 AC41 guard (adversary R8, 2026-10-26): a viewer citing a study as evidence is NOT spam and should get an answer. Was KNOWN-FAIL under the GREETING wording (GREETING 5/5); the SPAM label (2026-10-29) narrows spam to selling. The prompt's own example uses different wording on purpose."
   },
   {
+    "query": "Great breakdown. Here at Quillmere Labs we run independent HPLC and mass-spec checks on research peptides, and from our side, how the material was verified is what matters most when reading BPC-157 studies.",
+    "category": "classifier-spam",
+    "source": "us-15-ac41-2026-11-01",
+    "expected_classification": "SPAM",
+    "notes": "US-15 AC41 amendment (chat-health W44 proposal 3, issue #437): a peptide-testing lab introduced itself and its service under its own name on a BPC-157 video (2026-10-31), asking nothing. Production ROUTE, replay ROUTE 5/5, and the bot replied publicly. Paraphrased; the lab is replaced with Quillmere Labs, an invented name that a web search (2026-11-01) found no company using."
+  },
+  {
+    "query": "We're a small peptide testing lab (Quillmere Labs). Is there a validated assay for BPC-157 purity, or does everyone rely on HPLC alone?",
+    "category": "classifier-spam",
+    "source": "us-15-ac41-2026-11-01",
+    "expected_classification": "ROUTE",
+    "notes": "US-15 AC41 guard for the 2026-11-01 amendment: a company that names itself but asks a real question is NOT spam. Must stay ROUTE."
+  },
+  {
     "query": "Is there anything that eases psoriatic arthritis pain, or any new research on it? Asking for someone I love who has it.",
     "expected": [],
     "category": "musculoskeletal",

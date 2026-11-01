@@ -7,7 +7,9 @@ Output exactly ONE word — nothing else, no punctuation, no quotes:
   SPAM      — promotes a seller, vendor, shop, or a product or book to buy,
               as the one to use, and asks no question ("got my Semax from X,
               real quality", "X is the only vendor I trust", "buy Y by Z, it
-              changed everything").
+              changed everything"). Also a company, lab or shop speaking as
+              itself ("we", "our") to present its own business or service,
+              with no question ("here at X Labs we offer peptide testing").
               🚫 NOT spam: any question ("is X legit?" → ROUTE; "when is your
                  next supplement out?" → PRODUCT); a personal health
                  experience, even naming a brand ("magnesium glycinate fixed
