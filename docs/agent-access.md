@@ -51,9 +51,14 @@ document has `fileRef: ""`.
    you may not understand every field. Read if you like; do not write. A file at 2 carries
    `erasedRows` (rule 6): if your tool predates it, do not write that file either.
 3. Current values live in the arrays, not in a separate "current" object.
-   - `measurements` (core metrics) and `labValues` (everything else) are **append-only
-     history**. A row's slot is `(metric, calendar day of recordedAt)`, `metricType` for
-     measurements, `metricName` for lab values.
+   - `labValues` (every blood test) and `measurements` (weight, waist and blood pressure) are
+     **append-only history**. A row's slot is `(metric, calendar day of recordedAt)`:
+     `metricType` for measurements, `metricName` for lab values. The nine core blood tests
+     (`hba1c`, `ldl`, `total_cholesterol`, `hdl`, `triglycerides`, `apob`, `creatinine`, `psa`,
+     `lpa`) are lab rows with `core: true` and `metricName` set to that key (US-66, 2026-11).
+     Only a row with `core: true` is a core value: a lab row merely named "LDL" is an extra row
+     the plan does not read. Records written before US-66 held core tests in `measurements`;
+     the app moves them on load, and moves any you write there too.
    - Within a slot, at most one row has `status: "active"`. That is the slot's value.
      If several are active, the newest `createdAt` wins (larger `id` breaks a tie). A
      metric's current value is its active row with the latest `recordedAt`, by the same
@@ -129,9 +134,10 @@ someone's medical history, or lose their data at the next device sync.
    Updating a current-state row you legitimately own (a medication, supplement, or
    reminder preference) means setting that row's `updatedAt` to now and leaving its
    `lamport` exactly as you found it, or absent.
-8. **Units.** `measurements[].value` is the SI canonical unit, kg, cm, mmHg, mmol/mol
-   for HbA1c, mmol/L for lipids, g/L for ApoB, µmol/L for creatinine, ng/mL for PSA,
-   nmol/L for Lp(a). Convert before you write. Lp(a) converts at the factor the app uses,
+8. **Units.** `measurements[].value` is the SI canonical unit, kg, cm, mmHg. A core blood
+   test's lab row carries its SI canonical `value` and `unit` string: `mmol/mol` for HbA1c,
+   `mmol/L` for lipids, `g/L` for ApoB, `µmol/L` for creatinine, `ng/mL` for PSA, `nmol/L` for
+   Lp(a); a core row in any other unit counts nowhere. Convert before you write. Lp(a) converts at the factor the app uses,
    2.5 nmol/L per mg/dL (0.25 per mg/L; the EAS 2022 interim factor), so your rows
    match the app's. **Lab values are SI at rest too, since
    2026-09-18 (US-21 phase 3).** Send `labValues[].value` and `unit` as the lab PRINTED
@@ -187,8 +193,9 @@ someone's medical history, or lose their data at the next device sync.
     Matching happens on those keys. Catalogue spellings, aliases and
     underscore/space variants all converge on the catalogue key at merge time, so
     "Vitamin D", `vitamin_d` and "vitamin  d" land in one slot; only a name that is
-    genuinely uncatalogued beyond that fold stays a separate row. Core metrics (LDL, HDL, HbA1c, creatinine and the rest) belong in
-    `measurements` with a `metricType` from `METRIC_TYPES`, not here.
+    genuinely uncatalogued beyond that fold stays a separate row. A core blood test (LDL, HDL,
+    HbA1c, creatinine and the rest) goes here too, with `core: true`, its key as `metricName`
+    and its SI unit (rule 8). Weight, waist and blood pressure stay in `measurements`.
 11. **Deleting a document** means setting `deleted: true` on its row. A removed row comes
     straight back from any other device.
 12. **`reminderOptIn.token` is a capability secret.** Leave it where it is; never copy it
