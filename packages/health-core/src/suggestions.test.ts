@@ -3084,10 +3084,11 @@ describe('Evidence attachment', () => {
     expect(section).not.toMatch(/fib(?:er|re)[^<]*(?:cholesterol|blood pressure)/i);
     // AREDS framing (Brad): never "did not significantly slow progression".
     expect(section).toContain('In AREDS2, 10 mg of lutein and 2 mg of zeaxanthin worked as well as beta-carotene in that formula.');
+    expect(section).toContain('lutein and zeaxanthin did not.[138, 144]');
     expect(section).not.toMatch(/did not significantly/i);
     // TMG: the card's words, and the Alzheimer's link as an open question.
     expect(section).toContain('Small trials suggest it may improve strength and power.[64-66]');
-    expect(section).toContain('more research is needed.[63]');
+    expect(section).toContain('promising but not conclusive, and more research is needed. Those trials did not test TMG.[63]');
     expect(section).not.toContain('findings are inconsistent');
     // Sleep lists the card's three ingredients, each with its trials.
     expect(section).toContain('low-dose melatonin, glycine and magnesium glycinate');

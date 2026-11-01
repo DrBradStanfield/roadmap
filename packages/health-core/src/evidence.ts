@@ -599,6 +599,8 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
       REF_MPOD,
       { label: 'AREDS 2001 – Vitamins C and E, beta-carotene and zinc for age-related macular degeneration: AREDS Report 8 (Arch Ophthalmol)', url: 'https://doi.org/10.1001/archopht.119.10.1417' },
       { label: 'AREDS2 2013 – Lutein + zeaxanthin and omega-3 fatty acids for age-related macular degeneration (JAMA)', url: 'https://doi.org/10.1001/jama.2013.4997' },
+      // The 10-year follow-up is what shows lutein and zeaxanthin carry no lung cancer signal.
+      { label: 'AREDS2 Report 28, 2022 – Long-term outcomes of lutein/zeaxanthin vs beta-carotene, including lung cancer (JAMA Ophthalmol)', url: 'https://doi.org/10.1001/jamaophthalmol.2022.1640' },
     ],
   },
 

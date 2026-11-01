@@ -49,6 +49,7 @@ describe('US-61 AC1: the two new supplement cards, in every market', () => {
       'https://doi.org/10.1093/advances/nmab071',
       'https://doi.org/10.1001/archopht.119.10.1417',
       'https://doi.org/10.1001/jama.2013.4997',
+      'https://doi.org/10.1001/jamaophthalmol.2022.1640',
     ]);
     const tmg = suggestions.find((s) => s.id === 'supplement-tmg')!;
     expect(tmg).toMatchObject({ category: 'supplements', priority: 'info', title: 'TMG (trimethylglycine)' });
