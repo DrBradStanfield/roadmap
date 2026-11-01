@@ -438,17 +438,25 @@ describe('US-52 AC4c: a verified key\'s failures are its own', () => {
     addOther();
     expect((await appChat(signed('/api/app/v1/chat', { ...chatBody, stream: false }, { counter: 5 }), store)).status).toBe(200);
     for (let i = 0; i < 20; i++) expect((await (await appChat(signed('/api/app/v1/chat', chatBody, { counter: 5 }), store)).json()).reason).toBe('stale_counter');
-    // Its 21st refusal is the over-limit 429, after the signature and before the key's step.
-    let uses = 0;
-    const use = store.use.bind(store);
-    store.use = async (...a: Parameters<KeyStore['use']>) => { uses++; return use(...a); };
-    const locked = await appChat(signed('/api/app/v1/chat', chatBody, { counter: 6 }), store);
+    // Its 20 failures handed the IP's units back.
+    expect(appLimits.failures.remaining(ipBucket(IP))).toBe(200);
+    // Locked, its next request is the over-limit 429 with no key read and no body read; nothing
+    // is verified, so the IP's unit is kept. A forged request naming it gets the same.
+    let reads = 0;
+    const get = store.get.bind(store);
+    store.get = async (keyId: string) => { reads++; return get(keyId); };
+    const lockedReq = signed('/api/app/v1/chat', chatBody, { counter: 6 });
+    const locked = await appChat(lockedReq, store);
     expect(locked.status).toBe(429);
     expect((await locked.json()).reason).toBe('limit');
-    expect(uses).toBe(0);
-    // The neighbour behind the same IP is untouched, and so is the IP's budget.
+    const forgedReq = signed('/api/app/v1/chat', chatBody, { by: other, keyId: device.keyId });
+    expect((await appChat(forgedReq, store)).status).toBe(429);
+    expect(reads).toBe(0);
+    expect(lockedReq.bodyUsed).toBe(false);
+    expect(forgedReq.bodyUsed).toBe(false);
+    expect(appLimits.failures.remaining(ipBucket(IP))).toBe(198);
+    // The neighbour behind the same IP is untouched.
     expect((await appChat(signed('/api/app/v1/chat', { ...chatBody, stream: false }, { counter: 1, by: other }), store)).status).toBe(200);
-    expect(appLimits.failures.remaining(ipBucket(IP))).toBe(200);
     // The locked key's refusal reserved no shared unit: only the two passes spent one.
     expect(appLimits.ip.chat.remaining(ipBucket(IP))).toBe(198);
   });
@@ -492,6 +500,13 @@ describe('US-52 AC1b: only failing registrations spend the IP\'s attempts', () =
     expect((await bad()).status).toBe(429);
     store.rows.clear();
     expect((await good()).status).toBe(429);
+  });
+
+  it('a store outage spends no registration attempt (US-52 AC1b)', async () => {
+    store.fail = true;
+    for (let i = 0; i < 12; i++) expect((await good()).status).toBe(503);
+    expect(appLimits.register.remaining(ipBucket(IP))).toBe(10);
+    expect(appLimits.registered.remaining(ipBucket(IP))).toBe(50);
   });
 
   it('a success past the success cap is refused and stores nothing (US-52 AC1b)', async () => {

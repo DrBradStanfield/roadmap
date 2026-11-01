@@ -153,6 +153,9 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
   let charged = false;
   const failed = (reason: string) => { charged = true; logRefusal(kind, reason); return unauthorized(reason); };
   try {
+    // A key past its own failure budget reads nothing more. By the header's key id, read-only:
+    // nothing is verified yet, so the IP's unit is kept and the key's budget is never charged (US-52 AC4c).
+    if (appLimits.keyFailures.remaining(keyId) === 0) { charged = true; logRefusal(kind, 'key_failure_limit'); return overLimit(); }
     let assertion;
     try {
       assertion = parseAssertion(header, config.appId);

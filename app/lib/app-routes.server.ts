@@ -64,7 +64,9 @@ export async function appRegister(request: Request, store: KeyStore = supabaseKe
   try {
     inserted = await store.insert(key);
   } catch {
+    // An outage is not a failed attempt: both units go back, as in the gate.
     success();
+    attempt();
     return registerRefused(503, 'store_unavailable');
   }
   if (inserted === 'exists') { success(); return registerRefused(409, 'key_exists'); }
