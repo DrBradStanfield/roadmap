@@ -1,4 +1,5 @@
 import { defineConfig } from "vitest/config";
+import { realpathSync } from "node:fs";
 
 // Root vitest config for the server (`app/`) + workspace test runs.
 //
@@ -22,6 +23,17 @@ export default defineConfig({
   resolve: {
     alias: {
       '@roadmap/health-core': new URL('./packages/health-core/src', import.meta.url).pathname,
+    },
+  },
+  // A session worktree's node_modules is a link to the main checkout's (docs/git-workflow.md). Vite resolves it
+  // to that real path, outside this root, and refuses a `?raw` import from there ("Denied ID",
+  // widget-src/src/upload-entry.test.ts), so allow the real folder beside the root (the same path without a link).
+  server: {
+    fs: {
+      allow: [
+        new URL('.', import.meta.url).pathname,
+        realpathSync(new URL('./node_modules', import.meta.url).pathname),
+      ],
     },
   },
   test: {

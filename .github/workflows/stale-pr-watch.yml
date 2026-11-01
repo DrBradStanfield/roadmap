@@ -2,7 +2,7 @@
 # orphaned and forgotten about").
 #
 # WHY THIS EXISTS: every change now ships through its own branch and PR
-# (CLAUDE.md, "Every change: its own worktree"). stranded-branch-watch catches
+# (CLAUDE.md § Development Rules; docs/git-workflow.md). stranded-branch-watch catches
 # a branch that never got a PR; nothing caught a PR that was opened and then
 # left. This daily audit lists every open PR with no activity for 48h in ONE
 # issue, refreshed each run, so a burst of idle PRs is one email, not dozens.
@@ -10,6 +10,9 @@
 # nothing is stale, the issue is closed with a note.
 name: Stale PR watch
 
+# Notifies by GitHub issue: this watch and stranded-branch-watch are the one exception to Brad's Claude-app-only
+# notification rule (Brad 2026-11-01, claude_business PR 32), because they are the only
+# checks that run when no session is open.
 on:
   schedule:
     - cron: '47 12 * * *'
@@ -31,9 +34,11 @@ jobs:
             const owner = context.repo.owner, repo = context.repo.repo;
             const IDLE_MS = 48 * 60 * 60 * 1000;
             const TITLE = '⏳ Stale pull requests (idle over 48h)';
+            // A draft (parked while Brad decides) gets a week before it counts as stale.
+            const DRAFT_IDLE_MS = 7 * 24 * 60 * 60 * 1000;
             const prs = await github.paginate(github.rest.pulls.list, { owner, repo, state: 'open', per_page: 100 });
             const stale = prs
-              .filter(p => !p.draft && Date.now() - new Date(p.updated_at).getTime() > IDLE_MS)
+              .filter(p => Date.now() - new Date(p.updated_at).getTime() > (p.draft ? DRAFT_IDLE_MS : IDLE_MS))
               .sort((a, b) => new Date(a.updated_at) - new Date(b.updated_at));
             const found = await github.rest.search.issuesAndPullRequests({
               q: `repo:${owner}/${repo} is:issue is:open in:title "Stale pull requests"`,
@@ -48,13 +53,13 @@ jobs:
             }
             const days = p => Math.floor((Date.now() - new Date(p.updated_at).getTime()) / 86400000);
             const body = [
-              `**${stale.length} open PR(s)** have had no activity for over 48 hours. Each needs an owner to merge or close it.`,
+              `**${stale.length} open PR(s)** have had no activity for over 48 hours (a draft: over 7 days). Each needs an owner to merge or close it.`,
               '',
               '| PR | Idle | Branch | Author |',
               '|---|---|---|---|',
               ...stale.map(p => `| #${p.number} ${p.title.replace(/\|/g, '/')} | ${days(p)}d | \`${p.head.ref}\` | ${p.user.login} |`),
               '',
-              'What to do with each: merge it (CI green, main merged in), close it with a note on where its work went, or mark it draft if it is deliberately parked.',
+              'What to do with each: merge it (CI green, main merged in, its review gates passed), close it with a note on where its work went, or, if Brad is still deciding, say so in a comment (that resets the clock).',
               '',
               '_Refreshed daily by stale-pr-watch. Closes itself when nothing is stale._',
             ].join('\n');

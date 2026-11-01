@@ -2,8 +2,8 @@
 # Finish a session's worktree once its work is on GitHub. Run from the main checkout after ExitWorktree (keep).
 #   1. refuses uncommitted changes, any commit that is on no remote branch, and unmerged work whose PR is
 #      not closed (merge the PR, or close it with a note on where the work went, first);
-#   2. copies the worktree's own gitignored files (outputs made there; never links to the main checkout's
-#      files, its node_modules clones, or rebuildable build or cache output) into the main checkout.
+#   2. copies the worktree's own gitignored files (outputs made there; never the links worktree-guard.cjs
+#      made to the main checkout's files, nor rebuildable build or cache output) into the main checkout.
 #      It never overwrites: a file that already exists in the main checkout with different content keeps the
 #      worktree, listed, for a human to resolve;
 #   3. unlocks (tools/worktree-new.sh locks it), removes the worktree and its local branch (the merged remote
@@ -12,10 +12,12 @@
 #   bash tools/worktree-done.sh <name>     one worktree under .claude/worktrees/ (unlocks it)
 #   bash tools/worktree-done.sh --all      every worktree under .claude/worktrees/ that passes; a locked one, or
 #                                          one used in the last day, may belong to a live session and is skipped
-# Ported from claude_business (its copy also refreshes a scriptwriter mirror; this repo has none).
+# Ported from claude_business (its copy also refreshes a scriptwriter mirror; this repo has none). Roadmap-only, so
+# far: the lock and last-used checks before `git status`, fetch --prune, the worktree identity check, a re-lock
+# when removal fails, and build or cache output and .claude/ never copied back.
 # Workflow: docs/git-workflow.md.
 set -u
-MAIN="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"
+MAIN="$(cd "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")" && pwd -P)"
 # --prune: a remote branch deleted on GitHub must not still count as "pushed".
 git -C "$MAIN" fetch -q --prune origin || { echo "REFUSED: git fetch failed; nothing removed." >&2; exit 1; }
 
@@ -24,6 +26,14 @@ finish() { # $1 = worktree path, $2 = 1 to unlock a locked worktree; prints one 
   local -a differ=()
   [ -d "$WT" ] || { echo "skip  $WT: not a folder"; return 1; }
   BR="$(git -C "$WT" rev-parse --abbrev-ref HEAD 2>/dev/null)" || { echo "skip  $WT: not a git worktree"; return 1; }
+  # A plain folder (or a worktree that lost its .git file) resolves to the main checkout's git: it must be its own
+  # top level and listed by `git worktree list`, or the steps below would act on the main checkout.
+  local TOP; TOP="$(cd "$WT" && pwd -P)"
+  if [ "$(cd "$(git -C "$WT" rev-parse --show-toplevel)" && pwd -P)" != "$TOP" ] \
+    || ! git -C "$MAIN" worktree list --porcelain | sed -n 's/^worktree //p' | while IFS= read -r l; do
+         [ -d "$l" ] && [ "$(cd "$l" && pwd -P)" = "$TOP" ] && echo y; done | grep -q y; then
+    echo "skip  $WT: not a registered worktree of this repo"; return 1
+  fi
   # The lock and last-used checks come before `git status`, which refreshes the index and so its mtime.
   if [ "$UNLOCK" != 1 ]; then
     local GD; GD="$(git -C "$WT" rev-parse --absolute-git-dir)"
@@ -43,8 +53,8 @@ finish() { # $1 = worktree path, $2 = 1 to unlock a locked worktree; prints one 
       echo "keep  $WT [$BR]: $UNMERGED commit(s) not on origin/main, PR ${STATE:-none}; merge or close it first"; return 1
     fi
   fi
-  # Copy back the worktree's own gitignored files and symlinks; a link to the same path in the main checkout
-  # (claude_business's guard makes them; here only by hand) is skipped. Copies never clobber (cp -n), and every
+  # Copy back the worktree's own gitignored files and symlinks; a link worktree-guard.cjs made (pointing at the
+  # same path in the main checkout) is skipped. Copies never clobber (cp -n), and every
   # file is compared after the copy, so a concurrent cleanup that wrote the same path first shows up as a
   # difference, not a loss.
   while IFS= read -r -d '' f; do
@@ -70,6 +80,8 @@ finish() { # $1 = worktree path, $2 = 1 to unlock a locked worktree; prints one 
     return 1
   fi
   local WASLOCKED=""; [ -e "$(git -C "$WT" rev-parse --absolute-git-dir)/locked" ] && WASLOCKED=1
+  # Links made by worktree-guard.cjs point into the main checkout; remove only the links, never their targets.
+  find "$WT" -type l -lname "$MAIN/*" -delete
   git -C "$MAIN" worktree unlock "$WT" 2>/dev/null
   if ! git -C "$MAIN" worktree remove "$WT"; then
     [ -z "$WASLOCKED" ] || git -C "$MAIN" worktree lock --reason "session worktree (re-locked by worktree-done)" "$WT" 2>/dev/null

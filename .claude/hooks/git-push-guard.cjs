@@ -4,6 +4,8 @@
 //   1. Denies force, delete (--delete, -d, ":dest"), mirror, prune and "+refspec" pushes.
 //   2. Fetches origin/main and denies the push while origin/main holds commits HEAD
 //      lacks, unless the same command pulls/merges first: merge deliberately, then push.
+//   3. A claude/ branch never pushes to main, and `gh pr merge` runs only as
+//      `--merge --match-head-commit <sha>` (docs/git-workflow.md).
 // Fails open on fetch errors (GitHub still rejects a non-fast-forward push); fails
 // closed on a git push it cannot tokenize. The same file lives in claude_business
 // and roadmap: edit both.
@@ -71,7 +73,7 @@ function allSegments(s, depth = 0) {
   for (const seg of segs) {
     out.push(seg);
     for (const t of seg) {
-      if (depth < 3 && /\s/.test(t) && /\bgit\b/.test(t) && /\b(push|pull|merge)\b/.test(t)) {
+      if (depth < 3 && /\s/.test(t) && /\b(git|gh)\b/.test(t) && /\b(push|pull|merge)\b/.test(t)) {
         const inner = allSegments(t, depth + 1);
         if (inner === null) return null;
         out.push(...inner);
@@ -103,6 +105,19 @@ let configChanged = false;
 const synced = new Set(); // repos an earlier git pull/merge in this same command synced
 for (const seg of segs) {
   if (seg[0] === 'cd' || seg[0] === 'pushd') { here = path.resolve(here, expand(seg[1] || process.env.HOME || '~')); continue; }
+  // A PR merges only as a merge commit of the exact head that was reviewed (docs/git-workflow.md step 4; Brad
+  // 2026-11-01): `gh pr merge <n> --merge --match-head-commit <sha>`, never --admin/--squash/--rebase/--auto.
+  const gh = seg.findIndex((t) => t === 'gh' || t.endsWith('/gh'));
+  if (gh >= 0 && seg[gh + 1] === 'pr' && seg[gh + 2] === 'merge') {
+    const a = seg.slice(gh + 3);
+    const banned = a.find((x) => /^--(admin|squash|rebase|auto)(=|$)/.test(x) || /^-[a-zA-Z]*[sr]/.test(x));
+    if (banned || !a.some((x) => x === '--merge' || x === '-m')
+        || !a.some((x) => /^--match-head-commit(=.+)?$/.test(x))) {
+      deny(`Merge PRs only with \`gh pr merge <n> --merge --match-head-commit <reviewed sha>\`${banned ? ` ("${banned}" is not allowed)` : ''}: `
+        + 'a merge commit of exactly the head that was reviewed (docs/git-workflow.md step 4).');
+    }
+    continue;
+  }
   const g = gitCall(seg, here);
   if (!g) continue;
   const dir = g.dir;

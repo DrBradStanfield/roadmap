@@ -4,6 +4,17 @@
     "pr": "",
     "sessionUrl": false
   },
+  "permissions": {
+    "allow": [
+      "Bash(gh pr merge * --merge --match-head-commit *)"
+    ],
+    "deny": [
+      "Bash(gh pr merge *--admin*)",
+      "Bash(gh pr merge *--squash*)",
+      "Bash(gh pr merge *--rebase*)",
+      "Bash(gh pr merge *--auto*)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
@@ -11,7 +22,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "input=$(cat); case \"$input\" in *push*) printf '%s' \"$input\" | node \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-push-guard.cjs\";; esac"
+            "command": "input=$(cat); case \"$input\" in *push*|*merge*) printf '%s' \"$input\" | node \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-push-guard.cjs\";; esac"
           },
           {
             "type": "command",

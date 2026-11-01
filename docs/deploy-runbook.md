@@ -28,20 +28,23 @@ the workflow (auto-mode blocks production deploys — a human clicks Run).
 Full manual deploy (widget + Shopify extensions + backend):
 
 ```bash
-# 0. Only merged code ships (Brad 2026-10-31, docs/git-workflow.md). Never deploy from a session worktree or a
-#    claude/ branch: HEAD must be exactly origin/main. `shopify app deploy` also refuses while any worktree sits
-#    inside the repo (docs/reference.md, 2026-10-01), so release from a detached checkout outside it:
-#    Run from the main checkout's root. The block stops at the first failure; if it prints STOP, run nothing below.
+# 0. Only merged code ships, cut from the main checkout (Brad 2026-10-31/11-01, docs/git-workflow.md). Never deploy
+#    from a session worktree or a claude/ branch: the release is exactly origin/main. `shopify app deploy` also
+#    refuses while any worktree sits inside the repo (docs/reference.md, 2026-10-01), so release from a detached
+#    checkout of origin/main outside it. Run from the main checkout's root; the block stops at the first failure,
+#    and if it prints STOP, run nothing below.
 ( set -euo pipefail
-  MAIN="$PWD"
+  MAIN="$(pwd -P)"
+  [ "$(git rev-parse --path-format=absolute --git-common-dir)" = "$MAIN/.git" ] \
+    || { echo "REFUSED: run this from the main checkout's root, never a session worktree" >&2; exit 1; }
   git fetch origin main
-  git worktree add --detach "$TMPDIR/deploy-checkout" origin/main
-  cd "$TMPDIR/deploy-checkout"
+  git worktree add --detach "${TMPDIR:-/tmp}/deploy-checkout" origin/main
+  cd "${TMPDIR:-/tmp}/deploy-checkout"
   [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || { echo "REFUSED: HEAD is not origin/main" >&2; exit 1; }
   ln -s "$MAIN/.env" .env   # a link to the secrets, never a copy
-  npm ci
-) && cd "$TMPDIR/deploy-checkout" || echo "STOP: step 0 failed; do not run the steps below"
-#    When done: cd back, `git worktree remove --force "$TMPDIR/deploy-checkout"` (--force: the build output).
+  npm ci                    # its own packages: never link node_modules here (npm ci through a link empties the main checkout's)
+) && cd "${TMPDIR:-/tmp}/deploy-checkout" || echo "STOP: step 0 failed; do not run the steps below"
+#    When done: cd back, `git worktree remove --force "${TMPDIR:-/tmp}/deploy-checkout"` (--force: the build output).
 
 # 1. Build the live v2 widget bundle (from project root). build:shopify-prod
 #    emits health-plan-v2.js + the upload bundle into the extension assets.
@@ -68,11 +71,12 @@ npx shopify app deploy --allow-updates
 
 # 5a. Shared chatbot docs must be current (2026-10-14). docs/writing-style.md and the
 #     generated docs/chatbot/answer-bank.md come from the private claude_business repo.
-#     Run in claude_business; a non-zero exit means stale or diverged copies: do NOT deploy.
-#     Fix with `node tools/sync-shared-docs.mjs` there, commit both repos, then deploy.
+#     Run in claude_business against the release checkout; a non-zero exit means stale or diverged copies:
+#     do NOT deploy. Fix with `node tools/sync-shared-docs.mjs --road <a roadmap worktree>` there (never the
+#     roadmap main checkout), land both repos' PRs, then start again from step 0.
 #     (CI cannot see claude_business: its guard, scripts/check-symlinks.mjs, only checks
 #     each copy against the hash its last sync recorded.)
-(cd ~/Documents/claude_business.nosync && node tools/sync-shared-docs.mjs --check)
+D="$PWD"; (cd ~/Documents/claude_business.nosync && node tools/sync-shared-docs.mjs --check --road "$D")
 
 # 6. Deploy backend to Fly.io (MUST run from project root where Dockerfile lives).
 #    THERE ARE TWO FLY APPS sharing the same Dockerfile + the same chatbot knowledge files:

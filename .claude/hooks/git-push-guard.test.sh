@@ -89,6 +89,18 @@ t "$S/b" "git push origin @" DENY
 (cd b && git config remote.origin.push +refs/heads/main:refs/heads/main); t "$S/b" "git pull -q && git push" DENY
 (cd b && git config --unset remote.origin.push)
 (cd b && git pull -q --no-rebase); t "$S/b" "git push" allow
+# PR merges: a merge commit of the reviewed head only (Brad 2026-11-01).
+t "$S/b" "gh pr merge 32 --merge --match-head-commit abc123" allow
+t "$S/b" "gh pr merge 32 -m --match-head-commit=abc123" allow
+t "$S/b" "gh pr merge 32 --merge" DENY
+t "$S/b" "gh pr merge 32 --squash --match-head-commit abc123" DENY
+t "$S/b" "gh pr merge 32 -s --match-head-commit abc123" DENY
+t "$S/b" "gh pr merge 32 --merge --admin --match-head-commit abc123" DENY
+t "$S/b" "gh pr merge 32 --merge --auto --match-head-commit abc123" DENY
+t "$S/b" "gh pr merge 32 --rebase --match-head-commit abc123" DENY
+t "$S/b" "bash -c 'gh pr merge 32 --merge'" DENY
+t "$S/b" "gh pr view 32 && gh pr merge 32" DENY
+t "$S/b" "gh pr view 32 --json state" allow
 t /nonexistent "git push" allow
 t "$S/b" "git commit -m 'note' && echo pushed" allow
 exit $fail

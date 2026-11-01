@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 // Worktree + PR workflow guard (Brad 2026-10-31: worktrees are fine "so long as everything is properly
 // committed, PRs, pushed"). One script, dispatched on the hook event:
-//   PreToolUse Bash               in a session worktree: clone the main checkout's node_modules folders in (APFS
-//                                 copy-on-write, once), so tools resolve their packages; nothing shared is written.
+//   PreToolUse Bash               in a session worktree: symlink the main checkout's node_modules folders in, so
+//                                 tools resolve their packages (fs checks only; nothing shared is written), and
+//                                 refuse an npm install there while a link stands (it would rewrite the main
+//                                 checkout's packages).
 //   PreToolUse Edit|Write|...     deny edits to the main checkout's tracked (or new, trackable) files: every change
 //                                 happens in the session's own worktree. Untracked gitignored outputs are allowed.
 //                                 Bash writes (sed -i, >, cp) are NOT covered.
@@ -14,10 +16,10 @@
 // landing check) and when CLAUDE_MAIN_CHECKOUT_WRITES=1 (an unattended local job that commits to main itself; none
 // in this repo today). Fails open on any git or gh error: the GitHub watches (stranded-branch-watch,
 // stale-pr-watch) are the backstop. CommonJS (.cjs): the root package.json sets "type": "module" (see
-// tests/git-push-guard.test.ts). Ported from claude_business's worktree-guard.js; edit both.
+// tests/git-push-guard.test.ts). Ported from claude_business's worktree-guard.js; edit both. Roadmap-only, so
+// far: the main checkout found from this file's place, .claude/ never writable there, and the npm refusal.
 // Workflow: docs/git-workflow.md.
 const { execFileSync } = require('child_process');
-const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
@@ -65,44 +67,56 @@ const landing = (dir) => ({
   ahead: () => git(dir, ['rev-list', '--count', 'origin/main..HEAD']),
 });
 
-// Give this worktree the main checkout's installed packages so tools resolve them. Only these folders, and as an
-// APFS clone (`cp -c`: copy-on-write, no extra disk), never a symlink. claude_business links them; here a link
-// fails twice: Vite resolves it to a real path outside the worktree and refuses imports from it ("Denied ID",
-// widget-src/src/upload-entry.test.ts), and `npm ci` run through a link empties the MAIN checkout's folder
-// (tested 2026-11-01; the 2026-10-14 gotcha in docs/reference.md). A clone is the worktree's own: npm may
-// rebuild it freely. Each hook clones into its own folder in the worktree's git dir, marks it whole, then renames
-// it into place: the rename is atomic and refuses a folder already there, so parallel Bash calls (each fires this
-// hook) never share or leave half a folder; a loser deletes its own copy. `.gitignore`'s `node_modules/` keeps
-// the clone out of every commit, and nothing shared is written. Other gitignored inputs (.env,
-// health-roadmap.json) are NOT mirrored: work that needs them reads them from the main checkout
-// (docs/git-workflow.md).
+// Link the main checkout's installed packages into this worktree so tools resolve them. Only these folders: the
+// tracked .gitignore rule `node_modules` (no trailing slash) matches a symlink too, so a link can never show as
+// untracked or be committed, and nothing shared (like .git/info/exclude) is ever written. Other gitignored inputs
+// (.env, health-roadmap.json) are NOT mirrored: work that needs them reads them from the main checkout
+// (docs/git-workflow.md). Same design as claude_business's worktree-guard.js.
 const PACKAGE_DIRS = ['node_modules', 'widget-src/node_modules', 'packages/health-core/node_modules'];
-function clonePackages() {
-  let gitDir;
+function linkPackages() {
   for (const rel of PACKAGE_DIRS) {
     const src = path.join(main, rel), dst = path.join(top, rel);
-    try { fs.lstatSync(dst); continue; } catch { /* absent: clone it */ }
-    if (!fs.existsSync(src) || !fs.existsSync(path.dirname(dst))) continue;
-    let tmp = '';
-    try {
-      gitDir = gitDir || git(top, ['rev-parse', '--absolute-git-dir']);
-      tmp = path.join(gitDir, `package-clone-${rel.replace(/\//g, '_')}-${process.pid}-${crypto.randomBytes(4).toString('hex')}`);
-      // macOS: an APFS clone. Elsewhere (Linux CI runs these tests): GNU cp, a reflink where the disk has
-      // them, else a plain copy.
-      const copy = (args) => execFileSync('cp', [...args, src, tmp], { stdio: 'ignore', timeout: 240000 });
-      if (process.platform === 'darwin') copy(['-cR']);
-      else try { copy(['-a', '--reflink=auto']); } catch { fs.rmSync(tmp, { recursive: true, force: true }); copy(['-a']); }
-      // A link back into the main checkout (a stray `node_modules/node_modules`, left by an old `ln -s`) would
-      // load a second React from there: drop it, so the clone resolves only inside the worktree.
-      execFileSync('find', [tmp, '-type', 'l', '-lname', main + '/*', '-delete'], { stdio: 'ignore', timeout: 60000 });
-      fs.writeFileSync(path.join(tmp, '.worktree-clone'), `cloned whole from ${src}\n`); // written last
-      fs.renameSync(tmp, dst);
-    } catch { /* no clone support, killed, or another hook won the rename: npm ci in the worktree works */ }
-    finally { if (tmp) fs.rmSync(tmp, { recursive: true, force: true }); }
+    try { fs.lstatSync(dst); continue; } catch { /* absent: link it */ }
+    try { if (fs.existsSync(src) && fs.existsSync(path.dirname(dst))) fs.symlinkSync(src, dst, 'dir'); } catch { /* raced: skip */ }
   }
 }
+// npm commands that rewrite node_modules. Run through a link, they rewrite the MAIN checkout's packages: `npm ci`
+// deletes the folder's contents first, so every other session loses its packages (reproduced 2026-11-01; the
+// 2026-10-14 gotcha in docs/reference.md). Not in claude_business's guard.
+const NPM_WRITES = new Set(['ci', 'install', 'i', 'in', 'ins', 'inst', 'insta', 'instal', 'isnt', 'isnta', 'isntal',
+  'isntall', 'add', 'uninstall', 'unlink', 'un', 'remove', 'rm', 'r', 'update', 'up', 'upgrade', 'udpate', 'prune',
+  'dedupe', 'ddp', 'rebuild', 'rb', 'link', 'ln', 'clean-install', 'install-clean', 'ic', 'isntall-clean',
+  'install-test', 'it', 'install-ci-test', 'cit', 'clean-install-test', 'sit']);
+const NPM_VALUE_OPTS = new Set(['--prefix', '-C', '--workspace', '-w', '--cache', '--registry', '--userconfig', '--loglevel']);
+// The npm subcommand of each simple command (words split on whitespace, quotes dropped; ; & | ( ) ` and newlines
+// separate commands), so `cd widget-src && npm ci` and `npm --prefix widget-src i` are caught.
+function npmWrite(cmd) {
+  for (const seg of cmd.replace(/["']/g, '').split(/[;&|()`\n]/)) {
+    const w = seg.trim().split(/\s+/);
+    let i = w.findIndex((t) => t === 'npm' || t.endsWith('/npm'));
+    if (i < 0) continue;
+    for (i++; i < w.length && w[i].startsWith('-'); i++) if (NPM_VALUE_OPTS.has(w[i])) i++;
+    if (NPM_WRITES.has(w[i])) return `npm ${w[i]}`;
+  }
+  return null;
+}
 
-if (event === 'PreToolUse' && input.tool_name === 'Bash') { if (inWorktree) clonePackages(); process.exit(0); }
+if (event === 'PreToolUse' && input.tool_name === 'Bash') {
+  if (!inWorktree) process.exit(0);
+  const npm = npmWrite((input.tool_input && input.tool_input.command) || '');
+  // An install about to run: link nothing new (the worktree may be getting its own packages); refuse it while a
+  // link is there.
+  if (!npm) { linkPackages(); process.exit(0); }
+  const linked = PACKAGE_DIRS.map((rel) => path.join(top, rel))
+    .filter((p) => { try { return fs.lstatSync(p).isSymbolicLink(); } catch { return false; } });
+  if (!linked.length) process.exit(0);
+  out({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason:
+    `Refused: \`${npm}\` in this worktree would rewrite the MAIN checkout's packages, because ${linked.join(', ')} `
+    + `${linked.length > 1 ? 'are links' : 'is a link'} to them (npm ci empties them first). To install packages of `
+    + `this worktree's own, first remove the link(s) in a command of their own: \`unlink ${linked.join(' && unlink ')}\` `
+    + '(unlink removes only the link, never the main checkout\'s folder; never `rm -r`), then run npm again. '
+    + 'docs/git-workflow.md.' } });
+}
 
 if (event === 'PreToolUse') {
   const ti = input.tool_input || {};

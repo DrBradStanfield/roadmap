@@ -178,11 +178,11 @@ same commit).
 
 ## Development Rules
 
-- **Every change: its own worktree, `claude/` branch and PR (HARD, Brad 2026-10-31)**, never the main checkout:
-  `sh tools/worktree-new.sh <name>`, EnterWorktree `path`; hooks deny main-checkout edits and an un-PR'd turn end.
-  Before the PR and the merge: merge `origin/main` in, `test:all`, re-review if main touched your files (PR 150);
-  adversary + Codex first; check citation numbering. Ship: auto-ship, or `gh pr merge --merge --match-head-commit`
-  once CI is green, then the CI Deploy; finish with `tools/worktree-done.sh`. Steps, exceptions: docs/git-workflow.md.
+- **Every change: its own worktree, `claude/` branch and PR (HARD, Brad 2026-10-31)**: `sh tools/worktree-new.sh <name>`,
+  EnterWorktree `path`; hooks deny main-checkout edits, an un-PR'd turn end and `npm ci` through linked node_modules.
+  Before merging: merge `origin/main` in, `test:all`, re-review if main touched your files (PR 150); adversary + Codex;
+  citation numbering. Merge only `gh pr merge <n> --merge --match-head-commit <sha>` (or auto-ship), then CI Deploy;
+  live writes and deploys run merged code only; then `tools/worktree-done.sh`. Steps, exceptions: docs/git-workflow.md.
 - **One owner per PR (HARD):** whoever opens it merges or closes it before ending, or the final report names
   it. `stale-pr-watch.yml` (PRs idle >48h) and `stranded-branch-watch.yml` email Brad. Work found uncommitted
   in the main checkout goes in its own PR, "Swept, unreviewed: <what>" (name failing tests), never in yours.

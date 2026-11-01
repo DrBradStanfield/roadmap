@@ -66,6 +66,13 @@ describe('git push guard, as .claude/settings.json runs it', () => {
     expect(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision).toBe('deny');
   });
 
+  it('reaches the guard for a gh pr merge, which holds no "push" (US-63 AC5)', () => {
+    const r = runHook(scratch, 'gh pr merge 415 --squash --match-head-commit abc123');
+    expect(r.stderr).toBe('');
+    expect(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision).toBe('deny');
+    expect(runHook(scratch, 'gh pr merge 415 --merge --match-head-commit abc123').stdout).toBe('');
+  });
+
   it('loads and allows a plain push it cannot fetch for', () => {
     const r = runHook(scratch, 'git push');
     expect(r.stderr).toBe('');
@@ -82,10 +89,10 @@ describe('git-push-guard.test.sh', () => {
       const [, got, want] = l.match(/^(\S+)\s+expected\s+(\S+)/)!;
       return got !== want;
     });
-    expect(cases.length).toBeGreaterThanOrEqual(70);
+    expect(cases.length).toBeGreaterThanOrEqual(82);
     expect(mismatches).toEqual([]);
     expect(r.status).toBe(0);
-  }, 120_000);
+  }, 240_000);
 
   it('exits non-zero when a case does not match', () => {
     // A copy of the script beside a guard that fails open (exit 1, no output),
@@ -102,5 +109,5 @@ describe('git-push-guard.test.sh', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
-  }, 120_000);
+  }, 240_000);
 });
