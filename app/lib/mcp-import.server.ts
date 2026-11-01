@@ -406,11 +406,13 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
           }
           // A member is named `zip/member`, as the website's upload names it (US-12 AC9): unique in a
           // call, and one `sourceFileName` for the same member on both surfaces.
+          // Each carries the ZIP's own name, the one a later call can ask for (US-35 AC7a).
           const member = (path: string) => zipMemberName(unit.name, path);
+          const inZip = (read: ExtractedFile): ExtractedFile => ({ ...read, zip: unit.name });
           const inside: ExtractedFile[] = new Array<ExtractedFile>(opened.entries.length);
           results[i] = inside;
-          opened.entries.forEach((entry, k) => queue.push(async () => { inside[k] = await extractOne(member(entry.name), entry.bytes, entry.mimeType); }));
-          for (const skip of opened.skipped) inside.push(fail(member(skip.name), 'skipped', skip.reason));
+          opened.entries.forEach((entry, k) => queue.push(async () => { inside[k] = inZip(await extractOne(member(entry.name), entry.bytes, entry.mimeType)); }));
+          for (const skip of opened.skipped) inside.push(inZip(fail(member(skip.name), 'skipped', skip.reason)));
           return;
         }
         if (!mimeType) {
