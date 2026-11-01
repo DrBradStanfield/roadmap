@@ -63,6 +63,8 @@ export {
   SEX_DB,
   UNIT_SYSTEM_DB,
   encodeSex,
+  isSex,
+  SEXES,
   decodeSex,
   encodeUnitSystem,
   decodeUnitSystem,
@@ -162,6 +164,7 @@ export {
   computeFormStage,
   opensFullForm,
   type FormStage,
+  type RecordHoldings,
 } from './mappings';
 
 // Reminders
@@ -191,6 +194,8 @@ export {
   HBA1C_THRESHOLDS,
   LDL_THRESHOLDS,
   HDL_THRESHOLDS,
+  HDL_GRID_BANDS,
+  CREATININE_GRID_BANDS,
   TRIGLYCERIDES_THRESHOLDS,
   TOTAL_CHOLESTEROL_THRESHOLDS,
   NON_HDL_THRESHOLDS,

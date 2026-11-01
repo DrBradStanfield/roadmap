@@ -8,10 +8,10 @@
  * profiles table, not as measurements. Use diffProfileFields() for those.
  */
 import type { AlcoholAnswer, HealthInputs } from './types';
-import { encodeSex, decodeSex, encodeUnitSystem, decodeUnitSystem, isAlcoholAnswer } from './types';
+import { encodeSex, decodeSex, encodeUnitSystem, decodeUnitSystem, isAlcoholAnswer, isSex } from './types';
 import { CANONICAL_UNITS, rangeFault, UNIT_DEFS, type MetricType, type ValidationRange } from './units';
 import { parseLocalisedNumber } from './parseNumber';
-import { birthInFuture, validateInputValue } from './validation';
+import { birthKept } from './validation';
 
 /**
  * Maps HealthInputs field names to metric_type values for storage in the
@@ -583,18 +583,26 @@ export function computeFormStage(
   const plausible = (v: number | undefined, r: ValidationRange) => v !== undefined && !rangeFault(r, v);
   if (!plausible(merged.heightCm, UNIT_DEFS.height.validationRange.si)) return 1;
   if (!plausible(merged.weightKg, UNIT_DEFS.weight.validationRange.si)) return 1;
-  if (merged.sex !== 'male' && merged.sex !== 'female') return 2;
-  const year = validateInputValue('birthYear', merged.birthYear);
-  const month = validateInputValue('birthMonth', merged.birthMonth);
-  if (year === undefined || (merged.birthMonth !== undefined && (month === undefined || birthInFuture(year, month, new Date())))) return 3;
-  return 4;
+  if (!isSex(merged.sex)) return 2;
+  return birthKept(merged) ? 4 : 3;
+}
+
+/** What a record holds beyond its profile, as `opensFullForm` reads it. */
+export interface RecordHoldings {
+  saved: ReadonlyArray<Pick<ApiMeasurement, 'metricType'>>;
+  medications?: ReadonlyArray<unknown>;
+  screenings?: ReadonlyArray<unknown>;
+  supplements?: ReadonlyArray<unknown>;
+  documents?: ReadonlyArray<unknown>;
+  labValues?: ReadonlyArray<unknown>;
 }
 
 /** The whole form shows once the onboarding is done, or at once for a record
  *  holding more than the onboarding's answers: any saved value but the
- *  weight (a blood test, a waist, a blood pressure), or `otherRecords` (a
- *  medication, screening, supplement, lab test or document). The missing
- *  questions are pinned at the top (US-01 AC3). */
-export function opensFullForm(stage: FormStage, saved: ReadonlyArray<Pick<ApiMeasurement, 'metricType'>>, otherRecords = false): boolean {
-  return stage === 4 || otherRecords || saved.some(m => m.metricType !== 'weight');
+ *  weight (a blood test, a waist, a blood pressure), a medication,
+ *  screening, supplement, lab test or document. The missing questions are
+ *  pinned at the top (US-01 AC3). */
+export function opensFullForm(stage: FormStage, record: RecordHoldings): boolean {
+  const { saved, ...lists } = record;
+  return stage === 4 || saved.some(m => m.metricType !== 'weight') || Object.values(lists).some(list => (list?.length ?? 0) > 0);
 }

@@ -33,7 +33,11 @@ function optimalBelow(metric: MetricType, target: number): RefHint {
 export const REFERENCE_HINTS: Partial<Record<MetricType, SexedRefHint>> = {
   hba1c:             { si: 'Normal: <39 mmol/mol',     conv: 'Normal: <5.7%',        bare: { si: 'Normal <39', conv: 'Normal <5.7' } },
   creatinine:        {
-    si: 'Normal: 45–110 µmol/L', conv: 'Normal: 0.5–1.2 mg/dL', bare: { si: 'Normal 45–110', conv: 'Normal 0.5–1.2' },
+    // No sex (US-62 AC13): both ranges, labelled, so the hint agrees with the
+    // grade, which is amber where they differ. The row's bare form, men first
+    // as HDL's ">1.0/>1.3" is, fits 375px.
+    si: 'Normal: 60–110 (men) / 45–90 (women) µmol/L', conv: 'Normal: 0.7–1.2 (men) / 0.5–1.0 (women) mg/dL',
+    bare: { si: 'Normal 60–110/45–90', conv: 'Normal 0.7–1.2/0.5–1.0' },
     male:   { si: 'Normal: 60–110 µmol/L', conv: 'Normal: 0.7–1.2 mg/dL', bare: { si: 'Normal 60–110', conv: 'Normal 0.7–1.2' } },
     female: { si: 'Normal: 45–90 µmol/L',  conv: 'Normal: 0.5–1.0 mg/dL', bare: { si: 'Normal 45–90', conv: 'Normal 0.5–1.0' } },
   },

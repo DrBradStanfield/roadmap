@@ -9,8 +9,8 @@
  * allowlist or a bound.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { buildChatContextJson, chatContextOf } from './chat-context';
-import { withLabEgfr } from './plan';
+import { buildChatContextJson, chatContextOf, NO_SEX_CHAT_RULE } from './chat-context';
+import { NEEDS_SEX, withLabEgfr } from './plan';
 import { calculateHealthResults } from './calculations';
 import { medicationsToInputs } from './mappings';
 import type { HealthInputs } from './types';
@@ -685,5 +685,23 @@ describe('US-07 AC8: labEgfrOutdated reaches the chat plan', () => {
   it('the control: the same lab eGFR with no newer creatinine opens it', () => {
     const inputs = withLabEgfr<Partial<HealthInputs>>({ heightCm: 170, birthYear: 1960, creatinine: 80, ...bp }, '2026-05-01', lab, '2026-09-01');
     expect(ids(inputs)).toContain('high-potassium');
+  });
+});
+
+// US-07 AC8: the chat rule keeps its own wording (agent contract, clinical
+// text), but names every part NEEDS_SEX lists, so the two cannot drift.
+describe('US-07 AC8: NO_SEX_CHAT_RULE names every NEEDS_SEX item', () => {
+  const NAMED: Array<[RegExp, RegExp]> = [
+    [/idealBodyWeightKg/, /ideal body weight, protein target/],
+    [/eGFR/, /calculated eGFR/],
+    [/low-HDL/, /HDL verdict/],
+    [/sex-specific screening/, /sex-specific screening/],
+  ];
+  it('each NEEDS_SEX item has its words in the rule, and no item is left unmatched', () => {
+    expect(NEEDS_SEX).toHaveLength(NAMED.length);
+    NEEDS_SEX.forEach((item, i) => {
+      expect(item, `item ${i}`).toMatch(NAMED[i][0]);
+      expect(NO_SEX_CHAT_RULE, `item ${i}`).toMatch(NAMED[i][1]);
+    });
   });
 });

@@ -16,7 +16,8 @@ import { act, cleanup, fireEvent, render, waitFor, type RenderResult } from '@te
 import { localDay, ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
+import { MIRROR_KEY } from '../lib/storage';
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -33,6 +34,11 @@ const chat = vi.hoisted(() => ({ muted: [] as boolean[] }));
 vi.mock('./ChatEmbed', () => ({
   ChatEmbed: ({ muted }: { muted?: boolean }) => { chat.muted.push(!!muted); return null; },
 }));
+// The desktop floating chat's panel: whether it is open and muted.
+const floating = vi.hoisted(() => ({ muted: [] as boolean[] }));
+vi.mock('./ChatSection', () => ({
+  ChatSection: ({ muted }: { muted?: boolean }) => { floating.muted.push(!!muted); return <div className="floating-chat-panel"/>; },
+}));
 import { HealthTool } from './HealthTool';
 
 const TODAY = localDay(new Date());
@@ -48,6 +54,7 @@ beforeEach(async () => {
   phone = false;
   sent = [];
   chat.muted = [];
+  floating.muted = [];
   localStorage.clear(); sessionStorage.clear();
   // Wide desktop: the chat column shows. A phone matches the max-width query.
   vi.stubGlobal('matchMedia', (q: string) => ({
@@ -342,18 +349,18 @@ describe('US-62 AC13 review fixes (PR 421)', () => {
     void view;
   });
 
-  it('R4: a returning user resuming mid-onboarding sees the weight once when the form opens', async () => {
+  it('R4: a returning user resuming mid-onboarding sees the weight once when the form opens (the vitals as a matrix)', async () => {
     await saveChangedMeasurements({ heightCm: 170 }, {});
     await addMeasurement('weight', 80, '2026-09-01');
     await flushRoadmapStore();
+    seedMatrixMirror();
     const view = await open();
     await waitFor(() => expect(sexQuestion(view)).toBeTruthy());
     fireEvent.click(view.getByRole('radio', { name: 'Female' }));
     birth(view);
     await waitFor(() => expect(fullForm(view)).toBe(true));
-    const weightRows = Array.from(view.container.querySelectorAll('.collapsed-field-label, .bt-name-label, label[for="weightKg"]'))
-      .filter((l) => l.textContent?.trim().startsWith('Weight'));
-    expect(weightRows).toHaveLength(1);
+    expect(weightPlaces(view)).toHaveLength(1);
+    expect(q(view, '.bt-vitals-card')).toBeTruthy(); // the matrix, not the first-time fields
   });
 
   it('R5: a jump from another device or tab sends no onboarding events', async () => {
@@ -369,5 +376,152 @@ describe('US-62 AC13 review fixes (PR 421)', () => {
     await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
     expect(named('onboarding_step')).toEqual([]);
     expect(named('onboarding_done')).toEqual([]);
+  });
+});
+
+/** The mirror as the widget writes it with a saved vital: the vitals show as a matrix at mount. */
+function seedMatrixMirror() {
+  const now = new Date().toISOString();
+  localStorage.setItem(MIRROR_KEY, JSON.stringify({
+    inputs: {}, previousMeasurements: [{ id: 'm', metricType: 'waist', value: 85, recordedAt: now, createdAt: now }],
+  }));
+}
+/** Every place the weight shows as a field, a saved value or a matrix row. */
+const weightPlaces = (view: RenderResult) => Array.from(view.container.querySelectorAll('.collapsed-field-label, .bt-name-label, label[for="weightKg"]'))
+  .filter((l) => l.textContent?.trim().startsWith('Weight'));
+async function completeRecord(extra: Parameters<typeof saveChangedMeasurements>[0] = {}) {
+  await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3, ...extra }, {});
+  await addMeasurement('weight', 70, '2026-09-01');
+  await flushRoadmapStore();
+}
+
+describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
+  it('B1: a complete record whose height is cleared and retyped sends no onboarding events', async () => {
+    await completeRecord();
+    const view = await open();
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    const height = q(view, '#heightCm') as HTMLInputElement;
+    type(height, '');
+    type(height, '172');
+    leave(height);
+    await act(async () => { await new Promise((r) => setTimeout(r, 700)); });
+    expect(named('onboarding_step')).toEqual([]);
+    expect(named('onboarding_done')).toEqual([]);
+  });
+
+  it('S1: a weight typed beside the height shows there alone once the form opens, the matrix leaving its row out', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+    await flushRoadmapStore();
+    seedMatrixMirror(); // a copy holding a saved vital (another device's, say): the vitals open as a matrix
+    const view = await open();
+    const weight = q(view, '#weightKg') as HTMLInputElement;
+    type(weight, '70');
+    await waitFor(() => expect(q(view, '.bt-vitals-card')).toBeTruthy());
+    expect(q(view, '#weightKg')).toBe(weight);
+    expect(weightPlaces(view)).toHaveLength(1);
+  });
+
+  it('Codex R1: a year-only record keeps its year field, and focus, while the year is cleared and retyped', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980 }, {});
+    await addMeasurement('weight', 70, '2026-09-01');
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    const year = q(view, '#birthYear') as HTMLInputElement;
+    act(() => year.focus());
+    fireEvent.change(year, { target: { value: '' } });
+    expect(q(view, '#birthYear')).toBe(year);
+    expect(document.activeElement).toBe(year);
+    fireEvent.change(year, { target: { value: '1981' } });
+    expect(q(view, '#birthYear')).toBe(year);
+    expect(view.container.querySelector('.prefill-summary')?.textContent).toContain('Born 1981');
+  });
+
+  it.each([
+    ['supplements', () => saveSupplement('magnesium', 'Magnesium', 200, 'mg')],
+  ] as const)('Codex R3: a record holding only %s opens the whole form', async (_, seed) => {
+    await seed();
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    expect(sexQuestion(view)).toBeTruthy(); // the questions pinned above
+  });
+
+  it('Codex R4: finishing through the vitals matrix counts the answered step and done', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+    await addMeasurement('ldl', 3.0, '2026-09-01'); // the whole form, the weight in the matrix
+    await flushRoadmapStore();
+    seedMatrixMirror();
+    const view = await open();
+    const cell = await waitFor(() => {
+      const row = Array.from(view.container.querySelectorAll('.bt-vitals-card .bt-row')).find((r) => r.querySelector('.bt-name-label')?.textContent === 'Weight');
+      const input = row?.querySelector('.bt-cell-draft input');
+      if (!input) throw new Error('no weight draft cell');
+      return input as HTMLInputElement;
+    });
+    type(cell, '70');
+    await waitFor(() => expect(named('onboarding_done')).toHaveLength(1));
+    expect(named('onboarding_step').map((e) => e.metadata)).toEqual([{ step: 'measurements' }]);
+  });
+
+  it('Codex R5: the open floating chat stays mounted and goes muted when an answer is cleared', async () => {
+    await completeRecord();
+    const view = await open();
+    fireEvent.click(await waitFor(() => document.querySelector('.chat-fab') as HTMLElement));
+    await waitFor(() => expect(document.querySelector('.floating-chat-panel')).toBeTruthy());
+    expect(floating.muted.at(-1)).toBe(false);
+    type(q(view, '#heightCm'), '');
+    expect(document.querySelector('.floating-chat-panel')).toBeTruthy();
+    expect(floating.muted.at(-1)).toBe(true);
+  });
+
+  it('N3: an erase starts the tab dot again', async () => {
+    phone = true;
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', () => {});
+    const view = await open();
+    await measurements(view);
+    const planTab = view.getByRole('tab', { name: 'My plan' });
+    fireEvent.click(planTab); // BMI seen
+    fireEvent.click(view.getByRole('tab', { name: 'My data' }));
+    expect(planTab.querySelector('.hr-tab-dot')).toBeNull();
+    fireEvent.click(view.getByText('Delete All My Data'));
+    await waitFor(() => expect(sexQuestion(view)).toBeNull());
+    await measurements(view, '165', '60');
+    await waitFor(() => expect(planTab.querySelector('.hr-tab-dot')).toBeTruthy());
+  });
+
+  it('R7: the vitals matrix weight jumps to the email box only as the last answer', async () => {
+    // Sex missing: the weight is not the last answer, so the email box keeps still.
+    await saveChangedMeasurements({ heightCm: 170, birthYear: 1980, birthMonth: 3 }, {});
+    await addMeasurement('ldl', 3.0, '2026-09-01');
+    await flushRoadmapStore();
+    seedMatrixMirror();
+    const view = await open();
+    const cell = () => {
+      const row = Array.from(view.container.querySelectorAll('.bt-vitals-card .bt-row')).find((r) => r.querySelector('.bt-name-label')?.textContent === 'Weight');
+      return row?.querySelector('.bt-cell-draft input') as HTMLInputElement;
+    };
+    await waitFor(() => expect(cell()).toBeTruthy());
+    type(cell(), '170');
+    await act(async () => { await new Promise((r) => setTimeout(r, 100)); });
+    expect(q(view, '#guestEmail')).toBeTruthy();
+    expect(document.activeElement?.id).not.toBe('guestEmail');
+  });
+
+  it('R7: with the other answers in, the matrix weight is the last answer and jumps to the email box', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+    await addMeasurement('ldl', 3.0, '2026-09-01');
+    await flushRoadmapStore();
+    seedMatrixMirror();
+    const view = await open();
+    const cell = await waitFor(() => {
+      const row = Array.from(view.container.querySelectorAll('.bt-vitals-card .bt-row')).find((r) => r.querySelector('.bt-name-label')?.textContent === 'Weight');
+      const input = row?.querySelector('.bt-cell-draft input');
+      if (!input) throw new Error('no weight draft cell');
+      return input as HTMLInputElement;
+    });
+    type(cell, '170');
+    await waitFor(() => expect(document.activeElement?.id).toBe('guestEmail'));
   });
 });

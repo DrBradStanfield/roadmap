@@ -775,15 +775,17 @@ describe('computeFormStage', () => {
 describe('opensFullForm (US-01 AC3)', () => {
   const saved = (metricType: string, value: number) => ({ metricType, value });
   it('opens the whole form once the onboarding is done', () => {
-    expect(opensFullForm(4, [])).toBe(true);
-    expect(opensFullForm(3, [])).toBe(false);
-    expect(opensFullForm(3, [saved('weight', 82)])).toBe(false); // the onboarding's own answer
+    expect(opensFullForm(4, { saved: [] })).toBe(true);
+    expect(opensFullForm(3, { saved: [] })).toBe(false);
+    expect(opensFullForm(3, { saved: [saved('weight', 82)], medications: [], documents: [] })).toBe(false); // the onboarding's own answer
   });
   it('opens it at once for a record holding more than the four answers, at any stage', () => {
-    expect(opensFullForm(1, [saved('hba1c', 39)])).toBe(true);
-    expect(opensFullForm(2, [saved('weight', 82), saved('waist', 90)])).toBe(true);
-    expect(opensFullForm(3, [saved('systolic_bp', 120)])).toBe(true);
-    expect(opensFullForm(3, [], true)).toBe(true); // a medication, screening, supplement, lab test or document
+    expect(opensFullForm(1, { saved: [saved('hba1c', 39)] })).toBe(true);
+    expect(opensFullForm(2, { saved: [saved('weight', 82), saved('waist', 90)] })).toBe(true);
+    expect(opensFullForm(3, { saved: [saved('systolic_bp', 120)] })).toBe(true);
+    for (const list of ['medications', 'screenings', 'supplements', 'documents', 'labValues']) {
+      expect(opensFullForm(3, { saved: [], [list]: [{}] }), list).toBe(true);
+    }
   });
 });
 

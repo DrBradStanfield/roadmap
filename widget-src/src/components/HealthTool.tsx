@@ -45,12 +45,14 @@ import {
   type ProposedFieldEdit,
   type ProposedMedicationEdit,
   type ProposedProfileEdit,
+  type FormStage,
+  isSex,
   formatHeightDisplay,
 } from '@roadmap/health-core';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import type { MoveTestApi } from './MoveTestPanel';
 import { routeVitalsEdit, type VitalsPrefillFn } from './StartingInfoVitals';
-import type { ApiSupplement, ApiLabValue } from '../lib/api-types';
+import type { ApiSupplement, ApiLabValue, LatestMeasurementsResult } from '../lib/api-types';
 import { InputPanel, type PlanBasis } from './InputPanel';
 import { ResultsPanel } from './ResultsPanel';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
@@ -222,6 +224,27 @@ function debounceSave(timers: Map<string, ReturnType<typeof setTimeout>>, key: s
   }, 300));
 }
 
+/**
+ * US-62 AC13: the highest onboarding stage reached on the record the screen
+ * shows (`reached`), the stage that record opened at (`opened`), and a count
+ * of the records shown (`epoch`). `reached` only rises, so nothing unlocked
+ * goes away while an answer is retyped; an erase (the screen moving to
+ * another erase identity) starts all three again.
+ */
+function useReachedStage(stage: FormStage): { reached: FormStage; opened: FormStage; epoch: number } {
+  const ref = useRef<{ erase: string; reached: FormStage; opened: FormStage; epoch: number } | null>(null);
+  const erase = getShownErase();
+  const was = ref.current;
+  if (!was || was.erase !== erase) ref.current = { erase, reached: stage, opened: stage, epoch: (was?.epoch ?? 0) + 1 };
+  else if (stage > was.reached) was.reached = stage;
+  const { reached, opened, epoch } = ref.current!;
+  return { reached, opened, epoch };
+}
+
+/** The same rows, value for value: a re-read that changed nothing keeps the old array. */
+const sameRows = (a: ApiMeasurement[], b: ApiMeasurement[]) =>
+  a.length === b.length && a.every((r, i) => r.id === b[i].id && r.value === b[i].value && r.recordedAt === b[i].recordedAt);
+
 export function HealthTool({ syncControl, remindersSection, storageBar }: {
   syncControl?: (ctx: { hasData: boolean; attention: boolean }) => ReactNode;
   remindersSection?: ReactNode;
@@ -236,9 +259,12 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const [lent, setLent] = useState<Partial<HealthInputs>>({});
   // The day each lent value is dated, when its draft has one (US-07 AC7).
   const [lentDays, setLentDays] = useState<Partial<Record<keyof HealthInputs, string>>>({});
-  // Read at mount too, so a returning user resumes at their step with no
-  // flash of step 1 (US-62 AC13); the load below replaces it.
-  const [previousMeasurements, setPreviousMeasurements] = useState<ApiMeasurement[]>(() => loadLatestMeasurementsSync()?.previousMeasurements ?? []);
+  // The record, read once at mount, so a returning user resumes at their step
+  // with no flash of step 1 (US-62 AC13); the first load reuses it.
+  const mountRead = useRef<{ erase: string; result: LatestMeasurementsResult | null } | null | undefined>(undefined);
+  if (mountRead.current === undefined) mountRead.current = { erase: getEraseIdentity(), result: loadLatestMeasurementsSync() };
+  const [previousMeasurements, setPreviousMeasurementsRaw] = useState<ApiMeasurement[]>(() => mountRead.current?.result?.previousMeasurements ?? []);
+  const setPreviousMeasurements = useCallback((next: ApiMeasurement[]) => setPreviousMeasurementsRaw(prev => (sameRows(prev, next) ? prev : next)), []);
   // Every active measurement, re-read after each save. The blood-test matrix
   // and the vitals matrix (StartingInfoVitals) each read their own metrics.
   const [history, setHistory] = useState<ApiMeasurement[]>([]);
@@ -259,6 +285,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const applyRemoteRef = useRef<() => void>(() => {});
   const remoteRelay = useRef(
     createRemoteChangeRelay(() => {
+      answeredHere.current = false; // another writer's change is no answer given here (US-62 AC13)
       trackProductEvent('remote_change_applied', { backend: getBackendKind() });
       void applyRemoteRef.current();
     }),
@@ -433,8 +460,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // The RoadmapStore is authoritative. Never replay the retired v1 cache into it.
   useEffect(() => {
     async function loadData() {
-      const erase = getEraseIdentity(); // read with the record, in one turn
-      const result = await loadLatestMeasurements();
+      // The mount's read, or a fresh one: the erase is read with the record, in one turn.
+      const first = mountRead.current;
+      mountRead.current = null;
+      const { erase, result } = first ?? { erase: getEraseIdentity(), result: await loadLatestMeasurements() };
       showErase(erase);
 
       if (hasSavedRecord(result)) {
@@ -508,44 +537,48 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   }, [inputDay]);
 
   // The form is the onboarding (US-62 AC13): the first answer the record
-  // lacks. The chatbot embed reads the same rule. A record holding more than
-  // the four answers opens the whole form at once, the missing questions at
-  // the top (US-01 AC3).
+  // lacks. The chatbot embed reads the same rule. What the person has
+  // unlocked on this record (`reached`) sets the form, About you, the weight's
+  // place and the floating chat; a record holding more than the four answers
+  // opens the whole form at once, the missing questions at the top (US-01
+  // AC3). The chats' wording follows the stage itself.
   const formStage = useMemo(
     () => computeFormStage(effectiveInputs, previousMeasurements),
     [effectiveInputs, previousMeasurements],
   );
-  // Once open, the whole form stays open on this record while a profile
-  // answer is edited (a height cleared to retype), so nothing vanishes mid-
-  // typing; an erase starts the onboarding again.
-  const formOpenedFor = useRef<string | null>(null);
-  const otherRecords = medications.length + screenings.length + supplements.length + documentHistory.length + labValueHistory.length > 0;
-  const fullForm = opensFullForm(formStage, previousMeasurements, otherRecords) || formOpenedFor.current === getShownErase();
-  if (fullForm) formOpenedFor.current = getShownErase();
+  const { reached, opened, epoch } = useReachedStage(formStage);
+  const fullForm = opensFullForm(reached, {
+    saved: previousMeasurements, medications, screenings, supplements, documents: documentHistory, labValues: labValueHistory,
+  });
 
   // US-62 AC13: each step answered in this tab, once, and the end. Only a
-  // stage reached by the form's own edit counts: a returning user, or a jump
-  // from another device or tab, sends none. A stage that drops (an erase, a
-  // cleared answer) restarts the count. The step's name only, never its answer.
-  const stageSeen = useRef<number | null>(null);
-  const answeredHere = useRef(false); // set by the form's edits, read after each render
+  // rise in `reached` after the person's own action here counts, as the
+  // step that was asked (the form,
+  // a matrix, the chat's profile proposal, an upload): a returning user, an
+  // answer retyped, or a jump from another device or tab sends none. An erase
+  // starts the count again. The step's name only, never its answer.
+  const answeredHere = useRef(false); // set by the person's actions, cleared by a remote change
+  const markAnswered = useCallback(() => { answeredHere.current = true; }, []);
+  const countedTo = useRef<{ epoch: number; stage: number } | null>(null);
   useEffect(() => {
-    const edited = answeredHere.current;
+    const from = countedTo.current?.epoch === epoch ? countedTo.current.stage : reached;
+    countedTo.current = { epoch, stage: reached };
+    if (reached <= from || !answeredHere.current || !hasApiResponse) return;
     answeredHere.current = false;
-    if (!hasApiResponse) return;
-    const from = stageSeen.current ?? formStage;
-    stageSeen.current = formStage;
-    if (!edited) return;
-    for (let step = from; step < formStage; step++) {
-      trackProductEvent('onboarding_step', { step: ONBOARDING_STEPS[step - 1] }); // stage 1 asks the measurements, 2 sex, 3 the birth date
-    }
-    if (from < 4 && formStage === 4) trackProductEvent('onboarding_done');
+    // The step that was asked is the one answered; later steps a record already held were not (stage 1 asks the measurements, 2 sex, 3 the birth date).
+    trackProductEvent('onboarding_step', { step: ONBOARDING_STEPS[from - 1] });
+    if (reached === 4) trackProductEvent('onboarding_done');
   });
+  // An erase closes the floating chat: its conversation belongs to the old record.
+  useEffect(() => { setFloatingChatOpen(false); }, [epoch]);
+  // The latest stage, for a call made after the render that changed it.
+  const stageRef = useRef(formStage);
+  stageRef.current = formStage;
 
   // Pre-fetch chat conversations in background once the chat unmutes,
   // so messages are ready instantly when the user clicks the chat bubble
   useEffect(() => {
-    if (formStage < 4 || chatPrefetch) return;
+    if (reached < 4 || chatPrefetch) return;
     listConversations().then((result) => {
       if (!result) return;
       setChatPrefetch({
@@ -554,7 +587,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
         activeConversationId: null,
       });
     });
-  }, [formStage, chatPrefetch]);
+  }, [reached, chatPrefetch]);
 
   // Save any unsaved profile/demographic fields (height, sex, birthYear, birthMonth, unitSystem).
   // Returns true if saved or nothing to save; false on failure.
@@ -902,15 +935,20 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     }, { rootMargin: '0px 0px -25% 0px' });
   }, [hasSuggestions, isMobile, activeTab]);
 
+  // The plan's tiles, once: ResultsPanel shows them; the phone's tab dot reads their keys.
+  const sex = isSex(inputs.sex) ? inputs.sex : undefined;
+  const tiles = useMemo(
+    () => (results ? statTiles(results, { unitSystem, unitOverrides: metricUnitOverrides, sex }) : []),
+    [results, unitSystem, metricUnitOverrides, sex],
+  );
   // US-62 AC13: on a phone, a dot on My plan when a tile appears that the
-  // person has not seen there. What My plan last showed is what was seen.
-  const tileKeys = useMemo(() => (results ? statTiles(results, { unitSystem }).map(t => t.key) : []), [results, unitSystem]);
-  // Kept per erase: an erase starts what was seen again.
-  const seenTiles = useRef<{ erase: string; keys: string[] } | null>(null);
-  if (hasApiResponse && (seenTiles.current?.erase !== getShownErase() || activeTab === 'plan')) {
-    seenTiles.current = { erase: getShownErase(), keys: tileKeys };
+  // person has not seen there. What My plan last showed is what was seen; a
+  // new record (an erase) starts it again.
+  const seenTiles = useRef<{ epoch: number; keys: string[] } | null>(null);
+  if (hasApiResponse && (seenTiles.current?.epoch !== epoch || activeTab === 'plan')) {
+    seenTiles.current = { epoch, keys: tiles.map(t => t.key) };
   }
-  const planDot = hasApiResponse && activeTab !== 'plan' && tileKeys.some(k => !seenTiles.current?.keys.includes(k));
+  const planDot = hasApiResponse && activeTab !== 'plan' && tiles.some(t => !seenTiles.current?.keys.includes(t.key));
 
   // US-20 AC6: each tab keeps its own scroll position. The page scrolls, not
   // the panel, so leaving a tab records the page's offset and coming back
@@ -1005,7 +1043,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // keeps the unit its caller converted it from (typedIn). One update per
   // field, so several made at once all land (US-16 AC1).
   const handleInputChange = useCallback(<K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem) => {
-    answeredHere.current = true; // US-62 AC13: an answer given in this tab
+    markAnswered(); // US-62 AC13: an answer given in this tab
     if (unit) typedIn.current[field] = { value, unit };
     // The user's own sex or height outranks a chat proposal for it (US-16 AC2).
     if (field === 'sex' || field === 'heightCm') setProfileProposal(null);
@@ -1246,7 +1284,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const emailCaptureActive = SHOPIFY_SURFACE;
 
   const handleAutoFocusEmail = useCallback(() => {
-    if (!emailCaptureActive) return;
+    // Only when the weight was the last answer: a first weight is step 1 (US-62 AC13).
+    if (!emailCaptureActive || stageRef.current !== 4) return;
     if (isMobile) {
       selectTab('plan');
       setTimeout(() => document.getElementById('guestEmail')?.focus(), 400);
@@ -1300,7 +1339,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     bloodTestPrefillRef,
     vitalsPrefillRef,
     formStage,
+    reached,
     fullForm,
+    wasDone: opened === 4,
     setShowUploadModal,
     planBasis,
     grading,
@@ -1318,15 +1359,13 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     syncControl,
     remindersSection,
     isValid,
-    unitSystem,
-    unitOverrides: metricUnitOverrides,
     hasUnsavedLongitudinal: hasApiResponse && LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined),
     onSaveLongitudinal: handleSaveLongitudinal,
     onDeleteData: handleDeleteData,
     isDeleting,
-    sex: inputs.sex,
+    tiles,
     showEmailCapture: emailCaptureActive,
-    formStage,
+    formStage: reached,
     // US-60 AC3: the Dismiss shows only while the question is unanswered.
     onAlcoholAnswer: inputs.alcohol === undefined ? handleAlcoholAnswer : undefined,
   };
@@ -1361,7 +1400,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       {isMobile ? (
         <>
           {storageBar && <div className="hr-top-bar">{storageBar}</div>}
-          {panel('input', <fieldset className="health-form-lock" disabled={isDeleting}><InputPanel {...inputPanelProps} /></fieldset>)}
+          {panel('input', <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markAnswered}><InputPanel {...inputPanelProps} /></fieldset>)}
           {panel('plan', (
             <div className="health-tool-right">
               <ResultsPanel {...resultsPanelProps} />
@@ -1382,7 +1421,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       ) : (
         <div className="health-tool-content">
           <div className="health-tool-left">
-            <fieldset className="health-form-lock" disabled={isDeleting}><InputPanel {...inputPanelProps} /></fieldset>
+            <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markAnswered}><InputPanel {...inputPanelProps} /></fieldset>
           </div>
           <div className="health-tool-right" ref={planColumnRef}>
             <ResultsPanel {...resultsPanelProps} />
@@ -1407,12 +1446,12 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
         metricUnitOverrides={metricUnitOverrides}
         onToggleFieldUnit={handleToggleFieldUnit}
         history={uploadHistory}
-        onComplete={handleUploadComplete}
+        onComplete={() => { markAnswered(); return handleUploadComplete(); }}
         onStart={handleUploadStart}
         onClose={() => setShowUploadModal(false)}
         onScreeningUpdate={handleScreeningChange}
         age={planBasis?.age}
-        sex={inputs.sex === 'male' || inputs.sex === 'female' ? inputs.sex : undefined}
+        sex={sex}
         grading={grading}
       />
 
@@ -1457,8 +1496,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
 
       {/* Floating chat FAB + expanded panel — portaled to body so their
           position: fixed doesn't resolve against the transform'd .health-tool. */}
-      {/* The chat waits for the onboarding's four answers (US-62 AC13). */}
-      {!isMobile && formStage === 4 && !floatingChatOpen && createPortal(
+      {/* The chat waits for the onboarding's four answers (US-62 AC13); an
+          open panel stays through an answer retyped, its wording muted. */}
+      {!isMobile && reached === 4 && !floatingChatOpen && createPortal(
         <button
           className="chat-fab no-print"
           onClick={() => setFloatingChatOpen(true)}
@@ -1469,9 +1509,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
         </button>,
         document.body,
       )}
-      {!isMobile && floatingChatOpen && fullForm && createPortal(
+      {!isMobile && floatingChatOpen && reached === 4 && createPortal(
         <ChatSection
           startExpanded
+          muted={formStage < 4}
           onClose={() => setFloatingChatOpen(false)}
           {...chatSectionProps}
         />,

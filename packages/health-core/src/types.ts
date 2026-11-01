@@ -610,6 +610,12 @@ export const SEX_DB = { MALE: 1, FEMALE: 2 } as const;
  */
 export const UNIT_SYSTEM_DB = { SI: 1, CONVENTIONAL: 2 } as const;
 
+/** The two sexes the plan reads (US-07 AC8): anything else is no sex. */
+export const SEXES = ['male', 'female'] as const;
+export function isSex(value: unknown): value is (typeof SEXES)[number] {
+  return (SEXES as readonly unknown[]).includes(value);
+}
+
 /** Encode sex string to database integer */
 export function encodeSex(sex: 'male' | 'female'): number {
   return sex === 'male' ? SEX_DB.MALE : SEX_DB.FEMALE;

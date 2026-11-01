@@ -23,13 +23,20 @@ describe('rowTarget: blood-test reference hints (US-62 AC9)', () => {
       for (const variant of [hint, hint.male, hint.female].filter(Boolean)) {
         for (const [key, system] of [['si', 'si'], ['conv', 'conventional']] as const) {
           const unit = getDisplayLabel(metric, system);
-          const full = variant![key];
+          // The no-sex creatinine hint labels its two lines in full, and the row drops the labels to fit 375px.
+          const full = variant === REFERENCE_HINTS.creatinine ? variant![key].replace(/ \((men|women)\)/g, '').replace(' / ', '/') : variant![key];
           const bare = variant!.bare[key];
           expect(bare, `${metric} ${key}`).not.toContain(unit);
           expect(full.replace(': ', ' ').replace(` ${unit}`, '').replace(unit, ''), `${metric} ${key}`).toBe(bare);
         }
       }
     }
+  });
+
+  it('US-62 AC13: with no sex, the creatinine hint shows both lines, labelled in the grid', () => {
+    expect(rowTarget('creatinine', 'si', {}, null)).toEqual({ full: 'Normal: 60–110 (men) / 45–90 (women) µmol/L', bare: 'Normal 60–110/45–90' });
+    expect(rowTarget('creatinine', 'conventional', {}, null)?.full).toBe('Normal: 0.7–1.2 (men) / 0.5–1.0 (women) mg/dL');
+    expect(rowTarget('creatinine', 'si', { sex: 'female' }, null)?.bare).toBe('Normal 45–90');
   });
 
   it('picks the sex-specific variant when the sex is known, and the combined one before', () => {

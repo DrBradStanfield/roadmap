@@ -8,6 +8,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { statTiles } from '@roadmap/health-core';
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { calculateHealthResults } from '@roadmap/health-core';
 import { US_SUPPLEMENT_DESCRIPTIONS } from '@roadmap/health-core/suggestions';
@@ -43,7 +44,7 @@ const PRODUCT_CARDS = Object.keys(US_PRODUCT_LINES);
 const WHO_SENTENCE = "WHO's 2026 dementia guideline";
 
 function show(results = adult) {
-  return render(<ResultsPanel results={results} isValid unitSystem="si" />);
+  return render(<ResultsPanel results={results} isValid tiles={results ? statTiles(results, { unitSystem: 'si' }) : []} />);
 }
 function cardById(container: HTMLElement, id: string): HTMLElement {
   const title = adult.suggestions.find((s) => s.id === id)!.title;

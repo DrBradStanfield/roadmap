@@ -88,6 +88,8 @@ interface StartingInfoVitalsProps {
   /** Called after the user types a valid weight — continues the
    *  height → weight → email focus chain from the legacy form. */
   onAutoFocusEmail?: () => void;
+  /** The weight is asked beside the height (US-62 AC13): its row is left out, so it shows once. */
+  withoutWeight?: boolean;
   /** Per-field unit overrides — clicking the weight/waist chip toggles
    *  just that metric's display unit (kg ↔ lbs, cm ↔ inches). */
   unitOverrides: Record<string, UnitSystem>;
@@ -262,9 +264,10 @@ export function vitalsCellsOf(
 
 export function StartingInfoVitals({
   vitalsHistory, unitSystem, onSave, onCorrectValue,
-  onDraftValue, formStage, plan, knownMinor, onAutoFocusEmail, unitOverrides, onToggleFieldUnit,
+  onDraftValue, formStage, plan, knownMinor, onAutoFocusEmail, withoutWeight, unitOverrides, onToggleFieldUnit,
   prefillRef, flushRef, onHoldsText,
 }: StartingInfoVitalsProps) {
+  const rows = withoutWeight ? ROWS.filter(r => r.kind !== 'simple' || r.metric !== 'weight') : ROWS;
   // The plan's systolic target; none, and no BP colours, with no plan. A known
   // minor gets no adult weight or BP target or colour (US-07 AC6); the waist
   // line, half the height, is also used in children, so it stays.
@@ -516,8 +519,8 @@ export function StartingInfoVitals({
             </div>
 
             {/* Metric rows */}
-            {ROWS.map((row, rowIdx) => {
-              const last = rowIdx === ROWS.length - 1 ? ' bt-row-last' : '';
+            {rows.map((row, rowIdx) => {
+              const last = rowIdx === rows.length - 1 ? ' bt-row-last' : '';
               const ref = refLabel(row);
               const nameCell = (
                 <div className="bt-cell-name">

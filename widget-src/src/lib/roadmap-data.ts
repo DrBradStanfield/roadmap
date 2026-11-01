@@ -146,7 +146,9 @@ export function loadLatestMeasurementsSync(): LatestMeasurementsResult | null {
  *  HealthTool's load and the email landing notice (US-22 AC13), so "empty"
  *  cannot mean two things. */
 export function hasSavedRecord(result: LatestMeasurementsResult | null): result is LatestMeasurementsResult {
-  return !!result && (Object.keys(result.inputs).length > 0 || result.previousMeasurements.length > 0 || result.medications.length > 0 || result.screenings.length > 0);
+  // Supplements and documents count too: a record of only those still opens the whole form (US-62 AC13).
+  return !!result && (Object.keys(result.inputs).length > 0 || result.previousMeasurements.length > 0 || result.medications.length > 0 || result.screenings.length > 0
+    || result.supplements.length > 0 || result.documents.length > 0);
 }
 export async function loadAllHistory(): Promise<ApiMeasurement[]> {
   return store ? store.loadAllHistory() : [];

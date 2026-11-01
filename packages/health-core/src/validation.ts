@@ -1,7 +1,7 @@
 import * as z from './zod';
 import { rangeFault, roundBoundInward, UNIT_DEFS, UnitSystem } from './units';
 import { FIELD_METRIC_MAP } from './mappings';
-import { ALCOHOL_ANSWERS, type HealthInputs } from './types';
+import { ALCOHOL_ANSWERS, SEXES, type HealthInputs } from './types';
 import { IMPORT_LIMITS } from './import-hints';
 import { latestDayOnEarth } from './merge';
 
@@ -30,7 +30,7 @@ export const healthInputSchema = z.object({
     .min(50, 'Height must be at least 50 cm')
     .max(250, 'Height must be at most 250 cm'),
   // Optional (US-07 AC8): the plan works without it, minus what needs sex.
-  sex: z.enum(['male', 'female'], { error: 'Please select male or female' }).optional(),
+  sex: z.enum(SEXES, { error: 'Please select male or female' }).optional(),
 
   // Optional body measurements
   weightKg: z
@@ -208,6 +208,18 @@ export function birthInFuture(year: number, month: number, now: string | Date): 
 }
 
 /**
+ * The birth date the plan keeps: a year the schema takes, alone (the plan
+ * reads January) or with a month the schema takes that is not in the future
+ * (US-54 AC5b). The form's birth step is answered by it (US-62 AC13).
+ */
+export function birthKept(inputs: Pick<Partial<HealthInputs>, 'birthYear' | 'birthMonth'>, now: string | Date = new Date()): boolean {
+  const { birthYear, birthMonth } = inputs;
+  if (birthYear === undefined || !isInputFieldValid('birthYear', birthYear)) return false;
+  if (birthMonth === undefined) return true;
+  return isInputFieldValid('birthMonth', birthMonth) && !birthInFuture(birthYear, birthMonth, now);
+}
+
+/**
  * Validate health inputs and return result. An inverted blood pressure from
  * one day is an error on both halves (US-02 AC8, `inputsPressureInverted`),
  * so every plan leaves both out, as it leaves out any field the schema refuses.
@@ -227,7 +239,7 @@ export function validateHealthInputs(data: unknown, days?: PressureDays, now: st
   const { birthYear, birthMonth } = inputs;
   const birth = birthYear !== undefined && birthMonth !== undefined
     && isInputFieldValid('birthYear', birthYear) && isInputFieldValid('birthMonth', birthMonth)
-    && birthInFuture(birthYear, birthMonth, now)
+    && !birthKept(inputs, now)
     ? [{ code: 'custom' as const, path: ['birthMonth'], message: BIRTH_IN_FUTURE, input: data }]
     : [];
 
