@@ -38,7 +38,9 @@ export async function appRegister(request: Request, store: KeyStore = supabaseKe
   if (request.method !== 'POST') return postOnly();
   const config = attestConfig();
   if (appRoutesOff() || !config) return unavailable();
-  if (!appLimits.register.take(ipBucket(getClientIp(request, 'fly')), 1)) return registerRefused(429, 'limit');
+  const ip = ipBucket(getClientIp(request, 'fly'));
+  const attempt = appLimits.register.reserve(ip, 1);
+  if (!attempt) return registerRefused(429, 'limit');
 
   const body = await parseSimpleRequestJson(request, SMALL_BODY_CAP) as { keyId?: unknown; attestation?: unknown; challenge?: unknown } | typeof BODY_TOO_LARGE | null;
   if (body === BODY_TOO_LARGE) return registerRefused(413, 'too_large');
@@ -54,11 +56,21 @@ export async function appRegister(request: Request, store: KeyStore = supabaseKe
   } catch (error) {
     return registerRefused(401, error instanceof AttestError ? error.reason : 'bad_attestation');
   }
+  // A success spends the larger success cap instead of an attempt, so an IP's
+  // neighbours are blocked only by failing attempts (AC1b). Reserved before the insert.
+  const success = appLimits.registered.reserve(ip, 1);
+  if (!success) return registerRefused(429, 'limit');
+  let inserted;
   try {
-    if ((await store.insert(key)) === 'exists') return registerRefused(409, 'key_exists');
+    inserted = await store.insert(key);
   } catch {
+    // An outage is not a failed attempt: both units go back, as in the gate.
+    success();
+    attempt();
     return registerRefused(503, 'store_unavailable');
   }
+  if (inserted === 'exists') { success(); return registerRefused(409, 'key_exists'); }
+  attempt();
   return json(200, { success: true });
 }
 

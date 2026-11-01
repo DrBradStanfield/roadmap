@@ -1001,7 +1001,9 @@ later.
 **Limits.**
 - Per key, exact and shared across machines (in `app_attest_use`, R4): 60 chat turns and
   30 lab files per UTC day.
-- Per IP, in memory: 10 registration attempts, 200 turns, 200 files a day. IPv6 is keyed
+- Per IP, in memory: 10 failed registration attempts and 50 successful registrations
+  (US-52 AC1b; a success hands its attempt back, and a store outage or a 409 hands the
+  success unit back, an outage the attempt too), 200 turns, 200 files a day. IPv6 is keyed
   on its /64, which one subscriber holds whole, so rotating addresses inside it buys
   nothing. IPv4 is keyed on the address, so phones behind one carrier NAT share a bucket:
   the price of having one; 200 is set high for that reason.
@@ -1010,8 +1012,19 @@ later.
   (`machineFiles`, `AI_DAILY_FILE_CAP`, 2000), but the app's own cap is smaller, so the
   app can never use up the web's and the connector's uploads (R5); the code also holds it
   at or under 15% of `AI_DAILY_FILE_CAP` whatever the env says.
-- Per IP, refused signed requests: 50 a day. Past that, the gate reads neither the key nor
-  the body (code review R3).
+- Per IP, signed requests refused before their signature verifies (a bad or garbage
+  assertion, an unknown key, a development key refused, an oversized body, a bad
+  signature): 200 a day. Past that, the gate reads neither the key nor the body (code
+  review R3).
+- Per key, in memory, refusals after the signature verifies (a stale counter, or a key
+  gone at the counter step): 20 a day, each handing the IP's unit back, so a broken phone
+  whose requests verify stops only itself (US-52 AC4c, 2026-11-01). A key past its 20 is
+  refused before the key read, by the header's key id, read-only: no key or body read,
+  and the IP's unit goes back. A parallel burst of one key's replays still does its key
+  reads, body reads and signature checks before 20 win the reserve. Residual: unverified
+  refusals from any client share the IP's 200, so a hostile client behind one IP can still
+  lock its neighbours out, after 200 instead of 50. Brad to decide: let a key id that
+  verified successfully on this machine in this window skip the IP backstop.
 - In memory means cap x machines, reset whenever a machine restarts: on deploy and on
   Fly's idle stop and start (`auto_stop_machines`). The per-key cap holds exactly; the
   machine caps bound the worst case.
