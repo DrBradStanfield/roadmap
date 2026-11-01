@@ -26,7 +26,7 @@ import * as z from './zod';
 import { lookupUnit, reportedToCanonical, type MetricType, type UnitSystem } from './units';
 import { FIELD_TO_METRIC, LONGITUDINAL_FIELDS } from './mappings';
 import { MEDICATION_KEYS, sanitizeInputs } from './validation';
-import type { HealthInputs } from './types';
+import { BEMPEDOIC_ACID_OPTIONS, EZETIMIBE_OPTIONS, METFORMIN_OPTIONS, PCSK9I_OPTIONS, type HealthInputs } from './types';
 
 // ---------------------------------------------------------------------------
 // Field enum — derived from LONGITUDINAL_FIELDS so it can never drift
@@ -233,12 +233,37 @@ const rawFieldEditSchema = z.object({
   date: z.string().regex(isoDateRe).optional().nullable(),
 });
 
+type MedicationKey = (typeof MEDICATION_KEYS)[number];
+const valuesOf = (options: ReadonlyArray<{ value: string }>) => options.map((o) => o.value);
+/** An escalation answer's values (input-form.ts `escalationOptions`). */
+const ESCALATION_ANSWERS = ['not_yet', 'not_tolerated'];
+/** The answers each choice question offers. Ezetimibe and a PCSK9 inhibitor
+ *  also take their own name, the record's "taking" form (mappings.ts). */
+const CHOICE_ANSWERS: Partial<Record<MedicationKey, readonly string[]>> = {
+  ezetimibe: [...valuesOf(EZETIMIBE_OPTIONS), 'ezetimibe'],
+  pcsk9i: [...valuesOf(PCSK9I_OPTIONS), 'pcsk9i'],
+  bempedoic_acid: valuesOf(BEMPEDOIC_ACID_OPTIONS),
+  metformin: valuesOf(METFORMIN_OPTIONS),
+  statin_escalation: ESCALATION_ANSWERS,
+  glp1_escalation: ESCALATION_ANSWERS,
+};
+/** A drug key (statin, GLP-1, SGLT2 inhibitor) takes any drug name, plus its
+ *  question's 'none' and 'not_tolerated'; these words are no drug name. */
+const NOT_A_DRUG = ['not_yet', 'yes', 'no'];
+
+/** A medication edit saves at once, so its answer must be one its question
+ *  offers: the plan reads most other strings as answered (US-16 AC3). */
+function answerFits(key: MedicationKey, drugName: string): boolean {
+  const choices = CHOICE_ANSWERS[key];
+  return choices ? choices.includes(drugName) : !NOT_A_DRUG.includes(drugName);
+}
+
 const rawMedicationEditSchema = z.object({
   medicationKey: z.enum(MEDICATION_KEYS),
   drugName: z.string().min(1).max(64),
   doseValue: z.number().positive().optional().nullable(),
   doseUnit: z.string().max(16).optional().nullable(),
-});
+}).refine(({ medicationKey, drugName }) => answerFits(medicationKey, drugName));
 
 // A null field is absent (the model may send `sex: null`); an unknown key, at
 // either level, refuses the whole edit.
@@ -256,7 +281,8 @@ const rawProfileEditSchema = z.object({
  *  - the field isn't a known measurement metric, or
  *  - the stated unit is not one the unit table (`lookupUnit`) knows for the metric
  *    (so we never silently store a wrong-unit value — the model should have
- *    asked instead).
+ *    asked instead), or
+ *  - a medication's answer is not one its question offers (`answerFits`).
  *
  * Range validation is deliberately NOT done here for measurements — the value
  * flows through the real form Save, which runs the canonical Zod range check. A

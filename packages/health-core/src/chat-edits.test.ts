@@ -13,6 +13,8 @@ import {
   type ProposedMedicationEdit,
 } from './chat-edits';
 import { FIELD_TO_METRIC, UNIT_DEFS, toCanonicalValue, type MetricType } from './index';
+import { medicationsToInputs } from './mappings';
+import { lipidCascade, weightCascade } from './medication-cascades';
 import { lookupUnit, type UnitSystem } from './units';
 
 /** The system a stated unit names, as the chatbot's parser reads it. */
@@ -148,6 +150,60 @@ describe('parseProposedEdit — medication edits', () => {
 
   it('rejects a missing drugName', () => {
     expect(parseProposedEdit(MED, { medicationKey: 'statin' })).toBeNull();
+  });
+});
+
+// US-16 AC3: a chat medication edit saves at once, so its answer must be one
+// the medication's own question offers. Before, any string was saved, and the
+// cascade read most of them as answered.
+describe('US-16 AC3: a chat medication answer must be one its question offers', () => {
+  const med = (medicationKey: string, drugName: string, doseValue?: number) =>
+    parseProposedEdit(MED, { medicationKey, drugName, ...(doseValue !== undefined ? { doseValue, doseUnit: 'mg' } : {}) });
+
+  it("the tool's own 'none' (not taking) for ezetimibe would read as answered, so it is refused", () => {
+    // The consequence the refusal prevents: saved as-is, 'none' answers the ezetimibe step.
+    const saved = medicationsToInputs([
+      { medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20 },
+      { medicationKey: 'ezetimibe', drugName: 'none', doseValue: null },
+    ]);
+    expect(lipidCascade(saved).suggest).not.toContain('ezetimibe');
+    expect(med('ezetimibe', 'none')).toBeNull();
+  });
+
+  it("the tool's 'not_yet' for a GLP-1 would read as taking one, so it is refused", () => {
+    expect(weightCascade(medicationsToInputs([{ medicationKey: 'glp1', drugName: 'not_yet', doseValue: null }])).suggest).not.toContain('glp1');
+    expect(med('glp1', 'not_yet')).toBeNull();
+  });
+
+  it.each([
+    ['ezetimibe', 'none'], ['ezetimibe', 'atorvastatin'], ['pcsk9i', 'none'], ['pcsk9i', 'evolocumab'],
+    ['bempedoic_acid', 'yes'], ['metformin', 'yes'], ['metformin', 'no'],
+    ['statin_escalation', 'yes'], ['glp1_escalation', 'none'],
+    ['glp1', 'not_yet'], ['glp1', 'no'], ['sglt2i', 'yes'], ['statin', 'not_yet'], ['statin', 'no'],
+  ])('refuses %s = %s', (key, answer) => {
+    expect(med(key, answer)).toBeNull();
+  });
+
+  it.each([
+    ['ezetimibe', 'yes'], ['ezetimibe', 'no'], ['ezetimibe', 'not_yet'], ['ezetimibe', 'not_tolerated'],
+    ['pcsk9i', 'yes'], ['pcsk9i', 'no'], ['pcsk9i', 'not_yet'], ['pcsk9i', 'not_tolerated'],
+    ['bempedoic_acid', 'bempedoic_acid'], ['bempedoic_acid', 'bempedoic_acid_ezetimibe'], ['bempedoic_acid', 'none'],
+    ['bempedoic_acid', 'not_yet'], ['bempedoic_acid', 'not_tolerated'],
+    ['metformin', 'ir_1000'], ['metformin', 'xr_2000'], ['metformin', 'none'], ['metformin', 'not_tolerated'],
+    ['statin_escalation', 'not_yet'], ['statin_escalation', 'not_tolerated'],
+    ['glp1_escalation', 'not_yet'], ['glp1_escalation', 'not_tolerated'],
+    ['statin', 'atorvastatin'], ['statin', 'fluvastatin'], ['statin', 'none'], ['statin', 'not_tolerated'],
+    // An unlisted drug name stays an answer for each drug key: fluvastatin,
+    // liraglutide and ertugliflozin are not in the form's lists.
+    ['glp1', 'tirzepatide'], ['glp1', 'other'], ['glp1', 'liraglutide'], ['glp1', 'none'], ['glp1', 'not_tolerated'],
+    ['sglt2i', 'empagliflozin'], ['sglt2i', 'ertugliflozin'], ['sglt2i', 'none'], ['sglt2i', 'not_tolerated'],
+  ])('keeps %s = %s', (key, answer) => {
+    expect(med(key, answer)).toMatchObject({ kind: 'medication', medicationKey: key, drugName: answer });
+  });
+
+  it("keeps the record's own drug-name form for ezetimibe and a PCSK9 inhibitor with a dose", () => {
+    expect(med('ezetimibe', 'ezetimibe', 10)).toMatchObject({ drugName: 'ezetimibe', doseValue: 10 });
+    expect(med('pcsk9i', 'pcsk9i', 140)).toMatchObject({ drugName: 'pcsk9i', doseValue: 140 });
   });
 });
 
