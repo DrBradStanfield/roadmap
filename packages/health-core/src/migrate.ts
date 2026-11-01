@@ -334,7 +334,9 @@ export function migrateFile(
     supplements: stamped(idRowsOf(raw.supplements)),
     supplementHistory: stamped(idRowsOf(raw.supplementHistory)),
     screenings: singleton(raw.screenings),
-    labValues: withSiCorrections(dated<FileLabValue>(raw.labValues)),
+    // US-29 AC4b: a lab row with no string `metricName` names no test, and
+    // every catalogue and slot lookup reads it, so it is omitted like AC4a's.
+    labValues: withSiCorrections(dated<FileLabValue>(raw.labValues).filter((r) => typeof r.metricName === 'string')),
     documents: idRowsOf(raw.documents),
     reminderPreferences: stamped(raw.reminderPreferences),
     recommendationSnapshots: rowsOf(raw.recommendationSnapshots),
