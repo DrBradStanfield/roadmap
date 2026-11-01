@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { IMPORT_LIMITS } from './import-hints';
 import { convertValidationErrorsToUnits, getValidationErrors, validateHealthInputs, birthInFuture, healthInputSchema, METRIC_TYPES, labImportPageSchema, medicationSchema, screeningSchema, profileUpdateSchema, measurementSchema, validateInputValue, isBirthYearClearlyInvalid, sanitizeInputs, excludedInputFields } from './validation';
 import { UNIT_DEFS } from './units';
@@ -590,6 +590,24 @@ describe('US-03 AC7 — lipids and ApoB refuse 0; PSA and Lp(a) take it', () => 
     const exclusive = METRIC_TYPES.filter(m => UNIT_DEFS[m].validationRange.si.minExclusive);
     expect(exclusive).toEqual(['ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'apob']);
     for (const m of exclusive) expect(UNIT_DEFS[m].validationRange.conventional).toMatchObject({ min: 0, minExclusive: true });
+  });
+});
+
+describe('US-54 AC5b — the birth year maximum is this year when checked, not when the module loaded', () => {
+  afterEach(() => vi.useRealTimers());
+  // A tab or server left running across New Year. The hours keep each instant
+  // in its year from UTC-12 to UTC+14.
+  it('a year refused on 31 December is accepted on 1 January', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-12-31T08:00:00Z'));
+    expect(healthInputSchema.shape.birthYear.safeParse(2027).success).toBe(false);
+    expect(profileUpdateSchema.shape.birthYear.safeParse(2027).success).toBe(false);
+    expect(validateInputValue('birthYear', 2027)).toBeUndefined();
+    vi.setSystemTime(new Date('2027-01-01T13:00:00Z'));
+    expect(healthInputSchema.shape.birthYear.safeParse(2027).success).toBe(true);
+    expect(profileUpdateSchema.shape.birthYear.safeParse(2027).success).toBe(true);
+    expect(validateInputValue('birthYear', 2027)).toBe(2027);
+    expect(healthInputSchema.shape.birthYear.safeParse(2028).error?.issues[0]?.message).toBe('Birth year cannot be in the future');
   });
 });
 

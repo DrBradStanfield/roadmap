@@ -100,6 +100,7 @@ export {
   healthInputSchema,
   PRESSURE_ORDER,
   pressureInverted,
+  birthInFuture,
   sanitizeInputs,
   excludedInputFields,
   measurementSchema,

@@ -29,6 +29,7 @@ import {
   LiveRefresh,
   RecordSession,
   bulkAppendValues,
+  birthInFuture,
   placeMeasurement,
   saveDocuments,
   documentView,
@@ -544,6 +545,18 @@ export class RoadmapStore {
       // A cleared form field is absent from current, but is still a write.
       // Keep its key as null so the field stamp carries the clear (US-10 AC9).
       if (current[field] !== previous[field]) changes[field] = current[field] ?? null;
+    }
+    // US-54 AC5b: a birth month after this one writes neither half, as
+    // update_profile refuses it; a year alone is judged with January. The form
+    // keeps a refused pair as saved, so a later good edit to one half also
+    // writes the other where it differs from the record.
+    if ('birthYear' in changes || 'birthMonth' in changes) {
+      const { birthYear, birthMonth } = current;
+      const refused = birthYear !== undefined && birthInFuture(birthYear, birthMonth ?? 1, new Date());
+      for (const field of ['birthYear', 'birthMonth'] as const) {
+        if (refused) delete changes[field];
+        else if (!(field in changes) && (current[field] ?? null) !== (this.file.profile[field] ?? null)) changes[field] = current[field] ?? null;
+      }
     }
     if (Object.keys(changes).length === 0) return;
     // Only the fields changed take a new stamp (US-10 AC6). And an edit, which

@@ -16,6 +16,9 @@ export const METRIC_TYPES = [
 
 export type MetricTypeValue = typeof METRIC_TYPES[number];
 
+/** Read at each check, so a tab or server left running across New Year takes the new year. */
+const notFutureYear = (year: number) => year <= new Date().getFullYear();
+
 /**
  * Schema for validating health inputs.
  *
@@ -47,7 +50,7 @@ export const healthInputSchema = z.object({
   birthYear: z
     .number()
     .min(1900, 'Birth year must be after 1900')
-    .max(new Date().getFullYear(), 'Birth year cannot be in the future')
+    .refine(notFutureYear, 'Birth year cannot be in the future')
     .optional(),
   birthMonth: z
     .number()
@@ -369,7 +372,7 @@ export const profileUpdateSchema = z.object({
     .number()
     .int()
     .min(1900, 'Birth year must be after 1900')
-    .max(new Date().getFullYear(), 'Birth year cannot be in the future')
+    .refine(notFutureYear, 'Birth year cannot be in the future')
     .optional(),
   birthMonth: z
     .number()
@@ -534,7 +537,7 @@ export type DocumentType = typeof DOCUMENT_TYPES[number];
  * boundary values slightly outside SI ranges, causing false rejections.
  */
 const IDENTITY_FIELD_RANGES: Record<string, { min: number; max: number }> = {
-  birthYear: { min: 1900, max: new Date().getFullYear() },
+  birthYear: { min: 1900, get max() { return new Date().getFullYear(); } },
   birthMonth: { min: 1, max: 12 },
   systolicBp: { min: 60, max: 250 },
   diastolicBp: { min: 40, max: 150 },

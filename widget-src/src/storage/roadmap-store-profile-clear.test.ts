@@ -115,3 +115,51 @@ it('US-60 AC2: a hand-edited alcohol value never reaches the form; the two answe
     expect((await RoadmapStore.create(new MemoryAdapter(cloud))).getPrefillInputs().alcohol).toBe(read);
   }
 });
+
+// US-54 AC5b (2026-11-01): the web's form showed the rule but still saved the
+// month. Now the store refuses it where profile writes enter, as update_profile does.
+it('US-54 AC5b: a birth month after this one leaves the stored birth month and year unchanged', async () => {
+  const cloud = new MemoryCloud();
+  const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+  store.saveChangedMeasurements({ birthYear: 1990, birthMonth: 5, heightCm: 178 }, {});
+  await store.flush();
+  vi.advanceTimersByTime(1000);
+
+  store.saveChangedMeasurements({ birthYear: 2026, birthMonth: 12, heightCm: 180 }, { birthYear: 1990, birthMonth: 5, heightCm: 178 });
+  await store.flush();
+  const saved: RoadmapFile = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
+  expect([saved.profile.birthYear, saved.profile.birthMonth, saved.profile.heightCm]).toEqual([1990, 5, 180]);
+  const reloaded = (await RoadmapStore.create(new MemoryAdapter(cloud))).getPrefillInputs();
+  expect([reloaded.birthYear, reloaded.birthMonth]).toEqual([1990, 5]);
+
+  // A year alone is judged with the month: 1990 → 2026 with December stored.
+  store.saveChangedMeasurements({ birthYear: 1990, birthMonth: 12 }, { birthYear: 1990, birthMonth: 5 });
+  store.saveChangedMeasurements({ birthYear: 2026, birthMonth: 12 }, { birthYear: 1990, birthMonth: 12 });
+  await store.flush();
+  const yearOnly: RoadmapFile = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
+  expect([yearOnly.profile.birthYear, yearOnly.profile.birthMonth]).toEqual([1990, 12]);
+});
+
+it('US-54 AC5b: after a refused month, moving the month back saves the year shown with it', async () => {
+  const cloud = new MemoryCloud();
+  const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+  store.saveChangedMeasurements({ birthYear: 1990, birthMonth: 5 }, {});
+  // The form keeps 2026/12 as its saved state after the refusal, so the next
+  // edit changes only the month: the store still writes the year beside it.
+  store.saveChangedMeasurements({ birthYear: 2026, birthMonth: 12 }, { birthYear: 1990, birthMonth: 5 });
+  store.saveChangedMeasurements({ birthYear: 2026, birthMonth: 9 }, { birthYear: 2026, birthMonth: 12 });
+  await store.flush();
+  const saved: RoadmapFile = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
+  expect([saved.profile.birthYear, saved.profile.birthMonth]).toEqual([2026, 9]);
+});
+
+it('US-54 AC5b: this month is saved, judged in the zone furthest ahead', async () => {
+  // 10:00 UTC on 31 October is already 1 November at UTC+14.
+  vi.setSystemTime(new Date('2026-10-31T10:00:00Z'));
+  const cloud = new MemoryCloud();
+  const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+  store.saveChangedMeasurements({ birthYear: 2026, birthMonth: 11 }, {});
+  await store.flush();
+  const saved: RoadmapFile = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
+  expect([saved.profile.birthYear, saved.profile.birthMonth]).toEqual([2026, 11]);
+});
