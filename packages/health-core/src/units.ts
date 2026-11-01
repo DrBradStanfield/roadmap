@@ -677,6 +677,7 @@ export const BP_THRESHOLDS = {
 
 /** eGFR thresholds in mL/min/1.73m² */
 export const EGFR_THRESHOLDS = {
+  normal: 70,              // eGFR 70 and over: normal
   lowNormal: 60,           // eGFR 60-69: low normal (no CKD without markers)
   mildlyDecreased: 45,     // G3a: mildly decreased
   moderatelyDecreased: 30, // G3b: moderately decreased

@@ -20,6 +20,8 @@ import {
   validDay,
   isCalendarDay,
   UNDATED_PREVIOUS,
+  withComparator,
+  type Comparator,
   type LabQuantity,
 } from '@roadmap/health-core';
 import { getCurrentDateValue } from './DatePicker';
@@ -72,11 +74,14 @@ export interface DocumentToSave {
  *  turns it into a FHIR correction. */
 export interface ReviewedValue {
   metric: string; valueSI: number; recordedAt: string; source?: MeasurementSource; correctsId?: string;
+  /** Printed as a limit and saved as printed (US-12 AC20); an edited cell is an exact value. */
+  comparator?: Comparator;
 }
 export interface ReviewedLabValue {
   name: string; value: number; unit: string;
   referenceLow?: number | null; referenceHigh?: number | null;
   recordedAt: string; correctsId?: string;
+  comparator?: Comparator;
 }
 
 interface ReviewTableProps {
@@ -292,8 +297,8 @@ type MatrixRow = CoreRow | AdditionalRow;
 interface ExistingCell { id: string; display: string; valueSI?: number; lab?: LabQuantity; displayUnit?: string }
 
 type EditableMatrixCell =
-  | { state: 'editable'; kind: 'core'; fi: number; vi: number; initialDisplay: string; confidence: 'high' | 'medium' | 'low'; question?: string; printed?: string; valueSI: number; displayUnit: string; existing?: ExistingCell }
-  | { state: 'editable'; kind: 'additional'; fi: number; ai: number; initialDisplay: string; valueSI: number; displayUnit: string; lab: LabQuantity; referenceLow?: number | null; referenceHigh?: number | null; existing?: ExistingCell };
+  | { state: 'editable'; kind: 'core'; fi: number; vi: number; initialDisplay: string; confidence: 'high' | 'medium' | 'low'; question?: string; printed?: string; valueSI: number; displayUnit: string; existing?: ExistingCell; comparator?: Comparator }
+  | { state: 'editable'; kind: 'additional'; fi: number; ai: number; initialDisplay: string; valueSI: number; displayUnit: string; lab: LabQuantity; referenceLow?: number | null; referenceHigh?: number | null; existing?: ExistingCell; comparator?: Comparator };
 
 /** What a cell's review state (typed text, touched, Replace) is keyed by: its
  *  value's place in the extraction, never its column. A picked date re-keys
@@ -313,7 +318,8 @@ function replaceKey(cell: EditableMatrixCell, existing: ExistingCell): string {
 
 /** A reading a review hides because another holds its (test, day): named, never its value. */
 interface HiddenReading { label: string; day: DateKey }
-type Quantity = { valueSI?: number; lab?: LabQuantity };
+/** `comparator`: a core reading printed as a limit; a lab's rides on its `lab` (US-12 AC20). */
+type Quantity = { valueSI?: number; lab?: LabQuantity; comparator?: Comparator };
 
 /** A core cell as rendered: its text in the row's unit and the value it saves. */
 interface CoreCellView { text: string; valueSI?: number; error: string | null }
@@ -322,7 +328,7 @@ type MatrixCell =
   | { state: 'empty' }
   /** What a collision compares: `valueSI` for a core metric (the stored value), `lab` for an additional lab,
    *  shown in `displayUnit`. */
-  | { state: 'context'; id: string; displayValue: string; valueSI?: number; lab?: LabQuantity; displayUnit?: string }
+  | { state: 'context'; id: string; displayValue: string; valueSI?: number; lab?: LabQuantity; displayUnit?: string; comparator?: Comparator }
   | EditableMatrixCell;
 
 /** Build the matrix view. A saved row owns its cell: an upload value that
@@ -354,7 +360,7 @@ export function buildMatrixModel(
    *  SI, the report prints its own unit, so health-core's `sameLabQuantity`
    *  converts both, as the connector does (US-35 AC6). */
   const sameQuantity = (a: Quantity, b: Quantity, display?: string, shown?: string) =>
-    a.valueSI !== undefined && b.valueSI !== undefined ? sameValue(a.valueSI, b.valueSI)
+    a.valueSI !== undefined && b.valueSI !== undefined ? sameValue(a.valueSI, b.valueSI) && a.comparator === b.comparator
       : a.lab && b.lab ? sameLabQuantity(a.lab, b.lab)
         : display !== undefined && shown !== undefined && slotState(shown, display) === 'held_equal';
 
@@ -412,7 +418,7 @@ export function buildMatrixModel(
     const display = UNIT_DEFS[metric]
       ? cellText(metric, m.value, displayFor(metric))
       : String(m.value);
-    cells.set(`${metric}|${dateKey}`, { state: 'context', id: m.id, displayValue: display, valueSI: m.value });
+    cells.set(`${metric}|${dateKey}`, { state: 'context', id: m.id, displayValue: withComparator(display, m.comparator), valueSI: m.value, ...(m.comparator ? { comparator: m.comparator } : {}) });
   }
   for (const lv of labValueHistory) {
     const dateKey = lv.recordedAt.slice(0, 10);
@@ -432,8 +438,8 @@ export function buildMatrixModel(
       });
     }
     cells.set(`${nameKey}|${dateKey}`, {
-      state: 'context', id: lv.id, displayValue: String(lv.value),
-      lab: { name: lv.metricName, value: lv.value, unit: lv.unit },
+      state: 'context', id: lv.id, displayValue: withComparator(String(lv.value), lv.comparator),
+      lab: { name: lv.metricName, value: lv.value, unit: lv.unit, ...(lv.comparator ? { comparator: lv.comparator } : {}) },
       displayUnit: labUnitText({ name: lv.metricName, unit: lv.unit }),
     });
   }
@@ -503,7 +509,7 @@ export function buildMatrixModel(
       const initialDisplay = UNIT_DEFS[metric]
         ? cellText(metric, v.valueSI, displayFor(metric))
         : String(v.displayValue);
-      const existing = place(slot, cellKey, rank, initialDisplay, { valueSI: v.valueSI }, !!touched?.has(valueId(fi, 'core', vi)), METRIC_LABELS[metric] || metric);
+      const existing = place(slot, cellKey, rank, withComparator(initialDisplay, v.comparator), { valueSI: v.valueSI, ...(v.comparator ? { comparator: v.comparator } : {}) }, !!touched?.has(valueId(fi, 'core', vi)), METRIC_LABELS[metric] || metric);
       if (existing === null) return;
       cells.set(cellKey, {
         state: 'editable', kind: 'core', fi, vi,
@@ -517,6 +523,7 @@ export function buildMatrixModel(
         valueSI: v.valueSI,
         displayUnit: v.displayUnit,
         existing,
+        ...(v.comparator ? { comparator: v.comparator } : {}),
       });
     });
 
@@ -540,8 +547,8 @@ export function buildMatrixModel(
       }
       const cellKey = `${nameKey}|${dateKey}`;
       const slot = slotFor(nameKey, av, dateKey);
-      const lab = { name: av.name, value: av.value, unit: av.unit };
-      const existing = place(slot, cellKey, rank, String(av.value), { lab }, !!touched?.has(valueId(fi, 'additional', ai)), labValueLabel(av.name));
+      const lab = { name: av.name, value: av.value, unit: av.unit, ...(av.comparator ? { comparator: av.comparator } : {}) };
+      const existing = place(slot, cellKey, rank, withComparator(String(av.value), av.comparator), { lab }, !!touched?.has(valueId(fi, 'additional', ai)), labValueLabel(av.name));
       if (existing === null) return;
       cells.set(cellKey, {
         state: 'editable',
@@ -554,6 +561,7 @@ export function buildMatrixModel(
         referenceLow: av.referenceLow,
         referenceHigh: av.referenceHigh,
         existing,
+        ...(av.comparator ? { comparator: av.comparator } : {}),
       });
     });
   });
@@ -1022,6 +1030,8 @@ export function ReviewTable({
           recordedAt,
           source: c.isEdited ? 'lab_import_edited' : undefined,
           correctsId: cell.existing?.id,
+          // A limit saves as printed; a number typed over it is exact (US-12 AC20).
+          ...(cell.comparator && !c.isEdited ? { comparator: cell.comparator } : {}),
         });
       } else {
         const av = results[cell.fi]?.additionalValues[cell.ai];
@@ -1034,6 +1044,7 @@ export function ReviewTable({
           referenceHigh: av.referenceHigh,
           recordedAt,
           correctsId: cell.existing?.id,
+          ...(cell.comparator && !c.isEdited ? { comparator: cell.comparator } : {}),
         });
       }
     }

@@ -2,6 +2,7 @@ import type { HealthInputs, ApiMeasurement, ApiMedication, ApiScreening, ChatCon
 import type { UnitSystem } from '@roadmap/health-core';
 import {
   sanitizeInputs, mergeLongitudinalInputs, chatContextOf, detectUnitSystem, PREFILL_FIELDS, withLabEgfr, dayOf, localDay,
+  isComparator, withRowValue,
 } from '@roadmap/health-core';
 import type { ApiReminderPreference } from './api-types';
 
@@ -112,6 +113,10 @@ export function loadFromLocalStorage(): LoadedData | null {
       if (sanitizedInputs[field] !== undefined) (inputs as Record<string, unknown>)[field] = sanitizedInputs[field];
     }
     const lab = sanitizeInputs({ labEgfr: data.labEgfr?.labEgfr, labEgfrDate: data.labEgfr?.labEgfrDate });
+    // A lab eGFR printed as a limit (US-12 AC20): its code and bound, graded again by the plan's rule.
+    const sentLimit = data.labEgfr?.labEgfrLimit;
+    const limit = sentLimit && isComparator(sentLimit.comparator) && Number.isFinite(sentLimit.bound)
+      ? withRowValue<Partial<HealthInputs>>({}, 'labEgfr', sentLimit.bound, sentLimit.comparator) : null;
 
     return {
       inputs,
@@ -120,11 +125,15 @@ export function loadFromLocalStorage(): LoadedData | null {
       // or corrupted NaN/Infinity values.
       previousMeasurements: (data.previousMeasurements ?? [])
         .filter(m => m.value != null && (m.value as unknown) !== '' && Number.isFinite(Number(m.value)))
+        // A comparator this build cannot read makes the row unreadable, as in the record (US-12 AC20, US-65).
+        .filter(m => m.comparator === undefined || isComparator(m.comparator))
         .map(m => ({ ...m, value: Number(m.value) })),
       medications: data.medications ?? [],
       screenings: data.screenings ?? [],
       reminderPreferences: data.reminderPreferences ?? [],
-      labEgfr: lab.labEgfr !== undefined && lab.labEgfrDate !== undefined ? { labEgfr: lab.labEgfr, labEgfrDate: lab.labEgfrDate } : null,
+      labEgfr: limit?.limits?.labEgfr && lab.labEgfrDate !== undefined
+        ? { ...(limit.labEgfr === undefined ? {} : { labEgfr: limit.labEgfr }), labEgfrDate: lab.labEgfrDate, labEgfrLimit: limit.limits.labEgfr }
+        : lab.labEgfr !== undefined && lab.labEgfrDate !== undefined ? { labEgfr: lab.labEgfr, labEgfrDate: lab.labEgfrDate } : null,
     };
   } catch (error) {
     console.warn('Failed to load from localStorage:', error);

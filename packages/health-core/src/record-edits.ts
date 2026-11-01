@@ -40,6 +40,7 @@ import { dayOf, latestStamp, localDay } from './merge';
 import { isCalendarDay, isClinicalDay } from './measurement-history';
 import { createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
+import { isComparator, type Comparator } from './lab-limits';
 import { healthInputSchema, type MeasurementSource, METRIC_TYPES, PRESSURE_ORDER, pressureInverted } from './validation';
 import type { MEASUREMENT_REFUSAL_REASONS } from './product-events';
 
@@ -157,6 +158,11 @@ function reject<R extends string = EditRejectionReason>(reason: R, message: stri
 /** Float noise from a unit conversion is not a mismatch; a wrong number is. */
 function sameValue(a: number, b: number): boolean {
   return Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
+}
+
+/** A row's limit code, spread into the row it becomes (US-12 AC20); nothing for an exact value. */
+function limitOfRow(row: { comparator?: Comparator }): { comparator?: Comparator } {
+  return isComparator(row.comparator) ? { comparator: row.comparator } : {};
 }
 
 /** Rule 5 — a fresh UUID per row, always. Shared with state-edits.ts. */
@@ -341,7 +347,7 @@ export function slotState(existingDisplay: string | undefined, candidateDisplay:
 }
 
 /** One lab reading: the name it was filed or printed under, the number, and its unit. */
-export type LabQuantity = { name: string; value: number; unit: string };
+export type LabQuantity = { name: string; value: number; unit: string; comparator?: Comparator };
 
 /**
  * Is a held lab row the same result as an offered one (US-35 AC6)? The record
@@ -359,8 +365,9 @@ export function sameLabQuantity(held: LabQuantity, offered: LabQuantity): boolea
   };
   const a = canonical(held);
   const b = canonical(offered);
-  // Case matters: "G/L" is a cell count, "g/L" a mass.
-  return a !== null && b !== null && a.unit === b.unit && sameValue(a.value, b.value);
+  // Case matters: "G/L" is a cell count, "g/L" a mass. A limit and an exact
+  // value of one number are two results (US-12 AC20).
+  return a !== null && b !== null && a.unit === b.unit && sameValue(a.value, b.value) && held.comparator === offered.comparator;
 }
 
 /**
@@ -513,8 +520,10 @@ export function correctValue(file: RoadmapFile, request: CorrectValueRequest): E
       return reject('unknown-unit', labUnitRefusal(entry, request.unit, 'scale'));
     }
   }
+  // A correction is an exact value (US-12 AC20): the old row's limit stays behind.
+  const { comparator: _limit, ...exact } = labRow;
   const row: FileLabValue = {
-    ...labRow,
+    ...exact,
     id: newId(), value: stored.value, unit: stored.unit, createdAt: now,
     ...(relabelled ? { referenceLow: null, referenceHigh: null } : null),
     source: request.source ?? 'manual_correction', status: 'active', correctsId: id,
@@ -607,8 +616,10 @@ export function planBloodTestMove(file: RoadmapFile, from: string, to: string, c
     const held = holders[0];
     if (!held) continue;
     const same = 'metricType' in moving
-      ? sameValue(moving.value, held.value)
-      : !('metricType' in held) && sameLabQuantity({ name: moving.metricName, value: moving.value, unit: moving.unit }, { name: held.metricName, value: held.value, unit: held.unit });
+      ? sameValue(moving.value, held.value) && moving.comparator === held.comparator
+      : !('metricType' in held) && sameLabQuantity(
+        { name: moving.metricName, value: moving.value, unit: moving.unit, comparator: moving.comparator },
+        { name: held.metricName, value: held.value, unit: held.unit, comparator: held.comparator });
     (same ? matches : clashes).push({ moving, held });
   }
   const documentDated = file.documents.some((d) => !d.deleted && d.date === from);
@@ -653,7 +664,7 @@ export function moveBloodTest(file: RoadmapFile, request: MoveBloodTestRequest):
     if (clash) flip.add(clash.held.id);
     const recordedAt = plan.to + row.recordedAt.slice(10);
     added.push('metricType' in row
-      ? createMeasurement({ id: newId(), metricType: row.metricType, value: row.value, recordedAt, createdAt: now, source, correctsId: row.id })
+      ? createMeasurement({ id: newId(), metricType: row.metricType, value: row.value, recordedAt, createdAt: now, source, correctsId: row.id, ...limitOfRow(row) })
       : { ...row, id: newId(), recordedAt, createdAt: now, source, status: 'active', correctsId: row.id });
   }
   const flipped = <T extends ClinicalRow>(r: T): T => (flip.has(r.id) ? { ...r, status: 'entered-in-error' } : r);
@@ -679,10 +690,10 @@ export function moveBloodTest(file: RoadmapFile, request: MoveBloodTestRequest):
  * there is one conversion site and the review table shows what the lab said.
  */
 export type BulkRow =
-  | { kind: 'measurement'; metricType: string; value: number; recordedAt: string; source: MeasurementSource; correctsId?: string }
+  | { kind: 'measurement'; metricType: string; value: number; recordedAt: string; source: MeasurementSource; correctsId?: string; comparator?: Comparator }
   | {
       kind: 'lab'; metricName: string; value: number; unit: string; referenceLow?: number | null; referenceHigh?: number | null;
-      recordedAt: string; source: MeasurementSource; correctsId?: string;
+      recordedAt: string; source: MeasurementSource; correctsId?: string; comparator?: Comparator;
     };
 
 /** One lab row the record would not store because the catalogue does not know
@@ -764,7 +775,7 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
       }
       makeRow = (recordedAt, correctsId) => createLabValue({
         id: newId(), metricName: input.metricName, ...stored,
-        recordedAt, createdAt: now, source: input.source, correctsId,
+        recordedAt, createdAt: now, source: input.source, correctsId, ...limitOfRow(input),
       });
     } else {
       if (!(METRIC_TYPES as readonly string[]).includes(input.metricType)) {
@@ -784,7 +795,7 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
       }
       makeRow = (recordedAt, correctsId) => createMeasurement({
         id: newId(), metricType: input.metricType, value: input.value,
-        recordedAt, createdAt: now, source: input.source, correctsId,
+        recordedAt, createdAt: now, source: input.source, correctsId, ...limitOfRow(input),
       });
     }
     const slot = input.kind === 'measurement' ? slotKey('measurement', input.metricType, input.recordedAt) : slotKey('lab', input.metricName, input.recordedAt);

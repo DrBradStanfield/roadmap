@@ -1501,9 +1501,15 @@ export function prepareImport(
       // connector until the MCP 1.0.2 review ends: left out, as the old prompt
       // left it out. The assistant's own per-line day (US-36 AC1) is kept.
       const previousColumn = (value: { recordedAt?: string }) => bundle.route !== 'assistant' && !!value.recordedAt;
+      // A result printed as a limit is saved on the website and the iPhone
+      // (US-12 AC20); the connector's candidate shape has no place for its
+      // symbol while its tools are under review, so it is left out and counted
+      // as it was before, never offered as an exact number.
+      let limits = 0;
       for (const value of result.values) {
         if (candidates.length >= MAX_IMPORT_CANDIDATES) break;
         if (!VALID_METRICS.includes(value.metric as MetricType) || previousColumn(value)) continue;
+        if (value.comparator) { limits++; continue; }
         const metric = value.metric as MetricType;
         const own = value.recordedAt ?? day;
         // A dry run of the real append: it validates the value and the day the
@@ -1527,6 +1533,7 @@ export function prepareImport(
       for (const value of result.additionalValues) {
         if (candidates.length >= MAX_IMPORT_CANDIDATES) break;
         if (previousColumn(value)) continue;
+        if (value.comparator) { limits++; continue; }
         const own = value.recordedAt ?? day;
         // With its range: the write checks the whole row (US-21 AC15), so the preview does too.
         const check = bundle.checked ? null : appendLabValue(file, {
@@ -1557,7 +1564,7 @@ export function prepareImport(
         if (!previousColumn(value)) unrecognized.push(oneLine(`${`${value.metric} ${value.value} ${value.unit}`.trim()}: not saved. ${value.reason}`).slice(0, MAX_UNRECOGNIZED_LINE_LENGTH));
       }
       // Once filed, the report dedups as already_imported: a refused value is said now or never. A count, no value.
-      const n = result.droppedValueCount ?? 0;
+      const n = (result.droppedValueCount ?? 0) + limits;
       if (n > 0) {
         report.droppedValues = n;
         report.hint = n === 1

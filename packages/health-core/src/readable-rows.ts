@@ -14,6 +14,7 @@
 import { MEDICATION_KEYS, METRIC_TYPES } from './validation';
 import { LPA_UNITS, UNIT_SYSTEMS } from './units';
 import { ALCOHOL_ANSWERS, isSex } from './types';
+import { isComparator } from './lab-limits';
 import type { RoadmapFile } from './roadmap-file';
 
 type Row = Record<string, unknown>;
@@ -28,6 +29,9 @@ const optString = opt((v) => typeof v === 'string');
 const optNumber = opt(isNumber);
 const oneOf = (words: readonly unknown[]) => opt((v) => words.includes(v));
 const strings = (r: Row, fields: readonly string[]) => fields.every((field) => optString(r[field]));
+/** A lab limit's code (US-12 AC20): absent, or one of the four. Anything else, null
+ *  included, could turn a bound into an exact value, so the row is unreadable. */
+const comparator = (r: Row) => r.comparator === undefined || isComparator(r.comparator);
 
 const medication = (r: Row) => MEDICATIONS.has(r.medicationKey) && strings(r, ['drugName', 'doseUnit', 'changeType', 'updatedAt'])
   && optNumber(r.doseValue);
@@ -37,9 +41,9 @@ const supplement = (r: Row) => typeof r.supplementKey === 'string'
 /** The arrays readers skip rows in, and each one's test. Migrate already
  *  guarantees an object with a string id, and a clinical day where one is due. */
 const ROWS = {
-  measurements: (r: Row) => METRICS.has(r.metricType) && isNumber(r.value)
+  measurements: (r: Row) => METRICS.has(r.metricType) && isNumber(r.value) && comparator(r)
     && strings(r, ['status', 'createdAt', 'source', 'correctsId', 'externalId']),
-  labValues: (r: Row) => typeof r.metricName === 'string' && isNumber(r.value) && optNumber(r.referenceLow) && optNumber(r.referenceHigh)
+  labValues: (r: Row) => typeof r.metricName === 'string' && isNumber(r.value) && comparator(r) && optNumber(r.referenceLow) && optNumber(r.referenceHigh)
     && strings(r, ['unit', 'status', 'createdAt', 'source', 'correctsId']),
   medications: medication,
   medicationHistory: medication,

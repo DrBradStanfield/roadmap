@@ -1,0 +1,73 @@
+/**
+ * US-12 AC20: a lab limit is written as an immutable row with its comparator;
+ * a correction is an exact value; a move keeps the limit; Apple Health never
+ * gets one.
+ */
+import { describe, expect, it } from 'vitest';
+import { bulkAppendValues, correctValue, moveBloodTest, sameLabQuantity } from './record-edits';
+import { createEmptyFile, type FileLabValue, type FileMeasurement } from './roadmap-file';
+import { deviceWrites } from './device-export';
+
+const NOW = '2026-10-21T08:00:00.000Z';
+const empty = () => createEmptyFile({ deviceId: 'limits', now: '2026-10-01T00:00:00.000Z' });
+
+function saved() {
+  const result = bulkAppendValues(empty(), [
+    { kind: 'measurement', metricType: 'lpa', value: 10, comparator: '<', recordedAt: '2026-10-10', source: 'lab_import' },
+    { kind: 'measurement', metricType: 'hdl', value: 1.4, recordedAt: '2026-10-10', source: 'lab_import' },
+    { kind: 'lab', metricName: 'egfr', value: 60, unit: 'mL/min/1.73m²', comparator: '>', recordedAt: '2026-10-10', source: 'lab_import' },
+    { kind: 'lab', metricName: 'folate', value: 45, unit: 'nmol/L', comparator: '>', recordedAt: '2026-10-10', source: 'lab_import' },
+  ], NOW);
+  return result.file;
+}
+
+describe('US-12 AC20: writing a limit', () => {
+  it('the bulk save keeps each comparator on its row, and writes none on an exact value', () => {
+    const file = saved();
+    expect(file.measurements.map((m) => [m.metricType, m.value, m.comparator])).toEqual([['lpa', 10, '<'], ['hdl', 1.4, undefined]]);
+    expect('comparator' in file.measurements[1]).toBe(false);
+    expect(file.labValues.map((l) => [l.metricName, l.value, l.comparator])).toEqual([['egfr', 60, '>'], ['folate', 45, '>']]);
+  });
+
+  it('a correction of a limit is an exact value: the old row flips, the new one carries no comparator', () => {
+    for (const pick of [(f: ReturnType<typeof saved>) => f.measurements[0] as FileMeasurement | FileLabValue, (f: ReturnType<typeof saved>) => f.labValues[0]]) {
+      const file = saved();
+      const old = pick(file);
+      const result = correctValue(file, { id: old.id, newValue: 12, now: NOW });
+      if (!result.ok) throw new Error(result.message);
+      expect(result.row.comparator).toBeUndefined();
+      expect('comparator' in result.row).toBe(false);
+      expect(result.row.correctsId).toBe(old.id);
+      const flipped = [...result.file.measurements, ...result.file.labValues].find((r) => r.id === old.id)!;
+      expect(flipped).toMatchObject({ status: 'entered-in-error', comparator: old.comparator });
+    }
+  });
+
+  it('a moved blood test keeps each limit', () => {
+    const file = saved();
+    const moved = moveBloodTest(file, {
+      from: '2026-10-10', to: '2026-10-08', now: NOW, keep: {},
+      expectedIds: [...file.measurements, ...file.labValues].map((r) => r.id),
+    });
+    if (!moved.ok) throw new Error(moved.message);
+    expect(moved.rows.map((r) => r.comparator)).toEqual(['<', undefined, '>', '>']);
+  });
+
+  it('a limit and an exact value of one number are never the same result', () => {
+    const exact = { name: 'folate', value: 45, unit: 'nmol/L' };
+    expect(sameLabQuantity(exact, { ...exact, comparator: '>' })).toBe(false);
+    expect(sameLabQuantity({ ...exact, comparator: '>' }, { ...exact, comparator: '>' })).toBe(true);
+  });
+});
+
+describe('US-12 AC20: never to Apple Health', () => {
+  it('a vital or blood pressure half printed as a limit is not written, and its day\'s pair is not either', () => {
+    const result = bulkAppendValues(empty(), [
+      { kind: 'measurement', metricType: 'weight', value: 150, comparator: '>', recordedAt: '2026-10-10', source: 'lab_import' },
+      { kind: 'measurement', metricType: 'systolic_bp', value: 120, comparator: '<', recordedAt: '2026-10-10', source: 'lab_import' },
+      { kind: 'measurement', metricType: 'diastolic_bp', value: 70, recordedAt: '2026-10-10', source: 'lab_import' },
+      { kind: 'measurement', metricType: 'weight', value: 80, recordedAt: '2026-10-11', source: 'lab_import' },
+    ], NOW);
+    expect(deviceWrites(result.file, 'apple_health').map((w) => w.values)).toEqual([{ weight: 80 }]);
+  });
+});

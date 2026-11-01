@@ -12,6 +12,7 @@ import { encodeSex, decodeSex, encodeUnitSystem, decodeUnitSystem, isAlcoholAnsw
 import { CANONICAL_UNITS, rangeFault, UNIT_DEFS, type MetricType, type ValidationRange } from './units';
 import { parseLocalisedNumber } from './parseNumber';
 import { birthKept } from './validation';
+import { limitOf, withRowValue } from './lab-limits';
 
 /**
  * Maps HealthInputs field names to metric_type values for storage in the
@@ -142,13 +143,14 @@ export const LONGITUDINAL_FIELDS: ReadonlyArray<keyof HealthInputs> = [
  */
 export function mergeLongitudinalInputs(
   inputs: Partial<HealthInputs>,
-  previous: ReadonlyArray<Pick<ApiMeasurement, 'metricType' | 'value'>>,
+  previous: ReadonlyArray<Pick<ApiMeasurement, 'metricType' | 'value' | 'comparator'>>,
 ): Partial<HealthInputs> {
-  const base = { ...inputs };
+  let base = { ...inputs };
   for (const m of previous) {
     const field = METRIC_TO_FIELD[m.metricType];
-    if (field && (LONGITUDINAL_FIELDS as readonly string[]).includes(field) && base[field] === undefined) {
-      (base as Record<string, unknown>)[field] = m.value;
+    // A saved limit is read by the plan's one rule (US-12 AC20); a value typed over it wins, as any typed value does.
+    if (field && (LONGITUDINAL_FIELDS as readonly string[]).includes(field) && base[field] === undefined && !limitOf(base, field)) {
+      base = withRowValue(base, field, m.value, m.comparator);
     }
   }
   return base;
@@ -177,6 +179,8 @@ export interface ApiMeasurement {
   externalId?: string | null;
   status?: import('./validation').MeasurementStatus;
   correctsId?: string | null;
+  /** A lab result printed as a limit: `value` is its bound (US-12 AC20). */
+  comparator?: import('./lab-limits').Comparator;
 }
 
 /** API medication record shape (camelCase, as returned by API endpoints). FHIR-compatible. */
@@ -437,13 +441,10 @@ export function measurementsToInputs(
   measurements: ApiMeasurement[],
   profile?: ApiProfile | null,
 ): Partial<HealthInputs> {
-  const inputs: Partial<HealthInputs> = {};
-
+  let inputs: Partial<HealthInputs> = {};
   for (const m of measurements) {
     const field = METRIC_TO_FIELD[m.metricType];
-    if (field) {
-      (inputs as any)[field] = m.value;
-    }
+    if (field) inputs = withRowValue(inputs, field, m.value, m.comparator);
   }
 
   if (profile) {

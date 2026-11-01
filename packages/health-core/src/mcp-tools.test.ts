@@ -2547,6 +2547,22 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     expect(fits(commit.structured).written).toEqual({ measurements: 1, labValues: 0, corrections: 0, documents: 3 });
   });
 
+  // US-12 AC20: the website and the iPhone save a limit; the connector's
+  // candidate has no place for its symbol while its tools are under review, so
+  // it never offers one as an exact number: left out and counted, as before.
+  it('US-12 AC20 — import_documents never offers a result printed as a limit; it is counted as left out', async () => {
+    const sync = syncOver(new MemoryCloud());
+    const limited: ImportSurface = { ...surface, async extract() {
+      const report = ldlOnly(2.8, LAB_DAY);
+      report.values.push({ metric: 'hdl', valueSI: 1.5, displayValue: 1.5, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high', comparator: '>' });
+      report.additionalValues.push({ name: 'egfr', value: 60, unit: 'mL/min/1.73m²', comparator: '>' });
+      return { route: 'dropbox', remaining: [], files: [extracted('limits.pdf', report)] };
+    } };
+    const data = fits((await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: limited, latestDay: TODAY })).structured);
+    expect(data.candidates.map((c) => c.metric)).toEqual(['ldl']);
+    expect(data.files[0]).toMatchObject({ droppedValues: 2 });
+  });
+
   // US-35 / US-12 AC8: a value the parse refused ("250,000", a malformed row)
   // left the report silently, and the commit's document row then made the next
   // extract `already_imported`. The count rides on the file entry, with a hint.
