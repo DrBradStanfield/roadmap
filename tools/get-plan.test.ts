@@ -29,7 +29,7 @@ import {
 import { RoadmapStore } from '../widget-src/src/storage/roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../packages/health-core/src/adapter';
-import { computePlan, derivePlanInputs, renderJson, PlanError } from '../packages/health-core/src/plan';
+import { computePlan, derivePlanInputs, NEEDS_SEX, renderJson, PlanError } from '../packages/health-core/src/plan';
 import { loadRecord, renderHtml, renderText, run } from './get-plan';
 
 const CTX = { deviceId: 'us30_test', now: '2026-09-01T09:00:00Z' };
@@ -637,6 +637,8 @@ describe('US-30 AC7 — a plan from numbers, with no record file', () => {
     const text = await captureRun(['--from-values', path]);
     expect(text.code).toBe(0);
     expect(text.stdout).toContain('sex not given');
+    // The text is NEEDS_SEX itself, so the CLI and get_plan's needsSex cannot drift.
+    for (const item of NEEDS_SEX) expect(text.stdout).toContain(item);
     expect(text.stdout.split('\n')[1]).not.toMatch(/\bmale\b/);
   });
 

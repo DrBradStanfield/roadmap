@@ -63,6 +63,8 @@ export {
   SEX_DB,
   UNIT_SYSTEM_DB,
   encodeSex,
+  isSex,
+  SEXES,
   decodeSex,
   encodeUnitSystem,
   decodeUnitSystem,
@@ -162,6 +164,9 @@ export {
   type ApiScreening,
   screeningsToInputs,
   computeFormStage,
+  opensFullForm,
+  type FormStage,
+  type RecordHoldings,
 } from './mappings';
 
 // Reminders
@@ -191,6 +196,8 @@ export {
   HBA1C_THRESHOLDS,
   LDL_THRESHOLDS,
   HDL_THRESHOLDS,
+  HDL_GRID_BANDS,
+  CREATININE_GRID_BANDS,
   TRIGLYCERIDES_THRESHOLDS,
   TOTAL_CHOLESTEROL_THRESHOLDS,
   NON_HDL_THRESHOLDS,
@@ -248,7 +255,7 @@ export { STAT_CARD_EVIDENCE, getIbwEvidence, getProteinEvidence, getBmiEvidence 
 // Reference-range hints (blood-test matrix + legacy form labels)
 export type { RefHint, SexedRefHint } from './reference-hints';
 export { REFERENCE_HINTS, refLineFor } from './reference-hints';
-export { type Grading, type RowTarget, type RowTargetPlan, type RowSubject, TARGET_NEEDS_PROFILE, healthyWaistBelow, rowTarget } from './row-target';
+export { type Grading, type RowTarget, type RowTargetPlan, type RowSubject, TARGET_NEEDS_HEIGHT, TARGET_NEEDS_SEX, healthyWaistBelow, rowTarget } from './row-target';
 export { type CellUnit, isLpaUnit, recordLpaUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel, cellRange } from './cell-unit';
 
 // Sentry PII/PHI scrubbing

@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ChatEmbed } from './components/ChatEmbed';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { computeFormStage } from '@roadmap/health-core';
+import { computeFormStage, type FormStage } from '@roadmap/health-core';
 import { loadFromLocalStorage, loadGuestInputs, MIRROR_CHANGED_EVENT, MIRROR_KEY } from './lib/storage';
 import { resolveAssistantName, setAssistantName } from './lib/assistant-config';
 import { initSentry } from './lib/sentry';
@@ -18,13 +18,13 @@ import './styles.css';
 
 initSentry();
 
-function readFormStage(): 1 | 2 | 3 {
+function readFormStage(): FormStage {
   const cached = loadFromLocalStorage();
   return cached ? computeFormStage(cached.inputs, cached.previousMeasurements) : 1;
 }
 
 function ChatEmbedRoot({ isLoggedIn }: { isLoggedIn: boolean }) {
-  const [formStage, setFormStage] = useState<1 | 2 | 3>(() => readFormStage());
+  const [formStage, setFormStage] = useState<FormStage>(() => readFormStage());
 
   useEffect(() => {
     const recompute = () => {
@@ -45,7 +45,7 @@ function ChatEmbedRoot({ isLoggedIn }: { isLoggedIn: boolean }) {
   }, []);
 
   // The chat context, read as each message is sent: see useChatState.
-  return <ChatEmbed isLoggedIn={isLoggedIn} guestInputs={loadGuestInputs} muted={formStage < 3} />;
+  return <ChatEmbed isLoggedIn={isLoggedIn} guestInputs={loadGuestInputs} muted={formStage < 4} />;
 }
 
 function mount() {
