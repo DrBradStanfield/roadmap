@@ -15,7 +15,7 @@ import { DRAFTS_CLEARED_EVENT, loadFromLocalStorage } from '../lib/storage';
 const interceptHistory = (metric: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
   if (openHistoryLightbox(metric)) e.preventDefault();
 };
-import type { AlcoholAnswer, FormStage, HealthInputs, HealthResults, ScreeningInputs, WeightMedicationTrigger, LipidMarker } from '@roadmap/health-core';
+import type { FormStage, HealthInputs, HealthResults, ScreeningInputs, WeightMedicationTrigger, LipidMarker } from '@roadmap/health-core';
 import {
   type UnitSystem,
   fromCanonicalValue,
@@ -1276,17 +1276,26 @@ export function InputPanel({
   );
 
   // US-60: the answer the plan's "Reduce alcohol intake" Dismiss asks for. Not
-  // an onboarding question, so it shows with the whole form.
+  // an onboarding question, so it shows with the whole form and no attention
+  // highlight. Tapping the chosen answer clears it (M2: the card comes back), so
+  // these are pressed toggle buttons, not radios (a checked radio cannot uncheck).
   const renderAlcohol = () => (
     <div className="health-field">
-      <label htmlFor="alcohol">Alcohol</label>
-      <select
-        id="alcohol"
-        value={inputs.alcohol ?? ''}
-        onChange={(e) => updateField('alcohol', (e.target.value || undefined) as AlcoholAnswer | undefined)}
-      >
-        {ALCOHOL_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
+      <label>Alcohol</label>
+      <div id="alcohol" className="sex-toggle" role="group" aria-label="Alcohol">
+        {ALCOHOL_OPTIONS.map(({ value, label }) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={inputs.alcohol === value}
+            className={`sex-toggle-btn${inputs.alcohol === value ? ' sex-toggle-btn--active' : ''}`}
+            onClick={() => updateField('alcohol', inputs.alcohol === value ? undefined : value)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <p className="field-why">Used to decide whether advice on alcohol applies to you.</p>
     </div>
   );
 

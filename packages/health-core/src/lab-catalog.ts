@@ -605,6 +605,10 @@ export const LAB_CONVERSIONS: readonly LabConversionRow[] = LAB_CATALOG.flatMap(
  * a catalogued test cannot disagree on "free_t4" versus "free t4".
  */
 export function foldName(name: string): string {
+  // A hand-edited row can carry a number or an array here. It gets a key no
+  // printed name can fold to, so it resolves to no entry and shares no slot with
+  // a real row; migrate and merge read past it rather than throw (US-65).
+  if (typeof name !== 'string') return `\u0000${typeof name}`;
   return name.trim().toLowerCase().replace(/[_\s]+/g, ' ');
 }
 
