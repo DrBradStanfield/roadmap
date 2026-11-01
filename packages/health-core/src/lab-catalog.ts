@@ -666,8 +666,6 @@ export function resolveLabCatalogEntry(reportedName: string): LabCatalogEntry | 
   return ENTRY_BY_NAME.get(foldName(reportedName)) ?? ENTRY_BY_LOOSE_NAME.get(looseFold(reportedName)) ?? undefined;
 }
 
-/** For the US-07 AC10 tests: the loose forms two entries share, which resolve to nothing. */
-export const AMBIGUOUS_LOOSE_NAMES: readonly string[] = [...ENTRY_BY_LOOSE_NAME].filter(([, e]) => e === null).map(([n]) => n);
 
 /** A test's plain label wherever a person reads it: a core metric's, else
  *  the catalogue's, else its name title-cased (US-12 AC19). */

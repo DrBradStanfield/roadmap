@@ -4,7 +4,7 @@ import { generateSuggestions } from './suggestions';
 import { STAT_CARD_EVIDENCE, getIbwEvidence } from './evidence';
 import { getBMICategory } from './calculations';
 import { statTiles } from './stat-tiles';
-import { labSlotKey, labTestLabel, canonicalLabRow, resolveLabCatalogEntry, foldName, LAB_CATALOG, AMBIGUOUS_LOOSE_NAMES } from './lab-catalog';
+import { labSlotKey, labTestLabel, canonicalLabRow, resolveLabCatalogEntry, foldName, LAB_CATALOG } from './lab-catalog';
 import { unifiedSystemPrompt, CORE_METRIC_ALIASES } from './lab-extraction';
 import { toCanonicalValue } from './units';
 import type { HealthInputs, HealthResults } from './types';
@@ -109,10 +109,6 @@ describe('US-07 AC10: punctuated names reach their entry (Brad 2026-11-02, issue
     '"%s" still matches nothing', (printed) => {
       expect(resolveLabCatalogEntry(printed)).toBeUndefined();
     });
-
-  it('no loose form is shared by two entries', () => {
-    expect(AMBIGUOUS_LOOSE_NAMES).toEqual([]);
-  });
 
   // Every name the catalogue already answered to answers the same way: its own key,
   // as the exact fold resolves it (first entry wins a name).

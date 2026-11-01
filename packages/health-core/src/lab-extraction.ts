@@ -575,6 +575,19 @@ function toDay(text: string): string {
   return /^\d{4}-\d{2}-\d{2}[T ]/.test(trimmed) ? trimmed.slice(0, 10) : trimmed;
 }
 const labBound = z.preprocess(readModelNumber, z.number().nullable()).optional();
+/**
+ * Longest test name or unit a tool will take, and longest row id. Neither is a
+ * clinical limit — a real test name is a few words and an id is a UUID (~45
+ * chars with a duplicate suffix). They exist because nothing else bounds the
+ * bytes one call can put in the user's file: without them a single call can
+ * write megabytes of a string into a record that has to be read back whole.
+ */
+export const MAX_NAME_LENGTH = 120;
+/** The test's name as the report printed it (US-07 AC10): one line, control codes gone, bounded. */
+const printedNameField = z.unknown().transform(n => {
+  const line = typeof n === 'string' ? fileNameLine(n).replace(/\s+/g, ' ').trim() : '';
+  return line ? cutText(line, MAX_NAME_LENGTH) : undefined;
+}).optional();
 
 const coreValueRow = z.object({
   metric: z.string(),
@@ -585,7 +598,7 @@ const coreValueRow = z.object({
   question: z.string().nullish().transform(q => q ?? undefined).optional(),
   recordedAt: labDay,
   printedMonth: z.unknown().transform(m => (typeof m === 'string' ? m.trim() : undefined)).optional(),
-  printedName: z.unknown().transform(n => (typeof n === 'string' && n.trim() ? cutText(n.replace(/\s+/g, ' ').trim(), 120) : undefined)).optional(),
+  printedName: printedNameField,
 });
 
 const additionalValueRow = z.object({
@@ -596,7 +609,7 @@ const additionalValueRow = z.object({
   referenceHigh: labBound,
   recordedAt: labDay,
   printedMonth: z.unknown().transform(m => (typeof m === 'string' ? m.trim() : undefined)).optional(),
-  printedName: z.unknown().transform(n => (typeof n === 'string' && n.trim() ? cutText(n.replace(/\s+/g, ' ').trim(), 120) : undefined)).optional(),
+  printedName: printedNameField,
 });
 
 const unifiedResultSchema = z.object({
@@ -735,28 +748,31 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
   // whatever key the model chose, and a printed urine creatinine is filed as a
   // lab row, never as serum creatinine. Website and BYOK only (the `full`
   // prompt asks for the name); a row without one is filed as before.
-  // Creatinine (Brad 2026-11-02): a printed name that says urine keeps the row
-  // urine, and a row the model filed as urine is never moved into blood
-  // creatinine ("Creatinine" under a URINE heading); otherwise it is blood
-  // creatinine, and the unit check below still refuses urine-only units.
-  const byPrinted = (name?: string): ResolvedName => (mode === 'full' && name ? resolveName(name) : null);
-  const saysUrine = (name?: string) => !!name && URINE_MARKER.test(name.replace(/_/g, ' '));
+  // Creatinine (Brad 2026-11-02): when one name says urine and the other would
+  // make the row serum creatinine, the urine one wins ("Creatinine" under a
+  // URINE heading stays urine); otherwise the unit check below still refuses
+  // urine-only units.
+  const printedOf = (v: { printedName?: string }) => (mode === 'full' ? v.printedName : undefined);
+  const saysUrine = (name: string) => URINE_MARKER.test(foldName(name));
+  const intoCreatinine = (name: string) => resolveCoreMetricName(name) === 'creatinine';
+  const filingName = (model: string, printed?: string): string =>
+    !printed ? model
+      : saysUrine(model) && intoCreatinine(printed) ? model
+        : saysUrine(printed) && intoCreatinine(model) ? printed
+          : resolveName(printed) ? printed : model;
   const coreIn: typeof parsed.values = [];
   const labIn: typeof parsed.additionalValues = [];
   for (const v of parsed.values) {
-    const printed = byPrinted(v.printedName);
-    const metric = printed?.kind === 'core' ? printed.metric : v.metric;
-    if (printed?.kind === 'lab' || (mode === 'full' && metric === 'creatinine' && saysUrine(v.printedName))) {
-      labIn.push({ name: v.printedName!, value: v.value, unit: v.unit, referenceLow: null, referenceHigh: null, recordedAt: v.recordedAt, printedMonth: v.printedMonth, printedName: v.printedName });
-    } else {
-      coreIn.push({ ...v, metric });
-    }
+    const printedName = printedOf(v);
+    const name = filingName(v.metric, printedName);
+    const filed = resolveName(name);
+    if (filed?.kind === 'core') coreIn.push({ ...v, metric: filed.metric, printedName });
+    else if (name === v.metric) coreIn.push({ ...v, printedName });
+    else labIn.push({ name, value: v.value, unit: v.unit, referenceLow: null, referenceHigh: null, recordedAt: v.recordedAt, printedMonth: v.printedMonth, printedName });
   }
   for (const v of parsed.additionalValues) {
-    const printed = byPrinted(v.printedName);
-    const keepsUrine = printed?.kind === 'core' && printed.metric === 'creatinine' && saysUrine(v.name);
-    const printedUrine = mode === 'full' && saysUrine(v.printedName) && resolveCoreMetricName(v.name) === 'creatinine';
-    labIn.push((printed && !keepsUrine) || printedUrine ? { ...v, name: v.printedName! } : v);
+    const printedName = printedOf(v);
+    labIn.push({ ...v, name: filingName(v.name, printedName), printedName });
   }
   const coreRows = isLab ? coreIn.flatMap(ownDay).filter(v => v.metric !== 'creatinine' || !refusesCreatinine(v)).map(exactMmol) : [];
   const slot = (metric: string, day?: string) => `${metric}@${day ?? ''}`;

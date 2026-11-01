@@ -23,6 +23,7 @@ import {
   FOLDER_IMPORT_EXTENSIONS,
   isImportableEntryName,
   MAX_FILE_NAME_LENGTH,
+  MAX_NAME_LENGTH,
   resolveCoreMetricName,
   resolveName,
   type ResolvedName,
@@ -67,16 +68,8 @@ import { isReadableRow, readableView } from './readable-rows';
  */
 export const MAX_LAB_ROWS_PER_CALL = 50;
 
-/**
- * Longest test name or unit a tool will take, and longest row id. Neither is a
- * clinical limit — a real test name is a few words and an id is a UUID (~45
- * chars with a duplicate suffix). They exist because nothing else bounds the
- * bytes one call can put in the user's file: without them a single call can
- * write megabytes of a string into a record that has to be read back whole.
- */
-export const MAX_NAME_LENGTH = 120;
 /** Longest file name a source or a folder entry keeps: a file system's own bound, and what `fileNames` must match. */
-export { MAX_FILE_NAME_LENGTH };
+export { MAX_FILE_NAME_LENGTH, MAX_NAME_LENGTH };
 /** Unrecognized lines one extract answers with; the model's output cap would otherwise bound them at ~30 KB. */
 export const MAX_UNRECOGNIZED_LINES = 50;
 /** One such line: a printed name, a value, a unit, the reason and the way round it (US-36 AC2). */

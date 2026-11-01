@@ -1,7 +1,7 @@
 // US-07 AC10 (Brad 2026-11-02, "Yes, all tests"): a catalogued test's name, however a
 // report punctuates it, saves into that test's own slot, in its SI unit.
 import { describe, expect, it } from 'vitest';
-import { AMBIGUOUS_LOOSE_NAMES, LAB_CATALOG, foldName, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
+import { LAB_CATALOG, foldName, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
 import { appendLabValue } from './record-edits';
 import { createEmptyFile, type FileLabValue, type RoadmapFile } from './roadmap-file';
 import { mergeFiles } from './merge';
@@ -56,8 +56,8 @@ describe('US-07 AC10: punctuated spellings of other catalogued tests', () => {
         }
       }
     }
+    // A loose form two entries shared would resolve to nothing, so a collision shows here as a miss.
     expect(misses).toEqual([]);
-    expect(AMBIGUOUS_LOOSE_NAMES).toEqual([]);
   });
 
   it('a punctuated name saves in the catalogue unit, converted from the printed one', () => {
