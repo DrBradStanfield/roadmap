@@ -15,7 +15,7 @@
  */
 import * as z from './zod';
 import { getDisplayRange, rangeFault, reportedToCanonical, toCanonicalValue, type MetricType, type UnitSystem } from './units';
-import { foldName, LAB_CATALOG, LAB_GROUPS, labTestLabel, normalizeLabUnit, PROMPT_DEFERRED_KEYS, resolveLabCatalogEntry, type LabCatalogEntry } from './lab-catalog';
+import { foldName, LAB_CATALOG, LAB_GROUPS, labTestLabel, normalizeLabUnit, resolveLabCatalogEntry, type LabCatalogEntry } from './lab-catalog';
 import { cutText } from './chat-history';
 import { parseLocalisedNumber } from './parseNumber';
 import { DOCUMENT_TYPES } from './validation';
@@ -411,7 +411,7 @@ ${VALID_METRICS.map((metric) => `  - "${metric}" — ${CORE_METRIC_ALIASES[metri
   11. An eGFR printed with < or > (">60", ">90") is returned exactly as printed, as a string: never as its number.
 ${mode === 'full' ? '  12. Every row in "values" and "additionalValues" also has "printedName": the test name exactly as the report prints it.\n' : ''}
   ADDITIONAL VALUES — use these standardized snake_case names when applicable:
-${LAB_GROUPS.map((group) => [group.label, LAB_CATALOG.filter((entry) => entry.group === group.id && !PROMPT_DEFERRED_KEYS.has(entry.key)).map((entry) => entry.key)] as const)
+${LAB_GROUPS.map((group) => [group.label, LAB_CATALOG.filter((entry) => entry.group === group.id).map((entry) => entry.key)] as const)
   .filter(([, keys]) => keys.length > 0)
   .map(([label, keys]) => `  ${label}: ${keys.join(', ')}`).join('\n')}
   Any other test: use the best descriptive snake_case name.

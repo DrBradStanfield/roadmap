@@ -330,22 +330,6 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'fructosamine', label: 'Fructosamine', group: 'metabolic', unit: 'µmol/L', aliases: [] },
 ];
 
-/**
- * The tests US-21 AC19 added. The extraction prompt does not suggest their
- * keys until the #166 Haiku benchmark: a prompt change waits for it. The
- * catalogue still resolves whatever name the model returns. (The two cortisol
- * timings left this list on Brad's call, US-07 AC10.)
- */
-export const PROMPT_DEFERRED_KEYS: ReadonlySet<string> = new Set([
-  'egfr_cystatin', 'egfr_combined', 'anion_gap', 'osmolality_serum', 'bilirubin_indirect', 'lipase', 'amylase', 'rdw_sd',
-  'mpv', 'immature_granulocytes', 'reticulocytes', 'nrbc', 'd_dimer', 'fibrinogen', 'total_t4', 'total_t3', 'reverse_t3',
-  't3_uptake', 'thyroglobulin', 'anti_tg', 'trab', 'pth', 'amh', 'bioavailable_testosterone', 'psa_free_percent', 'estrone',
-  'androstenedione', 'oh_progesterone_17', 'dht', 'acth', 'gh', 'hcg', 'red_cell_folate', 'calcium_ionised', 'uibc', 'stfr',
-  'copper', 'caeruloplasmin', 'selenium', 'omega3_index', 'vitamin_a', 'vitamin_e', 'vitamin_c', 'vitamin_b6', 'vitamin_b1',
-  'mma', 'procalcitonin', 'ige', 'rf', 'anti_ccp', 'total_iga', 'ttg_iga', 'nt_probnp', 'bnp', 'troponin_t', 'troponin_i',
-  'c_peptide', 'eag', 'vldl', 'lactate', 'fructosamine',
-]);
-
 const SUPERSCRIPT_DIGITS: Record<string, string> = {
   '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
   '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
