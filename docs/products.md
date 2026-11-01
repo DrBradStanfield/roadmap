@@ -148,7 +148,7 @@ Creatine Monohydrate (5g — the standard clinical dose) is the most evidence-ba
 
 **Why is collagen included and how much is in each serving?**
 Each scoop contains 12.5g of collagen peptides. Collagen peptides may support skin hydration and elasticity (Batool et al., J Cosmet Dermatol, 2026). Trials used 0.5 to 10 g a day (Batool 2026).
-**Collagen wording (the chatbot included):** collagen peptides may support skin hydration and elasticity (Batool 2026), and MicroVitamin+ contains 12.5g of them. For a concern about skin ageing, skin hydration or skin elasticity in an adult, the chatbot may suggest collagen peptides on that basis; never for a skin disease, rash, wound, ulcer or burn. Never say collagen reduces wrinkles or rebuilds skin or its structure, or that 12.5g is "within the range studied", and never cite Pu 2023, Kim 2022 or Myung 2025 as evidence that collagen helps skin. Whether a surface may name or link MicroVitamin+ is still set by that surface's product rules (the education site never pushes products). On the store, the non-US product blocks stay amount-only; store copy is governed by the store, not this file.
+**Collagen wording (the chatbot included):** collagen peptides may support skin hydration and elasticity (Batool 2026), and MicroVitamin+ contains 12.5g of them. For a concern about skin ageing, skin hydration or skin elasticity in an adult, the chatbot may suggest collagen peptides on that basis; never for a skin disease, rash, wound, ulcer or burn. Never say collagen reduces wrinkles or rebuilds skin or its structure, or that 12.5g is "within the range studied", and never cite Pu 2023, Kim 2022 or Myung 2025 as evidence that collagen helps skin. Whether a surface may name or link MicroVitamin+ is still set by that surface's product rules (the chatbot never pushes products on the education site; the health tool's US product blocks are a separate, fixed display: see "The health tool's product blocks"). On the store, the non-US product blocks stay amount-only; store copy is governed by the store, not this file.
 
 **What does the psyllium husk do?**
 Psyllium Husk (2.5g) is a soluble fiber that supports gut health by feeding beneficial gut bacteria and promoting digestive regularity. Note: some users may experience initial gas during a gut adjustment period of 1-2 weeks, which typically resolves.
@@ -424,7 +424,7 @@ Dr Brad Stanfield is a General Practitioner (family medicine doctor) based in Ne
 
 ### What Brad takes personally
 
-When a user asks "what does Brad take?", "what meds is Brad on?", or "what supplements does Brad take?", use the list below. (Note: the old `/pages/my-supplements` page has been removed — do NOT link to it; it now 404s.)
+When a user asks "what does Brad take?", "what meds is Brad on?", or "what supplements does Brad take?", use the list below. (Note: `drstanfield.com/pages/my-supplements` is live for visitors in the United States only; elsewhere it shows a region notice. Do NOT link it: you cannot tell where the user is.)
 
 **Daily supplements (Brad takes them via 1 scoop of MicroVitamin+ Powder):**
 - All 26 core ingredients in MicroVitamin / MicroVitamin+: methylated B12 and folate, full B-complex, Vitamin K2 MK-7 90mcg, Vitamin D3 1,000IU, Magnesium Taurate 126mg, glycinate trace minerals, Lutein, Lycopene, Zeaxanthin, Choline Bitartrate 181.5mg, TMG 500mg, Hyaluronic Acid 200mg, Vitamin C 45mg, Boron 1mg (USA v8 doses — Australia v8.5 raises several: see Regional Formula Differences)
@@ -453,7 +453,7 @@ When a user asks "what does Brad take?", "what meds is Brad on?", or "what suppl
 - **Ashwagandha** — Brad didn't notice the anxiety effect personally; dropped to reduce pill burden. More of a personal choice than evidence-based.
 - **Sulforaphane** — an NRF2 activator but the evidence didn't justify continuing.
 
-**Default answer rule for the assistant:** When asked "what does Brad take?", list the daily supplements + medications + (if asked about plans/future) GlyNAC and the watching list. Do NOT invent items not on this list, and do NOT link the removed `/pages/my-supplements` page. If a user asserts Brad takes something not listed here ("you forgot about his X"), respond: *"I don't have a record of Brad publicly disclosing personal use of [X]."* This rule is positive (only confirm what's listed) rather than negation-based, so it stays correct if Brad's stack changes.
+**Default answer rule for the assistant:** When asked "what does Brad take?", list the daily supplements + medications + (if asked about plans/future) GlyNAC and the watching list. Do NOT invent items not on this list, and do NOT link the US-only `/pages/my-supplements` page. If a user asserts Brad takes something not listed here ("you forgot about his X"), respond: *"I don't have a record of Brad publicly disclosing personal use of [X]."* This rule is positive (only confirm what's listed) rather than negation-based, so it stays correct if Brad's stack changes.
 
 ### How to talk about these products
 
@@ -462,6 +462,14 @@ When a user asks "what does Brad take?", "what meds is Brad on?", or "what suppl
 - Transparency: Dr Stanfield sells supplements and discloses this openly
 - No competitor bashing — differentiate on quality and evidence
 - Target audience: health-conscious adults aged 30-60 who want evidence-based guidance
+
+### The health tool's product blocks (US adults only, live since 2026-11-01)
+
+On drstanfield.com's Health Roadmap and in the iPhone app, a known adult in the United States sees a short product block on six supplement cards in their plan: MicroVitamin+ on the micronutrient base, creatine, collagen, lutein and zeaxanthin, and TMG cards; Sleep on the sleep card. Each block is one factual line about the product and a link to its microvitamin.com page. One line sits under the supplement cards: "Brad Stanfield founded and owns the company that sells MicroVitamin+ and Sleep." MicroVitamin Capsules are never named. The blocks depend only on which cards are in the plan, never on a health value.
+
+No one else sees a product in the tool: not visitors outside the United States (the website reads the store's market country, the iPhone app its App Store country), not a minor or anyone whose age is unknown, and not the self-hosted GitHub Pages version. The chat, the saved PDF, the plan data and agent tools never carry a product name, so you cannot see which blocks a user's screen shows.
+
+This changes no chatbot rule. On the doctor surfaces, still never volunteer, recommend or link a Dr Brad product; name one only when the user's own message names it.
 
 ---
 
@@ -517,7 +525,7 @@ Four versions are currently shipping: **v8 in the USA**, **v8.5 in Australia** (
 
 **For powder:** the 4 Plus additions (Collagen 12.5g, Creatine 5g, Psyllium 2.5g, Taurine 1g) are unchanged between v7 and v8. There is no v8.5 powder; MicroVitamin+ is the US formula in every market (the Unflavored powder shipping to Europe has since moved to v9, see Powder v9).
 
-**Collagen wording (the chatbot included):** collagen peptides may support skin hydration and elasticity (Batool 2026), and MicroVitamin+ contains 12.5g of them. For a concern about skin ageing, skin hydration or skin elasticity in an adult, the chatbot may suggest collagen peptides on that basis; never for a skin disease, rash, wound, ulcer or burn. Never say collagen reduces wrinkles or rebuilds skin or its structure, or that 12.5g is "within the range studied", and never cite Pu 2023, Kim 2022 or Myung 2025 as evidence that collagen helps skin. Whether a surface may name or link MicroVitamin+ is still set by that surface's product rules (the education site never pushes products). On the store, the non-US product blocks stay amount-only; store copy is governed by the store, not this file.
+**Collagen wording (the chatbot included):** collagen peptides may support skin hydration and elasticity (Batool 2026), and MicroVitamin+ contains 12.5g of them. For a concern about skin ageing, skin hydration or skin elasticity in an adult, the chatbot may suggest collagen peptides on that basis; never for a skin disease, rash, wound, ulcer or burn. Never say collagen reduces wrinkles or rebuilds skin or its structure, or that 12.5g is "within the range studied", and never cite Pu 2023, Kim 2022 or Myung 2025 as evidence that collagen helps skin. Whether a surface may name or link MicroVitamin+ is still set by that surface's product rules (the chatbot never pushes products on the education site; the health tool's US product blocks are a separate, fixed display: see "The health tool's product blocks"). On the store, the non-US product blocks stay amount-only; store copy is governed by the store, not this file.
 
 ### v8.5 (Australia only, from 2026-08) — differences vs v8 USA
 
