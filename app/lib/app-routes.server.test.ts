@@ -474,6 +474,34 @@ describe('US-52 AC4c: a verified key\'s failures are its own', () => {
   });
 });
 
+describe('US-52 AC4c: the key\'s unit and a burst', () => {
+  const IP = '203.0.113.9';
+
+  it('hands the key\'s unit back on a limit and on a store outage at the key step (US-52 AC4c)', async () => {
+    await registered();
+    store.rows.get(device.keyId)!.uses.chat = 60;
+    for (let i = 0; i < 25; i++) expect((await appChat(signed('/api/app/v1/chat', chatBody), store)).status).toBe(429);
+    expect(appLimits.keyFailures.remaining(device.keyId)).toBe(20);
+    store.use = async () => { throw new Error('down'); };
+    for (let i = 0; i < 25; i++) expect((await appChat(signed('/api/app/v1/chat', chatBody), store)).status).toBe(503);
+    expect(appLimits.keyFailures.remaining(device.keyId)).toBe(20);
+  });
+
+  it('a parallel burst of one key\'s stale replays charges exactly 20; the rest get 429 and hold no shared or IP unit (US-52 AC4c)', async () => {
+    await registered();
+    expect((await appChat(signed('/api/app/v1/chat', { ...chatBody, stream: false }, { counter: 5 }), store)).status).toBe(200);
+    const res = await Promise.all(Array.from({ length: 50 }, () => appChat(signed('/api/app/v1/chat', chatBody, { counter: 5 }), store)));
+    const reasons = await Promise.all(res.map(async (r) => `${r.status} ${(await r.json()).reason}`));
+    expect(reasons.filter((r) => r === '401 stale_counter').length).toBe(20);
+    expect(reasons.filter((r) => r === '429 limit').length).toBe(30);
+    expect(appLimits.keyFailures.remaining(device.keyId)).toBe(0);
+    expect(appLimits.failures.remaining(ipBucket(IP))).toBe(200);
+    // Only the one good turn holds a shared unit.
+    expect(appLimits.ip.chat.remaining(ipBucket(IP))).toBe(199);
+    expect(appLimits.machine.chat.remaining('machine')).toBe(appLimits.machine.chat.remaining('nobody') - 1);
+  });
+});
+
 describe('US-52 AC1b: only failing registrations spend the IP\'s attempts', () => {
   const IP = '198.51.100.50';
   const fresh = async () => (await appChallenge(new Request(`${BASE}/api/app/v1/attest/challenge`, { method: 'POST' })).json()).challenge as string;
