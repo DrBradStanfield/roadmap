@@ -752,28 +752,36 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
   // Creatinine (Brad 2026-11-02): when one name says urine and the other would
   // make the row serum creatinine, the urine one wins ("Creatinine" under a
   // URINE heading stays urine); otherwise the unit check below still refuses
-  // urine-only units.
+  // urine-only units. A printed "Cr" never overrides: it is chromium as often
+  // as creatinine, so the model's pick and its checks stand (US-12 AC15).
   const printedOf = (v: { printedName?: string }) => (mode === 'full' ? v.printedName : undefined);
   const saysUrine = (name: string) => URINE_MARKER.test(foldName(name));
   const intoCreatinine = (name: string) => resolveCoreMetricName(name) === 'creatinine';
-  const filingName = (model: string, printed?: string): string =>
-    !printed ? model
+  const filingName = (model: string, printed: string): string =>
+    foldName(printed) === 'cr' ? model
       : saysUrine(model) && intoCreatinine(printed) ? model
         : saysUrine(printed) && intoCreatinine(model) ? printed
           : resolveName(printed) ? printed : model;
+  // A core slot the model already filled on that day is never taken by another
+  // row's printed name: that row keeps the model's pick.
+  const reportDayOf = (d?: string) => (!d || d === parsed.reportDate ? '' : d);
+  const modelSlots = new Set(parsed.values.map(v => `${v.metric}@${reportDayOf(v.recordedAt)}`));
   const coreIn: typeof parsed.values = [];
   const labIn: typeof parsed.additionalValues = [];
   for (const v of parsed.values) {
     const printedName = printedOf(v);
+    if (!printedName) { coreIn.push(v); continue; }
     const name = filingName(v.metric, printedName);
     const filed = resolveName(name);
-    if (filed?.kind === 'core') coreIn.push({ ...v, metric: filed.metric, printedName });
-    else if (name === v.metric) coreIn.push({ ...v, printedName });
+    if (filed?.kind === 'core') {
+      const moves = filed.metric !== v.metric && modelSlots.has(`${filed.metric}@${reportDayOf(v.recordedAt)}`);
+      coreIn.push({ ...v, metric: moves ? v.metric : filed.metric, printedName });
+    } else if (name === v.metric) coreIn.push({ ...v, printedName });
     else labIn.push({ name, value: v.value, unit: v.unit, referenceLow: null, referenceHigh: null, recordedAt: v.recordedAt, printedMonth: v.printedMonth, printedName });
   }
   for (const v of parsed.additionalValues) {
     const printedName = printedOf(v);
-    labIn.push({ ...v, name: filingName(v.name, printedName), printedName });
+    labIn.push(printedName ? { ...v, name: filingName(v.name, printedName), printedName } : v);
   }
   const coreRows = isLab ? coreIn.flatMap(ownDay).filter(v => v.metric !== 'creatinine' || !refusesCreatinine(v)).map(exactMmol) : [];
   const slot = (metric: string, day?: string) => `${metric}@${day ?? ''}`;

@@ -111,7 +111,7 @@ export function labReview(extraction: Extraction, now: string, file: RoadmapFile
     })),
     ...(extraction.additionalValues ?? []).map((v, i) => ({
       ref: `a${i}`,
-      label: v.printedName ?? v.name,
+      label: labTestLabel(v.name),
       value: String(v.value),
       unit: v.unit,
       day: ownDay(v.recordedAt, now),

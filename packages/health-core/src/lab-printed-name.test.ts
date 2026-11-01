@@ -3,7 +3,7 @@
 // stands only when it does not.
 import { describe, expect, it } from 'vitest';
 import { parseUnifiedResult, toUnifiedResult, unifiedSystemPrompt, type DocumentPromptMode } from './lab-extraction';
-import { labSlotKey } from './lab-catalog';
+import { canonicalLabRow, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
 
 const extract = (rows: { values?: unknown[]; additionalValues?: unknown[] }, mode: DocumentPromptMode = 'full') =>
   toUnifiedResult(parseUnifiedResult({ classification: 'lab_report', reportDate: '2026-10-30', document: null, values: [], additionalValues: [], ...rows }), mode);
@@ -138,6 +138,38 @@ describe('US-07 AC10: creatinine (Brad 2026-11-02)', () => {
   it('...and a creatinine picked only by the model\'s name is still never promoted', () => {
     const result = extract({ additionalValues: [lab('creatinine', 'Kreatinin-Wert', 82, 'µmol/L')] });
     expect(result.values).toEqual([]);
+  });
+});
+
+describe('US-07 AC10 adversary fixes', () => {
+  it.each([
+    ['creatinine', 'mg/mmol'], ['creatinine', ''], ['creatinine', 'µg/L'],
+  ])('a printed "Cr" never overrides: model %s in "%s" keeps its own creatinine checks (R2, US-12 AC15)', (model, unit) => {
+    const result = extract({ additionalValues: [lab(model, 'Cr', 3.1, unit)] });
+    expect(result.additionalValues).toEqual([]);
+    expect(result.refusedValues?.map((r) => r.metric)).toEqual(['creatinine']);
+  });
+
+  it('a printed "Cr" leaves a chromium the model\'s own row (R2)', () => {
+    const [row] = extract({ additionalValues: [lab('chromium', 'Cr', 0.3, 'µg/L')] }).additionalValues;
+    expect(row.name).toBe('chromium');
+  });
+
+  it.each(['full', 'metadata'] as const)('%s: a core row with no printed name is filed exactly as before; a non-key metric is still dropped (R3)', (mode) => {
+    const { values } = extract({ values: [core('LDL'), core('Serum Creatinine', undefined, 80, '')] }, mode);
+    expect(values).toEqual([]);
+  });
+
+  it('a printed name never moves a row into a core slot the model filled that day (R4)', () => {
+    const { values } = extract({ values: [core('ldl', 'Cholesterol', 2.8), core('total_cholesterol', 'Total Cholesterol', 5.2)] });
+    expect(values.map((v) => [v.metric, v.displayValue])).toEqual([['ldl', 2.8], ['total_cholesterol', 5.2]]);
+  });
+
+  it('a printed "BUN" in mg/dL is stored converted, as its own words say (the caller sees mmol/L)', () => {
+    const [row] = extract({ additionalValues: [lab('urea', 'BUN', 14, 'mg/dL')] }).additionalValues;
+    const entry = resolveLabCatalogEntry(row.name)!;
+    expect(canonicalLabRow(entry, { value: row.value, unit: row.unit })?.stored).toMatchObject({ unit: 'mmol/L' });
+    expect(canonicalLabRow(entry, { value: row.value, unit: row.unit })?.stored.value).toBeCloseTo(5.0, 1);
   });
 });
 
