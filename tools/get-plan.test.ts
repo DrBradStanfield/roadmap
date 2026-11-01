@@ -289,7 +289,7 @@ describe('US-30 AC5 — an untrusted file fails clearly, never with a stack', ()
   });
 
   it('explains an empty record instead of computing a plan from nothing', () => {
-    expect(() => computePlan(createEmptyFile(CTX), NOW)).toThrow(/no usable height and sex/);
+    expect(() => computePlan(createEmptyFile(CTX), NOW)).toThrow(/no usable height \(/);
   });
 
   /**
@@ -308,7 +308,7 @@ describe('US-30 AC5 — an untrusted file fails clearly, never with a stack', ()
       hint = (error as { hint?: string }).hint ?? '';
     }
     expect(hint).toMatch(/height/);
-    expect(hint).toMatch(/male or female/);
+    expect(hint).not.toMatch(/male or female/); // US-07 AC8: the plan needs a height, not a sex
     expect(hint).toMatch(/in the app/);           // the route the CLI user has
     expect(hint).toMatch(/update_profile/);       // the route an assistant has
   });
@@ -622,6 +622,22 @@ describe('US-30 AC7 — a plan from numbers, with no record file', () => {
     const tall = await captureRun(['--from-values', spec([], { heightCm: 900 })]);
     expect(tall.code).toBe(1);
     expect(tall.stderr).toContain('heightCm');
+  });
+
+  // US-07 AC8: sex is optional; the plan says what its absence costs, and never prints "male".
+  it('plans numbers with no sex: --json nulls what needs it and lists needsSex; the text says sex not given', async () => {
+    const path = join(dir, 'nosex.json');
+    writeFileSync(path, JSON.stringify({ age: 52, heightCm: 178, values: [{ metric: 'weight', value: 80, unit: 'kg' }] }));
+    const json = await captureRun(['--from-values', path, '--json']);
+    expect(json.code).toBe(0);
+    const payload = JSON.parse(json.stdout);
+    expect(payload.profile).toMatchObject({ sex: null, idealBodyWeightKg: null, proteinTargetG: null, bmi: 25.2 });
+    expect(payload.missingInputs).toContain('sex');
+    expect(payload.profile.needsSex.length).toBeGreaterThan(0);
+    const text = await captureRun(['--from-values', path]);
+    expect(text.code).toBe(0);
+    expect(text.stdout).toContain('sex not given');
+    expect(text.stdout.split('\n')[1]).not.toMatch(/\bmale\b/);
   });
 
   it('refuses a record file beside --from-values, and a second value for the same day', async () => {

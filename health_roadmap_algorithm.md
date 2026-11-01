@@ -39,6 +39,7 @@ Sex-specific target BMIs (based on mortality meta-analyses):
 - **Female:** BMI target = 22 (optimal mortality range 20–23)
 - **Minimum:** `max(result, 30)` kg
 - Rounded to 1 decimal place
+- **No sex on record:** no ideal body weight. There is no unisex target BMI, so the plan never falls back to either one (US-07 AC8).
 
 ### Daily Protein Target
 
@@ -46,6 +47,8 @@ Sex-specific target BMIs (based on mortality meta-analyses):
 - **CKD (eGFR < 45):** `round(IBW * 1.0)` grams/day
 
 The CKD adjustment uses strict less-than: at exactly eGFR 45, the normal 1.2 multiplier applies.
+
+The target is worked out from ideal body weight, so it needs sex too: with no sex on record there is no protein target (US-07 AC8).
 
 ### BMI
 
@@ -92,12 +95,14 @@ Input: creatinine in umol/L. Internal conversion: `Cr_mg_dL = Cr_umol_L / 88.4`.
 
 Rounded to nearest integer (mL/min/1.73m^2).
 
+**No sex on record:** no calculated eGFR. The equation has no unisex form, so the plan never falls back to either branch (US-07 AC8). A lab-printed eGFR still stands (below).
+
 **Source (US-07 AC7, Brad 2026-10-27).** The plan reads one eGFR, chosen from two candidates by `withLabEgfr` (`plan.ts`):
 
 - (a) the eGFR above, calculated from the latest active creatinine and dated by that row;
 - (b) the latest active lab `egfr` row: the creatinine eGFR the lab printed, stored in mL/min/1.73m². `egfr_cystatin` and `egfr_combined` are never used.
 
-The newer by measurement day wins. On the same day the lab's eGFR wins: the lab worked it out from a real serum creatinine, and ours may come from a misread row. Only one exists: that one. Candidate (a) exists only when the plan can calculate it: a known birth year and a creatinine inside its input range (10–2650 µmol/L). Otherwise the lab eGFR stands, whatever the creatinine's day. Neither: no eGFR. A creatinine with no date (typed and not yet saved, or stated in the chat without a date) counts as today's, the day it would be saved with; an unsaved blood-test draft counts on the day it is dated. A creatinine is never worked back from an eGFR. The lab eGFR needs no age, and is rounded to the nearest integer. It drives the same rules as the calculated one: the CKD protein target, the potassium gate and the eGFR tile. A known minor's eGFR is withheld either way (section on adult readings). With a lab eGFR, creatinine is not a missing plan input.
+The newer by measurement day wins. On the same day the lab's eGFR wins: the lab worked it out from a real serum creatinine, and ours may come from a misread row. Only one exists: that one. Candidate (a) exists only when the plan can calculate it: a known birth year, a known sex (US-07 AC8) and a creatinine inside its input range (10–2650 µmol/L). Otherwise the lab eGFR stands, whatever the creatinine's day. Neither: no eGFR. A creatinine with no date (typed and not yet saved, or stated in the chat without a date) counts as today's, the day it would be saved with; an unsaved blood-test draft counts on the day it is dated. A creatinine is never worked back from an eGFR. The lab eGFR needs no age, and is rounded to the nearest integer. It drives the same rules as the calculated one: the CKD protein target, the potassium gate and the eGFR tile. One exception (US-07 AC8, orchestrator's call 2026-11-01, the cautious side): when a creatinine newer than the lab eGFR exists but the plan cannot calculate from it (no sex or no birth year), the lab eGFR still shows and still sets the protein target, but it does not open the potassium advice (`labEgfrOutdated`). Potassium advice needs an eGFR that no newer creatinine has outdated. A known minor's eGFR is withheld either way (section on adult readings). With a lab eGFR, creatinine is not a missing plan input.
 
 ### Non-HDL Cholesterol
 
@@ -500,6 +505,9 @@ The Optimal line for LDL and non-HDL is the plan's on-treatment target (below). 
 |-----|--------------|-------|
 | Male | < 1.03 | < 40 |
 | Female | < 1.29 | < 50 |
+| Not on record | no threshold | no threshold |
+
+With no sex on record the plan grades no HDL, so `hdl-low` does not show (US-07 AC8).
 
 ### Triglycerides (mmol/L)
 
@@ -622,6 +630,10 @@ The plan is built for adults aged 18 and over (US-07 AC6, 2026-10-14; amended th
 | 18 or over | The plan below, unchanged. |
 | Unknown (no birth year) | The plan below, except the medicine cards. Medicine cards need a known age of 18 or over. When the plan would show any, they give way to one card where the first stood: `add-birth-year` (general, info), "Add your birth year": "Medicine suggestions need your age. Add your birth year to see them." Every other card is unchanged. The standalone lipid cards (`apob-*`, `non-hdl-*`, `ldl-*`, `total-chol-*`) never give way to the lipid cascade here, because the cascade is not shown. No weight card gives way to the weight cascade, at any age. The kept cards suggest no medicine in their own text: `apob-very-high` ends "Discuss treatment, including lifestyle changes, with your doctor." and `ldl-very-high` "Discuss treatment with your doctor." in place of their statin sentence, `bp-stage2` says "Discuss treatment with your doctor." in place of "Medication is typically recommended at this level.", `bp-stage1` and `bp-stage2` keep their weight-loss sentences but leave out "GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.", and the `lpa-elevated` checklist leaves out its "not started" medicine lines. One exception, by decision: `ldl-high` keeps "Consider lifestyle modifications and discuss medication options." It names no medicine, and discussing is not suggesting. |
 
+**Unknown sex (US-07 AC8, Brad 2026-10-31).** The plan needs only a height. A stored sex that is not male or female counts as none (the record is not changed). With no sex on record it is the plan above, minus every part that needs sex: the ideal body weight, the protein target and its `protein-target` card, a calculated eGFR (a lab-printed one still stands, and a calculated one cannot outrank it; when a newer creatinine exists, that lab eGFR opens no potassium advice), the `hdl-low` card, and the sex-specific screenings (breast, cervical, prostate, endometrial, bone density), as cards and as reminders in `due` (section 11). Nothing falls back to a male or female default. BMI, the waist-to-height ratio and every unsexed card are unchanged. `get_plan` returns `profile.sex`, `idealBodyWeightKg` and `proteinTargetG` as `null`, names `sex` in `missingInputs`, and lists the missing parts in `profile.needsSex`. No usable height is still no plan.
+
+Three-file sync for US-07 AC8: `evidence.ts` needs no change. No card's reason, guideline tag or citation changes, and the sex-specific "why" texts (ideal body weight, BMI) are built only when sex is known. `roadmap_text.html` needs no change. It describes how each number is worked out, which is unchanged when sex is known, and its eGFR sentence ("uses your creatinine level along with your age and sex") stays true: with no sex there is no calculated eGFR.
+
 The medicine cards are the `medication` category: `weight-glp1`; `weight-med-glp1`, `-glp1-dose`, `-glp1-increase`, `-glp1-switch`, `-sglt2i`, `-metformin`; `med-statin`, `-ezetimibe`, `-bempedoic-acid`, `-statin-dose`, `-statin-increase`, `-statin-switch`, `-pcsk9i`.
 
 The gate's age (`isKnownMinor`) is the one in section 1, except that a missing birth month is strict: the person is a minor until 1 January of the year after the year they turn 18 (birth year + 19), so no one counts as 18 early. Someone born in 2008 with no month is a minor through 31 December 2026 and an adult from 1 January 2027. A known month keeps the birthday-month rule. The gate reads the date at UTC−12, the zone furthest behind, whatever zone it runs in (the hosted server runs in UTC), so no one anywhere counts as 18 early: the new month or year starts for the gate at 12:00 UTC on its first day (born November 2008: an adult from 1 November 2026 12:00 UTC; born 2008 with no month: from 1 January 2027 12:00 UTC). Every other age keeps the January default and the local date, so that person's profile reads 18 beside the adults-only card through 2026 (accepted). Every surface (the plan, the reminder schedule, the form, the chat context) asks the gate over the birth year and month the plan keeps (`knownMinorOf`): one outside the plan's bounds (birth year 1900 to this year, month 1 to 12) counts as missing, so no surface calls someone a minor while the plan has no age for them.
@@ -645,7 +657,7 @@ Three-file sync for this section's 2026-10-14 amendments (the strict missing-mon
 
 | ID | Category | What | Evidence |
 |----|----------|------|----------|
-| `protein-target` | nutrition | Daily protein target (CKD-adjusted if eGFR < 45) | ISSN 2017 |
+| `protein-target` | nutrition | Daily protein target (CKD-adjusted if eGFR < 45). Needs sex: absent with no sex on record (US-07 AC8) | ISSN 2017 |
 | `fiber` | nutrition | 25-35g fiber daily | Reynolds 2019 |
 | `exercise` | exercise | At least 150 min moderate cardio, or 75 min vigorous, or a mix (1 vigorous min = 2 moderate) + 2-3 resistance sessions/week | WHO 2020; Physical Activity Guidelines 2018 |
 | `sleep` | sleep | 7-9 hours nightly | Cappuccio 2010 |
@@ -655,7 +667,7 @@ Three-file sync for this section's 2026-10-14 amendments (the strict missing-mon
 | ID | Condition | Priority | Notes |
 |----|-----------|----------|-------|
 | `low-salt` | systolicBp > 120 (age < 65) or > 130 (age >= 65) | info | Target: <1,500 mg/day (ACC/AHA 2017) |
-| `high-potassium` | eGFR >= 45 (safe kidney function) | info | |
+| `high-potassium` | eGFR >= 45 (safe kidney function), from an eGFR no newer creatinine has outdated (US-07 AC8, section 1) | info | |
 | `trig-nutrition` | triglycerides 150 mg/dL (about 1.7 mmol/L) or more | attention | Its text names "limit alcohol" among the key measures, except for someone who answered "I don't drink": then "Key measures: reduce sugar intake, and reduce total fat and calorie intake." (US-60, Brad 2026-10-31). Its evidence reason is one text for everyone: "reducing sugar and total calorie intake, and reducing alcohol for people who drink." |
 | `reduce-alcohol` | (BMI >= 30, OR (BMI >= 25 AND WHtR >= 0.5), OR triglycerides 150 mg/dL (about 1.7 mmol/L) or more), and the person has not answered "I don't drink" | attention | "I drink" or no answer keeps the card (US-60) |
 
@@ -715,7 +727,7 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 
 | ID | Condition | Priority |
 |----|-----------|----------|
-| `hdl-low` | HDL < sex-specific threshold | attention |
+| `hdl-low` | HDL < sex-specific threshold; never with no sex on record | attention |
 | `trig-very-high` | triglycerides >= 5.65 mmol/L (500 mg/dL) — pancreatitis risk | urgent |
 
 `trig-very-high` is the same for everyone, the alcohol answer included: its evidence reason keeps "strict alcohol and sugar avoidance" on purpose for a non-drinker too (US-60 C3, Brad 2026-10-31). It is an urgent safety card, and the advice does no harm to someone who does not drink.
@@ -731,7 +743,7 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 Stage 1 shows age-dependent target: < 120/80 for age < 65, < 130/80 for age >= 65.
 
 Stage 1 and 2 include conditional extra paragraphs:
-- If eGFR >= 45: potassium recommendation
+- If eGFR >= 45, from an eGFR no newer creatinine has outdated (US-07 AC8, section 1): potassium recommendation
 - If the weight-medication trigger is on (section 6): weight loss + GLP-1 mention (the GLP-1 sentence only for a known age of 18 or over; US-07 AC6)
 
 ---
@@ -983,6 +995,8 @@ Source: `suggestions.ts` (screening section) + `types.ts` (intervals/follow-up)
 | Endometrial | 45+ | Female | Abnormal bleeding = urgent |
 | DEXA | Female >= 50, Male >= 70 | Both | — |
 
+With no sex on record only the unsexed screenings (colorectal, lung) show (US-07 AC8).
+
 ### Screening Intervals (months)
 
 | Method Key | Months |
@@ -1073,13 +1087,14 @@ the screen, so the US text below (which names no product) may appear. Only the s
 adds a product block (`us-products.ts`) for a known adult in the US: MicroVitamin+ on
 the micronutrient base, creatine, collagen, lutein and zeaxanthin and TMG cards; Sleep
 on the sleep card; none on omega-3 or fiber; one ownership line under the section. On
-three cards the overlay also swaps in a US text, kept beside the generic one under an
-explicit `-us` key (`US_SUPPLEMENT_DESCRIPTIONS` in suggestions.ts,
-`US_SUPPLEMENT_REFERENCES` in evidence.ts), so no disease outcome sits beside a named
-product: `supplement-micronutrient-base-us` drops the WHO 2026 dementia sentences and
+three cards the overlay also swaps in a US text, kept beside the generic one in maps
+keyed by card id (`US_SUPPLEMENT_DESCRIPTIONS` in suggestions.ts,
+`US_SUPPLEMENT_REFERENCES` in evidence.ts; the keys lost their `-us` suffix on
+2026-11-01, a rename only, with no text changed), so no disease outcome sits beside a named
+product: `supplement-micronutrient-base` drops the WHO 2026 dementia sentences and
 reference (COSMOS and the vitamin K2 / warfarin sentence stay);
-`supplement-creatine-us` keeps the strength and lean mass sentence and Kreider 2017
-only; `supplement-lutein-zeaxanthin-us` keeps the macular pigment sentences and Wilson
+`supplement-creatine` keeps the strength and lean mass sentence and Kreider 2017
+only; `supplement-lutein-zeaxanthin` keeps the macular pigment sentences and Wilson
 2021 only (no AREDS outcome). Supplement cards carry no `reason`, so their "Why this
 suggestion?" panel is the reference list alone, and the swapped US references cover it.
 
@@ -1089,7 +1104,7 @@ suggestion?" panel is the reference list alone, and the swapped US references co
 | `supplement-creatine` | Creatine | Creatine monohydrate, 3–5 g/day | Strength/lean mass (Kreider 2017). Cognition: that the memory evidence is clear and consistent is Dr Stanfield's judgement, not a trial finding; formal reviews are more mixed. Avgerinos 2018 (systematic review) and two meta-analyses (Prokopidis 2023; Xu 2024, 16 RCTs, 492 adults) reported better memory, but both meta-analyses pooled several non-independent tests per participant (Prokopidis authors' reply 2023; Citherlet 2026 commentary on Xu). The Prokopidis authors' reanalysis found no clear overall memory benefit (SMD 0.19, P = 0.15) except in older adults aged 66–76 (SMD 0.80). Xu 2024: no effect on overall cognition or executive function; GRADE certainty moderate for memory, low for attention and processing speed. EFSA 2024: cause-and-effect not established for any cognitive domain; a working-memory effect only at 20 g/day for 5–7 days, not at 2.2–14 g/day or 5 g/day for 6 weeks after a 5-day loading phase. Text only: the card is always shown and no rule or dose changed |
 | `supplement-collagen` | Collagen peptides | Hydrolyzed collagen peptides; may improve skin hydration and elasticity | Skin hydration/elasticity meta-analysis (Batool 2026) |
 | `supplement-lutein-zeaxanthin` | Lutein and zeaxanthin | The macular pigments. No disease claim in the card's own advice; the AREDS lines report the trials | Macular pigment optical density rises with L/Z supplements, more at higher doses (Wilson 2021, Adv Nutr: 46 studies, 3,189 adults with healthy eyes; +0.04 at 5 to <20 mg/day, +0.11 at ≥20 mg/day). AREDS (2001): a formula of vitamins C and E, beta-carotene and zinc slowed progression of macular degeneration in people with intermediate macular degeneration. AREDS2 (2013, JAMA): 10 mg lutein + 2 mg zeaxanthin worked as well as beta-carotene in that formula, without beta-carotene's excess lung cancers, mostly in former smokers. Framing rule (Brad): never write that adding L/Z "did not significantly slow progression". Adults only, like every supplement card (US-61) |
-| `supplement-tmg` | TMG (trimethylglycine) | Betaine. Card: "lowers blood homocysteine … Small trials suggest it may improve strength and power. At 4 g a day or more, the doses used in the homocysteine trials, it may modestly raise total cholesterol." | Homocysteine: meta-analysis of 5 RCTs in healthy adults, ≥4 g/day for 6–24 weeks, −1.23 µmol/L (McRae 2013). Strength and power: small trials with mixed results, much weaker than creatine's (Lee 2010; Pryor 2012, cycling sprint; Nobari 2021, young soccer players). Lipids: 6 RCTs at ≥4 g/day for 6–24 weeks, total cholesterol +0.34 mmol/L (95% CI 0.02 to 0.65), no significant effect on LDL, HDL or triglycerides; the authors say it "may moderately increase" it (Zawieja 2021, J Diet Suppl). The homocysteine-to-dementia link stays off the card. Adults only (US-61) |
+| `supplement-tmg` | TMG (trimethylglycine) | Betaine. Card: "lowers blood homocysteine … Small trials suggest it may improve strength and power." | Homocysteine: meta-analysis of 5 RCTs in healthy adults, ≥4 g/day for 6–24 weeks, −1.23 µmol/L (McRae 2013). Strength and power: small trials with mixed results, much weaker than creatine's (Lee 2010; Pryor 2012, cycling sprint; Nobari 2021, young soccer players). Lipids: 6 RCTs at ≥4 g/day for 6–24 weeks, total cholesterol +0.34 mmol/L (95% CI 0.02 to 0.65), no significant effect on LDL, HDL or triglycerides; the authors say it "may moderately increase" it (Zawieja 2021, J Diet Suppl). Not on the card (Brad 2026-11-01: the card does not advocate those doses). The homocysteine-to-dementia link stays off the card. Adults only (US-61) |
 | `supplement-omega3` | Omega-3 | EPA/DHA, up to 1 g/day combined | CV benefits (Bernasconi 2021). The cognitive benefit of B vitamins may depend on good omega-3 status: in one trial, VITACOG, B vitamins slowed brain atrophy only with good omega-3 status, which was measured, not randomised (Jernerén 2015, Oulhaj 2016). The Dutch FACIT trial found the reverse: 800 mcg/day folic acid improved global cognition and processing speed only with lower omega-3 (van Soest 2021; 791 adults aged 50–70 with raised homocysteine; post hoc). WHO 2026 guideline recommends against omega-3, B, E and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia without a diagnosed deficiency (strong recommendation, moderate certainty; stated reason: 'unexpected harmful effects that outweigh any potential benefits'); it validated its 2019 advice without reassessing supplements, did not consider the omega-3 analyses of VITACOG or FACIT, and does not address omega-3 for heart health. That everyone may reasonably consider up to 1 g/day is Dr Stanfield's judgement, not a trial finding: CV benefit may rise with dose, but so may atrial fibrillation risk: AF HR 1.49 in trials testing >1 g/day vs 1.12 at ≤1 g/day (Gencer 2021). The card asks people with AF or on a blood thinner to check with their doctor first. Text only: the card is always shown and no dose is recorded or checked |
 | `supplement-sleep` | Sleep support | Low-dose melatonin; glycine; magnesium glycinate. Timing (3 to 4 hours before the person wants to fall asleep) appears in roadmap_text only; the card carries no timing | Melatonin may reduce sleep onset latency (Low 2020); a longer gap between dose and bedtime predicted faster sleep onset, and the authors suggest about 3 hours (Cruz-Sanabria 2024; pooled trials of other doses and forms, not 0.8 mg sustained-release) |
 
@@ -1148,6 +1163,10 @@ Triggers when ANY active medication (drug name not in `['none', 'not_yet', 'not_
 ### Screening Reminders
 
 Same eligibility criteria as the suggestion algorithm (section 8). Checks both initial screening overdue and post-follow-up overdue. Only triggers for screenings the user has started (not `'not_yet_started'`).
+
+### Missing Profile Fields
+
+The schedule needs a birth year: without one it holds only the annual check-in floor. It does not need a sex (US-07 AC8): with no sex on record (or one that is not male or female) the blood-test, medication-review, colorectal and lung reminders run as usual, and only the sexed screenings (breast, cervical, prostate, bone density) drop out.
 
 ### Preference Filtering
 

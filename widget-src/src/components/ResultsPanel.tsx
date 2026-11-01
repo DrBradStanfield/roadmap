@@ -7,11 +7,10 @@ import {
   statTiles,
   statTileText,
   planSections,
-  medicinesShown,
   type PlanCard,
 } from '@roadmap/health-core';
 // US-61 AC5: called only under SHOPIFY_SURFACE, so the Pages build drops the module.
-import { usProductBlocks, type UsProductBlock, type UsProductOverlay } from '@roadmap/health-core/us-products';
+import { usProductSections, type UsPlanCard, type UsPlanSection, type UsProduct, type UsProductBlock } from '@roadmap/health-core/us-products';
 import { getReportHtml, sendGuestReport, getReportEmailCaptured, markReportEmailCaptured } from '../lib/roadmap-data';
 import { trackABConversion, trackProductEvent } from '../lib/server-api';
 import { EMAIL_REGEX } from '../lib/email';
@@ -146,8 +145,6 @@ function UsProductBlockView({ block }: { block: UsProductBlock }) {
   );
 }
 
-const NO_US_OVERLAY: UsProductOverlay = { blocks: [], ownershipLine: null };
-
 function SuggestionCard({ suggestion, highlighted, fadingOut, alcoholQuestion, usBlock }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; alcoholQuestion?: AlcoholQuestion; usBlock?: UsProductBlock }) {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const hasEvidence = suggestionHasEvidence(suggestion);
@@ -244,21 +241,15 @@ function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds, alcoholQues
   );
 }
 
-/** US-61 AC2: a US card's own text and references, in place of the card's, when it has them. */
-function withUsText(suggestion: Suggestion, block?: UsProductBlock): Suggestion {
-  return block?.description ? { ...suggestion, description: block.description, references: block.references } : suggestion;
-}
-
-/** A section's cards: grouped ones as one card, the rest one card each (layout: planSections).
- *  `usBlocks` (US-61) sit on single cards only. */
-function renderCards(cards: PlanCard[], highlightedIds: Set<string>, fadingOutIds: Set<string>, alcoholQuestion?: AlcoholQuestion, usBlocks?: ReadonlyMap<string, UsProductBlock>) {
+/** A section's cards: grouped ones as one card, the rest one card each (layout: planSections;
+ *  US-61's blocks and text: usProductSections). */
+function renderCards(cards: UsPlanCard[], highlightedIds: Set<string>, fadingOutIds: Set<string>, alcoholQuestion?: AlcoholQuestion) {
   return cards.map((card) => {
     if (card.suggestions.length > 1) {
       return <GroupedSuggestionCard key={card.category} card={card} highlightedIds={highlightedIds} fadingOutIds={fadingOutIds} alcoholQuestion={alcoholQuestion} />;
     }
     const s = card.suggestions[0];
-    const usBlock = usBlocks?.get(s.id);
-    return <SuggestionCard key={s.id} suggestion={withUsText(s, usBlock)} highlighted={highlightedIds.has(s.id)} fadingOut={fadingOutIds.has(s.id)} alcoholQuestion={alcoholQuestion} usBlock={usBlock} />;
+    return <SuggestionCard key={s.id} suggestion={s} highlighted={highlightedIds.has(s.id)} fadingOut={fadingOutIds.has(s.id)} alcoholQuestion={alcoholQuestion} usBlock={s.usProduct} />;
   });
 }
 
@@ -588,14 +579,15 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
   const tiles = useMemo(() => (results ? statTiles(results, { unitSystem, unitOverrides, sex }) : []), [results, unitSystem, unitOverrides, sex]);
 
   // US-61 AC5: Brad's products for a known adult in the US, on the Shopify build only.
-  const usOverlay = useMemo(() => (SHOPIFY_SURFACE && results
-    ? usProductBlocks(results.suggestions, medicinesShown(results), getMarketCountry() === 'US', 'web')
-    : NO_US_OVERLAY), [results]);
-  const usBlocks = useMemo(() => new Map(usOverlay.blocks.map((b) => [b.suggestionId, b])), [usOverlay]);
+  const sections = useMemo((): UsPlanSection[] => {
+    if (!results) return [];
+    const plain = planSections(results.suggestions);
+    return (SHOPIFY_SURFACE && usProductSections(plain, results, getMarketCountry() === 'US', 'web')) || plain;
+  }, [results]);
   // US-61 AC8: once the Supplements section is on screen, one count per product
   // (trackProductEvent keeps one per product per tab session).
   const supplementsRef = useRef<HTMLDivElement>(null);
-  const usProducts = [...new Set(usOverlay.blocks.map((b) => b.product))].join(' ');
+  const usProducts = [...new Set(sections.flatMap((section) => section.cards.flatMap((card) => card.suggestions.flatMap((s) => s.usProduct?.product ?? []))))].join(' ');
   useEffect(() => {
     const el = supplementsRef.current;
     if (!el || !usProducts) return;
@@ -603,7 +595,7 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
     return observeVisibility(el, (visible) => {
       if (!visible || counted) return;
       counted = true;
-      for (const product of usProducts.split(' ') as UsProductBlock['product'][]) trackProductEvent('us_product_shown', { product });
+      for (const product of usProducts.split(' ') as UsProduct[]) trackProductEvent('us_product_shown', { product });
     });
   }, [usProducts]);
 
@@ -714,11 +706,11 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
 
       {/* Suggestions */}
       <section className="suggestions-section">
-        {planSections(results.suggestions).map((section) => (
+        {sections.map((section) => (
           <div key={section.key} ref={section.key === 'supplements' ? supplementsRef : undefined} className={`suggestions-group${section.key === 'skin' || section.key === 'supplements' ? ` ${section.key}-group` : ''}`}>
             <h4 className={`suggestions-group-title ${section.key}`}>{section.title}</h4>
-            {renderCards(section.cards, highlightedIds, fadingOutIds, alcoholQuestion, section.key === 'supplements' ? usBlocks : undefined)}
-            {section.key === 'supplements' && usOverlay.ownershipLine && <p className="us-ownership no-print">{usOverlay.ownershipLine}</p>}
+            {renderCards(section.cards, highlightedIds, fadingOutIds, alcoholQuestion)}
+            {section.ownershipLine && <p className="us-ownership no-print">{section.ownershipLine}</p>}
           </div>
         ))}
       </section>
