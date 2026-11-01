@@ -1,7 +1,7 @@
 # One blood-test table (DRAFT for Brad)
 
-Status: design, 2026-11-02; Brad answered D1 to D4 the same day (§10). D5 and one creatinine point
-are open, and nothing is built until they are answered. Story: US-66 in [docs/user-stories.md](../user-stories.md).
+Status: design, 2026-11-02; Brad answered D1 to D4 and the creatinine point the same day (§10). D5
+and the rollout order (§11) are open, and nothing is built until they are answered. Story: US-66 in [docs/user-stories.md](../user-stories.md).
 Brad's direction (via the user, 2026-11-02): every blood test lives in one table; the plan reads the core
 tests it needs from that table; vitals may stay where they are. Also in scope: a punctuated core name
 ("LDL - Cholesterol") resolves the way catalogue names do after PR 543 (US-07 AC10).
@@ -181,10 +181,10 @@ stuff". Migrate folds every old lab row whose name resolves to a core test (§7)
 - **every active row whose unit converts** by `UNIT_DEFS`, same-scale spellings ("umol/L", "ng/ml")
   included, and whose converted value passes `measurementValueFault`. Lp(a) in mg/dL converts by the
   average factor, as a typed Lp(a) does (US-05);
-- **creatinine is held out** by one switch, `FOLD_CREATININE = false`, until Brad answers the open
-  point: an old row named "creatinine" may be a urine result (US-12 AC11, issue #166), and a dilute
-  one passes the plausibility range (25 mg/dL becomes 2210 µmol/L, an eGFR near 2). Removing the
-  switch is a one-line change;
+- **creatinine is held out** by its own switch, `FOLD_CREATININE = false` (Brad, 2026-11-02: "do
+  it"): an old row named "creatinine" may be a urine result (US-12 AC11, issue #166), and a dilute
+  one passes the plausibility range (25 mg/dL becomes 2210 µmol/L, an eGFR near 2). It stays an
+  extra row. Turning the switch on later is a one-line change;
 - **a row whose unit does not convert** (blank, garbled, a unit the test does not take) cannot become
   a core value: there is no number in the core unit to store. It stays an extra row, as today, and
   the usage event counts it (§12).
@@ -302,7 +302,7 @@ shown. Showing them is a later decision.
 **Hosted and stdio MCP (Brad, D3: update now).** `read_record` and `get_plan` return the new
 shape: core tests under `labValues` with `core: true`, `measurements` vitals only. No adapter for the
 old view. The tool text changes with it, so the hashes in `app/lib/mcp-freeze.test.ts` are re-taken
-in the build and `TOOL_LAYER_VERSION` goes up (a tool's meaning changed):
+in the build (subject to the Connectors Directory check below) and `TOOL_LAYER_VERSION` goes up (a tool's meaning changed):
 - `add_measurement` keeps its name and enum; a blood metric lands as a core lab row. Its text says so.
 - `add_lab_values` takes core names too and converts them with `UNIT_DEFS`; "not core metrics" goes
   from its text.
@@ -310,8 +310,8 @@ in the build and `TOOL_LAYER_VERSION` goes up (a tool's meaning changed):
   tests live.
 - `correct_value`, `import_documents`, `file_results`: id- and slot-based, follow the new slot key.
 
-Known risk, told to Brad by the master session: the connector's published text changes while OpenAI
-reviews 1.0.2.
+Open, outside this design: whether Anthropic's Connectors Directory review relies on the tool freeze
+(another session is checking). The build re-takes the hashes only once that is known.
 
 **Raw-file agents** (`docs/agent-access.md`): rule 10 ("core metrics belong in `measurements`")
 becomes "every blood test goes in `labValues`; a core test with `core: true`, its core key as
@@ -330,15 +330,17 @@ change reaches the iPhone as a new binary (D4).
 **D1, old lab rows named like a core test: move them all (option 3).** "we need to start how we
 want to continue. don't want to worry about legacy stuff." Built as §5: every convertible row folds;
 a real core value beats a fold on the same day, so no uploaded value silently replaces one the
-person already had. **Open:** creatinine is held out behind one switch until Brad answers whether
-old "creatinine" rows, which may be urine, should fold too.
+person already had. Creatinine stays out, behind its own switch (`FOLD_CREATININE = false`; Brad:
+"do it"), since an old "creatinine" row may be urine.
 
 **D2, old apps: no schema bump, no lock-out.** "the app isn't released yet, so won't worry about old
 code (yet)." Consequence, in §6: until they update, old apps show no core blood tests and a plan
 without lipids, HbA1c or creatinine, with no warning; nothing is lost.
 
-**D3, agents: update the view now, no adapter.** "no, update now." The connector's tool text and its
-freeze hashes change during OpenAI's 1.0.2 review; the master session told Brad the risk.
+**D3, agents: update the view now, no adapter.** "no, update now." There is no OpenAI review to
+protect: "OpenAI rejected our app and we're not going to resubmit." Whether Anthropic's Connectors
+Directory review depends on the tool freeze is being checked by another session; this design
+assumes neither way, and the build follows that session's answer on the freeze hashes.
 
 **D4, rollout: release build 3 as it is, then ship this as an update.** "we want the initial app to
 be released. then we can do an update." Build 3 stays on automatic release.
@@ -359,7 +361,10 @@ filled), the upload today saves it quietly as an extra lab row the plan ignores.
 Recommendation: 1. It matches D1 ("start how we want to continue") and the review's rule for every
 held value (US-13 AC3). Creatinine stays a lab row under its printed name either way (US-12 AC11).
 
-## 11. Rollout order
+## 11. Rollout order (on hold)
+
+Brad asked "can't we just do the full rollout now"; the master session is putting the build-3
+trade-off to him (§10, D4's second-order effect). The order below is the current draft.
 
 1. PR 543 merges (punctuation pass). Build 3 releases from App Review as it is (D4).
 2. health-core PR: resolver (§7), move and fold (§4, §5), `bloodTestRows`, writers, plan, reminders,
@@ -407,7 +412,8 @@ events.
   Mitigation: deploy the website after the iPhone update is live; data is never lost.
 - **D1 changes plans on purpose** for an unknown number of people: an uploaded value the plan never
   used becomes current when it is the newest. A same-day core value always stays current (§5).
-- **Connector text changes during OpenAI's review** (D3).
+- **Connector text changes** (D3) while Anthropic's directory review status is unknown (another
+  session is checking).
 - **Uploads behave differently** (§7): a core-named extra value on a held day becomes a conflict to
   resolve, or a refusal, instead of a quiet extra row.
 
