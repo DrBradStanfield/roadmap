@@ -86,7 +86,6 @@ import { AdditionalLabRows } from './AdditionalLabRows';
 import { useMoveTest, type MoveTestApi } from './MoveTestPanel';
 import { StartingInfoVitals, type VitalsPrefillFn } from './StartingInfoVitals';
 import { CommitTickButton } from './CommitTickButton';
-import { ALCOHOL_OPTIONS } from './AlcoholQuestion';
 import { StorageNotice } from '../lib/storage-notice';
 import { useLpaUnit } from '../lib/lpa-unit';
 import { BloodTestRows, VitalsRows, type RowContext, type ValueSubject } from './MyDataRows';
@@ -1143,7 +1142,6 @@ export function InputPanel({
               {birthShown && <div className="stage-reveal profile-step">{renderBirthInfo()}</div>}
             </>
           )}
-          {fullForm && renderAlcohol()}
           {!fullForm && (
             <p className="field-hint-attention field-hint-attention--centered">
               {formStage === 1 ? 'Enter your height and weight — then more fields will appear.' : 'Fill in the above — then more fields will appear.'}
@@ -1339,29 +1337,6 @@ export function InputPanel({
     </>
   );
 
-  // US-60: the answer the plan's "Reduce alcohol intake" Dismiss asks for. Not
-  // an onboarding question, so it shows with the whole form and no attention
-  // highlight. Tapping the chosen answer clears it (M2: the card comes back), so
-  // these are pressed toggle buttons, not radios (a checked radio cannot uncheck).
-  const renderAlcohol = () => (
-    <div className="health-field">
-      <label>Alcohol</label>
-      <div id="alcohol" className="sex-toggle" role="group" aria-label="Alcohol">
-        {ALCOHOL_OPTIONS.map(({ value, label }) => (
-          <button
-            key={value}
-            type="button"
-            aria-pressed={inputs.alcohol === value}
-            className={`sex-toggle-btn${inputs.alcohol === value ? ' sex-toggle-btn--active' : ''}`}
-            onClick={() => updateField('alcohol', inputs.alcohol === value ? undefined : value)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      <p className="field-why">Used to decide whether advice on alcohol applies to you.</p>
-    </div>
-  );
 
   // One move for both blood-test matrices: their headers pick it, the panel sits between them (US-04 AC5).
   const move = useMoveTest({ api: moveTest, unitSystem, unitOverrides, bloodTestHistory, labValues });
