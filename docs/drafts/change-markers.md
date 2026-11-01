@@ -6,7 +6,9 @@ and the metric charts mark that date, so they can see whether the numbers moved.
 
 **Revision 2** folds in Brad's answers to revision 1 (same day) and turns the plan into
 phases with full stories. Revision 1 was reviewed by a fresh adversary and Codex
-(gpt-6.1-sol); their findings are kept below. Revision 2 has had one fix-scoped re-check.
+(gpt-6.1-sol); their findings are kept below. Revision 2 had the one fix-scoped re-check
+(a fresh adversary and Codex, 2026-11-02); its findings are folded in. That closes the
+review rounds: what remains is Brad's.
 
 ## 0. Brad's decisions so far, and what I make of them
 
@@ -19,10 +21,10 @@ phases with full stories. Revision 1 was reviewed by a fresh adversary and Codex
 | D5 | Chat and assistants: good, needs a proper story. | Phases 1 and 5, each with a story below. | None. |
 | D6 | Every chart, but tasteful, without clutter. | Section 3 sets the look: one neutral marker style, no words on the chart, grouping keeps the count low. | None. |
 | D7 | Schema bump: yes. | Phase 2. | The version number still clashes with the one-blood-table plan (F6). |
-| D8 | The iPhone chat must edit the record ("my blood pressure is now XYZ"). | Phase 1, a story of its own: the iPhone chat proposes every edit the web chat proposes. It ships before markers and does not wait for them. | Agreed. It is worth more than markers on its own, so I put it first (F7). |
+| D8 | The iPhone chat must edit the record ("my blood pressure is now XYZ"). | Phase 1, a story of its own: the iPhone chat can change everything the web chat can. It ships before markers and does not wait for them. | Agreed, and it is worth more than markers on its own, so it goes first (F7). It is more than switching the web's tools on: the web saves a medication change at once with Undo but pre-fills values for review, and the phone needs its own unit, blood-pressure and batch handling (section 6, F11). |
 
 Still open from revision 1, and asked again in section 8: the start date (F8), the caption
-(F5), what Remove deletes (F9) and the success bar (F10).
+(F5), what Remove deletes (F9) and the success bar (F10). New from the re-check: F11 to F13.
 
 ## 1. Why build it
 
@@ -82,8 +84,9 @@ the value.
 | 4 | The iPhone suggests a change from Apple Health steps | 3 | iPhone |
 | 5 | Chat and assistants note changes | 1 and 3 | server, web, iPhone, MCP, CLI |
 
-Phases 0 and 1 can run now and in parallel. Phase 2's iPhone binary can ride the same
-TestFlight build as phase 1, which saves a release.
+Phases 0 and 1 can run now and in parallel. Phase 2's iPhone binary gets its own
+TestFlight build: riding phase 1's would make phase 1 wait on F6 and on phase 2's merge
+review.
 
 ## 3. How the markers work (phase 3)
 
@@ -100,12 +103,30 @@ For each chart, the app collects the events that chart shows:
 It sorts them by date and groups them: a period opens at its first event, and every event
 within 90 days of that first event joins it. The next event after that opens a new period.
 Anchoring on the first event (rather than chaining each event to the last) keeps a run of
-changes a few weeks apart from becoming one year-long period.
+changes a few weeks apart from becoming one year-long period. You said "within two or three
+months of each other"; chaining would match those words more closely, so this is F13.
+
+Exactly, so web and phone always agree: each event becomes a **local calendar day** (a
+note's own day; a medication change's recorded instant on the reader's local day, as
+`recordedTime` already places it). An event joins a period when its day is at most 90
+calendar days after the period's first day, inclusive. Same-day events sort medication
+first, then note, then by id. Daylight saving cannot move an event across the boundary,
+because the count is in days, not milliseconds. Two devices in different time zones can
+still place a medication change on different days, as today's pins already do; at a
+period's edge that can change the count, which the story accepts.
 
 So the LDL chart of someone who started atorvastatin on 10 September, noted "more walking" on
 1 October and "cut saturated fat" on 20 October shows **one** marker, on 10 September,
 reading "3 changes". The weight chart of the same person shows one marker of 2 changes (the
 statin is not mapped to weight).
+
+**The case grouping gets wrong (F2):** "more walking" on 1 July, an LDL test on 20 August,
+a statin on 25 September, another LDL test on 20 October. All three events share one
+period, so the only rule sits on 1 July, and the fall after the statin looks like the
+period's work, walking included. That is the misattribution grouping was meant to stop.
+The fix proposed: a medication change inside a period also draws a small pill dot on the
+axis at its own day (no rule, no label), so a test before and after the statin reads at a
+glance. Brad decides (F2).
 
 ### The look (D6: tasteful, no clutter)
 
@@ -119,11 +140,14 @@ statin is not mapped to weight).
 - **Tap or select** the tab, or its entry in the list: a small callout lists the period's
   changes with their dates, and the rule darkens. A scrub along the chart still picks only
   values.
-- **The list below the chart** shows one entry per period: "10 Sep to 20 Oct · Started
-  atorvastatin 10 mg, more walking, cut saturated fat". It expands to the dated items.
+- **The list below the chart** shows one entry per period: "10 Sep to 20 Oct · Recorded
+  start: Atorvastatin 10mg; you noted: more walking, cut saturated fat". It expands to the
+  dated items.
 - **Density.** With 90-day periods a five-year chart holds at most about 20, and real
   records far fewer. If the visible range would draw more than six, the oldest merge into a
-  single "+N earlier" tab at the left edge, still listed below.
+  single "+N earlier" tab at the left edge, still listed below. The periods are the same on
+  both clients; the fold depends on the range shown, so a web chart and a phone chart on
+  different ranges may fold differently.
 - **The range** reaches the newest marker, as it does for medications now.
 - **Words.** "You noted: started more walking" for a note; "Recorded start: Atorvastatin
   10mg" for a medication, as now (US-06 AC4). The note's day is the person's claim (F8); the
@@ -151,8 +175,13 @@ that no chart shows yet.
 
 The grouping, the words and the medication map live in one health-core projection
 (`changeMarkers(file, metric)`), beside `medication-annotations.ts`, which it absorbs. The
-web's `HistoryPanel` imports it; the iPhone engine serves it on `historyJson` in place of
-today's `markers`, so an over-the-air engine can change it. The iPhone's Apple Health pages
+web's `HistoryPanel` imports it; the iPhone engine serves it on `historyJson` as a new
+`periods` field, so an over-the-air engine can change it. Today's `markers` field stays
+beside it until every binary built before phase 3 has aged out: an older binary reads only
+`markers`, and an engine that dropped it would take the medication markers away from that
+binary (the engine contract rule, ios/architecture.md: what an older app cannot do without
+stays in the contract). US-06 AC4a (select without redraw) carries over, and the tests that
+pin today's shape (`my-data-local-day.test.ts`, `FormEditTests.swift`) change with it. The iPhone's Apple Health pages
 draw their own charts (`LiveMetricPage.swift`, `SleepPage.swift`) and need a new engine
 field for the change list; the web has no such pages, so that is the one place the clients
 differ, by data, not by design.
@@ -160,8 +189,8 @@ differ, by data, not by design.
 ### Accessibility and masking
 
 - Screen readers read the list, not the rules (as US-25 AC9b does now): "Period 1, 10
-  September to 20 October, 3 changes: started atorvastatin 10 milligrams, more walking, cut
-  saturated fat".
+  September to 20 October, 3 changes: recorded start, atorvastatin 10 milligrams; you noted,
+  more walking; you noted, cut saturated fat".
 - The marker never relies on colour: the count and the list carry it.
 - Reduced motion: no draw-in (US-06 AC4a). Controls meet 44 pt on the phone and are
   keyboard-reachable on the web.
@@ -251,7 +280,11 @@ files that hold a change row, so an older build refuses exactly the files it wou
 Three conditions:
 
 1. **The number** (F6): the one-blood-table plan (PR #551, its own proposed US-66) already
-   claims 3. Two meanings for one number reopen the trap.
+   claims 3. Two meanings for one number reopen the trap. And separate numbers are not
+   enough on their own: `migrate.ts` accepts every version at or below its own, so a build
+   that knows version 4 accepts a version-3 file. **Each version's reader must support every
+   lower version.** So the numbers go in ship order, and the feature that ships second
+   carries the first one's reading and merging too.
 2. **Erase gets its own constant.** `CURRENT_SCHEMA_VERSION` doubles as the erase list's
    version today (`migrate.ts:327`, `merge.ts:753`, `erase.ts:74`); bumped as is, every
    erased file would jump to the new version with no change in it. The erase list keeps 2.
@@ -296,8 +329,11 @@ the first week whose average crossed halfway to the new level. At most one sugge
 
 **What the person sees:** a card at the top of the steps page and in My data's Fitness
 section: "Your steps rose to about 8,900 a day since 3 September. Add it to your charts?"
-with Add, Not now and Don't suggest this. Add writes a normal change (`source:
-'apple-health'`, category exercise) that the person can edit or remove like any other.
+(or "fell to about 5,100") with Add, Not now and Don't suggest this. Add writes a normal
+change (`source: 'apple-health'`, category exercise) that the person can edit or remove like
+any other. Its title follows the direction: "Walking more (from Apple Health)" or "Walking
+less (from Apple Health)". A fall is worth marking too: an injury or a new job often explains
+the next results.
 
 **Why suggest and not just draw it (F3):** a step count also jumps on a holiday, falls in an
 illness, drops when the phone sits in a drawer, and shifts with a new watch. An automatic
@@ -305,13 +341,30 @@ marker would draw every one of those on every chart, the clutter D6 rules out. A
 one is the person's own statement, and it syncs to the web like any note, so both clients
 show it.
 
-**What enters the record (F4b):** US-56 AC1 and AC3 promise that Apple Health's steps never
-enter the record and that the website, the CLI, the MCP and the chatbot never see them. A
-confirmed change is a row in the record, so its words must not carry the step count. The
-title says "Walking more (from Apple Health)"; the number shows only on the phone's card
-and is never stored. That keeps US-56's promise in letter and spirit, but the story still
-amends US-56 AC1 to say a confirmed change may come from Apple Health. "Not now" and "Don't
-suggest this" are kept on the phone with the kept cards (US-56 AC2), never in the record.
+**What enters the record (F4b, F12):** US-56 promises that Apple Health's steps stay on the
+phone. A confirmed change breaks part of that even with no number in it: its direction
+("walking more"), a start day computed from step data and `source: 'apple-health'` are
+Apple Health-derived facts, and they sync to the person's Drive or Dropbox and, in phase 5,
+reach the chat. Keeping the step count out (F4b) limits it; it does not keep the promise.
+What changes if Brad goes ahead:
+
+- US-56 AC1 ("no chat summary, export or merge can see them") and AC3 ("the website, the
+  CLI, the MCP and the chatbot never see these metrics") gain an exception: a change the
+  person confirmed.
+- AC10's purpose string ("keeps only on this iPhone, never in your record") becomes false at
+  the first Add, so it is reworded, for example "…which it shows you and keeps on this
+  iPhone. If you choose, a change it notices can be added to your record."
+- AC11's App Review position and the App Store privacy answers ("never collected") are
+  redone. Data derived from HealthKit going to the person's own cloud and, in phase 5, to the
+  chat server is a guideline 5.1.3 question to answer in the review notes before the build is
+  submitted.
+
+**Where the suggestion's own state lives:** "Not now", "Don't suggest this" and the
+90-day clock cannot go in UserDefaults (US-56 AC2 forbids it) or in the kept-cards file,
+which is deleted by an empty read, an access reset and an erase, so a "no" would come back.
+They go in a small phone-only file of their own (`suggestion-state.json` beside the kept
+cards: a version, the last suggestion's day, and a dismissed flag; no step value). An access
+reset leaves it; "Delete all my data" deletes it. Story C amends US-56 AC2 to name it.
 
 ## 6. Chat and assistants
 
@@ -320,19 +373,51 @@ suggest this" are kept on the phone with the kept cards (US-56 AC2), never in th
 Today the iPhone chat proposes nothing (US-52 AC5: "No form edits are proposed to the app").
 The server turns the form tools off for app requests (`api.chat.ts`: `canApplyEdits` needs
 `!app`), `ChatClient.swift` advertises no capability and `ChatModels.swift` decodes no
-proposals. Phase 1 brings the web's three form tools to the phone, unchanged:
-`propose_field_edit` (values: "my blood pressure is 128/82"), `propose_medication_edit` and
+proposals. Phase 1 brings the web's three form tools to the phone: `propose_field_edit`
+(values: "my blood pressure is 128/82"), `propose_medication_edit` and
 `propose_profile_edit`.
 
-- **Server:** the app sends a capability (`edits: 1`); only then does the server offer the
-  tools, so an older app never gets a proposal it cannot show (the US-16 AC2 pattern). App
-  requests still store nothing (US-52 AC5, D9).
-- **Phone:** the engine parses proposals with health-core's `chat-edits.ts`, the web's one
-  parser. A banner under the reply shows them in the person's units ("Save: blood pressure
-  128/82 today?") with Save and Not now. Save writes through the engine's existing edit entry
-  (`applyEditJson`), the same path as typing the value, so the slot rule, corrections and
-  units are the ones the phone already uses. Nothing is written without Save.
-- **Erase:** a banner made before an erase dies with it (the US-16 AC2a rule).
+**They do not behave the same on the web, and the phone must choose (F11).** On the web a
+value is pre-filled into its cell for the person to review and save; a profile edit gets a
+Save banner; a medication edit **saves at once**, with Undo. The tool text tells the model
+so ("Medications save immediately… tell the user… they can undo it"), and the server's
+tool-only reply says "Done — I've updated your medications". Copy that to a phone that waits
+for Save, and the chat says the statin is saved when it is not. Options:
+
+- **Copy the web (recommended):** a medication edit saves at once with an Undo banner;
+  values and the profile show in a banner with Save and Not now (the phone has no cells to
+  pre-fill, so the banner is its review step). The field tool's text and its tool-only reply
+  get app wording ("I've put that ready to save"), chosen by the server from the capability.
+- **Save first for everything:** one rule on the phone, but the medication tool text and
+  reply need an app variant too, and the phone then differs from the web.
+
+**The server side:**
+- The app sends a capability (`edits: 1`); only then does the server offer the tools, so an
+  older app never gets a proposal it cannot show (the US-16 AC2 pattern). App requests still
+  store nothing (US-52 AC5, D9). App Attest is unaffected: the field rides in the signed body.
+- The same gate (`canApplyEdits`) also turns on `run_roadmap`, the plan tool, when a recent
+  message holds a digit. That is wanted (the phone's chat can then say what a new value does
+  to the plan), but the server reads the person's inputs from `guestInputs`, which the app
+  does not send today. The phone sends them from its record.
+- The server already parses the tool calls (`parseProposedEdits`) and writes the "Not
+  applied" result itself. The app receives `proposedEdits` already parsed; the engine
+  re-checks them at the boundary, as any input from the network.
+- Story A amends US-52 AC5 and US-15 AC19 ("the form tools go only where a client applies
+  them").
+
+**The phone side: one new engine entry, not `applyEditJson` per edit.** The engine's `add`
+reads a value in the unit the row shows; a proposal carries the unit the person said. So
+"LDL 130 mg/dL" on a phone set to mmol/L would store 130 mmol/L, or be refused. The new
+entry (`applyChatEditsJson`) takes the parsed proposals and:
+- converts each value from its stated unit, Lp(a)'s three units included (US-05 AC2);
+- joins a systolic and a diastolic into one blood-pressure pair (`PressureEdit`): both or
+  neither, never half;
+- applies one Save's edits as one write, all or none, as the web batches same-day edits;
+- turns a held day into the correction the phone already offers when typing;
+- takes height in centimetres, as the parser returns it.
+
+**Erase:** a banner made before an erase dies with it, and the medication Undo with it (the
+US-16 AC2a rule).
 
 ### Phase 5: chat and assistants note changes
 
@@ -380,19 +465,25 @@ proposals. Phase 1 brings the web's three form tools to the phone, unchanged:
 >   with its cause.
 
 > **Story A · The iPhone chat saves what I tell it, after I confirm (amends US-52 AC5)**
-> As an iPhone user, when I tell the chat a value, a medicine or my height, it offers to save
-> it, and nothing is saved until I press Save, as on the website (US-16).
-> - AC1 (capability): the app sends `edits: 1`; the server offers `propose_field_edit`,
->   `propose_medication_edit` and `propose_profile_edit` only then. An app without it gets
->   none, as today. App requests still store nothing.
-> - AC2 (one parser): the engine parses proposals with `chat-edits.ts`; what the web refuses,
->   the phone refuses, with the same "Not applied" tool result.
-> - AC3 (banner): proposals show under the reply in my units, naming any value they replace,
->   with Save and Not now. VoiceOver reads the banner as one element, then its buttons.
-> - AC4 (write): Save writes through `applyEditJson`, so a held day offers a correction as
->   typing does; Not now writes nothing.
-> - AC5 (erase): an erase on any device drops an unanswered banner.
+> As an iPhone user, when I tell the chat a value, a medicine or my height, it changes my
+> record the way the website's chat does (US-16), and it never says it saved something it
+> did not.
+> - AC1 (capability): the app sends `edits: 1`; only then does the server offer
+>   `propose_field_edit`, `propose_medication_edit`, `propose_profile_edit` and `run_roadmap`,
+>   with the app's inputs in place of `guestInputs`. An app without it gets none, as today.
+>   App requests still store nothing.
+> - AC2 (one parser): the server parses and refuses as for the web, with the same "Not
+>   applied" result; the engine re-checks what arrives.
+> - AC3 (what saves when, per F11): a medication edit saves at once with Undo; values and the
+>   profile show in a banner in my units, naming any value they replace, with Save and Not
+>   now. The model's words match: it never says a value is saved before Save, and after Not
+>   now nothing was written.
+> - AC4 (write): Save writes through one engine entry: each value converted from its stated
+>   unit (Lp(a)'s three included), a blood-pressure pair both or neither, one Save's edits all
+>   or none, a held day turned into a correction, height in centimetres.
+> - AC5 (erase): an erase on any device drops an unanswered banner and the Undo.
 > - AC6 (signal): "Chat edit proposed" and "Chat edit saved", no value or field name.
+> - Amends US-52 AC5 and US-15 AC19.
 > - Gate check: a live write path and the chat server: adversary plus Codex. No clinical
 >   change.
 
@@ -411,10 +502,13 @@ proposals. Phase 1 brings the web's three form tools to the phone, unchanged:
 >   refuses it; a file without changes keeps its version, an erased one included. The iPhone
 >   binary that reads it ships before any client writes one.
 > - AC5 (periods): each chart groups the events it shows (my changes and their ends on every
->   chart; medication changes on their mapped metrics) into periods that open at an event and
->   take every event within 90 days of it. One marker per period, the count on its tab; more
+>   chart; medication changes on their mapped metrics) into periods: a period opens at an
+>   event's local day and takes every event up to 90 calendar days after it, inclusive;
+>   same-day events sort medication, then note, then id. One marker per period, the count on
+>   its tab; a medication change inside a period also gets its own small dot (per F2); more
 >   than six in view fold the oldest into "+N earlier". Supersedes US-06 AC4's one pin per
->   medication change and US-25 AC9b's indigo rule.
+>   medication change and US-25 AC9b's indigo rule; `historyJson` keeps `markers` for older
+>   binaries beside the new `periods`.
 > - AC6 (no verdict): nothing computes a before/after difference or says a change worked.
 >   Charts with a marker show the approved caption (F5).
 > - AC7 (removal): a removed change and every superseded title reach no chart, `read_record`,
@@ -429,15 +523,21 @@ proposals. Phase 1 brings the web's three form tools to the phone, unchanged:
 > - Gate check: merge/FHIR, schema and agent contract: adversary plus Codex. The caption is
 >   health wording Brad approves; if it cites evidence, the three-file sync.
 
-> **Story C · My iPhone notices when I start walking more (amends US-56 AC1)**
+> **Story C · My iPhone notices when I start walking more, or less (amends US-56 AC1, AC2,
+> AC3, AC10, AC11)**
 > - AC1 (rule): a sustained change in daily steps by the thresholds F4 settles offers one
 >   card on the steps page and in Fitness, at most once per 90 days, never within 90 days of
->   an exercise change I noted.
-> - AC2 (confirm): Add writes a change (`source: 'apple-health'`) I can edit or remove; Not
->   now and Don't suggest this are kept on the phone only.
+>   an exercise change I noted. The card and the saved title follow the direction ("Walking
+>   more" or "Walking less").
+> - AC2 (confirm): Add writes a change (`source: 'apple-health'`) I can edit or remove. Not
+>   now, Don't suggest this and the 90-day clock live in the phone-only
+>   `suggestion-state.json`, never in UserDefaults or the record; an access reset keeps it;
+>   "Delete all my data" deletes it.
 > - AC3 (no numbers in the record): the change's words carry no step count; the count shows
 >   only on the card and is never stored. VO2 max, resting heart rate and sleep never create
 >   a suggestion.
+> - AC3a (the promise, per F12): the purpose string and the App Store privacy answers say a
+>   change the person adds can go into their record; the review notes answer 5.1.3.
 > - AC4 (markers on Apple Health pages): the steps, heart rate, VO2 max and sleep pages draw
 >   the same period markers as the record's charts.
 > - AC5 (signal): "Steps change suggested" and "Steps change added".
@@ -465,20 +565,25 @@ Each carries its own context.
   phases 2 to 5 wait for F6 and your review of this plan.
 - **F2. Medication changes join the grouped markers.** Today each medication change has its
   own indigo pin at its exact date (US-06 AC4, US-25 AC9b, both approved). Your one-marker
-  rule (D3) puts "started statin" inside the same period marker as "more walking". Options:
-  one marker style for everything (simplest chart, matches your example), or keep
-  medications separate (two kinds of marker on one chart, the clutter you want to avoid).
-  Recommendation: one style; the list still names each change and its date.
+  rule (D3) puts "started statin" inside the same period marker as "more walking". The
+  catch: when the statin comes late in a period (walking on 1 July, statin on 25 September),
+  the only rule sits on 1 July, and an LDL fall after the statin looks like the walking's
+  work. Options: one marker per period and nothing else (cleanest, but that case
+  misleads); one marker per period plus a small pill dot on the axis at each medication's own
+  day (one extra dot, the case reads right); or medications keep their own pins (two kinds
+  of marker, the clutter you want to avoid). Recommendation: the period marker plus the
+  dots.
 - **F3. Apple Health markers: suggest or automatic?** You suggested automatic markers from
   steps and VO2 max. Options: automatic (no effort for the person, but holidays, illness,
   a phone in a drawer or a new watch all draw markers, and the web never sees them), or the
   phone suggests and the person taps Add (one tap, no false markers, syncs to the web).
   Recommendation: suggest, then confirm.
 - **F4. What starts a suggestion.** Proposed: steps only, a 28-day average at least 25% and
-  1,500 steps a day away from the 90 days before, at most once per 90 days. VO2 max and
-  resting heart rate are results of exercise, so they show markers but never create them.
-  Options: accept, change the numbers, or add sleep now. Recommendation: accept; tune after
-  a month on TestFlight.
+  1,500 steps a day above or below the 90 days before, at most once per 90 days; a rise is
+  saved as "Walking more", a fall as "Walking less". VO2 max and resting heart rate are
+  results of exercise, so they show markers but never create them. Options: accept, change
+  the numbers, rises only, or add sleep now. Recommendation: accept both directions; tune
+  after a month on TestFlight.
 - **F4b. The step count stays off the record.** US-56 promised the website and chatbot never
   see Apple Health's steps. Options: the saved change says "Walking more (from Apple
   Health)" with no number (keeps the promise), or it carries "about 8,900 a day" (more
@@ -490,9 +595,12 @@ Each carries its own context.
   Recommendation: a caption, in words you approve.
 - **F6. One version ladder with the one-blood-table plan.** PR #551 (still open) claims
   schema 3 for core blood rows. If both use 3, a build that knows one feature reads a file
-  holding the other without refusing it, and loses data. Options: one ladder (3 blood
-  tests, 4 changes, each stamped only when its rows exist) or one combined bump.
-  Recommendation: one ladder, so either can ship first.
+  holding the other without refusing it, and loses data. And because a reader accepts every
+  version at or below its own, a build that knows 4 must also handle 3. Options: one ladder
+  in ship order (whichever ships first takes 3; the second takes 4 and carries the first's
+  reading and merging), or one combined bump shipped together. Recommendation: one ladder in
+  ship order, each stamped only when its rows exist. One-blood-table is likely first, so
+  change notes would be 4 and wait for it.
 - **F7. Phase 1 first.** The iPhone chat editing the record is useful on day one for every
   user who chats; markers help those who measure often. Recommendation: phase 1 before
   phase 3, as the table has it.
@@ -509,6 +617,24 @@ Each carries its own context.
   a change within 60 days, half of them later view a marker, a third of iPhone step
   suggestions added; below 1% noting, remove the feature. These are guesses. Recommendation:
   accept the 1% removal floor now.
+- **F11. What the iPhone chat saves, and when.** On the web, the chat saves a medication
+  change at once with Undo, but only pre-fills a value for the person to check and save.
+  The phone has no cells to pre-fill. Options: copy the web (medications at once with Undo;
+  values and height in a Save banner), or Save first for everything (one rule on the phone,
+  different from the web). Either way the model's words are matched, so the chat never says
+  "saved" before it is. Recommendation: copy the web, so the two chats behave the same.
+- **F12. The Apple Health promise.** US-56 tells people, in the iPhone's permission text and
+  the App Store privacy answers, that their Apple Health readings stay on the phone and never
+  enter the record. A confirmed "Walking more" change is derived from those readings and
+  goes into the record, the person's cloud and later the chat. Options: go ahead and reword
+  the permission text and privacy answers (a change Apple reviews), or keep step suggestions
+  out and let people note exercise changes themselves. Recommendation: go ahead; the person
+  chooses each Add, and the words say so plainly.
+- **F13. How periods are cut.** You said changes "within two or three months of each other"
+  share a marker. Chaining (each change within 90 days of the last) matches those words, but
+  changes every two months would chain into one marker for a year. Anchoring (within 90 days
+  of the period's first change) caps a marker at three months. Options: anchor at 90 days,
+  anchor at 60, or chain. Recommendation: anchor at 90 days.
 
 ## Out of scope
 
