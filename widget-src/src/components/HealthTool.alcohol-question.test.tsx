@@ -58,13 +58,14 @@ afterEach(async () => {
 const alcoholCard = (root: HTMLElement) =>
   [...root.querySelectorAll('.suggestion-title')].find((t) => t.textContent === 'Reduce alcohol intake');
 const dialog = () => document.body.querySelector<HTMLElement>('[role="dialog"][aria-labelledby="alcohol-dialog-title"]');
-const dismiss = async (root: HTMLElement) => {
+const dismiss = async (root: HTMLElement, prompt = 'Do you drink alcohol?') => {
   const card = await waitFor(() => { const c = alcoholCard(root); expect(c).toBeDefined(); return c!; });
   const button = card.closest('.suggestion-subsection, .suggestion-card')!.querySelector<HTMLButtonElement>('.suggestion-dismiss')!;
   fireEvent.click(button);
   expect(dialog()).not.toBeNull();
-  expect(within(dialog()!).getByText('Do you drink alcohol?')).toBeTruthy();
+  expect(within(dialog()!).getByRole('heading').textContent).toBe(prompt);
 };
+const still = (section: string) => `This stays on your plan because the advice applies to anyone who drinks. You can change your answer in ${section}.`;
 
 it('US-60 AC3: "I don\'t drink" takes the card off the plan and saves the answer; the event carries no answer', async () => {
   const view = render(<HealthTool />);
@@ -85,7 +86,7 @@ it('US-60 AC3: "I don\'t drink" takes the card off the plan and saves the answer
   }
 });
 
-it('US-60 AC3 (C4): "I drink" saves the answer and the card stays with no Dismiss; Cancel saves nothing', async () => {
+it('US-60 AC3 (C4): "I drink" saves the answer and the card stays; Cancel saves nothing', async () => {
   const view = render(<HealthTool />);
   await dismiss(view.container);
   fireEvent.click(within(dialog()!).getByText('Cancel'));
@@ -99,8 +100,68 @@ it('US-60 AC3 (C4): "I drink" saves the answer and the card stays with no Dismis
   await persist();
   expect(saved().profile.alcohol).toBe('drinks');
   expect(alcoholCard(view.container)).toBeDefined();
-  // Answered: the card no longer asks again.
-  expect(view.container.querySelectorAll('.suggestion-dismiss')).toHaveLength(0);
+});
+
+it('US-60 AC3 (Brad 2026-11-01): a drinker\'s Dismiss asks "Do you still drink alcohol?"; "I still drink" saves nothing and says why the card stays', async () => {
+  await saveChangedMeasurements({ alcohol: 'drinks' }, {});
+  await flushRoadmapStore();
+  const view = render(<HealthTool />);
+  await waitFor(() => expect(view.container.querySelector<HTMLSelectElement>('#alcohol')?.value).toBe('drinks'));
+  expect(view.container.querySelectorAll('.suggestion-dismiss')).toHaveLength(1);
+  await dismiss(view.container, 'Do you still drink alcohol?');
+  expect([...dialog()!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(["I've stopped", 'I still drink', 'Cancel']);
+  const alert = vi.spyOn(window, 'alert').mockImplementation(() => {});
+  // The saved file, stamps and all, before the tap: "I still drink" writes nothing.
+  const before = saved();
+  expect(before.profile.alcohol).toBe('drinks');
+  expect(before.profile.fieldStamps?.alcohol).toBeDefined();
+  fireEvent.click(within(dialog()!).getByText('I still drink'));
+  // One line, in the dialog's place, never a browser alert. On desktop the
+  // profile section is titled "Starting Info", so the line names that.
+  expect(dialog()!.textContent).toBe(`${still('Starting Info')}OK`);
+  expect(alert).not.toHaveBeenCalled();
+  fireEvent.click(within(dialog()!).getByText('OK'));
+  expect(dialog()).toBeNull();
+  // Past the autosave's debounce nothing has landed, meta included...
+  await tick();
+  expect(saved()).toEqual(before);
+  // ...and nothing was pending: after a flush only meta moves, as any flush
+  // moves it (lamport, updatedAt), and the alcohol stamp is untouched.
+  await act(async () => { await flushRoadmapStore(); });
+  expect({ ...saved(), meta: null }).toEqual({ ...before, meta: null });
+  expect(saved().profile.fieldStamps?.alcohol).toEqual(before.profile.fieldStamps?.alcohol);
+  expect(alcoholCard(view.container)).toBeDefined();
+  expect(vi.mocked(trackProductEvent)).not.toHaveBeenCalledWith('alcohol_question_answered');
+});
+
+it('US-60 AC3 (Brad 2026-11-01): on a phone with sex and height in, the "I still drink" line names About you, the title shown there', async () => {
+  vi.stubGlobal('matchMedia', (q: string) => ({
+    matches: q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {},
+  }));
+  await saveChangedMeasurements({ alcohol: 'drinks' }, {});
+  await flushRoadmapStore();
+  const view = render(<HealthTool />);
+  await waitFor(() => expect(view.container.querySelector<HTMLSelectElement>('#alcohol')?.value).toBe('drinks'));
+  const titles = [...view.container.querySelectorAll('.health-section-title')].map((h) => h.textContent!.replace('\u25B8', '').trim());
+  expect(titles).toContain('About you');
+  expect(titles).not.toContain('Starting Info');
+  await dismiss(view.container, 'Do you still drink alcohol?');
+  fireEvent.click(within(dialog()!).getByText('I still drink'));
+  expect(dialog()!.textContent).toBe(`${still('About you')}OK`);
+});
+
+it('US-60 AC3 (Brad 2026-11-01): a drinker\'s "I\'ve stopped" saves \'none\' through the profile autosave and the card leaves; the event carries no answer', async () => {
+  await saveChangedMeasurements({ alcohol: 'drinks' }, {});
+  await flushRoadmapStore();
+  const view = render(<HealthTool />);
+  await waitFor(() => expect(view.container.querySelector<HTMLSelectElement>('#alcohol')?.value).toBe('drinks'));
+  await dismiss(view.container, 'Do you still drink alcohol?');
+  fireEvent.click(within(dialog()!).getByText("I've stopped"));
+  expect(dialog()).toBeNull();
+  expect(alcoholCard(view.container)).toBeUndefined();
+  await persist();
+  expect(saved().profile.alcohol).toBe('none');
+  expect(vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'alcohol_question_answered')).toEqual([['alcohol_question_answered']]);
 });
 
 it('US-60 AC4 (M2): Starting Info\'s Alcohol row sets the answer with no usage event, and "Not answered" clears it with a stamp and brings the card back', async () => {
