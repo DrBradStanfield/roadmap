@@ -10,7 +10,7 @@ import type { ApiMedication } from '../../packages/health-core/src/mappings';
 import { derivePlanInputs } from '../../packages/health-core/src/plan';
 import type { RecordHost } from '../../packages/health-core/src/record-host';
 import { labReview, labRows, labSaveSummary, type Extraction } from './lab-review';
-import { readView, Refusal } from './my-data';
+import { readRecord, readView, Refusal } from './my-data';
 
 /** What the chat sends with a question (US-52 AC5): the widget's payload, built from the record. */
 export function chatContextJson(recordJson: string, nowIso: string, deviceId: string): string {
@@ -121,13 +121,15 @@ export async function eraseChatText(historyText: string | null, nowIso: string, 
 export function labReviewJson(extractionJson: string, nowIso: string, recordJson: string, sourceFileName: string, contentHash: string, deviceId: string): string {
   const extraction = JSON.parse(extractionJson) as Extraction;
   // The record is read only for a document's dedup: a lab report's card never needs it.
-  const file = recordJson && extraction.document ? readView(recordJson, nowIso, deviceId) : null;
+  // Raw, as the save dedups on it (US-65): a hidden document still holds its file name.
+  const file = recordJson && extraction.document ? readRecord(recordJson, nowIso, deviceId) : null;
   return JSON.stringify(labReview(extraction, nowIso, file, sourceFileName || null, contentHash || null));
 }
 
-/** What saving the ticked values would do: `{ ok, summary }` or the refusal. The record is not changed. */
+/** What saving the ticked values would do: `{ ok, summary }` or the refusal. The record is not changed.
+ *  Read raw, as the save writes it (US-65), so the receipt counts what really lands. */
 export function labSaveSummaryJson(recordJson: string, extractionJson: string, refsJson: string, reportDay: string, nowIso: string, deviceId: string): string {
   const rows = labRows(JSON.parse(extractionJson) as Extraction, JSON.parse(refsJson) as string[], reportDay, nowIso);
   if (!rows.ok) return JSON.stringify(rows);
-  return JSON.stringify({ ok: true, summary: labSaveSummary(readView(recordJson, nowIso, deviceId), rows.rows, nowIso) });
+  return JSON.stringify({ ok: true, summary: labSaveSummary(readRecord(recordJson, nowIso, deviceId), rows.rows, nowIso) });
 }

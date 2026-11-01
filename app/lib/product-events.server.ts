@@ -155,7 +155,7 @@ const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   onboarding_done: [],
   signin_opened: ['placement'],
   guide_opened: ['placement'],
-  record_unreadable_kept: ['count'], // US-65 AC7: how many entries, nothing else
+  record_unreadable_kept: ['count'], // US-65 AC6: how many entries, nothing else
 };
 
 /**

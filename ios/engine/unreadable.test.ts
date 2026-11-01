@@ -3,7 +3,8 @@
 // threw the whole screen call, and the person saw none of their record.
 // Synthetic values only.
 import { describe, expect, it } from 'vitest';
-import { applyEditJson, chatContextJson, healthWritesJson, historyJson, newRecordJson, planJson, remindersJson, screenJson } from './entry';
+import { applyEditJson, chatContextJson, healthWritesJson, historyJson, labSaveSummaryJson, newRecordJson, planJson, remindersJson, screenJson } from './entry';
+import { unitsOf } from './unit-choices';
 
 const NOW = '2026-11-01T00:00:00.000Z';
 const DAY = '2026-10-01T00:00:00Z';
@@ -33,12 +34,53 @@ describe('US-65: the engine opens a record with unreadable entries', () => {
     expect(JSON.parse(out.record).measurements).toContainEqual(future);
   });
 
-  it('every other reader skips them too: plan, history, chat context, Health writes, reminders', () => {
+  it('plan, history and chat context skip them', () => {
     const record = JSON.stringify({ ...base, profile: { ...profile, lpaUnit: 'synthetic' }, measurements: [weight, future, { ...weight, id: 'm3', value: 'synthetic' }] });
     for (const read of [
       () => planJson(record, NOW, 'phone'), () => historyJson(record, 'weight', NOW, 'phone'), () => chatContextJson(record, NOW, 'phone'),
-      () => healthWritesJson(record, NOW, 'phone'), () => remindersJson(record, NOW, 'phone'),
     ]) expect(read()).not.toContain('synthetic');
+  });
+
+  it('reminders are due as if a hidden LDL were not there', () => {
+    const hidden = JSON.stringify({ ...base, profile, measurements: [weight, { ...weight, id: 'l1', metricType: 'ldl', value: 'synthetic' }] });
+    const clean = JSON.stringify({ ...base, profile, measurements: [weight] });
+    expect(remindersJson(hidden, NOW, 'phone')).toBe(remindersJson(clean, NOW, 'phone'));
+  });
+
+  it('Health writes follow a correction back through a hidden Apple Health row, so nothing is written', () => {
+    // h1 came from Apple Health and is hidden (its externalId is a number); w2 corrects it by hand.
+    const h1 = { ...weight, id: 'h1', source: 'apple_health', status: 'entered-in-error', externalId: 5 };
+    const w2 = { ...weight, id: 'w2', value: 81, source: 'manual_correction', correctsId: 'h1', createdAt: '2026-10-02T00:00:00Z' };
+    expect(JSON.parse(healthWritesJson(JSON.stringify({ ...base, profile, measurements: [h1, w2] }), NOW, 'phone'))).toEqual([]);
+  });
+
+  it('the lab receipt counts what the save writes: a hidden active row holds its day', () => {
+    const extraction = { classification: 'lab_report', reportDate: '2026-10-01', values: [
+      { metric: 'ldl', valueSI: 3.1, displayValue: 3.1, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high' },
+    ], additionalValues: [] };
+    const record = JSON.stringify({ ...base, profile, measurements: [weight, { ...weight, id: 'l1', metricType: 'ldl', value: 'synthetic' }] });
+    const receipt = JSON.parse(labSaveSummaryJson(record, JSON.stringify(extraction), JSON.stringify(['v0']), '2026-10-01', NOW, 'phone'));
+    const saved = JSON.parse(applyEditJson(record, JSON.stringify({ kind: 'labImport', extractionJson: JSON.stringify(extraction), refs: ['v0'], reportDay: '2026-10-01' }), NOW, 'phone'));
+    const ldlRows = saved.ok ? JSON.parse(saved.record).measurements.filter((m: { metricType: string }) => m.metricType === 'ldl').length : 1;
+    expect(receipt.summary.saved).toBe(ldlRows - 1);
+  });
+
+  it('an unreadable unit system reads as metric for screens and for writes alike', () => {
+    const record = JSON.stringify({ ...base, profile: { ...profile, unitSystem: 'synthetic' }, measurements: [weight] });
+    expect(JSON.parse(screenJson(record, NOW, 'phone')).myData.unitSystem).toBe('si');
+    const out = JSON.parse(applyEditJson(record, JSON.stringify({ kind: 'add', metric: 'weight', value: 81, day: '2026-10-31' }), NOW, 'phone'));
+    expect(out.ok).toBe(true);
+    expect(JSON.parse(out.record).measurements.find((m: { value: number }) => m.value === 81)).toBeTruthy();
+    expect(unitsOf(JSON.parse(out.record))).toBe('si'); // the cloud path's units check (cloud.ts) reads this
+  });
+
+  it('a lab name that is a number, a cleared height and a hidden document still open My data', () => {
+    const lab = { id: 'x1', metricName: 5, value: 1, unit: 'g/L', referenceLow: null, referenceHigh: null, recordedAt: DAY, createdAt: DAY, source: 'manual', status: 'active', correctsId: null };
+    const doc = { id: 'd1', title: 'Synthetic', type: 7, date: null, fileRef: '', contentHash: '', mimeType: '', extractedText: '', addedAt: DAY };
+    const record = JSON.stringify({ ...base, profile: { ...profile, heightCm: null }, measurements: [weight], labValues: [lab], documents: [doc] });
+    const screen = JSON.parse(screenJson(record, NOW, 'phone'));
+    expect(screen.myData.profile.height).toBeNull();
+    expect(screen.myData.unreadableNote).toBe('2 entries in your record could not be read, so they are kept unchanged and not shown.');
   });
 
   it('a readable record carries no line', () => {

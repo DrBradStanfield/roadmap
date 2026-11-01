@@ -237,7 +237,9 @@ Validate your result against the schema before you write it back.
   metric or medication key the app version does not know, or a wrong type on a field it
   reads (a string `value`, a string `heightCm`), is left exactly where it is: every
   version still merges, erases and corrects it, but the screens, `read_record` and
-  `get_plan` skip it, and the app shows a one-line count. Fix it by writing a corrected row.
+  `get_plan` skip it, the write tools never repeat its value, and the app shows a one-line
+  count. Fix it by writing a corrected row. The hosted connector cannot repair a hidden
+  profile field (its expected-value check can never match it): use the app or the stdio server.
 - **Unknown fields survive at the top level and inside rows**: migrate and merge both
   spread what they do not recognise, so an older app will not strip something a newer
   one added. **`meta` is the exception:** `mergeFiles` rebuilds it from its five known

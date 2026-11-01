@@ -12,8 +12,8 @@
  * Hand-written checks, not Zod: this runs over every row on every read.
  */
 import { MEDICATION_KEYS, METRIC_TYPES } from './validation';
-import { LPA_UNITS } from './units';
-import { ALCOHOL_ANSWERS } from './types';
+import { LPA_UNITS, UNIT_SYSTEMS } from './units';
+import { ALCOHOL_ANSWERS, isSex } from './types';
 import type { RoadmapFile } from './roadmap-file';
 
 type Row = Record<string, unknown>;
@@ -21,73 +21,103 @@ type Row = Record<string, unknown>;
 const METRICS: ReadonlySet<unknown> = new Set(METRIC_TYPES);
 const MEDICATIONS: ReadonlySet<unknown> = new Set(MEDICATION_KEYS);
 const isNumber = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
+const isObject = (v: unknown) => typeof v === 'object' && v !== null && !Array.isArray(v);
 /** Absent, null, or of the type readers expect. */
 const opt = (test: (v: unknown) => boolean) => (v: unknown) => v === undefined || v === null || test(v);
 const optString = opt((v) => typeof v === 'string');
 const optNumber = opt(isNumber);
+const oneOf = (words: readonly unknown[]) => opt((v) => words.includes(v));
+const strings = (r: Row, fields: readonly string[]) => fields.every((field) => optString(r[field]));
 
-const medication = (r: Row) => MEDICATIONS.has(r.medicationKey) && optString(r.drugName) && optNumber(r.doseValue) && optString(r.doseUnit);
-const supplement = (r: Row) => typeof r.supplementKey === 'string' && optString(r.supplementName) && optNumber(r.doseValue) && optString(r.doseUnit) && optString(r.status);
+const medication = (r: Row) => MEDICATIONS.has(r.medicationKey) && strings(r, ['drugName', 'doseUnit', 'changeType', 'updatedAt'])
+  && optNumber(r.doseValue);
+const supplement = (r: Row) => typeof r.supplementKey === 'string'
+  && strings(r, ['supplementName', 'doseUnit', 'status', 'startedAt', 'changeType', 'updatedAt']) && optNumber(r.doseValue);
 
 /** The arrays readers skip rows in, and each one's test. Migrate already
  *  guarantees an object with a string id, and a clinical day where one is due. */
 const ROWS = {
-  measurements: (r: Row) => METRICS.has(r.metricType) && isNumber(r.value) && optString(r.status) && optString(r.createdAt),
-  labValues: (r: Row) => typeof r.metricName === 'string' && isNumber(r.value) && optString(r.unit)
-    && optNumber(r.referenceLow) && optNumber(r.referenceHigh) && optString(r.status) && optString(r.createdAt),
+  measurements: (r: Row) => METRICS.has(r.metricType) && isNumber(r.value)
+    && strings(r, ['status', 'createdAt', 'source', 'correctsId', 'externalId']),
+  labValues: (r: Row) => typeof r.metricName === 'string' && isNumber(r.value) && optNumber(r.referenceLow) && optNumber(r.referenceHigh)
+    && strings(r, ['unit', 'status', 'createdAt', 'source', 'correctsId']),
   medications: medication,
   medicationHistory: medication,
   supplements: supplement,
   supplementHistory: supplement,
-  documents: (r: Row) => optString(r.title) && optString(r.extractedText) && optString(r.date),
+  // Every field a reader renders: a number or an object in any of them reached React as a child.
+  documents: (r: Row) => strings(r, ['title', 'type', 'date', 'fileRef', 'contentHash', 'mimeType', 'extractedText', 'addedAt', 'sourceFileName'])
+    && opt(isObject)(r.metadata) && opt((v) => typeof v === 'boolean')(r.deleted),
 } as const;
 
-const oneOf = (words: readonly unknown[]) => opt((v) => words.includes(v));
+export type RowArray = keyof typeof ROWS;
+const ROW_ARRAYS = Object.keys(ROWS) as RowArray[];
 
 /** The profile fields readers use, and each one's test. */
 const PROFILE: Record<string, (v: unknown) => boolean> = {
-  sex: oneOf(['male', 'female']),
+  sex: opt(isSex),
   birthYear: optNumber,
   birthMonth: optNumber,
   heightCm: optNumber,
-  unitSystem: oneOf(['si', 'conventional']),
-  unitOverrides: opt((v) => typeof v === 'object' && !Array.isArray(v)),
+  unitSystem: oneOf(UNIT_SYSTEMS),
+  unitOverrides: opt(isObject),
   lpaUnit: oneOf(LPA_UNITS),
   reportEmailCaptured: opt((v) => typeof v === 'boolean'),
   alcohol: oneOf(ALCOHOL_ANSWERS),
 };
+const PROFILE_FIELDS = Object.keys(PROFILE);
+
+/** Whether a reader can read this row of this array (US-65). */
+export function isReadableRow(key: RowArray, row: unknown): boolean {
+  return isObject(row) && ROWS[key](row as Row);
+}
+
+/** Whether a reader would show this row at all: a corrected or deleted one it would
+ *  not, so it never keeps the line alive (US-65 AC4). */
+function shown(row: Row): boolean {
+  return row.status !== 'entered-in-error' && row.deleted !== true;
+}
 
 export interface ReadableView {
   /** The record as readers see it: unreadable rows left out, unreadable profile fields absent. */
   file: RoadmapFile;
-  /** How many rows and profile fields were left out. */
+  /** How many unreadable rows a reader would have shown, plus unreadable profile fields. */
   count: number;
 }
 
-const views = new WeakMap<RoadmapFile, ReadableView>();
+/** The view, with what it was computed from: an edit that pushes a row in place
+ *  (the web's document commit does) changes a length, and the view is made again. */
+interface Cached { lengths: number[]; profile: unknown; view: ReadableView }
+const views = new WeakMap<RoadmapFile, Cached>();
 
-/** The readers' view of a record, computed once per record object. The record
- *  itself when everything in it is readable. A view's own view is itself, with
- *  the same count, so a reader handed the view still knows what was left out. */
+/** The readers' view of a record. The record itself, with no copy, when every
+ *  entry in it is readable. A view's own view is itself, with the same count, so
+ *  a reader handed the view still knows what was left out. */
 export function readableView(file: RoadmapFile): ReadableView {
+  const lengths = ROW_ARRAYS.map((key) => file[key].length);
   const seen = views.get(file);
-  if (seen) return seen;
-  let count = 0;
-  const out: Record<string, unknown> = { ...file };
-  for (const [key, readable] of Object.entries(ROWS)) {
-    const rows = file[key as keyof typeof ROWS] as unknown as Row[];
-    const kept = rows.filter((row) => readable(row));
-    if (kept.length !== rows.length) [count, out[key]] = [count + rows.length - kept.length, kept];
-  }
+  if (seen && seen.profile === file.profile && seen.lengths.every((n, i) => n === lengths[i])) return seen.view;
+
   const profile = file.profile as unknown as Row;
-  const bad = Object.keys(PROFILE).filter((field) => !PROFILE[field](profile[field]));
-  if (bad.length > 0) {
-    count += bad.length;
-    out.profile = Object.fromEntries(Object.entries(profile).filter(([field]) => !bad.includes(field)));
+  const badFields = PROFILE_FIELDS.filter((field) => !PROFILE[field](profile[field]));
+  const badArrays = ROW_ARRAYS.filter((key) => !(file[key] as unknown as Row[]).every((row) => ROWS[key](row)));
+  let view: ReadableView = { file, count: 0 };
+  if (badFields.length > 0 || badArrays.length > 0) {
+    let count = badFields.length;
+    const out: Record<string, unknown> = { ...file };
+    for (const key of badArrays) {
+      const rows = file[key] as unknown as Row[];
+      out[key] = rows.filter((row) => {
+        if (ROWS[key](row)) return true;
+        if (shown(row)) count++;
+        return false;
+      });
+    }
+    if (badFields.length > 0) out.profile = Object.fromEntries(Object.entries(profile).filter(([field]) => !badFields.includes(field)));
+    view = { file: out as unknown as RoadmapFile, count };
+    views.set(view.file, { lengths: ROW_ARRAYS.map((key) => view.file[key].length), profile: view.file.profile, view });
   }
-  const view = { file: count === 0 ? file : (out as unknown as RoadmapFile), count };
-  views.set(file, view);
-  views.set(view.file, view);
+  views.set(file, { lengths, profile: file.profile, view });
   return view;
 }
 

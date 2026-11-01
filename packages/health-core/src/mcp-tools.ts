@@ -48,14 +48,14 @@ import {
 } from './record-edits';
 import type { FileDocument, FileLabValue, FileMeasurement, RoadmapFile, RoadmapProfile } from './roadmap-file';
 import type { SyncManager } from './sync-manager';
-import { CANONICAL_UNITS, formatDisplayValue, formatRange, getDisplayLabel, getDisplayRange, reportedToCanonical, UNIT_DEFS, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
+import { CANONICAL_UNITS, formatDisplayValue, formatRange, getDisplayLabel, getDisplayRange, reportedToCanonical, UNIT_DEFS, UNIT_SWAP_FLOORS, unitSystemOf, type MetricType, type UnitSystem } from './units';
 import { DROPBOX_APP_FOLDER, IMPORT_ACCEPTED_TYPES, IMPORT_FILE_REASONS, IMPORT_REFUSALS, importHint } from './import-hints';
 import { type McpImportRoute, type McpRefusalReason } from './product-events';
 import { LAB_ARCHIVE_TITLE } from './document-path';
 import { documentRow, labArchiveFields, type DocumentFields } from './document-rows';
 import { BIRTH_IN_FUTURE, birthInFuture, DOCUMENT_TYPES, type DocumentType, healthInputSchema, METRIC_TYPES, PRESSURE_ORDER, pressureInverted, zod3Message } from './validation';
 import * as z from './zod';
-import { readableView } from './readable-rows';
+import { isReadableRow, readableView } from './readable-rows';
 
 /**
  * Rows one `add_lab_values` call may write. A lab panel is the case this tool
@@ -619,10 +619,12 @@ export function getPlan(file: RoadmapFile, now: string): ToolOutcome {
 function rejection(result: EditRejection): ToolOutcome {
   const held = result.existing;
   if (result.reason === 'slot-occupied' && held) {
+    // A value no reader can read is never echoed (US-65 AC3): it may be anything.
+    const holds = isReadableRow('metricType' in held ? 'measurements' : 'labValues', held) ? oneLine(String(held.value)) : 'a value this app cannot read';
     return {
       status: 'rejected',
       reason: result.reason,
-      text: `${oneLine(result.message)}. That day already holds ${held.value} in row ${oneLine(held.id)}. ` +
+      text: `${oneLine(result.message)}. That day already holds ${holds} in row ${oneLine(held.id)}. ` +
         'Nothing was written. To change it, call correct_value with that row id — never add a second value to the same day.',
     };
   }
@@ -806,12 +808,15 @@ export function updateProfile(
   // connector write beat a concurrent one made in the app, whenever it was
   // made. The merge reads wall-clock time first (US-10 AC8), the honest
   // answer to "who wrote last".
+  // A stored value no reader can read is never echoed (US-65 AC3): `from` is null, the text says so.
+  const shown = readableView(file).file.profile;
+  const hidden = (field: (typeof PROFILE_FIELDS)[number]) => stored[field] != null && shown[field] === undefined;
   return {
     status: 'ok',
     file: stampProfile(file, Object.fromEntries(changed.map((field) => [field, request[field]])) as Partial<RoadmapProfile>, now),
-    text: changed.map((field) => `${field}: ${stored[field] ?? 'not set'} → ${request[field]}`).join('\n'),
+    text: changed.map((field) => `${field}: ${hidden(field) ? 'a value this app cannot read' : shown[field] ?? 'not set'} → ${request[field]}`).join('\n'),
     data: {
-      changed: changed.map((field) => ({ field, from: stored[field] ?? null, to: request[field] as string | number })),
+      changed: changed.map((field) => ({ field, from: hidden(field) ? null : shown[field] ?? null, to: request[field] as string | number })),
     },
   };
 }
@@ -1349,6 +1354,8 @@ function slotFor(
   system: UnitSystem,
 ): ImportCandidate['slot'] {
   if (!existing) return { state: 'free' };
+  // A value no reader can read holds the day, with nothing to show or compare (US-65 AC3).
+  if (typeof existing.value !== 'number') return { state: 'held_different', existingRowId: existing.id, replaceable: false };
   const state: SlotState = 'metricType' in existing
     ? slotState(formatDisplayValue(existing.metricType as MetricType, existing.value, system), candidate.displayValue)
     : sameLabQuantity(
@@ -1424,7 +1431,7 @@ export function prepareImport(
   ctx: EditContext & { maxCorrectionAgeDays?: number; payloadId: string },
 ): PreparedImport {
   const latestDay = ctx.latestDay ?? dayOf(ctx.now);
-  const system: UnitSystem = file.profile.unitSystem ?? 'si';
+  const system = unitSystemOf(file.profile);
   const files: Array<z.infer<typeof importFileOutput>> = [];
   const candidates: ImportCandidate[] = [];
   const documents: ImportDocument[] = [];
@@ -1785,7 +1792,7 @@ export function importDocumentsCommit(
     const current = held.get(slot);
     const moved = c.slot.state === 'free'
       ? current !== undefined
-      : !current || current.id !== c.slot.existingRowId || current.value !== c.slot.existingValue;
+      : !current || current.id !== c.slot.existingRowId || (typeof current.value === 'number' ? current.value : undefined) !== c.slot.existingValue;
     if (moved) {
       return {
         status: 'rejected',

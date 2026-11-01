@@ -89,6 +89,41 @@ describe('US-65 AC1: an unreadable row stays where it is', () => {
   });
 });
 
+describe('US-65 AC2, AC4: the view keeps up and counts only what a reader would show', () => {
+  const doc = (id: string, extra: Record<string, unknown> = {}) => ({ id, title: 'Synthetic letter', type: 'clinic_letter', date: null, fileRef: '', contentHash: '', mimeType: '', extractedText: '', addedAt: DAY, ...extra });
+
+  it('a document pushed in place shows at once while a hidden document exists', () => {
+    const file = read(rawRecord({ documents: [doc('d1', { type: 7 })] }));
+    expect(ids(readableView(file).file.documents)).toEqual([]);
+    file.documents.push(doc('d2') as never);
+    expect(ids(readableView(file).file.documents)).toEqual(['d2']);
+  });
+
+  it('a document field a reader renders, of the wrong type, hides it; metadata null does not', () => {
+    const file = read(rawRecord({ documents: [doc('d1', { sourceFileName: 3 }), doc('d2', { type: { a: 1 } }), doc('d3', { metadata: null })] }));
+    expect(ids(readableView(file).file.documents)).toEqual(['d3']);
+  });
+
+  it('a corrected or deleted unreadable row is hidden but not counted', () => {
+    const file = read(rawRecord({
+      measurements: [WEIGHT, { ...WORDY, status: 'entered-in-error' }],
+      documents: [doc('d1', { type: 7, deleted: true })],
+    }));
+    expect(readableView(file)).toMatchObject({ count: 0 });
+    expect(ids(readableView(file).file.measurements)).toEqual(['w1']);
+  });
+
+  it('a lab name that is a number opens through the whole load path, and a save keeps it', async () => {
+    const lab = { id: 'x1', metricName: 5, value: 1, unit: 'g/L', referenceLow: null, referenceHigh: null, recordedAt: DAY, createdAt: DAY, source: 'manual', status: 'active', correctsId: null };
+    const { cloud, sync } = cloudWith(JSON.stringify(rawRecord({ labValues: [lab] })));
+    const file = await sync.load();
+    expect(readableView(file).file.labValues).toEqual([]);
+    expect(callTool('get_plan', {}, { file, now: LATER }).status).not.toBe('invalid-args');
+    await sync.save(file);
+    expect(stored(cloud).labValues).toEqual([lab]);
+  });
+});
+
 describe('US-65 AC1: every build merges, erases and corrects them as before', () => {
   it('a merge of two files each holding unreadable rows keeps both, in either order', () => {
     const a = read(rawRecord({ measurements: [WEIGHT, FUTURE] }));

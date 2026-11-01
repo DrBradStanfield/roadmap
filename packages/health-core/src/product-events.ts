@@ -137,7 +137,7 @@ export const PRODUCT_EVENT_NAMES = [
   'onboarding_step',
   'onboarding_done',
   'signin_opened',
-  // US-65 AC7: the record opened with entries this build could not read, so
+  // US-65 AC6: the record opened with entries this build could not read, so
   // the page showed the kept-unchanged line. Metadata `{ count }` only, capped
   // at 1000: never a row, a field name or a value. Once per tab session.
   'record_unreadable_kept',

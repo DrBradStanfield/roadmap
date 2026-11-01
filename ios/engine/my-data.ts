@@ -222,9 +222,10 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
       sex: sex ?? null,
       birthYear: birthYear ?? null,
       birthMonth: birthMonth ?? null,
-      height: heightCm === undefined ? null : formatDisplayValue('height', heightCm, system),
+      // A cleared height is a stamped null (US-10 AC9): no height, like an absent one.
+      height: heightCm == null ? null : formatDisplayValue('height', heightCm, system),
       heightUnit: getDisplayLabel('height', system),
-      feetInches: heightCm === undefined || system !== 'conventional' ? null : cmToFeetInches(heightCm),
+      feetInches: heightCm == null || system !== 'conventional' ? null : cmToFeetInches(heightCm),
       alcohol: isAlcoholAnswer(file.profile.alcohol) ? file.profile.alcohol : null,
     },
     // Blood pressure is one row, as the web's matrix shows it: the newest day's pair.
@@ -259,7 +260,7 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
         if (!Number.isInteger(heightFeet) || !Number.isInteger(heightInches) || heightFeet! < 0 || heightInches! < 0 || heightInches! > 11) {
           return { ok: false, reason: 'invalid-value', message: 'Height is whole feet and 0 to 11 inches.' };
         }
-        const shown = file.profile.heightCm === undefined ? undefined : cmToFeetInches(file.profile.heightCm);
+        const shown = typeof file.profile.heightCm === 'number' ? cmToFeetInches(file.profile.heightCm) : undefined;
         // The wheels as they opened: write nothing, so 178 cm never becomes 177.8 (adversary R4).
         if (shown?.feet === heightFeet && shown?.inches === heightInches) {
           if (Object.keys(rest).length === 0) return { ok: true, file };

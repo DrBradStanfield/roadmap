@@ -217,10 +217,20 @@ export class RoadmapStore {
     return this.session.file;
   }
 
-  /** The record as screens read it: rows and profile fields this build cannot
-   *  read left out; they stay in the file (US-65). Edits use `file`. */
+  /** The readers' view: rows and profile fields this build cannot read left
+   *  out; they stay in the file (US-65). Edits use `file`. */
+  private get readable() {
+    return readableView(this.session.file);
+  }
+
+  /** The record as screens read it. */
   private get view(): RoadmapFile {
-    return readableView(this.session.file).file;
+    return this.readable.file;
+  }
+
+  /** How many entries this build could not read; kept, never shown (US-65). */
+  get unreadableCount(): number {
+    return this.readable.count;
   }
 
   get backendId() {
@@ -228,11 +238,6 @@ export class RoadmapStore {
   }
 
   /** Which erase this copy is at, as one comparable string (US-16 AC2a). */
-  /** How many entries this build could not read; kept, never shown (US-65). */
-  get unreadableCount(): number {
-    return readableView(this.session.file).count;
-  }
-
   get eraseIdentity(): string {
     return this.session.eraseIdentity;
   }
@@ -482,7 +487,7 @@ export class RoadmapStore {
     return this.session.edit((file) => stampProfile(file, { reportEmailCaptured: true }, new Date().toISOString()));
   }
 
-  /** The unit the user chose for Lp(a)'s field (US-05 AC2), as the record holds it: unchecked. */
+  /** The unit the user chose for Lp(a)'s field (US-05 AC2), as readers see it. */
   getLpaUnit(): unknown {
     return this.view.profile.lpaUnit;
   }
@@ -494,7 +499,7 @@ export class RoadmapStore {
   }
 
   getReminderOptIn(): FileReminderOptIn | undefined {
-    return this.view.reminderOptIn;
+    return this.file.reminderOptIn;
   }
 
   /** Set/replace the opt-in singleton (status flips included), stamped + persisted. */

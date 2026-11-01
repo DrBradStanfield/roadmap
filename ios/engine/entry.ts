@@ -140,7 +140,9 @@ export function convertJson(metric: string, value: number, from: string, to: str
 /** The values to write to Apple Health, as JSON (US-25 AC14, device-export.ts): the values
  *  a person entered, never the app's own imports. */
 export function healthWritesJson(recordJson: string, nowIso: string, deviceId: string): string {
-  return JSON.stringify(deviceWrites(readView(recordJson, nowIso, deviceId), 'apple_health'));
+  // The raw record: a correction's chain and source run through hidden rows too, and
+  // deviceWrites takes only active rows of known metrics with a valid number (US-65).
+  return JSON.stringify(deviceWrites(readRecord(recordJson, nowIso, deviceId), 'apple_health'));
 }
 
 /** Every value recorded for one metric, newest first, as JSON (US-25 AC9). */
