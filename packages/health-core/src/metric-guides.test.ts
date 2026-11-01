@@ -247,7 +247,7 @@ describe('METRIC_GUIDES (US-58)', () => {
   it('AC7: each reference added for the Apple Health guides is in the list and cited in the text by its number', () => {
     const added = GUIDE_REFERENCES.filter((r) => APPLE_HEALTH.some((k) => METRIC_GUIDES[k].sources.includes(r)));
     expect(added.map((r) => r.label.split(' ')[0])).toEqual(
-      ['Zhang', 'Aune', 'Reimers', 'Paluch', 'Watson', 'Milanović', 'Apple', 'Apple', 'Apple', 'Apple']);
+      ['Zhang', 'Aune', 'Reimers', 'Paluch', 'Watson', 'Milanović', 'NHS', 'Kusumoto', 'Apple', 'Apple', 'Apple', 'Apple']);
     const cited = new Set([...BODY.matchAll(MARKER)].flatMap((m) => numbersIn(m[1])));
     for (const r of added) {
       const n = numberOf(r.url);
@@ -255,10 +255,11 @@ describe('METRIC_GUIDES (US-58)', () => {
       expect(cited.has(n), `${r.label} [${n}] is cited`).toBe(true);
     }
     // Appended after [122], none renumbered (Brad's decision 7); Milanović was [108] already.
-    expect(REF_LIST).toHaveLength(131);
+    // [132]-[135], the exercise and heart rate safety sources, appended 2026-11-01.
+    expect(REF_LIST).toHaveLength(135);
     expect(numberOf('https://doi.org/10.1056/NEJMoa012512')).toBe(122);
     expect(numberOf('https://doi.org/10.1007/s40279-015-0365-0')).toBe(108);
-    expect(Math.max(...cited)).toBe(131);
+    expect(Math.max(...cited)).toBe(135);
   });
 
   it('AC7: no clinical claim cites an Apple source (Brad\'s decision 2)', () => {
@@ -301,6 +302,16 @@ describe('METRIC_GUIDES (US-58)', () => {
     expect(FILES.html).toContain('advise adults aged 18 to 60 to sleep at least 7 hours a night on a regular basis.[');
   });
 
+  it('AC7: the heart rate safety line is the one roadmap_text.html cites, and pairs no chest pain with a slow pulse (Brad 2026-11-01)', () => {
+    const line = 'A racing pulse with chest pain, fainting, dizziness or breathlessness, or a very slow pulse with fainting, dizziness or breathlessness, needs prompt medical care.';
+    expect(METRIC_GUIDES.heart_rate.whyItMatters.endsWith(line)).toBe(true);
+    // No source backs chest pain for a slow pulse: the bradycardia guideline names syncope, presyncope and dizziness.
+    expect(METRIC_GUIDES.heart_rate.whyItMatters).not.toMatch(/very slow pulse with chest pain|racing or very slow pulse/);
+    expect(FILES.html).toContain(line.replace(/\.$/, ' [134, 135].'));
+    expect(numberOf('https://www.nhs.uk/conditions/arrhythmia/')).toBe(134);
+    expect(numberOf('https://doi.org/10.1161/CIR.0000000000000628')).toBe(135);
+  });
+
   it('AC7: the Apple Health guides have their headings, parts and sources', () => {
     const headings = { heart_rate: 'How to read it', resting_heart_rate: 'How to read it', sleep: 'How to sleep well',
       vo2_max: 'How to get a good estimate', steps: 'How to add steps' };
@@ -313,7 +324,8 @@ describe('METRIC_GUIDES (US-58)', () => {
     expect(METRIC_GUIDES.sleep.sources.map((s) => s.label.split(' ')[0])).toEqual(['Cappuccio', 'Watson', 'Apple']);
     expect(METRIC_GUIDES.vo2_max.sources.map((s) => s.label.split(' – ')[0])).toEqual(['Kodama 2009', 'Kaminsky 2022', 'Apple 2021', 'Milanović 2015', 'Apple 2026']);
     expect(METRIC_GUIDES.steps.sources.map((s) => s.label.split(' ')[0])).toEqual(['Paluch', 'Bull', 'Piercy']);
-    expect(METRIC_GUIDES.heart_rate.sources.map((s) => s.url)).toEqual(['https://support.apple.com/en-us/120277']);
+    expect(METRIC_GUIDES.heart_rate.sources.map((s) => s.url)).toEqual(
+      ['https://www.nhs.uk/conditions/arrhythmia/', 'https://doi.org/10.1161/CIR.0000000000000628', 'https://support.apple.com/en-us/120277']);
     // No "60 to 100 bpm" normal range (Brad's decision 4).
     expect(textOf('heart_rate') + textOf('resting_heart_rate')).not.toMatch(/60 to 100|60-100/);
   });
