@@ -93,8 +93,23 @@ describe('US-61 AC2-AC3: engine output never carries a product or a US variant, 
     const json = renderJson(computePlan(file, NOW));
     for (const id of Object.keys(US_PRODUCT_LINES)) expect(json).toContain(`"${id}"`);
     expect(json).not.toMatch(PRODUCT_TEXT);
-    expect(json).not.toContain(US_SUPPLEMENT_DESCRIPTIONS['supplement-creatine']! + '"');
-    expect(json).not.toContain(US_SUPPLEMENT_DESCRIPTIONS['supplement-lutein-zeaxanthin']! + '"');
+    for (const text of Object.values(US_SUPPLEMENT_DESCRIPTIONS)) expect(json).not.toContain(text + '"');
+  });
+
+  it('US-61 AC3: no generated card ever carries a US variant as its text', () => {
+    const descriptions = plan(adult).suggestions.map((s) => s.description);
+    for (const text of Object.values(US_SUPPLEMENT_DESCRIPTIONS)) expect(descriptions).not.toContain(text);
+  });
+
+  it('US-61 AC4: a grouped Supplements card takes no block (single cards only, as the web draws them)', () => {
+    const { results, suggestions } = plan(adult);
+    const sections = planSections(suggestions);
+    const supp = sections.find((s) => s.key === 'supplements')!;
+    const grouped: PlanSection[] = sections.map((s) => s === supp ? { ...s, cards: [{ ...supp.cards[0], suggestions: [supp.cards[0].suggestions[0], supp.cards[1].suggestions[0]] }, ...supp.cards.slice(2)] } : s);
+    const overlaid = usProductSections(grouped, results, true, 'web')!;
+    const groupedCard = overlaid.find((s) => s.key === 'supplements')!.cards[0];
+    expect(groupedCard.suggestions.every((s) => !('usProduct' in s) || !s.usProduct)).toBe(true);
+    expect(overlaid.find((s) => s.key === 'supplements')!.cards.slice(1).some((c) => c.suggestions[0].usProduct)).toBe(true);
   });
 
   it('US-61 AC3: each variant is its card\'s text minus what it drops, with no product name', () => {

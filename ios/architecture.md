@@ -1531,6 +1531,11 @@ is. Spec: docs/user-stories.md US-61.
   **The rule:** `bridge.test.ts` pins the id as a literal. A real bridge change (anything an
   older app cannot do without) moves the id and updates that literal; `bridge-optional.json`
   is never a way around one, only a place for additions that work both ways.
+- **Costs, accepted (2026-11-01, review of the /simplify change):** for a US adult, `screenJson`
+  ships the sections twice (`sections`, product-free, plus `usProducts`, ready to draw), and the
+  plan's `ms` timing includes the overlay. A product link that fails the https microvitamin.com pin
+  drops the whole overlay, so the plan draws plain and nothing records it; only a bad signed engine
+  can cause that, and plain is the approved non-US view.
 - **Taps only, no new Clarity word.** The links carry `utm_source=health-tool&utm_medium=ios`,
   so taps and orders show in Shopify, and nothing from the record enters a URL. No impression
   is counted: a Clarity event would add a word to D9's fixed list, which US-61 leaves as it is.
