@@ -116,7 +116,7 @@ struct MyDataView: View {
             .pickerStyle(.segmented)
             .disabled(picking)
 
-            Picker("Birth year", selection: binding(data.profile.birthYear ?? 0) { .profile(birthYear: $0) }) {
+            Picker("Birth year", selection: binding(data.profile.birthYear ?? 0) { .birthYear($0, storedMonth: data.profile.birthMonth, now: .now) }) {
                 if data.profile.birthYear == nil { Text("Not set").tag(0) }
                 ForEach(DayText.birthYears(now: .now), id: \.self) { Text(String($0)).tag($0) }
             }
@@ -124,7 +124,7 @@ struct MyDataView: View {
 
             Picker("Birth month", selection: binding(data.profile.birthMonth ?? 0) { .profile(birthMonth: $0) }) {
                 if data.profile.birthMonth == nil { Text("Not set").tag(0) }
-                ForEach(1...12, id: \.self) { Text(DayText.monthName($0)).tag($0) }
+                ForEach(DayText.birthMonths(year: data.profile.birthYear ?? 0, now: .now, keeping: data.profile.birthMonth), id: \.self) { Text(DayText.monthName($0)).tag($0) }
             }
             .disabled(picking)
 
@@ -144,18 +144,6 @@ struct MyDataView: View {
             LabeledContent("Units") { units(data) }
         } header: {
             SectionTitle.aboutYou()
-        }
-    }
-
-    /// A section title with controls at its trailing end, large enough to hit easily.
-    private func header(_ title: SectionTitle, @ViewBuilder trailing: () -> some View) -> some View {
-        HStack(spacing: 14) {
-            title
-            Spacer()
-            trailing()
-                .labelStyle(.iconOnly)
-                .font(.title3)
-                .textCase(nil)
         }
     }
 
@@ -188,10 +176,11 @@ struct MyDataView: View {
                 metric(row, card: row.latest != nil)
             } header: {
                 if index == 0 {
-                    header(.vitals()) {
+                    ControlsHeader(title: .vitals()) {
                         Button { addingLabs = true } label: {
                             Label("Add medical records", systemImage: "plus")
                         }
+                        .accessibilityHint("Upload a lab report or clinic letter")
                         Button { showSync = true } label: {
                             Label("Sync", systemImage: SyncStatusText.symbol(sync.status, provider: sync.provider))
                         }
@@ -254,5 +243,34 @@ struct MyDataView: View {
     private func saved(_ result: RecordStore.ApplyResult) -> RecordStore.ApplyResult {
         if result == .saved { saves += 1 }
         return result
+    }
+}
+
+/// A section title with controls at its trailing end, large enough to hit easily.
+struct ControlsHeader<Trailing: View>: View {
+    let title: SectionTitle
+    @ViewBuilder let trailing: Trailing
+
+    var body: some View {
+        // The buttons go under the title when both do not fit on one line: beside them at the
+        // largest text sizes, "Vitals" broke mid-word as "Vi-tals" (US-25 AC17g, break-it 2026-10-30).
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 14) {
+                title.fixedSize()
+                Spacer()
+                buttons
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                title
+                HStack(spacing: 14) { buttons }
+            }
+        }
+    }
+
+    private var buttons: some View {
+        trailing
+            .labelStyle(.iconOnly)
+            .font(.title3)
+            .textCase(nil)
     }
 }

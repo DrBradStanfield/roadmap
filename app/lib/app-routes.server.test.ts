@@ -120,7 +120,7 @@ beforeEach(async () => {
   Object.assign(process.env, { APP_ATTEST_TEAM_ID: 'TEAM123456', SHOPIFY_API_SECRET: 'test-secret' });
   delete process.env.APP_ATTEST_DEV_BYPASS;
   delete process.env.CHAT_SURFACE;
-  for (const c of [appLimits.failures, appLimits.register, appLimits.ip.chat, appLimits.ip.lab, appLimits.machine.chat, appLimits.machine.lab, appLimits.dev.chat, appLimits.dev.lab, machineFiles]) c.reset();
+  for (const c of [appLimits.failures, appLimits.register, appLimits.challenges, appLimits.ip.chat, appLimits.ip.lab, appLimits.machine.chat, appLimits.machine.lab, appLimits.dev.chat, appLimits.dev.lab, machineFiles]) c.reset();
   store = memoryStore();
   counter = 0;
   mocks.getChatCompletion.mockReset().mockImplementation(async (_s: unknown, _m: unknown, _edits: boolean, onEvent?: (e: unknown) => void) => {
@@ -163,6 +163,53 @@ describe('US-52 AC1: registration', () => {
   });
 });
 
+describe('US-52 AC1a: a challenge is spent on first use', () => {
+  const reg = (challenge: string, attestation: string, ip: string) => register(new Request(`${BASE}/api/app/v1/attest/register`, {
+    method: 'POST', headers: { 'fly-client-ip': ip }, body: JSON.stringify({ keyId: device.keyId, attestation, challenge }),
+  }), store);
+  const fresh = async () => (await appChallenge(new Request(`${BASE}/api/app/v1/attest/challenge`, { method: 'POST' })).json()).challenge as string;
+
+  it('registers once per challenge, even after the key row is gone', async () => {
+    const challenge = await fresh();
+    expect((await reg(challenge, device.attest(challenge).toString('base64'), '198.51.100.20')).status).toBe(200);
+    store.rows.clear();
+    const again = await reg(challenge, device.attest(challenge).toString('base64'), '198.51.100.21');
+    expect(again.status).toBe(401);
+    expect((await again.json()).reason).toBe('bad_challenge');
+    expect(store.rows.size).toBe(0);
+  });
+
+  it('spends the challenge on a failed attempt too', async () => {
+    const challenge = await fresh();
+    expect((await reg(challenge, 'AA==', '198.51.100.22')).status).toBe(401);
+    const after = await reg(challenge, device.attest(challenge).toString('base64'), '198.51.100.23');
+    expect((await after.json()).reason).toBe('bad_challenge');
+    expect(store.rows.size).toBe(0);
+  });
+
+  it('spends the challenge on a malformed attempt too (Codex R1)', async () => {
+    const challenge = await fresh();
+    const malformed = await register(new Request(`${BASE}/api/app/v1/attest/register`, {
+      method: 'POST', headers: { 'fly-client-ip': '198.51.100.26' }, body: JSON.stringify({ keyId: 'not a key id', challenge }),
+    }), store);
+    expect(malformed.status).toBe(400);
+    const after = await reg(challenge, device.attest(challenge).toString('base64'), '198.51.100.27');
+    expect((await after.json()).reason).toBe('bad_challenge');
+    expect(store.rows.size).toBe(0);
+  });
+
+  it('refuses another spelling of a spent challenge', async () => {
+    const challenge = await fresh();
+    expect((await reg(challenge, device.attest(challenge).toString('base64'), '198.51.100.24')).status).toBe(200);
+    store.rows.clear();
+    // Node's base64url decoder skips padding and stray characters: the same bytes, another string.
+    const alias = `${challenge}==`;
+    const res = await reg(alias, device.attest(alias).toString('base64'), '198.51.100.25');
+    expect((await res.json()).reason).toBe('bad_challenge');
+    expect(store.rows.size).toBe(0);
+  });
+});
+
 describe('US-52 AC1/AC2: the gate', () => {
   it('refuses an unsigned request before any model call', async () => {
     const res = await appChat(new Request(`${BASE}/api/app/v1/chat`, { method: 'POST', body: JSON.stringify(chatBody) }), store);
@@ -200,6 +247,52 @@ describe('US-52 AC1/AC2: the gate', () => {
     expect(mocks.getChatCompletion).not.toHaveBeenCalled();
   });
 
+  it('reserves the failure budget before reading: 200 parallel forged requests read at most 50 bodies (US-52 AC4a)', async () => {
+    await registered();
+    const reqs = Array.from({ length: 200 }, () => signed('/api/app/v1/lab-import', chatBody, { tamper: true }));
+    const res = await Promise.all(reqs.map((r) => appLabImport(r, store)));
+    expect(reqs.filter((r) => r.bodyUsed).length).toBe(50);
+    expect(res.filter((r) => r.status === 401).length).toBe(50);
+    expect(res.filter((r) => r.status === 429).length).toBe(150);
+    expect(mocks.extract).not.toHaveBeenCalled();
+  });
+
+  it('reserves the failure budget before the key read: 200 parallel unknown keys make at most 50 reads (US-52 AC4a)', async () => {
+    let reads = 0;
+    const get = store.get.bind(store);
+    store.get = async (keyId: string) => { reads++; return get(keyId); };
+    const res = await Promise.all(Array.from({ length: 200 }, () => appChat(signed('/api/app/v1/chat', chatBody), store)));
+    expect(reads).toBe(50);
+    expect(res.filter((r) => r.status === 429).length).toBe(150);
+  });
+
+  it('hands the reservation back for a request that passes, so good requests never spend the budget (US-52 AC4a)', async () => {
+    await registered();
+    for (let i = 0; i < 60; i++) expect((await appChat(signed('/api/app/v1/chat', chatBody), store)).status).toBe(200);
+    expect(appLimits.failures.remaining(ipBucket('203.0.113.9'))).toBe(50);
+  });
+
+  it('a refund from a request pending across the window never reopens the next window (US-52 AC4a, Codex round 2 C1)', async () => {
+    await registered();
+    let release!: () => void;
+    const get = store.get.bind(store);
+    store.get = async (keyId: string) => { await new Promise<void>((r) => { release = r; }); return get(keyId); };
+    const start = Date.now();
+    const pending = appChat(signed('/api/app/v1/chat', { ...chatBody, stream: false }), store);
+    await vi.waitFor(() => expect(release).toBeTypeOf('function'));
+    // A minute past the day: the window opened at the reservation, a few ms after `start`.
+    const now = vi.spyOn(Date, 'now').mockReturnValue(start + 24 * 60 * 60_000 + 60_000);
+    try {
+      store.get = get;
+      for (let i = 0; i < 50; i++) expect((await appChat(signed('/api/app/v1/chat', chatBody, { tamper: true }), store)).status).toBe(401);
+      release();
+      expect((await pending).status).toBe(200);
+      expect((await appChat(signed('/api/app/v1/chat', chatBody, { tamper: true }), store)).status).toBe(429);
+    } finally {
+      now.mockRestore();
+    }
+  });
+
   it('charges an oversized body to the failure budget, still a 413 (Codex re-check R2)', async () => {
     await registered();
     const big = { message: 'x'.repeat(2 * 1024 * 1024 + 10) };
@@ -235,6 +328,8 @@ describe('US-52 AC1/AC2: the gate', () => {
     const down = await appChat(signed('/api/app/v1/chat', chatBody), store);
     expect(down.status).toBe(503);
     expect((await down.json()).reason).toBe('unavailable');
+    // An outage is not abuse: its reservation is handed back (US-52 AC4a).
+    expect(appLimits.failures.remaining(ipBucket('203.0.113.9'))).toBe(50);
     store.fail = false;
     process.env.CHAT_SURFACE = 'brand';
     expect((await appChat(signed('/api/app/v1/chat', chatBody), store)).status).toBe(503);
@@ -271,6 +366,51 @@ describe('US-52 AC4: limits', () => {
     const over = await appChat(signed('/api/app/v1/chat', chatBody), store);
     expect(over.status).toBe(429);
     expect(mocks.getChatCompletion).toHaveBeenCalledTimes(60);
+    // A key at its cap is not abuse: the failure budget is untouched (US-52 AC4a).
+    expect(appLimits.failures.remaining(ipBucket('203.0.113.9'))).toBe(50);
+  });
+
+  it('charges a development key the flag no longer allows to the failure budget (R10, US-52 AC4a)', async () => {
+    await registered();
+    for (const row of store.rows.values()) row.environment = 'development';
+    const res = await appChat(signed('/api/app/v1/chat', chatBody), store);
+    expect(res.status).toBe(401);
+    expect(appLimits.failures.remaining(ipBucket('203.0.113.9'))).toBe(49);
+  });
+
+  it('a request the IP or machine limit refuses spends no key use, but its counter is spent (US-52 AC4b)', async () => {
+    await registered();
+    const row = () => store.rows.get(device.keyId)!;
+    appLimits.ip.chat.take(ipBucket('203.0.113.9'), appLimits.ip.chat.remaining(ipBucket('203.0.113.9')));
+    expect((await appChat(signed('/api/app/v1/chat', chatBody, { counter: 3 }), store)).status).toBe(429);
+    expect(row().uses.chat).toBe(0);
+    expect(row().count).toBe(3);
+    appLimits.ip.chat.reset();
+    expect((await (await appChat(signed('/api/app/v1/chat', chatBody, { counter: 3 }), store)).json()).reason).toBe('stale_counter');
+    appLimits.machine.chat.take('machine', appLimits.machine.chat.remaining('machine'));
+    expect((await appChat(signed('/api/app/v1/chat', chatBody, { counter: 4 }), store)).status).toBe(429);
+    expect(row().uses.chat).toBe(0);
+    expect(row().count).toBe(4);
+    // The machine refusal handed back the IP unit it had taken.
+    expect(appLimits.ip.chat.remaining(ipBucket('203.0.113.9'))).toBe(200);
+    expect(mocks.getChatCompletion).not.toHaveBeenCalled();
+  });
+
+  it('a request the key refuses spends no IP or machine unit (US-52 AC4b)', async () => {
+    await registered();
+    store.rows.get(device.keyId)!.uses.chat = 60;
+    expect((await appChat(signed('/api/app/v1/chat', chatBody, { counter: 7 }), store)).status).toBe(429);
+    expect((await appChat(signed('/api/app/v1/chat', chatBody, { counter: 7 }), store)).status).toBe(401);
+    expect(appLimits.ip.chat.remaining(ipBucket('203.0.113.9'))).toBe(200);
+    expect(appLimits.machine.chat.remaining('machine')).toBe(appLimits.machine.chat.remaining('nobody'));
+  });
+
+  it('a store outage at the key step spends no IP or machine unit (US-52 AC4b, adversary R8)', async () => {
+    await registered();
+    store.use = async () => { throw new Error('down'); };
+    expect((await appChat(signed('/api/app/v1/chat', chatBody, { counter: 7 }), store)).status).toBe(503);
+    expect(appLimits.ip.chat.remaining(ipBucket('203.0.113.9'))).toBe(200);
+    expect(appLimits.machine.chat.remaining('machine')).toBe(appLimits.machine.chat.remaining('nobody'));
   });
 
   it('keys IPv6 on the /64', () => {

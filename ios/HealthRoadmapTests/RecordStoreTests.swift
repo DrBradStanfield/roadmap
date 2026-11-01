@@ -358,6 +358,57 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), "not a record")
     }
 
+    /// US-25 AC6b (break-it pass 2026-10-30): a record the engine cannot read is
+    /// explained in plain words, never the JavaScript exception's text.
+    func testAnUnreadableRecordIsExplainedWithoutTheEnginesExceptionText_US25_AC6b() throws {
+        try Data("{\"schemaVersion\": 1, \"measurements\": [".utf8).write(to: file)
+        let problem = try XCTUnwrap(try store().problem)
+        for developerText in ["SyntaxError", "TypeError", "JSON Parse", "engine failed", "EOF"] {
+            XCTAssertFalse(problem.contains(developerText), problem)
+        }
+        XCTAssertTrue(problem.contains("nothing will be saved over it"), problem)
+    }
+
+    /// Review R8: the engine's words for the person (its Refusal) stay visible, through a
+    /// plain call and a settled door alike; an exception's text stays hidden.
+    func testTheEnginesWordsForThePersonStayVisible_US25_AC6b() throws {
+        try Data("[]".utf8).write(to: file)
+        let notRecord = try XCTUnwrap(try store().problem)
+        XCTAssertTrue(notRecord.hasSuffix("nothing will be saved over it. This file is not a health record."), notRecord)
+        try Data("{\"schemaVersion\": 999, \"measurements\": []}".utf8).write(to: file)
+        let tooNew = try XCTUnwrap(try store().problem)
+        XCTAssertTrue(tooNew.hasSuffix("A newer version of Health Roadmap wrote this record. Update the app to open it."), tooNew)
+        let engine = try HealthEngine()
+        XCTAssertThrowsError(try engine.blocking { try $0.eraseOnPhone(recordJSON: "[]", historyJSON: nil, now: .now, deviceId: "test") }) {
+            XCTAssertEqual($0.localizedDescription, "This file is not a health record.")
+        }
+        XCTAssertThrowsError(try engine.blocking { try $0.eraseOnPhone(recordJSON: "{\"hello\": 1}", historyJSON: nil, now: .now, deviceId: "test") }) {
+            XCTAssertEqual($0.localizedDescription, "Something went wrong inside the app.")
+        }
+    }
+
+    /// US-54 AC5b, AC5c (break-it pass 2026-10-30): a future birth month and an
+    /// out-of-range height are refused in the person's words, nothing written.
+    func testARefusedProfileValueSaysItInPlainWords_US54_AC5c() async throws {
+        let store = try store()
+        let before = store.recordJSON
+        // Next month of this year, as the zone furthest ahead (UTC+14) counts months: the
+        // month rule, not the schema's birth-year cap. There is none in December.
+        var furthestAhead = Calendar(identifier: .gregorian)
+        furthestAhead.timeZone = try XCTUnwrap(TimeZone(secondsFromGMT: 14 * 3600))
+        let (year, month) = (furthestAhead.component(.year, from: .now), furthestAhead.component(.month, from: .now))
+        // Skipped while UTC+14 is already in next year (31 Dec): the schema's year cap counts the local year.
+        if month < 12, year == Calendar(identifier: .gregorian).component(.year, from: .now) {
+            guard case .refused(let future, _) = await store.apply(.profile(birthYear: year, birthMonth: month + 1)) else {
+                return XCTFail("a birth month in the future must be refused")
+            }
+            XCTAssertEqual(future, "Your birth month cannot be in the future.")
+        }
+        guard case .refused(let short, _) = await store.apply(.profile(height: 30)) else { return XCTFail("30 cm must be refused") }
+        XCTAssertEqual(short, "Height must be at least 50 cm.")
+        XCTAssertEqual(store.recordJSON, before)
+    }
+
     // MARK: Per-test units (US-25 AC17e)
 
     /// The record's units, and the other ones: the choice a test is switched to.

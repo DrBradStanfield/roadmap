@@ -128,14 +128,18 @@ struct OnboardingView: View {
                  progress: step, fromHealth: fromHealth.contains(.birth), message: message) {
                 HStack(spacing: 0) {
                     Picker("Month", selection: $answers.birthMonth) {
-                        ForEach(Self.months, id: \.self) { Text(DayText.monthName($0)).tag($0) }
+                        ForEach(DayText.birthMonths(year: answers.birthYear, now: .now), id: \.self) { Text(DayText.monthName($0)).tag($0) }
                     }
                     Picker("Year", selection: $answers.birthYear) {
                         ForEach(Self.birthYears, id: \.self) { Text(String($0)).tag($0) }
                     }
                 }
                 .pickerStyle(.wheel)
-                .onChange(of: [answers.birthMonth, answers.birthYear]) { birthAnswered = true }
+                .onChange(of: [answers.birthMonth, answers.birthYear]) {
+                    birthAnswered = true
+                    // This year's wheel stops at this month (US-54 AC5b): a later month moves back to it.
+                    answers.birthMonth = min(answers.birthMonth, DayText.latestBirthMonth(year: answers.birthYear, now: .now))
+                }
             } actions: {
                 primary("Continue", id: "onboarding.continue") { save(.birth) }.disabled(!birthAnswered)
             }
@@ -536,7 +540,6 @@ struct OnboardingView: View {
 
     /// Built once: the wheels redraw on every tick.
     static let appleAsksNextWords = "Next, Apple asks for access. Turn everything on, then tap **Allow**."
-    private static let months = Array(1...12)
     /// The five US-56 readings, named on the Apple Health page (adversary R5).
     static let liveLine = "It also shows your heart rate, sleep, VO2 max and steps here, never in your record."
     private static let birthYears = DayText.birthYears(now: .now)

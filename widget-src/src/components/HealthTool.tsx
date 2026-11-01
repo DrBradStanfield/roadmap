@@ -1263,6 +1263,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       setDocumentHistory(prev => prev.filter(d => d.id !== docId));
     },
     onAutoFocusEmail: handleAutoFocusEmail,
+    // On a phone a chat edit opens the grids, so the filled cell shows (US-62 AC11).
+    revealCell,
   };
 
   const resultsPanelProps = {

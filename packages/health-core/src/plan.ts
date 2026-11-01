@@ -227,7 +227,7 @@ export function computePlan(file: RoadmapFile, now = new Date(), unitOverrides?:
     return row ? dayOf(row.recordedAt) : null;
   };
 
-  const validation = validateHealthInputs(inputs, { systolicBp: day('systolic_bp'), diastolicBp: day('diastolic_bp') });
+  const validation = validateHealthInputs(inputs, { systolicBp: day('systolic_bp'), diastolicBp: day('diastolic_bp') }, now);
   if (!validation.success && validation.errors) {
     const invalid = new Set(validation.errors.issues.map((i) => String(i.path[0])));
     if (invalid.has('heightCm') || invalid.has('sex')) {
