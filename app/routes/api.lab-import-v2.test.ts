@@ -479,6 +479,14 @@ describe('US-12 AC19: the dropped values\' names reach the widget', () => {
     // This widget: every column.
     expect(await ask({ ownDates: true, undatedPrev: true })).toMatchObject({ droppedValueCount: 3 });
   });
+
+  it('an unnamed row in a column the caller is not offered leaves the count too (re-check R1)', async () => {
+    extractOrClassify.mockResolvedValueOnce({ ...partial(), droppedValueCount: 2, unreadValues: [
+      { name: '', reason: 'unreadable' }, { name: '', reason: 'unreadable', recordedAt: 'undated' },
+    ] });
+    const data = (await (await action({ request: body({ pages: FILES[0].pages, undatedPrev: undefined }) } as never)).json()).data;
+    expect(data).toMatchObject({ droppedValueCount: 1, unreadValues: [{ name: '', reason: 'unreadable' }] });
+  });
 });
 
 // PR #201 review R2: a file is charged only if it reaches Anthropic. Busy is

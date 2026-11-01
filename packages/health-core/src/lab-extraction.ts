@@ -67,6 +67,7 @@ export type UnreadReason = 'limit' | 'unreadable';
 /** A lab row the parse left out, by its test's name and why: never its value
  *  (US-12 AC19), so the person knows which result to look for. */
 export interface UnreadLabValue {
+  /** "" when the row names no test: kept for its day, counted, never shown. */
   name: string;
   reason: UnreadReason;
   /** The row's own day, as on a value (AC12, AC14): only a column whose
@@ -95,7 +96,8 @@ export function unreadLines({ droppedValueCount = 0, unreadValues = [], refusedV
     reasons.set(label, known.includes(reason) ? known : [...known, reason]);
   };
   for (const v of refusedValues) add(labTestLabel(v.metric), v.reason);
-  for (const v of unreadValues) add(labTestLabel(v.name), UNREAD_REASON_TEXT[v.reason]);
+  const named = unreadValues.filter(v => v.name);
+  for (const v of named) add(labTestLabel(v.name), UNREAD_REASON_TEXT[v.reason]);
   const labelsByReason = new Map<string, string[]>();
   for (const [label, why] of reasons) {
     const reason = why.length > 1 ? why.map(r => r.replace(/\.$/, '')).join('; ') : why[0];
@@ -103,7 +105,7 @@ export function unreadLines({ droppedValueCount = 0, unreadValues = [], refusedV
   }
   return {
     lines: [...labelsByReason].map(([reason, labels]) => ({ label: labels.join(', '), reason })),
-    otherCount: Math.max(0, droppedValueCount - unreadValues.length),
+    otherCount: Math.max(0, droppedValueCount - named.length),
   };
 }
 
@@ -172,8 +174,9 @@ export interface UnifiedExtractionResult {
    *  malformed row), so the person is told some were left out (US-12 AC8).
    *  Absent where nothing was parsed from a model's reply. */
   droppedValueCount?: number;
-  /** The dropped rows that name their test, with why (US-12 AC19); absent
-   *  when none was. Never longer than `droppedValueCount`. */
+  /** Each dropped row from a column the caller is offered, with why and its
+   *  day; one that names no test has name "" (US-12 AC19). Absent when none
+   *  was. Never longer than `droppedValueCount`. */
   unreadValues?: UnreadLabValue[];
   /** Rows refused rather than guessed (US-12 AC15); absent when none was.
    *  Never in `droppedValueCount`: only the HTTP route adds them there, for a
@@ -598,11 +601,11 @@ const unifiedResultSchema = z.object({
 /** A result printed as a limit: "> 60", "<5", "≤ 0.1". Never read as its number (US-12 AC19). */
 const PRINTED_LIMIT = /^\s*[<>≤≥]/;
 
-/** A dropped row by its test's name, why and day, or null when it names no test (US-12 AC19). */
-function unreadValue(row: unknown): UnreadLabValue | null {
+/** A dropped row by its test's name ("" for none), why and day (US-12 AC19):
+ *  an unnamed one keeps its day too, so it leaves the count with its column. */
+function unreadValue(row: unknown): UnreadLabValue {
   const { metric, name, value, recordedAt } = (row ?? {}) as Record<string, unknown>;
   const test = typeof metric === 'string' ? metric.trim() : typeof name === 'string' ? name.trim() : '';
-  if (!test) return null;
   const day = labDay.safeParse(recordedAt);
   return {
     name: cutText(test, 80),
@@ -611,14 +614,13 @@ function unreadValue(row: unknown): UnreadLabValue | null {
   };
 }
 
-/** The rows of `rows` that `schema` reads; the rest are dropped, and each that
- *  names its test goes to `unread`. */
+/** The rows of `rows` that `schema` reads; the rest are dropped, each to
+ *  `unread`. */
 function readableRows<T extends z.ZodTypeAny>(schema: T, rows: unknown[], unread: UnreadLabValue[]): Array<z.output<T>> {
   return rows.flatMap(row => {
     const r = schema.safeParse(row);
     if (r.success && !refusedCountRow(row)) return [r.data];
-    const named = unreadValue(row);
-    if (named) unread.push(named);
+    unread.push(unreadValue(row));
     return [];
   });
 }

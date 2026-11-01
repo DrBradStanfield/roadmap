@@ -1222,6 +1222,7 @@ describe('US-12 AC19: a value not saved is named, with why', () => {
     expect(result.unreadValues).toEqual([
       { name: 'hdl', reason: 'limit' }, { name: 'lpa', reason: 'limit' },
       { name: 'vitamin_d', reason: 'limit' }, { name: 'platelets', reason: 'unreadable' }, { name: 'crp', reason: 'unreadable' },
+      { name: '', reason: 'unreadable' },
     ]);
     // No value is ever saved from a limit.
     expect(result.values.map(v => v.metric)).toEqual(['ldl']);
@@ -1275,6 +1276,22 @@ describe('US-12 AC19: a value not saved is named, with why', () => {
     const connector = toUnifiedResult(parsed, 'metadata');
     expect(connector.unreadValues).toEqual([{ name: 'ldl', reason: 'limit', recordedAt: '2025-06-01' }]);
     expect(connector.droppedValueCount).toBe(1);
+  });
+
+  // Re-check R1: an unnamed row left out with its column left the count with
+  // "1 value could not be read" for a row in a column never offered.
+  it('an unnamed dropped row is counted only from an offered column, never shown', () => {
+    const parsed = parseUnifiedResult({ ...report, values: [], additionalValues: [
+      { value: 'trace', unit: 'mg/L' },
+      { value: 'trace', unit: 'mg/L', recordedAt: '2027-03-01' },
+      { value: 'trace', unit: 'mg/L', recordedAt: UNDATED_PREVIOUS },
+    ] });
+    const full = toUnifiedResult(parsed, 'full');
+    expect(full.droppedValueCount).toBe(2);
+    expect(unreadLines(full)).toEqual({ lines: [], otherCount: 2 });
+    const connector = toUnifiedResult(parsed, 'metadata');
+    expect(connector.droppedValueCount).toBe(1);
+    expect(unreadLines(connector)).toEqual({ lines: [], otherCount: 1 });
   });
 
   it('cuts a long name without halving an emoji', () => {
