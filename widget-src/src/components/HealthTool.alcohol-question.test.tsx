@@ -2,8 +2,8 @@
 /**
  * US-60 AC3, AC4 on the web: the "Reduce alcohol intake" card's Dismiss asks
  * "Do you drink alcohol?"; the answer saves to the profile through the form's
- * own write path. The card is the only place to answer: Starting Info has no
- * Alcohol row (Brad 2026-11-02).
+ * own write path. After the onboarding, About you's rows hold an Alcohol row
+ * to change or clear it; during the onboarding there is none (Brad 2026-11-02).
  */
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
@@ -162,15 +162,63 @@ it('US-60 AC3 (Brad 2026-11-01): a drinker\'s "I\'ve stopped" saves \'none\' thr
   expect(vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'alcohol_question_answered')).toEqual([['alcohol_question_answered']]);
 });
 
-it('US-60 AC4 (Brad 2026-11-02): card only, so the form has no Alcohol row, on desktop or a phone', async () => {
+const stub = (phone: boolean) => vi.stubGlobal('matchMedia', (q: string) => ({
+  matches: q.includes('max-width') ? phone : !phone, media: q, addEventListener() {}, removeEventListener() {},
+}));
+const panel = (root: HTMLElement) => root.querySelector<HTMLElement>('.health-input-panel')!;
+
+it('US-60 AC4 (Brad 2026-11-02): mid-onboarding there is no Alcohol row, and "I still drink" names no section, on desktop and a phone', async () => {
+  // No birth date yet: the onboarding is not done, so Starting Info shows its boxes.
+  localStorage.clear();
+  await initRoadmapStore(new LocalStorageAdapter());
+  await saveChangedMeasurements({ sex: 'male', heightCm: 178, unitSystem: 'si', weightKg: 100, alcohol: 'drinks' }, {});
+  await flushRoadmapStore();
   for (const phone of [false, true]) {
-    vi.stubGlobal('matchMedia', (q: string) => ({
-      matches: q.includes('max-width') ? phone : !phone, media: q, addEventListener() {}, removeEventListener() {},
-    }));
+    stub(phone);
     const view = render(<HealthTool />);
     await waitFor(() => expect(alcoholCard(view.container)).toBeDefined());
     expect(view.container.querySelector('#alcohol')).toBeNull();
-    expect(within(view.container.querySelector('.health-input-panel')!).queryByText(/alcohol/i)).toBeNull();
+    expect(within(panel(view.container)).queryByText(/alcohol/i)).toBeNull();
+    await dismiss(view.container, 'Do you still drink alcohol?');
+    fireEvent.click(within(dialog()!).getByText('I still drink'));
+    expect(dialog()!.textContent).toBe('This stays on your plan because the advice applies to anyone who drinks.OK');
+    fireEvent.click(within(dialog()!).getByText('OK'));
+    view.unmount();
+  }
+});
+
+it('US-60 AC4, AC4b (Brad 2026-11-02): About you\'s rows hold an Alcohol row that sets and clears the answer, on desktop and a phone', async () => {
+  for (const phone of [false, true]) {
+    stub(phone);
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(alcoholCard(view.container)).toBeDefined());
+    const row = view.container.querySelector<HTMLButtonElement>('#about-alcohol')!;
+    expect(row.closest('.about-rows')).not.toBeNull();
+    expect(row.textContent).toBe('AlcoholNot answered');
+    expect(view.container.querySelector('#alcohol')).toBeNull();
+    fireEvent.click(row);
+    const group = within(panel(view.container)).getByRole('group', { name: 'Alcohol' });
+    expect(group.id).toBe('alcohol');
+    const button = (name: string) => within(group).getByRole('button', { name });
+    expect([button("I don't drink"), button('I drink')].map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'false']);
+    expect(view.container.querySelector('[data-about="alcohol"] .field-why')!.textContent).toBe('Used to decide whether advice on alcohol applies to you.');
+    expect(view.container.querySelector('[data-about="alcohol"] .field-hint-attention')).toBeNull();
+
+    fireEvent.click(button("I don't drink"));
+    expect(button("I don't drink").getAttribute('aria-pressed')).toBe('true');
+    expect(alcoholCard(view.container)).toBeUndefined();
+    await persist();
+    expect(saved().profile.alcohol).toBe('none');
+
+    // Tapping the chosen answer clears it: Not answered, and the card returns.
+    fireEvent.click(button("I don't drink"));
+    expect(button("I don't drink").getAttribute('aria-pressed')).toBe('false');
+    await waitFor(() => expect(alcoholCard(view.container)).toBeDefined());
+    await persist();
+    expect(saved().profile.alcohol).toBeNull(); // a cleared field saves as null (LWW)
+    fireEvent.click(within(view.container.querySelector<HTMLElement>('[data-about="alcohol"]')!).getByRole('button', { name: 'Done' }));
+    expect(view.container.querySelector('#about-alcohol')!.textContent).toBe('AlcoholNot answered');
+    expect(vi.mocked(trackProductEvent)).not.toHaveBeenCalledWith('alcohol_question_answered');
     view.unmount();
   }
 });

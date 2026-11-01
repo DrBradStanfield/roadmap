@@ -86,6 +86,7 @@ import { AdditionalLabRows } from './AdditionalLabRows';
 import { useMoveTest, type MoveTestApi } from './MoveTestPanel';
 import { StartingInfoVitals, type VitalsPrefillFn } from './StartingInfoVitals';
 import { CommitTickButton } from './CommitTickButton';
+import { ALCOHOL_OPTIONS } from './AlcoholQuestion';
 import { StorageNotice } from '../lib/storage-notice';
 import { useLpaUnit } from '../lib/lpa-unit';
 import { BloodTestRows, VitalsRows, type RowContext, type ValueSubject } from './MyDataRows';
@@ -108,7 +109,7 @@ interface FieldConfig {
 
 const WEIGHT_FIELD: FieldConfig = { field: 'weightKg', name: 'Weight' };
 /** About you's rows (US-62 AC12). */
-type AboutKey = 'height' | 'sex' | 'birth';
+type AboutKey = 'height' | 'sex' | 'birth' | 'alcohol';
 const BASIC_LONGITUDINAL_FIELDS: FieldConfig[] = [
   WEIGHT_FIELD,
   { field: 'waistCm', name: 'Waist Circumference' },
@@ -1035,6 +1036,30 @@ export function InputPanel({
     </div>
   );
 
+  // US-60 AC4: the answer the plan's "Reduce alcohol intake" Dismiss asks for,
+  // in About you's rows only, never during onboarding (Brad 2026-11-02). Tapping
+  // the chosen answer clears it (M2: the card comes back), so these are pressed
+  // toggle buttons, not radios (a checked radio cannot uncheck).
+  const renderAlcohol = () => (
+    <div className="health-field">
+      <label>Alcohol</label>
+      <div id="alcohol" className="sex-toggle" role="group" aria-label="Alcohol">
+        {ALCOHOL_OPTIONS.map(({ value, label }) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={inputs.alcohol === value}
+            className={`sex-toggle-btn${inputs.alcohol === value ? ' sex-toggle-btn--active' : ''}`}
+            onClick={() => updateField('alcohol', inputs.alcohol === value ? undefined : value)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <p className="field-why">Used to decide whether advice on alcohol applies to you.</p>
+    </div>
+  );
+
   /** About you's rows (US-62 AC12); each row's editor is the field itself, with its why-line. */
   const renderAboutRows = () => {
     const month = inputs.birthMonth ? MONTHS_FULL[inputs.birthMonth - 1]?.label : undefined;
@@ -1048,10 +1073,13 @@ export function InputPanel({
       { key: 'birth', label: 'Birth', editor: renderBirthInfo,
         value: inputs.birthYear ? [month, inputs.birthYear].filter(Boolean).join(' ') : null,
         missing: !inputs.birthYear || !!errors.birthMonth || !!errors.birthYear },
+      // US-60 AC4: unanswered is an answer here, so it never opens itself.
+      { key: 'alcohol', label: 'Alcohol', editor: renderAlcohol, missing: false,
+        value: ALCOHOL_OPTIONS.find(o => o.value === inputs.alcohol)?.label ?? 'Not answered' },
     ];
     const open = (key: AboutKey) => {
       setAboutOpen(prev => new Set(prev).add(key));
-      requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-about="${key}"] :is(input, select, [role="radio"])`)?.focus());
+      requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-about="${key}"] :is(input, select, [role="radio"], button)`)?.focus());
     };
     const done = (key: AboutKey) => {
       aboutAutoOpen.current.delete(key);

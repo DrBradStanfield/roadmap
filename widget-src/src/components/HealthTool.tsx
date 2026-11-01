@@ -1093,7 +1093,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     if (field === 'birthYear' || field === 'birthMonth') setBirthRefused(null);
     setInputs(prev => ({ ...prev, [field]: value }));
   }, []);
-  // US-60: the plan card's answer saves as a profile field, as Starting Info's
+  // US-60: the plan card's answer saves as a profile field, as About you's
   // Alcohol row does. Its usage signal is the name alone, never the answer
   // (whether someone drinks is health information), and only from the card.
   const handleAlcoholAnswer = useCallback((answer: AlcoholAnswer) => {
@@ -1414,8 +1414,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     showEmailCapture: emailCaptureActive,
     formStage: reached,
     // US-60 AC3: the Dismiss asks the unanswered and drinkers; a non-drinker has no card.
-    // The section's name follows InputPanel's: About you sits low on a phone once the onboarding is done.
-    alcoholQuestion: { answer: inputs.alcohol, onAnswer: handleAlcoholAnswer, section: profileTitle(opened === 4) },
+    // The "I still drink" line names About you, as InputPanel's heading does, once the
+    // onboarding is done (wasDone), the only time its rows hold the Alcohol row; before
+    // that no row shows, so the line names none (US-60 AC4).
+    alcoholQuestion: { answer: inputs.alcohol, onAnswer: handleAlcoholAnswer, section: opened === 4 ? profileTitle(true) : undefined },
   };
 
   // The chat reads its context as each message is sent (useChatState), through
