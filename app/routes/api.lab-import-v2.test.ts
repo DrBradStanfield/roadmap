@@ -440,6 +440,55 @@ describe('US-12 AC15: a refused value reaches an old widget as a value that coul
   });
 });
 
+// The widget and the iPhone name each value the parse dropped (US-12 AC19):
+// the route hands the names and reasons on, on the single and the batch path.
+describe('US-12 AC19: the dropped values\' names reach the widget', () => {
+  const unread = [{ name: 'hdl', reason: 'limit' }, { name: 'lpa', reason: 'limit' }];
+  const partial = () => ({
+    classification: 'lab_report', reportDate: '2026-03-10', document: null, droppedValueCount: 2, unreadValues: unread,
+    values: [{ metric: 'ldl', valueSI: 2.1, displayValue: 2.1, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high' }],
+    additionalValues: [],
+  });
+  const body = (extra: Record<string, unknown>) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
+    method: 'POST', headers: { 'fly-client-ip': `10.1.0.${++ipCounter}` },
+    body: JSON.stringify({ ownDates: true, undatedPrev: true, refusedRows: true, ...extra }),
+  });
+
+  it('single file and batch poll alike', async () => {
+    extractOrClassify.mockResolvedValueOnce(partial());
+    const one = (await (await action({ request: body({ pages: FILES[0].pages }) } as never)).json()).data;
+    expect(one).toMatchObject({ droppedValueCount: 2, unreadValues: unread });
+    const { batchId, pollToken } = await (await action({ request: body({ batch: true, files: FILES }) } as never)).json();
+    pollBatch.mockResolvedValueOnce({ status: 'ended', completed: 1, total: 1, results: [{ index: 0, ...partial() }] } as never);
+    const { results } = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
+    expect(results[0]).toMatchObject({ droppedValueCount: 2, unreadValues: unread });
+  });
+
+  it('names only rows from a column this caller is offered, and the count drops the rest with their column', async () => {
+    const columns = () => ({ ...partial(), droppedValueCount: 3, unreadValues: [
+      { name: 'hdl', reason: 'limit' }, { name: 'hdl', reason: 'limit', recordedAt: '2025-06-01' }, { name: 'lpa', reason: 'limit', recordedAt: 'undated' },
+    ] });
+    const ask = async (flags: Record<string, unknown>) => {
+      extractOrClassify.mockResolvedValueOnce(columns());
+      return (await (await action({ request: body({ pages: FILES[0].pages, ownDates: undefined, undatedPrev: undefined, ...flags }) } as never)).json()).data;
+    };
+    // The iPhone: its own days, no undated column.
+    expect(await ask({ ownDates: true })).toMatchObject({ droppedValueCount: 2, unreadValues: [{ name: 'hdl', reason: 'limit' }, { name: 'hdl', reason: 'limit', recordedAt: '2025-06-01' }] });
+    // A widget from before own days: the report's column only.
+    expect(await ask({})).toMatchObject({ droppedValueCount: 1, unreadValues: [{ name: 'hdl', reason: 'limit' }] });
+    // This widget: every column.
+    expect(await ask({ ownDates: true, undatedPrev: true })).toMatchObject({ droppedValueCount: 3 });
+  });
+
+  it('an unnamed row in a column the caller is not offered leaves the count too (re-check R1)', async () => {
+    extractOrClassify.mockResolvedValueOnce({ ...partial(), droppedValueCount: 2, unreadValues: [
+      { name: '', reason: 'unreadable' }, { name: '', reason: 'unreadable', recordedAt: 'undated' },
+    ] });
+    const data = (await (await action({ request: body({ pages: FILES[0].pages, undatedPrev: undefined }) } as never)).json()).data;
+    expect(data).toMatchObject({ droppedValueCount: 1, unreadValues: [{ name: '', reason: 'unreadable' }] });
+  });
+});
+
 // PR #201 review R2: a file is charged only if it reaches Anthropic. Busy is
 // covered in api.lab-import-v2.sweep.test.ts (it fills the batch table).
 describe('US-12 AC17: a batch that never reaches Anthropic costs no quota', () => {

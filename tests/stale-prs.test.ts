@@ -1,5 +1,5 @@
 /**
- * US-63 AC7: the stale-PR watch flags an open PR idle over 48 hours, a draft only after 7 days. This runs the
+ * US-64 AC7: the stale-PR watch flags an open PR idle over 48 hours, a draft only after 7 days. This runs the
  * workflow's own github-script block (.github/workflows/stale-pr-watch.yml) in a sandbox with a stub GitHub
  * client, so the rule is tested where it lives (a separate script file would let a push to main change what a
  * workflow token runs without touching a workflow file).
@@ -35,7 +35,7 @@ async function run(prs: ReturnType<typeof pr>[]) {
   return created.length ? [...created[0].matchAll(/\| #(\d+) /g)].map((m) => Number(m[1])) : [];
 }
 
-describe('stale-pr-watch.yml (US-63 AC7)', () => {
+describe('stale-pr-watch.yml (US-64 AC7)', () => {
   it('flags a non-draft after 48 hours, not before', async () => {
     expect(await run([pr(1, false, 47), pr(2, false, 49)])).toEqual([2]);
   });

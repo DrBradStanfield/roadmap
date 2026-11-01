@@ -1,5 +1,5 @@
 /**
- * US-63 AC6: live writes run merged code only (tools/write-gate.mjs, docs/git-workflow.md § Exceptions).
+ * US-64 AC6: live writes run merged code only (tools/write-gate.mjs, docs/git-workflow.md § Exceptions).
  * A throwaway "main checkout" with a local bare remote stands in for Brad's; each case checks the refusal the
  * tool would print, or null when it may write.
  */
@@ -45,7 +45,7 @@ beforeAll(() => {
 }, 60_000);
 afterAll(() => rmSync(S, { recursive: true, force: true }));
 
-describe('write-gate.mjs (US-63 AC6)', () => {
+describe('write-gate.mjs (US-64 AC6)', () => {
   it('allows the main checkout at exactly origin/main with no tracked change', () => {
     expect(gate(MAIN)).toBeNull();
   });

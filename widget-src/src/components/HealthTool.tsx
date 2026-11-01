@@ -56,6 +56,7 @@ import type { MoveTestApi } from './MoveTestPanel';
 import { routeVitalsEdit, type VitalsPrefillFn } from './StartingInfoVitals';
 import type { ApiSupplement, ApiLabValue, LatestMeasurementsResult } from '../lib/api-types';
 import { InputPanel, type PlanBasis } from './InputPanel';
+import { profileTitle } from '../lib/profile-title';
 import { ResultsPanel } from './ResultsPanel';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
 import { ChatEmbed } from './ChatEmbed';
@@ -86,7 +87,9 @@ import {
   clearOffFileAfterErase,
   loadLatestMeasurementsSync,
   loadAllHistory,
+  loadAllHistorySync,
   loadLabValues,
+  loadLabValuesSync,
   saveChangedMeasurements,
   addMeasurement,
   correctValue,
@@ -276,14 +279,16 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const setPreviousMeasurements = useCallback((next: ApiMeasurement[]) => setPreviousMeasurementsRaw(prev => (sameRows(prev, next) ? prev : next)), []);
   // Every active measurement, re-read after each save. The blood-test matrix
   // and the vitals matrix (StartingInfoVitals) each read their own metrics.
-  const [history, setHistory] = useState<ApiMeasurement[]>([]);
+  // Read at mount too, with the record, so the phone's rows never show Add
+  // for a saved value while the first load runs (US-62 AC8).
+  const [history, setHistory] = useState<ApiMeasurement[]>(loadAllHistorySync);
   const bloodTestHistory = useMemo(() => history.filter(r => BLOOD_TEST_METRICS.includes(r.metricType)), [history]);
   const vitalsHistory = useMemo(
     () => history.filter(r => VITAL_METRICS.includes(r.metricType)),
     [history],
   );
   const [documentHistory, setDocumentHistory] = useState<ApiDocument[]>([]);
-  const [labValueHistory, setLabValueHistory] = useState<ApiLabValue[]>([]);
+  const [labValueHistory, setLabValueHistory] = useState<ApiLabValue[]>(() => loadLabValuesSync() ?? []);
   const [medications, setMedications] = useState<ApiMedication[]>([]);
   const [screenings, setScreenings] = useState<ApiScreening[]>([]);
   const [supplements, setSupplements] = useState<ApiSupplement[]>([]);
@@ -1395,8 +1400,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     tiles,
     showEmailCapture: emailCaptureActive,
     formStage: reached,
-    // US-60 AC3: the Dismiss shows only while the question is unanswered.
-    onAlcoholAnswer: inputs.alcohol === undefined ? handleAlcoholAnswer : undefined,
+    // US-60 AC3: the Dismiss asks the unanswered and drinkers; a non-drinker has no card.
+    // The section's name follows InputPanel's: About you sits low on a phone once the onboarding is done.
+    alcoholQuestion: { answer: inputs.alcohol, onAnswer: handleAlcoholAnswer, section: profileTitle(isMobile && opened === 4) },
   };
 
   // The chat reads its context as each message is sent (useChatState), through

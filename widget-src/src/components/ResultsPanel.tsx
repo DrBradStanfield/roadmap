@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import type { AlcoholAnswer, HealthResults, Suggestion } from '@roadmap/health-core';
+import type { HealthResults, Suggestion } from '@roadmap/health-core';
 import {
   type SuggestionEvidence,
   statTileText,
@@ -18,7 +18,7 @@ import { ColumnHeader } from './ColumnHeader';
 import { GuideLink } from './GuideLink';
 import { StorageNotice } from '../lib/storage-notice';
 import { FeedbackForm } from './FeedbackForm';
-import { alcoholDismiss } from './AlcoholQuestion';
+import { alcoholDismiss, type AlcoholQuestion } from './AlcoholQuestion';
 import { getMarketCountry } from '../lib/market-country';
 import { observeVisibility } from '../lib/observe-visibility';
 interface ResultsPanelProps {
@@ -40,8 +40,8 @@ interface ResultsPanelProps {
   /** The local-first email-reminders section (US-17), rendered as its own block
    *  lower in the plan — not bolted onto the sync line at the top. */
   remindersSection?: React.ReactNode;
-  /** US-60: save the answer the "Reduce alcohol intake" card's Dismiss asks for; absent once answered. */
-  onAlcoholAnswer?: (answer: AlcoholAnswer) => void;
+  /** US-60: the question the "Reduce alcohol intake" card's Dismiss asks, and its save. */
+  alcoholQuestion?: AlcoholQuestion;
 }
 
 function StatCard({ label, value, status, evidence }: {
@@ -123,7 +123,6 @@ function SuggestionEvidence({ suggestion, open, onToggle }: { suggestion: Sugges
   );
 }
 
-type AlcoholAnswerFn = (answer: AlcoholAnswer) => void;
 
 /** US-61 AC4: Brad's product on a US adult's supplement card, at the card's foot. Never printed. */
 function UsProductBlockView({ block }: { block: UsProductBlock }) {
@@ -143,7 +142,7 @@ function UsProductBlockView({ block }: { block: UsProductBlock }) {
   );
 }
 
-function SuggestionCard({ suggestion, highlighted, fadingOut, onAlcoholAnswer, usBlock }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; onAlcoholAnswer?: AlcoholAnswerFn; usBlock?: UsProductBlock }) {
+function SuggestionCard({ suggestion, highlighted, fadingOut, alcoholQuestion, usBlock }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; alcoholQuestion?: AlcoholQuestion; usBlock?: UsProductBlock }) {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const hasEvidence = suggestionHasEvidence(suggestion);
   const isSupplementCard = suggestion.category === 'supplements';
@@ -162,7 +161,7 @@ function SuggestionCard({ suggestion, highlighted, fadingOut, onAlcoholAnswer, u
             {suggestion.priority === 'urgent' && '⚠️ '}
             {suggestion.category.replace(/_/g, ' ')}
           </span>
-          {alcoholDismiss(suggestion, onAlcoholAnswer)}
+          {alcoholDismiss(suggestion, alcoholQuestion)}
         </div>
       )}
       <div className="suggestion-body" onClick={toggleEvidence}>
@@ -190,13 +189,13 @@ function SuggestionCard({ suggestion, highlighted, fadingOut, onAlcoholAnswer, u
   );
 }
 
-function GroupedSubsection({ suggestion, highlighted, fadingOut, onAlcoholAnswer }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; onAlcoholAnswer?: AlcoholAnswerFn }) {
+function GroupedSubsection({ suggestion, highlighted, fadingOut, alcoholQuestion }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; alcoholQuestion?: AlcoholQuestion }) {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const hasEvidence = suggestionHasEvidence(suggestion);
   const highlightClass = fadingOut ? ' suggestion-highlight suggestion-fade-out'
     : highlighted ? ' suggestion-highlight' : '';
 
-  const dismiss = alcoholDismiss(suggestion, onAlcoholAnswer);
+  const dismiss = alcoholDismiss(suggestion, alcoholQuestion);
   const toggleEvidence = hasEvidence ? () => setEvidenceOpen(o => !o) : undefined;
 
   return (
@@ -219,7 +218,7 @@ function GroupedSubsection({ suggestion, highlighted, fadingOut, onAlcoholAnswer
   );
 }
 
-function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds, onAlcoholAnswer }: { card: PlanCard; highlightedIds?: Set<string>; fadingOutIds?: Set<string>; onAlcoholAnswer?: AlcoholAnswerFn }) {
+function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds, alcoholQuestion }: { card: PlanCard; highlightedIds?: Set<string>; fadingOutIds?: Set<string>; alcoholQuestion?: AlcoholQuestion }) {
   const { suggestions, category, priority: highestPriority } = card;
 
   return (
@@ -232,7 +231,7 @@ function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds, onAlcoholAn
       </div>
       <div className="grouped-subsections">
         {suggestions.map((s) => (
-          <GroupedSubsection key={s.id} suggestion={s} highlighted={highlightedIds?.has(s.id)} fadingOut={fadingOutIds?.has(s.id)} onAlcoholAnswer={onAlcoholAnswer} />
+          <GroupedSubsection key={s.id} suggestion={s} highlighted={highlightedIds?.has(s.id)} fadingOut={fadingOutIds?.has(s.id)} alcoholQuestion={alcoholQuestion} />
         ))}
       </div>
     </div>
@@ -241,13 +240,13 @@ function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds, onAlcoholAn
 
 /** A section's cards: grouped ones as one card, the rest one card each (layout: planSections;
  *  US-61's blocks and text: usProductSections). */
-function renderCards(cards: UsPlanCard[], highlightedIds: Set<string>, fadingOutIds: Set<string>, onAlcoholAnswer?: AlcoholAnswerFn) {
+function renderCards(cards: UsPlanCard[], highlightedIds: Set<string>, fadingOutIds: Set<string>, alcoholQuestion?: AlcoholQuestion) {
   return cards.map((card) => {
     if (card.suggestions.length > 1) {
-      return <GroupedSuggestionCard key={card.category} card={card} highlightedIds={highlightedIds} fadingOutIds={fadingOutIds} onAlcoholAnswer={onAlcoholAnswer} />;
+      return <GroupedSuggestionCard key={card.category} card={card} highlightedIds={highlightedIds} fadingOutIds={fadingOutIds} alcoholQuestion={alcoholQuestion} />;
     }
     const s = card.suggestions[0];
-    return <SuggestionCard key={s.id} suggestion={s} highlighted={highlightedIds.has(s.id)} fadingOut={fadingOutIds.has(s.id)} onAlcoholAnswer={onAlcoholAnswer} usBlock={s.usProduct} />;
+    return <SuggestionCard key={s.id} suggestion={s} highlighted={highlightedIds.has(s.id)} fadingOut={fadingOutIds.has(s.id)} alcoholQuestion={alcoholQuestion} usBlock={s.usProduct} />;
   });
 }
 
@@ -474,7 +473,7 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
   );
 }
 
-export function ResultsPanel({ results, isValid, hasUnsavedLongitudinal, onSaveLongitudinal, onDeleteData, isDeleting, tiles, showEmailCapture, formStage, syncControl, remindersSection, onAlcoholAnswer }: ResultsPanelProps) {
+export function ResultsPanel({ results, isValid, hasUnsavedLongitudinal, onSaveLongitudinal, onDeleteData, isDeleting, tiles, showEmailCapture, formStage, syncControl, remindersSection, alcoholQuestion }: ResultsPanelProps) {
   // Track highlighted (new/changed) suggestion IDs
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
   const [fadingOutIds, setFadingOutIds] = useState<Set<string>>(new Set());
@@ -620,7 +619,7 @@ export function ResultsPanel({ results, isValid, hasUnsavedLongitudinal, onSaveL
               <span className="stat-status">Awaiting</span>
             </div>
             <div className="stat-card stat-card--awaiting">
-              <span className="stat-label">Ideal Body Weight (IBW)</span>
+              <span className="stat-label">Ideal Body Weight</span>
               <span className="stat-value">—</span>
               <span className="stat-status">Awaiting</span>
             </div>
@@ -706,7 +705,7 @@ export function ResultsPanel({ results, isValid, hasUnsavedLongitudinal, onSaveL
         {sections.map((section) => (
           <div key={section.key} ref={section.key === 'supplements' ? supplementsRef : undefined} className={`suggestions-group${section.key === 'skin' || section.key === 'supplements' ? ` ${section.key}-group` : ''}`}>
             <h4 className={`suggestions-group-title ${section.key}`}>{section.title}</h4>
-            {renderCards(section.cards, highlightedIds, fadingOutIds, onAlcoholAnswer)}
+            {renderCards(section.cards, highlightedIds, fadingOutIds, alcoholQuestion)}
             {section.ownershipLine && <p className="us-ownership no-print">{section.ownershipLine}</p>}
           </div>
         ))}

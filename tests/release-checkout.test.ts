@@ -1,5 +1,5 @@
 /**
- * US-63 AC6: a manual release is cut from the main checkout as exactly origin/main (tools/release-checkout.sh,
+ * US-64 AC6: a manual release is cut from the main checkout as exactly origin/main (tools/release-checkout.sh,
  * docs/deploy-runbook.md step 0). A throwaway repo with a local bare remote; a stub `npm` on PATH records that it ran.
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
@@ -39,7 +39,7 @@ beforeAll(() => {
 }, 60_000);
 afterAll(() => rmSync(S, { recursive: true, force: true }));
 
-describe('tools/release-checkout.sh (US-63 AC6)', () => {
+describe('tools/release-checkout.sh (US-64 AC6)', () => {
   it('makes a detached checkout of exactly origin/main outside the repo, with its own npm ci, and prints it', () => {
     const dest = join(S, 'rel1');
     const r = release(MAIN, dest);

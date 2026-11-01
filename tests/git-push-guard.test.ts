@@ -66,14 +66,14 @@ describe('git push guard, as .claude/settings.json runs it', () => {
     expect(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision).toBe('deny');
   });
 
-  it('reaches the guard for a gh pr merge, which holds no "push" (US-63 AC5)', () => {
+  it('reaches the guard for a gh pr merge, which holds no "push" (US-64 AC5)', () => {
     const r = runHook(scratch, 'gh pr merge 415 --squash --match-head-commit abc1234');
     expect(r.stderr).toBe('');
     expect(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision).toBe('deny');
     expect(runHook(scratch, 'gh pr merge 415 --merge --match-head-commit abc1234').stdout).toBe('');
   });
 
-  it('settings.json allows exactly the reviewed merge form and denies the four flags (US-63 AC5)', () => {
+  it('settings.json allows exactly the reviewed merge form and denies the four flags (US-64 AC5)', () => {
     // Claude Code's Bash(...) rules: `*` matches any text; a deny beats an allow.
     const { allow, deny } = JSON.parse(readFileSync(join(ROOT, '.claude/settings.json'), 'utf8')).permissions;
     const rx = (rule: string) => new RegExp(`^${rule.replace(/^Bash\((.*)\)$/, '$1')

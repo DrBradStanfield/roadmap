@@ -643,6 +643,13 @@ export function resolveLabCatalogEntry(reportedName: string): LabCatalogEntry | 
   return ENTRY_BY_NAME.get(foldName(reportedName));
 }
 
+/** A test's plain label wherever a person reads it: a core metric's, else
+ *  the catalogue's, else its name title-cased (US-12 AC19). */
+export function labTestLabel(name: string): string {
+  return Object.prototype.hasOwnProperty.call(METRIC_LABELS, name) ? METRIC_LABELS[name]
+    : resolveLabCatalogEntry(name)?.label ?? name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
 /**
  * The stable slot identity of a lab test: the catalogue key when the name is
  * catalogued, otherwise the name folded to lower case with underscores and

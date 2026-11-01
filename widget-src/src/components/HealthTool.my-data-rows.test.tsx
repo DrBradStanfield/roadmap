@@ -128,6 +128,18 @@ describe('US-62 AC8: one row per value on a phone', () => {
     expect(apob.querySelector('.md-row-meta')!.textContent).toBe('Optimal <0.50');
   });
 
+  it('a returning record\'s rows show its saved values from the first render, never Add (CI WebKit, PR 421)', async () => {
+    await seed();
+    // The first render, before any effect or promise settles: what a slow phone paints first.
+    const view = render(<HealthTool />);
+    const values = () => Object.fromEntries(['HbA1c', 'LDL Cholesterol', 'Weight', 'Blood Pressure', 'Sodium']
+      .map(name => [name, row(view, name)?.querySelector('.md-row-value')?.textContent ?? null]));
+    const expected = { 'HbA1c': '36', 'LDL Cholesterol': '3.4 (2.9)', 'Weight': '81.0 (84.0)', 'Blood Pressure': '126/80 (132/84)', 'Sodium': '139' };
+    expect(values()).toEqual(expected);
+    await act(async () => { await new Promise(r => setTimeout(r, 20)); });
+    expect(values()).toEqual(expected);
+  });
+
   it('a known minor: no adult targets on the rows, the waist target stays (US-07 AC6)', async () => {
     const year = new Date().getFullYear() - 12;
     await seed({ sex: 'male', heightCm: 150, birthYear: year, birthMonth: 1 });

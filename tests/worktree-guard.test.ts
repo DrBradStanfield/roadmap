@@ -1,5 +1,5 @@
 /**
- * US-63: the worktree workflow (docs/git-workflow.md, Brad 2026-10-31): .claude/hooks/worktree-guard.cjs and
+ * US-64: the worktree workflow (docs/git-workflow.md, Brad 2026-10-31): .claude/hooks/worktree-guard.cjs and
  * tools/worktree-new.sh / worktree-done.sh, run against a throwaway repo with a local bare remote.
  * A stub `gh` on PATH answers the PR questions: GH_COUNT (open PRs for the Stop check) and GH_STATE
  * (the PR state worktree-done.sh reads); GH_FAIL makes it fail. The guard finds the main checkout it protects
@@ -115,7 +115,7 @@ beforeAll(() => {
 }, 60_000);
 afterAll(() => rmSync(S, { recursive: true, force: true }));
 
-describe('worktree-guard.cjs: edits (US-63 AC1)', () => {
+describe('worktree-guard.cjs: edits (US-64 AC1)', () => {
   it('denies an edit to a tracked file in the main checkout', () => {
     expect(denied(edit(join(MAIN, 'tracked.txt')))).toBe(true);
   });
@@ -139,11 +139,11 @@ describe('worktree-guard.cjs: edits (US-63 AC1)', () => {
     if (!existsSync(join(MAIN, 'TRACKED.TXT'))) return; // case-sensitive disk: nothing to prove
     expect(denied(edit(join(MAIN, 'TRACKED.TXT')))).toBe(true);
   });
-  it('denies an edit to the main checkout whatever the session cwd (scratchpad, another repo) (US-63 AC1)', () => {
+  it('denies an edit to the main checkout whatever the session cwd (scratchpad, another repo) (US-64 AC1)', () => {
     expect(denied(edit(join(MAIN, 'tracked.txt'), {}, 'Edit', S))).toBe(true);
     expect(denied(edit(join(MAIN, 'tracked.txt'), {}, 'Edit', '/'))).toBe(true);
   });
-  it('denies a gitignored file under .claude/, where settings.local.json could switch the hooks off (US-63 AC1)', () => {
+  it('denies a gitignored file under .claude/, where settings.local.json could switch the hooks off (US-64 AC1)', () => {
     expect(denied(edit(join(MAIN, '.claude/settings.local.json'), {}, 'Write'))).toBe(true);
     expect(denied(edit(join(MAIN, '.claude/hooks/worktree-guard.cjs')))).toBe(true);
   });
@@ -153,7 +153,7 @@ describe('worktree-guard.cjs: edits (US-63 AC1)', () => {
   });
 });
 
-describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US-63 AC2-AC4)', () => {
+describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US-64 AC2-AC4)', () => {
   let WT: string;
   beforeAll(() => {
     const r = newWorktree('feat');
@@ -175,7 +175,7 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
   it('allows edits inside the worktree', () => {
     expect(edit(join(WT, 'tracked.txt'))).toBeNull();
   });
-  it("a Bash call links each package folder to the worktree's own clone, outside the repo (US-63 AC3)", () => {
+  it("a Bash call links each package folder to the worktree's own clone, outside the repo (US-64 AC3)", () => {
     expect(bash(WT, 'ls')).toBeNull();
     const cache = cacheDir(WT);
     expect(cache.startsWith(join(S, 'home') + '/')).toBe(true);
@@ -189,18 +189,18 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
     expect(readFileSync(join(cache, '.owner'), 'utf8')).toBe(WT);
     expect(sh(WT, 'git status --porcelain')).toBe('');
   });
-  it("the clone resolves workspace packages to the worktree's own source (US-63 AC3)", () => {
+  it("the clone resolves workspace packages to the worktree's own source (US-64 AC3)", () => {
     const resolved = createRequire(join(WT, 'x.js')).resolve('@roadmap/health-core');
     expect(realpathSync(resolved)).toBe(join(WT, 'packages/health-core/index.js'));
   });
-  it('npm ci or rm -rf through the link empties only the clone, and the next call re-clones (US-63 AC3)', () => {
+  it('npm ci or rm -rf through the link empties only the clone, and the next call re-clones (US-64 AC3)', () => {
     sh(WT, 'rm -rf node_modules/'); // follows the link, as npm ci does
     expect(existsSync(join(MAIN, 'node_modules/pkg'))).toBe(true);
     sh(WT, 'rm -rf "$(readlink node_modules)"'); // the clone itself gone
     expect(bash(WT, 'ls')).toBeNull();
     expect(existsSync(join(WT, 'node_modules/pkg'))).toBe(true);
   });
-  it('replaces an old link into the main checkout (the link only) and leaves any other link alone (US-63 AC3)', () => {
+  it('replaces an old link into the main checkout (the link only) and leaves any other link alone (US-64 AC3)', () => {
     const w = newWorktree('oldlink').path;
     symlinkSync(join(MAIN, 'node_modules'), join(w, 'node_modules'));
     symlinkSync(join(S, 'elsewhere'), join(w, 'widget-src/node_modules'));
@@ -213,7 +213,7 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
     expect(stop(WT)).toBeNull();
     expect(stop(MAIN)).toBeNull();
   });
-  it('Stop blocks uncommitted work, once, even from a cwd outside the repo (US-63 AC2)', () => {
+  it('Stop blocks uncommitted work, once, even from a cwd outside the repo (US-64 AC2)', () => {
     writeFileSync(join(WT, 'tracked.txt'), 'two\n');
     expect(stop(WT)?.decision).toBe('block');
     // A session started in the worktree runs the worktree's own copy of the hook; its cwd may wander off.
@@ -289,7 +289,7 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
   });
 });
 
-describe('worktree-done.sh --all (US-63 AC4)', () => {
+describe('worktree-done.sh --all (US-64 AC4)', () => {
   it('skips a locked worktree and one used in the last day, and finishes an old unlocked one', () => {
     const locked = newWorktree('all-locked').path;
     const recent = newWorktree('all-recent').path;
@@ -307,7 +307,7 @@ describe('worktree-done.sh --all (US-63 AC4)', () => {
   }, 60_000);
 });
 
-describe('worktree-done.sh on a folder that is not a worktree (US-63 AC4)', () => {
+describe('worktree-done.sh on a folder that is not a worktree (US-64 AC4)', () => {
   it('refuses a plain folder under .claude/worktrees/, which git would resolve to the main checkout', () => {
     const fake = join(MAIN, '.claude/worktrees/fake');
     mkdirSync(fake, { recursive: true });
@@ -319,7 +319,7 @@ describe('worktree-done.sh on a folder that is not a worktree (US-63 AC4)', () =
   });
 });
 
-describe('package clones: new worktrees, failures, races and orphans (US-63 AC3, AC4)', () => {
+describe('package clones: new worktrees, failures, races and orphans (US-64 AC3, AC4)', () => {
   it('in an older worktree outside .claude/worktrees/, swaps a link into the main checkout and adds nothing', () => {
     const older = join(S, 'older');
     sh(MAIN, `git worktree add -q --detach "${older}" origin/main`);

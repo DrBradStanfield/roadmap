@@ -38,12 +38,11 @@ struct PlanView: View {
         .refusalAlert($refusal)
     }
 
-    /// Offered only while the question is unanswered: after "I drink" the card stays, without
-    /// its Dismiss. Called at the tap, it checks the answer against the screen then, as a
-    /// sheet's save is (RecordPin.swift), so an erase in between refuses it.
+    /// Offered unanswered and to a drinker, who can say they've stopped; a non-drinker has no
+    /// card. Called at the tap, it checks the answer against the screen then, as a sheet's
+    /// save is (RecordPin.swift), so an erase in between refuses it.
     private var alcoholQuestion: AlcoholQuestion? {
-        guard store.myData?.profile.alcohol?.value == nil else { return nil }
-        return { [store, analytics] in
+        AlcoholQuestion(answered: store.myData?.profile.alcohol?.value) { [store, analytics] in
             let seen = store.screen
             return { choice in
                 Task {
@@ -82,7 +81,7 @@ struct PlanList: View {
     let sections: [PlanSection]
     let planMs: Double
     let showMyData: () -> Void
-    /// Asks "Do you drink alcohol?" (US-60); nil once it is answered.
+    /// The reduce-alcohol card's question (US-60); nil for a non-drinker.
     let askAboutAlcohol: AlcoholQuestion?
 
     var body: some View {

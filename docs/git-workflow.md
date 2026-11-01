@@ -2,7 +2,7 @@
 
 Brad, 2026-10-31: worktrees are fine "so long as everything is properly committed, PRs, pushed". Roadmap PR #389
 set the rule; PR 415 added the enforcement. Both repos run one design (claude_business PRs 31 and 32, Brad's
-2026-11-01 rulings). Binding rule: CLAUDE.md § Development Rules. Story: US-63.
+2026-11-01 rulings). Binding rule: CLAUDE.md § Development Rules. Story: US-64.
 
 ## Why the old rule went
 
