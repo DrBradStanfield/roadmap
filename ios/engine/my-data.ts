@@ -24,6 +24,8 @@ import { METRIC_GUIDES, type MetricGuide } from '../../packages/health-core/src/
 import { APPLE_LOW_FROM_60, FRIEND_2022_TREADMILL, type Vo2MaxCutPoints } from '../../packages/health-core/src/vo2max-bands';
 import { calculateAge, knownMinorOf } from '../../packages/health-core/src/calculations';
 import { rowTarget, type Grading, type RowTargetPlan } from '../../packages/health-core/src/row-target';
+import { gradeWords, pressureStatus, valueStatus, type GradeContext, type Status } from '../../packages/health-core/src/row-grade';
+import { formatLabValue, groupLabValues } from '../../packages/health-core/src/lab-series';
 import { isAlcoholAnswer, type AlcoholAnswer } from '../../packages/health-core/src/types';
 import { readableView, unreadableNote } from '../../packages/health-core/src/readable-rows';
 import {
@@ -52,6 +54,12 @@ export interface MyDataRow {
   /** The value before the latest, in the same units: the newest earlier day's active value, the
    *  web's "(74)" (US-62 AC8); null with fewer than two days. */
   previous: string | null;
+  /** The value's grade, as the web's row colours it (health-core `valueStatus`, US-62 AC8): "warn"
+   *  amber, "bad" red, "ok" plain; null when ungraded (no value, no line, a known minor, PSA, a lab test). */
+  status: Status;
+  /** The grade as a screen reader hears it after the value, off target only: "above optimal"
+   *  (health-core `gradeWords`); null on target or ungraded. */
+  gradeWords: string | null;
 }
 
 export interface MyData {
@@ -78,6 +86,10 @@ export interface MyData {
   bloodTests: MyDataRow[];
   /** PSA, asked for under prostate screening (US-25 AC8). */
   psa: MyDataRow;
+  /** The lab tests beyond the core ones, one row per series as the web's Blood tests rows list them
+   *  (MyDataRows.tsx labRows, US-62 AC8): catalogue label, the printed "Ref …" range, the newest value
+   *  as reported and the one before it, unless the series mixes units. `metric` is the series key. */
+  labTests: MyDataRow[];
   /** The "about this measure" guides (US-58), by metric or medication key: served here so a
    *  correction ships over the air (D3). */
   guides: Record<string, MetricGuide>;
@@ -210,7 +222,9 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
   // and the plan's age, weight target and height once there is a plan.
   const grading: Grading = knownMinorOf(file.profile, new Date(now)) ? null : { sex: file.profile.sex ?? undefined };
   const basis: RowTargetPlan | null = plan && { age: plan.results.age, idealBodyWeight: plan.results.idealBodyWeight, heightCm: plan.results.heightCm };
-  const row = (metric: string): MyDataRow => {
+  const graded: GradeContext = { grading, plan: basis };
+  // `grade`: false for PSA, which the web asks for under screening and never colours.
+  const row = (metric: string, grade = true): MyDataRow => {
     const latest = current.get(metric);
     const shown = cellUnitFor(file, metric, choices);
     const day = latest?.recordedAt.slice(0, 10);
@@ -226,6 +240,7 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
       switchable: SWITCHABLE.has(metric),
       target: rowTarget(metric as MetricType, shown, grading, basis)?.bare ?? null,
       previous: before ? cellText(metric as MetricType, days.get(metric)!.get(before)!, shown) : null,
+      ...gradeOf(latest && grade ? valueStatus(metric as MetricType, latest.value, graded) : null, metric),
     };
   };
   const { sex, birthYear, birthMonth, heightCm } = file.profile;
@@ -245,10 +260,11 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
       alcohol: isAlcoholAnswer(file.profile.alcohol) ? file.profile.alcohol : null,
     },
     // Blood pressure is one row, as the web's matrix shows it: the newest day's pair.
-    vitals: [...VITAL_METRICS.filter((metric) => metric !== 'systolic_bp' && metric !== 'diastolic_bp').map(row), pressureRow(file, trend, rowTarget('blood_pressure', 'si', grading, basis)?.bare ?? null)],
+    vitals: [...VITAL_METRICS.filter((metric) => metric !== 'systolic_bp' && metric !== 'diastolic_bp').map((metric) => row(metric)), pressureRow(file, trend, days, rowTarget('blood_pressure', 'si', grading, basis)?.bare ?? null, graded)],
     // PSA is asked for under prostate screening on the web, not with the blood tests.
-    bloodTests: BLOOD_TEST_METRICS.filter((metric) => metric !== 'psa').map(row),
-    psa: row('psa'),
+    bloodTests: BLOOD_TEST_METRICS.filter((metric) => metric !== 'psa').map((metric) => row(metric)),
+    psa: row('psa', false),
+    labTests: labTestRows(file, now),
     guides: METRIC_GUIDES,
     vo2Bands: vo2BandsOf(sex, birthYear, birthMonth, now),
     inputRanges: Object.fromEntries((Object.keys(UNIT_DEFS) as MetricType[]).map((metric) => [metric, Object.fromEntries(
@@ -390,7 +406,7 @@ function typedRangeMessage(metric: string, typed: number, unit: CellUnit, refusa
 }
 
 /** The Vitals row for blood pressure: the newest day's pair, from the history's own pairing. */
-function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: string | null): MyDataRow {
+function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, days: Map<string, Map<string, number>>, target: string | null, graded: GradeContext): MyDataRow {
   const { label, unit, rows } = pressureHistory(file, []);
   const active = rows.filter((row) => row.status === 'active');
   const [newest] = active;
@@ -398,6 +414,9 @@ function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: st
   // A half-pair latest ("135/–", US-25 AC17) gets none, so no bracket sits beside a dash.
   const whole = (row?: (typeof rows)[number]) => !!row?.systolic && !!row?.diastolic;
   const previous = whole(newest) ? active.slice(1).find(whole) : undefined;
+  // Graded on the stored halves, as the web's row grades them; a half-pair has no grade.
+  const sys = whole(newest) ? days.get('systolic_bp')?.get(newest.day) : undefined;
+  const dia = whole(newest) ? days.get('diastolic_bp')?.get(newest.day) : undefined;
   return {
     metric: BLOOD_PRESSURE, label, unit,
     latest: newest ? { id: newest.id, value: newest.value, day: newest.day } : null,
@@ -405,7 +424,38 @@ function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: st
     switchable: false,
     target,
     previous: previous?.value ?? null,
+    ...gradeOf(sys !== undefined && dia !== undefined ? pressureStatus({ value: sys, dia: { value: dia } }, graded) : null, BLOOD_PRESSURE),
   };
+}
+
+/** A row's grade and its spoken words. */
+function gradeOf(status: Status, metric: string): Pick<MyDataRow, 'status' | 'gradeWords'> {
+  return { status, gradeWords: gradeWords(status, metric) };
+}
+
+/** The lab tests beyond the core ones, as the web's phone rows build them (MyDataRows.tsx labRows):
+ *  health-core's series, newest first; the printed range of the newest value as the target; no
+ *  previous value or trend for a series in more than one unit (US-21 AC3a); never graded. */
+function labTestRows(file: RoadmapFile, now: string): MyDataRow[] {
+  const byId = new Map(file.labValues.map((v) => [v.id, v]));
+  return groupLabValues(file.labValues).flatMap((g) => g.series).map((s): MyDataRow => {
+    const readings = s.points.map((p) => ({ day: p.recordedAt.slice(0, 10), id: p.id, value: p.value }));
+    const [latest, previous] = [...readings].reverse();
+    const printed = byId.get(latest.id);
+    const sameUnit = !s.mixedUnits;
+    return {
+      metric: s.seriesKey,
+      label: s.label,
+      unit: s.unit,
+      latest: { id: latest.id, value: formatLabValue(latest.value), day: latest.day },
+      trend: sameUnit ? recent(readings, now).map((r) => r.value) : [],
+      switchable: false,
+      target: rowTarget({ referenceLow: printed?.referenceLow, referenceHigh: printed?.referenceHigh }, 'si', null, null)?.bare ?? null,
+      previous: previous && sameUnit ? formatLabValue(previous.value) : null,
+      status: null,
+      gradeWords: null,
+    };
+  });
 }
 
 /** Each metric's active value per day (the slot's first, as findActiveInSlot reads it), in SI, in one pass. */
@@ -426,13 +476,18 @@ function activeDays(file: RoadmapFile): Map<string, Map<string, number>> {
  *  hold fewer than two (US-25 AC17f). A day after today (an import that kept another zone's
  *  offset) is left out of both, as the phone leaves out a night dated after today. */
 function trends(byMetric: Map<string, Map<string, number>>, now: string, shown: (metric: string, valueSI: number) => number): Map<string, number[]> {
-  const today = localDay(new Date(now));
-  const from = new Date(Date.parse(today) - 29 * 86_400_000).toISOString().slice(0, 10);
   const out = new Map<string, number[]>();
   for (const [metric, days] of byMetric) {
-    const sorted = [...days.keys()].filter((day) => day <= today).sort();
-    const recent = sorted.filter((day) => day >= from);
-    out.set(metric, (recent.length >= 2 ? recent : sorted.slice(-7)).map((day) => shown(metric, days.get(day)!)));
+    out.set(metric, recent([...days.keys()].sort().map((day) => ({ day })), now).map(({ day }) => shown(metric, days.get(day)!)));
   }
   return out;
+}
+
+/** The recent readings of `oldestFirst` by the rule above (the web's my-data-rows.ts recentTrend). */
+function recent<T extends { day: string }>(oldestFirst: T[], now: string): T[] {
+  const today = localDay(new Date(now));
+  const from = new Date(Date.parse(today) - 29 * 86_400_000).toISOString().slice(0, 10);
+  const past = oldestFirst.filter((r) => r.day <= today);
+  const inWindow = past.filter((r) => r.day >= from);
+  return inWindow.length >= 2 ? inWindow : past.slice(-7);
 }

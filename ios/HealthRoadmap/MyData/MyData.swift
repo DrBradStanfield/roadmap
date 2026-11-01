@@ -62,6 +62,12 @@ struct MyData: Decodable {
         /// The value before the latest, in the same units, shown in brackets (US-62 AC8); nil
         /// with one reading, or from an older engine.
         var previous: String? = nil
+        /// The value's grade, as the web's row colours it (health-core's valueStatus, US-62 AC8):
+        /// "warn" amber, "bad" red, "ok" plain; nil when ungraded, or from an older engine.
+        var status: String? = nil
+        /// The grade as VoiceOver says it after an off-target value ("above optimal", health-core's
+        /// gradeWords); nil on target, ungraded, or from an older engine.
+        var gradeWords: String? = nil
 
         var id: String { metric }
     }
@@ -81,6 +87,9 @@ struct MyData: Decodable {
     let bloodTests: [Row]
     // US-25 AC8: health-core's form questions (FormModels.swift).
     let psa: Row
+    /// The lab tests beyond the core ones, one row per series, as the web's Blood tests rows list
+    /// them (US-62 AC8): `metric` is the series key; nil from an older engine.
+    var labTests: [Row]? = nil
     let medications: [FormSection]
     let screenings: [FormSection]
     /// Why there are no screening questions; nil when there are.

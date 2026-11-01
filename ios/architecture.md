@@ -241,6 +241,8 @@ A signature means "the key holder approved this bundle", nothing more.
   an older app cannot do without stays in the contract and moves the id.
   Second use (2026-11-02, US-62 AC8): My data rows' `target` and `previous`, read as none from
   an older engine (`MyDataLayoutTests.testARowReadsItsTargetAndPreviousValueFromTheEngine_US62`).
+  Third (2026-11-02, D11): rows' `status` and `gradeWords`, and `labTests`
+  (`MyDataLayoutTests.testARowReadsItsGradeFromTheEngine_US62`).
 - **The schema is the app's (R7).** A bundle whose record `schemaVersion` differs from the
   bundled engine's is refused. A schema change always needs an app update, so an over-the-
   air engine can never write a record the web or an older phone cannot read.
@@ -1277,6 +1279,17 @@ updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.
 - **Two Charts traps:** a material background inside a chart annotation renders black, so
   the callout uses a solid system fill; and the newest axis label clips unless the marks
   use the `.aligned` preset.
+- **Grades and lab test rows come from health-core, through the engine (Brad, 2026-11-02,
+  US-25 AC17, US-62 AC8).** The web's grade (amber, red) and its spoken words lived in
+  widget code (`statusOf`, the vitals grades, `gradeWords`). They moved unchanged into
+  `packages/health-core/src/row-grade.ts`; the widget imports them, and a dense input grid
+  (1.68 million cases) graded identically before and after. The lab tests' grouping moved
+  the same way (`lab-series.ts`). The engine serves each row's `status` and `gradeWords` and
+  a `labTests` list; Swift only maps the colour (`ValueRow.gradeColor`: amber is the app's
+  `info` tone, red `urgent`, the web's #b91c1c) and joins VoiceOver's words. Why not in
+  Swift: a copy of a clinical line drifts, and an engine fix ships over the air (D3). PSA is
+  not graded, as on the web. A lab test row opens nothing: there is no engine door for a lab
+  series' history and no page for one yet.
 
 **Added 2026-10-26: "About this measure" guides (US-58).** Below Show All Data and Unit, a metric page shows
 "About {title}" (What it is, Why it matters, How to measure or prepare) and its Sources as links, as Apple Health

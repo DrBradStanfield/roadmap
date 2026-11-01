@@ -75,7 +75,7 @@ struct MyDataView: View {
                     // Under blood pressure: heart rate, resting heart rate and sleep, or the Turn On or Open Settings row (US-56 AC5, AC6).
                     LiveCardsSection(metrics: LiveMetric.vitals) { liveDetail = $0 }
                     LiveCardsSection(metrics: LiveMetric.fitness, bands: data.vo2Bands?.value.map { [.vo2Max: $0] } ?? [:]) { liveDetail = $0 }
-                    metrics(data.bloodTests) {
+                    metrics(data.bloodTests, labs: data.labTests ?? []) {
                         // Tour tip 3 (US-57 AC7); its action is the lab upload.
                         SectionTitle.bloodTests().tourTip(BloodTestsTip(), action: { addingLabs = true })
                     }
@@ -165,10 +165,16 @@ struct MyDataView: View {
         .fixedSize()
     }
 
-    private func metrics(_ rows: [MyData.Row], @ViewBuilder header: () -> some View) -> some View {
+    /// `labs`: the lab tests beyond the core ones, after them as on the web (US-62 AC8). They open
+    /// nothing yet: the app has no page for a lab test's history.
+    private func metrics(_ rows: [MyData.Row], labs: [MyData.Row] = [], @ViewBuilder header: () -> some View) -> some View {
         Section {
-            let column = ValueRow.Column(rows.map { ($0.latest?.value, $0.previous, $0.unit, nil) })
+            let column = ValueRow.Column((rows + labs).map { ($0.latest?.value, $0.previous, $0.unit, nil) })
             ForEach(rows) { metric($0, column: column) }
+            ForEach(labs) { lab in
+                ValueRow(label: lab.label, value: lab.latest?.value, unit: lab.unit, day: lab.latest?.day,
+                         target: lab.target, previous: lab.previous, trend: lab.trend ?? [], tint: MetricChart.labTint, column: column)
+            }
         } header: {
             header()
         }
@@ -203,7 +209,7 @@ struct MyDataView: View {
         // A unit switch still landing would open a sheet on the old choices (AC17e).
         Button { open(row) } label: {
             ValueRow(label: row.label, value: row.latest?.value, unit: row.unit, day: row.latest?.day,
-                     target: row.target, previous: row.previous, trend: row.trend ?? [], tint: MetricChart.colors(for: row.metric)[0], card: card,
+                     target: row.target, previous: row.previous, status: row.status, gradeWords: row.gradeWords, trend: row.trend ?? [], tint: MetricChart.colors(for: row.metric)[0], card: card,
                      column: column)
         }
         .tint(.primary)

@@ -281,6 +281,95 @@ final class MyDataLayoutTests: XCTestCase {
         XCTAssertTrue(column.add)
         XCTAssertNil(ValueRow.Column([("3.4", nil, "mmol/L", nil)]).previous)
     }
+
+    /// My data as the engine's one door draws it.
+    private func screenMyData(_ engine: HealthEngine, _ record: String) throws -> [String: Any] {
+        let now = self.now
+        let raw = try engine.blocking { [now] in try $0.call("screenJson", [record, now.formatted(HealthEngine.iso), "test", "{}"]) }
+        return try XCTUnwrap((JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any])?["myData"] as? [String: Any])
+    }
+
+    /// US-62 AC8, US-25 AC17: a row reads its grade and spoken grade from the engine (health-core's
+    /// valueStatus and gradeWords, never worked out here); a row from an engine before them reads none.
+    func testARowReadsItsGradeFromTheEngine_US62() throws {
+        let engine = try HealthEngine()
+        let now = self.now
+        let apply = { (edit: RecordEdit, record: String) throws -> String in
+            let outcome = try engine.blocking { [now] in try $0.apply(edit, to: record, now: now, deviceId: "test") }
+            XCTAssertTrue(outcome.ok, outcome.message ?? "")
+            return try XCTUnwrap(outcome.record)
+        }
+        var shown = try record(engine)
+        shown = try apply(.profile(sex: "male", birthYear: 1970, height: 180), shown)
+        shown = try apply(.add(metric: "ldl", value: 3.4, day: "2026-10-01"), shown)
+        shown = try apply(.add(metric: "hba1c", value: 50, day: "2026-10-01"), shown)
+        shown = try apply(.add(metric: "hdl", value: 1.3, day: "2026-10-01"), shown)
+        var myData = try screenMyData(engine, shown)
+        let decoded = try JSONDecoder().decode(MyData.self, from: JSONSerialization.data(withJSONObject: myData))
+        let row = { (metric: String) in decoded.bloodTests.first { $0.metric == metric } }
+        XCTAssertEqual(row("ldl")?.status, "warn")
+        XCTAssertEqual(row("ldl")?.gradeWords, "above optimal")
+        XCTAssertEqual(row("hba1c")?.status, "bad")
+        XCTAssertEqual(row("hba1c")?.gradeWords, "high")
+        XCTAssertEqual(row("hdl")?.status, "ok")
+        XCTAssertNil(row("hdl")?.gradeWords, "on target, no words")
+
+        // An engine before the grades sends neither field nor labTests: values draw plain, speak no grade.
+        let strip = { (rows: Any?) in (rows as? [[String: Any]] ?? []).map { $0.filter { $0.key != "status" && $0.key != "gradeWords" } } }
+        myData["bloodTests"] = strip(myData["bloodTests"])
+        myData.removeValue(forKey: "labTests")
+        let older = try JSONDecoder().decode(MyData.self, from: JSONSerialization.data(withJSONObject: myData))
+        XCTAssertNil(older.bloodTests.first { $0.metric == "ldl" }?.status)
+        XCTAssertNil(older.bloodTests.first { $0.metric == "ldl" }?.gradeWords)
+        XCTAssertNil(older.labTests, "no lab test rows from an older engine")
+    }
+
+    /// US-62 AC8: the web's colours in the app's tones (amber `info`, red `urgent`, the web's
+    /// #b91c1c), and VoiceOver's words in the web's order.
+    func testAGradeColoursAndSpeaksTheValueAsTheWebDoes_US62() {
+        // Each tone resolved to 0xRRGGBB in light and dark: dynamic colours do not compare by value.
+        let hex = { (color: Color?) -> [Int] in
+            guard let color else { return [] }
+            return [UIUserInterfaceStyle.light, .dark].map { style in
+                var (r, g, b, a): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
+                UIColor(color).resolvedColor(with: UITraitCollection(userInterfaceStyle: style)).getRed(&r, green: &g, blue: &b, alpha: &a)
+                return [r, g, b].reduce(0) { $0 << 8 | Int(($1 * 255).rounded()) }
+            }
+        }
+        XCTAssertEqual(hex(ValueRow.gradeColor("warn")), hex(Color.status("info")))
+        XCTAssertEqual(hex(ValueRow.gradeColor("bad")), hex(Color.status("urgent")))
+        XCTAssertEqual(hex(ValueRow.gradeColor("bad")).first, 0xB91C1C, "the web's red")
+        XCTAssertNil(ValueRow.gradeColor("ok"))
+        XCTAssertNil(ValueRow.gradeColor(nil))
+        XCTAssertEqual(ValueRow.spoken("3.4", grade: "above optimal", previous: "2.9"), "3.4, above optimal, previous 2.9")
+        XCTAssertEqual(ValueRow.spoken("81", grade: nil, previous: "74"), "81, previous 74")
+        XCTAssertEqual(ValueRow.spoken("5.2", grade: nil), "5.2")
+    }
+
+    /// US-62 AC8, US-25 AC17: the lab tests beyond the core ones come from the engine as rows, with
+    /// the web's label, "Ref" target, newest and previous value and unit.
+    func testLabTestRowsComeFromTheEngine_US62() throws {
+        let engine = try HealthEngine()
+        var file = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(try record(engine).utf8)) as? [String: Any])
+        let lab = { (id: String, name: String, value: Double, unit: String, day: String, low: Double?, high: Double?) -> [String: Any] in
+            ["id": id, "metricName": name, "value": value, "unit": unit,
+             "referenceLow": low.map { $0 as Any } ?? NSNull(), "referenceHigh": high.map { $0 as Any } ?? NSNull(),
+             "recordedAt": "\(day)T00:00:00.000Z", "createdAt": "\(day)T00:00:00.000Z", "source": "manual", "status": "active", "correctsId": NSNull()]
+        }
+        file["labValues"] = [lab("f1", "ferritin", 80, "µg/L", "2026-09-01", 30, 400), lab("f2", "ferritin", 112, "µg/L", "2026-10-01", 30, 500),
+                             lab("s1", "sodium", 140, "mmol/L", "2026-10-01", nil, 145)]
+        let text = String(decoding: try JSONSerialization.data(withJSONObject: file), as: UTF8.self)
+        let decoded = try JSONDecoder().decode(MyData.self, from: JSONSerialization.data(withJSONObject: try screenMyData(engine, text)))
+        let labs = try XCTUnwrap(decoded.labTests)
+        XCTAssertEqual(labs.map(\.label), ["Sodium", "Ferritin"])
+        XCTAssertEqual(labs[1].target, "Ref 30–500")
+        XCTAssertEqual(labs[1].latest?.value, "112")
+        XCTAssertEqual(labs[1].previous, "80")
+        XCTAssertEqual(labs[1].unit, "µg/L")
+        XCTAssertEqual(labs[0].target, "Ref <145")
+        XCTAssertNil(labs[0].previous)
+        XCTAssertNil(labs[0].status, "a lab test is never graded")
+    }
 }
 
 extension UIColor {

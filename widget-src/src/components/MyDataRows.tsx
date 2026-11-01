@@ -14,15 +14,16 @@ import {
   BLOOD_TEST_METRICS,
   METRIC_LABELS,
   METRIC_TO_FIELD,
-  bpTargetFor,
   cellLabel,
   cellText,
+  gradeWords,
+  pressureStatus,
   rowTarget,
+  valueStatus,
 } from '@roadmap/health-core';
-import { formatLabValue, statusOf, type Status } from '../lib/blood-test-cell';
+import { formatLabValue, type Status } from '../lib/blood-test-cell';
 import { monthYear, pressureReadings, readingsOf, recentTrend, type DayReading } from '../lib/my-data-rows';
 import { groupLabValues } from '../lib/lab-rows';
-import { bpStatus, simpleStatus } from './StartingInfoVitals';
 import type { ApiLabValue } from '../lib/api-types';
 
 /** What a row opens: a core metric, the blood pressure, or a lab test's series (`labSlotKey`). */
@@ -49,36 +50,8 @@ export interface RowContext {
   unitOf: (metric: MetricType) => CellUnit;
 }
 
-/** A value's grade, as the grids colour it: the blood tests by their lines,
- *  weight and waist by the plan; none for a known minor's adult lines. */
-export function valueStatus(metric: MetricType, si: number, { grading, plan }: RowContext): Status {
-  if (metric === 'weight') return simpleStatus('weight', si, grading ? plan?.idealBodyWeight : undefined);
-  if (metric === 'waist') return simpleStatus('waist', si, undefined, plan?.heightCm);
-  return statusOf(metric, si, grading);
-}
-
-/** A pressure's grade against the plan's systolic target; none without a plan or for a known minor. */
-export function pressureStatus(r: DayReading, { grading, plan }: RowContext): Status {
-  return bpStatus(r.value, r.dia?.value, plan && grading ? bpTargetFor(plan.age) : undefined);
-}
-
-/** The line each metric's grade is read against, in the words its target prints. */
-const LINE_WORD: Record<string, string> = {
-  ldl: 'optimal', apob: 'optimal', total_cholesterol: 'optimal',
-  hba1c: 'normal', triglycerides: 'normal', lpa: 'normal', creatinine: 'normal',
-  waist: 'target', blood_pressure: 'target',
-};
-
-/** A grade as a screen reader hears it beside the value ("3.4, above optimal,
- *  previous 2.9"): the colour says it on screen. Said only off target, so no
- *  word can contradict the printed target. Weight's amber covers both sides
- *  of its target, and HDL is better higher. */
-export function gradeWords(status: Status, metric: string): string | null {
-  if (!status || status === 'ok') return null;
-  if (metric === 'hdl') return status === 'bad' ? 'low' : 'below optimal';
-  if (metric === 'weight') return status === 'bad' ? 'above target' : 'outside target';
-  return status === 'bad' ? 'high' : `above ${LINE_WORD[metric] ?? 'target'}`;
-}
+// A value's grade and its spoken words live in health-core (row-grade.ts), which the iPhone reads too.
+export { gradeWords, pressureStatus, valueStatus };
 
 /** A pressure as the grid prints it: "128/82". */
 export const pressureText = (r: DayReading) => `${Math.round(r.value)}/${Math.round(r.dia!.value)}`;

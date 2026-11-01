@@ -17,6 +17,10 @@ struct ValueRow: View {
     var target: String?
     /// The value before this one, in the same units, shown after it in brackets: "81 (74)".
     var previous: String?
+    /// The engine's grade ("warn", "bad"): the value is drawn in its colour, as the web's row (US-62 AC8).
+    var status: String?
+    /// The grade as VoiceOver says it after the value, off target only ("above optimal").
+    var gradeWords: String?
     /// A US height, shown as 5 ft 10 in in place of the value (AC17).
     var feetInches: MyData.FeetInches?
     /// The recent days, drawn small beside the value (AC17d).
@@ -51,7 +55,7 @@ struct ValueRow: View {
     /// The card's day as Apple Health's cards write it: Today, Yesterday, then the date (AC17).
     private func cardBody(_ value: String) -> some View {
         CardShell(label: label, when: day.map { DayText.when(day: $0, now: .now, calendar: .autoupdatingCurrent) }, trend: trend, tint: tint) {
-            CardValue(value: value, unit: unit, bounces: bounces)
+            CardValue(value: value, unit: unit, bounces: bounces, color: Self.gradeColor(status), spoken: Self.spoken(value, grade: gradeWords))
         }
     }
 
@@ -87,7 +91,7 @@ struct ValueRow: View {
                         .hidden()
                         .accessibilityHidden(true)
                     }
-                    reading(value, unit, previous: previous, feetInches: feetInches, stacked: stacked)
+                    reading(value, unit, previous: previous, feetInches: feetInches, stacked: stacked, graded: true)
                 }
             }
         }
@@ -124,7 +128,8 @@ struct ValueRow: View {
     /// previous value after it in brackets, smaller and grey; a US height as feet and inches
     /// side by side; "Add" when there is none.
     @ViewBuilder
-    private func reading(_ value: String?, _ unit: String, previous: String? = nil, feetInches: MyData.FeetInches? = nil, stacked: Bool) -> some View {
+    /// `graded`: the row's own reading, in its grade's colour; never the hidden column's.
+    private func reading(_ value: String?, _ unit: String, previous: String? = nil, feetInches: MyData.FeetInches? = nil, stacked: Bool, graded: Bool = false) -> some View {
         if let value {
             let parts = feetInches.map { [(String($0.feet), "ft"), (String($0.inches), "in")] } ?? [(value, unit)]
             let under = stacked && feetInches == nil
@@ -135,6 +140,7 @@ struct ValueRow: View {
                         HStack(alignment: .firstTextBaseline, spacing: 0) {
                             Text(parts[index].0)
                                 .font(.body.weight(.semibold))
+                                .foregroundStyle(graded ? Self.gradeColor(status) ?? .primary : .primary)
                                 .monospacedDigit()
                                 .contentTransition(.numericText())
                                 .modifier(Bounce(trigger: bounces, anchor: .trailing))
@@ -142,9 +148,10 @@ struct ValueRow: View {
                                 Text(" (\(previous))").font(.footnote).foregroundStyle(.secondary).monospacedDigit()
                             }
                         }
-                        // VoiceOver: "81, previous 74"; brackets alone say nothing out loud (the web's rule).
+                        // VoiceOver: "3.4, above optimal, previous 2.9"; brackets and colour alone say
+                        // nothing out loud (the web's rule).
                         .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(previous.map { "\(parts[index].0), previous \($0)" } ?? parts[index].0)
+                        .accessibilityLabel(Self.spoken(parts[index].0, grade: graded ? gradeWords : nil, previous: previous))
                         Text(parts[index].1).font(under ? .caption : .subheadline).foregroundStyle(.secondary)
                     }
                 }
@@ -156,6 +163,24 @@ struct ValueRow: View {
             // VoiceOver: "LDL Cholesterol, no value yet, add one", never a bare "Add" beside the lab upload's (US-52 AC7b).
             Text("Add").foregroundStyle(Color.accentColor).accessibilityLabel("No value yet, add one")
         }
+    }
+}
+
+extension ValueRow {
+    /// A grade's colour, the web's row colours (styles.css `.md-status-warn` amber #b45309,
+    /// `.md-status-bad` red #b91c1c) in the app's status tones: amber is `info` (the tiles'
+    /// Borderline and Above optimal), red is `urgent` (#B91C1C, the web's own). Nil: plain.
+    nonisolated static func gradeColor(_ status: String?) -> Color? {
+        switch status {
+        case "warn": Color.status("info")
+        case "bad": Color.status("urgent")
+        default: nil
+        }
+    }
+
+    /// What VoiceOver says for a value: "3.4, above optimal, previous 2.9" (MyDataRows.tsx MetricRow).
+    nonisolated static func spoken(_ value: String, grade: String?, previous: String? = nil) -> String {
+        [value, grade, previous.map { "previous \($0)" }].compactMap { $0 }.joined(separator: ", ")
     }
 }
 
@@ -202,11 +227,17 @@ struct CardValue: View {
     let unit: String
     /// Counts new values, for My data's bounce.
     var bounces = 0
+    /// A vital's grade colour (`ValueRow.gradeColor`); nil draws it plain.
+    var color: Color? = nil
+    /// What VoiceOver says for the value, its grade included; nil says the value.
+    var spoken: String? = nil
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
             Text(value)
                 .font(.system(.title, design: .rounded).weight(.semibold))
+                .foregroundStyle(color ?? .primary)
+                .accessibilityLabel(spoken ?? value)
                 .monospacedDigit()
                 .contentTransition(.numericText())
                 .modifier(Bounce(trigger: bounces, anchor: .leading))

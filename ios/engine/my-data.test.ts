@@ -230,6 +230,93 @@ describe('myData rows: target and previous value (US-62 AC8, AC9)', () => {
   });
 });
 
+// US-62 AC8, US-25 AC17: the web's grade on each row, from health-core (row-grade.ts), the
+// functions the web's MyDataRows.tsx calls: the colour (status) and the words a screen reader
+// says after the value, off target only.
+describe('myData rows: grade and spoken grade (US-62 AC8, US-25 AC17)', () => {
+  const rows = (data: ReturnType<typeof myData>) => new Map([...data.vitals, ...data.bloodTests, data.psa].map((row) => [row.metric, row]));
+  const adult = () => edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+    { kind: 'profile', sex: 'male', birthYear: 1970, height: 180 },
+    { kind: 'add', metric: 'ldl', value: 3.4, day: '2026-10-01' },
+    { kind: 'add', metric: 'hba1c', value: 50, day: '2026-10-01' },
+    { kind: 'add', metric: 'hdl', value: 1.3, day: '2026-10-01' },
+    { kind: 'add', metric: 'weight', value: 90, day: '2026-10-01' },
+    { kind: 'add', metric: 'waist', value: 92, day: '2026-10-01' },
+    { kind: 'add', metric: 'psa', value: 5, day: '2026-10-01' },
+    { kind: 'bloodPressure', systolic: 125, diastolic: 82, day: '2026-10-02', replace: false });
+
+  it('grades each row as the web does: amber, red or plain, with the words only off target', () => {
+    const shown = rows(myData(adult(), NOW));
+    expect(shown.get('ldl')).toMatchObject({ status: 'warn', gradeWords: 'above optimal' });
+    expect(shown.get('hba1c')).toMatchObject({ status: 'bad', gradeWords: 'high' });
+    expect(shown.get('hdl')).toMatchObject({ status: 'ok', gradeWords: null });
+    expect(shown.get('weight')).toMatchObject({ status: 'bad', gradeWords: 'above target' });
+    expect(shown.get('waist')).toMatchObject({ status: 'warn', gradeWords: 'above target' });
+    expect(shown.get('blood_pressure')).toMatchObject({ status: 'warn', gradeWords: 'above target' });
+    expect(shown.get('apob')).toMatchObject({ latest: null, status: null, gradeWords: null });
+  });
+
+  it('grades no PSA, which the web asks for under screening and never colours', () => {
+    expect(rows(myData(adult(), NOW)).get('psa')).toMatchObject({ latest: { value: '5.0' }, status: null, gradeWords: null });
+  });
+
+  it('grades on the stored value, in any display unit', () => {
+    expect(rows(myData(adult(), NOW, { ldl: 'conventional' })).get('ldl')).toMatchObject({ unit: 'mg/dL', status: 'warn', gradeWords: 'above optimal' });
+  });
+
+  it('grades no adult line for a known minor, but still the waist (US-07 AC6)', () => {
+    const minor = rows(myData(edited(adult(), { kind: 'profile', birthYear: 2015 }), NOW));
+    expect(['ldl', 'hba1c', 'weight', 'blood_pressure'].map((metric) => minor.get(metric)?.status)).toEqual([null, null, null, null]);
+    expect(minor.get('waist')?.status).not.toBeNull();
+  });
+
+  it('grades no HDL without sex, and no half-entered blood pressure (US-62 AC13, US-25 AC17)', () => {
+    const noSex = rows(myData(edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'add', metric: 'hdl', value: 0.8, day: '2026-10-01' }), NOW));
+    expect(noSex.get('hdl')).toMatchObject({ status: null, gradeWords: null });
+    const half = adult();
+    half.measurements.push({ ...half.measurements.find((row) => row.metricType === 'systolic_bp')!, id: 'half', recordedAt: '2026-10-10', value: 150 });
+    expect(rows(myData(half, NOW)).get('blood_pressure')).toMatchObject({ latest: { value: '150/–' }, status: null, gradeWords: null });
+  });
+});
+
+// US-62 AC8, US-25 AC17: the lab tests beyond the core ones, as the web's Blood tests rows list
+// them (MyDataRows.tsx labRows): one row per series, catalogue label, "Ref …" target, newest value
+// and the one before it in the unit the lab printed.
+describe('myData lab test rows (US-62 AC8, US-25 AC17)', () => {
+  const lab = (id: string, metricName: string, value: number, unit: string, recordedAt: string, extra: Partial<RoadmapFile['labValues'][number]> = {}): RoadmapFile['labValues'][number] => ({
+    id, metricName, value, unit, referenceLow: null, referenceHigh: null, recordedAt, createdAt: recordedAt, source: 'manual', status: 'active', correctsId: null, ...extra,
+  });
+  const withLabs = () => {
+    const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    return { ...file, labValues: [
+      lab('f1', 'ferritin', 80, 'µg/L', '2026-09-01T00:00:00.000Z', { referenceLow: 30, referenceHigh: 400 }),
+      lab('f2', 'Ferritin', 112.456, 'ng/mL', '2026-10-01T00:00:00.000Z', { referenceLow: 30, referenceHigh: 500 }),
+      lab('f0', 'ferritin', 999, 'µg/L', '2026-10-05T00:00:00.000Z', { status: 'entered-in-error' }),
+      lab('s1', 'sodium', 140, 'mmol/L', '2026-10-01T00:00:00.000Z', { referenceHigh: 145 }),
+      lab('z1', 'zinc_custom', 12, 'µmol/L', '2026-09-01T00:00:00.000Z'),
+      lab('z2', 'zinc_custom', 80, 'µg/dL', '2026-10-01T00:00:00.000Z'),
+    ] };
+  };
+
+  it('lists each series in the web\'s order, with its label, target, newest and previous value and unit', () => {
+    const tests = myData(withLabs(), NOW).labTests;
+    expect(tests.map((row) => row.label)).toEqual(['Sodium', 'Ferritin', 'Zinc Custom']);
+    expect(tests[0]).toMatchObject({ metric: 'sodium', unit: 'mmol/L', target: 'Ref <145', latest: { id: 's1', value: '140', day: '2026-10-01' }, previous: null, switchable: false });
+    // The entered-in-error row is left out; ng/mL reads as the catalogue's µg/L, so one unit.
+    expect(tests[1]).toMatchObject({ metric: 'ferritin', unit: 'µg/L', target: 'Ref 30–500', latest: { id: 'f2', value: '112.46' }, previous: '80', trend: [80, 112.456] });
+  });
+
+  it('gives a series in more than one unit no previous value and no trend (US-21 AC3a), and grades none', () => {
+    const tests = myData(withLabs(), NOW).labTests;
+    expect(tests[2]).toMatchObject({ metric: 'zinc custom', unit: 'µg/dL', latest: { value: '80' }, previous: null, trend: [], target: null });
+    expect(tests.every((row) => row.status === null && row.gradeWords === null)).toBe(true);
+  });
+
+  it('is empty for a record with no lab tests', () => {
+    expect(myData(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), NOW).labTests).toEqual([]);
+  });
+});
+
 describe('applyEdit (AC4/AC5)', () => {
   it('stores a value typed in US units as SI, the web\'s rule', () => {
     const file = edited(newRecord(NOW, 'phone', 'en-US', 'America/New_York'), { kind: 'add', metric: 'weight', value: 220, day: '2026-10-20' });
