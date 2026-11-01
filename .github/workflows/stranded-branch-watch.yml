@@ -6,8 +6,9 @@
 # 2026-08-23) and was only found by a manual sweep on 2026-08-29. Nothing
 # else watches for unlanded branches, so this daily audit does: any branch
 # with commits not on main, no open PR, and a tip older than ~20h gets one
-# issue. github-actions[bot] is the author, so the issue emails Brad
-# natively (same mechanism workflow-integrity relies on).
+# issue, assigned to Brad so it emails him (a bot issue alone emails nobody;
+# GHSA-rmrp-qfvm-jf2p). Only the bot's own issues count as already raised, so
+# an outsider's look-alike issue cannot silence a branch.
 #
 # The 20h grace period keeps in-flight Tier 3 work (branch pushed, PR opened
 # the same run) from being flagged between push and PR creation.
@@ -52,11 +53,19 @@ jobs:
               const found = await github.rest.search.issuesAndPullRequests({
                 q: `repo:${owner}/${repo} is:issue in:title "${marker}"`,
               });
-              if (found.data.items.some(i => i.title.endsWith(marker))) continue;
+              const own = found.data.items.find(i => i.title.endsWith(marker) && i.user?.login === 'github-actions[bot]');
+              if (own) {
+                // An open one opened before assignment existed gets Brad now; a closed one stays silent.
+                if (own.state === 'open' && !own.assignees?.some(a => a.login === 'DrBradStanfield')) {
+                  await github.rest.issues.addAssignees({ owner, repo, issue_number: own.number, assignees: ['DrBradStanfield'] });
+                }
+                continue;
+              }
               const subject = tip.data.commit.message.split('\n')[0];
               await github.rest.issues.create({
                 owner, repo,
                 title: `⚠️ ${marker}`,
+                assignees: ['DrBradStanfield'],
                 body: [
                   `Branch \`${b.name}\` has **${cmp.data.ahead_by} commit(s) not on main**, no open PR, and its tip is >20h old — loop or session work is stranded there.`,
                   '',

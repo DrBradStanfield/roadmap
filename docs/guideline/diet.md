@@ -123,7 +123,7 @@ Critically, protein-enriched ultra-processed foods **do not prevent overeating**
 
 **CKD adjustment:** The algorithm reduces to 1.0 g/kg for eGFR < 45 (CKD-3b boundary). This is conservative but aligns with current guidelines for moderate-severe CKD.
 
-**Algorithm links:** `protein-target` suggestion (1.2 g/kg IBW, CKD-adjusted), `lipid-diet` (plant protein sources for lipid management).
+**Algorithm links:** `protein-target` suggestion (1.2 g/kg ideal body weight, CKD-adjusted), `lipid-diet` (plant protein sources for lipid management).
 
 **Algorithm gap:** The `protein-target` suggestion is quantity-focused. It should also emphasise protein source — prioritising plant sources and fish, limiting red/processed meat. This aligns with both the AHA 2026 position and the mortality data.
 

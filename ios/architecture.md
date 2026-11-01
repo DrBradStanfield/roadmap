@@ -239,6 +239,8 @@ A signature means "the key holder approved this bundle", nothing more.
   by name in `entry.ts`, and that every optional door, called with only its contract args,
   answers as it does with them undefined. A missing return field is tested per feature. Anything
   an older app cannot do without stays in the contract and moves the id.
+  Second use (2026-11-02, US-62 AC8): My data rows' `target` and `previous`, read as none from
+  an older engine (`MyDataLayoutTests.testARowReadsItsTargetAndPreviousValueFromTheEngine_US62`).
 - **The schema is the app's (R7).** A bundle whose record `schemaVersion` differs from the
   bundled engine's is refused. A schema change always needs an app update, so an over-the-
   air engine can never write a record the web or an older phone cannot read.
@@ -1392,7 +1394,8 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
     through the engine; `RecordFile` is the file on disk and the engine steps that read and
     write it; `MyData.swift` is the engine's view of the record and the
     `RecordEdit` the tab sends; `MyDataView`, `ValueRow` (a row, a vitals card, its
-    sparkline), `ValueEntrySheet` and `DayText` draw it. `SheetSave` is a sheet's save and
+    sparkline; the row follows the web's MyDataRows.tsx, without grade colours: "target · date" under the name, the value
+    with the previous one in brackets, both served by the engine, US-62 AC8), `ValueEntrySheet` and `DayText` draw it. `SheetSave` is a sheet's save and
     the "Not saved" alert (`refusalAlert`, over `App/MessageAlert.swift`).
     The form sections (US-25 AC8): `FormModels` (the engine's question JSON and `FormEdit`),
     `FormFieldRow` (one question: menu, month wheel, number or dated value),

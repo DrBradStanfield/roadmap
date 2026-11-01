@@ -59,6 +59,14 @@ describe('US-07 AC9: ideal body weight card (issue 475)', () => {
   });
 });
 
+describe('US-07 AC1: the ideal body weight card spells out the name (Brad 2026-11-02)', () => {
+  it.each(['male', 'female'] as const)('for %s never says IBW', (sex) => {
+    const { reason } = getIbwEvidence(sex);
+    expect(reason).not.toMatch(/\bIBW\b/);
+    expect(reason).toContain('Peterson formula (2016): Ideal Body Weight = 2.2 × BMI_target + 3.5 × BMI_target × (height_m − 1.5).');
+  });
+});
+
 describe('US-07 AC9: cortisol by timing (issue 476)', () => {
   it.each([
     ['Cortisol', 'cortisol_am', 'Cortisol (morning)'],

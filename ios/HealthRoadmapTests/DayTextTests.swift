@@ -85,6 +85,15 @@ final class DayTextTests: XCTestCase {
         XCTAssertEqual(DayText.short("not a day"), "not a day")
     }
 
+    /// US-62 AC8: a My data row's date is month and year, as the web's "Oct 2026": no day,
+    /// and the 1st in UTC never slips back a month.
+    func testARowsDateIsMonthAndYear_US62() {
+        let shown = DayText.monthYear("2026-10-01")
+        XCTAssertTrue(shown.contains("2026"), shown)
+        XCTAssertFalse(shown.contains("1 ") || shown.contains(" 1,") || shown.contains("Sep"), shown)
+        XCTAssertEqual(DayText.monthYear("not a day"), "not a day")
+    }
+
     /// Noon of a stored day in a given zone: a lab review's date picker and a typed value
     /// sent to Apple Health use it, so the day never shifts.
     func testNoonIsTwelveOnThatDayInTheZone() throws {
