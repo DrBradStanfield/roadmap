@@ -132,8 +132,8 @@ export interface ZipEntryBytes {
 }
 
 /**
- * Open a ZIP under the caps (AC5): at most `MAX_IMPORT_FILES_PER_CALL`
- * importable entries, each at most `MAX_IMPORT_FILE_BYTES` INFLATED — the
+ * Open a ZIP under the caps (AC5): it opens at most `MAX_IMPORT_FILES_PER_CALL`
+ * importable entries, kept or skipped (AC5a), each at most `MAX_IMPORT_FILE_BYTES` INFLATED — the
  * bytes are counted as they inflate and the stream is stopped past the cap,
  * so a bomb declaring 1 MB never fills memory. Entries are taken by position;
  * a name is a label (the entry's path inside the ZIP), never a path anything
@@ -150,12 +150,15 @@ export async function unzip(bytes: Uint8Array): Promise<{ entries: ZipEntryBytes
     if (entry.dir) return;
     listed.push({ name: fileNameLine(relativePath), entry });
   });
+  // Every member opened counts, kept or skipped, so oversized or unreadable
+  // members cannot keep it inflating (US-35 AC5a).
+  let opened = 0;
   for (const { name, entry } of listed) {
     if (!isImportableEntryName(name)) {
       if (name.toLowerCase().endsWith('.zip')) skipped.push({ name, reason: 'nested_zip' });
       continue;
     }
-    if (entries.length >= MAX_IMPORT_FILES_PER_CALL) {
+    if (opened++ >= MAX_IMPORT_FILES_PER_CALL) {
       skipped.push({ name, reason: 'too_many' });
       continue;
     }

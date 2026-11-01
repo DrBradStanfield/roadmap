@@ -100,6 +100,9 @@ const WEIGHT_MED_TRIGGER_NOTE = '\n\nThis plan raises these medications earlier 
 const REFS_SGLT2I: SuggestionReference[] = [
   { label: 'Zinman 2015 – EMPA-REG OUTCOME: empagliflozin CV outcomes (NEJM)', url: 'https://doi.org/10.1056/NEJMoa1504720' },
   { label: 'McMurray 2019 – DAPA-HF: dapagliflozin in heart failure (NEJM)', url: 'https://doi.org/10.1056/NEJMoa1911303' },
+  { label: 'Heerspink 2020 – DAPA-CKD: dapagliflozin in chronic kidney disease (NEJM)', url: 'https://doi.org/10.1056/NEJMoa2024816' },
+  { label: 'Vaduganathan 2022 – SGLT2 inhibitors in heart failure: meta-analysis of five trials (Lancet)', url: 'https://doi.org/10.1016/S0140-6736(22)01429-5' },
+  { label: 'Neuen 2025 – SMART-C: SGLT2 inhibitors and kidney outcomes by GFR and albuminuria (JAMA)', url: 'https://doi.org/10.1001/jama.2025.20834' },
 ];
 
 const REFS_BP_TRIALS: SuggestionReference[] = [
@@ -263,7 +266,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'weight-med-sglt2i': {
-    reason: 'SGLT2 inhibitors (empagliflozin, dapagliflozin) work by a different mechanism to GLP-1 medications — they cause the kidneys to excrete excess glucose. Beyond modest weight loss, they provide proven cardiovascular and kidney protection, making them a valuable addition for metabolic health.',
+    reason: 'SGLT2 inhibitors (empagliflozin, dapagliflozin) work by a different mechanism to GLP-1 medications — they cause the kidneys to excrete excess glucose. Beyond modest weight loss, they provide proven cardiovascular and kidney protection in some populations, making them a valuable addition for metabolic health.',
     guidelines: [],
     references: REFS_SGLT2I,
   },
@@ -570,7 +573,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'supplement-creatine': {
-    reason: 'Creatine monohydrate is one of the most well-studied supplements. A meta-analysis found it significantly increases muscle strength and lean mass when combined with resistance training. Dr Stanfield considers the evidence that creatine improves memory clear and consistent; this is his judgement, not a trial finding. Formal reviews are more mixed. A systematic review (Avgerinos 2018) and two meta-analyses of small trials (Prokopidis 2023, Xu 2024) reported better memory, but the meta-analyses counted several tests from the same people as separate results. Reanalysed by its authors, Prokopidis 2023 found no clear overall memory benefit except in older adults (aged 66 to 76). Xu 2024 found no effect on overall cognition or executive function. In 2024 the European Food Safety Authority concluded that a cause-and-effect link between creatine and better cognitive function has not been established.',
+    reason: 'Creatine monohydrate is one of the most well-studied supplements. A meta-analysis found it significantly increases muscle strength and lean mass when combined with resistance training. There is also an interesting signal that creatine may help memory, another possible benefit. Formal reviews are mixed. A systematic review (Avgerinos 2018) and two meta-analyses of small trials (Prokopidis 2023, Xu 2024) reported better memory, but the meta-analyses counted several tests from the same people as separate results. Reanalysed by its authors, Prokopidis 2023 found no clear overall memory benefit except in older adults (aged 66 to 76). Xu 2024 found no effect on overall cognition or executive function. In 2024 the European Food Safety Authority concluded that a cause-and-effect link between creatine and better cognitive function has not been established.',
     guidelines: [],
     references: [
       REF_CREATINE_STRENGTH,
@@ -599,6 +602,8 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
       REF_MPOD,
       { label: 'AREDS 2001 – Vitamins C and E, beta-carotene and zinc for age-related macular degeneration: AREDS Report 8 (Arch Ophthalmol)', url: 'https://doi.org/10.1001/archopht.119.10.1417' },
       { label: 'AREDS2 2013 – Lutein + zeaxanthin and omega-3 fatty acids for age-related macular degeneration (JAMA)', url: 'https://doi.org/10.1001/jama.2013.4997' },
+      // The 10-year follow-up is what shows lutein and zeaxanthin carry no lung cancer signal.
+      { label: 'AREDS2 Report 28, 2022 – Long-term outcomes of lutein/zeaxanthin vs beta-carotene, including lung cancer (JAMA Ophthalmol)', url: 'https://doi.org/10.1001/jamaophthalmol.2022.1640' },
     ],
   },
 
@@ -687,6 +692,7 @@ const REFS_BMI: SuggestionReference[] = [
 
 const REFS_EGFR: SuggestionReference[] = [
   { label: 'Inker 2021 – CKD-EPI 2021 race-free eGFR equation (NEJM)', url: 'https://doi.org/10.1056/NEJMoa2102953' },
+  { label: 'KDIGO 2024 – Clinical practice guideline for CKD: GFR categories (Kidney Int)', url: 'https://doi.org/10.1016/j.kint.2023.10.018' },
 ];
 
 const REFS_IBW: SuggestionReference[] = [
@@ -719,6 +725,10 @@ export const GUIDE_REFERENCES: SuggestionReference[] = [
   { label: 'Paluch 2022 – Daily steps & all-cause mortality: meta-analysis of 15 international cohorts (Lancet Public Health)', url: 'https://doi.org/10.1016/S2468-2667(21)00302-9' },
   { label: 'Watson 2015 – Recommended amount of sleep for a healthy adult: AASM and SRS consensus (J Clin Sleep Med)', url: 'https://doi.org/10.5664/jcsm.4758' },
   { label: 'Milanović 2015 – Interval versus continuous training for VO2 max: meta-analysis (Sports Med)', url: 'https://doi.org/10.1007/s40279-015-0365-0' },
+  // The heart rate guide's safety lines (Brad 2026-11-01). DOIs checked against PubMed on 2026-11-01.
+  { label: 'Gulati 2021 – AHA/ACC guideline for the evaluation and diagnosis of chest pain (Circulation)', url: 'https://doi.org/10.1161/CIR.0000000000001029' },
+  { label: 'NHS 2024 – Arrhythmia: when to call 999 or go to A&E (NHS website)', url: 'https://www.nhs.uk/conditions/arrhythmia/' },
+  { label: 'Kusumoto 2019 – 2018 ACC/AHA/HRS guideline on bradycardia and cardiac conduction delay (Circulation)', url: 'https://doi.org/10.1161/CIR.0000000000000628' },
   { label: 'Apple 2026 – Monitor your heart rate with Apple Watch (Apple Support; how the watch measures)', url: 'https://support.apple.com/en-us/120277' },
   { label: 'Apple 2026 – HealthKit documentation: restingHeartRate (Apple Developer; how the estimate is made)', url: 'https://developer.apple.com/documentation/healthkit/hkquantitytypeidentifier/restingheartrate' },
   { label: 'Apple 2025 – Estimating Sleep Stages from Apple Watch (white paper; how the watch measures)', url: 'https://www.apple.com/health/pdf/Estimating_Sleep_Stages_from_Apple_Watch_Oct_2025.pdf' },
@@ -750,7 +760,7 @@ export const STAT_CARD_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'egfr': {
-    reason: 'Estimated glomerular filtration rate (eGFR) measures kidney function. The plan uses the eGFR printed on your lab report when it is from your latest test; otherwise it calculates one with the CKD-EPI 2021 equation (race-free) from your creatinine, age, and sex. CKD staging: ≥70 Normal, 60-69 Low Normal, 45-59 Mildly Decreased (Stage 3a), 30-44 Moderately Decreased (Stage 3b), 15-29 Severely Decreased (Stage 4), <15 Kidney Failure (Stage 5). An eGFR below 60 sustained for 3+ months is consistent with chronic kidney disease.',
+    reason: 'Estimated glomerular filtration rate (eGFR) measures kidney function. The plan uses the eGFR printed on your lab report when it is from your latest test; otherwise it calculates one with the CKD-EPI 2021 equation (race-free) from your creatinine, age, and sex. Bands: ≥70 Normal, 60-69 Low Normal, 45-59 Mildly to Moderately Decreased (KDIGO G3a), 30-44 Moderately to Severely Decreased (G3b), 15-29 Severely Decreased (G4), <15 Kidney Failure (G5). The two bands from 60 up are this tool\'s own: KDIGO 2024 calls 60-89 mildly decreased (G2). An eGFR below 60 sustained for 3+ months is consistent with chronic kidney disease.',
     guidelines: ['KDIGO'],
     references: REFS_EGFR,
   },
@@ -791,7 +801,7 @@ export function getIbwEvidence(sex: 'male' | 'female'): SuggestionEvidence {
   const bmiTarget = sex === 'male' ? 24 : 22;
   const range = sex === 'male' ? '23-26' : '20-23';
   return {
-    reason: `Ideal Body Weight is calculated using the Peterson formula (2016): IBW = 2.2 × BMI_target + 3.5 × BMI_target × (height_m − 1.5). The target BMI is ${bmiTarget} for ${sex}s, derived from large mortality meta-analyses showing this BMI is associated with the lowest all-cause mortality (optimal range: ${range}). Unlike the older Devine formula (1974), the Peterson formula accounts for both sex and height, producing more physiologically accurate estimates.`,
+    reason: `Ideal Body Weight is calculated using the Peterson formula (2016): IBW = 2.2 × BMI_target + 3.5 × BMI_target × (height_m − 1.5). The target BMI is ${bmiTarget} for ${sex}s, derived from large mortality meta-analyses showing this BMI is associated with the lowest all-cause mortality (optimal range: ${range}). Unlike older formulas such as Devine (1974), which over- or underestimate at the short and tall ends, the Peterson formula follows BMI at every height. The app sets a different target BMI for men and women.`,
     guidelines: [],
     references: REFS_IBW,
   };
