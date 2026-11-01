@@ -120,7 +120,7 @@ private struct SuggestionRow: View {
 }
 
 /// Dr Brad's product for a supplement card (US-61), the engine's words and link: a quiet
-/// inset under the card's text, its link opening the product page in Safari, as every
+/// inset under the card's text, its link opening the product page in the browser, as every
 /// link in the plan does.
 private struct USProductBlock: View {
     let block: USProducts.Block
@@ -138,7 +138,7 @@ private struct USProductBlock: View {
                     .font(.footnote.weight(.medium))
             }
             .accessibilityLabel("\(block.name) on \(block.url.host() ?? "its website")")
-            .accessibilityHint("Opens in Safari")
+            .accessibilityHint("Opens in your browser")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)

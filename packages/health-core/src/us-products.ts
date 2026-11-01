@@ -34,7 +34,7 @@ export const US_PRODUCT_LINES: Readonly<Record<string, { product: UsProduct; lin
     product: 'microvitamin_plus',
     line: 'MicroVitamin+ contains 10 mg of lutein and 2 mg of zeaxanthin, the doses used in the AREDS2 trial.',
   },
-  'supplement-tmg': { product: 'microvitamin_plus', line: 'MicroVitamin+ contains 500 mg of TMG, a lower dose than these trials used.' },
+  'supplement-tmg': { product: 'microvitamin_plus', line: 'MicroVitamin+ contains 500 mg of TMG.' },
   'supplement-sleep': {
     product: 'sleep',
     line: 'Sleep contains 0.8 mg of sustained-release melatonin, 2,400 mg of glycine and magnesium bisglycinate.',
