@@ -85,6 +85,13 @@ input[type="number"] {
   border-color: var(--color-brand-text);
 }
 
+/* US-65: the one calm line about entries this build could not read. */
+.hr-unreadable-note {
+  margin: 0 16px 12px;
+  font-size: 14px;
+  color: var(--color-gray-medium);
+}
+
 /* Health Tool Container */
 .health-tool {
   font-family: var(--font-family-base);

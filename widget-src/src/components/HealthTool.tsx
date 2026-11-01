@@ -2,6 +2,7 @@ import { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef, use
 import { createPortal } from 'react-dom';
 import {
   calculateHealthResults,
+  unreadableNote,
   knownMinorOf,
   medicinesShown,
   weightMedicationTrigger,
@@ -100,6 +101,7 @@ import {
   deleteSupplementApi,
   deleteUserData,
   getBackendKind,
+  getUnreadableCount,
 } from '../lib/roadmap-data';
 import { trackABImpression, trackABConversion, trackProductEvent } from '../lib/server-api';
 import { observeVisibility } from '../lib/observe-visibility';
@@ -871,6 +873,15 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     return () => window.removeEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
   }, [remoteRelay, handleUploadComplete]);
 
+  // US-65: entries this build could not read are kept unchanged and never
+  // shown; one calm line says how many, read on every render so a re-read
+  // that brings or clears them shows at once. Counted once per tab, count only.
+  const unreadable = getUnreadableCount();
+  const unreadableLine = unreadableNote(unreadable);
+  useEffect(() => {
+    if (unreadable > 0) trackProductEvent('record_unreadable_kept', { count: Math.min(unreadable, 1000) });
+  }, [unreadable]);
+
   // Calculate results using effective inputs (form + fallback to previous)
   const { results, isValid, validationErrors, planBasis } = useMemo(() => {
     // The plan needs a height; what needs sex waits for it (US-07 AC8).
@@ -1430,6 +1441,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   );
   return (
     <div className="health-tool" ref={rootRef} data-clarity-mask="true">
+      {unreadableLine && <p className="hr-unreadable-note no-print" role="status">{unreadableLine}</p>}
       {isMobile ? (
         <>
           {storageBar && <div className="hr-top-bar">{storageBar}</div>}

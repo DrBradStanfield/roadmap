@@ -210,6 +210,24 @@ export interface ErasedRows {
   ids: string[];
 }
 
+/**
+ * What this build could not read, kept verbatim so a write never loses it
+ * (US-65, Brad 2026-11-01). Each row array's unreadable rows sit under the
+ * same key; `profile` holds each unreadable profile field's raw value with
+ * the clock it was written at. Never shown, computed with or changed: a
+ * later build that can read an entry moves it back (migrate.ts), the merge
+ * unions the rows (merge.ts) and an erase removes them like any row.
+ */
+export interface UnreadableEntries {
+  [rows: string]: unknown[] | Record<string, ParkedField> | undefined;
+  profile?: Record<string, ParkedField>;
+}
+
+/** An unreadable profile field: its raw value and the clock that wrote it. */
+export interface ParkedField extends SyncStamp {
+  value: unknown;
+}
+
 /** Metadata for an uploaded document; the bytes live next to the JSON in `documents/`. */
 export interface FileDocument {
   id: string;
@@ -256,6 +274,8 @@ export interface RoadmapFile {
   reminderOptIn?: FileReminderOptIn;
   /** The rows the erases removed (optional — absent until an erase lists them). */
   erasedRows?: ErasedRows;
+  /** Entries this build could not read (US-65) — absent when there are none. */
+  unreadable?: UnreadableEntries;
 }
 
 /** Create a brand-new, empty record for a first-time user. */

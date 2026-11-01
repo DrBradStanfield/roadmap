@@ -70,7 +70,7 @@ import {
   type RoadmapFile,
   type RoadmapProfile,
 } from '@roadmap/health-core';
-import { isAlcoholAnswer, ROADMAP_DOC } from '@roadmap/health-core';
+import { isAlcoholAnswer, ROADMAP_DOC, unreadableCount } from '@roadmap/health-core';
 import { type EraseResult, type EraseSteps, type RecordHost, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { webRecordHost } from './web-record-host';
@@ -222,6 +222,11 @@ export class RoadmapStore {
   }
 
   /** Which erase this copy is at, as one comparable string (US-16 AC2a). */
+  /** How many entries this build could not read; kept, never shown (US-65). */
+  get unreadableCount(): number {
+    return unreadableCount(this.file);
+  }
+
   get eraseIdentity(): string {
     return this.session.eraseIdentity;
   }

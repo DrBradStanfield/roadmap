@@ -85,6 +85,13 @@ struct MyDataView: View {
                     RemindersSection()
                     aboutYou(data)
                     AppleHealthSection()
+                    // US-65: entries the engine could not read are kept unchanged; one calm line says how many.
+                    if let note = data.unreadableNote {
+                        Section {
+                        } footer: {
+                            Text(note)
+                        }
+                    }
                     RecordSection(store: store, sync: sync)
                     Section {
                     } footer: {
