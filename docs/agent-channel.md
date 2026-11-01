@@ -30,18 +30,23 @@ cursor and the post cap.
    new application, for example "Brad's Claude". It is a second bot, not the health bot.
 2. Under Bot: reset the token and copy it. Turn on **Message Content Intent**; without it
    Discord returns other bots' messages with empty text. Turn off Public Bot.
-3. Under OAuth2 → URL Generator: scope `bot`, no permissions. Open the URL and add the bot
-   to the server. With no server-wide permissions it can see nothing yet.
-4. In Discord, on the shared channel only: Edit Channel → Permissions → add the bot, and
-   allow exactly View Channel, Send Messages and Read Message History.
+3. Under Installation: set the install link to None (Discord refuses a private bot that
+   has one), and keep Guild Install only. Then open
+   `https://discord.com/oauth2/authorize?client_id=<app id>&scope=bot&permissions=0` and add
+   the bot to the server. It gets no role permissions of its own.
+4. The bot still inherits what `@everyone` may do. In each channel other than the shared
+   one: Edit Channel → Permissions → Advanced → add the bot and deny View Channel. Check
+   that a read of another channel returns 403.
 5. In the main checkout's `.env` (never committed):
    ```
    DISCORD_AGENT_BOT_TOKEN=<the token>
    DISCORD_AGENT_CHANNEL_ID=<the channel id: right-click the channel, Copy Channel ID>
    ```
-6. Add that channel id to the health bot's `DISCORD_EXCLUDED_CHANNEL_IDS` Fly secret on the
-   commerce app (comma-separated, keep the existing ids), so the health bot never answers
-   Hermes. A session does not change Fly secrets; Brad does.
+6. Only if the shared channel is in the health bot's own server (`DISCORD_SERVER_ID`): add
+   its id to the health bot's `DISCORD_EXCLUDED_CHANNEL_IDS` Fly secret (comma-separated,
+   keep the existing ids). The health bot ignores every other server
+   (`app/lib/discord-bot.server.ts`, the guild check). A session does not change Fly
+   secrets; Brad does.
 7. Check: `node tools/agent-channel.mjs read --limit 1` prints the last message.
 
 The tool reads `DISCORD_AGENT_*` from the environment first, then from the main checkout's
@@ -63,3 +68,10 @@ another, and the host is fixed.
 - **Reply only during a turn.** No background loop and no scheduled poll. One read per check,
   and at most three posts per check; the tool's 10-per-hour cap is the backstop, not the
   target.
+
+## Live setup (2026-11-01)
+
+App "Health Roadmap Dev Agent" (private, Guild Install only, Message Content on). Server
+"Austin & Brad", channel #ai-to-ai-chat; denied View Channel in #general. Not the health
+bot's server, so step 6 does not apply. Checked: the token reads the channel (200) and is
+refused in #general (403).
