@@ -409,8 +409,11 @@ export class RecordSession {
     return { ...result, chatErased };
   }
 
-  /** Force-persist any pending changes (call before navigation). */
+  /** Force-persist any pending changes (call before navigation). With nothing
+   *  unsaved and no save in flight it writes nothing: a save always merges,
+   *  and every merge moves the lamport on (US-10 AC5a). */
   async flush(): Promise<void> {
+    if (!this.unsaved && !this.running) return;
     this.cancelDebounce();
     if (!(await this.persist())) throw new Error(SAVE_FAILED);
   }
