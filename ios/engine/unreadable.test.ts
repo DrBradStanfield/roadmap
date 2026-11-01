@@ -3,7 +3,7 @@
 // threw the whole screen call, and the person saw none of their record.
 // Synthetic values only.
 import { describe, expect, it } from 'vitest';
-import { applyEditJson, chatContextJson, healthWritesJson, historyJson, labSaveSummaryJson, newRecordJson, planJson, remindersJson, screenJson } from './entry';
+import { applyEditJson, chatContextJson, healthWritesJson, historyJson, labReviewJson, labSaveSummaryJson, newRecordJson, planJson, remindersJson, screenJson } from './entry';
 import { unitsOf } from './unit-choices';
 
 const NOW = '2026-11-01T00:00:00.000Z';
@@ -81,6 +81,16 @@ describe('US-65: the engine opens a record with unreadable entries', () => {
     const screen = JSON.parse(screenJson(record, NOW, 'phone'));
     expect(screen.myData.profile.height).toBeNull();
     expect(screen.myData.unreadableNote).toBe('2 entries in your record could not be read, so they are kept unchanged and not shown.');
+  });
+
+  it('the lab review finds a hidden held document as the save does, and shows only the extraction', () => {
+    // A metadata-only row for these bytes, hidden by a numeric title: held, never shown.
+    const doc = { id: 'd1', title: 7, type: 'clinic_letter', date: '2026-09-01', fileRef: '', contentHash: 'sha256-x', mimeType: 'application/pdf', extractedText: '', addedAt: DAY };
+    const letter = { classification: 'clinic_letter', reportDate: null, values: [], additionalValues: [],
+      document: { classification: 'clinic_letter', title: 'Heart clinic', documentDate: '2026-09-14', contentMarkdown: '# Letter', metadata: {} } };
+    const review = JSON.parse(labReviewJson(JSON.stringify(letter), NOW, JSON.stringify({ ...base, profile, documents: [doc] }), 'Letter.pdf', 'sha256-x', 'phone'));
+    expect(review.document).toMatchObject({ title: 'Heart clinic', held: true });
+    expect(typeof review.document.title).toBe('string');
   });
 
   it('a readable record carries no line', () => {

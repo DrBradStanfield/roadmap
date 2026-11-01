@@ -124,6 +124,29 @@ describe('US-65 AC2, AC4: the view keeps up and counts only what a reader would 
   });
 });
 
+describe('US-65 AC5: a lab name that is not a string never shares a slot', () => {
+  const real = { id: 'a', metricName: 'vitamin_d', value: 80, unit: 'nmol/L', referenceLow: null, referenceHigh: null, recordedAt: DAY, createdAt: DAY, status: 'active', source: 'manual', correctsId: null };
+  const arrayName = { ...real, id: 'b', metricName: ['vitamin_d'], value: 30, unit: 'ng/mL', createdAt: LATER };
+
+  it('an array name beside a real row on the same day: the real row stays active, the hidden one unchanged', () => {
+    const a = read(rawRecord({ labValues: [real] }));
+    const b = read(rawRecord({ labValues: [arrayName] }));
+    expect(b.labValues).toEqual([arrayName]); // no `#si` conversion of the hidden row
+    for (const merged of [mergeFiles(a, b, CTX), mergeFiles(b, a, CTX)]) {
+      const rows = Object.fromEntries(merged.labValues.map((r) => [r.id, r]));
+      expect(rows.a.status).toBe('active');
+      expect(rows.b).toEqual(arrayName);
+      expect(ids(readableView(merged).file.labValues)).toEqual(['a']);
+    }
+  });
+
+  it('an array name survives a load and a save', async () => {
+    const { cloud, sync } = cloudWith(JSON.stringify(rawRecord({ labValues: [arrayName] })));
+    await sync.save(await sync.load());
+    expect(stored(cloud).labValues).toEqual([arrayName]);
+  });
+});
+
 describe('US-65 AC1: every build merges, erases and corrects them as before', () => {
   it('a merge of two files each holding unreadable rows keeps both, in either order', () => {
     const a = read(rawRecord({ measurements: [WEIGHT, FUTURE] }));

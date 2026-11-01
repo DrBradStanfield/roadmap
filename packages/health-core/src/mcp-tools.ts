@@ -620,7 +620,7 @@ function rejection(result: EditRejection): ToolOutcome {
   const held = result.existing;
   if (result.reason === 'slot-occupied' && held) {
     // A value no reader can read is never echoed (US-65 AC3): it may be anything.
-    const holds = isReadableRow('metricType' in held ? 'measurements' : 'labValues', held) ? oneLine(String(held.value)) : 'a value this app cannot read';
+    const holds = readableSlotRow(held) ? oneLine(String(held.value)) : 'a value this app cannot read';
     return {
       status: 'rejected',
       reason: result.reason,
@@ -1268,11 +1268,13 @@ export function isAlreadyImported(file: RoadmapFile, name: string, contentHash: 
   const live = file.documents.filter((d) => !d.deleted);
   const byHash = contentHash === '' ? undefined : live.find((d) => d.contentHash === contentHash);
   if (byHash) return { row: byHash, by: 'hash' };
+  // The name paths read only documents this build reads (US-65): a hidden one's name may be anything.
+  const named = live.filter((d) => isReadableRow('documents', d));
   const sameName = (d: FileDocument) => d.sourceFileName != null && dedupFileName(d.sourceFileName) === dedupFileName(name);
-  const byNameDate = contentHash === '' && date ? live.find((d) => sameName(d) && d.date === date) : undefined;
+  const byNameDate = contentHash === '' && date ? named.find((d) => sameName(d) && d.date === date) : undefined;
   if (byNameDate) return { row: byNameDate, by: 'name_date' };
   // A dated candidate against a hashless row dated differently is the portal's next `Results.pdf`, not a twin.
-  const byName = live.find((d) => d.contentHash === '' && sameName(d) && (!date || !d.date || d.date === date));
+  const byName = named.find((d) => d.contentHash === '' && sameName(d) && (!date || !d.date || d.date === date));
   return byName ? { row: byName, by: 'name' } : null;
 }
 
@@ -1331,7 +1333,8 @@ export function folderNudge(file: RoadmapFile, entryNames: string[]): z.infer<ty
 
 /** The sentence for an `already_imported` entry: which row, when, and the way past it (AC13). Names a file, never a title. */
 function alreadyImportedHint(match: ImportedMatch | null): string {
-  if (!match) return 'Already in the record. Nothing to do.';
+  // A hidden document's date and name are never echoed (US-65 AC3).
+  if (!match || !isReadableRow('documents', match.row)) return 'Already in the record. Nothing to do.';
   const when = match.row.date ?? dayOf(match.row.addedAt);
   const as = match.row.sourceFileName ? ` as ${oneLine(match.row.sourceFileName)}` : '';
   if (match.by === 'hash') return `Already in the record: the same file was filed on ${when}${as}. Nothing to do.`;
@@ -1346,6 +1349,11 @@ function fromDocument(text: string | undefined | null): string | undefined {
 }
 
 /** What a candidate finds in its slot (AC6): a core metric by its displayed string, a lab by quantity (`sameLabQuantity`, the website's rule too). */
+/** Whether a reader can read the row holding a slot (US-65): only then is its value shown or compared. */
+function readableSlotRow(row: FileMeasurement | FileLabValue): boolean {
+  return isReadableRow('metricType' in row ? 'measurements' : 'labValues', row);
+}
+
 function slotFor(
   existing: FileMeasurement | FileLabValue | undefined,
   candidate: Omit<ImportCandidate, 'id' | 'sameDayAs' | 'slot'>,
@@ -1354,8 +1362,8 @@ function slotFor(
   system: UnitSystem,
 ): ImportCandidate['slot'] {
   if (!existing) return { state: 'free' };
-  // A value no reader can read holds the day, with nothing to show or compare (US-65 AC3).
-  if (typeof existing.value !== 'number') return { state: 'held_different', existingRowId: existing.id, replaceable: false };
+  // A row no reader can read holds the day, with nothing to show or compare (US-65 AC3).
+  if (!readableSlotRow(existing)) return { state: 'held_different', existingRowId: existing.id, replaceable: false };
   const state: SlotState = 'metricType' in existing
     ? slotState(formatDisplayValue(existing.metricType as MetricType, existing.value, system), candidate.displayValue)
     : sameLabQuantity(
@@ -1792,7 +1800,7 @@ export function importDocumentsCommit(
     const current = held.get(slot);
     const moved = c.slot.state === 'free'
       ? current !== undefined
-      : !current || current.id !== c.slot.existingRowId || (typeof current.value === 'number' ? current.value : undefined) !== c.slot.existingValue;
+      : !current || current.id !== c.slot.existingRowId || (readableSlotRow(current) ? current.value : undefined) !== c.slot.existingValue;
     if (moved) {
       return {
         status: 'rejected',
