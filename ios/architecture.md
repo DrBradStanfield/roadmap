@@ -993,7 +993,8 @@ later.
 **Limits.**
 - Per key, exact and shared across machines (in `app_attest_use`, R4): 60 chat turns and
   30 lab files per UTC day.
-- Per IP, in memory: 10 registration attempts, 200 turns, 200 files a day. IPv6 is keyed
+- Per IP, in memory: 10 failed registration attempts and 50 successful registrations
+  (US-52 AC1b), 200 turns, 200 files a day. IPv6 is keyed
   on its /64, which one subscriber holds whole, so rotating addresses inside it buys
   nothing. IPv4 is keyed on the address, so phones behind one carrier NAT share a bucket:
   the price of having one; 200 is set high for that reason.
@@ -1002,8 +1003,10 @@ later.
   (`machineFiles`, `AI_DAILY_FILE_CAP`, 2000), but the app's own cap is smaller, so the
   app can never use up the web's and the connector's uploads (R5); the code also holds it
   at or under 15% of `AI_DAILY_FILE_CAP` whatever the env says.
-- Per IP, refused signed requests: 50 a day. Past that, the gate reads neither the key nor
-  the body (code review R3).
+- Per IP, signed requests refused before their signature verifies: 200 a day. Past that,
+  the gate reads neither the key nor the body (code review R3). Per key, refusals after
+  the signature verifies (a stale counter): 20 a day, so one broken phone behind a shared
+  IP stops only itself (US-52 AC4c, 2026-11-01).
 - In memory means cap x machines, reset whenever a machine restarts: on deploy and on
   Fly's idle stop and start (`auto_stop_machines`). The per-key cap holds exactly; the
   machine caps bound the worst case.
