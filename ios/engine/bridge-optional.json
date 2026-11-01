@@ -3,7 +3,7 @@
   "doors": {
     "screenJson": {
       "optionalArgs": ["isUS"],
-      "optionalReturns": "plan.usProducts: us-products.ts's {blocks: [{suggestionId, product, name, line, url, description?, references?}], ownershipLine|null} for isUS true (the App Store storefront USA) and a known adult, else no blocks and a null line (US-61). An app before it sends no isUS, so it gets no blocks; an engine before it sends no usProducts, so the app shows none."
+      "optionalReturns": "plan.usProducts: us-products.ts's usProductSections, the [PlanSection] ready to draw, for isUS true (the App Store storefront USA) and a known adult: on the Supplements section each product card's suggestion carries usProduct {product, name, line, url} and its US description and references, and the section carries ownershipLine. Left out when no block shows (US-61). An app before it sends no isUS, so it gets none; an engine before it sends no usProducts, so the app draws the plain sections. Its first shape (2026-10-31, {blocks, ownershipLine}) was read by no shipped app, so the change is safe for builds 3 and 4."
     }
   }
 }

@@ -1,4 +1,4 @@
-import type { HealthInputs, HealthResults, Suggestion, MedicationInputs, ScreeningInputs } from './types';
+import type { HealthInputs, HealthResults, Suggestion, MedicationInputs, ScreeningInputs, UsProductCardId } from './types';
 import { SUGGESTION_EVIDENCE } from './evidence';
 import { POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
 import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
@@ -38,18 +38,18 @@ const LUTEIN_PIGMENT = 'Lutein and zeaxanthin are the pigments of the macula, th
 const LUTEIN_AREDS = 'In the AREDS trial, a formula containing beta-carotene slowed the progression of macular degeneration. In AREDS2, lutein and zeaxanthin worked as well as beta-carotene, without beta-carotene\'s lung cancer signal in former smokers.';
 
 /**
- * US variants of three supplement cards' text (US-61 AC3), keyed `<id>-us`.
+ * US variants of three supplement cards' text (US-61 AC3), keyed by card id.
  * Only the US product overlay (us-products.ts) reads them: generateSuggestions
  * never emits them, so the plan, chat, agents and the CLI stay the same in
  * every country. No product name here; the product line lives in us-products.ts.
  */
-export const US_SUPPLEMENT_DESCRIPTIONS: Readonly<Record<string, string>> = {
+export const US_SUPPLEMENT_DESCRIPTIONS: Readonly<Partial<Record<UsProductCardId, string>>> = {
   // No WHO dementia sentences (a disease outcome beside a named product).
-  'supplement-micronutrient-base-us': `${BASE_COSMOS} ${BASE_K2}`,
+  'supplement-micronutrient-base': `${BASE_COSMOS} ${BASE_K2}`,
   // Strength and lean mass only: no memory sentence.
-  'supplement-creatine-us': CREATINE_STRENGTH,
+  'supplement-creatine': CREATINE_STRENGTH,
   // Macular pigment only: no macular degeneration outcome.
-  'supplement-lutein-zeaxanthin-us': LUTEIN_PIGMENT,
+  'supplement-lutein-zeaxanthin': LUTEIN_PIGMENT,
 };
 
 /** Dietary advice for elevated lipids — shared between suggestion card and InputPanel medication cascade */
