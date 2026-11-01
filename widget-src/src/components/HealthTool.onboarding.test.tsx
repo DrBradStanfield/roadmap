@@ -218,7 +218,7 @@ describe('US-62 AC12, AC13 (Brad 2026-11-02): boxes while typing, rows after', (
     const again = render(<HealthTool />);
     await waitFor(() => expect(q(again, '.about-row')).toBeTruthy());
     expect(sectionOrder(again)).toEqual(['Vitals', 'Blood tests', 'Supplements', 'About you']);
-    expect(aboutRows(again)).toEqual([['Height', '185 cm'], ['Sex', 'Male'], ['Birth', 'June 1985']]);
+    expect(aboutRows(again)).toEqual([['Height', '185 cm'], ['Sex', 'Male'], ['Birth', 'June 1985'], ['Alcohol', 'Not answered']]); // US-60 AC4
     expect(q(again, '#heightCm')).toBeNull();
     expect(q(again, '.md-about-you #weightKg')).toBeNull(); // the weight lives in the vitals rows
     // A tap opens the field itself, its why-line with it; Done gives the row back.
