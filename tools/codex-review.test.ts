@@ -1621,7 +1621,7 @@ describe('US-40 AC13 — --include copies a pinned, read-only source folder from
     // A copy of the wrapper in its own git checkout, with that policy committed; another repo is under review.
     const home = realpathSync(mkdtempSync(join(tmpdir(), 'cr-include-home-'))); // node reports the wrapper's own path resolved
     mkdirSync(join(home, 'tools'));
-    for (const m of ['codex-review.mjs', 'codex-review-include.mjs', 'codex-review-names.mjs', 'codex-review-links.mjs', 'codex-review-includes.json']) writeFileSync(join(home, 'tools', m), readFileSync(resolve(__dirname, m)));
+    for (const m of ['codex-review.mjs', 'codex-review-include.mjs', 'codex-review-names.mjs', 'codex-review-links.mjs', 'secret-rules.mjs', 'codex-review-includes.json']) writeFileSync(join(home, 'tools', m), readFileSync(resolve(__dirname, m)));
     const copy = join(home, 'tools', 'codex-review.mjs'), policyFile = join(home, 'tools', 'codex-review-includes.json');
     const dir = changed(), raw = rawDir({ 'f.md': 'x\n' });
     const go = (env: NodeJS.ProcessEnv = childEnv()) => spawnSync('node', [copy, '--codex', fake({ output: CLEAN }).bin, '--include', raw, '--out', outJson], { cwd: dir, encoding: 'utf8', env, timeout: 120_000 });
@@ -2040,7 +2040,7 @@ describe('US-40 AC15 — --subject reviews exact files, never whatever else the 
     /** A copy of the wrapper inside `repo`, so its own repo (HOME_REPO) is that temp repo, as the real one is in production. */
     const install = (repo: string) => {
       mkdirSync(join(repo, 'tools'), { recursive: true });
-      for (const m of readdirSync(__dirname).filter((n) => /^codex-review(-[a-z]+)?\.mjs$/.test(n))) writeFileSync(join(repo, 'tools', m), readFileSync(join(__dirname, m)));
+      for (const m of readdirSync(__dirname).filter((n) => /^(?:codex-review(-[a-z]+)?|secret-rules)\.mjs$/.test(n))) writeFileSync(join(repo, 'tools', m), readFileSync(join(__dirname, m)));
       return join(repo, 'tools', 'codex-review.mjs');
     };
     const dir = scriptRepo(), wrapper = install(dir);

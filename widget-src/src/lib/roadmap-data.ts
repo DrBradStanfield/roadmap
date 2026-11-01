@@ -151,12 +151,18 @@ export function hasSavedRecord(result: LatestMeasurementsResult | null): result 
     || result.supplements.length > 0 || result.documents.length > 0);
 }
 export async function loadAllHistory(): Promise<ApiMeasurement[]> {
+  return loadAllHistorySync();
+}
+export function loadAllHistorySync(): ApiMeasurement[] {
   return store ? store.loadAllHistory() : [];
 }
 export async function loadMedicationHistory(): Promise<ApiMedicationHistory[]> {
   return store ? store.loadMedicationHistory() : [];
 }
 export async function loadLabValues(): Promise<ApiLabValue[] | null> {
+  return loadLabValuesSync();
+}
+export function loadLabValuesSync(): ApiLabValue[] | null {
   return store ? store.loadLabValues() : null;
 }
 
