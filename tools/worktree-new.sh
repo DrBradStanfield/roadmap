@@ -22,4 +22,7 @@ git -C "$MAIN" fetch -q origin main
 # name unlocks it.
 git -C "$MAIN" worktree add -q --no-track --lock --reason "session worktree, created $(date -u +%Y-%m-%dT%H:%MZ)" \
   -b "claude/$NAME" "$WT" origin/main
+# A new worktree starts with fresh package clones: drop any left by an earlier worktree at this same path.
+CLONES="$(node "$(dirname "$0")/../.claude/hooks/worktree-guard.cjs" --pkg-cache-dir "$WT" </dev/null 2>/dev/null)" || CLONES=""
+case "$CLONES" in */claude-worktree-packages/?*) rm -rf "$CLONES";; esac
 echo "$WT"

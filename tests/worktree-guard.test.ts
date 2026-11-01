@@ -11,8 +11,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawn, spawnSync } from 'node:child_process';
 import {
-  chmodSync, copyFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync,
-  symlinkSync, unlinkSync, utimesSync, writeFileSync,
+  chmodSync, copyFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync,
+  rmSync, symlinkSync, utimesSync, writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
@@ -47,6 +47,8 @@ function hook(payload: Record<string, unknown>, extra: NodeJS.ProcessEnv = {}, g
   expect(r.status).toBe(0);
   return r.stdout ? JSON.parse(r.stdout) : null;
 }
+const cacheDir = (wt: string) => spawnSync('node', [GUARD, '--pkg-cache-dir', wt], { encoding: 'utf8', env: ENV }).stdout.trim();
+const countFiles = (dir: string) => Number(spawnSync('sh', ['-c', `find "${dir}" -type f | wc -l`], { encoding: 'utf8' }).stdout.trim());
 const bash = (cwd: string, command: string) => hook({ hook_event_name: 'PreToolUse', tool_name: 'Bash', cwd, tool_input: { command } });
 const edit = (file: string, extra: NodeJS.ProcessEnv = {}, tool = 'Edit', cwd = MAIN) =>
   hook({ hook_event_name: 'PreToolUse', tool_name: tool, cwd,
@@ -71,9 +73,13 @@ beforeAll(() => {
   writeFileSync(join(BIN, 'gh'), '#!/bin/sh\n[ -n "$GH_FAIL" ] && exit 1\n'
     + 'case "$*" in *length*) echo "${GH_COUNT:-0}";; *) echo "${GH_STATE:-}";; esac\n');
   chmodSync(join(BIN, 'gh'), 0o755);
+  // cp passes through to the real one, unless CP_FAIL asks it to fail (a disk or OS with no clone support).
+  writeFileSync(join(BIN, 'cp'), `#!/bin/sh\n[ -n "$CP_FAIL" ] && exit 1\nexec ${spawnSync('sh', ['-c', 'command -v cp'], { encoding: 'utf8' }).stdout.trim()} "$@"\n`);
+  chmodSync(join(BIN, 'cp'), 0o755);
   ENV = {
     ...process.env,
     PATH: `${BIN}:${process.env.PATH}`,
+    HOME: join(S, 'home'), // the package clone cache lands in the scratch folder, never the real one
     GIT_CONFIG_NOSYSTEM: '1',
     GIT_CONFIG_GLOBAL: '/dev/null',
     GIT_AUTHOR_NAME: 'test', GIT_AUTHOR_EMAIL: 'test@example.invalid',
@@ -81,6 +87,7 @@ beforeAll(() => {
   };
   delete ENV.CLAUDE_CODE_REMOTE;
   delete ENV.CLAUDE_MAIN_CHECKOUT_WRITES;
+  delete ENV.XDG_CACHE_HOME;
   MAIN = join(S, 'main');
   sh(S, 'git init -q --bare -b main remote.git && git clone -q remote.git main 2>/dev/null');
   // `node_modules` with no trailing slash, as the real .gitignore: it matches the link too.
@@ -88,10 +95,15 @@ beforeAll(() => {
   writeFileSync(join(MAIN, 'tracked.txt'), 'one\n');
   mkdirSync(join(MAIN, 'widget-src'));
   writeFileSync(join(MAIN, 'widget-src/a.ts'), 'x\n');
+  // A tracked link to an absolute path in the main checkout, as claude_business's docs/products.md is: cleanup
+  // must never delete it.
+  symlinkSync(join(MAIN, 'tracked.txt'), join(MAIN, 'abs-link'));
   sh(MAIN, 'git add -A && git commit -q -m one && git push -q origin main');
   GUARD = installGuard(MAIN);
   // Installed packages exist only in the main checkout, as in real life.
   for (const d of ['node_modules', 'widget-src/node_modules']) mkdirSync(join(MAIN, d, 'pkg'), { recursive: true });
+  // A stray self-link, as the real main checkout has (node_modules/node_modules -> node_modules).
+  symlinkSync(join(MAIN, 'node_modules'), join(MAIN, 'node_modules/node_modules'));
 }, 60_000);
 afterAll(() => rmSync(S, { recursive: true, force: true }));
 
@@ -155,33 +167,34 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
   it('allows edits inside the worktree', () => {
     expect(edit(join(WT, 'tracked.txt'))).toBeNull();
   });
-  it('a Bash call in the worktree links the installed packages in, and git ignores the links (US-63 AC3)', () => {
+  it("a Bash call links each package folder to the worktree's own clone, outside the repo (US-63 AC3)", () => {
     expect(bash(WT, 'ls')).toBeNull();
+    const cache = cacheDir(WT);
+    expect(cache.startsWith(join(S, 'home') + '/')).toBe(true);
     for (const d of ['node_modules', 'widget-src/node_modules']) {
-      expect(lstatSync(join(WT, d)).isSymbolicLink()).toBe(true);
-      expect(realpathSync(join(WT, d))).toBe(join(MAIN, d));
+      expect(readlinkSync(join(WT, d))).toBe(join(cache, d));
+      expect(existsSync(join(WT, d, 'pkg'))).toBe(true);
     }
     expect(existsSync(join(WT, 'packages/health-core/node_modules'))).toBe(false); // no source, no parent: skipped
+    // A link back into the main checkout would load a second copy of a package (two Reacts): dropped.
+    expect(() => lstatSync(join(cache, 'node_modules/node_modules'))).toThrow();
+    expect(readFileSync(join(cache, '.owner'), 'utf8')).toBe(WT);
     expect(sh(WT, 'git status --porcelain')).toBe('');
   });
-  it('refuses an npm install while a link stands, in any spelling (US-63 AC3)', () => {
-    for (const cmd of ['npm ci', 'cd widget-src && npm ci', 'npm --prefix widget-src i', 'npm -w widget-src install x',
-      'FOO=1 npm  uninstall y', '/usr/local/bin/npm update', "bash -c 'npm ci'"]) {
-      const o = bash(WT, cmd);
-      expect(denied(o), cmd).toBe(true);
-      expect(o.hookSpecificOutput.permissionDecisionReason).toMatch(/unlink .*\/node_modules/);
-    }
-    for (const cmd of ['npm test', 'npm run build:shopify-prod', 'npm run ci', 'npx vitest run', 'echo npm ci-free']) {
-      expect(bash(WT, cmd), cmd).toBeNull();
-    }
+  it('npm ci or rm -rf through the link empties only the clone, and the next call re-clones (US-63 AC3)', () => {
+    sh(WT, 'rm -rf node_modules/'); // follows the link, as npm ci does
     expect(existsSync(join(MAIN, 'node_modules/pkg'))).toBe(true);
+    sh(WT, 'rm -rf "$(readlink node_modules)"'); // the clone itself gone
+    expect(bash(WT, 'ls')).toBeNull();
+    expect(existsSync(join(WT, 'node_modules/pkg'))).toBe(true);
   });
-  it('after the links are removed, npm installs run and no link comes back (US-63 AC3)', () => {
-    const w = newWorktree('ownpkgs').path;
+  it('replaces an old link into the main checkout (the link only) and leaves any other link alone (US-63 AC3)', () => {
+    const w = newWorktree('oldlink').path;
+    symlinkSync(join(MAIN, 'node_modules'), join(w, 'node_modules'));
+    symlinkSync(join(S, 'elsewhere'), join(w, 'widget-src/node_modules'));
     expect(bash(w, 'ls')).toBeNull();
-    for (const d of ['node_modules', 'widget-src/node_modules']) unlinkSync(join(w, d));
-    expect(bash(w, 'npm ci')).toBeNull();
-    expect(existsSync(join(w, 'node_modules'))).toBe(false);
+    expect(readlinkSync(join(w, 'node_modules'))).toBe(join(cacheDir(w), 'node_modules'));
+    expect(readlinkSync(join(w, 'widget-src/node_modules'))).toBe(join(S, 'elsewhere'));
     expect(existsSync(join(MAIN, 'node_modules/pkg'))).toBe(true);
   });
   it('Stop: nothing to land, so the turn may end; the main checkout is never blocked', () => {
@@ -229,6 +242,8 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
     mkdirSync(join(WT, 'tmp'));
     writeFileSync(join(WT, 'tmp/result.txt'), 'made in the worktree\n');
     writeFileSync(join(WT, '.claude/settings.local.json'), '{}\n'); // gitignored, but never copied back
+    const clones = cacheDir(WT);
+    expect(existsSync(clones)).toBe(true);
     sh(MAIN, 'git pull -q --ff-only && git merge -q --no-edit origin/claude/feat && git push -q origin main');
     const r = done('feat');
     expect(r.status).toBe(0);
@@ -236,6 +251,8 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
     expect(readFileSync(join(MAIN, 'tmp/result.txt'), 'utf8')).toBe('made in the worktree\n');
     expect(existsSync(join(MAIN, '.claude/settings.local.json'))).toBe(false);
     expect(existsSync(join(MAIN, 'node_modules/pkg'))).toBe(true); // the worktree's link went, never the folder
+    expect(existsSync(clones)).toBe(false); // its clones are deleted too
+    expect(readlinkSync(join(MAIN, 'abs-link'))).toBe(join(MAIN, 'tracked.txt'));
     expect(existsSync(WT)).toBe(false);
     expect(spawnSync('git', ['-C', MAIN, 'show-ref', '-q', '--verify', 'refs/heads/claude/feat'], { env: ENV }).status).not.toBe(0);
   });
@@ -281,8 +298,27 @@ describe('worktree-done.sh on a folder that is not a worktree (US-63 AC4)', () =
   });
 });
 
-describe('parallel Bash calls in a new worktree (US-63 AC3)', () => {
-  it('three hooks at once leave one link per folder and all answer cleanly', async () => {
+describe('package clones: new worktrees, failures, races and orphans (US-63 AC3, AC4)', () => {
+  it('worktree-new deletes a clone left by an earlier worktree at the same path', () => {
+    let w = newWorktree('reuse').path;
+    expect(bash(w, 'ls')).toBeNull();
+    writeFileSync(join(cacheDir(w), 'node_modules/stale'), 'x');
+    sh(MAIN, `git worktree remove -f -f "${w}" && git branch -q -D claude/reuse`);
+    w = newWorktree('reuse').path;
+    expect(existsSync(join(cacheDir(w), 'node_modules/stale'))).toBe(false);
+  });
+  it('a failed clone answers cleanly, links nothing and leaves no temp folder', () => {
+    const w = newWorktree('noclone').path;
+    expect(hook({ hook_event_name: 'PreToolUse', tool_name: 'Bash', cwd: w, tool_input: { command: 'ls' } },
+      { CP_FAIL: '1' })).toBeNull();
+    expect(() => lstatSync(join(w, 'node_modules'))).toThrow();
+    expect(readdirSync(cacheDir(w)).filter((f) => f.includes('.tmp-'))).toEqual([]);
+  });
+  it('three hooks at once leave one whole clone, one link per folder and no temp folders', async () => {
+    for (let i = 0; i < 40; i++) {
+      mkdirSync(join(MAIN, 'node_modules', `p${i}`), { recursive: true });
+      for (let j = 0; j < 50; j++) writeFileSync(join(MAIN, 'node_modules', `p${i}`, `f${j}.js`), `${i}-${j}\n`);
+    }
     const wt = newWorktree('race').path;
     const payload = JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Bash', cwd: wt, tool_input: { command: 'ls' } });
     const run = () => new Promise<number>((resolve) => {
@@ -291,7 +327,18 @@ describe('parallel Bash calls in a new worktree (US-63 AC3)', () => {
       c.stdin.end(payload);
     });
     expect(await Promise.all([run(), run(), run()])).toEqual([0, 0, 0]);
-    expect(realpathSync(join(wt, 'node_modules'))).toBe(join(MAIN, 'node_modules'));
+    expect(readlinkSync(join(wt, 'node_modules'))).toBe(join(cacheDir(wt), 'node_modules'));
+    expect(countFiles(join(wt, 'node_modules/'))).toBe(countFiles(join(MAIN, 'node_modules')));
+    expect(readdirSync(cacheDir(wt)).filter((f) => f.includes('.tmp-'))).toEqual([]);
     expect(sh(wt, 'git status --porcelain')).toBe('');
-  }, 60_000);
+  }, 120_000);
+  it('SessionStart deletes a clone folder whose worktree is gone', () => {
+    const w = newWorktree('orphan').path;
+    expect(bash(w, 'ls')).toBeNull();
+    const clones = cacheDir(w);
+    sh(MAIN, `git worktree remove -f -f "${w}"`);
+    hook({ hook_event_name: 'SessionStart', cwd: MAIN });
+    expect(existsSync(clones)).toBe(false);
+    expect(existsSync(join(MAIN, 'node_modules/pkg'))).toBe(true);
+  });
 });

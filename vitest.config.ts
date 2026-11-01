@@ -25,8 +25,8 @@ export default defineConfig({
       '@roadmap/health-core': new URL('./packages/health-core/src', import.meta.url).pathname,
     },
   },
-  // A session worktree's node_modules is a link to the main checkout's (docs/git-workflow.md). Vite resolves it
-  // to that real path, outside this root, and refuses a `?raw` import from there ("Denied ID",
+  // A session worktree's node_modules is a link to its own package clone, outside the repo (docs/git-workflow.md).
+  // Vite resolves it to that real path, outside this root, and refuses a `?raw` import from there ("Denied ID",
   // widget-src/src/upload-entry.test.ts), so allow the real folder beside the root (the same path without a link).
   server: {
     fs: {

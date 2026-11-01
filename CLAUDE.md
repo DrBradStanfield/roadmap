@@ -179,7 +179,7 @@ same commit).
 ## Development Rules
 
 - **Every change: its own worktree, `claude/` branch and PR (HARD, Brad 2026-10-31)**: `sh tools/worktree-new.sh <name>`,
-  EnterWorktree `path`; hooks deny main-checkout edits, an un-PR'd turn end and `npm ci` through linked node_modules.
+  EnterWorktree `path`; hooks deny main-checkout edits and an un-PR'd turn end, and clone node_modules in.
   Before merging: merge `origin/main` in, `test:all`, re-review if main touched your files (PR 150); adversary + Codex;
   citation numbering. Merge only `gh pr merge <n> --merge --match-head-commit <sha>` (or auto-ship), then CI Deploy;
   live writes and deploys run merged code only; then `tools/worktree-done.sh`. Steps, exceptions: docs/git-workflow.md.

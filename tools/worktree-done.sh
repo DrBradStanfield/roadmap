@@ -2,11 +2,11 @@
 # Finish a session's worktree once its work is on GitHub. Run from the main checkout after ExitWorktree (keep).
 #   1. refuses uncommitted changes, any commit that is on no remote branch, and unmerged work whose PR is
 #      not closed (merge the PR, or close it with a note on where the work went, first);
-#   2. copies the worktree's own gitignored files (outputs made there; never the links worktree-guard.cjs
-#      made to the main checkout's files, nor rebuildable build or cache output) into the main checkout.
+#   2. copies the worktree's own gitignored files (outputs made there; never the package links worktree-guard.cjs
+#      made, nor rebuildable build or cache output) into the main checkout.
 #      It never overwrites: a file that already exists in the main checkout with different content keeps the
 #      worktree, listed, for a human to resolve;
-#   3. unlocks (tools/worktree-new.sh locks it), removes the worktree and its local branch (the merged remote
+#   3. unlocks (tools/worktree-new.sh locks it), removes the worktree, its package clones and its local branch (the merged remote
 #      branch stays on GitHub; harmless, and the push guard keeps branch deletes Brad's).
 # Nothing is ever forced: a worktree that fails a check is reported and left alone.
 #   bash tools/worktree-done.sh <name>     one worktree under .claude/worktrees/ (unlocks it)
@@ -18,13 +18,17 @@
 # Workflow: docs/git-workflow.md.
 set -u
 MAIN="$(cd "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")" && pwd -P)"
+# Each worktree's package clones (worktree-guard.cjs linkPackages), kept outside the repo; the guard names the folder.
+GUARD="$(cd "$(dirname "$0")/.." && pwd)/.claude/hooks/worktree-guard.cjs"
+PACKAGE_DIRS="node_modules widget-src/node_modules packages/health-core/node_modules"   # as worktree-guard.cjs
 # --prune: a remote branch deleted on GitHub must not still count as "pushed".
 git -C "$MAIN" fetch -q --prune origin || { echo "REFUSED: git fetch failed; nothing removed." >&2; exit 1; }
 
 finish() { # $1 = worktree path, $2 = 1 to unlock a locked worktree; prints one line; returns 0 if removed
-  local WT="$1" UNLOCK="$2" BR LOCAL UNMERGED STATE f
+  local WT="$1" UNLOCK="$2" BR LOCAL UNMERGED STATE f CLONES rel
   local -a differ=()
   [ -d "$WT" ] || { echo "skip  $WT: not a folder"; return 1; }
+  CLONES="$(node "$GUARD" --pkg-cache-dir "$WT" </dev/null 2>/dev/null)" || CLONES="/nonexistent-clones"
   BR="$(git -C "$WT" rev-parse --abbrev-ref HEAD 2>/dev/null)" || { echo "skip  $WT: not a git worktree"; return 1; }
   # A plain folder (or a worktree that lost its .git file) resolves to the main checkout's git: it must be its own
   # top level and listed by `git worktree list`, or the steps below would act on the main checkout.
@@ -53,8 +57,8 @@ finish() { # $1 = worktree path, $2 = 1 to unlock a locked worktree; prints one 
       echo "keep  $WT [$BR]: $UNMERGED commit(s) not on origin/main, PR ${STATE:-none}; merge or close it first"; return 1
     fi
   fi
-  # Copy back the worktree's own gitignored files and symlinks; a link worktree-guard.cjs made (pointing at the
-  # same path in the main checkout) is skipped. Copies never clobber (cp -n), and every
+  # Copy back the worktree's own gitignored files and symlinks; a package link worktree-guard.cjs made (to the
+  # worktree's clone, or an older one to the same path in the main checkout) is skipped. Copies never clobber (cp -n), and every
   # file is compared after the copy, so a concurrent cleanup that wrote the same path first shows up as a
   # difference, not a loss.
   while IFS= read -r -d '' f; do
@@ -63,7 +67,9 @@ finish() { # $1 = worktree path, $2 = 1 to unlock a locked worktree; prints one 
     # .claude/ (settings, hooks) never flows back: a worktree's settings.local.json must not reach the main checkout.
     case "/$f" in */.claude/*|*/.DS_Store|*/._*|*/node_modules/*|*/dist/*|*/dist-pages/*|*/_site/*|*/build/*|*/.cache/*|\
       */.react-router/*|*/.vite/*|*/.stryker-tmp*|*/reports/mutation/*|*.log|*.map) continue;; esac
-    [ -L "$WT/$f" ] && [ "$(readlink "$WT/$f")" = "$MAIN/$f" ] && continue
+    if [ -L "$WT/$f" ]; then
+      case "$(readlink "$WT/$f")" in "$MAIN/$f"|"$CLONES/$f") continue;; esac
+    fi
     [ -f "$WT/$f" ] || [ -L "$WT/$f" ] || continue
     if [ ! -e "$MAIN/$f" ] && [ ! -L "$MAIN/$f" ]; then
       { [[ "$f" != */* ]] || mkdir -p "$MAIN/${f%/*}"; } && cp -pPn "$WT/$f" "$MAIN/$f" || { echo "keep  $WT [$BR]: copying $f back failed"; return 1; }
@@ -80,13 +86,19 @@ finish() { # $1 = worktree path, $2 = 1 to unlock a locked worktree; prints one 
     return 1
   fi
   local WASLOCKED=""; [ -e "$(git -C "$WT" rev-parse --absolute-git-dir)/locked" ] && WASLOCKED=1
-  # Links made by worktree-guard.cjs point into the main checkout; remove only the links, never their targets.
-  find "$WT" -type l -lname "$MAIN/*" -delete
+  # Remove the package links worktree-guard.cjs made: only those paths, only when they point at the worktree's
+  # clones or (older ones) the main checkout, and only the link (no trailing slash). Never delete links broadly:
+  # a tracked link is the work itself.
+  for rel in $PACKAGE_DIRS; do
+    [ -L "$WT/$rel" ] || continue
+    case "$(readlink "$WT/$rel")" in "$MAIN/$rel"|"$CLONES/$rel") rm -f "$WT/$rel";; esac
+  done
   git -C "$MAIN" worktree unlock "$WT" 2>/dev/null
   if ! git -C "$MAIN" worktree remove "$WT"; then
     [ -z "$WASLOCKED" ] || git -C "$MAIN" worktree lock --reason "session worktree (re-locked by worktree-done)" "$WT" 2>/dev/null
     echo "keep  $WT [$BR]: git refused to remove it"; return 1
   fi
+  case "$CLONES" in */claude-worktree-packages/?*) rm -rf "$CLONES";; esac
   [ "$BR" = HEAD ] || git -C "$MAIN" branch -q -D "$BR"
   echo "done  $WT [$BR]"
 }

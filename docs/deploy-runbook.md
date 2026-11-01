@@ -42,7 +42,7 @@ Full manual deploy (widget + Shopify extensions + backend):
   cd "${TMPDIR:-/tmp}/deploy-checkout"
   [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || { echo "REFUSED: HEAD is not origin/main" >&2; exit 1; }
   ln -s "$MAIN/.env" .env   # a link to the secrets, never a copy
-  npm ci                    # its own packages: never link node_modules here (npm ci through a link empties the main checkout's)
+  npm ci                    # its own packages, never a link to the main checkout's (npm ci through one empties them)
 ) && cd "${TMPDIR:-/tmp}/deploy-checkout" || echo "STOP: step 0 failed; do not run the steps below"
 #    When done: cd back, `git worktree remove --force "${TMPDIR:-/tmp}/deploy-checkout"` (--force: the build output).
 

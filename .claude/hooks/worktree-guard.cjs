@@ -1,10 +1,8 @@
 #!/usr/bin/env node
 // Worktree + PR workflow guard (Brad 2026-10-31: worktrees are fine "so long as everything is properly
 // committed, PRs, pushed"). One script, dispatched on the hook event:
-//   PreToolUse Bash               in a session worktree: symlink the main checkout's node_modules folders in, so
-//                                 tools resolve their packages (fs checks only; nothing shared is written), and
-//                                 refuse an npm install there while a link stands (it would rewrite the main
-//                                 checkout's packages).
+//   PreToolUse Bash               in a session worktree: link in its own clone of each of the main checkout's
+//                                 node_modules folders, so tools resolve their packages (nothing shared is written).
 //   PreToolUse Edit|Write|...     deny edits to the main checkout's tracked (or new, trackable) files: every change
 //                                 happens in the session's own worktree. Untracked gitignored outputs are allowed.
 //                                 Bash writes (sed -i, >, cp) are NOT covered.
@@ -17,11 +15,26 @@
 // in this repo today). Fails open on any git or gh error: the GitHub watches (stranded-branch-watch,
 // stale-pr-watch) are the backstop. CommonJS (.cjs): the root package.json sets "type": "module" (see
 // tests/git-push-guard.test.ts). Ported from claude_business's worktree-guard.js; edit both. Roadmap-only, so
-// far: the main checkout found from this file's place, .claude/ never writable there, and the npm refusal.
+// far: the main checkout found from this file's place, .claude/ never writable there, a random temp suffix and the
+// dropped self-links in a clone, and a non-macOS cache path and copy.
 // Workflow: docs/git-workflow.md.
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+
+// Each worktree's package clones (linkPackages below), outside the repo: one folder per worktree, keyed by its
+// full real path (lowercased: the Mac disk ignores case), so two checkouts with the same folder names never share
+// or delete each other's clones. tools/worktree-new.sh and worktree-done.sh get the same folder from
+// `--pkg-cache-dir <worktree>`. Off macOS (Linux CI runs the tests): $XDG_CACHE_HOME or ~/.cache.
+const PKG_CACHE = path.join(process.platform === 'darwin' ? path.join(process.env.HOME || '/tmp', 'Library', 'Caches')
+  : (process.env.XDG_CACHE_HOME || path.join(process.env.HOME || '/tmp', '.cache')), 'claude-worktree-packages');
+const pkgCacheDir = (wt) => path.join(PKG_CACHE, `${path.basename(wt)}-${require('crypto').createHash('sha1')
+  .update(wt.toLowerCase()).digest('hex').slice(0, 12)}`);
+if (process.argv[2] === '--pkg-cache-dir') {
+  if (!process.argv[3]) process.exit(1);
+  process.stdout.write(pkgCacheDir(fs.realpathSync.native(process.argv[3])) + '\n');
+  process.exit(0);
+}
 
 let input;
 try { input = JSON.parse(fs.readFileSync(0, 'utf8')); } catch { process.exit(0); }
@@ -67,56 +80,57 @@ const landing = (dir) => ({
   ahead: () => git(dir, ['rev-list', '--count', 'origin/main..HEAD']),
 });
 
-// Link the main checkout's installed packages into this worktree so tools resolve them. Only these folders: the
-// tracked .gitignore rule `node_modules` (no trailing slash) matches a symlink too, so a link can never show as
-// untracked or be committed, and nothing shared (like .git/info/exclude) is ever written. Other gitignored inputs
-// (.env, health-roadmap.json) are NOT mirrored: work that needs them reads them from the main checkout
-// (docs/git-workflow.md). Same design as claude_business's worktree-guard.js.
+// Give this worktree its own copy of the main checkout's installed packages so tools resolve them. Each folder
+// is a clone kept OUTSIDE the repo in PKG_CACHE (macOS: an APFS clone, `cp -c`, copy-on-write, almost no disk;
+// elsewhere, as on Linux CI: `cp -a`, a reflink where the disk has them), and the worktree gets a link to its
+// clone. Never a link to the main checkout's folder: `npm ci`, `rm -rf node_modules/` or any script run through
+// such a link rewrote the main checkout's packages (2026-11-01), and no command filter catches every route. A
+// worktree's install now touches only its clone. Only these folders: the tracked .gitignore rule `node_modules`
+// (no trailing slash) matches a link too, so it never shows as untracked, and nothing shared (like
+// .git/info/exclude) is written. Other gitignored inputs (.env, health-roadmap.json) are NOT mirrored: read them
+// from the main checkout (docs/git-workflow.md). tools/worktree-done.sh deletes the worktree's clones.
+// Same design as claude_business's worktree-guard.js (its PR 33).
 const PACKAGE_DIRS = ['node_modules', 'widget-src/node_modules', 'packages/health-core/node_modules'];
 function linkPackages() {
+  const mine = pkgCacheDir(top);
   for (const rel of PACKAGE_DIRS) {
-    const src = path.join(main, rel), dst = path.join(top, rel);
-    try { fs.lstatSync(dst); continue; } catch { /* absent: link it */ }
-    try { if (fs.existsSync(src) && fs.existsSync(path.dirname(dst))) fs.symlinkSync(src, dst, 'dir'); } catch { /* raced: skip */ }
+    const src = path.join(main, rel), dst = path.join(top, rel), clone = path.join(mine, rel);
+    let st = null;
+    try { st = fs.lstatSync(dst); } catch { /* absent */ }
+    if (st && !st.isSymbolicLink()) continue; // the worktree's own real folder
+    if (st) {
+      let to;
+      try { to = fs.readlinkSync(dst); } catch { continue; } // changed under us: leave it this call
+      if (to === clone && fs.existsSync(clone)) continue;
+      // Ours with the clone deleted (`rm -rf node_modules/`), or an old link into the main checkout: replace the
+      // link only. Anyone else's link is left alone.
+      if (!to.startsWith(PKG_CACHE + path.sep) && path.resolve(path.dirname(dst), to) !== src) continue;
+      try { fs.unlinkSync(dst); } catch { continue; }
+    }
+    // Each hook clones into its own temp folder, then renames it into place: the rename is atomic and refuses a
+    // folder already there, so parallel Bash calls (each fires this hook) never share or leave half a clone.
+    const tmp = `${clone}.tmp-${process.pid}-${require('crypto').randomBytes(4).toString('hex')}`;
+    try {
+      if (!fs.existsSync(src) || !fs.existsSync(path.dirname(dst))) continue;
+      if (!fs.existsSync(clone)) {
+        fs.mkdirSync(path.dirname(clone), { recursive: true });
+        // Owner record: SessionStart deletes a cache folder whose worktree is gone (removed without worktree-done).
+        fs.writeFileSync(path.join(mine, '.owner'), top);
+        const copy = (args) => execFileSync('cp', [...args, src, tmp], { stdio: 'ignore', timeout: 240000 });
+        if (process.platform === 'darwin') copy(['-cR']);
+        else try { copy(['-a', '--reflink=auto']); } catch { fs.rmSync(tmp, { recursive: true, force: true }); copy(['-a']); }
+        // A link back into the main checkout (main's stray `node_modules/node_modules` self-links, left by an old
+        // `ln -s`) would load a second React from there: drop it, so the clone resolves only inside itself.
+        execFileSync('find', [tmp, '-type', 'l', '-lname', main + '/*', '-delete'], { stdio: 'ignore', timeout: 60000 });
+        try { fs.renameSync(tmp, clone); } catch { /* raced: theirs wins */ }
+      }
+      fs.symlinkSync(clone, dst, 'dir');
+    } catch { /* clone failed or raced: no link; tools fail to resolve until the next call */ }
+    try { fs.rmSync(tmp, { recursive: true, force: true }); } catch { /* nothing to remove */ }
   }
-}
-// npm commands that rewrite node_modules. Run through a link, they rewrite the MAIN checkout's packages: `npm ci`
-// deletes the folder's contents first, so every other session loses its packages (reproduced 2026-11-01; the
-// 2026-10-14 gotcha in docs/reference.md). Not in claude_business's guard.
-const NPM_WRITES = new Set(['ci', 'install', 'i', 'in', 'ins', 'inst', 'insta', 'instal', 'isnt', 'isnta', 'isntal',
-  'isntall', 'add', 'uninstall', 'unlink', 'un', 'remove', 'rm', 'r', 'update', 'up', 'upgrade', 'udpate', 'prune',
-  'dedupe', 'ddp', 'rebuild', 'rb', 'link', 'ln', 'clean-install', 'install-clean', 'ic', 'isntall-clean',
-  'install-test', 'it', 'install-ci-test', 'cit', 'clean-install-test', 'sit']);
-const NPM_VALUE_OPTS = new Set(['--prefix', '-C', '--workspace', '-w', '--cache', '--registry', '--userconfig', '--loglevel']);
-// The npm subcommand of each simple command (words split on whitespace, quotes dropped; ; & | ( ) ` and newlines
-// separate commands), so `cd widget-src && npm ci` and `npm --prefix widget-src i` are caught.
-function npmWrite(cmd) {
-  for (const seg of cmd.replace(/["']/g, '').split(/[;&|()`\n]/)) {
-    const w = seg.trim().split(/\s+/);
-    let i = w.findIndex((t) => t === 'npm' || t.endsWith('/npm'));
-    if (i < 0) continue;
-    for (i++; i < w.length && w[i].startsWith('-'); i++) if (NPM_VALUE_OPTS.has(w[i])) i++;
-    if (NPM_WRITES.has(w[i])) return `npm ${w[i]}`;
-  }
-  return null;
 }
 
-if (event === 'PreToolUse' && input.tool_name === 'Bash') {
-  if (!inWorktree) process.exit(0);
-  const npm = npmWrite((input.tool_input && input.tool_input.command) || '');
-  // An install about to run: link nothing new (the worktree may be getting its own packages); refuse it while a
-  // link is there.
-  if (!npm) { linkPackages(); process.exit(0); }
-  const linked = PACKAGE_DIRS.map((rel) => path.join(top, rel))
-    .filter((p) => { try { return fs.lstatSync(p).isSymbolicLink(); } catch { return false; } });
-  if (!linked.length) process.exit(0);
-  out({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason:
-    `Refused: \`${npm}\` in this worktree would rewrite the MAIN checkout's packages, because ${linked.join(', ')} `
-    + `${linked.length > 1 ? 'are links' : 'is a link'} to them (npm ci empties them first). To install packages of `
-    + `this worktree's own, first remove the link(s) in a command of their own: \`unlink ${linked.join(' && unlink ')}\` `
-    + '(unlink removes only the link, never the main checkout\'s folder; never `rm -r`), then run npm again. '
-    + 'docs/git-workflow.md.' } });
-}
+if (event === 'PreToolUse' && input.tool_name === 'Bash') { if (inWorktree) linkPackages(); process.exit(0); }
 
 if (event === 'PreToolUse') {
   const ti = input.tool_input || {};
@@ -182,6 +196,15 @@ if (event === 'SessionStart') {
       }
     } catch { /* one unreadable worktree must not hide the rest */ }
   }
+  // Delete package clones whose worktree is gone (removed by ExitWorktree, git worktree remove, agent isolation).
+  try {
+    for (const d of fs.readdirSync(PKG_CACHE)) {
+      const dir = path.join(PKG_CACHE, d);
+      let owner = null;
+      try { owner = fs.readFileSync(path.join(dir, '.owner'), 'utf8').trim(); } catch { continue; } // mid-clone or not ours
+      if (owner && !fs.existsSync(path.join(owner, '.git'))) fs.rmSync(dir, { recursive: true, force: true });
+    }
+  } catch { /* no cache yet */ }
   try {
     const mainDirty = git(main, ['status', '--porcelain']).split('\n').filter(Boolean);
     if (mainDirty.length) notes.push(`- main checkout: ${mainDirty.length} uncommitted file(s), e.g. ${mainDirty.slice(0, 5).map((l) => l.slice(3)).join(', ')}`);

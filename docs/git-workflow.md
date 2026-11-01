@@ -22,11 +22,12 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    can never land on `main`. The worktree is locked, so bulk cleanup never removes a live session's.
    (Don't use EnterWorktree with `name`: that makes `worktree-<name>` branches, and both repos use `claude/`.)
    Resuming a thread: EnterWorktree `path` into its existing worktree.
-2. **Work**: edit only inside the worktree. The guard hook links the main checkout's `node_modules`,
-   `widget-src/node_modules` and `packages/health-core/node_modules` in, so tools find their packages. **Never
-   run `npm ci` or `npm install` through those links**: npm empties the folder first, so it empties the main
-   checkout's packages for every session. The hook refuses it. To install packages of the worktree's own,
-   `unlink` the links first (in a command of their own), then run npm. Other gitignored inputs (`.env`,
+2. **Work**: edit only inside the worktree. The guard hook gives the worktree its own copy-on-write clone of the
+   main checkout's `node_modules`, `widget-src/node_modules` and `packages/health-core/node_modules` (kept in
+   `~/Library/Caches/claude-worktree-packages/`, outside the repo, and linked in), so tools find their packages,
+   and `npm ci` or `rm -rf node_modules/` there touches only the clone, never the main checkout (a direct link let
+   it wipe them, 2026-11-01). The first command in a new worktree takes about 10 s; a deleted clone comes back on
+   the next command; cleanup deletes the clones. Other gitignored inputs (`.env`,
    `health-roadmap.json`, exports) are not in a worktree: read them from the main checkout by absolute path, and
    write new outputs in the worktree (cleanup copies them back). Bash writes (`sed -i`, `>`, `cp`) into the main
    checkout are not blocked by the hook: don't.
@@ -47,7 +48,8 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    `bash tools/worktree-done.sh <name>`. It refuses unless everything is pushed and merged (or the PR is closed),
    copies the worktree's own gitignored outputs back into the main checkout (never `.claude/`, the package links,
    or build and cache output; it never overwrites: a differing file keeps the worktree for you to resolve),
-   removes the package links (never their targets), then the worktree and its local branch.
+   removes the package links (only those paths, never another link), the worktree, its package clones and its
+   local branch.
    `bash tools/worktree-done.sh --all` does the same for every unlocked worktree under `.claude/worktrees/` not
    used in the last day, skipping the rest.
 
@@ -59,7 +61,7 @@ it in the final message as still open and why.
 | Check | Where | What it does |
 |---|---|---|
 | Main-checkout edit block | `.claude/hooks/worktree-guard.cjs` (PreToolUse Edit/Write/NotebookEdit) | Denies edits to the main checkout's tracked or new files whatever the session's cwd (symlink- and case-proof; the hook finds the main checkout from its own place); untracked gitignored outputs are allowed, never under `.claude/`; Bash writes are not covered |
-| Package links | same script (PreToolUse Bash) | In a worktree under `.claude/worktrees/`, links the three `node_modules` folders; refuses an npm install while a link stands |
+| Package clones | same script (PreToolUse Bash, SessionStart) | In a worktree under `.claude/worktrees/`, links each `node_modules` folder to the worktree's own clone outside the repo; replaces an old link into the main checkout (the link only); SessionStart deletes clones whose worktree is gone. `node .claude/hooks/worktree-guard.cjs --pkg-cache-dir <worktree>` prints a worktree's clone folder |
 | Turn-end landing check | same script (Stop) | Blocks once while the worktree has uncommitted, unpushed, or un-PR'd work; fails open if `gh` is missing |
 | Session-start audit | same script (SessionStart) | Lists local worktrees with unlanded work and uncommitted files in the main checkout |
 | Push guard | `.claude/hooks/git-push-guard.cjs` | No force pushes or deletes; a `claude/` branch never pushes to `main` (that is the PR's job); a push to `main` is refused while `origin/main` is ahead; `gh pr merge` only as `--merge --match-head-commit <sha>` |
@@ -104,10 +106,16 @@ and `tests/write-gate.test.ts`, all in `test:all`. The same hooks live in claude
 - **`shopify app deploy` refuses while any worktree sits inside the repo** ("only one web configuration file
   with the backend role"): it scans the tree and finds each worktree's `shopify.web.toml`. CI is unaffected. A
   manual release runs from a detached checkout of `origin/main` outside the repo (docs/deploy-runbook.md step 0).
-- **Vite and the package links**: Vite resolves a linked `node_modules` to its real path in the main checkout
-  and refuses a `?raw` import from outside its root ("Denied ID", `widget-src/src/upload-entry.test.ts`).
+- **Live worktrees made before this change** hold links straight into the main checkout. The hook swaps each
+  for a clone on the worktree's next Bash call (removing the link only), once the PR is merged and the session
+  restarts (hooks load at session start).
+- **Never delete symlinks broadly** (`find -type l -delete`): a tracked link is the work itself (claude_business's
+  `docs/products.md`). Cleanup removes only the three package paths, and only when they point at the clones or
+  the main checkout.
+- **Vite and the package links**: Vite resolves a linked `node_modules` to its real path (the clone, outside the
+  worktree) and refuses a `?raw` import from outside its root ("Denied ID", `widget-src/src/upload-entry.test.ts`).
   `vitest.config.ts` allows that real folder (`server.fs.allow`).
-- Only worktrees under `.claude/worktrees/` get the package links. Older ones elsewhere (`../roadmap-*`) need
+- Only worktrees under `.claude/worktrees/` get the package clones. Older ones elsewhere (`../roadmap-*`) need
   `npm ci`; the Stop and SessionStart checks still cover them.
 - In a session moved into a worktree, the harness may refuse a complex Bash command that runs git against
   another checkout, or names git twice. Use one git call per command, run from the worktree; a helper script
