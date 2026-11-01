@@ -333,7 +333,8 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
 /**
  * The tests US-21 AC19 added. The extraction prompt does not suggest their
  * keys until the #166 Haiku benchmark: a prompt change waits for it. The
- * catalogue still resolves whatever name the model returns.
+ * catalogue still resolves whatever name the model returns. (The two cortisol
+ * timings left this list on Brad's call, US-07 AC10.)
  */
 export const PROMPT_DEFERRED_KEYS: ReadonlySet<string> = new Set([
   'egfr_cystatin', 'egfr_combined', 'anion_gap', 'osmolality_serum', 'bilirubin_indirect', 'lipase', 'amylase', 'rdw_sd',
@@ -647,10 +648,12 @@ const ENTRY_BY_NAME: ReadonlyMap<string, LabCatalogEntry> = (() => {
  * Brad 2026-11-02): "A.M." and "P.M." lose their dots, and hyphens, dashes,
  * brackets, commas, colons and slashes become spaces. "Cortisol, A.M.",
  * "cortisol(am)" and "Cortisol - PM" all fold to the words of a listed name.
- * Lookup only: a slot key is still `foldName`, so no uncatalogued row moves.
+ * Only a name the exact fold misses is tried, so no name that resolved before
+ * moves; a stored row in a punctuated spelling now reads under its entry, as
+ * `labSlotKey` resolves it (a non-SI unit is corrected on load by `migrate.ts`).
  */
 function looseFold(name: string): string {
-  return foldName(name).replace(/\b([ap])\.\s?m\.?(?![a-z])/g, '$1m').replace(/[-–—(),:/]+/g, ' ').replace(/\s+/g, ' ').trim();
+  return foldName(name).replace(/\b([ap])\.\s?m\.?(?![a-z])/g, '$1m').replace(/[-‐‑–—−(),:/]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 /**

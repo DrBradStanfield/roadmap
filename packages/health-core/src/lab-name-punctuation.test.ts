@@ -5,6 +5,7 @@ import { AMBIGUOUS_LOOSE_NAMES, LAB_CATALOG, foldName, labSlotKey, resolveLabCat
 import { appendLabValue } from './record-edits';
 import { createEmptyFile, type FileLabValue, type RoadmapFile } from './roadmap-file';
 import { mergeFiles } from './merge';
+import { migrateFile } from './migrate';
 
 const NOW = '2026-11-02T09:00:00Z';
 const empty = (): RoadmapFile => createEmptyFile({ deviceId: 'test-device', now: NOW });
@@ -82,5 +83,24 @@ describe('US-07 AC10: punctuated spellings of other catalogued tests', () => {
   it('an unknown test keeps its own printed slot and unit', () => {
     const { row } = saved(empty(), 'Salivary Cortisol, Late-Night', 3.1, 'nmol/L');
     expect(row).toMatchObject({ metricName: 'salivary cortisol, late-night', unit: 'nmol/L', value: 3.1 });
+  });
+
+  it.each(['Cortisol \u2010 PM', 'Cortisol \u2011 PM', 'Cortisol \u2212 PM'])('"%s" (a PDF hyphen or minus) counts as a dash', (printed) => {
+    expect(labSlotKey(printed)).toBe('cortisol_pm');
+  });
+
+  it('a row stored earlier as "Cortisol, A.M." in µg/dL loads as a converted cortisol_am row; the original is kept, flipped', () => {
+    const raw = JSON.parse(JSON.stringify(empty()));
+    raw.labValues = [{
+      id: 'old-1', metricName: 'Cortisol, A.M.', value: 10, unit: 'µg/dL', recordedAt: '2026-06-01',
+      createdAt: '2026-06-01T08:00:00Z', status: 'active', source: 'lab_import',
+    }];
+    const file = migrateFile(raw, { deviceId: 'test-device', now: NOW });
+    const original = file.labValues.find((r) => r.id === 'old-1');
+    const converted = file.labValues.find((r) => r.id === 'old-1#si');
+    expect(original?.status).toBe('entered-in-error');
+    expect(converted).toMatchObject({ status: 'active', unit: 'nmol/L', correctsId: 'old-1' });
+    expect(converted?.value).toBeCloseTo(275.9, 1);
+    expect(labSlotKey(converted!.metricName)).toBe('cortisol_am');
   });
 });
