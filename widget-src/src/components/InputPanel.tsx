@@ -1,4 +1,5 @@
 import { profileTitle } from '../lib/profile-title';
+import { SectionIcon } from './icons';
 import { Fragment, useState, useEffect, useLayoutEffect, useRef, type MutableRefObject, type ReactNode } from 'react';
 import { ColumnHeader } from './ColumnHeader';
 import { InfoTooltip } from './InfoTooltip';
@@ -1169,7 +1170,7 @@ export function InputPanel({
             className={`health-section-title${canCollapse ? ' health-section-title--collapsible' : ''}`}
             onClick={canCollapse ? () => setPrefillExpanded(!prefillExpanded) : undefined}
           >
-            {profileTitle(aboutYouLow)}
+            <SectionIcon section="aboutYou"/>{profileTitle(aboutYouLow)}
             {canCollapse && (
               <span className={`collapse-chevron${prefillExpanded ? ' expanded' : ''}`}>{'\u25B8'}</span>
             )}
@@ -1275,7 +1276,7 @@ export function InputPanel({
     const bpLabel = bpData ? `${bpShown} · ${formatShortDate(bpData.latestDate)}` : null;
     return (
       <section className="health-section">
-        <h3 className="health-section-title">Vitals</h3>
+        <h3 className="health-section-title"><SectionIcon section="vitals"/>Vitals</h3>
         {BASIC_LONGITUDINAL_FIELDS.filter(cfg => !(weightInProfile && cfg === WEIGHT_FIELD)).map(renderVital)}
 
         {hasBpPreviousData && !bpExpanded && bpData ? (
@@ -1550,7 +1551,7 @@ export function InputPanel({
             return (
               <div className="section-card">
                 <section className="health-section">
-                  <h3 className="health-section-title">{MEDICATION_TEXT.lipidTitle}</h3>
+                  <h3 className="health-section-title"><SectionIcon section="medications"/>{MEDICATION_TEXT.lipidTitle}</h3>
                   <p className="health-section-desc">{neutral}</p>
                   {statinDropdown}
                   {ezetimibeDropdown}
@@ -1572,7 +1573,7 @@ export function InputPanel({
           return (
             <div className="section-card">
             <section className="health-section medication-cascade">
-              <h3 className="health-section-title">{MEDICATION_TEXT.lipidTitle}</h3>
+              <h3 className="health-section-title"><SectionIcon section="medications"/>{MEDICATION_TEXT.lipidTitle}</h3>
               <p className="health-section-desc">
                 {/* It recommends only while the plan shows a step's card: with every
                     step answered the marker stays elevated and the plan shows none. */}
@@ -1726,7 +1727,7 @@ export function InputPanel({
           return (
             <div className="section-card">
               <section className="health-section">
-                <h3 className="health-section-title">{MEDICATION_TEXT.weightTitle}</h3>
+                <h3 className="health-section-title"><SectionIcon section="medications"/>{MEDICATION_TEXT.weightTitle}</h3>
                 <p className="health-section-desc">{neutral}</p>
                 {glp1Dropdown}
                 {sglt2iDropdown}
@@ -1745,7 +1746,7 @@ export function InputPanel({
         return (
           <div className="section-card">
           <section className="health-section medication-cascade">
-            <h3 className="health-section-title">{MEDICATION_TEXT.weightTitle}</h3>
+            <h3 className="health-section-title"><SectionIcon section="medications"/>{MEDICATION_TEXT.weightTitle}</h3>
             <p className="health-section-desc">
               {/* It recommends only while the plan shows a step's card: with every
                   step answered the trigger stays on and the plan shows none. */}
@@ -1854,7 +1855,7 @@ export function InputPanel({
         return (
           <div className="section-card">
           <section className="health-section screening-cascade">
-            <h3 className="health-section-title">{SCREENING_TEXT.title}</h3>
+            <h3 className="health-section-title"><SectionIcon section="screening"/>{SCREENING_TEXT.title}</h3>
             <p className="health-section-desc">
               {SCREENING_TEXT.intro}
             </p>
@@ -2159,7 +2160,7 @@ export function InputPanel({
         return (
           <div className="section-card">
           <section className="health-section screening-cascade">
-            <h3 className="health-section-title">{SCREENING_TEXT.boneTitle}</h3>
+            <h3 className="health-section-title"><SectionIcon section="screening"/>{SCREENING_TEXT.boneTitle}</h3>
             <p className="health-section-desc">
               {SCREENING_TEXT.boneIntro}
             </p>
@@ -2275,7 +2276,7 @@ export function InputPanel({
     return (
       <div className="section-card">
         <section className="health-section">
-          <h3 className="health-section-title">{SUPPLEMENT_TEXT.title}</h3>
+          <h3 className="health-section-title"><SectionIcon section="supplements"/>{SUPPLEMENT_TEXT.title}</h3>
           <p className="health-section-desc">{SUPPLEMENT_TEXT.intro}</p>
 
           {/* Featured supplement chips */}

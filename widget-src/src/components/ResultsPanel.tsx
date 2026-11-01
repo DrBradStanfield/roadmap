@@ -18,6 +18,7 @@ import { ColumnHeader } from './ColumnHeader';
 import { GuideLink } from './GuideLink';
 import { FeedbackForm } from './FeedbackForm';
 import { alcoholDismiss, type AlcoholQuestion } from './AlcoholQuestion';
+import { CategoryIcon } from './icons';
 import { getMarketCountry } from '../lib/market-country';
 import { observeVisibility } from '../lib/observe-visibility';
 interface ResultsPanelProps {
@@ -156,9 +157,12 @@ function SuggestionCard({ suggestion, highlighted, fadingOut, alcoholQuestion, u
     <div className={`suggestion-card ${priorityColors[suggestion.priority]}${isSupplementCard ? ' supplement-card' : ''}${isSkinCard ? ' skin-card' : ''}${highlightClass}${hasEvidence ? ' suggestion-card-clickable' : ''}`}>
       {!isSpecialCard && (
         <div className="suggestion-header">
-          <span className={`suggestion-badge ${priorityColors[suggestion.priority]}`}>
-            {suggestion.priority === 'urgent' && '⚠️ '}
-            {suggestion.category.replace(/_/g, ' ')}
+          <span className="suggestion-header-lead">
+            <CategoryIcon category={suggestion.category}/>
+            <span className={`suggestion-badge ${priorityColors[suggestion.priority]}`}>
+              {suggestion.priority === 'urgent' && '⚠️ '}
+              {suggestion.category.replace(/_/g, ' ')}
+            </span>
           </span>
           {alcoholDismiss(suggestion, alcoholQuestion)}
         </div>
@@ -223,9 +227,12 @@ function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds, alcoholQues
   return (
     <div className={`suggestion-card grouped-card ${priorityColors[highestPriority]}`}>
       <div className="suggestion-header">
-        <span className={`suggestion-badge ${priorityColors[highestPriority]}`}>
-          {highestPriority === 'urgent' && '⚠️ '}
-          {category.replace(/_/g, ' ')}
+        <span className="suggestion-header-lead">
+          <CategoryIcon category={category}/>
+          <span className={`suggestion-badge ${priorityColors[highestPriority]}`}>
+            {highestPriority === 'urgent' && '⚠️ '}
+            {category.replace(/_/g, ' ')}
+          </span>
         </span>
       </div>
       <div className="grouped-subsections">

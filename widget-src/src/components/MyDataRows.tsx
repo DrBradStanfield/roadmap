@@ -23,6 +23,7 @@ import { formatLabValue, statusOf, type Status } from '../lib/blood-test-cell';
 import { monthYear, pressureReadings, readingsOf, recentTrend, type DayReading } from '../lib/my-data-rows';
 import { groupLabValues } from '../lib/lab-rows';
 import { bpStatus, simpleStatus } from './StartingInfoVitals';
+import { SectionIcon, type SectionKey } from './icons';
 import type { ApiLabValue } from '../lib/api-types';
 
 /** What a row opens: a core metric, the blood pressure, or a lab test's series (`labSlotKey`). */
@@ -221,10 +222,10 @@ function MetricRow({ row, onOpen }: { row: RowModel; onOpen: (subject: ValueSubj
   );
 }
 
-function RowSection({ title, rows, onOpen, children }: { title: string; rows: RowModel[]; onOpen: (s: ValueSubject) => void; children?: React.ReactNode }) {
+function RowSection({ title, icon, rows, onOpen, children }: { title: string; icon: SectionKey; rows: RowModel[]; onOpen: (s: ValueSubject) => void; children?: React.ReactNode }) {
   return (
     <section className="md-section" aria-label={title}>
-      <h3 className="health-section-title md-section-title">{title}</h3>
+      <h3 className="health-section-title md-section-title"><SectionIcon section={icon}/>{title}</h3>
       <ul className="md-rows">
         {rows.map(row => <MetricRow key={row.subject.kind === 'lab' ? row.subject.seriesKey : row.subject.kind === 'bp' ? 'bp' : row.subject.metric} row={row} onOpen={onOpen}/>)}
       </ul>
@@ -236,7 +237,7 @@ function RowSection({ title, rows, onOpen, children }: { title: string; rows: Ro
 export function VitalsRows({ history, ctx, onOpen, withoutWeight }: { history: ApiMeasurement[]; ctx: RowContext; onOpen: (s: ValueSubject) => void; withoutWeight?: boolean }) {
   // The weight asked beside the height shows there alone (US-62 AC13).
   const rows = [...(withoutWeight ? [] : [coreRow('weight', history, ctx)]), coreRow('waist', history, ctx), pressureRow(history, ctx)];
-  return <RowSection title="Vitals" rows={rows} onOpen={onOpen}/>;
+  return <RowSection title="Vitals" icon="vitals" rows={rows} onOpen={onOpen}/>;
 }
 
 export function BloodTestRows({ history, labValues, ctx, onOpen, children }: {
@@ -244,5 +245,5 @@ export function BloodTestRows({ history, labValues, ctx, onOpen, children }: {
 }) {
   const labs = useMemo(() => labRows(labValues), [labValues]);
   const rows = [...BLOOD_ROWS.map(m => coreRow(m, history, ctx)), ...labs];
-  return <RowSection title="Blood tests" rows={rows} onOpen={onOpen}>{children}</RowSection>;
+  return <RowSection title="Blood tests" icon="bloodTests" rows={rows} onOpen={onOpen}>{children}</RowSection>;
 }

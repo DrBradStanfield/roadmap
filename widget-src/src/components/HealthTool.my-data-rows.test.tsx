@@ -158,6 +158,31 @@ describe('US-62 AC8: one row per value on a phone', () => {
   });
 });
 
+describe('US-62 AC15: the iPhone\'s symbols', () => {
+  it('each section title carries its tinted symbol, and each plan card its category square, hidden from screen readers', async () => {
+    await seed();
+    const view = await renderTool();
+    const panel = view.container.querySelector<HTMLElement>('.health-input-panel')!;
+    for (const [title, icon] of [['Vitals', 'heart'], ['Blood tests', 'drop'], [/^About you/, 'person']] as const) {
+      const heading = within(panel).getByRole('heading', { name: title }); // the symbol adds nothing to the name
+      const symbol = heading.querySelector<HTMLElement>('.section-icon')!;
+      expect(symbol.dataset.icon).toBe(icon);
+      expect(symbol.getAttribute('aria-hidden')).toBe('true');
+      expect(symbol.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+    }
+    const squares = await waitFor(() => {
+      const found = Array.from(view.container.querySelectorAll<HTMLElement>('.suggestion-card .category-icon'));
+      expect(found.length).toBeGreaterThan(0);
+      return found;
+    });
+    for (const square of squares) {
+      expect(square.getAttribute('aria-hidden')).toBe('true');
+      expect(square.querySelector('svg')).not.toBeNull();
+      expect(square.textContent).toBe('');
+    }
+  });
+});
+
 describe('US-62 AC10: the value page', () => {
   it('a tap opens it: the target, the chart, the history newest first; Back returns to the rows', async () => {
     await seed();

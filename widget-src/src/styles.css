@@ -1109,6 +1109,29 @@ input[type="number"] {
   flex-wrap: wrap;
 }
 
+/* US-62 AC15: the iPhone's symbols. A section title's tinted symbol sits
+   before its words; a plan card leads with its category's symbol on a 40px
+   square tinted at 14% (radius 12, as CategoryIcon). */
+.section-icon {
+  display: inline-flex;
+  vertical-align: -3px;
+  margin-right: 8px;
+}
+.suggestion-header-lead {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.category-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
 .suggestion-badge {
   font-size: 11px;
   font-weight: 600;
