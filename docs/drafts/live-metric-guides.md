@@ -34,7 +34,7 @@ Sources read for structure: Apple Support "Monitor your heart rate with Apple Wa
 
 **What it is.** How many times your heart beats each minute (bpm). Apple Watch measures your pulse with light sensors on its back, through the day and during workouts. *(Edited in review 2026-10-31 (narrowed; Apple's pages and Paluch's design).)*
 
-**Why it matters.** Heart rate rises with activity, stress, caffeine, heat, dehydration and illness, and falls as you rest. The pattern over days tells you more than any one reading. A racing or very slow pulse with chest pain, fainting, dizziness or breathlessness needs prompt medical care. *(Superseded 2026-11-01 to fit its sources: "Get emergency care for chest pain, whatever your pulse, or for a racing pulse with fainting, dizziness or breathlessness. A very slow pulse with fainting or dizziness needs prompt medical care." Gulati 2021, NHS 2024, Kusumoto 2019.)*
+**Why it matters.** Heart rate rises with activity, stress, caffeine, heat, dehydration and illness, and falls as you rest. The pattern over days tells you more than any one reading. A racing or very slow pulse with chest pain, fainting, dizziness or breathlessness needs prompt medical care. *(Superseded 2026-11-01 to fit its sources: "Get emergency care for chest pain, whatever your pulse, or for a racing pulse with fainting, dizziness or breathlessness. A very slow pulse with fainting, dizziness or breathlessness needs prompt medical care." Gulati 2021, NHS 2024, Kusumoto 2019.)*
 
 **How to read it.**
 - Compare readings taken at rest with each other, not with readings taken just after moving.

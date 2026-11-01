@@ -280,7 +280,7 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
   heart_rate: {
     title: 'Heart rate',
     whatItIs: 'How many times your heart beats each minute (bpm). Apple Watch measures your pulse with light sensors on its back, through the day and during workouts.',
-    whyItMatters: 'Heart rate rises with activity, stress, caffeine, heat, dehydration and illness, and falls as you rest. The pattern over days tells you more than any one reading. Get emergency care for chest pain, whatever your pulse, or for a racing pulse with fainting, dizziness or breathlessness. A very slow pulse with fainting or dizziness needs prompt medical care.',
+    whyItMatters: 'Heart rate rises with activity, stress, caffeine, heat, dehydration and illness, and falls as you rest. The pattern over days tells you more than any one reading. Get emergency care for chest pain, whatever your pulse, or for a racing pulse with fainting, dizziness or breathlessness. A very slow pulse with fainting, dizziness or breathlessness needs prompt medical care.',
     howTo: { heading: READ, points: [
       'Compare readings taken at rest with each other, not with readings taken just after moving.',
       'Wear the watch so it fits well. A good fit helps the reading.',

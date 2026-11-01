@@ -303,11 +303,11 @@ describe('METRIC_GUIDES (US-58)', () => {
   });
 
   it('AC7: the heart rate safety lines are the ones roadmap_text.html cites, each to its source (Brad 2026-11-01)', () => {
-    const lines = 'Get emergency care for chest pain, whatever your pulse, or for a racing pulse with fainting, dizziness or breathlessness. A very slow pulse with fainting or dizziness needs prompt medical care.';
+    const lines = 'Get emergency care for chest pain, whatever your pulse, or for a racing pulse with fainting, dizziness or breathlessness. A very slow pulse with fainting, dizziness or breathlessness needs prompt medical care.';
     expect(METRIC_GUIDES.heart_rate.whyItMatters.endsWith(lines)).toBe(true);
-    // Chest pain needs emergency care at any pulse (Gulati); the bradycardia guideline names syncope, presyncope and dizziness, not breathlessness.
-    expect(METRIC_GUIDES.heart_rate.whyItMatters).not.toMatch(/slow pulse with [^.]*breathlessness/);
-    expect(FILES.html).toContain('Get emergency care for chest pain, whatever your pulse [133], or for a racing pulse with fainting, dizziness or breathlessness [134]. A very slow pulse with fainting or dizziness needs prompt medical care [135].');
+    // Chest pain needs emergency care at any pulse (Gulati), never only with a racing pulse (Codex R1).
+    expect(METRIC_GUIDES.heart_rate.whyItMatters).not.toMatch(/racing pulse with chest pain/);
+    expect(FILES.html).toContain('Get emergency care for chest pain, whatever your pulse [133], or for a racing pulse with fainting, dizziness or breathlessness [134]. A very slow pulse with fainting, dizziness or breathlessness needs prompt medical care [135].');
     expect(numberOf('https://doi.org/10.1161/CIR.0000000000001029')).toBe(133);
     expect(numberOf('https://www.nhs.uk/conditions/arrhythmia/')).toBe(134);
     expect(numberOf('https://doi.org/10.1161/CIR.0000000000000628')).toBe(135);
