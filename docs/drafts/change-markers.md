@@ -53,7 +53,7 @@ Every question below is answered; this list overrides anything else in the draft
 - **F12** go ahead: reword the permission text and the App Store privacy answers.
 - **F13** anchor periods at 90 days from their first change.
 
-The stories are in `docs/user-stories.md`: Story 0 as US-06 AC4b, Story A as **US-67**,
+The stories are in `docs/user-stories.md`: Story 0 as US-06 AC4b, Story A as **US-67** (landing with its build, PR #573),
 Story B as **US-68**, Story C as **US-69** (US-66 is claimed by two open drafts).
 
 ## 1. Why build it
