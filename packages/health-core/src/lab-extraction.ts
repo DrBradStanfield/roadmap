@@ -625,6 +625,19 @@ function readableRows<T extends z.ZodTypeAny>(schema: T, rows: unknown[], unread
   });
 }
 
+const isCoreRow = (row: { metric: string }) => VALID_METRICS.includes(row.metric as MetricType);
+
+/** US-12 AC11a: a core row naming no core key, as a lab row under that name,
+ *  which AC11 promotes when it resolves. A blank name is neither, so it is
+ *  dropped as unread (AC19), unnamed, and counted. A core row stays put. */
+function asLabRow(row: z.output<typeof coreValueRow>, unread: UnreadLabValue[]): Array<z.output<typeof additionalValueRow>> {
+  if (isCoreRow(row)) return [];
+  const name = row.metric.trim();
+  if (name) return [{ name, value: row.value, unit: row.unit, recordedAt: row.recordedAt, printedMonth: row.printedMonth }];
+  unread.push(unreadValue(row));
+  return [];
+}
+
 /** Parses the file's shape, then each value row on its own (US-12 AC8): a row
  *  whose value isn't a readable number, or that is otherwise malformed, is
  *  dropped rather than failing the whole file, and counted in
@@ -632,8 +645,11 @@ function readableRows<T extends z.ZodTypeAny>(schema: T, rows: unknown[], unread
 export function parseUnifiedResult(raw: unknown) {
   const parsed = unifiedResultSchema.parse(raw);
   const unreadValues: UnreadLabValue[] = [];
-  const values = readableRows(coreValueRow, parsed.values, unreadValues);
-  const additionalValues = readableRows(additionalValueRow, parsed.additionalValues, unreadValues);
+  const coreRows = readableRows(coreValueRow, parsed.values, unreadValues);
+  const values = coreRows.filter(isCoreRow);
+  // US-12 AC11a: `resolveLabValues` dropped a core row naming no core key unseen.
+  const renamed = coreRows.flatMap(row => asLabRow(row, unreadValues));
+  const additionalValues = [...readableRows(additionalValueRow, parsed.additionalValues, unreadValues), ...renamed];
   const droppedValueCount = parsed.values.length + parsed.additionalValues.length - values.length - additionalValues.length;
   return { ...parsed, values, additionalValues, droppedValueCount, unreadValues };
 }
