@@ -15,10 +15,14 @@
 #   A push by any OTHER actor is also neutralized at once:
 #     1. DISABLE every workflow file the push added/modified
 #     2. CANCEL any runs those workflows started from the same push
-#   Daily scheduled audit: any workflow-file commit on main in the last 26 h
-#   that this push check never ran on (an intermediate commit of a multi-commit
-#   push, or a push that removed this file); the product-health loop's weekly
-#   git-log check is the out-of-band layer.
+#   Daily scheduled audit: any commit on main's first-parent line in the last
+#   26 h that changed workflow files with no successful push check at that sha
+#   (a merge made with GITHUB_TOKEN, which starts no workflow; an intermediate
+#   commit of a multi-commit push; a check that failed before alerting).
+#   Residual, stated (US-46 AC13): a push that edits or deletes THIS file
+#   silences both checks, since a push runs the pushed copy and the schedule
+#   runs main's. Nothing outside this repo's main watches for that; the
+#   product-health loop's weekly git-log review runs with the same identity.
 #
 # Residual (documented, accepted): a same-push-triggered malicious run may
 # execute for a few seconds before cancellation. Only the spend-capped
@@ -48,6 +52,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      # The audit reads main's first-parent history; the push check needs no checkout.
+      - uses: actions/checkout@v5
+        if: github.event_name == 'schedule'
+        with:
+          fetch-depth: 500
       - name: Alert Brad on every workflow-file change; neutralize non-Brad ones
         env:
           GH_TOKEN: ${{ github.token }}
@@ -73,10 +82,17 @@ jobs:
           }
 
           if [ "${EVENT}" = "push" ]; then
-            # The push payload Actions gets carries no per-commit file lists, so
-            # ask the compare API what changed under .github/workflows/.
-            changes=$(gh api "repos/${GITHUB_REPOSITORY}/compare/${BEFORE}...${GITHUB_SHA}" \
-              --jq '[.files[] | select(.filename | startswith(".github/workflows/")) | {filename, status}]')
+            # What changed: the workflow folder's files and blob shas before and
+            # after the push, compared by content. No merge base (a force-push
+            # rollback still shows), no file cap. If the old side cannot be read
+            # (a new branch, a rewritten history), every file counts as changed.
+            listing() { gh api "repos/${GITHUB_REPOSITORY}/contents/.github/workflows?ref=$1" --jq '[.[] | {path, sha}]'; }
+            after=$(listing "${GITHUB_SHA}" || echo '[]')
+            before=$(listing "${BEFORE}" 2>/dev/null || echo '[]')
+            changes=$(jq -n --argjson a "${after}" --argjson b "${before}" '
+              ($b | map({(.path): .sha}) | add // {}) as $old | ($a | map({(.path): .sha}) | add // {}) as $new
+              | [($a[] | select($old[.path] != .sha) | {filename: .path, status: "changed"}),
+                 ($b[] | select($new[.path] == null) | {filename: .path, status: "removed"})]')
             if [ "${ACTOR}" = "DrBradStanfield" ]; then
               # Agents and loops push as this account too: tell Brad, never disable.
               files=$(echo "${changes}" | jq -r '.[].filename')
@@ -115,18 +131,16 @@ jobs:
             exit 0
           fi
 
-          # Scheduled audit: workflow-file commits on main in the last 26 h
-          # that the push check above never ran on successfully (it runs on a
-          # push's head only, and not at all on a push that removed this file). Every
-          # author counts: agents push as DrBradStanfield too.
-          since=$(date -u -d '26 hours ago' +%Y-%m-%dT%H:%M:%SZ)
-          # Only a push check that SUCCEEDED counts as reported; a failed or
-          # cancelled one may never have reached Brad.
+          # Scheduled audit: commits on main's FIRST-PARENT line (what was pushed
+          # or merged onto main, not a PR's own commits) in the last 26 h that
+          # changed workflow files with no SUCCESSFUL push check at that sha.
+          # Every author counts: agents push as DrBradStanfield too.
           checked=$(gh run list -R "${GITHUB_REPOSITORY}" --workflow workflow-integrity.yml --event push \
             --limit 100 --json headSha,conclusion --jq '[.[] | select(.conclusion == "success") | .headSha]')
-          missed=$(gh api "repos/${GITHUB_REPOSITORY}/commits?path=.github/workflows&since=${since}&per_page=100" \
-            | jq --argjson checked "${checked}" '[.[] | select(.sha as $s | $checked | index($s) | not)
-                   | {sha: .sha[0:8], who: (.author.login // .commit.author.name), msg: (.commit.message | split("\n")[0])}]')
+          missed=$(git log --first-parent --since='26 hours ago' --format='%H%x09%an%x09%s' HEAD -- .github/workflows \
+            | jq -R -s --argjson checked "${checked}" '[split("\n")[] | select(length > 0) | split("\t")
+                | select(.[0] as $s | $checked | index($s) | not)
+                | {sha: .[0][0:8], who: .[1], msg: .[2]}]')
           count=$(echo "${missed}" | jq 'length')
           if [ "${count}" -gt 0 ]; then
             alert "daily audit: ${count} workflow-file commit(s) on main in the last 26 h that the push check never ran on:

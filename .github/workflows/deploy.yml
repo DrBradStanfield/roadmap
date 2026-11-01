@@ -32,8 +32,9 @@ on:
         options: [all, fly-only, shopify-only]
         default: all
 # No pull_request trigger (GHSA-v69g-jc5m-3993, 2026-11-02): auto-ship and
-# people deploy by dispatching on main, and the 'production' environment
-# allows main only. The labelled-merge path it replaced was unused.
+# people deploy by dispatching on main. The labelled-merge path it replaced was
+# unused. This file alone cannot keep the secrets on main (a branch runs its own
+# copy): the 'production' environment's deployment-branch rule, main only, does.
 
 # One deploy at a time; later runs queue rather than interleave.
 concurrency:
