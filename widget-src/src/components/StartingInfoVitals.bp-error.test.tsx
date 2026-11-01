@@ -17,7 +17,7 @@ afterEach(() => { cleanup(); localStorage.clear(); });
 function renderVitals(vitalsHistory: ApiMeasurement[] = []) {
   return render(
     <StartingInfoVitals vitalsHistory={vitalsHistory} unitSystem="si"
-      onSave={vi.fn()} onCorrectValue={vi.fn()} onDraftValue={() => {}} formStage={3}
+      onSave={vi.fn()} onCorrectValue={vi.fn()} onDraftValue={() => {}} formStage={4}
       plan={{ age: 50, idealBodyWeight: 73, heightCm: 178 }} unitOverrides={{}} onToggleFieldUnit={() => {}}/>,
   );
 }
@@ -95,7 +95,7 @@ describe('US-02 AC8: a blood pressure the wrong way up is the pair\'s error', ()
     const lent = new Map<string, number | undefined>();
     const view = render(
       <StartingInfoVitals vitalsHistory={[]} unitSystem="si"
-        onSave={vi.fn()} onCorrectValue={vi.fn()} onDraftValue={(field: string, value: number | undefined) => { lent.set(field, value); }} formStage={3}
+        onSave={vi.fn()} onCorrectValue={vi.fn()} onDraftValue={(field: string, value: number | undefined) => { lent.set(field, value); }} formStage={4}
         plan={{ age: 50, idealBodyWeight: 73, heightCm: 178 }} unitOverrides={{}} onToggleFieldUnit={() => {}}/>,
     );
     fireEvent.change(view.getByRole('textbox', { name: 'Systolic blood pressure' }), { target: { value: '80' } });

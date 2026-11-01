@@ -211,15 +211,16 @@ Results use `effectiveInputs` (current form + fallback to previous measurements)
 
 ### Progressive Disclosure
 
-First-time users see fields revealed in 3 stages. Returning users with data see full form immediately. `computeFormStage(inputs, saved)` in `mappings.ts` returns 1–3. Saved values fill the empty fields, and any saved blood-test value means stage 3. The widget and the chatbot embed both call it (US-15 AC10).
+The form is the onboarding (US-62 AC13). `computeFormStage(inputs, saved)` in `mappings.ts` returns the first answer the record lacks, 1–4; saved values fill the empty fields. `opensFullForm(stage, saved, otherRecords)` opens the whole form at stage 4, or at once for a record holding more than the four answers (any saved value but the weight, or a medication, screening, supplement, lab test or document), with the missing questions pinned at the top. The widget and the chatbot embed both call `computeFormStage` (US-15 AC10); the chats unmute at 4. Full table: `health_roadmap_algorithm.md` §10.
 
-| Stage | Gate | Fields shown |
-|-------|------|-------------|
-| 1 | Always | Units, Sex, Height |
-| 2 | Sex + Height filled | Weight, Waist, Blood Pressure, Birth Month (Birth Year is sub-gated by Birth Month being filled) |
-| 3 | Weight filled | Blood Tests, Medications, Screening, Bone Density, Supplements (logged-in) |
+| Stage | Asks | Then shows |
+|-------|------|------------|
+| 1 | Height and weight | The BMI tile |
+| 2 | Sex | Ideal body weight, protein target |
+| 3 | Birth month and year (a year alone passes) | The age-based plan |
+| 4 | Nothing | Vitals, Blood Tests, Medications, Screening, Bone Density, Supplements; the chats |
 
-Pulsing `.field-attention` CSS class highlights the next field to fill. On mobile, tab visibility gated by `formStage`.
+Pulsing `.field-attention` CSS class highlights the next field to fill. Once open on a record the whole form stays open while an answer is retyped; an erase starts the onboarding again.
 
 ## API Endpoints
 
