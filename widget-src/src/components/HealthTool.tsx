@@ -86,7 +86,9 @@ import {
   clearOffFileAfterErase,
   loadLatestMeasurementsSync,
   loadAllHistory,
+  loadAllHistorySync,
   loadLabValues,
+  loadLabValuesSync,
   saveChangedMeasurements,
   addMeasurement,
   correctValue,
@@ -276,14 +278,16 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const setPreviousMeasurements = useCallback((next: ApiMeasurement[]) => setPreviousMeasurementsRaw(prev => (sameRows(prev, next) ? prev : next)), []);
   // Every active measurement, re-read after each save. The blood-test matrix
   // and the vitals matrix (StartingInfoVitals) each read their own metrics.
-  const [history, setHistory] = useState<ApiMeasurement[]>([]);
+  // Read at mount too, with the record, so the phone's rows never show Add
+  // for a saved value while the first load runs (US-62 AC8).
+  const [history, setHistory] = useState<ApiMeasurement[]>(loadAllHistorySync);
   const bloodTestHistory = useMemo(() => history.filter(r => BLOOD_TEST_METRICS.includes(r.metricType)), [history]);
   const vitalsHistory = useMemo(
     () => history.filter(r => VITAL_METRICS.includes(r.metricType)),
     [history],
   );
   const [documentHistory, setDocumentHistory] = useState<ApiDocument[]>([]);
-  const [labValueHistory, setLabValueHistory] = useState<ApiLabValue[]>([]);
+  const [labValueHistory, setLabValueHistory] = useState<ApiLabValue[]>(() => loadLabValuesSync() ?? []);
   const [medications, setMedications] = useState<ApiMedication[]>([]);
   const [screenings, setScreenings] = useState<ApiScreening[]>([]);
   const [supplements, setSupplements] = useState<ApiSupplement[]>([]);
