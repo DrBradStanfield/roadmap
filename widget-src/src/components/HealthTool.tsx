@@ -947,6 +947,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // Mobile tab state
   const isMobile = useIsMobile();
   const isWideDesktop = useIsWideDesktop(1200);
+  const floatingChat = !isMobile && !isWideDesktop && reached === 4;
   const [activeTab, setActiveTab] = useState<TabId>('input');
   const tabIds = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -1548,8 +1549,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       {/* Floating chat FAB + expanded panel — portaled to body so their
           position: fixed doesn't resolve against the transform'd .health-tool. */}
       {/* The chat waits for the onboarding's four answers (US-62 AC13); an
-          open panel stays through an answer retyped, its wording muted. */}
-      {!isMobile && reached === 4 && !floatingChatOpen && createPortal(
+          open panel stays through an answer retyped, its wording muted. Only
+          where no chat is on screen already: the phone has its Chat tab, and
+          from 1200px the chat column shows (US-62 AC14). */}
+      {floatingChat && !floatingChatOpen && createPortal(
         <button
           className="chat-fab no-print"
           onClick={() => setFloatingChatOpen(true)}
@@ -1560,7 +1563,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
         </button>,
         document.body,
       )}
-      {!isMobile && floatingChatOpen && reached === 4 && createPortal(
+      {floatingChat && floatingChatOpen && createPortal(
         <ChatSection
           startExpanded
           muted={formStage < 4}

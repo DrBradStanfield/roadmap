@@ -162,6 +162,13 @@ input[type="number"] {
     margin-bottom: 0;
   }
 
+  /* One gap between cards on both tabs: My data's cards and the plan's
+     sections (desktop keeps 20px), US-62 AC14. */
+  .hr-tabpanel .health-input-panel,
+  .hr-tabpanel .hr-col-body {
+    gap: 16px;
+  }
+
   .hr-tabpanel .health-tool-right {
     position: static;
     max-height: none;
@@ -5547,9 +5554,8 @@ input[type="number"] {
     padding: 16px 24px 24px;
   }
 }
+/* The card title's style (health-section-title), US-62 AC14. */
 .md-page-title {
-  font-size: 22px;
-  font-weight: 700;
   margin: 4px 0 2px;
 }
 .md-page-title:focus {

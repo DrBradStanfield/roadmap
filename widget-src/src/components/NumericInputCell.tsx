@@ -5,9 +5,9 @@
 // Visual is driven by .bt-cell-* classes — the parent passes wrapperClass
 // to position the cell + signal mode (input / correcting / draft / review).
 
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import type React from 'react';
-import { commaQuestion, type MetricType } from '@roadmap/health-core';
+import { cellRange, commaQuestion, type MetricType } from '@roadmap/health-core';
 import { describedBy } from '../lib/aria';
 import {
   type CellUnit,
@@ -15,6 +15,7 @@ import {
   blockBadNumericKeys,
   numericCellText,
   hasNumericSyntax,
+  mayStillFit,
   readNumericCell,
   NUMERIC_SYNTAX_GUIDANCE,
   previewStatus,
@@ -75,8 +76,14 @@ export function NumericInputCell({
     : value !== '' && !hasNumericSyntax(value) ? NUMERIC_SYNTAX_GUIDANCE
     : metric && display ? validateTypedValue(metric, value, display).error
     : commaQuestion(value) ?? (value !== '' && readNumericCell(value) === undefined ? 'Enter a number' : null);
-  const error = externalError ?? validationError;
-  const status = !grading || error || !metric || !display
+  // US-02 AC9: while typed, a range error that more digits could still fix
+  // waits for the cell to be left or Enter ("4" on the way to 45 cm). Only
+  // the text as typed: a unit switch shows another number, judged at once.
+  const [typed, setTyped] = useState<string | null>(null);
+  const range = typed === value && validationError && metric && display ? cellRange(metric, display) : null;
+  const waits = !!range && mayStillFit(value, range.min, range.max);
+  const error = externalError ?? (waits ? null : validationError);
+  const status = !grading || error || waits || !metric || !display
     ? null
     : valueSI !== undefined ? statusOf(metric, valueSI, grading) : previewStatus(metric, value, display, grading);
   const insertText = (input: HTMLInputElement, text: string) => {
@@ -99,7 +106,7 @@ export function NumericInputCell({
         size={1}
         value={value}
         // Keep ambiguous syntax invalid instead of joining numeric tokens.
-        onChange={e => onChange(numericCellText(e.target.value))}
+        onChange={e => { const text = numericCellText(e.target.value); setTyped(text); onChange(text); }}
         // Read before a text input removes spreadsheet line separators.
         onPaste={e => {
           e.preventDefault();
@@ -110,9 +117,9 @@ export function NumericInputCell({
           e.preventDefault();
           insertText(e.currentTarget, e.dataTransfer.getData('text'));
         }}
-        onKeyDown={onKeyDown}
+        onKeyDown={e => { if (e.key === 'Enter') setTyped(null); onKeyDown(e); }}
         onFocus={onFocus}
-        onBlur={onBlur}
+        onBlur={e => { setTyped(null); onBlur?.(e); }}
         placeholder={placeholder}
         aria-label={ariaLabel}
         aria-invalid={!!error}

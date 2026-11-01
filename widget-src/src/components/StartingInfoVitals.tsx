@@ -43,6 +43,7 @@ import {
   blockBadNumericKeys,
   blockNonIntegerKeys,
   bpSysAdvance,
+  mayStillFit,
   readTypedValue,
   validateTypedValue,
 } from '../lib/blood-test-cell';
@@ -735,13 +736,21 @@ function BpInputCell({
   // sanitised in the change handlers below.
   const onKey: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
     blockNonIntegerKeys(e);
-    if (e.key === 'Enter') { e.preventDefault(); onEnter(); }
+    if (e.key === 'Enter') { e.preventDefault(); setTyping(null); onEnter(); }
+  };
+  // US-02 AC9: the half being typed keeps back a range error more digits
+  // could still fix ("6" on the way to 65); leaving it or Enter shows it.
+  const [typing, setTyping] = useState<'sys' | 'dia' | null>(null);
+  const rangeError = (half: 'sys' | 'dia', text: string) => {
+    const { error, range } = validateTypedValue(half === 'sys' ? 'systolic_bp' : 'diastolic_bp', text, 'si');
+    return error && !(typing === half && mayStillFit(text, range.min, range.max)) ? error : undefined;
   };
   // Auto-advance systolic → diastolic (US-02 AC6): immediately for an
   // unambiguous 3-digit value, after 800ms for a plausible 2-digit one.
   // Never steal focus if the user already left systolic or dia has content.
   const handleSysChange = (raw: string) => {
     const v = raw.replace(/[^0-9]/g, '');
+    setTyping('sys');
     onSysChange(v);
     if (advanceTimer.current) { window.clearTimeout(advanceTimer.current); advanceTimer.current = null; }
     if (dia !== '') return;
@@ -753,13 +762,13 @@ function BpInputCell({
       }, 800);
     }
   };
-  const handleDiaChange = (raw: string) => onDiaChange(raw.replace(/[^0-9]/g, ''));
+  const handleDiaChange = (raw: string) => { setTyping('dia'); onDiaChange(raw.replace(/[^0-9]/g, '')); };
   // Visible range validation (US-02 AC5) — same inline-error pattern as
   // NumericInputCell (this is the one cell that can't reuse it directly).
   // A pair the wrong way up is the pair's error, as a clash is (US-02 AC8).
   const pairError = clash ?? (pressureInverted(parseLocalisedNumber(sys), parseLocalisedNumber(dia)) ? PRESSURE_ORDER : undefined);
-  const sysError = validateTypedValue('systolic_bp', sys, 'si').error ?? pairError;
-  const diaError = validateTypedValue('diastolic_bp', dia, 'si').error ?? pairError;
+  const sysError = rangeError('sys', sys) ?? pairError;
+  const diaError = rangeError('dia', dia) ?? pairError;
   const error = sysError ?? diaError;
   // Each half's visible error describes it; a title would be captured with
   // the page (US-13 AC10). One error for the pair (a clash) shows once, and
@@ -789,12 +798,12 @@ function BpInputCell({
         <input ref={sysRef} className={`bt-input${active ? ' bt-input-active' : ''}${sysError ? ' bt-input-error' : ''}`}
                inputMode="numeric" pattern="[0-9]*" placeholder="sys" size={1} aria-label="Systolic blood pressure"
                aria-invalid={!!sysError} aria-describedby={describedBy(sysError && sysErrorId, diaOwnError && diaError === pairError && diaErrorId)}
-               value={sys} onChange={e => handleSysChange(e.target.value)} onKeyDown={onKey}/>
+               value={sys} onChange={e => handleSysChange(e.target.value)} onKeyDown={onKey} onBlur={() => setTyping(null)}/>
         <span className="bt-vitals-bp-sep">/</span>
         <input ref={diaRef} className={`bt-input${active ? ' bt-input-active' : ''}${diaError ? ' bt-input-error' : ''}`}
                inputMode="numeric" pattern="[0-9]*" placeholder="dia" size={1} aria-label="Diastolic blood pressure"
                aria-invalid={!!diaError} aria-describedby={describedBy(diaError && (diaOwnError ? diaErrorId : sysErrorId))}
-               value={dia} onChange={e => handleDiaChange(e.target.value)} onKeyDown={onKey}/>
+               value={dia} onChange={e => handleDiaChange(e.target.value)} onKeyDown={onKey} onBlur={() => setTyping(null)}/>
       </div>
       <div className="bt-cell-foot">
         {sysError && <span id={sysErrorId} className="bt-input-error-text">{sysError}</span>}

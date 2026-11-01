@@ -51,16 +51,20 @@ let sent: Array<{ eventName: string; metadata?: Record<string, unknown> }> = [];
 const named = (name: string) => sent.filter((e) => e.eventName === name);
 const stops: Array<() => void> = [];
 let phone = false;
+/** 1200px and up: the inline chat column shows (`useIsWideDesktop`). */
+let wide = true;
 
 beforeEach(async () => {
   phone = false;
+  wide = true;
   sent = [];
   chat.muted = [];
   floating.muted = [];
   localStorage.clear(); sessionStorage.clear();
-  // Wide desktop: the chat column shows. A phone matches the max-width query.
+  // Wide desktop: the chat column shows. A phone matches the max-width query;
+  // a narrow desktop (`wide` false) matches neither.
   vi.stubGlobal('matchMedia', (q: string) => ({
-    matches: q.includes('max-width') ? phone : !phone, media: q, addEventListener() {}, removeEventListener() {},
+    matches: q.includes('max-width') ? phone : !phone && wide, media: q, addEventListener() {}, removeEventListener() {},
   }));
   vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
     if (String(url).endsWith('/api/events')) {
@@ -408,6 +412,7 @@ describe('US-62 AC13 review fixes (PR 421)', () => {
   });
 
   it('R3: the desktop floating chat button waits for all four answers', async () => {
+    wide = false; // under 1200px: no chat column, so the button is the chat
     const view = await open();
     const fab = () => document.querySelector('.chat-fab');
     expect(fab()).toBeNull();
@@ -535,7 +540,17 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
     expect(named('onboarding_step').map((e) => e.metadata)).toEqual([{ step: 'measurements' }]);
   });
 
+  it('US-62 AC14: with the chat column on screen (1200px and up) there is no floating chat button', async () => {
+    await completeRecord();
+    const view = await open();
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    expect(chat.muted.at(-1)).toBe(false); // the inline chat is there, unmuted
+    expect(document.querySelector('.chat-fab')).toBeNull();
+    expect(document.querySelector('.floating-chat-panel')).toBeNull();
+  });
+
   it('Codex R5: the open floating chat stays mounted and goes muted when an answer is cleared', async () => {
+    wide = false;
     await completeRecord();
     const view = await open();
     fireEvent.click(await waitFor(() => document.querySelector('.chat-fab') as HTMLElement));
@@ -710,5 +725,31 @@ describe('US-62 AC12 (adversary R5, 2026-11-02): About you rows hold a missing a
     expect(q(view, '.about-row')).toBeNull();
     expect(q(view, '#weightKg')).toBeTruthy(); // the box beside the height again
     expect(fullForm(view)).toBe(false);
+  });
+});
+
+describe('US-02 AC9: a range error waits while the number is still being typed', () => {
+  const shown = (view: RenderResult) => Array.from(view.container.querySelectorAll('.error-message')).map((e) => e.textContent);
+
+  it('"19" on the way to 190 says nothing until the height field is left', async () => {
+    const view = await open();
+    const height = q(view, '#heightCm');
+    type(height, '1');
+    type(height, '19');
+    expect(shown(view)).toEqual([]);
+    expect(height?.className).not.toContain('error');
+    leave(height);
+    expect(shown(view)).toEqual(['Height must be at least 50 cm']);
+  });
+
+  it('a number already wrong says so while typing: too big, or no digit can fix it', async () => {
+    const view = await open();
+    type(q(view, '#heightCm'), '300');
+    expect(shown(view)).toEqual(['Height must be at most 250 cm']);
+    type(q(view, '#heightCm'), '190');
+    type(q(view, '#weightKg'), '9');
+    expect(shown(view)).toEqual([]);
+    act(() => { fireEvent.keyDown(q(view, '#weightKg')!, { key: 'Enter' }); });
+    expect(shown(view)).toEqual(['Weight must be at least 20 kg']);
   });
 });

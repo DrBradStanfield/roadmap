@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assertDesktopColumns, assertMatrixLayout, assertRows, assertTabBar } from './webkit-verify.mjs';
+import { assertDesktopColumns, assertMatrixLayout, assertPhoneCardGaps, assertRows, assertTabBar } from './webkit-verify.mjs';
 
 describe('US-20: WebKit deployment gate', () => {
   const values = ['35', '36', '2.4'].map(text => ({ text, width: 72, height: 40, numberWidth: 20, numberHeight: 18, visible: true, boxSizing: 'border-box' }));
@@ -60,6 +60,7 @@ describe('US-62 AC14: WebKit desktop columns gate', () => {
     heads: [28, 28, 28], firstCardTops: [322.4, 322.4, 322.4], headerInScroller: false, scrolled: 4900,
     headerTopBefore: 274, headerTopAfter: 274, bodyWidthBefore: 433, bodyWidthAfter: 433, sectionGaps: [20, 20, 20],
     select: { appearance: 'none', paddingRight: 36, backgroundImage: 'url("data:image/svg+xml,…")' }, unitSelect: { paddingRight: 20 },
+    chatColumn: true, floatingChat: false,
   };
   it('passes aligned columns, a still header, a steady body, even gaps and drawn chevrons', () => {
     expect(() => assertDesktopColumns(valid)).not.toThrow();
@@ -77,8 +78,19 @@ describe('US-62 AC14: WebKit desktop columns gate', () => {
       [{ select: { ...valid.select, paddingRight: 12 } }, 'no room'],
       [{ select: { ...valid.select, backgroundImage: 'none' } }, 'lost its chevron'],
       [{ unitSelect: { paddingRight: 36 } }, 'clips its text'],
+      [{ floatingChat: true }, 'beside the chat column'],
     ] as const) {
       expect(() => assertDesktopColumns({ ...valid, ...change })).toThrow(message);
     }
+  });
+});
+
+describe('US-62 AC14: WebKit phone card gaps gate', () => {
+  it('passes one gap across My data and the plan', () => {
+    expect(() => assertPhoneCardGaps({ myData: [16, 16], plan: [16, 16, 16] })).not.toThrow();
+  });
+  it('fails the 8px cards beside the 20px plan Brad reported, and a missing tab', () => {
+    expect(() => assertPhoneCardGaps({ myData: [8, 8], plan: [20, 20] })).toThrow('gaps differ');
+    expect(() => assertPhoneCardGaps({ myData: [], plan: [16] })).toThrow('missing');
   });
 });

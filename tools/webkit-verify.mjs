@@ -107,7 +107,8 @@ export function shownPanels(bar) {
 // first card starts on one line; the plan's header stays put while its body
 // scrolls, which never narrows it; the plan's first sections are evenly spaced;
 // a form select draws its own chevron with room for it, and the 80px dose-unit
-// select a compact one.
+// select a compact one. With the chat column on screen there is no floating
+// chat button.
 export function assertDesktopColumns(data) {
   assert(data.heads.length >= 2, 'column headers missing');
   for (const h of data.heads) assert(Math.abs(h - data.heads[0]) < 0.5, `column headers differ in height (${data.heads})`);
@@ -122,6 +123,21 @@ export function assertDesktopColumns(data) {
   assert(data.select.paddingRight >= 30, `form select has no room for its chevron (${data.select.paddingRight}px)`);
   assert(data.select.backgroundImage !== 'none', 'form select lost its chevron');
   if (data.unitSelect) assert(data.unitSelect.paddingRight <= 24, `dose-unit select's chevron inset clips its text (${data.unitSelect.paddingRight}px)`);
+  assert(!(data.chatColumn && data.floatingChat), 'the floating chat button shows beside the chat column');
+}
+
+// US-62 AC14: on a phone, My data's cards and the plan's sections are one gap apart.
+export function assertPhoneCardGaps(data) {
+  assert(data.myData.length >= 1 && data.plan.length >= 1, 'phone cards missing');
+  for (const g of [...data.myData, ...data.plan]) assert(g === data.myData[0], `phone card gaps differ (My data ${data.myData}, plan ${data.plan})`);
+}
+
+// Passed directly to Playwright's evaluate; keep this function self-contained.
+// The gaps between a container's shown cards: no column header, nothing out of flow.
+export function collectCardGaps(selector) {
+  const cards = [...document.querySelector(selector).children]
+    .filter(c => c.getBoundingClientRect().height > 0 && !c.matches('.hr-col-header') && getComputedStyle(c).position !== 'absolute');
+  return cards.slice(1).map((c, i) => Math.round(c.getBoundingClientRect().top - cards[i].getBoundingClientRect().bottom));
 }
 
 // Passed directly to Playwright's evaluate; keep this function self-contained.
@@ -154,6 +170,8 @@ export function collectDesktopColumns() {
     sectionGaps,
     select: select && { appearance: select.appearance || select.webkitAppearance, paddingRight: parseFloat(select.paddingRight), backgroundImage: select.backgroundImage },
     unitSelect: unit && { paddingRight: parseFloat(unit.paddingRight) },
+    chatColumn: !!document.querySelector('.health-tool-content .health-tool-chat'),
+    floatingChat: [...document.querySelectorAll('.chat-fab')].some(b => rect(b).width > 0),
   };
 }
 
@@ -202,6 +220,7 @@ async function inspect(browser, deviceName, viewport) {
     const rows = await page.evaluate(collectRows);
     assertRows(rows);
     console.log(`${deviceName ?? 'desktop'}: rows verified`, JSON.stringify(rows));
+    const myData = deviceName && await page.evaluate(collectCardGaps, '.health-input-panel');
     if (!deviceName) {
       const columns = await page.evaluate(collectDesktopColumns);
       assertDesktopColumns(columns);
@@ -223,6 +242,9 @@ async function inspect(browser, deviceName, viewport) {
       tabBar.shownAfterPlanTap = await bar.evaluate(shownPanels);
       assertTabBar(tabBar);
       console.log(`${deviceName}: tab bar verified`, JSON.stringify(tabBar));
+      const gaps = { myData, plan: await page.evaluate(collectCardGaps, '.health-tool-right .hr-col-body') };
+      assertPhoneCardGaps(gaps);
+      console.log(`${deviceName}: card gaps verified`, JSON.stringify(gaps));
     }
   } finally {
     await ctx.close();

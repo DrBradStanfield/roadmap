@@ -176,6 +176,22 @@ describe('US-62 AC10: the value page', () => {
     expect(view.container.querySelector('.health-input-panel')!.className).not.toContain('md-page-open');
   });
 
+  it('US-62 AC14: the title is a card title, and the chart does not repeat it (a pressure keeps its two names)', async () => {
+    await seed();
+    const view = await renderTool();
+    fireEvent.click(row(view, 'LDL Cholesterol'));
+    let page = view.container.querySelector<HTMLElement>('.md-page')!;
+    expect(within(page).getByRole('heading', { name: 'LDL Cholesterol' }).className).toContain('health-section-title');
+    await waitFor(() => expect(page.querySelector('canvas')).not.toBeNull());
+    expect(within(page).getAllByRole('heading', { name: 'LDL Cholesterol' })).toHaveLength(1);
+    expect(within(page).getByRole('img', { name: 'LDL Cholesterol chart' })).toBeTruthy();
+    fireEvent.click(within(page).getByRole('button', { name: '‹ My data' }));
+    fireEvent.click(await waitFor(() => row(view, 'Blood Pressure')));
+    page = view.container.querySelector<HTMLElement>('.md-page')!;
+    await waitFor(() => expect(page.querySelectorAll('canvas')).toHaveLength(2));
+    expect([...page.querySelectorAll('.metric-chart-container h3')].map(h => h.textContent)).toEqual(['Systolic', 'Diastolic']);
+  });
+
   it('Add on a new day appends one active row, in the unit typed', async () => {
     await seed();
     const view = await renderTool();

@@ -7,7 +7,7 @@ import { DOCUMENT_TYPE_LABELS, formatDocumentDate } from '../lib/document-format
 import { openHistoryLightbox } from '../lib/roadmap-data';
 import { isLabArchiveDocument, SEXES } from '@roadmap/health-core';
 import type { CorrectFn, Refused, SaveTask } from '../lib/matrix-save';
-import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance, type Grading } from '../lib/blood-test-cell';
+import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance, mayStillFit, type Grading } from '../lib/blood-test-cell';
 import type { ApiDocument, ApiLabValue, ApiSupplement } from '../lib/api-types';
 import { DRAFTS_CLEARED_EVENT, loadFromLocalStorage } from '../lib/storage';
 
@@ -235,7 +235,7 @@ function useAutoAdvance(): (opts: { ambiguous: boolean; advance: () => void }) =
 }
 
 export function InputPanel({
-  storageBar, inputs, effectiveInputs, onChange: updateField, errors, unitSystem, onUnitSystemChange,
+  storageBar, inputs, effectiveInputs, onChange: updateField, errors: allErrors, unitSystem, onUnitSystemChange,
   unitOverrides, onToggleFieldUnit,
   previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onLabValueAdded, onSaveBloodTestBatch,
   onCorrectValue, moveTest, onDraftValue,
@@ -531,6 +531,14 @@ export function InputPanel({
     if (!metric) return { min: 0, max: 999 };
     return getDisplayRange(metric, fieldUnit(field));
   };
+
+  // US-02 AC9: the field being typed in keeps its range error back while more
+  // digits could still fix it ("19" on the way to 190); leaving the field or
+  // pressing Enter shows it. Display only: what saves is unchanged.
+  const [typing, setTyping] = useState<{ field: string; text: string } | null>(null);
+  const errors = typing && allErrors[typing.field] && mayStillFit(typing.text, range(typing.field).min, range(typing.field).max)
+    ? Object.fromEntries(Object.entries(allErrors).filter(([field]) => field !== typing.field))
+    : allErrors;
 
   /** Validate on blur for identity fields (no unit conversion). Clears if out of range. */
   const validateOnBlur = (field: keyof HealthInputs) => {
@@ -1069,13 +1077,13 @@ export function InputPanel({
     const rows: Array<{ key: AboutKey; label: string; value: string | null; missing: boolean; editor: () => ReactNode }> = [
       { key: 'height', label: 'Height', editor: renderHeight,
         value: inputs.heightCm != null ? formatHeightDisplay(inputs.heightCm, unitSystem) : null,
-        missing: inputs.heightCm == null || !!errors.heightCm || !!unreadable.heightCm },
+        missing: inputs.heightCm == null || !!allErrors.heightCm || !!unreadable.heightCm },
       { key: 'sex', label: 'Sex', editor: renderSex,
         value: inputs.sex === 'male' ? 'Male' : inputs.sex === 'female' ? 'Female' : null,
-        missing: !inputs.sex || !!errors.sex },
+        missing: !inputs.sex || !!allErrors.sex },
       { key: 'birth', label: 'Birth', editor: renderBirthInfo,
         value: inputs.birthYear ? [month, inputs.birthYear].filter(Boolean).join(' ') : null,
-        missing: !inputs.birthYear || !!errors.birthMonth || !!errors.birthYear },
+        missing: !inputs.birthYear || !!allErrors.birthMonth || !!allErrors.birthYear },
       // US-60 AC4: unanswered is an answer here, so it never opens itself.
       { key: 'alcohol', label: 'Alcohol', editor: renderAlcohol, missing: false,
         value: ALCOHOL_OPTIONS.find(o => o.value === inputs.alcohol)?.label ?? 'Not answered' },
@@ -2341,7 +2349,10 @@ export function InputPanel({
 
   // ── Render all sections with progressive disclosure (both mobile and desktop) ──
   return (
-    <div ref={panelRef} className={`health-input-panel${pageShown ? ' md-page-open' : ''}`}>
+    <div ref={panelRef} className={`health-input-panel${pageShown ? ' md-page-open' : ''}`}
+         onChangeCapture={e => { const t = e.target as HTMLInputElement; setTyping(t.id ? { field: t.id, text: t.value } : null); }}
+         onBlurCapture={() => setTyping(null)}
+         onKeyDownCapture={e => { if (e.key === 'Enter') setTyping(null); }}>
       <ColumnHeader step={1} title="Your information" meta={storageBar} actions={!!storageBar} />
       {pageShown && (
         <ValuePage key={JSON.stringify(pageShown)} subject={pageShown} history={[...vitalsHistory, ...bloodTestHistory]} labValues={labValues}
