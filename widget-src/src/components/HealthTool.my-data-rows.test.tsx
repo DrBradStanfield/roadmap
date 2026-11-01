@@ -10,7 +10,7 @@
  * are checked where they live.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
+import { act, cleanup, configure, fireEvent, render, waitFor, within } from '@testing-library/react';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveLabValues, correctValue, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
@@ -32,6 +32,11 @@ vi.mock('../lib/chat-api', async original => ({
 }));
 import { HealthTool } from './HealthTool';
 import { trackProductEvent } from '../lib/server-api';
+
+// Adversary R7 (2026-11-02): each Add waits on the store's real async save. Under a
+// loaded full run that took longer than waitFor's default 1 s, so two AC10 tests
+// failed now and then. A wider wait budget; the assertions are unchanged.
+configure({ asyncUtilTimeout: 5000 });
 
 const stops: Array<() => void> = [];
 let phone = true;
