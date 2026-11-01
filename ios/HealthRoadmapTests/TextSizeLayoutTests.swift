@@ -73,16 +73,22 @@ final class TextSizeLayoutTests: XCTestCase {
 
     // MARK: Text that never truncates (break-it pass 2026-11-01, iPhone 17e)
 
-    /// The iPhone 17e's screen, the smallest current iPhone.
-    private let iPhone17e = CGSize(width: 390, height: 844)
+    /// The smallest supported iPhone (SE) and the iPhone 17e, with the insets of their
+    /// status bar and home indicator.
+    private let screens: [(name: String, size: CGSize, insets: CGFloat)] = [
+        ("SE", CGSize(width: 375, height: 667), 20), ("17e", CGSize(width: 390, height: 844), 47 + 34),
+    ]
+    private let sizes: [UIContentSizeCategory] = [.large, .extraLarge, .extraExtraLarge, .extraExtraExtraLarge,
+                                                  .accessibilityMedium, .accessibilityExtraLarge, .accessibilityExtraExtraExtraLarge]
 
-    /// How many times `view`'s texts were drawn, once settled, in a 17e-sized window at
-    /// `category`, and how many of those draws were cut short with "…" (SwiftUI's own `Text.Layout.isTruncated`).
+    /// How `view`'s texts were drawn, once settled, in a window of `screen` at `category`:
+    /// the draws, those cut short with "…" (SwiftUI's own `Text.Layout.isTruncated`), and the
+    /// most lines one text took.
     @available(iOS 18.0, *)
-    private func drawnTexts(in view: some View, at category: UIContentSizeCategory) throws -> (drawn: Int, cut: Int) {
+    private func drawnTexts(in view: some View, at category: UIContentSizeCategory, screen: CGSize) throws -> TruncationProbe.Log {
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
         let window = UIWindow(windowScene: scene)
-        window.frame = CGRect(origin: .zero, size: iPhone17e)
+        window.frame = CGRect(origin: .zero, size: screen)
         window.traitOverrides.preferredContentSizeCategory = category
         let probe = TruncationProbe()
         window.rootViewController = UIHostingController(rootView: view.textRenderer(probe))
@@ -91,64 +97,96 @@ final class TextSizeLayoutTests: XCTestCase {
         // Long enough for `.task` to reveal a scene's rows and their springs to settle.
         RunLoop.main.run(until: Date(timeIntervalSinceNow: 3))
         // Then count the settled page only: dark mode redraws every text where it lies.
-        probe.log.drawn = 0
-        probe.log.cut = 0
+        probe.log.reset()
         window.traitOverrides.userInterfaceStyle = .dark
         RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
-        return (probe.log.drawn, probe.log.cut)
+        return probe.log
     }
 
-    /// US-54 AC8b: the Apple Health page's title and words are whole on a 17e at the
-    /// default and extra-large sizes; the page scrolls instead.
-    @available(iOS 18.0, *)
+    /// US-54 AC8b: the real Apple Health page cuts no words short, its tiles included,
+    /// on an SE and a 17e, from the default size to accessibility XL; the page scrolls instead.
     func testTheAppleHealthPageNeverCutsItsWords_US54_AC8b() throws {
-        let page = NavigationStack {
-            OnboardingPage(symbol: "heart.fill", tint: .pink, title: OnboardingView.healthTitle, detail: OnboardingView.healthDetail,
-                           progress: nil, spread: true) {
-                VStack(spacing: 12) {
-                    HealthFillScene()
-                    Text(OnboardingView.liveLine).font(.footnote).multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            } actions: {
-                Text(OnboardingView.appleAsksNextWords).padding(14)
-                Button("Connect Apple Health") {}.buttonStyle(.accent)
-                Button("Not now") {}
+        guard #available(iOS 18, *) else { throw XCTSkip("Text.Layout.isTruncated needs iOS 18") }
+        let page = NavigationStack { OnboardingView.healthPage(connecting: false, allow: {}, notNow: {}) }
+        for screen in screens {
+            for category in sizes {
+                let texts = try drawnTexts(in: page, at: category, screen: screen.size)
+                XCTAssertGreaterThan(texts.drawn, 5, "\(screen.name) \(category.rawValue): the page drew its words")
+                XCTAssertEqual(texts.cut, 0, "\(screen.name) \(category.rawValue): no words end in …")
             }
-        }
-        for category in [UIContentSizeCategory.large, .extraLarge] {
-            let texts = try drawnTexts(in: page, at: category)
-            XCTAssertGreaterThan(texts.drawn, 5, "\(category.rawValue): the page drew its words")
-            XCTAssertEqual(texts.cut, 0, "\(category.rawValue): no words end in …")
         }
     }
 
-    /// US-54 AC8b: the welcome story's rows never cut a name short ("Blood pre…") at the
-    /// largest size it shows (the welcome shows words alone at accessibility sizes).
-    @available(iOS 18.0, *)
-    func testTheWelcomeStoryNeverCutsARowShort_US54_AC8b() throws {
-        // Framed and inset as WelcomeStory and WelcomeView place them.
-        let numbers = NumbersScene().frame(height: 236).padding(.horizontal, 28)
-        let plan = PlanScene().frame(height: 236).padding(.horizontal, 28)
-        for category in [UIContentSizeCategory.large, .extraLarge, .extraExtraExtraLarge] {
-            for (name, scene) in [("numbers", AnyView(numbers)), ("plan", AnyView(plan))] {
-                let texts = try drawnTexts(in: scene, at: category)
-                XCTAssertGreaterThan(texts.drawn, 5, "\(category.rawValue) \(name): the scene drew its rows")
-                XCTAssertEqual(texts.cut, 0, "\(category.rawValue) \(name): no row ends in …")
+    /// US-54 AC8b: each Apple Health tile's name fits its tile, shrunk at most to the
+    /// tile's 0.8 scale, at every size on both screens: the grid drops columns as text grows.
+    /// (SwiftUI draws a text with a minimum scale factor outside the probe above, so this
+    /// one is measured.)
+    func testEveryAppleHealthTileNameFitsItsTile_US54_AC8b() throws {
+        for screen in screens {
+            for category in sizes + [.accessibilityLarge, .accessibilityExtraExtraLarge] {
+                let columns = CGFloat(HealthFillScene.columns(at: DynamicTypeSize(category) ?? .large))
+                let tile = (screen.size.width - 48 - HealthFillScene.spacing * (columns - 1)) / columns // the page's margins
+                for item in HealthFillScene.items {
+                    let name = try measure(Text(item.name).font(.caption.weight(.medium)).fixedSize(), at: category).width
+                    XCTAssertLessThanOrEqual(name * 0.8, tile, "\(screen.name) \(category.rawValue): \(item.name) fits \(Int(columns)) columns")
+                }
             }
         }
+    }
+
+    /// US-54 AC8b: the welcome screen shows the story only where every scene fits its card
+    /// whole, each row on one line (a 17e at the default size); elsewhere the story's words
+    /// scroll above the buttons. Either way nothing is cut and Get started stays on screen.
+    func testTheWelcomeScreenShowsTheStoryOnlyWhereItFits_US54_AC8b() throws {
+        guard #available(iOS 18, *) else { throw XCTSkip("Text.Layout.isTruncated needs iOS 18") }
+        for screen in screens {
+            let card = screen.size.width - 56 // WelcomeView's margins
+            let room = CGSize(width: screen.size.width, height: screen.size.height - screen.insets)
+            for category in sizes {
+                let welcome = WelcomeView(sync: nil, start: {})
+                let texts = try drawnTexts(in: welcome, at: category, screen: screen.size)
+                XCTAssertEqual(texts.cut, 0, "\(screen.name) \(category.rawValue): no words end in …")
+                // The words are one text of five lines or more; the story's texts take at most three.
+                let words = texts.lines > 4
+                let needs = try measure(WelcomeStory.needs, at: category)
+                let fits = !category.isAccessibilityCategory && needs.width <= card && needs.height <= WelcomeStory.height
+                XCTAssertEqual(words, !fits, "\(screen.name) \(category.rawValue): the story shows only where its \(needs) fits \(card) x 236")
+                XCTAssertLessThanOrEqual(try taken(by: welcome, in: room, at: category).height, room.height + 0.5,
+                                         "\(screen.name) \(category.rawValue): Get started in view")
+            }
+        }
+    }
+
+    /// The height `view` takes when offered `room`: more than `room` means it runs off screen.
+    private func taken(by view: some View, in room: CGSize, at category: UIContentSizeCategory) throws -> CGSize {
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(origin: .zero, size: room)
+        window.traitOverrides.preferredContentSizeCategory = category
+        let host = UIHostingController(rootView: view)
+        host.safeAreaRegions = []
+        window.rootViewController = host
+        window.makeKeyAndVisible()
+        defer { window.isHidden = true }
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.3)) // the story's size is read after the first layout
+        host.view.layoutIfNeeded()
+        return host.sizeThatFits(in: room)
     }
 }
 
-/// Draws text as usual and counts the texts drawn, and those cut short.
+/// Draws text as usual, and logs the draws, those cut short, and the most lines a text took.
 @available(iOS 18.0, *)
 private struct TruncationProbe: TextRenderer {
-    final class Log { var drawn = 0, cut = 0 }
+    final class Log {
+        var drawn = 0, cut = 0, lines = 0
+        func reset() { (drawn, cut, lines) = (0, 0, 0) }
+    }
     let log = Log()
 
     func draw(layout: Text.Layout, in context: inout GraphicsContext) {
         log.drawn += 1
         if layout.isTruncated { log.cut += 1 }
+        log.lines = max(log.lines, layout.count)
         for line in layout { context.draw(line) }
     }
 }

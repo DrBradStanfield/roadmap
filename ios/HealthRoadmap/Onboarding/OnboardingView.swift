@@ -97,21 +97,8 @@ struct OnboardingView: View {
     @ViewBuilder private func page(_ step: OnboardingStep) -> some View {
         switch step {
         case .health:
-            OnboardingPage(symbol: "heart.fill", tint: .pink, title: Self.healthTitle, detail: Self.healthDetail,
-                 progress: nil, spread: true) {
-                VStack(spacing: 12) {
-                    HealthFillScene()
-                    // US-56's five, named too (adversary R5): the sheet asks for them as well.
-                    Text(Self.liveLine).font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            } actions: {
-                appleAsksNext
-                primary(connecting ? "Connecting…" : "Connect Apple Health", id: "onboarding.allow") { Task { await allowHealth() } }
-                    .disabled(connecting)
-                secondary("Not now", id: "onboarding.notNow") { healthAsked = true; advance(from: .health) }
-                    .disabled(connecting)
-            }
+            Self.healthPage(connecting: connecting, allow: { Task { await allowHealth() } },
+                            notNow: { healthAsked = true; advance(from: .health) })
         case .sex:
             // A tap is the answer: it saves and moves on, so the step has no Continue (Brad 2026-10-23).
             OnboardingPage(symbol: "person.fill", tint: .accentColor, title: "What is your sex?",
@@ -140,7 +127,7 @@ struct OnboardingView: View {
                     answers.birthMonth = min(answers.birthMonth, DayText.latestBirthMonth(year: answers.birthYear, now: .now))
                 }
             } actions: {
-                primary("Continue", id: "onboarding.continue") { save(.birth) }.disabled(!birthAnswered)
+                Self.primary("Continue", id: "onboarding.continue") { save(.birth) }.disabled(!birthAnswered)
             }
         case .height:
             OnboardingPage(symbol: "ruler", tint: .teal, title: "How tall are you?",
@@ -154,7 +141,7 @@ struct OnboardingView: View {
                     }
                 }
             } actions: {
-                primary("Continue", id: "onboarding.continue") { save(.height) }
+                Self.primary("Continue", id: "onboarding.continue") { save(.height) }
                     .disabled(answers.height.value == nil)
             }
         case .weight:
@@ -165,7 +152,7 @@ struct OnboardingView: View {
                     numberField(.weight)
                 }
             } actions: {
-                primary("Continue", id: "onboarding.continue") { save(.weight) }
+                Self.primary("Continue", id: "onboarding.continue") { save(.weight) }
                     .disabled(answers.weight.value == nil)
             }
         case .review:
@@ -190,8 +177,28 @@ struct OnboardingView: View {
                 .padding(.horizontal, 16)
                 .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             } actions: {
-                primary("Continue", id: "onboarding.continue") { advance(from: .review) }
+                Self.primary("Continue", id: "onboarding.continue") { advance(from: .review) }
             }
+        }
+    }
+
+    /// The Apple Health page (AC3), built here so TextSizeLayoutTests lays out the real one.
+    static func healthPage(connecting: Bool, allow: @escaping () -> Void, notNow: @escaping () -> Void) -> some View {
+        OnboardingPage(symbol: "heart.fill", tint: .pink, title: "Use your Apple Health data",
+             detail: "So you type less. Your sex, birth date, height, weight, waist and blood pressure go only into your record, on this iPhone or in your own cloud. Values you add here are saved back to Apple Health.",
+             progress: nil, spread: true) {
+            VStack(spacing: 12) {
+                HealthFillScene()
+                // US-56's five, named too (adversary R5): the sheet asks for them as well.
+                Text(liveLine).font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        } actions: {
+            appleAsksNext
+            primary(connecting ? "Connecting…" : "Connect Apple Health", id: "onboarding.allow", action: allow)
+                .disabled(connecting)
+            secondary("Not now", id: "onboarding.notNow", action: notNow)
+                .disabled(connecting)
         }
     }
 
@@ -199,7 +206,7 @@ struct OnboardingView: View {
     /// A hint, never a switch: no app can turn that sheet's switches on. In the accent
     /// green, not pink: red read as something wrong (Brad 2026-10-25). Primary text on the
     /// 12% wash; the icon in the accent clears 3:1 on it in both modes.
-    private var appleAsksNext: some View {
+    private static var appleAsksNext: some View {
         Label {
             Text(LocalizedStringKey(Self.appleAsksNextWords))
         } icon: {
@@ -288,13 +295,13 @@ struct OnboardingView: View {
         .accessibilityIdentifier("onboarding.\(value)")
     }
 
-    private func primary(_ title: String, id: String, action: @escaping () -> Void) -> some View {
+    private static func primary(_ title: String, id: String, action: @escaping () -> Void) -> some View {
         Button(title, action: action)
             .buttonStyle(.accent)
             .accessibilityIdentifier(id)
     }
 
-    private func secondary(_ title: String, id: String, action: @escaping () -> Void) -> some View {
+    private static func secondary(_ title: String, id: String, action: @escaping () -> Void) -> some View {
         Button(title, action: action)
             .padding(.top, 4)
             .accessibilityIdentifier(id)
@@ -539,9 +546,6 @@ struct OnboardingView: View {
 
     /// Built once: the wheels redraw on every tick.
     static let appleAsksNextWords = "Next, Apple asks for access. Turn everything on, then tap **Allow**."
-    /// The Apple Health page's words, also measured by TextSizeLayoutTests.
-    static let healthTitle = "Use your Apple Health data"
-    static let healthDetail = "So you type less. Your sex, birth date, height, weight, waist and blood pressure go only into your record, on this iPhone or in your own cloud. Values you add here are saved back to Apple Health."
     /// The five US-56 readings, named on the Apple Health page (adversary R5).
     static let liveLine = "It also shows your heart rate, sleep, VO2 max and steps here, never in your record."
     private static let birthYears = DayText.birthYears(now: .now)

@@ -9,8 +9,15 @@ import SwiftUI
 /// The values are made up, in the region's units, and no scene gives advice.
 struct WelcomeStory: View {
     /// The story in words: what VoiceOver reads, and what the welcome screen shows in its
-    /// place at accessibility text sizes, where the scenes cannot fit.
+    /// place wherever the scenes cannot fit (larger text, a narrow phone).
     static let summary = "Add your numbers: Apple Health and lab reports can fill them in. Get your plan, built from published guidelines. Your data stays yours: on this iPhone or in your own Dropbox or Google Drive, never on our servers."
+    /// The card's height: every scene must fit it whole (US-54 AC8b).
+    static let height = 236.0
+    /// All three scenes at once, fully shown: the size the card needs. WelcomeView shows
+    /// the story only where this fits, so no row is cut or wrapped.
+    static var needs: some View {
+        ZStack { NumbersScene(still: true); PlanScene(still: true); PrivateScene() }.fixedSize()
+    }
     @State private var scene = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -23,7 +30,7 @@ struct WelcomeStory: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .frame(height: 236)
+        .frame(height: Self.height)
         .background(
             LinearGradient(colors: [Color.accentColor.opacity(0.10), Color.accentColor.opacity(0.03)], startPoint: .top, endPoint: .bottom),
             in: RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -62,6 +69,8 @@ private struct Heading: View {
 
 /// Values arrive one by one, as Apple Health or a lab report would fill them in.
 struct NumbersScene: View {
+    /// Every row at once, without the reveal: the size the scene needs.
+    var still = false
     @State private var shown = 0
     /// The icon column grows with the text, as SourceRow's (US-52 AC10b).
     @ScaledMetric(relativeTo: .subheadline) private var iconWidth = 22.0
@@ -72,12 +81,11 @@ struct NumbersScene: View {
         VStack(alignment: .leading, spacing: 8) {
             Heading(title: "Add your numbers", symbol: "list.bullet.clipboard", bounce: shown)
             ForEach(rows.indices, id: \.self) { index in
-                if index < shown {
+                if still || index < shown {
                     let row = rows[index]
                     HStack(spacing: 10) {
                         Image(systemName: row.symbol).foregroundStyle(row.tint.softInDark).frame(width: iconWidth)
-                        // Wraps rather than "Blood pre…" at large sizes (US-54 AC8b).
-                        Text(row.label).font(.subheadline).fixedSize(horizontal: false, vertical: true)
+                        Text(row.label).font(.subheadline)
                         Spacer()
                         Text(row.value).font(.subheadline.weight(.semibold)).monospacedDigit()
                         Text(row.unit).font(.caption).foregroundStyle(.secondary)
@@ -92,12 +100,14 @@ struct NumbersScene: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
-        .task { await reveal($shown, count: rows.count, at: reduceMotion) }
+        .task { if !still { await reveal($shown, count: rows.count, at: reduceMotion) } }
     }
 }
 
 /// The plan builds itself: one step per area, each ticked as it lands.
 struct PlanScene: View {
+    /// Every step at once, without the reveal: the size the scene needs.
+    var still = false
     @State private var shown = 0
     /// The icon column grows with the text, as SourceRow's (US-52 AC10b).
     @ScaledMetric(relativeTo: .subheadline) private var iconWidth = 22.0
@@ -108,11 +118,11 @@ struct PlanScene: View {
         VStack(alignment: .leading, spacing: 8) {
             Heading(title: "Get your plan", symbol: "sparkles", bounce: shown)
             ForEach(steps.indices, id: \.self) { index in
-                if index < shown {
+                if still || index < shown {
                     let step = steps[index]
                     HStack(spacing: 10) {
                         Image(systemName: step.0).foregroundStyle(step.1.softInDark).frame(width: iconWidth)
-                        Text(step.2).font(.subheadline.weight(.medium)).fixedSize(horizontal: false, vertical: true)
+                        Text(step.2).font(.subheadline.weight(.medium))
                         Spacer()
                         Text("Next step").font(.caption).foregroundStyle(.secondary)
                         Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
@@ -127,12 +137,12 @@ struct PlanScene: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
-        .task { await reveal($shown, count: steps.count, at: reduceMotion, first: 0.45) }
+        .task { if !still { await reveal($shown, count: steps.count, at: reduceMotion, first: 0.45) } }
     }
 }
 
 /// The record settles on the phone and the person's own cloud, and a lock closes on it.
-private struct PrivateScene: View {
+struct PrivateScene: View {
     @State private var locked = false
     @State private var linked = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion

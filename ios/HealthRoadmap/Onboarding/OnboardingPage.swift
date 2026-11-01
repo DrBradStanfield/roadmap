@@ -63,6 +63,9 @@ struct OnboardingPage<Content: View, Actions: View>: View {
                 }
                 actions()
             }
+            // Its full height, so a long hint or button never ends in "…"; the page above
+            // scrolls instead (US-54 AC8b).
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.top, 12)
         }
         .padding(.horizontal, 24)
