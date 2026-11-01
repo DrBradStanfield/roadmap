@@ -12,13 +12,15 @@ import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { calculateHealthResults } from '@roadmap/health-core';
 import { US_SUPPLEMENT_DESCRIPTIONS } from '@roadmap/health-core/suggestions';
 import { US_SUPPLEMENT_REFERENCES } from '@roadmap/health-core/evidence';
-import { US_OWNERSHIP_LINE, US_PRODUCT_LINES } from '@roadmap/health-core/us-products';
+import { US_OWNERSHIP_LINE, US_PRODUCT_LINES, type UsPlanSection } from '@roadmap/health-core/us-products';
 import { resolveMarketCountry } from '../lib/market-country';
 
 const mocks = vi.hoisted(() => ({
   trackProductEvent: vi.fn(),
   shopify: { value: true },
   country: { value: 'US' as string | null },
+  /** Stands in for usProductSections when set. */
+  overlay: { value: null as null | ((...args: unknown[]) => UsPlanSection[] | null) },
 }));
 vi.mock('../lib/roadmap-data', () => ({
   getReportHtml: vi.fn(), sendGuestReport: vi.fn(), getReportEmailCaptured: () => false, markReportEmailCaptured: vi.fn(),
@@ -30,6 +32,10 @@ vi.mock('../lib/market-country', async (original) => ({
   getMarketCountry: () => mocks.country.value,
 }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
+vi.mock('@roadmap/health-core/us-products', async (original) => {
+  const real = await original<typeof import('@roadmap/health-core/us-products')>();
+  return { ...real, usProductSections: (...args: Parameters<typeof real.usProductSections>) => (mocks.overlay.value ?? real.usProductSections)(...args) };
+});
 import { ResultsPanel } from './ResultsPanel';
 
 const YEAR = new Date().getFullYear();
@@ -39,7 +45,7 @@ const otherAdult = calculateHealthResults({ heightCm: 160, sex: 'female', weight
 const minor = calculateHealthResults({ heightCm: 150, sex: 'female', weightKg: 45, birthYear: YEAR - 10 });
 const unknownAge = calculateHealthResults({ heightCm: 175, sex: 'male', weightKg: 80 });
 
-const PRODUCT_CARDS = Object.keys(US_PRODUCT_LINES);
+const PRODUCT_CARDS = Object.keys(US_PRODUCT_LINES) as (keyof typeof US_PRODUCT_LINES)[];
 const WHO_SENTENCE = "WHO's 2026 dementia guideline";
 
 function show(results = adult) {
@@ -73,6 +79,7 @@ function reveal() {
 beforeEach(() => {
   mocks.shopify.value = true;
   mocks.country.value = 'US';
+  mocks.overlay.value = null;
   observed = [];
   vi.stubGlobal('IntersectionObserver', FakeObserver);
 });
@@ -81,7 +88,7 @@ afterEach(() => { cleanup(); vi.clearAllMocks(); vi.unstubAllGlobals(); });
 describe('US-61 AC4/AC5: blocks for a known adult in the US, on the Shopify build', () => {
   it('lays one block on each mapped supplement card, in card order, and none on omega-3 or fiber (AC6)', () => {
     const { container } = show();
-    const expected = adult.suggestions.filter((s) => PRODUCT_CARDS.includes(s.id)).map((s) => s.title);
+    const expected = adult.suggestions.filter((s) => (PRODUCT_CARDS as string[]).includes(s.id)).map((s) => s.title);
     expect(expected).toHaveLength(6);
     expect(blockedCardTitles(container)).toEqual(expected);
     expect(cardById(container, 'supplement-omega3').querySelector('.us-product')).toBeNull();
@@ -130,12 +137,12 @@ describe('US-61 AC4/AC5: blocks for a known adult in the US, on the Shopify buil
 describe('US-61 AC2: the US card text replaces the base text on the US cards only', () => {
   it('base, creatine and lutein show their US text and references; the other cards keep theirs', () => {
     const { container } = show();
-    for (const id of ['supplement-micronutrient-base', 'supplement-creatine', 'supplement-lutein-zeaxanthin']) {
+    for (const id of ['supplement-micronutrient-base', 'supplement-creatine', 'supplement-lutein-zeaxanthin'] as const) {
       const card = cardById(container, id);
-      expect(card.querySelector('.suggestion-desc')?.textContent).toBe(US_SUPPLEMENT_DESCRIPTIONS[`${id}-us`]);
+      expect(card.querySelector('.suggestion-desc')?.textContent).toBe(US_SUPPLEMENT_DESCRIPTIONS[id]);
       fireEvent.click(card.querySelector('.evidence-toggle')!);
       const refs = Array.from(card.querySelectorAll('.evidence-refs a')).map((a) => a.getAttribute('href'));
-      expect(refs).toEqual(US_SUPPLEMENT_REFERENCES[`${id}-us`].map((r) => r.url));
+      expect(refs).toEqual(US_SUPPLEMENT_REFERENCES[id]!.map((r) => r.url));
     }
     expect(cardById(container, 'supplement-micronutrient-base').textContent).not.toContain(WHO_SENTENCE);
     for (const id of ['supplement-collagen', 'supplement-tmg', 'supplement-omega3', 'supplement-sleep']) {
@@ -203,6 +210,28 @@ describe('US-61 AC7: one ownership line', () => {
     for (const el of container.querySelectorAll('.us-product, .us-ownership')) expect(el.classList.contains('no-print')).toBe(true);
     const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
     expect(css).toMatch(/@media print\s*\{\s*\.us-product,\s*\.us-ownership\s*\{\s*display:\s*none !important;/);
+  });
+});
+
+describe('US-61: placement is us-products.ts\'s alone', () => {
+  it('draws the block and the line wherever usProductSections puts them, and nowhere else', () => {
+    // A stand-in that puts the block on the first Foundation card and the line under that section.
+    mocks.overlay.value = (sections) => (sections as UsPlanSection[]).map((section) => section.key !== 'info' ? section : {
+      ...section,
+      ownershipLine: 'Owner line.',
+      cards: section.cards.map((card, i) => i > 0 ? card : {
+        ...card,
+        suggestions: [{ ...card.suggestions[0], description: 'Stand-in text.', usProduct: { product: 'sleep', name: 'Sleep', line: 'A line.', url: 'https://microvitamin.com/products/sleep' } }],
+      }),
+    });
+    const { container } = show();
+    const blocks = container.querySelectorAll('.us-product');
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].closest('.suggestions-group')?.querySelector('.suggestions-group-title')?.classList.contains('info')).toBe(true);
+    expect(blocks[0].closest('.suggestion-card')?.querySelector('.suggestion-desc')?.textContent).toBe('Stand-in text.');
+    expect(container.querySelector('.supplements-group .us-product')).toBeNull();
+    expect(Array.from(container.querySelectorAll('.us-ownership')).map((l) => l.textContent)).toEqual(['Owner line.']);
+    expect(container.querySelector('.supplements-group .us-ownership')).toBeNull();
   });
 });
 
