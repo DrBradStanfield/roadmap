@@ -5,8 +5,8 @@ import StoreKit
 /// the web's Liquid market country, deciding whether the plan's supplement cards show
 /// Dr Brad's products. StoreKit's answer is kept on the phone, so a launch draws the plan
 /// at once with the last one and never waits on StoreKit. No storefront (no Apple ID, or
-/// StoreKit cannot say) is not the US. Never under the tests, so no test depends on the
-/// simulator's account.
+/// StoreKit cannot say) keeps the last answer; with none saved, it is not the US. Never
+/// under the tests, so no test depends on the simulator's account.
 enum AppStoreCountry {
     static let key = "appStoreCountryIsUS"
 
@@ -24,7 +24,14 @@ enum AppStoreCountry {
         if let forced { return forced }
         #endif
         guard !testing else { return false }
-        let isUS = await Storefront.current?.countryCode == "USA"
+        return remember(await Storefront.current?.countryCode, in: defaults)
+    }
+
+    /// StoreKit's country code, kept for the next launch. Nil (StoreKit cannot say now) keeps
+    /// the saved answer and writes nothing, so a passing gap never drops a US user's products.
+    static func remember(_ countryCode: String?, in defaults: UserDefaults) -> Bool {
+        guard let countryCode else { return defaults.bool(forKey: key) }
+        let isUS = countryCode == "USA"
         defaults.set(isUS, forKey: key)
         return isUS
     }
