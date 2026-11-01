@@ -152,6 +152,8 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
   if (!refund) { logRefusal(kind, 'failure_limit'); return overLimit(); }
   let charged = false;
   const failed = (reason: string) => { charged = true; logRefusal(kind, reason); return unauthorized(reason); };
+  /** A refusal after the signature verified: the key's own budget holds it, so the IP's unit goes back (AC4c). */
+  const keyFailed = (reason: string) => { logRefusal(kind, reason); return unauthorized(reason); };
   try {
     // A key past its own failure budget reads nothing more. By the header's key id, read-only;
     // it costs only this lookup, so the IP's unit goes back and the key's budget is never charged (US-52 AC4c).
@@ -195,11 +197,8 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
     const shared = reserveShared(kind, ip);
     const outcome: UseOutcome | null = await store.use(keyId, assertion.counter, kind, shared ? PER_KEY_DAILY[kind] : 0).catch(() => null);
     if (outcome !== 'ok') shared?.();
-    if (outcome === 'unknown' || outcome === 'stale') {
-      const reason = outcome === 'stale' ? 'stale_counter' : 'unknown_key';
-      logRefusal(kind, reason);
-      return unauthorized(reason);
-    }
+    if (outcome === 'unknown') return keyFailed('unknown_key');
+    if (outcome === 'stale') return keyFailed('stale_counter');
     keyRefund();
     if (!outcome) { logRefusal(kind, 'store_unavailable'); return unavailable(); }
     if (outcome === 'limit') { if (shared) logRefusal(kind, 'key_limit'); return overLimit(); }
