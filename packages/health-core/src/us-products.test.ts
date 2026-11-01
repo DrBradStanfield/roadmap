@@ -4,12 +4,13 @@
  * (us-products.ts) names a product.
  */
 import { describe, it, expect } from 'vitest';
-import { generateSuggestions, medicinesShown, US_SUPPLEMENT_DESCRIPTIONS } from './suggestions';
+import { generateSuggestions, US_SUPPLEMENT_DESCRIPTIONS } from './suggestions';
 import { SUGGESTION_EVIDENCE, US_SUPPLEMENT_REFERENCES } from './evidence';
 import { calculateHealthResults } from './calculations';
 import { createEmptyFile } from './roadmap-file';
 import { computePlan, renderJson } from './plan';
-import { usProductBlocks, usProductUrl, US_OWNERSHIP_LINE, US_PRODUCT_LINES } from './us-products';
+import { planSections, type PlanSection } from './plan-sections';
+import { usProductSections, usProductUrl, US_OWNERSHIP_LINE, US_PRODUCT_LINES, type UsPlanSection } from './us-products';
 import type { HealthInputs } from './types';
 
 const NOW = new Date('2026-10-31T12:00:00Z');
@@ -35,7 +36,7 @@ const other: HealthInputs = {
 };
 const minor: HealthInputs = { sex: 'female', heightCm: 160, weightKg: 55, birthYear: 2012, birthMonth: 1 };
 const noAge: HealthInputs = { sex: 'male', heightCm: 178, weightKg: 80 };
-const PRODUCT_TEXT = /microvitamin|sleep by|drstanfield|dr brad|-us\b/i;
+const PRODUCT_TEXT = /microvitamin|sleep by|drstanfield|dr brad/i;
 
 describe('US-61 AC1: the two new supplement cards, in every market', () => {
   it('US-61 AC1: an adult gets lutein and zeaxanthin and TMG, beside the other supplement cards, with the final text', () => {
@@ -70,10 +71,10 @@ describe('US-61 AC1: the two new supplement cards, in every market', () => {
 });
 
 describe('US-61 AC2-AC3: engine output never carries a product or a US variant, in any country', () => {
-  it('US-61 AC3: generateSuggestions emits no -us id and no product name, for a US-like conventional-units adult', () => {
+  it('US-61 AC3: generateSuggestions emits no US text and no product name, for a US-like conventional-units adult', () => {
     for (const record of [adult, other]) {
       const { suggestions } = plan(record, 'conventional');
-      expect(suggestions.some((s) => s.id.endsWith('-us'))).toBe(false);
+      expect(suggestions.map((s) => s.description)).not.toContain(US_SUPPLEMENT_DESCRIPTIONS['supplement-creatine']);
       const supplements = suggestions.filter((s) => s.category === 'supplements');
       expect(supplements.map((s) => `${s.title} ${s.description} ${JSON.stringify(s.references)}`).join(' ')).not.toMatch(PRODUCT_TEXT);
       // The base card keeps the WHO sentences: the variant is the overlay's alone.
@@ -83,39 +84,49 @@ describe('US-61 AC2-AC3: engine output never carries a product or a US variant, 
 
   // No runRoadmap or chat-context test here: the chat context (runRoadmap's
   // contextJson) never holds supplement text, so a check on it proves nothing.
-  it('US-61 AC3: get_plan and the CLI (renderJson of computePlan) carry the generic supplement cards, with no product name and no -us text', () => {
+  it('US-61 AC3: get_plan and the CLI (renderJson of computePlan) carry the generic supplement cards, with no product name and no US text', () => {
     const file = createEmptyFile({ deviceId: 'dev_us', now: '2026-10-01T00:00:00Z' });
     file.profile = { sex: 'male', heightCm: 178, birthYear: 1970, unitSystem: 'conventional', updatedAt: '2026-10-01T00:00:00Z', lamport: 1 };
     const json = renderJson(computePlan(file, NOW));
     for (const id of Object.keys(US_PRODUCT_LINES)) expect(json).toContain(`"${id}"`);
     expect(json).not.toMatch(PRODUCT_TEXT);
-    expect(json).not.toContain(US_SUPPLEMENT_DESCRIPTIONS['supplement-creatine-us'] + '"');
-    expect(json).not.toContain(US_SUPPLEMENT_DESCRIPTIONS['supplement-lutein-zeaxanthin-us'] + '"');
+    expect(json).not.toContain(US_SUPPLEMENT_DESCRIPTIONS['supplement-creatine']! + '"');
+    expect(json).not.toContain(US_SUPPLEMENT_DESCRIPTIONS['supplement-lutein-zeaxanthin']! + '"');
   });
 
   it('US-61 AC3: each variant is its card\'s text minus what it drops, with no product name', () => {
     const { suggestions } = plan(adult);
     const card = (id: string) => suggestions.find((s) => s.id === id)!;
-    const base = US_SUPPLEMENT_DESCRIPTIONS['supplement-micronutrient-base-us'];
+    const base = US_SUPPLEMENT_DESCRIPTIONS['supplement-micronutrient-base']!;
     expect(base).not.toMatch(/WHO|dementia/);
     expect(base).toContain('COSMOS');
     expect(base).toContain('warfarin');
     expect(card('supplement-micronutrient-base').description.startsWith(base.split(' If you take')[0])).toBe(true);
-    expect(US_SUPPLEMENT_DESCRIPTIONS['supplement-creatine-us']).toBe('One of the most-studied supplements: a meta-analysis found creatine (3–5 g/day) significantly increases muscle strength and lean mass with resistance training.');
-    expect(US_SUPPLEMENT_DESCRIPTIONS['supplement-lutein-zeaxanthin-us']).toBe('Lutein and zeaxanthin are the pigments of the macula, the part of the eye that sees fine detail. Trials show supplements raise macular pigment density.');
+    expect(US_SUPPLEMENT_DESCRIPTIONS['supplement-creatine']!).toBe('One of the most-studied supplements: a meta-analysis found creatine (3–5 g/day) significantly increases muscle strength and lean mass with resistance training.');
+    expect(US_SUPPLEMENT_DESCRIPTIONS['supplement-lutein-zeaxanthin']!).toBe('Lutein and zeaxanthin are the pigments of the macula, the part of the eye that sees fine detail. Trials show supplements raise macular pigment density.');
     expect(Object.values(US_SUPPLEMENT_DESCRIPTIONS).join(' ')).not.toMatch(PRODUCT_TEXT);
-    expect(US_SUPPLEMENT_REFERENCES['supplement-micronutrient-base-us'].map((r) => r.label)).not.toContainEqual(expect.stringMatching(/WHO/));
-    expect(US_SUPPLEMENT_REFERENCES['supplement-creatine-us'].map((r) => r.label.split(' ')[0])).toEqual(['Kreider']);
-    expect(US_SUPPLEMENT_REFERENCES['supplement-lutein-zeaxanthin-us'].map((r) => r.label)).not.toContainEqual(expect.stringMatching(/AREDS|macular degeneration/i));
+    expect(US_SUPPLEMENT_REFERENCES['supplement-micronutrient-base']!.map((r) => r.label)).not.toContainEqual(expect.stringMatching(/WHO/));
+    expect(US_SUPPLEMENT_REFERENCES['supplement-creatine']!.map((r) => r.label.split(' ')[0])).toEqual(['Kreider']);
+    expect(US_SUPPLEMENT_REFERENCES['supplement-lutein-zeaxanthin']!.map((r) => r.label)).not.toContainEqual(expect.stringMatching(/AREDS|macular degeneration/i));
     expect(Object.keys(US_SUPPLEMENT_REFERENCES).sort()).toEqual(Object.keys(US_SUPPLEMENT_DESCRIPTIONS).sort());
   });
 });
 
-describe('US-61 AC4-AC6: usProductBlocks', () => {
-  const blocksFor = (inputs: HealthInputs, isUS = true) => {
-    const { results, suggestions } = plan(inputs);
-    return usProductBlocks(suggestions, medicinesShown(results), isUS, 'web');
+/** What the overlay shows, flat: each block with its card id, and the line. */
+function shownOf(overlaid: UsPlanSection[] | null) {
+  const cards = (overlaid ?? []).flatMap((section) => section.cards.flatMap((c) => c.suggestions));
+  return {
+    blocks: cards.filter((s) => s.usProduct).map((s) => ({ suggestionId: s.id, ...s.usProduct! })),
+    ownershipLine: overlaid?.find((section) => section.ownershipLine)?.ownershipLine ?? null,
   };
+}
+
+describe('US-61 AC4-AC7: usProductSections', () => {
+  const overlayFor = (inputs: HealthInputs, isUS = true, medium: 'web' | 'ios' = 'web') => {
+    const { results, suggestions } = plan(inputs);
+    return { sections: planSections(suggestions), overlaid: usProductSections(planSections(suggestions), results, isUS, medium) };
+  };
+  const blocksFor = (inputs: HealthInputs, isUS = true) => shownOf(overlayFor(inputs, isUS).overlaid);
 
   it('US-61 AC4: two very different adults get the same blocks, in card order, with the final lines', () => {
     const a = blocksFor(adult);
@@ -136,36 +147,64 @@ describe('US-61 AC4-AC6: usProductBlocks', () => {
     expect(a.ownershipLine).toBe('Brad Stanfield founded and owns the company that sells MicroVitamin+ and Sleep.');
   });
 
-  it('US-61 AC4: the three variant cards carry their US text and references; the others carry none', () => {
-    const { blocks } = blocksFor(adult);
-    const withText = blocks.filter((b) => b.description).map((b) => b.suggestionId);
-    expect(withText).toEqual(['supplement-micronutrient-base', 'supplement-creatine', 'supplement-lutein-zeaxanthin']);
-    for (const b of blocks.filter((x) => x.description)) {
-      expect(b.description).toBe(US_SUPPLEMENT_DESCRIPTIONS[`${b.suggestionId}-us`]);
-      expect(b.references).toEqual(US_SUPPLEMENT_REFERENCES[`${b.suggestionId}-us`]);
+  it('US-61 AC2/AC4: the three variant cards carry their US text and references; the others keep their own', () => {
+    const { sections, overlaid } = overlayFor(adult);
+    const own = sections.flatMap((section) => section.cards.flatMap((c) => c.suggestions));
+    const shown = overlaid!.flatMap((section) => section.cards.flatMap((c) => c.suggestions));
+    const swapped = shown.filter((s, i) => s.description !== own[i].description).map((s) => s.id);
+    expect(swapped).toEqual(['supplement-micronutrient-base', 'supplement-creatine', 'supplement-lutein-zeaxanthin']);
+    for (const id of swapped as (keyof typeof US_SUPPLEMENT_DESCRIPTIONS)[]) {
+      const s = shown.find((x) => x.id === id)!;
+      expect(s.description).toBe(US_SUPPLEMENT_DESCRIPTIONS[id]);
+      expect(s.references).toEqual(US_SUPPLEMENT_REFERENCES[id]);
     }
-    expect(blocks.find((b) => b.suggestionId === 'supplement-tmg')).not.toHaveProperty('description');
+    const tmg = shown.find((s) => s.id === 'supplement-tmg')!;
+    expect(tmg.references).toEqual(own.find((s) => s.id === 'supplement-tmg')!.references);
+    // The input sections are never changed.
+    expect(sections).toEqual(planSections(plan(adult).suggestions));
   });
 
   it('US-61 AC5: none for a known minor, an unknown age, or outside the US', () => {
-    const empty = { blocks: [], ownershipLine: null };
-    expect(blocksFor(minor)).toEqual(empty);
-    expect(blocksFor(noAge)).toEqual(empty);
-    expect(blocksFor(adult, false)).toEqual(empty);
+    expect(overlayFor(minor).overlaid).toBeNull();
+    expect(overlayFor(noAge).overlaid).toBeNull();
+    expect(overlayFor(adult, false).overlaid).toBeNull();
+  });
+
+  it('US-61 AC5: the adult gate is the overlay\'s own, from the results (medicinesShown)', () => {
+    const { suggestions } = plan(adult);
+    const sections = planSections(suggestions);
+    expect(usProductSections(sections, { age: 15, knownMinor: true }, true, 'web')).toBeNull();
+    expect(usProductSections(sections, { age: undefined }, true, 'web')).toBeNull();
+    expect(usProductSections(sections, { age: 40 }, true, 'web')).not.toBeNull();
   });
 
   it('US-61 AC6: fiber and omega-3 get no product', () => {
-    const { blocks } = usProductBlocks([{ id: 'fiber' }, { id: 'supplement-omega3' }], true, true, 'web');
-    expect(blocks).toEqual([]);
+    const results = plan(adult).results;
+    const card = (id: string) => ({ category: 'supplements' as const, priority: 'info' as const, suggestions: [{ id, category: 'supplements' as const, priority: 'info' as const, title: 'T', description: 'D' }] });
+    const sections: PlanSection[] = [{ key: 'supplements', title: 'Supplements', cards: [card('fiber'), card('supplement-omega3')] }];
+    expect(usProductSections(sections, results, true, 'web')).toBeNull();
     expect(Object.keys(US_PRODUCT_LINES)).not.toContain('fiber');
     expect(Object.keys(US_PRODUCT_LINES)).not.toContain('supplement-omega3');
+  });
+
+  it('US-61 AC7: blocks and the one ownership line sit on the Supplements section only', () => {
+    const { results, suggestions } = plan(adult);
+    const sleep = suggestions.find((s) => s.id === 'supplement-sleep')!;
+    // A mapped card outside the Supplements section takes nothing.
+    const sections: PlanSection[] = [
+      { key: 'info', title: 'Foundation', cards: [{ category: 'supplements', priority: 'info', suggestions: [sleep] }] },
+      ...planSections(suggestions),
+    ];
+    const overlaid = usProductSections(sections, results, true, 'web')!;
+    expect(overlaid[0]).toBe(sections[0]);
+    expect(overlaid.filter((section) => section.ownershipLine).map((section) => section.key)).toEqual(['supplements']);
+    expect(overlaid.filter((section) => section.key !== 'supplements').flatMap((section) => section.cards.flatMap((c) => c.suggestions)).some((s) => s.usProduct)).toBe(false);
   });
 
   it('US-61 AC8: the links carry utm_source=health-tool and the medium, web or ios', () => {
     expect(usProductUrl('microvitamin_plus', 'web')).toBe('https://microvitamin.com/products/microvitamin-plus?utm_source=health-tool&utm_medium=web');
     expect(usProductUrl('sleep', 'ios')).toBe('https://microvitamin.com/products/sleep?utm_source=health-tool&utm_medium=ios');
-    const { results, suggestions } = plan(adult);
-    const ios = usProductBlocks(suggestions, medicinesShown(results), true, 'ios');
+    const ios = shownOf(overlayFor(adult, true, 'ios').overlaid);
     expect(ios.blocks.every((b) => b.url.endsWith('?utm_source=health-tool&utm_medium=ios'))).toBe(true);
     expect(ios.ownershipLine).toBe(US_OWNERSHIP_LINE);
   });

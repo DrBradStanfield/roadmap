@@ -1508,23 +1508,25 @@ is. Spec: docs/user-stories.md US-61.
   is always false. DEBUG only, compiled out of Release: the launch argument
   `-StorefrontCountry USA` (or `NZL`) stands in for StoreKit, for simulator checks.
 - **The engine stays the one source.** `screenJson` takes `isUS` as a new last argument and
-  answers `plan.usProducts`, health-core's `usProductBlocks` (us-products.ts, the web's own
-  overlay) with the adult rule `medicinesShown`, the web's. Only `true` counts. Every word,
-  link and card choice is the engine's, so a wording or mapping change ships over the air
-  (D3), and an engine release that empties the mapping removes the blocks (no kill switch,
-  Brad). The sections stay the web's `planSections`, product-free; Swift places each block on
-  its card, swaps in the card's US text and references when the block has them
-  (`USProducts.applied`), and draws the ownership line on the Supplements section once. As on
-  the web (ResultsPanel's `renderCards`), only the Supplements section's single cards take a
-  block. **Host pin:** decoding keeps a block only when its link is https on
-  `microvitamin.com`, so a signed engine can choose among those product pages but cannot
-  point a link anywhere else.
+  answers `plan.usProducts`: health-core's `usProductSections` (us-products.ts, the web's own
+  overlay), the sections ready to draw. It applies the adult rule `medicinesShown` itself, the
+  web's. Only `true` counts. Every word, link, card choice and place is the engine's, so a
+  wording or mapping change ships over the air (D3), and an engine release that empties the
+  mapping removes the blocks (no kill switch, Brad). `plan.sections` stays the web's
+  `planSections`, product-free; `usProducts` is left out when no block shows. Swift decides
+  nothing: it draws `usProducts` when present, else `sections` (simplified 2026-11-01; the
+  first cut had Swift and the web each place blocks, swap text and add the line).
+  **Host pin:** decoding refuses a block whose link is not https on `microvitamin.com` (host
+  compared without case), and then the whole `usProducts`, so the plan shows plain: a signed
+  engine can choose among those product pages but cannot point a link anywhere else.
 - **No bridge change (corrected 2026-10-31, adversary review).** The change works both ways,
   so the id stays `2d467ff50c66c42d` and over-the-air engines keep reaching builds 3 and 4.
   An older app sends four arguments: `isUS` is undefined, so it gets no blocks. An older
   engine ignores the fifth argument and sends no `usProducts`, which Swift decodes as none.
   `isUS` and `usProducts` are recorded in `bridge-optional.json`, not the hashed contract
-  (D3). A first cut moved the id to `d0ffd9e53f8499b3`, which would have cut builds 3 and 4
+  (D3). `usProducts` changed shape on 2026-11-01, from `{blocks, ownershipLine}` to the
+  sections ready to draw; no build before US-61 reads it, so the change is safe for builds 3
+  and 4. A first cut moved the id to `d0ffd9e53f8499b3`, which would have cut builds 3 and 4
   off every later engine; it never shipped.
   **The rule:** `bridge.test.ts` pins the id as a literal. A real bridge change (anything an
   older app cannot do without) moves the id and updates that literal; `bridge-optional.json`
