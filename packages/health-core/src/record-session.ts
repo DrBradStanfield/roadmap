@@ -583,8 +583,8 @@ export class RecordSession {
    * Serialized read-merge-write, run by saveLoop(). A call made while a save
    * runs joins it, and answers when the whole save ends. It never forces
    * another pass itself: every change made meanwhile does that in touch(), so
-   * a debounce firing mid-pass or an empty flush adds no write (US-10 AC5a). A later pass that fails fails the
-   * call too: a false failure, never a false success. Answering at once let
+   * a debounce firing mid-pass or an empty flush adds no write (US-10 AC5a).
+   * A later pass that fails fails the call too: a false failure, never a false success. Answering at once let
    * an awaited flush, and so an erase, report a save that had not happened
    * (US-11 AC7).
    * @returns false when the save failed (already reported to the host).
