@@ -134,20 +134,31 @@ export interface ZipEntryBytes {
 /** Skipped members a ZIP names one by one; past these, one count per reason (AC5b). */
 const MAX_SKIPPED_ROWS = 20;
 /** Members a ZIP may list at all: parsing the directory costs CPU per entry, before any inflate (AC5b). */
-export const MAX_ZIP_ENTRIES = 1_000;
-const CENTRAL_HEADER = Buffer.from([0x50, 0x4b, 0x01, 0x02]);
+export const MAX_ZIP_ENTRIES = IMPORT_LIMITS.zipEntries;
 
 /**
- * Whether a ZIP lists more than `limit` members, by counting central-directory
- * signatures in the bytes. JSZip parses every record it finds whatever count the
- * directory declares, and each record starts with this signature, so the count
- * can run high (the signature inside compressed data) but never low.
+ * Why JSZip must not parse these bytes, or null (AC5b), in one pass of plain
+ * byte compares (a native search crawls on bytes like `PPPP…`). Over
+ * `MAX_ZIP_ENTRIES` central-directory signatures is `too_many`: JSZip parses
+ * every record it finds, whatever count the directory declares, and each starts
+ * with the signature, so the count can run high but never low. An end record
+ * that sends JSZip to its ZIP64 reader is `unreadable`: that reader's loop over
+ * the record's extra data never advances, and crafted bytes keep it spinning
+ * until the reader runs out. The check is JSZip's own, on the record it uses
+ * (the last), so a ZIP64 signature inside compressed data refuses nothing.
  */
-export function zipHasOver(bytes: Uint8Array, limit: number): boolean {
-  const buf = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  let n = 0;
-  for (let at = buf.indexOf(CENTRAL_HEADER); at !== -1; at = buf.indexOf(CENTRAL_HEADER, at + 4)) if (++n > limit) return true;
-  return false;
+export function zipRefusal(bytes: Uint8Array): 'too_many' | 'unreadable' | null {
+  let entries = 0;
+  let end = -1;
+  for (let i = 0; i + 3 < bytes.length; i++) {
+    if (bytes[i] !== 0x50 || bytes[i + 1] !== 0x4b) continue;
+    if (bytes[i + 2] === 0x01 && bytes[i + 3] === 0x02 && ++entries > MAX_ZIP_ENTRIES) return 'too_many';
+    if (bytes[i + 2] === 0x05 && bytes[i + 3] === 0x06) end = i;
+  }
+  if (end < 0 || end + 22 > bytes.length) return null;
+  const view = new DataView(bytes.buffer, bytes.byteOffset + end, 22);
+  const zip64 = [4, 6, 8, 10].some((at) => view.getUint16(at, true) === 0xffff) || [12, 16].some((at) => view.getUint32(at, true) === 0xffffffff);
+  return zip64 ? 'unreadable' : null;
 }
 
 /**
@@ -445,8 +456,9 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
             results[i] = fail(unit.name, 'failed', 'too_large');
             return;
           }
-          if (zipHasOver(bytes, MAX_ZIP_ENTRIES)) {
-            results[i] = fail(unit.name, 'failed', 'too_many');
+          const refused = zipRefusal(bytes);
+          if (refused) {
+            results[i] = fail(unit.name, 'failed', refused);
             return;
           }
           let opened: Awaited<ReturnType<typeof unzip>> | 'time' | 'spent';

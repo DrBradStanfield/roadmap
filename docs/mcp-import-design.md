@@ -56,7 +56,7 @@ of truth for acceptance criteria and the schemas live in
    `next` says commit first, then ask again. Non-lab documents are asked for
    metadata only (`documentMode: 'metadata'`: title, date, a one-line
    summary, 3072 tokens) — the connector files no text, so a four-page
-   letter no longer runs past the budget; the website keeps the full prompt. PDFs/images ≤5 MB, ZIP ≤20 MB listing ≤1,000 members, ≤20 ZIP members opened per call (US-35 AC5b),
+   letter no longer runs past the budget; the website keeps the full prompt. PDFs/images ≤5 MB, ZIP ≤20 MB listing ≤1,000 entries and not ZIP64, ≤20 ZIP members opened per call (US-35 AC5b),
    inflate counted on the stream, type by magic bytes per entry, entries by
    position. Dropbox: list the root, download by `id`, files only, names
    control-stripped.

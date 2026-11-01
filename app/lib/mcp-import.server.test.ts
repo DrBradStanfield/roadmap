@@ -24,7 +24,7 @@ import {
   setImportSeams,
   sniff,
   unzip,
-  zipHasOver,
+  zipRefusal,
 } from './mcp-import.server';
 import { ExtractionStopError } from './anthropic.server';
 import { resourceUrl } from './mcp-config.server';
@@ -916,12 +916,35 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
       for (let i = 0; i < n; i++) zip.file(`junk${i}`, '');
       return new Uint8Array(await zip.generateAsync({ type: 'uint8array' }));
     };
-    expect(zipHasOver(await zipWith(MAX_ZIP_ENTRIES), MAX_ZIP_ENTRIES)).toBe(false);
+    expect(zipRefusal(await zipWith(MAX_ZIP_ENTRIES))).toBeNull();
     const cloud = new MemoryCloud();
     cloud.docs.set('huge.zip', new Blob([await zipWith(MAX_ZIP_ENTRIES + 1)]));
     const load = vi.spyOn(JSZip, 'loadAsync');
     const bundle = await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline());
     expect('files' in bundle && bundle.files).toEqual([{ name: 'huge.zip', status: 'failed', reason: 'too_many' }]);
+    expect(load).not.toHaveBeenCalled();
+    load.mockRestore();
+  });
+
+  it('a ZIP whose end record sends JSZip to its ZIP64 reader is unreadable before it is parsed (AC5b; adversary re-check R1)', async () => {
+    // JSZip's ZIP64 end-record loop never advances, so crafted bytes there spin until the reader runs out.
+    const zip = new JSZip();
+    zip.file('a.pdf', PDF);
+    const plain = new Uint8Array(await zip.generateAsync({ type: 'uint8array' }));
+    expect(zipRefusal(plain)).toBeNull();
+    const end = Buffer.from(plain).lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
+    for (const [offset, width] of [[4, 2], [6, 2], [8, 2], [10, 2], [12, 4], [16, 4]] as const) {
+      const bytes = plain.slice();
+      bytes.fill(0xff, end + offset, end + offset + width);
+      expect(zipRefusal(bytes)).toBe('unreadable');
+    }
+    const bytes = plain.slice();
+    bytes.fill(0xff, end + 10, end + 12);
+    const cloud = new MemoryCloud();
+    cloud.docs.set('z64.zip', new Blob([bytes]));
+    const load = vi.spyOn(JSZip, 'loadAsync');
+    const bundle = await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline());
+    expect('files' in bundle && bundle.files).toEqual([{ name: 'z64.zip', status: 'failed', reason: 'unreadable' }]);
     expect(load).not.toHaveBeenCalled();
     load.mockRestore();
   });
