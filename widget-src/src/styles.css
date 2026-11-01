@@ -5329,9 +5329,8 @@ input[type="number"] {
   }
 }
 
-/* US-62 AC8-AC11: the phone's My data rows and value pages, the iPhone's
-   layout (ValueRow.swift). Rendered only at 768px or less; desktop keeps the
-   grids. */
+/* US-62 AC8-AC11: My data rows and value pages, the iPhone's layout
+   (ValueRow.swift), on phone and desktop; the grids sit one click away. */
 .hr-sr-only {
   position: absolute;
   width: 1px;

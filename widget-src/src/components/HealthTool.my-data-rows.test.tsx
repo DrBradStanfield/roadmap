@@ -312,17 +312,23 @@ describe('US-62 AC12: About you low on a phone', () => {
   });
 });
 
-describe('US-62 AC9: desktop keeps the grids, with the same text', () => {
-  it('no rows; the grids\' hints and targets read exactly as before rowTarget', async () => {
+describe('US-62 AC9, AC11 (Brad 2026-11-02): desktop shows the rows too, the grids one click away with the same text', () => {
+  it('rows first; "All results as a table" shows the grids, whose hints and targets read exactly as before rowTarget', async () => {
     phone = false;
     await seed();
     // A first visit fills the device's mirror; the second opens the vitals grid, as a returning visit does.
     await renderTool();
     cleanup();
     const view = await renderTool();
-    await waitFor(() => expect(view.container.querySelector('.bt-row[data-metric] ~ .bt-row, .bt-timeline .bt-ref-label')).not.toBeNull());
+    expect(row(view, 'LDL Cholesterol').querySelector('.md-row-value')!.textContent).toBe('3.4 (2.9)');
+    expect(row(view, 'Weight')).toBeTruthy();
+    const tables = () => [...view.container.querySelectorAll<HTMLElement>('.md-table')];
+    expect(tables().length).toBe(2);
+    expect(tables().every(t => t.hidden)).toBe(true);
+    fireEvent.click(view.getByRole('button', { name: 'All results as a table' }));
+    expect(tables().every(t => !t.hidden)).toBe(true);
     expect(view.container.querySelector('.md-row')).toBeNull();
-    expect(view.container.querySelector('.md-table')).toBeNull();
+    await waitFor(() => expect(view.container.querySelector('.bt-row[data-metric] ~ .bt-row, .bt-timeline .bt-ref-label')).not.toBeNull());
     const refs = (selector: string) => [...view.container.querySelectorAll(`${selector} .bt-ref-label`)].map(e => e.textContent);
     expect(refs('.bt-timeline:not(.alr-matrix)').filter(t => t !== 'Units vary between reports')).toEqual(expect.arrayContaining([
       'Normal: <39 mmol/mol', 'Normal: 60–110 µmol/L', 'Optimal: <0.50 g/L', 'Optimal: <1.4 mmol/L',

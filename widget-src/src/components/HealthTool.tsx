@@ -1017,10 +1017,11 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // US-16 AC2 on a phone: after a chat edit switches to My data, the filled
   // cell (a matrix's highlighted cell, or the plain field) is scrolled to the
   // middle, clear of the tab bar, and focused. After the commit, so after the
-  // tab's own scroll restore.
+  // tab's own scroll restore. On desktop the chat stays where it is: the
+  // table opens (US-62 AC11) and the focus stays in the chat.
   const [revealCell, setRevealCell] = useState<{ field: string } | null>(null);
   useEffect(() => {
-    if (!revealCell) return;
+    if (!revealCell || !isMobileRef.current) return;
     const panel = rootRef.current?.querySelector('.health-input-panel');
     const cell = panel?.querySelector<HTMLElement>('.bt-input-active') ?? document.getElementById(revealCell.field);
     cell?.scrollIntoView({ block: 'center' });
@@ -1308,10 +1309,11 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       setProfileProposal(pending);
       for (const field of pending ? profileFields(pending) : []) trackProductEvent('chat_profile_edit', { field, choice: 'shown' });
     }
-    // Mobile hand-off: bring the user to the form so they SEE the pre-filled
-    // cell + Save button (they were on the chat tab). Mirror handleAutoFocusEmail.
-    if (editedField && isMobileRef.current) {
-      selectTab('input');
+    // Hand-off: the grid holding the pre-filled cell shows (US-62 AC11), and
+    // on a phone the form's tab opens, so they SEE it and its Save button
+    // (they were on the chat tab). Mirror handleAutoFocusEmail.
+    if (editedField) {
+      if (isMobileRef.current) selectTab('input');
       setRevealCell({ field: editedField });
     }
   }, [applyFieldEdit, applyMedicationEdit, unitSystem, eraseUnshown, selectTab]);

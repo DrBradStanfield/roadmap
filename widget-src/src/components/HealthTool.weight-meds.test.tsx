@@ -37,6 +37,7 @@ vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
 
 import { HealthTool } from './HealthTool';
+import { openAboutYou, showTables } from '../testing/health-tool-harness';
 
 const NEUTRAL = 'Are you currently taking any weight or diabetes medications? Recording these helps track your health over time.';
 const recommends = (bmi: string, reasons?: string) => (reasons
@@ -146,6 +147,13 @@ afterEach(async () => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
+
+/** The vitals' Blood Pressure row (US-62 AC8). */
+const pressureRow = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll('.md-row')).find((r) => r.querySelector('.md-row-label')?.textContent === 'Blood Pressure');
+/** Every blood-pressure target on the form: the row's, the plain field's and the grid's. */
+const bpTargets = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll('.md-row-meta, .field-hint, .bt-ref-label')).map((h) => h.textContent).filter((t) => t?.includes('/80'));
 
 describe('US-06 AC5: the form recommends a weight medication only when the plan does', () => {
   it("Brad's ruling: BMI 28.6 with a healthy waist and no raised marker is neutral, as the plan is silent", async () => {
@@ -362,9 +370,10 @@ describe('US-06 AC5: the form recommends a cholesterol medication only when the 
 });
 
 describe('US-06 AC5: the form\'s age-based targets and sections follow the plan\'s age', () => {
-  /** The form's blood-pressure target hint. */
+  /** The form's blood-pressure target hint: the vitals grid's, under "All results as a table" (US-62 AC11). */
   const bpHint = (container: HTMLElement) => waitFor(() => {
-    const hint = Array.from(container.querySelectorAll('.field-hint')).find((h) => h.textContent?.startsWith('Target: <1'));
+    showTables(container);
+    const hint = Array.from(container.querySelectorAll('.field-hint, .bt-ref-label')).find((h) => h.textContent?.startsWith('Target: <1'));
     if (!hint) throw new Error('no BP target on the page');
     return hint.textContent;
   });
@@ -394,10 +403,8 @@ describe('US-06 AC5: the form\'s age-based targets and sections follow the plan\
   // Codex R1 (2026-09-28): with no plan, blood pressure stays neutral, like weight and waist.
   it('with no plan (no height), the form states no blood-pressure target', async () => {
     const view = await guestWith({ sex: 'male', height: 0, weight: 80, bp: [135, 85], lipids: { ldl: 2 } }); // the blood test opens the whole form
-    await waitFor(() => expect(Array.from(view.container.querySelectorAll('.collapsed-field-value'))
-      .some((v) => v.textContent?.includes('135/85'))).toBe(true));
-    expect(Array.from(view.container.querySelectorAll('.field-hint')).map((h) => h.textContent)
-      .filter((t) => t?.includes('/80 mmHg'))).toEqual([]);
+    await waitFor(() => expect(pressureRow(view.container)?.querySelector('.md-row-value')?.textContent).toContain('135/85'));
+    expect(bpTargets(view.container)).toEqual([]);
   });
 
   it('a returning user who clears their height: the matrix states no BP target and colours no BP status', async () => {
@@ -406,6 +413,7 @@ describe('US-06 AC5: the form\'s age-based targets and sections follow the plan\
     const bpRow = () => Array.from(view.container.querySelectorAll('.bt-row')).find((r) => r.textContent?.includes('Blood Pressure'));
     await waitFor(() => expect(bpRow()?.querySelector('.bt-ref-label')?.textContent).toBe('Target: <120/80 mmHg'));
     expect(Array.from(bpRow()!.querySelectorAll('.bt-status-tick')).map((t) => t.className)).toContain('bt-status-tick bt-status-bad');
+    openAboutYou(view.container);
     fireEvent.change(view.container.querySelector('#heightCm')!, { target: { value: '' } });
     // The form stays open while the height is retyped (US-62 AC13).
     await waitFor(() => expect(bpRow()?.querySelector('.bt-ref-label')?.textContent).toBe('Set height to see target'));
@@ -604,10 +612,8 @@ describe('US-07 AC6: the form withholds its medicine wording when the plan does'
     it('the first-visit form: the blood pressure is shown with no target', async () => {
       const view = await guestWith(MINOR);
       await waitFor(() => expect(planCard(view.container, 'This plan is built for adults')).toBeDefined());
-      await waitFor(() => expect(Array.from(view.container.querySelectorAll('.collapsed-field-value'))
-        .some((v) => v.textContent?.includes('150/95'))).toBe(true));
-      expect(Array.from(view.container.querySelectorAll('.field-hint')).map((h) => h.textContent)
-        .filter((t) => t?.includes('/80 mmHg'))).toEqual([]);
+      await waitFor(() => expect(pressureRow(view.container)?.querySelector('.md-row-value')?.textContent).toContain('150/95'));
+      expect(bpTargets(view.container)).toEqual([]);
     });
   });
 

@@ -45,7 +45,7 @@ export function collectMatrixLayout(root) {
   };
 }
 
-// US-62 AC8: on a phone, each seeded blood test is one row, inside the screen,
+// US-62 AC8: on phone and desktop, each seeded blood test is one row, inside the screen,
 // its value with the previous in brackets.
 export function assertRows(data) {
   assert(data.documentWidth <= data.viewportWidth + 1, 'page overflows horizontally');
@@ -138,17 +138,16 @@ async function inspect(browser, deviceName, viewport) {
       localStorage.setItem('health_roadmap_file_v2_rev', '0');
     });
     await page.goto(process.env.WEBKIT_VERIFY_URL || 'https://drstanfield.com/pages/roadmap', { waitUntil: 'domcontentloaded' });
-    if (deviceName) {
-      // US-62 AC8, AC11: a phone shows rows; the grid is one tap away.
-      await page.locator('.md-row').first().waitFor({ state: 'visible', timeout: 30000 });
-      // A slow load fails only if the value never arrives; assertRows then names it.
-      await page.locator('.md-row', { has: page.locator('.md-row-label', { hasText: /^HbA1c$/ }) })
-        .locator('.md-row-value').waitFor({ state: 'attached', timeout: 15000 }).catch(() => {});
-      const rows = await page.evaluate(collectRows);
-      assertRows(rows);
-      console.log(`${deviceName}: rows verified`, JSON.stringify(rows));
-      await page.getByRole('button', { name: 'All results as a table' }).tap();
-    }
+    // US-62 AC8, AC11: phone and desktop show rows; the grid is one tap (or click) away.
+    await page.locator('.md-row').first().waitFor({ state: 'visible', timeout: 30000 });
+    // A slow load fails only if the value never arrives; assertRows then names it.
+    await page.locator('.md-row', { has: page.locator('.md-row-label', { hasText: /^HbA1c$/ }) })
+      .locator('.md-row-value').waitFor({ state: 'attached', timeout: 15000 }).catch(() => {});
+    const rows = await page.evaluate(collectRows);
+    assertRows(rows);
+    console.log(`${deviceName ?? 'desktop'}: rows verified`, JSON.stringify(rows));
+    const tableButton = page.getByRole('button', { name: 'All results as a table' });
+    await (deviceName ? tableButton.tap() : tableButton.click());
     const matrix = page.locator('.bt-timeline').first();
     await matrix.waitFor({ state: 'visible', timeout: 30000 });
     await matrix.scrollIntoViewIfNeeded();

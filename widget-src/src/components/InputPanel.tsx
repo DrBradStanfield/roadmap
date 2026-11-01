@@ -211,8 +211,8 @@ interface InputPanelProps {
   onDocumentDeleted?: (docId: string) => void;
   /** Says whether it jumped: only as the last answer (US-62 AC13). */
   onAutoFocusEmail?: () => boolean;
-  /** A chat edit that filled a grid cell on a phone (US-16 AC2): the table
-   *  opens so the filled cell shows. Each new edit is a new object. */
+  /** A chat edit that filled a grid cell (US-16 AC2): the table opens so the
+   *  filled cell shows, phone and desktop. Each new edit is a new object. */
   revealCell?: { field: string } | null;
 }
 
@@ -327,7 +327,7 @@ export function InputPanel({
   const canCollapse = wasDone && formStage === 4;
   const [collapsed, setCollapsed] = useState(wasDone);
 
-  // ── The phone's My data (US-62 AC8-AC12) ──
+  // ── My data, phone and desktop (US-62 AC8-AC12) ──
   // Rows replace the grids, which stay mounted but hidden: their drafts, the
   // chat's prefill (US-16 AC2) and the save before an upload all keep working.
   // "All results as a table" shows them; so does a chat edit that filled one.
@@ -342,8 +342,8 @@ export function InputPanel({
   const [tableOpen, setTableOpen] = useState(false);
   const [seenReveal, setSeenReveal] = useState<{ field: string } | null>(null);
   const revealing = !!revealCell && revealCell !== seenReveal;
-  const tableShown = !isPhone || tableOpen || revealing;
-  const pageShown = isPhone && !revealing ? valuePage : null;
+  const tableShown = tableOpen || revealing;
+  const pageShown = !revealing ? valuePage : null;
   // A page is a history entry (a state marker, no URL change), so the phone's
   // back gesture closes it, and "‹ My data" goes back. Typed, unsaved Add
   // input is never dropped silently: leaving asks first. Back returns to the
@@ -416,12 +416,12 @@ export function InputPanel({
     if (onPageEntry()) window.history.back();
   }, [revealing]);
   // A grid's typed text not yet saved, valid or not (the plan and the chat
-  // read the valid part, and an upload saves it first): on a phone, where the
-  // grids sit hidden under the rows, each card says so and opens the table
+  // read the valid part, and an upload saves it first): where the grids sit
+  // hidden under the rows, each card says so and opens the table
   // (US-62 AC11). Each grid reports what it keeps.
   const [draftedVitals, setDraftedVitals] = useState(false);
   const [draftedBlood, setDraftedBlood] = useState(false);
-  const unsavedCue = (shown: boolean) => isPhone && !tableShown && shown && (
+  const unsavedCue = (shown: boolean) => !tableShown && shown && (
     <button type="button" className="md-unsaved" onClick={() => showTable(true)}>Unsaved values: review</button>
   );
   const showTable = (open: boolean) => { setSeenReveal(revealCell); setTableOpen(open); };
@@ -429,7 +429,7 @@ export function InputPanel({
   const panelTop = () => (panelRef.current ? panelRef.current.getBoundingClientRect().top + window.scrollY - 60 : window.scrollY);
   // A grid mounted hidden never scrolled to its newest column: do it on showing.
   useEffect(() => {
-    if (!isPhone || !tableShown) return;
+    if (!tableShown) return;
     panelRef.current?.querySelectorAll<HTMLElement>('.md-table .bt-timeline-scroll').forEach(el => { el.scrollLeft = el.scrollWidth; });
   }, [isPhone, tableShown]);
   // About you sits low, as on the iPhone, for a record complete when first
@@ -1211,11 +1211,11 @@ export function InputPanel({
   };
 
   const renderVitals = () => {
-    // A phone shows rows for any saved vitals, the mirror's or the record's
-    // (a new device), unless the plain fields saved one this visit: those
-    // stay, so nothing moves under someone typing.
-    const phoneRows = isPhone && (vitalsViewMode === 'matrix' || (vitalsHistory.length > 0 && fieldsSaved === 0));
-    if (!phoneRows) return vitalsViewMode === 'matrix' ? renderVitalsMatrix() : renderVitalsLegacy();
+    // Rows for any saved vitals, the mirror's or the record's (a new device),
+    // unless the plain fields saved one this visit: those stay, so nothing
+    // moves under someone typing.
+    const rows = vitalsViewMode === 'matrix' || (vitalsHistory.length > 0 && fieldsSaved === 0);
+    if (!rows) return renderVitalsLegacy();
     return (
       <>
         {!tableShown && <VitalsRows history={vitalsHistory} ctx={rowCtx} onOpen={openPage} withoutWeight={weightInProfile}/>}
@@ -2270,13 +2270,6 @@ export function InputPanel({
   };
 
   // ── Render all sections with progressive disclosure (both mobile and desktop) ──
-  const bloodTestGrids = (
-    <>
-      {renderBloodTests()}
-      {move.panel}
-      <AdditionalLabRows labValues={labValues} onAdded={onLabValueAdded} onCorrect={onCorrectValue} move={move.headers}/>
-    </>
-  );
   return (
     <div ref={panelRef} className={`health-input-panel${pageShown ? ' md-page-open' : ''}`}>
       {pageShown && (
@@ -2296,11 +2289,11 @@ export function InputPanel({
 
       {/* Card 2: Blood Tests (the whole form). `section-card--bt` zeros the
           card's inner padding so the timeline matrix sits flush against
-          the card edges (column-fit math expects no inner padding). On a
-          phone, rows, with the grids one tap away (US-62 AC11). */}
+          the card edges (column-fit math expects no inner padding). Rows,
+          with the grids one tap away (US-62 AC11). */}
       {fullForm && (
         <div className="section-card section-card--bt stage-reveal">
-          {isPhone && !tableShown && (
+          {!tableShown && (
             <BloodTestRows history={bloodTestHistory} labValues={labValues} ctx={rowCtx} onOpen={openPage}>
               {unsavedCue(draftedBlood)}
               <div className="md-foot">
@@ -2309,12 +2302,12 @@ export function InputPanel({
               </div>
             </BloodTestRows>
           )}
-          {isPhone ? (
-            <div className="md-table" hidden={!tableShown}>
-              <button type="button" className="md-back md-table-back" onClick={() => showTable(false)}>‹ Show as rows</button>
-              {bloodTestGrids}
-            </div>
-          ) : bloodTestGrids}
+          <div className="md-table" hidden={!tableShown}>
+            <button type="button" className="md-back md-table-back" onClick={() => showTable(false)}>‹ Show as rows</button>
+            {renderBloodTests()}
+            {move.panel}
+            <AdditionalLabRows labValues={labValues} onAdded={onLabValueAdded} onCorrect={onCorrectValue} move={move.headers}/>
+          </div>
         </div>
       )}
 
