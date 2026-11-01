@@ -3,6 +3,12 @@
 Draft plan, 2026-11-02. Nothing built. Asked by Brad: "If we can auto import blood
 tests from Apple, that would be a huge unlock."
 
+Reviewed 2026-11-02 by a fresh adversary and Codex (gpt-6.1-sol). Every Apple claim
+below was re-checked by the adversary against Apple's pages. Their design findings
+(amendments and the dedup key, the institution in the key, `<` and `>` results, the
+unmeasurable "allowed" event, Apple's `supportsHealthRecords()` gate, glucose fasting,
+the agent-contract impact) are fixed in sections 4 to 9.
+
 ## The answer
 
 **Not in New Zealand.** Blood tests reach Apple Health as *Health Records*: FHIR files
@@ -11,8 +17,8 @@ countries only: Canada, the United Kingdom and the United States. New Zealand an
 Australia are not on the list. So Brad, and every NZ user, would see nothing.
 
 **Export is impossible everywhere.** Apple makes clinical records read-only. No app can
-write a lab result into Health as a lab result. The one lab-like value an app can write
-is blood glucose (an ordinary quantity type).
+write a lab result into Health as a lab result. The only lab-like values an app can
+write are blood glucose and blood alcohol (ordinary quantity types).
 
 **For US, UK and Canadian users it is feasible**, with Apple's extra "Clinical Health
 Records" entitlement, a second permission sheet, and parsing the FHIR JSON ourselves.
@@ -47,6 +53,16 @@ source (`developer.apple.com/tutorials/data/documentation/…json`). Quotes are 
   reflect the time and date when the system downloaded the FHIR data"
   ([HKClinicalRecord](https://developer.apple.com/documentation/healthkit/hkclinicalrecord)).
   The draw date must come from the FHIR JSON (`effectiveDateTime`).
+- **Identity:** "the system only guarantees that the FHIR identifier is unique for a
+  particular resource type from a given source. To identify a record uniquely, you must
+  check the identifier, type, and source." (Accessing Health Records.) `sourceURL` is
+  optional (`URL?`).
+- **Where it is offered:** `HKHealthStore.supportsHealthRecords()` "returns true if the
+  device is set to a locale where clinical records are supported, or if the user already
+  has clinical records downloaded"
+  ([supportsHealthRecords](https://developer.apple.com/documentation/healthkit/hkhealthstore/supportshealthrecords())).
+- **Not found in Apple's pages:** how an amended record reaches an app (a new sample, a
+  replaced one, or a delete and an add in an anchored query). It must be tested.
 
 **Versions.** `HKClinicalRecord` and `labResultRecord`: iOS 12 and later. `HKFHIRVersion`
 (which tells DSTU2 from R4): iOS 14 and later, with `primaryDSTU2()` and `primaryR4()`
@@ -59,7 +75,8 @@ app's minimum is iOS 17 (`IPHONEOS_DEPLOYMENT_TARGET`), above both.
   `com.apple.developer.healthkit.access`, the entitlement for "Health data types that
   require additional permission"
   ([entitlement](https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.healthkit.access)).
-  The exact value string (believed to be `health-records`) was not on the page I read: not confirmed.
+  Its value is `health-records`: "The app can request access to FHIR-backed clinical
+  records." (same page, verified by the adversary review).
 - A new purpose string, `NSHealthClinicalHealthRecordsShareUsageDescription`: "This key
   is required if your app uses APIs that access the user's clinical records"
   ([key](https://developer.apple.com/documentation/bundleresources/information-property-list/nshealthclinicalhealthrecordsshareusagedescription)).
@@ -147,8 +164,16 @@ Health only as a read-only clinical record.
   - Expect LOINC on most US results; expect some with only a local code and display text.
   - Expect several LOINC codes for one test (LDL calculated vs direct; HbA1c % vs mmol/mol;
     creatinine by mass vs by moles). The map is many-to-one.
-  - Expect UCUM spellings our catalogue does not hold (`10*9/L`, `10*3/uL`, `mg/dL`,
-    `umol/L`). They need aliases, never guesses.
+  - Expect UCUM spellings. `normalizeLabUnit` already folds `10*9/L`, `umol/L`, `uL` and
+    `mg/dL` (lab-catalog.ts). The gaps are UCUM's bracket and brace forms: `m[IU]/L` and
+    `u[IU]/mL` (TSH), `[iU]/L`, `%{HbA1c}`, `mL/min/{1.73_m2}`. Today these would be
+    refused, not misread: safe, but they would not import. They need aliases, never guesses.
+  - Expect bounded results: `valueQuantity.comparator` (`<`, `>`, `<=`, `>=`), as in a
+    PSA "<0.01" or an eGFR ">90". The FHIR Quantity type requires a reader to honour it
+    ([FHIR R4 Quantity](https://hl7.org/fhir/R4/datatypes.html#Quantity)). Our rows hold
+    an exact number only.
+  - Expect results with no number: `valueString`, `valueCodeableConcept`, or
+    `dataAbsentReason`.
   - UK and Canadian feeds: profiles not checked. Unknown.
   - Results can be `preliminary`, `final`, `amended`, `corrected`, `cancelled` or
     `entered-in-error`. Only some should land (below).
@@ -162,7 +187,7 @@ Health only as a read-only clinical record.
 | **A** | Do nothing more | | none | none |
 | **B** | Health Records import (read only), US/UK/Canada | US/UK/CA users with a connected provider | large: FHIR parser, LOINC map, schema addition, entitlement, second sheet | App Review on a new entitlement; LOINC/unit mistakes are clinical errors; we cannot see a real record |
 | **C** | Lab report to the app in two taps: a share-sheet extension, so "Share › Health Roadmap" from a portal app, Mail, Files or Photos runs today's lab-PDF import | everyone, NZ included | small to medium: the app has neither a share extension nor document types today. Cheapest: declare PDF and image document types so the share sheet offers "Open in Health Roadmap"; fuller: a share extension | low; the same US-52 import as today |
-| **D** | Blood glucose both ways with Apple Health | people with meters or CGMs | small once lab rows have an `externalId` (B's step 1) | CGMs write many readings a day; we keep one per day |
+| **D** | Blood glucose both ways with Apple Health | people with meters or CGMs | small once lab rows have an `externalId` (B's step 1), plus its own mapping rule | the catalogue's `glucose` is FASTING glucose (`glucose_random` is separate, lab-catalog.ts); meter and CGM readings are mostly not fasting, so filing them there mislabels them. Export must also skip `health_records` and `lab_import` rows, or lab results go to Health as meter readings (`deviceWrites` skips only the store's own source, device-export.ts) |
 | **E** | Write a CDA document to Health | almost no one | medium | odd UX; not lab values |
 
 **Recommended: C now. B later, only for US/UK/Canada, when the App Store build has US
@@ -171,71 +196,115 @@ Brad has (results arrive as a portal page or PDF), and the import it triggers al
 exists. B is worth it only if enough US users have Health Records, which we cannot
 measure until the app is in the US store.
 
-Trade-off stated: B is the only true "auto" import, and the US is the market for Brad's
-products (US-61). If Brad wants B for the US anyway, the plan below is how.
+Trade-offs stated:
+- B is the only true "auto" import. C is still a manual step, in NZ too.
+- B is fully local. C sends the whole report through Brad's server to the extraction
+  model (US-52's pipeline, App Attest-gated, so it needs the App Store build), as the
+  Add medical records sheet does today. Nothing is kept on the server, but the report
+  does leave the phone.
+- The US is the market for Brad's products (US-61). If Brad wants B for the US anyway,
+  the plan below is how.
 
 ## 6. If B is built: the design
 
 ### Reading (iOS)
 - Ask for `labResultRecord` in onboarding's one Apple Health request (Brad 2026-10-26,
-  "just do it in one step"), only on iOS where the storefront is US, GB or CA (D14's
-  storefront rule). Elsewhere the sheet would offer nothing and confuse.
-  Health shows it as a separate sheet anyway.
+  "just do it in one step"), only when `supportsHealthRecords()` is true. Apple's own
+  check follows the phone's locale and any records already downloaded. The App Store
+  storefront (D14's rule for products) is a shopping signal, not a Health one: a
+  Canadian with records and an NZ Apple ID would never be asked. Elsewhere the sheet
+  would offer nothing and confuse. Health shows it as a separate sheet anyway.
 - `HealthKitClient` stays the only file touching HealthKit: an anchored query on
   `labResultRecord`, observer plus background delivery as for vitals (whether background
   delivery fires for clinical types is not confirmed; test on the simulator).
-- Swift passes each record's raw `fhirResource.data`, its FHIR version, `identifier`
-  and `sourceURL` to the engine. Swift parses nothing (D2: one engine).
+- Swift passes each record's raw `fhirResource.data`, its FHIR version, `identifier`,
+  `sourceURL` and the record's HealthKit source (the institution's account) to the
+  engine. Swift parses nothing (D2: one engine).
 
 ### Parsing and mapping (health-core)
 - New `fhir-lab-import.ts`: parse the JSON once with Zod where it enters (CLAUDE.md
-  security rule; a provider's JSON is external text). Keep `code.coding[]`,
-  `code.text`, `valueQuantity` (value, unit, code, system), `effectiveDateTime`,
-  `status`, `referenceRange[0].low/high`. Anything else is dropped.
+  security rule; a provider's JSON is external text). Keep `id`, `meta.versionId`,
+  `meta.lastUpdated`, `code.coding[]`, `code.text`, `valueQuantity` (value, unit, code,
+  system, **comparator**), `effectiveDateTime`, `status`, `referenceRange[0].low/high`.
+  Anything else is dropped.
+- **Results that do not land** (counted, shown as "not read"): any with a `comparator`
+  (a "<0.01" must not become an exact 0.01; until Brad rules otherwise, question 8);
+  any without a `valueQuantity` (text, coded or absent results).
 - **LOINC map:** a `loinc: string[]` field on each `LAB_CATALOG` entry and on the core
   lab metrics in `mappings.ts`. Many codes per entry. A starting list, from memory and
   unverified, for Brad to check against loinc.org: HbA1c 4548-4 (%), 59261-8 (mmol/mol);
   LDL 13457-7 (calculated), 18262-6 (direct); total cholesterol 2093-3; HDL 2085-9;
   triglycerides 2571-8; ApoB 1884-6; creatinine 2160-0 (mass), 14682-9 (moles); PSA
-  2857-1; Lp(a) 10835-7 (mass), 43583-4 (moles); glucose 2345-7; ferritin 2276-4; TSH 3016-3.
+  2857-1; Lp(a) 10835-7 (mass), 43583-4 (moles); ferritin 2276-4; TSH 3016-3.
   This map is clinical-adjacent: Brad approves it, adversary plus Codex review it.
+- **A code is not always enough.** Glucose 2345-7 is serum or plasma glucose with no
+  fasting qualifier, but the catalogue splits `glucose` (fasting) from `glucose_random`.
+  A plain list of codes per entry cannot say which. Such tests stay out of the map
+  until a rule decides (fasting code only, or never fasting from 2345-7).
 - **No LOINC match:** do not fall back to `code.text` through the PDF aliases on the
   first build. A name match is how the PDF import works, but a feed that sends a local
   code is the feed most likely to name a test oddly. Count it, show it as "not read".
   (Brad's question 4.)
-- **Units:** reuse `toStoredLab` and the catalogue's unit aliases, the PDF path, so a
-  value converts or is refused the same way however it came in. Add UCUM spellings as
-  aliases (`10*9/L` = ×10⁹/L, `umol/L` = µmol/L). HbA1c % goes through the existing NGSP
-  to IFCC conversion in `units.ts`. An unknown unit is refused and shown, never guessed
-  (US-21 AC15's rule).
+- **Units:** catalogue lab values go through `toStoredLab` and the catalogue's unit
+  aliases, the PDF path, so a value converts or is refused the same way however it came
+  in. Core metrics (HbA1c, lipids, ApoB, creatinine, PSA, Lp(a)) go through `units.ts`
+  and `measurementValueFault`, as typed values do; HbA1c % uses the existing NGSP to
+  IFCC conversion. Add UCUM's bracket forms as aliases (section 4). An unknown unit is
+  refused and shown, never guessed (US-21 AC15's rule).
 - **Status:** `final`, `amended`, `corrected` land. `preliminary`, `registered`,
   `cancelled`, `unknown` do not. `entered-in-error` from the provider: Brad's question 3.
 
 ### Rows, dedup and the FHIR invariants
 - **The day:** `recordedAt` is the Observation's `effectiveDateTime` with its offset, as
-  D6 does for vitals. Never the HealthKit sample date (the download date). An
-  Observation with no effective date is skipped and counted.
+  D6 does for vitals. A date-only `effectiveDateTime` (`2026-10-21`) is the day itself,
+  stored as `T00:00:00Z`, which the web already shows as a day. Never the HealthKit
+  sample date (the download date). An Observation with no effective date is skipped and
+  counted.
 - **Source:** a new `MeasurementSource`, `health_records`, separate from `apple_health`
   (a scale or a cuff). Provenance matters clinically: a lab result from a hospital is
   not a device reading. The institution's name is not stored (no field; question 5).
-- **Stable key:** `sourceURL` (or `resourceType/id` when absent) is the record's own id.
-  Core lab metrics (HbA1c, LDL, ApoB…) are `FileMeasurement` rows, which already have
-  `externalId`. Catalogue lab values are `FileLabValue` rows, which do **not**.
-  - **B1 (recommended):** add an optional `externalId` to `FileLabValue`. A schema
-    addition: `roadmap-file.ts`, its Zod schema, merge passthrough, and a check that old
-    app versions keep a field they don't know (D10, US-65). Merge-class: adversary plus Codex.
-  - B2: dedup on (metric, day) only, as CLAUDE.md says for lab values today. Simpler, no
-    schema change. But an amended result for a slot we filled could not be told from a
-    different test the same day, so amendments would be lost.
-- **Landing rule** (the D6 rule, reused through `importDeviceSamples`' logic):
-  - A record whose key any row already carries, `entered-in-error` included, never lands again.
-  - It fills an empty (metric, day) slot.
-  - An `amended` or `corrected` version of a record we imported replaces our row as a
-    FHIR correction (new row, `correctsId`, old row `entered-in-error`).
+- **Two keys, not one** (review R1 to R3, 2026-11-02). A FHIR resource keeps its `id`
+  when the lab amends it, so one key cannot both block repeats and let amendments in.
+  - **Identity:** HealthKit source + `resourceType` + FHIR `id`. Apple says all three
+    are needed; `sourceURL` is optional, and two institutions can both send
+    `Observation/1`.
+  - **Version:** `meta.versionId`, else `meta.lastUpdated`, else the status and value
+    together. Stored as `externalId` = `identity#version`.
+- **Where the key lives.** Core lab metrics (HbA1c, LDL, ApoB…) are `FileMeasurement`
+  rows, which already have `externalId`. Catalogue lab values are `FileLabValue` rows,
+  which do **not**.
+  - **B1 (recommended):** add an optional `externalId` to `FileLabValue`. Touches
+    `roadmap-file.ts`, its Zod schema, and the published agent contract
+    (`docs/health-roadmap-file.schema.json`, pinned by `roadmap-file.schema.test.ts`;
+    docs/agent-access.md). Older app versions read the row (readable-rows.ts needs
+    `source` only to be a string) and migrate keeps the field (it spreads the row). A
+    third-party validator holding the old schema would reject the record. Merge- and
+    agent-contract-class: adversary plus Codex.
+  - B2: dedup on (metric, day) only, as CLAUDE.md says for lab values today. No schema
+    change, but two failures: an amendment cannot be told from a repeat, so it is lost;
+    and the import anchor lives outside the record (D6), so a new phone or reinstall
+    re-imports everything, and a value the person marked entered-in-error (its slot now
+    empty) lands again. B2 breaks AC5.
+- **Landing rule.** D6's idea, but not `importDeviceSamples` as is: its "only a later
+  reading the same day replaces" rule (device-import.ts) would block every amendment,
+  which has the same draw time.
+  - A version any row already carries, `entered-in-error` included, never lands again.
+  - A new identity fills an empty (metric, day) slot.
+  - A new version (`amended` or `corrected`) of an identity whose imported row is still
+    active replaces that row as a FHIR correction (new row, `correctsId`, old row
+    `entered-in-error`).
+  - An identity the person themself marked entered-in-error never lands again, in any
+    version: their call stands. Counted.
   - It **never** supersedes a value typed by hand or imported from a PDF the same day.
     The person may have typed the right number; a later provider feed must not undo it.
     The skipped value is counted ("3 results already in your record").
   - Rows are never mutated; deletions in Health are ignored (D6).
+  - **Erase:** D6 skips readings measured before the record's erase. For labs that means
+    a person who erases never gets their older results back from Health. Probably right
+    (they asked for a clean record), but noticeable: question 9.
+- **How HealthKit delivers an amendment is unknown** (section 1). The rule above works
+  whether it comes as a new sample or a replaced one, as long as its JSON carries the
+  same `id`. Test with the simulator accounts before relying on it.
 - **Merge:** nothing new beyond B1's field. D6's single-device limits apply unchanged
   (the merge keeps the newest-written row of a slot across devices).
 
@@ -261,23 +330,29 @@ products (US-61). If Brad wants B for the US anyway, the plan below is how.
 The web app cannot read HealthKit. It sees the imported rows in the shared record, as
 it sees vitals from Apple Health. Two small web changes: show "From Health Records"
 for `source: health_records` where the source is shown, and accept the new source
-value in the reader (`validation.ts`'s list is shared, so one edit).
+value. `MEASUREMENT_SOURCES` (validation.ts) is shared by both clients, but it is also
+pinned in the published agent contract (`docs/health-roadmap-file.schema.json`, checked
+by `roadmap-file.schema.test.ts`), so a new source is an agent-contract change too.
 
 ### Usage signal
-iOS sends no product events to Brad's server (D9). Two new Clarity custom events,
-fixed words, never a value or a count: "Health Records allowed" (the sheet answered
-yes) and "Health Records imported" (a batch landed at least one row). A D9 change and
-an `AnalyticsMaskingTests` change. Success: in the first 90 days, most US users who see
-the sheet allow it, and those who allow it get an import. If almost none get one,
-records are rare among our users and B stops there.
+iOS sends no product events to Brad's server (D9). HealthKit hides whether a read was
+allowed, so "allowed" cannot be measured. Two new Clarity custom events, fixed words,
+never a value or a count: "Health Records asked" (the request was shown: before it,
+`getRequestStatusForAuthorization` said it was needed) and "Health Records imported" (a
+batch landed at least one row). A D9 change and an `AnalyticsMaskingTests` change:
+question 10. Success: in the first 90 days, a fair share of people asked go on to an
+import. A refusal and an empty Health look the same, so a low share means "records are
+rare or refused among our users", and B stops there either way.
 
 ### Tests
 - health-core: DSTU2 and R4 fixtures (from Apple's simulator sample accounts and the
   public HL7 examples), each status, each unit spelling, missing date, unknown LOINC,
-  the typed-value-wins rule, the amended-replaces rule, the never-twice rule.
+  the typed-value-wins rule, the amended-replaces rule, the never-twice rule,
+  comparator results, text results, date-only dates, and two institutions sending the
+  same FHIR id.
 - iOS: the fake `HealthStoreClient` gives clinical records; simulator sample accounts
   for the sheet. **No real record can be tested by Brad in NZ.** A US beta tester with a
-  connected provider is the only real check (question 6).
+  connected provider is the only real check (question 12).
 
 ## 7. Draft story (only if Brad picks B)
 
@@ -286,21 +361,24 @@ records are rare among our users and B stops there.
 As a person whose provider sends results to Apple Health, I want them in my record
 without typing, so my plan uses my latest tests.
 
-- AC1: Where the App Store storefront is US, GB or CA, onboarding's Apple Health request
+- AC1: Where `supportsHealthRecords()` is true, onboarding's Apple Health request
   includes lab results. Elsewhere it does not, and no screen mentions Health Records.
 - AC2: An allowed lab result lands as a row with `source: health_records`, its value in
   the catalogue's unit, on the day the blood was drawn (the FHIR effective date, never the download date).
-- AC3: Only `final`, `amended` and `corrected` results land.
+- AC3: Only `final`, `amended` and `corrected` results with a plain number land. A
+  result with `<` or `>`, or with no number, does not, and is counted as not read.
 - AC4: A result whose LOINC code the catalogue does not know, or whose unit it cannot
   convert, does not land; My data shows how many were not read.
-- AC5: A result never lands twice, even after the person marks it entered in error.
+- AC5: A result never lands twice, even after the person marks it entered in error, and
+  not after a reinstall or on a new phone. Two institutions' results with the same FHIR
+  id both land.
 - AC6: A result never replaces a value typed by hand or imported from a lab report on
   the same day; it is counted as already in the record.
 - AC7: An amended result replaces the earlier imported row as a correction; the old row
   stays, marked entered in error.
 - AC8: Nothing from this import reaches Brad's server.
 - AC9: The website shows these rows, labelled as from Health Records.
-- AC10: Clarity receives "Health Records allowed" and "Health Records imported", never a
+- AC10: Clarity receives "Health Records asked" and "Health Records imported", never a
   value, a test name or a count.
 
 ## 8. Draft story for the recommendation (C)
@@ -317,22 +395,60 @@ without typing, so my plan uses my latest tests.
 
 ## 9. Questions for Brad
 
-1. **Build B now, later, or never?** Recommendation: later, US/UK/Canada only, after
-   the US App Store launch. It does nothing in NZ, and we cannot test it here.
-2. **Build C (share to the app) instead, now?** Recommendation: yes. It helps every user
-   and reuses the import we have.
-3. **A provider marks a result entered in error:** flip our imported row to
-   `entered-in-error` too (the lab withdrew it), or ignore it as D6 ignores deletions?
-   Recommendation: flip it. A withdrawn lab result is a correction, not a person tidying
-   their phone; leaving it active would put a wrong number in the plan.
-4. **No LOINC code:** skip it (recommended, first build), or match on the test's name
-   the way the PDF import does?
-5. **Store the institution's name** with each row? Needs a new field. Recommendation: no
-   for now; the source label is enough.
-6. **Real-world check:** do you know a US (or UK) patient with Health Records who would
-   test a TestFlight build? Without one, B ships on simulator data only.
-7. **The LOINC list** in section 6 is from memory. It needs your clinical check before
-   it is code.
+Each stands alone. "Recommend" is the plan's pick; the others are real choices.
+
+1. **Build B (Health Records import) now, later, or never?** It works only in the US, UK
+   and Canada, and no one in NZ can test it on a real phone.
+   - Now: the US launch gets "auto" blood tests, but weeks of work ship untested on real
+     data, ahead of features NZ users can use.
+   - Later (recommend): after the US App Store launch, once US users exist to ask and test.
+   - Never: no entitlement risk; US users keep typing or uploading reports.
+2. **Build C (Share › Health Roadmap into the existing lab-report import) now?** It
+   helps every user, NZ included, and reuses US-52.
+   - Yes (recommend): the cheapest form is declaring PDF and image document types, so
+     the share sheet offers the app; a share extension is fuller.
+   - No: the Add medical records sheet stays the only way in (Files, Photos, camera).
+   - Either way C still sends the report through your server for extraction; B would not.
+3. **The provider marks an imported result entered in error.** A lab withdrew it.
+   - Flip our row to `entered-in-error` too (recommend): a withdrawn result is a lab's
+     correction, not a person tidying their phone; left active, a wrong number drives
+     the plan. It needs the identity key (B1).
+   - Ignore it, as D6 ignores deletions in Health: simpler, but the wrong value stays.
+4. **A result with no LOINC code we know** (a provider's local code only).
+   - Skip and count it (recommend for the first build): the person sees "2 not read"
+     and can upload the report; nothing is mislabelled. Those tests never import.
+   - Match on its name, as the PDF import does: more imports, but the feeds with local
+     codes are the ones likeliest to name tests oddly, so mislabels are likelier.
+5. **Store the institution's name on each row?**
+   - No (recommend, for now): needs a new row field; the "From Health Records" label
+     says enough.
+   - Yes: the person sees which clinic sent it; a schema change like B1.
+6. **Where the lab value's key lives: B1 or B2** (section 6).
+   - B1 (recommend): an optional `externalId` on lab values. A schema and agent-contract
+     change (adversary plus Codex). Blocks repeats across reinstalls; lets amendments in.
+   - B2: no schema change, but values a person rejected come back on a new phone, and
+     amendments are lost.
+7. **A new row source, `health_records`, beside `apple_health`?**
+   - Yes (recommend): a hospital result is not a scale reading, and the plan and chat can
+     tell them apart. An agent-contract change (schema JSON).
+   - Reuse `apple_health`: no contract change, but the provenance is lost.
+8. **Results with `<` or `>`** (PSA "<0.01", eGFR ">90").
+   - Skip and count them (recommend for the first build): our rows hold exact numbers.
+   - Store the bound as the number: wrong ("<0.01" is not 0.01), so not offered.
+   - Add a comparator field to rows: right, but a schema change and every reader
+     (plan, charts, chat) must handle it. A later decision.
+9. **Erase and Health Records.** After an erase, results drawn before it never come
+   back from Health (D6's rule).
+   - Keep it (recommend): the person asked for a clean record.
+   - Re-import on request: a "Bring back my lab results" button; more work.
+10. **Two Clarity events** ("Health Records asked", "Health Records imported"). D9's list
+    is your decision. Recommend yes; without them B's use cannot be judged (Lane B).
+11. **The glucose code.** LOINC 2345-7 does not say fasting; our catalogue splits fasting
+    from random glucose. Recommend: leave glucose out of the map until you pick a rule.
+    This also decides option D (meter and CGM readings are mostly not fasting).
+12. **Two things only you can supply:** the LOINC list in section 6 is from memory and
+    needs your clinical check; and B needs a US or UK patient with Health Records willing
+    to test a TestFlight build. Without one, B ships on simulator data only.
 
 ## Sources
 
@@ -343,6 +459,8 @@ without typing, so my plan uses my latest tests.
   [HKFHIRVersion](https://developer.apple.com/documentation/healthkit/hkfhirversion),
   [HKFHIRResourceType](https://developer.apple.com/documentation/healthkit/hkfhirresourcetype),
   [sourceURL](https://developer.apple.com/documentation/healthkit/hkfhirresource/sourceurl)
+- Apple, [supportsHealthRecords()](https://developer.apple.com/documentation/healthkit/hkhealthstore/supportshealthrecords())
+- HL7, [FHIR R4 Quantity](https://hl7.org/fhir/R4/datatypes.html#Quantity)
 - Apple, [Accessing sample data in the simulator](https://developer.apple.com/documentation/healthkit/accessing-sample-data-in-the-simulator)
 - Apple, [com.apple.developer.healthkit.access](https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.healthkit.access),
   [NSHealthClinicalHealthRecordsShareUsageDescription](https://developer.apple.com/documentation/bundleresources/information-property-list/nshealthclinicalhealthrecordsshareusagedescription)
