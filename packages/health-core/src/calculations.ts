@@ -115,8 +115,8 @@ export function getBMICategory(bmi: number, waistToHeightRatio?: number): string
 }
 
 /**
- * Get eGFR status label.
- * Uses CKD staging: Normal (≥70), Low Normal (60-69), Mildly Decreased (45-59),
+ * Get eGFR status label: the tool's own labels on KDIGO's cut points from 60 down
+ * (KDIGO's names differ; algorithm §3). Normal (≥70), Low Normal (60-69), Mildly Decreased (45-59),
  * Moderately Decreased (30-44), Severely Decreased (15-29), Kidney Failure (<15).
  */
 export function getEgfrStatus(egfr: number): string {

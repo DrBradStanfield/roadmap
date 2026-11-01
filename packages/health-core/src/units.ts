@@ -675,12 +675,12 @@ export const BP_THRESHOLDS = {
   crisisDia: 120,
 } as const;
 
-/** eGFR thresholds in mL/min/1.73m² */
+/** eGFR thresholds in mL/min/1.73m². Keys are the tool's labels; KDIGO 2024 names differ (algorithm §3). */
 export const EGFR_THRESHOLDS = {
   lowNormal: 60,           // eGFR 60-69: low normal (no CKD without markers)
-  mildlyDecreased: 45,     // G3a: mildly decreased
-  moderatelyDecreased: 30, // G3b: moderately decreased
-  severelyDecreased: 15,   // G4: severely decreased
+  mildlyDecreased: 45,     // G3a, KDIGO: mildly to moderately decreased
+  moderatelyDecreased: 30, // G3b, KDIGO: moderately to severely decreased
+  severelyDecreased: 15,   // G4, KDIGO: severely decreased
 } as const;
 
 /** ApoB thresholds in g/L */

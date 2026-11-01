@@ -40,6 +40,7 @@ Sex-specific target BMIs (based on mortality meta-analyses):
 - **Minimum:** `max(result, 30)` kg
 - Rounded to 1 decimal place
 - **No sex on record:** no ideal body weight. There is no unisex target BMI, so the plan never falls back to either one (US-07 AC8).
+- **Why Peterson, not Devine (US-07 AC9, issue 475):** Devine (1974) starts from a fixed weight for men (50 kg) and women (45.5 kg) and adds 2.3 kg per inch over 5 feet, so it drifts away from a healthy BMI in short and tall people. Peterson has no sex term and gives the weight at the target BMI for any height. Sex enters only through the target BMI above. The IBW card says so.
 
 ### Daily Protein Target
 
@@ -543,6 +544,19 @@ With no sex on record the plan grades no HDL, so `hdl-low` does not show (US-07 
 | moderatelyDecreased | 30 | G3b |
 | severelyDecreased | 15 | G4 |
 
+**Labels (`getEgfrStatus`; US-07 AC9, issue 474).** The tile and card labels are this tool's own. The cut points from 60 down are KDIGO 2024's; its names differ, and for G3a and G3b they are one step more severe. The `egfr` card states both, so it never puts KDIGO's category beside a name KDIGO does not use.
+
+| eGFR | Tool label | KDIGO 2024 category and name |
+|------|------------|------------------------------|
+| >= 70 | Normal | G1 (>= 90) normal or high; G2 (60-89) mildly decreased |
+| 60-69 | Low Normal | G2 mildly decreased |
+| 45-59 | Mildly Decreased | G3a mildly to moderately decreased |
+| 30-44 | Moderately Decreased | G3b moderately to severely decreased |
+| 15-29 | Severely Decreased | G4 severely decreased |
+| < 15 | Kidney Failure | G5 kidney failure |
+
+G1 and G2 are not chronic kidney disease without other markers of kidney damage. Source: KDIGO 2024 CKD guideline (Kidney Int 2024; DOI: 10.1016/j.kint.2023.10.018), cited on the card.
+
 ### ApoB (g/L)
 
 | Level | g/L | mg/dL |
@@ -917,6 +931,8 @@ The same trigger drives the cascade (medications tracked), the standalone `weigh
 ### Step 3: SGLT2i (`weight-med-sglt2i`)
 
 **Condition:** GLP-1 dose recorded (when listed) AND GLP-1 escalation handled or not possible AND sglt2i is null, undefined, or drug is `'none'`.
+
+**Who the evidence covers (US-07 AC9, issue 473):** the card reaches anyone the weight trigger reaches, most of whom have no diabetes, heart failure or kidney disease. Its outcome trials, EMPA-REG OUTCOME (type 2 diabetes at high cardiovascular risk) and DAPA-HF (heart failure with reduced ejection fraction), did not study those people. So the card's reason names the trial populations, says the heart benefit is not proven outside them, and calls the weight loss modest. It makes no kidney claim: neither cited trial had a kidney primary outcome.
 
 ### Step 4: Metformin (`weight-med-metformin`)
 

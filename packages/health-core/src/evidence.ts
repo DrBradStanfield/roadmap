@@ -263,7 +263,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'weight-med-sglt2i': {
-    reason: 'SGLT2 inhibitors (empagliflozin, dapagliflozin) work by a different mechanism to GLP-1 medications — they cause the kidneys to excrete excess glucose. Beyond modest weight loss, they provide proven cardiovascular and kidney protection, making them a valuable addition for metabolic health.',
+    reason: 'SGLT2 inhibitors (empagliflozin, dapagliflozin) work differently from GLP-1 medications: they make the kidneys pass excess glucose out in the urine. Weight loss on them is modest. In large trials of people with type 2 diabetes at high cardiovascular risk, or with heart failure, they lowered the risk of cardiovascular death and of hospital stays for heart failure. Those trials did not study people without these conditions, so for them this heart benefit is not proven.',
     guidelines: [],
     references: REFS_SGLT2I,
   },
@@ -687,6 +687,7 @@ const REFS_BMI: SuggestionReference[] = [
 
 const REFS_EGFR: SuggestionReference[] = [
   { label: 'Inker 2021 – CKD-EPI 2021 race-free eGFR equation (NEJM)', url: 'https://doi.org/10.1056/NEJMoa2102953' },
+  { label: 'KDIGO 2024 – Clinical practice guideline for CKD: GFR categories (Kidney Int)', url: 'https://doi.org/10.1016/j.kint.2023.10.018' },
 ];
 
 const REFS_IBW: SuggestionReference[] = [
@@ -754,7 +755,7 @@ export const STAT_CARD_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'egfr': {
-    reason: 'Estimated glomerular filtration rate (eGFR) measures kidney function. The plan uses the eGFR printed on your lab report when it is from your latest test; otherwise it calculates one with the CKD-EPI 2021 equation (race-free) from your creatinine, age, and sex. CKD staging: ≥70 Normal, 60-69 Low Normal, 45-59 Mildly Decreased (Stage 3a), 30-44 Moderately Decreased (Stage 3b), 15-29 Severely Decreased (Stage 4), <15 Kidney Failure (Stage 5). An eGFR below 60 sustained for 3+ months is consistent with chronic kidney disease.',
+    reason: 'Estimated glomerular filtration rate (eGFR) measures kidney function. The plan uses the eGFR printed on your lab report when it is from your latest test; otherwise it calculates one with the CKD-EPI 2021 equation (race-free) from your creatinine, age, and sex. This tool labels it ≥70 Normal, 60-69 Low Normal, 45-59 Mildly Decreased, 30-44 Moderately Decreased, 15-29 Severely Decreased and <15 Kidney Failure. These labels are the tool\'s own. KDIGO 2024 uses the same cut points from 60 down, with its own names: G2 (60-89) mildly decreased, G3a (45-59) mildly to moderately decreased, G3b (30-44) moderately to severely decreased, G4 (15-29) severely decreased, G5 (<15) kidney failure. An eGFR below 60 sustained for 3+ months is consistent with chronic kidney disease.',
     guidelines: ['KDIGO'],
     references: REFS_EGFR,
   },
@@ -795,7 +796,7 @@ export function getIbwEvidence(sex: 'male' | 'female'): SuggestionEvidence {
   const bmiTarget = sex === 'male' ? 24 : 22;
   const range = sex === 'male' ? '23-26' : '20-23';
   return {
-    reason: `Ideal Body Weight is calculated using the Peterson formula (2016): IBW = 2.2 × BMI_target + 3.5 × BMI_target × (height_m − 1.5). The target BMI is ${bmiTarget} for ${sex}s, derived from large mortality meta-analyses showing this BMI is associated with the lowest all-cause mortality (optimal range: ${range}). Unlike the older Devine formula (1974), the Peterson formula accounts for both sex and height, producing more physiologically accurate estimates.`,
+    reason: `Ideal Body Weight is calculated using the Peterson formula (2016): IBW = 2.2 × BMI_target + 3.5 × BMI_target × (height_m − 1.5). The target BMI is ${bmiTarget} for ${sex}s, derived from large mortality meta-analyses showing this BMI is associated with the lowest all-cause mortality (optimal range: ${range}). The older Devine formula (1974) starts from a fixed weight for men and for women and adds the same amount per inch, so it drifts away from a healthy BMI in short and tall people. The Peterson formula has no sex term: it gives the weight at the target BMI for any height, and sex enters only through the target BMI.`,
     guidelines: [],
     references: REFS_IBW,
   };
