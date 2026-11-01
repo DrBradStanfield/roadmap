@@ -599,6 +599,17 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertEqual(unknown, .settings, "iOS cannot say: Settings")
     }
 
+    /// AC5c (Brad 2026-11-01): iOS asks only once, so after the sheet the button can only open
+    /// Settings. It says "Open Settings", not "Reconnect", and the line under it says these are
+    /// Apple Health's settings and where they are. A UI test cannot reach this row: Apple's
+    /// sheet runs in its own process and a test cannot answer it.
+    func testTheRowSaysOpenSettingsAndWhereAppleHealthsSettingsAre_AC5c() {
+        XCTAssertEqual(LiveReconnectRow.title(turnOn: false), "Open Settings")
+        XCTAssertEqual(LiveReconnectRow.title(turnOn: true), "Turn On", "before the sheet, Turn On is unchanged")
+        XCTAssertEqual(LiveFooter.healthSettings,
+                       "The Apple Health settings for this app are in Settings › Apps › Health › Data Access & Devices › Health Roadmap.")
+    }
+
     /// N1: a page read cancelled mid-flight throws, so the page never keeps it as "read,
     /// empty"; the next read reads again.
     func testACancelledPageReadIsNotKeptAsEmpty_N1() async throws {

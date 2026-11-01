@@ -802,7 +802,7 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   atomically, `.completeFileProtectionUntilFirstUserAuthentication` (a launch after the first unlock
   reads it). Read synchronously in `init` (a few hundred bytes), so the first frame has the cards;
   a missing, damaged or other-version file is none. Kept cards count as access granted and read, so
-  `LiveCardsSection.shown` draws them, never Turn On or Reconnect, until the first read. A read that
+  `LiveCardsSection.shown` draws them, never the Turn On or Open Settings row, until the first read. A read that
   changes the cards replaces the file (`keep`), one with none always deletes it (even a file the
   launch could not read, adversary R3), a locked or cancelled read changes nothing, a sheet due
   again deletes it, and `DataEraser` calls `forget()` (file gone, cards empty, nothing shown until
