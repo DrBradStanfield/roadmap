@@ -139,6 +139,21 @@ describe('verifyAppProxySignature: re-split signed queries (US-09 AC24a)', () =>
     expect(verifyAppProxySignature(resplit(signed, sent), NOW)).toBe(false);
   });
 
+  it('refuses the same re-split with a plain future timestamp, which only the key-once rule catches (AC24b, adversary R1)', () => {
+    const OLD = NOW - 3600;
+    const [pathPrefix, shop] = shopifyTail;
+    const signed: [string, string][] = [['logged_in_customer_id', ''], pathPrefix, shop, ['t', `Xtimestamp=${NOW}`], ['timestamp', String(OLD)], ['u', 'Z']];
+    const sent: [string, string][] = [['logged_in_customer_id', ''], pathPrefix, shop, ['t', 'X'], ['timestamp', String(NOW)], [`timestamp=${OLD}u`, 'Z']];
+    expect(verifyAppProxySignature(resplit(signed, sent), NOW)).toBe(false);
+  });
+
+  it('refuses a message that spells shop= or path_prefix= twice (AC24b generalized)', () => {
+    for (const key of ['shop', 'path_prefix']) {
+      const pairs: [string, string][] = [['a', `x${key}=y`], ...proxyPairs('', NOW)];
+      expect(verifyAppProxySignature(resplit(pairs, pairs), NOW)).toBe(false);
+    }
+  });
+
   it('refuses a timestamp that is not plain digits (AC24b)', () => {
     for (const ts of [`0${NOW}`, `${NOW}.0`, ` ${NOW}`, `${NOW}e0`]) {
       const pairs: [string, string][] = [['logged_in_customer_id', ''], ...shopifyTail.slice(0, 2), ['timestamp', ts]];
