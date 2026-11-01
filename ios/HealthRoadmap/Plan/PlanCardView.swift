@@ -51,10 +51,18 @@ struct AlcoholQuestion {
         self.ask = ask
     }
 
+    /// What a choice does: save an answer, or explain why the card stays ("I still drink").
+    enum Action: Equatable { case save(MyData.Alcohol), explain }
+
     var title: String { drinks ? "Do you still drink alcohol?" : "Do you drink alcohol?" }
-    /// The dialog's buttons; a nil answer is "I still drink", which saves nothing.
-    var choices: [(label: String, answer: MyData.Alcohol?)] {
-        drinks ? [("I've stopped", .noDrinking), ("I still drink", nil)] : MyData.Alcohol.allCases.map { ($0.label, $0) }
+    var message: String {
+        drinks ? "Tell us if this has changed."
+            : "Your answer is kept in your record, so your plan follows it on every device. You can change it in My data, under About you."
+    }
+    var hint: String { drinks ? "Asks whether you still drink alcohol" : "Asks whether you drink alcohol" }
+    /// The dialog's buttons; "I still drink" saves nothing.
+    var choices: [(label: String, action: Action)] {
+        drinks ? [("I've stopped", .save(.noDrinking)), ("I still drink", .explain)] : MyData.Alcohol.allCases.map { ($0.label, .save($0)) }
     }
     /// Shown after "I still drink".
     static let stillDrinks = "This stays on your plan because the advice applies to anyone who drinks. You can change your answer in About you."
@@ -120,15 +128,18 @@ private struct SuggestionRow: View {
                     .confirmationDialog(dismiss.title, isPresented: Binding(get: { answer != nil }, set: { if !$0 { answer = nil } }), titleVisibility: .visible, presenting: answer) { save in
                         ForEach(dismiss.choices, id: \.label) { choice in
                             Button(choice.label) {
-                                if let answer = choice.answer { save(answer) } else { stillDrinks = AlcoholQuestion.stillDrinks }
+                                switch choice.action {
+                                case .save(let answer): save(answer)
+                                case .explain: stillDrinks = AlcoholQuestion.stillDrinks
+                                }
                             }
                         }
                     } message: { _ in
-                        Text("Your answer is kept in your record, so your plan follows it on every device. You can change it in My data, under About you.")
+                        Text(dismiss.message)
                     }
                     .messageAlert("", $stillDrinks)
                     .padding(.leading, showsIcon ? 54 : 0)
-                    .accessibilityHint("Asks whether you drink alcohol")
+                    .accessibilityHint(dismiss.hint)
                     .accessibilityIdentifier("plan.dismissAlcohol")
             }
 

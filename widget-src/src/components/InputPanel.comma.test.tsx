@@ -36,6 +36,8 @@ const renderPanel = () => {
     ],
     onSupplementDelete: vi.fn(), scheduleLongitudinalSave, flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
     fieldsSaved: 0, hasApiResponse: true, formStage: 3 as const, planBasis: { age: 66 }, grading: {},
+    // HealthTool's call (US-62 AC12): low on a phone, with sex and height in.
+    aboutYouLow: phone,
   };
   const view = render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />);
   const box = (id: string) => view.container.querySelector<HTMLInputElement>(`#${id}`)!;

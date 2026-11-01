@@ -15,11 +15,12 @@ export const ALCOHOL_OPTIONS: ReadonlyArray<{ value: AlcoholAnswer | ''; label: 
   { value: 'drinks', label: 'I drink' },
 ];
 
-/** US-60 AC3: the card's question, with the answer the profile holds now. */
-export type AlcoholQuestion = { answer?: AlcoholAnswer; onAnswer: (answer: AlcoholAnswer) => void };
+/** US-60 AC3: the card's question, with the answer the profile holds now and
+ *  the title My data's profile section shows (`profileTitle`, InputPanel.tsx). */
+export type AlcoholQuestion = { answer?: AlcoholAnswer; onAnswer: (answer: AlcoholAnswer) => void; section: string };
 
 /** Shown in the dialog's place after "I still drink", which saves nothing. */
-export const STILL_DRINK_LINE = 'This stays on your plan because the advice applies to anyone who drinks. You can change your answer in About you.';
+export const stillDrinkLine = (section: string) => `This stays on your plan because the advice applies to anyone who drinks. You can change your answer in ${section}.`;
 
 /**
  * The Dismiss for `reduce-alcohol` (US-60 AC3), or null. Unanswered, it asks
@@ -29,11 +30,11 @@ export const STILL_DRINK_LINE = 'This stays on your plan because the advice appl
  * "I don't drink" and "I've stopped" take the card off the plan at once.
  */
 export function alcoholDismiss(suggestion: Suggestion, question?: AlcoholQuestion) {
-  return suggestion.id === REDUCE_ALCOHOL_ID && question ? <AlcoholDismiss drinks={question.answer === 'drinks'} onChoose={question.onAnswer} /> : null;
+  return suggestion.id === REDUCE_ALCOHOL_ID && question ? <AlcoholDismiss drinks={question.answer === 'drinks'} onChoose={question.onAnswer} section={question.section} /> : null;
 }
 
 /** The Dismiss button and its question. */
-function AlcoholDismiss({ drinks, onChoose }: { drinks: boolean; onChoose: (answer: AlcoholAnswer) => void }) {
+function AlcoholDismiss({ drinks, onChoose, section }: { drinks: boolean; onChoose: (answer: AlcoholAnswer) => void; section: string }) {
   // 'stays': "I still drink" was chosen, and the dialog says why the card stays.
   const [open, setOpen] = useState<false | 'ask' | 'stays'>(false);
   const firstRef = useRef<HTMLButtonElement>(null);
@@ -47,6 +48,11 @@ function AlcoholDismiss({ drinks, onChoose }: { drinks: boolean; onChoose: (answ
   }, [open]);
 
   const choose = (choice: AlcoholAnswer) => { setOpen(false); onChoose(choice); };
+  // The dialog's buttons; a null answer is "I still drink", which saves nothing.
+  // iOS twin: AlcoholQuestion.choices (PlanCardView.swift).
+  const choices: Array<{ label: string; answer: AlcoholAnswer | null }> = drinks
+    ? [{ label: "I've stopped", answer: 'none' }, { label: 'I still drink', answer: null }]
+    : ALCOHOL_OPTIONS.flatMap(({ value, label }) => (value ? [{ label, answer: value }] : []));
 
   return (
     <>
@@ -62,24 +68,17 @@ function AlcoholDismiss({ drinks, onChoose }: { drinks: boolean; onChoose: (answ
           <div className="upload-modal alcohol-dialog" role="dialog" aria-modal="true" aria-labelledby="alcohol-dialog-title">
             {open === 'stays' ? (
               <>
-                <p id="alcohol-dialog-title" className="alcohol-dialog-note">{STILL_DRINK_LINE}</p>
+                <p id="alcohol-dialog-title" className="alcohol-dialog-note">{stillDrinkLine(section)}</p>
                 <button ref={firstRef} type="button" className="upload-btn-primary" onClick={() => setOpen(false)}>OK</button>
               </>
             ) : (
               <>
                 <h3 id="alcohol-dialog-title" className="alcohol-dialog-title">{drinks ? 'Do you still drink alcohol?' : 'Do you drink alcohol?'}</h3>
                 <div className="alcohol-dialog-actions">
-                  {drinks ? (
-                    <>
-                      <button ref={firstRef} type="button" className="upload-btn-primary" onClick={() => choose('none')}>I've stopped</button>
-                      <button type="button" className="upload-btn-primary" onClick={() => setOpen('stays')}>I still drink</button>
-                    </>
-                  ) : (
-                    <>
-                      <button ref={firstRef} type="button" className="upload-btn-primary" onClick={() => choose('none')}>I don't drink</button>
-                      <button type="button" className="upload-btn-primary" onClick={() => choose('drinks')}>I drink</button>
-                    </>
-                  )}
+                  {choices.map(({ label, answer }, i) => (
+                    <button key={label} ref={i === 0 ? firstRef : undefined} type="button" className="upload-btn-primary"
+                      onClick={() => (answer ? choose(answer) : setOpen('stays'))}>{label}</button>
+                  ))}
                 </div>
                 <button type="button" className="upload-connect-skip" onClick={() => setOpen(false)}>Cancel</button>
               </>

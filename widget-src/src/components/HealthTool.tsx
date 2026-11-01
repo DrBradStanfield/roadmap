@@ -49,7 +49,7 @@ import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import type { MoveTestApi } from './MoveTestPanel';
 import { routeVitalsEdit, type VitalsPrefillFn } from './StartingInfoVitals';
 import type { ApiSupplement, ApiLabValue } from '../lib/api-types';
-import { InputPanel, type PlanBasis } from './InputPanel';
+import { InputPanel, profileTitle, type PlanBasis } from './InputPanel';
 import { ResultsPanel } from './ResultsPanel';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
 import { ChatEmbed } from './ChatEmbed';
@@ -837,6 +837,11 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
 
   // Mobile tab state
   const isMobile = useIsMobile();
+  // About you sits low, as on the iPhone, once sex and height are in. Decided
+  // at mount, so the section never jumps away while someone is typing; until
+  // the onboarding (a later phase) it stays first for a new user.
+  const profileAtMount = useRef(!!(inputs.sex && inputs.heightCm));
+  const aboutYouLow = isMobile && profileAtMount.current && !!(inputs.sex && inputs.heightCm);
   const isWideDesktop = useIsWideDesktop(1200);
   const [activeTab, setActiveTab] = useState<TabId>('input');
   const tabIds = useId();
@@ -1265,6 +1270,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     onAutoFocusEmail: handleAutoFocusEmail,
     // On a phone a chat edit opens the grids, so the filled cell shows (US-62 AC11).
     revealCell,
+    aboutYouLow,
   };
 
   const resultsPanelProps = {
@@ -1282,7 +1288,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     showEmailCapture: emailCaptureActive,
     formStage,
     // US-60 AC3: the Dismiss asks the unanswered and drinkers; a non-drinker has no card.
-    alcoholQuestion: { answer: inputs.alcohol, onAnswer: handleAlcoholAnswer },
+    alcoholQuestion: { answer: inputs.alcohol, onAnswer: handleAlcoholAnswer, section: profileTitle(aboutYouLow) },
   };
 
   // The chat reads its context as each message is sent (useChatState), through

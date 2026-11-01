@@ -65,7 +65,7 @@ const dismiss = async (root: HTMLElement, prompt = 'Do you drink alcohol?') => {
   expect(dialog()).not.toBeNull();
   expect(within(dialog()!).getByRole('heading').textContent).toBe(prompt);
 };
-const STILL = 'This stays on your plan because the advice applies to anyone who drinks. You can change your answer in About you.';
+const still = (section: string) => `This stays on your plan because the advice applies to anyone who drinks. You can change your answer in ${section}.`;
 
 it('US-60 AC3: "I don\'t drink" takes the card off the plan and saves the answer; the event carries no answer', async () => {
   const view = render(<HealthTool />);
@@ -111,16 +111,43 @@ it('US-60 AC3 (Brad 2026-11-01): a drinker\'s Dismiss asks "Do you still drink a
   await dismiss(view.container, 'Do you still drink alcohol?');
   expect([...dialog()!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(["I've stopped", 'I still drink', 'Cancel']);
   const alert = vi.spyOn(window, 'alert').mockImplementation(() => {});
+  // The saved file, stamps and all, before the tap: "I still drink" writes nothing.
+  const before = saved();
+  expect(before.profile.alcohol).toBe('drinks');
+  expect(before.profile.fieldStamps?.alcohol).toBeDefined();
   fireEvent.click(within(dialog()!).getByText('I still drink'));
-  // One line, in the dialog's place, never a browser alert.
-  expect(dialog()!.textContent).toBe(`${STILL}OK`);
+  // One line, in the dialog's place, never a browser alert. On desktop the
+  // profile section is titled "Starting Info", so the line names that.
+  expect(dialog()!.textContent).toBe(`${still('Starting Info')}OK`);
   expect(alert).not.toHaveBeenCalled();
   fireEvent.click(within(dialog()!).getByText('OK'));
   expect(dialog()).toBeNull();
-  await persist();
-  expect(saved().profile.alcohol).toBe('drinks');
+  // Past the autosave's debounce nothing has landed, meta included...
+  await tick();
+  expect(saved()).toEqual(before);
+  // ...and nothing was pending: after a flush only meta moves, as any flush
+  // moves it (lamport, updatedAt), and the alcohol stamp is untouched.
+  await act(async () => { await flushRoadmapStore(); });
+  expect({ ...saved(), meta: null }).toEqual({ ...before, meta: null });
+  expect(saved().profile.fieldStamps?.alcohol).toEqual(before.profile.fieldStamps?.alcohol);
   expect(alcoholCard(view.container)).toBeDefined();
   expect(vi.mocked(trackProductEvent)).not.toHaveBeenCalledWith('alcohol_question_answered');
+});
+
+it('US-60 AC3 (Brad 2026-11-01): on a phone with sex and height in, the "I still drink" line names About you, the title shown there', async () => {
+  vi.stubGlobal('matchMedia', (q: string) => ({
+    matches: q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {},
+  }));
+  await saveChangedMeasurements({ alcohol: 'drinks' }, {});
+  await flushRoadmapStore();
+  const view = render(<HealthTool />);
+  await waitFor(() => expect(view.container.querySelector<HTMLSelectElement>('#alcohol')?.value).toBe('drinks'));
+  const titles = [...view.container.querySelectorAll('.health-section-title')].map((h) => h.textContent!.replace('\u25B8', '').trim());
+  expect(titles).toContain('About you');
+  expect(titles).not.toContain('Starting Info');
+  await dismiss(view.container, 'Do you still drink alcohol?');
+  fireEvent.click(within(dialog()!).getByText('I still drink'));
+  expect(dialog()!.textContent).toBe(`${still('About you')}OK`);
 });
 
 it('US-60 AC3 (Brad 2026-11-01): a drinker\'s "I\'ve stopped" saves \'none\' through the profile autosave and the card leaves; the event carries no answer', async () => {

@@ -127,6 +127,10 @@ export type PlanBasis = Pick<HealthResults, 'age' | 'bmi' | 'idealBodyWeight' | 
   lipidMarker: LipidMarker | null;
 };
 
+/** The profile section's title: "About you" where it sits low (US-62 AC12), else
+ *  "Starting Info". The alcohol question's "I still drink" line names it too (US-60). */
+export const profileTitle = (aboutYouLow: boolean) => (aboutYouLow ? 'About you' : 'Starting Info');
+
 interface InputPanelProps {
   /** US-09 AC30: the Sign in button, in the header on desktop and on a phone. */
   storageBar?: React.ReactNode;
@@ -202,6 +206,8 @@ interface InputPanelProps {
   /** A chat edit that filled a grid cell on a phone (US-16 AC2): the table
    *  opens so the filled cell shows. Each new edit is a new object. */
   revealCell?: { field: string } | null;
+  /** On a phone with sex and height in, About you sits low (HealthTool decides it once). */
+  aboutYouLow: boolean;
 }
 
 /**
@@ -235,7 +241,7 @@ export function InputPanel({
   bloodTestFlushRef, vitalsFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
   formStage,
   setShowUploadModal, planBasis, grading,
-  healthDocuments, onDocumentDeleted, onAutoFocusEmail, revealCell = null,
+  healthDocuments, onDocumentDeleted, onAutoFocusEmail, revealCell = null, aboutYouLow,
 }: InputPanelProps) {
   const [prefillExpanded, setPrefillExpanded] = useState(false);
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
@@ -421,11 +427,6 @@ export function InputPanel({
     if (!isPhone || !tableShown) return;
     panelRef.current?.querySelectorAll<HTMLElement>('.md-table .bt-timeline-scroll').forEach(el => { el.scrollLeft = el.scrollWidth; });
   }, [isPhone, tableShown]);
-  // About you sits low, as on the iPhone, once sex and height are in. Decided
-  // at mount, so the section never jumps away while someone is typing; until
-  // the onboarding (a later phase) it stays first for a new user.
-  const profileAtMount = useRef(!!(inputs.sex && inputs.heightCm));
-  const aboutYouLow = isPhone && profileAtMount.current && !!(inputs.sex && inputs.heightCm);
   const [collapseAnimating, setCollapseAnimating] = useState(false);
   const hasMountedRef = useRef(false);
 
@@ -876,7 +877,7 @@ export function InputPanel({
             className={`health-section-title${canCollapse ? ' health-section-title--collapsible' : ''}`}
             onClick={canCollapse ? () => setPrefillExpanded(!prefillExpanded) : undefined}
           >
-            {aboutYouLow ? 'About you' : 'Starting Info'}
+            {profileTitle(aboutYouLow)}
             {canCollapse && (
               <span className={`collapse-chevron${prefillExpanded ? ' expanded' : ''}`}>{'\u25B8'}</span>
             )}
