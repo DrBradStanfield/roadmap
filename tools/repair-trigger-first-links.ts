@@ -21,6 +21,7 @@
  */
 import { pathToFileURL } from 'url';
 import { createClient } from '@supabase/supabase-js';
+import { requireMergedCode } from './write-gate.mjs';
 
 export interface Candidate {
   /** the profile's shopify_customer_id; undefined when no profile row exists */
@@ -91,5 +92,6 @@ async function main(execute: boolean): Promise<void> {
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  if (process.argv.includes('--execute')) requireMergedCode('repair-trigger-first-links --execute');
   main(process.argv.includes('--execute')).catch((e) => { console.error(e instanceof Error ? e.message : 'failed'); process.exit(1); });
 }
