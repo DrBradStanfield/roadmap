@@ -732,15 +732,20 @@ describe('US-62 AC12 (adversary R5, 2026-11-02): About you rows hold a missing a
 describe('US-02 AC9: a range error waits while the number is still being typed', () => {
   const shown = (view: RenderResult) => Array.from(view.container.querySelectorAll('.error-message')).map((e) => e.textContent);
 
-  it('"19" on the way to 190 says nothing until the height field is left', async () => {
+  it('"19" on the way to 190 says nothing until the height field is left, and is never written (US-02 AC5), left or not', async () => {
     const view = await open();
     const height = q(view, '#heightCm');
     type(height, '1');
     type(height, '19');
     expect(shown(view)).toEqual([]);
     expect(height?.className).not.toContain('error');
+    await act(async () => { await new Promise((r) => setTimeout(r, 700)); }); // the profile's 500 ms save, the field still focused
+    expect((await recordOnDisk()).profile?.heightCm ?? null).toBeNull();
     leave(height);
     expect(shown(view)).toEqual(['Height must be at least 50 cm']);
+    await act(async () => { await new Promise((r) => setTimeout(r, 700)); });
+    expect((await recordOnDisk()).profile?.heightCm ?? null).toBeNull();
+    expect((height as HTMLInputElement).value).toBe('19'); // kept, with its error
   });
 
   it('a number already wrong says so while typing: too big, or no digit can fix it', async () => {
@@ -806,5 +811,38 @@ describe('US-62 AC12: About you goes low once the onboarding is done and its car
     leave(q(view, '#birthYear'));
     await waitFor(() => expect(aboutLow(view)).toBeTruthy());
     expect(aboutLow(view)!.querySelector('#waistCm, .md-section-title')).toBeNull();
+  });
+});
+
+describe('US-02 AC5: an out-of-range first-time value stays in its field, its error shown, and is never written', () => {
+  const shown = (view: RenderResult) => Array.from(view.container.querySelectorAll('.error-message')).map((e) => e.textContent);
+
+  it('a systolic of 5, left: kept, "Systolic BP must be at least 60 mmHg", no row', async () => {
+    const view = await open();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    birth(view);
+    await waitFor(() => expect(q(view, '#systolicBp')).toBeTruthy());
+    const sys = q(view, '#systolicBp') as HTMLInputElement;
+    type(sys, '5');
+    leave(sys);
+    await act(async () => { await new Promise((r) => setTimeout(r, 700)); }); // the fields' 500 ms save
+    expect(sys.value).toBe('5');
+    expect(shown(view)).toContain('Systolic BP must be at least 60 mmHg');
+    expect((await recordOnDisk()).measurements.filter((m) => m.metricType === 'systolic_bp')).toEqual([]);
+  });
+
+  it('a birth year of 1850, left: kept, its error shown, not written', async () => {
+    const view = await open();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    fireEvent.change(q(view, '#birthMonth')!, { target: { value: '5' } });
+    const year = q(view, '#birthYear') as HTMLInputElement;
+    type(year, '1850');
+    leave(year);
+    await act(async () => { await new Promise((r) => setTimeout(r, 700)); }); // the profile's 500 ms save
+    expect(year.value).toBe('1850');
+    expect(shown(view)).toContain('Birth year must be after 1900');
+    expect((await recordOnDisk()).profile.birthYear ?? null).toBeNull();
   });
 });

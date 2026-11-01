@@ -22,6 +22,7 @@ import {
   toCanonicalValue,
   getDisplayLabel,
   getDisplayRange,
+  identityFieldRange,
   UNIT_DEFS,
   hasUnitChoice,
   FIELD_METRIC_MAP,
@@ -556,7 +557,7 @@ export function InputPanel({
 
   const range = (field: string): { min: number; max: number } => {
     const metric = FIELD_METRIC_MAP[field];
-    if (!metric) return { min: 0, max: 999 };
+    if (!metric) return identityFieldRange(field) ?? { min: 0, max: 999 };
     return getDisplayRange(metric, fieldUnit(field));
   };
 
@@ -1295,7 +1296,7 @@ export function InputPanel({
                       advanceToDiastolic({ ambiguous: adv === 'defer', advance: () => focusById('diastolicBp') });
                     }
                   }}
-                  onBlur={() => { validateOnBlur('systolicBp'); autoSaveOnBlur(); }}
+                  onBlur={autoSaveOnBlur}
                   onKeyDown={onIntegerEnter}
                   placeholder={bpExpanded ? '' : getPreviousPlaceholder('systolicBp')}
                   min={60}
@@ -1310,7 +1311,7 @@ export function InputPanel({
                   onWheel={blurOnWheel}
                   value={inputs.diastolicBp ?? ''}
                   onChange={(e) => updateField('diastolicBp', parseLocalisedNumber(e.target.value))}
-                  onBlur={() => { validateOnBlur('diastolicBp'); autoSaveOnBlur(); }}
+                  onBlur={autoSaveOnBlur}
                   onKeyDown={onIntegerEnter}
                   placeholder={bpExpanded ? '' : getPreviousPlaceholder('diastolicBp')}
                   min={40}
@@ -1375,6 +1376,8 @@ export function InputPanel({
           </select>
           {/* US-54 AC5b: a birth month in the future, left out of the plan. */}
           {errors.birthMonth && <span className="error-message">{errors.birthMonth}</span>}
+          {/* US-02 AC5: a year out of range stays, saying why; the store refuses it. */}
+          {errors.birthYear && errors.birthYear !== errors.birthMonth && <span className="error-message">{errors.birthYear}</span>}
         </div>
 
         {/* Once shown on this record it stays, so clearing a year to retype keeps the field (US-62 AC13). */}
@@ -1392,7 +1395,6 @@ export function InputPanel({
                 if (num !== undefined && isBirthYearClearlyInvalid(num)) return;
                 updateField('birthYear', num);
               }}
-              onBlur={() => validateOnBlur('birthYear')}
               placeholder=""
               min="1900"
               max={new Date().getFullYear()}

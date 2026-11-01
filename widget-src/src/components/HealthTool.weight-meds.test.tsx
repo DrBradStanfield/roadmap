@@ -16,6 +16,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup, waitFor, fireEvent, type RenderResult } from '@testing-library/react';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
+import { ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
 import {
   addMeasurement,
   flushRoadmapStore,
@@ -75,7 +76,7 @@ async function guestWith(r: GuestRecord): Promise<RenderResult> {
   await initRoadmapStore(new LocalStorageAdapter());
   await saveChangedMeasurements({
     ...(r.sex ? { sex: r.sex } : {}), ...(birthYear ? { birthYear } : {}),
-    ...(r.birthMonth ? { birthMonth: r.birthMonth } : {}), heightCm: r.height ?? 178,
+    ...(r.birthMonth ? { birthMonth: r.birthMonth } : {}), ...(r.height === 0 ? {} : { heightCm: r.height ?? 178 }),
   }, {});
   await addMeasurement('weight', r.weight, day);
   if (r.waist) await addMeasurement('waist', r.waist, day);
@@ -90,6 +91,14 @@ async function guestWith(r: GuestRecord): Promise<RenderResult> {
   if (r.lipids?.ldl) await addMeasurement('ldl', r.lipids.ldl, day);
   for (const [key, drug, dose] of r.meds ?? []) await saveMedication(key, drug, dose ?? null, dose ? 'mg' : null);
   await flushRoadmapStore();
+  // The store refuses a birth year out of range (US-02 AC5); a record holding
+  // one (an older app's, another writer's) is written as it would arrive.
+  if (birthYear && birthYear < 1900) {
+    const adapter = new LocalStorageAdapter();
+    const { body, version } = adapter.readSync(ROADMAP_FILE_NAME) as { body: RoadmapFile; version: string | null };
+    adapter.writeSync(ROADMAP_FILE_NAME, { ...body, profile: { ...body.profile, birthYear } }, version);
+    await initRoadmapStore(new LocalStorageAdapter());
+  }
   return render(<HealthTool />);
 }
 
@@ -222,8 +231,9 @@ describe('US-06 AC5: the form recommends a weight medication only when the plan 
   });
 
   it('before there is a plan (no height yet), the section is neutral', async () => {
-    // A saved blood test opens the whole form before the onboarding is done (US-62 AC13).
-    const view = await guestWith({ sex: 'male', height: 0, weight: 95, lipids: { ldl: 2 } });
+    // A saved blood test opens the whole form before the onboarding is done (US-62 AC13);
+    // the HbA1c shows the section, flat, with no plan to recommend from.
+    const view = await guestWith({ sex: 'male', height: 0, weight: 95, hba1c: 40, lipids: { ldl: 2 } });
     expect(await weightMedsIntro(view.container)).toBe(NEUTRAL);
   });
 

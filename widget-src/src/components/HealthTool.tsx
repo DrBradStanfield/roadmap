@@ -51,6 +51,7 @@ import {
   isSex,
   formatHeightDisplay,
   birthRefusedMessage,
+  inputRangeFault,
 } from '@roadmap/health-core';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import type { MoveTestApi } from './MoveTestPanel';
@@ -639,7 +640,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       return false;
     }
     const refused = result.birthRefused;
-    const kept = new Set<keyof HealthInputs>(refused ? ['birthYear', 'birthMonth'] : []);
+    // A value out of range was refused (US-02 AC5): it stays in the form, unsaved, its error shown.
+    const kept = new Set<keyof HealthInputs>([...(refused ? ['birthYear', 'birthMonth'] as const : []), ...Object.keys(result.refused ?? {}) as Array<keyof HealthInputs>]);
     for (const field of autoSaveFields) {
       if (!kept.has(field)) (previousInputsRef.current as any)[field] = inputs[field];
     }
@@ -724,7 +726,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
         const task: SaveTask = { date, values: {}, expected: {}, unit };
         for (const metric of metrics) {
           const value = inputs[METRIC_TO_FIELD[metric]] as number | undefined;
-          if (value === undefined) continue;
+          // US-02 AC5: a value out of range stays in its field, its error shown,
+          // and is never sent (the record's slot rule has no range check, D4b).
+          if (value === undefined || inputRangeFault(METRIC_TO_FIELD[metric], value)) continue;
           task.values[metric] = value;
           task.expected[metric] = shown.get(slotOf(date, metric))?.id ?? null;
         }
