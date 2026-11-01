@@ -21,7 +21,7 @@ function waistRow(cm: number, unit: UnitSystem) {
   }];
   const view = render(
     <StartingInfoVitals vitalsHistory={history} unitSystem={unit}
-      onSave={vi.fn()} onCorrectValue={vi.fn()} onDraftValue={() => {}} formStage={3}
+      onSave={vi.fn()} onCorrectValue={vi.fn()} onDraftValue={() => {}} formStage={4}
       plan={{ age: 50, idealBodyWeight: 73, heightCm: 178 }} unitOverrides={{}} onToggleFieldUnit={() => {}}/>,
   );
   const row = Array.from(view.container.querySelectorAll('.bt-row'))

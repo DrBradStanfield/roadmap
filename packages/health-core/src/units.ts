@@ -634,6 +634,22 @@ export const HDL_THRESHOLDS = {
   lowFemale: 50 / CHOLESTEROL_FACTOR, // ~1.29
 } as const;
 
+/** The blood-test grids' HDL colours by sex, mmol/L: ok from `okFrom`, bad
+ *  below `badBelow`, warn between. No sex on record: no colour (US-62 AC13). */
+export const HDL_GRID_BANDS = {
+  male: { okFrom: HDL_THRESHOLDS.lowMale, badBelow: HDL_THRESHOLDS.lowMale },
+  female: { okFrom: HDL_THRESHOLDS.lowFemale, badBelow: HDL_THRESHOLDS.lowMale },
+} as const;
+
+/** The blood-test grids' creatinine colours by sex, µmol/L: ok up to
+ *  `okMax`, bad from `badFrom` (1.3 × the reference ceiling), warn between.
+ *  No formal threshold: eGFR is the clinical gate. No sex on record: no
+ *  colour (US-62 AC13). */
+export const CREATININE_GRID_BANDS = {
+  male: { okMax: 110, badFrom: 110 * 1.3 },
+  female: { okMax: 90, badFrom: 90 * 1.3 },
+} as const;
+
 /** Triglycerides thresholds in mmol/L */
 export const TRIGLYCERIDES_THRESHOLDS = {
   borderline: 150 / TRIGLYCERIDES_FACTOR, // ~1.69

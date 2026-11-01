@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { statTiles } from '@roadmap/health-core';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { calculateHealthResults } from '@roadmap/health-core';
 
@@ -19,7 +20,7 @@ import { ResultsPanel } from './ResultsPanel';
 const results = calculateHealthResults({ heightCm: 175, sex: 'male' });
 
 function showPlan() {
-  return render(<ResultsPanel results={results} isValid unitSystem="si" showEmailCapture formStage={2}
+  return render(<ResultsPanel results={results} isValid tiles={results ? statTiles(results, { unitSystem: 'si' }) : []} showEmailCapture formStage={2}
     syncControl={() => <div>Save in your own cloud</div>} />);
 }
 

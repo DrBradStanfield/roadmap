@@ -36,6 +36,7 @@ import {
   computePlan,
   currentValues,
   dueSplit,
+  NEEDS_SEX,
   PlanError,
   oneLine,
   planPayload,
@@ -163,7 +164,7 @@ function profileLine(plan: Plan): string {
   const bits: string[] = [];
   if (plan.results.age !== undefined) bits.push(`${plan.results.age}y`);
   // US-07 AC8: never a default sex; say what its absence costs.
-  bits.push(plan.inputs.sex ?? 'sex not given (needed for ideal body weight, protein, a calculated eGFR, HDL and some screenings)');
+  bits.push(plan.inputs.sex ?? `sex not given; without it the plan leaves out: ${NEEDS_SEX.join('; ')}`);
   const height = FIELD_METRIC_MAP.heightCm;
   bits.push(`${formatDisplayValue(height, plan.results.heightCm, plan.unitSystem)}${getDisplayLabel(height, plan.unitSystem)}`);
   // The adult readings as the payload gives them: null for a known minor (US-07 AC6).

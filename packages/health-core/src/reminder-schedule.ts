@@ -15,7 +15,7 @@
  * and specific is the point — but never carry results, values, or reasoning.
  */
 import type { ScreeningInputs } from './types';
-import { getPostFollowupDueDate, getScreeningNextDueDate } from './types';
+import { getPostFollowupDueDate, getScreeningNextDueDate, isSex } from './types';
 import type {
   MeasurementDates,
   MedicationRecord,
@@ -275,7 +275,7 @@ function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleIte
   const { birthYear, birthMonth } = file.profile;
   if (!birthYear) return []; // no age → no eligibility rules can run
   // No sex (or one that is not male or female) drops only the sexed screenings (US-07 AC8).
-  const sex = file.profile.sex === 'male' || file.profile.sex === 'female' ? file.profile.sex : undefined;
+  const sex = isSex(file.profile.sex) ? file.profile.sex : undefined;
   let age = now.getUTCFullYear() - birthYear;
   if (birthMonth && now.getUTCMonth() + 1 < birthMonth) age -= 1;
 
