@@ -100,7 +100,8 @@ so a v3 record needs a new binary.
   rows named "Creatinine" or "LDL" that are not trusted core values (§1); some creatinine rows may be
   urine. A name-based rule would pull them into the slot eGFR reads (review R2, Codex R1). Only the
   core write path sets the flag, after `UNIT_DEFS` conversion and the plausibility check. The core
-  slot key is namespaced, `core:ldl`, so no other row's slot (`labSlotKey`, unchanged) can equal it.
+  slot key is `core:ldl`; every other lab row's slot is `lab:` plus today's `labSlotKey`, so the two
+  can never meet, even for a row an agent names "core:ldl" (round 2, Codex R2).
 - **`measurements` holds vitals only**: weight, waist, systolic_bp, diastolic_bp. Vitals are not
   lab tests: no unit field, no reference range, Apple Health `externalId` dedup, the BP pair rule.
   Moving them would buy nothing and touch the Apple Health import and export.
@@ -125,8 +126,12 @@ merge, the hosted MCP and the CLI (all via `roadmap-doc.ts`). The move goes ther
 
 For each row in `measurements` whose `metricType` is one of the nine blood tests, emit a lab row:
 `{ ...row without metricType, metricName: metricType, unit: CANONICAL[metricType], referenceLow: null,
-referenceHigh: null, core: true }`, dropping `externalId` when it is null and keeping it otherwise (unknown fields
-survive, forward-compat rule 1). Same `id`, `value`, `recordedAt`, `createdAt`, `source`, `status`,
+referenceHigh: null, core: true }`, with every other field kept verbatim, `externalId` included even
+when null (unknown fields survive, forward-compat rule 1). The move is then a pure field rename,
+which the hash rule below depends on (round 2: both reviewers). A measurement row that already
+carries any of `metricName`, `unit`, `referenceLow`, `referenceHigh` or `core` (only a hand edit can)
+is not moved: it stays in `measurements`, hidden as unreadable (US-65), so the rename never
+overwrites a field and stays reversible. Same `id`, `value`, `recordedAt`, `createdAt`, `source`, `status`,
 `correctsId`.
 
 Why this is safe under the FHIR rules:
@@ -148,23 +153,28 @@ Why this is safe under the FHIR rules:
   `contentOf` hashes a moved-shape row in its **v2 form** (a lab row whose `metricName` is a core
   key, `core: true`, `unit` canonical and both bounds null is hashed as `{ metricType, …rest }`). A moved row then
   hashes exactly as it did before the move, so every existing id, winner and chain stands. New core
-  rows carry fresh UUIDs and need no such care. This is the one change merge needs.
+  rows carry fresh UUIDs and need no such care. Because the move only renames fields, the v2 form
+  is exactly the v2 bytes, `externalId: null` included, so the map is one-to-one (round 2).
 - **Same id in both arrays** (an agent reused one): after the move both rows sit in `labValues`.
   Migrate runs `unionSlotRows` over the moved array before returning, so no reader ever sees two
   rows with one id (review R7); the quarantine is the one `mergeFiles` would compute, by the rule
-  above.
+  above. Known limit: today an id reused across the two arrays stays unrenamed in both; after the
+  move one copy becomes `X#dup-…`, and a `correctsId: X` may then point at the other fact. Only an
+  agent reusing an id can cause it.
 
 ### The version stamp (review R1, R6)
 
 `schemaVersion` 3 means "`labValues` holds a core blood test". It is stamped where the erase list's
-version is stamped today: in `migrateFile`, in `mergeFiles` (on the merged result, not the max of
-the inputs) and by any writer that appends a core lab row. So the first save of a typed LDL into a
+version is stamped today: in `migrateFile`, in `mergeFiles` (the max of both inputs and of what the
+merged result needs) and by any writer that appends a core lab row. So the first save of a typed LDL into a
 v1 record writes v3, and no v3-shaped file is ever written under a lower number. A record with no
 blood test keeps its version, so an old app can still open it; if that old app writes an LDL into
-`measurements`, the next new read moves it and stamps v3. A record never goes back down: a file
+`measurements`, the next new read moves it and stamps v3. A record never goes back down, even when an erase removes the last blood row: a file
 already stamped 3 keeps 3 even if every blood row is later erased.
 
-The erase list keeps its own constant (`ERASE_LIST_SCHEMA_VERSION = 2`); today it reuses
+`migrate.ts`'s stamp line (`version >= CURRENT_SCHEMA_VERSION ? CURRENT : BASE`) is rewritten as the
+max of the stored version, 2 when an erase list is present and 3 when a core row is, or a v2 file
+without a list would drop to 1. The erase list keeps its own constant (`ERASE_LIST_SCHEMA_VERSION = 2`); today it reuses
 `CURRENT_SCHEMA_VERSION`, which would stamp every erased record v3 after the bump.
 `CURRENT_SCHEMA_VERSION` (the highest this app reads) becomes 3.
 
@@ -182,17 +192,24 @@ only rows that pass every test below are folded:
 - not Lp(a) in mg/dL (the factor is an average, and reports often print both units for one sample);
 - the unit converts by `UNIT_DEFS`, including a same-scale spelling ("umol/L", "ng/ml"), and the
   converted value passes `measurementValueFault`;
+- only active rows are candidates;
 - the day has no core value in this copy, and no other candidate row for that test on that day (two
   candidates fold neither).
 
 A folded row is corrected like `withSiCorrections` does today: append
-`{ ...row, id: <id>#core, metricName: key, unit: canonical, value: converted, core: true, correctsId: <id> }`
+`{ ...row, id: <id>#core, metricName: key, unit: canonical, value, referenceLow, referenceHigh, core: true, correctsId: <id> }`,
+with the value and each non-null bound converted by the same `UNIT_DEFS` rule (nulls stay null)
 and flip the printed row to `entered-in-error`. It is a true correction: the row was filed under the
-wrong test. `rootIdOf` strips `#core` too, so an erase that lists the row takes its fold.
+wrong test. `rootIdOf` strips `#core` in the same alternation as `#si` and `#dup-`, so `X#dup-h#core`
+and an erase that lists the row both reach `X`.
 
 Two devices can disagree on "the day has no core value" while one has not yet synced a new upload.
-The merge then sees a fold row and a real core row active on one day. Rule: in a `core:` slot a fold
-row (`#core`) loses to any other active row, whatever the clocks say, so the real value always counts.
+The merge then sees a fold row and a real core row active on one day.
+Rule: in a `core:` slot a fold row loses to any other active row, whatever the clocks say, so the
+real value always counts. A fold row is one whose `baseIdOf(id)` ends in `#core`, so a quarantined
+copy (`X#core#dup-…`) is still a fold row. Two fold rows in one slot (two devices each folded a
+different row for one day before syncing) fall back to the merge's usual order, newer `createdAt`
+then id: the one arbitrary pick left, named here.
 The printed row stays flipped (monotonic), still in history.
 
 No same-day pair ever swaps, no unusable row holds a core slot, and readers and merge agree.
@@ -203,8 +220,8 @@ counts them, without values, once the change ships.
 ## 6. Merge
 
 Both inputs come through `migrateFile` first, so both are v3-shaped. `mergeSlotted(labValues, slotOf)`
-keeps one active row per slot; `slotOf(row)` is `core:<key>` for a flagged row, else today's
-`labSlotKey(metricName)`. Three changes to `merge.ts`, all small: the slot function takes the row,
+keeps one active row per slot; `slotOf(row)` is `core:<key>` for a flagged row, else
+`lab:` + today's `labSlotKey(metricName)`. The changes to `merge.ts`, all small: the slot function takes the row,
 not the name; `contentOf` hashes a moved row in its v2 form (§4); a `#core` fold row loses in its slot
 (§5); and the merged `schemaVersion` is computed from the merged result (§4). The `eraseEpoch` gate
 and `rowsSince` already cover `labValues` (`CREATED_STAMPS`).
@@ -283,7 +300,9 @@ shown. Showing them is a later decision.
   With D3 option 1 the projection also reports `schemaVersion` 2, the shape it presents.
 
 **Raw-file agents** (`docs/agent-access.md`): rule 10 ("core metrics belong in `measurements`")
-becomes "every blood test goes in `labValues`, in SI for a core test"; §4 absorbs agents that still
+becomes "every blood test goes in `labValues`; a core test with `core: true`, its core key as
+`metricName` and its SI unit". An agent that writes a core-named row without the flag gets an extra
+row the plan ignores, so `get_plan` could warn when one exists (a build choice); §4 absorbs agents that still
 follow the old rule. `get-plan.ts` HELP stops saying lab values are not used.
 
 **iPhone.** The engine changes (readers, `labRows`, `add`, `correct`, `dependsOnLpaUnit`). The view
@@ -437,3 +456,13 @@ gpt-6.1-sol (2 blocking). All accepted; none disputed.
 - Upload behaviour change unstated (R4): §7 and D5. "Cholesterol/HDL" read as HDL (R5): §7's slash
   rule. Duplicate ids before merge (R7): quarantine in migrate. Stories missing (R8), map errors (R9),
   event counting (R10), projected version (R11): fixed in place.
+
+Round 2 (capped re-check), 2026-11-02, on 72976121: adversary (1 blocking, 5 optional) and Codex
+(3 blocking). All accepted and applied in the next commit with no further review, per the round cap:
+- The move dropped a null `externalId`, so the v2-form hash could not rebuild v2 bytes (both): the
+  move keeps every field verbatim; rows that would lose a field are not moved (§4).
+- An unflagged row named "core:ldl" shared the core slot (Codex R2): `lab:` prefix (§3, §6).
+- A fold kept its reference bounds in the printed unit (both): bounds converted (§5).
+- Stamp wording and `migrate.ts`'s stamp line (adversary A1); cross-array id reuse named as a known
+  limit (N3); fold detection by `baseIdOf`, two fold rows, active-only candidates (N4, N6); rule 10
+  names the flag (N5).
