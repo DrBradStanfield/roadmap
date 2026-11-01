@@ -102,6 +102,23 @@ can see, and the bot sees whatever `@everyone` may. A channel created later inhe
   and at most three posts per check; the tool's 10-per-hour cap is the backstop, not the
   target.
 
+## Status posts (every local session, Brad 2026-11-01)
+
+So Hermes knows who is on what without asking, each local session posts its own status line
+to the channel. Loops and cloud sessions do not: the tool reads the main checkout's `.env`,
+which they lack.
+
+- **When:** once a task has its branch (`start`), and at wrap-up (`done`, or `blocked`
+  with why). Not for a question answered without a branch.
+- **How:** `node tools/agent-channel.mjs post "status: start | <task in plain words> |
+  branch <name> | touches <paths or areas> | PR <n or none>"`, from the session's worktree.
+- **What it never names:** security work before its fix ships (skip the post), customer or
+  tester details, health values, claude_business work, or anything the rules above forbid.
+  A task name says what changes, never whose data or which hole.
+- **Cap:** the posts share the tool's 10-per-hour cap with replies. A refused post is skipped,
+  not retried. Posting needs no read; a session that reads the channel follows the rules
+  above.
+
 ## Live setup (2026-11-01)
 
 App "Health Roadmap Dev Agent" (private, Guild Install only, Message Content on). Server

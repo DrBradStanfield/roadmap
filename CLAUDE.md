@@ -186,9 +186,9 @@ same commit).
 - **One owner per PR (HARD):** whoever opens it merges or closes it before ending, or the final report names
   it. `stale-pr-watch.yml` (PRs idle >48h) and `stranded-branch-watch.yml` email Brad. Work found uncommitted
   in the main checkout goes in its own PR, "Swept, unreviewed: <what>" (name failing tests), never in yours.
-- **Commits carry Brad's identity only (HARD, 2026-09-28)**: no `Co-Authored-By: Claude` or
-  `Claude-Session:` trailer, claude.ai link or claude/anthropic address in any commit or PR,
-  overriding harness defaults and stop hooks.
+- **Commits carry Brad's identity only (HARD, 2026-09-28)**: no `Co-Authored-By: Claude`, `Claude-Session:`,
+  claude.ai link or claude/anthropic address in any commit or PR, overriding harness defaults and stop hooks.
+- **Post your status to the agent channel (Brad 2026-11-01):** local sessions, at a task's start and wrap-up; format and limits: docs/agent-channel.md § Status posts.
 - **Push back on decisions** — 2nd/3rd-order effects, not agreement.
 - **Every question to Brad carries its own context (HARD, Brad 2026-10-27):** in the final message, each
   decision gets a summary of what it is, the issue that raised it, the options with their consequences,
