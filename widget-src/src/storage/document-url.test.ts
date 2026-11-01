@@ -14,7 +14,8 @@ const refs = [
   'documents/lab.pdf',
 ];
 const malformedRefs = [
-  [buildDocumentRef({ type: 'clinic_letter', title: 'a'.repeat(64) + '😀', date: '2026-01-01', sourceFileName: 'synthetic.pdf', existingRefs: [] }), `Clinic%20letters/2026-01-01%20${'a'.repeat(64)}%EF%BF%BD.pdf`],
+  // A ref stored before US-14 AC6, when the title cut could split an emoji.
+  [`Clinic letters/2026-01-01 ${'a'.repeat(64)}\ud83d.pdf`, `Clinic%20letters/2026-01-01%20${'a'.repeat(64)}%EF%BF%BD.pdf`],
   ['documents/\ud800.pdf', 'documents/%EF%BF%BD.pdf'],
   ['documents/\udc00.pdf', 'documents/%EF%BF%BD.pdf'],
   ['documents/😀.pdf', 'documents/%F0%9F%98%80.pdf'],
