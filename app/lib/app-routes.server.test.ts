@@ -637,6 +637,28 @@ describe('US-52 AC4d: the lab upload\'s limits, all or nothing', () => {
     expect((await appLabImport(signed('/api/app/v1/lab-import', body), store)).status).toBe(429);
     expect(counts()).toEqual(before);
   });
+
+  it('a store outage and a stale counter hand the file unit back (US-52 AC4d)', async () => {
+    await registered();
+    const files = machineFiles.remaining('machine');
+    const use = store.use;
+    store.use = async () => { throw new Error('down'); };
+    expect((await appLabImport(signed('/api/app/v1/lab-import', body, { counter: 5 }), store)).status).toBe(503);
+    expect(machineFiles.remaining('machine')).toBe(files);
+    store.use = use;
+    store.rows.get(device.keyId)!.count = 9;
+    const stale = await appLabImport(signed('/api/app/v1/lab-import', body, { counter: 9 }), store);
+    expect((await stale.json()).reason).toBe('stale_counter');
+    expect(machineFiles.remaining('machine')).toBe(files);
+    expect(mocks.extract).not.toHaveBeenCalled();
+  });
+
+  it('a chat success spends no file unit (US-52 AC4d)', async () => {
+    await registered();
+    const files = machineFiles.remaining('machine');
+    expect((await appChat(signed('/api/app/v1/chat', { ...chatBody, stream: false }), store)).status).toBe(200);
+    expect(machineFiles.remaining('machine')).toBe(files);
+  });
 });
 
 it('the test key is a real P-256 key', () => {
