@@ -72,7 +72,7 @@ struct MyDataView: View {
             if let data = store.myData {
                 List {
                     vitals(data)
-                    // Under blood pressure: heart rate, resting heart rate and sleep, or the Turn On or Reconnect row (US-56 AC5, AC6).
+                    // Under blood pressure: heart rate, resting heart rate and sleep, or the Turn On or Open Settings row (US-56 AC5, AC6).
                     LiveCardsSection(metrics: LiveMetric.vitals) { liveDetail = $0 }
                     LiveCardsSection(metrics: LiveMetric.fitness, bands: data.vo2Bands?.value.map { [.vo2Max: $0] } ?? [:]) { liveDetail = $0 }
                     metrics(data.bloodTests) {

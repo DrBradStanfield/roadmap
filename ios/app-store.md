@@ -140,7 +140,7 @@ declares the three rows below; declare them as written.
   during onboarding ("Connect Apple Health"), it also asks to read heart rate, resting
   heart rate, sleep, VO2 max and steps. A person who skipped that connects from My
   data's Apple Health row, which shows the same sheet. A person who connected before this
-  was added gets "Turn On" on My data, the same sheet again; after a refusal, "Reconnect"
+  was added gets "Turn On" on My data, the same sheet again; after a refusal, "Open Settings"
   opens Settings. These five never go into the record: the app reads them each time a card
   or chart shows, keeps only what the cards draw (each card's latest reading and the past month's
   daily values behind its trend line) in one file on this iPhone (not backed up, deleted by
