@@ -79,6 +79,11 @@ export function verifyAppProxySignature(request: Request, nowSeconds = Date.now(
     .sort()
     .map((k) => `${k}=${params.get(k)!.join(',')}`)
     .join('');
+  // No separator between pairs means a signed query can be re-split into other
+  // pairs with the same message (US-09 AC24a). Shopify sends its own id on every
+  // proxied request, so a message that spells the id key twice may hide a forged
+  // copy; with it spelled once, the sent id is the digits Shopify signed.
+  if (message.split('logged_in_customer_id=').length > 2) return false;
   const digest = crypto.createHmac('sha256', secret).update(message).digest('hex');
   return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(signature));
 }

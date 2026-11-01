@@ -595,6 +595,72 @@ describe('US-52 AC7: lab import', () => {
   });
 });
 
+describe('US-52 AC4d: the lab upload\'s limits, all or nothing', () => {
+  const body = { pages: [{ type: 'text', content: 'LDL 3.1 mmol/L' }], unitSystem: 'si', ownDates: true, refusedRows: true };
+  const IP = ipBucket('203.0.113.9');
+  const counts = () => ({
+    keyUses: store.rows.get(device.keyId)!.uses.lab,
+    ip: appLimits.ip.lab.remaining(IP),
+    machine: appLimits.machine.lab.remaining('machine'),
+    files: machineFiles.remaining('machine'),
+    failures: appLimits.failures.remaining(IP),
+    keyFailures: appLimits.keyFailures.remaining(device.keyId),
+  });
+
+  it('a file-cap refusal leaves every other counter where it was; the counter still advances (US-52 AC4d)', async () => {
+    await registered();
+    machineFiles.take('machine', machineFiles.remaining('machine'));
+    const before = counts();
+    const res = await appLabImport(signed('/api/app/v1/lab-import', body, { counter: 5 }), store);
+    expect(res.status).toBe(429);
+    expect((await res.json()).reason).toBe('limit');
+    expect(counts()).toEqual(before);
+    expect(store.rows.get(device.keyId)!.count).toBe(5);
+    expect(mocks.extract).not.toHaveBeenCalled();
+  });
+
+  it('a success charges each counter exactly once (US-52 AC4d)', async () => {
+    await registered();
+    const before = counts();
+    expect((await appLabImport(signed('/api/app/v1/lab-import', body), store)).status).toBe(200);
+    expect(counts()).toEqual({
+      ...before,
+      keyUses: before.keyUses + 1, ip: before.ip - 1, machine: before.machine - 1, files: before.files - 1,
+    });
+    expect(mocks.extract).toHaveBeenCalledTimes(1);
+  });
+
+  it('a request the key refuses spends no file unit (US-52 AC4d)', async () => {
+    await registered();
+    store.rows.get(device.keyId)!.uses.lab = 30;
+    const before = counts();
+    expect((await appLabImport(signed('/api/app/v1/lab-import', body), store)).status).toBe(429);
+    expect(counts()).toEqual(before);
+  });
+
+  it('a store outage and a stale counter hand the file unit back (US-52 AC4d)', async () => {
+    await registered();
+    const files = machineFiles.remaining('machine');
+    const use = store.use;
+    store.use = async () => { throw new Error('down'); };
+    expect((await appLabImport(signed('/api/app/v1/lab-import', body, { counter: 5 }), store)).status).toBe(503);
+    expect(machineFiles.remaining('machine')).toBe(files);
+    store.use = use;
+    store.rows.get(device.keyId)!.count = 9;
+    const stale = await appLabImport(signed('/api/app/v1/lab-import', body, { counter: 9 }), store);
+    expect((await stale.json()).reason).toBe('stale_counter');
+    expect(machineFiles.remaining('machine')).toBe(files);
+    expect(mocks.extract).not.toHaveBeenCalled();
+  });
+
+  it('a chat success spends no file unit (US-52 AC4d)', async () => {
+    await registered();
+    const files = machineFiles.remaining('machine');
+    expect((await appChat(signed('/api/app/v1/chat', { ...chatBody, stream: false }), store)).status).toBe(200);
+    expect(machineFiles.remaining('machine')).toBe(files);
+  });
+});
+
 it('the test key is a real P-256 key', () => {
   expect(crypto.createPublicKey(device.privateKey).asymmetricKeyDetails?.namedCurve).toBe('prime256v1');
 });

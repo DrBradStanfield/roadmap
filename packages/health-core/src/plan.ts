@@ -25,7 +25,7 @@ import { computeReminderSchedule, type ReminderScheduleItem } from './reminder-s
 import { BASE_SCHEMA_VERSION, type FileLabValue, type RoadmapFile } from './roadmap-file';
 import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
 import {
-  UNIT_DEFS, formatDisplayValue, formatGradedValue, getDisplayLabel, type MetricType, type UnitSystem,
+  UNIT_DEFS, formatDisplayValue, formatGradedValue, getDisplayLabel, unitSystemOf, type MetricType, type UnitSystem,
 } from './units';
 import { getValidationErrors, PRESSURE_ORDER, sanitizeInputs, validateHealthInputs } from './validation';
 
@@ -124,7 +124,7 @@ export function derivePlanInputs(file: RoadmapFile, now = new Date()): PlanInput
       measurementsToInputs(currentRows, fileProfileToApi(file.profile)),
       creatinine ? dayOf(creatinine.recordedAt) : null, labEgfrOf(file.labValues), localDay(now),
     ),
-    unitSystem: file.profile.unitSystem ?? 'si',
+    unitSystem: unitSystemOf(file.profile),
     medications: medicationsToInputs(file.medications),
     screenings: screeningsToInputs(fileScreeningRows(file.screenings)),
     currentRows,

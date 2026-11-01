@@ -11,7 +11,7 @@ import { cmToFeetInches, formatDisplayValue, fromCanonicalValue, toCanonicalValu
 import { fileNameLine, MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/src/lab-extraction';
 import { deviceWrites } from '../../packages/health-core/src/device-export';
 import { usProductSections, type UsPlanSection } from '../../packages/health-core/src/us-products';
-import { applyEdit, myData, newRecord, readNumber, readRecord, type Edit } from './my-data';
+import { applyEdit, myData, newRecord, readNumber, readRecord, readView, type Edit } from './my-data';
 import { metricHistory } from './my-data-forms';
 import { readUnitChoices } from './unit-choices';
 import { phoneReminders } from './reminders';
@@ -57,7 +57,7 @@ export function fileNamesJson(filesJson: string): string {
  *  here and on the doors below: the phone's per-test units (unit-choices.ts); an app older
  *  than them sends nothing, and every metric shows in the record's units. */
 export function planJson(recordJson: string, nowIso: string, deviceId: string, unitsJson?: string): string {
-  return JSON.stringify(computePlan(readRecord(recordJson, nowIso, deviceId), new Date(nowIso), readUnitChoices(unitsJson)));
+  return JSON.stringify(computePlan(readView(recordJson, nowIso, deviceId), new Date(nowIso), readUnitChoices(unitsJson)));
 }
 
 /** A plan's on-screen layout, as JSON: the web's results panel uses the same function. */
@@ -88,7 +88,7 @@ export function newRecordJson(nowIso: string, deviceId: string, locale: string, 
  *  (us-products.ts, the web's own overlay); left out when none shows. Anything but `true`,
  *  an app older than it included, gives none. */
 export function screenJson(recordJson: string, nowIso: string, deviceId: string, unitsJson?: string, isUS?: boolean): string {
-  const file = readRecord(recordJson, nowIso, deviceId);
+  const file = readView(recordJson, nowIso, deviceId);
   const choices = readUnitChoices(unitsJson);
   let plan: Plan | null = null;
   let view: { sections: PlanSection[]; tiles: StatTile[]; usProducts?: UsPlanSection[]; ms: number } | { error: string; planError: boolean };
@@ -140,16 +140,18 @@ export function convertJson(metric: string, value: number, from: string, to: str
 /** The values to write to Apple Health, as JSON (US-25 AC14, device-export.ts): the values
  *  a person entered, never the app's own imports. */
 export function healthWritesJson(recordJson: string, nowIso: string, deviceId: string): string {
+  // The raw record: a correction's chain and source run through hidden rows too, and
+  // deviceWrites takes only active rows of known metrics with a valid number (US-65).
   return JSON.stringify(deviceWrites(readRecord(recordJson, nowIso, deviceId), 'apple_health'));
 }
 
 /** Every value recorded for one metric, newest first, as JSON (US-25 AC9). */
 export function historyJson(recordJson: string, metric: string, nowIso: string, deviceId: string, unitsJson?: string): string {
-  return JSON.stringify(metricHistory(readRecord(recordJson, nowIso, deviceId), metric, nowIso, readUnitChoices(unitsJson)));
+  return JSON.stringify(metricHistory(readView(recordJson, nowIso, deviceId), metric, nowIso, readUnitChoices(unitsJson)));
 }
 // Chat and lab upload (US-52): app-doors.ts.
 export { chatContextJson, chatListJson, chatMessagesJson, chatRecordExchangeJson, chatDeleteJson, settledJson, labReviewJson, labSaveSummaryJson } from './app-doors';
 /** The phone's reminders (reminders.ts): health-core's schedule plus the notification days, as JSON. */
 export function remindersJson(recordJson: string, nowIso: string, deviceId: string): string {
-  return JSON.stringify(phoneReminders(readRecord(recordJson, nowIso, deviceId), new Date(nowIso)));
+  return JSON.stringify(phoneReminders(readView(recordJson, nowIso, deviceId), new Date(nowIso)));
 }
