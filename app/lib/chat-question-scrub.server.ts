@@ -72,19 +72,20 @@ export function backstop(text: string): string {
  * `[name]` after the same phrase in the kept copy, or the copy is skipped.
  */
 const HANDLE = /(?<![\w.@])@[\p{L}_]/u;
-const INTRO = /\b(?:my\s+name\s+is|my\s+name['’]s|call\s+me)[\s:,]+["'“‘]?(\S)/gi;
-/** Each intro's first character after the phrase, in order. */
-const intros = (text: string) => [...text.matchAll(INTRO)].map((m) => text.slice(m.index + m[0].length - 1));
+const INTRO = /\b(my\s+name\s+is|my\s+name['’]s|call\s+me)(?=[\s:,]+["'“‘«„‚‹]?\s*(\S))/gi;
+/** Each intro's phrase and the first character after it, in order; the lookahead never swallows a next phrase. */
+const intros = (text: string) =>
+  [...text.matchAll(INTRO)].map((m) => ({ phrase: m[1].toLowerCase().replace(/\s+/g, ' '), next: text.slice(text.indexOf(m[2], m.index + m[1].length)) }));
 /**
  * Pair the question's intros with the copy's in order (swaps never reorder);
- * a capital in the question needs `[name]` in the copy. A count that differs
- * is doubt, so a skip.
+ * a capital in the question needs `[name]` in the copy. A count or a phrase
+ * that differs is doubt, so a skip.
  */
 function leavesName(question: string, kept: string): boolean {
   const asked = intros(question);
   const saved = intros(kept);
   if (asked.length !== saved.length) return true;
-  return asked.some((rest, i) => /^\p{Lu}/u.test(rest) && !/^\[name\]/i.test(saved[i]));
+  return asked.some((a, i) => a.phrase !== saved[i].phrase || (/^\p{Lu}/u.test(a.next) && !/^\[name\]/i.test(saved[i].next)));
 }
 const leavesIdentity = (question: string, kept: string) => HANDLE.test(kept) || leavesName(question, kept);
 

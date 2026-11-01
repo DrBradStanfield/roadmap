@@ -53,8 +53,16 @@ describe('scrubQuestion: US-15 AC44e a handle or a self-introduced name left in 
     expect(await scrub(q, q)).toBeNull();
   });
 
-  it('skips when an intro the model lower-cased pairs with a name it kept', async () => {
-    expect(await scrub('Call me alice. My name is Bob. Is ferritin low?', 'Call me [name]. My name is Bob. Is ferritin low?')).toBeNull();
+  it('skips a kept name when another intro became a different placeholder, or two intros sit back to back (re-check R1, R2)', async () => {
+    expect(await scrub('My name is Alice. Can my clinic call me 3/1?', 'My name is Alice. Can my clinic call me [date]?')).toBeNull();
+    for (const q of ['Call me, my name is Alice. Is ferritin low?', 'My name is: call me Bob. Is ferritin low?', 'Call me «Bob». Is ferritin low?', "Call me ' Bob. Is ferritin low?"]) {
+      expect(await scrub(q, q)).toBeNull();
+    }
+  });
+
+  it('skips when glued text adds an intro where another was swapped away (re-check R3)', async () => {
+    const q = 'Jimmy name is Carl. My name is Alice. Call me 021 123 4567.';
+    expect(await scrub(q, '[name]my name is [name]. My name is Alice. [contact].')).toBeNull();
   });
 
   it('control: the same question with both replaced is kept', async () => {
