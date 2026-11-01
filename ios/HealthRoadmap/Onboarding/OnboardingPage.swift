@@ -32,13 +32,17 @@ struct OnboardingPage<Content: View, Actions: View>: View {
                             .foregroundStyle(tint)
                             .padding(.top, 24)
                             .accessibilityHidden(true)
+                        // Full height always: `spread` gives the stack the screen's height, which
+                        // would otherwise squeeze these to "…" instead of scrolling (US-54 AC8b).
                         Text(title)
                             .font(.title.bold())
                             .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
                             .accessibilityAddTraits(.isHeader)
                         Text(detail)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
                         if fromHealth {
                             Label("From Apple Health", systemImage: "heart.fill")
                                 .font(.footnote)
@@ -59,6 +63,9 @@ struct OnboardingPage<Content: View, Actions: View>: View {
                 }
                 actions()
             }
+            // Its full height, so a long hint or button never ends in "…"; the page above
+            // scrolls instead (US-54 AC8b).
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.top, 12)
         }
         .padding(.horizontal, 24)
