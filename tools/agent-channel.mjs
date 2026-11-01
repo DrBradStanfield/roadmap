@@ -6,7 +6,7 @@
 //
 //   node tools/agent-channel.mjs read [--limit N]
 //   node tools/agent-channel.mjs post <text>        (or the text on stdin)
-import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
+import { chmodSync, closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -24,58 +24,95 @@ const POSTS_PER_HOUR = 10;
 const HOUR = 3_600_000;
 const MIN_SECRET = 8;
 const SNOWFLAKE = /^\d{17,20}$/;
+const BRAD_KEY = 'DISCORD_DrBradStanfield_USER_ID';
 // Also in packages/health-core/src/mcp-tools.ts and sentry-scrub.ts; copied because plain node cannot import TypeScript.
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/;
-const SHAPES = Object.entries(PATTERNS).map(([name, re]) => [name, new RegExp(re)]);
+// `name [at] domain [dot] com`: only the bracketed form; a bare "at ... dot" is ordinary prose ("looked at the dot com era").
+const EMAIL_SPELLED = /[A-Za-z0-9._%+-]+\s*[[(]at[\])]\s*[A-Za-z0-9-]+(?:\s*(?:[[(]dot[\])]|\.)\s*[A-Za-z0-9-]+)+/i;
+// Fly and JWT shapes are local: codex-review's shared PATTERNS stay as they are.
+const LOCAL_PATTERNS = { fly_token: '(?<![A-Za-z0-9])(?:FlyV1\\s+)?fm2_[A-Za-z0-9+/=_-]{20}', jwt: '(?<![A-Za-z0-9_-])eyJ[A-Za-z0-9_-]{7,}\\.[A-Za-z0-9_-]{7,}\\.[A-Za-z0-9_-]{7,}' };
+const SHAPES = Object.entries({ ...PATTERNS, ...LOCAL_PATTERNS }).map(([name, re]) => [name, new RegExp(re)]);
+// Other files whose values are refused, besides the main checkout's root .env*: `~/` is HOME; a folder means its .env* files.
+const OTHER_SECRET_SOURCES = ['~/.fly/config.yml', '~/Documents/claude_business.nosync', '~/Documents/claude_business.nosync/claude-integration'];
+const LOCK_STALE = 30_000;
 
 /** A refusal: printed on stderr as is, exit 1. Its text never holds a value. */
 class Refused extends Error {}
 
 /**
- * Every value in a .env file, as codex-review.mjs collects them: commented-out `# KEY=VALUE` lines count, a quoted
- * value ends at its quote, and an unquoted one counts whole and cut at its `#`, in case the `#` was part of it.
+ * Every value in a .env file (or YAML `key: value`), as codex-review.mjs collects them: commented-out `# KEY=VALUE`
+ * lines count, a quoted value ends at its quote (`\"` inside double quotes does not, and the unescaped text counts
+ * too), and an unquoted one counts whole and cut at its `#`, in case the `#` was part of it.
  */
 function envValues(text) {
   const out = [];
   for (const raw of text.split(/\r?\n/)) {
-    const m = /^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/.exec(raw.trim().replace(/^#+\s*/, ''));
+    const m = /^(?:export\s+)?([A-Za-z_][\w.-]*)\s*(?:=|:(?=\s))\s*(.*)$/.exec(raw.trim().replace(/^#+\s*/, ''));
     if (!m) continue;
-    const q = /^(["'`])(.*?)\1/.exec(m[2]);
-    const values = q ? [q[2]] : [m[2].trim(), m[2].replace(/\s*#.*$/, '').trim()];
+    const q = /^"((?:[^"\\]|\\.)*)"/.exec(m[2]) ?? /^(['`])(.*?)\1/.exec(m[2])?.slice(1);
+    const values = q ? [q.at(-1), q.at(-1).replace(/\\"/g, '"')] : [m[2].trim(), m[2].replace(/\s*#.*$/, '').trim()];
     for (const value of new Set(values)) out.push({ key: m[1], value });
   }
   return out;
 }
 
-/** Token and channel from the environment, else the main checkout's .env. Never printed. */
-function loadConfig(env, root) {
+/** Folded for matching: NFKC, no format characters or whitespace, lower case. */
+const fold = (s) => s.normalize('NFKC').replace(/[\p{Cf}\s]/gu, '').toLowerCase();
+
+/** The value's encodings a post might carry: itself, base64 (standard and url-safe, each byte alignment), hex, URL-encoded. */
+function forms(value) {
+  const bytes = Buffer.from(value, 'utf8');
+  const b64 = [0, 1, 2].map((k) => {
+    // Shifted by k bytes; keep only the characters this value's bits alone decide.
+    const n = k + bytes.length;
+    return Buffer.concat([Buffer.alloc(k), bytes]).toString('base64').slice([0, 2, 3][k], Math.floor((8 * n) / 6));
+  });
+  const all = [value, ...b64, ...b64.map((e) => e.replace(/\+/g, '-').replace(/\//g, '_')), bytes.toString('hex'), encodeURIComponent(value)];
+  return [...new Set(all.map(fold))].filter((f) => f.length >= MIN_SECRET);
+}
+
+/** Every value in a file this tool refuses to post, read only if it exists. */
+function sourceValues(root, home) {
+  const files = [];
+  const envFiles = (dir) => { try { for (const n of readdirSync(dir)) if (isSecretName(n) && statSync(join(dir, n)).isFile()) files.push(join(dir, n)); } catch { /* absent */ } };
+  // Every main-checkout root .env* file, .env.example included: a template can gain a real value.
+  envFiles(root);
+  for (const src of OTHER_SECRET_SOURCES) {
+    const path = src.replace(/^~\//, `${home}/`);
+    if (/\.ya?ml$/.test(path)) { if (existsSync(path)) files.push(path); } else envFiles(path);
+  }
+  return files.flatMap((f) => envValues(readFileSync(f, 'utf8')));
+}
+
+/** Token, channel and Brad's id from the main checkout's .env only; an environment override is refused. Never printed. */
+function loadConfig(env, root, home) {
   const mainPath = join(root, '.env');
   const mainEnv = existsSync(mainPath) ? parseEnv(readFileSync(mainPath, 'utf8')) : {};
-  const get = (k) => (env[k] || mainEnv[k] || '').trim();
-  const token = get(TOKEN_KEY);
-  const channel = get(CHANNEL_KEY);
-  for (const [key, value] of [[TOKEN_KEY, token], [CHANNEL_KEY, channel]]) if (!value) throw new Refused(`${key} is not set (environment or ${mainPath})`);
+  const [token, channel] = [TOKEN_KEY, CHANNEL_KEY].map((key) => {
+    const value = (mainEnv[key] ?? '').trim();
+    if (env[key]?.trim() && env[key].trim() !== value) throw new Refused(`${key} in the environment differs from ${mainPath}; set it only there`);
+    if (!value) throw new Refused(`${key} is not set in ${mainPath}`);
+    return value;
+  });
   if (!SNOWFLAKE.test(channel)) throw new Refused(`${CHANNEL_KEY} is not a Discord channel id (17 to 20 digits)`);
-  if (token === get('DISCORD_BOT_TOKEN')) throw new Refused(`${TOKEN_KEY} is the health bot's token; this tool needs its own bot`);
-  // Every root .env* file, .env.example included: a template can gain a real value.
-  const secrets = [{ key: TOKEN_KEY, value: token }];
-  for (const name of readdirSync(root)) {
-    const path = join(root, name);
-    if (!isSecretName(name) || !statSync(path).isFile()) continue;
-    for (const v of envValues(readFileSync(path, 'utf8'))) if (v.value.length >= MIN_SECRET) secrets.push(v);
-  }
-  return { token, channel, secrets };
+  const values = sourceValues(root, home);
+  const shared = values.find((v) => /^DISCORD_.*TOKEN$/.test(v.key) && v.key !== TOKEN_KEY && v.value === token);
+  if (shared) throw new Refused(`${TOKEN_KEY} is also ${shared.key}; this tool needs its own bot`);
+  const secrets = [{ key: TOKEN_KEY, value: token }, ...values.filter((v) => v.value.length >= MIN_SECRET)].map((v) => ({ ...v, forms: forms(v.value) }));
+  return { token, channel, brad: (mainEnv[BRAD_KEY] ?? '').trim() || null, secrets };
 }
 
 /** Why `text` may not be posted, naming only a key or a shape, or null. */
 function postProblem(text, secrets) {
   if (!text.trim()) return 'empty text';
   if (text.length > MAX_POST) return `text is ${text.length} characters; the limit is ${MAX_POST} (no auto-split)`;
-  const hit = secrets.find((s) => text.includes(s.value));
+  const folded = fold(text);
+  const hit = secrets.find((s) => s.forms.some((f) => folded.includes(f)));
   if (hit) return `text holds the value of ${hit.key}`;
-  const shape = SHAPES.find(([, re]) => re.test(text));
+  const plain = text.normalize('NFKC').replace(/\p{Cf}/gu, '');
+  const shape = SHAPES.find(([, re]) => re.test(text) || re.test(plain));
   if (shape) return `text holds a credential shape (${shape[0]})`;
-  if (EMAIL.test(text)) return 'text holds an email address';
+  if (EMAIL.test(plain) || EMAIL_SPELLED.test(plain)) return 'text holds an email address';
   return null;
 }
 
@@ -96,23 +133,45 @@ function loadState(home) {
 
 function saveState(home, state) {
   const path = statePath(home);
-  mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
   writeFileSync(`${path}.tmp`, `${JSON.stringify(state, null, 2)}\n`, { mode: 0o600 });
   chmodSync(`${path}.tmp`, 0o600);
   renameSync(`${path}.tmp`, path);
 }
 
-/** Status and Discord's own code and message, with the token and every .env value cut out. Never the body. */
+/**
+ * Runs `change(state)` on a fresh load and saves it, under an exclusive lockfile, so two runs never interleave a
+ * load and a save (the cap holds across processes). A lock older than 30 s is a crashed run's and is taken over.
+ */
+async function withState(home, change) {
+  const lock = `${statePath(home)}.lock`;
+  mkdirSync(dirname(lock), { recursive: true, mode: 0o700 });
+  for (let tries = 0; ; tries++) {
+    try { closeSync(openSync(lock, 'wx', 0o600)); break; } catch (e) {
+      if (e?.code !== 'EEXIST') throw e;
+      try { if (Date.now() - statSync(lock).mtimeMs > LOCK_STALE) { rmSync(lock, { force: true }); continue; } } catch { continue; }
+      if (tries >= 100) throw new Refused(`${lock} is held by another run; try again (delete it if no run is going)`);
+      await new Promise((r) => setTimeout(r, 50));
+    }
+  }
+  try {
+    const state = loadState(home);
+    try { return change(state); } finally { saveState(home, state); }
+  } finally { rmSync(lock, { force: true }); }
+}
+
+/** Status and Discord's own code and message, the token and every collected value cut out first. Never the body. */
 async function discordError(res, secrets) {
   let code = '';
   let msg = '';
   try {
     const b = await res.json();
     code = Number.isFinite(b?.code) ? ` code ${b.code}` : '';
-    msg = typeof b?.message === 'string' ? b.message.replace(/[\x00-\x1f\x7f]/g, ' ').slice(0, 200) : '';
+    msg = typeof b?.message === 'string' ? b.message : '';
+    // Longest first, so a value holding another is cut whole; then the cut at 200 cannot split a value.
+    for (const s of [...secrets].sort((x, y) => y.value.length - x.value.length)) msg = msg.split(s.value).join('[redacted]');
+    msg = msg.replace(/[\x00-\x1f\x7f]/g, ' ').slice(0, 200);
     if (Number.isFinite(b?.retry_after)) msg += ` (retry after ${b.retry_after}s)`;
   } catch { /* no JSON body */ }
-  for (const s of secrets) msg = msg.split(s.value).join('[redacted]');
   return new Refused(`Discord answered HTTP ${res.status}${code}${msg ? `: ${msg}` : ''}`);
 }
 
@@ -120,7 +179,8 @@ async function call(cfg, deps, init, query = '') {
   const url = `${API}/channels/${cfg.channel}/messages${query}`;
   let res;
   try {
-    res = await deps.fetch(url, { ...init, headers: { Authorization: `Bot ${cfg.token}`, 'Content-Type': 'application/json', 'User-Agent': 'DiscordBot (https://github.com/DrBradStanfield, 1) agent-channel' } });
+    // A redirect is an error: the token and the text are never re-sent anywhere else.
+    res = await deps.fetch(url, { ...init, redirect: 'error', headers: { Authorization: `Bot ${cfg.token}`, 'Content-Type': 'application/json', 'User-Agent': 'DiscordBot (https://github.com/DrBradStanfield, 1) agent-channel' } });
   } catch (e) {
     throw new Refused(`could not reach Discord (${e?.cause?.code ?? e?.name ?? 'network error'})`);
   }
@@ -135,44 +195,50 @@ function parseLimit(args) {
   return n;
 }
 
-async function read(cfg, deps, state, limit) {
+async function read(cfg, deps, limit) {
   const q = new URLSearchParams({ limit: String(limit) });
-  if (state.cursor) q.set('after', state.cursor);
+  const cursor = await withState(deps.home, (state) => state.cursor);
+  if (cursor) q.set('after', cursor);
   const list = await call(cfg, deps, { method: 'GET' }, `?${q}`);
   if (!Array.isArray(list)) throw new Refused('Discord answered with something other than a message list');
   const messages = list
     .filter((m) => SNOWFLAKE.test(String(m?.id)))
-    .map((m) => ({ id: String(m.id), author: String(m.author?.username ?? ''), is_bot: m.author?.bot === true, at: String(m.timestamp ?? ''), content: String(m.content ?? '').slice(0, MAX_CONTENT) }))
+    .map((m) => {
+      const author_id = String(m.author?.id ?? '');
+      const webhook_id = m.webhook_id == null ? null : String(m.webhook_id);
+      // A webhook can wear any name and avatar, so only Brad's own account, never a webhook, is Brad.
+      return { id: String(m.id), author: String(m.author?.username ?? ''), author_id, webhook_id, is_bot: m.author?.bot === true, is_brad: cfg.brad !== null && author_id === cfg.brad && webhook_id === null, at: String(m.timestamp ?? ''), content: String(m.content ?? '').slice(0, MAX_CONTENT) };
+    })
     .sort((a, b) => (BigInt(a.id) < BigInt(b.id) ? -1 : 1));
-  const last = messages.at(-1)?.id;
-  if (last && (!state.cursor || BigInt(last) > BigInt(state.cursor))) state.cursor = last;
-  state.reads += 1;
-  state.messages_read += messages.length;
-  saveState(deps.home, state);
+  await withState(deps.home, (state) => {
+    const last = messages.at(-1)?.id;
+    if (last && (!state.cursor || BigInt(last) > BigInt(state.cursor))) state.cursor = last;
+    state.reads += 1;
+    state.messages_read += messages.length;
+  });
   return { untrusted: true, note: UNTRUSTED_NOTE, messages };
 }
 
-async function post(cfg, deps, state, args) {
+async function post(cfg, deps, args) {
   const text = args.length ? args.join(' ') : await deps.stdin();
-  const refuse = (why) => {
-    state.refused += 1;
-    saveState(deps.home, state);
-    throw new Refused(`refused, nothing sent: ${why}`);
-  };
-  const problem = postProblem(text, cfg.secrets);
-  if (problem) refuse(problem);
-  const now = deps.now();
-  state.post_times = state.post_times.filter((t) => now - t < HOUR);
-  if (state.post_times.length >= POSTS_PER_HOUR) {
-    const wait = Math.ceil((state.post_times[0] + HOUR - now) / 60_000);
-    refuse(`${POSTS_PER_HOUR} posts in the last hour; next in about ${wait} min`);
-  }
-  // Every attempt counts toward the cap, sent or not, so a failing post cannot loop past it.
-  state.post_times.push(now);
-  saveState(deps.home, state);
+  const problem = await withState(deps.home, (state) => {
+    const refuse = (why) => { state.refused += 1; return why; };
+    const why = postProblem(text, cfg.secrets);
+    if (why) return refuse(why);
+    const now = deps.now();
+    // A time more than a minute ahead is a clock jump or an edit; it would hold the cap shut, so it goes.
+    state.post_times = state.post_times.filter((t) => now - t < HOUR && t - now <= 60_000);
+    if (state.post_times.length >= POSTS_PER_HOUR) {
+      const wait = Math.ceil((Math.min(...state.post_times) + HOUR - now) / 60_000);
+      return refuse(`${POSTS_PER_HOUR} posts in the last hour; next in about ${wait} min`);
+    }
+    // Every attempt counts toward the cap, sent or not, so a failing post cannot loop past it.
+    state.post_times.push(now);
+    return null;
+  });
+  if (problem) throw new Refused(`refused, nothing sent: ${problem}`);
   const sent = await call(cfg, deps, { method: 'POST', body: JSON.stringify({ content: text, allowed_mentions: { parse: [] } }) });
-  state.posts += 1;
-  saveState(deps.home, state);
+  await withState(deps.home, (state) => { state.posts += 1; });
   return { posted: true, id: String(sent?.id ?? '') };
 }
 
@@ -190,9 +256,8 @@ export async function run(argv, deps = {}) {
     if (cmd === 'post' && args[0]?.startsWith('--')) throw new Refused('post takes no flags: post <text>, or the text on stdin');
     const root = d.root ?? mainOf(dirname(fileURLToPath(import.meta.url)));
     if (!root) throw new Refused("cannot find the main checkout's .env (git rev-parse failed)");
-    const cfg = loadConfig(d.env, root);
-    const state = loadState(d.home);
-    const out = await (cmd === 'read' ? read(cfg, d, state, limit) : post(cfg, d, state, args));
+    const cfg = loadConfig(d.env, root, d.home);
+    const out = await (cmd === 'read' ? read(cfg, d, limit) : post(cfg, d, args));
     return { code: 0, stdout: `${JSON.stringify(out, null, 2)}\n`, stderr: '' };
   } catch (e) {
     const why = e instanceof Refused ? e.message : `unexpected ${e?.name ?? 'error'}${e?.code ? ` ${e.code}` : ''}`;

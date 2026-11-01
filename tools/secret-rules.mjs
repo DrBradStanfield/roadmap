@@ -30,7 +30,7 @@ export const PATTERNS = {
   google_oauth_secret: `${NW}GOCSPX-[A-Za-z0-9_-]{10}`,
   google_oauth_token: `${NB}ya29\\.[A-Za-z0-9_-]{10}`,
   private_key: "-----BEGIN [A-Z ]{0,20}PRIVATE KEY-----(?:\\\\[rn]|\\s){1,8}[A-Za-z0-9+/]{40}",
-  discord_webhook: "discord(?:app)?\\.com/api/webhooks/\\d+/",
+  discord_webhook: "discord(?:app)?\\.com/api/webhooks/\\d{17,20}/",
   slack_webhook: "hooks\\.slack\\.com/services/[A-Za-z0-9]{8}",
   gitlab_token: `${NW}glpat-[A-Za-z0-9_-]{10}`,
   meta_token: `${NB}EAA[A-Za-z0-9]{50}`,

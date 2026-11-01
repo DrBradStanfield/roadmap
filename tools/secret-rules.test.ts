@@ -75,14 +75,10 @@ describe('US-40 AC11: every credential shape fits the streaming carry', () => {
     expect(measure('a\\d+')).toEqual({ width: Infinity, reach: Infinity });
     expect(measure(PATTERNS.openai_anthropic).reach).toBe(103); // the widest: `sk-` and a 100-character digit look
   });
-  // discord_webhook ends in `\d+/`: a real webhook id is a snowflake of at most 20 digits, so a real URL
-  // is about 47 characters, but the pattern itself is unbounded. Held here until the pattern is bounded.
-  const UNBOUNDED = new Set(['discord_webhook']);
+  // US-63 R10: discord_webhook's id is a 17 to 20 digit snowflake, so no pattern is unbounded.
   for (const [name, re] of Object.entries(PATTERNS)) {
     it(`${name} reaches less than PATTERN_SPAN`, () => {
-      const { reach } = measure(re);
-      if (UNBOUNDED.has(name)) expect(reach).toBe(Infinity);
-      else expect(reach).toBeLessThan(PATTERN_SPAN);
+      expect(measure(re).reach).toBeLessThan(PATTERN_SPAN);
     });
   }
 });
