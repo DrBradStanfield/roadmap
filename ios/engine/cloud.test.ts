@@ -254,6 +254,30 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     expect((JSON.parse(engine.cloudEdit(add('2026-10-06'), view.erase, 'si', NOW)) as { ok: boolean }).ok).toBe(true);
   });
 
+  it('US-67 AC5: a chat edit or its Undo made for the screen before an erase is refused, and writes nothing', async () => {
+    const dropbox = new FakeDropbox();
+    const before = await recordWith(['2026-10-01'], 'web');
+    dropbox.put(before);
+    const { engine, state } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    dropbox.put(buildErasedFile({ stored: before, own: before, device: null, ctx: { deviceId: 'web', now: '2026-10-21T09:00:00.000Z' } }));
+    expect(await engine.cloudRefresh()).toBe('changed');
+    const view = JSON.parse(state.events.filter(([event]) => event === 'changed').at(-1)![1]) as { record: string; erase: string };
+    const review = JSON.stringify({ kind: 'chatEdits', part: 'review', today: '2026-10-21',
+      edits: [{ kind: 'field', field: 'weightKg', displayValue: 82, unitSystem: 'si', date: '2026-10-06' }] });
+    const meds = JSON.stringify({ kind: 'chatEdits', part: 'medications', today: '2026-10-21',
+      edits: [{ kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' }] });
+    const undo = JSON.stringify({ kind: 'chatUndo', medications: [{ medicationKey: 'statin', drugName: 'none', doseValue: null, doseUnit: null }] });
+    for (const edit of [review, meds, undo]) {
+      expect((JSON.parse(engine.cloudEdit(edit, erase, 'si', NOW)) as { reason: string }).reason).toBe('erased');
+    }
+    await engine.cloudFlush();
+    expect(days(dropbox.record)).toEqual([]);
+    expect(dropbox.record.medications).toEqual([]);
+    // With the erase the screen now shows, the same edit is taken.
+    expect((JSON.parse(engine.cloudEdit(review, view.erase, 'si', NOW)) as { ok: boolean }).ok).toBe(true);
+  });
+
   it('AC11d: a save the cloud cannot take waits on the phone, marked pending, and goes up with the next session', async () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));

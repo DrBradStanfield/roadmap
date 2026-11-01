@@ -26,7 +26,7 @@ import { resolveRecordedAt } from './record-edits';
 import { knownMinorOf } from './calculations';
 import { buildChatContextJson } from './chat-context';
 import {
-  CHAT_EDIT_TOOLS, EDITABLE_FIELDS, PROPOSE_PROFILE_EDIT_TOOL, parseProposedEdit, parseProposedEdits,
+  APP_CHAT_EDIT_TOOLS, CHAT_EDIT_TOOLS, EDITABLE_FIELDS, PROPOSE_PROFILE_EDIT_TOOL, parseProposedEdit, parseProposedEdits,
   type EditableField, type ProposedEdit,
 } from './chat-edits';
 
@@ -81,6 +81,8 @@ export const RUN_ROADMAP_TOOL = {
 
 /** The website widget's and the Pages chat's tools: the form tools plus run_roadmap. */
 export const CHAT_TOOLS = [...CHAT_EDIT_TOOLS, RUN_ROADMAP_TOOL];
+/** The iPhone app's (US-67 AC1): its own words for the form tools, the same run_roadmap. */
+const APP_CHAT_TOOLS = [...APP_CHAT_EDIT_TOOLS, RUN_ROADMAP_TOOL];
 
 /**
  * The website widget's and the Pages chat's tools for one turn: run_roadmap
@@ -89,12 +91,13 @@ export const CHAT_TOOLS = [...CHAT_EDIT_TOOLS, RUN_ROADMAP_TOOL];
  * form tools always. Tools render before the system prompt, so the two shapes
  * cache separately. `profileEdits` false leaves out propose_profile_edit, for
  * a widget built before it (US-16 AC2), which would apply its edit as a
- * medication.
+ * medication. `app`: the iPhone app's words (US-67 AC3).
  */
-export function chatToolsFor(messages: readonly ChatTurnMessage[], profileEdits = true) {
+export function chatToolsFor(messages: readonly ChatTurnMessage[], profileEdits = true, app = false) {
   const said = messages.filter(m => m.role === 'user' && typeof m.content === 'string').slice(-2);
-  const tools = said.some(m => /\d/.test(m.content as string)) ? CHAT_TOOLS : CHAT_EDIT_TOOLS;
-  return profileEdits ? tools : tools.filter(t => t !== PROPOSE_PROFILE_EDIT_TOOL);
+  const run = said.some(m => /\d/.test(m.content as string));
+  const tools = app ? (run ? APP_CHAT_TOOLS : APP_CHAT_EDIT_TOOLS) : run ? CHAT_TOOLS : CHAT_EDIT_TOOLS;
+  return profileEdits ? tools : tools.filter(t => t.name !== PROPOSE_PROFILE_EDIT_TOOL.name);
 }
 
 export interface RoadmapRun {
@@ -367,17 +370,28 @@ export interface RoadmapRoundCounts { applied: number; rejected: number }
 /** A transport's own tool_result for a tool health-core does not know (US-59's subscription tool); undefined for the rest. */
 export type ToolResultFor = (b: ChatContentBlock, blocks: readonly ChatContentBlock[]) => string | undefined;
 
-/** Stub results for a form tool called beside run_roadmap: the client applies a valid one after the answer. */
-const FORM_TOOL_STUB = 'Pre-filled for the user to review and Save.';
-const MEDICATION_STUB = 'Sent to the user\'s form; medications save at once and the user can undo.';
+/** Stub results for a form tool called beside run_roadmap: the client applies a valid one after the answer.
+ *  The iPhone app's (US-67 AC3) show a value in a Save banner rather than pre-fill a form. */
+const STUBS = {
+  web: {
+    field: 'Pre-filled for the user to review and Save.',
+    medication: 'Sent to the user\'s form; medications save at once and the user can undo.',
+    notApplied: 'Not applied: the edit did not pass the form\'s checks, so nothing was pre-filled or saved.',
+  },
+  app: {
+    field: 'Shown to the user to review and Save; nothing is saved until they press Save.',
+    medication: 'Saved to the user\'s medications at once; the user can undo it from the banner.',
+    notApplied: 'Not applied: the edit did not pass the checks, so nothing was shown or saved.',
+  },
+};
 const PROFILE_STUB = 'Shown to the user to confirm; nothing is saved until they press Save.';
-const NOT_APPLIED = 'Not applied: the edit did not pass the form\'s checks, so nothing was pre-filled or saved.';
 const NOT_RUN = 'Not run: one run_roadmap per turn; use the first result.';
 
 /** The tool_result for a form tool: pre-filled or saved only when the client will apply it (parseProposedEdit accepts it). */
-function formToolStub(b: ChatContentBlock): string {
+function formToolStub(b: ChatContentBlock, app: boolean): string {
   const edit = b.name ? parseProposedEdit(b.name, b.input) : null;
-  return !edit ? NOT_APPLIED : edit.kind === 'medication' ? MEDICATION_STUB : edit.kind === 'profile' ? PROFILE_STUB : FORM_TOOL_STUB;
+  const stub = app ? STUBS.app : STUBS.web;
+  return !edit ? stub.notApplied : edit.kind === 'medication' ? stub.medication : edit.kind === 'profile' ? PROFILE_STUB : stub.field;
 }
 
 /** Every run_roadmap call of one reply as one input: the values in order, each profile field from the first call that gives it. */
@@ -402,6 +416,7 @@ export function roadmapToolResults(
   blocks: ChatContentBlock[],
   guestInputs: unknown,
   otherResult?: ToolResultFor,
+  app = false,
 ): { results: ToolResultBlock[]; counts: RoadmapRoundCounts } | null {
   const uses = blocks.filter(b => b.type === 'tool_use');
   const runs = uses.filter(b => b.name === RUN_ROADMAP_TOOL.name);
@@ -410,7 +425,7 @@ export function roadmapToolResults(
   const results = uses.map((b): ToolResultBlock => ({
     type: 'tool_result',
     tool_use_id: b.id,
-    content: b === runs[0] ? roadmapResultText(run) : b.name === RUN_ROADMAP_TOOL.name ? NOT_RUN : otherResult?.(b, blocks) ?? formToolStub(b),
+    content: b === runs[0] ? roadmapResultText(run) : b.name === RUN_ROADMAP_TOOL.name ? NOT_RUN : otherResult?.(b, blocks) ?? formToolStub(b, app),
   }));
   return { results, counts: { applied: run.applied.length, rejected: run.rejected.length } };
 }
@@ -423,6 +438,7 @@ export function roadmapToolResults(
  * reply is the answer. A failed second call throws, as a failed first one does;
  * `onRound` has the round's counts before that call, so a caller keeps them.
  * `otherResult` answers a tool only the transport knows (roadmapToolResults).
+ * `app`: the iPhone app's stub words (US-67 AC3).
  */
 export async function withRoadmapRound<R extends { contentBlocks: ChatContentBlock[] }>(
   messages: ChatTurnMessage[],
@@ -430,9 +446,10 @@ export async function withRoadmapRound<R extends { contentBlocks: ChatContentBlo
   guestInputs: unknown,
   onRound?: (counts: RoadmapRoundCounts) => void,
   otherResult?: ToolResultFor,
+  app = false,
 ): Promise<{ first: R; final: R; counts: RoadmapRoundCounts | null; proposedEdits: ProposedEdit[] }> {
   const first = await send({ messages });
-  const round = roadmapToolResults(first.contentBlocks, guestInputs, otherResult);
+  const round = roadmapToolResults(first.contentBlocks, guestInputs, otherResult, app);
   if (!round) return { first, final: first, counts: null, proposedEdits: parseProposedEdits(first.contentBlocks) };
   onRound?.(round.counts);
   const final = await send({

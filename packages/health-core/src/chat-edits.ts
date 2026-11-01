@@ -23,9 +23,9 @@
  *                               to confirm before it writes anything.
  */
 import * as z from './zod';
-import { lookupUnit, reportedToCanonical, type MetricType, type UnitSystem } from './units';
+import { formatHeightDisplay, lookupUnit, reportedToCanonical, type MetricType, type UnitSystem } from './units';
 import { FIELD_TO_METRIC, LONGITUDINAL_FIELDS } from './mappings';
-import { MEDICATION_KEYS, sanitizeInputs } from './validation';
+import { ESCALATION_KEY_OF, MEDICATION_KEYS, sanitizeInputs, UNANSWERED_OF } from './validation';
 import type { HealthInputs } from './types';
 
 // ---------------------------------------------------------------------------
@@ -173,15 +173,52 @@ export const PROPOSE_PROFILE_EDIT_TOOL = {
 export const CHAT_EDIT_TOOLS = [PROPOSE_FIELD_EDIT_TOOL, PROPOSE_MEDICATION_EDIT_TOOL, PROPOSE_PROFILE_EDIT_TOOL];
 
 /**
+ * The iPhone app's form tools (US-67 AC3): the app has no form cell to
+ * pre-fill, so a value and a profile edit show in a banner with Save and Not
+ * now. Only the words differ; a medication saves at once with Undo, as on the
+ * web. Its own tool list, so its own cache prefix; the web's text is unchanged.
+ */
+export const APP_CHAT_EDIT_TOOLS = [
+  {
+    ...PROPOSE_FIELD_EDIT_TOOL,
+    description:
+      'Show a value in the app for the user to review and Save. ' +
+      'Use this ONLY when the user clearly states a new measurement they want recorded ' +
+      "(e.g. \"my LDL was 3.8 mmol/L\", \"set my weight to 80 kg\"). Emit the user's STATED " +
+      'value and unit verbatim — do NOT convert units or compute SI. You are NOT saving the ' +
+      'value: the app shows it in a banner and nothing is saved until the user presses Save, so say ' +
+      'it is ready to save, never that it is saved. If the unit is ' +
+      'ambiguous (e.g. cholesterol could be mmol/L or mg/dL) and the user did not state it, ' +
+      'ASK them which unit instead of calling this tool.',
+  },
+  PROPOSE_MEDICATION_EDIT_TOOL,
+  {
+    ...PROPOSE_PROFILE_EDIT_TOOL,
+    description:
+      "Propose saving the user's own sex and/or height to their roadmap profile. Use it ONLY when the user " +
+      "clearly states their own sex or height (e.g. \"I'm a 52 year old man, 178 cm\"), not a family member's. " +
+      'Pass the height exactly as stated, in cm or in (feet and inches as total inches: 5 ft 10 in is 70 in); ' +
+      'do NOT convert. You are NOT saving it: the user confirms it in the app, and nothing is saved until ' +
+      'they press Save there, so say you have proposed it and ask them to confirm.',
+  },
+];
+
+/**
  * Shown in the chat thread when the model proposed a form edit but returned no
  * prose. Shared by both transports so the two surfaces can't drift. A
  * measurement waits for Save; a medication saves at once with an undo banner.
+ * `app`: the iPhone app's words (US-67 AC3), which has a Save banner, not a form.
  */
-export function toolOnlyAck(edits: ProposedEdit[]): string {
+export function toolOnlyAck(edits: ProposedEdit[], app = false): string {
   if (edits.length > 0 && edits.every((e) => e.kind === 'profile')) return 'Please check the details shown and press Save to add them to your profile.';
   const fields = edits.some((e) => e.kind === 'field');
   const meds = edits.some((e) => e.kind === 'medication');
   if (meds && !fields) return "Done — I've updated your medications. You can undo this from the banner.";
+  if (app) {
+    return meds
+      ? "I've updated your medications (undo from the banner) and put the rest ready to save — check it and press Save."
+      : "I've put that ready to save — check it and press Save.";
+  }
   if (meds) return "I've updated your medications (undo from the banner) and pre-filled your form — review the highlighted value and press Save.";
   return "I've pre-filled that in your form — review the highlighted value and press Save.";
 }
@@ -323,3 +360,105 @@ export function parseProposedEdits(
 export const VITALS_INPUT_FIELDS: ReadonlyArray<keyof HealthInputs> = [
   'weightKg', 'waistCm', 'systolicBp', 'diastolicBp',
 ];
+
+// ---------------------------------------------------------------------------
+// Applying a reply's edits: the rules the web widget and the iPhone engine share
+// ---------------------------------------------------------------------------
+
+/** A medication row as the chat's change and its Undo read it. */
+export interface ChatMedicationRow {
+  medicationKey: string;
+  drugName: string;
+  doseValue: number | null;
+  doseUnit: string | null;
+}
+
+/**
+ * One chat medication edit against the saved rows (US-06 AC12). `undo`: every
+ * row the change writes, as it was before, in the order Undo writes them; a
+ * key with no row goes back to its unanswered value ('none' would read as an
+ * answer for a step such as ezetimibe or an escalation). `reset`: the drug's
+ * escalation key when a new drug or dose resets its answer, as the form does,
+ * else null. The answer is about the old drug, so it is reset unless the same
+ * reply states it (`stated`: every key the reply names). The web also passes
+ * `onForm`, the form's unsaved row for the key; the caller writes the reset
+ * ('not_yet') when `undo` holds the saved answer, or the web form holds one
+ * not yet saved.
+ */
+export function chatMedicationChange(
+  edit: ProposedMedicationEdit,
+  saved: readonly ChatMedicationRow[],
+  stated: ReadonlySet<string>,
+  onForm?: { drugName: string; doseValue: number | null },
+): { undo: ChatMedicationRow[]; reset: string | null } {
+  const prior = saved.find(m => m.medicationKey === edit.medicationKey);
+  const undo: ChatMedicationRow[] = [{
+    medicationKey: edit.medicationKey,
+    drugName: prior?.drugName ?? UNANSWERED_OF[edit.medicationKey],
+    doseValue: prior?.doseValue ?? null,
+    doseUnit: prior?.doseUnit ?? null,
+  }];
+  const escalationKey = (ESCALATION_KEY_OF as Partial<Record<string, string>>)[edit.medicationKey];
+  const changes = (row: { drugName: string; doseValue: number | null } | undefined) =>
+    !!row && (edit.drugName !== row.drugName || edit.doseValue !== row.doseValue);
+  if (!escalationKey || stated.has(escalationKey) || !(changes(undo[0]) || changes(onForm))) return { undo, reset: null };
+  const answer = saved.find(m => m.medicationKey === escalationKey && m.drugName !== 'not_yet');
+  if (answer) undo.unshift({ medicationKey: answer.medicationKey, drugName: answer.drugName, doseValue: answer.doseValue, doseUnit: answer.doseUnit });
+  return { undo, reset: escalationKey };
+}
+
+/** The fields of a profile proposal the profile does not already hold, as the
+ *  user sees them in `units`; null when none, so no banner (US-16 AC2). */
+export function unsavedProfile(
+  p: ProposedProfileEdit,
+  saved: { sex?: string | null; heightCm?: number | null },
+  units: UnitSystem,
+): ProposedProfileEdit | null {
+  const sex = p.sex !== saved.sex ? p.sex : null;
+  const heightCm = p.heightCm !== null && (saved.heightCm == null
+    || formatHeightDisplay(saved.heightCm, units) !== formatHeightDisplay(p.heightCm, units)) ? p.heightCm : null;
+  return sex || heightCm !== null ? { kind: 'profile', sex, heightCm } : null;
+}
+
+const receivedEdit = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('field'),
+    field: z.enum(EDITABLE_FIELDS as unknown as [EditableField, ...EditableField[]]),
+    displayValue: z.number().finite(),
+    unitSystem: z.enum(['si', 'conventional']),
+    date: z.string().regex(isoDateRe).nullable(),
+  }),
+  z.object({
+    kind: z.literal('medication'),
+    medicationKey: z.enum(MEDICATION_KEYS),
+    drugName: z.string().min(1).max(64),
+    doseValue: z.number().positive().finite().nullable(),
+    doseUnit: z.string().max(16).nullable(),
+  }),
+  z.object({
+    kind: z.literal('profile'),
+    sex: z.enum(['male', 'female']).nullable(),
+    heightCm: z.number().finite().nullable(),
+  }).refine(p => p.sex !== null || p.heightCm !== null),
+]);
+const KINDS: readonly string[] = ['field', 'medication', 'profile'];
+
+/**
+ * A reply's `proposedEdits` as a client receives them, read again (US-67 AC2):
+ * from the network, so untrusted. An entry of a kind this build does not know
+ * is left out (a newer server's); an entry of a known kind that is not its
+ * shape, or a list that is not one, is `invalid` and the caller refuses.
+ */
+export function readProposedEdits(raw: unknown): { edits: ProposedEdit[]; invalid: Array<ProposedEdit['kind'] | 'list'> } {
+  if (!Array.isArray(raw)) return { edits: [], invalid: ['list'] };
+  const edits: ProposedEdit[] = [];
+  const invalid: Array<ProposedEdit['kind']> = [];
+  for (const entry of raw) {
+    const kind = entry && typeof entry === 'object' ? (entry as { kind?: unknown }).kind : undefined;
+    if (typeof kind !== 'string' || !KINDS.includes(kind)) continue;
+    const parsed = receivedEdit.safeParse(entry);
+    if (parsed.success) edits.push(parsed.data as ProposedEdit);
+    else invalid.push(kind as ProposedEdit['kind']);
+  }
+  return { edits, invalid };
+}

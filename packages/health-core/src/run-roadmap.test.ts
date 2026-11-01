@@ -3,6 +3,7 @@
  * stated in the chat, and returns exactly buildChatContextJson's output. The
  * one-round loop is shared by every chat transport.
  */
+import { createHash } from 'node:crypto';
 import { describe, it, expect, vi } from 'vitest';
 import { buildChatContextJson } from './chat-context';
 import { reportedToCanonical } from './units';
@@ -912,5 +913,62 @@ describe('US-07 AC8: a stated sex clears the outdated lab eGFR mark', () => {
     // Creatinine 80 µmol/L at 66, female (CKD-EPI 2021): 70.
     expect(ctx(out.contextJson).derivedValues.eGFR).toBe(70);
     expect(ids(out.contextJson)).toContain('high-potassium');
+  });
+});
+
+// US-67 AC3: the iPhone app shows a value in a Save banner, not a form cell, so its
+// tools and stubs say so; the web's are byte-identical to what shipped before.
+describe('US-67 AC3: the app\'s words for the form tools', () => {
+  const use = (id: string, name: string, input: unknown) => ({ type: 'tool_use', id, name, input });
+  const said = [{ role: 'user' as const, content: 'my LDL is 3.4 mmol/L' }];
+  const desc = (tools: ReadonlyArray<{ name: string; description: string }>, name: string) => tools.find(t => t.name === name)!.description;
+
+  it('US-67 AC3: the web\'s tools are byte-identical to the shipped ones (prompt cache prefix)', () => {
+    const sha = (x: unknown) => createHash('sha256').update(JSON.stringify(x)).digest('hex');
+    expect(sha(CHAT_TOOLS)).toBe('1f38ef85ddb6772f86069a54c23e055179c3d68d7f05ceeda8d91f25f2398d06');
+    expect(chatToolsFor(said)).toBe(CHAT_TOOLS);
+    expect(chatToolsFor(said, true, false)).toBe(CHAT_TOOLS);
+  });
+
+  it('US-67 AC3: the app gets the same four tools and schemas, with banner words and no pre-filled cell', () => {
+    const app = chatToolsFor(said, true, true);
+    expect(app.map(t => t.name)).toEqual(CHAT_TOOLS.map(t => t.name));
+    expect(app.map(t => t.input_schema)).toEqual(CHAT_TOOLS.map(t => t.input_schema));
+    expect(desc(app, 'propose_field_edit')).toMatch(/banner/);
+    expect(desc(app, 'propose_field_edit')).toMatch(/never that it is saved/);
+    expect(desc(app, 'propose_field_edit')).not.toMatch(/pre-fill/i);
+    expect(desc(app, 'propose_profile_edit')).toMatch(/confirms it in the app/);
+    expect(desc(app, 'propose_profile_edit')).not.toMatch(/roadmap tool/);
+    // A medication saves at once with Undo on both (Brad: copy the web).
+    expect(desc(app, 'propose_medication_edit')).toBe(desc(CHAT_TOOLS, 'propose_medication_edit'));
+    expect(chatToolsFor([{ role: 'user', content: 'hello' }], true, true).map(t => t.name))
+      .toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit']);
+    expect(chatToolsFor(said, false, true).map(t => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap']);
+  });
+
+  it('US-67 AC3: beside run_roadmap the app\'s stubs say shown to review and Save, never pre-filled', () => {
+    const blocks = [
+      use('r', 'run_roadmap', { values: [] }),
+      use('ok', 'propose_field_edit', val('ldlC', 3.4, 'mmol/L')),
+      use('med', 'propose_medication_edit', { medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' }),
+      use('profile', 'propose_profile_edit', { sex: 'male' }),
+      use('bad', 'propose_field_edit', val('ldlC', 3.4, 'mmol')),
+    ];
+    const byId = (app: boolean) => Object.fromEntries(roadmapToolResults(blocks, PROFILE, undefined, app)!.results.map(r => [r.tool_use_id, r.content]));
+    const app = byId(true);
+    expect(app.ok).toBe('Shown to the user to review and Save; nothing is saved until they press Save.');
+    expect(app.med).toMatch(/at once.*undo/);
+    expect(app.profile).toBe('Shown to the user to confirm; nothing is saved until they press Save.');
+    expect(app.bad).toMatch(/^Not applied/);
+    expect(JSON.stringify([app.ok, app.med, app.profile, app.bad])).not.toMatch(/pre-filled|Pre-filled|form/);
+    expect(byId(false).ok).toBe('Pre-filled for the user to review and Save.');
+  });
+
+  it('US-67 AC3: withRoadmapRound passes the app flag to its stubs', async () => {
+    const first = { contentBlocks: [use('r', 'run_roadmap', { values: [] }), use('ok', 'propose_field_edit', val('ldlC', 3.4, 'mmol/L'))] };
+    const send = vi.fn().mockResolvedValueOnce(first).mockResolvedValueOnce({ contentBlocks: [{ type: 'text' }] });
+    await withRoadmapRound(said, send, PROFILE, undefined, undefined, true);
+    const results = send.mock.calls[1][0].messages.at(-1).content;
+    expect(results[1].content).toBe('Shown to the user to review and Save; nothing is saved until they press Save.');
   });
 });

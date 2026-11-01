@@ -32,8 +32,8 @@ import {
   labEgfrOf,
   toCanonicalValue,
   VITALS_INPUT_FIELDS,
-  ESCALATION_KEY_OF,
-  UNANSWERED_OF,
+  chatMedicationChange,
+  unsavedProfile,
   type AlcoholAnswer,
   type HealthInputs,
   type UnitSystem,
@@ -42,6 +42,7 @@ import {
   type ApiMedication,
   type ApiScreening,
   type ChatContextPayload,
+  type ChatMedicationRow,
   type ProposedEdit,
   type ProposedFieldEdit,
   type ProposedMedicationEdit,
@@ -200,15 +201,6 @@ const profileFields = (p: ProposedProfileEdit) =>
   [...(p.sex ? ['sex' as const] : []), ...(p.heightCm !== null ? ['heightCm' as const] : [])];
 
 const sexLabel = (sex: 'male' | 'female') => (sex === 'male' ? 'Male' : 'Female');
-
-/** The fields of a proposal the profile does not already hold, as the user
- *  sees them; null when none, so no banner (US-16 AC2). */
-function unsavedProfile(p: ProposedProfileEdit, saved: Partial<HealthInputs>, units: UnitSystem): ProposedProfileEdit | null {
-  const sex = p.sex !== saved.sex ? p.sex : null;
-  const heightCm = p.heightCm !== null && (saved.heightCm == null
-    || formatHeightDisplay(saved.heightCm, units) !== formatHeightDisplay(p.heightCm, units)) ? p.heightCm : null;
-  return sex || heightCm !== null ? { kind: 'profile', sex, heightCm } : null;
-}
 
 /** After a medication or screening save, failed or not, the chat copy takes
  *  the lists the store holds (US-15 AC10). Never the form's: a failed save
@@ -1201,10 +1193,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // A one-shot undo for a medication change the chat just applied (meds
   // auto-save, so the chat states the change + offers Undo): every row the
   // change wrote, as it was before.
-  const [medUndo, setMedUndo] = useState<
-    | Array<{ key: string; drugName: string; doseValue: number | null; doseUnit: string | null }>
-    | null
-  >(null);
+  const [medUndo, setMedUndo] = useState<ChatMedicationRow[] | null>(null);
   // The form's medications, unsaved changes included: a chat change is
   // judged against these as well as the saved ones (US-06 AC12).
   const medicationsRef = useRef(medications);
@@ -1238,31 +1227,15 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const applyMedicationEdit = useCallback((edit: ProposedMedicationEdit, stated: ReadonlySet<string>) => {
     // Snapshot the prior values FIRST so Undo can restore them: the saved
     // ones, from the copy the banner's erase check reads (US-16 AC2a).
+    // The rule is health-core's, shared with the iPhone (US-06 AC12, US-67 AC4):
+    // a new drug or dose resets the drug's escalation answer, escalation first,
+    // unless the same reply states it. Flat mode too: the chat changes the drug
+    // on purpose. An answer the form holds but has not saved yet was about the
+    // old drug too: it is reset as well, and only the saved one is Undo's to restore.
     const saved = loadLatestMeasurementsSync()?.medications ?? [];
-    const prior = saved.find(m => m.medicationKey === edit.medicationKey);
-    // A key that had no row goes back to its unanswered value: 'none' would
-    // read as an answer for a step such as ezetimibe or an escalation.
-    const undo: NonNullable<typeof medUndo> = [{
-      key: edit.medicationKey,
-      drugName: prior?.drugName ?? UNANSWERED_OF[edit.medicationKey],
-      doseValue: prior?.doseValue ?? null,
-      doseUnit: prior?.doseUnit ?? null,
-    }];
-    // A new drug or dose resets the drug's escalation answer, as the form does,
-    // escalation first. Flat mode too: the chat changes the drug on purpose,
-    // and the answer was about the old one (US-06 AC12). An answer the same
-    // reply states wins, whatever its order in the reply.
-    // An answer the form holds but has not saved yet was about the old drug
-    // too: it is reset as well, and only the saved one is Undo's to restore.
-    const escalationKey = (ESCALATION_KEY_OF as Partial<Record<string, string>>)[edit.medicationKey];
     const onForm = medicationsRef.current.find(m => m.medicationKey === edit.medicationKey);
-    const changes = (row: { drugName: string; doseValue: number | null } | undefined) =>
-      !!row && (edit.drugName !== row.drugName || edit.doseValue !== row.doseValue);
-    if (escalationKey && !stated.has(escalationKey) && (changes(undo[0]) || changes(onForm))) {
-      const answer = saved.find(m => m.medicationKey === escalationKey && m.drugName !== 'not_yet');
-      if (answer) undo.unshift({ key: answer.medicationKey, drugName: answer.drugName, doseValue: answer.doseValue, doseUnit: answer.doseUnit });
-      if (answer || medSaveTimers.current.has(escalationKey)) handleMedicationChange(escalationKey, 'not_yet', null, null);
-    }
+    const { undo, reset } = chatMedicationChange(edit, saved, stated, onForm);
+    if (reset && (undo.some(m => m.medicationKey === reset) || medSaveTimers.current.has(reset))) handleMedicationChange(reset, 'not_yet', null, null);
     handleMedicationChange(edit.medicationKey, edit.drugName, edit.doseValue, edit.doseUnit);
     return undo;
   }, [handleMedicationChange]);
@@ -1287,7 +1260,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     const stated = new Set(edits.flatMap(e => (e.kind === 'medication' ? [e.medicationKey] : [])));
     // Undo restores every medication row the reply changed, the last edit
     // first. Field edits are drafts the person saves or discards.
-    const undo: NonNullable<typeof medUndo> = [];
+    const undo: ChatMedicationRow[] = [];
     for (const edit of edits) {
       switch (edit.kind) {
         case 'field': applyFieldEdit(edit); editedField ??= edit.field; break;
@@ -1319,7 +1292,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const undoMedEdit = useCallback(() => {
     if (!medUndo) return;
     // The store holds an erase the screen does not show: write nothing (US-16 AC2a).
-    if (!eraseUnshown()) for (const m of medUndo) handleMedicationChange(m.key, m.drugName, m.doseValue, m.doseUnit);
+    if (!eraseUnshown()) for (const m of medUndo) handleMedicationChange(m.medicationKey, m.drugName, m.doseValue, m.doseUnit);
     setMedUndo(null);
   }, [medUndo, handleMedicationChange, eraseUnshown]);
 

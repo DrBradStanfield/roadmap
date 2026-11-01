@@ -1154,6 +1154,18 @@ phones only). Brad decided the order on 2026-10-25.
   all my data". The web's code lives in the widget's adapter, not health-core, so the
   phone repeats the one call in OAuthClient beside Drive's `about`.
 
+**The chat edits the record (2026-11-02, US-67; Brad: copy the web, F11).** The app sends
+`edits: 1`, so the server offers the web's form tools, and the `done` line's `proposedEdits`
+reach Swift as opaque JSON (`OpaqueJSON`), never read. One engine door, `chatEditsJson`, words
+them against the record now, in the person's units; two edit kinds write them through the
+usual path (`applyOnPhone`, or `cloudEdit` with its erase guard): `chatEdits` (part
+`medications` or `review`, the proposals as received, the phone's day) and the engine's own
+Undo edit, passed back as it came. A medication change saves at once with Undo; values,
+height and sex wait in a banner with Save and Not now (`Chat/ChatEdits.swift`). A reply to a
+question asked before an erase, and a banner made before one, write nothing: `RecordStore.ChatMark`
+(the cloud erase, the eraseEpoch and the phone's erase count) is checked in the write's turn,
+and ChatView drops the banners when it moves (US-16 AC2a).
+
 **State 2026-10-22.** On the iPhone, chat answers "not available": the education server leaves
 App Attest off until `APP_ATTEST_TEAM_ID` is set (`app/lib/app-attest.server.ts`), so chat and lab
 upload wait for that secret and the team it names (Brad's personal team P7LB54J2PM now, DR BRAD,
