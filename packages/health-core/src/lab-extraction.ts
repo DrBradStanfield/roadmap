@@ -59,6 +59,31 @@ export interface RefusedLabValue {
   printedMonth?: string;
 }
 
+/** Why a lab row was left out unread (US-12 AC19): its result was printed as
+ *  a limit ("> 60", "<5"), or it could not be read as a number at all. */
+export type UnreadReason = 'limit' | 'unreadable';
+
+/** A lab row the parse left out, by its test's name and why: never its value
+ *  (US-12 AC19), so the person knows which result to look for. */
+export interface UnreadLabValue {
+  name: string;
+  reason: UnreadReason;
+}
+
+/** The words both review screens show for each reason (US-12 AC19). */
+export const UNREAD_REASON_TEXT: Record<UnreadReason, string> = {
+  limit: 'printed as a limit',
+  unreadable: 'could not be read',
+};
+
+/** The unread values as review lines: one per reason, in the report's order,
+ *  each test labelled once by the surface's own `label`. */
+export function unreadLines(values: readonly UnreadLabValue[], label: (name: string) => string): Array<{ label: string; reason: string }> {
+  const byReason = new Map<UnreadReason, Set<string>>();
+  for (const v of values) byReason.set(v.reason, (byReason.get(v.reason) ?? new Set()).add(label(v.name)));
+  return [...byReason].map(([reason, labels]) => ({ label: [...labels].join(', '), reason: UNREAD_REASON_TEXT[reason] }));
+}
+
 /**
  * `recordedAt` for a value from a previous-results column that prints no full
  * day: no date, or a month only (US-12 AC14). A reserved string, not a new field: every guard that keeps
@@ -124,6 +149,9 @@ export interface UnifiedExtractionResult {
    *  malformed row), so the person is told some were left out (US-12 AC8).
    *  Absent where nothing was parsed from a model's reply. */
   droppedValueCount?: number;
+  /** The dropped rows that name their test, with why (US-12 AC19); absent
+   *  when none was. Never longer than `droppedValueCount`. */
+  unreadValues?: UnreadLabValue[];
   /** Rows refused rather than guessed (US-12 AC15); absent when none was.
    *  Never in `droppedValueCount`: only the HTTP route adds them there, for a
    *  widget that predates this field. */
@@ -544,11 +572,25 @@ const unifiedResultSchema = z.object({
   }).nullable().default(null),
 });
 
-/** The rows of `rows` that `schema` reads; the rest are dropped. */
-function readableRows<T extends z.ZodTypeAny>(schema: T, rows: unknown[]): Array<z.output<T>> {
+/** A result printed as a limit: "> 60", "<5", "≤ 0.1". Never read as its number (US-12 AC19). */
+const PRINTED_LIMIT = /^\s*[<>≤≥]/;
+
+/** A dropped row by its test's name and why, or nothing when it names no test (US-12 AC19). */
+function unreadValue(row: unknown): UnreadLabValue[] {
+  const { metric, name, value } = (row ?? {}) as Record<string, unknown>;
+  const test = typeof metric === 'string' ? metric.trim() : typeof name === 'string' ? name.trim() : '';
+  if (!test) return [];
+  return [{ name: test.slice(0, 80), reason: typeof value === 'string' && PRINTED_LIMIT.test(value) ? 'limit' : 'unreadable' }];
+}
+
+/** The rows of `rows` that `schema` reads; the rest are dropped, and each that
+ *  names its test goes to `unread`. */
+function readableRows<T extends z.ZodTypeAny>(schema: T, rows: unknown[], unread: UnreadLabValue[]): Array<z.output<T>> {
   return rows.flatMap(row => {
     const r = schema.safeParse(row);
-    return r.success && !refusedCountRow(row) ? [r.data] : [];
+    if (r.success && !refusedCountRow(row)) return [r.data];
+    unread.push(...unreadValue(row));
+    return [];
   });
 }
 
@@ -558,10 +600,11 @@ function readableRows<T extends z.ZodTypeAny>(schema: T, rows: unknown[]): Array
  *  `droppedValueCount`. Exposed for testing. */
 export function parseUnifiedResult(raw: unknown) {
   const parsed = unifiedResultSchema.parse(raw);
-  const values = readableRows(coreValueRow, parsed.values);
-  const additionalValues = readableRows(additionalValueRow, parsed.additionalValues);
+  const unreadValues: UnreadLabValue[] = [];
+  const values = readableRows(coreValueRow, parsed.values, unreadValues);
+  const additionalValues = readableRows(additionalValueRow, parsed.additionalValues, unreadValues);
   const droppedValueCount = parsed.values.length + parsed.additionalValues.length - values.length - additionalValues.length;
-  return { ...parsed, values, additionalValues, droppedValueCount };
+  return { ...parsed, values, additionalValues, droppedValueCount, unreadValues };
 }
 
 const BARE_DOT_THOUSANDS = new RegExp(String.raw`([{,]\s*"(?:value|referenceLow|referenceHigh)"\s*:\s*)(-?${DOT_THOUSANDS})(?=\s*[,}\]])`, 'g');
@@ -663,6 +706,7 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
       metadata: parsed.document.metadata as Record<string, unknown>,
     } : null,
     droppedValueCount: isLab ? parsed.droppedValueCount : 0,
+    ...(isLab && parsed.unreadValues.length ? { unreadValues: parsed.unreadValues } : null),
     ...(refusedValues.length ? { refusedValues } : null),
   };
 }

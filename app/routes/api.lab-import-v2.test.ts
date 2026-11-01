@@ -440,6 +440,31 @@ describe('US-12 AC15: a refused value reaches an old widget as a value that coul
   });
 });
 
+// The widget and the iPhone name each value the parse dropped (US-12 AC19):
+// the route hands the names and reasons on, on the single and the batch path.
+describe('US-12 AC19: the dropped values\' names reach the widget', () => {
+  const unread = [{ name: 'hdl', reason: 'limit' }, { name: 'lpa', reason: 'limit' }];
+  const partial = () => ({
+    classification: 'lab_report', reportDate: '2026-03-10', document: null, droppedValueCount: 2, unreadValues: unread,
+    values: [{ metric: 'ldl', valueSI: 2.1, displayValue: 2.1, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high' }],
+    additionalValues: [],
+  });
+  const body = (extra: Record<string, unknown>) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
+    method: 'POST', headers: { 'fly-client-ip': `10.1.0.${++ipCounter}` },
+    body: JSON.stringify({ ownDates: true, undatedPrev: true, refusedRows: true, ...extra }),
+  });
+
+  it('single file and batch poll alike', async () => {
+    extractOrClassify.mockResolvedValueOnce(partial());
+    const one = (await (await action({ request: body({ pages: FILES[0].pages }) } as never)).json()).data;
+    expect(one).toMatchObject({ droppedValueCount: 2, unreadValues: unread });
+    const { batchId, pollToken } = await (await action({ request: body({ batch: true, files: FILES }) } as never)).json();
+    pollBatch.mockResolvedValueOnce({ status: 'ended', completed: 1, total: 1, results: [{ index: 0, ...partial() }] } as never);
+    const { results } = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
+    expect(results[0]).toMatchObject({ droppedValueCount: 2, unreadValues: unread });
+  });
+});
+
 // PR #201 review R2: a file is charged only if it reaches Anthropic. Busy is
 // covered in api.lab-import-v2.sweep.test.ts (it fills the batch table).
 describe('US-12 AC17: a batch that never reaches Anthropic costs no quota', () => {

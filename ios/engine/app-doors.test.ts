@@ -106,6 +106,23 @@ describe('US-52 AC8: the lab review and the write', () => {
     expect(JSON.parse(reviewOf({ ...extraction, reportDate: '2026-10' })).reportDay).toBeNull();
   });
 
+  // US-12 AC19 (break-it pass 2026-11-01): HDL printed "> 60" and Lp(a) "<5"
+  // said only "2 values could not be read"; now each is named, with why.
+  it('names each value the server could not read under "Not saved", one line per reason, and counts only the unnamed', () => {
+    const unread = { ...extraction, droppedValueCount: 5, unreadValues: [
+      { name: 'hdl', reason: 'limit' }, { name: 'lpa', reason: 'limit' }, { name: 'vitamin_d', reason: 'unreadable' }, { name: 'hdl', reason: 'limit' },
+    ] };
+    const review = JSON.parse(reviewOf(unread));
+    expect(review.notSaved).toEqual([
+      { label: 'Creatinine', reason: 'unit unknown' },
+      { label: 'HDL Cholesterol, Lp(a)', reason: 'printed as a limit' },
+      { label: 'Vitamin D (25-OH)', reason: 'could not be read' },
+    ]);
+    expect(review.unreadCount).toBe(1);
+    // A value printed as a limit is never offered for saving.
+    expect(review.items.map((i: { label: string }) => i.label)).not.toContain('HDL Cholesterol');
+  });
+
   it('writes only the ticked values through bulkAppendValues, skipping a held day and refusing a bad unit', () => {
     let file = record({ kind: 'add', metric: 'ldl', value: 2.5, day: '2026-10-01' });
     const refs = ['v0', 'v1', 'a0', 'a1'];

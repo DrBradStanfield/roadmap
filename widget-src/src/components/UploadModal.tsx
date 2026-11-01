@@ -1,12 +1,12 @@
 import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota } from '../lib/upload-api';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { IMPORT_LIMITS, METRIC_LABELS, UNDATED_PREVIOUS, zipMemberName, type DocumentPayload, type LabUnitRefusal, type MeasurementRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
+import { IMPORT_LIMITS, METRIC_LABELS, UNDATED_PREVIOUS, unreadLines, zipMemberName, type DocumentPayload, type UnreadLabValue, type LabUnitRefusal, type MeasurementRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { LabImportResult, PageContent, UploadErrorCode, UploadHistory } from '../lib/api-types';
-import { labUnitRefusalLine, measurementRefusalLine } from '../lib/lab-value-labels';
+import { labUnitRefusalLine, labValueLabel, measurementRefusalLine } from '../lib/lab-value-labels';
 import { useLpaUnit } from '../lib/lpa-unit';
 import type { Grading } from '../lib/blood-test-cell';
 import { ReviewTable, type FileResult, type DocumentToSave, type ReviewedValue, type ReviewedLabValue } from './ReviewTable';
@@ -125,10 +125,11 @@ const MAX_FILES = IMPORT_LIMITS.websiteFiles; // also the server's per-IP daily 
 const MAX_FILE_SIZE = IMPORT_LIMITS.websiteFileMb * 1024 * 1024; // the connector's hint names this number
 
 /** Why a file was not fully read (US-12 AC9). Each is also its `upload_outcome` count. */
-type FileNoticeReason = Exclude<UploadOutcomeKey, 'picked' | 'withValues' | 'docx' | 'undatedPrevious' | 'unitsGuessed' | 'unitsRefused'>;
+type FileNoticeReason = Exclude<UploadOutcomeKey, 'picked' | 'withValues' | 'docx' | 'undatedPrevious' | 'unitsGuessed' | 'unitsRefused' | 'valuesLimit'>;
 /** `name` is the file's whole path, its identity; the list shows it short (`noticeName`).
- *  `count` is how many the notice stands for (values dropped); `text` overrides the reason's. */
-interface FileNotice { name: string; reason: FileNoticeReason; count?: number; text?: string }
+ *  `count` is how many the notice stands for (values dropped), `unread` the ones that
+ *  name their test (US-12 AC19); `text` overrides the reason's. */
+interface FileNotice { name: string; reason: FileNoticeReason; count?: number; unread?: UnreadLabValue[]; text?: string }
 const FILE_NOTICE_TEXT: Record<Exclude<FileNoticeReason, 'valuesDropped'>, string> = {
   openFailed: 'Could not open it. It may be password-protected, damaged, or not a PDF, photo or .docx file.',
   tooLarge: `Too large to read. The limit is ${IMPORT_LIMITS.websiteFileMb} MB per file.`,
@@ -149,9 +150,18 @@ const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
 const OVER_LIMIT_TEXT = `Not read. It is over the ${MAX_FILES}-file limit for one upload. Upload it separately.`;
 const LEGACY_DOC_TEXT = 'Word .doc files cannot be read. Save it as a PDF or .docx, then upload that.';
 
-function noticeText({ reason, count = 1, text }: FileNotice): string {
+/** A test's label: a core metric's, else the catalogue's (US-12 AC19). */
+const unreadLabel = (name: string) => Object.prototype.hasOwnProperty.call(METRIC_LABELS, name) ? METRIC_LABELS[name] : labValueLabel(name);
+
+function noticeText({ reason, count = 1, unread = [], text }: FileNotice): string {
   if (text) return text;
-  if (reason === 'valuesDropped') return `${count} value${count === 1 ? '' : 's'} could not be read.`;
+  if (reason === 'valuesDropped') {
+    // Each value that names its test is named, with why; the rest are counted (US-12 AC19).
+    const lines = unreadLines(unread, unreadLabel).map(l => `${l.label}: ${l.reason}, not saved.`);
+    const rest = count - unread.length;
+    if (rest > 0) lines.push(`${rest} ${lines.length ? 'other ' : ''}value${rest === 1 ? '' : 's'} could not be read.`);
+    return lines.join(' ');
+  }
   return (!SHOPIFY_SURFACE && BYOK_NOTICE_TEXT[reason]) || FILE_NOTICE_TEXT[reason];
 }
 
@@ -207,7 +217,7 @@ async function readPages(upload: HealthUploadAPI, { fileName: name, getFile }: R
 
 /** A file the server read, as a review row; values its parse refused are named (US-12 AC9). */
 function readResult(fileName: string, result: LabImportResult, notices: FileNotice[]): FileResult {
-  if (result.droppedValueCount) notices.push({ name: fileName, reason: 'valuesDropped', count: result.droppedValueCount });
+  if (result.droppedValueCount) notices.push({ name: fileName, reason: 'valuesDropped', count: result.droppedValueCount, unread: result.unreadValues });
   return { fileName, reportDate: result.reportDate, values: result.values, additionalValues: result.additionalValues || [], document: result.document ?? undefined, refusedValues: result.refusedValues };
 }
 
@@ -229,7 +239,11 @@ function unreadResult(fileName: string, errorCode: UploadErrorCode | undefined, 
  *  only once it counts something. */
 function trackUploadOutcome(picked: number, withValues: number, docx: number, notices: FileNotice[], values: Partial<Record<'undatedPrevious' | 'unitsGuessed' | 'unitsRefused', number>> = {}): void {
   const counts: Partial<Record<UploadOutcomeKey, number>> = { picked, withValues, docx, ...values };
-  for (const n of notices) counts[n.reason] = (counts[n.reason] ?? 0) + (n.count ?? 1);
+  for (const n of notices) {
+    counts[n.reason] = (counts[n.reason] ?? 0) + (n.count ?? 1);
+    // Values printed as a limit (US-12 AC19): a count only, never a test's name.
+    counts.valuesLimit = (counts.valuesLimit ?? 0) + (n.unread?.filter(v => v.reason === 'limit').length ?? 0);
+  }
   trackProductEvent('upload_outcome', Object.fromEntries(
     UPLOAD_OUTCOME_KEYS.filter(k => counts[k]).map(k => [k, Math.min(counts[k]!, UPLOAD_OUTCOME_MAX)]),
   ));

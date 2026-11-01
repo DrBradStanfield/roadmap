@@ -199,7 +199,7 @@ describe('US-12 AC10: one count-only upload_outcome per run', () => {
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual({
       picked: 6, withValues: 1, documentOnly: 1, noValues: 1, openFailed: 1,
-      tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, refused: 0, tooLong: 0, valuesDropped: 0, docx: 0, picturesOnly: 0, undatedPrevious: 0, unitsGuessed: 0, unitsRefused: 0,
+      tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, refused: 0, tooLong: 0, valuesDropped: 0, docx: 0, picturesOnly: 0, undatedPrevious: 0, unitsGuessed: 0, unitsRefused: 0, valuesLimit: 0,
     });
     expect(Object.values(outcomes()[0]!).every(Number.isInteger)).toBe(true);
     // A zero is never sent, so a server a deploy behind never meets a new key it would refuse.
@@ -272,6 +272,29 @@ describe('US-12 AC9: values a file printed but the parse refused are not silent'
     expect(reasonFor('good.pdf')).toBeNull();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 3, withValues: 3, valuesDropped: 3 }));
+  });
+});
+
+// A lab photo with HDL printed "> 60" and Lp(a) "<5" said only "2 values could
+// not be read" (break-it pass, 2026-11-01): the person could not tell which.
+describe('US-12 AC19: each value not saved is named, with why', () => {
+  it('names the tests printed as a limit and the ones not read, counts the rest, and sends only counts', async () => {
+    vi.mocked(labImport).mockResolvedValue({ result: { ...withValues.result!, droppedValueCount: 5, unreadValues: [
+      { name: 'hdl', reason: 'limit' }, { name: 'lpa', reason: 'limit' }, { name: 'vitamin_d', reason: 'unreadable' }, { name: 'hdl', reason: 'limit' },
+    ] } } as Import);
+    render_(); pick(pdf('photo.pdf'));
+    await screen.findByDisplayValue('3.9');
+    expect(reasonFor('photo.pdf')).toBe('HDL Cholesterol, Lp(a): printed as a limit, not saved. Vitamin D (25-OH): could not be read, not saved. 1 other value could not be read.');
+    await waitFor(() => expect(sent()).toHaveLength(1));
+    // A count and its reason word only: never a test's name or a value.
+    expect(sent()[0]).toEqual({ picked: 1, withValues: 1, valuesDropped: 5, valuesLimit: 3 });
+  });
+
+  it('a value printed as a limit is never offered for saving', async () => {
+    vi.mocked(labImport).mockResolvedValue({ result: { ...nothing.result!, droppedValueCount: 1, unreadValues: [{ name: 'hdl', reason: 'limit' }] } } as Import);
+    render_(); pick(pdf('photo.pdf'));
+    await waitFor(() => expect(reasonFor('photo.pdf')).toMatch(/^HDL Cholesterol: printed as a limit, not saved\./));
+    expect(screen.queryByRole('button', { name: /^Save / })).toBeNull();
   });
 });
 

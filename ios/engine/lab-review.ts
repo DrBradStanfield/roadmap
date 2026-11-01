@@ -6,7 +6,8 @@ import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { bulkAppendValues, validDay, type BulkRow } from '../../packages/health-core/src/record-edits';
 import { METRIC_LABELS } from '../../packages/health-core/src/mappings';
 import { documentView, pendingRowsFor } from '../../packages/health-core/src/document-save';
-import type { AdditionalLabValue, DocumentResult, ExtractedValue, RefusedLabValue } from '../../packages/health-core/src/lab-extraction';
+import { unreadLines, type AdditionalLabValue, type DocumentResult, type ExtractedValue, type RefusedLabValue, type UnreadLabValue } from '../../packages/health-core/src/lab-extraction';
+import { resolveLabCatalogEntry } from '../../packages/health-core/src/lab-catalog';
 
 /** The server's answer (`data` of POST /api/app/v1/lab-import). */
 export interface Extraction {
@@ -16,6 +17,8 @@ export interface Extraction {
   additionalValues?: AdditionalLabValue[];
   refusedValues?: RefusedLabValue[];
   droppedValueCount?: number;
+  /** The dropped rows that name their test, with why (US-12 AC19). */
+  unreadValues?: UnreadLabValue[];
   /** A letter, discharge summary or other document: what the web files (US-52 AC13d). */
   document?: DocumentResult | null;
 }
@@ -58,9 +61,10 @@ export interface LabReview {
   /** The report's day when it printed a full one; null asks the user to pick. */
   reportDay: string | null;
   items: LabReviewItem[];
-  /** Rows the server would not convert (US-12 AC15), named for "Not saved". */
+  /** Rows the server would not convert (US-12 AC15), then the rows it could
+   *  not read that name their test, one line per reason (AC19): "Not saved". */
   notSaved: Array<{ label: string; reason: string }>;
-  /** Rows the extractor could not read at all (US-12 AC8). */
+  /** Rows the extractor could not read that name no test (US-12 AC8). */
   unreadCount: number;
   /** The document to file, when the file is not a lab report. */
   document: DocumentReview | null;
@@ -87,7 +91,11 @@ function documentReview(document: DocumentResult, now: string, file: RoadmapFile
   };
 }
 
+/** A test's label: a core metric's, else the catalogue's, else its name (US-12 AC19). */
+const unreadLabel = (name: string) => Object.prototype.hasOwnProperty.call(METRIC_LABELS, name) ? METRIC_LABELS[name] : resolveLabCatalogEntry(name)?.label ?? name;
+
 export function labReview(extraction: Extraction, now: string, file: RoadmapFile | null = null, sourceFileName: string | null = null, contentHash: string | null = null): LabReview {
+  const unread = extraction.unreadValues ?? [];
   const items: LabReviewItem[] = [
     ...(extraction.values ?? []).map((v, i) => ({
       ref: `v${i}`,
@@ -111,8 +119,11 @@ export function labReview(extraction: Extraction, now: string, file: RoadmapFile
     isLabReport: extraction.classification === 'lab_report',
     reportDay: ownDay(extraction.reportDate ?? undefined, now),
     items,
-    notSaved: (extraction.refusedValues ?? []).map((r) => ({ label: METRIC_LABELS[r.metric] ?? r.metric, reason: r.reason })),
-    unreadCount: extraction.droppedValueCount ?? 0,
+    notSaved: [
+      ...(extraction.refusedValues ?? []).map((r) => ({ label: METRIC_LABELS[r.metric] ?? r.metric, reason: r.reason })),
+      ...unreadLines(unread, unreadLabel),
+    ],
+    unreadCount: Math.max(0, (extraction.droppedValueCount ?? 0) - unread.length),
     document: extraction.classification !== 'lab_report' && extraction.document
       ? documentReview(extraction.document, now, file, sourceFileName, contentHash)
       : null,

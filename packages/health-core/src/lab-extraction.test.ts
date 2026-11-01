@@ -24,6 +24,7 @@ import {
   fileNameLine,
   unifiedSystemPrompt,
   UNDATED_PREVIOUS,
+  unreadLines,
 } from './lab-extraction';
 import { oneLine } from './plan';
 
@@ -1194,5 +1195,55 @@ describe('US-12 AC8: a row with no printedMonth or question is read, not dropped
     expect(parsed.droppedValueCount).toBe(0);
     expect(parsed.values).toEqual([{ metric: 'hdl', value: 1.2, unit: 'mmol/L', confidence: 'high' }]);
     expect(parsed.additionalValues).toEqual([{ name: 'Ferritin', value: 120, unit: 'ug/L' }]);
+  });
+});
+
+describe('US-12 AC19: a value not saved is named, with why', () => {
+  const report = { classification: 'lab_report' as const, reportDate: '2026-01-01', document: null };
+
+  it('names each dropped row by its test: a limit ("> 60", "<5") as a limit, anything else as unreadable; never its value', () => {
+    const parsed = parseUnifiedResult({
+      ...report,
+      values: [
+        { metric: 'ldl', value: 2.5, unit: 'mmol/L', confidence: 'high' },
+        { metric: 'hdl', value: '> 60', unit: 'mg/dL', confidence: 'high' },
+        { metric: 'lpa', value: '<5', unit: 'nmol/L', confidence: 'high' },
+      ],
+      additionalValues: [
+        { name: 'vitamin_d', value: '≥ 250', unit: 'nmol/L' },
+        { name: 'platelets', value: '250,000', unit: 'cells/µL' },
+        { name: 'crp', value: 'trace', unit: 'mg/L' },
+        { value: 'trace', unit: 'mg/L' },
+        { name: 'sodium', value: 141, unit: 'mmol/L' },
+      ],
+    });
+    const result = toUnifiedResult(parsed, 'full');
+    expect(result.droppedValueCount).toBe(6);
+    expect(result.unreadValues).toEqual([
+      { name: 'hdl', reason: 'limit' }, { name: 'lpa', reason: 'limit' },
+      { name: 'vitamin_d', reason: 'limit' }, { name: 'platelets', reason: 'unreadable' }, { name: 'crp', reason: 'unreadable' },
+    ]);
+    // No value is ever saved from a limit.
+    expect(result.values.map(v => v.metric)).toEqual(['ldl']);
+    expect(result.additionalValues.map(v => v.name)).toEqual(['sodium']);
+    expect(JSON.stringify(result.unreadValues)).not.toMatch(/\d/);
+  });
+
+  it('leaves the field out when nothing was dropped, and on a document that is not a lab report', () => {
+    const good = toUnifiedResult(parseUnifiedResult({ ...report, values: [], additionalValues: [{ name: 'sodium', value: 141, unit: 'mmol/L' }] }), 'full');
+    expect(good).not.toHaveProperty('unreadValues');
+    const letter = toUnifiedResult(parseUnifiedResult({ ...report, classification: 'clinic_letter', values: [{ metric: 'hdl', value: '> 60', unit: 'mg/dL', confidence: 'high' }], additionalValues: [] }), 'full');
+    expect(letter).not.toHaveProperty('unreadValues');
+  });
+
+  it('unreadLines: one line per reason, each test labelled once, in report order', () => {
+    const label = (name: string) => ({ hdl: 'HDL Cholesterol', lpa: 'Lp(a)' } as Record<string, string>)[name] ?? name;
+    expect(unreadLines([
+      { name: 'hdl', reason: 'limit' }, { name: 'crp', reason: 'unreadable' }, { name: 'lpa', reason: 'limit' }, { name: 'hdl', reason: 'limit' },
+    ], label)).toEqual([
+      { label: 'HDL Cholesterol, Lp(a)', reason: 'printed as a limit' },
+      { label: 'crp', reason: 'could not be read' },
+    ]);
+    expect(unreadLines([], label)).toEqual([]);
   });
 });
