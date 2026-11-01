@@ -141,6 +141,9 @@ async function inspect(browser, deviceName, viewport) {
     if (deviceName) {
       // US-62 AC8, AC11: a phone shows rows; the grid is one tap away.
       await page.locator('.md-row').first().waitFor({ state: 'visible', timeout: 30000 });
+      // A slow load fails only if the value never arrives; assertRows then names it.
+      await page.locator('.md-row', { has: page.locator('.md-row-label', { hasText: /^HbA1c$/ }) })
+        .locator('.md-row-value').waitFor({ state: 'attached', timeout: 15000 }).catch(() => {});
       const rows = await page.evaluate(collectRows);
       assertRows(rows);
       console.log(`${deviceName}: rows verified`, JSON.stringify(rows));
