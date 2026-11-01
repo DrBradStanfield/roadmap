@@ -174,3 +174,6 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   nausea → ginger): 8 of 18 fails on the first v4 arm (250/268). Rule 1 was
   rewritten in the same change, so the cause is unattributed. Pre-v4 arms are not comparable: 42 fixtures were deleted and 146
   re-pointed to ∅ on 10-22. Baseline any v4 change against a v4 arm.
+  **Brad 11-01: no interim router fix.** A pathway replacement is due in about
+  two weeks; re-point these fixtures to its entries when it lands. Until then,
+  report the count and propose nothing for it.

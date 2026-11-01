@@ -52,15 +52,18 @@ describe('US-61 AC1: the two new supplement cards, in every market', () => {
     ]);
     const tmg = suggestions.find((s) => s.id === 'supplement-tmg')!;
     expect(tmg).toMatchObject({ category: 'supplements', priority: 'info', title: 'TMG (trimethylglycine)' });
-    expect(tmg.description).toBe('TMG lowers blood homocysteine, according to a meta-analysis of randomized trials. Small trials suggest it may improve strength and power. At 4 g a day or more, the doses used in the homocysteine trials, it may modestly raise total cholesterol.');
-    expect(tmg.references!.map((r) => r.label.split(' ')[0])).toEqual(['McRae', 'Lee', 'Pryor', 'Nobari', 'Zawieja']);
-    expect(tmg.references!.at(-1)!.url).toBe('https://doi.org/10.1080/19390211.2019.1699223');
+    expect(tmg.description).toBe('TMG lowers blood homocysteine, according to a meta-analysis of randomized trials. Small trials suggest it may improve strength and power.');
+    expect(tmg.references!.map((r) => r.label.split(' ')[0])).toEqual(['McRae', 'Lee', 'Pryor', 'Nobari']);
+    expect(tmg.references!.at(-1)!.url).toBe('https://doi.org/10.1186/s12970-021-00464-y');
   });
 
   it('US-61 AC1: the lutein card never says adding lutein and zeaxanthin did not slow progression (Brad\'s AREDS2 framing)', () => {
     const text = `${plan(adult).suggestions.find((s) => s.id === 'supplement-lutein-zeaxanthin')!.description} ${SUGGESTION_EVIDENCE['supplement-lutein-zeaxanthin'].reason}`;
     expect(text).not.toMatch(/did not (significantly )?slow/i);
     expect(SUGGESTION_EVIDENCE['supplement-tmg'].reason).not.toMatch(/dementia|alzheimer/i);
+    // Brad 2026-11-01: no cholesterol line and no dose caveat for TMG.
+    expect(SUGGESTION_EVIDENCE['supplement-tmg'].reason).not.toMatch(/cholesterol/i);
+    expect(US_PRODUCT_LINES['supplement-tmg'].line).toBe('MicroVitamin+ contains 500 mg of TMG.');
     expect(SUGGESTION_EVIDENCE['supplement-lutein-zeaxanthin'].reason).toContain('slowed progression in people with intermediate macular degeneration, or advanced disease in one eye');
   });
 
