@@ -8,9 +8,8 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { REDUCE_ALCOHOL_ID, type AlcoholAnswer, type Suggestion } from '@roadmap/health-core';
 
-/** About you's choices; '' is "Not answered", which clears the answer. */
-export const ALCOHOL_OPTIONS: ReadonlyArray<{ value: AlcoholAnswer | ''; label: string }> = [
-  { value: '', label: 'Not answered' },
+/** The two answers, for About you's toggle and the card's first question. */
+export const ALCOHOL_OPTIONS: ReadonlyArray<{ value: AlcoholAnswer; label: string }> = [
   { value: 'none', label: "I don't drink" },
   { value: 'drinks', label: 'I drink' },
 ];
@@ -52,7 +51,7 @@ function AlcoholDismiss({ drinks, onChoose, section }: { drinks: boolean; onChoo
   // iOS twin: AlcoholQuestion.choices (PlanCardView.swift).
   const choices: Array<{ label: string; answer: AlcoholAnswer | null }> = drinks
     ? [{ label: "I've stopped", answer: 'none' }, { label: 'I still drink', answer: null }]
-    : ALCOHOL_OPTIONS.flatMap(({ value, label }) => (value ? [{ label, answer: value }] : []));
+    : ALCOHOL_OPTIONS.map(({ value, label }) => ({ label, answer: value }));
 
   return (
     <>
