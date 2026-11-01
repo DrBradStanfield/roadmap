@@ -5569,3 +5569,25 @@ input[type="number"] {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
+
+/* A printed limit's symbol before its bound in an editable cell (US-12 AC20).
+   Without one, the wrapper is not there for layout. */
+.bt-cell-input-row {
+  display: contents;
+}
+.bt-cell-limit-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 90%;
+  min-width: 0;
+}
+.bt-cell-limit-row .bt-input {
+  flex: 1 1 0;
+  width: auto;
+}
+.bt-cell-limit {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--bt-ink-900);
+}

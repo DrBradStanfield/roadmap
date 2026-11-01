@@ -21,7 +21,8 @@ import type { MetricType } from '../../packages/health-core/src/units';
 import { BLOOD_PRESSURE, pressureHistory } from './blood-pressure';
 import { cellUnitFor, systemFor, type UnitChoices } from './unit-choices';
 import type { EditOutcome } from './my-data';
-import { cellLabel, cellText } from '../../packages/health-core/src/cell-unit';
+import { cellDecimalPlaces, cellFromSI, cellLabel, cellText, type CellUnit } from '../../packages/health-core/src/cell-unit';
+import { LIMIT_NOT_GRADED, isComparator, limitOf, limitText, type Comparator } from '../../packages/health-core/src/lab-limits';
 import { medicationAnnotations, medicationChanges } from '../../packages/health-core/src/medication-annotations';
 
 /** A supplement as the tab lists it. */
@@ -70,6 +71,11 @@ export interface HistoryRow {
   diastolic?: string | null;
   /** A blood pressure's active row ids, which a replace sends back as `seenIds`. */
   pairIds?: string[];
+  /** A lab result printed as a limit (US-12 AC20): its bound in the row's unit, where the
+   *  chart plots it, hollow and out of the line. `value` then reads "> 60". Absent otherwise. */
+  bound?: number;
+  /** The plan's word on the current value when it says more than "used": a limit it cannot grade. */
+  note?: string;
 }
 
 export interface MetricHistory {
@@ -275,9 +281,18 @@ export function applyFormEdit(file: RoadmapFile, edit: Exclude<FormEdit, { kind:
  * included (the app strikes them through). The record is append-only: this
  * view offers corrections, never removal.
  */
+/** A stored value as its cell shows it: a limit with its symbol, at places that keep it true (US-12 AC20). */
+export function rowText(metric: MetricType, row: { value: number; comparator?: Comparator }, unit: CellUnit): string {
+  return isComparator(row.comparator)
+    ? limitText(cellFromSI(metric, row.value, unit), cellDecimalPlaces(metric, unit), row.comparator)
+    : cellText(metric, row.value, unit);
+}
+
 export function metricHistory(file: RoadmapFile, metric: string, now = new Date().toISOString(), choices: UnitChoices = {}): MetricHistory {
   // No plan yet (no usable height): nothing is excluded, and nothing used.
-  const excludedFields = planOf(file, now, {})?.excluded ?? [];
+  const plan = planOf(file, now, {});
+  const excludedFields = plan?.excluded ?? [];
+  const ungraded = limitOf(plan?.inputs, METRIC_TO_FIELD[metric])?.graded === false;
   // The web's own pins (US-25 AC9b): none for a metric no medication affects.
   const markers = (medicationAnnotations(medicationChanges(file.medicationHistory))[metric] ?? [])
     .map(({ id, date, label }) => ({ id, day: localDay(new Date(date)), label }));
@@ -298,12 +313,14 @@ export function metricHistory(file: RoadmapFile, metric: string, now = new Date(
         || Number(b.status === 'active') - Number(a.status === 'active'))
       .map((row) => ({
         id: row.id,
-        value: cellText(metric as MetricType, row.value, shown),
+        value: rowText(metric as MetricType, row, shown),
         day: row.recordedAt.slice(0, 10),
         status: row.status,
         current: row.id === current?.id,
         // A legacy row may lack the key: only a named row is a correction.
         correction: !!row.correctsId,
+        ...(isComparator(row.comparator) ? { bound: cellFromSI(metric as MetricType, row.value, shown) } : null),
+        ...(ungraded && row.id === current?.id && isComparator(row.comparator) ? { note: LIMIT_NOT_GRADED } : null),
       })),
   };
 }

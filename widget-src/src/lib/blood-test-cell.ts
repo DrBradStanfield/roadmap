@@ -9,6 +9,14 @@ import {
   cellLabel,
   cellRange,
   cellToSI,
+  cellFromSI,
+  cellDecimalPlaces,
+  cellText,
+  isLimitField,
+  withComparator,
+  limitRepresentative,
+  limitText,
+  METRIC_TO_FIELD,
   HBA1C_THRESHOLDS,
   LDL_THRESHOLDS,
   getLipidStatus,
@@ -20,6 +28,7 @@ import {
   LPA_THRESHOLDS,
   PSA_THRESHOLDS,
   type CellUnit,
+  type Comparator,
   type MetricType,
   type ValidationRange,
 } from '@roadmap/health-core';
@@ -78,6 +87,40 @@ export function bpSysAdvance(typed: string): BpAdvance {
 export function formatLabValue(v: number): string {
   return String(Math.round(v * 100) / 100);
 }
+
+/** A saved lab value as shown: a limit with its symbol and its bound as
+ *  printed ("< 0.005"), else up to two decimals (US-12 AC20). */
+export function savedLabText(v: number, comparator?: Comparator): string {
+  return comparator ? limitText(v, 0, comparator) : formatLabValue(v);
+}
+
+/** A saved core value as its cell shows it: a limit with its symbol, "> 1.55" (US-12 AC20). */
+export function savedCellText(metric: MetricType, si: number, unit: CellUnit, comparator?: Comparator): string {
+  return comparator ? limitText(cellFromSI(metric, si, unit), cellDecimalPlaces(metric, unit), comparator) : cellText(metric, si, unit);
+}
+
+/** The number a saved core limit is graded with, or null when its bound does
+ *  not decide (US-12 AC20). Never shown. */
+function limitGrade(metric: MetricType, bound: number, comparator: Comparator): number | null {
+  const field = METRIC_TO_FIELD[metric];
+  return field && isLimitField(field) ? limitRepresentative(field, comparator, bound) : null;
+}
+
+/** A limit the plan cannot grade: it shows no colour, and says `LIMIT_NOT_GRADED`. */
+export function limitUngraded(metric: MetricType, bound: number, comparator?: Comparator): boolean {
+  return !!comparator && limitGrade(metric, bound, comparator) === null;
+}
+
+/** A saved core value's grade. A limit is graded only when its bound decides,
+ *  and never by the bound itself (US-12 AC20). */
+export function savedStatus(metric: MetricType, si: number, comparator: Comparator | undefined, grading: Grading): Status {
+  if (!comparator) return statusOf(metric, si, grading);
+  const graded = limitGrade(metric, si, comparator);
+  return graded === null ? null : statusOf(metric, graded, grading);
+}
+
+/** A comparator's symbol as shown: "<", "≤". */
+export const comparatorSymbol = (comparator: Comparator) => withComparator('', comparator).trim();
 
 /**
  * A typed value that changes nothing, so saving it writes nothing (US-03

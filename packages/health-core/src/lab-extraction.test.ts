@@ -1262,6 +1262,8 @@ describe('US-12 AC19: a value not saved is named, with why', () => {
       { label: 'HDL Cholesterol, CRP, Lp(a)', reason: 'could not be read' },
     ], otherCount: 1 });
     expect(unreadLines({})).toEqual({ lines: [], otherCount: 0 });
+    // US-12 AC20: a server from before it still sends `limit`; it reads as unreadable, never a throw.
+    expect(unreadLines({ droppedValueCount: 1, unreadValues: [{ name: 'hdl', reason: 'limit' as 'unreadable' }] }).lines).toEqual([{ label: 'HDL Cholesterol', reason: 'could not be read' }]);
   });
 
   it('unreadLines: one test under two reasons, or refused and unread at once, is one line, so no two lines share a label', () => {

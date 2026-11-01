@@ -103,8 +103,13 @@ export function chatContextOf(
   dated: Array<{ metricType: string; value: number; recordedAt?: string | null; comparator?: Comparator }>,
 ): ChatContextPayload {
   const measurementHistory = buildMeasurementHistory(dated);
+  // A limit travels as `limits` alone (US-12 AC20): its field's representative
+  // stays home, so a client allow-list that strips `limits` (an older phone)
+  // cannot pass it off as an exact value. The builder grades `limits` again.
+  const sent: Record<string, unknown> = { ...inputs };
+  for (const field of Object.keys(inputs.limits ?? {})) delete sent[field];
   return {
-    ...inputs,
+    ...(sent as Partial<HealthInputs>),
     unitSystem,
     // The mirror is localStorage, so a row may be anything: skip what is not
     // an object, and the builder drops the rest.

@@ -322,7 +322,8 @@ interface HiddenReading { label: string; day: DateKey }
 type Quantity = { valueSI?: number; lab?: LabQuantity; comparator?: Comparator };
 
 /** A core cell as rendered: its text in the row's unit and the value it saves. */
-interface CoreCellView { text: string; valueSI?: number; error: string | null }
+/** `comparator`: an untouched limit's, shown before its bound; an edited cell is exact (US-12 AC20). */
+interface CoreCellView { text: string; valueSI?: number; error: string | null; comparator?: Comparator }
 
 type MatrixCell =
   | { state: 'empty' }
@@ -909,14 +910,16 @@ export function ReviewTable({
       if (cell.state !== 'editable') continue;
       const metric = metricOf(cell);
       const text = (editedDisplayValues[editId(cell)] ?? cell.initialDisplay).trim();
+      const limit = cell.comparator && !isEditedText(cell, text) ? { comparator: cell.comparator } : {};
       if (!metric) {
-        views.set(editId(cell), { valueSI: savedValue(cell, text), error: cellError(cell, text), text });
+        views.set(editId(cell), { valueSI: savedValue(cell, text), error: cellError(cell, text), text, ...limit });
         continue;
       }
       const valueSI = savedValue(cell, text);
       const shownIn = units[metric] ?? unitSystem;
       const typedIn = touchedRef.current.get(editId(cell))?.display ?? shownIn;
       views.set(editId(cell), {
+        ...limit,
         valueSI,
         error: cellError(cell, text),
         text: !isEditedText(cell, text) ? cell.initialDisplay
@@ -1437,6 +1440,7 @@ function MatrixRowView({
                 editedValue={coreCellViews.get(id)?.text ?? editedDisplayValues[id] ?? ''}
                 valueSI={coreCellViews.get(id)?.valueSI}
                 validationError={coreCellViews.get(id)?.error}
+                comparator={coreCellViews.get(id)?.comparator}
                 onCellChange={onCellChange}
                 replace={cell.state === 'editable' && !!cell.existing && !!replaceChecked[replaceKey(cell, cell.existing)]}
                 alreadySaved={heldEqual.has(id)}
@@ -1487,10 +1491,12 @@ interface MatrixCellViewProps {
   alreadySaved: boolean;
   /** Keyed by `replaceKey`. */
   onReplaceToggle: (key: string, on: boolean) => void;
+  /** An untouched limit's symbol, shown before its bound (US-12 AC20). */
+  comparator?: Comparator;
 }
 
 const MatrixCellView = memo(function MatrixCellView({
-  cell, row, columnWords, unitSystem, grading, editedValue, valueSI, validationError, onCellChange, replace, alreadySaved, onReplaceToggle,
+  cell, row, columnWords, unitSystem, grading, editedValue, valueSI, validationError, onCellChange, replace, alreadySaved, onReplaceToggle, comparator,
 }: MatrixCellViewProps) {
   // Ids of the text that describes the inputs: labels name the test and
   // column, never a value (US-13 AC10).
@@ -1550,6 +1556,7 @@ const MatrixCellView = memo(function MatrixCellView({
       valueSI={valueSI}
       validationResult={validationError}
       onChange={handleChange}
+      comparator={comparator}
       ariaLabel={label}
       ariaDescribedBy={describedBy(cell.printed && printedId)}
       wrapperClass={`bt-cell-input bt-cell-review${lowConfClass}`}
@@ -1560,6 +1567,7 @@ const MatrixCellView = memo(function MatrixCellView({
       value={editedValue}
       validationResult={validationError}
       onChange={handleChange}
+      comparator={comparator}
       wrapperClass="bt-cell-input bt-cell-review"
       ariaLabel={label}
       ariaDescribedBy={describedBy(newUnitShown && unitId, storedText && siId, refusedText && refusedId)}
@@ -1577,7 +1585,7 @@ const MatrixCellView = memo(function MatrixCellView({
       <span id={oldId} className="bt-value-num num bt-cell-conflict-old">{showUnit(displayUnit) ? `${display} ${displayUnit}` : display}</span>
       {input}
       {/* The new value as text for the Replace box: a description names text, never an input (US-13 AC10). */}
-      {!alreadySaved && <span id={newId} className="bt-cell-heard">{editedValue ? `new value ${editedValue}` : 'no new value'}</span>}
+      {!alreadySaved && <span id={newId} className="bt-cell-heard">{editedValue ? `new value ${withComparator(editedValue, comparator)}` : 'no new value'}</span>}
       {!alreadySaved && <label className="bt-cell-conflict-replace">
         <input
           type="checkbox"

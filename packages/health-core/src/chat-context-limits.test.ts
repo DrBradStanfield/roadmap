@@ -42,6 +42,15 @@ describe('US-12 AC20: the chat context and a lab limit', () => {
     expect(JSON.parse(buildChatContextJson(junk)!).latestValues.ldlC).toBe('2');
   });
 
+  it('the payload a client sends never holds the representative: a limit travels as `limits` only', () => {
+    const payload = chatContextOf(withRowValue(base, 'lpa', 10, '<'), 'si', [], [], []);
+    expect(payload).not.toHaveProperty('lpa');
+    expect(payload.limits).toEqual({ lpa: { comparator: '<', bound: 10, graded: true } });
+    // An allow-list that drops `limits` leaves no Lp(a) at all, never a wrong exact one.
+    const { limits: _dropped, ...stripped } = payload;
+    expect(JSON.parse(buildChatContextJson(stripped)!).latestValues).not.toHaveProperty('lpa');
+  });
+
   it('derivedValues.eGFR says a lab eGFR limit as printed', () => {
     const json = context({ ...withRowValue(base, 'labEgfr', 90, '>'), labEgfrDate: '2026-08-01' });
     expect(json.derivedValues.eGFR).toBe('> 90');

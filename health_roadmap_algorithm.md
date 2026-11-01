@@ -538,6 +538,7 @@ With no sex on record the plan grades no HDL, so `hdl-low` does not show (US-07 
 
 | Constant | Value | Meaning |
 |----------|-------|---------|
+| normal | 70 | eGFR 70 and over: the tile's "Normal" (named 2026-11-02; was a literal in `getEgfrStatus`) |
 | lowNormal | 60 | eGFR 60-69, no CKD without markers |
 | mildlyDecreased | 45 | CKD-3b boundary, protein adjustment |
 | moderatelyDecreased | 30 | G3b |
@@ -580,6 +581,19 @@ Used when medications are tracked and a lipid is at or above its target: the val
 | Non-HDL | < 1.6 mmol/L | < 62 mg/dL |
 
 ApoB source: Brad's target, extended from the Ez-PAVE LDL-C target trial (Lee 2026) and PESA (Ibanez 2021), and lower than the ESC/EAS 2019 goal of < 65 mg/dL for very high risk.
+
+### Results Printed as a Limit (US-12 AC20)
+
+Source: `lab-limits.ts`. Brad, 2026-11-02: "Only when it decides".
+
+A lab result printed with a symbol ("> 60", "< 5", "≤ 0.1") is saved as its bound with its comparator, never as the bound alone. The plan grades it only when the bound decides: when no cutoff the input is compared against lies inside the band the limit leaves open, so every value in the band grades the same.
+
+- **The cutoff set (`LIMIT_CUTOFFS`).** For each graded input, every threshold in this section that anything compares it against, for any sex and any treatment state: the plan's tiers, the tiles' status lines, the blood-test grid colours (HDL and creatinine by sex, both sexes listed), the cards, the medication cascades and the on-treatment targets. eGFR's set holds 70 (the tile's Normal line), 60, 45, 30 and 15; the systolic set holds both targets, 120 and 130. Non-HDL's lines are not in any set: non-HDL is derived, and never from a limit. A non-core lab graded by its printed reference range uses that range as its set.
+- **Decides when:** `< b` and every cutoff is at or above b; `<= b` and every cutoff is above b; `> b` and every cutoff is at or below b; `>= b` and every cutoff is below b. One list for everyone, conservative on purpose.
+- **Decided:** the plan grades a representative strictly inside the band, halfway between the bound and the input range's far end (section 12), so no rounding moves it across the bound. It must pass the input range, or the limit is undecided. It is never shown, stored or sent: every surface shows the bound with its symbol.
+- **Undecided:** the input has no graded value. No card, tile grade or cascade step comes from it, it is not counted missing, and no older exact value stands in for it. It is shown with its limit and "Printed as a limit, so the plan cannot grade it against its cutoff."
+- **Derived values** never use a limit: no non-HDL from a limit HDL or total cholesterol, no eGFR calculated from a limit creatinine, no ratio, trend or percent change. A lab eGFR printed as a limit is graded by the rule above; with an undecided one the plan has no eGFR and does not calculate one from an older creatinine. A newer creatinine printed as a limit leaves an older lab eGFR standing, marked outdated (the same treatment as a newer creatinine the plan cannot read).
+- **Examples:** eGFR "> 90" decides (protein target 1.2 g/kg, potassium advice open); eGFR "> 60" does not (70 lies above it); Lp(a) "< 10" nmol/L, PSA "< 0.01" ng/mL and HDL "> 1.5" mmol/L decide; LDL "< 1.5" mmol/L does not (the 1.4 target lies below).
 
 ### VO2 Max Fitness Bands (iPhone app, display only)
 

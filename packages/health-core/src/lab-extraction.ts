@@ -100,7 +100,8 @@ export function unreadLines({ droppedValueCount = 0, unreadValues = [], refusedV
   };
   for (const v of refusedValues) add(labTestLabel(v.metric), v.reason);
   const named = unreadValues.filter(v => v.name);
-  for (const v of named) add(labTestLabel(v.name), UNREAD_REASON_TEXT[v.reason]);
+  // A server from before US-12 AC20 may still send `limit`: read any word this build does not know as unreadable.
+  for (const v of named) add(labTestLabel(v.name), UNREAD_REASON_TEXT[v.reason] ?? UNREAD_REASON_TEXT.unreadable);
   const labelsByReason = new Map<string, string[]>();
   for (const [label, why] of reasons) {
     const reason = why.length > 1 ? why.map(r => r.replace(/\.$/, '')).join('; ') : why[0];
