@@ -1,7 +1,7 @@
 # One blood-test table (DRAFT for Brad)
 
-Status: design, 2026-11-02; Brad answered D1 to D4 and the creatinine point the same day (§10). D5
-and the rollout order (§11) are open, and nothing is built until they are answered. Story: US-66 in [docs/user-stories.md](../user-stories.md).
+Status: design, 2026-11-02; Brad answered D1 to D4 and the creatinine point the same day, and D5 later
+that day (§10). The rollout order (§11) is open, and nothing is built until they are answered. Story: US-66 in [docs/user-stories.md](../user-stories.md).
 Brad's direction (via the user, 2026-11-02): every blood test lives in one table; the plan reads the core
 tests it needs from that table; vitals may stay where they are. Also in scope: a punctuated core name
 ("LDL - Cholesterol") resolves the way catalogue names do after PR 543 (US-07 AC10).
@@ -268,8 +268,8 @@ writers may create a core row:
 - the matrix and form, the iPhone's add, `add_measurement`, and `add_lab_values` or AddLabTest with
   a core name: core row, after conversion and range check;
 - the upload's `values` (the extractor's core list): core row, as today;
-- the upload's `additionalValues` resolving to a core test other than creatinine: **open, D5**.
-  Recommended: offered as a core value. On a day the core slot already holds, the review table shows
+- the upload's `additionalValues` resolving to a core test other than creatinine (Brad, D5: "do
+  it"): offered as a core value. On a day the core slot already holds, the review table shows
   the conflict (US-13 AC3) and the person may replace it; if they do not, it is not saved. A unit
   that will not convert is listed as refused, with its reason (US-12 AC19). Today both are saved
   quietly as extra lab rows;
@@ -349,17 +349,12 @@ also opened on the web sees their blood tests vanish from the phone as soon as t
 writes the new shape. So §11 deploys the website only after the iPhone update is live in the store.
 Brad may prefer to deploy the website first; the cost is that window.
 
-**D5, an upload's extra core value: open.** When a report prints a core test the extractor could not
-file as core (an unfamiliar spelling, a unit it would not promote, a second value for a day already
-filled), the upload today saves it quietly as an extra lab row the plan ignores. Options:
-1. Offer it as the core value. On a day already filled, the review shows both and the person
-   chooses; nothing is saved unless they replace. A unit that will not convert is listed as "not
-   saved", with the reason. Consequence: the plan can use values it missed; the person sees a
-   conflict or a refusal where today they saw nothing.
-2. Keep saving it apart, as today. Consequence: no visible change, but each such upload adds a row
-   of exactly the kind D1 just folded, which the plan then ignores until a fold rule runs again.
-Recommendation: 1. It matches D1 ("start how we want to continue") and the review's rule for every
-held value (US-13 AC3). Creatinine stays a lab row under its printed name either way (US-12 AC11).
+**D5, an upload's extra core value: offer it as the core value (option 1).** Brad, 2026-11-02:
+"do it". When a report prints a core test the extractor could not file as core (an unfamiliar
+spelling, a unit it would not promote, a second value for a day already filled), it is offered as
+the core value. On a day already filled, the review shows both and the person chooses; nothing is
+saved unless they replace. A unit that will not convert is listed as "not saved", with the reason.
+Creatinine stays a lab row under its printed name (US-12 AC11).
 
 ## 11. Rollout order (on hold)
 
