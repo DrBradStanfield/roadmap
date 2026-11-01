@@ -27,7 +27,8 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    `~/Library/Caches/claude-worktree-packages/`, outside the repo, and linked in), so tools find their packages,
    and `npm ci` or `rm -rf node_modules/` there touches only the clone, never the main checkout (a direct link let
    it wipe them, 2026-11-01). The first command in a new worktree takes about 10 s; a deleted clone comes back on
-   the next command; cleanup deletes the clones. Other gitignored inputs (`.env`,
+   the next command; the clone's workspace links (`@roadmap/health-core`, `health-tool-widget`) point at the
+   worktree's own folders; cleanup deletes the clones. Other gitignored inputs (`.env`,
    `health-roadmap.json`, exports) are not in a worktree: read them from the main checkout by absolute path, and
    write new outputs in the worktree (cleanup copies them back). Bash writes (`sed -i`, `>`, `cp`) into the main
    checkout are not blocked by the hook: don't.
@@ -37,17 +38,21 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
 4. **Merge** it yourself when the work is done and its gates have passed (CLAUDE.md: `test:all`, adversary +
    Codex where required, clinical citation numbering). The project settings allow exactly
    `gh pr merge <n> --merge --match-head-commit <sha>` and deny `--admin`, `--squash`, `--rebase` and `--auto`;
-   the push guard refuses any other form (Brad 2026-11-01). Nothing on GitHub enforces the reviews, so you do.
+   the push guard refuses any other form (Brad 2026-11-01): the sha must be 7-40 hex, each option once, no
+   `-d`/`--delete-branch` (branch deletes are Brad's), and no merge through `gh api` (a gh alias is invisible to
+   it). Nothing on GitHub enforces the reviews, so you do.
    First `git fetch origin main`, then (its own command) `git merge --no-edit origin/main`, re-run `test:all`,
    re-review if main touched your files (PR 150), push, wait for CI, then merge. Or let auto-ship merge it. Use
    merge commits, not squash: the cleanup script proves the work reached `main` by ancestry. Brad's account
    merges workflow-file PRs.
 5. **Deploy** only merged code: the CI Deploy always builds main's tip. A manual release follows
-   docs/deploy-runbook.md step 0 (cut from the main checkout at exactly `origin/main`, never a session worktree).
+   docs/deploy-runbook.md step 0: `bash tools/release-checkout.sh` from the main checkout makes a detached
+   checkout of exactly `origin/main` outside the repo (it refuses a folder that exists, or a dirty result).
 6. **Finish**: ExitWorktree (`keep`), then from the main checkout `git pull --ff-only` and
    `bash tools/worktree-done.sh <name>`. It refuses unless everything is pushed and merged (or the PR is closed),
-   copies the worktree's own gitignored outputs back into the main checkout (never `.claude/`, the package links,
-   or build and cache output; it never overwrites: a differing file keeps the worktree for you to resolve),
+   copies the worktree's own gitignored outputs back into the main checkout, logs included (never the package
+   links or build and cache output, the iOS engine bundle among them; `.claude/` files are listed, not copied,
+   and go with the worktree; it never overwrites: a differing file keeps the worktree for you to resolve),
    removes the package links (only those paths, never another link), the worktree, its package clones and its
    local branch.
    `bash tools/worktree-done.sh --all` does the same for every unlocked worktree under `.claude/worktrees/` not
@@ -68,11 +73,11 @@ it in the final message as still open and why.
 | Merge permissions | `.claude/settings.json` `permissions` | Allows the one merge form, denies `--admin`/`--squash`/`--rebase`/`--auto` (without the allow rule, auto mode blocks every merge) |
 | Stranded-branch watch | `.github/workflows/stranded-branch-watch.yml` | Issue for a branch with unmerged commits, no PR, idle 20h+ |
 | Stale-PR watch | `.github/workflows/stale-pr-watch.yml` | One refreshed issue listing open PRs idle 48h+ (drafts 7 days+), daily. These two watches are the only exception to Brad's Claude-app-only notification rule (Brad 2026-11-01) |
-| Live-write gate | `tools/write-gate.mjs` | Live writes only from the main checkout or a session worktree at exactly `origin/main` with no tracked change |
-| Deploy | `deploy.yml` (CI, `ref: main`); docs/deploy-runbook.md step 0 (manual) | Only merged code ships |
+| Live-write gate | `tools/write-gate.mjs` | Live writes only from the main checkout or a session worktree, at exactly `origin/main` with no tracked change |
+| Deploy | `deploy.yml` (CI, `ref: main`); `tools/release-checkout.sh` (manual, docs/deploy-runbook.md step 0) | Only merged code ships |
 
-Tests: `tests/worktree-guard.test.ts`, `tests/git-push-guard.test.ts` (runs `.claude/hooks/git-push-guard.test.sh`)
-and `tests/write-gate.test.ts`, all in `test:all`. The same hooks live in claude_business: edit both.
+Tests: `tests/worktree-guard.test.ts`, `tests/git-push-guard.test.ts` (runs `.claude/hooks/git-push-guard.test.sh`),
+`tests/write-gate.test.ts`, `tests/release-checkout.test.ts` and `tests/stale-prs.test.ts`, all in `test:all`. The same hooks live in claude_business: edit both.
 
 ## Exceptions
 
@@ -95,9 +100,9 @@ and `tests/write-gate.test.ts`, all in `test:all`. The same hooks live in claude
   `/blog-post` and `/blog-update` already work in a roadmap worktree (`$ROAD`).
 - **Live writes** (`scripts/publish-guides.mjs --publish`, `scripts/build-privacy-page.mjs --publish`,
   `tools/backfill-shopify-link-proof.ts --execute`, `tools/repair-trigger-first-links.ts --execute`,
-  `tools/mcp-reviewer-token.ts`) run from the main checkout or from a session worktree whose HEAD is exactly
-  `origin/main` with no tracked change. `tools/write-gate.mjs` refuses anything else. The main checkout it
-  trusts as it is, so `git pull --ff-only` there first. Recipe: merge any tool or content change first; then in
+  `tools/mcp-reviewer-token.ts`) run from the main checkout or a session worktree, and only when its HEAD is
+  exactly `origin/main` with no tracked change (none hidden by skip-worktree). `tools/write-gate.mjs` refuses
+  anything else, the main checkout included: `git pull --ff-only` there first and land or set aside its edits. Recipe: merge any tool or content change first; then in
   a fresh worktree (`tools/worktree-new.sh` already qualifies), or in your own after `git fetch origin main` and
   `git merge --ff-only origin/main`, run the write.
 
@@ -106,17 +111,23 @@ and `tests/write-gate.test.ts`, all in `test:all`. The same hooks live in claude
 - **`shopify app deploy` refuses while any worktree sits inside the repo** ("only one web configuration file
   with the backend role"): it scans the tree and finds each worktree's `shopify.web.toml`. CI is unaffected. A
   manual release runs from a detached checkout of `origin/main` outside the repo (docs/deploy-runbook.md step 0).
-- **Live worktrees made before this change** hold links straight into the main checkout. The hook swaps each
-  for a clone on the worktree's next Bash call (removing the link only), once the PR is merged and the session
-  restarts (hooks load at session start).
+- **Live worktrees made before this change** hold links straight into the main checkout, under
+  `.claude/worktrees/` or elsewhere (`../roadmap-*`). In any registered worktree the hook swaps each for a clone
+  on the next Bash call (removing the link only), once the PR is merged and the session restarts (hooks load at
+  session start). Until then, never run `npm ci` or `rm -rf node_modules/` there: remove the links first, with
+  no trailing slash (`unlink node_modules widget-src/node_modules packages/health-core/node_modules`; never
+  `rm -rf node_modules/`, which follows the link).
 - **Never delete symlinks broadly** (`find -type l -delete`): a tracked link is the work itself (claude_business's
   `docs/products.md`). Cleanup removes only the three package paths, and only when they point at the clones or
   the main checkout.
 - **Vite and the package links**: Vite resolves a linked `node_modules` to its real path (the clone, outside the
   worktree) and refuses a `?raw` import from outside its root ("Denied ID", `widget-src/src/upload-entry.test.ts`).
   `vitest.config.ts` allows that real folder (`server.fs.allow`).
-- Only worktrees under `.claude/worktrees/` get the package clones. Older ones elsewhere (`../roadmap-*`) need
-  `npm ci`; the Stop and SessionStart checks still cover them.
+- Only worktrees under `.claude/worktrees/` get new package clones. An older one elsewhere (`../roadmap-*`) with
+  no `node_modules` needs `npm ci`, but first check none of its three folders is a link (`ls -ld`); if one is,
+  remove it as above. The Stop and SessionStart checks cover those worktrees too.
+- The Stop hook has 45 s: its git calls get 3 s each and the fetch and `gh` 8 s, so on a loaded machine it fails
+  open rather than overrun.
 - In a session moved into a worktree, the harness may refuse a complex Bash command that runs git against
   another checkout, or names git twice. Use one git call per command, run from the worktree; a helper script
   (`bash tools/...`) is fine.

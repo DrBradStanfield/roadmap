@@ -67,10 +67,24 @@ describe('git push guard, as .claude/settings.json runs it', () => {
   });
 
   it('reaches the guard for a gh pr merge, which holds no "push" (US-63 AC5)', () => {
-    const r = runHook(scratch, 'gh pr merge 415 --squash --match-head-commit abc123');
+    const r = runHook(scratch, 'gh pr merge 415 --squash --match-head-commit abc1234');
     expect(r.stderr).toBe('');
     expect(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision).toBe('deny');
-    expect(runHook(scratch, 'gh pr merge 415 --merge --match-head-commit abc123').stdout).toBe('');
+    expect(runHook(scratch, 'gh pr merge 415 --merge --match-head-commit abc1234').stdout).toBe('');
+  });
+
+  it('settings.json allows exactly the reviewed merge form and denies the four flags (US-63 AC5)', () => {
+    // Claude Code's Bash(...) rules: `*` matches any text; a deny beats an allow.
+    const { allow, deny } = JSON.parse(readFileSync(join(ROOT, '.claude/settings.json'), 'utf8')).permissions;
+    const rx = (rule: string) => new RegExp(`^${rule.replace(/^Bash\((.*)\)$/, '$1')
+      .replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*')}$`);
+    const verdict = (cmd: string) => (deny.some((r: string) => rx(r).test(cmd)) ? 'deny'
+      : allow.some((r: string) => /gh pr merge/.test(r) && rx(r).test(cmd)) ? 'allow' : 'ask');
+    expect(verdict('gh pr merge 415 --merge --match-head-commit abc1234')).toBe('allow');
+    for (const flag of ['--admin', '--squash', '--rebase', '--auto']) {
+      expect(verdict(`gh pr merge 415 --merge ${flag} --match-head-commit abc1234`), flag).toBe('deny');
+    }
+    expect(verdict('gh pr merge 415')).toBe('ask');
   });
 
   it('loads and allows a plain push it cannot fetch for', () => {
@@ -89,7 +103,7 @@ describe('git-push-guard.test.sh', () => {
       const [, got, want] = l.match(/^(\S+)\s+expected\s+(\S+)/)!;
       return got !== want;
     });
-    expect(cases.length).toBeGreaterThanOrEqual(82);
+    expect(cases.length).toBeGreaterThanOrEqual(105);
     expect(mismatches).toEqual([]);
     expect(r.status).toBe(0);
   }, 240_000);

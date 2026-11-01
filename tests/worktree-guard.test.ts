@@ -17,6 +17,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const GUARD_SRC = join(ROOT, '.claude/hooks/worktree-guard.cjs');
@@ -91,19 +92,26 @@ beforeAll(() => {
   MAIN = join(S, 'main');
   sh(S, 'git init -q --bare -b main remote.git && git clone -q remote.git main 2>/dev/null');
   // `node_modules` with no trailing slash, as the real .gitignore: it matches the link too.
-  writeFileSync(join(MAIN, '.gitignore'), 'node_modules\ntmp/\n.claude/*\n');
+  writeFileSync(join(MAIN, '.gitignore'), 'node_modules\ntmp/\n.claude/*\n*.log\nios/HealthRoadmap/Engine/health-engine.js\n');
   writeFileSync(join(MAIN, 'tracked.txt'), 'one\n');
   mkdirSync(join(MAIN, 'widget-src'));
   writeFileSync(join(MAIN, 'widget-src/a.ts'), 'x\n');
   // A tracked link to an absolute path in the main checkout, as claude_business's docs/products.md is: cleanup
   // must never delete it.
   symlinkSync(join(MAIN, 'tracked.txt'), join(MAIN, 'abs-link'));
+  // A workspace package, as packages/health-core is.
+  mkdirSync(join(MAIN, 'packages/health-core'), { recursive: true });
+  writeFileSync(join(MAIN, 'packages/health-core/package.json'), '{"name":"@roadmap/health-core","main":"index.js"}\n');
+  writeFileSync(join(MAIN, 'packages/health-core/index.js'), 'module.exports = 1;\n');
   sh(MAIN, 'git add -A && git commit -q -m one && git push -q origin main');
   GUARD = installGuard(MAIN);
   // Installed packages exist only in the main checkout, as in real life.
   for (const d of ['node_modules', 'widget-src/node_modules']) mkdirSync(join(MAIN, d, 'pkg'), { recursive: true });
   // A stray self-link, as the real main checkout has (node_modules/node_modules -> node_modules).
   symlinkSync(join(MAIN, 'node_modules'), join(MAIN, 'node_modules/node_modules'));
+  // npm's workspace link, relative as npm writes it.
+  mkdirSync(join(MAIN, 'node_modules/@roadmap'));
+  symlinkSync('../../packages/health-core', join(MAIN, 'node_modules/@roadmap/health-core'));
 }, 60_000);
 afterAll(() => rmSync(S, { recursive: true, force: true }));
 
@@ -181,6 +189,10 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
     expect(readFileSync(join(cache, '.owner'), 'utf8')).toBe(WT);
     expect(sh(WT, 'git status --porcelain')).toBe('');
   });
+  it("the clone resolves workspace packages to the worktree's own source (US-63 AC3)", () => {
+    const resolved = createRequire(join(WT, 'x.js')).resolve('@roadmap/health-core');
+    expect(realpathSync(resolved)).toBe(join(WT, 'packages/health-core/index.js'));
+  });
   it('npm ci or rm -rf through the link empties only the clone, and the next call re-clones (US-63 AC3)', () => {
     sh(WT, 'rm -rf node_modules/'); // follows the link, as npm ci does
     expect(existsSync(join(MAIN, 'node_modules/pkg'))).toBe(true);
@@ -242,6 +254,12 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
     mkdirSync(join(WT, 'tmp'));
     writeFileSync(join(WT, 'tmp/result.txt'), 'made in the worktree\n');
     writeFileSync(join(WT, '.claude/settings.local.json'), '{}\n'); // gitignored, but never copied back
+    writeFileSync(join(WT, 'run.log'), 'a log\n'); // copied back, not dropped (review R8)
+    // The iOS engine bundle is rebuilt in each checkout, so a different copy never keeps the worktree.
+    for (const [dir, body] of [[WT, 'worktree build'], [MAIN, 'main build']]) {
+      mkdirSync(join(dir, 'ios/HealthRoadmap/Engine'), { recursive: true });
+      writeFileSync(join(dir, 'ios/HealthRoadmap/Engine/health-engine.js'), body);
+    }
     const clones = cacheDir(WT);
     expect(existsSync(clones)).toBe(true);
     sh(MAIN, 'git pull -q --ff-only && git merge -q --no-edit origin/claude/feat && git push -q origin main');
@@ -250,6 +268,9 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
     expect(r.stdout).toMatch(/^done/m);
     expect(readFileSync(join(MAIN, 'tmp/result.txt'), 'utf8')).toBe('made in the worktree\n');
     expect(existsSync(join(MAIN, '.claude/settings.local.json'))).toBe(false);
+    expect(r.stdout).toMatch(/not copied back[\s\S]*\.claude\/settings\.local\.json/);
+    expect(readFileSync(join(MAIN, 'run.log'), 'utf8')).toBe('a log\n');
+    expect(readFileSync(join(MAIN, 'ios/HealthRoadmap/Engine/health-engine.js'), 'utf8')).toBe('main build');
     expect(existsSync(join(MAIN, 'node_modules/pkg'))).toBe(true); // the worktree's link went, never the folder
     expect(existsSync(clones)).toBe(false); // its clones are deleted too
     expect(readlinkSync(join(MAIN, 'abs-link'))).toBe(join(MAIN, 'tracked.txt'));
@@ -299,6 +320,25 @@ describe('worktree-done.sh on a folder that is not a worktree (US-63 AC4)', () =
 });
 
 describe('package clones: new worktrees, failures, races and orphans (US-63 AC3, AC4)', () => {
+  it('in an older worktree outside .claude/worktrees/, swaps a link into the main checkout and adds nothing', () => {
+    const older = join(S, 'older');
+    sh(MAIN, `git worktree add -q --detach "${older}" origin/main`);
+    symlinkSync(join(MAIN, 'node_modules'), join(older, 'node_modules'));
+    expect(bash(older, 'ls')).toBeNull();
+    expect(readlinkSync(join(older, 'node_modules'))).toBe(join(cacheDir(older), 'node_modules'));
+    expect(existsSync(join(older, 'node_modules/pkg'))).toBe(true);
+    expect(() => lstatSync(join(older, 'widget-src/node_modules'))).toThrow(); // absent stays absent here
+    sh(older, 'rm -rf node_modules/');
+    expect(existsSync(join(MAIN, 'node_modules/pkg'))).toBe(true);
+  });
+  it('leaves a link alone in a folder that is not a registered worktree', () => {
+    const fake = join(MAIN, '.claude/worktrees/notreg');
+    mkdirSync(fake, { recursive: true });
+    symlinkSync(join(MAIN, 'node_modules'), join(fake, 'node_modules'));
+    expect(bash(fake, 'ls')).toBeNull();
+    expect(readlinkSync(join(fake, 'node_modules'))).toBe(join(MAIN, 'node_modules'));
+    rmSync(fake, { recursive: true });
+  });
   it('worktree-new deletes a clone left by an earlier worktree at the same path', () => {
     let w = newWorktree('reuse').path;
     expect(bash(w, 'ls')).toBeNull();
@@ -337,8 +377,15 @@ describe('package clones: new worktrees, failures, races and orphans (US-63 AC3,
     expect(bash(w, 'ls')).toBeNull();
     const clones = cacheDir(w);
     sh(MAIN, `git worktree remove -f -f "${w}"`);
+    const leftover = join(dirname(clones), 'gone-0123456789ab.deleting-1');
+    mkdirSync(join(leftover, 'x'), { recursive: true });
     hook({ hook_event_name: 'SessionStart', cwd: MAIN });
-    expect(existsSync(clones)).toBe(false);
+    expect(existsSync(clones)).toBe(false); // renamed away at once; a detached process deletes it
+    const deadline = Date.now() + 20_000;
+    while (readdirSync(dirname(clones)).some((d) => d.includes('.deleting-')) && Date.now() < deadline) {
+      spawnSync('sleep', ['0.2']);
+    }
+    expect(readdirSync(dirname(clones)).filter((d) => d.includes('.deleting-'))).toEqual([]);
     expect(existsSync(join(MAIN, 'node_modules/pkg'))).toBe(true);
-  });
+  }, 60_000);
 });

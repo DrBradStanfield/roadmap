@@ -82,6 +82,12 @@ t "$S/b" "git push origin" DENY
 t "$S/b" "git push origin claude/x" allow
 CLAUDE_CODE_REMOTE=true t "$S/b" "git push origin HEAD:main" allow   # cloud loops commit to main by design
 (cd b && git branch -q --unset-upstream)
+# PR 415 review round 2: an inline upstream of main (Codex R3), a variable destination (adversary R4).
+t "$S/b" "git -c branch.claude/x.merge=refs/heads/main -c push.default=upstream push" DENY
+t "$S/b" "git -c branch.claude/x.merge=refs/heads/main push origin" DENY
+t "$S/b" "git push origin HEAD:\$D" DENY
+t "$S/b" "git push origin \"HEAD:\$(echo main)\"" DENY
+t "$S/b" "git -c branch.claude/x.merge=refs/heads/claude/x push origin claude/x" allow
 (cd b && git checkout -q main)
 t "$S/b" "git push origin @" DENY
 (cd a && git config remote.origin.push +refs/heads/main:refs/heads/main); t "$S/b" "cd ../a && git push" DENY
@@ -89,18 +95,41 @@ t "$S/b" "git push origin @" DENY
 (cd b && git config remote.origin.push +refs/heads/main:refs/heads/main); t "$S/b" "git pull -q && git push" DENY
 (cd b && git config --unset remote.origin.push)
 (cd b && git pull -q --no-rebase); t "$S/b" "git push" allow
+# On main or a detached HEAD, a refspec onto main must push main itself (adversary R4).
+t "$S/b" "git push origin claude/x:main" DENY
+t "$S/b" "git push origin HEAD~1:refs/heads/main" DENY
+t "$S/b" "git push origin main:main" allow
+(cd b && git checkout -q --detach)
+t "$S/b" "git push origin HEAD:main" DENY
+(cd b && git checkout -q main)
 # PR merges: a merge commit of the reviewed head only (Brad 2026-11-01).
-t "$S/b" "gh pr merge 32 --merge --match-head-commit abc123" allow
-t "$S/b" "gh pr merge 32 -m --match-head-commit=abc123" allow
+t "$S/b" "gh pr merge 32 --merge --match-head-commit abc1234" allow
+t "$S/b" "gh pr merge 32 -m --match-head-commit=abc1234" allow
 t "$S/b" "gh pr merge 32 --merge" DENY
-t "$S/b" "gh pr merge 32 --squash --match-head-commit abc123" DENY
-t "$S/b" "gh pr merge 32 -s --match-head-commit abc123" DENY
-t "$S/b" "gh pr merge 32 --merge --admin --match-head-commit abc123" DENY
-t "$S/b" "gh pr merge 32 --merge --auto --match-head-commit abc123" DENY
-t "$S/b" "gh pr merge 32 --rebase --match-head-commit abc123" DENY
+t "$S/b" "gh pr merge 32 --squash --match-head-commit abc1234" DENY
+t "$S/b" "gh pr merge 32 -s --match-head-commit abc1234" DENY
+t "$S/b" "gh pr merge 32 --merge --admin --match-head-commit abc1234" DENY
+t "$S/b" "gh pr merge 32 --merge --auto --match-head-commit abc1234" DENY
+t "$S/b" "gh pr merge 32 --rebase --match-head-commit abc1234" DENY
 t "$S/b" "bash -c 'gh pr merge 32 --merge'" DENY
 t "$S/b" "gh pr view 32 && gh pr merge 32" DENY
 t "$S/b" "gh pr view 32 --json state" allow
+# PR 415 review round 2: the sha must be 7-40 hex, once (Codex R2); no branch delete, no API merge (adversary R4);
+# quoted text and option values are data, not commands (adversary R3).
+t "$S/b" "gh pr merge 32 --merge --match-head-commit ''" DENY
+t "$S/b" "gh pr merge 32 --merge --match-head-commit=" DENY
+t "$S/b" "gh pr merge 32 --merge --match-head-commit zzzzzzz" DENY
+t "$S/b" "gh pr merge 32 --merge --match-head-commit abc1234 --match-head-commit def5678" DENY
+t "$S/b" "gh pr merge 32 --merge --merge --match-head-commit abc1234" DENY
+t "$S/b" "gh pr merge 32 --merge --match-head-commit 0123456789abcdef0123456789abcdef01234567" allow
+t "$S/b" "gh pr merge 32 --merge -d --match-head-commit abc1234" DENY
+t "$S/b" "gh pr merge 32 --merge --delete-branch --match-head-commit abc1234" DENY
+t "$S/b" "gh api -X PUT repos/o/r/pulls/32/merge" DENY
+t "$S/b" "gh api graphql -f query='mutation { mergePullRequest(input: {}) { clientMutationId } }'" DENY
+t "$S/b" "gh api repos/o/r/pulls/32" allow
+t "$S/b" "git commit -m 'Later: gh pr merge 32 --squash'" allow
+t "$S/b" "gh pr create --title 'gh pr merge --squash' --body '-s'" allow
+t "$S/b" "gh pr merge 32 --merge --match-head-commit abc1234 --body '-s' -t '--squash'" allow
 t /nonexistent "git push" allow
 t "$S/b" "git commit -m 'note' && echo pushed" allow
 exit $fail

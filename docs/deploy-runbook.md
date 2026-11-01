@@ -29,22 +29,13 @@ Full manual deploy (widget + Shopify extensions + backend):
 
 ```bash
 # 0. Only merged code ships, cut from the main checkout (Brad 2026-10-31/11-01, docs/git-workflow.md). Never deploy
-#    from a session worktree or a claude/ branch: the release is exactly origin/main. `shopify app deploy` also
-#    refuses while any worktree sits inside the repo (docs/reference.md, 2026-10-01), so release from a detached
-#    checkout of origin/main outside it. Run from the main checkout's root; the block stops at the first failure,
-#    and if it prints STOP, run nothing below.
-( set -euo pipefail
-  MAIN="$(pwd -P)"
-  [ "$(git rev-parse --path-format=absolute --git-common-dir)" = "$MAIN/.git" ] \
-    || { echo "REFUSED: run this from the main checkout's root, never a session worktree" >&2; exit 1; }
-  git fetch origin main
-  git worktree add --detach "${TMPDIR:-/tmp}/deploy-checkout" origin/main
-  cd "${TMPDIR:-/tmp}/deploy-checkout"
-  [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || { echo "REFUSED: HEAD is not origin/main" >&2; exit 1; }
-  ln -s "$MAIN/.env" .env   # a link to the secrets, never a copy
-  npm ci                    # its own packages, never a link to the main checkout's (npm ci through one empties them)
-) && cd "${TMPDIR:-/tmp}/deploy-checkout" || echo "STOP: step 0 failed; do not run the steps below"
-#    When done: cd back, `git worktree remove --force "${TMPDIR:-/tmp}/deploy-checkout"` (--force: the build output).
+#    from a session worktree or a claude/ branch. From the main checkout's root, tools/release-checkout.sh makes a
+#    detached checkout of exactly origin/main outside the repo (`shopify app deploy` refuses while any worktree
+#    sits inside it; docs/reference.md, 2026-10-01), links .env, runs its own `npm ci`, checks HEAD is origin/main
+#    with no tracked change, and prints the folder. It refuses a folder that already exists. If it fails, run
+#    nothing below.
+D="$(bash tools/release-checkout.sh)" && cd "$D"
+#    When done: cd back, `git worktree remove --force "$D"` (--force: the build output).
 
 # 1. Build the live v2 widget bundle (from project root). build:shopify-prod
 #    emits health-plan-v2.js + the upload bundle into the extension assets.
@@ -76,7 +67,7 @@ npx shopify app deploy --allow-updates
 #     roadmap main checkout), land both repos' PRs, then start again from step 0.
 #     (CI cannot see claude_business: its guard, scripts/check-symlinks.mjs, only checks
 #     each copy against the hash its last sync recorded.)
-D="$PWD"; (cd ~/Documents/claude_business.nosync && node tools/sync-shared-docs.mjs --check --road "$D")
+(cd ~/Documents/claude_business.nosync && node tools/sync-shared-docs.mjs --check --road "$D")
 
 # 6. Deploy backend to Fly.io (MUST run from project root where Dockerfile lives).
 #    THERE ARE TWO FLY APPS sharing the same Dockerfile + the same chatbot knowledge files:

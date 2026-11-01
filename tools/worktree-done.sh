@@ -26,7 +26,7 @@ git -C "$MAIN" fetch -q --prune origin || { echo "REFUSED: git fetch failed; not
 
 finish() { # $1 = worktree path, $2 = 1 to unlock a locked worktree; prints one line; returns 0 if removed
   local WT="$1" UNLOCK="$2" BR LOCAL UNMERGED STATE f CLONES rel
-  local -a differ=()
+  local -a differ=() skipped=()
   [ -d "$WT" ] || { echo "skip  $WT: not a folder"; return 1; }
   CLONES="$(node "$GUARD" --pkg-cache-dir "$WT" </dev/null 2>/dev/null)" || CLONES="/nonexistent-clones"
   BR="$(git -C "$WT" rev-parse --abbrev-ref HEAD 2>/dev/null)" || { echo "skip  $WT: not a git worktree"; return 1; }
@@ -63,10 +63,12 @@ finish() { # $1 = worktree path, $2 = 1 to unlock a locked worktree; prints one 
   # difference, not a loss.
   while IFS= read -r -d '' f; do
     # Finder junk is never worth keeping a worktree for; a dependency install is never copied (reinstall in main);
-    # build and cache output (.gitignore) is rebuilt, and both checkouts usually hold a different copy.
-    # .claude/ (settings, hooks) never flows back: a worktree's settings.local.json must not reach the main checkout.
-    case "/$f" in */.claude/*|*/.DS_Store|*/._*|*/node_modules/*|*/dist/*|*/dist-pages/*|*/_site/*|*/build/*|*/.cache/*|\
-      */.react-router/*|*/.vite/*|*/.stryker-tmp*|*/reports/mutation/*|*.log|*.map) continue;; esac
+    # build and cache output (.gitignore) is rebuilt, and both checkouts usually hold a different copy (the iOS
+    # engine bundle too). .claude/ (settings, hooks) never flows back: a worktree's settings.local.json must not
+    # reach the main checkout; those files are listed, not copied, and go with the worktree.
+    case "/$f" in */.claude/*) skipped+=("$f"); continue;; esac
+    case "/$f" in */.DS_Store|*/._*|*/node_modules/*|*/dist/*|*/dist-pages/*|*/_site/*|*/build/*|*/.cache/*|\
+      */.react-router/*|*/.vite/*|*/.stryker-tmp*|*/reports/mutation/*|*.map|/ios/HealthRoadmap/Engine/health-engine.js) continue;; esac
     if [ -L "$WT/$f" ]; then
       case "$(readlink "$WT/$f")" in "$MAIN/$f"|"$CLONES/$f") continue;; esac
     fi
@@ -84,6 +86,10 @@ finish() { # $1 = worktree path, $2 = 1 to unlock a locked worktree; prints one 
     echo "keep  $WT [$BR]: these gitignored files differ from the main checkout's copy; keep the right one by hand, then rerun:"
     printf '    %s\n' "${differ[@]}"
     return 1
+  fi
+  if [ ${#skipped[@]} -gt 0 ]; then
+    echo "note  $WT [$BR]: not copied back (.claude/ never flows to the main checkout), deleted with the worktree:"
+    printf '    %s\n' "${skipped[@]}"
   fi
   local WASLOCKED=""; [ -e "$(git -C "$WT" rev-parse --absolute-git-dir)/locked" ] && WASLOCKED=1
   # Remove the package links worktree-guard.cjs made: only those paths, only when they point at the worktree's

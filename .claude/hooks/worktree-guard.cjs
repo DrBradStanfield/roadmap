@@ -18,7 +18,7 @@
 // far: the main checkout found from this file's place, .claude/ never writable there, a random temp suffix and the
 // dropped self-links in a clone, and a non-macOS cache path and copy.
 // Workflow: docs/git-workflow.md.
-const { execFileSync } = require('child_process');
+const { execFileSync, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -41,10 +41,16 @@ try { input = JSON.parse(fs.readFileSync(0, 'utf8')); } catch { process.exit(0);
 if (process.env.CLAUDE_CODE_REMOTE === 'true' || process.env.CLAUDE_MAIN_CHECKOUT_WRITES === '1') process.exit(0);
 const cwd = input.cwd || process.cwd();
 const event = input.hook_event_name;
-// Hot path: a Bash call outside a session worktree has nothing to link, so skip every git call.
-if (event === 'PreToolUse' && input.tool_name === 'Bash' && !/\/\.claude\/worktrees\//i.test(cwd + '/')) process.exit(0);
+// Hot path: a Bash call in the checkout this hook lives in (outside .claude/worktrees/) has nothing to link, so
+// skip every git call. Anywhere else (a session worktree, an older ../roadmap-* worktree) goes on.
+const HOME_CHECKOUT = path.resolve(__dirname, '..', '..');
+if (event === 'PreToolUse' && input.tool_name === 'Bash' && !/\/\.claude\/worktrees\//i.test(cwd + '/')
+  && (cwd + '/').toLowerCase().startsWith(HOME_CHECKOUT.toLowerCase() + '/')) process.exit(0);
 
-const git = (dir, args, timeout = 10000) => execFileSync('git', ['-C', dir, ...args],
+// The Stop hook has 45 s (settings.json) for up to seven git calls, a fetch and a gh call: 3 s each, 8 s for the
+// network calls, so it answers (or fails open) in time. Everything else keeps 10 s.
+const GIT_TIMEOUT = event === 'Stop' ? 3000 : 10000;
+const git = (dir, args, timeout = GIT_TIMEOUT) => execFileSync('git', ['-C', dir, ...args],
   { encoding: 'utf8', timeout, stdio: ['ignore', 'pipe', 'ignore'] }).trim();
 const gitOk = (dir, args) => { try { git(dir, args); return true; } catch { return false; } };
 const out = (o) => { process.stdout.write(JSON.stringify(o)); process.exit(0); };
@@ -91,13 +97,33 @@ const landing = (dir) => ({
 // from the main checkout (docs/git-workflow.md). tools/worktree-done.sh deletes the worktree's clones.
 // Same design as claude_business's worktree-guard.js (its PR 33).
 const PACKAGE_DIRS = ['node_modules', 'widget-src/node_modules', 'packages/health-core/node_modules'];
-function linkPackages() {
+// A clone's links, fixed after the copy. Each is read as it resolved in the main checkout: one into the copied
+// folder itself is kept when relative (`.bin` entries) and dropped when absolute (main's stray
+// `node_modules/node_modules` self-links, left by an old `ln -s`, would load a second React from the main
+// checkout); one elsewhere in the main checkout (the npm workspace links @roadmap/health-core and
+// health-tool-widget) is re-pointed at the same path in this worktree, so imports resolve to its own source.
+function fixCloneLinks(tmp, src) {
+  const links = execFileSync('find', [tmp, '-type', 'l', '-print0'], { encoding: 'utf8', timeout: 60000, maxBuffer: 64 << 20 })
+    .split('\0').filter(Boolean);
+  for (const l of links) {
+    const to = fs.readlinkSync(l);
+    const was = path.resolve(path.dirname(path.join(src, path.relative(tmp, l))), to);
+    if (under(was, src)) { if (path.isAbsolute(to)) fs.unlinkSync(l); continue; }
+    if (!under(was, main)) continue;
+    fs.unlinkSync(l);
+    fs.symlinkSync(path.join(top, was.slice(main.length + 1)), l);
+  }
+}
+// `create`: give a missing folder a clone (session worktrees under .claude/worktrees/). Elsewhere (an older
+// ../roadmap-* worktree) only an old link into the main checkout is swapped for a clone.
+function linkPackages(create) {
   const mine = pkgCacheDir(top);
   for (const rel of PACKAGE_DIRS) {
     const src = path.join(main, rel), dst = path.join(top, rel), clone = path.join(mine, rel);
     let st = null;
     try { st = fs.lstatSync(dst); } catch { /* absent */ }
     if (st && !st.isSymbolicLink()) continue; // the worktree's own real folder
+    if (!st && !create) continue;
     if (st) {
       let to;
       try { to = fs.readlinkSync(dst); } catch { continue; } // changed under us: leave it this call
@@ -119,9 +145,7 @@ function linkPackages() {
         const copy = (args) => execFileSync('cp', [...args, src, tmp], { stdio: 'ignore', timeout: 240000 });
         if (process.platform === 'darwin') copy(['-cR']);
         else try { copy(['-a', '--reflink=auto']); } catch { fs.rmSync(tmp, { recursive: true, force: true }); copy(['-a']); }
-        // A link back into the main checkout (main's stray `node_modules/node_modules` self-links, left by an old
-        // `ln -s`) would load a second React from there: drop it, so the clone resolves only inside itself.
-        execFileSync('find', [tmp, '-type', 'l', '-lname', main + '/*', '-delete'], { stdio: 'ignore', timeout: 60000 });
+        fixCloneLinks(tmp, src);
         try { fs.renameSync(tmp, clone); } catch { /* raced: theirs wins */ }
       }
       fs.symlinkSync(clone, dst, 'dir');
@@ -130,7 +154,14 @@ function linkPackages() {
   }
 }
 
-if (event === 'PreToolUse' && input.tool_name === 'Bash') { if (inWorktree) linkPackages(); process.exit(0); }
+if (event === 'PreToolUse' && input.tool_name === 'Bash') {
+  if (!inWorktree) process.exit(0);
+  // Only a registered worktree of this repo (top is its own git top level by construction).
+  let listed = [];
+  try { listed = git(main, ['worktree', 'list', '--porcelain']).split('\n').filter((l) => l.startsWith('worktree ')).map((l) => real(l.slice(9))); } catch { /* none */ }
+  if (listed.some((w) => same(w, top))) linkPackages(under(top, path.join(main, '.claude', 'worktrees')));
+  process.exit(0);
+}
 
 if (event === 'PreToolUse') {
   const ti = input.tool_input || {};
@@ -161,11 +192,11 @@ if (event === 'Stop') {
     if (s.localOnly !== '0') problems.push(`${s.localOnly} commit(s) on ${branch} are not pushed`);
     // Nothing ahead of the last-fetched origin/main means nothing to land; otherwise fetch (a GitHub-side merge).
     if (!problems.length && s.ahead() !== '0') {
-      try { git(top, ['fetch', '-q', 'origin', 'main'], 15000); } catch { /* offline: count against the last fetch */ }
+      try { git(top, ['fetch', '-q', 'origin', 'main'], 8000); } catch { /* offline: count against the last fetch */ }
       const ahead = s.ahead();
       if (ahead !== '0') {
         const prs = execFileSync('gh', ['pr', 'list', '--head', branch, '--state', 'open', '--json', 'number', '--jq', 'length'],
-          { cwd: top, encoding: 'utf8', timeout: 15000, stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+          { cwd: top, encoding: 'utf8', timeout: 8000, stdio: ['ignore', 'pipe', 'ignore'] }).trim();
         if (prs === '0') problems.push(`${branch} has ${ahead} commit(s) not on origin/main and no open PR`);
       }
     }
@@ -197,12 +228,19 @@ if (event === 'SessionStart') {
     } catch { /* one unreadable worktree must not hide the rest */ }
   }
   // Delete package clones whose worktree is gone (removed by ExitWorktree, git worktree remove, agent isolation).
+  // Each is first renamed to a `.deleting-` name (atomic, so it never sits half-deleted under its own name without
+  // its .owner), then deleted by a detached process, so a big tree never runs this hook past its timeout. A
+  // `.deleting-` folder left by an earlier run is deleted again.
+  const purge = (dir) => { try { spawn('rm', ['-rf', dir], { detached: true, stdio: 'ignore' }).unref(); } catch { /* next session */ } };
   try {
     for (const d of fs.readdirSync(PKG_CACHE)) {
       const dir = path.join(PKG_CACHE, d);
+      if (d.includes('.deleting-')) { purge(dir); continue; }
       let owner = null;
       try { owner = fs.readFileSync(path.join(dir, '.owner'), 'utf8').trim(); } catch { continue; } // mid-clone or not ours
-      if (owner && !fs.existsSync(path.join(owner, '.git'))) fs.rmSync(dir, { recursive: true, force: true });
+      if (!owner || fs.existsSync(path.join(owner, '.git'))) continue;
+      const doomed = `${dir}.deleting-${process.pid}`;
+      try { fs.renameSync(dir, doomed); purge(doomed); } catch { /* raced */ }
     }
   } catch { /* no cache yet */ }
   try {

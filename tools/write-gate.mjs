@@ -2,14 +2,15 @@
  * write-gate.mjs — live writes run merged code only (Brad 2026-11-01; docs/git-workflow.md § Exceptions).
  *
  * A live write (a Shopify page or article PUT, a production Supabase write, a staged Fly secret) runs only from
- * the main checkout, or from a session worktree of it whose HEAD is exactly origin/main with no tracked change.
+ * the main checkout or a session worktree of it, and only when that checkout's HEAD is exactly origin/main with
+ * no tracked change (none hidden by skip-worktree or assume-unchanged).
  * A session worktree's own unmerged tool or content changes never run live. Checked TWICE: the tool's own
  * location (realpath of tools/..) and the invoking checkout (realpath of process.cwd() and its git top level), so
  * a scratch folder whose tools/ links to the real one is refused too.
  *
  * Ported from claude_business tools/write-gate.js, its checkout check only: this repo's live writes take no
- * --authorised-by record, so that half has no caller here. The main checkout is trusted as it is, so
- * `git pull --ff-only` there first.
+ * --authorised-by record, so that half has no caller here. Unlike claude_business's copy, the main checkout is
+ * held to the same test (PR 415 review): `git pull --ff-only` there first, and land or set aside its edits.
  *
  * No I/O at import time: safe to load from tests.
  */
@@ -46,6 +47,11 @@ export function mergedWorktreeProblem(dir, roots, git = gitIn) {
   const listed = (git(root, ['worktree', 'list', '--porcelain']) || '').split('\n')
     .filter((l) => l.startsWith('worktree ')).map((l) => realpathOrSelf(l.slice(9)));
   if (!listed.includes(real)) return 'not a registered worktree of the canonical repo';
+  return mergedCodeProblem(real, git);
+}
+
+/** Null when the checkout at `real` is exactly refs/remotes/origin/main with no tracked change, hidden or not. */
+export function mergedCodeProblem(real, git = gitIn) {
   const head = git(real, ['rev-parse', '--verify', '-q', 'HEAD^{commit}']);
   if (!head || head !== git(real, ['rev-parse', '--verify', '-q', 'refs/remotes/origin/main^{commit}'])) return 'its HEAD is not exactly origin/main (merge your PR, then `git merge --ff-only origin/main`)';
   const status = git(real, ['status', '--porcelain', '--untracked-files=no']);
@@ -66,15 +72,17 @@ export function checkCanonicalRoot(opts = {}) {
   const roots = allowed.map(realpathOrSelf);
   const git = opts.git || gitIn;
   const repoRoot = opts.repoRoot || REPO_ROOT;
-  const isCanon = (p) => !!p && (roots.includes(realpathOrSelf(p)) || !mergedWorktreeProblem(p, roots, git));
+  const why = (p) => (roots.includes(realpathOrSelf(p)) ? mergedCodeProblem(realpathOrSelf(p), git)
+    : mergedWorktreeProblem(p, roots, git));
+  const isCanon = (p) => !!p && !why(p);
   if (!isCanon(repoRoot)) {
-    const why = mergedWorktreeProblem(repoRoot, roots, git);
-    return `live writes run only from the main checkout (${allowed.join(' or ')}) or a session worktree of it at exactly origin/main; this tool copy is at ${realpathOrSelf(repoRoot)}${why === 'not a canonical session worktree' ? '' : ` (${why})`}`;
+    const problem = why(repoRoot);
+    return `live writes run only from the main checkout (${allowed.join(' or ')}) or a session worktree of it at exactly origin/main; this tool copy is at ${realpathOrSelf(repoRoot)}${problem === 'not a canonical session worktree' ? '' : ` (${problem})`}`;
   }
   const cwd = realpathOrSelf(opts.cwd || process.cwd());
   const top = git(cwd, ['rev-parse', '--show-toplevel']);
   if (!top) return `live writes must be invoked from inside the main checkout; cwd ${cwd} is not in a git checkout`;
-  if (!isCanon(top)) return `live writes must be invoked from the main checkout or a merged session worktree; cwd ${cwd} belongs to ${realpathOrSelf(top)}`;
+  if (!isCanon(top)) return `live writes must be invoked from the main checkout or a session worktree at exactly origin/main; cwd ${cwd} belongs to ${realpathOrSelf(top)} (${why(top)})`;
   return null;
 }
 

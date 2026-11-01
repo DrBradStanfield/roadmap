@@ -28,6 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      # tests/stale-prs.test.ts runs this script with a stub GitHub client (48 h; a draft 7 days).
       - uses: actions/github-script@v7
         with:
           script: |
