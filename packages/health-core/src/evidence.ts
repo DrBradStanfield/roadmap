@@ -100,6 +100,9 @@ const WEIGHT_MED_TRIGGER_NOTE = '\n\nThis plan raises these medications earlier 
 const REFS_SGLT2I: SuggestionReference[] = [
   { label: 'Zinman 2015 – EMPA-REG OUTCOME: empagliflozin CV outcomes (NEJM)', url: 'https://doi.org/10.1056/NEJMoa1504720' },
   { label: 'McMurray 2019 – DAPA-HF: dapagliflozin in heart failure (NEJM)', url: 'https://doi.org/10.1056/NEJMoa1911303' },
+  { label: 'Heerspink 2020 – DAPA-CKD: dapagliflozin in chronic kidney disease (NEJM)', url: 'https://doi.org/10.1056/NEJMoa2024816' },
+  { label: 'Vaduganathan 2022 – SGLT2 inhibitors in heart failure: meta-analysis of five trials (Lancet)', url: 'https://doi.org/10.1016/S0140-6736(22)01429-5' },
+  { label: 'Neuen 2025 – SMART-C: SGLT2 inhibitors and kidney outcomes by GFR and albuminuria (JAMA)', url: 'https://doi.org/10.1001/jama.2025.20834' },
 ];
 
 const REFS_BP_TRIALS: SuggestionReference[] = [
@@ -263,7 +266,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'weight-med-sglt2i': {
-    reason: 'SGLT2 inhibitors (empagliflozin, dapagliflozin) work by a different mechanism to GLP-1 medications — they cause the kidneys to excrete excess glucose. Beyond modest weight loss, they provide proven cardiovascular and kidney protection, making them a valuable addition for metabolic health.',
+    reason: 'SGLT2 inhibitors (empagliflozin, dapagliflozin) work by a different mechanism to GLP-1 medications — they cause the kidneys to excrete excess glucose. Beyond modest weight loss, they provide proven cardiovascular and kidney protection in some populations, making them a valuable addition for metabolic health.',
     guidelines: [],
     references: REFS_SGLT2I,
   },
@@ -687,6 +690,7 @@ const REFS_BMI: SuggestionReference[] = [
 
 const REFS_EGFR: SuggestionReference[] = [
   { label: 'Inker 2021 – CKD-EPI 2021 race-free eGFR equation (NEJM)', url: 'https://doi.org/10.1056/NEJMoa2102953' },
+  { label: 'KDIGO 2024 – Clinical practice guideline for CKD: GFR categories (Kidney Int)', url: 'https://doi.org/10.1016/j.kint.2023.10.018' },
 ];
 
 const REFS_IBW: SuggestionReference[] = [
@@ -754,7 +758,7 @@ export const STAT_CARD_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'egfr': {
-    reason: 'Estimated glomerular filtration rate (eGFR) measures kidney function. The plan uses the eGFR printed on your lab report when it is from your latest test; otherwise it calculates one with the CKD-EPI 2021 equation (race-free) from your creatinine, age, and sex. CKD staging: ≥70 Normal, 60-69 Low Normal, 45-59 Mildly Decreased (Stage 3a), 30-44 Moderately Decreased (Stage 3b), 15-29 Severely Decreased (Stage 4), <15 Kidney Failure (Stage 5). An eGFR below 60 sustained for 3+ months is consistent with chronic kidney disease.',
+    reason: 'Estimated glomerular filtration rate (eGFR) measures kidney function. The plan uses the eGFR printed on your lab report when it is from your latest test; otherwise it calculates one with the CKD-EPI 2021 equation (race-free) from your creatinine, age, and sex. Bands: ≥70 Normal, 60-69 Low Normal, 45-59 Mildly to Moderately Decreased (KDIGO G3a), 30-44 Moderately to Severely Decreased (G3b), 15-29 Severely Decreased (G4), <15 Kidney Failure (G5). The two bands from 60 up are this tool\'s own: KDIGO 2024 calls 60-89 mildly decreased (G2). An eGFR below 60 sustained for 3+ months is consistent with chronic kidney disease.',
     guidelines: ['KDIGO'],
     references: REFS_EGFR,
   },
@@ -795,7 +799,7 @@ export function getIbwEvidence(sex: 'male' | 'female'): SuggestionEvidence {
   const bmiTarget = sex === 'male' ? 24 : 22;
   const range = sex === 'male' ? '23-26' : '20-23';
   return {
-    reason: `Ideal Body Weight is calculated using the Peterson formula (2016): IBW = 2.2 × BMI_target + 3.5 × BMI_target × (height_m − 1.5). The target BMI is ${bmiTarget} for ${sex}s, derived from large mortality meta-analyses showing this BMI is associated with the lowest all-cause mortality (optimal range: ${range}). Unlike the older Devine formula (1974), the Peterson formula accounts for both sex and height, producing more physiologically accurate estimates.`,
+    reason: `Ideal Body Weight is calculated using the Peterson formula (2016): IBW = 2.2 × BMI_target + 3.5 × BMI_target × (height_m − 1.5). The target BMI is ${bmiTarget} for ${sex}s, derived from large mortality meta-analyses showing this BMI is associated with the lowest all-cause mortality (optimal range: ${range}). Unlike older formulas such as Devine (1974), which over- or underestimate at the short and tall ends, the Peterson formula follows BMI at every height. The app sets a different target BMI for men and women.`,
     guidelines: [],
     references: REFS_IBW,
   };
