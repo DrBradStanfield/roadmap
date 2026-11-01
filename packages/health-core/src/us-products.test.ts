@@ -60,6 +60,9 @@ describe('US-61 AC1: the two new supplement cards, in every market', () => {
     const text = `${plan(adult).suggestions.find((s) => s.id === 'supplement-lutein-zeaxanthin')!.description} ${SUGGESTION_EVIDENCE['supplement-lutein-zeaxanthin'].reason}`;
     expect(text).not.toMatch(/did not (significantly )?slow/i);
     expect(SUGGESTION_EVIDENCE['supplement-tmg'].reason).not.toMatch(/dementia|alzheimer/i);
+    // Brad 2026-11-01: no cholesterol line and no dose caveat for TMG.
+    expect(SUGGESTION_EVIDENCE['supplement-tmg'].reason).not.toMatch(/cholesterol/i);
+    expect(US_PRODUCT_LINES['supplement-tmg'].line).toBe('MicroVitamin+ contains 500 mg of TMG.');
     expect(SUGGESTION_EVIDENCE['supplement-lutein-zeaxanthin'].reason).toContain('slowed progression in people with intermediate macular degeneration, or advanced disease in one eye');
   });
 
