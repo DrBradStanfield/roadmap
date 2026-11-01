@@ -20,7 +20,7 @@ import { cutText } from './chat-history';
 import { parseLocalisedNumber } from './parseNumber';
 import { DOCUMENT_TYPES, METRIC_TYPES } from './validation';
 import { isCalendarDay } from './measurement-history';
-import { COMPARATORS, readPrintedLimit, uploadLimitUngraded, type Comparator } from './lab-limits';
+import { COMPARATORS, comparatorOf, readPrintedLimit, uploadLimitUngraded, type Comparator } from './lab-limits';
 import { METRIC_TO_FIELD } from './mappings';
 
 // ---------------------------------------------------------------------------
@@ -353,7 +353,7 @@ export function resolveLabValues(rawValues: Array<{ metric: string; value: numbe
       ...(v.recordedAt ? { recordedAt: v.recordedAt } : null),
       ...(v.printedMonth ? { printedMonth: v.printedMonth } : null),
       ...(!confident ? { unitGuessed: true as const } : null),
-      ...(v.comparator ? { comparator: v.comparator } : null),
+      ...comparatorOf(v),
     });
   }
   return values;

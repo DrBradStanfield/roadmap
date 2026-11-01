@@ -21,8 +21,8 @@ import type { MetricType } from '../../packages/health-core/src/units';
 import { BLOOD_PRESSURE, pressureHistory } from './blood-pressure';
 import { cellUnitFor, systemFor, type UnitChoices } from './unit-choices';
 import type { EditOutcome } from './my-data';
-import { cellDecimalPlaces, cellFromSI, cellLabel, cellText, type CellUnit } from '../../packages/health-core/src/cell-unit';
-import { LIMIT_NOT_GRADED, isComparator, limitOf, limitText, type Comparator } from '../../packages/health-core/src/lab-limits';
+import { cellFromSI, cellLabel, limitCellText, type CellUnit } from '../../packages/health-core/src/cell-unit';
+import { LIMIT_NOT_GRADED, comparatorOf, isComparator, limitOf, type Comparator } from '../../packages/health-core/src/lab-limits';
 import { medicationAnnotations, medicationChanges } from '../../packages/health-core/src/medication-annotations';
 
 /** A supplement as the tab lists it. */
@@ -283,9 +283,7 @@ export function applyFormEdit(file: RoadmapFile, edit: Exclude<FormEdit, { kind:
  */
 /** A stored value as its cell shows it: a limit with its symbol, at places that keep it true (US-12 AC20). */
 export function rowText(metric: MetricType, row: { value: number; comparator?: Comparator }, unit: CellUnit): string {
-  return isComparator(row.comparator)
-    ? limitText(cellFromSI(metric, row.value, unit), cellDecimalPlaces(metric, unit), row.comparator)
-    : cellText(metric, row.value, unit);
+  return limitCellText(metric, row.value, unit, comparatorOf(row).comparator);
 }
 
 export function metricHistory(file: RoadmapFile, metric: string, now = new Date().toISOString(), choices: UnitChoices = {}): MetricHistory {

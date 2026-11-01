@@ -444,7 +444,11 @@ export function measurementsToInputs(
   let inputs: Partial<HealthInputs> = {};
   for (const m of measurements) {
     const field = METRIC_TO_FIELD[m.metricType];
-    if (field) inputs = withRowValue(inputs, field, m.value, m.comparator);
+    if (!field) continue;
+    // A limit, or a value over one, goes through the plan's rule (US-12 AC20);
+    // every other row is assigned in place, so the mount path stays O(rows).
+    if (m.comparator || limitOf(inputs, field)) inputs = withRowValue(inputs, field, m.value, m.comparator);
+    else (inputs as Record<string, unknown>)[field] = m.value;
   }
 
   if (profile) {

@@ -1,7 +1,7 @@
 import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota } from '../lib/upload-api';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { IMPORT_LIMITS, METRIC_LABELS, UNDATED_PREVIOUS, unreadLines, uploadLimitSignal, zipMemberName, type DocumentPayload, type UnreadLabValue, type LabUnitRefusal, type MeasurementRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
+import { IMPORT_LIMITS, METRIC_LABELS, UNDATED_PREVIOUS, unreadLines, uploadLimitSignal, zipMemberName, comparatorOf, type DocumentPayload, type UnreadLabValue, type LabUnitRefusal, type MeasurementRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
@@ -733,7 +733,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         // Set only when the reviewer ticked "Replace" on an occupied slot —
         // the store then corrects that row instead of skipping the upload.
         correctsId: v.correctsId,
-        ...(v.comparator ? { comparator: v.comparator } : null),
+        ...comparatorOf(v),
       }));
       // Blobs travel INSIDE the payload (attached at processing time, and only
       // when the backend can archive them) — no name-keyed re-join here.
@@ -760,7 +760,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         recordedAt: lv.recordedAt,
         source: 'lab_import' as const,
         correctsId: lv.correctsId,
-        ...(lv.comparator ? { comparator: lv.comparator } : null),
+        ...comparatorOf(lv),
       }));
 
       // Each branch settles before the session becomes dismissible. One

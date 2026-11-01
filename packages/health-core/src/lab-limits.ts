@@ -14,12 +14,12 @@
  */
 import type { HealthInputs } from './types';
 import {
-  UNIT_DEFS, fromCanonicalValue, type MetricType, type UnitSystem,
+  UNIT_DEFS, formatDisplayValue, fromCanonicalValue, type MetricType, type UnitSystem,
   APOB_RISK_ENHANCING, APOB_THRESHOLDS, BP_THRESHOLDS, CREATININE_GRID_BANDS, EGFR_THRESHOLDS, HBA1C_THRESHOLDS,
   HDL_GRID_BANDS, HDL_THRESHOLDS, LDL_THRESHOLDS, LIPID_TREATMENT_TARGETS, LPA_THRESHOLDS, PSA_THRESHOLDS,
   TOTAL_CHOLESTEROL_THRESHOLDS, TRIGLYCERIDES_THRESHOLDS, bpTargetFor,
 } from './units';
-import { healthInputSchema, sanitizeInputs } from './validation';
+import { fieldBounds, inRange } from './validation';
 
 /** FHIR Quantity.comparator's codes, as the file stores them. */
 export const COMPARATORS = ['<', '<=', '>', '>='] as const;
@@ -30,9 +30,17 @@ export const isComparator = (v: unknown): v is Comparator => (COMPARATORS as rea
 /** How each code prints: ≤ and ≥ in display only, never in the file. */
 const SYMBOLS: Record<Comparator, string> = { '<': '<', '<=': '≤', '>': '>', '>=': '≥' };
 
+/** A code's symbol alone: "<", "≤". */
+export const comparatorSymbol = (comparator: Comparator): string => SYMBOLS[comparator];
+
 /** A displayed value with its limit's symbol: "> 60", "≤ 5". The text alone when there is none. */
 export function withComparator(text: string, comparator?: Comparator | null): string {
   return comparator ? `${SYMBOLS[comparator]} ${text}` : text;
+}
+
+/** A row's limit code, to spread into the row or shape it becomes: `{ comparator }` for one of the four codes, else `{}`. */
+export function comparatorOf(row: { comparator?: unknown } | null | undefined): { comparator?: Comparator } {
+  return isComparator(row?.comparator) ? { comparator: row.comparator } : {};
 }
 
 /**
@@ -59,6 +67,11 @@ export function limitNumber(displayed: number, dp: number, comparator: Comparato
 /** A core metric's limit in a unit system, as `formatDisplayValue` shows an exact value. */
 export function formatLimit(metric: MetricType, limit: Pick<InputLimit, 'comparator' | 'bound'>, system: UnitSystem): string {
   return limitText(fromCanonicalValue(metric, limit.bound, system), UNIT_DEFS[metric].decimalPlaces[system], limit.comparator);
+}
+
+/** A core value as every surface shows it: a limit with its symbol, rounded away from its band; else `formatDisplayValue`. */
+export function formatValue(metric: MetricType, value: number, system: UnitSystem, comparator?: Comparator | null): string {
+  return comparator ? formatLimit(metric, { comparator, bound: value }, system) : formatDisplayValue(metric, value, system);
 }
 
 /** What a report's symbol is in the file's code. */
@@ -130,14 +143,27 @@ export const LIMIT_LABEL_CUTOFFS: Readonly<Record<LimitField, readonly number[]>
 
 export const isLimitField = (field: string): field is LimitField => Object.prototype.hasOwnProperty.call(LIMIT_CUTOFFS, field);
 
+/** Each input's SI display places, for a limit said in SI (agents, the chat, the eGFR and Lp(a) tiles). */
+const SI_PLACES: Readonly<Record<LimitField, number>> = {
+  hba1c: UNIT_DEFS.hba1c.decimalPlaces.si, ldlC: UNIT_DEFS.ldl.decimalPlaces.si, totalCholesterol: UNIT_DEFS.total_cholesterol.decimalPlaces.si,
+  hdlC: UNIT_DEFS.hdl.decimalPlaces.si, triglycerides: UNIT_DEFS.triglycerides.decimalPlaces.si, apoB: UNIT_DEFS.apob.decimalPlaces.si,
+  creatinine: UNIT_DEFS.creatinine.decimalPlaces.si, psa: UNIT_DEFS.psa.decimalPlaces.si, lpa: UNIT_DEFS.lpa.decimalPlaces.si,
+  systolicBp: UNIT_DEFS.systolic_bp.decimalPlaces.si, diastolicBp: UNIT_DEFS.diastolic_bp.decimalPlaces.si, labEgfr: 0,
+};
+
+/** A limit as printed in its input's SI unit, "> 1.5", rounded away from its band: never a float's raw digits. */
+export function limitSIText(field: LimitField, limit: Pick<InputLimit, 'comparator' | 'bound'>): string {
+  return limitText(limit.bound, SI_PLACES[field], limit.comparator);
+}
+
 /**
- * Whether a limit decides against every cutoff of `field`: `< b` when every
- * cutoff is at or above b; `<= b` when every one is above b; `> b` when every
- * one is at or below b; `>= b` when every one is below b. One list for
- * everyone, never per sex: conservative on purpose.
+ * The plan's eGFR as an agent or the chat reads it: a lab eGFR printed as a
+ * limit as printed ("> 90"), never the representative; else the number. A
+ * known minor's adult reading is withheld either way (`adult` absent).
  */
-export function limitDecides(field: LimitField, comparator: Comparator, bound: number): boolean {
-  return bandDecides(LIMIT_CUTOFFS[field], comparator, bound);
+export function egfrAsPrinted(inputs: Pick<Partial<HealthInputs>, 'limits'>, adult: { eGFR?: number } | null | undefined): number | string | undefined {
+  const limit = inputs.limits?.labEgfr;
+  return limit ? (adult ? limitSIText('labEgfr', limit) : undefined) : adult?.eGFR;
 }
 
 /**
@@ -150,7 +176,13 @@ export function limitLabelValue(field: LimitField, comparator: Comparator, bound
   return value !== null && bandDecides(LIMIT_LABEL_CUTOFFS[field], comparator, bound) ? value : null;
 }
 
-/** The same rule against any list of cutoffs: a non-core lab's own reference range, say. */
+/**
+ * Whether a limit decides against every cutoff in a list (an input's lines,
+ * or a non-core lab's reference range): `< b` when every cutoff is at or
+ * above b; `<= b` when every one is above b; `> b` when every one is at or
+ * below b; `>= b` when every one is below b. The same lists for everyone,
+ * never per sex: conservative on purpose.
+ */
 export function bandDecides(cutoffs: readonly number[], comparator: Comparator, bound: number): boolean {
   switch (comparator) {
     case '<': return cutoffs.every((c) => c >= bound);
@@ -172,12 +204,6 @@ export function referenceGradeValue(limit: Pick<InputLimit, 'comparator' | 'boun
   return limit.comparator === '<' || limit.comparator === '<=' ? limit.bound - step : limit.bound + step;
 }
 
-/** The schema's own bounds for a field (`minValue`, `maxValue` of its number). */
-function schemaBounds(field: LimitField): { min: number; max: number } {
-  const schema = (healthInputSchema.shape[field] as unknown as { unwrap(): { minValue: number | null; maxValue: number | null } }).unwrap();
-  return { min: schema.minValue ?? 0, max: schema.maxValue ?? 0 };
-}
-
 /**
  * The value the plan grades a limit with: strictly inside the band the limit
  * leaves open, halfway to the schema's far bound, so no rounding moves it
@@ -185,12 +211,12 @@ function schemaBounds(field: LimitField): { min: number; max: number } {
  * passes the schema: the input then has no graded value.
  */
 export function limitRepresentative(field: LimitField, comparator: Comparator, bound: number): number | null {
-  if (!Number.isFinite(bound) || !limitDecides(field, comparator, bound)) return null;
-  const { min, max } = schemaBounds(field);
+  if (!Number.isFinite(bound) || !bandDecides(LIMIT_CUTOFFS[field], comparator, bound)) return null;
+  const { min, max } = fieldBounds(field)!;
   const below = comparator === '<' || comparator === '<=';
   const value = below ? (min + bound) / 2 : (bound + max) / 2;
   const inBand = below ? value < bound : value > bound;
-  return inBand && field in sanitizeInputs({ [field]: value }) ? value : null;
+  return inBand && inRange(field, value) ? value : null;
 }
 
 /** A limit as the inputs carry it: the printed bound, its code, and whether the plan grades it. */
@@ -210,16 +236,21 @@ export type InputLimits = Partial<Record<LimitField, InputLimit>>;
  * field's old limit, if any, goes, so a typed value is never marked a limit.
  */
 export function withRowValue<T extends Partial<HealthInputs>>(inputs: T, field: keyof HealthInputs, value: number, comparator?: Comparator | null): T {
-  const { [field as LimitField]: _old, ...rest } = inputs.limits ?? {};
-  const limits = Object.keys(rest).length ? { limits: rest as InputLimits } : {};
-  const { limits: _l, [field]: _f, ...others } = inputs as Record<string, unknown>;
-  if (!comparator || !isLimitField(field)) return { ...others, ...limits, [field]: value } as T;
+  const { limits, [field]: _f, ...others } = inputs as Record<string, unknown>;
+  const rest = withoutLimit(limits as InputLimits | undefined, field);
+  if (!comparator || !isLimitField(field)) return { ...others, ...rest, [field]: value } as T;
   const representative = limitRepresentative(field, comparator, value);
   return {
     ...others,
     ...(representative === null ? {} : { [field]: representative }),
-    limits: { ...rest, [field]: { comparator, bound: value, graded: representative !== null } },
+    limits: { ...rest.limits, [field]: { comparator, bound: value, graded: representative !== null } },
   } as T;
+}
+
+/** `{ limits }` without `field`'s, or `{}` when none is left: spread over inputs that drop the key. */
+export function withoutLimit(limits: InputLimits | undefined, field: string): { limits?: InputLimits } {
+  const { [field as LimitField]: _dropped, ...rest } = limits ?? {};
+  return Object.keys(rest).length ? { limits: rest } : {};
 }
 
 /** The field's limit, if it holds one. */

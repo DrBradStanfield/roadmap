@@ -20,7 +20,7 @@ import {
   LIMIT_NOT_GRADED,
   type Comparator,
 } from '@roadmap/health-core';
-import { limitUngraded, savedCellText, savedLabText, savedStatus, type Status } from '../lib/blood-test-cell';
+import { limitUngraded, savedCellText, savedLabText, savedStatus, trendGeometry, type Status } from '../lib/blood-test-cell';
 import { monthYear, pressureReadings, readingsOf, recentTrend, type DayReading } from '../lib/my-data-rows';
 import { groupLabValues } from '../lib/lab-rows';
 import { bpStatus, simpleStatus } from './StartingInfoVitals';
@@ -181,19 +181,8 @@ function labRows(labValues: ApiLabValue[]): RowModel[] {
 export function RowTrend({ points, limits, tint, width = 44, height = 18 }: { points: number[]; limits?: boolean[]; tint: string; width?: number; height?: number }) {
   const fill = `md-fill${useId().replace(/:/g, '')}`; // one gradient per row
   if (points.length < 2) return <span className="md-row-trend" aria-hidden="true">{' '}</span>;
-  const low = Math.min(...points), high = Math.max(...points);
-  const span = high - low || 1;
-  const pad = 2;
-  const spot = (v: number, i: number) => [
-    pad + (i / (points.length - 1)) * (width - pad * 2),
-    height - pad - ((v - low) / span) * (height - pad * 2),
-  ] as const;
-  const coords = points.map(spot);
-  const exact = coords.filter((_, i) => !limits?.[i]);
-  const line = exact.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const { coords, exact, line, area } = trendGeometry(points, limits, width, height, height);
   const [lastX, lastY] = coords[coords.length - 1];
-  const area = exact.length >= 2
-    ? `${line} L${exact[exact.length - 1][0].toFixed(1)},${height} L${exact[0][0].toFixed(1)},${height} Z` : null;
   const lastLimit = !!limits?.[coords.length - 1];
   return (
     <svg className="md-row-trend" width={width} height={height} aria-hidden="true" focusable="false">

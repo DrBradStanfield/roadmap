@@ -149,6 +149,22 @@ function isInputFieldValid(key: string, value: unknown): boolean {
   return !Object.prototype.hasOwnProperty.call(shape, key) || shape[key].safeParse(value).success;
 }
 
+/** A value the input schema accepts for `field` (an unknown field passes), as `sanitizeInputs` keeps it. */
+export const inRange = (field: string, value: unknown): boolean => isInputFieldValid(field, value);
+
+/** Each numeric input's schema bounds (`minValue`, `maxValue`), read once from the schema. */
+const FIELD_BOUNDS: Readonly<Record<string, { min: number; max: number }>> = Object.fromEntries(
+  Object.entries(healthInputSchema.shape).flatMap(([field, schema]) => {
+    const inner = (schema instanceof z.ZodOptional ? schema.unwrap() : schema) as unknown;
+    return inner instanceof z.ZodNumber ? [[field, { min: inner.minValue ?? -Infinity, max: inner.maxValue ?? Infinity }]] : [];
+  }),
+);
+
+/** A numeric input's schema bounds, or undefined for a field that is not a number. */
+export function fieldBounds(field: string): { min: number; max: number } | undefined {
+  return Object.prototype.hasOwnProperty.call(FIELD_BOUNDS, field) ? FIELD_BOUNDS[field] : undefined;
+}
+
 /**
  * Sanitize inputs against the Zod schema (single source of truth).
  * Validates each field individually — invalid fields are stripped,

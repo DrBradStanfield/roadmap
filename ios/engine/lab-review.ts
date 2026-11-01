@@ -9,7 +9,7 @@ import { documentView, pendingRowsFor } from '../../packages/health-core/src/doc
 import { unreadLines, type AdditionalLabValue, type DocumentResult, type ExtractedValue, type RefusedLabValue, type UnreadLabValue } from '../../packages/health-core/src/lab-extraction';
 import { labTestLabel } from '../../packages/health-core/src/lab-catalog';
 import { isReadableRow } from '../../packages/health-core/src/readable-rows';
-import { withComparator } from '../../packages/health-core/src/lab-limits';
+import { comparatorOf, withComparator } from '../../packages/health-core/src/lab-limits';
 
 /** The server's answer (`data` of POST /api/app/v1/lab-import). */
 export interface Extraction {
@@ -132,7 +132,6 @@ export function labReview(extraction: Extraction, now: string, file: RoadmapFile
 }
 
 /** A value printed as a limit keeps its code on the row it becomes (US-12 AC20). */
-const limit = (value: Pick<ExtractedValue, 'comparator'>) => (value.comparator ? { comparator: value.comparator } : {});
 
 export type LabRowsResult = { ok: true; rows: BulkRow[] } | { ok: false; reason: string; message: string };
 
@@ -158,12 +157,12 @@ export function labRows(extraction: Extraction, refs: string[], reportDay: strin
         : { ok: false, reason: 'invalid-date', message: 'Pick the day of the test: a real day, today or before.' };
     }
     if (core) {
-      rows.push({ kind: 'measurement', metricType: core.metric, value: core.valueSI, recordedAt: day, source: 'lab_import', ...limit(core) });
+      rows.push({ kind: 'measurement', metricType: core.metric, value: core.valueSI, recordedAt: day, source: 'lab_import', ...comparatorOf(core) });
     } else if (extra) {
       rows.push({
         kind: 'lab', metricName: extra.name, value: extra.value, unit: extra.unit,
         referenceLow: extra.referenceLow ?? null, referenceHigh: extra.referenceHigh ?? null,
-        recordedAt: day, source: 'lab_import', ...limit(extra),
+        recordedAt: day, source: 'lab_import', ...comparatorOf(extra),
       });
     }
   }

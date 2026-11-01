@@ -21,6 +21,7 @@ import {
   isCalendarDay,
   UNDATED_PREVIOUS,
   withComparator,
+  comparatorOf,
   type Comparator,
   type LabQuantity,
 } from '@roadmap/health-core';
@@ -419,7 +420,7 @@ export function buildMatrixModel(
     const display = UNIT_DEFS[metric]
       ? cellNumber(metric, m.value, displayFor(metric), m.comparator)
       : String(m.value);
-    cells.set(`${metric}|${dateKey}`, { state: 'context', id: m.id, displayValue: withComparator(display, m.comparator), valueSI: m.value, ...(m.comparator ? { comparator: m.comparator } : {}) });
+    cells.set(`${metric}|${dateKey}`, { state: 'context', id: m.id, displayValue: withComparator(display, m.comparator), valueSI: m.value, ...comparatorOf(m) });
   }
   for (const lv of labValueHistory) {
     const dateKey = lv.recordedAt.slice(0, 10);
@@ -440,7 +441,7 @@ export function buildMatrixModel(
     }
     cells.set(`${nameKey}|${dateKey}`, {
       state: 'context', id: lv.id, displayValue: withComparator(String(lv.value), lv.comparator),
-      lab: { name: lv.metricName, value: lv.value, unit: lv.unit, ...(lv.comparator ? { comparator: lv.comparator } : {}) },
+      lab: { name: lv.metricName, value: lv.value, unit: lv.unit, ...comparatorOf(lv) },
       displayUnit: labUnitText({ name: lv.metricName, unit: lv.unit }),
     });
   }
@@ -510,7 +511,7 @@ export function buildMatrixModel(
       const initialDisplay = UNIT_DEFS[metric]
         ? cellNumber(metric, v.valueSI, displayFor(metric), v.comparator)
         : String(v.displayValue);
-      const existing = place(slot, cellKey, rank, withComparator(initialDisplay, v.comparator), { valueSI: v.valueSI, ...(v.comparator ? { comparator: v.comparator } : {}) }, !!touched?.has(valueId(fi, 'core', vi)), METRIC_LABELS[metric] || metric);
+      const existing = place(slot, cellKey, rank, withComparator(initialDisplay, v.comparator), { valueSI: v.valueSI, ...comparatorOf(v) }, !!touched?.has(valueId(fi, 'core', vi)), METRIC_LABELS[metric] || metric);
       if (existing === null) return;
       cells.set(cellKey, {
         state: 'editable', kind: 'core', fi, vi,
@@ -524,7 +525,7 @@ export function buildMatrixModel(
         valueSI: v.valueSI,
         displayUnit: v.displayUnit,
         existing,
-        ...(v.comparator ? { comparator: v.comparator } : {}),
+        ...comparatorOf(v),
       });
     });
 
@@ -548,7 +549,7 @@ export function buildMatrixModel(
       }
       const cellKey = `${nameKey}|${dateKey}`;
       const slot = slotFor(nameKey, av, dateKey);
-      const lab = { name: av.name, value: av.value, unit: av.unit, ...(av.comparator ? { comparator: av.comparator } : {}) };
+      const lab = { name: av.name, value: av.value, unit: av.unit, ...comparatorOf(av) };
       const existing = place(slot, cellKey, rank, withComparator(String(av.value), av.comparator), { lab }, !!touched?.has(valueId(fi, 'additional', ai)), labValueLabel(av.name));
       if (existing === null) return;
       cells.set(cellKey, {
@@ -562,7 +563,7 @@ export function buildMatrixModel(
         referenceLow: av.referenceLow,
         referenceHigh: av.referenceHigh,
         existing,
-        ...(av.comparator ? { comparator: av.comparator } : {}),
+        ...comparatorOf(av),
       });
     });
   });

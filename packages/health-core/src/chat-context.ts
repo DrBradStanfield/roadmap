@@ -77,7 +77,7 @@ import {
 } from './measurement-history';
 import { calculateAge, calculateHealthResults, knownMinorOf, missingPlanInputs } from './calculations';
 import { parseLocalisedNumber } from './parseNumber';
-import { isComparator, isLimitField, limitOf, withComparator, withRowValue, type Comparator, type LimitField } from './lab-limits';
+import { comparatorOf, egfrAsPrinted, isComparator, isLimitField, limitOf, limitSIText, withRowValue, type Comparator, type LimitField } from './lab-limits';
 import { localDay } from './merge';
 
 /** What a client sends as the chat's context. A row carries only the fields
@@ -233,7 +233,7 @@ export function buildChatContextJson(payload: unknown): string | null {
   for (const field of LONGITUDINAL_FIELDS) {
     const limit = limitOf(inputs, field);
     // A limit reads as printed, in SI, never as the plan's representative (US-12 AC20).
-    if (limit) latestValues[field] = withComparator(String(limit.bound), limit.comparator);
+    if (limit) latestValues[field] = limitSIText(field as LimitField, limit);
     else if (inputs[field] !== undefined && inputs[field] !== null) latestValues[field] = `${inputs[field]}`;
   }
   // latestValues are the values the plan above was computed from, so the model
@@ -270,7 +270,7 @@ export function buildChatContextJson(payload: unknown): string | null {
         bmiCategory: adult?.bmiCategory,
         waistToHeightRatio: results.waistToHeightRatio,
         nonHdlCholesterol: results.nonHdlCholesterol,
-        eGFR: inputs.limits?.labEgfr ? (adult ? withComparator(String(inputs.limits.labEgfr.bound), inputs.limits.labEgfr.comparator) : undefined) : adult?.eGFR,
+        eGFR: egfrAsPrinted(inputs, adult),
       },
     } : {}),
     // US-15 AC36: with no plan too, so the model asks for what the plan needs.
@@ -422,7 +422,7 @@ function historyOf(raw: unknown): MeasurementHistoryMap {
       const { date, value, comparator } = fields(entry);
       if (typeof date === 'string' && ISO_DATE.test(date) && typeof value === 'number' && shape[field].safeParse(value).success
         && (comparator === undefined || isComparator(comparator))) {
-        clean.push({ date, value, ...(comparator === undefined ? {} : { comparator: comparator as Comparator }) });
+        clean.push({ date, value, ...comparatorOf({ comparator }) });
         total++;
       }
     }

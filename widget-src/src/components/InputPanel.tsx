@@ -28,8 +28,7 @@ import {
   medicationsToInputs,
   screeningsToInputs,
   type ApiMeasurement,
-  formatLimit,
-  limitText,
+  formatValue,
   type ApiMedication,
   type ApiScreening,
   STATIN_NAMES,
@@ -540,7 +539,7 @@ export function InputPanel({
   /** A saved value as shown, a printed limit with its symbol (US-12 AC20). */
   const savedText = (field: string, m: ApiMeasurement): string => {
     const metric = FIELD_METRIC_MAP[field];
-    return metric && m.comparator ? formatLimit(metric, { comparator: m.comparator, bound: m.value }, fieldUnit(field)) : toDisplay(field, m.value);
+    return metric && m.comparator ? formatValue(metric, m.value, fieldUnit(field), m.comparator) : toDisplay(field, m.value);
   };
 
   const getPreviousPlaceholder = (field: string): string | undefined => {
@@ -1932,7 +1931,7 @@ export function InputPanel({
                     {(() => {
                       const psaMeasurement = previousMeasurements.find(m => m.metricType === 'psa');
                       const psaPreviousLabel = psaMeasurement
-                        ? `${psaMeasurement.comparator ? limitText(psaMeasurement.value, 1, psaMeasurement.comparator) : psaMeasurement.value.toFixed(1)} ng/mL · ${formatShortDate(psaMeasurement.recordedAt)}`
+                        ? `${formatValue('psa', psaMeasurement.value, 'si', psaMeasurement.comparator)} ng/mL · ${formatShortDate(psaMeasurement.recordedAt)}`
                         : null;
 
                       return (

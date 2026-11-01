@@ -45,6 +45,7 @@ import {
   savedCellText,
   savedLabText,
   savedStatus,
+  trendGeometry,
   validateTypedValue,
 } from '../lib/blood-test-cell';
 import { keepLpaAsIs, lpaRowsToCheck, useLpaUnit, type LpaCheck } from '../lib/lpa-unit';
@@ -115,20 +116,8 @@ export function Sparkline({ points, limits, width = 44, height = 18 }: { points:
       </svg>
     );
   }
-  const min = Math.min(...points), max = Math.max(...points);
-  const range = max - min || 1;
-  const pad = 2;
-  const w = width - pad * 2, h = height - pad * 2;
-  const coords = points.map((v, i) => {
-    const x = pad + (i / (points.length - 1)) * w;
-    const y = pad + h - ((v - min) / range) * h;
-    return [x, y] as const;
-  });
-  const exact = coords.filter((_, i) => !limits?.[i]);
-  const d = exact.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
   // Area path: line + drop down to baseline + back to its start, closed.
-  const areaD = exact.length >= 2
-    ? `${d} L${exact[exact.length - 1][0].toFixed(1)},${height - pad} L${exact[0][0].toFixed(1)},${height - pad} Z` : null;
+  const { coords, exact, line: d, area: areaD } = trendGeometry(points, limits, width, height, height - 2);
   return (
     <svg width={width} height={height} style={{ display: 'block' }}>
       {areaD && <path d={areaD} fill="var(--bt-ink-100)" opacity="0.7"/>}

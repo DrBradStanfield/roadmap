@@ -256,7 +256,7 @@ export { STAT_CARD_EVIDENCE, getIbwEvidence, getProteinEvidence, getBmiEvidence 
 export type { RefHint, SexedRefHint } from './reference-hints';
 export { REFERENCE_HINTS, refLineFor } from './reference-hints';
 export { type Grading, type RowTarget, type RowTargetPlan, type RowSubject, TARGET_NEEDS_HEIGHT, TARGET_NEEDS_SEX, healthyWaistBelow, rowTarget } from './row-target';
-export { type CellUnit, isLpaUnit, recordLpaUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel, cellRange } from './cell-unit';
+export { type CellUnit, isLpaUnit, recordLpaUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel, cellRange, cellNumber, limitCellText } from './cell-unit';
 
 // Sentry PII/PHI scrubbing
 export {
@@ -467,11 +467,11 @@ export {
 } from './input-form';
 
 // US-07 AC7: the lab's printed eGFR, when it is the plan's.
-export { labEgfrOf, withLabEgfr, type LabEgfr } from './plan';
+export { labEgfrFrom, labEgfrOf, withLabEgfr, type LabEgfr } from './plan';
 
 // US-25 AC22: the plan's summary tiles, the web's Quick Stats and the phone's My plan tiles.
 export { statTiles, statTileText, type StatTile, type StatTileOptions, type StatTileStatus, type StatTone } from './stat-tiles';
 export {
-  COMPARATORS, LIMIT_CUTOFFS, LIMIT_LABEL_CUTOFFS, LIMIT_NOT_GRADED, limitLabelValue, formatLimit, isComparator, isLimitField, limitDecides, limitOf, limitRepresentative,
-  limitNumber, limitText, withComparator, withRowValue, type Comparator, type InputLimit, type InputLimits, type LimitField,
+  LIMIT_NOT_GRADED, comparatorOf, comparatorSymbol, formatValue, isComparator, isLimitField, limitLabelValue, limitRepresentative,
+  limitText, withComparator, type Comparator, type InputLimit, type InputLimits, type LimitField,
 } from './lab-limits';

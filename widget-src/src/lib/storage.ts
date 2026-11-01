@@ -2,7 +2,7 @@ import type { HealthInputs, ApiMeasurement, ApiMedication, ApiScreening, ChatCon
 import type { UnitSystem } from '@roadmap/health-core';
 import {
   sanitizeInputs, mergeLongitudinalInputs, chatContextOf, detectUnitSystem, PREFILL_FIELDS, withLabEgfr, dayOf, localDay,
-  isComparator, withRowValue,
+  isComparator, labEgfrFrom,
 } from '@roadmap/health-core';
 import type { ApiReminderPreference } from './api-types';
 
@@ -115,8 +115,7 @@ export function loadFromLocalStorage(): LoadedData | null {
     const lab = sanitizeInputs({ labEgfr: data.labEgfr?.labEgfr, labEgfrDate: data.labEgfr?.labEgfrDate });
     // A lab eGFR printed as a limit (US-12 AC20): its code and bound, graded again by the plan's rule.
     const sentLimit = data.labEgfr?.labEgfrLimit;
-    const limit = sentLimit && isComparator(sentLimit.comparator) && Number.isFinite(sentLimit.bound)
-      ? withRowValue<Partial<HealthInputs>>({}, 'labEgfr', sentLimit.bound, sentLimit.comparator) : null;
+    const limit = sentLimit && isComparator(sentLimit.comparator) && Number.isFinite(sentLimit.bound) ? sentLimit : null;
 
     return {
       inputs,
@@ -131,9 +130,9 @@ export function loadFromLocalStorage(): LoadedData | null {
       medications: data.medications ?? [],
       screenings: data.screenings ?? [],
       reminderPreferences: data.reminderPreferences ?? [],
-      labEgfr: limit?.limits?.labEgfr && lab.labEgfrDate !== undefined
-        ? { ...(limit.labEgfr === undefined ? {} : { labEgfr: limit.labEgfr }), labEgfrDate: lab.labEgfrDate, labEgfrLimit: limit.limits.labEgfr }
-        : lab.labEgfr !== undefined && lab.labEgfrDate !== undefined ? { labEgfr: lab.labEgfr, labEgfrDate: lab.labEgfrDate } : null,
+      labEgfr: lab.labEgfrDate === undefined ? null
+        : limit ? labEgfrFrom(limit.bound, lab.labEgfrDate, limit.comparator)
+        : lab.labEgfr !== undefined ? labEgfrFrom(lab.labEgfr, lab.labEgfrDate) : null,
     };
   } catch (error) {
     console.warn('Failed to load from localStorage:', error);

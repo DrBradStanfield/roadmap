@@ -17,7 +17,7 @@
  */
 import { METRIC_TO_FIELD } from './mappings';
 import type { HealthInputs } from './types';
-import { isComparator, type Comparator } from './lab-limits';
+import { comparatorOf, type Comparator } from './lab-limits';
 
 export interface DatedMeasurement {
   /** YYYY-MM-DD */
@@ -60,7 +60,7 @@ export function buildMeasurementHistory(
   for (const r of records) {
     const date = (r.recordedAt || '').slice(0, 10);
     if (!ISO_DATE.test(date)) continue;
-    (out[r.metricType] ??= []).push({ date, value: r.value, ...(isComparator(r.comparator) ? { comparator: r.comparator } : {}) });
+    (out[r.metricType] ??= []).push({ date, value: r.value, ...comparatorOf(r) });
   }
   for (const k of Object.keys(out)) {
     out[k].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));

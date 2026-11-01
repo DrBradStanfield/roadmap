@@ -9,15 +9,11 @@ import {
   cellLabel,
   cellRange,
   cellToSI,
-  cellFromSI,
-  cellDecimalPlaces,
-  cellText,
   isLimitField,
-  withComparator,
+  limitCellText,
   limitRepresentative,
   limitLabelValue,
   limitText,
-  limitNumber,
   METRIC_TO_FIELD,
   HBA1C_THRESHOLDS,
   LDL_THRESHOLDS,
@@ -46,7 +42,7 @@ import type { Grading } from '@roadmap/health-core';
 
 // The unit a cell is shown and typed in, and its conversions, live in health-core
 // (cell-unit.ts), which the iPhone app reads too.
-export { type CellUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel } from '@roadmap/health-core';
+export { type CellUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel, cellNumber, comparatorSymbol } from '@roadmap/health-core';
 
 // Keystroke filters (US-02 AC4). Most of our numeric cells are type="text"
 // (for inputMode/pattern control), and even type="number" doesn't reject
@@ -96,16 +92,29 @@ export function savedLabText(v: number, comparator?: Comparator): string {
   return comparator ? limitText(v, 0, comparator) : formatLabValue(v);
 }
 
-/** A saved core value as its cell shows it: a limit with its symbol, "> 1.55" (US-12 AC20). */
-export function savedCellText(metric: MetricType, si: number, unit: CellUnit, comparator?: Comparator): string {
-  return comparator ? withComparator(cellNumber(metric, si, unit, comparator), comparator) : cellText(metric, si, unit);
+/**
+ * A trend's shape, for the grid's sparkline and the phone rows' trend: each
+ * point's spot in a `width` x `height` box (2px padding), the line through the
+ * exact points only, and the area under it down to `baseline`. A point printed
+ * as a limit (`limits[i]`) keeps its spot, to be drawn hollow, and stays off
+ * the line (US-12 AC20). Needs two points or more.
+ */
+export function trendGeometry(points: number[], limits: boolean[] | undefined, width: number, height: number, baseline: number) {
+  const low = Math.min(...points), span = Math.max(...points) - low || 1;
+  const pad = 2;
+  const coords = points.map((v, i) => [
+    pad + (i / (points.length - 1)) * (width - pad * 2),
+    height - pad - ((v - low) / span) * (height - pad * 2),
+  ] as const);
+  const exact = coords.filter((_, i) => !limits?.[i]);
+  const line = exact.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const area = exact.length >= 2
+    ? `${line} L${exact[exact.length - 1][0].toFixed(1)},${baseline} L${exact[0][0].toFixed(1)},${baseline} Z` : null;
+  return { coords, exact, line, area };
 }
 
-/** A core value's number in a cell's unit: a limit's bound rounded away from
- *  its band, so the shown limit stays true in any unit (US-12 AC20). */
-export function cellNumber(metric: MetricType, si: number, unit: CellUnit, comparator?: Comparator): string {
-  return comparator ? limitNumber(cellFromSI(metric, si, unit), cellDecimalPlaces(metric, unit), comparator) : cellText(metric, si, unit);
-}
+/** A saved core value as its cell shows it: a limit with its symbol, "> 1.55" (US-12 AC20). */
+export const savedCellText = limitCellText;
 
 /** A saved core limit's input field, when the plan can read one (US-12 AC20). */
 function limitField(metric: MetricType) {
@@ -129,8 +138,6 @@ export function savedStatus(metric: MetricType, si: number, comparator: Comparat
   return graded === null ? null : statusOf(metric, graded, grading);
 }
 
-/** A comparator's symbol as shown: "<", "≤". */
-export const comparatorSymbol = (comparator: Comparator) => withComparator('', comparator).trim();
 
 /**
  * A typed value that changes nothing, so saving it writes nothing (US-03

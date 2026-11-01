@@ -11,8 +11,7 @@ import {
   METRIC_LABELS,
   medicationAnnotations,
   type ChartAnnotation,
-  type Comparator,
-  formatLimit,
+  formatValue,
 } from '@roadmap/health-core';
 import {
   Chart,
@@ -65,12 +64,6 @@ function toDisplayValue(metricType: string, value: number, unitSystem: UnitSyste
   const display = fromCanonicalValue(metric, value, unitSystem);
   const dp = UNIT_DEFS[metric].decimalPlaces[unitSystem];
   return parseFloat(display.toFixed(dp));
-}
-
-/** A core limit as its chart point reads: "> 1.55" (US-12 AC20). */
-function limitDisplay(metricType: string, value: number, comparator: Comparator, unitSystem: UnitSystem): string {
-  const metric = FIELD_METRIC_MAP[METRIC_TO_FIELD[metricType] ?? ''];
-  return metric ? formatLimit(metric, { comparator, bound: value }, unitSystem) : savedLabText(value, comparator);
 }
 
 function getUnitLabel(metricType: string, unitSystem: UnitSystem): string {
@@ -356,11 +349,15 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
 
   // Each chart's points, built once per load: a fresh array every render would
   // rebuild every chart on any tick (US-06 AC4a).
-  const chartData = useMemo(() => Object.fromEntries(metricTypes.map((mt) => [mt, grouped[mt].map((m): ChartPoint => ({
-    x: chartTimestamp(m.recordedAt),
-    y: toDisplayValue(mt, m.value, unitSystem),
-    ...(m.comparator ? { limit: limitDisplay(mt, m.value, m.comparator, unitSystem) } : {}),
-  }))])), [grouped, metricTypes, unitSystem]);
+  const chartData = useMemo(() => Object.fromEntries(metricTypes.map((mt) => {
+    const metric = FIELD_METRIC_MAP[METRIC_TO_FIELD[mt] ?? ''];
+    // A core limit's point reads "> 1.55" (US-12 AC20).
+    return [mt, grouped[mt].map((m): ChartPoint => ({
+      x: chartTimestamp(m.recordedAt),
+      y: toDisplayValue(mt, m.value, unitSystem),
+      ...(m.comparator && metric ? { limit: formatValue(metric, m.value, unitSystem, m.comparator) } : {}),
+    }))];
+  })), [grouped, metricTypes, unitSystem]);
 
   // One series per lab slot key, so spelling variants share a chart (US-10).
   const { labSeries, labMetricNames, labColorMap } = useMemo(() => {

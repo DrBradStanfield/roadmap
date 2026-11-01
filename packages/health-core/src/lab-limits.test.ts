@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import * as units from './units';
 import { LAB_CATALOG } from './lab-catalog';
 import {
-  LIMIT_CUTOFFS, LIMIT_LABEL_CUTOFFS, limitLabelValue, limitNumber, limitDecides, limitRepresentative, readPrintedLimit, withComparator, withRowValue, type LimitField,
+  LIMIT_CUTOFFS, LIMIT_LABEL_CUTOFFS, limitLabelValue, limitNumber, bandDecides, limitRepresentative, readPrintedLimit, withComparator, withRowValue, type LimitField,
 } from './lab-limits';
 import { sanitizeInputs } from './validation';
 import type { HealthInputs } from './types';
@@ -109,11 +109,11 @@ describe('US-12 AC20 — the cutoff set holds every threshold', () => {
 describe('US-12 AC20 — only when the bound decides', () => {
   it('decides by the four rules, strict and non-strict, at a cutoff', () => {
     const { prediabetes, diabetes } = units.HBA1C_THRESHOLDS;
-    expect(limitDecides('hba1c', '<', prediabetes)).toBe(true); // every cutoff at or above b
-    expect(limitDecides('hba1c', '<=', prediabetes)).toBe(false); // the cutoff itself is in the band
-    expect(limitDecides('hba1c', '>', diabetes)).toBe(true);
-    expect(limitDecides('hba1c', '>=', diabetes)).toBe(false);
-    expect(limitDecides('hba1c', '<', prediabetes + 0.1)).toBe(false);
+    expect(bandDecides(LIMIT_CUTOFFS.hba1c, '<', prediabetes)).toBe(true); // every cutoff at or above b
+    expect(bandDecides(LIMIT_CUTOFFS.hba1c, '<=', prediabetes)).toBe(false); // the cutoff itself is in the band
+    expect(bandDecides(LIMIT_CUTOFFS.hba1c, '>', diabetes)).toBe(true);
+    expect(bandDecides(LIMIT_CUTOFFS.hba1c, '>=', diabetes)).toBe(false);
+    expect(bandDecides(LIMIT_CUTOFFS.hba1c, '<', prediabetes + 0.1)).toBe(false);
   });
 
   it('eGFR "> 90" decides for the plan and for the tile', () => {

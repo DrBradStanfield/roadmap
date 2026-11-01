@@ -23,10 +23,13 @@ import { cmpStr, dayOf, localDay } from './merge';
 import { refLineFor } from './reference-hints';
 import { computeReminderSchedule, type ReminderScheduleItem } from './reminder-schedule';
 import { BASE_SCHEMA_VERSION, type FileLabValue, type RoadmapFile } from './roadmap-file';
-import { LIMIT_NOT_GRADED, formatLimit, limitOf, withComparator, withRowValue, type Comparator, type InputLimit } from './lab-limits';
+import {
+  LIMIT_NOT_GRADED, comparatorOf, egfrAsPrinted, formatValue, limitOf, limitSIText, withComparator, withoutLimit, withRowValue,
+  type Comparator, type InputLimit, type LimitField,
+} from './lab-limits';
 import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
 import {
-  UNIT_DEFS, formatDisplayValue, formatGradedValue, getDisplayLabel, unitSystemOf, type MetricType, type UnitSystem,
+  UNIT_DEFS, formatGradedValue, getDisplayLabel, unitSystemOf, type MetricType, type UnitSystem,
 } from './units';
 import { getValidationErrors, PRESSURE_ORDER, sanitizeInputs, validateHealthInputs } from './validation';
 
@@ -154,9 +157,14 @@ export function labEgfrOf(labValues: readonly LabRowLike[]): LabEgfr | null {
   const rows = labValues.filter((l) => labSlotKey(l.metricName) === 'egfr'
     && l.unit === resolveLabCatalogEntry(l.metricName)?.unit && 'labEgfr' in sanitizeInputs({ labEgfr: l.value }));
   const lab = latestActivePerMetric(rows.map((l) => ({ ...l, metricType: 'egfr' })))[0];
-  if (!lab) return null;
-  const { labEgfr, limits } = withRowValue<Partial<HealthInputs>>({}, 'labEgfr', lab.value, lab.comparator);
-  return { ...(labEgfr === undefined ? {} : { labEgfr }), labEgfrDate: dayOf(lab.recordedAt), ...(limits?.labEgfr ? { labEgfrLimit: limits.labEgfr } : {}) };
+  return lab ? labEgfrFrom(lab.value, dayOf(lab.recordedAt), lab.comparator) : null;
+}
+
+/** A lab eGFR candidate from its printed number, day and code: a limit graded by
+ *  US-12 AC20's rule, the record's row and the widget's cached copy alike. */
+export function labEgfrFrom(value: number, labEgfrDate: string, comparator?: Comparator): LabEgfr {
+  const { labEgfr, limits } = withRowValue<Partial<HealthInputs>>({}, 'labEgfr', value, comparator);
+  return { ...(labEgfr === undefined ? {} : { labEgfr }), labEgfrDate, ...(limits?.labEgfr ? { labEgfrLimit: limits.labEgfr } : {}) };
 }
 
 /**
@@ -174,8 +182,8 @@ export function withLabEgfr<T extends Partial<HealthInputs>>(
   inputs: T, creatinineDay: string | null, lab: LabEgfr | null, today: string,
 ): T {
   const { labEgfr: _value, labEgfrDate: _day, labEgfrOutdated: _outdated, limits, ...rest } = inputs;
-  const { labEgfr: _limit, ...kept } = limits ?? {};
-  const others = Object.keys(kept).length ? { limits: kept } : {};
+  const others = withoutLimit(limits, 'labEgfr');
+  const kept = others.limits ?? {};
   if (!lab) return { ...rest, ...others } as T;
   const usable = sanitizeInputs({ creatinine: inputs.creatinine, birthYear: inputs.birthYear, sex: inputs.sex });
   // A creatinine printed as a limit is held, but no eGFR is worked out from it (US-12 AC20).
@@ -217,7 +225,7 @@ function derivePlanLabs(file: RoadmapFile): PlanLab[] {
         value: l.value,
         unit: displayLabUnit(l.unit, entry),
         date: String(l.recordedAt ?? '').slice(0, 10),
-        ...(l.comparator ? { comparator: l.comparator } : {}),
+        ...comparatorOf(l),
       };
     })
     .sort((a, b) => cmpStr(a.label, b.label));
@@ -316,11 +324,10 @@ export function currentValues(plan: Plan) {
         id: row.id,
         metric: row.metricType,
         label: METRIC_LABELS[row.metricType] ?? row.metricType,
-        value: row.comparator ? formatLimit(metric, { comparator: row.comparator, bound: row.value }, plan.unitSystem)
-          : line === undefined
-          ? formatDisplayValue(metric, row.value, plan.unitSystem)
+        value: line === undefined || row.comparator
+          ? formatValue(metric, row.value, plan.unitSystem, row.comparator)
           : formatGradedValue(metric, row.value, plan.unitSystem, line),
-        ...(row.comparator ? { comparator: row.comparator } : {}),
+        ...comparatorOf(row),
         ...(limit && !limit.graded ? { notGraded: LIMIT_NOT_GRADED } : {}),
         unit: getDisplayLabel(metric, plan.unitSystem),
         date: String(row.recordedAt ?? '').slice(0, 10),
@@ -356,7 +363,7 @@ export const NEEDS_SEX: readonly string[] = [
  *  it with; an ungraded one is there too. `limits` says which (US-12 AC20). */
 function limitedInputs(inputs: Partial<HealthInputs>): Record<string, unknown> {
   const out: Record<string, unknown> = { ...inputs };
-  for (const [field, limit] of Object.entries(inputs.limits ?? {})) out[field] = withComparator(String(limit.bound), limit.comparator);
+  for (const [field, limit] of Object.entries(inputs.limits ?? {})) out[field] = limitSIText(field as LimitField, limit);
   return out;
 }
 
@@ -380,7 +387,7 @@ export function planPayload(plan: Plan) {
       bmiCategory: adult?.bmiCategory ?? null,
       waistToHeightRatio: plan.results.waistToHeightRatio ?? null,
       // A lab eGFR printed as a limit is said as printed, never as the plan's representative (US-12 AC20).
-      eGFR: plan.inputs.limits?.labEgfr ? (adult ? withComparator(String(plan.inputs.limits.labEgfr.bound), plan.inputs.limits.labEgfr.comparator) : null) : adult?.eGFR ?? null,
+      eGFR: egfrAsPrinted(plan.inputs, adult) ?? null,
       idealBodyWeightKg: adult?.idealBodyWeight ?? null,
       proteinTargetG: adult?.proteinTarget ?? null,
       // Inside `profile`, a free-form object, so tools/list stays frozen (US-35 AC13).

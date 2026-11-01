@@ -6,7 +6,7 @@ import type { SuggestionEvidence } from './evidence';
 import { STAT_CARD_EVIDENCE, getBmiEvidence, getIbwEvidence, getProteinEvidence } from './evidence';
 import { getEgfrStatus, getHba1cStatus, getLipidStatus, getLpaStatus, getProteinRate } from './calculations';
 import { lipidMarkerFor, type LipidMarker } from './suggestions';
-import { LIMIT_NOT_GRADED, formatLimit, limitLabelValue, limitText, withComparator, type LimitField } from './lab-limits';
+import { LIMIT_NOT_GRADED, formatLimit, formatValue, limitLabelValue, limitSIText, type LimitField } from './lab-limits';
 import {
   APOB_THRESHOLDS, LDL_THRESHOLDS, NON_HDL_THRESHOLDS, formatDisplayValue, formatGradedValue, formatHeightDisplay,
   getDisplayLabel, isWaistToHeightElevated, type MetricType, type UnitSystem,
@@ -147,6 +147,9 @@ export function statTiles(results: HealthResults, { unitSystem, unitOverrides, s
     const limit = results.limits?.[field];
     return !limit || limitLabelValue(field, limit.comparator, limit.bound) !== null;
   };
+  /** A tile's status: NOT_GRADED with no value (a limit the plan could not grade), none where its word is undecided, else the grade. */
+  const tileStatus = (field: LimitField | null, value: number | undefined, grade: (v: number) => StatTileStatus | undefined) =>
+    value === undefined ? NOT_GRADED : field && !worded(field) ? undefined : grade(value);
   // Results carry ApoB and LDL through from the inputs.
   const marker = lipidMarkerFor(results, results);
   if (marker) {
@@ -158,8 +161,8 @@ export function statTiles(results: HealthResults, { unitSystem, unitOverrides, s
       // a limit reads as printed (US-12 AC20).
       value: marker.limit ? formatLimit(tile.metric, marker.limit, u) : formatGradedValue(tile.metric, marker.value, u, marker.target),
       unit: getDisplayLabel(tile.metric, u),
-      status: marker.kind !== 'nonHdl' && !worded(marker.kind === 'apoB' ? 'apoB' : 'ldlC') ? undefined
-        : reading(graded(getLipidStatus(marker.value, tile.thresholds))),
+      status: tileStatus(marker.kind === 'nonHdl' ? null : marker.kind === 'apoB' ? 'apoB' : 'ldlC', marker.value,
+        (v) => reading(graded(getLipidStatus(v, tile.thresholds)))),
       evidence: reading(STAT_CARD_EVIDENCE[tile.evidence]),
     });
   }
@@ -174,24 +177,24 @@ export function statTiles(results: HealthResults, { unitSystem, unitOverrides, s
   const egfrLimit = results.limits?.labEgfr;
   if (adult && (results.eGFR !== undefined || egfrLimit)) {
     tiles.push({
-      key: 'egfr', label: 'eGFR', value: egfrLimit ? withComparator(String(egfrLimit.bound), egfrLimit.comparator) : String(results.eGFR), unit: 'mL/min',
-      status: results.eGFR === undefined ? NOT_GRADED : worded('labEgfr') ? graded(getEgfrStatus(results.eGFR)) : undefined, evidence: STAT_CARD_EVIDENCE['egfr'],
+      key: 'egfr', label: 'eGFR', value: egfrLimit ? limitSIText('labEgfr', egfrLimit) : String(results.eGFR), unit: 'mL/min',
+      status: tileStatus('labEgfr', results.eGFR, (v) => graded(getEgfrStatus(v))), evidence: STAT_CARD_EVIDENCE['egfr'],
     });
   }
   const lpaLimit = results.limits?.lpa;
   if (results.lpa !== undefined || lpaLimit) {
     tiles.push({
-      key: 'lpa', label: 'Lp(a)', value: lpaLimit ? limitText(lpaLimit.bound, 0, lpaLimit.comparator) : String(Math.round(results.lpa!)), unit: 'nmol/L',
-      status: results.lpa === undefined ? NOT_GRADED : worded('lpa') ? reading(graded(getLpaStatus(results.lpa))) : undefined, evidence: reading(STAT_CARD_EVIDENCE['lpa']),
+      key: 'lpa', label: 'Lp(a)', value: lpaLimit ? limitSIText('lpa', lpaLimit) : String(Math.round(results.lpa!)), unit: 'nmol/L',
+      status: tileStatus('lpa', results.lpa, (v) => reading(graded(getLpaStatus(v)))), evidence: reading(STAT_CARD_EVIDENCE['lpa']),
     });
   }
   const hba1cLimit = results.limits?.hba1c;
   if (results.hba1c !== undefined || hba1cLimit) {
     tiles.push({
       key: 'hba1c', label: 'HbA1c',
-      value: hba1cLimit ? formatLimit('hba1c', hba1cLimit, usFor('hba1c')) : formatDisplayValue('hba1c', results.hba1c!, usFor('hba1c')),
+      value: formatValue('hba1c', hba1cLimit?.bound ?? results.hba1c!, usFor('hba1c'), hba1cLimit?.comparator),
       unit: getDisplayLabel('hba1c', usFor('hba1c')),
-      status: results.hba1c === undefined ? NOT_GRADED : worded('hba1c') ? reading(graded(getHba1cStatus(results.hba1c))) : undefined, evidence: reading(STAT_CARD_EVIDENCE['hba1c']),
+      status: tileStatus('hba1c', results.hba1c, (v) => reading(graded(getHba1cStatus(v)))), evidence: reading(STAT_CARD_EVIDENCE['hba1c']),
     });
   }
   return tiles.map((t) => ({

@@ -48,8 +48,8 @@ import {
 } from './record-edits';
 import type { FileDocument, FileLabValue, FileMeasurement, RoadmapFile, RoadmapProfile } from './roadmap-file';
 import type { SyncManager } from './sync-manager';
-import { CANONICAL_UNITS, formatDisplayValue, formatRange, getDisplayLabel, getDisplayRange, reportedToCanonical, UNIT_DEFS, UNIT_SWAP_FLOORS, unitSystemOf, type MetricType, type UnitSystem } from './units';
-import { COMPARATORS, formatLimit, withComparator, type Comparator } from './lab-limits';
+import { CANONICAL_UNITS, formatRange, getDisplayLabel, getDisplayRange, reportedToCanonical, UNIT_DEFS, UNIT_SWAP_FLOORS, unitSystemOf, type MetricType, type UnitSystem } from './units';
+import { COMPARATORS, comparatorOf, formatValue, withComparator } from './lab-limits';
 import { DROPBOX_APP_FOLDER, IMPORT_ACCEPTED_TYPES, IMPORT_FILE_REASONS, IMPORT_REFUSALS, importHint } from './import-hints';
 import { type McpImportRoute, type McpRefusalReason } from './product-events';
 import { LAB_ARCHIVE_TITLE } from './document-path';
@@ -1360,14 +1360,6 @@ function readableSlotRow(row: FileMeasurement | FileLabValue): boolean {
   return isReadableRow('metricType' in row ? 'measurements' : 'labValues', row);
 }
 
-/** A core value as a candidate and its slot show it: a limit with its symbol (US-12 AC20), so "< 5" never equals "5". */
-function shownCore(metric: MetricType, value: number, system: UnitSystem, comparator?: Comparator): string {
-  return comparator ? formatLimit(metric, { comparator, bound: value }, system) : formatDisplayValue(metric, value, system);
-}
-
-/** A row's limit code, carried only when it is one (US-12 AC20). */
-const comparatorOf = (row: { comparator?: Comparator }) => (row.comparator ? { comparator: row.comparator } : {});
-
 function slotFor(
   existing: FileMeasurement | FileLabValue | undefined,
   candidate: Omit<ImportCandidate, 'id' | 'sameDayAs' | 'slot'>,
@@ -1379,7 +1371,7 @@ function slotFor(
   // A row no reader can read holds the day, with nothing to show or compare (US-65 AC3).
   if (!readableSlotRow(existing)) return { state: 'held_different', existingRowId: existing.id, replaceable: false };
   const state: SlotState = 'metricType' in existing
-    ? slotState(shownCore(existing.metricType as MetricType, existing.value, system, existing.comparator), candidate.displayValue)
+    ? slotState(formatValue(existing.metricType as MetricType, existing.value, system, existing.comparator), candidate.displayValue)
     : sameLabQuantity(
       { name: existing.metricName, value: existing.value, unit: existing.unit, comparator: existing.comparator },
       { name: candidate.printedName ?? candidate.metric, value: candidate.value, unit: candidate.unit, comparator: candidate.comparator },
@@ -1530,7 +1522,7 @@ export function prepareImport(
           continue;
         }
         // A limit offers its bound with its code, shown with its symbol (US-12 AC20).
-        const display = shownCore(metric, value.valueSI, system, value.comparator);
+        const display = formatValue(metric, value.valueSI, system, value.comparator);
         offer(slotKey('measurement', metric, own), {
           kind: 'measurement', metric, value: value.valueSI, unit: CANONICAL_UNITS[metric], ...comparatorOf(value),
           displayValue: display, displayUnit: getDisplayLabel(metric, system),

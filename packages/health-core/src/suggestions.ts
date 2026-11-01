@@ -2,7 +2,7 @@ import type { HealthInputs, HealthResults, Suggestion, MedicationInputs, Screeni
 import { SUGGESTION_EVIDENCE } from './evidence';
 import { POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
 import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
-import { formatLimit, limitOf, limitText, type InputLimit, type LimitField } from './lab-limits';
+import { formatLimit, formatValue, limitOf, limitSIText, type Comparator, type InputLimit, type LimitField } from './lab-limits';
 import {
   type UnitSystem,
   type MetricType,
@@ -56,9 +56,9 @@ export const US_SUPPLEMENT_DESCRIPTIONS: Readonly<Partial<Record<UsProductCardId
 /** Dietary advice for elevated lipids — shared between suggestion card and InputPanel medication cascade */
 export const LIPID_DIET_ADVICE = 'Specific foods can lower LDL cholesterol: oats, walnuts, almonds, ground flaxseed, edamame, and replacing butter with extra-virgin olive oil. If you don\'t have IBS or IBD, beans, lentils, chickpeas, and mixed vegetables are also great options. Psyllium husk is a soluble fibre that is well-tolerated even with IBS or IBD; discuss with your doctor whether it fits your routine.';
 
-/** Format a metric value with its display unit, e.g. "5.7%" or "39 mmol/mol" */
-function fmtMetric(metricType: MetricType, value: number, us: UnitSystem): string {
-  return `${formatDisplayValue(metricType, value, us)} ${getDisplayLabel(metricType, us)}`;
+/** Format a metric value with its display unit, e.g. "5.7%", "39 mmol/mol" or a limit's "< 39 mmol/mol" (US-12 AC20). */
+function fmtMetric(metricType: MetricType, value: number, us: UnitSystem, comparator?: Comparator): string {
+  return `${formatValue(metricType, value, us, comparator)} ${getDisplayLabel(metricType, us)}`;
 }
 
 // Metric-specific aliases for readability
@@ -245,11 +245,11 @@ export function generateSuggestions(
   // value the plan graded it with (US-12 AC20).
   const shown = (field: LimitField, metric: MetricType, value: number): string => {
     const limit = limitOf(inputs, field);
-    return limit ? `${formatLimit(metric, limit, us(metric))} ${getDisplayLabel(metric, us(metric))}` : fmtMetric(metric, value, us(metric));
+    return fmtMetric(metric, limit?.bound ?? value, us(metric), limit?.comparator);
   };
-  const bare = (field: LimitField, value: number, dp = 0): string => {
+  const bare = (field: LimitField, value: number): string => {
     const limit = limitOf(inputs, field);
-    return limit ? limitText(limit.bound, dp, limit.comparator) : String(dp ? value.toFixed(dp) : Math.round(value));
+    return limit ? limitSIText(field, limit) : String(Math.round(value));
   };
 
   // === Always-show lifestyle suggestions ===
