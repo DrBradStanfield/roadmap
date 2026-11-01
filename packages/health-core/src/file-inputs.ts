@@ -23,7 +23,8 @@ export function screeningFieldName(key: string): keyof ScreeningInputs {
 /** The file's profile as an ApiProfile. Names are never stored in the file. */
 export function fileProfileToApi(p: RoadmapProfile): ApiProfile {
   return {
-    sex: p.sex ? encodeSex(p.sex) : null,
+    // Anything but male or female is no sex (US-07 AC8): encodeSex would read it as female.
+    sex: p.sex === 'male' || p.sex === 'female' ? encodeSex(p.sex) : null,
     birthYear: p.birthYear ?? null,
     birthMonth: p.birthMonth ?? null,
     unitSystem: p.unitSystem ? encodeUnitSystem(p.unitSystem) : null,

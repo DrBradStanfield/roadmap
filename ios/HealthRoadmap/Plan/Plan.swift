@@ -35,7 +35,8 @@ struct Suggestion: Decodable, Identifiable {
 enum PlanState: Sendable {
     /// The plan, and how long the engine took to plan it (D2's plan budget).
     case planned(tiles: [StatTile], sections: [PlanSection], ms: Double)
-    /// health-core's one PlanError: no usable height or sex (plan.ts). The engine worked.
+    /// health-core's one PlanError: no usable height (plan.ts). No sex is a plan without
+    /// the parts that need it (US-07 AC8). The engine worked.
     case needsDetails
     /// The engine threw on this record, in its own words.
     case failed(String)
