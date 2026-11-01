@@ -7,7 +7,8 @@ Reviewed 2026-11-02 by a fresh adversary and Codex (gpt-6.1-sol). Every Apple cl
 below was re-checked by the adversary against Apple's pages. Their design findings
 (amendments and the dedup key, the institution in the key, `<` and `>` results, the
 unmeasurable "allowed" event, Apple's `supportsHealthRecords()` gate, glucose fasting,
-the agent-contract impact) are fixed in sections 4 to 9.
+the agent-contract impact) are fixed in sections 4 to 9. A fix-scoped re-check passed all twelve and found two
+small gaps in the new landing rule, also fixed.
 
 ## The answer
 
@@ -290,11 +291,19 @@ Trade-offs stated:
   which has the same draw time.
   - A version any row already carries, `entered-in-error` included, never lands again.
   - A new identity fills an empty (metric, day) slot.
-  - A new version (`amended` or `corrected`) of an identity whose imported row is still
-    active replaces that row as a FHIR correction (new row, `correctsId`, old row
-    `entered-in-error`).
+  - A newer version (`final`, `amended` or `corrected`) of an identity whose imported
+    row is still active replaces that row as a FHIR correction (new row, `correctsId`,
+    old row `entered-in-error`), but only if the value or unit changed. A version bump
+    with the same value (metadata only) appends nothing; its version key is remembered
+    on the phone so it is not weighed again (re-check N2).
   - An identity the person themself marked entered-in-error never lands again, in any
     version: their call stands. Counted.
+  - Rows do not record who set `entered-in-error`. So if a provider withdrawal also flips
+    our row (question 3), the phone remembers that identity as "withdrawn by the
+    provider" (in `HealthSyncMemory`, beside the anchors), and a later corrected version
+    may land. On another phone, or after a reinstall, that memory is gone and the
+    withdrawal looks like the person's: the corrected version stays out, counted. A rare
+    case; recording who flipped a row would need a row field (re-check N1).
   - It **never** supersedes a value typed by hand or imported from a PDF the same day.
     The person may have typed the right number; a later provider feed must not undo it.
     The skipped value is counted ("3 results already in your record").
