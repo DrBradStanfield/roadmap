@@ -725,7 +725,7 @@ input[type="number"] {
 }
 
 /* Two tiles a row on a phone. After the base rule, or the base rule wins. A
-   long title ("Ideal Body Weight (IBW)") wraps rather than spill at 320px. */
+   long title ("Ideal Body Weight") wraps rather than spill at 320px. */
 @media (max-width: 768px) {
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1035,6 +1035,12 @@ input[type="number"] {
 .alcohol-dialog-title {
   margin: 0 0 16px;
   font-size: 18px;
+  color: var(--color-text-heading);
+}
+.alcohol-dialog-note {
+  margin: 0 0 16px;
+  font-size: 15px;
+  line-height: 1.45;
   color: var(--color-text-heading);
 }
 .alcohol-dialog-actions {

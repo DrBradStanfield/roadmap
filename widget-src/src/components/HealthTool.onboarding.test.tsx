@@ -134,7 +134,7 @@ describe('US-62 AC13: each step reveals the next', () => {
     const view = await open();
     await measurements(view);
     await waitFor(() => expect(tiles(view)).toContain('BMI'));
-    expect(tiles(view)).not.toContain('Ideal Body Weight (IBW)');
+    expect(tiles(view)).not.toContain('Ideal Body Weight');
     expect(tiles(view)).not.toContain('Protein Target');
     expect(sexQuestion(view)).toBeTruthy();
     expect(view.getByText(WHY_SEX)).toBeTruthy();
@@ -146,7 +146,7 @@ describe('US-62 AC13: each step reveals the next', () => {
     const view = await open();
     await measurements(view);
     fireEvent.click(view.getByRole('radio', { name: 'Female' }));
-    await waitFor(() => expect(tiles(view)).toEqual(expect.arrayContaining(['BMI', 'Ideal Body Weight (IBW)', 'Protein Target'])));
+    await waitFor(() => expect(tiles(view)).toEqual(expect.arrayContaining(['BMI', 'Ideal Body Weight', 'Protein Target'])));
     expect(q(view, '#birthMonth')).toBeTruthy();
     expect(view.getByText(WHY_BIRTH)).toBeTruthy();
     expect(fullForm(view)).toBe(false);

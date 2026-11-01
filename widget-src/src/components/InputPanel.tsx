@@ -1,3 +1,4 @@
+import { profileTitle } from '../lib/profile-title';
 import { Fragment, useState, useEffect, useRef, type MutableRefObject } from 'react';
 import { ColumnHeader } from './ColumnHeader';
 import { InfoTooltip } from './InfoTooltip';
@@ -127,6 +128,7 @@ export type PlanBasis = Pick<HealthResults, 'age' | 'bmi' | 'idealBodyWeight' | 
   /** The plan's lipid marker: ApoB, then non-HDL, then LDL-c. */
   lipidMarker: LipidMarker | null;
 };
+
 
 interface InputPanelProps {
   /** US-09 AC30: the Sign in button, in the header on desktop and on a phone. */
@@ -1029,7 +1031,7 @@ export function InputPanel({
             className={`health-section-title${canCollapse ? ' health-section-title--collapsible' : ''}`}
             onClick={canCollapse ? () => setPrefillExpanded(!prefillExpanded) : undefined}
           >
-            {aboutYouLow ? 'About you' : 'Starting Info'}
+            {profileTitle(aboutYouLow)}
             {canCollapse && (
               <span className={`collapse-chevron${prefillExpanded ? ' expanded' : ''}`}>{'\u25B8'}</span>
             )}
