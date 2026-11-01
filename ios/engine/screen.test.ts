@@ -30,7 +30,7 @@ describe('screenJson (US-25 AC2, AC22)', () => {
     const tiles = statTiles(plan.results, { unitSystem: plan.unitSystem, unitOverrides: choices, sex: plan.inputs.sex });
     expect(JSON.parse(screenJson(sample, NOW, 'phone', UNITS))).toEqual({
       myData: JSON.parse(JSON.stringify(myData(file, NOW, choices))),
-      plan: { sections: JSON.parse(JSON.stringify(planSections(plan.results.suggestions))), tiles: JSON.parse(JSON.stringify(tiles)), usProducts: { blocks: [], ownershipLine: null }, ms: expect.any(Number) },
+      plan: { sections: JSON.parse(JSON.stringify(planSections(plan.results.suggestions))), tiles: JSON.parse(JSON.stringify(tiles)), ms: expect.any(Number) },
     });
   });
 
@@ -51,7 +51,7 @@ describe('screenJson (US-25 AC2, AC22)', () => {
     expect(computePlan).toHaveBeenCalledTimes(1);
   });
 
-  it('answers a record with no height or sex with My data and health-core\'s PlanError', () => {
+  it('answers a record with no height with My data and health-core\'s PlanError', () => {
     const empty = JSON.stringify(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'));
     const screen = JSON.parse(screenJson(empty, NOW, 'phone', '{}'));
     expect(screen.myData.vitals.length).toBeGreaterThan(0);
@@ -59,6 +59,18 @@ describe('screenJson (US-25 AC2, AC22)', () => {
     expect(screen.plan.error).toMatch(/^PlanError: /);
     expect(screen.plan.sections).toBeUndefined();
     expect(computePlan).toHaveBeenCalledTimes(1);
+  });
+
+  // US-07 AC8: no sex is no longer a PlanError; the plan comes without the parts that need it.
+  it('plans a record with a height and no sex, without the ideal body weight and protein tiles', () => {
+    const record = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    record.profile.heightCm = 170;
+    const screen = JSON.parse(screenJson(JSON.stringify(record), NOW, 'phone', '{}'));
+    expect(screen.plan.planError).toBeUndefined();
+    expect(screen.plan.sections.length).toBeGreaterThan(0);
+    const keys = screen.plan.tiles.map((t: { key: string }) => t.key);
+    expect(keys).not.toContain('ibw');
+    expect(keys).not.toContain('protein');
   });
 
   it('keeps My data when the plan throws anything else, and says it was not a PlanError', () => {

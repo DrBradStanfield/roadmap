@@ -139,8 +139,8 @@ actor HealthEngine {
             let ms: Double
             let error: String?
             let planError: Bool
-            /// US-61's blocks; one Swift cannot read shows none, never a broken plan.
-            let usProducts: USProducts?
+            /// US-61's sections ready to draw, with the blocks; ones Swift cannot read show none, never a broken plan.
+            let usProducts: [PlanSection]?
             enum CodingKeys: CodingKey { case sections, tiles, ms, error, planError, usProducts }
             /// Sections decode strictly: sections Swift cannot read fail the plan, never My data.
             /// A tile Swift cannot read leaves no tiles, never a blank plan.
@@ -149,7 +149,7 @@ actor HealthEngine {
                 tiles = (try? c.decode([StatTile].self, forKey: .tiles)) ?? []
                 ms = (try? c.decodeIfPresent(Double.self, forKey: .ms)) ?? 0
                 planError = (try? c.decodeIfPresent(Bool.self, forKey: .planError)) == true
-                usProducts = (try? c.decodeIfPresent(USProducts.self, forKey: .usProducts)) ?? nil
+                usProducts = (try? c.decodeIfPresent([PlanSection].self, forKey: .usProducts)) ?? nil
                 do {
                     (sections, error) = (try c.decodeIfPresent([PlanSection].self, forKey: .sections), try c.decodeIfPresent(String.self, forKey: .error))
                 } catch {
@@ -158,7 +158,7 @@ actor HealthEngine {
             }
 
             var state: PlanState {
-                if let sections { return .planned(tiles: tiles, sections: usProducts?.applied(to: sections) ?? sections, ms: ms) }
+                if let sections { return .planned(tiles: tiles, sections: usProducts ?? sections, ms: ms) }
                 if planError { return .needsDetails }
                 return .failed(EngineError.callFailed(error ?? "no plan").localizedDescription)
             }
