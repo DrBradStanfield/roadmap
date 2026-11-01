@@ -1031,7 +1031,9 @@ later.
   files (default 300). Lab files also spend the web's per-machine file cap
   (`machineFiles`, `AI_DAILY_FILE_CAP`, 2000), but the app's own cap is smaller, so the
   app can never use up the web's and the connector's uploads (R5); the code also holds it
-  at or under 15% of `AI_DAILY_FILE_CAP` whatever the env says.
+  at or under 15% of `AI_DAILY_FILE_CAP` whatever the env says. The gate reserves the
+  per-IP, per-machine and file-cap units together, all or nothing, before the key's use,
+  so the file cap refusing spends no other count (US-52 AC4d, 2026-11-01).
 - Per IP, signed requests refused before their signature verifies (a bad or garbage
   assertion, an unknown key, a development key refused, an oversized body, a bad
   signature): 200 a day. Past that, the gate reads neither the key nor the body (code
