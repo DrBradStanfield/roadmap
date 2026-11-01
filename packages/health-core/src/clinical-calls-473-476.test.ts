@@ -69,6 +69,9 @@ describe('US-07 AC9: cortisol by timing (issue 476)', () => {
     ['Cortisol PM', 'cortisol_pm', 'Cortisol (PM)'],
     ['Evening cortisol', 'cortisol_pm', 'Cortisol (PM)'],
     ['Midnight Cortisol', 'cortisol_pm', 'Cortisol (PM)'],
+    ['cortisol_morning', 'cortisol_am', 'Cortisol (morning)'],
+    ['cortisol_evening', 'cortisol_pm', 'Cortisol (PM)'],
+    ['Cortisol Midnight', 'cortisol_pm', 'Cortisol (PM)'],
   ])('"%s" is filed under %s, read as "%s"', (printed, slot, label) => {
     expect(labSlotKey(printed)).toBe(slot);
     expect(labTestLabel(printed)).toBe(label);

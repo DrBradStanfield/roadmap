@@ -244,9 +244,9 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   // Cortisol is read against the time it was drawn. A name that prints no timing is a
   // morning cortisol, as most are (Brad 2026-11-02, issue 476); one that prints its
   // timing goes to that time's entry. Salivary and urine cortisol are not catalogued.
-  { key: 'cortisol_am', label: 'Cortisol (morning)', group: 'hormones', unit: 'nmol/L', aliases: ['cortisol', 'am cortisol', 'cortisol, am', 'cortisol (am)', 'morning cortisol', 'cortisol, morning'], conversions: { 'µg/dl': 27.59 } }, // cortisol 362.46 g/mol
+  { key: 'cortisol_am', label: 'Cortisol (morning)', group: 'hormones', unit: 'nmol/L', aliases: ['cortisol', 'am cortisol', 'cortisol, am', 'cortisol (am)', 'morning cortisol', 'cortisol, morning', 'cortisol morning'], conversions: { 'µg/dl': 27.59 } }, // cortisol 362.46 g/mol
   { key: 'cortisol_random', label: 'Cortisol (random)', group: 'hormones', unit: 'nmol/L', aliases: ['random cortisol', 'cortisol, random'], conversions: { 'µg/dl': 27.59 } }, // cortisol 362.46 g/mol
-  { key: 'cortisol_pm', label: 'Cortisol (PM)', group: 'hormones', unit: 'nmol/L', aliases: ['pm cortisol', 'cortisol, pm', 'evening cortisol', 'cortisol, evening', 'cortisol (evening)', 'midnight cortisol', 'cortisol, midnight', 'cortisol (midnight)'], conversions: { 'µg/dl': 27.59 } }, // cortisol 362.46 g/mol
+  { key: 'cortisol_pm', label: 'Cortisol (PM)', group: 'hormones', unit: 'nmol/L', aliases: ['pm cortisol', 'cortisol, pm', 'evening cortisol', 'cortisol, evening', 'cortisol (evening)', 'cortisol evening', 'midnight cortisol', 'cortisol, midnight', 'cortisol (midnight)', 'cortisol midnight'], conversions: { 'µg/dl': 27.59 } }, // cortisol 362.46 g/mol
   { key: 'psa_free', label: 'PSA (free)', group: 'hormones', unit: 'µg/L', aliases: ['free psa', 'psa, free'], unitAliases: ['ng/ml'] },
   { key: 'lh', label: 'LH', group: 'hormones', unit: 'IU/L', aliases: ['luteinising hormone', 'luteinizing hormone'], unitAliases: GONADOTROPHIN_ALIASES },
   { key: 'fsh', label: 'FSH', group: 'hormones', unit: 'IU/L', aliases: ['follicle stimulating hormone'], unitAliases: GONADOTROPHIN_ALIASES },
