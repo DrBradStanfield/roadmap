@@ -121,5 +121,23 @@ describe('US-07 AC10: creatinine (Brad 2026-11-02)', () => {
     expect(result.values).toEqual([]);
     expect(result.additionalValues.map((r) => r.name)).toEqual(['Creatinine Urine']);
   });
+
+  it('a row the model listed among other tests but the report printed as serum creatinine is promoted (Codex R1, Brad: "sounds fine")', () => {
+    const result = extract({ additionalValues: [lab('cystatin_c', 'Serum Creatinine', 82, 'µmol/L')] });
+    expect(result.values.map((v) => [v.metric, v.valueSI, v.printedName])).toEqual([['creatinine', 82, 'Serum Creatinine']]);
+    expect(result.additionalValues).toEqual([]);
+  });
+
+  it('...but its unit is checked as a core creatinine\'s: a ratio unit is refused, never saved', () => {
+    const result = extract({ additionalValues: [lab('cystatin_c', 'Serum Creatinine', 3.1, 'mg/mmol')] });
+    expect(result.values).toEqual([]);
+    expect(result.additionalValues).toEqual([]);
+    expect(result.refusedValues?.map((r) => r.metric)).toEqual(['creatinine']);
+  });
+
+  it('...and a creatinine picked only by the model\'s name is still never promoted', () => {
+    const result = extract({ additionalValues: [lab('creatinine', 'Kreatinin-Wert', 82, 'µmol/L')] });
+    expect(result.values).toEqual([]);
+  });
 });
 

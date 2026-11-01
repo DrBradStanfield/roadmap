@@ -683,8 +683,9 @@ export function parseExtractionJson(text: string): unknown {
 }
 
 /** The core metrics an additional value can be promoted into (US-12 AC11).
- *  Never creatinine: a urine creatinine prints in mg/dL too, and serum
- *  creatinine drives eGFR. */
+ *  Not creatinine by its name alone: a urine creatinine prints in mg/dL too,
+ *  and serum creatinine drives eGFR. One the report printed as serum
+ *  creatinine is promoted in `toUnifiedResult` (US-07 AC10). */
 const PROMOTABLE = new Set<string>(VALID_METRICS.filter(m => m !== 'creatinine'));
 
 /** Build a UnifiedExtractionResult from a parsed-and-filtered unified response.
@@ -780,9 +781,19 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
   const additionalValues: typeof parsed.additionalValues = [];
   for (const v of isLab ? labIn.flatMap(ownDay) : []) {
     const metric = resolveCoreMetricName(v.name);
-    if (metric && PROMOTABLE.has(metric) && !taken.has(slot(metric, v.recordedAt)) && reportedToCanonical(metric, v.value, v.unit)) {
-      taken.add(slot(metric, v.recordedAt));
-      coreRows.push({ metric, value: v.value, unit: v.unit, confidence: 'high', recordedAt: v.recordedAt, printedMonth: v.printedMonth, printedName: v.printedName });
+    const free = !!metric && !taken.has(slot(metric, v.recordedAt));
+    const promote = () => {
+      taken.add(slot(metric!, v.recordedAt));
+      coreRows.push({ metric: metric!, value: v.value, unit: v.unit, confidence: 'high', recordedAt: v.recordedAt, printedMonth: v.printedMonth, printedName: v.printedName });
+    };
+    // A creatinine the report itself printed as serum creatinine, with no urine
+    // word, is promoted like any core value, its unit checked as a core
+    // creatinine's (US-07 AC10, Brad 2026-11-02: "sounds fine").
+    const serumByPrint = metric === 'creatinine' && !!v.printedName && intoCreatinine(v.printedName) && !saysUrine(v.printedName);
+    if (free && serumByPrint) {
+      if (!refusesCreatinine(v)) promote();
+    } else if (free && PROMOTABLE.has(metric!) && reportedToCanonical(metric!, v.value, v.unit)) {
+      promote();
     } else if (metric !== 'creatinine' || foldName(v.name) === 'cr' || !refusesCreatinine(v)) {
       additionalValues.push(v);
     }
