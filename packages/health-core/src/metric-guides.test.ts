@@ -256,11 +256,11 @@ describe('METRIC_GUIDES (US-58)', () => {
     }
     // Appended after [122], none renumbered (Brad's decision 7); Milanović was [108] already.
     // [132]-[135], the exercise and heart rate safety sources, appended 2026-11-01;
-    // [136]-[144], the Supplements section's sources, appended 2026-11-02 (US-61 AC9).
-    expect(REF_LIST).toHaveLength(144);
+    // [136]-[147], the Supplements and Medications That I Take sources, appended 2026-11-02 (US-61 AC9).
+    expect(REF_LIST).toHaveLength(147);
     expect(numberOf('https://doi.org/10.1056/NEJMoa012512')).toBe(122);
     expect(numberOf('https://doi.org/10.1007/s40279-015-0365-0')).toBe(108);
-    expect(Math.max(...cited)).toBe(144);
+    expect(Math.max(...cited)).toBe(147);
   });
 
   it('AC7: no clinical claim cites an Apple source (Brad\'s decision 2)', () => {

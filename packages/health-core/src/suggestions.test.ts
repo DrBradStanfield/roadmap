@@ -3018,19 +3018,21 @@ describe('Evidence attachment', () => {
   // on good omega-3 levels (VITACOG), but FACIT found the reverse (van Soest 2021);
   // the omega-3 card carries the WHO 2026 note, and the reason drops the unhedged
   // "important role in cognitive protection".
-  it('US-07 AC1: creatine card attributes the memory view to Dr Stanfield; reviews are mixed', () => {
+  it('US-07 AC1: creatine card calls memory an interesting signal; reviews are mixed (Brad 2026-11-02)', () => {
     const { inputs, results } = createTestData({}, { bmi: 22 });
     const creatine = generateSuggestions(inputs, results, 'si').find(s => s.id === 'supplement-creatine')!;
 
-    expect(creatine.description).toContain('Dr Stanfield considers the memory evidence clear and consistent');
-    expect(creatine.description).toContain('formal reviews are more mixed, with the clearest benefit in older adults');
+    expect(creatine.description).toContain('There is also an interesting signal that it may help memory, another possible benefit');
+    expect(creatine.description).toContain('formal reviews are mixed, with the clearest benefit in older adults');
+    expect(creatine.description).not.toContain('clear and consistent');
     expect(creatine.description).not.toMatch(/consistently find/i);
     expect(creatine.description).not.toMatch(/emerging evidence/i);
     expect(creatine.description).not.toMatch(/women/i);
     expect(creatine.description).not.toContain('—');
 
     const reason = SUGGESTION_EVIDENCE['supplement-creatine'].reason;
-    expect(reason).toContain('his judgement, not a trial finding');
+    expect(reason).toContain('an interesting signal that creatine may help memory, another possible benefit. Formal reviews are mixed.');
+    expect(reason).not.toContain('clear and consistent');
     expect(reason).toContain('A systematic review (Avgerinos 2018)');
     expect(reason).toContain('no clear overall memory benefit except in older adults');
     expect(reason).toContain('no effect on overall cognition or executive function');
@@ -3075,7 +3077,7 @@ describe('Evidence attachment', () => {
     const watching = html.slice(html.indexOf('<h3>Supplements/Medications Worth Watching'), html.indexOf('<h3>Supplements Not Included Here'));
     // Every supplement card has its entry, under the dose Brad takes.
     for (const heading of ['Creatine Monohydrate 5g', 'Omega-3 1g', 'Low-dose Multivitamin', 'Lutein 10mg &amp; Zeaxanthin 2mg',
-      'Trimethylglycine 500mg', 'Collagen Peptides 12.5g', 'Hyaluronic Acid 200mg', 'Acacia Fiber 5g', 'Sleep support']) {
+      'Trimethylglycine 500mg', 'Collagen Peptides 10g', 'Hyaluronic Acid 200mg', 'Acacia Fiber 5g', 'Sleep support']) {
       expect(section, heading).toContain(heading);
     }
     // Fiber is a gap in intake, never a cholesterol or blood pressure claim.
@@ -3097,6 +3099,9 @@ describe('Evidence attachment', () => {
     // GlyNAC is watched, not suggested.
     expect(section).not.toContain('GlyNAC');
     expect(watching).toContain('GlyNAC');
+    // Brad's current medicines (2026-11-02), each off-label one labelled so.
+    for (const heading of ['Rosuvastatin 5mg + Ezetimibe 10mg', 'Tirzepatide 2.5mg weekly', 'Empagliflozin 6.25mg daily']) expect(section).toContain(heading);
+    expect(section.match(/off-label and against current guidelines/g)).toHaveLength(2);
   });
 
   it('US-07 AC1: omega-3 card and reason give VITACOG and the reverse FACIT finding, and the WHO 2026 note', () => {
