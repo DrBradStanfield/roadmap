@@ -1177,6 +1177,64 @@ describe('Dropbox failing to answer is an error, not a crash (US-32, N-2)', () =
   });
 });
 
+describe('US-10 AC4a: a 401 or 403 after the upload is not "nothing was written"', () => {
+  /** Dropbox stores the upload, then refuses the token on every later read: the save's own verify read. */
+  function refuseReadsAfterUpload(status: 401 | 403): void {
+    setAdapterFactory(() => {
+      const adapter = new MemoryAdapter(cloud);
+      const read = adapter.read.bind(adapter);
+      const write = adapter.write.bind(adapter);
+      let uploaded = false;
+      adapter.write = async (...args: Parameters<MemoryAdapter['write']>) => {
+        const result = await write(...args);
+        uploaded = true;
+        return result;
+      };
+      adapter.read = async (...args: Parameters<MemoryAdapter['read']>) => {
+        if (uploaded) throw new StorageError(`Dropbox read failed (${status})`, undefined, undefined, status);
+        return read(...args);
+      };
+      return adapter;
+    });
+  }
+
+  for (const status of [401, 403] as const) {
+    it(`a ${status} on the verify read says reconnect AND that the change may have landed`, async () => {
+      seedRecord();
+      const { access } = await connect();
+      refuseReadsAfterUpload(status);
+      const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY });
+      // The value is in the user's Dropbox: the upload landed before the refusal.
+      expect(storedRecord().measurements.map((m) => [m.metricType, m.value])).toEqual([['ldl', 3.2]]);
+      expect(answer.isError).toBe(true);
+      expect(answer.text).not.toMatch(/nothing was written/i);
+      expect(answer.text).toBe(
+        'The record in Dropbox refused this connection’s access after a change was sent. ' +
+          'Reconnect the provider, which grants access again. The change may have landed: read the record again before retrying.',
+      );
+    });
+  }
+
+  for (const status of [401, 403] as const) {
+    it(`control: a ${status} before anything was sent still says nothing was read and nothing was written`, async () => {
+      seedRecord();
+      const { access } = await connect();
+      setAdapterFactory(() => {
+        const adapter = new MemoryAdapter(cloud);
+        adapter.read = async () => { throw new StorageError(`Dropbox read failed (${status})`, undefined, undefined, status); };
+        return adapter;
+      });
+      const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY });
+      expect(storedRecord().measurements).toEqual([]);
+      expect(answer.isError).toBe(true);
+      expect(answer.text).toBe(
+        'Dropbox refused this connection’s access to the record. Nothing was read and nothing was written. ' +
+          'Ask the user to reconnect the connector, which grants it again.',
+      );
+    });
+  }
+});
+
 describe('bodies and floods are bounded (US-32)', () => {
   const OVERSIZE = 'x'.repeat(64 * 1024 + 1);
 
