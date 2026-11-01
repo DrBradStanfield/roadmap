@@ -26,6 +26,8 @@ final class AppleHealthSync {
         /// Health is encrypted while the phone is locked; the next unlock retries.
         case waitingForUnlock
         case failed(String)
+        /// After "Don't Allow" (AC15b): nothing may be written and nothing has come in.
+        case notAllowed
     }
 
     private(set) var status: Status
@@ -65,7 +67,7 @@ final class AppleHealthSync {
     var connected: Bool {
         switch status {
         case .notConnected, .failed, .unavailable: false
-        case .working, .upToDate, .waitingForUnlock: true
+        case .working, .upToDate, .waitingForUnlock, .notAllowed: true
         }
     }
 
@@ -158,7 +160,7 @@ final class AppleHealthSync {
             do {
                 try await importNew()
                 try await writeTyped()
-                status = .upToDate(.now)
+                status = noAccess ? .notAllowed : .upToDate(.now)
             } catch HealthStoreError.locked {
                 status = .waitingForUnlock
                 return
@@ -167,6 +169,12 @@ final class AppleHealthSync {
                 return
             }
         } while again
+    }
+
+    /// No kind may be written and none has given a reading (US-25 AC15b). iOS hides a refused
+    /// read, so an empty Health whose writes were refused looks the same, and says the same.
+    private var noAccess: Bool {
+        !HealthKind.allCases.contains { client.canWrite($0) || memory.anchor(for: $0) != nil }
     }
 
     private func importNew() async throws {

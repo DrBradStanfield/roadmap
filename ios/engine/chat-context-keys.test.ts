@@ -42,10 +42,11 @@ describe('chat context allow-list (Codex R3)', () => {
 // Codex R1 on PR 402 (US-07 AC8): a binary forwards only its own allow-list, so an engine
 // that produces a key an older binary lacks must not reach it. The bridge id is what keeps
 // an engine from an app (D3): it moves with the contract, and an app reads only its own
-// bridge's releases. These are the last binary's bridge and allow-list, before labEgfrOutdated.
+// bridge's releases. These are the last binary's bridge and allow-list, before labEgfrOutdated:
+// builds 3 and 4 carry 2d467ff50c66c42d (main's id before the 2026-11-01 move).
 describe('an older binary never takes an engine whose chat context it would strip', () => {
   const PREVIOUS = {
-    bridge: 'd0ffd9e53f8499b3',
+    bridge: '2d467ff50c66c42d',
     keys: [
       'heightCm', 'weightKg', 'waistCm', 'sex', 'birthYear', 'birthMonth',
       'hba1c', 'ldlC', 'totalCholesterol', 'hdlC', 'triglycerides', 'apoB', 'creatinine', 'psa', 'lpa',

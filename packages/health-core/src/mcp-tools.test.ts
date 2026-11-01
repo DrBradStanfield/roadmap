@@ -845,6 +845,30 @@ describe('US-34 — update_profile changes who the record is about', () => {
     }
   });
 
+  it('US-54 AC5b — refuses a birth month after this one, judged in the zone furthest ahead', () => {
+    // NOW is 2026-09-01T09:00Z: already 1 September everywhere, so September 2026 is
+    // allowed and October is not. A month alone is judged with the stored year, and a year alone with the stored month.
+    // The agent's words name the field; the person's words (US-54 AC5c) ride beside them.
+    expect(updateProfile(base(), { birthYear: 2026, birthMonth: 10 }, NOW)).toEqual({
+      status: 'rejected',
+      text: 'birthMonth: Your birth month cannot be in the future. Nothing was written.',
+      message: 'Your birth month cannot be in the future.',
+    });
+    const born2026 = ok(updateProfile(base(), { birthYear: 2026, birthMonth: 1 }, NOW)).file!;
+    expect(updateProfile(born2026, { birthMonth: 12 }, NOW).status).toBe('rejected');
+    expect(ok(updateProfile(born2026, { birthMonth: 9 }, NOW)).file).toBeDefined();
+    // This year with a stored December: refused by the month rule, never the schema's birth-year cap.
+    const december = ok(updateProfile(base(), { birthYear: 2025, birthMonth: 12 }, NOW)).file!;
+    expect(updateProfile(december, { birthYear: 2026 }, NOW)).toEqual({
+      status: 'rejected',
+      text: 'birthYear: Your birth month cannot be in the future. Nothing was written.',
+      message: 'Your birth month cannot be in the future.',
+    });
+    // 31 Aug 11:00 UTC is already 1 September in Kiribati (UTC+14): its own month is not refused.
+    expect(ok(updateProfile(base(), { birthYear: 2026, birthMonth: 9 }, '2026-08-31T11:00:00Z')).file).toBeDefined();
+    expect(updateProfile(base(), { birthYear: 2026, birthMonth: 9 }, '2026-08-31T09:00:00Z').status).toBe('rejected');
+  });
+
   it('AC3 — refuses a wrong `expected` without saying what the record holds', () => {
     const stale = updateProfile(base(), { heightCm: 180, expected: { heightCm: 170 } }, NOW);
     expect(stale.status).toBe('rejected');
@@ -857,6 +881,18 @@ describe('US-34 — update_profile changes who the record is about', () => {
     expect(ok(updateProfile(base(), { birthMonth: 4, expected: { birthMonth: null } }, NOW)).file).toBeDefined();
     const wrongNull = updateProfile(base(), { heightCm: 180, expected: { heightCm: null } }, NOW);
     expect(wrongNull.status).toBe('rejected');
+  });
+
+  it('AC3 — a wrong `expected` is refused before any check that reads the stored profile (US-32 AC5/AC22, Codex round 2 C2)', () => {
+    // Stored: born January 2026. December alone is a future month only with the STORED year,
+    // so answering "future month" would tell a wrong guesser the record holds 2026.
+    const born2026 = ok(updateProfile(base(), { birthYear: 2026, birthMonth: 1 }, NOW)).file!;
+    expect(updateProfile(born2026, { birthMonth: 12, expected: { birthYear: 1980 } }, NOW)).toEqual({
+      status: 'rejected',
+      text: 'The record does not hold the birthYear you expected. Read the record, then update. Nothing was written.',
+    });
+    // A right expectation still meets the future-month rule.
+    expect(updateProfile(born2026, { birthMonth: 12, expected: { birthYear: 2026 } }, NOW).text).toContain('cannot be in the future');
   });
 
   it('AC3 — a call that changes nothing writes nothing', () => {

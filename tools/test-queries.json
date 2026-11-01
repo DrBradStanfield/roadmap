@@ -7931,5 +7931,26 @@
     "source": "us-15-ac41-2026-10-26",
     "expected_classification": "ROUTE",
     "notes": "US-15 AC41 guard (adversary R8, 2026-10-26): a viewer citing a study as evidence is NOT spam and should get an answer. Was KNOWN-FAIL under the GREETING wording (GREETING 5/5); the SPAM label (2026-10-29) narrows spam to selling. The prompt's own example uses different wording on purpose."
+  },
+  {
+    "query": "Is there anything that eases psoriatic arthritis pain, or any new research on it? Asking for someone I love who has it.",
+    "expected": [],
+    "category": "musculoskeletal",
+    "source": "chat-health-2026-W44",
+    "notes": "2026-W44 chat-health: storefront first turn, paraphrased. Production empty (router v4); replay with its context empty 3/3. No entry covers psoriatic arthritis since the pathways left (US-15 AC39). Revisit expected if one is built (content-backlog.csv)."
+  },
+  {
+    "query": "The phone number box on your contact form keeps rejecting my Dutch mobile number, with and without the country code, so I can't send my message.",
+    "category": "classifier-account",
+    "source": "chat-health-2026-W44",
+    "expected_classification": "ACCOUNT",
+    "notes": "2026-W44 chat-health: storefront first turn, paraphrased (number and email dropped). A site-form problem, not health. Production ROUTE (router empty); replay of the original ACCOUNT 3/3, so production's ROUTE may be one draw."
+  },
+  {
+    "query": "I'm viewing full screen on a big monitor and there's a huge white margin either side of the page",
+    "category": "classifier-greeting",
+    "source": "chat-health-2026-W44",
+    "expected_classification": "GREETING",
+    "notes": "2026-W44 chat-health: widget turn, paraphrased. A meta complaint about the tool's layout after two table-scrolling asks labelled ACCOUNT. Production ROUTE (router empty); replay context-free GREETING 3/3, in thread ROUTE 3/3. KNOWN-FLAKY in thread; this fixture is context-free."
   }
 ]

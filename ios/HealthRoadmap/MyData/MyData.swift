@@ -173,6 +173,14 @@ enum RecordEdit: Encodable, Equatable {
     /// as JSON text, the refs ticked, and the report's day.
     case labImport(extractionJSON: String, refs: [String], reportDay: String)
 
+    /// A new birth year. A stored month that would then be in the future moves back to the
+    /// latest one in the same edit, as onboarding's wheel does (US-54 AC5b, review R4).
+    static func birthYear(_ year: Int, storedMonth: Int?, now: Date) -> RecordEdit {
+        let latest = DayText.latestBirthMonth(year: year, now: now)
+        guard let storedMonth, storedMonth > latest else { return .profile(birthYear: year) }
+        return .profile(birthYear: year, birthMonth: latest)
+    }
+
     private enum Key: String, CodingKey {
         case kind, alcohol, sex, birthYear, birthMonth, height, heightFeet, heightInches, systolic, diastolic, replace, seenIds, unitSystem, unit, metric, value, day, id, extractionJson, refs, reportDay, samples
     }

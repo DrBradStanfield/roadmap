@@ -2,7 +2,7 @@
 // health-core's own write functions. The app runs this same code in
 // JavaScriptCore; these tests run it in Node.
 import { describe, expect, it } from 'vitest';
-import { applyEdit, myData, newRecord, readNumber, readRecord } from './my-data';
+import { applyEdit, myData, newRecord, readNumber, readRecord, Refusal } from './my-data';
 import { metricHistory } from './my-data-forms';
 import { readUnitChoices } from './unit-choices';
 import { healthWritesJson, planJson } from './entry';
@@ -185,6 +185,13 @@ describe('applyEdit (AC4/AC5)', () => {
     expect(outcome).toMatchObject({ ok: false });
   });
 
+  it('US-54 AC5c — a refused profile value says it in plain words, with no field key or agent tail', () => {
+    const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    expect(applyEdit(file, { kind: 'profile', height: 30 }, NOW)).toEqual({ ok: false, reason: 'invalid-value', message: 'Height must be at least 50 cm.' });
+    // US-54 AC5b: NOW is 21 October 2026, so December 2026 is in the future.
+    expect(applyEdit(file, { kind: 'profile', birthYear: 2026, birthMonth: 12 }, NOW)).toEqual({ ok: false, reason: 'invalid-value', message: 'Your birth month cannot be in the future.' });
+  });
+
   it('changes units with a field stamp, and the shown values follow', () => {
     let file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'add', metric: 'weight', value: 80, day: '2026-10-20' });
     file = edited(file, { kind: 'units', unitSystem: 'conventional' });
@@ -256,6 +263,23 @@ describe('readRecord (AC4, adversary R4)', () => {
 
   it('reads a record', () => {
     expect(readRecord(JSON.stringify(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland')), NOW, 'phone').measurements).toEqual([]);
+  });
+
+  // US-25 AC6b, review R8: the phone hides an exception's text, so the words meant for
+  // the person go as a Refusal, which HealthEngine shows as they are.
+  it('refuses a file that is not a record, and one a newer app wrote, in the person\u2019s words', () => {
+    const refusal = (raw: string) => {
+      try { readRecord(raw, NOW, 'phone'); } catch (error) { return error; }
+      throw new Error('not refused');
+    };
+    const notRecord = refusal('[]');
+    expect(notRecord).toBeInstanceOf(Refusal);
+    expect(notRecord).toMatchObject({ name: 'Refusal', message: 'This file is not a health record.' });
+    const record = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    const tooNew = refusal(JSON.stringify({ ...record, schemaVersion: 999 }));
+    expect(tooNew).toMatchObject({ name: 'Refusal', message: 'A newer version of Health Roadmap wrote this record. Update the app to open it.' });
+    // A broken record is no refusal: its text stays hidden.
+    expect(refusal(JSON.stringify({ hello: 1 }))).not.toBeInstanceOf(Refusal);
   });
 });
 

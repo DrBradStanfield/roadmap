@@ -70,6 +70,17 @@ describe('web redesign §1 — the green token pair', () => {
   });
 });
 
+describe('US-62 AC8 — a grade as text', () => {
+  it('the amber and red grade colours reach 4.5:1 on white and on grey, and the rows use them', () => {
+    for (const name of ['color-grade-warn-text', 'color-grade-bad-text']) {
+      expect(ratio(token(name), WHITE), name).toBeGreaterThanOrEqual(4.5);
+      expect(ratio(token(name), GREY), name).toBeGreaterThanOrEqual(4.5);
+    }
+    expect(css).toMatch(/\.md-status-warn \{ color: var\(--color-grade-warn-text\); \}/);
+    expect(css).toMatch(/\.md-status-bad \{ color: var\(--color-grade-bad-text\); \}/);
+  });
+});
+
 describe('web redesign §1 — each use is on the right token', () => {
   const rules = (sheet: string) => sheet.replace(/\/\*[\s\S]*?\*\//g, '').split('}').map((r) => r.replace(/\s+/g, ' '));
 
