@@ -99,6 +99,18 @@ describe('US-35 AC5 — a ZIP is opened under caps, by position, with a counted 
     expect(skipped.map((s) => s.reason)).toEqual(['too_many', 'too_many']);
   });
 
+  it('counts every importable member it opens, kept or not, so oversized members cannot keep it inflating (GHSA-c7rw-h6xq-w2r6)', async () => {
+    const big = new Uint8Array(MAX_IMPORT_FILE_BYTES + 1);
+    const files: Record<string, Uint8Array> = {};
+    for (let i = 0; i < MAX_IMPORT_FILES_PER_CALL + 5; i++) files[`big${String(i).padStart(2, '0')}.pdf`] = big;
+    files['zz-ok.pdf'] = PDF;
+    const { entries, skipped } = await unzip(await zipOf(files));
+    expect(entries).toEqual([]);
+    expect(skipped.filter((s) => s.reason === 'too_large')).toHaveLength(MAX_IMPORT_FILES_PER_CALL);
+    expect(skipped.filter((s) => s.reason === 'too_many').map((s) => s.name)).toEqual(
+      [...Array.from({ length: 5 }, (_, i) => `big${MAX_IMPORT_FILES_PER_CALL + i}.pdf`), 'zz-ok.pdf']);
+  });
+
   it('stops inflating an entry past the cap — a bomb never fills memory', async () => {
     // A highly compressible 6 MB entry: declared size is real here, and the
     // inflate is counted regardless of what the directory claims.

@@ -70,8 +70,8 @@ export interface StatTileOptions {
 const TONES: Record<string, StatTone> = {
   'Normal': 'normal', 'Optimal': 'normal', 'Healthy': 'normal',
   'Low Normal': 'info', 'Borderline': 'info', 'Above optimal': 'info', 'Overweight': 'info',
-  'Mildly Decreased': 'attention', 'High': 'attention', 'Elevated': 'attention',
-  'Moderately Decreased': 'attention', 'Underweight': 'attention',
+  'Mildly to Moderately Decreased': 'attention', 'High': 'attention', 'Elevated': 'attention',
+  'Moderately to Severely Decreased': 'attention', 'Underweight': 'attention',
   'Prediabetic': 'attention',
   'Very High': 'urgent', 'Severely Decreased': 'urgent', 'Kidney Failure': 'urgent',
   'Diabetic': 'urgent',
