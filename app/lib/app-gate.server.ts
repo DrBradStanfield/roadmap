@@ -7,7 +7,7 @@
  */
 import { readCappedBytes } from './capped-body.server';
 import { getClientIp } from './local-first-route.server';
-import { createQuotaCounter, DAY_MS } from './rate-limiter';
+import { createQuotaCounter, DAY_MS, machineFiles } from './rate-limiter';
 import { supabaseAdmin } from './supabase.server';
 import {
   assertionSignatureValid, attestConfig, AttestError, devBypassAllowed, parseAssertion,
@@ -208,14 +208,20 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
   }
 }
 
-/** The per-IP and per-machine counts, all or nothing: their refund, or null when either is full. */
+/**
+ * The per-IP and per-machine counts, and for a lab file the web's shared file
+ * cap (US-35 AC10), all or nothing: their refund, or null when any is full (US-52 AC4d).
+ */
 function reserveShared(kind: AppUseKind, ip: string): (() => void) | null {
   const ipBack = appLimits.ip[kind].reserve(ip, 1);
   if (!ipBack) { logRefusal(kind, 'ip_limit'); return null; }
   const machineBack = appLimits.machine[kind].reserve('machine', 1);
-  if (machineBack) return () => { ipBack(); machineBack(); };
+  if (!machineBack) { ipBack(); logRefusal(kind, 'machine_limit'); return null; }
+  const fileBack = kind === 'lab' ? machineFiles.reserve('machine', 1) : () => {};
+  if (fileBack) return () => { ipBack(); machineBack(); fileBack(); };
   ipBack();
-  logRefusal(kind, 'machine_limit');
+  machineBack();
+  logRefusal(kind, 'file_limit');
   return null;
 }
 
