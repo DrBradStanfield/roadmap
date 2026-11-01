@@ -2342,11 +2342,11 @@ export function InputPanel({
   // ── Render all sections with progressive disclosure (both mobile and desktop) ──
   return (
     <div ref={panelRef} className={`health-input-panel${pageShown ? ' md-page-open' : ''}`}>
+      <ColumnHeader step={1} title="Your information" meta={storageBar} actions={!!storageBar} />
       {pageShown && (
         <ValuePage key={JSON.stringify(pageShown)} subject={pageShown} history={[...vitalsHistory, ...bloodTestHistory]} labValues={labValues}
                    ctx={rowCtx} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} dirtyRef={pageDirty}/>
       )}
-      <ColumnHeader step={1} title="Your information" meta={storageBar} actions={!!storageBar} />
       {panelMessages}
       {/* Card 1: the profile (the onboarding's questions until they are
           answered, US-62 AC13), then the vitals once the whole form shows.
