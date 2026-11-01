@@ -56,8 +56,8 @@ afterEach(async () => {
 });
 
 // About you's Alcohol toggle (US-60 AC4): the label of its checked answer, '' when none.
-const alcoholRow = (root: HTMLElement) => root.querySelector<HTMLElement>('#alcohol[role="radiogroup"]');
-const alcoholAnswer = (root: HTMLElement) => alcoholRow(root)?.querySelector('[aria-checked="true"]')?.textContent ?? '';
+const alcoholRow = (root: HTMLElement) => root.querySelector<HTMLElement>('#alcohol[role="group"]');
+const alcoholAnswer = (root: HTMLElement) => alcoholRow(root)?.querySelector('[aria-pressed="true"]')?.textContent ?? '';
 const alcoholCard = (root: HTMLElement) =>
   [...root.querySelectorAll('.suggestion-title')].find((t) => t.textContent === 'Reduce alcohol intake');
 const dialog = () => document.body.querySelector<HTMLElement>('[role="dialog"][aria-labelledby="alcohol-dialog-title"]');
@@ -171,23 +171,23 @@ it('US-60 AC4 (M2): Starting Info\'s Alcohol toggle sets each answer with no usa
   const view = render(<HealthTool />);
   const row = await waitFor(() => { const r = alcoholRow(view.container); expect(r).not.toBeNull(); return r!; });
   expect(row.getAttribute('aria-label')).toBe('Alcohol');
-  const radios = within(row).getAllByRole('radio');
+  const radios = within(row).getAllByRole('button');
   expect(radios.map((b) => b.textContent)).toEqual(["I don't drink", 'I drink']);
   // Unanswered: neither is checked, and the row asks for no attention (optional).
-  expect(radios.map((b) => b.getAttribute('aria-checked'))).toEqual(['false', 'false']);
+  expect(radios.map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'false']);
   expect(row.closest('.health-field')!.classList.contains('field-attention')).toBe(false);
   expect(row.closest('.health-field')!.querySelector('.field-why')?.textContent).toBe('Used to decide whether advice on alcohol applies to you.');
 
   fireEvent.click(within(row).getByText('I drink'));
   await persist();
   expect(saved().profile.alcohol).toBe('drinks');
-  expect(radios.map((b) => b.getAttribute('aria-checked'))).toEqual(['false', 'true']);
+  expect(radios.map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'true']);
   expect(alcoholCard(view.container)).toBeDefined();
 
   fireEvent.click(within(row).getByText("I don't drink"));
   await persist();
   expect(saved().profile.alcohol).toBe('none');
-  expect(radios.map((b) => b.getAttribute('aria-checked'))).toEqual(['true', 'false']);
+  expect(radios.map((b) => b.getAttribute('aria-pressed'))).toEqual(['true', 'false']);
   expect(radios[0].classList.contains('sex-toggle-btn--active')).toBe(true);
   expect(alcoholCard(view.container)).toBeUndefined();
 
@@ -196,7 +196,7 @@ it('US-60 AC4 (M2): Starting Info\'s Alcohol toggle sets each answer with no usa
   await persist();
   expect(saved().profile.alcohol).toBeNull();
   expect(saved().profile.fieldStamps?.alcohol).toBeDefined();
-  expect(radios.map((b) => b.getAttribute('aria-checked'))).toEqual(['false', 'false']);
+  expect(radios.map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'false']);
   await waitFor(() => expect(alcoholCard(view.container)).toBeDefined());
   // The signal counts the card's question only (US-60 usage signal).
   expect(vi.mocked(trackProductEvent)).not.toHaveBeenCalledWith('alcohol_question_answered');

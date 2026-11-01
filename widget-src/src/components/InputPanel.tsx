@@ -1277,17 +1277,17 @@ export function InputPanel({
 
   // US-60: the answer the plan's "Reduce alcohol intake" Dismiss asks for. Not
   // an onboarding question, so it shows with the whole form and no attention
-  // highlight. Tapping the chosen answer clears it (M2: the card comes back).
+  // highlight. Tapping the chosen answer clears it (M2: the card comes back), so
+  // these are pressed toggle buttons, not radios (a checked radio cannot uncheck).
   const renderAlcohol = () => (
     <div className="health-field">
       <label>Alcohol</label>
-      <div id="alcohol" className="sex-toggle" role="radiogroup" aria-label="Alcohol">
+      <div id="alcohol" className="sex-toggle" role="group" aria-label="Alcohol">
         {ALCOHOL_OPTIONS.map(({ value, label }) => (
           <button
             key={value}
             type="button"
-            role="radio"
-            aria-checked={inputs.alcohol === value}
+            aria-pressed={inputs.alcohol === value}
             className={`sex-toggle-btn${inputs.alcohol === value ? ' sex-toggle-btn--active' : ''}`}
             onClick={() => updateField('alcohol', inputs.alcohol === value ? undefined : value)}
           >
