@@ -537,10 +537,13 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     const hasChanges = autoSaveFields.some(f => inputs[f] !== previousInputsRef.current[f]);
     if (!hasChanges) return true;
 
-    const success = await saveChangedMeasurements(currentPrefill, previousPrefill, erase);
+    const refused = await saveChangedMeasurements(currentPrefill, previousPrefill, erase);
+    const success = refused !== false;
     if (success) {
+      // A refused field keeps its saved value here, so the next edit to
+      // either half is judged against the record as a pair (US-54 AC5b).
       for (const field of autoSaveFields) {
-        (previousInputsRef.current as any)[field] = inputs[field];
+        if (!(refused as string[]).includes(field)) (previousInputsRef.current as any)[field] = inputs[field];
       }
       // The chat copy holds the saved profile beside the saved values it
       // already has (US-15 AC10).

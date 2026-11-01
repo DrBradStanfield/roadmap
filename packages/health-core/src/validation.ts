@@ -16,8 +16,11 @@ export const METRIC_TYPES = [
 
 export type MetricTypeValue = typeof METRIC_TYPES[number];
 
-/** Read at each check, so a tab or server left running across New Year takes the new year. */
-const notFutureYear = (year: number) => year <= new Date().getFullYear();
+/** This year in the zone furthest ahead (UTC+14), as `birthInFuture` judges the
+ *  month. Read at each check, so a tab or server left running across New Year
+ *  takes the new year. */
+const latestYear = () => Number(latestDayOnEarth(new Date()).slice(0, 4));
+const notFutureYear = (year: number) => year <= latestYear();
 
 /**
  * Schema for validating health inputs.
@@ -537,7 +540,7 @@ export type DocumentType = typeof DOCUMENT_TYPES[number];
  * boundary values slightly outside SI ranges, causing false rejections.
  */
 const IDENTITY_FIELD_RANGES: Record<string, { min: number; max: number }> = {
-  birthYear: { min: 1900, get max() { return new Date().getFullYear(); } },
+  birthYear: { min: 1900, get max() { return latestYear(); } },
   birthMonth: { min: 1, max: 12 },
   systolicBp: { min: 60, max: 250 },
   diastolicBp: { min: 40, max: 150 },

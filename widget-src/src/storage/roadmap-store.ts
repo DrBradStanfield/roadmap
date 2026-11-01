@@ -162,6 +162,9 @@ export type CorrectStatus = 'ok' | 'changed' | 'invalid' | 'error';
  *  the test on that day is not what the page showed. `invalid` carries the
  *  record's refusal, for the page to say. */
 export type MoveOutcome = { status: Exclude<CorrectStatus, 'invalid'> } | { status: 'invalid'; refusal: MoveRejection };
+const BIRTH_FIELDS = ['birthYear', 'birthMonth'] as const;
+/** A profile field a save can refuse: a birth month in the future (US-54 AC5b). */
+export type BirthField = (typeof BIRTH_FIELDS)[number];
 export interface BulkSaveResult {
   saved: ApiMeasurement[];
   skippedDuplicates: number;
@@ -324,14 +327,16 @@ export class RoadmapStore {
     return { status: 'ok' };
   }
 
-  saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): boolean {
+  /** False when the erase refuses it; otherwise the profile fields it refused
+   *  (US-54 AC5b), which the caller keeps at their saved values. */
+  saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): false | BirthField[] {
     if (this.refuses(erase)) return false;
-    this.applyProfileChanges(current, previous, erase);
+    const refused = this.applyProfileChanges(current, previous, erase);
     // diffInputsToMeasurements (health-core) owns the field→metric map + change detection.
     for (const { metricType, value } of diffInputsToMeasurements(current, previous)) {
       this.addMeasurement(metricType, value, undefined, erase);
     }
-    return true;
+    return refused;
   }
 
   saveMedication(medicationKey: string, drugName: string, doseValue: number | null = null, doseUnit: string | null = null, erase?: string): boolean {
@@ -539,31 +544,26 @@ export class RoadmapStore {
 
   // =================================================================== private
 
-  private applyProfileChanges(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): void {
+  private applyProfileChanges(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): BirthField[] {
     const changes: Record<string, unknown> = {};
     for (const field of [...PREFILL_FIELDS, 'unitSystem'] as const) {
       // A cleared form field is absent from current, but is still a write.
       // Keep its key as null so the field stamp carries the clear (US-10 AC9).
       if (current[field] !== previous[field]) changes[field] = current[field] ?? null;
     }
-    // US-54 AC5b: a birth month after this one writes neither half, as
-    // update_profile refuses it; a year alone is judged with January. The form
-    // keeps a refused pair as saved, so a later good edit to one half also
-    // writes the other where it differs from the record.
-    if ('birthYear' in changes || 'birthMonth' in changes) {
-      const { birthYear, birthMonth } = current;
-      const refused = birthYear !== undefined && birthInFuture(birthYear, birthMonth ?? 1, new Date());
-      for (const field of ['birthYear', 'birthMonth'] as const) {
-        if (refused) delete changes[field];
-        else if (!(field in changes) && (current[field] ?? null) !== (this.file.profile[field] ?? null)) changes[field] = current[field] ?? null;
-      }
-    }
-    if (Object.keys(changes).length === 0) return;
+    // US-54 AC5b: a birth month after this one writes neither changed half,
+    // as update_profile refuses it; a year alone is judged with January.
+    const refused = current.birthYear !== undefined && birthInFuture(current.birthYear, current.birthMonth ?? 1, new Date())
+      ? BIRTH_FIELDS.filter((field) => field in changes)
+      : [];
+    for (const field of refused) delete changes[field];
+    if (Object.keys(changes).length === 0) return refused;
     // Only the fields changed take a new stamp (US-10 AC6). And an edit, which
     // schedules a save, as every other mutation is: a profile-only edit (sex,
     // height, birth date — no measurement changed with it) once scheduled no
     // save at all, so it sat in memory until the next unrelated edit carried it up.
     this.session.edit((file) => stampProfile(file, changes as Partial<RoadmapProfile>, new Date().toISOString()), erase);
+    return refused;
   }
 }
 

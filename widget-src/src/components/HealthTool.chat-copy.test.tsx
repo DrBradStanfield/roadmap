@@ -150,6 +150,29 @@ describe('US-15 AC10: the chat copy holds what is saved, never an unsaved typed 
     expect(loadGuestInputs()?.weightKg).toBeUndefined();
   });
 
+  // US-54 AC5b (review of 2026-11-01): a refused birth month never reaches the
+  // copy, and the form's next edit to either half is judged as a pair.
+  it('US-54 AC5b, US-15 AC10: after a refused birth month the copy holds the record\'s pair; the next edit saves both halves', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-01T09:00:00Z'));
+    try {
+      await returningGuest(); // born 1970, no month
+      act(() => panel.props!.onChange('birthYear', 2026));
+      act(() => panel.props!.onChange('birthMonth', 10));
+      act(() => panel.props!.onChange('heightCm', 180));
+      await waitFor(() => expect(loadFromLocalStorage()?.inputs.heightCm).toBe(180), { timeout: 2000 });
+      expect(loadFromLocalStorage()!.inputs).toEqual({ sex: 'male', heightCm: 180, birthYear: 1970 });
+      expect((await loadLatestMeasurements())?.inputs).toMatchObject({ birthYear: 1970 });
+      expect((await loadLatestMeasurements())?.inputs.birthMonth).toBeUndefined();
+
+      act(() => panel.props!.onChange('birthMonth', 9)); // only the month changes in the form
+      await waitFor(() => expect(loadFromLocalStorage()?.inputs).toMatchObject({ birthYear: 2026, birthMonth: 9 }), { timeout: 2000 });
+      expect((await loadLatestMeasurements())?.inputs).toMatchObject({ birthYear: 2026, birthMonth: 9 });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   const statinOnRecord = async () => (await loadLatestMeasurements())?.medications
     .some((m: ApiMedication) => m.medicationKey === 'statin') ?? false;
 
