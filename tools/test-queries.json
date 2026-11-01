@@ -7891,6 +7891,20 @@
     "notes": "US-15 AC41 guard for the 2026-11-01 amendment: a company that names itself but asks a real question is NOT spam. Must stay ROUTE."
   },
   {
+    "query": "In our practice we offer CAC scans from age 40, and the result often changes how we manage statins.",
+    "category": "classifier-spam",
+    "source": "us-15-ac41-2026-11-01",
+    "expected_classification": "ROUTE",
+    "notes": "US-15 AC41 guard (adversary R1, 2026-11-01): a clinician describing their own patient care as \"we/our\", with no question, is NOT a company presenting its service. ROUTE 5/5 before the amendment; SPAM 10/10 on its first wording, so the prompt gained the clinic carve-out (ROUTE 10/10)."
+  },
+  {
+    "query": "Our lab published a 2023 RCT on this and we found no effect on HbA1c after six months.",
+    "category": "classifier-spam",
+    "source": "us-15-ac41-2026-11-01",
+    "expected_classification": "ROUTE",
+    "notes": "US-15 AC41 guard (adversary R1, 2026-11-01): a research group citing its own study is the cited-study carve-out, not a lab presenting its service. ROUTE 5/5 before and after the amendment."
+  },
+  {
     "query": "Is there anything that eases psoriatic arthritis pain, or any new research on it? Asking for someone I love who has it.",
     "expected": [],
     "category": "musculoskeletal",

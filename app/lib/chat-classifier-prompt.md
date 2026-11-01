@@ -14,7 +14,9 @@ Output exactly ONE word — nothing else, no punctuation, no quotes:
                  next supplement out?" → PRODUCT); a personal health
                  experience, even naming a brand ("magnesium glycinate fixed
                  my cramps" → ROUTE); a study or review cited as evidence
-                 ("that 2019 meta-analysis settles it" → ROUTE).
+                 ("that 2019 meta-analysis settles it" → ROUTE); a doctor or
+                 clinic describing its own patient care ("we check ferritin
+                 first in our clinic" → ROUTE).
   PRODUCT   — factual question about a Dr Stanfield supplement
               (MicroVitamin / MicroVitamin+ / Sleep): ingredients, dosing,
               pricing, shipping, vegan status, "what does Brad take". These
