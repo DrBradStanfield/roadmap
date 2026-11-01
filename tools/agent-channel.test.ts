@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { run, MAX_CONTENT, UNTRUSTED_NOTE } from './agent-channel.mjs';
+import { run, CHANNEL_KEY, MAX_CONTENT, TOKEN_KEY, UNTRUSTED_NOTE } from './agent-channel.mjs';
 
 // Fixture values are assembled at run time, so no credential shape sits in this file.
 const TOKEN = ['agent', 'bot', 'fixture', 'value', '7f3a9c'].join('-');
@@ -24,9 +24,9 @@ let now: number;
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 const msg = (id: string, content = `m${id}`, bot = true) => ({ id, content, timestamp: '2026-11-01T00:00:00Z', author: { username: 'hermes', bot } });
-const env = (extra: Record<string, string> = {}) => ({ [`DISCORD_AGENT_BOT_TOKEN`]: TOKEN, [`DISCORD_AGENT_CHANNEL_ID`]: CHANNEL, ...extra });
+const env = (extra: Record<string, string> = {}) => ({ [TOKEN_KEY]: TOKEN, [CHANNEL_KEY]: CHANNEL, ...extra });
 const go = (argv: string[], extra: Record<string, unknown> = {}) =>
-  run(argv, { env: env(), fetch: fetchMock, home, roots: [root], now: () => now, stdin: async () => '', ...extra });
+  run(argv, { env: env(), fetch: fetchMock, home, root, now: () => now, stdin: async () => '', ...extra });
 const state = () => JSON.parse(readFileSync(join(home, '.health-roadmap', 'agent-channel-state.json'), 'utf8'));
 const urls = () => fetchMock.mock.calls.map((c) => String(c[0]));
 
@@ -45,29 +45,29 @@ afterEach(() => {
 
 describe('US-63 AC1: configuration comes only from the two agent variables', () => {
   it('refuses a missing token, naming the variable, and sends nothing', async () => {
-    const r = await go(['read'], { env: { DISCORD_AGENT_CHANNEL_ID: CHANNEL } });
+    const r = await go(['read'], { env: { [CHANNEL_KEY]: CHANNEL } });
     expect(r.code).toBe(1);
-    expect(r.stderr).toContain('DISCORD_AGENT_BOT_TOKEN is not set');
+    expect(r.stderr).toContain(`${TOKEN_KEY} is not set`);
     expect(fetchMock).not.toHaveBeenCalled();
   });
   it('refuses a missing channel, naming the variable', async () => {
-    const r = await go(['post', 'hi'], { env: { DISCORD_AGENT_BOT_TOKEN: TOKEN } });
-    expect(r.stderr).toContain('DISCORD_AGENT_CHANNEL_ID is not set');
+    const r = await go(['post', 'hi'], { env: { [TOKEN_KEY]: TOKEN } });
+    expect(r.stderr).toContain(`${CHANNEL_KEY} is not set`);
     expect(fetchMock).not.toHaveBeenCalled();
   });
   it('refuses a channel id that is not a Discord id', async () => {
-    const r = await go(['read'], { env: env({ DISCORD_AGENT_CHANNEL_ID: '../../guilds/1' }) });
-    expect(r.stderr).toContain('DISCORD_AGENT_CHANNEL_ID is not a Discord channel id');
+    const r = await go(['read'], { env: env({ [CHANNEL_KEY]: '../../guilds/1' }) });
+    expect(r.stderr).toContain(`${CHANNEL_KEY} is not a Discord channel id`);
     expect(fetchMock).not.toHaveBeenCalled();
   });
   it("refuses the health bot's token", async () => {
-    const r = await go(['read'], { env: env({ DISCORD_AGENT_BOT_TOKEN: HEALTH_TOKEN }) });
+    const r = await go(['read'], { env: env({ [TOKEN_KEY]: HEALTH_TOKEN }) });
     expect(r.stderr).toContain("is the health bot's token");
     expect(r.stderr).not.toContain(HEALTH_TOKEN);
     expect(fetchMock).not.toHaveBeenCalled();
   });
   it("falls back to the main checkout's .env when the environment lacks them", async () => {
-    writeFileSync(join(root, '.env'), `DISCORD_AGENT_BOT_TOKEN=${TOKEN}\nDISCORD_AGENT_CHANNEL_ID=${CHANNEL}\n`);
+    writeFileSync(join(root, '.env'), `${TOKEN_KEY}=${TOKEN}\n${CHANNEL_KEY}=${CHANNEL}\n`);
     const r = await go(['read'], { env: {} });
     expect(r.code).toBe(0);
     expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe(`Bot ${TOKEN}`);
@@ -174,7 +174,7 @@ describe('US-63 AC6: nothing private is posted', () => {
     await refusedClean(`the key is ${ENV_SECRET} ok`, 'SUPABASE_SERVICE_ROLE_KEY', ENV_SECRET);
   });
   it('refuses the bot token itself', async () => {
-    await refusedClean(`token ${TOKEN}`, 'DISCORD_AGENT_BOT_TOKEN', TOKEN);
+    await refusedClean(`token ${TOKEN}`, TOKEN_KEY, TOKEN);
   });
   it('refuses a credential shape, naming only the shape', async () => {
     const gh = ['gh', 'p_', 'A1b2'.repeat(9)].join('');
@@ -184,8 +184,25 @@ describe('US-63 AC6: nothing private is posted', () => {
     const email = ['tester', 'example.com'].join('@');
     await refusedClean(`ask ${email}`, 'email address', email);
   });
-  it('lets short values and template values through', async () => {
-    expect((await go(['post', 'abc and your-placeholder-here'])).code).toBe(0);
+  it('refuses a .env.example value too: a template can gain a real value', async () => {
+    await refusedClean('use your-placeholder-here', 'PLACEHOLDER_VALUE', 'your-placeholder-here');
+  });
+  it('refuses a value present only in a commented-out line', async () => {
+    const old = ['retired', 'fixture', 'secret'].join('-');
+    writeFileSync(join(root, '.env.local'), `# OLD_SERVICE_KEY=${old}\n`);
+    await refusedClean(`was ${old}`, 'OLD_SERVICE_KEY', old);
+  });
+  it('refuses an unquoted value holding ` #`, whole and cut at the #', async () => {
+    // The cut form alone is long enough in CUT_KEY; only the whole form is in WHOLE_KEY (its cut, `ab`, is short).
+    const head = ['hashed', 'fixture', 'head'].join('-');
+    const whole = ['ab #', 'tail', 'part'].join('-');
+    writeFileSync(join(root, '.env.local'), `CUT_KEY=${head} #note\nWHOLE_KEY=${whole}\n`);
+    await refusedClean(`cut ${head} here`, 'CUT_KEY', head);
+    await refusedClean(`whole ${whole} here`, 'WHOLE_KEY', whole);
+    expect((await go(['post', 'ab alone'])).code).toBe(0);
+  });
+  it('lets short values through', async () => {
+    expect((await go(['post', 'abc and plain words'])).code).toBe(0);
   });
 });
 

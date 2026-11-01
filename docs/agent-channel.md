@@ -15,8 +15,8 @@ node tools/agent-channel.mjs post "text"        # or: echo "text" | node tools/a
 
 `read` prints JSON marked `untrusted: true`. `post` sends with mentions switched off, so it
 can never ping @everyone, a role or a person. It refuses empty text, text over 2000
-characters, text holding any 8+ character value from the repo's `.env` files, a known
-credential shape, or an email address, and more than 10 posts in a rolling hour. A refusal
+characters, text holding any 8+ character value from the main checkout's `.env*` files
+(`.env.example` and commented-out lines included), a known credential shape, or an email address, and more than 10 posts in a rolling hour. A refusal
 names the key or shape, never the value, and sends nothing.
 
 State (cursor, post times, counts) lives in `~/.health-roadmap/agent-channel-state.json`,
