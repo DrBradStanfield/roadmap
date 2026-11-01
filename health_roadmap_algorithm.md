@@ -32,7 +32,7 @@ Source: `calculations.ts`
 
 ### Ideal Body Weight (Peterson Formula, 2016)
 
-`IBW = 2.2 × BMI_target + 3.5 × BMI_target × (height_m − 1.5)` kg
+`Ideal Body Weight = 2.2 × BMI_target + 3.5 × BMI_target × (height_m − 1.5)` kg
 
 Sex-specific target BMIs (based on mortality meta-analyses):
 - **Male:** BMI target = 24 (optimal mortality range 23–26)
@@ -43,8 +43,8 @@ Sex-specific target BMIs (based on mortality meta-analyses):
 
 ### Daily Protein Target
 
-- **Normal:** `round(IBW * 1.2)` grams/day
-- **CKD (eGFR < 45):** `round(IBW * 1.0)` grams/day
+- **Normal:** `round(Ideal Body Weight * 1.2)` grams/day
+- **CKD (eGFR < 45):** `round(Ideal Body Weight * 1.0)` grams/day
 
 The CKD adjustment uses strict less-than: at exactly eGFR 45, the normal 1.2 multiplier applies.
 
@@ -337,6 +337,8 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `prolactin` | mIU/L | microiu/ml | 1 | µIU/mL with the prefix spelled out |
 | `prolactin` | mIU/L | mciu/ml | 1 | µIU/mL with the mc prefix (as mcg) |
 | `cortisol_am` | nmol/L | µg/dl | 27.59 | cortisol 362.46 g/mol |
+| `cortisol_random` | nmol/L | µg/dl | 27.59 | cortisol 362.46 g/mol |
+| `cortisol_pm` | nmol/L | µg/dl | 27.59 | cortisol 362.46 g/mol |
 | `psa_free` | µg/L | ng/ml | 1 | ng/mL and µg/L are the same number |
 | `lh` | IU/L | miu/ml | 1 | mIU/mL and IU/L are the same number |
 | `lh` | IU/L | u/l | 1 | U/L is IU/L, printed short |
@@ -444,6 +446,8 @@ AC20 adds the comma, bracket and "absolute" spellings US, AU and NZ reports prin
 
 Three-file sync: `evidence.ts` and `roadmap_text.html` are untouched because no threshold, suggestion or user-facing sentence changes — only the unit a stored number is expressed in. This holds for the 2026-10-20 additions too: no suggestion reads a catalogued test (`suggestions.ts` never reads `labValues`), so they are record-keeping only. If any of them ever drives a suggestion, all three files change.
 
+**Cortisol by timing (US-07 AC9, Brad 2026-11-02, issue 476).** Cortisol is read against the time it was drawn, so each timing has its own entry, in nmol/L at the same 27.59 µg/dL factor. A name that prints no timing ("Cortisol") is a morning cortisol, `cortisol_am` "Cortisol (morning)", since most cortisol tests are drawn in the morning. AM or morning spellings go there too. A random cortisol goes to `cortisol_random` "Cortisol (random)". A PM, evening or (blood) midnight cortisol goes to `cortisol_pm` "Cortisol (PM)". Salivary and urine cortisol are not catalogued: they keep their printed names. A row stored earlier under a random or PM name was uncatalogued; slots are computed on read, so it now reads under its new entry, and one printed in µg/dL is converted at load by an appended correction row (`migrate.ts`, as for every newly catalogued test). A bare "Cortisol" row stays in `cortisol_am`. The upload prompt's name list does not offer the two new keys until the #166 benchmark (`PROMPT_DEFERRED_KEYS`).
+
 ---
 
 ## 3. Clinical Thresholds
@@ -542,6 +546,19 @@ With no sex on record the plan grades no HDL, so `hdl-low` does not show (US-07 
 | mildlyDecreased | 45 | CKD-3b boundary, protein adjustment |
 | moderatelyDecreased | 30 | G3b |
 | severelyDecreased | 15 | G4 |
+
+**Labels (`getEgfrStatus`; US-07 AC9, Brad 2026-11-02, issue 474).** From 60 down the tile and card use KDIGO 2024's names and cut points. Normal and Low Normal are the tool's own bands: KDIGO calls 60-89 mildly decreased (G2), and G1-G2 are not chronic kidney disease without other markers of kidney damage.
+
+| eGFR | Label | KDIGO 2024 |
+|------|-------|------------|
+| >= 70 | Normal | tool's own (G1 >= 90 normal or high; G2 60-89 mildly decreased) |
+| 60-69 | Low Normal | tool's own (G2 mildly decreased) |
+| 45-59 | Mildly to Moderately Decreased | G3a |
+| 30-44 | Moderately to Severely Decreased | G3b |
+| 15-29 | Severely Decreased | G4 |
+| < 15 | Kidney Failure | G5 |
+
+Source: KDIGO 2024 CKD guideline (Kidney Int 2024; DOI: 10.1016/j.kint.2023.10.018), cited on the card.
 
 ### ApoB (g/L)
 
@@ -661,6 +678,8 @@ Three-file sync for this section's 2026-10-14 amendments (the strict missing-mon
 | `fiber` | nutrition | 25-35g fiber daily | Reynolds 2019 |
 | `exercise` | exercise | At least 150 min moderate cardio, or 75 min vigorous, or a mix (1 vigorous min = 2 moderate) + 2-3 resistance sessions/week | WHO 2020; Physical Activity Guidelines 2018 |
 | `sleep` | sleep | 7-9 hours nightly | Cappuccio 2010 |
+
+**Exercise safety (display text, Brad 2026-11-01):** roadmap_text.html's Exercise safety paragraph says only: stop if you get chest pain, dizziness, fainting, palpitations or unusual breathlessness, and see your doctor before you exercise again (Franklin 2020, AHA scientific statement, DOI: 10.1161/CIR.0000000000000749). The Apple Watch heart rate paragraph above it says (Brad 2026-11-02 moved it there, so the safety paragraph gives one instruction): get emergency care for chest pain, whatever your pulse (Gulati 2021, AHA/ACC chest pain guideline, DOI: 10.1161/CIR.0000000000001029), or for a racing pulse with fainting, dizziness or breathlessness (NHS Arrhythmia, 2024, www.nhs.uk/conditions/arrhythmia). A very slow pulse with fainting, dizziness or breathlessness needs prompt medical care (Kusumoto 2019, ACC/AHA/HRS bradycardia guideline, DOI: 10.1161/CIR.0000000000000628). The heart rate guide (`heart_rate` in `metric-guides.ts`) states the last two lines and cites Gulati 2021, NHS 2024 and Kusumoto 2019. No card or threshold changes.
 
 ### Conditional Lifestyle Suggestions
 
@@ -916,6 +935,8 @@ The same trigger drives the cascade (medications tracked), the standalone `weigh
 
 **Condition:** GLP-1 dose recorded (when listed) AND GLP-1 escalation handled or not possible AND sglt2i is null, undefined, or drug is `'none'`.
 
+**Evidence (US-07 AC9, Brad 2026-11-02, issue 473):** the card offers the drug through the proactive weight trigger above, a deliberate choice; its claim of proven cardiovascular and kidney protection is population-specific ("in some populations"). References: EMPA-REG OUTCOME (Zinman 2015), DAPA-HF (McMurray 2019), DAPA-CKD (Heerspink 2020), the five-trial heart failure meta-analysis (Vaduganathan 2022) and SMART-C (Neuen 2025).
+
 ### Step 4: Metformin (`weight-med-metformin`)
 
 **Condition:** SGLT2i handled (on one or not tolerated) AND metformin is `undefined` or `'none'`.
@@ -1101,12 +1122,22 @@ suggestion?" panel is the reference list alone, and the swapped US references co
 | ID | Title | Ingredients / notes | Evidence |
 |----|-------|---------------------|----------|
 | `supplement-micronutrient-base` | Micronutrient base | Methylated B-complex; vitamin D3 + K2; magnesium taurate; trace minerals (glycinate); lutein + zeaxanthin; TMG; lycopene | COSMOS meta-analysis of 3 cognition sub-studies, men 60+ and women 65+ (Vyas 2024): global cognition and episodic memory, about 2 years less cognitive ageing. Executive function improved in COSMOS-Mind only (Baker 2023), so it is not a headline claim. WHO 2026 dementia guideline recommends against B, E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia without a diagnosed deficiency (strong recommendation, moderate certainty; stated reason: 'unexpected harmful effects that outweigh any potential benefits'); it validated its 2019 advice without reassessing supplements and did not cite COSMOS. Vitamin K2 caveat: in healthy volunteers on a vitamin K antagonist, MK-7 at 10–20 mcg/day lowered the INR to a clinically relevant degree in at least 40–60%, and 45 mcg/day lowered the group mean INR by about 40% (Theuwissen 2013). The authors concluded that MK-7 supplements should be avoided with VKA therapy. The card keeps the softer instruction: it asks anyone on warfarin (Coumadin, Marevan) or another vitamin K antagonist to check with their doctor or anticoagulation clinic before starting or stopping K2 |
-| `supplement-creatine` | Creatine | Creatine monohydrate, 3–5 g/day | Strength/lean mass (Kreider 2017). Cognition: that the memory evidence is clear and consistent is Dr Stanfield's judgement, not a trial finding; formal reviews are more mixed. Avgerinos 2018 (systematic review) and two meta-analyses (Prokopidis 2023; Xu 2024, 16 RCTs, 492 adults) reported better memory, but both meta-analyses pooled several non-independent tests per participant (Prokopidis authors' reply 2023; Citherlet 2026 commentary on Xu). The Prokopidis authors' reanalysis found no clear overall memory benefit (SMD 0.19, P = 0.15) except in older adults aged 66–76 (SMD 0.80). Xu 2024: no effect on overall cognition or executive function; GRADE certainty moderate for memory, low for attention and processing speed. EFSA 2024: cause-and-effect not established for any cognitive domain; a working-memory effect only at 20 g/day for 5–7 days, not at 2.2–14 g/day or 5 g/day for 6 weeks after a 5-day loading phase. Text only: the card is always shown and no rule or dose changed |
+| `supplement-creatine` | Creatine | Creatine monohydrate, 3–5 g/day | Strength/lean mass (Kreider 2017). Cognition: an interesting signal that creatine may help memory, another possible benefit (Brad 2026-11-02; it was 'clear and consistent', his judgement); formal reviews are mixed. Avgerinos 2018 (systematic review) and two meta-analyses (Prokopidis 2023; Xu 2024, 16 RCTs, 492 adults) reported better memory, but both meta-analyses pooled several non-independent tests per participant (Prokopidis authors' reply 2023; Citherlet 2026 commentary on Xu). The Prokopidis authors' reanalysis found no clear overall memory benefit (SMD 0.19, P = 0.15) except in older adults aged 66–76 (SMD 0.80). Xu 2024: no effect on overall cognition or executive function; GRADE certainty moderate for memory, low for attention and processing speed. EFSA 2024: cause-and-effect not established for any cognitive domain; a working-memory effect only at 20 g/day for 5–7 days, not at 2.2–14 g/day or 5 g/day for 6 weeks after a 5-day loading phase. Text only: the card is always shown and no rule or dose changed |
 | `supplement-collagen` | Collagen peptides | Hydrolyzed collagen peptides; may improve skin hydration and elasticity | Skin hydration/elasticity meta-analysis (Batool 2026) |
-| `supplement-lutein-zeaxanthin` | Lutein and zeaxanthin | The macular pigments. No disease claim in the card's own advice; the AREDS lines report the trials | Macular pigment optical density rises with L/Z supplements, more at higher doses (Wilson 2021, Adv Nutr: 46 studies, 3,189 adults with healthy eyes; +0.04 at 5 to <20 mg/day, +0.11 at ≥20 mg/day). AREDS (2001): a formula of vitamins C and E, beta-carotene and zinc slowed progression of macular degeneration in people with intermediate macular degeneration. AREDS2 (2013, JAMA): 10 mg lutein + 2 mg zeaxanthin worked as well as beta-carotene in that formula, without beta-carotene's excess lung cancers, mostly in former smokers. Framing rule (Brad): never write that adding L/Z "did not significantly slow progression". Adults only, like every supplement card (US-61) |
+| `supplement-lutein-zeaxanthin` | Lutein and zeaxanthin | The macular pigments. No disease claim in the card's own advice; the AREDS lines report the trials | Macular pigment optical density rises with L/Z supplements, more at higher doses (Wilson 2021, Adv Nutr: 46 studies, 3,189 adults with healthy eyes; +0.04 at 5 to <20 mg/day, +0.11 at ≥20 mg/day). AREDS (2001): a formula of vitamins C and E, beta-carotene and zinc slowed progression of macular degeneration in people with intermediate macular degeneration. AREDS2 (2013, JAMA): 10 mg lutein + 2 mg zeaxanthin worked as well as beta-carotene in that formula, without beta-carotene's excess lung cancers, mostly in former smokers. At 10 years, lung cancer OR 1.82 (95% CI 1.06 to 3.12) with beta-carotene and 1.15 (0.79 to 1.66, not significant) with lutein and zeaxanthin (AREDS2 Report 28, Chew 2022). Framing rule (Brad): never write that adding L/Z "did not significantly slow progression". Adults only, like every supplement card (US-61) |
 | `supplement-tmg` | TMG (trimethylglycine) | Betaine. Card: "lowers blood homocysteine … Small trials suggest it may improve strength and power." | Homocysteine: meta-analysis of 5 RCTs in healthy adults, ≥4 g/day for 6–24 weeks, −1.23 µmol/L (McRae 2013). Strength and power: small trials with mixed results, much weaker than creatine's (Lee 2010; Pryor 2012, cycling sprint; Nobari 2021, young soccer players). Lipids: 6 RCTs at ≥4 g/day for 6–24 weeks, total cholesterol +0.34 mmol/L (95% CI 0.02 to 0.65), no significant effect on LDL, HDL or triglycerides; the authors say it "may moderately increase" it (Zawieja 2021, J Diet Suppl). Not on the card (Brad 2026-11-01: the card does not advocate those doses). The homocysteine-to-dementia link stays off the card. Adults only (US-61) |
 | `supplement-omega3` | Omega-3 | EPA/DHA, up to 1 g/day combined | CV benefits (Bernasconi 2021). The cognitive benefit of B vitamins may depend on good omega-3 status: in one trial, VITACOG, B vitamins slowed brain atrophy only with good omega-3 status, which was measured, not randomised (Jernerén 2015, Oulhaj 2016). The Dutch FACIT trial found the reverse: 800 mcg/day folic acid improved global cognition and processing speed only with lower omega-3 (van Soest 2021; 791 adults aged 50–70 with raised homocysteine; post hoc). WHO 2026 guideline recommends against omega-3, B, E and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia without a diagnosed deficiency (strong recommendation, moderate certainty; stated reason: 'unexpected harmful effects that outweigh any potential benefits'); it validated its 2019 advice without reassessing supplements, did not consider the omega-3 analyses of VITACOG or FACIT, and does not address omega-3 for heart health. That everyone may reasonably consider up to 1 g/day is Dr Stanfield's judgement, not a trial finding: CV benefit may rise with dose, but so may atrial fibrillation risk: AF HR 1.49 in trials testing >1 g/day vs 1.12 at ≤1 g/day (Gencer 2021). The card asks people with AF or on a blood thinner to check with their doctor first. Text only: the card is always shown and no dose is recorded or checked |
 | `supplement-sleep` | Sleep support | Low-dose melatonin; glycine; magnesium glycinate. Timing (3 to 4 hours before the person wants to fall asleep) appears in roadmap_text only; the card carries no timing | Melatonin may reduce sleep onset latency (Low 2020); a longer gap between dose and bedtime predicted faster sleep onset, and the authors suggest about 3 hours (Cruz-Sanabria 2024; pooled trials of other doses and forms, not 0.8 mg sustained-release) |
+
+**The page's Supplements section (roadmap_text.html, Brad 2026-11-02)** is education text, not
+a card, and may say more than the cards do. Its headings give the doses Brad takes. Beyond the
+cards it reports: the homocysteine and Alzheimer's link (Yu 2020: trials that lowered homocysteine with B
+vitamins promising but not conclusive, "more research is needed", and TMG not tested); the lutein AREDS lines, as on the generic card; a fiber
+entry framed only as a gap in intake (Quagliani 2017), with no cholesterol or blood pressure
+claim; glycine (Inagawa 2006, Yamadera 2007, Bannai 2012) and magnesium bisglycinate
+(Schuster 2025) for sleep; hyaluronic acid. GlyNAC sits under "Worth watching". "Medications That I Take" adds tirzepatide (Krumholz 2024, SURMOUNT-1 blood pressure) and empagliflozin (EMPA-KIDNEY 2023; canagliflozin in the ITP, Miller 2020), each labelled off-label; no card covers them. No card,
+rule or dose changes. `evidence.ts` gains only AREDS2 Report 28 on the lutein card, the
+source for its "no lung cancer signal" (the 2013 paper compared beta-carotene with none).
 
 ---
 
