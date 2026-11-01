@@ -110,11 +110,11 @@ export const OPEN_SOURCE_NOTE = REPO_PUBLIC
  * starts with a space: both servers append it to a sentence.
  */
 /**
- * The exception AC35 promises in words. A `measurements[]` row whose metricType
- * the catalogue does not know (a newer or foreign writer) is left out of the
- * read tools and stays in the file (US-65); no unit may be guessed for it.
+ * The exception AC35 promises in words: a `measurements[]` row whose metricType
+ * the catalogue does not know (an older or foreign writer) has no entry in
+ * `units`, and no unit may be guessed for it.
  */
-export const OFF_CATALOGUE_NOTE = ' A metric this version does not know is left out here and kept in the file; a metric the `units` map does not name has no canonical unit: never infer one.';
+export const OFF_CATALOGUE_NOTE = ' A metric the `units` map does not name has no canonical unit: never infer one.';
 
 export const SI_NOTE =
   ' Every value is stored in SI canonical units; the `units` map in read_record and get_plan names them.' +
