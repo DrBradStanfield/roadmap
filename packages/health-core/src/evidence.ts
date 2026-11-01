@@ -573,7 +573,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'supplement-creatine': {
-    reason: 'Creatine monohydrate is one of the most well-studied supplements. A meta-analysis found it significantly increases muscle strength and lean mass when combined with resistance training. Dr Stanfield considers the evidence that creatine improves memory clear and consistent; this is his judgement, not a trial finding. Formal reviews are more mixed. A systematic review (Avgerinos 2018) and two meta-analyses of small trials (Prokopidis 2023, Xu 2024) reported better memory, but the meta-analyses counted several tests from the same people as separate results. Reanalysed by its authors, Prokopidis 2023 found no clear overall memory benefit except in older adults (aged 66 to 76). Xu 2024 found no effect on overall cognition or executive function. In 2024 the European Food Safety Authority concluded that a cause-and-effect link between creatine and better cognitive function has not been established.',
+    reason: 'Creatine monohydrate is one of the most well-studied supplements. A meta-analysis found it significantly increases muscle strength and lean mass when combined with resistance training. There is also an interesting signal that creatine may help memory, another possible benefit. Formal reviews are mixed. A systematic review (Avgerinos 2018) and two meta-analyses of small trials (Prokopidis 2023, Xu 2024) reported better memory, but the meta-analyses counted several tests from the same people as separate results. Reanalysed by its authors, Prokopidis 2023 found no clear overall memory benefit except in older adults (aged 66 to 76). Xu 2024 found no effect on overall cognition or executive function. In 2024 the European Food Safety Authority concluded that a cause-and-effect link between creatine and better cognitive function has not been established.',
     guidelines: [],
     references: [
       REF_CREATINE_STRENGTH,
@@ -602,6 +602,8 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
       REF_MPOD,
       { label: 'AREDS 2001 – Vitamins C and E, beta-carotene and zinc for age-related macular degeneration: AREDS Report 8 (Arch Ophthalmol)', url: 'https://doi.org/10.1001/archopht.119.10.1417' },
       { label: 'AREDS2 2013 – Lutein + zeaxanthin and omega-3 fatty acids for age-related macular degeneration (JAMA)', url: 'https://doi.org/10.1001/jama.2013.4997' },
+      // The 10-year follow-up is what shows lutein and zeaxanthin carry no lung cancer signal.
+      { label: 'AREDS2 Report 28, 2022 – Long-term outcomes of lutein/zeaxanthin vs beta-carotene, including lung cancer (JAMA Ophthalmol)', url: 'https://doi.org/10.1001/jamaophthalmol.2022.1640' },
     ],
   },
 
