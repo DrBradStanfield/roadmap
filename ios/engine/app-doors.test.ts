@@ -108,7 +108,7 @@ describe('US-52 AC8: the lab review and the write', () => {
 
   // US-12 AC19 (break-it pass 2026-11-01): HDL printed "> 60" and Lp(a) "<5"
   // said only "2 values could not be read"; now each is named, with why.
-  it('names each value the server could not read under "Not saved", one line per reason, and counts only the unnamed', () => {
+  it('US-12 AC19: names each value the server could not read under "Not saved", one line per reason, and counts only the unnamed', () => {
     const unread = { ...extraction, droppedValueCount: 5, unreadValues: [
       { name: 'hdl', reason: 'limit' }, { name: 'lpa', reason: 'limit' }, { name: 'vitamin_d', reason: 'unreadable' }, { name: 'hdl', reason: 'limit' },
     ] };
@@ -119,8 +119,19 @@ describe('US-52 AC8: the lab review and the write', () => {
       { label: 'Vitamin D (25-OH)', reason: 'could not be read' },
     ]);
     expect(review.unreadCount).toBe(1);
-    // A value printed as a limit is never offered for saving.
-    expect(review.items.map((i: { label: string }) => i.label)).not.toContain('HDL Cholesterol');
+  });
+
+  // Review R1: two lines with one label had one SwiftUI id (LabReviewView keys rows).
+  it('US-12 AC19: lists each label once: one test under two reasons, and a refused and an unread creatinine', () => {
+    const both = { ...extraction, droppedValueCount: 3, unreadValues: [
+      { name: 'hdl', reason: 'limit' }, { name: 'hdl', reason: 'unreadable' }, { name: 'creatinine', reason: 'limit' },
+    ] };
+    const { notSaved, unreadCount } = JSON.parse(reviewOf(both));
+    expect(notSaved).toEqual([
+      { label: 'Creatinine', reason: 'unit unknown; printed as a limit' },
+      { label: 'HDL Cholesterol', reason: 'printed as a limit; could not be read' },
+    ]);
+    expect(unreadCount).toBe(0);
   });
 
   it('writes only the ticked values through bulkAppendValues, skipping a held day and refusing a bad unit', () => {

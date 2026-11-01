@@ -290,11 +290,11 @@ describe('US-12 AC19: each value not saved is named, with why', () => {
     expect(sent()[0]).toEqual({ picked: 1, withValues: 1, valuesDropped: 5, valuesLimit: 3 });
   });
 
-  it('a value printed as a limit is never offered for saving', async () => {
-    vi.mocked(labImport).mockResolvedValue({ result: { ...nothing.result!, droppedValueCount: 1, unreadValues: [{ name: 'hdl', reason: 'limit' }] } } as Import);
+  it('one test not saved for two reasons is named once, with both', async () => {
+    vi.mocked(labImport).mockResolvedValue({ result: { ...withValues.result!, droppedValueCount: 2, unreadValues: [{ name: 'hdl', reason: 'limit' }, { name: 'hdl', reason: 'unreadable' }] } } as Import);
     render_(); pick(pdf('photo.pdf'));
-    await waitFor(() => expect(reasonFor('photo.pdf')).toMatch(/^HDL Cholesterol: printed as a limit, not saved\./));
-    expect(screen.queryByRole('button', { name: /^Save / })).toBeNull();
+    await screen.findByDisplayValue('3.9');
+    expect(reasonFor('photo.pdf')).toBe('HDL Cholesterol: printed as a limit; could not be read, not saved.');
   });
 });
 

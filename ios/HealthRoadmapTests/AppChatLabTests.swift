@@ -186,11 +186,13 @@ final class AppChatLabTests: XCTestCase {
         let unread = #"""
         {"classification":"lab_report","reportDate":"2026-10-01",
          "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],
-         "additionalValues":[], "droppedValueCount":3,
-         "unreadValues":[{"name":"hdl","reason":"limit"},{"name":"lpa","reason":"limit"}]}
+         "additionalValues":[], "droppedValueCount":4,
+         "unreadValues":[{"name":"hdl","reason":"limit"},{"name":"lpa","reason":"limit"},{"name":"hdl","reason":"unreadable"}]}
         """#
         let review = try engine.blocking { [now] in try $0.labReview(extractionJSON: unread, now: now) }
-        XCTAssertEqual(review.notSaved, [LabReview.NotSaved(label: "HDL Cholesterol, Lp(a)", reason: "printed as a limit")])
+        // One test under two reasons is one line: each label once (review R1).
+        XCTAssertEqual(review.notSaved, [LabReview.NotSaved(label: "HDL Cholesterol", reason: "printed as a limit; could not be read"),
+                                         LabReview.NotSaved(label: "Lp(a)", reason: "printed as a limit")])
         XCTAssertEqual(review.unreadCount, 1)
         XCTAssertEqual(review.items.map(\.label), ["LDL Cholesterol"])
     }

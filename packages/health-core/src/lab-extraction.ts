@@ -15,7 +15,8 @@
  */
 import * as z from './zod';
 import { getDisplayRange, rangeFault, reportedToCanonical, toCanonicalValue, type MetricType, type UnitSystem } from './units';
-import { foldName, LAB_CATALOG, LAB_GROUPS, normalizeLabUnit, PROMPT_DEFERRED_KEYS } from './lab-catalog';
+import { foldName, LAB_CATALOG, LAB_GROUPS, labTestLabel, normalizeLabUnit, PROMPT_DEFERRED_KEYS } from './lab-catalog';
+import { cutText } from './chat-history';
 import { parseLocalisedNumber } from './parseNumber';
 import { DOCUMENT_TYPES } from './validation';
 import { isCalendarDay } from './measurement-history';
@@ -68,20 +69,42 @@ export type UnreadReason = 'limit' | 'unreadable';
 export interface UnreadLabValue {
   name: string;
   reason: UnreadReason;
+  /** The row's own day, as on a value (AC12, AC14): only a column whose
+   *  values are offered has its unread rows named. */
+  recordedAt?: string;
 }
 
 /** The words both review screens show for each reason (US-12 AC19). */
-export const UNREAD_REASON_TEXT: Record<UnreadReason, string> = {
+const UNREAD_REASON_TEXT: Record<UnreadReason, string> = {
   limit: 'printed as a limit',
   unreadable: 'could not be read',
 };
 
-/** The unread values as review lines: one per reason, in the report's order,
- *  each test labelled once by the surface's own `label`. */
-export function unreadLines(values: readonly UnreadLabValue[], label: (name: string) => string): Array<{ label: string; reason: string }> {
-  const byReason = new Map<UnreadReason, Set<string>>();
-  for (const v of values) byReason.set(v.reason, (byReason.get(v.reason) ?? new Set()).add(label(v.name)));
-  return [...byReason].map(([reason, labels]) => ({ label: [...labels].join(', '), reason: UNREAD_REASON_TEXT[reason] }));
+/**
+ * What "Not saved" says (US-12 AC19): each test once, under its own label,
+ * with every reason it was not saved for; tests with the same reasons share a
+ * line ("HDL Cholesterol, Lp(a)": "printed as a limit"), so no two lines
+ * share a label. `refusedValues` (AC15) joins only where the surface lists
+ * them in one place (the iPhone). `otherCount` is the dropped rows that name
+ * no test.
+ */
+export function unreadLines({ droppedValueCount = 0, unreadValues = [], refusedValues = [] }: Pick<UnifiedExtractionResult, 'droppedValueCount' | 'unreadValues' | 'refusedValues'>): { lines: Array<{ label: string; reason: string }>; otherCount: number } {
+  const reasons = new Map<string, string[]>();
+  const add = (label: string, reason: string) => {
+    const known = reasons.get(label) ?? [];
+    reasons.set(label, known.includes(reason) ? known : [...known, reason]);
+  };
+  for (const v of refusedValues) add(labTestLabel(v.metric), v.reason);
+  for (const v of unreadValues) add(labTestLabel(v.name), UNREAD_REASON_TEXT[v.reason]);
+  const labelsByReason = new Map<string, string[]>();
+  for (const [label, why] of reasons) {
+    const reason = why.length > 1 ? why.map(r => r.replace(/\.$/, '')).join('; ') : why[0];
+    labelsByReason.set(reason, [...(labelsByReason.get(reason) ?? []), label]);
+  }
+  return {
+    lines: [...labelsByReason].map(([reason, labels]) => ({ label: labels.join(', '), reason })),
+    otherCount: Math.max(0, droppedValueCount - unreadValues.length),
+  };
 }
 
 /**
@@ -575,12 +598,17 @@ const unifiedResultSchema = z.object({
 /** A result printed as a limit: "> 60", "<5", "≤ 0.1". Never read as its number (US-12 AC19). */
 const PRINTED_LIMIT = /^\s*[<>≤≥]/;
 
-/** A dropped row by its test's name and why, or nothing when it names no test (US-12 AC19). */
-function unreadValue(row: unknown): UnreadLabValue[] {
-  const { metric, name, value } = (row ?? {}) as Record<string, unknown>;
+/** A dropped row by its test's name, why and day, or null when it names no test (US-12 AC19). */
+function unreadValue(row: unknown): UnreadLabValue | null {
+  const { metric, name, value, recordedAt } = (row ?? {}) as Record<string, unknown>;
   const test = typeof metric === 'string' ? metric.trim() : typeof name === 'string' ? name.trim() : '';
-  if (!test) return [];
-  return [{ name: test.slice(0, 80), reason: typeof value === 'string' && PRINTED_LIMIT.test(value) ? 'limit' : 'unreadable' }];
+  if (!test) return null;
+  const day = labDay.safeParse(recordedAt);
+  return {
+    name: cutText(test, 80),
+    reason: typeof value === 'string' && PRINTED_LIMIT.test(value) ? 'limit' : 'unreadable',
+    ...(day.success && day.data ? { recordedAt: day.data } : null),
+  };
 }
 
 /** The rows of `rows` that `schema` reads; the rest are dropped, and each that
@@ -589,7 +617,8 @@ function readableRows<T extends z.ZodTypeAny>(schema: T, rows: unknown[], unread
   return rows.flatMap(row => {
     const r = schema.safeParse(row);
     if (r.success && !refusedCountRow(row)) return [r.data];
-    unread.push(...unreadValue(row));
+    const named = unreadValue(row);
+    if (named) unread.push(named);
     return [];
   });
 }
@@ -678,6 +707,10 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
   const exactMmol = <T extends { metric: string; value: number; unit: string }>(v: T): T =>
     mode === 'metadata' && v.metric === 'creatinine' && /^mmol\/l$/i.test(cleanedCreatinineUnit(v.unit).replace(/\s+/g, ''))
       ? { ...v, value: Math.round(v.value * 1e6) / 1e3, unit: 'µmol/L' } : v;
+  // A dropped row is named only from a column whose values are offered (AC19):
+  // one left out with its column is left out of the count too, as its read
+  // neighbours are never counted.
+  const unreadValues = isLab ? parsed.unreadValues.flatMap(ownDay).map(({ name, reason, recordedAt }) => ({ name, reason, ...(recordedAt ? { recordedAt } : null) })) : [];
   const coreRows = isLab ? parsed.values.flatMap(ownDay).filter(v => v.metric !== 'creatinine' || !refusesCreatinine(v)).map(exactMmol) : [];
   const slot = (metric: string, day?: string) => `${metric}@${day ?? ''}`;
   const taken = new Set(coreRows.map(v => slot(v.metric, v.recordedAt)));
@@ -705,8 +738,8 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
       ...(parsed.document.summary !== undefined ? { summary: parsed.document.summary } : null),
       metadata: parsed.document.metadata as Record<string, unknown>,
     } : null,
-    droppedValueCount: isLab ? parsed.droppedValueCount : 0,
-    ...(isLab && parsed.unreadValues.length ? { unreadValues: parsed.unreadValues } : null),
+    droppedValueCount: isLab ? parsed.droppedValueCount - (parsed.unreadValues.length - unreadValues.length) : 0,
+    ...(unreadValues.length ? { unreadValues } : null),
     ...(refusedValues.length ? { refusedValues } : null),
   };
 }

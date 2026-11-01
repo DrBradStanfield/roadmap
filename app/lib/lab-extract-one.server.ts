@@ -48,12 +48,16 @@ export async function extractOneFile(data: LabImportRequest, extra: () => object
 export function withDaysItReads<T>(result: T, { ownDates, undatedPrev }: DayFlags): T {
   if (ownDates && undatedPrev) return result;
   const reads = (v: { recordedAt?: string }) => !v.recordedAt || (!!ownDates && v.recordedAt !== UNDATED_PREVIOUS);
-  const r = result as { values?: Array<{ recordedAt?: string }>; additionalValues?: Array<{ recordedAt?: string }>; refusedValues?: Array<{ recordedAt?: string }> };
+  const r = result as { values?: Array<{ recordedAt?: string }>; additionalValues?: Array<{ recordedAt?: string }>; refusedValues?: Array<{ recordedAt?: string }>; unreadValues?: Array<{ recordedAt?: string }>; droppedValueCount?: number };
+  // An unread row is named only from a column this widget is offered, and one
+  // cut with its column leaves the count with it (US-12 AC19).
+  const unread = r.unreadValues?.filter(reads);
   return {
     ...result,
     ...(r.values && { values: r.values.filter(reads) }),
     ...(r.additionalValues && { additionalValues: r.additionalValues.filter(reads) }),
     ...(r.refusedValues && { refusedValues: r.refusedValues.filter(reads) }),
+    ...(unread && { unreadValues: unread, droppedValueCount: (r.droppedValueCount ?? 0) - (r.unreadValues!.length - unread.length) }),
   };
 }
 

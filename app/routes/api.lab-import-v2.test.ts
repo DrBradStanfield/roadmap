@@ -463,6 +463,22 @@ describe('US-12 AC19: the dropped values\' names reach the widget', () => {
     const { results } = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
     expect(results[0]).toMatchObject({ droppedValueCount: 2, unreadValues: unread });
   });
+
+  it('names only rows from a column this caller is offered, and the count drops the rest with their column', async () => {
+    const columns = () => ({ ...partial(), droppedValueCount: 3, unreadValues: [
+      { name: 'hdl', reason: 'limit' }, { name: 'hdl', reason: 'limit', recordedAt: '2025-06-01' }, { name: 'lpa', reason: 'limit', recordedAt: 'undated' },
+    ] });
+    const ask = async (flags: Record<string, unknown>) => {
+      extractOrClassify.mockResolvedValueOnce(columns());
+      return (await (await action({ request: body({ pages: FILES[0].pages, ownDates: undefined, undatedPrev: undefined, ...flags }) } as never)).json()).data;
+    };
+    // The iPhone: its own days, no undated column.
+    expect(await ask({ ownDates: true })).toMatchObject({ droppedValueCount: 2, unreadValues: [{ name: 'hdl', reason: 'limit' }, { name: 'hdl', reason: 'limit', recordedAt: '2025-06-01' }] });
+    // A widget from before own days: the report's column only.
+    expect(await ask({})).toMatchObject({ droppedValueCount: 1, unreadValues: [{ name: 'hdl', reason: 'limit' }] });
+    // This widget: every column.
+    expect(await ask({ ownDates: true, undatedPrev: true })).toMatchObject({ droppedValueCount: 3 });
+  });
 });
 
 // PR #201 review R2: a file is charged only if it reaches Anthropic. Busy is

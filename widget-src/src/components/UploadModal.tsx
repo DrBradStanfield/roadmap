@@ -6,7 +6,7 @@ import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { LabImportResult, PageContent, UploadErrorCode, UploadHistory } from '../lib/api-types';
-import { labUnitRefusalLine, labValueLabel, measurementRefusalLine } from '../lib/lab-value-labels';
+import { labUnitRefusalLine, measurementRefusalLine } from '../lib/lab-value-labels';
 import { useLpaUnit } from '../lib/lpa-unit';
 import type { Grading } from '../lib/blood-test-cell';
 import { ReviewTable, type FileResult, type DocumentToSave, type ReviewedValue, type ReviewedLabValue } from './ReviewTable';
@@ -150,17 +150,14 @@ const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
 const OVER_LIMIT_TEXT = `Not read. It is over the ${MAX_FILES}-file limit for one upload. Upload it separately.`;
 const LEGACY_DOC_TEXT = 'Word .doc files cannot be read. Save it as a PDF or .docx, then upload that.';
 
-/** A test's label: a core metric's, else the catalogue's (US-12 AC19). */
-const unreadLabel = (name: string) => Object.prototype.hasOwnProperty.call(METRIC_LABELS, name) ? METRIC_LABELS[name] : labValueLabel(name);
-
 function noticeText({ reason, count = 1, unread = [], text }: FileNotice): string {
   if (text) return text;
   if (reason === 'valuesDropped') {
     // Each value that names its test is named, with why; the rest are counted (US-12 AC19).
-    const lines = unreadLines(unread, unreadLabel).map(l => `${l.label}: ${l.reason}, not saved.`);
-    const rest = count - unread.length;
-    if (rest > 0) lines.push(`${rest} ${lines.length ? 'other ' : ''}value${rest === 1 ? '' : 's'} could not be read.`);
-    return lines.join(' ');
+    const { lines, otherCount } = unreadLines({ droppedValueCount: count, unreadValues: unread });
+    const text = lines.map(l => `${l.label}: ${l.reason}, not saved.`);
+    if (otherCount > 0) text.push(`${otherCount} ${text.length ? 'other ' : ''}value${otherCount === 1 ? '' : 's'} could not be read.`);
+    return text.join(' ');
   }
   return (!SHOPIFY_SURFACE && BYOK_NOTICE_TEXT[reason]) || FILE_NOTICE_TEXT[reason];
 }

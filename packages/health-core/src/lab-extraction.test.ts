@@ -1236,14 +1236,50 @@ describe('US-12 AC19: a value not saved is named, with why', () => {
     expect(letter).not.toHaveProperty('unreadValues');
   });
 
-  it('unreadLines: one line per reason, each test labelled once, in report order', () => {
-    const label = (name: string) => ({ hdl: 'HDL Cholesterol', lpa: 'Lp(a)' } as Record<string, string>)[name] ?? name;
-    expect(unreadLines([
+  it('unreadLines: each test once, with every reason; tests with the same reasons share a line; the unnamed are counted', () => {
+    expect(unreadLines({ droppedValueCount: 5, unreadValues: [
       { name: 'hdl', reason: 'limit' }, { name: 'crp', reason: 'unreadable' }, { name: 'lpa', reason: 'limit' }, { name: 'hdl', reason: 'limit' },
-    ], label)).toEqual([
+    ] })).toEqual({ lines: [
       { label: 'HDL Cholesterol, Lp(a)', reason: 'printed as a limit' },
-      { label: 'crp', reason: 'could not be read' },
+      { label: 'CRP', reason: 'could not be read' },
+    ], otherCount: 1 });
+    expect(unreadLines({})).toEqual({ lines: [], otherCount: 0 });
+  });
+
+  it('unreadLines: one test under two reasons, or refused and unread at once, is one line, so no two lines share a label', () => {
+    const { lines } = unreadLines({
+      droppedValueCount: 3,
+      unreadValues: [{ name: 'hdl', reason: 'limit' }, { name: 'hdl', reason: 'unreadable' }, { name: 'creatinine', reason: 'limit' }],
+      refusedValues: [{ metric: 'creatinine', value: 2, unit: 'mg/mmol', reason: 'This unit is usually a urine result.' }],
+    });
+    expect(lines).toEqual([
+      { label: 'Creatinine', reason: 'This unit is usually a urine result; printed as a limit' },
+      { label: 'HDL Cholesterol', reason: 'printed as a limit; could not be read' },
     ]);
-    expect(unreadLines([], label)).toEqual([]);
+    expect(new Set(lines.map(l => l.label)).size).toBe(lines.length);
+  });
+
+  it('names a dropped row only from a column whose values are offered, and leaves one cut with its column out of the count', () => {
+    const rows = [
+      { metric: 'hdl', value: 1.2, unit: 'mmol/L', confidence: 'high' },
+      { metric: 'hdl', value: '> 1.5', unit: 'mmol/L', confidence: 'high', recordedAt: '2027-03-01' },
+      { metric: 'lpa', value: '<5', unit: 'nmol/L', confidence: 'high', recordedAt: UNDATED_PREVIOUS },
+      { metric: 'ldl', value: '> 4', unit: 'mmol/L', confidence: 'high', recordedAt: '2025-06-01' },
+    ];
+    const parsed = parseUnifiedResult({ ...report, values: rows, additionalValues: [] });
+    // A future day is no column; an undated one is offered only by the full prompt.
+    const full = toUnifiedResult(parsed, 'full');
+    expect(full.values.map(v => v.metric)).toEqual(['hdl']);
+    expect(full.unreadValues).toEqual([{ name: 'lpa', reason: 'limit', recordedAt: UNDATED_PREVIOUS }, { name: 'ldl', reason: 'limit', recordedAt: '2025-06-01' }]);
+    expect(full.droppedValueCount).toBe(2);
+    const connector = toUnifiedResult(parsed, 'metadata');
+    expect(connector.unreadValues).toEqual([{ name: 'ldl', reason: 'limit', recordedAt: '2025-06-01' }]);
+    expect(connector.droppedValueCount).toBe(1);
+  });
+
+  it('cuts a long name without halving an emoji', () => {
+    const name = `${'a'.repeat(79)}😀`;
+    const [v] = toUnifiedResult(parseUnifiedResult({ ...report, values: [], additionalValues: [{ name, value: 'trace', unit: '' }] }), 'full').unreadValues!;
+    expect(v.name).toBe('a'.repeat(79));
   });
 });
