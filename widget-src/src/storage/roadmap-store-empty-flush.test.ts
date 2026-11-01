@@ -87,4 +87,52 @@ describe('RoadmapStore.flush with nothing unsaved (US-10 AC5a)', () => {
     await new Promise((r) => setTimeout(r, PERSIST_DEBOUNCE_MS + 200));
     expect(adapter.writes).toBe(2);
   });
+
+  it('a save that outlasts the debounce is not followed by an empty pass', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new CountingAdapter(cloud);
+    const store = await RoadmapStore.create(adapter);
+    let release1!: () => void;
+    let release2!: () => void;
+    adapter.gate = new Promise((r) => { release1 = r; });
+
+    store.markReportEmailCaptured();
+    const saving = store.flush();
+    await new Promise((r) => setTimeout(r, 0)); // pass 1 is held at the gate
+    store.setLpaUnit('nmol/L'); // lands mid-save: pass 2 takes it, and a debounce is set
+    adapter.gate = new Promise((r) => { release2 = r; });
+    release1();
+    // Pass 2 is held past the debounce, which fires while it runs (a slow cloud write).
+    await new Promise((r) => setTimeout(r, PERSIST_DEBOUNCE_MS + 200));
+    adapter.gate = null;
+    release2();
+    await saving;
+    expect(adapter.writes).toBe(2);
+    expect(stored(cloud).profile.reportEmailCaptured).toBe(true);
+    expect(stored(cloud).profile.lpaUnit).toBe('nmol/L');
+
+    await new Promise((r) => setTimeout(r, PERSIST_DEBOUNCE_MS + 200));
+    expect(adapter.writes).toBe(2);
+  });
+
+  it('a flush that joins a running save adds no write, and answers when that save ends', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new CountingAdapter(cloud);
+    const store = await RoadmapStore.create(adapter);
+    let release!: () => void;
+    adapter.gate = new Promise((r) => { release = r; });
+
+    store.markReportEmailCaptured();
+    const saving = store.flush();
+    await new Promise((r) => setTimeout(r, 0)); // the write is held at the gate
+    let joinedDone = false;
+    const joined = store.flush().then(() => { joinedDone = true; });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(joinedDone).toBe(false); // US-11 AC7: it waits for the running save
+    adapter.gate = null;
+    release();
+    await Promise.all([saving, joined]);
+    expect(adapter.writes).toBe(1);
+    expect(stored(cloud).profile.reportEmailCaptured).toBe(true);
+  });
 });

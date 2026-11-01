@@ -101,8 +101,8 @@ describe('lipid tile', () => {
 
 describe('eGFR, Lp(a) and HbA1c tiles', () => {
   it.each([
-    [75, 'Normal', 'normal'], [65, 'Low Normal', 'info'], [50, 'Mildly Decreased', 'attention'],
-    [35, 'Moderately Decreased', 'attention'], [20, 'Severely Decreased', 'urgent'], [10, 'Kidney Failure', 'urgent'],
+    [75, 'Normal', 'normal'], [65, 'Low Normal', 'info'], [50, 'Mildly to Moderately Decreased', 'attention'],
+    [35, 'Moderately to Severely Decreased', 'attention'], [20, 'Severely Decreased', 'urgent'], [10, 'Kidney Failure', 'urgent'],
   ])('eGFR %s is %s', (eGFR, label, tone) => {
     expect(tile({ eGFR }, 'egfr')).toMatchObject({ label: 'eGFR', value: String(eGFR), unit: 'mL/min', status: { label, tone } });
   });

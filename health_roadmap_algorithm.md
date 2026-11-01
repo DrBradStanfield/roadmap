@@ -337,6 +337,8 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `prolactin` | mIU/L | microiu/ml | 1 | µIU/mL with the prefix spelled out |
 | `prolactin` | mIU/L | mciu/ml | 1 | µIU/mL with the mc prefix (as mcg) |
 | `cortisol_am` | nmol/L | µg/dl | 27.59 | cortisol 362.46 g/mol |
+| `cortisol_random` | nmol/L | µg/dl | 27.59 | cortisol 362.46 g/mol |
+| `cortisol_pm` | nmol/L | µg/dl | 27.59 | cortisol 362.46 g/mol |
 | `psa_free` | µg/L | ng/ml | 1 | ng/mL and µg/L are the same number |
 | `lh` | IU/L | miu/ml | 1 | mIU/mL and IU/L are the same number |
 | `lh` | IU/L | u/l | 1 | U/L is IU/L, printed short |
@@ -444,6 +446,8 @@ AC20 adds the comma, bracket and "absolute" spellings US, AU and NZ reports prin
 
 Three-file sync: `evidence.ts` and `roadmap_text.html` are untouched because no threshold, suggestion or user-facing sentence changes — only the unit a stored number is expressed in. This holds for the 2026-10-20 additions too: no suggestion reads a catalogued test (`suggestions.ts` never reads `labValues`), so they are record-keeping only. If any of them ever drives a suggestion, all three files change.
 
+**Cortisol by timing (US-07 AC9, Brad 2026-11-02, issue 476).** Cortisol is read against the time it was drawn, so each timing has its own entry, in nmol/L at the same 27.59 µg/dL factor. A name that prints no timing ("Cortisol") is a morning cortisol, `cortisol_am` "Cortisol (morning)", since most cortisol tests are drawn in the morning. AM or morning spellings go there too. A random cortisol goes to `cortisol_random` "Cortisol (random)". A PM, evening or (blood) midnight cortisol goes to `cortisol_pm` "Cortisol (PM)". Salivary and urine cortisol are not catalogued: they keep their printed names. A row stored earlier under a random or PM name was uncatalogued; slots are computed on read, so it now reads under its new entry, and one printed in µg/dL is converted at load by an appended correction row (`migrate.ts`, as for every newly catalogued test). A bare "Cortisol" row stays in `cortisol_am`. The upload prompt's name list does not offer the two new keys until the #166 benchmark (`PROMPT_DEFERRED_KEYS`).
+
 ---
 
 ## 3. Clinical Thresholds
@@ -542,6 +546,19 @@ With no sex on record the plan grades no HDL, so `hdl-low` does not show (US-07 
 | mildlyDecreased | 45 | CKD-3b boundary, protein adjustment |
 | moderatelyDecreased | 30 | G3b |
 | severelyDecreased | 15 | G4 |
+
+**Labels (`getEgfrStatus`; US-07 AC9, Brad 2026-11-02, issue 474).** From 60 down the tile and card use KDIGO 2024's names and cut points. Normal and Low Normal are the tool's own bands: KDIGO calls 60-89 mildly decreased (G2), and G1-G2 are not chronic kidney disease without other markers of kidney damage.
+
+| eGFR | Label | KDIGO 2024 |
+|------|-------|------------|
+| >= 70 | Normal | tool's own (G1 >= 90 normal or high; G2 60-89 mildly decreased) |
+| 60-69 | Low Normal | tool's own (G2 mildly decreased) |
+| 45-59 | Mildly to Moderately Decreased | G3a |
+| 30-44 | Moderately to Severely Decreased | G3b |
+| 15-29 | Severely Decreased | G4 |
+| < 15 | Kidney Failure | G5 |
+
+Source: KDIGO 2024 CKD guideline (Kidney Int 2024; DOI: 10.1016/j.kint.2023.10.018), cited on the card.
 
 ### ApoB (g/L)
 
@@ -662,7 +679,7 @@ Three-file sync for this section's 2026-10-14 amendments (the strict missing-mon
 | `exercise` | exercise | At least 150 min moderate cardio, or 75 min vigorous, or a mix (1 vigorous min = 2 moderate) + 2-3 resistance sessions/week | WHO 2020; Physical Activity Guidelines 2018 |
 | `sleep` | sleep | 7-9 hours nightly | Cappuccio 2010 |
 
-**Exercise safety (display text, Brad 2026-11-01):** roadmap_text.html's Exercise section says: stop if you get chest pain, dizziness, fainting, palpitations or unusual breathlessness, and see your doctor before you exercise again (Franklin 2020, AHA scientific statement, DOI: 10.1161/CIR.0000000000000749). Get emergency care for chest pain, whatever your pulse (Gulati 2021, AHA/ACC chest pain guideline, DOI: 10.1161/CIR.0000000000001029), or for a racing pulse with fainting, dizziness or breathlessness (NHS Arrhythmia, 2024, www.nhs.uk/conditions/arrhythmia). A very slow pulse with fainting, dizziness or breathlessness needs prompt medical care (Kusumoto 2019, ACC/AHA/HRS bradycardia guideline, DOI: 10.1161/CIR.0000000000000628). The heart rate guide (`heart_rate` in `metric-guides.ts`) states the last two lines and cites Gulati 2021, NHS 2024 and Kusumoto 2019. No card or threshold changes.
+**Exercise safety (display text, Brad 2026-11-01):** roadmap_text.html's Exercise safety paragraph says only: stop if you get chest pain, dizziness, fainting, palpitations or unusual breathlessness, and see your doctor before you exercise again (Franklin 2020, AHA scientific statement, DOI: 10.1161/CIR.0000000000000749). The Apple Watch heart rate paragraph above it says (Brad 2026-11-02 moved it there, so the safety paragraph gives one instruction): get emergency care for chest pain, whatever your pulse (Gulati 2021, AHA/ACC chest pain guideline, DOI: 10.1161/CIR.0000000000001029), or for a racing pulse with fainting, dizziness or breathlessness (NHS Arrhythmia, 2024, www.nhs.uk/conditions/arrhythmia). A very slow pulse with fainting, dizziness or breathlessness needs prompt medical care (Kusumoto 2019, ACC/AHA/HRS bradycardia guideline, DOI: 10.1161/CIR.0000000000000628). The heart rate guide (`heart_rate` in `metric-guides.ts`) states the last two lines and cites Gulati 2021, NHS 2024 and Kusumoto 2019. No card or threshold changes.
 
 ### Conditional Lifestyle Suggestions
 
@@ -917,6 +934,8 @@ The same trigger drives the cascade (medications tracked), the standalone `weigh
 ### Step 3: SGLT2i (`weight-med-sglt2i`)
 
 **Condition:** GLP-1 dose recorded (when listed) AND GLP-1 escalation handled or not possible AND sglt2i is null, undefined, or drug is `'none'`.
+
+**Evidence (US-07 AC9, Brad 2026-11-02, issue 473):** the card offers the drug through the proactive weight trigger above, a deliberate choice; its claim of proven cardiovascular and kidney protection is population-specific ("in some populations"). References: EMPA-REG OUTCOME (Zinman 2015), DAPA-HF (McMurray 2019), DAPA-CKD (Heerspink 2020), the five-trial heart failure meta-analysis (Vaduganathan 2022) and SMART-C (Neuen 2025).
 
 ### Step 4: Metformin (`weight-med-metformin`)
 
