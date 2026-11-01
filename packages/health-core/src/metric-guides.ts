@@ -251,7 +251,7 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
   sglt2i: {
     title: 'SGLT2 inhibitors',
     whatItIs: 'Daily tablets first made for type 2 diabetes. The app lists empagliflozin (Jardiance), dapagliflozin (Farxiga) and canagliflozin (Invokana).',
-    whyItMatters: 'Besides lowering blood sugar and causing modest weight loss, they protected the heart and kidneys in large trials, including in people with heart failure.',
+    whyItMatters: 'Besides lowering blood sugar and causing modest weight loss, they cut heart deaths and hospital stays for heart failure in large trials of people with type 2 diabetes at high heart risk, or with heart failure. Outside these groups that benefit is not proven.',
     howTo: { heading: WORKS, points: [
       'They make your kidneys pass extra sugar out in your urine.',
       'Genital yeast infections are the most common side effect.',

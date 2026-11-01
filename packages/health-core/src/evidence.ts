@@ -263,7 +263,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'weight-med-sglt2i': {
-    reason: 'SGLT2 inhibitors (empagliflozin, dapagliflozin) work differently from GLP-1 medications: they make the kidneys pass excess glucose out in the urine. Weight loss on them is modest. In large trials of people with type 2 diabetes at high cardiovascular risk, or with heart failure, they lowered the risk of cardiovascular death and of hospital stays for heart failure. Those trials did not study people without these conditions, so for them this heart benefit is not proven.',
+    reason: 'SGLT2 inhibitors (empagliflozin, dapagliflozin) work differently from GLP-1 medications: they make the kidneys pass excess glucose out in the urine. Weight loss on them is modest. In large trials of people with type 2 diabetes at high cardiovascular risk, or with heart failure and a reduced ejection fraction, they lowered the risk of cardiovascular death and of hospital stays for heart failure. Those trials did not study people without these conditions, so for them this heart benefit is not proven.',
     guidelines: [],
     references: REFS_SGLT2I,
   },
