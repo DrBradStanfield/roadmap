@@ -15,7 +15,7 @@
  */
 import * as z from './zod';
 import { getDisplayRange, rangeFault, reportedToCanonical, toCanonicalValue, type MetricType, type UnitSystem } from './units';
-import { foldName, LAB_CATALOG, LAB_GROUPS, labTestLabel, normalizeLabUnit, PROMPT_DEFERRED_KEYS } from './lab-catalog';
+import { foldName, LAB_CATALOG, LAB_GROUPS, labTestLabel, normalizeLabUnit, PROMPT_DEFERRED_KEYS, resolveLabCatalogEntry, type LabCatalogEntry } from './lab-catalog';
 import { cutText } from './chat-history';
 import { parseLocalisedNumber } from './parseNumber';
 import { DOCUMENT_TYPES } from './validation';
@@ -238,6 +238,16 @@ export function resolveCoreMetricName(name: string): MetricType | null {
   return CORE_NAME_INDEX.get(foldName(name)) ?? null;
 }
 
+/** What a printed name resolves to: a core metric, a catalogued test, or nothing. */
+export type ResolvedName = { kind: 'core'; metric: MetricType } | { kind: 'lab'; key: string; entry: LabCatalogEntry } | null;
+
+export function resolveName(name: string): ResolvedName {
+  const core = resolveCoreMetricName(name);
+  if (core) return { kind: 'core', metric: core };
+  const entry = resolveLabCatalogEntry(name);
+  return entry ? { kind: 'lab', key: entry.key, entry } : null;
+}
+
 /** A flag printed beside a value or its unit (H, L, HH, LL, *, ↑, ↓, any case):
  *  one grammar for a count row's value (US-12 AC8) and a creatinine's unit
  *  (AC15), so the two cannot drift. */
@@ -321,7 +331,7 @@ export function resolveUnit(metric: MetricType, unitStr: string, value: number):
 }
 
 /** Resolve units for an array of LLM-extracted lab values. Shared by all extraction paths. */
-export function resolveLabValues(rawValues: Array<{ metric: string; value: number; unit: string; confidence: 'high' | 'medium' | 'low'; question?: string; recordedAt?: string; printedMonth?: string }>): ExtractedValue[] {
+export function resolveLabValues(rawValues: Array<{ metric: string; value: number; unit: string; confidence: 'high' | 'medium' | 'low'; question?: string; recordedAt?: string; printedMonth?: string; printedName?: string }>): ExtractedValue[] {
   const values: ExtractedValue[] = [];
   for (const v of rawValues) {
     if (!VALID_METRICS.includes(v.metric as MetricType)) continue;
@@ -346,6 +356,7 @@ export function resolveLabValues(rawValues: Array<{ metric: string; value: numbe
       question,
       ...(v.recordedAt ? { recordedAt: v.recordedAt } : null),
       ...(v.printedMonth ? { printedMonth: v.printedMonth } : null),
+      ...(v.printedName ? { printedName: v.printedName } : null),
       ...(!confident ? { unitGuessed: true as const } : null),
     });
   }
@@ -398,7 +409,7 @@ ${VALID_METRICS.map((metric) => `  - "${metric}" — ${CORE_METRIC_ALIASES[metri
   9. UNITS, in "values" and "additionalValues" alike: copy each row's unit exactly as the report prints it for that row: the unit beside the result; else the unit printed in that row's own reference range ("200-900 pg/mL" gives "pg/mL"); else the unit in that column's header. NEVER convert a value and NEVER relabel its unit to the one you expect for that test: a result printed in pg/mL is returned in pg/mL, even where pmol/L is more common. If no unit is printed anywhere for the row, return "unit": "" (an empty string). Never guess one.
   10. REFERENCE RANGES: for each "additionalValues" row, return the row's printed reference range as "referenceLow" and "referenceHigh": the numbers as printed, in the row's printed unit, never converted. A one-sided range sets one side ("<5" is referenceHigh 5, ">40" is referenceLow 40) and the other is null; both are null when no range is printed.
   11. An eGFR printed with < or > (">60", ">90") is returned exactly as printed, as a string: never as its number.
-
+${mode === 'full' ? '  12. Every row in "values" and "additionalValues" also has "printedName": the test name exactly as the report prints it.\n' : ''}
   ADDITIONAL VALUES — use these standardized snake_case names when applicable:
 ${LAB_GROUPS.map((group) => [group.label, LAB_CATALOG.filter((entry) => entry.group === group.id && !PROMPT_DEFERRED_KEYS.has(entry.key)).map((entry) => entry.key)] as const)
   .filter(([, keys]) => keys.length > 0)
@@ -439,16 +450,18 @@ const METADATA_DOCUMENT_RULES = `  Do NOT transcribe or convert the document. Re
   - metadata: {} (empty object)
 `;
 
-const RESPONSE_FORMAT = `
+const responseFormat = (mode: DocumentPromptMode) => {
+  const printed = (name: string) => (mode === 'full' ? `, "printedName": "${name}"` : '');
+  return `
 RESPONSE FORMAT (strict JSON, no markdown wrapping):
 {
   "classification": "lab_report" | "scan_result" | etc.,
   "reportDate": "YYYY-MM-DD" or null,
   "values": [
-    { "metric": "ldl", "value": 2.8, "unit": "mmol/L", "confidence": "high" }
+    { "metric": "ldl", "value": 2.8, "unit": "mmol/L", "confidence": "high"${printed('LDL Cholesterol')} }
   ],
   "additionalValues": [
-    { "name": "sodium", "value": 139, "unit": "mmol/L", "referenceLow": 135, "referenceHigh": 145 }
+    { "name": "sodium", "value": 139, "unit": "mmol/L", "referenceLow": 135, "referenceHigh": 145${printed('Sodium')} }
   ],
   "document": {
     "title": "Colonoscopy Report — Dr. Smith",
@@ -458,10 +471,11 @@ RESPONSE FORMAT (strict JSON, no markdown wrapping):
     "metadata": { "scanType": "colonoscopy", "provider": "Dr. Smith", "screeningType": "colorectal" }
   } or null
 }`;
+};
 
 /** The one prompt, with the document section the caller needs (US-35 AC5). */
 export function unifiedSystemPrompt(mode: DocumentPromptMode): string {
-  return promptHead(mode) + (mode === 'metadata' ? METADATA_DOCUMENT_RULES : FULL_DOCUMENT_RULES) + RESPONSE_FORMAT;
+  return promptHead(mode) + (mode === 'metadata' ? METADATA_DOCUMENT_RULES : FULL_DOCUMENT_RULES) + responseFormat(mode);
 }
 
 /** The website's prompt: classification plus the whole document as markdown. */
@@ -571,6 +585,7 @@ const coreValueRow = z.object({
   question: z.string().nullish().transform(q => q ?? undefined).optional(),
   recordedAt: labDay,
   printedMonth: z.unknown().transform(m => (typeof m === 'string' ? m.trim() : undefined)).optional(),
+  printedName: z.unknown().transform(n => (typeof n === 'string' && n.trim() ? cutText(n.replace(/\s+/g, ' ').trim(), 120) : undefined)).optional(),
 });
 
 const additionalValueRow = z.object({
@@ -581,6 +596,7 @@ const additionalValueRow = z.object({
   referenceHigh: labBound,
   recordedAt: labDay,
   printedMonth: z.unknown().transform(m => (typeof m === 'string' ? m.trim() : undefined)).optional(),
+  printedName: z.unknown().transform(n => (typeof n === 'string' && n.trim() ? cutText(n.replace(/\s+/g, ' ').trim(), 120) : undefined)).optional(),
 });
 
 const unifiedResultSchema = z.object({
@@ -713,15 +729,44 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
   // one left out with its column is left out of the count too, as its read
   // neighbours are never counted.
   const unreadValues = isLab ? parsed.unreadValues.flatMap(ownDay).map(({ name, reason, recordedAt }) => ({ name, reason, ...(recordedAt ? { recordedAt } : null) })) : [];
-  const coreRows = isLab ? parsed.values.flatMap(ownDay).filter(v => v.metric !== 'creatinine' || !refusesCreatinine(v)).map(exactMmol) : [];
+  // The name the report printed files the row whenever it resolves exactly to a
+  // core metric or a catalogued test; the model's pick stands only when it does
+  // not (US-07 AC10, Brad 2026-11-02). So "Cortisol" is a morning cortisol
+  // whatever key the model chose, and a printed urine creatinine is filed as a
+  // lab row, never as serum creatinine. Website and BYOK only (the `full`
+  // prompt asks for the name); a row without one is filed as before.
+  // Creatinine (Brad 2026-11-02): a printed name that says urine keeps the row
+  // urine, and a row the model filed as urine is never moved into blood
+  // creatinine ("Creatinine" under a URINE heading); otherwise it is blood
+  // creatinine, and the unit check below still refuses urine-only units.
+  const byPrinted = (name?: string): ResolvedName => (mode === 'full' && name ? resolveName(name) : null);
+  const saysUrine = (name?: string) => !!name && URINE_MARKER.test(name.replace(/_/g, ' '));
+  const coreIn: typeof parsed.values = [];
+  const labIn: typeof parsed.additionalValues = [];
+  for (const v of parsed.values) {
+    const printed = byPrinted(v.printedName);
+    const metric = printed?.kind === 'core' ? printed.metric : v.metric;
+    if (printed?.kind === 'lab' || (mode === 'full' && metric === 'creatinine' && saysUrine(v.printedName))) {
+      labIn.push({ name: v.printedName!, value: v.value, unit: v.unit, referenceLow: null, referenceHigh: null, recordedAt: v.recordedAt, printedMonth: v.printedMonth, printedName: v.printedName });
+    } else {
+      coreIn.push({ ...v, metric });
+    }
+  }
+  for (const v of parsed.additionalValues) {
+    const printed = byPrinted(v.printedName);
+    const keepsUrine = printed?.kind === 'core' && printed.metric === 'creatinine' && saysUrine(v.name);
+    const printedUrine = mode === 'full' && saysUrine(v.printedName) && resolveCoreMetricName(v.name) === 'creatinine';
+    labIn.push((printed && !keepsUrine) || printedUrine ? { ...v, name: v.printedName! } : v);
+  }
+  const coreRows = isLab ? coreIn.flatMap(ownDay).filter(v => v.metric !== 'creatinine' || !refusesCreatinine(v)).map(exactMmol) : [];
   const slot = (metric: string, day?: string) => `${metric}@${day ?? ''}`;
   const taken = new Set(coreRows.map(v => slot(v.metric, v.recordedAt)));
   const additionalValues: typeof parsed.additionalValues = [];
-  for (const v of isLab ? parsed.additionalValues.flatMap(ownDay) : []) {
+  for (const v of isLab ? labIn.flatMap(ownDay) : []) {
     const metric = resolveCoreMetricName(v.name);
     if (metric && PROMOTABLE.has(metric) && !taken.has(slot(metric, v.recordedAt)) && reportedToCanonical(metric, v.value, v.unit)) {
       taken.add(slot(metric, v.recordedAt));
-      coreRows.push({ metric, value: v.value, unit: v.unit, confidence: 'high', recordedAt: v.recordedAt, printedMonth: v.printedMonth });
+      coreRows.push({ metric, value: v.value, unit: v.unit, confidence: 'high', recordedAt: v.recordedAt, printedMonth: v.printedMonth, printedName: v.printedName });
     } else if (metric !== 'creatinine' || foldName(v.name) === 'cr' || !refusesCreatinine(v)) {
       additionalValues.push(v);
     }

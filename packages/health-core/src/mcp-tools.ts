@@ -14,7 +14,7 @@
 import { deadlineSignal } from './adapter';
 import { dayOf, daysBetween } from './merge';
 import { stampProfile } from './state-edits';
-import { displayLabUnit, foldLpa, LAB_CATALOG, type LabCatalogEntry, labSlotKey, metricNameWords, resolveLabCatalogEntry } from './lab-catalog';
+import { displayLabUnit, foldLpa, LAB_CATALOG, labSlotKey, metricNameWords } from './lab-catalog';
 import { ISO_DATE, latestActivePerMetric } from './measurement-history';
 import {
   type AdditionalLabValue,
@@ -24,6 +24,8 @@ import {
   isImportableEntryName,
   MAX_FILE_NAME_LENGTH,
   resolveCoreMetricName,
+  resolveName,
+  type ResolvedName,
   type UnifiedExtractionResult,
   VALID_METRICS,
 } from './lab-extraction';
@@ -1614,16 +1616,6 @@ export function prepareImport(
 // ---------------------------------------------------------------------------
 // file_results — the assistant read the file; the server checks every row (US-36)
 // ---------------------------------------------------------------------------
-
-/** What a printed name or a claimed `metric` resolves to: a core metric, a catalogued test, or nothing. */
-type ResolvedName = { kind: 'core'; metric: MetricType } | { kind: 'lab'; key: string; entry: LabCatalogEntry } | null;
-
-function resolveName(name: string): ResolvedName {
-  const core = resolveCoreMetricName(name);
-  if (core) return { kind: 'core', metric: core };
-  const entry = resolveLabCatalogEntry(name);
-  return entry ? { kind: 'lab', key: entry.key, entry } : null;
-}
 
 const describeName = (resolved: ResolvedName): string => (resolved?.kind === 'core' ? resolved.metric : resolved?.kind === 'lab' ? resolved.key : 'nothing this record knows');
 

@@ -1,0 +1,119 @@
+// US-07 AC10 (Brad 2026-11-02, "do the proper fix"): on a website or BYOK upload the
+// name the report printed files each row whenever it resolves; the model's pick
+// stands only when it does not.
+import { describe, expect, it } from 'vitest';
+import { parseUnifiedResult, toUnifiedResult, unifiedSystemPrompt, type DocumentPromptMode } from './lab-extraction';
+import { labSlotKey } from './lab-catalog';
+
+const extract = (rows: { values?: unknown[]; additionalValues?: unknown[] }, mode: DocumentPromptMode = 'full') =>
+  toUnifiedResult(parseUnifiedResult({ classification: 'lab_report', reportDate: '2026-10-30', document: null, values: [], additionalValues: [], ...rows }), mode);
+
+const lab = (name: string, printedName?: string, value = 450, unit = 'nmol/L') =>
+  ({ name, value, unit, referenceLow: null, referenceHigh: null, ...(printedName === undefined ? null : { printedName }) });
+const core = (metric: string, printedName?: string, value = 2.8, unit = 'mmol/L') =>
+  ({ metric, value, unit, confidence: 'high', ...(printedName === undefined ? null : { printedName }) });
+
+describe('US-07 AC10: the printed name decides the filing', () => {
+  it.each([
+    ['cortisol_random', 'Cortisol', 'cortisol_am'],
+    ['cortisol_am', 'Cortisol, Random', 'cortisol_random'],
+    ['cortisol_am', 'P.M. cortisol', 'cortisol_pm'],
+    ['vitamin_d3_total', 'Vitamin-D', 'vitamin_d'],
+  ])('model %s, printed "%s": filed under %s', (picked, printed, slot) => {
+    const [row] = extract({ additionalValues: [lab(picked, printed)] }).additionalValues;
+    expect(labSlotKey(row.name)).toBe(slot);
+    expect(row.printedName).toBe(printed);
+  });
+
+  it('a printed name that resolves to nothing leaves the model\'s pick standing', () => {
+    const [row] = extract({ additionalValues: [lab('cortisol_am', 'Cortisol level, 8 o\'clock draw')] }).additionalValues;
+    expect(labSlotKey(row.name)).toBe('cortisol_am');
+  });
+
+  it('only a whole-name resolve overrides, never a substring', () => {
+    const [row] = extract({ additionalValues: [lab('cortisol_pm', 'Cortisol (saliva)')] }).additionalValues;
+    expect(row.name).toBe('cortisol_pm');
+  });
+
+  it('a "core" row whose printed name is a catalogued urine test is filed as that lab row, never as creatinine', () => {
+    const result = extract({ values: [core('creatinine', 'Urine Creatinine', 120, 'mg/dL')] });
+    expect(result.values).toEqual([]);
+    expect(result.additionalValues.map((r) => labSlotKey(r.name))).toEqual(['urine_creatinine']);
+  });
+
+  it('a core row printed as another core metric is re-filed as that metric', () => {
+    const { values } = extract({ values: [core('total_cholesterol', 'LDL Cholesterol')] });
+    expect(values.map((v) => [v.metric, v.printedName])).toEqual([['ldl', 'LDL Cholesterol']]);
+  });
+
+  it('a lab row printed as a core metric is promoted, as a core-named row always was', () => {
+    const { values, additionalValues } = extract({ additionalValues: [lab('apolipoprotein_b_level', 'Apolipoprotein B', 0.9, 'g/L')] });
+    expect(values.map((v) => v.metric)).toEqual(['apob']);
+    expect(additionalValues).toEqual([]);
+  });
+
+  it('the printed name carries a conversion its own words decide: "BUN" in mg/dL', () => {
+    const [row] = extract({ additionalValues: [lab('urea', 'BUN', 14, 'mg/dL')] }).additionalValues;
+    expect(row.name).toBe('BUN');
+  });
+
+  it('a row without a printed name, or with an empty or non-text one, is filed exactly as before', () => {
+    const rows = { values: [core('ldl')], additionalValues: [lab('cortisol_random')] };
+    const before = extract(rows);
+    for (const printedName of ['', '   ', 42, null]) {
+      const withBlank = extract({ values: [{ ...core('ldl'), printedName }], additionalValues: [{ ...lab('cortisol_random'), printedName }] });
+      expect(withBlank).toEqual(before);
+    }
+    expect(before.additionalValues[0].name).toBe('cortisol_random');
+  });
+
+  it('the connector\'s metadata prompt does not ask for it, and its rows are filed by the model\'s pick', () => {
+    const [row] = extract({ additionalValues: [lab('cortisol_random', 'Cortisol')] }, 'metadata').additionalValues;
+    expect(row.name).toBe('cortisol_random');
+    expect(unifiedSystemPrompt('metadata')).not.toContain('printedName');
+  });
+
+  it('the website prompt asks for the printed name in one rule and shows it in the format', () => {
+    const prompt = unifiedSystemPrompt('full');
+    expect(prompt).toContain('12. Every row in "values" and "additionalValues" also has "printedName": the test name exactly as the report prints it.');
+    expect(prompt).toContain('"printedName": "LDL Cholesterol"');
+    expect(prompt).toContain('"printedName": "Sodium"');
+  });
+
+  it('a long printed name is cut, and line breaks fold to spaces', () => {
+    const [row] = extract({ additionalValues: [lab('x_test', `Some\ntest ${'z'.repeat(300)}`)] }).additionalValues;
+    expect(row.printedName!.length).toBeLessThanOrEqual(120);
+    expect(row.printedName).toMatch(/^Some test z/);
+  });
+});
+
+describe('US-07 AC10: creatinine (Brad 2026-11-02)', () => {
+  it('a printed name that says urine keeps the row urine, even when the model picked serum creatinine', () => {
+    const result = extract({ values: [core('creatinine', 'Creatinine, random urine', 110, 'mg/dL')] });
+    expect(result.values).toEqual([]);
+    expect(result.additionalValues.map((r) => r.name)).toEqual(['Creatinine, random urine']);
+  });
+
+  it('a lab row the model named as creatinine but printed as urine is kept as that urine row', () => {
+    const [row] = extract({ additionalValues: [lab('creatinine', 'U-Creat (spot)', 110, 'mg/dL')] }).additionalValues;
+    expect(row.name).toBe('U-Creat (spot)');
+  });
+
+  it('a row the model filed as urine is never moved into blood creatinine ("Creatinine" under a URINE heading)', () => {
+    const result = extract({ additionalValues: [lab('urine_creatinine', 'Creatinine', 9.8, 'mmol/L')] });
+    expect(result.values).toEqual([]);
+    expect(result.additionalValues.map((r) => labSlotKey(r.name))).toEqual(['urine_creatinine']);
+  });
+
+  it('otherwise it is blood creatinine, with no review flag', () => {
+    const { values } = extract({ values: [core('creatinine', 'Creatinine (serum)', 82, 'µmol/L')] });
+    expect(values.map((v) => [v.metric, v.confidence, v.question])).toEqual([['creatinine', 'high', undefined]]);
+  });
+
+  it('the unit check still refuses a urine-only unit on a blood creatinine', () => {
+    const result = extract({ values: [core('creatinine', 'Creatinine', 3.1, 'mg/mmol')] });
+    expect(result.values).toEqual([]);
+    expect(result.refusedValues?.map((r) => r.metric)).toEqual(['creatinine']);
+  });
+});
+
