@@ -689,6 +689,13 @@ function wordCount(text: string): number {
   return text.trim().split(/\s+/).length;
 }
 
+/** Under the word floor, unless it reads as a crisis or emergency: a short one
+ *  still reaches the answer model, top-level (US-15 AC39 review N5) and as a
+ *  follow-up (US-15 AC49). */
+function tooShort(text: string, minWords: number): boolean {
+  return wordCount(text) < minWords && !CRISIS.test(text);
+}
+
 function ageInDays(publishedAt: string): number {
   return (Date.now() - new Date(publishedAt).getTime()) / (24 * 60 * 60_000);
 }
@@ -706,9 +713,7 @@ function loadVideoBody(videoId: string): { entry: BlogIndexEntry; body: string }
 export function filterThread(thread: YouTubeThread): FilterResult {
   if (thread.canReply === false) return { pass: false, reason: 'cannot reply' };
   if (!thread.text || !thread.text.trim()) return { pass: false, reason: 'empty' };
-  const words = wordCount(thread.text);
-  // A short crisis or emergency comment still gets the chat's emergency reply (US-15 AC39 review N5).
-  if (words < MIN_WORDS && !CRISIS.test(thread.text)) return { pass: false, reason: `too short (${words} words)` };
+  if (tooShort(thread.text, MIN_WORDS)) return { pass: false, reason: `too short (${wordCount(thread.text)} words)` };
 
   // Don't reply to Brad's own comments
   if (thread.authorChannelId && CHANNEL_ID && thread.authorChannelId === CHANNEL_ID) {
@@ -993,7 +998,7 @@ async function processFollowUps(
 
     // Same hygiene gates as top-level, with the shorter follow-up word floor.
     if (ageInDays(reply.publishedAt) > COMMENT_MAX_AGE_DAYS) { gate('stale'); continue; }
-    if (wordCount(reply.text) < FOLLOWUP_MIN_WORDS) { gate('too-short'); continue; }
+    if (tooShort(reply.text, FOLLOWUP_MIN_WORDS)) { gate('too-short'); continue; }
     if ((videoPostCounts.get(meta.videoId) ?? 0) >= PER_VIDEO_REPLY_CAP) { gate('video-cap'); continue; }
 
     let claimed: boolean;
