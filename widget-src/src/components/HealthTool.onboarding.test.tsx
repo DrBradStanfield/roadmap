@@ -785,6 +785,31 @@ describe('US-62 AC12: About you goes low once the onboarding is done and its car
     expect(Array.from(aboutLow(view)!.querySelectorAll('.about-row-label')).map((l) => l.textContent)).toEqual(['Height', 'Sex', 'Birth', 'Alcohol']);
     expect(aboutLow(view)!.querySelector('h3')?.textContent).toContain('About you');
     expect(weightPlaces(view)).toHaveLength(1); // the weight joins the vitals, shown once
+    // The returning layout: the vitals as rows, the grids hidden but mounted.
+    const vitals = cards(view)[0];
+    await waitFor(() => expect(Array.from(vitals.querySelectorAll('.md-row-label')).map((l) => l.textContent)).toEqual(['Weight', 'Waist', 'Blood Pressure']));
+    expect(vitals.querySelector('#waistCm, .collapsed-field-row')).toBeNull();
+    expect(vitals.querySelector('.md-table[hidden] .bt-vitals-card')).toBeTruthy();
+    fireEvent.click(Array.from(vitals.querySelectorAll('.md-row')).find((r) => r.textContent?.includes('Waist'))!);
+    await waitFor(() => expect(within(q(view, '.md-page') as HTMLElement).getByRole('heading', { name: 'Waist' })).toBeTruthy());
+  });
+
+  it('the focus going from the birth year into the waist field keeps that field until the vitals card is left', async () => {
+    const view = await open();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    birth(view);
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    const year = q(view, '#birthYear') as HTMLElement;
+    act(() => { year.focus(); });
+    const waist = q(view, '#waistCm') as HTMLElement;
+    act(() => { waist.focus(); }); // Tab: the profile card is left, into the vitals
+    await waitFor(() => expect(aboutLow(view)).toBeTruthy());
+    expect(q(view, '#waistCm')).toBe(waist);
+    expect(document.activeElement).toBe(waist);
+    leave(waist);
+    await waitFor(() => expect(q(view, '#waistCm')).toBeNull());
+    expect(Array.from(cards(view)[0].querySelectorAll('.md-row-label')).map((l) => l.textContent)).toContain('Waist');
   });
 
   it('a stage short of four moves nothing when the card is left', async () => {

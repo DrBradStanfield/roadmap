@@ -151,8 +151,10 @@ async function typeAndLeave(field: HTMLInputElement, value: string, beforeSave?:
  *  birth date on record that weight finishes the onboarding, and leaving it
  *  moves About you low, the weight joining the vitals (US-62 AC12); with none,
  *  the weight box stays beside the height. */
-async function firstWeight(value: string, { born = true } = {}): Promise<RenderResult> {
+async function firstWeight(value: string, { born = true, opened = false } = {}): Promise<RenderResult> {
   await guest({ born });
+  // A saved blood test opens the whole form, the first-time vitals with it (US-62 AC13).
+  if (opened) await addMeasurement('ldl', 3.0, '2026-09-01');
   const view = render(<HealthTool />);
   await typeAndLeave(await shown<HTMLInputElement>(view.container, '#weightKg'), value);
   await waitFor(async () => expect(await activeOn('weight')).toEqual([[Number(value), TODAY]]));
@@ -759,7 +761,7 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
   // Cleanup review of 2026-09-25: a save took each field it saved out of the
   // form by name, so a number typed there while the save ran went with it.
   it('US-03 AC3: a weight typed into its first-time field while that field\'s save runs stays in the form, and is saved next', async () => {
-    const view = await firstWeight('82');
+    const view = await firstWeight('82', { born: false, opened: true }); // About you stays at the top: the first-time fields
     const field = await openToday(view);
     const release = holdNextCorrection();
     await typeAndLeave(field, '84'); // its save starts, and holds as it writes
@@ -1155,7 +1157,7 @@ describe('leftover form state never writes a value', () => {
 describe('US-03 AC3: a first-time value the form was built again without', () => {
   it('is written under today by the next save of the fields', async () => {
     const turnPhone = rotatablePhone();
-    const view = await firstWeight('82'); // saved: the next form built shows the vitals as a matrix
+    const view = await firstWeight('82', { born: false, opened: true }); // saved: the next form built shows the vitals as a matrix
     typeInto(await shown<HTMLInputElement>(view.container, '#waistCm'), '90'); // not left
     await turnPhone(); // portrait: the form is built again
     await shown(view.container, '.bt-vitals-card');

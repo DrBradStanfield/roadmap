@@ -444,6 +444,17 @@ export function InputPanel({
   // transform only) while its rows fade in; the cards below slide up, so the
   // next card takes its place on screen. Reduced motion moves it at once.
   const aboutRef = useRef<HTMLDivElement>(null);
+  // With About you low the person is in the returning layout, so the vitals
+  // are rows. If the focus went into a first-time vitals field as the profile
+  // card was left, or one holds a value not yet saved, the rows wait until
+  // the focus leaves the vitals card: no field goes from under the cursor.
+  const vitalsRef = useRef<HTMLDivElement>(null);
+  const [vitalsLeft, setVitalsLeft] = useState(aboutYouLow);
+  useEffect(() => {
+    if (aboutYouLow && !vitalsRef.current?.contains(document.activeElement)) setVitalsLeft(true);
+  }, [aboutYouLow]);
+  const vitalPending = (['weightKg', 'waistCm', 'systolicBp', 'diastolicBp'] as const).some(f => inputs[f] !== undefined);
+  const vitalsAsRows = aboutYouLow && vitalsLeft && !vitalPending;
   const flipFrom = useRef<Map<Element, number> | null>(null);
   const leaveProfile = (e: React.FocusEvent<HTMLDivElement>) => {
     if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
@@ -1345,7 +1356,7 @@ export function InputPanel({
     // Rows for any saved vitals, the mirror's or the record's (a new device),
     // unless the plain fields saved one this visit: those stay, so nothing
     // moves under someone typing.
-    const rows = vitalsViewMode === 'matrix' || (vitalsHistory.length > 0 && fieldsSaved === 0);
+    const rows = vitalsViewMode === 'matrix' || vitalsAsRows || (vitalsHistory.length > 0 && fieldsSaved === 0);
     if (!rows) return renderVitalsLegacy();
     return (
       <>
@@ -2403,7 +2414,12 @@ export function InputPanel({
           once the whole form shows. */}
       {[
         !aboutYouLow && aboutCard,
-        fullForm && <div key="vitals" className="section-card stage-reveal">{renderVitals()}</div>,
+        fullForm && (
+          <div key="vitals" ref={vitalsRef} className="section-card stage-reveal"
+               onBlurCapture={aboutYouLow && !vitalsLeft ? e => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setVitalsLeft(true); } : undefined}>
+            {renderVitals()}
+          </div>
+        ),
         /* Blood Tests (the whole form). `section-card--bt` zeros the card's
            inner padding so the timeline matrix sits flush against the card
            edges (column-fit math expects no inner padding). Rows, with the
