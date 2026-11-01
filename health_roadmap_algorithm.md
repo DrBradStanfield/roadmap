@@ -1110,6 +1110,15 @@ suggestion?" panel is the reference list alone, and the swapped US references co
 | `supplement-omega3` | Omega-3 | EPA/DHA, up to 1 g/day combined | CV benefits (Bernasconi 2021). The cognitive benefit of B vitamins may depend on good omega-3 status: in one trial, VITACOG, B vitamins slowed brain atrophy only with good omega-3 status, which was measured, not randomised (Jernerén 2015, Oulhaj 2016). The Dutch FACIT trial found the reverse: 800 mcg/day folic acid improved global cognition and processing speed only with lower omega-3 (van Soest 2021; 791 adults aged 50–70 with raised homocysteine; post hoc). WHO 2026 guideline recommends against omega-3, B, E and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia without a diagnosed deficiency (strong recommendation, moderate certainty; stated reason: 'unexpected harmful effects that outweigh any potential benefits'); it validated its 2019 advice without reassessing supplements, did not consider the omega-3 analyses of VITACOG or FACIT, and does not address omega-3 for heart health. That everyone may reasonably consider up to 1 g/day is Dr Stanfield's judgement, not a trial finding: CV benefit may rise with dose, but so may atrial fibrillation risk: AF HR 1.49 in trials testing >1 g/day vs 1.12 at ≤1 g/day (Gencer 2021). The card asks people with AF or on a blood thinner to check with their doctor first. Text only: the card is always shown and no dose is recorded or checked |
 | `supplement-sleep` | Sleep support | Low-dose melatonin; glycine; magnesium glycinate. Timing (3 to 4 hours before the person wants to fall asleep) appears in roadmap_text only; the card carries no timing | Melatonin may reduce sleep onset latency (Low 2020); a longer gap between dose and bedtime predicted faster sleep onset, and the authors suggest about 3 hours (Cruz-Sanabria 2024; pooled trials of other doses and forms, not 0.8 mg sustained-release) |
 
+**The page's Supplements section (roadmap_text.html, Brad 2026-11-02)** is education text, not
+a card, and may say more than the cards do. Its headings give the doses Brad takes. Beyond the
+cards it reports: the homocysteine and Alzheimer's link (Yu 2020, "more research is needed",
+no claim that TMG lowers that risk); the lutein AREDS lines, as on the generic card; a fiber
+entry framed only as a gap in intake (Quagliani 2017), with no cholesterol or blood pressure
+claim; glycine (Inagawa 2006, Yamadera 2007, Bannai 2012) and magnesium bisglycinate
+(Schuster 2025) for sleep; hyaluronic acid. GlyNAC sits under "Worth watching". No card,
+rule or dose changes, so `evidence.ts` is untouched.
+
 ---
 
 ## 10. Progressive Disclosure
