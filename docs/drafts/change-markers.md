@@ -26,6 +26,36 @@ review rounds: what remains is Brad's.
 Still open from revision 1, and asked again in section 8: the start date (F8), the caption
 (F5), what Remove deletes (F9) and the success bar (F10). New from the re-check: F11 to F13.
 
+### Brad's answers to section 8 (2026-11-02, the same day)
+
+Every question below is answered; this list overrides anything else in the draft.
+
+- **F1** yes: phases 0 and 1 started at once, in parallel, each in its own session.
+- **F2** one marker per period, plus a pill dot at each medication change's own day.
+- **F3** suggest, then the person taps Add. **F4** as proposed: steps only, both
+  directions, "Walking more" and "Walking less", tuned after a month on TestFlight.
+  **F4b** no step count in the record.
+- **F5** keep the caption: "Markers show when things changed. Results vary from test to
+  test, so look for a trend over several results."
+- **F6** one ladder in ship order: one-blood-table takes schema 3, change notes 4, and the
+  version-4 build reads and merges version 3 too.
+- **F7** phase 1 before the markers.
+- **F8** a note carries the person's own start day; medications keep the day the change was
+  recorded (US-06 AC4).
+- **F9** Remove hides the words from every reader; they stay in the file until "Delete all
+  my data".
+- **F10** set aside for now. The usage events are still built; the success bar is decided
+  later.
+- **F11** copy the web: a medication edit saves at once with Undo, values and height wait for
+  Save. "Ideally, we want to share as much code as possible between the web and iOS", so
+  parsing, unit conversion, batching and the write rules live in health-core and the engine,
+  and Swift only decodes and draws.
+- **F12** go ahead: reword the permission text and the App Store privacy answers.
+- **F13** anchor periods at 90 days from their first change.
+
+The stories are in `docs/user-stories.md`: Story 0 as US-06 AC4b, Story A as **US-67**,
+Story B as **US-68**, Story C as **US-69** (US-66 is claimed by two open drafts).
+
 ## 1. Why build it
 
 - **People who measure often.** Weight, waist and home blood pressure show a trend within
@@ -456,7 +486,7 @@ US-16 AC2a rule).
 
 ### Story drafts (proposals; ids assigned when they land, US-66 is taken)
 
-> **Story 0 · The medication marker counter is proven (US-06 usage signal, Lane A)**
+> **Story 0 (US-06 AC4b) · The medication marker counter is proven (US-06 usage signal, Lane A)**
 > - AC1: one deliberate production view of a chart with a recorded medication change sends
 >   exactly one `medication_history_viewed`, seen in `product_events`.
 > - AC2: if it does not, the emit is fixed with a failing test first (`HistoryPanel.test.tsx`
@@ -464,7 +494,7 @@ US-16 AC2a rule).
 > - AC3: the product-health loop's Suspect flag is cleared, or the counter is reported broken
 >   with its cause.
 
-> **Story A · The iPhone chat saves what I tell it, after I confirm (amends US-52 AC5)**
+> **Story A (US-67) · The iPhone chat saves what I tell it, after I confirm (amends US-52 AC5)**
 > As an iPhone user, when I tell the chat a value, a medicine or my height, it changes my
 > record the way the website's chat does (US-16), and it never says it saved something it
 > did not.
@@ -487,7 +517,7 @@ US-16 AC2a rule).
 > - Gate check: a live write path and the chat server: adversary plus Codex. No clinical
 >   change.
 
-> **Story B · I note a change and see it on my charts, grouped with my medicines**
+> **Story B (US-68) · I note a change and see it on my charts, grouped with my medicines**
 > As someone following my plan, I note when I started a change, so my charts show what I was
 > doing when my numbers moved, without the app saying what caused what.
 > - AC1 (note): from a lifestyle plan card, a metric page or My data I note a change: title,
@@ -523,7 +553,7 @@ US-16 AC2a rule).
 > - Gate check: merge/FHIR, schema and agent contract: adversary plus Codex. The caption is
 >   health wording Brad approves; if it cites evidence, the three-file sync.
 
-> **Story C · My iPhone notices when I start walking more, or less (amends US-56 AC1, AC2,
+> **Story C (US-69) · My iPhone notices when I start walking more, or less (amends US-56 AC1, AC2,
 > AC3, AC10, AC11)**
 > - AC1 (rule): a sustained change in daily steps by the thresholds F4 settles offers one
 >   card on the steps page and in Fitness, at most once per 90 days, never within 90 days of
