@@ -3,7 +3,7 @@
 // Only extraction, archive bytes and telemetry are synthetic boundaries.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
+import { createEmptyFile, ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
 import { UploadModal } from './UploadModal';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { flushRoadmapStore, initRoadmapStore } from '../lib/roadmap-data';
@@ -35,7 +35,9 @@ afterEach(async () => { cleanup(); await flushRoadmapStore(); });
 
 async function disk() {
   await flushRoadmapStore();
-  return (await new LocalStorageAdapter().read(ROADMAP_FILE_NAME)).body as RoadmapFile;
+  // A record nothing was saved to is never written (US-10 AC5a): read it as empty.
+  const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
+  return (body ?? createEmptyFile({ deviceId: 'test', now: new Date().toISOString() })) as RoadmapFile;
 }
 
 async function review() {
