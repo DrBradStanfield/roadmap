@@ -308,7 +308,9 @@ describe('METRIC_GUIDES (US-58)', () => {
     expect(METRIC_GUIDES.heart_rate.whyItMatters.endsWith(lines)).toBe(true);
     // Chest pain needs emergency care at any pulse (Gulati), never only with a racing pulse (Codex R1).
     expect(METRIC_GUIDES.heart_rate.whyItMatters).not.toMatch(/racing pulse with chest pain/);
-    expect(FILES.html).toContain('Get emergency care for chest pain, whatever your pulse [133], or for a racing pulse with fainting, dizziness or breathlessness [134]. A very slow pulse with fainting, dizziness or breathlessness needs prompt medical care [135].');
+    expect(FILES.html).toContain('Get emergency care for chest pain, whatever your pulse,[133] or for a racing pulse with fainting, dizziness or breathlessness.[134] A very slow pulse with fainting, dizziness or breathlessness needs prompt medical care.[135]');
+    // The Exercise safety paragraph keeps one instruction (Brad 2026-11-02).
+    expect(FILES.html).toContain('see your doctor before you exercise again [132].</p>');
     expect(numberOf('https://doi.org/10.1161/CIR.0000000000001029')).toBe(133);
     expect(numberOf('https://www.nhs.uk/conditions/arrhythmia/')).toBe(134);
     expect(numberOf('https://doi.org/10.1161/CIR.0000000000000628')).toBe(135);
