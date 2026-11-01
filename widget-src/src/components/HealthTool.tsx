@@ -44,6 +44,7 @@ import {
   type ProposedMedicationEdit,
   type ProposedProfileEdit,
   formatHeightDisplay,
+  birthRefusedMessage,
 } from '@roadmap/health-core';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import type { MoveTestApi } from './MoveTestPanel';
@@ -100,7 +101,6 @@ import type { ApiDocument } from '../lib/api-types';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { createRemoteChangeRelay } from '../lib/remote-replay';
-import { MONTHS_FULL } from '../lib/constants';
 
 // What "Delete all my data" does, said BEFORE the click. The caveats used to
 // arrive in the alert afterwards, which is too late to be a decision, and
@@ -540,13 +540,15 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     const hasChanges = autoSaveFields.some(f => inputs[f] !== previousInputsRef.current[f]);
     if (!hasChanges) return true;
 
-    const refused = await saveChangedMeasurements(currentPrefill, previousPrefill, erase);
-    if (refused === false) {
+    const result = await saveChangedMeasurements(currentPrefill, previousPrefill, erase);
+    if (!result.ok) {
       writeRefused();
       return false;
     }
+    const refused = result.birthRefused;
+    const kept = new Set<keyof HealthInputs>(refused ? ['birthYear', 'birthMonth'] : []);
     for (const field of autoSaveFields) {
-      if (!refused || (field !== 'birthYear' && field !== 'birthMonth')) (previousInputsRef.current as any)[field] = inputs[field];
+      if (!kept.has(field)) (previousInputsRef.current as any)[field] = inputs[field];
     }
     if (refused) {
       // US-54 AC5b: the form shows the record's pair again, unless typed over
@@ -555,8 +557,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       setInputs(prev => (prev.birthYear === inputs.birthYear && prev.birthMonth === inputs.birthMonth
         ? { ...prev, birthYear: saved.birthYear, birthMonth: saved.birthMonth }
         : prev));
-      const month = refused.birthMonth ? `${MONTHS_FULL[refused.birthMonth - 1].label} ` : '';
-      setBirthRefused(`${month}${refused.birthYear} is in the future, so it was not saved.`);
+      setBirthRefused(birthRefusedMessage(refused.birthYear, refused.birthMonth));
     }
     // The chat copy holds the saved profile beside the saved values it
     // already has (US-15 AC10).

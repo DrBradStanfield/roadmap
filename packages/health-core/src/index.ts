@@ -101,6 +101,7 @@ export {
   PRESSURE_ORDER,
   pressureInverted,
   birthInFuture,
+  birthRefusedMessage,
   sanitizeInputs,
   excludedInputFields,
   measurementSchema,

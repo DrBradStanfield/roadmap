@@ -164,6 +164,8 @@ export type CorrectStatus = 'ok' | 'changed' | 'invalid' | 'error';
 export type MoveOutcome = { status: Exclude<CorrectStatus, 'invalid'> } | { status: 'invalid'; refusal: MoveRejection };
 /** A birth month in the future that a save refused (US-54 AC5b): the pair judged. */
 export interface BirthRefusal { birthYear: number; birthMonth: number | undefined }
+/** A profile save: refused by the erase, or saved with any birth month it refused. */
+export type ProfileSave = { ok: false } | { ok: true; birthRefused: BirthRefusal | null };
 export interface BulkSaveResult {
   saved: ApiMeasurement[];
   skippedDuplicates: number;
@@ -326,16 +328,16 @@ export class RoadmapStore {
     return { status: 'ok' };
   }
 
-  /** False when the erase refuses it; otherwise the birth month it refused
-   *  (US-54 AC5b), or null. The caller puts the record's pair back in the form. */
-  saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): false | BirthRefusal | null {
-    if (this.refuses(erase)) return false;
-    const refused = this.applyProfileChanges(current, previous, erase);
+  /** `birthRefused`: a birth month it refused (US-54 AC5b), which the caller
+   *  replaces in the form with the record's pair. */
+  saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): ProfileSave {
+    if (this.refuses(erase)) return { ok: false };
+    const birthRefused = this.applyProfileChanges(current, previous, erase);
     // diffInputsToMeasurements (health-core) owns the field→metric map + change detection.
     for (const { metricType, value } of diffInputsToMeasurements(current, previous)) {
       this.addMeasurement(metricType, value, undefined, erase);
     }
-    return refused;
+    return { ok: true, birthRefused };
   }
 
   saveMedication(medicationKey: string, drugName: string, doseValue: number | null = null, doseUnit: string | null = null, erase?: string): boolean {
@@ -553,11 +555,12 @@ export class RoadmapStore {
     // US-54 AC5b: a birth month after this one writes neither changed half, as
     // update_profile refuses it; a year alone is judged with January. Judged as
     // typed and as it would be stored, over a half another device changed.
-    const birthChanged = 'birthYear' in changes || 'birthMonth' in changes;
-    const stored = { ...this.file.profile, ...changes } as { birthYear?: number | null; birthMonth?: number | null };
-    const refused = birthChanged
-      ? [current, stored].map((p) => ({ birthYear: p.birthYear ?? undefined, birthMonth: p.birthMonth ?? undefined }))
-        .find((p): p is BirthRefusal => p.birthYear !== undefined && birthInFuture(p.birthYear, p.birthMonth ?? 1, new Date())) ?? null
+    const future = (p: { birthYear?: number | null; birthMonth?: number | null }): BirthRefusal | null =>
+      p.birthYear != null && birthInFuture(p.birthYear, p.birthMonth ?? 1, new Date())
+        ? { birthYear: p.birthYear, birthMonth: p.birthMonth ?? undefined }
+        : null;
+    const refused = 'birthYear' in changes || 'birthMonth' in changes
+      ? future(current) ?? future({ ...this.file.profile, ...changes })
       : null;
     if (refused) { delete changes.birthYear; delete changes.birthMonth; }
     if (Object.keys(changes).length === 0) return refused;

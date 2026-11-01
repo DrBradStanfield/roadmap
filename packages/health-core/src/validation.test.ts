@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { IMPORT_LIMITS } from './import-hints';
-import { convertValidationErrorsToUnits, getValidationErrors, validateHealthInputs, birthInFuture, healthInputSchema, METRIC_TYPES, labImportPageSchema, medicationSchema, screeningSchema, profileUpdateSchema, measurementSchema, validateInputValue, isBirthYearClearlyInvalid, sanitizeInputs, excludedInputFields } from './validation';
+import { convertValidationErrorsToUnits, getValidationErrors, validateHealthInputs, birthInFuture, birthRefusedMessage, healthInputSchema, METRIC_TYPES, labImportPageSchema, medicationSchema, screeningSchema, profileUpdateSchema, measurementSchema, validateInputValue, isBirthYearClearlyInvalid, sanitizeInputs, excludedInputFields } from './validation';
 import { UNIT_DEFS } from './units';
 import { METRIC_TO_FIELD } from './mappings';
 
@@ -637,6 +637,12 @@ describe('US-54 AC5b — a birth month in the future is refused on the month', (
     expect(birthInFuture(2026, 8, BEHIND)).toBe(false);
     expect(birthInFuture(2027, 1, AHEAD)).toBe(true);
     expect(birthInFuture(1990, 12, new Date(BEHIND))).toBe(false);
+  });
+
+  it('birthRefusedMessage names the refused month and year, or the year alone', () => {
+    expect(birthRefusedMessage(2026, 10)).toBe('October 2026 is in the future, so it was not saved.');
+    expect(birthRefusedMessage(2026, 1)).toBe('January 2026 is in the future, so it was not saved.');
+    expect(birthRefusedMessage(2027)).toBe('2027 is in the future, so it was not saved.');
   });
 
   it('validateHealthInputs refuses the month with the person\'s words, and keeps the year', () => {

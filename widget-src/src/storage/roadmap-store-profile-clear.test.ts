@@ -14,14 +14,14 @@ afterEach(() => {
 it('US-10 AC9: clearing Birth Month persists a stamped null through save and fresh load', async () => {
   const cloud = new MemoryCloud();
   const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-  expect(store.saveChangedMeasurements({ birthMonth: 5, heightCm: 178 }, {})).toBeNull();
+  expect(store.saveChangedMeasurements({ birthMonth: 5, heightCm: 178 }, {})).toEqual({ ok: true, birthRefused: null });
   await store.flush();
   const saved: RoadmapFile = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
 
   vi.advanceTimersByTime(1000);
   // HealthTool omits a cleared field from currentPrefill, but retains its
   // previous value in previousPrefill. This is a removal, not an absent edit.
-  expect(store.saveChangedMeasurements({}, { birthMonth: 5 })).toBeNull();
+  expect(store.saveChangedMeasurements({}, { birthMonth: 5 })).toEqual({ ok: true, birthRefused: null });
   await store.flush();
   const cleared: RoadmapFile = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
   expect(cleared.profile.birthMonth).toBeNull();
@@ -99,7 +99,7 @@ it('US-10 AC9: an erase mismatch refuses a clear without changing the saved reco
   store.saveChangedMeasurements({ birthMonth: 5 }, {});
   await store.flush();
   const before = { ...cloud.files.get(ROADMAP_FILE_NAME)! };
-  expect(store.saveChangedMeasurements({}, { birthMonth: 5 }, 'not-the-shown-erase')).toBe(false);
+  expect(store.saveChangedMeasurements({}, { birthMonth: 5 }, 'not-the-shown-erase')).toEqual({ ok: false });
   await vi.advanceTimersByTimeAsync(2000);
   expect(cloud.files.get(ROADMAP_FILE_NAME)).toEqual(before);
 });
@@ -126,7 +126,7 @@ it('US-54 AC5b: a birth month after this one leaves the stored birth month and y
   vi.advanceTimersByTime(1000);
 
   expect(store.saveChangedMeasurements({ birthYear: 2026, birthMonth: 12, heightCm: 180 }, { birthYear: 1990, birthMonth: 5, heightCm: 178 }))
-    .toEqual({ birthYear: 2026, birthMonth: 12 });
+    .toEqual({ ok: true, birthRefused: { birthYear: 2026, birthMonth: 12 } });
   await store.flush();
   const saved: RoadmapFile = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
   expect([saved.profile.birthYear, saved.profile.birthMonth, saved.profile.heightCm]).toEqual([1990, 5, 180]);
@@ -135,7 +135,7 @@ it('US-54 AC5b: a birth month after this one leaves the stored birth month and y
 
   // A year alone is judged with the month: 1990 → 2026 with December stored.
   store.saveChangedMeasurements({ birthYear: 1990, birthMonth: 12 }, { birthYear: 1990, birthMonth: 5 });
-  expect(store.saveChangedMeasurements({ birthYear: 2026, birthMonth: 12 }, { birthYear: 1990, birthMonth: 12 })).toEqual({ birthYear: 2026, birthMonth: 12 });
+  expect(store.saveChangedMeasurements({ birthYear: 2026, birthMonth: 12 }, { birthYear: 1990, birthMonth: 12 })).toEqual({ ok: true, birthRefused: { birthYear: 2026, birthMonth: 12 } });
   await store.flush();
   const yearOnly: RoadmapFile = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
   expect([yearOnly.profile.birthYear, yearOnly.profile.birthMonth]).toEqual([1990, 12]);
@@ -155,7 +155,7 @@ it('US-54 AC5b, US-10 AC6: a month edit never stamps the year; a newer year from
   await b.flush();
   vi.advanceTimersByTime(1000);
   await a.refreshFromRemote(); // merged into A's file; A's form still shows 1990
-  expect(a.saveChangedMeasurements({ birthYear: 1990, birthMonth: 6 }, { birthYear: 1990, birthMonth: 5 })).toBeNull();
+  expect(a.saveChangedMeasurements({ birthYear: 1990, birthMonth: 6 }, { birthYear: 1990, birthMonth: 5 })).toEqual({ ok: true, birthRefused: null });
   await a.flush();
   const saved: RoadmapFile = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
   expect([saved.profile.birthYear, saved.profile.birthMonth]).toEqual([1985, 6]);
@@ -175,7 +175,7 @@ it('US-54 AC5b: a month that would make the stored pair future is refused, thoug
   vi.advanceTimersByTime(1000);
   await a.refreshFromRemote(); // merged into A's file; A's form still shows 1990
   expect(a.saveChangedMeasurements({ birthYear: 1990, birthMonth: 12 }, { birthYear: 1990, birthMonth: 5 }))
-    .toEqual({ birthYear: 2026, birthMonth: 12 });
+    .toEqual({ ok: true, birthRefused: { birthYear: 2026, birthMonth: 12 } });
   await a.flush();
   const saved: RoadmapFile = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
   expect([saved.profile.birthYear, saved.profile.birthMonth]).toEqual([2026, 5]);

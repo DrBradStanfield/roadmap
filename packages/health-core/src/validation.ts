@@ -204,6 +204,17 @@ export function inputsPressureInverted(inputs: Partial<HealthInputs>, days: Pres
 export const BIRTH_IN_FUTURE = 'Your birth month cannot be in the future.';
 
 /**
+ * US-54 AC5b: what the web says under Birth Month after a save refused a
+ * birth month. The iPhone and the agents refuse before anything changes and
+ * say BIRTH_IN_FUTURE; the web has already put the record's pair back in the
+ * form, so it names what it did not save.
+ */
+export function birthRefusedMessage(year: number, month?: number): string {
+  const name = month ? `${new Date(Date.UTC(2000, month - 1)).toLocaleString('en-US', { month: 'long', timeZone: 'UTC' })} ` : '';
+  return `${name}${year} is in the future, so it was not saved.`;
+}
+
+/**
  * US-54 AC5b: a birth month after this one. "This month" is the one the zone
  * furthest ahead (UTC+14) is in, so no one's own month is refused.
  */
