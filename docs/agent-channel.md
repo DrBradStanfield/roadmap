@@ -116,19 +116,21 @@ status line to the channel.
 - **How:** from any worktree, run the main checkout's copy, which is always on main:
   `node ~/Documents/roadmap.nosync/tools/agent-channel.mjs post "status: start | <task in
   plain words> | branch <name> | touches <areas> | PR <n or none>"`.
-- **What it never names:** a security defect or the area it sits in, before its fix is
-  deployed; a session that finds partway through that its task is security work posts
-  nothing more until the deploy, then a plain `done` that names no defect. Unfixed security
-  detail stays in the GitHub advisories (agreed with Hermes, 2026-11-01). `blocked` names the
-  area, never the defect. Never customer or tester details, health values or claude_business
-  work, nor anything the rules above forbid. A task name says what changes, never whose data
-  or which hole.
+- **Security work posts nothing until its fix is deployed:** no `start`, no `blocked`, no
+  `touches`. A task known to be security work skips `start`; one found to be security work
+  partway through posts nothing more. After the deploy, one plain `done` that names no defect
+  or area. Unfixed security detail stays in the GitHub advisories (agreed with Hermes,
+  2026-11-01).
+- **What it never names:** on other work, `blocked` names the area, never the defect. Never
+  customer or tester details, health values or claude_business work, nor anything the rules
+  above forbid. A task name says what changes, never whose data.
 - **When a post fails:** skip it, never retry in a loop, and name it in the final report:
   a refused `done` leaves Hermes thinking the branch is still busy, so the next check posts
   it. A refusal by the leak guard means a secret or an email got into the task or branch
   text: tell Brad. If the tool is missing or errors, skip the post and say so in the report.
-- **Cap:** status posts share the tool's 10-per-hour cap with replies. Lines that start
-  `status:` are status; everything else is a reply. The channel history tells them apart.
+- **Cap:** status posts share the tool's 10-per-hour cap with replies. Our bot's lines that
+  start `status:` are status; its other lines are replies. The tool's `posts` count lumps the
+  two together, so the reply count comes from scrolling the channel by hand.
 
 ## Live setup (2026-11-01)
 
