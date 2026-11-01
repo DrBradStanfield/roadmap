@@ -61,8 +61,10 @@ private struct Heading: View {
 }
 
 /// Values arrive one by one, as Apple Health or a lab report would fill them in.
-private struct NumbersScene: View {
+struct NumbersScene: View {
     @State private var shown = 0
+    /// The icon column grows with the text, as SourceRow's (US-52 AC10b).
+    @ScaledMetric(relativeTo: .subheadline) private var iconWidth = 22.0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let rows = Sample.rows
 
@@ -73,8 +75,9 @@ private struct NumbersScene: View {
                 if index < shown {
                     let row = rows[index]
                     HStack(spacing: 10) {
-                        Image(systemName: row.symbol).foregroundStyle(row.tint.softInDark).frame(width: 22)
-                        Text(row.label).font(.subheadline)
+                        Image(systemName: row.symbol).foregroundStyle(row.tint.softInDark).frame(width: iconWidth)
+                        // Wraps rather than "Blood pre…" at large sizes (US-54 AC8b).
+                        Text(row.label).font(.subheadline).fixedSize(horizontal: false, vertical: true)
                         Spacer()
                         Text(row.value).font(.subheadline.weight(.semibold)).monospacedDigit()
                         Text(row.unit).font(.caption).foregroundStyle(.secondary)
@@ -94,8 +97,10 @@ private struct NumbersScene: View {
 }
 
 /// The plan builds itself: one step per area, each ticked as it lands.
-private struct PlanScene: View {
+struct PlanScene: View {
     @State private var shown = 0
+    /// The icon column grows with the text, as SourceRow's (US-52 AC10b).
+    @ScaledMetric(relativeTo: .subheadline) private var iconWidth = 22.0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let steps = [("heart.fill", Color.red, "Blood pressure"), ("drop.fill", Color.blue, "Cholesterol"), ("scalemass.fill", Color.purple, "Weight")]
 
@@ -106,8 +111,8 @@ private struct PlanScene: View {
                 if index < shown {
                     let step = steps[index]
                     HStack(spacing: 10) {
-                        Image(systemName: step.0).foregroundStyle(step.1.softInDark).frame(width: 22)
-                        Text(step.2).font(.subheadline.weight(.medium))
+                        Image(systemName: step.0).foregroundStyle(step.1.softInDark).frame(width: iconWidth)
+                        Text(step.2).font(.subheadline.weight(.medium)).fixedSize(horizontal: false, vertical: true)
                         Spacer()
                         Text("Next step").font(.caption).foregroundStyle(.secondary)
                         Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)

@@ -70,6 +70,87 @@ final class TextSizeLayoutTests: XCTestCase {
         XCTAssertLessThan(normal, try height(title, at: .large) + height(buttons, at: .large),
                           "at the default size title and buttons share a row")
     }
+
+    // MARK: Text that never truncates (break-it pass 2026-11-01, iPhone 17e)
+
+    /// The iPhone 17e's screen, the smallest current iPhone.
+    private let iPhone17e = CGSize(width: 390, height: 844)
+
+    /// How many times `view`'s texts were drawn, once settled, in a 17e-sized window at
+    /// `category`, and how many of those draws were cut short with "…" (SwiftUI's own `Text.Layout.isTruncated`).
+    @available(iOS 18.0, *)
+    private func drawnTexts(in view: some View, at category: UIContentSizeCategory) throws -> (drawn: Int, cut: Int) {
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(origin: .zero, size: iPhone17e)
+        window.traitOverrides.preferredContentSizeCategory = category
+        let probe = TruncationProbe()
+        window.rootViewController = UIHostingController(rootView: view.textRenderer(probe))
+        window.makeKeyAndVisible()
+        defer { window.isHidden = true }
+        // Long enough for `.task` to reveal a scene's rows and their springs to settle.
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 3))
+        // Then count the settled page only: dark mode redraws every text where it lies.
+        probe.log.drawn = 0
+        probe.log.cut = 0
+        window.traitOverrides.userInterfaceStyle = .dark
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
+        return (probe.log.drawn, probe.log.cut)
+    }
+
+    /// US-54 AC8b: the Apple Health page's title and words are whole on a 17e at the
+    /// default and extra-large sizes; the page scrolls instead.
+    @available(iOS 18.0, *)
+    func testTheAppleHealthPageNeverCutsItsWords_US54_AC8b() throws {
+        let page = NavigationStack {
+            OnboardingPage(symbol: "heart.fill", tint: .pink, title: OnboardingView.healthTitle, detail: OnboardingView.healthDetail,
+                           progress: nil, spread: true) {
+                VStack(spacing: 12) {
+                    HealthFillScene()
+                    Text(OnboardingView.liveLine).font(.footnote).multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            } actions: {
+                Text(OnboardingView.appleAsksNextWords).padding(14)
+                Button("Connect Apple Health") {}.buttonStyle(.accent)
+                Button("Not now") {}
+            }
+        }
+        for category in [UIContentSizeCategory.large, .extraLarge] {
+            let texts = try drawnTexts(in: page, at: category)
+            XCTAssertGreaterThan(texts.drawn, 5, "\(category.rawValue): the page drew its words")
+            XCTAssertEqual(texts.cut, 0, "\(category.rawValue): no words end in …")
+        }
+    }
+
+    /// US-54 AC8b: the welcome story's rows never cut a name short ("Blood pre…") at the
+    /// largest size it shows (the welcome shows words alone at accessibility sizes).
+    @available(iOS 18.0, *)
+    func testTheWelcomeStoryNeverCutsARowShort_US54_AC8b() throws {
+        // Framed and inset as WelcomeStory and WelcomeView place them.
+        let numbers = NumbersScene().frame(height: 236).padding(.horizontal, 28)
+        let plan = PlanScene().frame(height: 236).padding(.horizontal, 28)
+        for category in [UIContentSizeCategory.large, .extraLarge, .extraExtraExtraLarge] {
+            for (name, scene) in [("numbers", AnyView(numbers)), ("plan", AnyView(plan))] {
+                let texts = try drawnTexts(in: scene, at: category)
+                XCTAssertGreaterThan(texts.drawn, 5, "\(category.rawValue) \(name): the scene drew its rows")
+                XCTAssertEqual(texts.cut, 0, "\(category.rawValue) \(name): no row ends in …")
+            }
+        }
+    }
+}
+
+/// Draws text as usual and counts the texts drawn, and those cut short.
+@available(iOS 18.0, *)
+private struct TruncationProbe: TextRenderer {
+    final class Log { var drawn = 0, cut = 0 }
+    let log = Log()
+
+    func draw(layout: Text.Layout, in context: inout GraphicsContext) {
+        log.drawn += 1
+        if layout.isTruncated { log.cut += 1 }
+        for line in layout { context.draw(line) }
+    }
 }
 
 /// The question box with its own focus, as ChatView holds it.
