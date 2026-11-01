@@ -16,8 +16,18 @@ final class EngineBridgeContractTests: XCTestCase {
         struct Door: Decodable { let args: [String] }
     }
 
+    /// Both-way additions that keep the bridge id (D14), never hashed.
+    private struct Additions: Decodable {
+        let doors: [String: Door]
+        struct Door: Decodable { let optionalArgs: [String]? }
+    }
+
     private func contractBytes() throws -> Data {
         try Data(contentsOf: ios.appending(path: "engine/bridge-contract.json"))
+    }
+
+    private func additions() throws -> Additions {
+        try JSONDecoder().decode(Additions.self, from: Data(contentsOf: ios.appending(path: "engine/bridge-optional.json")))
     }
 
     func testTheBridgeIdIsTheContractsHash() throws {
@@ -37,10 +47,13 @@ final class EngineBridgeContractTests: XCTestCase {
     func testTheDoorsTheSelfTestChecksAreTheContracts() throws {
         let contract = try JSONDecoder().decode(Contract.self, from: contractBytes())
         XCTAssertEqual(EngineRelease.doors.sorted(), contract.doors.keys.sorted())
+        let extra = try additions()
         let engine = try HealthEngine()
         for (name, door) in contract.doors {
-            XCTAssertEqual(try engine.blocking { try $0.evaluate("HealthEngine.\(name).length").toInt32() }, Int32(door.args.count), name)
+            let arity = door.args.count + (extra.doors[name]?.optionalArgs?.count ?? 0)
+            XCTAssertEqual(try engine.blocking { try $0.evaluate("HealthEngine.\(name).length").toInt32() }, Int32(arity), name)
         }
+        XCTAssertTrue(Set(extra.doors.keys).isSubset(of: contract.doors.keys))
     }
 
     func testCloudSyncHandlesEveryContractEvent() throws {

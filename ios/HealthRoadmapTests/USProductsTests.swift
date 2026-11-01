@@ -1,3 +1,4 @@
+import Observation
 import XCTest
 @testable import HealthRoadmap
 
@@ -88,11 +89,76 @@ final class USProductsTests: XCTestCase {
             guard case .planned(_, let sections, _) = store.plan else { return -1 }
             return suggestions(sections).compactMap(\.usProduct).count
         }
+        /// Whether `body` drew the record again (RecordStore.follow's guard skips a repeat).
+        func redraws(_ body: () async -> Void) async -> Bool {
+            let redrew = Flag()
+            withObservationTracking { _ = store.drawn } onChange: { redrew.set() }
+            await body()
+            return redrew.value
+        }
         XCTAssertEqual(shownProducts(), 0, "not the US until StoreKit says so")
-        await store.follow(storefrontIsUS: true)
+        let toUS = await redraws { await store.follow(storefrontIsUS: true) }
+        XCTAssertTrue(toUS)
         XCTAssertGreaterThan(shownProducts(), 0)
+        let repeatUS = await redraws { await store.follow(storefrontIsUS: true) }
+        XCTAssertFalse(repeatUS, "the same answer again draws nothing")
         await store.follow(storefrontIsUS: false)
         XCTAssertEqual(shownProducts(), 0)
+        let repeatNotUS = await redraws { await store.follow(storefrontIsUS: false) }
+        XCTAssertFalse(repeatNotUS, "the same answer again draws nothing")
+    }
+
+    /// No storefront now (StoreKit cannot say) keeps the saved answer and writes nothing;
+    /// with nothing saved, it is not the US.
+    func testANilStorefrontKeepsTheSavedAnswer_US61() throws {
+        let suite = "USProductsTests-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        XCTAssertFalse(AppStoreCountry.remember(nil, in: defaults), "nothing saved: not the US")
+        XCTAssertNil(defaults.object(forKey: AppStoreCountry.key), "a nil storefront writes nothing")
+        XCTAssertTrue(AppStoreCountry.remember("USA", in: defaults))
+        XCTAssertTrue(AppStoreCountry.remember(nil, in: defaults), "a nil storefront keeps the saved US")
+        XCTAssertEqual(defaults.object(forKey: AppStoreCountry.key) as? Bool, true)
+        XCTAssertFalse(AppStoreCountry.remember("NZL", in: defaults))
+        XCTAssertEqual(defaults.object(forKey: AppStoreCountry.key) as? Bool, false)
+    }
+
+    /// D14, a new app with an old engine (builds 3 and 4 carry bridge 2d467ff50c66c42d, and
+    /// their engines reach this app too): an engine built before US-61 ignores the fifth
+    /// argument and sends no usProducts, and the app then draws the plan with no block.
+    func testAnEngineBeforeUS61DrawsThePlanWithNoBlock_US61() throws {
+        let url = try XCTUnwrap(Bundle.main.url(forResource: "health-engine", withExtension: "js"))
+        let older = """
+            HealthEngine = (function (e) {
+              var o = Object.assign({}, e);
+              o.screenJson = function (a, b, c, d) {
+                var v = JSON.parse(e.screenJson(a, b, c, d));
+                if (v.plan) delete v.plan.usProducts;
+                return JSON.stringify(v);
+              };
+              return o;
+            })(HealthEngine);
+            """
+        let engine = try HealthEngine(source: try String(contentsOf: url, encoding: .utf8) + "\n" + older, sourceURL: nil, session: StubHTTP.session())
+        XCTAssertEqual(try engine.blocking { try $0.evaluate("HealthEngine.screenJson.length").toInt32() }, 4, "the stand-in takes the old four arguments")
+        let shown = try sections(engine, try record(engine, birthYear: 1970), isUS: true)
+        XCTAssertNotNil(shown.first { $0.key == "supplements" })
+        XCTAssertTrue(suggestions(shown).allSatisfy { $0.usProduct == nil })
+        XCTAssertTrue(shown.allSatisfy { $0.ownershipLine == nil })
+    }
+
+    /// A signed engine cannot point a block anywhere but https on microvitamin.com.
+    func testABlockLinkingAnywhereButMicrovitaminIsDropped_US61() throws {
+        func kept(_ url: String) throws -> Int {
+            let block = ["suggestionId": "supplement-sleep", "product": "sleep", "name": "Sleep", "line": "A line.", "url": url]
+            let json = try JSONSerialization.data(withJSONObject: ["blocks": [block], "ownershipLine": "Owner line."])
+            return try JSONDecoder().decode(USProducts.self, from: json).blocks.count
+        }
+        XCTAssertEqual(try kept("https://microvitamin.com/products/sleep?utm_source=health-tool&utm_medium=ios"), 1)
+        for url in ["http://microvitamin.com/products/sleep", "https://example.com/products/sleep", "https://microvitamin.com.example.com/x",
+                    "https://www.microvitamin.com/products/sleep", "https://microvitamin.com@example.com/x", "mailto:a@microvitamin.com"] {
+            XCTAssertEqual(try kept(url), 0, url)
+        }
     }
 
     /// Swift places only what the engine gives: no block, no line; a line with no card
@@ -107,5 +173,42 @@ final class USProductsTests: XCTestCase {
         XCTAssertNil(elsewhere[0].cards[0].suggestions[0].usProduct)
         XCTAssertNil(elsewhere[0].ownershipLine, "no card here shows a block, so no ownership line")
         XCTAssertEqual(elsewhere[0].cards[0].suggestions[0].description, "Own text.")
+        let here = USProducts(blocks: [.init(suggestionId: "supplement-omega3", name: "Sleep", line: "A line.", url: URL(string: "https://microvitamin.com/products/sleep")!, description: nil, references: nil)],
+                              ownershipLine: "Owner line.").applied(to: sections)
+        XCTAssertEqual(here[0].cards[0].suggestions[0].usProduct?.name, "Sleep", "a block the engine gave for this card shows on it")
+        XCTAssertEqual(here[0].ownershipLine, "Owner line.")
+        XCTAssertEqual(here[0].cards[0].suggestions[0].description, "Own text.", "a block with no US text keeps the card's own")
     }
+
+    /// A block shows on its single Supplements card, with its text and the line, and nowhere
+    /// else: not on a grouped card, not in another section (the web's renderCards rule).
+    func testABlockShowsOnlyOnItsSingleSupplementsCard_US61() throws {
+        func card(_ ids: [String]) -> [String: Any] {
+            ["category": "supplements", "priority": "info",
+             "suggestions": ids.map { ["id": $0, "category": "supplements", "priority": "info", "title": "T", "description": "Own text."] }]
+        }
+        let json = try JSONSerialization.data(withJSONObject: [
+            ["key": "supplements", "title": "Supplements", "cards": [card(["supplement-sleep"]), card(["supplement-collagen", "supplement-creatine"])]],
+            ["key": "info", "title": "Foundation", "cards": [card(["supplement-micronutrient-base"])]],
+        ])
+        let sections = try JSONDecoder().decode([PlanSection].self, from: json)
+        let blocks = ["supplement-sleep", "supplement-collagen", "supplement-micronutrient-base"].map {
+            USProducts.Block(suggestionId: $0, name: "Sleep", line: "A line.", url: URL(string: "https://microvitamin.com/products/sleep")!, description: "US text.", references: [])
+        }
+        let shown = USProducts(blocks: blocks, ownershipLine: "Owner line.").applied(to: sections)
+        let single = shown[0].cards[0].suggestions[0]
+        XCTAssertEqual(single.usProduct?.name, "Sleep", "the positive case: a block on its card shows")
+        XCTAssertEqual(single.description, "US text.")
+        XCTAssertEqual(shown[0].ownershipLine, "Owner line.")
+        XCTAssertTrue(shown[0].cards[1].suggestions.allSatisfy { $0.usProduct == nil && $0.description == "Own text." }, "a grouped card takes no block")
+        XCTAssertNil(shown[1].cards[0].suggestions[0].usProduct, "only the Supplements section")
+        XCTAssertEqual(shown[1].cards[0].suggestions[0].description, "Own text.")
+        XCTAssertNil(shown[1].ownershipLine)
+    }
+}
+
+/// Set once from an observation's onChange, read after on the main actor.
+private final class Flag: @unchecked Sendable {
+    private(set) var value = false
+    func set() { value = true }
 }
