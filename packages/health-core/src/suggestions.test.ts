@@ -3099,6 +3099,8 @@ describe('Evidence attachment', () => {
     // GlyNAC is watched, not suggested.
     expect(section).not.toContain('GlyNAC');
     expect(watching).toContain('GlyNAC');
+    // The page names no product (AC9), anywhere.
+    expect(html).not.toMatch(/MicroVitamin|Sleep by Dr Brad/);
     // Brad's current medicines (2026-11-02), each off-label one labelled so.
     for (const heading of ['Rosuvastatin 5mg + Ezetimibe 10mg', 'Tirzepatide 2.5mg weekly', 'Empagliflozin 6.25mg daily']) expect(section).toContain(heading);
     expect(section.match(/off-label and against current guidelines/g)).toHaveLength(2);
