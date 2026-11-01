@@ -1468,7 +1468,7 @@ As a US adult reading My Plan on drstanfield.com or the iPhone app, I see which 
   - `supplement-lutein-zeaxanthin` US description: "Lutein and zeaxanthin are the pigments of the macula, the part of the eye that sees fine detail. Trials show supplements raise macular pigment density."
   - `supplement-micronutrient-base` → MicroVitamin+: "COSMOS tested a standard multivitamin (Centrum Silver), not MicroVitamin+. It is the trial that led Dr Brad to create MicroVitamin+, which uses doses close to daily needs rather than megadoses."
   - `supplement-creatine` → MicroVitamin+: "MicroVitamin+ contains 5 g of creatine monohydrate."
-  - `supplement-collagen` → MicroVitamin+: "MicroVitamin+ contains 10 g of collagen peptides." (the v9 powder; was 12.5 g, v8; Brad 2026-11-02)
+  - `supplement-collagen` → MicroVitamin+: "MicroVitamin+ contains 10 g of collagen peptides." (the v9 powder, as the US ships; Europe's v8 Mixed Berry has 12.5 g; was 12.5 g, v8; Brad 2026-11-02)
   - `supplement-lutein-zeaxanthin` → MicroVitamin+: "MicroVitamin+ contains 10 mg of lutein and 2 mg of zeaxanthin, the doses used in the AREDS2 trial."
   - `supplement-tmg` → MicroVitamin+: "MicroVitamin+ contains 500 mg of TMG."
   - `supplement-sleep` → Sleep: "Sleep contains 0.8 mg of sustained-release melatonin, 2,400 mg of glycine and magnesium bisglycinate."

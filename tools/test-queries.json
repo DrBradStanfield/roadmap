@@ -1985,7 +1985,7 @@
       "([Ww]rinkle|[Ff]ine line|[Rr]ebuild|[Ss]tructur)(?:(?!\\.\\s)[^\\n]){0,200}\\b[Cc]ollagen\\b",
       "12\\.5\\s*g(?:(?!\\.\\s)[^\\n]){0,120}\\b(within|inside (?:that|the|this) range|in line with|consistent with|falls in|in the middle of|covered by)\\b"
     ],
-    "notes": "US-15 AC35 (amended 2026-10-18, Brad's collagen update v3). The chat may suggest collagen peptides for skin, saying they may improve skin hydration and elasticity (Batool 2026), and may say MicroVitamin+ contains 12.5 g. It must not tie collagen to wrinkles, fine lines, rebuilding or skin structure in the same sentence (a full stop followed by a space ends the window, so the decimal in 12.5 g does not), call 12.5 g within the range studied, or cite Pu, Kim or Myung. Known false fails, judge by reading: a negated sentence (\"has not been shown to reduce wrinkles\") and a non-supplement collagen mention (retinoids or red light \"stimulate collagen\") in the same sentence as wrinkles. answer_handles [] = products block plus the brand posture only; routing is not asserted. Amended 2026-10-19: a collagen suggestion also gives the range the trials used, 0.5 to 10 g a day (Batool 2026); 12.5 g is never put inside that range. Amended 2026-11-02 (Brad: the US ships v9): MicroVitamin+ contains 10 g, within the trials' range, and the chat may say so; 12.5 g (the v8 Mixed Berry powder still in Europe) must never be called within that range.",
+    "notes": "US-15 AC35 (amended 2026-10-18, Brad's collagen update v3). The chat may suggest collagen peptides for skin, saying they may improve skin hydration and elasticity (Batool 2026), and may say MicroVitamin+ contains 10 g (version 9). It must not tie collagen to wrinkles, fine lines, rebuilding or skin structure in the same sentence (a full stop followed by a space ends the window, so the decimal in 12.5 g does not), call 12.5 g within the range studied, or cite Pu, Kim or Myung. Known false fails, judge by reading: a negated sentence (\"has not been shown to reduce wrinkles\") and a non-supplement collagen mention (retinoids or red light \"stimulate collagen\") in the same sentence as wrinkles. answer_handles [] = products block plus the brand posture only; routing is not asserted. Amended 2026-10-19: a collagen suggestion also gives the range the trials used, 0.5 to 10 g a day (Batool 2026); 12.5 g is never put inside that range. Amended 2026-11-02 (Brad: the US ships v9): MicroVitamin+ contains 10 g, within the trials' range, and the chat may say so; 12.5 g (the v8 Mixed Berry powder still in Europe) must never be called within that range.",
     "must_match": [
       "(?<![\\d.])0\\.5\\s*(?:g|grams?)?(?:\\s*(?:/|per|a)\\s*day)?\\s*(?:to|up to|through|-|–|—|−|and)\\s*10(?:\\.0)?\\s*(?:g\\b|gm\\b|grams)",
       "batool|jocd\\.71041"
@@ -2077,7 +2077,7 @@
     "surface": "brand",
     "answer_handles": [],
     "must_match": [
-      "(?<![\\d.])10\\s*(?:g\\b|gm\\b|grams)",
+      "microvitamin\\+?[^\\n]{0,80}\\b10\\s*(?:g\\b|gm\\b|grams)",
       "(?<![\\d.])0\\.5\\s*(?:g|grams?)?(?:\\s*(?:/|per|a)\\s*day)?\\s*(?:to|up to|through|-|–|—|−|and)\\s*10(?:\\.0)?\\s*(?:g\\b|gm\\b|grams)"
     ],
     "must_not_mention": [
