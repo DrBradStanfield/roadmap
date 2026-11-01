@@ -68,8 +68,10 @@ Apple Health permission as everything else, all at once, when you connect Apple 
 setup, or later from "Connect Apple Health" in My data. If you connected before this was
 added, My data offers "Turn On", which shows the same permission (iOS lists only what it
 has not asked you yet) and also brings in any new weight, height, waist and blood pressure
-readings, as connecting does. After you said no, it offers "Open Settings". Once you have answered, iOS does not ask again, so the button opens
-Settings, where you can turn them on. It
+readings, as connecting does. If you said no, or Apple Health has none of these readings, My
+data shows an "Open Settings" button. Once you have answered, iOS does not ask again, so the
+button opens Settings at its top page. From there, the path under the button leads to the app's
+Apple Health page, where "Change Access" turns the readings on. It
 reads them from Apple Health each time it shows a card or a chart of them. So the cards
 show at once when you open the app, it keeps what the cards draw in one small file on this
 iPhone only: the latest reading of each card, with its date, and the values behind its trend

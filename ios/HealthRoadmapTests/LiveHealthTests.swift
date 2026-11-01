@@ -599,15 +599,18 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertEqual(unknown, .settings, "iOS cannot say: Settings")
     }
 
-    /// AC5c (Brad 2026-11-01): iOS asks only once, so after the sheet the button can only open
-    /// Settings. It says "Open Settings", not "Reconnect", and the line under it says these are
-    /// Apple Health's settings and where they are. A UI test cannot reach this row: Apple's
-    /// sheet runs in its own process and a test cannot answer it.
-    func testTheRowSaysOpenSettingsAndWhereAppleHealthsSettingsAre_AC5c() {
+    /// AC5c (Brad 2026-11-01): iOS asks only once, so after the sheet the button opens
+    /// Settings. It says "Open Settings", not "Reconnect". The path to Apple Health's settings
+    /// depends on the iOS version: iOS 18 moved Health under Settings › Apps, and the app runs
+    /// from iOS 17. The row on screen is checked by
+    /// `OnboardingUITests.testAfterDontAllowTheRowSaysOpenSettings_US56_AC5c`.
+    func testTheRowSaysOpenSettingsWithThePathForThisIOS_AC5c() {
         XCTAssertEqual(LiveReconnectRow.title(turnOn: false), "Open Settings")
         XCTAssertEqual(LiveReconnectRow.title(turnOn: true), "Turn On", "before the sheet, Turn On is unchanged")
-        XCTAssertEqual(LiveFooter.healthSettings,
-                       "The Apple Health settings for this app are in Settings › Apps › Health › Data Access & Devices › Health Roadmap.")
+        XCTAssertEqual(LiveFooter.healthPath(appsMenu: true), "Settings › Apps › Health › Data Access & Devices › Health Roadmap", "iOS 18 and later")
+        XCTAssertEqual(LiveFooter.healthPath(appsMenu: false), "Settings › Health › Data Access & Devices › Health Roadmap", "iOS 17")
+        XCTAssertTrue(LiveFooter.healthSettings.hasSuffix(" \(LiveFooter.healthPath(appsMenu: true))."), "this simulator runs iOS 18 or later")
+        XCTAssertTrue(LiveFooter.access.hasSuffix(" \(LiveFooter.healthPath(appsMenu: true))."), "AC4's footer names the same path")
     }
 
     /// N1: a page read cancelled mid-flight throws, so the page never keeps it as "read,
