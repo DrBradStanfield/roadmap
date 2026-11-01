@@ -67,13 +67,13 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   36→0 and gated in ci.yml, which surfaced a second latent crash (Object.hasOwn
   on iOS WebKit <15.4 → hasOwnProperty.call, floors kept at ES2020). app/ is
   still ungated — a standing task.
-- `[noise][server]` 2026-08-23, sharpened 11-01 — Handled probe errors: OAuth
-  `exitIframe=javascript:…`/`data:…` → "Invalid URL. Refusing to redirect";
-  route misses → "No route matches URL" (72 pools them), POST / → "no action for
-  route root" (76), OPTIONS → "Invalid request method" (7F). Scanner = tool or
-  scanner UA (curl, Go-http-client, fasthttp, l9scan, mcp/1.0.0) or secret/config/
-  GraphQL guesses (browser UAs too: one 10-15 scan sent 132), no Origin: wontfix. Ours: a proxy path +
-  browser UA, a `/.well-known/*` miss on mcp, or a CORS preflight (Origin + ACRM).
+- `[noise][server]` 2026-08-23, sharpened 11-01 — Probe errors: OAuth `exitIframe=javascript:`
+  → "Refusing to redirect"; misses → "No route matches URL" (72 pools all: read each new event),
+  POST / → 76, OPTIONS → 7F. Sentry keeps only host/UA/content-type/length/accept
+  (instrument-scrub KEPT_HEADERS): no Origin, no ACRM, no body. Wontfix ONLY if unsigned AND
+  a named tool UA (curl, Go-http-client, fasthttp, l9scan) or a secret/config/GraphQL guess
+  path; never `/.well-known/*` on mcp. Ours: proxy path + browser UA (73: a real Chrome admin
+  action read as a probe), or POST / or OPTIONS from one non-scanner UA repeating over days.
 - `[gap][sentry]` 2026-09-07 — Widget no-op days before 09-08 are lower bounds
   (PR #73). A `release` tag means a side bundle; none means health-plan-v2.
   Storage adapters put document titles into thrown messages: READ before quoting.
