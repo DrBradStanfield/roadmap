@@ -18,7 +18,8 @@ describe('US-07 AC9: SGLT2 inhibitor card (issue 473)', () => {
     expect(card).toBeDefined();
     expect(card!.reason).not.toMatch(/proven cardiovascular and kidney protection/);
     expect(card!.reason).toContain('type 2 diabetes at high cardiovascular risk, or with heart failure');
-    expect(card!.reason).toContain('Those trials did not study people without these conditions, so for them this heart benefit is not proven.');
+    expect(card!.reason).toContain('The trials cited here did not study people without these conditions.');
+    expect(card!.reason).not.toMatch(/not proven/);
     expect(card!.reason).toContain('Weight loss on them is modest.');
     expect(card!.reason).not.toMatch(/kidney protection/);
     expect(card!.reason).toContain('heart failure and a reduced ejection fraction');
@@ -27,8 +28,8 @@ describe('US-07 AC9: SGLT2 inhibitor card (issue 473)', () => {
   it('the SGLT2 guide makes the same claim, with no kidney protection', () => {
     const why = METRIC_GUIDES.sglt2i.whyItMatters;
     expect(why).not.toMatch(/kidney/);
-    expect(why).toContain('type 2 diabetes at high heart risk, or with heart failure');
-    expect(why).toContain('Outside these groups that benefit is not proven.');
+    expect(why).toContain('type 2 diabetes at high heart risk, or with a weak heart pump');
+    expect(why).toContain('Those trials did not include people without these conditions.');
   });
 });
 

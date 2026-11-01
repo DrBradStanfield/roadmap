@@ -932,7 +932,7 @@ The same trigger drives the cascade (medications tracked), the standalone `weigh
 
 **Condition:** GLP-1 dose recorded (when listed) AND GLP-1 escalation handled or not possible AND sglt2i is null, undefined, or drug is `'none'`.
 
-**Who the evidence covers (US-07 AC9, issue 473):** the card reaches anyone the weight trigger reaches, most of whom have no diabetes, heart failure or kidney disease. Its outcome trials, EMPA-REG OUTCOME (type 2 diabetes at high cardiovascular risk) and DAPA-HF (heart failure with reduced ejection fraction), did not study those people. So the card's reason names the trial populations, says the heart benefit is not proven outside them, and calls the weight loss modest. It makes no kidney claim: neither cited trial had a kidney primary outcome. The SGLT2 guide (`metric-guides.ts`, US-58) and `roadmap_text.html` say the same.
+**Who the evidence covers (US-07 AC9, issue 473):** the card reaches anyone the weight trigger reaches, most of whom have no diabetes, heart failure or kidney disease. Its outcome trials, EMPA-REG OUTCOME (type 2 diabetes at high cardiovascular risk) and DAPA-HF (heart failure with reduced ejection fraction), did not study those people. So the card's reason names the trial populations, says the cited trials did not study anyone else (a claim about those trials, not about all evidence), and calls the weight loss modest. It makes no kidney claim: neither cited trial had a kidney primary outcome. The SGLT2 guide (`metric-guides.ts`, US-58) and `roadmap_text.html` say the same.
 
 ### Step 4: Metformin (`weight-med-metformin`)
 

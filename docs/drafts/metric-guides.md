@@ -301,7 +301,7 @@ Source list: `MEDICATION_KEYS` in `validation.ts` without the two escalation key
 
 **What it is.** Daily tablets first made for type 2 diabetes. The app lists empagliflozin (Jardiance), dapagliflozin (Farxiga) and canagliflozin (Invokana).
 
-**Why it matters.** Besides lowering blood sugar and causing modest weight loss, they cut heart deaths and hospital stays for heart failure in large trials of people with type 2 diabetes at high heart risk, or with heart failure. Outside these groups that benefit is not proven.
+**Why it matters.** Besides lowering blood sugar and causing modest weight loss, they cut heart deaths and hospital stays for heart failure in large trials of people with type 2 diabetes at high heart risk, or with a weak heart pump. Those trials did not include people without these conditions.
 
 **How it works, and side effects to discuss with your doctor.**
 - They make your kidneys pass extra sugar out in your urine.
