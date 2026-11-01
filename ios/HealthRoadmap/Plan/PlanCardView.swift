@@ -123,7 +123,7 @@ private struct SuggestionRow: View {
 /// inset under the card's text, its link opening the product page in the browser, as every
 /// link in the plan does.
 private struct USProductBlock: View {
-    let block: USProducts.Block
+    let block: USProduct
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
