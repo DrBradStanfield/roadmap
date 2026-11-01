@@ -8,7 +8,7 @@
  * disturbing the type graph. `api.ts` re-exports everything here for back-compat
  * import paths; new code may import directly from `./api-types`.
  */
-import type { HealthInputs, DocumentType, ApiMeasurement, ApiMedication, ApiScreening, MedicationChange, LabUnitRefusal, MeasurementRefusal, RefusedLabValue } from '@roadmap/health-core';
+import type { HealthInputs, DocumentType, ApiMeasurement, ApiMedication, ApiScreening, MedicationChange, LabUnitRefusal, MeasurementRefusal, RefusedLabValue, UnreadLabValue } from '@roadmap/health-core';
 import type { ExtractionStopCode } from '@roadmap/health-core/models';
 
 export interface ApiReminderPreference {
@@ -122,6 +122,9 @@ export interface LabImportResult {
   /** Lab rows the parse refused, so the review can say some were left out
    *  (US-12 AC8). Absent from a server that predates it. */
   droppedValueCount?: number;
+  /** The dropped rows with why, so the review names each that names its
+   *  test (US-12 AC19). Absent from a server that predates it. */
+  unreadValues?: UnreadLabValue[];
   /** Values refused rather than guessed, listed under "Not saved" (US-12 AC15). */
   refusedValues?: RefusedLabValue[];
 }

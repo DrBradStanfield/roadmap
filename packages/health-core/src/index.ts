@@ -456,7 +456,7 @@ export {
 
 // US-35: the slot rule and the bulk save the website and the connector share.
 export { bulkAppendValues, correctValue, moveBloodTest, placeMeasurement, planBloodTestMove, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type MeasurementRefusal, type MoveClash, type MoveKeep, type MovePlan, type MoveRejection, type MoveResult, type SlotState } from './record-edits';
-export { fileNameLine, inflateCapped, isImportableEntryName, zipMemberName, UNDATED_PREVIOUS, type RefusedLabValue } from './lab-extraction';
+export { fileNameLine, inflateCapped, isImportableEntryName, zipMemberName, unreadLines, UNDATED_PREVIOUS, type RefusedLabValue, type UnreadLabValue } from './lab-extraction';
 export { IMPORT_LIMITS } from './import-hints';
 export {
   MEDICATION_TEXT, SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, SUPPLEMENT_TEXT, SUPPLEMENT_DOSE_UNITS,
