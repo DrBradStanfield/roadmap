@@ -1,12 +1,13 @@
 # One blood-test table (DRAFT for Brad)
 
-Status: design only, 2026-11-02. Nothing is built. Story: US-66 in [docs/user-stories.md](../user-stories.md).
+Status: design, 2026-11-02; Brad answered D1 to D4 the same day (§10). D5 and one creatinine point
+are open, and nothing is built until they are answered. Story: US-66 in [docs/user-stories.md](../user-stories.md).
 Brad's direction (via the user, 2026-11-02): every blood test lives in one table; the plan reads the core
 tests it needs from that table; vitals may stay where they are. Also in scope: a punctuated core name
 ("LDL - Cholesterol") resolves the way catalogue names do after PR 543 (US-07 AC10).
 
-Five decisions are Brad's (§10). Everything else here is the orchestrator's call on merge, FHIR and
-format, reviewed by a fresh adversary and Codex (§11).
+Brad's decisions are in §10. Everything else here is the orchestrator's call on merge, FHIR and
+format, reviewed by a fresh adversary and Codex (§15).
 
 ## 1. Today
 
@@ -37,7 +38,7 @@ Two read-only sweeps (2026-11-02) are summarised below, with line numbers at `ea
 ### health-core (`packages/health-core/src`)
 | Where | R/W | Today | Change |
 |---|---|---|---|
-| `roadmap-file.ts` | shape | two arrays, `CURRENT_SCHEMA_VERSION = 2` | v3; `measurements` documented as vitals |
+| `roadmap-file.ts` | shape | two arrays, `CURRENT_SCHEMA_VERSION = 2` | version unchanged (D2); `core` flag; `measurements` documented as vitals |
 | `migrate.ts` `migrateFile` | R | `withSiCorrections` on `labValues` | adds the move (§4) and the legacy-row rule (§5) |
 | `merge.ts` `mergeFiles` | R/W | `mergeSlotted` per array; `labSlotKey` for labs | unchanged code; the slot key now resolves core names (§6) |
 | `lab-catalog.ts` `labSlotKey`, `resolveLabCatalogEntry` | R | catalogue, then fold | one resolver: core, then catalogue, then fold (§7) |
@@ -50,7 +51,7 @@ Two read-only sweeps (2026-11-02) are summarised below, with line numbers at `ea
 | `mcp-tools.ts` (`read_record`, `get_plan`, `add_measurement`, `add_lab_values`, `correct_value`, `file_results`, `import_documents`) | R/W | frozen contract, core in `measurements` | §9 |
 | `device-import.ts`, `device-export.ts` | R/W | vitals only | none |
 | `storage-self-test.ts` | test data | blood rows in `measurements` | fixtures change |
-| `sync-manager.ts`, `drive-rest.ts`, `record-session.ts` | R | `migrateFile` via `roadmap-doc.ts`; `SchemaTooNewError` | none; the v3 refusal rides the existing path |
+| `sync-manager.ts`, `drive-rest.ts`, `record-session.ts` | R | `migrateFile` via `roadmap-doc.ts`; `SchemaTooNewError` | none |
 
 ### Web widget (`widget-src/src`)
 | Where | Today | Risk if missed |
@@ -88,7 +89,7 @@ Swift never parses blood-test rows. All of it goes through `ios/engine` (health-
 
 Shipping: builds 3 (App Store review, automatic release), 4 (TestFlight) and 5 (uploaded) carry a v2
 engine. An over-the-air engine must match the bundled `schemaVersion` (`EngineManifest.swift:65`),
-so a v3 record needs a new binary.
+so the change reaches the iPhone as a new binary (D4).
 
 ## 3. Target shape
 
@@ -162,82 +163,89 @@ Why this is safe under the FHIR rules:
   move one copy becomes `X#dup-…`, and a `correctsId: X` may then point at the other fact. Only an
   agent reusing an id can cause it.
 
-### The version stamp (review R1, R6)
+### No version bump (Brad, D2)
 
-`schemaVersion` 3 means "`labValues` holds a core blood test". It is stamped where the erase list's
-version is stamped today: in `migrateFile`, in `mergeFiles` (the max of both inputs and of what the
-merged result needs) and by any writer that appends a core lab row. So the first save of a typed LDL into a
-v1 record writes v3, and no v3-shaped file is ever written under a lower number. A record with no
-blood test keeps its version, so an old app can still open it; if that old app writes an LDL into
-`measurements`, the next new read moves it and stamps v3. A record never goes back down, even when an erase removes the last blood row: a file
-already stamped 3 keeps 3 even if every blood row is later erased.
-
-`migrate.ts`'s stamp line (`version >= CURRENT_SCHEMA_VERSION ? CURRENT : BASE`) is rewritten as the
-max of the stored version, 2 when an erase list is present and 3 when a core row is, or a v2 file
-without a list would drop to 1. The erase list keeps its own constant (`ERASE_LIST_SCHEMA_VERSION = 2`); today it reuses
-`CURRENT_SCHEMA_VERSION`, which would stamp every erased record v3 after the bump.
-`CURRENT_SCHEMA_VERSION` (the highest this app reads) becomes 3.
+`schemaVersion` stays as it is; `CURRENT_SCHEMA_VERSION` stays 2. Old apps keep opening the record.
+What they do with the new shape is in §6. (The review rounds designed a v3 stamp: migrate, merge and
+every core writer, with the erase list on its own constant. It is not built; it is the shape to use
+if old apps ever need locking out later.)
 
 The move is permanent code, not a one-off. A raw-JSON agent following an old copy of
 `docs/agent-access.md`, or a hand edit, can put a blood test in `measurements` any time. The next
 read moves it.
 
-## 5. Old lab rows named like a core test (Brad's call, D1)
+## 5. Old lab rows named like a core test (Brad, D1: move them all)
 
-Without `core: true` these rows keep their own slot and stay out of the plan, exactly as today. The
-safe default changes nothing. D1 asks whether migrate should also fold some of them in. If it does,
-only rows that pass every test below are folded:
-- not creatinine under any name (US-12 AC11: a urine creatinine prints in mg/dL and µmol/L too, and
-  a dilute one passes the plausibility range; 25 mg/dL becomes 2210 µmol/L and an eGFR near 2);
-- not Lp(a) in mg/dL (the factor is an average, and reports often print both units for one sample);
-- the unit converts by `UNIT_DEFS`, including a same-scale spelling ("umol/L", "ng/ml"), and the
-  converted value passes `measurementValueFault`;
-- only active rows are candidates;
-- the day has no core value in this copy, and no other candidate row for that test on that day (two
-  candidates fold neither).
+Brad (2026-11-02): "we need to start how we want to continue. don't want to worry about legacy
+stuff". Migrate folds every old lab row whose name resolves to a core test (§7) into a core value:
+- **every active row whose unit converts** by `UNIT_DEFS`, same-scale spellings ("umol/L", "ng/ml")
+  included, and whose converted value passes `measurementValueFault`. Lp(a) in mg/dL converts by the
+  average factor, as a typed Lp(a) does (US-05);
+- **creatinine is held out** by one switch, `FOLD_CREATININE = false`, until Brad answers the open
+  point: an old row named "creatinine" may be a urine result (US-12 AC11, issue #166), and a dilute
+  one passes the plausibility range (25 mg/dL becomes 2210 µmol/L, an eGFR near 2). Removing the
+  switch is a one-line change;
+- **a row whose unit does not convert** (blank, garbled, a unit the test does not take) cannot become
+  a core value: there is no number in the core unit to store. It stays an extra row, as today, and
+  the usage event counts it (§12).
 
 A folded row is corrected like `withSiCorrections` does today: append
 `{ ...row, id: <id>#core, metricName: key, unit: canonical, value, referenceLow, referenceHigh, core: true, correctsId: <id> }`,
-with the value and each non-null bound converted by the same `UNIT_DEFS` rule (nulls stay null)
+with the value and each non-null bound converted by the same `UNIT_DEFS` rule (nulls stay null),
 and flip the printed row to `entered-in-error`. It is a true correction: the row was filed under the
 wrong test. `rootIdOf` strips `#core` in the same alternation as `#si` and `#dup-`, so `X#dup-h#core`
 and an erase that lists the row both reach `X`.
 
-Two devices can disagree on "the day has no core value" while one has not yet synced a new upload.
-The merge then sees a fold row and a real core row active on one day.
-Rule: in a `core:` slot a fold row loses to any other active row, whatever the clocks say, so the
-real value always counts. A fold row is one whose `baseIdOf(id)` ends in `#core`, so a quarantined
-copy (`X#core#dup-…`) is still a fold row. Two fold rows in one slot (two devices each folded a
-different row for one day before syncing) fall back to the merge's usual order, newer `createdAt`
-then id: the one arbitrary pick left, named here.
-The printed row stays flipped (monotonic), still in history.
+**Same day as a core value.** Most old rows were saved by the upload that also saved the day's core
+value, in one batch with one `createdAt`, so "newest wins" would pick by random id (review round 1,
+R3). Rule: a real core value beats a fold.
+- In migrate, a fold for a day that already holds an active core value is appended already
+  `entered-in-error`. It is in the core history, under the right test, and not current.
+- In merge, a fold row (its `baseIdOf(id)` ends in `#core`) loses its `core:` slot to any other
+  active row, whatever the clocks say. This settles two devices that disagree because one has not
+  synced an upload yet.
+- Two folds for one day (two candidates in one record, or two devices) fall back to the merge's
+  usual order, newer `createdAt` then id. That pick is arbitrary between two printed values of one
+  test on one day; it is the one left, and it is named here.
 
-No same-day pair ever swaps, no unusable row holds a core slot, and readers and merge agree.
+Readers and merge agree: migrate's output already holds one active row per slot.
 
 We cannot count these rows: the records are the users' own (local-first). The usage event (§12)
 counts them, without values, once the change ships.
 
 ## 6. Merge
 
-Both inputs come through `migrateFile` first, so both are v3-shaped. `mergeSlotted(labValues, slotOf)`
+Both inputs come through `migrateFile` first, so both have the new shape. `mergeSlotted(labValues, slotOf)`
 keeps one active row per slot; `slotOf(row)` is `core:<key>` for a flagged row, else
 `lab:` + today's `labSlotKey(metricName)`. The changes to `merge.ts`, all small: the slot function takes the row,
 not the name; `contentOf` hashes a moved row in its v2 form (§4); a `#core` fold row loses in its slot
-(§5); and the merged `schemaVersion` is computed from the merged result (§4). The `eraseEpoch` gate
+(§5). The `eraseEpoch` gate
 and `rowsSince` already cover `labValues` (`CREATED_STAMPS`).
 
-Old clients cannot write the old shape into a v3 file: a v2 reader throws `SchemaTooNewError` on the
-read before every write (`sync-manager.ts`, `drive-rest.ts`), and on iOS shows "Update the app".
+**Old apps (no bump, D2).** An app built before this change still opens the record. What it does:
+- **Reads.** It looks for core tests in `measurements` only, so it shows none and its plan has no
+  lipids, HbA1c, ApoB, PSA, Lp(a) or creatinine, with no warning. iPhone build 3 shows no lab rows
+  at all, so the blood tests vanish from its My data. An old web tab lists them as extra lab rows.
+  Nothing is lost: the rows are in the file and the next new app reads them.
+- **Writes.** A core value it adds goes into `measurements`; the next new read moves it (§4). On a
+  day the new shape already holds, that is two values for one day, settled by the usual newer-entry
+  rule, as any double entry is today.
+- **Merges.** Its merge keeps unknown fields (`core`) and unions rows by id and content. It slots lab
+  rows by the old `labSlotKey`, which for a core row is the key itself (`ldl`), so it still keeps one
+  active row per test and day. It does not know the fold-loses rule, so in the rare case of a fold
+  and a real value active on one day it may keep the fold; the next new merge cannot undo that flip
+  (status is one-way). Migrate's rule (§5) makes this case need two unsynced devices and an old app.
+
 The adversary checked every read path (`SyncManager` load, save and verify, `record-session`'s
 mirror, lift-up, refresh and flush, the iPhone engine's `readRecord` and `mergeJson`, both MCP
-servers): each migrates before it merges. An old device's own v2 working copy is migrated on its
-first load after it updates. The only old-shape writers left are raw-JSON agents and hand edits,
-which §4 absorbs.
+servers): each migrates before it merges. An old device's own working copy is migrated on its first
+load after it updates. Raw-JSON agents and hand edits that write the old shape are absorbed by §4.
 
 Convergence check for the build: a property test over random v2 records with blood rows,
 corrections, quarantined `#dup-` rows with chains pointing at them, erase lists and old core-named
 lab rows. `merge(migrate(a), migrate(b))` is equal in both orders, and equal to
-`migrate(merge_v2(a, b))` whenever D1 folds nothing.
+`migrate(merge_v2(a, b))` for records with no old core-named lab rows. A second test merges a
+new-shape file with the v2 merge (an old app) and checks one active row per test and day.
 
 ## 7. One name resolver, punctuation included
 
@@ -260,11 +268,11 @@ writers may create a core row:
 - the matrix and form, the iPhone's add, `add_measurement`, and `add_lab_values` or AddLabTest with
   a core name: core row, after conversion and range check;
 - the upload's `values` (the extractor's core list): core row, as today;
-- the upload's `additionalValues` resolving to a core test other than creatinine: offered as a core
-  value. On a day the core slot already holds, the review table shows the conflict (US-13 AC3) and
-  the person may replace it; if they do not, it is not saved. A unit that will not convert is listed
-  as refused, with its reason (US-12 AC19). Today both are saved quietly as extra lab rows; this
-  is a visible change (review R4), so it is Brad's (D5);
+- the upload's `additionalValues` resolving to a core test other than creatinine: **open, D5**.
+  Recommended: offered as a core value. On a day the core slot already holds, the review table shows
+  the conflict (US-13 AC3) and the person may replace it; if they do not, it is not saved. A unit
+  that will not convert is listed as refused, with its reason (US-12 AC19). Today both are saved
+  quietly as extra lab rows;
 - `additionalValues` creatinine under any name: a lab row under its printed name, never core, as
   today (US-12 AC11).
 
@@ -281,23 +289,29 @@ Display is unchanged: `cellFromSI`, the per-test unit switch, the LDL/ApoB rule 
 preference key on the metric id, which stays. The "additional" lab rows show every row without the
 flag, so old core-named rows still show there, as today.
 
-For a record where D1 folds nothing the plan must be identical before and after. A golden test runs
+For a record with no old core-named lab rows the plan must be identical before and after. A golden test runs
 the plan, the reminder dates and every tile over the fixture corpus (CLI fixtures,
-`ios/engine/fixtures.mjs`, `storage-self-test`) on v2 and on migrated v3 and requires equal output.
+`ios/engine/fixtures.mjs`, `storage-self-test`) before and after the move and requires equal
+output. Records that hold such rows change on purpose (D1); fixtures pin how.
 
 Reference ranges on core rows are stored when the lab printed them and are not read by the plan or
 shown. Showing them is a later decision.
 
 ## 9. Agents and the iPhone bridge
 
-**Hosted and stdio MCP.** The tool text is hash-frozen while OpenAI reviews 1.0.2
-(`app/lib/mcp-freeze.test.ts`). Behaviour can change under frozen text where the text stays true:
-- `add_measurement` keeps its enum; a blood metric lands as a lab row. The output shape is unchanged.
-- `add_lab_values` stops refusing core names and converts them with `UNIT_DEFS`. Its description says
-  "not core metrics"; accepting them is more lenient, not contradictory.
+**Hosted and stdio MCP (Brad, D3: update now).** `read_record` and `get_plan` return the new
+shape: core tests under `labValues` with `core: true`, `measurements` vitals only. No adapter for the
+old view. The tool text changes with it, so the hashes in `app/lib/mcp-freeze.test.ts` are re-taken
+in the build and `TOOL_LAYER_VERSION` goes up (a tool's meaning changed):
+- `add_measurement` keeps its name and enum; a blood metric lands as a core lab row. Its text says so.
+- `add_lab_values` takes core names too and converts them with `UNIT_DEFS`; "not core metrics" goes
+  from its text.
+- `read_record`'s `units` map, the server `INSTRUCTIONS` and `docs/mcp-architecture.md` say where core
+  tests live.
 - `correct_value`, `import_documents`, `file_results`: id- and slot-based, follow the new slot key.
-- `read_record` and `get_plan`: see D3. The record they return would put LDL under `labValues`.
-  With D3 option 1 the projection also reports `schemaVersion` 2, the shape it presents.
+
+Known risk, told to Brad by the master session: the connector's published text changes while OpenAI
+reviews 1.0.2.
 
 **Raw-file agents** (`docs/agent-access.md`): rule 10 ("core metrics belong in `measurements`")
 becomes "every blood test goes in `labValues`; a core test with `core: true`, its core key as
@@ -308,111 +322,68 @@ follow the old rule. `get-plan.ts` HELP stops saying lab values are not used.
 **iPhone.** The engine changes (readers, `labRows`, `add`, `correct`, `dependsOnLpaUnit`). The view
 models (`MyData.Row`, `MetricHistory`) and metric ids stay, so the bridge contract does not move and
 Swift does not change, except that `readsLpa` must keep finding Lp(a) through `historyJson("lpa")`.
-The schema bump still needs a new binary (§2).
+Build 3 cannot take a new engine over the air (its bridge id moved on 2026-11-01), so the
+change reaches the iPhone as a new binary (D4).
 
-## 10. Decisions only Brad can make
+## 10. Decisions (Brad, 2026-11-02, via the master session)
 
-### D1. Old lab rows named like a core test: fold some into the plan, or leave them all apart?
-**What:** some records already hold lab rows named "LDL Cholesterol", "HbA1c", "Lp(a)" or
-"Creatinine", saved by uploads that could not file them as core values (§1). Today the plan ignores
-them and they show as extra rows. The design never lets a row become a core value by its name (§3),
-so by default nothing changes.
-**Issue:** some of these are real results the plan never used: a value on a day with no other value
-of that test, filed apart only because the name or unit was unfamiliar. Others are a second method
-for a day that already has one (direct and calculated LDL; Lp(a) printed in both units), and
-creatinine rows may be urine.
-**Options:**
-1. Leave them all apart. Consequence: no plan changes for anyone; the extra rows stay as they are.
-2. Fold the safe ones, under §5's guards: never creatinine, never Lp(a) in mg/dL, only a unit that
-   converts and a value in range, only on a day with no core value and only one candidate that day.
-   A fold is a correction that keeps the printed row in history. Consequence: some people's LDL,
-   HbA1c, ApoB, PSA, triglyceride or cholesterol tile shows a value they uploaded but never saw used,
-   and when it is their newest, the plan reads it. No same-day value ever changes.
-3. Fold every row that converts, same-day pairs included, newest entry winning. Consequence: the
-   most complete, but a same-day pair from one report has equal timestamps, so which value counts is
-   arbitrary, and a dilute urine creatinine can reach eGFR. Not recommended.
-**Recommendation:** 2. These are the person's own results, kept out only by an extraction limit. The
-guards remove the cases where the plan would guess. Option 1 is a safe fallback if Brad would rather
-see the usage event's counts first and decide after.
+**D1, old lab rows named like a core test: move them all (option 3).** "we need to start how we
+want to continue. don't want to worry about legacy stuff." Built as §5: every convertible row folds;
+a real core value beats a fold on the same day, so no uploaded value silently replaces one the
+person already had. **Open:** creatinine is held out behind one switch until Brad answers whether
+old "creatinine" rows, which may be urine, should fold too.
 
-### D2. Lock out old app versions (schema v3), or let them read a record they half understand?
-**What:** after the change, old apps (iPhone builds 3 to 5, an old stdio MCP or CLI checkout, a
-GitHub Pages fork not yet updated, a browser tab open across the deploy) would find blood tests where
-they do not look.
-**Options:**
-1. Bump to v3. Old apps refuse with the existing "Update the app" message and write nothing.
-   Consequence: safe and clear; anyone on an old app is blocked until they update.
-2. No bump. Old apps open the record, show no blood tests and give a plan without lipids, HbA1c or
-   creatinine; what they write is moved on the next new read. Consequence: no lockout, but an old app
-   shows a wrong plan with no warning.
-**Recommendation:** 1. A wrong plan without a warning is worse than "update the app". It is the
-precedent from the erase list (v2, US-09 AC23).
+**D2, old apps: no schema bump, no lock-out.** "the app isn't released yet, so won't worry about old
+code (yet)." Consequence, in §6: until they update, old apps show no core blood tests and a plan
+without lipids, HbA1c or creatinine, with no warning; nothing is lost.
 
-### D3. Agents during the OpenAI review: keep the old view, or show the new table now?
-**What:** the hosted connector's tool text is frozen while OpenAI reviews 1.0.2. `read_record` and
-`get_plan` currently describe LDL as a measurement.
-**Options:**
-1. Keep the old view: `read_record` presents core blood tests under `measurements`, as now, until
-   the review ends; then switch, with one re-pin. Consequence: the published contract stays true;
-   about 20 lines of projection code that later die.
-2. Show the new table now. Consequence: the description and the data disagree during the review;
-   an assistant may say "no LDL on file".
-**Recommendation:** 1. The review is the riskier thing to disturb, and the projection is small and
-dated.
+**D3, agents: update the view now, no adapter.** "no, update now." The connector's tool text and its
+freeze hashes change during OpenAI's 1.0.2 review; the master session told Brad the risk.
 
-### D4. Rollout: one step, and what to do about iPhone build 3?
-**What:** the first v3 write locks out every v2 app (D2). Build 3 is in App Store review with
-automatic release.
-**Options:**
-1. One step: build the new iPhone binary first, then deploy web, server, CLI together. Set build 3
-   to manual release, or withdraw it, so no store user lands on a build that will be locked out.
-   Consequence: one change to reason about; testers update once.
-2. Two steps: first ship readers that understand both shapes everywhere, then switch the writers
-   once that iPhone build is the floor. Consequence: no lockout of anyone who updated in between; two
-   releases and a long window with both shapes.
-**Recommendation:** 1, with build 3 on manual release. Brad said on 2026-11-01 there are no downloads
-yet; two steps protect users we do not have.
+**D4, rollout: release build 3 as it is, then ship this as an update.** "we want the initial app to
+be released. then we can do an update." Build 3 stays on automatic release.
+Second-order effect of D2 plus D4: once build 3 is live, a person who uses it with a cloud record
+also opened on the web sees their blood tests vanish from the phone as soon as the updated website
+writes the new shape. So §11 deploys the website only after the iPhone update is live in the store.
+Brad may prefer to deploy the website first; the cost is that window.
 
-### D5. An upload's extra core value: offer it as the core value, or keep saving it quietly apart?
-**What:** when a report prints a core test the extractor could not file as core (an unfamiliar
-spelling, a unit it would not promote, a second value for a day already filled), the upload today
-saves it quietly as an extra lab row the plan ignores.
-**Issue:** in one table, that value either becomes the core value or stays a second kind of row
-forever. Creatinine is excluded either way (US-12 AC11).
-**Options:**
+**D5, an upload's extra core value: open.** When a report prints a core test the extractor could not
+file as core (an unfamiliar spelling, a unit it would not promote, a second value for a day already
+filled), the upload today saves it quietly as an extra lab row the plan ignores. Options:
 1. Offer it as the core value. On a day already filled, the review shows both and the person
    chooses; nothing is saved unless they replace. A unit that will not convert is listed as "not
    saved", with the reason. Consequence: the plan can use values it missed; the person sees a
-   conflict or a refusal where today they saw nothing; a quiet extra row is no longer kept.
-2. Keep saving it apart, as today, without the core flag. Consequence: no visible change; the plan
-   keeps missing these values, and records keep growing extra rows that D1 later has to judge.
-**Recommendation:** 1. It is the rule the review already uses for every held value (US-13 AC3), and
-it stops new rows of the kind D1 is about. If Brad picks D1 option 1 (leave old rows apart), this can
-still be 1: it governs new uploads only.
+   conflict or a refusal where today they saw nothing.
+2. Keep saving it apart, as today. Consequence: no visible change, but each such upload adds a row
+   of exactly the kind D1 just folded, which the plan then ignores until a fold rule runs again.
+Recommendation: 1. It matches D1 ("start how we want to continue") and the review's rule for every
+held value (US-13 AC3). Creatinine stays a lab row under its printed name either way (US-12 AC11).
 
-## 11. Rollout order (if D4 option 1)
+## 11. Rollout order
 
-1. PR 543 merges (punctuation pass).
-2. health-core PR: resolver (§7), move and legacy rule (§4, §5), `bloodTestRows`, writers, plan,
-   reminders, readable view, agent projection (D3), v3. Tests first, per AC.
+1. PR 543 merges (punctuation pass). Build 3 releases from App Review as it is (D4).
+2. health-core PR: resolver (§7), move and fold (§4, §5), `bloodTestRows`, writers, plan, reminders,
+   readable view, agent tools and text (D3). Tests first, per AC.
 3. Widget, CLI, stdio MCP, hosted MCP, `ios/engine` in the same PR or stacked behind it, merged
    together; nothing deploys until all pass `test:all`.
-4. iPhone binary with the v3 engine to TestFlight; Brad's phone updated.
-5. CI Deploy; live check on drstanfield.com (desktop and real WebKit): a v2 test record opens, moves,
-   the plan matches the pre-deploy plan, an upload with "LDL - Cholesterol" lands in the LDL tile.
-6. `docs/agent-access.md`, `docs/mcp-architecture.md`, `docs/reference.md` updated; re-pin after the
-   OpenAI verdict.
+4. iPhone update with the new engine: TestFlight, Brad's phone (real data, so check the fold on a copy
+   first), then App Review.
+5. Once the iPhone update is live: CI Deploy; live check on drstanfield.com (desktop and real
+   WebKit): an old-shape test record opens and moves, the plan matches for a record with no old
+   core-named rows, an upload with "LDL - Cholesterol" lands in the LDL tile.
+6. `docs/agent-access.md`, `docs/mcp-architecture.md`, `docs/reference.md` updated in the same PR.
 
 Review gate: merge/FHIR change, so a fresh adversary and Codex before commit, per CLAUDE.md.
 
 ## 12. Usage signal
 
-`blood_tests_unified`, sent by the web page once per record: when a save writes `schemaVersion` 3 over
-a stored record below 3, so only the device that makes the move counts it. Metadata, counts only,
-each capped at 1000: `{ moved, folded, keptApart }`, where `keptApart` counts old core-named rows left
-as extra rows. A pure function compares the stored and written records to produce them. No test
-names, no values. It says how many records carried old-shape rows and how many D1 touched. The
-iPhone sends no product events.
+`blood_tests_unified`, sent by the web page once per record: when a save writes a record with no
+blood test left in `measurements` and no foldable old row over a stored record that had either, so
+only the device that makes the move counts it. Metadata, counts only, each capped at 1000:
+`{ moved, folded, keptApart }`, where `keptApart` counts old core-named rows that could not fold (a
+unit that does not convert, or creatinine while the switch holds it). A pure function compares the
+stored and written records to produce them. No test names, no values. The iPhone sends no product
+events.
 
 ## 13. Risks
 
@@ -432,14 +403,18 @@ iPhone sends no product events.
 - **Quarantine identity** (§4): the v2-form hash is what keeps old `#dup-` ids and their chains. A
   property test covers it in both orders.
 - **Old agents** keep writing `measurements`. Absorbed by §4 forever; costs one loop per read.
-- **Lockout** of old apps (D2, D4). Mitigation: build order, manual release of build 3.
+- **Old apps show a plan without blood tests** (D2, §6), build 3 included once released (D4).
+  Mitigation: deploy the website after the iPhone update is live; data is never lost.
+- **D1 changes plans on purpose** for an unknown number of people: an uploaded value the plan never
+  used becomes current when it is the newest. A same-day core value always stays current (§5).
+- **Connector text changes during OpenAI's review** (D3).
 - **Uploads behave differently** (§7): a core-named extra value on a held day becomes a conflict to
   resolve, or a refusal, instead of a quiet extra row.
 
 ## 14. Size
 
 Estimated, to be stated at build: new code is the move, the v2-form hash, the slot function, the
-stamp, the resolver merge, the D1 fold if chosen, and `bloodTestRows` (about 250 lines); deleted are the `measurements` blood paths in the widget, engine and CLI, the
+resolver merge, the D1 fold, and `bloodTestRows` (about 250 lines); deleted are the `measurements` blood paths in the widget, engine and CLI, the
 `appendLabValue` core refusal and the extractor's two-way save routing. Expect net production lines
 near zero or below.
 
@@ -466,3 +441,7 @@ Round 2 (capped re-check), 2026-11-02, on 72976121: adversary (1 blocking, 5 opt
 - Stamp wording and `migrate.ts`'s stamp line (adversary A1); cross-array id reuse named as a known
   limit (N3); fold detection by `baseIdOf`, two fold rows, active-only candidates (N4, N6); rule 10
   names the flag (N5).
+
+Brad's answers (2026-11-02) changed D1 to D4 after both rounds (§10). The changed parts (§4's version
+note, §5, §6's old-app section, §9, §10, §11, §12, §13) have not been reviewed; the build's own
+adversary and Codex review covers them.
