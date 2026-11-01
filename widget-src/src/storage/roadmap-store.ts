@@ -162,9 +162,8 @@ export type CorrectStatus = 'ok' | 'changed' | 'invalid' | 'error';
  *  the test on that day is not what the page showed. `invalid` carries the
  *  record's refusal, for the page to say. */
 export type MoveOutcome = { status: Exclude<CorrectStatus, 'invalid'> } | { status: 'invalid'; refusal: MoveRejection };
-const BIRTH_FIELDS = ['birthYear', 'birthMonth'] as const;
-/** A profile field a save can refuse: a birth month in the future (US-54 AC5b). */
-export type BirthField = (typeof BIRTH_FIELDS)[number];
+/** A birth month in the future that a save refused (US-54 AC5b): the pair judged. */
+export interface BirthRefusal { birthYear: number; birthMonth: number | undefined }
 export interface BulkSaveResult {
   saved: ApiMeasurement[];
   skippedDuplicates: number;
@@ -327,9 +326,9 @@ export class RoadmapStore {
     return { status: 'ok' };
   }
 
-  /** False when the erase refuses it; otherwise the profile fields it refused
-   *  (US-54 AC5b), which the caller keeps at their saved values. */
-  saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): false | BirthField[] {
+  /** False when the erase refuses it; otherwise the birth month it refused
+   *  (US-54 AC5b), or null. The caller puts the record's pair back in the form. */
+  saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): false | BirthRefusal | null {
     if (this.refuses(erase)) return false;
     const refused = this.applyProfileChanges(current, previous, erase);
     // diffInputsToMeasurements (health-core) owns the field→metric map + change detection.
@@ -544,19 +543,23 @@ export class RoadmapStore {
 
   // =================================================================== private
 
-  private applyProfileChanges(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): BirthField[] {
+  private applyProfileChanges(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): BirthRefusal | null {
     const changes: Record<string, unknown> = {};
     for (const field of [...PREFILL_FIELDS, 'unitSystem'] as const) {
       // A cleared form field is absent from current, but is still a write.
       // Keep its key as null so the field stamp carries the clear (US-10 AC9).
       if (current[field] !== previous[field]) changes[field] = current[field] ?? null;
     }
-    // US-54 AC5b: a birth month after this one writes neither changed half,
-    // as update_profile refuses it; a year alone is judged with January.
-    const refused = current.birthYear !== undefined && birthInFuture(current.birthYear, current.birthMonth ?? 1, new Date())
-      ? BIRTH_FIELDS.filter((field) => field in changes)
-      : [];
-    for (const field of refused) delete changes[field];
+    // US-54 AC5b: a birth month after this one writes neither changed half, as
+    // update_profile refuses it; a year alone is judged with January. Judged as
+    // typed and as it would be stored, over a half another device changed.
+    const birthChanged = 'birthYear' in changes || 'birthMonth' in changes;
+    const stored = { ...this.file.profile, ...changes } as { birthYear?: number | null; birthMonth?: number | null };
+    const refused = birthChanged
+      ? [current, stored].map((p) => ({ birthYear: p.birthYear ?? undefined, birthMonth: p.birthMonth ?? undefined }))
+        .find((p): p is BirthRefusal => p.birthYear !== undefined && birthInFuture(p.birthYear, p.birthMonth ?? 1, new Date())) ?? null
+      : null;
+    if (refused) { delete changes.birthYear; delete changes.birthMonth; }
     if (Object.keys(changes).length === 0) return refused;
     // Only the fields changed take a new stamp (US-10 AC6). And an edit, which
     // schedules a save, as every other mutation is: a profile-only edit (sex,

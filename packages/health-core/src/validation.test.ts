@@ -612,11 +612,12 @@ describe('US-54 AC5b — the birth year maximum is this year when checked, not w
 
   it('the year turns when the month rule does: in the zone furthest ahead (UTC+14)', () => {
     vi.useFakeTimers();
-    // 09:00 UTC on 31 December is 23:00 at UTC+14; 11:00 UTC is already 1 January there.
+    // 09:00 UTC on 31 December is 23:00 at UTC+14. 10:30 UTC is 1 January only
+    // at UTC+14: still 31 December at UTC+13 (New Zealand summer), where this runs.
     vi.setSystemTime(new Date('2026-12-31T09:00:00Z'));
     expect(healthInputSchema.shape.birthYear.safeParse(2027).success).toBe(false);
     expect(birthInFuture(2027, 1, new Date())).toBe(true);
-    vi.setSystemTime(new Date('2026-12-31T11:00:00Z'));
+    vi.setSystemTime(new Date('2026-12-31T10:30:00Z'));
     expect(birthInFuture(2027, 1, new Date())).toBe(false);
     expect(healthInputSchema.shape.birthYear.safeParse(2027).success).toBe(true);
     expect(profileUpdateSchema.shape.birthYear.safeParse(2027).success).toBe(true);
