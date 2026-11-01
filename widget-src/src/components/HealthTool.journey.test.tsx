@@ -45,6 +45,7 @@ import {
 } from '../lib/roadmap-data';
 import { BT_TIMELINE_DRAFT_KEY, VITALS_DRAFT_KEY } from '../lib/storage';
 import { trackProductEvent } from '../lib/server-api';
+import { openAboutYou, showTables } from '../testing/health-tool-harness';
 import { hidePage, pickDraftDate, press, pressMouse, pressWithoutFocus, releaseMouse, showPage, typeInto, typeWithoutTap } from '../testing/matrix-gestures';
 import { SAME_SLOT, SAVE_ERRORS } from './BloodTestTimeline';
 
@@ -154,11 +155,14 @@ async function firstWeight(value: string): Promise<RenderResult> {
   await waitFor(async () => expect(await activeOn('weight')).toEqual([[Number(value), TODAY]]));
   return view;
 }
-/** Today's saved weight, clicked open in its first-time field. */
+/** Today's saved weight in its first-time field: the onboarding's weight box,
+ *  beside the height, holds it (US-62 AC13). */
 async function openToday(view: RenderResult): Promise<HTMLInputElement> {
-  fireEvent.click(await shown<HTMLElement>(view.container, '.collapsed-field-value'));
-  return view.container.querySelector('#weightKg') as HTMLInputElement;
+  return shown<HTMLInputElement>(view.container, '#weightKg');
 }
+/** The line a typed weight shows under the box: what saving it replaces. */
+const weightReference = (view: RenderResult) =>
+  view.container.querySelector('label[for="weightKg"]')!.closest('.health-field')!.querySelector('.previous-reference')?.textContent ?? null;
 /** The store's next correction waits for the call this hands back: a save
  *  caught in flight, so the user can type while it runs. */
 function holdNextCorrection(): () => void {
@@ -239,8 +243,10 @@ function toggleChip(scope: Element, label: string) {
  *  until the edit is saved (US-34 AC4), so it shows an older record than the
  *  store holds. (178.5, not a whole number: a plausible height moves the
  *  focus on to the weight, which would leave the matrix.) */
-const editHeight = (container: HTMLElement) =>
+const editHeight = (container: HTMLElement) => {
+  openAboutYou(container); // a complete record's About you is rows (US-62 AC12)
   fireEvent.change(container.querySelector('#heightCm') as HTMLInputElement, { target: { value: '178.5' } });
+};
 /** A press on the blood-test title: out of the vitals matrix, into the page. */
 const leaveVitals = (container: HTMLElement) => press(container.querySelector('.bt-timeline-title') as HTMLElement);
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -387,6 +393,7 @@ describe('the 2026-09-22 feedback: blood tests on the wrong day', () => {
     await addMeasurement('ldl', 2.1, '2026-08-15'); // the latest, but drawn last December
     const view = render(<HealthTool />);
     await waitFor(() => expect(ldlTile(view.container)).toBe('2.1 mmol/L'));
+    showTables(view.container); // the grids sit under the rows (US-62 AC11)
 
     const header = Array.from(bloodMatrix(view.container).querySelectorAll<HTMLElement>('.bt-cell-movable'))
       .find((b) => b.querySelector('input')!.value === '2026-08-15')!;
@@ -518,6 +525,7 @@ describe('the 2026-09-22 feedback: a mistyped "add a blood test"', () => {
     await guest({ weight: 82 });
     const view = render(<HealthTool />);
     const wrap = await shown<HTMLElement>(view.container, '.alr-wrap');
+    showTables(view.container);
 
     await addLab(wrap, { name: 'Feritin', value: '45', unit: 'ug/L' });
     fireEvent.click(await within(wrap).findByRole('button', { name: /Other tests/ }));
@@ -540,6 +548,7 @@ describe('the 2026-09-22 feedback: a mistyped "add a blood test"', () => {
     await bulkSaveLabValues([{ metricName: 'Feritin', value: 45, unit: 'ug/L', recordedAt: `${TODAY}T00:00:00.000Z`, source: 'manual' }]);
     const view = render(<HealthTool />);
     const wrap = await shown<HTMLElement>(view.container, '.alr-wrap');
+    showTables(view.container);
     const header = await within(wrap).findByRole('button', { name: /Other tests/ });
     fireEvent.click(header);
 
@@ -558,6 +567,7 @@ describe('the 2026-09-22 feedback: a mistyped "add a blood test"', () => {
     await bulkSaveLabValues([{ metricName: 'ferritin', value: 45, unit: 'µg/L', recordedAt: `${TODAY}T00:00:00.000Z`, source: 'manual' }]);
     const view = render(<HealthTool />);
     const wrap = await shown<HTMLElement>(view.container, '.alr-wrap');
+    showTables(view.container);
 
     await addLab(wrap, { name: 'Ferritin', value: '54' });
     const replace = await within(wrap).findByRole('button', { name: 'Replace 45 µg/L with 54' });
@@ -577,10 +587,14 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
   it('US-03 AC3: a same-day fix to a weight replaces it, says so, and an unchanged value writes nothing', async () => {
     const view = await firstWeight('82');
 
-    // The user spots the typo and clicks the value to fix it.
+    // The user spots the typo and types over it in the box that holds it.
     const again = await openToday(view);
-    expect(view.getByText('Replaces 82 kg')).toBeTruthy();
-    await typeAndLeave(again, '84');
+    expect(again.value).toBe('82');
+    expect(weightReference(view)).toBeNull();
+    typeInto(again, '84');
+    expect(weightReference(view)).toBe('Replaces 82 kg');
+    act(() => again.blur());
+    await wait(600);
 
     await waitFor(async () => expect(active(await rowsOf('weight')).map((m) => m.value)).toEqual([84]));
     const both = await rowsOf('weight');
@@ -589,12 +603,17 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
     expect(first.status).toBe('entered-in-error');
     expect(fix).toMatchObject({ correctsId: first.id, recordedAt: first.recordedAt, source: 'manual_correction' });
 
-    // The save closed the field. The same number again is not a change: the
-    // field closes as after any save, and nothing is written.
+    // The box holds the corrected value. The same number again is not a
+    // change: the save takes it out of the form, and nothing is written.
     const same = await openToday(view);
-    expect(view.getByText('Replaces 84 kg')).toBeTruthy();
-    await typeAndLeave(same, '84');
-    await waitFor(() => expect(view.container.querySelector('#weightKg')).toBeNull());
+    await waitFor(() => expect(same.value).toBe('84'));
+    typeInto(same, ''); // cleared, then typed again
+    typeInto(same, '84');
+    expect(weightReference(view)).toBe('Replaces 84 kg');
+    act(() => same.blur());
+    await wait(600);
+    await waitFor(() => expect(weightReference(view)).toBeNull());
+    expect(same.value).toBe('84');
     expect(await rowsOf('weight')).toHaveLength(2);
   });
 
@@ -610,9 +629,13 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
     async function typeInLbThenSwitchBack(typed: string) {
       const field = await openToday(view);
       fireEvent.click(unitPill()); // kg → lb
-      expect(view.getByText('Replaces 185 lbs')).toBeTruthy();
-      await typeAndLeave(field, typed, () => fireEvent.click(unitPill())); // lb → kg
-      await waitFor(() => expect(view.container.querySelector('#weightKg')).toBeNull()); // the save closed the field
+      typeInto(field, ''); // cleared, then typed again
+      typeInto(field, typed);
+      expect(weightReference(view)).toMatch(/^Replaces \d+ lbs$/);
+      act(() => field.blur());
+      fireEvent.click(unitPill()); // lb → kg, while the save waits
+      await wait(600);
+      await waitFor(() => expect(weightReference(view)).toBeNull()); // the save took it out of the form
     }
 
     await typeInLbThenSwitchBack(formatDisplayValue('weight', 84, 'conventional')); // 185, as shown
@@ -702,6 +725,8 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
     const view = render(<HealthTool />);
     const rule = 'Your birth month cannot be in the future.';
     const shownRule = () => [...view.container.querySelectorAll('.error-message')].filter((e) => e.textContent === rule);
+    await shown(view.container, '.about-row');
+    openAboutYou(view.container);
 
     fireEvent.change(await shown<HTMLSelectElement>(view.container, '#birthMonth'), { target: { value: '10' } });
     fireEvent.change(await shown<HTMLInputElement>(view.container, '#birthYear'), { target: { value: '2026' } });
@@ -1192,6 +1217,7 @@ describe('another writer changes a value the user is working on', () => {
     await bulkSaveLabValues([{ metricName: 'ferritin', value: 45, unit: 'µg/L', recordedAt: `${RIGHT_DAY}T00:00:00.000Z`, source: 'manual' }]);
     const view = render(<HealthTool />);
     const wrap = await shown<HTMLElement>(view.container, '.alr-wrap');
+    showTables(view.container);
     fireEvent.click(await within(wrap).findByRole('button', { name: /Vitamins/ }));
     const editor = openEditor(row(wrap.querySelector('.alr-matrix') as HTMLElement, 'Ferritin'));
     fireEvent.change(editor, { target: { value: '50' } });
@@ -1915,6 +1941,7 @@ describe('US-05 AC3: the Lp(a) check, over the real record', () => {
     vi.setSystemTime(new Date('2026-10-14T00:00:00.000Z')); // the fixed page
     const view = render(<HealthTool />);
     const notice = await shown(view.container, '.lpa-check');
+    showTables(view.container);
     fireEvent.click(within(notice).getByRole('button', { name: 'My report says 156 mg/dL (saves 390 nmol/L)' }));
 
     await waitFor(() => expect(view.container.querySelector('.lpa-check')).toBeNull());
@@ -1965,6 +1992,7 @@ describe('US-04 AC1 / US-05 AC2: the Units pill held while a value is being corr
     const view = await returningGuest();
     const editor = openEditor(row(vitalsMatrix(view.container), 'Weight'));
     fireEvent.change(editor, { target: { value: '85' } });
+    openAboutYou(view.container);
     const cm = () => view.container.querySelector('label[for="heightCm"] .unit-toggle-pill, label[for="heightFeet"] .unit-toggle-pill') as HTMLElement;
     pressWithoutFocus(cm());
     await wait(1200);

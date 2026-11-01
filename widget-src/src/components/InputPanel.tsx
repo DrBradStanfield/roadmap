@@ -1,5 +1,5 @@
 import { profileTitle } from '../lib/profile-title';
-import { Fragment, useState, useEffect, useRef, type MutableRefObject } from 'react';
+import { Fragment, useState, useEffect, useRef, type MutableRefObject, type ReactNode } from 'react';
 import { ColumnHeader } from './ColumnHeader';
 import { InfoTooltip } from './InfoTooltip';
 import { DocumentLightbox } from './DocumentLightbox';
@@ -88,7 +88,6 @@ import { StartingInfoVitals, type VitalsPrefillFn } from './StartingInfoVitals';
 import { CommitTickButton } from './CommitTickButton';
 import { ALCOHOL_OPTIONS } from './AlcoholQuestion';
 import { StorageNotice } from '../lib/storage-notice';
-import { useIsMobile } from '../lib/useIsMobile';
 import { useLpaUnit } from '../lib/lpa-unit';
 import { BloodTestRows, VitalsRows, type RowContext, type ValueSubject } from './MyDataRows';
 import { ValuePage } from './ValuePage';
@@ -109,6 +108,8 @@ interface FieldConfig {
 }
 
 const WEIGHT_FIELD: FieldConfig = { field: 'weightKg', name: 'Weight' };
+/** About you's rows (US-62 AC12). */
+type AboutKey = 'height' | 'sex' | 'birth';
 const BASIC_LONGITUDINAL_FIELDS: FieldConfig[] = [
   WEIGHT_FIELD,
   { field: 'waistCm', name: 'Waist Circumference' },
@@ -331,7 +332,6 @@ export function InputPanel({
   // Rows replace the grids, which stay mounted but hidden: their drafts, the
   // chat's prefill (US-16 AC2) and the save before an upload all keep working.
   // "All results as a table" shows them; so does a chat edit that filled one.
-  const isPhone = useIsMobile();
   const [lpaUnit] = useLpaUnit(unitSystem);
   const rowCtx: RowContext = {
     grading,
@@ -431,11 +431,12 @@ export function InputPanel({
   useEffect(() => {
     if (!tableShown) return;
     panelRef.current?.querySelectorAll<HTMLElement>('.md-table .bt-timeline-scroll').forEach(el => { el.scrollLeft = el.scrollWidth; });
-  }, [isPhone, tableShown]);
-  // About you sits low, as on the iPhone, for a record complete when first
-  // shown; an answer retyped never moves it. A new user finishes the
-  // onboarding at the top (US-62 AC12, AC13).
-  const aboutYouLow = isPhone && wasDone;
+  }, [tableShown]);
+  // About you sits low, as on the iPhone, phone and desktop, for a record
+  // complete when first shown; an answer retyped never moves it, and nor does
+  // finishing the onboarding: a new user finishes at the top, and About you
+  // moves low on the next visit (US-62 AC12, AC13).
+  const aboutYouLow = wasDone;
   // Something is on record (height and weight, or more): the sex question and the storage notice (US-09 AC5).
   const valueShown = fullForm || reached >= 2;
   // The onboarding asks the weight beside the height (US-62 AC13). A weight
@@ -449,6 +450,12 @@ export function InputPanel({
   const weightInProfile = !fullForm || weightTyped.current;
   weightShown.current = weightInProfile;
   const sexInRow = fullForm && !weightInProfile;
+  // Low, About you is rows, as on the iPhone (US-62 AC12): label left, value
+  // right, a tap opens the field itself in the row's place. The onboarding's
+  // boxes never turn into rows under someone typing. A missing or refused
+  // answer opens its field, which stays open while it is typed in, until Done.
+  const [aboutOpen, setAboutOpen] = useState<ReadonlySet<AboutKey>>(new Set());
+  const aboutAutoOpen = useRef(new Set<AboutKey>());
   // The birth year's field, once shown, stays while the birth question does:
   // a year cleared to retype keeps its field, whatever the stage. The
   // question going (an erase) starts it again.
@@ -665,14 +672,17 @@ export function InputPanel({
       : (inputs.sex === 'female' && hintFemale) ? hintFemale : hint;
   };
 
-  const renderLongitudinalField = (config: FieldConfig) => {
+  /** `box`: the onboarding's weight (US-62 AC13), a plain box like the
+   *  height's beside it, holding the saved value; a number typed over it saves
+   *  through the same path (one active row per day, US-03 AC3). */
+  const renderLongitudinalField = (config: FieldConfig, box = false) => {
     const { field, name, step } = config;
     const effectiveHint = resolveHint(config);
     const r = range(field);
     const metric = FIELD_METRIC_MAP[field];
     const previous = metric && previousMeasurements.find(m => m.metricType === metric);
     const shown = metric && previous ? `${toDisplay(field, previous.value)} ${getDisplayLabel(metric, fieldUnit(field))}` : '';
-    const previousLabel = previous ? `${shown} · ${formatShortDate(previous.recordedAt)}` : null;
+    const previousLabel = previous && !box ? `${shown} · ${formatShortDate(previous.recordedAt)}` : null;
     const needsAttention = field === 'weightKg' && formStage === 1 && inputs.heightCm !== undefined && inputs.weightKg === undefined;
     // In expanded mode with previous data, show "Previous:" reference instead of placeholder
     // (blood tests no longer use this render path — they use BloodTestTimeline).
@@ -702,7 +712,7 @@ export function InputPanel({
             type="number"
             id={field}
             onWheel={blurOnWheel}
-            value={rawInputs[field] !== undefined ? rawInputs[field] : toDisplay(field, inputs[field] as number | undefined)}
+            value={rawInputs[field] !== undefined ? rawInputs[field] : toDisplay(field, (inputs[field] as number | undefined) ?? (box ? previous?.value : undefined))}
             onChange={(e) => {
               const raw = e.target.value;
               setRawInputs(prev => ({ ...prev, [field]: raw }));
@@ -728,7 +738,7 @@ export function InputPanel({
               autoSaveOnBlur();
             }}
             onKeyDown={onNumericEnter}
-            placeholder={isExpandedWithData ? '' : getPreviousPlaceholder(field)}
+            placeholder={isExpandedWithData || box ? '' : getPreviousPlaceholder(field)}
             step={step ? (fieldUnit(field) === 'si' ? step.si : step.conv) : undefined}
             min={r.min}
             max={r.max}
@@ -738,6 +748,9 @@ export function InputPanel({
             <CommitTickButton ariaLabel={`Save ${field}`} onClick={flushLongitudinalSave}/>
           )}
         </div>
+        {box && previous && inputs[field] !== undefined && (
+          <span className="previous-reference">{previousReference(shown, previous.recordedAt)}</span>
+        )}
         {(unreadable[field] || errors[field]) && (
           <span className="error-message">{unreadable[field] ? 'Enter a number' : errors[field]}</span>
         )}
@@ -945,7 +958,7 @@ export function InputPanel({
             const heightNum = parseLocalisedNumber(raw);
             const heightRange = range('heightCm');
             // Plausible height → move on to weight.
-            if (heightNum !== undefined && /^\d{2,3}$/.test(raw) && heightNum >= heightRange.min && heightNum <= heightRange.max && inputs.weightKg === undefined) {
+            if (heightNum !== undefined && /^\d{2,3}$/.test(raw) && heightNum >= heightRange.min && heightNum <= heightRange.max && inputs.weightKg === undefined && !hasPreviousValue('weightKg')) {
               advanceToWeight({
                 ambiguous: /^\d{2}$/.test(raw) && heightNum * 10 <= heightRange.max,
                 advance: () => focusById('weightKg'),
@@ -1003,7 +1016,7 @@ export function InputPanel({
               }
               // Height complete → move on to weight (mirrors the cm
               // path). A lone '1' might still become 10/11 — wait it out.
-              if (heightFeet !== '' && val !== '' && inches <= 11 && inputs.weightKg === undefined) {
+              if (heightFeet !== '' && val !== '' && inches <= 11 && inputs.weightKg === undefined && !hasPreviousValue('weightKg')) {
                 advanceToWeight({
                   ambiguous: val === '1',
                   advance: () => focusById('weightKg'),
@@ -1022,6 +1035,53 @@ export function InputPanel({
       )}
     </div>
   );
+
+  /** About you's rows (US-62 AC12); each row's editor is the field itself, with its why-line. */
+  const renderAboutRows = () => {
+    const month = inputs.birthMonth ? MONTHS_FULL[inputs.birthMonth - 1]?.label : undefined;
+    const rows: Array<{ key: AboutKey; label: string; value: string | null; missing: boolean; editor: () => ReactNode }> = [
+      { key: 'height', label: 'Height', editor: renderHeight,
+        value: inputs.heightCm != null ? formatHeightDisplay(inputs.heightCm, unitSystem) : null,
+        missing: inputs.heightCm == null || !!errors.heightCm || !!unreadable.heightCm },
+      { key: 'sex', label: 'Sex', editor: renderSex,
+        value: inputs.sex === 'male' ? 'Male' : inputs.sex === 'female' ? 'Female' : null,
+        missing: !inputs.sex || !!errors.sex },
+      { key: 'birth', label: 'Birth', editor: renderBirthInfo,
+        value: inputs.birthYear ? [month, inputs.birthYear].filter(Boolean).join(' ') : null,
+        missing: !inputs.birthYear || !!errors.birthMonth || !!errors.birthYear },
+    ];
+    const open = (key: AboutKey) => {
+      setAboutOpen(prev => new Set(prev).add(key));
+      requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-about="${key}"] :is(input, select, [role="radio"])`)?.focus());
+    };
+    const done = (key: AboutKey) => {
+      aboutAutoOpen.current.delete(key);
+      setAboutOpen(prev => { const next = new Set(prev); next.delete(key); return next; });
+      focusById(`about-${key}`);
+    };
+    return (
+      <ul className="md-rows about-rows">
+        {rows.map(row => {
+          if (row.missing) aboutAutoOpen.current.add(row.key);
+          return (
+            <li key={row.key}>
+              {aboutOpen.has(row.key) || aboutAutoOpen.current.has(row.key) ? (
+                <div className="about-editor" data-about={row.key}>
+                  {row.editor()}
+                  <button type="button" className="md-back about-done" onClick={() => done(row.key)}>Done</button>
+                </div>
+              ) : (
+                <button type="button" id={`about-${row.key}`} className="about-row" onClick={() => open(row.key)}>
+                  <span className="about-row-label">{row.label}</span>
+                  {row.value ? <span className="about-row-value">{row.value}</span> : <span className="md-row-add">Add</span>}
+                </button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
 
   const renderProfile = () => (
     <>
@@ -1072,13 +1132,17 @@ export function InputPanel({
               weight, then sex, then the birth date. Each answer saves. Every
               slot keeps its place as the form opens, so a field being typed
               in is never remounted under the cursor. */}
-          <div className="sex-height-row">
-            {renderHeight()}
-            {weightInProfile && renderVital(WEIGHT_FIELD)}
-            {sexInRow && renderSex()}
-          </div>
-          {!sexInRow && valueShown && <div className="stage-reveal profile-step">{renderSex()}</div>}
-          {birthShown && <div className="stage-reveal profile-step">{renderBirthInfo()}</div>}
+          {aboutYouLow ? renderAboutRows() : (
+            <>
+              <div className="sex-height-row">
+                {renderHeight()}
+                {weightInProfile && renderLongitudinalField(WEIGHT_FIELD, true)}
+                {sexInRow && renderSex()}
+              </div>
+              {!sexInRow && valueShown && <div className="stage-reveal profile-step">{renderSex()}</div>}
+              {birthShown && <div className="stage-reveal profile-step">{renderBirthInfo()}</div>}
+            </>
+          )}
           {fullForm && renderAlcohol()}
           {!fullForm && (
             <p className="field-hint-attention field-hint-attention--centered">
@@ -2280,8 +2344,8 @@ export function InputPanel({
       {panelMessages}
       {/* Card 1: the profile (the onboarding's questions until they are
           answered, US-62 AC13), then the vitals once the whole form shows.
-          On a phone with the onboarding done, About you moves to the foot
-          (US-62 AC12). */}
+          With the onboarding done when the record was first shown, About
+          you moves to the foot, phone and desktop (US-62 AC12). */}
       <div className="section-card">
         {!aboutYouLow && renderProfile()}
         {fullForm && <div className="stage-reveal">{renderVitals()}</div>}

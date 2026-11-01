@@ -518,15 +518,15 @@ input[type="number"] {
   margin-top: 20px;
 }
 
+/* US-62 AC13: height and weight, two equal boxes side by side, phone and desktop. */
 .sex-height-row {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
 }
 
 @media (min-width: 768px) {
   .sex-height-row {
-    grid-template-columns: 1fr 1fr;
     gap: 20px;
   }
 
@@ -5360,10 +5360,12 @@ input[type="number"] {
   margin: 0;
   padding: 0;
 }
-.md-rows > li + li .md-row {
+.md-rows > li + li .md-row,
+.about-rows > li + li .about-row {
   border-top: 1px solid var(--bt-ink-100, #eceef0);
 }
-.md-row {
+.md-row,
+.about-row {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -5378,7 +5380,8 @@ input[type="number"] {
   text-align: left;
   cursor: pointer;
 }
-.md-row:focus-visible {
+.md-row:focus-visible,
+.about-row:focus-visible {
   outline: 2px solid var(--color-brand-text);
   outline-offset: 2px;
 }
@@ -5431,6 +5434,29 @@ input[type="number"] {
 .md-row-add {
   color: var(--color-brand-text);
   font-size: 15px;
+}
+/* US-62 AC12: About you as rows; a tap opens the field in the row's place. */
+.about-row {
+  min-height: 48px;
+}
+.about-row-label {
+  flex: 1 1 auto;
+  font-size: 15px;
+}
+.about-row-value {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+.about-rows > li + li .about-editor {
+  border-top: 1px solid var(--bt-ink-100, #eceef0);
+}
+.about-editor {
+  padding: 12px 0 0;
+}
+.about-done {
+  display: block;
+  margin-left: auto;
 }
 .md-status-warn { color: var(--color-grade-warn-text); }
 .md-status-bad { color: var(--color-grade-bad-text); }

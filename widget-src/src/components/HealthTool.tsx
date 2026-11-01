@@ -1415,7 +1415,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     formStage: reached,
     // US-60 AC3: the Dismiss asks the unanswered and drinkers; a non-drinker has no card.
     // The section's name follows InputPanel's: About you sits low on a phone once the onboarding is done.
-    alcoholQuestion: { answer: inputs.alcohol, onAnswer: handleAlcoholAnswer, section: profileTitle(isMobile && opened === 4) },
+    alcoholQuestion: { answer: inputs.alcohol, onAnswer: handleAlcoholAnswer, section: profileTitle(opened === 4) },
   };
 
   // The chat reads its context as each message is sent (useChatState), through
