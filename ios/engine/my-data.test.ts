@@ -182,6 +182,42 @@ describe('myData rows: target and previous value (US-62 AC8, AC9)', () => {
     expect(noHeight.get('weight')?.target).toBeNull();
     expect(noHeight.get('ldl')?.target).toBe('Optimal <1.4');
   });
+
+  const idOf = (file: RoadmapFile, metric: string, day: string) =>
+    file.measurements.find((row) => row.metricType === metric && row.status === 'active' && row.recordedAt.startsWith(day))!.id;
+
+  it('takes a corrected earlier day\'s new value as the previous one, never the struck row (US-04)', () => {
+    const file = adult();
+    const fixed = edited(file, { kind: 'correct', id: idOf(file, 'ldl', '2026-09-01'), value: 3.0 });
+    expect(rows(myData(fixed, NOW)).get('ldl')).toMatchObject({ latest: { value: '3.4' }, previous: '3.0' });
+  });
+
+  it('reads a corrected latest day as its new value, with the day before as the previous one', () => {
+    const file = adult();
+    const fixed = edited(file, { kind: 'correct', id: idOf(file, 'ldl', '2026-10-01'), value: 3.5 });
+    expect(rows(myData(fixed, NOW)).get('ldl')).toMatchObject({ latest: { value: '3.5', day: '2026-10-01' }, previous: '2.9' });
+  });
+
+  it('counts a day after today as the latest, as the web\'s rows do, while the trend leaves it out (US-25 AC17f)', () => {
+    const file = adult();
+    const held = file.measurements.find((row) => row.id === idOf(file, 'ldl', '2026-10-01'))!;
+    const ahead = { ...file, measurements: [...file.measurements, { ...held, id: 'ahead-ldl', value: 3.8, recordedAt: '2026-10-23', createdAt: NOW }] };
+    const ldl = rows(myData(ahead, NOW)).get('ldl');
+    expect(ldl).toMatchObject({ latest: { value: '3.8', day: '2026-10-23' }, previous: '3.4' });
+    expect(ldl?.trend).toEqual([2.9, 3.4]);
+  });
+
+  it('gives Lp(a)\'s previous value in the unit Lp(a) is shown in (US-05 AC2)', () => {
+    const file = edited(adult(), { kind: 'add', metric: 'lpa', value: 100, day: '2026-09-01' }, { kind: 'add', metric: 'lpa', value: 150, day: '2026-10-01' });
+    expect(rows(myData(file, NOW)).get('lpa')).toMatchObject({ unit: 'nmol/L', latest: { value: '150' }, previous: '100' });
+    const mg = rows(myData(edited(file, { kind: 'lpaUnit', unit: 'mg/dL' }), NOW)).get('lpa');
+    expect(mg).toMatchObject({ unit: 'mg/dL', latest: { value: '60.0' }, previous: '40.0', target: 'Normal <30' });
+  });
+
+  it('still gives a known minor\'s blood pressure its previous pair, with no adult target (US-07 AC6)', () => {
+    const minor = rows(myData(edited(adult(), { kind: 'profile', birthYear: 2015 }), NOW)).get('blood_pressure');
+    expect(minor).toMatchObject({ latest: { value: '121/79' }, previous: '128/82', target: null });
+  });
 });
 
 describe('applyEdit (AC4/AC5)', () => {

@@ -62,9 +62,15 @@ struct ValueRow: View {
         return LabelValue.layout(textSize).callAsFunction {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
-                let meta = [target, day.map(DayText.monthYear)].compactMap { $0 }.joined(separator: " · ")
+                let meta = [target, day.map(DayText.monthYear)].compactMap { $0 }
                 if !meta.isEmpty {
-                    Text(meta).font(.caption).foregroundStyle(.secondary)
+                    // One line when it fits; else the target over the date, so "Oct 2026" never
+                    // breaks in two (a 375-pt phone at large text, no sex: "Normal 60–110/45–90").
+                    ViewThatFits(in: .horizontal) {
+                        Text(meta.joined(separator: " · "))
+                        VStack(alignment: .leading, spacing: 0) { ForEach(meta, id: \.self) { Text($0) } }
+                    }
+                    .font(.caption).foregroundStyle(.secondary)
                 }
             }
             Spacer(minLength: 0)
@@ -143,6 +149,9 @@ struct ValueRow: View {
                     }
                 }
             }
+            // Beside the label, a reading never wraps ("0.9" over "1" at large text on a 375-pt
+            // phone): the label wraps instead. Under it, at accessibility sizes, it has the row.
+            .fixedSize(horizontal: stacked, vertical: false)
         } else {
             // VoiceOver: "LDL Cholesterol, no value yet, add one", never a bare "Add" beside the lab upload's (US-52 AC7b).
             Text("Add").foregroundStyle(Color.accentColor).accessibilityLabel("No value yet, add one")

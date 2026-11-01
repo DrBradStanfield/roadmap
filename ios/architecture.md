@@ -1394,7 +1394,7 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
     through the engine; `RecordFile` is the file on disk and the engine steps that read and
     write it; `MyData.swift` is the engine's view of the record and the
     `RecordEdit` the tab sends; `MyDataView`, `ValueRow` (a row, a vitals card, its
-    sparkline; the row is the web's MyDataRows.tsx: "target · date" under the name, the value
+    sparkline; the row follows the web's MyDataRows.tsx, without grade colours: "target · date" under the name, the value
     with the previous one in brackets, both served by the engine, US-62 AC8), `ValueEntrySheet` and `DayText` draw it. `SheetSave` is a sheet's save and
     the "Not saved" alert (`refusalAlert`, over `App/MessageAlert.swift`).
     The form sections (US-25 AC8): `FormModels` (the engine's question JSON and `FormEdit`),
