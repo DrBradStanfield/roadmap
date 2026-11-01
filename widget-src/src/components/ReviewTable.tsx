@@ -30,7 +30,7 @@ import { pendingRowsFor, rowTarget, type RefusedLabValue } from '@roadmap/health
 import { labUnitRefusalLine, labValueLabel } from '../lib/lab-value-labels';
 import { unarchivedOriginals } from '../lib/archive-payloads';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
-import { type CellUnit, type Grading, cellLabel, cellText, cellToSI, hasNumericSyntax, NUMERIC_SYNTAX_GUIDANCE, readNumericCell, readTypedValue, validateTypedValue } from '../lib/blood-test-cell';
+import { type CellUnit, type Grading, cellLabel, cellNumber, cellText, cellToSI, hasNumericSyntax, NUMERIC_SYNTAX_GUIDANCE, readNumericCell, readTypedValue, validateTypedValue } from '../lib/blood-test-cell';
 import { useLpaUnit } from '../lib/lpa-unit';
 import { NumericInputCell } from './NumericInputCell';
 import { DraftDateCell } from './DraftDateCell';
@@ -417,7 +417,7 @@ export function buildMatrixModel(
       coreMetricsSeen.add(metric);
     }
     const display = UNIT_DEFS[metric]
-      ? cellText(metric, m.value, displayFor(metric))
+      ? cellNumber(metric, m.value, displayFor(metric), m.comparator)
       : String(m.value);
     cells.set(`${metric}|${dateKey}`, { state: 'context', id: m.id, displayValue: withComparator(display, m.comparator), valueSI: m.value, ...(m.comparator ? { comparator: m.comparator } : {}) });
   }
@@ -508,7 +508,7 @@ export function buildMatrixModel(
       const cellKey = `${metric}|${dateKey}`;
       const slot = slotFor(metric, v, dateKey);
       const initialDisplay = UNIT_DEFS[metric]
-        ? cellText(metric, v.valueSI, displayFor(metric))
+        ? cellNumber(metric, v.valueSI, displayFor(metric), v.comparator)
         : String(v.displayValue);
       const existing = place(slot, cellKey, rank, withComparator(initialDisplay, v.comparator), { valueSI: v.valueSI, ...(v.comparator ? { comparator: v.comparator } : {}) }, !!touched?.has(valueId(fi, 'core', vi)), METRIC_LABELS[metric] || metric);
       if (existing === null) return;
@@ -809,7 +809,7 @@ export function ReviewTable({
     const typedIn = touchedRef.current.get(editId(cell))?.display;
     const metric = metricOf(cell);
     return (touchedRef.current.has(editId(cell)) && extractedError(cell) !== null)
-      || editedStr !== (typedIn && metric && UNIT_DEFS[metric] ? cellText(metric, cell.valueSI, typedIn) : cell.initialDisplay);
+      || editedStr !== (typedIn && metric && UNIT_DEFS[metric] ? cellNumber(metric, cell.valueSI, typedIn, cell.comparator) : cell.initialDisplay);
   };
 
   /** The value a cell saves (SI for a core metric): the extracted one while

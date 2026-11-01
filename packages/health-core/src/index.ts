@@ -472,6 +472,6 @@ export { labEgfrOf, withLabEgfr, type LabEgfr } from './plan';
 // US-25 AC22: the plan's summary tiles, the web's Quick Stats and the phone's My plan tiles.
 export { statTiles, statTileText, type StatTile, type StatTileOptions, type StatTileStatus, type StatTone } from './stat-tiles';
 export {
-  COMPARATORS, LIMIT_CUTOFFS, LIMIT_NOT_GRADED, formatLimit, isComparator, isLimitField, limitDecides, limitOf, limitRepresentative,
-  limitText, withComparator, withRowValue, type Comparator, type InputLimit, type InputLimits, type LimitField,
+  COMPARATORS, LIMIT_CUTOFFS, LIMIT_LABEL_CUTOFFS, LIMIT_NOT_GRADED, limitLabelValue, formatLimit, isComparator, isLimitField, limitDecides, limitOf, limitRepresentative,
+  limitNumber, limitText, withComparator, withRowValue, type Comparator, type InputLimit, type InputLimits, type LimitField,
 } from './lab-limits';

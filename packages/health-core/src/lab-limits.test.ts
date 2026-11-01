@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import * as units from './units';
 import { LAB_CATALOG } from './lab-catalog';
 import {
-  LIMIT_CUTOFFS, limitDecides, limitRepresentative, readPrintedLimit, withComparator, withRowValue, type LimitField,
+  LIMIT_CUTOFFS, LIMIT_LABEL_CUTOFFS, limitLabelValue, limitNumber, limitDecides, limitRepresentative, readPrintedLimit, withComparator, withRowValue, type LimitField,
 } from './lab-limits';
 import { sanitizeInputs } from './validation';
 import type { HealthInputs } from './types';
@@ -25,6 +25,13 @@ describe('US-12 AC20 — reading a printed limit', () => {
 
   it.each(['<<5', '<=5', '< >5', '<', '> ', '5', '5 <', 'less than 5', '>=60'])('%s is no limit', (text) => {
     expect(readPrintedLimit(text)).toBeNull();
+  });
+
+  it('a bound in another unit rounds away from its band, and keeps every place it needs', () => {
+    expect(limitNumber(60 / 38.67, 1, '>')).toBe('1.55'); // 1.55159…: rounded down, still true
+    expect(limitNumber(60 / 38.67, 1, '<')).toBe('1.56');
+    expect(limitNumber(0.01, 1, '<')).toBe('0.01');
+    expect(limitNumber(60, 0, '>')).toBe('60');
   });
 
   it('shows ≤ and ≥ only in display, with a space after the symbol', () => {
@@ -57,6 +64,9 @@ const CONSTANT_FIELDS: Record<string, LimitField | null | Record<string, LimitFi
 const leaves = (v: unknown, path = ''): Array<[string, number]> => typeof v === 'number' ? [[path, v]]
   : Object.entries(v as object).flatMap(([k, x]) => leaves(x, path ? `${path}.${k}` : k));
 
+/** Every line anything compares an input against: the plan's grading lines and the label lines. */
+const ALL_LINES = (field: LimitField) => [...LIMIT_CUTOFFS[field], ...LIMIT_LABEL_CUTOFFS[field]];
+
 describe('US-12 AC20 — the cutoff set holds every threshold', () => {
   const exported = Object.keys(units).filter((name) => /_(THRESHOLDS|TARGETS|BANDS|RISK_ENHANCING)$/.test(name));
 
@@ -70,7 +80,7 @@ describe('US-12 AC20 — the cutoff set holds every threshold', () => {
       const field = typeof fields === 'object' && fields !== null ? fields[key] : fields;
       if (field === null) continue;
       expect(field, `${name}.${path} has no input`).toBeDefined();
-      expect(LIMIT_CUTOFFS[field!], `${name}.${path}`).toContain(value);
+      expect(ALL_LINES(field!), `${name}.${path}`).toContain(value);
     }
   });
 
@@ -92,7 +102,7 @@ describe('US-12 AC20 — the cutoff set holds every threshold', () => {
     const name = Object.keys(NAMES).join('|');
     const pattern = new RegExp(String.raw`\b(${name})\b\s*(?:<=|>=|<|>)\s*(\d+(?:\.\d+)?)\b|\b(\d+(?:\.\d+)?)\s*(?:<=|>=|<|>)\s*(?:[\w.]*\.)?(${name})\b`, 'g');
     const found = [...code.matchAll(pattern)].map((m) => [NAMES[m[1] ?? m[4]], Number(m[2] ?? m[3])] as const);
-    for (const [field, literal] of found) expect(LIMIT_CUTOFFS[field], `${file}: ${field} against ${literal}`).toContain(literal);
+    for (const [field, literal] of found) expect(ALL_LINES(field), `${file}: ${field} against ${literal}`).toContain(literal);
   });
 });
 
@@ -106,13 +116,24 @@ describe('US-12 AC20 — only when the bound decides', () => {
     expect(limitDecides('hba1c', '<', prediabetes + 0.1)).toBe(false);
   });
 
-  it('eGFR "> 90" decides: every eGFR cutoff is at or below 90', () => {
+  it('eGFR "> 90" decides for the plan and for the tile', () => {
     expect(limitRepresentative('labEgfr', '>', 90)).toBeGreaterThan(90);
+    expect(limitLabelValue('labEgfr', '>', 90)).toBeGreaterThan(90);
   });
 
-  it('eGFR "> 60" does not decide: the eGFR tile grades 70 and over "Normal", 60-69 "Low Normal"', () => {
-    expect(LIMIT_CUTOFFS.labEgfr).toContain(70);
-    expect(limitRepresentative('labEgfr', '>', 60)).toBeNull();
+  // The orchestrator, 2026-11-02 (option B): the 70 line drives only the tile's word.
+  it('eGFR "> 60" decides for the plan (its one line is 45), not for the tile word (70 is a label line)', () => {
+    expect(LIMIT_CUTOFFS.labEgfr).toEqual([45]);
+    expect(LIMIT_LABEL_CUTOFFS.labEgfr).toContain(70);
+    expect(limitRepresentative('labEgfr', '>', 60)).toBeGreaterThan(60);
+    expect(limitLabelValue('labEgfr', '>', 60)).toBeNull();
+  });
+
+  it('grid colour bands are label lines only: a creatinine limit is graded by the plan, coloured only when it clears the bands', () => {
+    expect(LIMIT_CUTOFFS.creatinine).toEqual([]);
+    expect(limitLabelValue('creatinine', '<', 50)).not.toBeNull();
+    expect(limitLabelValue('creatinine', '<', 100)).toBeNull();
+    expect(limitRepresentative('creatinine', '<', 100)).not.toBeNull();
   });
 
   it.each([

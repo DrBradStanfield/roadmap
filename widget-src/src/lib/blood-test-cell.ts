@@ -15,7 +15,9 @@ import {
   isLimitField,
   withComparator,
   limitRepresentative,
+  limitLabelValue,
   limitText,
+  limitNumber,
   METRIC_TO_FIELD,
   HBA1C_THRESHOLDS,
   LDL_THRESHOLDS,
@@ -96,26 +98,34 @@ export function savedLabText(v: number, comparator?: Comparator): string {
 
 /** A saved core value as its cell shows it: a limit with its symbol, "> 1.55" (US-12 AC20). */
 export function savedCellText(metric: MetricType, si: number, unit: CellUnit, comparator?: Comparator): string {
-  return comparator ? limitText(cellFromSI(metric, si, unit), cellDecimalPlaces(metric, unit), comparator) : cellText(metric, si, unit);
+  return comparator ? withComparator(cellNumber(metric, si, unit, comparator), comparator) : cellText(metric, si, unit);
 }
 
-/** The number a saved core limit is graded with, or null when its bound does
- *  not decide (US-12 AC20). Never shown. */
-function limitGrade(metric: MetricType, bound: number, comparator: Comparator): number | null {
+/** A core value's number in a cell's unit: a limit's bound rounded away from
+ *  its band, so the shown limit stays true in any unit (US-12 AC20). */
+export function cellNumber(metric: MetricType, si: number, unit: CellUnit, comparator?: Comparator): string {
+  return comparator ? limitNumber(cellFromSI(metric, si, unit), cellDecimalPlaces(metric, unit), comparator) : cellText(metric, si, unit);
+}
+
+/** A saved core limit's input field, when the plan can read one (US-12 AC20). */
+function limitField(metric: MetricType) {
   const field = METRIC_TO_FIELD[metric];
-  return field && isLimitField(field) ? limitRepresentative(field, comparator, bound) : null;
+  return field && isLimitField(field) ? field : null;
 }
 
 /** A limit the plan cannot grade: it shows no colour, and says `LIMIT_NOT_GRADED`. */
 export function limitUngraded(metric: MetricType, bound: number, comparator?: Comparator): boolean {
-  return !!comparator && limitGrade(metric, bound, comparator) === null;
+  const field = limitField(metric);
+  return !!comparator && (!field || limitRepresentative(field, comparator, bound) === null);
 }
 
-/** A saved core value's grade. A limit is graded only when its bound decides,
- *  and never by the bound itself (US-12 AC20). */
+/** A saved core value's colour. A limit is coloured only when its bound
+ *  decides against the plan's lines and the grid's own colour bands, and
+ *  never by the bound itself (US-12 AC20). */
 export function savedStatus(metric: MetricType, si: number, comparator: Comparator | undefined, grading: Grading): Status {
   if (!comparator) return statusOf(metric, si, grading);
-  const graded = limitGrade(metric, si, comparator);
+  const field = limitField(metric);
+  const graded = field ? limitLabelValue(field, comparator, si) : null;
   return graded === null ? null : statusOf(metric, graded, grading);
 }
 

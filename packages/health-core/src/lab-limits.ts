@@ -42,14 +42,18 @@ export function withComparator(text: string, comparator?: Comparator | null): st
  * shown limit is still true: 60 mg/dL HDL shown in mmol/L is "> 1.55".
  */
 export function limitText(displayed: number, dp: number, comparator: Comparator): string {
+  return withComparator(limitNumber(displayed, dp, comparator), comparator);
+}
+
+/** `limitText`'s number alone, for a cell that shows the symbol beside it. */
+export function limitNumber(displayed: number, dp: number, comparator: Comparator): string {
   for (let places = dp; places <= dp + 4; places++) {
     const fixed = displayed.toFixed(places);
-    if (Math.abs(Number(fixed) - displayed) <= 1e-9 * Math.max(1, Math.abs(displayed))) return withComparator(fixed, comparator);
+    if (Math.abs(Number(fixed) - displayed) <= 1e-9 * Math.max(1, Math.abs(displayed))) return fixed;
   }
   const scale = 10 ** (dp + 1);
   const steps = Number((displayed * scale).toPrecision(12));
-  const rounded = (comparator === '<' || comparator === '<=' ? Math.ceil(steps) : Math.floor(steps)) / scale;
-  return withComparator(rounded.toFixed(dp + 1), comparator);
+  return ((comparator === '<' || comparator === '<=' ? Math.ceil(steps) : Math.floor(steps)) / scale).toFixed(dp + 1);
 }
 
 /** A core metric's limit in a unit system, as `formatDisplayValue` shows an exact value. */
@@ -78,25 +82,49 @@ export type LimitField = 'hba1c' | 'ldlC' | 'totalCholesterol' | 'hdlC' | 'trigl
 const values = (o: object): number[] => Object.values(o).flatMap((v) => (typeof v === 'number' ? [v] : values(v as object)));
 
 /**
- * Every cutoff anything compares each input against, in its canonical unit,
- * for any sex and any treatment state: the plan, its tiles, the blood-test
- * grids' colours, the cards and the medication cascades. Built from the
- * threshold constants, never copied from them; lab-limits.test.ts fails when
- * a constant or a literal is missing. Non-HDL's thresholds are absent on
- * purpose: non-HDL is derived, and never derived from a limit.
+ * The plan's grading lines: every cutoff the plan's cards, calculations,
+ * gates, targets and medication cascades compare each input against, in its
+ * canonical unit, for any sex and any treatment state. A limit is graded by
+ * the plan only when it decides against these. Built from the threshold
+ * constants, never copied; lab-limits.test.ts fails when a constant or a
+ * literal is in neither this list nor `LIMIT_LABEL_CUTOFFS`. Non-HDL's lines
+ * are absent on purpose: non-HDL is derived, and never derived from a limit.
+ * Creatinine and PSA have none: the plan grades neither directly.
  */
 export const LIMIT_CUTOFFS: Readonly<Record<LimitField, readonly number[]>> = {
   hba1c: values(HBA1C_THRESHOLDS),
   ldlC: [...values(LDL_THRESHOLDS), LIPID_TREATMENT_TARGETS.ldlMmol],
   totalCholesterol: values(TOTAL_CHOLESTEROL_THRESHOLDS),
-  hdlC: [...values(HDL_THRESHOLDS), ...values(HDL_GRID_BANDS)],
-  triglycerides: values(TRIGLYCERIDES_THRESHOLDS),
+  hdlC: values(HDL_THRESHOLDS),
+  triglycerides: [TRIGLYCERIDES_THRESHOLDS.borderline, TRIGLYCERIDES_THRESHOLDS.veryHigh],
   apoB: [...values(APOB_THRESHOLDS), LIPID_TREATMENT_TARGETS.apobGl, APOB_RISK_ENHANCING],
+  creatinine: [],
+  psa: [],
+  lpa: values(LPA_THRESHOLDS),
+  systolicBp: [BP_THRESHOLDS.stage1Sys, BP_THRESHOLDS.stage2Sys, BP_THRESHOLDS.crisisSys, bpTargetFor(undefined), bpTargetFor(65)],
+  diastolicBp: [BP_THRESHOLDS.stage1Dia, BP_THRESHOLDS.stage2Dia, BP_THRESHOLDS.crisisDia],
+  labEgfr: [EGFR_THRESHOLDS.mildlyDecreased],
+};
+
+/**
+ * The label lines: what the tiles' status words and the blood-test grids'
+ * colours compare each input against (the vitals grid's systolic target
+ * too). A limit the plan grades shows a tile word or a grid colour only when
+ * it also decides against these; otherwise it shows with no word and no
+ * colour (the orchestrator, 2026-11-02: eGFR's 70 line drives only a label).
+ */
+export const LIMIT_LABEL_CUTOFFS: Readonly<Record<LimitField, readonly number[]>> = {
+  hba1c: values(HBA1C_THRESHOLDS),
+  ldlC: values(LDL_THRESHOLDS),
+  totalCholesterol: values(TOTAL_CHOLESTEROL_THRESHOLDS),
+  hdlC: values(HDL_GRID_BANDS),
+  triglycerides: [TRIGLYCERIDES_THRESHOLDS.borderline, TRIGLYCERIDES_THRESHOLDS.high],
+  apoB: values(APOB_THRESHOLDS),
   creatinine: values(CREATININE_GRID_BANDS),
   psa: values(PSA_THRESHOLDS),
   lpa: values(LPA_THRESHOLDS),
-  systolicBp: [BP_THRESHOLDS.elevatedSys, BP_THRESHOLDS.stage1Sys, BP_THRESHOLDS.stage2Sys, BP_THRESHOLDS.crisisSys, bpTargetFor(undefined), bpTargetFor(65)],
-  diastolicBp: [BP_THRESHOLDS.stage1Dia, BP_THRESHOLDS.stage2Dia, BP_THRESHOLDS.crisisDia],
+  systolicBp: [BP_THRESHOLDS.elevatedSys, bpTargetFor(undefined), bpTargetFor(65)],
+  diastolicBp: [BP_THRESHOLDS.stage1Dia],
   labEgfr: values(EGFR_THRESHOLDS),
 };
 
@@ -110,6 +138,16 @@ export const isLimitField = (field: string): field is LimitField => Object.proto
  */
 export function limitDecides(field: LimitField, comparator: Comparator, bound: number): boolean {
   return bandDecides(LIMIT_CUTOFFS[field], comparator, bound);
+}
+
+/**
+ * The value a tile word or a grid colour grades a limit with: the plan's
+ * representative, only when the limit also decides against the label lines;
+ * null when it does not, so the surface shows the limit with no word or colour.
+ */
+export function limitLabelValue(field: LimitField, comparator: Comparator, bound: number): number | null {
+  const value = limitRepresentative(field, comparator, bound);
+  return value !== null && bandDecides(LIMIT_LABEL_CUTOFFS[field], comparator, bound) ? value : null;
 }
 
 /** The same rule against any list of cutoffs: a non-core lab's own reference range, say. */

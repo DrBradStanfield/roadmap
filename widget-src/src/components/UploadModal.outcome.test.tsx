@@ -303,7 +303,7 @@ describe('US-12 AC20: the upload counts limits, and names the ungraded tests by 
         { metric: 'ldl', valueSI: 1.5, displayValue: 1.5, displayUnit: 'mmol/L', confidence: 'high', comparator: '<' },
       ],
       additionalValues: [
-        { name: 'eGFR', value: 60, unit: 'mL/min/1.73m²', comparator: '>' },
+        { name: 'eGFR', value: 30, unit: 'mL/min/1.73m²', comparator: '>' },
         { name: 'Folate (serum)', value: 45, unit: 'nmol/L', referenceLow: 7, referenceHigh: 45, comparator: '>' },
         { name: 'Made-up marker 7', value: 3, unit: 'U/L', referenceLow: 1, referenceHigh: 5, comparator: '<' },
       ],
@@ -312,7 +312,7 @@ describe('US-12 AC20: the upload counts limits, and names the ungraded tests by 
     await screen.findByDisplayValue('3.9');
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 1, withValues: 1, valuesLimit: 5, valuesLimitUngraded: 3, limitUngradedTests: ['egfr', 'ldl', 'other'] });
-    expect(JSON.stringify(sent()[0])).not.toMatch(/Made-up|Folate|nmol|1\.5|"60"|[<>]/);
+    expect(JSON.stringify(sent()[0])).not.toMatch(/Made-up|Folate|nmol|1\.5|"30"|[<>]/);
   });
 });
 

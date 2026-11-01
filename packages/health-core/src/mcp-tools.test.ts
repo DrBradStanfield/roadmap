@@ -2547,10 +2547,9 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     expect(fits(commit.structured).written).toEqual({ measurements: 1, labValues: 0, corrections: 0, documents: 3 });
   });
 
-  // US-12 AC20: the website and the iPhone save a limit; the connector's
-  // candidate has no place for its symbol while its tools are under review, so
-  // it never offers one as an exact number: left out and counted, as before.
-  it('US-12 AC20 — import_documents never offers a result printed as a limit; it is counted as left out', async () => {
+  // US-12 AC20: a result printed as a limit is offered with its code, shown
+  // with its symbol, and the commit writes the code on the row.
+  it('US-12 AC20 — import_documents offers a limit with its comparator, and the commit writes it', async () => {
     const sync = syncOver(new MemoryCloud());
     const limited: ImportSurface = { ...surface, async extract() {
       const report = ldlOnly(2.8, LAB_DAY);
@@ -2559,8 +2558,14 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
       return { route: 'dropbox', remaining: [], files: [extracted('limits.pdf', report)] };
     } };
     const data = fits((await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: limited, latestDay: TODAY })).structured);
-    expect(data.candidates.map((c) => c.metric)).toEqual(['ldl']);
-    expect(data.files[0]).toMatchObject({ droppedValues: 2 });
+    expect(data.candidates.map((c) => [c.metric, c.comparator, c.displayValue])).toEqual([['ldl', undefined, '2.8'], ['hdl', '>', '> 1.5'], ['egfr', '>', '> 60']]);
+    expect(data.files[0]).not.toHaveProperty('droppedValues');
+    const commit = await runToolOverSync(sync, 'import_documents', { commit: { receipt: data.receipt, accept: data.candidates.map((c) => c.id), replace: [] } }, NOW, { importer: limited, latestDay: TODAY });
+    expect(fits(commit.structured).written).toMatchObject({ measurements: 2, labValues: 1 });
+    const record = await sync.load();
+    expect(record.measurements.find((m) => m.metricType === 'hdl' && m.source === 'lab_import')).toMatchObject({ value: 1.5, comparator: '>' });
+    expect(record.measurements.find((m) => m.metricType === 'ldl' && m.source === 'lab_import')).not.toHaveProperty('comparator');
+    expect(record.labValues.find((l) => l.metricName === 'egfr')).toMatchObject({ value: 60, comparator: '>' });
   });
 
   // US-35 / US-12 AC8: a value the parse refused ("250,000", a malformed row)
@@ -2853,6 +2858,29 @@ describe('US-36 AC9 — two-phase is declared once per tool, and its three mirro
     expect(MCP_TOOLS.filter((t) => t.twoPhase).map((t) => t.name)).toEqual(['correct_value', 'update_profile', 'report_feedback']);
     // The receipt's identity: report_feedback declares its prepared text; the others their arguments.
     expect(MCP_TOOLS.find((t) => t.name === 'report_feedback')!.canonicalArgs!({ kind: 'bug', title: '  A  Title ', detail: 'x' })).toEqual({ kind: 'bug', title: 'a title', detail: 'x' });
+  });
+});
+
+describe('US-12 AC20 — file_results takes a limit with the same four codes, and refuses any other', () => {
+  it('a core and a lab limit become candidates with their comparator, shown with the symbol', () => {
+    const { payload } = prepared(labCall([
+      row('lpa', 'Lipoprotein(a)', 10, 'nmol/L', { comparator: '<' }),
+      row('egfr', 'eGFR', 90, 'mL/min/1.73m²', { comparator: '>' }),
+    ]));
+    expect(payload.candidates.map((c) => [c.metric, c.value, c.comparator, c.displayValue])).toEqual([['lpa', 10, '<', '< 10'], ['egfr', 90, '>', '> 90']]);
+  });
+
+  it('a comparator that is not one of the four codes is refused, nothing read', () => {
+    for (const comparator of ['≥', '=', 'gt', '>>']) {
+      expect(fileResultsInput.safeParse(labCall([row('lpa', 'Lipoprotein(a)', 10, 'nmol/L', { comparator } as never)])).success, comparator).toBe(false);
+    }
+  });
+
+  it('a held exact value and an offered limit of the same number are different results', () => {
+    const file = base();
+    file.measurements.push(createMeasurement({ id: 'held', metricType: 'lpa', value: 10, recordedAt: LAB_DAY, createdAt: NOW }));
+    const { payload } = prepared(labCall([row('lpa', 'Lipoprotein(a)', 10, 'nmol/L', { comparator: '<' })]), file);
+    expect(payload.candidates[0].slot.state).toBe('held_different');
   });
 });
 

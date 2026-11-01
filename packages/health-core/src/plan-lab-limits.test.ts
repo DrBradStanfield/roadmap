@@ -41,17 +41,32 @@ describe('US-12 AC20: eGFR printed as a limit', () => {
     expect(JSON.stringify(payload)).not.toContain(String(plan.inputs.labEgfr));
   });
 
-  it('"> 60" does not decide (70 grades the tile): no eGFR, no potassium advice, no eGFR from an older creatinine, not missing', () => {
+  // The orchestrator, 2026-11-02 (option B): the plan grades against its own lines (45 here);
+  // the tile's 70 line drives only its word.
+  it('"> 60" decides for the plan: potassium advice and 1.2 g/kg; the tile shows "> 60" with no Normal or Low Normal', () => {
+    const plan = computePlan(record(BP, [{ metricName: 'egfr', value: 60, unit: 'mL/min/1.73m²', comparator: '>' }]), NOW);
+    const payload = planPayload(plan);
+    expect(payload.profile.eGFR).toBe('> 60');
+    expect(payload.inputs.limits).toEqual({ labEgfr: { comparator: '>', bound: 60, graded: true } });
+    expect(payload.suggestions.find((s) => s.id.startsWith('bp-'))?.description).toContain(POTASSIUM);
+    expect(payload.suggestions.find((s) => s.id === 'protein-target')?.description).not.toContain('adjusted for kidney function');
+    const tile = statTiles(plan.results, { unitSystem: 'si', sex: 'male' }).find((t) => t.key === 'egfr')!;
+    expect(tile.value).toBe('> 60');
+    expect(tile.status).toBeUndefined();
+    expect(tile.about).not.toContain(LIMIT_NOT_GRADED);
+  });
+
+  it('"> 30" does not decide (45 lies above): no eGFR, no potassium advice, no eGFR from an older creatinine, not missing', () => {
     const older = { metricType: 'creatinine', value: 80, recordedAt: '2026-01-01T00:00:00.000Z' };
-    const plan = computePlan(record([...BP, older], [{ metricName: 'egfr', value: 60, unit: 'mL/min/1.73m²', comparator: '>' }]), NOW);
+    const plan = computePlan(record([...BP, older], [{ metricName: 'egfr', value: 30, unit: 'mL/min/1.73m²', comparator: '>' }]), NOW);
     const payload = planPayload(plan);
     expect(plan.results.eGFR).toBeUndefined();
-    expect(payload.profile.eGFR).toBe('> 60');
-    expect(payload.inputs.limits).toEqual({ labEgfr: { comparator: '>', bound: 60, graded: false } });
+    expect(payload.profile.eGFR).toBe('> 30');
+    expect(payload.inputs.limits).toEqual({ labEgfr: { comparator: '>', bound: 30, graded: false } });
     expect(payload.suggestions.find((s) => s.id.startsWith('bp-'))?.description).not.toContain(POTASSIUM);
     expect(payload.missingInputs).not.toContain('creatinine');
     const tile = statTiles(plan.results, { unitSystem: 'si', sex: 'male' }).find((t) => t.key === 'egfr')!;
-    expect(tile).toMatchObject({ value: '> 60', status: NOT_GRADED });
+    expect(tile).toMatchObject({ value: '> 30', status: NOT_GRADED });
     expect(tile.about).toContain(LIMIT_NOT_GRADED);
   });
 });
