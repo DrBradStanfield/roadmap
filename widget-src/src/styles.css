@@ -112,7 +112,7 @@ input[type="number"] {
 /* Two-Panel Layout */
 .health-tool-content {
   display: grid;
-  grid-template-columns: 5fr 6fr;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
   gap: 32px;
   align-items: stretch;
 }
@@ -132,10 +132,6 @@ input[type="number"] {
     padding: 12px !important;
     margin-left: 10px;
     margin-right: 10px;
-  }
-
-  .field-hint-attention--centered {
-    margin-top: 15px !important;
   }
 
   .health-tool-right {
@@ -169,7 +165,6 @@ input[type="number"] {
   .hr-tabpanel .health-tool-right {
     position: static;
     max-height: none;
-    overflow-y: visible;
   }
 
   /* US-20 AC6: the bottom tab bar, as on the iPhone. Sticky at the widget's
@@ -248,7 +243,28 @@ input[type="number"] {
   position: sticky;
   top: 24px;
   max-height: calc(100vh - 48px);
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* US-62: the plan column's header stays put; only the body under it scrolls.
+   The body always has its scrollbar (overflow-y: scroll, as scrollbar-gutter is
+   not kept by WebKit until it overflows), so the plan never narrows when it grows
+   past the screen; overlay scrollbars (a Mac trackpad) take no room at all. The
+   header keeps the same room where the browser honours scrollbar-gutter. */
+@media (min-width: 769px) {
+  .health-tool-right .health-results-panel {
+    min-height: 0;
+  }
+  .health-tool-right .hr-col-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: scroll;
+  }
+  .health-tool-right .hr-col-header {
+    overflow-y: hidden;
+    scrollbar-gutter: stable;
+  }
 }
 
 /* Input Panel */
@@ -421,6 +437,11 @@ input[type="number"] {
   background-size: 12px 8px;
   padding-right: 36px;
 }
+/* The 80px dose-unit select: a compact inset, so "capsules" is not clipped. */
+.health-tool select.supplement-unit:not([multiple]):not([size]) {
+  background-position: right 6px center;
+  padding-right: 20px;
+}
 
 .health-tool .health-field input:focus,
 .health-tool .health-field select:focus {
@@ -500,15 +521,9 @@ input[type="number"] {
 }
 
 .field-hint-attention--centered {
-  margin-top: 0;
-  text-align: center;
-}
-/* Stage-2 helper sits right under the birth-info wrapper which has no
-   bottom padding, so it needs explicit breathing room. The stage-1
-   helper sits under .sex-height-row whose input fields already provide
-   visual whitespace, so it's left at margin-top: 0. */
-.prefill-fields-wrapper + .field-hint-attention--centered {
+  /* Clear of the why-line above it, at every stage and width. */
   margin-top: 20px;
+  text-align: center;
 }
 
 /* US-62 AC13: height and weight, two equal boxes side by side, phone and desktop. */
@@ -516,6 +531,10 @@ input[type="number"] {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
+}
+/* The row is one field: 16px to the next question, as between every field. */
+.sex-height-row > .health-field {
+  margin-bottom: 0;
 }
 
 @media (min-width: 768px) {
@@ -560,6 +579,12 @@ input[type="number"] {
 
 .profile-step + .health-field {
   margin-top: 16px;
+}
+
+/* Starting Info's vitals follow its profile questions 16px down, as every
+   field does (the section's own 9px bottom padding + 7px). */
+.section-card > .health-section + .stage-reveal {
+  margin-top: 7px;
 }
 
 /* A drug name and its dose. The name keeps room for its longest label
@@ -648,12 +673,25 @@ input[type="number"] {
   min-height: 100%;
 }
 
+/* One rhythm down the plan: 20px between its sections (the tiles, the storage
+   card, the PDF card, each suggestions group, the footer), as between column
+   1's cards (8px gap + 12px card margin). The gap is the only spacing, so the
+   sections' own margins go; the tiles keep their tighter 12px inside. */
+.hr-col-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.health-results-panel > .hr-col-body > * {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
 .plan-empty-preview {
   display: flex;
   flex-direction: column;
   gap: 16px;
   flex: 1;
-  margin-bottom: 12px;
 }
 
 .plan-empty-intro {
@@ -840,7 +878,6 @@ input[type="number"] {
 
 /* Suggestions */
 .suggestions-group {
-  margin-top: 15px;
   margin-bottom: 20px;
 }
 
@@ -1221,7 +1258,6 @@ input[type="number"] {
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   padding: 20px;
-  margin-bottom: 16px;
 }
 
 .email-capture-row {
@@ -1308,7 +1344,7 @@ input[type="number"] {
    styles bare `a` inside the widget; the doubled class outranks it. */
 .hr-guide-card.hr-guide-card {
   display: block;
-  margin: 16px 0 4px;
+  margin: 0;
   padding: 12px 16px;
   background: #fff;
   border: 1px solid var(--color-gray-border);
@@ -1334,7 +1370,6 @@ input[type="number"] {
   display: flex;
   justify-content: center;
   gap: 12px;
-  margin: 8px 0 16px;
 }
 
 .action-btn {
@@ -1769,7 +1804,6 @@ input[type="number"] {
 
 .privacy-notice-link {
   text-align: center;
-  margin-top: 10px;
 }
 
 .privacy-notice-link a {
@@ -1939,7 +1973,7 @@ input[type="number"] {
 }
 .hr-skeleton-content {
   display: grid;
-  grid-template-columns: 5fr 6fr;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
   gap: 32px;
   align-items: start;
 }
@@ -1949,11 +1983,12 @@ input[type="number"] {
   gap: 16px;
   min-width: 0;
 }
-/* Column header placeholder (matches .hr-col-header: 20px tall + 12px margin). */
+/* Column header placeholder: 32px with its margins, plus the 16px gap, is the
+   real header's 28px + 12px margin + 8px gap, so the cards do not jump. */
 .hr-skel-colhead {
   height: 20px;
   width: 160px;
-  margin: 0 4px 8px;
+  margin: 4px 4px 8px;
 }
 /* Card placeholder (matches .section-card: white frame, 12px radius, 24px pad). */
 .hr-skel-card {
@@ -1962,7 +1997,7 @@ input[type="number"] {
   padding: 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
-.hr-skel-card + .hr-skel-card { margin-top: -4px; }
+.hr-skel-card + .hr-skel-card { margin-top: 4px; } /* 20px apart, as the cards */
 /* Generic shimmer line/block inside a card. */
 .hr-skel-line {
   height: 14px;
@@ -1999,7 +2034,7 @@ input[type="number"] {
 
 /* ≥1200px: 3-column (input / results / chat), matching .health-tool-content. */
 @media (min-width: 1200px) {
-  .hr-skeleton-content { grid-template-columns: 1fr 1fr 0.95fr; }
+  .hr-skeleton-content { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.95fr); }
 }
 /* Mobile-only tab-bar strip (shown only inside the ≤768px block below). */
 .hr-skel-tabbar { display: none; }
@@ -3953,6 +3988,10 @@ input[type="number"] {
   gap: 12px;
   padding: 0 4px;
   margin-bottom: 12px;
+  /* All three headers one height, the height of the tallest thing any holds
+     (column 1's Sign in pill, the plan's Save as PDF), so every column's first
+     card starts on one line. */
+  min-height: 28px;
 }
 .hr-col-title {
   font-size: 12px;
@@ -3963,6 +4002,12 @@ input[type="number"] {
   display: flex;
   align-items: center;
   gap: 10px;
+  /* One line: a wrapped title would make its header taller than the others. */
+  white-space: nowrap;
+}
+/* Narrow three-column widths: tighter tracking keeps the plan's title on one line. */
+@media (min-width: 1200px) and (max-width: 1439px) {
+  .hr-col-title { letter-spacing: 0.4px; }
 }
 .hr-col-step {
   display: inline-flex;
@@ -4036,7 +4081,7 @@ input[type="number"] {
 /* ─── 3-column layout (≥1200px viewport) ─────────────────────── */
 @media (min-width: 1200px) {
   .health-tool-content {
-    grid-template-columns: 1fr 1fr 0.95fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.95fr);
   }
 }
 
@@ -4044,7 +4089,6 @@ input[type="number"] {
   position: sticky;
   top: 24px;
   max-height: calc(100vh - 48px);
-  overflow-y: auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -4107,10 +4151,6 @@ input[type="number"] {
 
   .chat-embed .chat-header-sub {
     display: none;
-  }
-
-  .plan-empty-preview {
-    margin-bottom: 0;
   }
 }
 
@@ -5341,9 +5381,13 @@ input[type="number"] {
 .md-table[hidden] {
   display: none !important;
 }
-.section-card--bt .md-section,
-.section-card--bt .md-table-back {
-  margin: 12px 12px 0;
+/* The rows' inset is every card's: on a phone the card's own 12px padding
+   (forced on every card there), on desktop, where this card has none, 24px. */
+@media (min-width: 769px) {
+  .section-card--bt .md-section,
+  .section-card--bt .md-table-back {
+    margin: 24px 24px 4px;
+  }
 }
 .md-section-title {
   margin-bottom: 4px;

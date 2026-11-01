@@ -19,6 +19,7 @@ import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveDocuments, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
 import { MIRROR_KEY } from '../lib/storage';
 import { openAboutYou } from '../testing/health-tool-harness';
+import { formatShortDate } from '../lib/constants';
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -262,6 +263,27 @@ describe('US-62 AC13: a reload resumes at the first missing answer', () => {
     await waitFor(() => expect(sexQuestion(view)).toBeTruthy());
     expect(fullForm(view)).toBe(false);
     expect(q(view, '.health-field.field-attention .sex-toggle')).toBeTruthy();
+  });
+
+  it('US-62 AC13 (adversary R3, 2026-11-02): a saved weight from another day in the onboarding box says when it was saved; today\'s says nothing', async () => {
+    await saveChangedMeasurements({ heightCm: 170 }, {});
+    await addMeasurement('weight', 90, '2024-03-03');
+    await flushRoadmapStore();
+    const view = await open();
+    const box = await waitFor(() => { const b = q(view, '#weightKg') as HTMLInputElement; expect(b).toBeTruthy(); return b; });
+    expect(box.value).toBe('90');
+    const line = () => box.closest('.health-field')!.querySelector('.previous-reference')?.textContent;
+    expect(line()).toBe(`Saved ${formatShortDate('2024-03-03')}`);
+    // Typing a new weight swaps it for the usual reference to the saved one.
+    fireEvent.change(box, { target: { value: '88' } });
+    expect(line()).toBe(`Previous: 90 kg · ${formatShortDate('2024-03-03')}`);
+    view.unmount();
+
+    await addMeasurement('weight', 89, TODAY);
+    await flushRoadmapStore();
+    const again = await open();
+    const today = await waitFor(() => { const b = q(again, '#weightKg') as HTMLInputElement; expect(b?.value).toBe('89'); return b; });
+    expect(today.closest('.health-field')!.querySelector('.previous-reference')).toBeNull();
   });
 });
 
@@ -633,5 +655,60 @@ describe('US-62 AC13 review fixes, round 3 (PR 421)', () => {
     await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
     await waitFor(() => expect(q(view, '.prefill-summary-wrapper.visible')).toBeNull(), { timeout: 3000 });
     expect(named('onboarding_step')).toEqual([]);
+  });
+});
+
+describe('US-62 AC12 (adversary R5, 2026-11-02): About you rows hold a missing answer open', () => {
+  /** The tool with a complete record's About you rows left closed. */
+  async function rows() {
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(q(view, '#about-height')).toBeTruthy());
+    return view;
+  }
+  const editor = (view: RenderResult, key: string) => q(view, `[data-about="${key}"]`) as HTMLElement | null;
+  const done = (view: RenderResult, key: string) => fireEvent.click(within(editor(view, key)!).getByRole('button', { name: 'Done' }));
+
+  it('a refused height keeps its editor open through Done; a good one gives the row back', async () => {
+    await completeRecord();
+    const view = await rows();
+    fireEvent.click(q(view, '#about-height')!);
+    type(q(view, '#heightCm'), '300');
+    expect(view.getByText(/Height must be/)).toBeTruthy();
+    done(view, 'height');
+    expect(editor(view, 'height')).not.toBeNull(); // still refused: the row cannot close
+    expect(q(view, '#about-height')).toBeNull();
+    type(q(view, '#heightCm'), '180');
+    done(view, 'height');
+    expect(editor(view, 'height')).toBeNull();
+    expect(q(view, '#about-height')!.textContent).toBe('Height180 cm');
+  });
+
+  it('an answer cleared in its editor opens itself and stays open through Done until answered again', async () => {
+    await completeRecord();
+    const view = await rows();
+    fireEvent.click(q(view, '#about-birth')!);
+    type(q(view, '#birthYear'), '');
+    leave(q(view, '#birthYear'));
+    done(view, 'birth');
+    await waitFor(() => expect(editor(view, 'birth')).not.toBeNull());
+    expect(q(view, '#about-birth')).toBeNull();
+    type(q(view, '#birthYear'), '1981');
+    leave(q(view, '#birthYear'));
+    done(view, 'birth');
+    expect(editor(view, 'birth')).toBeNull();
+    expect(q(view, '#about-birth')!.textContent).toBe('BirthMarch 1981');
+  });
+
+  it('an erase takes About you from rows back to the onboarding boxes', async () => {
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', () => {});
+    await completeRecord();
+    const view = await rows();
+    expect(q(view, '#heightCm')).toBeNull();
+    fireEvent.click(view.getByText('Delete All My Data'));
+    await waitFor(() => expect(q(view, '#heightCm')).toBeTruthy());
+    expect(q(view, '.about-row')).toBeNull();
+    expect(q(view, '#weightKg')).toBeTruthy(); // the box beside the height again
+    expect(fullForm(view)).toBe(false);
   });
 });

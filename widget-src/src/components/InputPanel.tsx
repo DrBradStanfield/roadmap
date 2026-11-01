@@ -750,6 +750,10 @@ export function InputPanel({
         {box && previous && inputs[field] !== undefined && (
           <span className="previous-reference">{previousReference(shown, previous.recordedAt)}</span>
         )}
+        {/* The box shows a saved value of any age: say when it was saved, unless today. */}
+        {box && previous && inputs[field] === undefined && rawInputs[field] === undefined && dayOf(previous.recordedAt) !== localDay(new Date()) && (
+          <span className="previous-reference">Saved {formatShortDate(previous.recordedAt)}</span>
+        )}
         {(unreadable[field] || errors[field]) && (
           <span className="error-message">{unreadable[field] ? 'Enter a number' : errors[field]}</span>
         )}
@@ -2389,7 +2393,6 @@ export function InputPanel({
       {healthDocuments && healthDocuments.length > 0 && (
         <HealthRecordsSection documents={healthDocuments} onDeleted={onDocumentDeleted} />
       )}
-      {/* US-09 AC5: once a value exists: height and weight, or a saved blood test. */}
     </div>
   );
 }

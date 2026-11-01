@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assertMatrixLayout, assertRows, assertTabBar } from './webkit-verify.mjs';
+import { assertDesktopColumns, assertMatrixLayout, assertRows, assertTabBar } from './webkit-verify.mjs';
 
 describe('US-20: WebKit deployment gate', () => {
   const values = ['35', '36', '2.4'].map(text => ({ text, width: 72, height: 40, numberWidth: 20, numberHeight: 18, visible: true, boxSizing: 'border-box' }));
@@ -52,5 +52,33 @@ describe('US-62 AC8: WebKit rows gate', () => {
     expect(() => assertRows({ ...valid, rows: [{ ...valid.rows[0], value: '36' }] })).toThrow('previous');
     expect(() => assertRows({ ...valid, rows: valid.rows.slice(1) })).toThrow('missing');
     expect(() => assertRows({ ...valid, rows: [...valid.rows, { label: 'ApoB', value: null, right: 500, height: 58 }] })).toThrow('off screen');
+  });
+});
+
+describe('US-62 AC14: WebKit desktop columns gate', () => {
+  const valid = {
+    heads: [28, 28, 28], firstCardTops: [322.4, 322.4, 322.4], headerInScroller: false, scrolled: 4900,
+    headerTopBefore: 274, headerTopAfter: 274, bodyWidthBefore: 433, bodyWidthAfter: 433, sectionGaps: [20, 20, 20],
+    select: { appearance: 'none', paddingRight: 36, backgroundImage: 'url("data:image/svg+xml,…")' }, unitSelect: { paddingRight: 20 },
+  };
+  it('passes aligned columns, a still header, a steady body, even gaps and drawn chevrons', () => {
+    expect(() => assertDesktopColumns(valid)).not.toThrow();
+  });
+  it('fails each regression Brad reported', () => {
+    for (const [change, message] of [
+      [{ heads: [25, 20, 38] }, 'headers differ'],
+      [{ firstCardTops: [319, 314, 314] }, 'do not line up'],
+      [{ headerInScroller: true }, 'inside its scroller'],
+      [{ scrolled: 0 }, 'did not scroll'],
+      [{ headerTopAfter: 120 }, 'header moved'],
+      [{ bodyWidthAfter: 413 }, 'narrowed'],
+      [{ sectionGaps: [8, 20, 45] }, 'gaps differ'],
+      [{ select: { ...valid.select, appearance: 'auto' } }, 'native arrow'],
+      [{ select: { ...valid.select, paddingRight: 12 } }, 'no room'],
+      [{ select: { ...valid.select, backgroundImage: 'none' } }, 'lost its chevron'],
+      [{ unitSelect: { paddingRight: 36 } }, 'clips its text'],
+    ] as const) {
+      expect(() => assertDesktopColumns({ ...valid, ...change })).toThrow(message);
+    }
   });
 });

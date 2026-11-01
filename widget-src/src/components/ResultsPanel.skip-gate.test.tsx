@@ -518,3 +518,25 @@ describe('US-07 AC6 — a known minor gets Save as PDF and no email box', () => 
     expect(view.getAllByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL }).length).toBeGreaterThan(0);
   });
 });
+
+describe('US-62 AC14 (Brad 2026-11-02): the plan column, top to bottom', () => {
+  it('the snapshot tiles lead, then the storage card, then the PDF box, then the suggestions; the header sits above the scroller', () => {
+    mocks.skip.value = false;
+    const syncControl = ({ hasData }: { hasData: boolean }) => (hasData ? <div className="hr-sync">Where do you want to keep your health record?</div> : null);
+    const view = showPlan({ syncControl });
+    const at = (selector: string) => {
+      const el = view.container.querySelector(selector);
+      expect(el, selector).not.toBeNull();
+      return el!;
+    };
+    const order = ['.quick-stats', '.hr-sync', '.email-capture', '.suggestions-section'].map(at);
+    for (let i = 1; i < order.length; i++) {
+      expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+    // Siblings in the one body, so the column's single gap spaces them alike.
+    const body = at('.health-results-panel > .hr-col-body');
+    for (const el of order) expect(el.parentElement).toBe(body);
+    // The header is the body's sibling, outside the scroller, so it never scrolls away.
+    expect(body.contains(at('.health-results-panel > .hr-col-header'))).toBe(false);
+  });
+});
