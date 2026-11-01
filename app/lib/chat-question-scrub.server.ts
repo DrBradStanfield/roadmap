@@ -63,6 +63,31 @@ export function backstop(text: string): string {
     .replace(/#\d{4,}\b/g, '[id]');
 }
 
+/**
+ * What the code pass cannot replace but can see (US-15 AC44e). A social
+ * handle: `@` then a letter (any script) or `_`, not after a word, a dot or an
+ * `@`, so an email or a dose like "@5000IU" is not one. A name the person gave:
+ * "my name is", "my name's" or "call me" then a capital, read in the QUESTION, since the model's answer may
+ * lower-case the name and `isScrubOf` would still accept it. Each needs a
+ * `[name]` after the same phrase in the kept copy, or the copy is skipped.
+ */
+const HANDLE = /(?<![\w.@])@[\p{L}_]/u;
+const INTRO = /\b(?:my\s+name\s+is|my\s+name['’]s|call\s+me)[\s:,]+["'“‘]?(\S)/gi;
+/** Each intro's first character after the phrase, in order. */
+const intros = (text: string) => [...text.matchAll(INTRO)].map((m) => text.slice(m.index + m[0].length - 1));
+/**
+ * Pair the question's intros with the copy's in order (swaps never reorder);
+ * a capital in the question needs `[name]` in the copy. A count that differs
+ * is doubt, so a skip.
+ */
+function leavesName(question: string, kept: string): boolean {
+  const asked = intros(question);
+  const saved = intros(kept);
+  if (asked.length !== saved.length) return true;
+  return asked.some((rest, i) => /^\p{Lu}/u.test(rest) && !/^\[name\]/i.test(saved[i]));
+}
+const leavesIdentity = (question: string, kept: string) => HANDLE.test(kept) || leavesName(question, kept);
+
 const collapse = (text: string) => text.replace(/\s+/g, ' ').trim();
 const MONTH = /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/i;
 /** Words that change what a question means; a placeholder never covers one. */
@@ -173,7 +198,8 @@ export async function scrubQuestion(text: string, deps: ScrubDeps = {}): Promise
     if (!parsed.success) return null;
     const scrubbed = parsed.data.scrubbed.trim();
     if (!scrubbed || !isScrubOf(question, scrubbed)) return null;
-    return backstop(scrubbed);
+    const kept = backstop(scrubbed);
+    return leavesIdentity(question, kept) ? null : kept;
   } catch {
     // A failed or timed-out call is a skip, never rethrown or logged here; the caller counts it.
     return null;
