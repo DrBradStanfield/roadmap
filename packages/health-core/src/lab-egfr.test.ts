@@ -99,7 +99,7 @@ describe('US-07 AC7: which eGFR the plan reads', () => {
     const p = plan(fileWith({ labs: [{ value: 40, day: '2026-07-01' }] }));
     expect(p.results.proteinTarget).toBe(Math.round(p.results.idealBodyWeight * 1.0));
     const protein = statTiles(p.results, { unitSystem: 'si', sex: 'female' }).find((t) => t.key === 'protein');
-    expect(protein?.status?.label).toBe('1.0g per kg IBW');
+    expect(protein?.status?.label).toBe('1.0 g per kg ideal weight');
   });
 
   it('the potassium card follows the lab eGFR: shown at 45 and over, not below', () => {

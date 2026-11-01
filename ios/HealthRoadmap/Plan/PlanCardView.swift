@@ -36,9 +36,29 @@ struct PlanCardView: View {
     }
 }
 
-/// "Do you drink alcohol?" (US-60): called at Dismiss's tap, it records the screen then
-/// and returns the save for the answer. Web twin: widget-src/src/components/AlcoholQuestion.tsx.
-typealias AlcoholQuestion = @MainActor () -> (MyData.Alcohol) -> Void
+/// The reduce-alcohol card's question (US-60 AC3). Unanswered, it asks "Do you drink
+/// alcohol?"; a drinker is asked "Do you still drink alcohol?"; a non-drinker has no card,
+/// so no question. `ask`, called at Dismiss's tap, records the screen then and returns the
+/// save for the answer. Web twin: widget-src/src/components/AlcoholQuestion.tsx.
+struct AlcoholQuestion {
+    let drinks: Bool
+    let ask: @MainActor () -> (MyData.Alcohol) -> Void
+
+    /// Nil for a non-drinker (Brad 2026-11-01: a drinker can still say they've stopped).
+    init?(answered: MyData.Alcohol?, ask: @escaping @MainActor () -> (MyData.Alcohol) -> Void) {
+        guard answered != .noDrinking else { return nil }
+        drinks = answered == .drinks
+        self.ask = ask
+    }
+
+    var title: String { drinks ? "Do you still drink alcohol?" : "Do you drink alcohol?" }
+    /// The dialog's buttons; a nil answer is "I still drink", which saves nothing.
+    var choices: [(label: String, answer: MyData.Alcohol?)] {
+        drinks ? [("I've stopped", .noDrinking), ("I still drink", nil)] : MyData.Alcohol.allCases.map { ($0.label, $0) }
+    }
+    /// Shown after "I still drink".
+    static let stillDrinks = "This stays on your plan because the advice applies to anyone who drinks. You can change your answer in About you."
+}
 
 /// A suggestion's title and two lines; a tap opens everything the web shows:
 /// the full text, ingredients, guideline tags, the reason and the references.
@@ -50,6 +70,8 @@ private struct SuggestionRow: View {
     @State private var expanded = false
     /// The open question's save, so its dialog's arrow points at this Dismiss.
     @State private var answer: ((MyData.Alcohol) -> Void)?
+    /// "I still drink"'s line, shown in an alert once the dialog closes.
+    @State private var stillDrinks: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -91,15 +113,20 @@ private struct SuggestionRow: View {
             }
 
             if let dismiss {
-                Button("Dismiss") { answer = dismiss() }
+                Button("Dismiss") { answer = dismiss.ask() }
                     .font(.subheadline.weight(.medium))
                     .buttonStyle(.bordered)
                     .controlSize(.small)
-                    .confirmationDialog("Do you drink alcohol?", isPresented: Binding(get: { answer != nil }, set: { if !$0 { answer = nil } }), titleVisibility: .visible, presenting: answer) { save in
-                        ForEach(MyData.Alcohol.allCases, id: \.self) { choice in Button(choice.label) { save(choice) } }
+                    .confirmationDialog(dismiss.title, isPresented: Binding(get: { answer != nil }, set: { if !$0 { answer = nil } }), titleVisibility: .visible, presenting: answer) { save in
+                        ForEach(dismiss.choices, id: \.label) { choice in
+                            Button(choice.label) {
+                                if let answer = choice.answer { save(answer) } else { stillDrinks = AlcoholQuestion.stillDrinks }
+                            }
+                        }
                     } message: { _ in
                         Text("Your answer is kept in your record, so your plan follows it on every device. You can change it in My data, under About you.")
                     }
+                    .messageAlert("", $stillDrinks)
                     .padding(.leading, showsIcon ? 54 : 0)
                     .accessibilityHint("Asks whether you drink alcohol")
                     .accessibilityIdentifier("plan.dismissAlcohol")

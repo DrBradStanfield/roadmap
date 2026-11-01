@@ -1281,8 +1281,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     sex: inputs.sex,
     showEmailCapture: emailCaptureActive,
     formStage,
-    // US-60 AC3: the Dismiss shows only while the question is unanswered.
-    onAlcoholAnswer: inputs.alcohol === undefined ? handleAlcoholAnswer : undefined,
+    // US-60 AC3: the Dismiss asks the unanswered and drinkers; a non-drinker has no card.
+    alcoholQuestion: { answer: inputs.alcohol, onAnswer: handleAlcoholAnswer },
   };
 
   // The chat reads its context as each message is sent (useChatState), through

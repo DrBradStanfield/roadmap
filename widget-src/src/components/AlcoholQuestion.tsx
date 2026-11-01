@@ -15,20 +15,27 @@ export const ALCOHOL_OPTIONS: ReadonlyArray<{ value: AlcoholAnswer | ''; label: 
   { value: 'drinks', label: 'I drink' },
 ];
 
+/** US-60 AC3: the card's question, with the answer the profile holds now. */
+export type AlcoholQuestion = { answer?: AlcoholAnswer; onAnswer: (answer: AlcoholAnswer) => void };
+
+/** Shown in the dialog's place after "I still drink", which saves nothing. */
+export const STILL_DRINK_LINE = 'This stays on your plan because the advice applies to anyone who drinks. You can change your answer in About you.';
+
 /**
- * The Dismiss for `reduce-alcohol` (US-60 AC3), or null: `onAnswer` is absent
- * once the question is answered, so "I drink" leaves the card with no Dismiss.
- * The answer goes into the form on the click and saves through the profile's
+ * The Dismiss for `reduce-alcohol` (US-60 AC3), or null. Unanswered, it asks
+ * "Do you drink alcohol?"; a drinker is asked "Do you still drink alcohol?".
+ * An answer goes into the form on the click and saves through the profile's
  * debounced autosave, which keeps the erase the screen showed then (US-16 AC2a);
- * "I don't drink" takes the card off the plan at once.
+ * "I don't drink" and "I've stopped" take the card off the plan at once.
  */
-export function alcoholDismiss(suggestion: Suggestion, onAnswer?: (answer: AlcoholAnswer) => void) {
-  return suggestion.id === REDUCE_ALCOHOL_ID && onAnswer ? <AlcoholDismiss onChoose={onAnswer} /> : null;
+export function alcoholDismiss(suggestion: Suggestion, question?: AlcoholQuestion) {
+  return suggestion.id === REDUCE_ALCOHOL_ID && question ? <AlcoholDismiss drinks={question.answer === 'drinks'} onChoose={question.onAnswer} /> : null;
 }
 
 /** The Dismiss button and its question. */
-function AlcoholDismiss({ onChoose }: { onChoose: (answer: AlcoholAnswer) => void }) {
-  const [open, setOpen] = useState(false);
+function AlcoholDismiss({ drinks, onChoose }: { drinks: boolean; onChoose: (answer: AlcoholAnswer) => void }) {
+  // 'stays': "I still drink" was chosen, and the dialog says why the card stays.
+  const [open, setOpen] = useState<false | 'ask' | 'stays'>(false);
   const firstRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -43,7 +50,7 @@ function AlcoholDismiss({ onChoose }: { onChoose: (answer: AlcoholAnswer) => voi
 
   return (
     <>
-      <button type="button" className="suggestion-dismiss no-print" onClick={(e) => { e.stopPropagation(); setOpen(true); }}>
+      <button type="button" className="suggestion-dismiss no-print" onClick={(e) => { e.stopPropagation(); setOpen('ask'); }}>
         Dismiss
       </button>
       {/* Portaled: the plan card is transformed on hover and as it enters, and
@@ -53,12 +60,30 @@ function AlcoholDismiss({ onChoose }: { onChoose: (answer: AlcoholAnswer) => voi
         <div className="upload-modal-backdrop no-print" data-clarity-mask="true"
           onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
           <div className="upload-modal alcohol-dialog" role="dialog" aria-modal="true" aria-labelledby="alcohol-dialog-title">
-            <h3 id="alcohol-dialog-title" className="alcohol-dialog-title">Do you drink alcohol?</h3>
-            <div className="alcohol-dialog-actions">
-              <button ref={firstRef} type="button" className="upload-btn-primary" onClick={() => choose('none')}>I don't drink</button>
-              <button type="button" className="upload-btn-primary" onClick={() => choose('drinks')}>I drink</button>
-            </div>
-            <button type="button" className="upload-connect-skip" onClick={() => setOpen(false)}>Cancel</button>
+            {open === 'stays' ? (
+              <>
+                <p id="alcohol-dialog-title" className="alcohol-dialog-note">{STILL_DRINK_LINE}</p>
+                <button ref={firstRef} type="button" className="upload-btn-primary" onClick={() => setOpen(false)}>OK</button>
+              </>
+            ) : (
+              <>
+                <h3 id="alcohol-dialog-title" className="alcohol-dialog-title">{drinks ? 'Do you still drink alcohol?' : 'Do you drink alcohol?'}</h3>
+                <div className="alcohol-dialog-actions">
+                  {drinks ? (
+                    <>
+                      <button ref={firstRef} type="button" className="upload-btn-primary" onClick={() => choose('none')}>I've stopped</button>
+                      <button type="button" className="upload-btn-primary" onClick={() => setOpen('stays')}>I still drink</button>
+                    </>
+                  ) : (
+                    <>
+                      <button ref={firstRef} type="button" className="upload-btn-primary" onClick={() => choose('none')}>I don't drink</button>
+                      <button type="button" className="upload-btn-primary" onClick={() => choose('drinks')}>I drink</button>
+                    </>
+                  )}
+                </div>
+                <button type="button" className="upload-connect-skip" onClick={() => setOpen(false)}>Cancel</button>
+              </>
+            )}
           </div>
         </div>,
         document.body,

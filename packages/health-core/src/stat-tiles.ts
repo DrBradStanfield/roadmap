@@ -122,7 +122,7 @@ export function statTiles(results: HealthResults, { unitSystem, unitOverrides, s
   }
   if (adult) {
     tiles.push({
-      key: 'ibw', label: 'Ideal Body Weight (IBW)',
+      key: 'ibw', label: 'Ideal Body Weight',
       value: formatDisplayValue('weight', results.idealBodyWeight, usFor('weight')), unit: getDisplayLabel('weight', usFor('weight')),
       // Height reads in the plan's units: it has no per-test toggle.
       // No tone: a fact, not a grade, so neutral gray (Brad 2026-10-31).
@@ -132,7 +132,7 @@ export function statTiles(results: HealthResults, { unitSystem, unitOverrides, s
     const rate = getProteinRate(results.eGFR);
     tiles.push({
       key: 'protein', label: 'Protein Target', value: String(results.proteinTarget), unit: 'g/day',
-      status: { label: `${rate.toFixed(1)}g per kg IBW` },
+      status: { label: `${rate.toFixed(1)} g per kg ideal weight` },
       evidence: getProteinEvidence(results.idealBodyWeight, rate, results.eGFR),
     });
   }
