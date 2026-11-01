@@ -133,6 +133,22 @@ export interface ZipEntryBytes {
 
 /** Skipped members a ZIP names one by one; past these, one count per reason (AC5b). */
 const MAX_SKIPPED_ROWS = 20;
+/** Members a ZIP may list at all: parsing the directory costs CPU per entry, before any inflate (AC5b). */
+export const MAX_ZIP_ENTRIES = 1_000;
+const CENTRAL_HEADER = Buffer.from([0x50, 0x4b, 0x01, 0x02]);
+
+/**
+ * Whether a ZIP lists more than `limit` members, by counting central-directory
+ * signatures in the bytes. JSZip parses every record it finds whatever count the
+ * directory declares, and each record starts with this signature, so the count
+ * can run high (the signature inside compressed data) but never low.
+ */
+export function zipHasOver(bytes: Uint8Array, limit: number): boolean {
+  const buf = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let n = 0;
+  for (let at = buf.indexOf(CENTRAL_HEADER); at !== -1; at = buf.indexOf(CENTRAL_HEADER, at + 4)) if (++n > limit) return true;
+  return false;
+}
 
 /**
  * Open a ZIP under the caps (AC5): it opens at most `MAX_IMPORT_FILES_PER_CALL`
@@ -429,13 +445,28 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
             results[i] = fail(unit.name, 'failed', 'too_large');
             return;
           }
-          let opened: Awaited<ReturnType<typeof unzip>>;
+          if (zipHasOver(bytes, MAX_ZIP_ENTRIES)) {
+            results[i] = fail(unit.name, 'failed', 'too_many');
+            return;
+          }
+          let opened: Awaited<ReturnType<typeof unzip>> | 'time' | 'spent';
           try {
-            const turn = zipTurn.then(() => unzip(bytes, zipBudget));
+            // A ZIP whose turn comes after the deadline or with the budget spent is not parsed at all;
+            // asked for again alone, it gets the whole budget.
+            const turn = zipTurn.then(async (): Promise<typeof opened> => (signal.aborted ? 'time' : zipBudget.left <= 0 ? 'spent' : unzip(bytes, zipBudget)));
             zipTurn = turn.catch(() => undefined);
             opened = await turn;
           } catch {
             results[i] = fail(unit.name, 'failed', 'unreadable');
+            return;
+          }
+          if (opened === 'time') {
+            results[i] = fail(unit.name, 'skipped', 'time');
+            return;
+          }
+          if (opened === 'spent') {
+            results[i] = fail(unit.name, 'skipped', 'too_many');
+            if (!remaining.includes(unit.name)) remaining.push(unit.name);
             return;
           }
           // A member is named `zip/member`, as the website's upload names it (US-12 AC9): unique in a

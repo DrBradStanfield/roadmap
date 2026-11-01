@@ -19,10 +19,12 @@ import {
   hostedImporter,
   MAX_IMPORT_FILE_BYTES,
   MAX_IMPORT_ZIP_BYTES,
+  MAX_ZIP_ENTRIES,
   MCP_IMPORT_BUDGET_MS,
   setImportSeams,
   sniff,
   unzip,
+  zipHasOver,
 } from './mcp-import.server';
 import { ExtractionStopError } from './anthropic.server';
 import { resourceUrl } from './mcp-config.server';
@@ -862,9 +864,11 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
     const bundle = await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline());
     if (!('files' in bundle)) throw new Error(bundle.refusal);
     expect(bundle.files.filter((f) => f.reason === 'too_large')).toHaveLength(MAX_IMPORT_FILES_PER_CALL);
-    expect(bundle.files.filter((f) => f.reason === 'too_many')).toHaveLength(10);
-    expect(bundle.remaining.length).toBeGreaterThan(0);
-    expect(bundle.remaining.every((n) => ['a.zip', 'b.zip', 'c.zip'].includes(n))).toBe(true);
+    // Two ZIPs take ten each; the third reaches its turn with nothing left and is one row, unparsed.
+    const waited = bundle.files.filter((f) => f.reason === 'too_many');
+    expect(waited).toHaveLength(1);
+    expect(['a.zip', 'b.zip', 'c.zip']).toContain(waited[0].name);
+    expect(bundle.remaining).toEqual([waited[0].name]);
     expect(seam).not.toHaveBeenCalled();
   });
 
@@ -880,7 +884,7 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
     if (!('files' in first)) throw new Error(first.refusal);
     // One ZIP whole, the other cut at eight: never ten and ten, which would defer both.
     const perZip = (bundle: typeof first, zipName: string) => bundle.files.filter((f) => f.status === 'extracted' && f.name.startsWith(`${zipName}/`)).length;
-    expect([perZip(first, 'a.zip'), perZip(first, 'b.zip')].sort()).toEqual([12, 8]);
+    expect([perZip(first, 'a.zip'), perZip(first, 'b.zip')].sort((x, y) => y - x)).toEqual([12, 8]);
     expect(first.remaining).toHaveLength(1);
     resetMcpMemory();
     const again = await surfaceOver(new MemoryAdapter(cloud)).extract({ fileNames: first.remaining }, file, NOW, deadline());
@@ -889,9 +893,42 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
     expect(again.remaining).toEqual([]);
   });
 
-  it('a ZIP listing thousands of members answers with twenty named and one count row per reason (AC5b)', async () => {
+  it('a ZIP that reaches its turn with the budget spent is not parsed: one row, and it goes to remaining (AC5b)', async () => {
+    const cloud = new MemoryCloud();
+    for (const zipName of ['a.zip', 'b.zip', 'c.zip']) {
+      const zip = new JSZip();
+      for (let i = 0; i < MAX_IMPORT_FILES_PER_CALL; i++) zip.file(`m${String(i).padStart(2, '0')}.pdf`, new Uint8Array([...PDF, zipName.charCodeAt(0), i]));
+      cloud.docs.set(zipName, new Blob([new Uint8Array(await zip.generateAsync({ type: 'uint8array' }))]));
+    }
+    setImportSeams({ extract: async () => letter });
+    const bundle = await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline());
+    if (!('files' in bundle)) throw new Error(bundle.refusal);
+    expect(bundle.files.filter((f) => f.status === 'extracted')).toHaveLength(MAX_IMPORT_FILES_PER_CALL);
+    const waited = bundle.files.filter((f) => f.status === 'skipped');
+    expect(waited.map((f) => f.reason)).toEqual(['too_many', 'too_many']);
+    expect(waited.every((f) => ['a.zip', 'b.zip', 'c.zip'].includes(f.name))).toBe(true);
+    expect([...bundle.remaining].sort()).toEqual(waited.map((f) => f.name).sort());
+  });
+
+  it('a ZIP listing more than MAX_ZIP_ENTRIES members is refused before it is parsed (AC5b; adversary R1)', async () => {
+    const zipWith = async (n: number) => {
+      const zip = new JSZip();
+      for (let i = 0; i < n; i++) zip.file(`junk${i}`, '');
+      return new Uint8Array(await zip.generateAsync({ type: 'uint8array' }));
+    };
+    expect(zipHasOver(await zipWith(MAX_ZIP_ENTRIES), MAX_ZIP_ENTRIES)).toBe(false);
+    const cloud = new MemoryCloud();
+    cloud.docs.set('huge.zip', new Blob([await zipWith(MAX_ZIP_ENTRIES + 1)]));
+    const load = vi.spyOn(JSZip, 'loadAsync');
+    const bundle = await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline());
+    expect('files' in bundle && bundle.files).toEqual([{ name: 'huge.zip', status: 'failed', reason: 'too_many' }]);
+    expect(load).not.toHaveBeenCalled();
+    load.mockRestore();
+  });
+
+  it('a ZIP listing hundreds of members answers with twenty named and one count row per reason (AC5b)', async () => {
     const zip = new JSZip();
-    for (let i = 0; i < 2000; i++) zip.file(`m${String(i).padStart(4, '0')}.pdf`, new Uint8Array([...PDF, i & 0xff, i >> 8]));
+    for (let i = 0; i < 900; i++) zip.file(`m${String(i).padStart(4, '0')}.pdf`, new Uint8Array([...PDF, i & 0xff, i >> 8]));
     const cloud = new MemoryCloud();
     cloud.docs.set('many.zip', new Blob([new Uint8Array(await zip.generateAsync({ type: 'uint8array' }))]));
     setImportSeams({ extract: async () => letter });
@@ -899,7 +936,7 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
     if (!('files' in bundle)) throw new Error(bundle.refusal);
     const skipped = bundle.files.filter((f) => f.status === 'skipped');
     expect(skipped).toHaveLength(21);
-    expect(skipped.at(-1)).toEqual({ name: zipMemberName('many.zip', '(and 1960 more)'), status: 'skipped', reason: 'too_many' });
+    expect(skipped.at(-1)).toEqual({ name: zipMemberName('many.zip', '(and 860 more)'), status: 'skipped', reason: 'too_many' });
     // Its own twenty-plus is not a deferral: asking again opens the same twenty.
     expect(bundle.remaining).toEqual([]);
   });
