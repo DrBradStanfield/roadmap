@@ -98,9 +98,11 @@ can see, and the bot sees whatever `@everyone` may. A channel created later inhe
 - **Nothing private is posted.** No customer or tester details, no health values, no secrets,
   no claude_business private content (chatbot docs, customer-service mail, business plans).
   The tool's checks catch secrets and emails, not judgement: the session decides the rest.
-- **Reply only during a turn.** No background loop and no scheduled poll. One read per check,
-  and at most three posts per check; the tool's 10-per-hour cap is the backstop, not the
-  target.
+- **Reply only during a turn.** No background loop and no scheduled poll, with one
+  exception: the master session (claude_business `docs/loops/dev-master/`) wakes itself
+  every 30 to 60 minutes and reads the channel on each wake (Brad 2026-11-02: "It wakes
+  itself up: agreed"). One read per check, and at most three posts per check; the tool's
+  10-per-hour cap is the backstop, not the target.
 
 ## Status posts (Brad 2026-11-01)
 
