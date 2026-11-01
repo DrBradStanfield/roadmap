@@ -24,6 +24,7 @@ import { METRIC_GUIDES, type MetricGuide } from '../../packages/health-core/src/
 import { APPLE_LOW_FROM_60, FRIEND_2022_TREADMILL, type Vo2MaxCutPoints } from '../../packages/health-core/src/vo2max-bands';
 import { calculateAge } from '../../packages/health-core/src/calculations';
 import { isAlcoholAnswer, type AlcoholAnswer } from '../../packages/health-core/src/types';
+import { readableView, unreadableNote } from '../../packages/health-core/src/readable-rows';
 import {
   cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, getDisplayLabel, LPA_UNITS, toCanonicalValue, UNIT_DEFS,
   type LpaUnit, type MetricType, type UnitSystem,
@@ -52,6 +53,9 @@ export interface MyData {
   lpaUnit: LpaUnit;
   /** How many times the record was erased, anywhere: a rise starts the phone's questions again (US-54 AC7). */
   eraseEpoch: number;
+  /** US-65: the one line saying how many entries this engine could not read and left
+   *  in the file; null when there are none. The count only, never what they hold. */
+  unreadableNote: string | null;
   profile: {
     sex: 'male' | 'female' | null;
     birthYear: number | null;
@@ -121,6 +125,12 @@ export class Refusal extends Error {
  * with a broken part, is refused: the migration would quietly empty it, and
  * the app's next save would write over whatever the file held.
  */
+/** The record as the screens read it (US-65): `readRecord`, less the rows and profile
+ *  fields this engine cannot read. They stay in the file; edits and merges take `readRecord`. */
+export function readView(text: string, now: string, deviceId: string): RoadmapFile {
+  return readableView(readRecord(text, now, deviceId)).file;
+}
+
 export function readRecord(text: string, now: string, deviceId: string): RoadmapFile {
   if (kept && kept.text === text && kept.deviceId === deviceId) return kept.file;
   const raw: unknown = JSON.parse(text);
@@ -207,13 +217,15 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
     unitSystem: system,
     lpaUnit: lpaUnitOf(file),
     eraseEpoch: file.meta.eraseEpoch ?? 0,
+    unreadableNote: unreadableNote(readableView(file).count),
     profile: {
       sex: sex ?? null,
       birthYear: birthYear ?? null,
       birthMonth: birthMonth ?? null,
-      height: heightCm === undefined ? null : formatDisplayValue('height', heightCm, system),
+      // A cleared height is a stamped null (US-10 AC9): no height, like an absent one.
+      height: heightCm == null ? null : formatDisplayValue('height', heightCm, system),
       heightUnit: getDisplayLabel('height', system),
-      feetInches: heightCm === undefined || system !== 'conventional' ? null : cmToFeetInches(heightCm),
+      feetInches: heightCm == null || system !== 'conventional' ? null : cmToFeetInches(heightCm),
       alcohol: isAlcoholAnswer(file.profile.alcohol) ? file.profile.alcohol : null,
     },
     // Blood pressure is one row, as the web's matrix shows it: the newest day's pair.
@@ -248,7 +260,7 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
         if (!Number.isInteger(heightFeet) || !Number.isInteger(heightInches) || heightFeet! < 0 || heightInches! < 0 || heightInches! > 11) {
           return { ok: false, reason: 'invalid-value', message: 'Height is whole feet and 0 to 11 inches.' };
         }
-        const shown = file.profile.heightCm === undefined ? undefined : cmToFeetInches(file.profile.heightCm);
+        const shown = typeof file.profile.heightCm === 'number' ? cmToFeetInches(file.profile.heightCm) : undefined;
         // The wheels as they opened: write nothing, so 178 cm never becomes 177.8 (adversary R4).
         if (shown?.feet === heightFeet && shown?.inches === heightInches) {
           if (Object.keys(rest).length === 0) return { ok: true, file };

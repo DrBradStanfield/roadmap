@@ -103,6 +103,11 @@ export function getInitialInputsSync(): Partial<HealthInputs> {
   return store ? store.getPrefillInputs() : {};
 }
 
+/** US-65: how many record entries this build could not read (kept unchanged, not shown). */
+export function getUnreadableCount(): number {
+  return store?.unreadableCount ?? 0;
+}
+
 // --- lead capture (Shopify surface) ---
 export function getReportEmailCaptured(): boolean {
   return store?.getReportEmailCaptured() ?? false;
