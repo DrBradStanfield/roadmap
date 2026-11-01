@@ -22,7 +22,8 @@ import { applyFormEdit, formsOf, planOf, type FormEdit, type FormsView } from '.
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
 import { METRIC_GUIDES, type MetricGuide } from '../../packages/health-core/src/metric-guides';
 import { APPLE_LOW_FROM_60, FRIEND_2022_TREADMILL, type Vo2MaxCutPoints } from '../../packages/health-core/src/vo2max-bands';
-import { calculateAge } from '../../packages/health-core/src/calculations';
+import { calculateAge, knownMinorOf } from '../../packages/health-core/src/calculations';
+import { rowTarget, type Grading, type RowTargetPlan } from '../../packages/health-core/src/row-target';
 import { isAlcoholAnswer, type AlcoholAnswer } from '../../packages/health-core/src/types';
 import { readableView, unreadableNote } from '../../packages/health-core/src/readable-rows';
 import {
@@ -45,6 +46,12 @@ export interface MyDataRow {
   trend: number[];
   /** Whether this test has its own Metric/US choice, as the web's unit chip (not Lp(a), height or blood pressure). */
   switchable: boolean;
+  /** The target the value is read against, as the web's row prints it under the name (US-62 AC9):
+   *  health-core's `rowTarget(...).bare`, such as "Optimal <2.6" or "Target <130/80"; null when none. */
+  target: string | null;
+  /** The value before the latest, in the same units: the newest earlier day's active value, the
+   *  web's "(74)" (US-62 AC8); null with fewer than two days. */
+  previous: string | null;
 }
 
 export interface MyData {
@@ -197,10 +204,17 @@ export function newRecord(now: string, deviceId: string, locale: string, timeZon
 export function myData(file: RoadmapFile, now = new Date().toISOString(), choices: UnitChoices = {}, plan: Plan | null = planOf(file, now, choices)): MyData & FormsView {
   const system = unitsOf(file);
   const current = new Map(latestActivePerMetric(file.measurements).map((row) => [row.metricType, row]));
-  const trend = trends(file, now, (metric, valueSI) => cellFromSI(metric as MetricType, valueSI, cellUnitFor(file, metric, choices)));
+  const days = activeDays(file);
+  const trend = trends(days, now, (metric, valueSI) => cellFromSI(metric as MetricType, valueSI, cellUnitFor(file, metric, choices)));
+  // What the web's rows grade against (InputPanel.tsx rowCtx): none for a known minor (US-07 AC6),
+  // and the plan's age, weight target and height once there is a plan.
+  const grading: Grading = knownMinorOf(file.profile, new Date(now)) ? null : { sex: file.profile.sex ?? undefined };
+  const basis: RowTargetPlan | null = plan && { age: plan.results.age, idealBodyWeight: plan.results.idealBodyWeight, heightCm: plan.results.heightCm };
   const row = (metric: string): MyDataRow => {
     const latest = current.get(metric);
     const shown = cellUnitFor(file, metric, choices);
+    const day = latest?.recordedAt.slice(0, 10);
+    const before = day && [...(days.get(metric)?.keys() ?? [])].filter((d) => d < day).sort().at(-1);
     return {
       metric,
       label: METRIC_LABELS[metric] ?? metric,
@@ -210,6 +224,8 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
         : null,
       trend: trend.get(metric) ?? [],
       switchable: SWITCHABLE.has(metric),
+      target: rowTarget(metric as MetricType, shown, grading, basis)?.bare ?? null,
+      previous: before ? cellText(metric as MetricType, days.get(metric)!.get(before)!, shown) : null,
     };
   };
   const { sex, birthYear, birthMonth, heightCm } = file.profile;
@@ -229,7 +245,7 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
       alcohol: isAlcoholAnswer(file.profile.alcohol) ? file.profile.alcohol : null,
     },
     // Blood pressure is one row, as the web's matrix shows it: the newest day's pair.
-    vitals: [...VITAL_METRICS.filter((metric) => metric !== 'systolic_bp' && metric !== 'diastolic_bp').map(row), pressureRow(file, trend)],
+    vitals: [...VITAL_METRICS.filter((metric) => metric !== 'systolic_bp' && metric !== 'diastolic_bp').map(row), pressureRow(file, trend, rowTarget('blood_pressure', 'si', grading, basis)?.bare ?? null)],
     // PSA is asked for under prostate screening on the web, not with the blood tests.
     bloodTests: BLOOD_TEST_METRICS.filter((metric) => metric !== 'psa').map(row),
     psa: row('psa'),
@@ -374,25 +390,24 @@ function typedRangeMessage(metric: string, typed: number, unit: CellUnit, refusa
 }
 
 /** The Vitals row for blood pressure: the newest day's pair, from the history's own pairing. */
-function pressureRow(file: RoadmapFile, trend: Map<string, number[]>): MyDataRow {
+function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: string | null): MyDataRow {
   const { label, unit, rows } = pressureHistory(file, []);
-  const newest = rows.find((row) => row.status === 'active');
+  const active = rows.filter((row) => row.status === 'active');
+  const [newest] = active;
+  // The day before's pair, both halves present: a half-pair is no reading (the web's pressureReadings).
+  const previous = active.slice(1).find((row) => row.systolic && row.diastolic);
   return {
     metric: BLOOD_PRESSURE, label, unit,
     latest: newest ? { id: newest.id, value: newest.value, day: newest.day } : null,
     trend: trend.get('systolic_bp') ?? [],
     switchable: false,
+    target,
+    previous: previous?.value ?? null,
   };
 }
 
-/** Every metric's trend in one pass: each day's active value (the slot's first, as
- *  findActiveInSlot reads it), oldest first. As Apple Health, the last 30 days (today, the
- *  phone's local day, and the 29 before), or the last seven days however old when those 30
- *  hold fewer than two (US-25 AC17f). A day after today (an import that kept another zone's
- *  offset) is left out of both, as the phone leaves out a night dated after today. */
-function trends(file: RoadmapFile, now: string, shown: (metric: string, valueSI: number) => number): Map<string, number[]> {
-  const today = localDay(new Date(now));
-  const from = new Date(Date.parse(today) - 29 * 86_400_000).toISOString().slice(0, 10);
+/** Each metric's active value per day (the slot's first, as findActiveInSlot reads it), in SI, in one pass. */
+function activeDays(file: RoadmapFile): Map<string, Map<string, number>> {
   const byMetric = new Map<string, Map<string, number>>();
   for (const row of file.measurements) {
     if (row.status !== 'active') continue;
@@ -401,6 +416,16 @@ function trends(file: RoadmapFile, now: string, shown: (metric: string, valueSI:
     const day = row.recordedAt.slice(0, 10);
     if (!days.has(day)) days.set(day, row.value);
   }
+  return byMetric;
+}
+
+/** Every metric's trend, from `activeDays`, oldest first. As Apple Health, the last 30 days (today, the
+ *  phone's local day, and the 29 before), or the last seven days however old when those 30
+ *  hold fewer than two (US-25 AC17f). A day after today (an import that kept another zone's
+ *  offset) is left out of both, as the phone leaves out a night dated after today. */
+function trends(byMetric: Map<string, Map<string, number>>, now: string, shown: (metric: string, valueSI: number) => number): Map<string, number[]> {
+  const today = localDay(new Date(now));
+  const from = new Date(Date.parse(today) - 29 * 86_400_000).toISOString().slice(0, 10);
   const out = new Map<string, number[]>();
   for (const [metric, days] of byMetric) {
     const sorted = [...days.keys()].filter((day) => day <= today).sort();
