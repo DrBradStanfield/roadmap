@@ -16,7 +16,7 @@ import { act, cleanup, fireEvent, render, waitFor, type RenderResult } from '@te
 import { localDay, ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
+import { addMeasurement, bulkSaveDocuments, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
 import { MIRROR_KEY } from '../lib/storage';
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
@@ -30,9 +30,9 @@ vi.mock('../lib/chat-api', async original => ({
   listConversations: () => Promise.resolve(null), getChatGate: () => null,
 }));
 // The chat column: what it was told about muting.
-const chat = vi.hoisted(() => ({ muted: [] as boolean[] }));
+const chat = vi.hoisted(() => ({ muted: [] as boolean[], proposeEdit: null as null | ((edits: unknown[]) => void) }));
 vi.mock('./ChatEmbed', () => ({
-  ChatEmbed: ({ muted }: { muted?: boolean }) => { chat.muted.push(!!muted); return null; },
+  ChatEmbed: ({ muted, onProposeEdit }: { muted?: boolean; onProposeEdit: (edits: unknown[]) => void }) => { chat.muted.push(!!muted); chat.proposeEdit = onProposeEdit; return null; },
 }));
 // The desktop floating chat's panel: whether it is open and muted.
 const floating = vi.hoisted(() => ({ muted: [] as boolean[] }));
@@ -439,6 +439,7 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
 
   it.each([
     ['supplements', () => saveSupplement('magnesium', 'Magnesium', 200, 'mg')],
+    ['documents', () => saveLetter()],
   ] as const)('Codex R3: a record holding only %s opens the whole form', async (_, seed) => {
     await seed();
     await flushRoadmapStore();
@@ -523,5 +524,66 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
     });
     type(cell, '170');
     await waitFor(() => expect(document.activeElement?.id).toBe('guestEmail'));
+  });
+});
+
+/** A clinic letter on record: a document the Health Records list shows. */
+const saveLetter = () => bulkSaveDocuments([{
+  documentType: 'clinic_letter', title: 'Clinic letter', documentDate: '2026-09-01', contentMd: 'A letter.', metadata: {}, sourceFileName: 'letter.pdf',
+}]);
+
+describe('US-62 AC13 review fixes, round 3 (PR 421)', () => {
+  it('1: a chat weight, with the weight beside the height, lands in that field: the BMI matches and no hidden draft', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+    await flushRoadmapStore();
+    seedMatrixMirror(); // the vitals as a matrix, its weight row hidden
+    const view = await open();
+    type(q(view, '#weightKg'), '70');
+    await waitFor(() => expect(q(view, '.bt-vitals-card')).toBeTruthy());
+    act(() => chat.proposeEdit!([{ kind: 'field', field: 'weightKg', displayValue: 80, unitSystem: 'si', date: null }]));
+    await waitFor(() => expect((q(view, '#weightKg') as HTMLInputElement).value).toBe('80'));
+    const bmi = Array.from(view.container.querySelectorAll('.stat-card')).find((c) => c.querySelector('.stat-label')?.textContent === 'BMI');
+    expect(bmi?.querySelector('.stat-value')?.textContent).toBe('27.7'); // 80 kg at 170 cm
+    expect(JSON.parse(localStorage.getItem('health_roadmap_vitals_draft') ?? '{}')?.draft?.values?.weight).toBeUndefined();
+    expect(weightPlaces(view)).toHaveLength(1);
+  });
+
+  it('2: a whole form a document opened stays open when that document is deleted', async () => {
+    await saveLetter();
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    fireEvent.click(view.getByText('Clinic letter'));
+    fireEvent.click(view.getByText('Delete Document'));
+    fireEvent.click(view.getByText('Confirm Delete'));
+    await waitFor(() => expect(view.queryByText('Clinic letter')).toBeNull());
+    expect(fullForm(view)).toBe(true);
+  });
+
+  it('3: a year-only record opened by a medication keeps its year field while the year is retyped', async () => {
+    await saveChangedMeasurements({ heightCm: 170, birthYear: 1980 }, {});
+    await saveMedication('statin', 'rosuvastatin', 10, 'mg');
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    const year = q(view, '#birthYear') as HTMLInputElement;
+    act(() => year.focus());
+    fireEvent.change(year, { target: { value: '' } });
+    expect(q(view, '#birthYear')).toBe(year);
+    expect(document.activeElement).toBe(year);
+    fireEvent.change(year, { target: { value: '1981' } });
+    expect(q(view, '#birthYear')).toBe(year);
+  });
+
+  it('4: About you, collapsed for a complete record, opens when another device clears an answer', async () => {
+    await completeRecord();
+    const view = await open();
+    await waitFor(() => expect(q(view, '.prefill-summary-wrapper.visible')).toBeTruthy());
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, { heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 });
+    await saveChangedMeasurements({ heightCm: undefined }, { heightCm: 170 }); // another writer clears the height
+    await flushRoadmapStore();
+    await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    await waitFor(() => expect(q(view, '.prefill-summary-wrapper.visible')).toBeNull(), { timeout: 3000 });
+    expect(named('onboarding_step')).toEqual([]);
   });
 });

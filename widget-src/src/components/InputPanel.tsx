@@ -207,7 +207,8 @@ interface InputPanelProps {
   grading: Grading;
   healthDocuments?: ApiDocument[];
   onDocumentDeleted?: (docId: string) => void;
-  onAutoFocusEmail?: () => void;
+  /** Says whether it jumped: only as the last answer (US-62 AC13). */
+  onAutoFocusEmail?: () => boolean;
   /** A chat edit that filled a grid cell on a phone (US-16 AC2): the table
    *  opens so the filled cell shows. Each new edit is a new object. */
   revealCell?: { field: string } | null;
@@ -318,9 +319,10 @@ export function InputPanel({
     const metric = FIELD_METRIC_MAP[field];
     return !!metric && hasUnitChoice(metric);
   };
-  // Collapse only for a record complete when first shown. No auto-collapse
-  // on a first visit, nor mid-onboarding.
-  const canCollapse = wasDone;
+  // Collapse only for a record complete when first shown and complete now
+  // (an answer cleared elsewhere opens it). No auto-collapse on a first
+  // visit, nor mid-onboarding.
+  const canCollapse = wasDone && formStage === 4;
   const [collapsed, setCollapsed] = useState(wasDone);
 
   // ── The phone's My data (US-62 AC8-AC12) ──
@@ -445,6 +447,12 @@ export function InputPanel({
   const weightInProfile = !fullForm || weightTyped.current;
   weightShown.current = weightInProfile;
   const sexInRow = fullForm && !weightInProfile;
+  // The birth year's field, once shown, stays while the birth question does:
+  // a year cleared to retype keeps its field, whatever the stage. The
+  // question going (an erase) starts it again.
+  const birthShown = fullForm || reached >= 3;
+  const yearShown = useRef(false);
+  yearShown.current = birthShown && (yearShown.current || !!(inputs.birthMonth || inputs.birthYear));
   const [collapseAnimating, setCollapseAnimating] = useState(false);
   const hasMountedRef = useRef(false);
 
@@ -707,10 +715,7 @@ export function InputPanel({
                 if (weightNum !== undefined && /^\d{2,3}$/.test(raw) && weightNum >= r.min && weightNum <= r.max) {
                   advanceToEmail({
                     ambiguous: /^\d{2}$/.test(raw) && weightNum * 10 <= r.max,
-                    advance: () => {
-                      hasAutoFocusedEmail.current = true;
-                      requestAnimationFrame(() => onAutoFocusEmail());
-                    },
+                    advance: () => requestAnimationFrame(() => { if (onAutoFocusEmail()) hasAutoFocusedEmail.current = true; }),
                   });
                 }
               }
@@ -1071,7 +1076,7 @@ export function InputPanel({
             {sexInRow && renderSex()}
           </div>
           {!sexInRow && valueShown && <div className="stage-reveal profile-step">{renderSex()}</div>}
-          {(fullForm || reached >= 3) && <div className="stage-reveal profile-step">{renderBirthInfo()}</div>}
+          {birthShown && <div className="stage-reveal profile-step">{renderBirthInfo()}</div>}
           {fullForm && renderAlcohol()}
           {!fullForm && (
             <p className="field-hint-attention field-hint-attention--centered">
@@ -1240,8 +1245,8 @@ export function InputPanel({
           {errors.birthMonth && <span className="error-message">{errors.birthMonth}</span>}
         </div>
 
-        {/* Once shown it stays, so clearing a year to retype keeps the field (US-62 AC13). */}
-        {(inputs.birthMonth || inputs.birthYear || reached === 4) && (
+        {/* Once shown on this record it stays, so clearing a year to retype keeps the field (US-62 AC13). */}
+        {yearShown.current && (
           <div className={`health-field stage-reveal${!inputs.birthYear ? ' field-attention' : ''}`}>
             <label htmlFor="birthYear">Birth Year</label>
             <input

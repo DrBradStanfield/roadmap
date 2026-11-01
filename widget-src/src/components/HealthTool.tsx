@@ -46,6 +46,7 @@ import {
   type ProposedMedicationEdit,
   type ProposedProfileEdit,
   type FormStage,
+  type RecordHoldings,
   isSex,
   formatHeightDisplay,
 } from '@roadmap/health-core';
@@ -228,20 +229,27 @@ function debounceSave(timers: Map<string, ReturnType<typeof setTimeout>>, key: s
  * US-62 AC13: the highest onboarding stage reached on the record the screen
  * shows (`reached`), the stage that record opened at (`opened`), and a count
  * of the records shown (`epoch`). `reached` only rises, so nothing unlocked
- * goes away while an answer is retyped; an erase (the screen moving to
- * another erase identity) starts all three again.
+ * goes away while an answer is retyped; `fullForm` latches the same way.
+ * An erase (the screen moving to another erase identity) starts all again.
  */
-function useReachedStage(stage: FormStage): { reached: FormStage; opened: FormStage; epoch: number } {
-  const ref = useRef<{ erase: string; reached: FormStage; opened: FormStage; epoch: number } | null>(null);
+function useReachedStage(stage: FormStage, holdings: RecordHoldings): { reached: FormStage; opened: FormStage; epoch: number; fullForm: boolean } {
+  const ref = useRef<{ erase: string; reached: FormStage; opened: FormStage; epoch: number; fullForm: boolean } | null>(null);
   const erase = getShownErase();
   const was = ref.current;
-  if (!was || was.erase !== erase) ref.current = { erase, reached: stage, opened: stage, epoch: (was?.epoch ?? 0) + 1 };
+  if (!was || was.erase !== erase) ref.current = { erase, reached: stage, opened: stage, epoch: (was?.epoch ?? 0) + 1, fullForm: false };
   else if (stage > was.reached) was.reached = stage;
-  const { reached, opened, epoch } = ref.current!;
-  return { reached, opened, epoch };
+  const now = ref.current!;
+  // The whole form, once open on this record, stays open until an erase
+  // (a deleted document that opened it does not close it).
+  now.fullForm ||= opensFullForm(now.reached, holdings);
+  const { reached, opened, epoch, fullForm } = now;
+  return { reached, opened, epoch, fullForm };
 }
 
 /** The same rows, value for value: a re-read that changed nothing keeps the old array. */
+/** The onboarding's answers (US-62 AC13): only an edit to one of them counts as a step. */
+const ONBOARDING_FIELDS: ReadonlyArray<keyof HealthInputs> = ['heightCm', 'weightKg', 'sex', 'birthMonth', 'birthYear'];
+
 const sameRows = (a: ApiMeasurement[], b: ApiMeasurement[]) =>
   a.length === b.length && a.every((r, i) => r.id === b[i].id && r.value === b[i].value && r.recordedAt === b[i].recordedAt);
 
@@ -450,6 +458,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     if (erasingRef.current || refusedFor.current === getEraseIdentity()) return;
     refusedFor.current = getEraseIdentity();
     window.alert(WRITE_REFUSED);
+    answeredHere.current = false; // the record re-read is not an answer given here (US-62 AC13)
     void applyRemoteRef.current();
   }, []);
   const afterListSave = useCallback((saved: boolean) => {
@@ -546,8 +555,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     () => computeFormStage(effectiveInputs, previousMeasurements),
     [effectiveInputs, previousMeasurements],
   );
-  const { reached, opened, epoch } = useReachedStage(formStage);
-  const fullForm = opensFullForm(reached, {
+  const { reached, opened, epoch, fullForm } = useReachedStage(formStage, {
     saved: previousMeasurements, medications, screenings, supplements, documents: documentHistory, labValues: labValueHistory,
   });
 
@@ -559,6 +567,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // starts the count again. The step's name only, never its answer.
   const answeredHere = useRef(false); // set by the person's actions, cleared by a remote change
   const markAnswered = useCallback(() => { answeredHere.current = true; }, []);
+  // A matrix's weight cell is the one matrix edit that can answer a step.
+  const markMatrixWeight = useCallback((e: React.SyntheticEvent) => {
+    if ((e.target as HTMLElement).closest?.('.bt-vitals-card [data-metric="weight"]')) markAnswered();
+  }, [markAnswered]);
   const countedTo = useRef<{ epoch: number; stage: number } | null>(null);
   useEffect(() => {
     const from = countedTo.current?.epoch === epoch ? countedTo.current.stage : reached;
@@ -1043,7 +1055,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // keeps the unit its caller converted it from (typedIn). One update per
   // field, so several made at once all land (US-16 AC1).
   const handleInputChange = useCallback(<K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem) => {
-    markAnswered(); // US-62 AC13: an answer given in this tab
+    if (ONBOARDING_FIELDS.includes(field)) markAnswered(); // US-62 AC13: an answer given in this tab
     if (unit) typedIn.current[field] = { value, unit };
     // The user's own sex or height outranks a chat proposal for it (US-16 AC2).
     if (field === 'sex' || field === 'heightCm') setProfileProposal(null);
@@ -1179,11 +1191,11 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     // Fresh users (legacy plain fields, ref null) fall back to setting the form
     // input directly — no flash, unchanged behaviour.
     if (VITALS_INPUT_FIELDS.includes(edit.field)) {
-      if (routeVitalsEdit(!!vitalsPrefillRef.current) === 'matrix') {
-        vitalsPrefillRef.current!(metric, edit.displayValue, edit.unitSystem, edit.date);
-      } else {
-        handleInputChange(edit.field, toCanonicalValue(metric, edit.displayValue, edit.unitSystem), edit.unitSystem);
-      }
+      // The matrix refuses a weight it does not show (the weight beside the
+      // height, US-62 AC13): that edit goes to the visible field.
+      const filled = routeVitalsEdit(!!vitalsPrefillRef.current) === 'matrix'
+        && vitalsPrefillRef.current!(metric, edit.displayValue, edit.unitSystem, edit.date) !== null;
+      if (!filled) handleInputChange(edit.field, toCanonicalValue(metric, edit.displayValue, edit.unitSystem), edit.unitSystem);
       return;
     }
     // Blood-test metrics → the timeline matrix's draft/backfill cell.
@@ -1283,15 +1295,17 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // Email capture and US-23 reminder enrolment require the Shopify server.
   const emailCaptureActive = SHOPIFY_SURFACE;
 
-  const handleAutoFocusEmail = useCallback(() => {
+  // Says whether it acted, so a caller spends its once-only jump only then.
+  const handleAutoFocusEmail = useCallback((): boolean => {
     // Only when the weight was the last answer: a first weight is step 1 (US-62 AC13).
-    if (!emailCaptureActive || stageRef.current !== 4) return;
+    if (!emailCaptureActive || stageRef.current !== 4) return false;
     if (isMobile) {
       selectTab('plan');
       setTimeout(() => document.getElementById('guestEmail')?.focus(), 400);
     } else {
       document.getElementById('guestEmail')?.focus();
     }
+    return true;
   }, [emailCaptureActive, isMobile, selectTab]);
 
   // Memoised so the UploadModal's matrix doesn't rebuild on unrelated
@@ -1400,7 +1414,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       {isMobile ? (
         <>
           {storageBar && <div className="hr-top-bar">{storageBar}</div>}
-          {panel('input', <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markAnswered}><InputPanel {...inputPanelProps} /></fieldset>)}
+          {panel('input', <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markMatrixWeight}><InputPanel {...inputPanelProps} /></fieldset>)}
           {panel('plan', (
             <div className="health-tool-right">
               <ResultsPanel {...resultsPanelProps} />
@@ -1421,7 +1435,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       ) : (
         <div className="health-tool-content">
           <div className="health-tool-left">
-            <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markAnswered}><InputPanel {...inputPanelProps} /></fieldset>
+            <fieldset className="health-form-lock" disabled={isDeleting} onChangeCapture={markMatrixWeight}><InputPanel {...inputPanelProps} /></fieldset>
           </div>
           <div className="health-tool-right" ref={planColumnRef}>
             <ResultsPanel {...resultsPanelProps} />

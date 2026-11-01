@@ -87,7 +87,7 @@ interface StartingInfoVitalsProps {
   knownMinor?: boolean;
   /** Called after the user types a valid weight — continues the
    *  height → weight → email focus chain from the legacy form. */
-  onAutoFocusEmail?: () => void;
+  onAutoFocusEmail?: () => boolean;
   /** The weight is asked beside the height (US-62 AC13): its row is left out, so it shows once. */
   withoutWeight?: boolean;
   /** Per-field unit overrides — clicking the weight/waist chip toggles
@@ -308,6 +308,14 @@ export function StartingInfoVitals({
     holdsText,
     draft, backfills, type, setDate, unitOf, expected, clashes, taken, lends, settle, refusal,
   } = useMatrixDraft<VitalsKey>(VITALS_DRAFT_KEY, { onScreen, rowsUnder, latestDay, cellOf: key => (key === 'dia' ? 'sys' : key) });
+  // No weight typed here while its row is hidden (the weight shows beside the
+  // height): a restored or earlier draft goes, so nothing unseen is lent to
+  // the plan or saved (US-62 AC13).
+  useEffect(() => {
+    if (!withoutWeight) return;
+    if (draft.values.weight) type([null, 'weight'], '', unitFor('weight'));
+    for (const [day, typed] of Object.entries(backfills)) if (typed?.weight) type([day, 'weight'], '', unitFor('weight'));
+  }, [withoutWeight]);
   // On a phone the grid sits hidden under rows: tell the page it holds typed text (US-62 AC11).
   useEffect(() => { onHoldsText?.(holdsText); }, [holdsText]);
   const [activeCell, setActiveCell] = useState<string | null>(null);
@@ -373,15 +381,10 @@ export function StartingInfoVitals({
       if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
       if (/^\d{2,3}$/.test(typed) && n >= 30 && n <= 400) {
         const couldExtend = /^\d{2}$/.test(typed) && n * 10 <= 400;
-        if (!couldExtend) {
-          focusedEmailRef.current = true;
-          requestAnimationFrame(() => onAutoFocusEmail());
-        } else {
-          focusTimerRef.current = setTimeout(() => {
-            focusedEmailRef.current = true;
-            onAutoFocusEmail();
-          }, 800);
-        }
+        // The once-only jump is spent only if it happened (not before the last answer).
+        const jump = () => { if (onAutoFocusEmail()) focusedEmailRef.current = true; };
+        if (!couldExtend) requestAnimationFrame(jump);
+        else focusTimerRef.current = setTimeout(jump, 800);
       }
     }
   };
@@ -419,6 +422,8 @@ export function StartingInfoVitals({
     }
 
     if (metric !== 'weight' && metric !== 'waist') return null;
+    // The weight asked beside the height has no row here: its edit goes to that field (US-62 AC13).
+    if (metric === 'weight' && withoutWeight) return null;
     if (date && column && column[metric] == null) {
       type([date, metric], typed, fromUnit, false);
       return flash(`${date}.${metric}`);
@@ -544,7 +549,7 @@ export function StartingInfoVitals({
                 const lastSi = row.metric === 'weight' ? trend.lastW : trend.lastWa;
                 const lastStatus = lastSi != null ? simpleStatus(row.metric, lastSi, ibwKg, planHeightCm) : null;
                 return (
-                  <div key={row.metric} className={`bt-row${last}`}>
+                  <div key={row.metric} className={`bt-row${last}`} data-metric={row.metric}>
                     {nameCell}
                     {columns.map((c, colIdx) => {
                       if (c.kind === 'draft') {
