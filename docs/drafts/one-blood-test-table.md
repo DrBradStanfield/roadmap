@@ -1,7 +1,8 @@
 # One blood-test table (DRAFT for Brad)
 
-Status: design, 2026-11-02; Brad answered D1 to D4 and the creatinine point the same day, and D5 later
-that day (§10). The rollout order (§11) is open, and nothing is built until they are answered. Story: US-66 in [docs/user-stories.md](../user-stories.md).
+Status: design, 2026-11-02; Brad answered D1 to D5, the creatinine point and the rollout order the
+same day (§10, §11). The build waits on Brad's approval of the migration plan (§11) and on the
+freeze-hash answer (§9). Story: US-66 in [docs/user-stories.md](../user-stories.md).
 Brad's direction (via the user, 2026-11-02): every blood test lives in one table; the plan reads the core
 tests it needs from that table; vitals may stay where they are. Also in scope: a punctuated core name
 ("LDL - Cholesterol") resolves the way catalogue names do after PR 543 (US-07 AC10).
@@ -344,10 +345,10 @@ assumes neither way, and the build follows that session's answer on the freeze h
 
 **D4, rollout: release build 3 as it is, then ship this as an update.** "we want the initial app to
 be released. then we can do an update." Build 3 stays on automatic release.
-Second-order effect of D2 plus D4: once build 3 is live, a person who uses it with a cloud record
-also opened on the web sees their blood tests vanish from the phone as soon as the updated website
-writes the new shape. So §11 deploys the website only after the iPhone update is live in the store.
-Brad may prefer to deploy the website first; the cost is that window.
+Second-order effect of D2 plus D4: a build-3 phone on a record an updated app has moved shows no
+blood tests until it updates. Brad's rollout answer (wait for build 3, then ship web and iPhone
+together) and §11's manual release of the update keep that window to people who have not updated
+yet.
 
 **D5, an upload's extra core value: offer it as the core value (option 1).** Brad, 2026-11-02:
 "do it". When a report prints a core test the extractor could not file as core (an unfamiliar
@@ -356,24 +357,82 @@ the core value. On a day already filled, the review shows both and the person ch
 saved unless they replace. A unit that will not convert is listed as "not saved", with the reason.
 Creatinine stays a lab row under its printed name (US-12 AC11).
 
-## 11. Rollout order (on hold)
+## 11. Migration plan (Brad, 2026-11-02: wait for build 3 to go live, then ship web and iPhone together)
 
-Brad asked "can't we just do the full rollout now"; the master session is putting the build-3
-trade-off to him (§10, D4's second-order effect). The order below is the current draft.
+### How a record moves
 
-1. PR 543 merges (punctuation pass). Build 3 releases from App Review as it is (D4).
-2. health-core PR: resolver (§7), move and fold (§4, §5), `bloodTestRows`, writers, plan, reminders,
-   readable view, agent tools and text (D3). Tests first, per AC.
-3. Widget, CLI, stdio MCP, hosted MCP, `ios/engine` in the same PR or stacked behind it, merged
-   together; nothing deploys until all pass `test:all`.
-4. iPhone update with the new engine: TestFlight, Brad's phone (real data, so check the fold on a copy
-   first), then App Review.
-5. Once the iPhone update is live: CI Deploy; live check on drstanfield.com (desktop and real
-   WebKit): an old-shape test record opens and moves, the plan matches for a record with no old
-   core-named rows, an upload with "LDL - Cholesterol" lands in the LDL tile.
-6. `docs/agent-access.md`, `docs/mcp-architecture.md`, `docs/reference.md` updated in the same PR.
+- **On load, always.** Every updated app moves the record in memory as it opens it (`migrateFile`,
+  §4): the website, the iPhone engine, both assistant connectors and the CLI. The move is permanent
+  code, so a record still in the old shape (an un-updated phone's, a hand edit's) is moved whenever
+  an updated app reads it, however late.
+- **Written once, at first open.** If the move changed anything, the updated app saves the record
+  straight away, through the normal read-merge-write save (`SyncManager`, the iPhone's cloud save,
+  the CLI's backed-up atomic write). Without this, the file would stay in the old shape until the
+  person next typed a value, and assistants and other devices would keep meeting both shapes. The
+  write happens once: a moved record has nothing left to move. A local-only record (browser
+  storage, or the phone with no cloud) is written to its own storage the same way.
+- **Old core-named lab rows are folded in the same step** (§5, D1), creatinine excepted.
 
-Review gate: merge/FHIR change, so a fresh adversary and Codex before commit, per CLAUDE.md.
+### Can it be undone?
+
+- **No data is removed.** Moved rows keep their id, value, day, status and correction chain. A
+  folded row stays in history as the corrected original. Nothing is deleted.
+- **The move is exactly reversible.** It is a field rename (§4), so `toOldShape` (the inverse:
+  `core: true` rows back to `measurements`) rebuilds the old rows byte for byte. It ships in the
+  build, tested as the inverse of the move, but no app runs it.
+- **Folds are not reversible by flipping back.** A status only moves forward. To undo a fold you
+  append a correction, as for any value.
+- **Backups.** The CLI keeps its three `.bak-` copies. Google Drive and Dropbox keep earlier file
+  versions (around 30 days); GitHub keeps every commit. The browser and the phone keep none.
+- **If the release goes wrong, fix forward.** Redeploying the old website code would behave like
+  build 3 on a moved record: blood tests hidden from the plan, never lost. So a fix ships forward;
+  `toOldShape` is the emergency path only if a fix forward is impossible.
+
+### Order
+
+1. PR 543 merges. Build 3 goes live from App Review as it is (D4).
+2. The build: health-core, widget, CLI, both MCP servers and `ios/engine`, with tests first per AC,
+   adversary and Codex review, `test:all`. Merged to main, **not deployed**.
+3. The iPhone update is submitted to App Review with **manual release** chosen in App Store Connect.
+   (This is the update, not build 3; build 3 stays on automatic release.) Checked first in the
+   simulator on a de-identified copy of a real-shaped record, never on Brad's phone data.
+4. When Apple approves it: release the iPhone update and run the CI Deploy (website and server) the
+   same hour. Manual release is what lets the two go live together. If the website went first,
+   build-3 phones would lose their blood tests from view; if the iPhone went first, the old website
+   would show moved blood tests as extra lab rows and plan without them.
+5. Live checks the same day (desktop and real WebKit): an old-shape test record opens, moves and is
+   written once; its plan matches the plan before the move (no old core-named rows); an upload with
+   "LDL - Cholesterol" lands in the LDL tile; the iPhone update opens a moved record.
+6. CLI and stdio-connector users get the change when they update their copy (`git pull`). An old copy
+   on a moved record behaves like build 3. `docs/agent-access.md` says so.
+7. A week of watching: the `blood_tests_unified` counts (§12), Sentry, and support mail.
+
+### What a build-3 user sees
+
+- **Before updating, on a record nothing new has touched:** everything as today.
+- **Before updating, once an updated app has moved their record** (the website, or another device
+  already updated): My data shows no blood tests, and the phone's plan has no lipids, HbA1c, ApoB,
+  PSA, Lp(a) or creatinine, with no warning. Weight, waist and blood pressure still show. Nothing
+  is lost, and a blood test they type is saved in the old place. Step 4's same-hour release keeps
+  this to people who have not updated their phone yet.
+- **After updating:** the app moves the record on its first open and writes it once. Every blood
+  test is back where it was, plus any value typed meanwhile, plus old core-named lab rows now folded
+  into their tiles (D1).
+
+### A record touched by both shapes in between
+
+- **An old app adds a blood test** to `measurements`. The next updated app moves it. If that day
+  already holds a value, it is a same-day double entry, settled as today: the newer entry counts and
+  the other goes to history.
+- **An old app merges** a moved record (it saves after a read). It keeps the unknown `core` field and
+  every row, and keeps one active row per test and day (§6). It does not know the rule that a fold
+  loses to a real value, so in the rare case of an unsynced fold and a real value on one day it may
+  keep the fold. Status is one-way, so the next updated app cannot undo that; the real value stays in
+  history.
+- **Assistants with an old copy, and hand edits,** that write `measurements`: moved on the next read,
+  as above.
+
+Nothing in any of these cases is lost; the cost is which of two same-day values is current.
 
 ## 12. Usage signal
 
