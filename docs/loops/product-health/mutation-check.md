@@ -8,6 +8,9 @@ Run in Gather. Report and record only: fix nothing, and never run `--update-base
    stryker.clinical.config.json vitest.stryker.config.ts` exits 0. An empty `B` is a NAMED gap
    ("no mutation baseline"): report it, run step 2 for the scores, and list no survivors.
 2. **Run.** `npm ci && TZ=UTC npm run mutation:clinical && npm run mutation:report`.
+   Run it alone, as a non-root user, in a copy of the checkout (Brad 2026-11-01). Start it first
+   and let no other worker run `npm ci` meanwhile: W44 lost two attempts and ~1 h to a parallel
+   install ("stryker: not found") and to root passing the US-31 AC8 unwritable-folder test.
 3. **Record.** One metrics.csv row per file every week, metric `mutation_score_<file>`
    (calculations, suggestions, units, merge). A skipped week repeats last week's value with the
    note `skipped: unchanged`, so the series never breaks.

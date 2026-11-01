@@ -120,7 +120,8 @@ export function statTiles(results: HealthResults, { unitSystem, unitOverrides, s
       evidence: sex ? reading(getBmiEvidence(results.bmi, sex, results.waistToHeightRatio)) : undefined,
     });
   }
-  if (adult) {
+  // Both need sex (US-07 AC8).
+  if (adult && results.idealBodyWeight !== undefined && results.proteinTarget !== undefined) {
     tiles.push({
       key: 'ibw', label: 'Ideal Body Weight (IBW)',
       value: formatDisplayValue('weight', results.idealBodyWeight, usFor('weight')), unit: getDisplayLabel('weight', usFor('weight')),

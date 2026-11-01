@@ -214,7 +214,7 @@ describe('US-16 AC2: the proposal banner, after review', () => {
 
   it('never names a field that already holds the value, even after the form changes under the banner', async () => {
     localStorage.setItem('health_roadmap_unit_system', 'si');
-    const view = await guestWithoutProfile({ sex: 'female' });
+    const view = await guestWithoutProfile({ sex: 'female', heightCm: 170 }); // sex shows once height and weight are in (US-62 AC13)
     reply({ sex: 'male', height: { value: 178, unit: 'cm' } });
     expect(banner()!.textContent).toContain('Male (replaces Female)');
     // The user picks Male in the form: their own entry outranks the proposal, which goes.
@@ -222,7 +222,7 @@ describe('US-16 AC2: the proposal banner, after review', () => {
     expect(banner()).toBeNull();
     await wait(1500);
     expect((await recordOnDisk()).profile.sex).toBe('male');
-    expect((await recordOnDisk()).profile).not.toHaveProperty('heightCm');
+    expect((await recordOnDisk()).profile.heightCm).toBe(170);
   });
 
   it('a height typed in the form clears the proposal', async () => {
