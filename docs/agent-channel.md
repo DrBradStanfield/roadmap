@@ -18,22 +18,28 @@ node tools/agent-channel.mjs post "text"        # or: echo "text" | node tools/a
 from the main `.env` and there is no webhook (a webhook can wear any name). `post` sends with
 mentions switched off, so it can never ping @everyone, a role or a person, and never follows a
 redirect. It refuses empty text, text over 2000 characters, and more than 10 posts in a rolling
-hour (a lockfile keeps the count right when runs overlap). A refusal names the key or shape,
+hour (a lockfile keeps the count right when runs overlap; a post time more than a minute in the
+future counts as now, so a clock jump neither holds the cap shut nor reopens it). A refusal names the key or shape,
 never the value, and sends nothing.
 
 ### What the secret guard catches
 
 It is a backstop, not a guarantee. It refuses a post holding:
 
-- any 8+ character value from the main checkout's root `.env*` files (`.env.example` and
-  commented-out lines included), `~/.fly/config.yml`, and the `.env*` files at the root of
-  `~/Documents/claude_business.nosync` and its `claude-integration/` (each skipped if absent);
+- any 8+ character value from the main checkout's root `.env*` files (`.env.example`,
+  commented-out lines and multi-line quoted values included), `~/.fly/config.yml`, and the
+  `.env*` files at the root of `~/Documents/claude_business.nosync` and its
+  `claude-integration/`. A source that is absent is skipped; one that exists but cannot be read
+  stops the run, naming the path and the error. A value of letters only and under 16
+  characters (`commerce`, `YOURLIST`) is a word or a placeholder, not a secret, and is skipped;
 - that value with its case, spacing, zero-width characters or fullwidth forms changed (the text
   and the value are both NFKC-normalised, stripped of format characters and whitespace, and
-  lower-cased before matching), or as base64 (standard or url-safe, at any byte offset), hex or
-  URL-encoding;
+  lower-cased before matching, so `12 34 56` is caught however it is spaced), or as base64
+  (standard or url-safe, at any byte offset), hex or URL-encoding. The text is also checked
+  with its `%XX` escapes decoded, whole or partial, and again with `+` read as a space;
 - a known credential shape (codex-review's `PATTERNS`, plus Fly tokens and JWTs);
-- an email address, fullwidth `＠` and `name [at] domain [dot] com` included.
+- an email address, fullwidth `＠` and `name [at] domain [dot] com` included (the last part must
+  be a letters-only domain, so "meet me (at) 5.30" passes).
 
 It misses part of a value (no partial matching: too many false positives on public ids), any
 other encoding or split, `name at domain dot com` written out bare (indistinguishable from

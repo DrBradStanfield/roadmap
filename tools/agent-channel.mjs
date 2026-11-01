@@ -6,7 +6,8 @@
 //
 //   node tools/agent-channel.mjs read [--limit N]
 //   node tools/agent-channel.mjs post <text>        (or the text on stdin)
-import { chmodSync, closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
+import { chmodSync, existsSync, linkSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -28,7 +29,8 @@ const BRAD_KEY = 'DISCORD_DrBradStanfield_USER_ID';
 // Also in packages/health-core/src/mcp-tools.ts and sentry-scrub.ts; copied because plain node cannot import TypeScript.
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/;
 // `name [at] domain [dot] com`: only the bracketed form; a bare "at ... dot" is ordinary prose ("looked at the dot com era").
-const EMAIL_SPELLED = /[A-Za-z0-9._%+-]+\s*[[(]at[\])]\s*[A-Za-z0-9-]+(?:\s*(?:[[(]dot[\])]|\.)\s*[A-Za-z0-9-]+)+/i;
+// The last part is a letters-only top-level domain, so "meet me (at) 5.30" is not an address.
+const EMAIL_SPELLED = /[A-Za-z0-9._%+-]+\s*[[(]at[\])]\s*[A-Za-z0-9-]+(?:\s*(?:[[(]dot[\])]|\.)\s*[A-Za-z0-9-]+)*\s*(?:[[(]dot[\])]|\.)\s*[A-Za-z]{2,}(?![A-Za-z0-9-])/i;
 // Fly and JWT shapes are local: codex-review's shared PATTERNS stay as they are.
 const LOCAL_PATTERNS = { fly_token: '(?<![A-Za-z0-9])(?:FlyV1\\s+)?fm2_[A-Za-z0-9+/=_-]{20}', jwt: '(?<![A-Za-z0-9_-])eyJ[A-Za-z0-9_-]{7,}\\.[A-Za-z0-9_-]{7,}\\.[A-Za-z0-9_-]{7,}' };
 const SHAPES = Object.entries({ ...PATTERNS, ...LOCAL_PATTERNS }).map(([name, re]) => [name, new RegExp(re)]);
@@ -40,14 +42,16 @@ const LOCK_STALE = 30_000;
 class Refused extends Error {}
 
 /**
- * Every value in a .env file (or YAML `key: value`), as codex-review.mjs collects them: commented-out `# KEY=VALUE`
- * lines count, a quoted value ends at its quote (`\"` inside double quotes does not, and the unescaped text counts
- * too), and an unquoted one counts whole and cut at its `#`, in case the `#` was part of it.
+ * Every value in a .env file (or, with `yaml`, a YAML `key: value` file), as codex-review.mjs collects them:
+ * commented-out `# KEY=VALUE` lines count, a quoted value ends at its quote (`\"` inside double quotes does not, and
+ * the unescaped text counts too), and an unquoted one counts whole and cut at its `#`, in case the `#` was part of it.
+ * A .env file's values also come from node's own parser, which reads a double-quoted value across lines.
  */
-function envValues(text) {
-  const out = [];
+function envValues(text, yaml) {
+  const out = yaml ? [] : Object.entries(parseEnv(text)).map(([key, value]) => ({ key, value }));
+  const sep = yaml ? ':(?=\\s)' : '=';
   for (const raw of text.split(/\r?\n/)) {
-    const m = /^(?:export\s+)?([A-Za-z_][\w.-]*)\s*(?:=|:(?=\s))\s*(.*)$/.exec(raw.trim().replace(/^#+\s*/, ''));
+    const m = new RegExp(`^(?:export\\s+)?([A-Za-z_][\\w.-]*)\\s*${sep}\\s*(.*)$`).exec(raw.trim().replace(/^#+\s*/, ''));
     if (!m) continue;
     const q = /^"((?:[^"\\]|\\.)*)"/.exec(m[2]) ?? /^(['`])(.*?)\1/.exec(m[2])?.slice(1);
     const values = q ? [q.at(-1), q.at(-1).replace(/\\"/g, '"')] : [m[2].trim(), m[2].replace(/\s*#.*$/, '').trim()];
@@ -68,20 +72,40 @@ function forms(value) {
     return Buffer.concat([Buffer.alloc(k), bytes]).toString('base64').slice([0, 2, 3][k], Math.floor((8 * n) / 6));
   });
   const all = [value, ...b64, ...b64.map((e) => e.replace(/\+/g, '-').replace(/\//g, '_')), bytes.toString('hex'), encodeURIComponent(value)];
-  return [...new Set(all.map(fold))].filter((f) => f.length >= MIN_SECRET);
+  return [...new Set(all.map(fold))].filter(Boolean);
 }
 
-/** Every value in a file this tool refuses to post, read only if it exists. */
+/** Eligible on its own length; letters only and under 16 is a word or a placeholder (`commerce`, `YOURLIST`), not a secret. */
+const secretShaped = (value) => value.length >= MIN_SECRET && !(value.length < 16 && /^\p{L}+$/u.test(value));
+
+/** The text with each valid %XX decoded (invalid ones left as they are); with `plus`, `+` is a space first. */
+const percentDecoded = (text, plus) =>
+  (plus ? text.replace(/\+/g, ' ') : text).replace(/(?:%[0-9A-Fa-f]{2})+/g, (run) => Buffer.from(run.replace(/%/g, ''), 'hex').toString('utf8'));
+
+/** Every value in a file this tool refuses to post. Only a source that is absent is skipped; any other error refuses. */
 function sourceValues(root, home) {
   const files = [];
-  const envFiles = (dir) => { try { for (const n of readdirSync(dir)) if (isSecretName(n) && statSync(join(dir, n)).isFile()) files.push(join(dir, n)); } catch { /* absent */ } };
+  const refuse = (path, e) => new Refused(`cannot read secret source ${path} (${e?.code ?? e?.name ?? 'error'}); nothing sent`);
+  const absentOr = (path, f) => {
+    try { return f(); } catch (e) { if (e?.code === 'ENOENT' || e?.code === 'ENOTDIR') return null; throw refuse(path, e); }
+  };
+  const envFiles = (dir) => {
+    for (const n of absentOr(dir, () => readdirSync(dir)) ?? []) {
+      if (!isSecretName(n)) continue;
+      const path = join(dir, n);
+      // A listed entry whose stat fails (a dangling link, say) is not absent: it refuses.
+      let st;
+      try { st = statSync(path); } catch (e) { throw refuse(path, e); }
+      if (st.isFile()) files.push(path);
+    }
+  };
   // Every main-checkout root .env* file, .env.example included: a template can gain a real value.
   envFiles(root);
   for (const src of OTHER_SECRET_SOURCES) {
     const path = src.replace(/^~\//, `${home}/`);
-    if (/\.ya?ml$/.test(path)) { if (existsSync(path)) files.push(path); } else envFiles(path);
+    if (/\.ya?ml$/.test(path)) { if (absentOr(path, () => statSync(path))) files.push(path); } else envFiles(path);
   }
-  return files.flatMap((f) => envValues(readFileSync(f, 'utf8')));
+  return files.flatMap((f) => absentOr(f, () => envValues(readFileSync(f, 'utf8'), /\.ya?ml$/.test(f))) ?? []);
 }
 
 /** Token, channel and Brad's id from the main checkout's .env only; an environment override is refused. Never printed. */
@@ -98,7 +122,7 @@ function loadConfig(env, root, home) {
   const values = sourceValues(root, home);
   const shared = values.find((v) => /^DISCORD_.*TOKEN$/.test(v.key) && v.key !== TOKEN_KEY && v.value === token);
   if (shared) throw new Refused(`${TOKEN_KEY} is also ${shared.key}; this tool needs its own bot`);
-  const secrets = [{ key: TOKEN_KEY, value: token }, ...values.filter((v) => v.value.length >= MIN_SECRET)].map((v) => ({ ...v, forms: forms(v.value) }));
+  const secrets = [{ key: TOKEN_KEY, value: token }, ...values.filter((v) => secretShaped(v.value))].map((v) => ({ ...v, forms: forms(v.value) }));
   return { token, channel, brad: (mainEnv[BRAD_KEY] ?? '').trim() || null, secrets };
 }
 
@@ -106,8 +130,8 @@ function loadConfig(env, root, home) {
 function postProblem(text, secrets) {
   if (!text.trim()) return 'empty text';
   if (text.length > MAX_POST) return `text is ${text.length} characters; the limit is ${MAX_POST} (no auto-split)`;
-  const folded = fold(text);
-  const hit = secrets.find((s) => s.forms.some((f) => folded.includes(f)));
+  const texts = [...new Set([text, percentDecoded(text, false), percentDecoded(text, true)].map(fold))];
+  const hit = secrets.find((s) => s.forms.some((f) => texts.some((t) => t.includes(f))));
   if (hit) return `text holds the value of ${hit.key}`;
   const plain = text.normalize('NFKC').replace(/\p{Cf}/gu, '');
   const shape = SHAPES.find(([, re]) => re.test(text) || re.test(plain));
@@ -138,17 +162,38 @@ function saveState(home, state) {
   renameSync(`${path}.tmp`, path);
 }
 
+/** The lock's owner token and mtime, or null if it is gone. */
+function lockSeen(path) {
+  try { return { token: readFileSync(path, 'utf8'), mtimeMs: statSync(path).mtimeMs }; } catch (e) { if (e?.code === 'ENOENT') return null; throw e; }
+}
+
+/**
+ * Takes over a lock older than 30 s (a crashed run's). Only the run whose rename wins goes on; if what it renamed is
+ * not the lock it saw stale (a fresh one took its place), it puts that back if the path is still free.
+ */
+function takeOverStale(lock, seen) {
+  const moved = `${lock}.stale.${process.pid}.${randomBytes(6).toString('hex')}`;
+  try { renameSync(lock, moved); } catch (e) { if (e?.code === 'ENOENT') return; throw e; }
+  const got = lockSeen(moved);
+  if (got && got.token === seen.token && got.mtimeMs === seen.mtimeMs) { rmSync(moved, { force: true }); return; }
+  try { linkSync(moved, lock); rmSync(moved, { force: true }); } catch (e) { if (e?.code !== 'EEXIST') throw e; }
+}
+
 /**
  * Runs `change(state)` on a fresh load and saves it, under an exclusive lockfile, so two runs never interleave a
- * load and a save (the cap holds across processes). A lock older than 30 s is a crashed run's and is taken over.
+ * load and a save (the cap holds across processes). The lock holds a random owner token; release deletes it only
+ * if it still holds ours.
  */
 async function withState(home, change) {
   const lock = `${statePath(home)}.lock`;
+  const token = randomBytes(16).toString('hex');
   mkdirSync(dirname(lock), { recursive: true, mode: 0o700 });
   for (let tries = 0; ; tries++) {
-    try { closeSync(openSync(lock, 'wx', 0o600)); break; } catch (e) {
+    try { writeFileSync(lock, token, { flag: 'wx', mode: 0o600 }); break; } catch (e) {
       if (e?.code !== 'EEXIST') throw e;
-      try { if (Date.now() - statSync(lock).mtimeMs > LOCK_STALE) { rmSync(lock, { force: true }); continue; } } catch { continue; }
+      const seen = lockSeen(lock);
+      if (!seen) continue;
+      if (Date.now() - seen.mtimeMs > LOCK_STALE) { takeOverStale(lock, seen); continue; }
       if (tries >= 100) throw new Refused(`${lock} is held by another run; try again (delete it if no run is going)`);
       await new Promise((r) => setTimeout(r, 50));
     }
@@ -156,7 +201,7 @@ async function withState(home, change) {
   try {
     const state = loadState(home);
     try { return change(state); } finally { saveState(home, state); }
-  } finally { rmSync(lock, { force: true }); }
+  } finally { if (lockSeen(lock)?.token === token) rmSync(lock, { force: true }); }
 }
 
 /** Status and Discord's own code and message, the token and every collected value cut out first. Never the body. */
@@ -226,8 +271,9 @@ async function post(cfg, deps, args) {
     const why = postProblem(text, cfg.secrets);
     if (why) return refuse(why);
     const now = deps.now();
-    // A time more than a minute ahead is a clock jump or an edit; it would hold the cap shut, so it goes.
-    state.post_times = state.post_times.filter((t) => now - t < HOUR && t - now <= 60_000);
+    // A time more than a minute ahead is a clock jump or an edit: it counts as now, so it neither holds the cap
+    // shut for hours nor, dropped, reopens it.
+    state.post_times = state.post_times.map((t) => (t - now > 60_000 ? now : t)).filter((t) => now - t < HOUR);
     if (state.post_times.length >= POSTS_PER_HOUR) {
       const wait = Math.ceil((Math.min(...state.post_times) + HOUR - now) / 60_000);
       return refuse(`${POSTS_PER_HOUR} posts in the last hour; next in about ${wait} min`);

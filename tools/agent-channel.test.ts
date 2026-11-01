@@ -4,9 +4,11 @@
  * sees: exit code, stdout, stderr, the requests made and the state file.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync, existsSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync, existsSync } from 'node:fs';
+import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { run, CHANNEL_KEY, MAX_CONTENT, TOKEN_KEY, UNTRUSTED_NOTE } from './agent-channel.mjs';
 
 // Fixture values are assembled at run time, so no credential shape sits in this file.
@@ -285,6 +287,53 @@ describe('US-63 AC6: nothing private is posted', () => {
   it('lets short values through', async () => {
     expect((await go(['post', 'abc and plain words'])).code).toBe(0);
   });
+  it('US-63 X1: an unreadable secret source refuses the run, naming the path and the error, with nothing sent', async () => {
+    const cbDir = join(home, 'Documents', 'claude_business.nosync');
+    mkdirSync(cbDir, { recursive: true });
+    chmodSync(cbDir, 0o000);
+    try {
+      for (const argv of [['post', 'hi'], ['read']]) {
+        const r = await go(argv);
+        expect(r.code).toBe(1);
+        expect(r.stderr).toContain(cbDir);
+        expect(r.stderr).toContain('EACCES');
+      }
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally { chmodSync(cbDir, 0o700); }
+  });
+  it('US-63 X2: a value is eligible on its own length, and its folded form counts however short', async () => {
+    writeFileSync(join(root, '.env.local'), 'PIN="12 34 56"\n');
+    await refusedClean('PIN: 12 34 56', 'PIN', '12 34 56');
+  });
+  it('US-63 X2: a letters-only value under 16 characters is not secret-shaped; one of 16 or more still is', async () => {
+    writeFileSync(join(root, '.env.example'), 'KLAVIYO_LIST_ID=YOURLIST    # list\nCHAT_SURFACE=commerce   # surface\n');
+    for (const text of ['Add it to your list', 'the Commerce surface']) expect((await go(['post', text])).code).toBe(0);
+    const long = 'abcdefghijklmnopq';
+    writeFileSync(join(root, '.env.local'), `LONG_WORD=${long}\n`);
+    fetchMock.mockClear();
+    await refusedClean(`say ${long.toUpperCase()}`, 'LONG_WORD', long.toUpperCase());
+  });
+  it('US-63 X3: refuses a value hidden by percent-escapes, mixed or partial, and by query-form plus signs', async () => {
+    const pct = ['fixture', 'Secret', '123'].join('');
+    writeFileSync(join(root, '.env.local'), `PCT_KEY=${pct}\nSPACE_KEY="fixture secret 99"\n`);
+    for (const text of ['%66ixtureSecret123', 'fixt%75reSecret%31%323', '%zz%66ixture%E2%80%8BSecret123', '%46IXTURESECRET123']) {
+      await refusedClean(`see ${text}`, 'PCT_KEY', pct);
+    }
+    await refusedClean('q=fixture+secret+99', 'SPACE_KEY', 'fixture secret 99');
+  });
+  it('US-63 X5: a `key: value` line counts only in YAML, never in a .env comment', async () => {
+    writeFileSync(join(root, '.env'), `${readFileSync(join(root, '.env'), 'utf8')}# Note: rotate this every month\n`);
+    expect((await go(['post', 'please rotate this every month'])).code).toBe(0);
+  });
+  it('US-63 X6: a bracketed email needs a letters-only top-level domain', async () => {
+    expect((await go(['post', 'Meet me (at) 5.30 then'])).code).toBe(0);
+    fetchMock.mockClear();
+    await refusedClean('ask tester (at) example.com', 'email address', 'tester');
+  });
+  it('US-63 X8: a multi-line double-quoted .env value is refused', async () => {
+    writeFileSync(join(root, '.env.local'), 'MULTI="first-line-abc\nsecond-line-xyz"\n');
+    await refusedClean('it is first-line-abc second-line-xyz', 'MULTI', 'second-line-xyz');
+  });
 });
 
 describe('US-63 AC7: at most 10 posts per rolling hour', () => {
@@ -328,11 +377,18 @@ describe('US-63 C3/R7: the cap holds across overlapping runs', () => {
     expect(fetchMock).toHaveBeenCalledTimes(10);
     expect(state()).toMatchObject({ posts: 10, refused: 20 });
   });
-  it('drops post times more than a minute in the future', async () => {
+  it('US-63 X7: clamps post times more than a minute in the future to now, still counted', async () => {
     mkdirSync(join(home, '.health-roadmap'), { recursive: true });
     writeFileSync(join(home, '.health-roadmap', 'agent-channel-state.json'), JSON.stringify({ cursor: null, post_times: Array(10).fill(now + 2 * 3_600_000) }));
-    expect((await go(['post', 'hi'])).code).toBe(0);
-    expect(state().post_times).toEqual([now]);
+    expect((await go(['post', 'hi'])).stderr).toContain('10 posts in the last hour');
+    expect(state().post_times).toEqual(Array(10).fill(now));
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+  it('US-63 X7: a backward clock jump does not reopen the cap', async () => {
+    for (let i = 0; i < 10; i++) expect((await go(['post', `n${i}`])).code).toBe(0);
+    now -= 2 * 3_600_000;
+    expect((await go(['post', 'after the jump'])).stderr).toContain('10 posts in the last hour');
+    expect(fetchMock).toHaveBeenCalledTimes(10);
   });
   it('takes over a lock left by a crashed run, and never leaves its own behind', async () => {
     const lock = join(home, '.health-roadmap', 'agent-channel-state.json.lock');
@@ -343,7 +399,29 @@ describe('US-63 C3/R7: the cap holds across overlapping runs', () => {
     expect((await go(['post', 'hi'])).code).toBe(0);
     expect((await go(['post', ''])).code).toBe(1);
     expect(existsSync(lock)).toBe(false);
+    expect(readdirSync(dirname(lock)).filter((n) => n.includes('.lock'))).toEqual([]);
   });
+  it('US-63 X4: separate processes racing a stale lock lose no update', async () => {
+    // Real processes, not promises in one: the takeover is a rename only one of them can win.
+    const lock = join(home, '.health-roadmap', 'agent-channel-state.json.lock');
+    mkdirSync(join(home, '.health-roadmap'), { recursive: true });
+    writeFileSync(lock, 'crashed-owner');
+    const old = new Date(Date.now() - 60_000);
+    utimesSync(lock, old, old);
+    const mod = join(dirname(fileURLToPath(import.meta.url)), 'agent-channel.mjs');
+    const child = `const { run } = await import(${JSON.stringify(`file://${mod}`)});
+      const deps = { env: {}, home: process.env.AC_HOME, root: process.env.AC_ROOT, stdin: async () => '', fetch: async () => new Response('[]') };
+      let bad = 0;
+      for (let i = 0; i < 15; i++) { const r = await run(['read', '--limit', '1'], deps); if (r.code) { bad++; process.stderr.write(r.stderr); } }
+      process.exit(bad ? 1 : 0);`;
+    const one = () => new Promise<number>((resolve) => {
+      const p = spawn(process.execPath, ['--input-type=module', '-e', child], { env: { ...process.env, AC_HOME: home, AC_ROOT: root }, stdio: ['ignore', 'ignore', 'inherit'] });
+      p.on('exit', (code) => resolve(code ?? 1));
+    });
+    expect(await Promise.all([one(), one(), one(), one()])).toEqual([0, 0, 0, 0]);
+    expect(state().reads).toBe(60);
+    expect(readdirSync(dirname(lock)).filter((n) => n.includes('.lock'))).toEqual([]);
+  }, 15_000);
 });
 
 describe('US-63 R6: a redirect is an error, and nothing is re-sent', () => {
