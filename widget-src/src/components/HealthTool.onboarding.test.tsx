@@ -208,7 +208,7 @@ describe('US-62 AC12, AC13 (Brad 2026-11-02): boxes while typing, rows after', (
     expect(boxes.children).toHaveLength(2);
   });
 
-  it('the onboarding finished in this visit stays at the top as boxes; the next visit shows About you low, as rows, on desktop', async () => {
+  it('the onboarding finished in this visit stays at the top as boxes while the focus is in its card; the next visit shows About you low, as rows, on desktop', async () => {
     const view = await open();
     await measurements(view, '185', '90');
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
@@ -490,7 +490,7 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
     seedMatrixMirror(); // a copy holding a saved vital (another device's, say): the vitals open as a matrix
     const view = await open();
     const weight = q(view, '#weightKg') as HTMLInputElement;
-    type(weight, '70');
+    type(weight, '70.5'); // a decimal: no jump to the email field, so the focus stays (US-62 AC12)
     await waitFor(() => expect(q(view, '.bt-vitals-card')).toBeTruthy());
     expect(q(view, '#weightKg')).toBe(weight);
     expect(weightPlaces(view)).toHaveLength(1);
@@ -623,7 +623,8 @@ describe('US-62 AC13 review fixes, round 3 (PR 421)', () => {
     await flushRoadmapStore();
     seedMatrixMirror(); // the vitals as a matrix, its weight row hidden
     const view = await open();
-    type(q(view, '#weightKg'), '70');
+    type(q(view, '#weightKg'), '70.5'); // no jump to the email field
+    act(() => { (q(view, '#heightCm') as HTMLElement).focus(); }); // the weight left, the focus still in the card (US-62 AC12)
     await waitFor(() => expect(q(view, '.bt-vitals-card')).toBeTruthy());
     act(() => chat.proposeEdit!([{ kind: 'field', field: 'weightKg', displayValue: 80, unitSystem: 'si', date: null }]));
     await waitFor(() => expect((q(view, '#weightKg') as HTMLInputElement).value).toBe('80'));
@@ -751,5 +752,59 @@ describe('US-02 AC9: a range error waits while the number is still being typed',
     expect(shown(view)).toEqual([]);
     act(() => { fireEvent.keyDown(q(view, '#weightKg')!, { key: 'Enter' }); });
     expect(shown(view)).toEqual(['Weight must be at least 20 kg']);
+  });
+});
+
+describe('US-62 AC12: About you goes low once the onboarding is done and its card is left', () => {
+  const cards = (view: RenderResult) => Array.from(view.container.querySelectorAll('.health-input-panel > .section-card'));
+  const aboutLow = (view: RenderResult) => q(view, '.md-about-you');
+
+  it.each([['desktop', false], ['phone', true]])('on %s: "199" on the way to 1990 moves nothing; leaving the card moves About you, as rows, to the foot', async (_, onPhone) => {
+    phone = onPhone;
+    const view = await open();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    fireEvent.change(q(view, '#birthMonth')!, { target: { value: '5' } });
+    const year = q(view, '#birthYear') as HTMLInputElement;
+    type(year, '199');
+    type(year, '1990'); // all four answers: the whole form opens, About you stays put
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    expect(aboutLow(view)).toBeNull();
+    expect(q(view, '#birthYear')).toBe(year);
+    expect(cards(view)[0].querySelector('#birthYear')).toBe(year);
+    act(() => { year.focus(); }); // the stage's reveal may have taken the focus to the month
+
+    leave(year);
+    await waitFor(() => expect(aboutLow(view)).toBeTruthy());
+    expect(cards(view).at(-1)).toBe(aboutLow(view)); // the column's foot
+    expect(Array.from(aboutLow(view)!.querySelectorAll('.about-row-label')).map((l) => l.textContent)).toEqual(['Height', 'Sex', 'Birth', 'Alcohol']);
+    expect(aboutLow(view)!.querySelector('h3')?.textContent).toContain('About you');
+    expect(weightPlaces(view)).toHaveLength(1); // the weight joins the vitals, shown once
+  });
+
+  it('a stage short of four moves nothing when the card is left', async () => {
+    const view = await open();
+    await measurements(view);
+    const male = view.getByRole('radio', { name: 'Male' });
+    fireEvent.click(male);
+    act(() => { male.focus(); });
+    act(() => { male.blur(); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    expect(aboutLow(view)).toBeNull();
+  });
+
+  it('the vitals are their own card, never inside Starting Info or About you', async () => {
+    const view = await open();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    birth(view);
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    const vitalsCard = (q(view, '#waistCm') as HTMLElement).closest('.section-card')!;
+    expect(vitalsCard.querySelector('#birthYear, #heightCm')).toBeNull();
+    expect(vitalsCard.querySelector('h3')?.textContent).toBe('Vitals');
+    act(() => { (q(view, '#birthYear') as HTMLElement).focus(); });
+    leave(q(view, '#birthYear'));
+    await waitFor(() => expect(aboutLow(view)).toBeTruthy());
+    expect(aboutLow(view)!.querySelector('#waistCm, .md-section-title')).toBeNull();
   });
 });

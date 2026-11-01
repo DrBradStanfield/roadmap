@@ -591,6 +591,14 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     trackProductEvent('onboarding_step', { step: ONBOARDING_STEPS[from - 1] });
     if (reached === 4) trackProductEvent('onboarding_done');
   });
+  // US-62 AC12: About you goes low for a record complete when first shown, and
+  // once the four answers hold and the focus leaves its card (this record:
+  // an erase starts it again).
+  const [movedLow, setMovedLow] = useState<number | null>(null);
+  const aboutYouLow = opened === 4 || movedLow === epoch;
+  const handleProfileLeft = useCallback(() => {
+    if (stageRef.current === 4) setMovedLow(epoch);
+  }, [epoch]);
   // An erase closes the floating chat: its conversation belongs to the old record.
   useEffect(() => { setFloatingChatOpen(false); }, [epoch]);
   // The latest stage, for a call made after the render that changed it.
@@ -1390,6 +1398,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     reached,
     fullForm,
     wasDone: opened === 4,
+    aboutYouLow,
+    onProfileLeft: handleProfileLeft,
     setShowUploadModal,
     planBasis,
     grading,
@@ -1415,10 +1425,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     showEmailCapture: emailCaptureActive,
     formStage: reached,
     // US-60 AC3: the Dismiss asks the unanswered and drinkers; a non-drinker has no card.
-    // The "I still drink" line names About you, as InputPanel's heading does, once the
-    // onboarding is done (wasDone), the only time its rows hold the Alcohol row; before
-    // that no row shows, so the line names none (US-60 AC4).
-    alcoholQuestion: { answer: inputs.alcohol, onAnswer: handleAlcoholAnswer, section: opened === 4 ? profileTitle(true) : undefined },
+    // The "I still drink" line names About you, as InputPanel's heading does, once
+    // About you sits low (aboutYouLow), the only time its rows hold the Alcohol row;
+    // before that no row shows, so the line names none (US-60 AC4).
+    alcoholQuestion: { answer: inputs.alcohol, onAnswer: handleAlcoholAnswer, section: aboutYouLow ? profileTitle(true) : undefined },
   };
 
   // The chat reads its context as each message is sent (useChatState), through

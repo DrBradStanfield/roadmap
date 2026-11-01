@@ -1,5 +1,5 @@
 import { profileTitle } from '../lib/profile-title';
-import { Fragment, useState, useEffect, useRef, type MutableRefObject, type ReactNode } from 'react';
+import { Fragment, useState, useEffect, useLayoutEffect, useRef, type MutableRefObject, type ReactNode } from 'react';
 import { ColumnHeader } from './ColumnHeader';
 import { InfoTooltip } from './InfoTooltip';
 import { DocumentLightbox } from './DocumentLightbox';
@@ -197,8 +197,13 @@ interface InputPanelProps {
   reached: FormStage;
   /** The whole form shows: the onboarding was done, or the record holds more than its answers. */
   fullForm: boolean;
-  /** The record was complete when it was first shown (a returning user): About you may sit low and collapse. */
+  /** The record was complete when it was first shown (a returning user): About you may collapse. */
   wasDone: boolean;
+  /** About you is its own card of rows at the column's foot (US-62 AC12): a
+   *  returning user's, or once the onboarding's answers are in and left. */
+  aboutYouLow: boolean;
+  /** The focus left the Starting Info card: HealthTool moves About you low if all four answers hold. */
+  onProfileLeft?: () => void;
   setShowUploadModal?: (show: boolean) => void;
   /** What the plan was computed from. Null until there is a plan (no valid
    *  sex or height). */
@@ -245,7 +250,7 @@ export function InputPanel({
   scheduleLongitudinalSave, flushLongitudinalSave,
   isSavingLongitudinal, fieldsSaved, hasApiResponse,
   bloodTestFlushRef, vitalsFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
-  formStage, reached, fullForm, wasDone,
+  formStage, reached, fullForm, wasDone, aboutYouLow, onProfileLeft,
   setShowUploadModal, planBasis, grading,
   healthDocuments, onDocumentDeleted, onAutoFocusEmail, revealCell = null,
 }: InputPanelProps) {
@@ -431,11 +436,34 @@ export function InputPanel({
     if (!tableShown) return;
     panelRef.current?.querySelectorAll<HTMLElement>('.md-table .bt-timeline-scroll').forEach(el => { el.scrollLeft = el.scrollWidth; });
   }, [tableShown]);
-  // About you sits low, as on the iPhone, phone and desktop, for a record
-  // complete when first shown; an answer retyped never moves it, and nor does
-  // finishing the onboarding: a new user finishes at the top, and About you
-  // moves low on the next visit (US-62 AC12, AC13).
-  const aboutYouLow = wasDone;
+  // About you sits low, as on the iPhone, phone and desktop (US-62 AC12): for
+  // a record complete when first shown, and once the onboarding's four answers
+  // hold and the focus leaves its card, never mid-typing. The card travels to
+  // the foot (FLIP: each card measured before, then animated from there, by
+  // transform only) while its rows fade in; the cards below slide up, so the
+  // next card takes its place on screen. Reduced motion moves it at once.
+  const aboutRef = useRef<HTMLDivElement>(null);
+  const flipFrom = useRef<Map<Element, number> | null>(null);
+  const leaveProfile = (e: React.FocusEvent<HTMLDivElement>) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+    flipFrom.current = new Map([...(panelRef.current?.children ?? [])].map(el => [el, el.getBoundingClientRect().top]));
+    onProfileLeft?.();
+  };
+  useLayoutEffect(() => {
+    const from = flipFrom.current;
+    flipFrom.current = null;
+    if (!from || !aboutYouLow || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    // The cards below ease out as they rise; About you eases in too, so its
+    // first steps down are seen before it travels out of view.
+    const rise = { duration: 400, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' };
+    const travel = { duration: 450, easing: 'cubic-bezier(0.45, 0, 0.2, 1)' };
+    for (const el of panelRef.current?.children ?? []) {
+      const top = from.get(el);
+      const dy = top === undefined ? 0 : top - el.getBoundingClientRect().top;
+      if (Math.abs(dy) >= 1) el.animate?.([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], el === aboutRef.current ? travel : rise);
+    }
+    aboutRef.current?.querySelector('.prefill-fields-wrapper')?.animate?.([{ opacity: 0 }, { opacity: 1 }], travel);
+  }, [aboutYouLow]);
   // Something is on record (height and weight, or more): the sex question and the storage notice (US-09 AC5).
   const valueShown = fullForm || reached >= 2;
   // The onboarding asks the weight beside the height (US-62 AC13). A weight
@@ -446,7 +474,7 @@ export function InputPanel({
   const weightShown = useRef(false);
   const weightTyped = useRef(false);
   if (weightShown.current && inputs.weightKg !== undefined) weightTyped.current = true;
-  const weightInProfile = !fullForm || weightTyped.current;
+  const weightInProfile = !aboutYouLow && (!fullForm || weightTyped.current);
   weightShown.current = weightInProfile;
   const sexInRow = fullForm && !weightInProfile;
   // Low, About you is rows, as on the iPhone (US-62 AC12): label left, value
@@ -1235,6 +1263,7 @@ export function InputPanel({
     const bpLabel = bpData ? `${bpShown} · ${formatShortDate(bpData.latestDate)}` : null;
     return (
       <section className="health-section">
+        <h3 className="health-section-title">Vitals</h3>
         {BASIC_LONGITUDINAL_FIELDS.filter(cfg => !(weightInProfile && cfg === WEIGHT_FIELD)).map(renderVital)}
 
         {hasBpPreviousData && !bpExpanded && bpData ? (
@@ -2347,6 +2376,13 @@ export function InputPanel({
     );
   };
 
+  const aboutCard = (
+    <div key="about" ref={aboutRef} className={`section-card about-card${aboutYouLow ? ' md-about-you' : ''}`}
+         onBlurCapture={aboutYouLow ? undefined : leaveProfile}>
+      {renderProfile()}
+    </div>
+  );
+
   // ── Render all sections with progressive disclosure (both mobile and desktop) ──
   return (
     <div ref={panelRef} className={`health-input-panel${pageShown ? ' md-page-open' : ''}`}
@@ -2359,48 +2395,42 @@ export function InputPanel({
                    ctx={rowCtx} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} dirtyRef={pageDirty}/>
       )}
       {panelMessages}
-      {/* Card 1: the profile (the onboarding's questions until they are
-          answered, US-62 AC13), then the vitals once the whole form shows.
-          With the onboarding done when the record was first shown, About
-          you moves to the foot, phone and desktop (US-62 AC12). */}
-      <div className="section-card">
-        {!aboutYouLow && renderProfile()}
-        {fullForm && <div className="stage-reveal">{renderVitals()}</div>}
-      </div>
-
-      {/* Card 2: Blood Tests (the whole form). `section-card--bt` zeros the
-          card's inner padding so the timeline matrix sits flush against
-          the card edges (column-fit math expects no inner padding). Rows,
-          with the grids one tap away (US-62 AC11). */}
-      {fullForm && (
-        <div className="section-card section-card--bt stage-reveal">
-          {!tableShown && (
-            <BloodTestRows history={bloodTestHistory} labValues={labValues} ctx={rowCtx} onOpen={openPage}>
-              {unsavedCue(draftedBlood)}
-              <div className="md-foot">
-                <button type="button" className="md-foot-btn" onClick={() => showTable(true)}>All results as a table</button>
-                {setShowUploadModal && <button type="button" className="md-foot-btn" onClick={() => setShowUploadModal(true)}>Upload lab results</button>}
-              </div>
-            </BloodTestRows>
-          )}
-          <div className="md-table" hidden={!tableShown}>
-            <button type="button" className="md-back md-table-back" onClick={() => showTable(false)}>‹ Show as rows</button>
-            {renderBloodTests()}
-            {move.panel}
-            <AdditionalLabRows labValues={labValues} onAdded={onLabValueAdded} onCorrect={onCorrectValue} move={move.headers}/>
+      {/* One keyed list, so About you's card is moved, not remade, when it
+          goes low (US-62 AC12). Card 1 is the profile: the onboarding's
+          questions until answered (US-62 AC13); the vitals are their own card
+          once the whole form shows. */}
+      {[
+        !aboutYouLow && aboutCard,
+        fullForm && <div key="vitals" className="section-card stage-reveal">{renderVitals()}</div>,
+        /* Blood Tests (the whole form). `section-card--bt` zeros the card's
+           inner padding so the timeline matrix sits flush against the card
+           edges (column-fit math expects no inner padding). Rows, with the
+           grids one tap away (US-62 AC11). */
+        fullForm && (
+          <div key="bt" className="section-card section-card--bt stage-reveal">
+            {!tableShown && (
+              <BloodTestRows history={bloodTestHistory} labValues={labValues} ctx={rowCtx} onOpen={openPage}>
+                {unsavedCue(draftedBlood)}
+                <div className="md-foot">
+                  <button type="button" className="md-foot-btn" onClick={() => showTable(true)}>All results as a table</button>
+                  {setShowUploadModal && <button type="button" className="md-foot-btn" onClick={() => setShowUploadModal(true)}>Upload lab results</button>}
+                </div>
+              </BloodTestRows>
+            )}
+            <div className="md-table" hidden={!tableShown}>
+              <button type="button" className="md-back md-table-back" onClick={() => showTable(false)}>‹ Show as rows</button>
+              {renderBloodTests()}
+              {move.panel}
+              <AdditionalLabRows labValues={labValues} onAdded={onLabValueAdded} onCorrect={onCorrectValue} move={move.headers}/>
+            </div>
           </div>
-        </div>
-      )}
-
-      {fullForm && renderMedications()}
-      {fullForm && renderScreening()}
-      {fullForm && renderBoneDensity()}
-      {fullForm && renderSupplements()}
-      {aboutYouLow && (
-        <div className="section-card md-about-you">
-          {renderProfile()}
-        </div>
-      )}
+        ),
+        fullForm && <Fragment key="meds">{renderMedications()}</Fragment>,
+        fullForm && <Fragment key="screening">{renderScreening()}</Fragment>,
+        fullForm && <Fragment key="bone">{renderBoneDensity()}</Fragment>,
+        fullForm && <Fragment key="supplements">{renderSupplements()}</Fragment>,
+        aboutYouLow && aboutCard,
+      ]}
       {healthDocuments && healthDocuments.length > 0 && (
         <HealthRecordsSection documents={healthDocuments} onDeleted={onDocumentDeleted} />
       )}

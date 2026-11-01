@@ -103,9 +103,9 @@ const activeOn = async (metric: string) => active(await rowsOf(metric)).map((m) 
 
 /** A guest who has entered height, sex and birth date (and, to finish the
  *  onboarding, a weight: US-62 AC13). */
-async function guest({ weight }: { weight?: number } = {}) {
+async function guest({ weight, born = true }: { weight?: number; born?: boolean } = {}) {
   await initRoadmapStore(new LocalStorageAdapter());
-  await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
+  await saveChangedMeasurements({ sex: 'male', heightCm: 178, ...(born && { birthYear: 1980, birthMonth: 1 }) }, {});
   if (weight) await addMeasurement('weight', weight, '2026-09-01');
 }
 
@@ -147,9 +147,12 @@ async function typeAndLeave(field: HTMLInputElement, value: string, beforeSave?:
   beforeSave?.();
   await wait(600);
 }
-/** A guest at stage 2 who has typed today's weight into its first-time field. */
-async function firstWeight(value: string): Promise<RenderResult> {
-  await guest();
+/** A guest who has typed today's weight into its first-time field. With the
+ *  birth date on record that weight finishes the onboarding, and leaving it
+ *  moves About you low, the weight joining the vitals (US-62 AC12); with none,
+ *  the weight box stays beside the height. */
+async function firstWeight(value: string, { born = true } = {}): Promise<RenderResult> {
+  await guest({ born });
   const view = render(<HealthTool />);
   await typeAndLeave(await shown<HTMLInputElement>(view.container, '#weightKg'), value);
   await waitFor(async () => expect(await activeOn('weight')).toEqual([[Number(value), TODAY]]));
@@ -158,6 +161,9 @@ async function firstWeight(value: string): Promise<RenderResult> {
 /** Today's saved weight in its first-time field: the onboarding's weight box,
  *  beside the height, holds it (US-62 AC13). */
 async function openToday(view: RenderResult): Promise<HTMLInputElement> {
+  // In the vitals, today's saved weight shows collapsed: a tap opens its field.
+  const collapsed = view.container.querySelector<HTMLElement>('.collapsed-field-value');
+  if (!view.container.querySelector('#weightKg') && collapsed) fireEvent.click(collapsed);
   return shown<HTMLInputElement>(view.container, '#weightKg');
 }
 /** The line a typed weight shows under the box: what saving it replaces. */
@@ -585,7 +591,7 @@ describe('the 2026-09-22 feedback: a mistyped "add a blood test"', () => {
 
 describe('the 2026-09-22 feedback: edits that added new things instead', () => {
   it('US-03 AC3: a same-day fix to a weight replaces it, says so, and an unchanged value writes nothing', async () => {
-    const view = await firstWeight('82');
+    const view = await firstWeight('82', { born: false });
 
     // The user spots the typo and types over it in the box that holds it.
     const again = await openToday(view);
@@ -621,7 +627,7 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
   // nothing" in the unit on screen at the save, not the unit the number was
   // typed in. Round 5 fixed only the vitals matrix.
   it('US-03 AC3: in the first-time fields, today\'s weight re-entered as shown in lb, then switched back to kg before the save, writes nothing; a new number is a correction, exactly', async () => {
-    const view = await firstWeight('84');
+    const view = await firstWeight('84', { born: false });
 
     // Open today's weight, switch it to lb, type, and switch back to kg while
     // the save still waits.
@@ -648,7 +654,7 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
   // Round 7 review: the chat fills a first-time field from the unit the user
   // stated, and the field kept the unit on screen instead.
   it('US-03 AC3: in the first-time fields, the chat\'s 185 lb over today\'s 84 kg, shown in kg, writes nothing', async () => {
-    const view = await firstWeight('84');
+    const view = await firstWeight('84', { born: false });
 
     act(() => chat.proposeEdit!([{ kind: 'field', field: 'weightKg', displayValue: 185, unitSystem: 'conventional', date: null }]));
     await waitFor(() => expect(chat.context?.weightKg).toBe(toCanonicalValue('weight', 185, 'conventional')));

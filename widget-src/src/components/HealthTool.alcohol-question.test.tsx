@@ -187,6 +187,31 @@ it('US-60 AC4 (Brad 2026-11-02): mid-onboarding there is no Alcohol row, and "I 
   }
 });
 
+it('US-60 AC4 with US-62 AC12: once the birth date finishes the onboarding and its card is left, About you is low with its Alcohol row, and "I still drink" names it, on desktop and a phone', async () => {
+  for (const phone of [false, true]) {
+    localStorage.clear();
+    await initRoadmapStore(new LocalStorageAdapter());
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, unitSystem: 'si', weightKg: 100, alcohol: 'drinks' }, {});
+    await flushRoadmapStore();
+    stub(phone);
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(alcoholCard(view.container)).toBeDefined());
+    fireEvent.change(view.container.querySelector('#birthMonth')!, { target: { value: '5' } });
+    const year = view.container.querySelector<HTMLInputElement>('#birthYear')!;
+    act(() => year.focus());
+    fireEvent.change(year, { target: { value: '1980' } });
+    expect(view.container.querySelector('.md-about-you')).toBeNull(); // still typing
+    act(() => year.blur());
+    const about = await waitFor(() => { const a = view.container.querySelector<HTMLElement>('.md-about-you'); expect(a).not.toBeNull(); return a!; });
+    expect(within(about).getByText('Alcohol')).toBeTruthy();
+    await dismiss(view.container, 'Do you still drink alcohol?');
+    fireEvent.click(within(dialog()!).getByText('I still drink'));
+    expect(dialog()!.textContent).toBe(`${still('About you')}OK`);
+    fireEvent.click(within(dialog()!).getByText('OK'));
+    view.unmount();
+  }
+});
+
 it('US-60 AC4, AC4b (Brad 2026-11-02): About you\'s rows hold an Alcohol row that sets and clears the answer, on desktop and a phone', async () => {
   for (const phone of [false, true]) {
     stub(phone);

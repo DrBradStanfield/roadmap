@@ -588,10 +588,10 @@ input[type="number"] {
   margin-top: 16px;
 }
 
-/* Starting Info's vitals follow its profile questions 16px down, as every
-   field does (the section's own 9px bottom padding + 7px). */
-.section-card > .health-section + .stage-reveal {
-  margin-top: 7px;
+/* About you's card travels to the column's foot (US-62 AC12): never the
+   browser's scroll anchor, so the page does not follow it down. */
+.about-card {
+  overflow-anchor: none;
 }
 
 /* A drug name and its dose. The name keeps room for its longest label
