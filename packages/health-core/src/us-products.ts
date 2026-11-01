@@ -30,7 +30,7 @@ export const US_PRODUCT_LINES: Readonly<Record<UsProductCardId, { product: UsPro
     line: 'COSMOS tested a standard multivitamin (Centrum Silver), not MicroVitamin+. It is the trial that led Dr Brad to create MicroVitamin+, which uses doses close to daily needs rather than megadoses.',
   },
   'supplement-creatine': { product: 'microvitamin_plus', line: 'MicroVitamin+ contains 5 g of creatine monohydrate.' },
-  'supplement-collagen': { product: 'microvitamin_plus', line: 'MicroVitamin+ contains 12.5 g of collagen peptides.' },
+  'supplement-collagen': { product: 'microvitamin_plus', line: 'MicroVitamin+ contains 10 g of collagen peptides.' },
   'supplement-lutein-zeaxanthin': {
     product: 'microvitamin_plus',
     line: 'MicroVitamin+ contains 10 mg of lutein and 2 mg of zeaxanthin, the doses used in the AREDS2 trial.',
