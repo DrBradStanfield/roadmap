@@ -395,7 +395,9 @@ function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: st
   const active = rows.filter((row) => row.status === 'active');
   const [newest] = active;
   // The day before's pair, both halves present: a half-pair is no reading (the web's pressureReadings).
-  const previous = active.slice(1).find((row) => row.systolic && row.diastolic);
+  // A half-pair latest ("135/–", US-25 AC17) gets none, so no bracket sits beside a dash.
+  const whole = (row?: (typeof rows)[number]) => !!row?.systolic && !!row?.diastolic;
+  const previous = whole(newest) ? active.slice(1).find(whole) : undefined;
   return {
     metric: BLOOD_PRESSURE, label, unit,
     latest: newest ? { id: newest.id, value: newest.value, day: newest.day } : null,

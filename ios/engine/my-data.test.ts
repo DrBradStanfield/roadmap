@@ -218,6 +218,16 @@ describe('myData rows: target and previous value (US-62 AC8, AC9)', () => {
     const minor = rows(myData(edited(adult(), { kind: 'profile', birthYear: 2015 }), NOW)).get('blood_pressure');
     expect(minor).toMatchObject({ latest: { value: '121/79' }, previous: '128/82', target: null });
   });
+
+  it('gives a lone-half latest pressure no previous, so no bracket sits beside the dash (US-25 AC17)', () => {
+    const file = adult();
+    const sys = file.measurements.find((row) => row.id === idOf(file, 'systolic_bp', '2026-10-02'))!;
+    const lone = { ...file, measurements: [...file.measurements, { ...sys, id: 'lone-sys', value: 135, recordedAt: '2026-10-20', createdAt: NOW }] };
+    expect(rows(myData(lone, NOW)).get('blood_pressure')).toMatchObject({ latest: { value: '135/–', day: '2026-10-20' }, previous: null });
+    // A full pair after it takes the last complete pair before it, skipping the half-pair day.
+    const fixed = edited(lone, { kind: 'bloodPressure', systolic: 118, diastolic: 76, day: '2026-10-21', replace: false });
+    expect(rows(myData(fixed, NOW)).get('blood_pressure')).toMatchObject({ latest: { value: '118/76' }, previous: '121/79' });
+  });
 });
 
 describe('applyEdit (AC4/AC5)', () => {
