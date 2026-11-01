@@ -346,9 +346,8 @@ assumes neither way, and the build follows that session's answer on the freeze h
 **D4, rollout: release build 3 as it is, then ship this as an update.** "we want the initial app to
 be released. then we can do an update." Build 3 stays on automatic release.
 Second-order effect of D2 plus D4: a build-3 phone on a record an updated app has moved shows no
-blood tests until it updates. Brad's rollout answer (wait for build 3, then ship web and iPhone
-together) and §11's manual release of the update keep that window to people who have not updated
-yet.
+blood tests until it updates. Brad assumes build 3 has no users, so the release is not timed
+against it (§11).
 
 **D5, an upload's extra core value: offer it as the core value (option 1).** Brad, 2026-11-02:
 "do it". When a report prints a core test the extractor could not file as core (an unfamiliar
@@ -357,7 +356,7 @@ the core value. On a day already filled, the review shows both and the person ch
 saved unless they replace. A unit that will not convert is listed as "not saved", with the reason.
 Creatinine stays a lab row under its printed name (US-12 AC11).
 
-## 11. Migration plan (Brad, 2026-11-02: wait for build 3 to go live, then ship web and iPhone together)
+## 11. Migration plan (Brad, 2026-11-02: "we need a migration plan"; assume build 3 has 0 users)
 
 ### How a record moves
 
@@ -390,21 +389,20 @@ Creatinine stays a lab row under its printed name (US-12 AC11).
 
 ### Order
 
-1. PR 543 merges. Build 3 goes live from App Review as it is (D4).
+Brad (2026-11-02): "no one is going to install this app. let's assume 0 users". So the release does
+not wait on Apple, and nothing is timed against build 3.
+
+1. PR 543 merges.
 2. The build: health-core, widget, CLI, both MCP servers and `ios/engine`, with tests first per AC,
-   adversary and Codex review, `test:all`. Merged to main, **not deployed**.
-3. The iPhone update is submitted to App Review with **manual release** chosen in App Store Connect.
-   (This is the update, not build 3; build 3 stays on automatic release.) Checked first in the
-   simulator on a de-identified copy of a real-shaped record, never on Brad's phone data.
-4. When Apple approves it: release the iPhone update and run the CI Deploy (website and server) the
-   same hour. Manual release is what lets the two go live together. If the website went first,
-   build-3 phones would lose their blood tests from view; if the iPhone went first, the old website
-   would show moved blood tests as extra lab rows and plan without them.
-5. Live checks the same day (desktop and real WebKit): an old-shape test record opens, moves and is
+   adversary and Codex review, `test:all`. Merged to main.
+3. CI Deploy (website and server), as soon as it is merged.
+4. Live checks the same day (desktop and real WebKit): an old-shape test record opens, moves and is
    written once; its plan matches the plan before the move (no old core-named rows); an upload with
-   "LDL - Cholesterol" lands in the LDL tile; the iPhone update opens a moved record.
+   "LDL - Cholesterol" lands in the LDL tile.
+5. The iPhone update goes to TestFlight and App Review whenever it is ready, checked first in the
+   simulator on a de-identified copy of a real-shaped record, never on Brad's phone data.
 6. CLI and stdio-connector users get the change when they update their copy (`git pull`). An old copy
-   on a moved record behaves like build 3. `docs/agent-access.md` says so.
+   on a moved record behaves like build 3, below. `docs/agent-access.md` says so.
 7. A week of watching: the `blood_tests_unified` counts (§12), Sentry, and support mail.
 
 ### What a build-3 user sees
@@ -413,8 +411,8 @@ Creatinine stays a lab row under its printed name (US-12 AC11).
 - **Before updating, once an updated app has moved their record** (the website, or another device
   already updated): My data shows no blood tests, and the phone's plan has no lipids, HbA1c, ApoB,
   PSA, Lp(a) or creatinine, with no warning. Weight, waist and blood pressure still show. Nothing
-  is lost, and a blood test they type is saved in the old place. Step 4's same-hour release keeps
-  this to people who have not updated their phone yet.
+  is lost, and a blood test they type is saved in the old place. Brad assumes no such user exists;
+  this is what one would see.
 - **After updating:** the app moves the record on its first open and writes it once. Every blood
   test is back where it was, plus any value typed meanwhile, plus old core-named lab rows now folded
   into their tiles (D1).
