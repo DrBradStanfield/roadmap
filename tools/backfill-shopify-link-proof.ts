@@ -35,6 +35,7 @@
 import { pathToFileURL } from 'url';
 import pg from 'pg';
 import { createClient } from '@supabase/supabase-js';
+import { requireMergedCode } from './write-gate.mjs';
 
 export interface AuthRow {
   id: string;
@@ -172,6 +173,7 @@ async function readRows(databaseUrl: string): Promise<AuthRow[]> {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  if (process.argv.includes('--execute')) requireMergedCode('backfill-shopify-link-proof --execute');
   const { SUPABASE_URL: url, SUPABASE_SERVICE_KEY: key, SESSION_DATABASE_URL: databaseUrl } = process.env;
   if (!url || !key || !databaseUrl) {
     console.error('SUPABASE_URL, SUPABASE_SERVICE_KEY and SESSION_DATABASE_URL are required (npx tsx --env-file=.env ...)');
