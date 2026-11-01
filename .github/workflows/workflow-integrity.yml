@@ -8,12 +8,17 @@
 # the exfiltration prize). Therefore: true pre-receive REJECTION is not
 # available here. This is the strongest enforceable response instead:
 #
-#   Non-Brad push touching .github/workflows/** →
-#     1. immediately DISABLE every workflow file the push added/modified
+#   Any push to main touching .github/workflows/** → a 🚨 issue assigned to
+#   Brad with an @mention (bot issues alone email nobody), whoever pushed it:
+#   agent and loop sessions push as DrBradStanfield too, so the actor proves
+#   nothing (GHSA-rmrp-qfvm-jf2p, 2026-11-02). Brad confirms each one.
+#   A push by any OTHER actor is also neutralized at once:
+#     1. DISABLE every workflow file the push added/modified
 #     2. CANCEL any runs those workflows started from the same push
-#     3. open a 🚨 issue (native email to Brad) with the response playbook
-#   Daily scheduled audit backstops the tripwire-deleted-in-same-push case;
-#   the product-health loop's weekly git-log check is the out-of-band layer.
+#   Daily scheduled audit: any workflow-file commit on main in the last 26 h
+#   that this push check never ran on (an intermediate commit of a multi-commit
+#   push, or a push that removed this file); the product-health loop's weekly
+#   git-log check is the out-of-band layer.
 #
 # Residual (documented, accepted): a same-push-triggered malicious run may
 # execute for a few seconds before cancellation. Only the spend-capped
@@ -43,33 +48,47 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Neutralize and alert on non-Brad workflow-file changes
+      - name: Alert Brad on every workflow-file change; neutralize non-Brad ones
         env:
           GH_TOKEN: ${{ github.token }}
           ACTOR: ${{ github.actor }}
           EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
         run: |
           set -euo pipefail
+          # Only this workflow's own issue (author github-actions, exact title)
+          # takes the alert, never a look-alike anyone can open first.
+          TITLE="🚨 SECURITY: workflow files changed on main"
           alert() {
-            existing=$(gh issue list -R "${GITHUB_REPOSITORY}" --state open \
-              --search "SECURITY: workflow files in:title" --json number --jq '.[0].number // empty')
+            body="@DrBradStanfield $1"
+            existing=$(gh issue list -R "${GITHUB_REPOSITORY}" --state open --author app/github-actions \
+              --search "SECURITY workflow files in:title" --json number,title \
+              | jq -r --arg t "${TITLE}" '[.[] | select(.title == $t)][0].number // empty')
             if [ -n "${existing}" ]; then
-              gh issue comment "${existing}" -R "${GITHUB_REPOSITORY}" --body "$1"
+              gh issue comment "${existing}" -R "${GITHUB_REPOSITORY}" --body "${body}"
             else
-              gh issue create -R "${GITHUB_REPOSITORY}" \
-                --title "🚨 SECURITY: workflow files changed by a non-Brad actor" \
-                --body "$1"
+              gh issue create -R "${GITHUB_REPOSITORY}" --title "${TITLE}" \
+                --assignee DrBradStanfield --body "${body}"
             fi
           }
 
           if [ "${EVENT}" = "push" ]; then
+            # The push payload Actions gets carries no per-commit file lists, so
+            # ask the compare API what changed under .github/workflows/.
+            changes=$(gh api "repos/${GITHUB_REPOSITORY}/compare/${BEFORE}...${GITHUB_SHA}" \
+              --jq '[.files[] | select(.filename | startswith(".github/workflows/")) | {filename, status}]')
             if [ "${ACTOR}" = "DrBradStanfield" ]; then
-              echo "Workflow change pushed by DrBradStanfield — OK."
+              # Agents and loops push as this account too: tell Brad, never disable.
+              files=$(echo "${changes}" | jq -r '.[].filename')
+              alert "workflow files changed on main, pushed as **${ACTOR}** (commit ${GITHUB_SHA}). Agent and loop sessions push as this account too: if you did not make or merge this, treat it as tampering.
+          Files: ${files}
+          Commit: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}
+          Playbook if it was not you: (1) disable the changed workflows in the Actions tab; (2) git revert on main;
+          (3) revoke the 'production' environment secrets, rotate ANTHROPIC_API_KEY."
               exit 0
             fi
             # 1) Disable every workflow file this push added or modified.
-            touched=$(jq -r '[.commits[].added[], .commits[].modified[]] | unique | .[]
-                             | select(startswith(".github/workflows/"))' "${GITHUB_EVENT_PATH}")
+            touched=$(echo "${changes}" | jq -r '.[] | select(.status != "removed") | .filename')
             disabled=""
             for f in ${touched}; do
               wf=$(basename "${f}")
@@ -96,20 +115,23 @@ jobs:
             exit 0
           fi
 
-          # Scheduled audit: last 8 days of commits touching workflow files,
-          # attributed to any account other than Brad. (Commits from Brad's
-          # Mac with an unmapped local email have a null author login — not
-          # flagged; the push path above and the product-health loop's weekly
-          # log review cover that gap.)
-          since=$(date -u -d '8 days ago' +%Y-%m-%dT%H:%M:%SZ)
-          suspicious=$(gh api "repos/${GITHUB_REPOSITORY}/commits?path=.github/workflows&since=${since}&per_page=100" \
-            --jq '[.[] | select(.author.login != null and .author.login != "DrBradStanfield")
-                   | {sha: .sha[0:8], who: .author.login, msg: (.commit.message | split("\n")[0])}]')
-          count=$(echo "${suspicious}" | jq 'length')
+          # Scheduled audit: workflow-file commits on main in the last 26 h
+          # that the push check above never ran on successfully (it runs on a
+          # push's head only, and not at all on a push that removed this file). Every
+          # author counts: agents push as DrBradStanfield too.
+          since=$(date -u -d '26 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+          # Only a push check that SUCCEEDED counts as reported; a failed or
+          # cancelled one may never have reached Brad.
+          checked=$(gh run list -R "${GITHUB_REPOSITORY}" --workflow workflow-integrity.yml --event push \
+            --limit 100 --json headSha,conclusion --jq '[.[] | select(.conclusion == "success") | .headSha]')
+          missed=$(gh api "repos/${GITHUB_REPOSITORY}/commits?path=.github/workflows&since=${since}&per_page=100" \
+            | jq --argjson checked "${checked}" '[.[] | select(.sha as $s | $checked | index($s) | not)
+                   | {sha: .sha[0:8], who: (.author.login // .commit.author.name), msg: (.commit.message | split("\n")[0])}]')
+          count=$(echo "${missed}" | jq 'length')
           if [ "${count}" -gt 0 ]; then
-            alert "Daily audit: ${count} workflow-file commit(s) in the last 8 days not attributed to DrBradStanfield:
+            alert "daily audit: ${count} workflow-file commit(s) on main in the last 26 h that the push check never ran on:
           \`\`\`json
-          ${suspicious}
+          ${missed}
           \`\`\`"
           else
             echo "Daily audit clean."
