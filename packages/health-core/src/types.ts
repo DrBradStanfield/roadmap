@@ -67,6 +67,11 @@ export interface HealthResults {
   suggestions: Suggestion[];
 }
 
+/** The supplement cards that carry a US product block (US-61): us-products.ts's US_PRODUCT_LINES,
+ *  and the keys of the US text (suggestions.ts) and references (evidence.ts). No product name here. */
+export type UsProductCardId = 'supplement-micronutrient-base' | 'supplement-creatine' | 'supplement-collagen'
+  | 'supplement-lutein-zeaxanthin' | 'supplement-tmg' | 'supplement-sleep';
+
 /**
  * A health suggestion
  */

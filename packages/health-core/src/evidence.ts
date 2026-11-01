@@ -13,6 +13,7 @@
  * DOI STATUS:
  * - All DOIs verified via web lookup against roadmap_text.html citations
  */
+import type { UsProductCardId } from './types';
 
 export interface SuggestionReference {
   label: string;
@@ -125,17 +126,17 @@ const REF_CREATINE_STRENGTH: SuggestionReference = { label: 'Kreider 2017 – IS
 const REF_MPOD: SuggestionReference = { label: 'Wilson 2021 – Lutein/zeaxanthin intake & macular pigment optical density: meta-analysis (Adv Nutr)', url: 'https://doi.org/10.1093/advances/nmab071' };
 
 /**
- * The references of the US variants (US-61 AC3), keyed `<id>-us` like
+ * The references of the US variants (US-61 AC3), keyed by card id like
  * suggestions.ts's US_SUPPLEMENT_DESCRIPTIONS. Read only by the US product
  * overlay (us-products.ts); never attached by the engine.
  */
-export const US_SUPPLEMENT_REFERENCES: Readonly<Record<string, SuggestionReference[]>> = {
+export const US_SUPPLEMENT_REFERENCES: Readonly<Partial<Record<UsProductCardId, SuggestionReference[]>>> = {
   // No WHO dementia guideline.
-  'supplement-micronutrient-base-us': [...REFS_COSMOS, REF_K2_VKA],
+  'supplement-micronutrient-base': [...REFS_COSMOS, REF_K2_VKA],
   // No cognition or memory references.
-  'supplement-creatine-us': [REF_CREATINE_STRENGTH],
+  'supplement-creatine': [REF_CREATINE_STRENGTH],
   // No macular degeneration trials.
-  'supplement-lutein-zeaxanthin-us': [REF_MPOD],
+  'supplement-lutein-zeaxanthin': [REF_MPOD],
 };
 
 // ============================================================
