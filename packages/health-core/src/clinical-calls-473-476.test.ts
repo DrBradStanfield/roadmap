@@ -4,8 +4,8 @@ import { generateSuggestions } from './suggestions';
 import { STAT_CARD_EVIDENCE, getIbwEvidence } from './evidence';
 import { getBMICategory } from './calculations';
 import { statTiles } from './stat-tiles';
-import { labSlotKey, labTestLabel, canonicalLabRow, resolveLabCatalogEntry } from './lab-catalog';
-import { unifiedSystemPrompt } from './lab-extraction';
+import { labSlotKey, labTestLabel, canonicalLabRow, resolveLabCatalogEntry, foldName, LAB_CATALOG, AMBIGUOUS_LOOSE_NAMES } from './lab-catalog';
+import { unifiedSystemPrompt, CORE_METRIC_ALIASES } from './lab-extraction';
 import { toCanonicalValue } from './units';
 import type { HealthInputs, HealthResults } from './types';
 
@@ -87,9 +87,53 @@ describe('US-07 AC9: cortisol by timing (issue 476)', () => {
       .toMatchObject({ value: 275.9, unit: 'nmol/L' });
   });
 
-  it('the upload prompt does not offer the new names yet', () => {
-    const prompt = unifiedSystemPrompt('full');
-    expect(prompt).toContain('cortisol_am');
-    expect(prompt).not.toMatch(/cortisol_random|cortisol_pm/);
+  it('US-07 AC10: the upload prompt offers all three timings (Brad 2026-11-02)', () => {
+    for (const mode of ['full', 'metadata'] as const) {
+      expect(unifiedSystemPrompt(mode)).toContain('cortisol_am, cortisol_random, cortisol_pm');
+    }
+  });
+});
+
+describe('US-07 AC10: punctuated names reach their entry (Brad 2026-11-02, issue 476 follow-up)', () => {
+  it.each([
+    ['Cortisol, A.M.', 'cortisol_am'], ['Cortisol A.M.', 'cortisol_am'], ['cortisol(am)', 'cortisol_am'],
+    ['Cortisol (A.M.)', 'cortisol_am'], ['a.m. cortisol', 'cortisol_am'], ['Cortisol-Morning', 'cortisol_am'],
+    ['cortisol-pm', 'cortisol_pm'], ['Cortisol - PM', 'cortisol_pm'], ['P.M. cortisol', 'cortisol_pm'],
+    ['Cortisol, P.M.', 'cortisol_pm'], ['Cortisol – Midnight', 'cortisol_pm'], ['cortisol(random)', 'cortisol_random'],
+    ['Cortisol-Random', 'cortisol_random'],
+  ])('"%s" is filed under %s', (printed, slot) => {
+    expect(labSlotKey(printed)).toBe(slot);
+  });
+
+  it.each(['Salivary cortisol', 'Salivary Cortisol, Late-Night', 'Cortisol (saliva)', 'Urine free cortisol', 'Cortisol, urine', 'Cortisol (24-hr urine)'])(
+    '"%s" still matches nothing', (printed) => {
+      expect(resolveLabCatalogEntry(printed)).toBeUndefined();
+    });
+
+  it('no loose form is shared by two entries', () => {
+    expect(AMBIGUOUS_LOOSE_NAMES).toEqual([]);
+  });
+
+  // Every name the catalogue already answered to answers the same way: its own key,
+  // as the exact fold resolves it (first entry wins a name).
+  it('every existing catalogue name still resolves to the same key', () => {
+    const firstOwner = new Map<string, string>();
+    for (const e of LAB_CATALOG) {
+      for (const n of [e.key, e.label, ...e.aliases]) if (!firstOwner.has(foldName(n))) firstOwner.set(foldName(n), e.key);
+    }
+    for (const [folded, key] of firstOwner) expect(resolveLabCatalogEntry(folded)?.key, folded).toBe(key);
+  });
+
+  it('a core metric name, plain or hyphenated, never resolves to a catalogue entry', () => {
+    for (const [metric, aliases] of Object.entries(CORE_METRIC_ALIASES)) {
+      for (const n of [metric, ...aliases]) {
+        expect(resolveLabCatalogEntry(n), n).toBeUndefined();
+        expect(resolveLabCatalogEntry(n.replace(/ /g, '-')), n).toBeUndefined();
+      }
+    }
+  });
+
+  it('an uncatalogued name keeps its slot: the loose fold is lookup only', () => {
+    expect(labSlotKey('Cortisol, saliva')).toBe('cortisol, saliva');
   });
 });

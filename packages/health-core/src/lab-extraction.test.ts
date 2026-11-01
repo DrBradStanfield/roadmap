@@ -854,7 +854,8 @@ describe('US-21 AC4: the prompt suggests the lab catalogue keys, and only those'
     });
     // US-21 AC19/AC20: the catalogue grew, the prompt did not. Its two name
     // lists are pinned to what main rendered before (2026-10-20); a change here
-    // is a prompt change and waits for the #166 Haiku benchmark.
+    // is a prompt change and waits for the #166 Haiku benchmark. One exception
+    // (US-07 AC10, Brad 2026-11-02: "just switch over"): the three cortisol timings.
     it(`${mode}: the TARGET METRICS and ADDITIONAL VALUES lists are unchanged by the catalogue additions`, () => {
       const prompt = unifiedSystemPrompt(mode);
       const target = prompt.slice(prompt.indexOf('TARGET METRICS (use these exact keys):'), prompt.indexOf('CRITICAL RULES')).trimEnd().split('\n').slice(1);
@@ -876,7 +877,7 @@ describe('US-21 AC4: the prompt suggests the lab catalogue keys, and only those'
         '  Liver: alt, ast, ggt, alp, bilirubin_total, bilirubin_direct, ldh, albumin, total_protein, globulin',
         '  Blood count: haemoglobin, haematocrit, rbc, wbc, platelets, neutrophils, lymphocytes, monocytes, eosinophils, basophils, mcv, mch, mchc, rdw',
         '  Thyroid: tsh, ft4, ft3, anti_tpo',
-        '  Hormones: testosterone_total, free_testosterone, free_testosterone_calculated, shbg, estradiol, prolactin, cortisol_am, psa_free, lh, fsh, progesterone, dhea_s, igf1',
+        '  Hormones: testosterone_total, free_testosterone, free_testosterone_calculated, shbg, estradiol, prolactin, cortisol_am, cortisol_random, cortisol_pm, psa_free, lh, fsh, progesterone, dhea_s, igf1',
         '  Vitamins & minerals: vitamin_d, vitamin_b12, b12_active, folate, ferritin, iron, tibc, transferrin, transferrin_sat, magnesium, calcium_corrected, calcium_total, phosphate, zinc',
         '  Inflammation: crp, esr',
         '  Metabolic: glucose, glucose_random, insulin, apoa1, homocysteine, ck',
