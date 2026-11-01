@@ -122,8 +122,8 @@ final class USProductsTests: XCTestCase {
         XCTAssertEqual(defaults.object(forKey: AppStoreCountry.key) as? Bool, false)
     }
 
-    /// D14, a new app with an old engine (builds 3 and 4 carry bridge 2d467ff50c66c42d, and
-    /// their engines reach this app too): an engine built before US-61 ignores the fifth
+    /// D14, a new app with an old engine (builds 3 and 4 carried bridge 2d467ff50c66c42d; the
+    /// bridge moved on 2026-11-01, but the case stays covered): an engine built before US-61 ignores the fifth
     /// argument and sends no usProducts, and the app then draws the plan with no block.
     func testAnEngineBeforeUS61DrawsThePlanWithNoBlock_US61() throws {
         let url = try XCTUnwrap(Bundle.main.url(forResource: "health-engine", withExtension: "js"))

@@ -240,7 +240,7 @@ export function computeNextDueDates(
  * per-category reminder preferences.
  *
  * Never returns an empty schedule (US-23 AC6, Brad 2026-08-14): when nothing
- * is due within the next 12 months — including the missing-demographics case,
+ * is due within the next 12 months — including the no-birth-year case,
  * where no eligibility rule can run at all — the schedule is floored with one
  * "Annual health check-in" item 12 months out. A colonoscopy-every-10-years
  * user must not get a decade of silence; every enrolled person gets at least
@@ -272,8 +272,10 @@ export function computeReminderSchedule(file: RoadmapFile, now: Date): ReminderS
 }
 
 function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleItem[] {
-  const { sex, birthYear, birthMonth } = file.profile;
-  if (!sex || !birthYear) return []; // no demographics → no eligibility rules can run
+  const { birthYear, birthMonth } = file.profile;
+  if (!birthYear) return []; // no age → no eligibility rules can run
+  // No sex (or one that is not male or female) drops only the sexed screenings (US-07 AC8).
+  const sex = file.profile.sex === 'male' || file.profile.sex === 'female' ? file.profile.sex : undefined;
   let age = now.getUTCFullYear() - birthYear;
   if (birthMonth && now.getUTCMonth() + 1 < birthMonth) age -= 1;
 

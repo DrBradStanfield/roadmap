@@ -191,14 +191,12 @@ export function missingPlanInputs(inputs: Partial<HealthInputs>): Array<(typeof 
  * Main calculation function - takes all inputs and returns all results
  */
 export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSystem, medications?: MedicationInputs, screenings?: ScreeningInputs, unitOverrides?: Partial<Record<MetricType, UnitSystem>>, now = new Date()): HealthResults {
-  // Calculate ideal body weight and protein target (always available with height + sex)
-  const ibw = calculateIBW(inputs.heightCm, inputs.sex);
-  const proteinTarget = calculateProteinTarget(ibw);
+  // Ideal body weight and protein target need sex: no female or male default (US-07 AC8)
+  const ibw = inputs.sex ? calculateIBW(inputs.heightCm, inputs.sex) : undefined;
 
   const results: HealthResults = {
     heightCm: inputs.heightCm,
-    idealBodyWeight: Math.round(ibw * 10) / 10,
-    proteinTarget,
+    ...(ibw !== undefined ? { idealBodyWeight: Math.round(ibw * 10) / 10, proteinTarget: calculateProteinTarget(ibw) } : {}),
     suggestions: [],
   };
 
@@ -250,16 +248,16 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
   }
   if (knownMinorOf(inputs, now)) results.knownMinor = true;
 
-  // US-07 AC7: the lab's printed eGFR when withLabEgfr chose it; else from creatinine + age + sex
+  // US-07 AC7: the lab's printed eGFR when withLabEgfr chose it; else from creatinine + age + sex (AC8: no sex, none)
   if (inputs.labEgfr !== undefined) {
     results.eGFR = Math.round(inputs.labEgfr);
     results.eGFRFromLab = true;
-  } else if (inputs.creatinine !== undefined && results.age !== undefined) {
+  } else if (inputs.creatinine !== undefined && results.age !== undefined && inputs.sex) {
     results.eGFR = Math.round(calculateEGFR(inputs.creatinine, results.age, inputs.sex));
   }
 
   // Adjust protein target for CKD Stage 3b+ (eGFR < 45): 1.0g/kg instead of 1.2g/kg
-  if (results.eGFR !== undefined && results.eGFR < EGFR_THRESHOLDS.mildlyDecreased) {
+  if (ibw !== undefined && results.eGFR !== undefined && results.eGFR < EGFR_THRESHOLDS.mildlyDecreased) {
     results.proteinTarget = Math.round(ibw * 1.0);
   }
 

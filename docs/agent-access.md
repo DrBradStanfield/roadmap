@@ -153,8 +153,11 @@ someone's medical history, or lose their data at the next device sync.
    `inputs.labEgfr` (mL/min/1.73m²) and `inputs.labEgfrDate` (YYYY-MM-DD) are set only
    when the plan's eGFR is the lab's printed one (US-07 AC7): the latest active lab `egfr`
    row, used when it is from the creatinine's day or later, or when no eGFR can be
-   calculated (no birth year, or a creatinine the plan excludes). They are derived, never
-   stored: write lab values, not these fields.
+   calculated (no birth year, no sex, or a creatinine the plan excludes). `inputs.labEgfrOutdated`
+   is `true` when a creatinine newer than that lab eGFR exists but the plan cannot use it
+   yet (no sex or no birth year): the lab eGFR still shows and still sets the protein
+   target, but the plan gives no potassium advice from it (US-07 AC8). All three are
+   derived, never stored: write lab values, not these fields.
    One exception to "converted": LDL and ApoB, the lipids with a target line, print on
    the side of their line the plan grades them (US-07 AC5). A value within one display
    step of the line can differ from a plain conversion: one step up to the line when the
@@ -246,7 +249,7 @@ Validate your result against the schema before you write it back.
   and leave the superseded one where it is. If you convert such a row yourself you will
   make a second, competing correction.
 - **A thin plan is not a clean bill of health.** On a record holding no measurement at
-  all, `get_plan` still returns `protein-target`, `exercise` and `sleep` — they rest on
+  all, `get_plan` still returns `protein-target` (when sex is known), `exercise` and `sleep` — they rest on
   no value whatever — plus the screening, skin and supplement cards, which follow from
   sex and age alone, and `fiber`, which shows whenever lipids are NOT elevated, absent
   lipids included: read it as "no lipid card", never as "lipids fine". Every other
@@ -269,6 +272,18 @@ Validate your result against the schema before you write it back.
   `adults-only` card, a `null` in those four profile fields means "withheld". In any
   other plan a `null` means the inputs are missing (no creatinine, no weight): read
   `missingInputs` for which.
+- **The plan needs a height, not a sex** (US-07 AC8, 2026-10-31). A record with a height
+  and no sex gets a plan without every part that needs sex: `profile.sex`,
+  `profile.idealBodyWeightKg` and `profile.proteinTargetG` are `null`, there is no
+  `protein-target` card, no calculated eGFR (a lab-printed eGFR still shows), no
+  `hdl-low` card and no breast, cervical, prostate, endometrial or bone-density screening.
+  `missingInputs` names `sex`, and `profile.needsSex` lists those parts in words (`[]` once sex
+  is set). Do not work them out yourself or assume a sex; ask the user, then
+  `update_profile`. A stored sex that is not `male` or `female` counts as none (the
+  record is not changed). `due` keeps every reminder that does not depend on sex (blood
+  tests, medication review, colorectal and lung screening); only the sexed screenings
+  drop out. Only a missing or unusable height still fails, with a hint that asks
+  for it.
 
 ## The hosted path (US-32 Phase 1)
 
