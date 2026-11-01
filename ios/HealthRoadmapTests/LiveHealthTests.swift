@@ -609,8 +609,10 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertEqual(LiveReconnectRow.title(turnOn: true), "Turn On", "before the sheet, Turn On is unchanged")
         XCTAssertEqual(LiveFooter.healthPath(appsMenu: true), "Settings › Apps › Health › Data Access & Devices › Health Roadmap", "iOS 18 and later")
         XCTAssertEqual(LiveFooter.healthPath(appsMenu: false), "Settings › Health › Data Access & Devices › Health Roadmap", "iOS 17")
-        XCTAssertTrue(LiveFooter.healthSettings.hasSuffix(" \(LiveFooter.healthPath(appsMenu: true))."), "this simulator runs iOS 18 or later")
-        XCTAssertTrue(LiveFooter.access.hasSuffix(" \(LiveFooter.healthPath(appsMenu: true))."), "AC4's footer names the same path")
+        let here: String
+        if #available(iOS 18, *) { here = LiveFooter.healthPath(appsMenu: true) } else { here = LiveFooter.healthPath(appsMenu: false) }
+        XCTAssertTrue(LiveFooter.healthSettings.hasSuffix(" \(here)."), "the path for the iOS this runs on")
+        XCTAssertTrue(LiveFooter.access.hasSuffix(" \(here)."), "AC4's footer names the same path")
     }
 
     /// N1: a page read cancelled mid-flight throws, so the page never keeps it as "read,

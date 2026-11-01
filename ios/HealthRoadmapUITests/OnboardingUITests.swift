@@ -533,7 +533,9 @@ final class OnboardingUITests: XCTestCase {
         for _ in 0..<12 where !open.waitForExistence(timeout: 5) { app.swipeDown() }
         XCTAssertTrue(open.waitForExistence(timeout: 30), "the row says Open Settings")
         XCTAssertFalse(app.buttons["Reconnect"].exists, "never Reconnect")
-        let line = "Heart rate, sleep, VO2 max and steps can show here from Apple Health. The Apple Health settings for this app are in Settings › Apps › Health › Data Access & Devices › Health Roadmap."
+        // iOS 18 moved Health under Settings › Apps; the app runs from iOS 17.
+        let apps = (Int(UIDevice.current.systemVersion.split(separator: ".").first ?? "") ?? 0) >= 18 ? "Apps › " : ""
+        let line = "Heart rate, sleep, VO2 max and steps can show here from Apple Health. The Apple Health settings for this app are in Settings › \(apps)Health › Data Access & Devices › Health Roadmap."
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label == %@", line)).firstMatch.exists,
                       "the row's words and where Apple Health's settings are, read as one")
         snap(app, "us56 open settings row")
