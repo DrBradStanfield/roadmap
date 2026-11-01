@@ -589,6 +589,10 @@ export class RecordSession {
    * @returns false when the save failed (already reported to the host).
    */
   private persist(): Promise<boolean> {
+    // Nothing to save writes nothing: a save always merges, and every merge
+    // moves the lamport on. Covers an empty flush and the debounce left over
+    // from an edit a save's own next pass already took (US-10 AC5a).
+    if (!this.running && !this.unsaved) return Promise.resolve(true);
     if (this.running) {
       this.dirtyDuringPersist = true;
       return this.running;

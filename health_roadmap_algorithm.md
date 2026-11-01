@@ -662,6 +662,8 @@ Three-file sync for this section's 2026-10-14 amendments (the strict missing-mon
 | `exercise` | exercise | At least 150 min moderate cardio, or 75 min vigorous, or a mix (1 vigorous min = 2 moderate) + 2-3 resistance sessions/week | WHO 2020; Physical Activity Guidelines 2018 |
 | `sleep` | sleep | 7-9 hours nightly | Cappuccio 2010 |
 
+**Exercise safety (display text, Brad 2026-11-01):** roadmap_text.html's Exercise section says: stop if you get chest pain, dizziness, fainting, palpitations or unusual breathlessness, and see your doctor before you exercise again (Franklin 2020, AHA scientific statement, DOI: 10.1161/CIR.0000000000000749). Get emergency care for chest pain, whatever your pulse (Gulati 2021, AHA/ACC chest pain guideline, DOI: 10.1161/CIR.0000000000001029), or for a racing pulse with fainting, dizziness or breathlessness (NHS Arrhythmia, 2024, www.nhs.uk/conditions/arrhythmia). A very slow pulse with fainting, dizziness or breathlessness needs prompt medical care (Kusumoto 2019, ACC/AHA/HRS bradycardia guideline, DOI: 10.1161/CIR.0000000000000628). The heart rate guide (`heart_rate` in `metric-guides.ts`) states the last two lines and cites Gulati 2021, NHS 2024 and Kusumoto 2019. No card or threshold changes.
+
 ### Conditional Lifestyle Suggestions
 
 | ID | Condition | Priority | Notes |
