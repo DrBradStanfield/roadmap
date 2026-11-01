@@ -526,16 +526,21 @@ const subscriptionToolResult: ToolResultFor = (b, blocks) => {
  * `opts.profileEdits` (US-16 AC2): propose_profile_edit goes only to a client
  * that says it applies it. A widget built before it applies any edit that is
  * not a field as a medication, so it gets neither the tool nor a profile edit.
+ *
+ * `opts.app` (US-67 AC3): the iPhone app's turn. The form tools, their stub
+ * results and the tool-only line say a value waits in a Save banner, since the
+ * app has no form to pre-fill.
  */
 export async function getChatCompletion(
   systemBlocks: SystemBlock[],
   messages: ChatTurnMessage[],
   canApplyEdits: boolean,
   onEvent?: (event: ChatStreamEvent) => void,
-  opts?: { subscriptionTool?: boolean; guestInputs?: unknown; profileEdits?: boolean },
+  opts?: { subscriptionTool?: boolean; guestInputs?: unknown; profileEdits?: boolean; app?: boolean },
 ): Promise<ChatCompletionResult> {
   const profileEdits = opts?.profileEdits === true;
-  const tools = [...(canApplyEdits ? chatToolsFor(messages, profileEdits) : []), ...(opts?.subscriptionTool ? [PROPOSE_SUBSCRIPTION_CHANGE_TOOL] : [])];
+  const app = opts?.app === true;
+  const tools = [...(canApplyEdits ? chatToolsFor(messages, profileEdits, app) : []), ...(opts?.subscriptionTool ? [PROPOSE_SUBSCRIPTION_CHANGE_TOOL] : [])];
   const body = {
     ...modelParams(CHAT_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system: systemBlocks,
@@ -555,7 +560,7 @@ export async function getChatCompletion(
       ? await withRoadmapRound(messages, send, opts?.guestInputs, (counts) => {
         roadmapRun = { roadmapRun: counts };
         onEvent?.({ type: 'status', text: ROADMAP_STATUS });
-      }, subscriptionToolResult)
+      }, subscriptionToolResult, app)
       : null;
     const result = turn ? turn.final : await send({ messages });
     const { stopReason } = result;
@@ -584,7 +589,7 @@ export async function getChatCompletion(
     if (!result.content || result.content.trim().length === 0) {
       if (proposedEdits.length > 0) {
         return {
-          content: toolOnlyAck(proposedEdits),
+          content: toolOnlyAck(proposedEdits, app),
           usage,
           isFallback: false,
           stopReason,

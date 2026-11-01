@@ -65,6 +65,29 @@ describe('US-15 AC19: tools only where a client can apply them', () => {
   });
 });
 
+// US-67 AC1/AC3: the iPhone app's turn gets the same tools in its own words, and a tool-only reply
+// says the value is ready to save; the web's request is unchanged.
+describe('US-67 AC3: the app\'s tools and tool-only line', () => {
+  const ldl = { type: 'tool_use', id: 't1', name: 'propose_field_edit', input: { field: 'ldlC', value: 3.4, unit: 'mmol/L' } };
+
+  it('US-67 AC3: app: true sends the app\'s tool words, and the tool-only line says ready to save', async () => {
+    const fetchMock = respond('end_turn', [ldl]);
+    const result = await getChatCompletion([], [{ role: 'user', content: 'my LDL is 3.4 mmol/L' }], true, undefined, { profileEdits: true, app: true });
+    const tools = JSON.parse(fetchMock.mock.calls[0][1].body).tools;
+    expect(tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit', 'run_roadmap']);
+    expect(tools[0].description).toMatch(/banner/);
+    expect(result.content).toBe("I've put that ready to save — check it and press Save.");
+    expect(result.proposedEdits).toEqual([{ kind: 'field', field: 'ldlC', displayValue: 3.4, unitSystem: 'si', date: null }]);
+  });
+
+  it('US-67 AC3: without app the web\'s words and line are unchanged', async () => {
+    const fetchMock = respond('end_turn', [ldl]);
+    const result = await getChatCompletion([], [{ role: 'user', content: 'my LDL is 3.4 mmol/L' }], true, undefined, { profileEdits: true });
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).tools[0].description).toMatch(/^Pre-fill a value/);
+    expect(result.content).toBe("I've pre-filled that in your form — review the highlighted value and press Save.");
+  });
+});
+
 describe('US-15 AC14: a refusal is its own outcome', () => {
   it.each([
     ['bio', REFUSAL_RESPONSES.clinical],

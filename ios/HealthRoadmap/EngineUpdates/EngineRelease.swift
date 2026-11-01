@@ -21,7 +21,7 @@ enum EngineRelease {
 
     /// Every door the engine must have (the contract's `doors`), checked by the self-test.
     static let doors = [
-        "applyEditJson", "chatContextJson", "chatDeleteJson", "chatListJson", "chatMessagesJson",
+        "applyEditJson", "chatContextJson", "chatDeleteJson", "chatEditsJson", "chatListJson", "chatMessagesJson",
         "chatRecordExchangeJson", "cloudClose", "cloudEdit", "cloudErase", "cloudFlush", "cloudHidden", "cloudLabImport",
         "cloudOpen", "cloudRefresh", "cloudVisible", "convertJson", "documentSave", "erasePhoneJson", "fileNamesJson", "healthWritesJson", "historyJson",
         "labReviewJson", "labSaveSummaryJson", "mergeJson", "newRecordJson", "numberJson",

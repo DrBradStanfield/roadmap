@@ -46,6 +46,8 @@ struct ChatClient: Sendable {
             "history": turns,
             "guestInputs": context,
             "stream": true,
+            // The app applies the chat's form edits (US-67 AC1): only then does the server offer its edit tools.
+            "edits": 1,
         ])
     }
 

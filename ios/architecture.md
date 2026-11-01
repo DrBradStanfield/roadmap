@@ -81,6 +81,10 @@ beta, so it's fine").** Main had kept `2d467ff50c66c42d` so US-61's engine (its 
 above, the contract hashes to `8dee92d80c028ed3`, which `EngineRelease.bridge` and
 `bridge.test.ts` now carry. Builds 3 and 4 stop receiving over-the-air engines: the US-61
 engine and this one reach them only through the next App Store build.
+**Bridge moved, 2026-11-02 (US-67, the chat's edits).** The new `chatEditsJson` door is one
+an older app cannot serve, so the contract hashes to `c72e95f874b9c22b`; `EngineRelease.bridge`
+and `bridge.test.ts` carry it. The chat's writes are new `Edit` kinds (`chatEdits`, `chatUndo`)
+inside the existing `applyEditJson` and `cloudEdit`, so they need no door of their own.
 
 Speed, measured 2026-10-21 (Node 22, esbuild bundle, an Intel iMac, the sample record
 padded to 526 rows; `--jitless` stands in for an app's JavaScriptCore, which runs without a
@@ -1172,10 +1176,10 @@ health tool (`data-clarity-mask` on `HealthTool.tsx`'s root). The app matches th
   never a navigation title, which can carry a supplement's name. Nothing is ever unmasked.
 - `AnalyticsMaskingTests` (US-25 AC19) fails if the window is not masked first, if any code
   unmasks, if a text input lacks its mask, or if any file but Analytics.swift calls Clarity.
-- **Custom events, exactly fourteen fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58; "Alcohol answered" for US-60):**
+- **Custom events, exactly sixteen fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58; "Alcohol answered" for US-60; "Chat edit proposed" and "Chat edit saved" for US-67):**
   `Analytics.event` sends `ClaritySDK.sendCustomEvent` with a word from one enum,
   `Analytics.Event`: "Tour started", "Tour tip closed 1/2/3", "Tour skipped 1/2/3", "Tile
-  explainer opened", "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened", "Alcohol answered".
+  explainer opened", "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened", "Alcohol answered", "Chat edit proposed", "Chat edit saved".
   Never a value, a tile's name or any other text; nothing before Clarity starts.
   `AnalyticsMaskingTests` pins the list, so a new word is a test change and a D9 change.
   Views reach the one `Analytics` through the environment (`\.analytics`, set by RootView).

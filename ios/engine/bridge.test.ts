@@ -90,9 +90,10 @@ describe('bridge contract (US-25 AC18)', () => {
   // never a way around that, only for additions that work both ways (D3, D14). Moved
   // 2026-11-01 (Brad: still in beta, no downloads): US-07 AC8's labEgfrOutdated plus
   // US-61's optional isUS and usProducts; builds 3 and 4 no longer take OTA engines.
-  it('the contract hashes to exactly the bridge id the app serves (8dee92d80c028ed3)', () => {
+  // Moved 2026-11-02: US-67's chatEditsJson door, a door an older app cannot serve.
+  it('the contract hashes to exactly the bridge id the app serves (c72e95f874b9c22b)', () => {
     const bytes = readFileSync(join(__dirname, 'bridge-contract.json'));
-    expect(createHash('sha256').update(bytes).digest('hex').slice(0, 16)).toBe('8dee92d80c028ed3');
+    expect(createHash('sha256').update(bytes).digest('hex').slice(0, 16)).toBe('c72e95f874b9c22b');
     expect(contract.doors.screenJson.args).toEqual(['recordJson', 'nowIso', 'deviceId', 'unitsJson']);
     expect(optional.doors.screenJson.optionalArgs).toEqual(['isUS']);
   });

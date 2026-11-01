@@ -31,6 +31,7 @@ import {
   type LpaUnit, type MetricType, type UnitSystem,
 } from '../../packages/health-core/src/units';
 import { applyPressure, BLOOD_PRESSURE, pressureHistory, type PressureEdit } from './blood-pressure';
+import { applyChatEdit, type ChatEdit } from './chat-edits';
 import { cellUnitFor, lpaUnitOf, SWITCHABLE, unitsOf, type UnitChoices } from './unit-choices';
 import { cellFromSI, cellLabel, cellRange, cellText, isLpaUnit, type CellUnit } from '../../packages/health-core/src/cell-unit';
 
@@ -111,7 +112,9 @@ export type Edit =
   /** Medication and screening answers and a typed supplement (my-data-forms.ts, US-25 AC8). */
   | FormEdit
   /** The ticked values of an uploaded lab report (US-52 AC8), written by the web's bulk rule. */
-  | { kind: 'labImport'; extractionJson: string; refs: string[]; reportDay: string };
+  | { kind: 'labImport'; extractionJson: string; refs: string[]; reportDay: string }
+  /** What the chat proposed, and its medications' Undo (US-67, chat-edits.ts). */
+  | ChatEdit;
 
 /** A refusal leaves the record as it was. `existingId` names the row holding the day. */
 export type EditOutcome =
@@ -377,6 +380,9 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
       // A held day is skipped and a refused unit left out: labSaveSummary says which, beforehand.
       return { ok: true, file: bulkAppendValues(file, rows.rows, now).file };
     }
+    case 'chatEdits':
+    case 'chatUndo':
+      return applyChatEdit(file, edit, now, choices);
   }
 }
 
