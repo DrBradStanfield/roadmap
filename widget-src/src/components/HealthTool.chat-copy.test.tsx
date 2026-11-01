@@ -17,7 +17,7 @@ import { loadFromLocalStorage, loadGuestInputs, saveToLocalStorage, MIRROR_CHANG
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
-import { initRoadmapStore, loadLatestMeasurements, saveMedication, saveScreening } from '../lib/roadmap-data';
+import { initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements, saveMedication, saveScreening } from '../lib/roadmap-data';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
@@ -148,6 +148,37 @@ describe('US-15 AC10: the chat copy holds what is saved, never an unsaved typed 
       medications: [expect.objectContaining({ medicationKey: 'statin', drugName: 'atorvastatin' })],
     }));
     expect(loadGuestInputs()?.weightKg).toBeUndefined();
+  });
+
+  // US-54 AC5b (reviews of 2026-11-01): a refused birth month never reaches
+  // the copy; the form shows the record's pair again and says why, so it is
+  // clean and a change from another device still reaches it (US-34 AC4).
+  it('US-54 AC5b, US-15 AC10, US-34 AC4: a refused birth month leaves the record\'s pair in the copy and the form, says why, and a later remote change still lands', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-01T09:00:00Z'));
+    try {
+      await returningGuest(); // born 1970, no month
+      act(() => panel.props!.onChange('birthMonth', 10));
+      act(() => panel.props!.onChange('birthYear', 2026));
+      act(() => panel.props!.onChange('heightCm', 180));
+      await waitFor(() => expect(loadFromLocalStorage()?.inputs.heightCm).toBe(180), { timeout: 2000 });
+      expect(loadFromLocalStorage()!.inputs).toEqual({ sex: 'male', heightCm: 180, birthYear: 1970 });
+      expect((await loadLatestMeasurements())?.inputs).toMatchObject({ birthYear: 1970 });
+      expect((await loadLatestMeasurements())?.inputs.birthMonth).toBeUndefined();
+      await waitFor(() => expect(panel.props!.errors.birthMonth).toBe('October 2026 is in the future, so it was not saved.'));
+      expect([panel.props!.inputs.birthYear, panel.props!.inputs.birthMonth]).toEqual([1970, undefined]);
+
+      // Another device's change, with no more typing here, reaches the form and the plan.
+      await saveChangedMeasurements({ sex: 'male', heightCm: 180, birthYear: 1980, birthMonth: 3 }, { sex: 'male', heightCm: 180, birthYear: 1970 });
+      act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+      await waitFor(() => expect([panel.props!.inputs.birthYear, panel.props!.inputs.birthMonth]).toEqual([1980, 3]));
+      expect([panel.props!.effectiveInputs.birthYear, panel.props!.effectiveInputs.birthMonth]).toEqual([1980, 3]);
+
+      act(() => panel.props!.onChange('birthMonth', 4)); // the next birth edit clears the sentence
+      await waitFor(() => expect(panel.props!.errors.birthMonth).toBeUndefined());
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   const statinOnRecord = async () => (await loadLatestMeasurements())?.medications

@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { IMPORT_LIMITS } from './import-hints';
-import { convertValidationErrorsToUnits, getValidationErrors, validateHealthInputs, birthInFuture, healthInputSchema, METRIC_TYPES, labImportPageSchema, medicationSchema, screeningSchema, profileUpdateSchema, measurementSchema, validateInputValue, isBirthYearClearlyInvalid, sanitizeInputs, excludedInputFields } from './validation';
+import { convertValidationErrorsToUnits, getValidationErrors, validateHealthInputs, birthInFuture, birthRefusedMessage, healthInputSchema, METRIC_TYPES, labImportPageSchema, medicationSchema, screeningSchema, profileUpdateSchema, measurementSchema, validateInputValue, isBirthYearClearlyInvalid, sanitizeInputs, excludedInputFields } from './validation';
 import { UNIT_DEFS } from './units';
 import { METRIC_TO_FIELD } from './mappings';
 
@@ -593,6 +593,38 @@ describe('US-03 AC7 — lipids and ApoB refuse 0; PSA and Lp(a) take it', () => 
   });
 });
 
+describe('US-54 AC5b — the birth year maximum is this year when checked, not when the module loaded', () => {
+  afterEach(() => vi.useRealTimers());
+  // A tab or server left running across New Year. The hours keep each instant
+  // in its year from UTC-12 to UTC+14.
+  it('a year refused on 31 December is accepted on 1 January', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-12-31T08:00:00Z'));
+    expect(healthInputSchema.shape.birthYear.safeParse(2027).success).toBe(false);
+    expect(profileUpdateSchema.shape.birthYear.safeParse(2027).success).toBe(false);
+    expect(validateInputValue('birthYear', 2027)).toBeUndefined();
+    vi.setSystemTime(new Date('2027-01-01T13:00:00Z'));
+    expect(healthInputSchema.shape.birthYear.safeParse(2027).success).toBe(true);
+    expect(profileUpdateSchema.shape.birthYear.safeParse(2027).success).toBe(true);
+    expect(validateInputValue('birthYear', 2027)).toBe(2027);
+    expect(healthInputSchema.shape.birthYear.safeParse(2028).error?.issues[0]?.message).toBe('Birth year cannot be in the future');
+  });
+
+  it('the year turns when the month rule does: in the zone furthest ahead (UTC+14)', () => {
+    vi.useFakeTimers();
+    // 09:00 UTC on 31 December is 23:00 at UTC+14. 10:30 UTC is 1 January only
+    // at UTC+14: still 31 December at UTC+13 (New Zealand summer), where this runs.
+    vi.setSystemTime(new Date('2026-12-31T09:00:00Z'));
+    expect(healthInputSchema.shape.birthYear.safeParse(2027).success).toBe(false);
+    expect(birthInFuture(2027, 1, new Date())).toBe(true);
+    vi.setSystemTime(new Date('2026-12-31T10:30:00Z'));
+    expect(birthInFuture(2027, 1, new Date())).toBe(false);
+    expect(healthInputSchema.shape.birthYear.safeParse(2027).success).toBe(true);
+    expect(profileUpdateSchema.shape.birthYear.safeParse(2027).success).toBe(true);
+    expect(validateInputValue('birthYear', 2027)).toBe(2027);
+  });
+});
+
 describe('US-54 AC5b — a birth month in the future is refused on the month', () => {
   // 31 Aug 11:00 UTC is already 1 September in Kiribati (UTC+14).
   const AHEAD = '2026-08-31T11:00:00Z';
@@ -605,6 +637,12 @@ describe('US-54 AC5b — a birth month in the future is refused on the month', (
     expect(birthInFuture(2026, 8, BEHIND)).toBe(false);
     expect(birthInFuture(2027, 1, AHEAD)).toBe(true);
     expect(birthInFuture(1990, 12, new Date(BEHIND))).toBe(false);
+  });
+
+  it('birthRefusedMessage names the refused month and year, or the year alone', () => {
+    expect(birthRefusedMessage(2026, 10)).toBe('October 2026 is in the future, so it was not saved.');
+    expect(birthRefusedMessage(2026, 1)).toBe('January 2026 is in the future, so it was not saved.');
+    expect(birthRefusedMessage(2027)).toBe('2027 is in the future, so it was not saved.');
   });
 
   it('validateHealthInputs refuses the month with the person\'s words, and keeps the year', () => {
