@@ -197,10 +197,10 @@ describe('due reminders on the schedule', () => {
       expect(result.reminders.find(r => r.category === 'screening_lung')).toBeUndefined();
     });
 
-    it('does not return lung reminder for smoker with < 15 pack-years', () => {
+    it('does not return lung reminder for smoker with < 20 pack-years (US-06 AC9)', () => {
       const screenings: ScreeningInputs = {
         lungSmokingHistory: 'former_smoker',
-        lungPackYears: 14,
+        lungPackYears: 19,
         lungScreening: 'annual_ldct',
         lungLastDate: monthsAgoYYYYMM(14),
       };

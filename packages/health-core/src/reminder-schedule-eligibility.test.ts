@@ -17,7 +17,7 @@ const ALL_STARTED: ScreeningInputs = {
   cervicalMethod: 'hpv_every_5yr',
   cervicalLastDate: '2025-01',
   lungSmokingHistory: 'former_smoker',
-  lungPackYears: 15,
+  lungPackYears: 20,
   lungScreening: 'annual_ldct',
   lungLastDate: '2025-01',
   prostateDiscussion: 'will_screen',
@@ -62,8 +62,8 @@ describe('screening reminder eligibility (US-06, algorithm doc table)', () => {
     expect(scheduled(sex, age).has(category)).toBe(expected);
   });
 
-  it('lung needs a smoking history and at least 15 pack-years', () => {
-    expect(scheduled('male', 60, { ...ALL_STARTED, lungPackYears: 14 }).has('screening_lung')).toBe(false);
+  it('lung needs a smoking history and at least 20 pack-years (ACS 2023, US-06 AC9)', () => {
+    expect(scheduled('male', 60, { ...ALL_STARTED, lungPackYears: 19 }).has('screening_lung')).toBe(false);
     expect(scheduled('male', 60, { ...ALL_STARTED, lungPackYears: undefined }).has('screening_lung')).toBe(false);
     expect(scheduled('male', 60, { ...ALL_STARTED, lungSmokingHistory: 'never_smoked' }).has('screening_lung')).toBe(false);
     expect(scheduled('male', 60, { ...ALL_STARTED, lungSmokingHistory: 'current_smoker' }).has('screening_lung')).toBe(true);

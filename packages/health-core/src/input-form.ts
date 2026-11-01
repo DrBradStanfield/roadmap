@@ -15,7 +15,7 @@ import type { MedicationSave } from './state-edits';
 import { LIPID_DIET_ADVICE, lipidTargetSentence, weightMedIntro, type LipidMarker, type WeightMedicationTrigger } from './suggestions';
 import {
   BEMPEDOIC_ACID_OPTIONS, EZETIMIBE_OPTIONS, GLP1_DRUGS, GLP1_NAMES, METFORMIN_OPTIONS, PCSK9I_OPTIONS,
-  SCREENING_FOLLOWUP_INFO, SGLT2I_DRUGS, SGLT2I_NAMES, STATIN_DRUGS, STATIN_NAMES,
+  LUNG_SCREENING_MIN_PACK_YEARS, SCREENING_FOLLOWUP_INFO, SGLT2I_DRUGS, SGLT2I_NAMES, STATIN_DRUGS, STATIN_NAMES,
   type MedicationInputs, type ScreeningInputs,
 } from './types';
 import type { MetricType, UnitSystem } from './units';
@@ -309,7 +309,7 @@ export const SCREENING_TEXT = {
     ? 'Screening typically starts at 50, but consider at 45 if you are at higher risk (African American or family history).'
     : 'PSA testing is an option after an informed discussion with your doctor.',
   packYearsLabel: 'Pack-years (packs/day × years smoked)',
-  packYearsHint: 'Screening recommended if ≥20 pack-years',
+  packYearsHint: `Screening recommended if ≥${LUNG_SCREENING_MIN_PACK_YEARS} pack-years`,
   psaLabel: 'PSA (ng/mL)',
   psaHint: 'Normal: <4.0 ng/mL',
   boneTitle: 'Bone Density',
@@ -435,7 +435,7 @@ export function screeningForm(age: number | undefined, sex: string | undefined, 
       if (history === 'former_smoker' || history === 'current_smoker') {
         fields.push({ kind: 'number', key: 'lung_pack_years', label: X.packYearsLabel, hint: X.packYearsHint, value: str('lung_pack_years'), min: 0, max: 200 });
         const packYears = scr.lungPackYears;
-        if (packYears !== undefined && packYears >= 20) {
+        if (packYears !== undefined && packYears >= LUNG_SCREENING_MIN_PACK_YEARS) {
           fields.push(choice('lung_screening', L.lungScreening, O.lung_screening));
           if (str('lung_screening') === 'annual_ldct') fields.push(month('lung_last_date', L.lastLdct), ...resultChain('lung', 'annual_ldct'));
         }

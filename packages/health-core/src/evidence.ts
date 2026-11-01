@@ -513,11 +513,11 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'screening-lung': {
-    reason: 'The USPSTF recommends annual low-dose CT screening for adults aged 50–80 with a smoking history of ≥15 pack-years (current or former smokers). Low-dose CT can detect lung cancer at an early, treatable stage, significantly reducing lung cancer mortality.',
-    guidelines: ['USPSTF 2021'],
+    reason: 'The American Cancer Society (2023) recommends yearly low-dose CT screening for people aged 50–80 who smoke or used to smoke and have a smoking history of ≥20 pack-years, however long ago they quit. Low-dose CT can detect lung cancer at an early, treatable stage, significantly reducing lung cancer mortality. Before deciding, discuss the benefits, limits and possible harms of screening with your doctor.',
+    guidelines: ['ACS 2023'],
     references: [
       ...REFS_SCREENING_ACS,
-      { label: 'USPSTF – Lung Cancer Screening Recommendation', url: 'https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/lung-cancer-screening' },
+      { label: 'Wolf 2023 – ACS lung cancer screening guideline update (CA Cancer J Clin)', url: 'https://doi.org/10.3322/caac.21811' },
     ],
   },
 

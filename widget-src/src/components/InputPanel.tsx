@@ -59,6 +59,7 @@ import {
   localDay,
   MEDICATION_TEXT,
   SCREENING_TEXT,
+  LUNG_SCREENING_MIN_PACK_YEARS,
   SCREENING_OPTIONS,
   SCREENING_LABELS,
   SUPPLEMENT_TEXT,
@@ -1831,7 +1832,7 @@ export function InputPanel({
                       <span className="field-hint">{SCREENING_TEXT.packYearsHint}</span>
                     </div>
 
-                    {scr.lungPackYears !== undefined && scr.lungPackYears >= 20 && (
+                    {scr.lungPackYears !== undefined && scr.lungPackYears >= LUNG_SCREENING_MIN_PACK_YEARS && (
                       <>
                         <div className="health-field">
                           <label htmlFor="lung-screening">{SCREENING_LABELS.lungScreening}</label>

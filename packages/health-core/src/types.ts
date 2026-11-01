@@ -413,6 +413,13 @@ export const SCREENING_MIN_AGE: Record<string, { age: number; sex?: 'male' | 'fe
   dexa:       { age: 50 },
 };
 
+/**
+ * Lung screening's smoking threshold (ACS 2023; US-06 AC9): the plan's card,
+ * the reminder schedule and the form's "Lung screening" question all read it,
+ * so the form always asks what the plan suggests.
+ */
+export const LUNG_SCREENING_MIN_PACK_YEARS = 20;
+
 export function isScreeningEligible(
   screeningType: string,
   userAge?: number,

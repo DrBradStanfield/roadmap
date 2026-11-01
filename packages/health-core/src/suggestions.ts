@@ -1,6 +1,6 @@
 import type { HealthInputs, HealthResults, Suggestion, MedicationInputs, ScreeningInputs } from './types';
 import { SUGGESTION_EVIDENCE } from './evidence';
-import { POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
+import { POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, LUNG_SCREENING_MIN_PACK_YEARS, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
 import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
 import {
   type UnitSystem,
@@ -918,17 +918,17 @@ export function generateSuggestions(
       }
     }
 
-    // Lung (age 50-80, smokers with 15+ pack-years — USPSTF 2021)
+    // Lung (age 50-80, current or former smokers with 20+ pack-years, no quit-window limit — ACS 2023)
     if (age >= 50 && age <= 80 &&
         (screenings.lungSmokingHistory === 'former_smoker' || screenings.lungSmokingHistory === 'current_smoker') &&
-        screenings.lungPackYears !== undefined && screenings.lungPackYears >= 15) {
+        screenings.lungPackYears !== undefined && screenings.lungPackYears >= LUNG_SCREENING_MIN_PACK_YEARS) {
       if (!screenings.lungScreening || screenings.lungScreening === 'not_yet_started') {
         suggestions.push({
           id: 'screening-lung',
           category: 'screening',
           priority: 'attention',
           title: 'Start lung cancer screening',
-          description: `With ${screenings.lungPackYears} pack-years of smoking history, annual low-dose CT screening is recommended. Discuss with your doctor.`,
+          description: `With ${screenings.lungPackYears} pack-years of smoking history, yearly low-dose CT screening is recommended. Discuss its benefits, limits and possible harms with your doctor first.`,
         });
       } else if (screenings.lungLastDate) {
         const followup = screeningFollowup('lung', screenings.lungScreening, screenings.lungResult, screenings.lungFollowupStatus, screenings.lungFollowupDate);

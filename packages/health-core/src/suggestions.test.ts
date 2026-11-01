@@ -1364,16 +1364,16 @@ describe('generateSuggestions', () => {
     });
 
     // Lung
-    it('suggests lung screening for smoker 50+ with 15+ pack-years (USPSTF 2021)', () => {
+    it('suggests lung screening for smoker 50+ with 20+ pack-years (ACS 2023, US-06 AC9)', () => {
       const { inputs, results } = createTestData({ birthYear: 1970, birthMonth: 1 }, { age: 56 });
       const scr: ScreeningInputs = { lungSmokingHistory: 'current_smoker', lungPackYears: 25 };
       const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
       expect(suggestions.find(s => s.id === 'screening-lung')).toBeDefined();
     });
 
-    it('suggests lung screening at exactly 15 pack-years (boundary)', () => {
+    it('suggests lung screening at exactly 20 pack-years (boundary)', () => {
       const { inputs, results } = createTestData({ birthYear: 1970, birthMonth: 1 }, { age: 56 });
-      const scr: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 15 };
+      const scr: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 20 };
       const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
       expect(suggestions.find(s => s.id === 'screening-lung')).toBeDefined();
     });
@@ -1385,9 +1385,9 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'screening-lung')).toBeUndefined();
     });
 
-    it('does not suggest lung screening for smoker with <15 pack-years', () => {
+    it('does not suggest lung screening for smoker with <20 pack-years', () => {
       const { inputs, results } = createTestData({ birthYear: 1970, birthMonth: 1 }, { age: 56 });
-      const scr: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 14 };
+      const scr: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 19 };
       const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
       expect(suggestions.find(s => s.id === 'screening-lung')).toBeUndefined();
     });

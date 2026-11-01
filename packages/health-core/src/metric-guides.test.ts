@@ -255,10 +255,12 @@ describe('METRIC_GUIDES (US-58)', () => {
       expect(cited.has(n), `${r.label} [${n}] is cited`).toBe(true);
     }
     // Appended after [122], none renumbered (Brad's decision 7); Milanović was [108] already.
-    expect(REF_LIST).toHaveLength(131);
+    // [132] (ACS 2023 lung screening, US-06 AC9) was appended after them.
+    expect(REF_LIST).toHaveLength(132);
     expect(numberOf('https://doi.org/10.1056/NEJMoa012512')).toBe(122);
     expect(numberOf('https://doi.org/10.1007/s40279-015-0365-0')).toBe(108);
-    expect(Math.max(...cited)).toBe(131);
+    expect(numberOf('https://doi.org/10.3322/caac.21811')).toBe(132);
+    expect(Math.max(...cited)).toBe(132);
   });
 
   it('AC7: no clinical claim cites an Apple source (Brad\'s decision 2)', () => {

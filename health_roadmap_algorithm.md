@@ -978,7 +978,7 @@ Source: `suggestions.ts` (screening section) + `types.ts` (intervals/follow-up)
 | Colorectal | 35-75 | Both | — |
 | Breast | 40+ | Female | 40-44 optional (info), 45+ recommended (attention) |
 | Cervical | 25-65 | Female | — |
-| Lung | 50-80 | Both | Former/current smoker AND >= 15 pack-years (USPSTF 2021) |
+| Lung | 50-80 | Both | Former/current smoker AND >= 20 pack-years, however long ago they quit (ACS 2023, Wolf 2023). One threshold, `LUNG_SCREENING_MIN_PACK_YEARS` in `types.ts`, drives the card, the reminder and the form's "Lung screening" question |
 | Prostate | 45+ | Male | Shared decision |
 | Endometrial | 45+ | Female | Abnormal bleeding = urgent |
 | DEXA | Female >= 50, Male >= 70 | Both | — |

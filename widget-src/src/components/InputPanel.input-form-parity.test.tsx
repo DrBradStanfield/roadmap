@@ -92,6 +92,9 @@ describe('US-25 AC8, US-06 — the web screening cards are screeningForm', () =>
     ['man of 60, former smoker, 25 pack-years, annual LDCT', 60, 'male', {
       lung_smoking_history: 'former_smoker', lung_pack_years: '25', lung_screening: 'annual_ldct',
     }],
+    // US-06 AC9: the screening question opens at the plan's own 20 pack-years.
+    ['man of 60, former smoker, 19 pack-years', 60, 'male', { lung_smoking_history: 'former_smoker', lung_pack_years: '19' }],
+    ['man of 60, former smoker, 20 pack-years', 60, 'male', { lung_smoking_history: 'former_smoker', lung_pack_years: '20' }],
     ['man of 55 who will screen', 55, 'male', { prostate_discussion: 'will_screen' }],
     ['man of 72, DEXA osteoporosis', 72, 'male', {
       dexa_screening: 'dexa_scan', dexa_last_date: '2024-06', dexa_result: 'osteoporosis', dexa_followup_status: 'completed',
@@ -102,6 +105,14 @@ describe('US-25 AC8, US-06 — the web screening cards are screeningForm', () =>
     const sections = screeningForm(age, sex, screeningsToInputs(screeningRows(screenings)));
     expect(sections.length).toBeGreaterThan(0);
     expectParity(container, sections);
+  });
+});
+
+describe('US-06 AC9 — the web form asks about lung screening from 20 pack-years, as the plan suggests it', () => {
+  it.each([[17, false], [19, false], [20, true]] as const)('%i pack-years: Lung screening question shown is %s', (packYears, shown) => {
+    const container = renderPanel({ sex: 'male', basis: { age: 60 }, screenings: { lung_smoking_history: 'former_smoker', lung_pack_years: String(packYears) } });
+    expect(container.querySelector('#lung-pack-years')).not.toBeNull();
+    expect(container.querySelector('#lung-screening') !== null).toBe(shown);
   });
 });
 
