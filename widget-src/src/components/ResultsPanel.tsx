@@ -16,7 +16,6 @@ import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { getSkipEmailGate } from '../lib/assistant-config';
 import { ColumnHeader } from './ColumnHeader';
 import { GuideLink } from './GuideLink';
-import { StorageNotice } from '../lib/storage-notice';
 import { FeedbackForm } from './FeedbackForm';
 import { alcoholDismiss, type AlcoholQuestion } from './AlcoholQuestion';
 import { getMarketCountry } from '../lib/market-country';
@@ -412,7 +411,6 @@ function ReminderSignup({ hook }: { hook: GuestEmailHook }) {
         supplement company), and we'll email you when a check-up or blood test is due. We store only
         check-up names and dates, never your results. Every email has a one-click unsubscribe.
       </p>
-      <StorageNotice surface="email" className="email-guest-helper" />
     </div>
   );
 }
@@ -468,7 +466,6 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
         supplement company), and we'll email you when a check-up or blood test is due. We store only
         check-up names and dates, never your results. Every email has a one-click unsubscribe.
       </p>
-      <StorageNotice surface="email" className="email-guest-helper" />
     </div>
   );
 }

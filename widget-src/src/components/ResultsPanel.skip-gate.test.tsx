@@ -33,15 +33,12 @@ vi.mock('../lib/build-flags', () => ({ get SHOPIFY_SURFACE() { return mocks.shop
 vi.mock('../lib/assistant-config', () => ({ getSkipEmailGate: () => mocks.skip.value }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
 import { ResultsPanel, REMINDER_SIGNUP_LABEL, REMINDER_SIGNUP_DONE, GUEST_CAPTURE_BUTTON_LABEL, PDF_WINDOW_BLOCKED } from './ResultsPanel';
-import { EMAIL_STORAGE_NOTICE, StorageNoticeContext } from '../lib/storage-notice';
 
 const results = calculateHealthResults({ heightCm: 175, sex: 'male' });
 
 function plan(props: Partial<React.ComponentProps<typeof ResultsPanel>> = {}) {
   return (
-    <StorageNoticeContext.Provider value>
-      <ResultsPanel results={results} isValid tiles={results ? statTiles(results, { unitSystem: 'si' }) : []} showEmailCapture formStage={3} {...props} />
-    </StorageNoticeContext.Provider>
+    <ResultsPanel results={results} isValid tiles={results ? statTiles(results, { unitSystem: 'si' }) : []} showEmailCapture formStage={3} {...props} />
   );
 }
 function showPlan(props: Partial<React.ComponentProps<typeof ResultsPanel>> = {}) {
@@ -82,7 +79,7 @@ describe('US-44 AC2 — gate skipped: Save as PDF straight away, nothing persist
 });
 
 describe('US-44 AC3/AC4 — the optional reminders line', () => {
-  it('renders once, labelled, with the MicroVitamin list disclosure and the storage sentence last', () => {
+  it('renders once, labelled, with the MicroVitamin list disclosure last and no storage sentence (US-09 AC5, Brad 2026-11-02)', () => {
     const view = showPlan();
     const inputs = view.container.querySelectorAll('input[type="email"]');
     expect(inputs).toHaveLength(1);
@@ -96,9 +93,8 @@ describe('US-44 AC3/AC4 — the optional reminders line', () => {
         'never your results. Every email has a one-click unsubscribe.',
     );
     expect(disclosure.querySelector('strong')?.textContent).toBe('MicroVitamin mailing list');
-    const notice = box.querySelector('.hr-storage-notice')!;
-    expect(notice.textContent).toBe(EMAIL_STORAGE_NOTICE);
-    expect(box.lastElementChild).toBe(notice);
+    expect(box.querySelector('.hr-storage-notice')).toBeNull();
+    expect(box.lastElementChild).toBe(disclosure);
   });
 
   it('submitting enrols through the same capture call, opens no print window and marks the record captured', async () => {

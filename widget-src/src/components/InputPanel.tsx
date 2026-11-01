@@ -87,7 +87,6 @@ import { useMoveTest, type MoveTestApi } from './MoveTestPanel';
 import { StartingInfoVitals, type VitalsPrefillFn } from './StartingInfoVitals';
 import { CommitTickButton } from './CommitTickButton';
 import { ALCOHOL_OPTIONS } from './AlcoholQuestion';
-import { StorageNotice } from '../lib/storage-notice';
 import { useLpaUnit } from '../lib/lpa-unit';
 import { BloodTestRows, VitalsRows, type RowContext, type ValueSubject } from './MyDataRows';
 import { ValuePage } from './ValuePage';
@@ -2391,7 +2390,6 @@ export function InputPanel({
         <HealthRecordsSection documents={healthDocuments} onDeleted={onDocumentDeleted} />
       )}
       {/* US-09 AC5: once a value exists: height and weight, or a saved blood test. */}
-      {valueShown && <StorageNotice surface="input" />}
     </div>
   );
 }
