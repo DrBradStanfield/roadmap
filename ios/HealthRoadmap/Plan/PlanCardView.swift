@@ -173,7 +173,7 @@ private struct USProductBlock: View {
             Link("\(block.name) ↗", destination: block.url)
                 .font(.footnote.weight(.medium))
                 .accessibilityLabel(block.name)
-            .accessibilityHint("Opens in your browser")
+                .accessibilityHint("Opens in your browser")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
