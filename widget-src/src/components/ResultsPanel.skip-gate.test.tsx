@@ -79,22 +79,16 @@ describe('US-44 AC2 — gate skipped: Save as PDF straight away, nothing persist
 });
 
 describe('US-44 AC3/AC4 — the optional reminders line', () => {
-  it('renders once, labelled, with the MicroVitamin list disclosure last and no storage sentence (US-09 AC5, Brad 2026-11-02)', () => {
+  it('renders once, labelled, with no mailing-list notice (Brad 2026-11-02) and no storage sentence (US-09 AC5)', () => {
     const view = showPlan();
     const inputs = view.container.querySelectorAll('input[type="email"]');
     expect(inputs).toHaveLength(1);
     expect(view.getByLabelText(REMINDER_SIGNUP_LABEL)).toBe(inputs[0]);
     const box = inputs[0].closest('.email-capture')!;
     expect(box.classList.contains('field-attention')).toBe(false);
-    const disclosure = box.querySelector('.email-capture-disclosure')!;
-    expect(disclosure.textContent).toBe(
-      'Signing up adds you to the MicroVitamin mailing list (Dr Brad\'s supplement company), and ' +
-        'we\'ll email you when a check-up or blood test is due. We store only check-up names and dates, ' +
-        'never your results. Every email has a one-click unsubscribe.',
-    );
-    expect(disclosure.querySelector('strong')?.textContent).toBe('MicroVitamin mailing list');
+    expect(box.querySelector('.email-capture-disclosure')).toBeNull();
+    expect(box.textContent).not.toContain('MicroVitamin mailing list');
     expect(box.querySelector('.hr-storage-notice')).toBeNull();
-    expect(box.lastElementChild).toBe(disclosure);
   });
 
   it('submitting enrols through the same capture call, opens no print window and marks the record captured', async () => {
