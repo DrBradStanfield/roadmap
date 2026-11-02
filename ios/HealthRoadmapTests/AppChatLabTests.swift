@@ -172,9 +172,13 @@ final class AppChatLabTests: XCTestCase {
         let outcome = try engine.blocking { [now, extraction] in try $0.apply(.labImport(extractionJSON: extraction, refs: ["v0", "v1", "a0"], reportDay: "2026-10-01"), to: held, now: now, deviceId: "test") }
         XCTAssertTrue(outcome.ok, outcome.message ?? "")
         let file = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(try XCTUnwrap(outcome.record).utf8)) as? [String: Any])
-        let rows = try XCTUnwrap(file["measurements"] as? [[String: Any]])
-        XCTAssertEqual(rows.filter { $0["source"] as? String == "lab_import" }.count, 1)
-        XCTAssertEqual((file["labValues"] as? [Any])?.count, 1)
+        // Every blood test is a lab row (US-66 AC1): the held LDL, the imported HbA1c as a core row, the ferritin.
+        XCTAssertEqual((file["measurements"] as? [Any])?.count, 0)
+        let rows = try XCTUnwrap(file["labValues"] as? [[String: Any]])
+        let imported = rows.filter { $0["source"] as? String == "lab_import" }
+        XCTAssertEqual(imported.filter { $0["core"] as? Bool == true }.map { $0["metricName"] as? String }, ["hba1c"])
+        XCTAssertEqual(imported.filter { $0["core"] == nil }.map { $0["metricName"] as? String }, ["Ferritin"])
+        XCTAssertEqual(rows.count, 3)
 
         XCTAssertThrowsError(try engine.blocking { [now, extraction] in try $0.labSaveSummary(recordJSON: held, extractionJSON: extraction, refs: ["v0"], reportDay: "2099-01-01", now: now, deviceId: "test") }.get())
     }
