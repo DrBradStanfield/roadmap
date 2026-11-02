@@ -964,38 +964,70 @@ describe('generateSuggestions', () => {
     });
   });
 
-  describe('Measure waist circumference suggestion', () => {
-    it('shows when BMI 25-29.9 and no waist data', () => {
-      const { inputs, results } = createTestData({}, { bmi: 26 });
-      const suggestions = generateSuggestions(inputs, results);
-      const waistSuggestion = suggestions.find(s => s.id === 'measure-waist');
-      expect(waistSuggestion).toBeDefined();
-      expect(waistSuggestion?.priority).toBe('attention');
-      expect(waistSuggestion?.description).toContain('waist');
+  describe('Measure waist circumference suggestion (US-07 AC10)', () => {
+    const waistCard = (bmi?: number, waistToHeightRatio?: number) => {
+      const { inputs, results } = createTestData({}, { bmi, waistToHeightRatio });
+      return generateSuggestions(inputs, results).find(s => s.id === 'measure-waist');
+    };
+
+    it('shows at BMI 22, 27 and 33 with no waist, and with no weight yet (Brad 2026-11-02)', () => {
+      for (const bmi of [22, 27, 33, undefined]) {
+        const card = waistCard(bmi);
+        expect(card, `BMI ${bmi}`).toBeDefined();
+        expect(card?.priority).toBe('attention');
+        expect(card?.description).toContain('half your height');
+      }
     });
 
-    it('does not show when BMI 25-29.9 and waist data is present (healthy)', () => {
-      const { inputs, results } = createTestData({}, { bmi: 26, waistToHeightRatio: 0.45 });
-      const suggestions = generateSuggestions(inputs, results);
-      expect(suggestions.find(s => s.id === 'measure-waist')).toBeUndefined();
+    it('is absent once a waist is on record, healthy or elevated, at any BMI', () => {
+      for (const bmi of [22, 27, 33, undefined]) {
+        expect(waistCard(bmi, 0.45), `BMI ${bmi} healthy`).toBeUndefined();
+        expect(waistCard(bmi, 0.55), `BMI ${bmi} elevated`).toBeUndefined();
+      }
     });
 
-    it('does not show when BMI 25-29.9 and waist data is present (elevated)', () => {
-      const { inputs, results } = createTestData({}, { bmi: 26, waistToHeightRatio: 0.55 });
-      const suggestions = generateSuggestions(inputs, results);
-      expect(suggestions.find(s => s.id === 'measure-waist')).toBeUndefined();
+    it('fits each BMI band: only 25-29.9 speaks of the 25-30 range', () => {
+      expect(waistCard(27)?.description).toContain('25\u201330 range');
+      expect(waistCard(22)?.description).toContain('A healthy BMI can still hide');
+      expect(waistCard(33)?.description).toContain('At a BMI of 30 or more');
+      expect(waistCard(undefined)?.description).not.toContain('BMI');
+      for (const bmi of [22, 33, undefined]) expect(waistCard(bmi)?.description).not.toContain('25\u201330');
     });
 
-    it('does not show when BMI < 25', () => {
-      const { inputs, results } = createTestData({}, { bmi: 23 });
-      const suggestions = generateSuggestions(inputs, results);
-      expect(suggestions.find(s => s.id === 'measure-waist')).toBeUndefined();
+    it('comes first in engine order, before blood pressure and screenings', () => {
+      const { inputs, results } = createTestData({}, { bmi: 22, age: 50 });
+      const suggestions = generateSuggestions(inputs, results, 'si', {}, { colorectalMethod: 'not_yet_started' });
+      expect(suggestions.some(s => s.id.startsWith('screening-colorectal'))).toBe(true);
+      expect(suggestions.map(s => s.id).slice(0, 2)).toEqual(['measure-waist', 'measure-bp']);
+    });
+  });
+
+  describe('Measure blood pressure suggestion (US-07 AC10)', () => {
+    const bpCard = (overrides: Partial<HealthInputs>, resultOverrides: Partial<HealthResults> = {}) => {
+      const { inputs, results } = createTestData(overrides, resultOverrides);
+      return generateSuggestions(inputs, results).find(s => s.id === 'measure-bp');
+    };
+
+    it('shows with no blood pressure on record, at attention, with the age target', () => {
+      const card = bpCard({});
+      expect(card).toBeDefined();
+      expect(card?.priority).toBe('attention');
+      expect(card?.category).toBe('blood_pressure');
+      expect(card?.description).toContain('below 120/80');
+      expect(bpCard({}, { age: 70 })?.description).toContain('below 130/80');
+      // Its evidence reuses the plan's blood pressure references.
+      expect(card?.references?.map(r => r.url)).toContain('https://doi.org/10.1161/HYP.0000000000000065');
+      expect(card?.reason).toContain('no symptoms');
     });
 
-    it('does not show when BMI >= 30', () => {
-      const { inputs, results } = createTestData({}, { bmi: 31 });
-      const suggestions = generateSuggestions(inputs, results);
-      expect(suggestions.find(s => s.id === 'measure-waist')).toBeUndefined();
+    it('is absent with a reading on record, normal or raised', () => {
+      expect(bpCard({ systolicBp: 115, diastolicBp: 75 })).toBeUndefined();
+      expect(bpCard({ systolicBp: 135, diastolicBp: 85 })).toBeUndefined();
+    });
+
+    it('comes first in engine order when the waist is on record', () => {
+      const { inputs, results } = createTestData({}, { bmi: 27, waistToHeightRatio: 0.45 });
+      expect(generateSuggestions(inputs, results)[0].id).toBe('measure-bp');
     });
   });
 

@@ -206,16 +206,13 @@ describe('US-07 AC1: conditional lifestyle cards at their lines (doc §4)', () =
     expect(alc(25.1, 0.49)).toBe(false);
   });
 
-  it('measure-waist: BMI 25.1 to 29.9 with no waist; not at 30, not with a waist', () => {
+  it('measure-waist: any BMI with no waist, never with one (US-07 AC10)', () => {
     const waist = (bmi: number, waistToHeightRatio?: number) => ids(plan({}, { bmi, waistToHeightRatio })).includes('measure-waist');
-    expect(waist(25.1)).toBe(true);
+    expect(waist(24.9)).toBe(true);
+    expect(waist(25)).toBe(true);
     expect(waist(29.9)).toBe(true);
-    expect(waist(30)).toBe(false);
+    expect(waist(30)).toBe(true);
     expect(waist(27, 0.45)).toBe(false);
-  });
-
-  it('measure-waist at exactly BMI 25.0 with no waist (doc §1: 25.0–29.9, unknown WHtR → prompt)', () => {
-    expect(ids(plan({}, { bmi: 25 }))).toContain('measure-waist');
   });
 });
 

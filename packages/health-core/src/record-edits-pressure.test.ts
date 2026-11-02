@@ -143,8 +143,9 @@ describe('US-02 AC8: the plan reads an inverted blood pressure as none (review R
       Object.assign(file.profile, { sex: 'male', birthYear: 1971, heightCm: 178, unitSystem: 'si' });
       return computePlan(file, new Date(NOW));
     };
-    expect(bpCards(planOf(160, 100).results)).not.toEqual([]);
-    expect(bpCards(planOf(80, 120).results)).toEqual([]);
+    expect(bpCards(planOf(160, 100).results)).toEqual(['bp-stage2']);
+    // US-07 AC10: with no usable reading, the plan asks for one; no tier card shows.
+    expect(bpCards(planOf(80, 120).results)).toEqual(['measure-bp']);
   });
 
   it('validation names the rule on both halves, so every surface leaves both out', () => {
@@ -167,7 +168,7 @@ describe('US-02 AC8: the plan reads an inverted blood pressure as none (review R
     expect(plan.inputs.systolicBp).toBeUndefined();
     expect(plan.inputs.diastolicBp).toBeUndefined();
     expect(plan.excluded).toEqual(expect.arrayContaining(['systolicBp', 'diastolicBp']));
-    expect(bpCards(plan.results)).toEqual([]);
+    expect(bpCards(plan.results)).toEqual(['measure-bp']);
   });
 });
 

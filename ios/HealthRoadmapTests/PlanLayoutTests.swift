@@ -32,11 +32,12 @@ final class PlanLayoutTests: XCTestCase {
         XCTAssertEqual(layout.map(\.0), ["Next Steps", "Foundation", "Skin Health", "Supplements"])
         // US-57 AC6: tour tip 2 anchors on the Foundation section's first card.
         XCTAssertEqual(sections.map(\.isFoundation), [false, true, false, false])
+        // US-07 AC10: the waist prompt leads Next Steps.
         XCTAssertEqual(layout[0].1, [
+            ["measure-waist"],
             ["screening-colorectal", "screening-cervical"],
             ["weight-med-glp1", "med-ezetimibe"],
             ["bp-stage1"],
-            ["measure-waist"],
         ])
         XCTAssertEqual(layout[1].1, [
             ["protein-target", "low-salt", "lipid-diet"],

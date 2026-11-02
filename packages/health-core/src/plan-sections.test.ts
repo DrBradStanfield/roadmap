@@ -26,9 +26,24 @@ describe('planSections (US-25 AC2)', () => {
     ];
 
     expect(layout(suggestions)).toEqual([
-      ['Next Steps', [['screening-colorectal', 'screening-cervical'], ['weight-med-glp1', 'med-ezetimibe'], ['bp-stage1'], ['measure-waist']]],
+      ['Next Steps', [['measure-waist'], ['screening-colorectal', 'screening-cervical'], ['weight-med-glp1', 'med-ezetimibe'], ['bp-stage1']]],
       ['Foundation', [['screening-breast'], ['hba1c-normal']]],
     ]);
+  });
+
+  it('leads Next Steps with the waist prompt, then the blood pressure prompt (US-07 AC10)', () => {
+    const suggestions = [
+      s('screening-colorectal', 'attention', 'screening'),
+      s('screening-cervical', 'attention', 'screening'),
+      s('measure-bp', 'attention', 'blood_pressure'),
+      s('weight-med-glp1', 'attention', 'medication'),
+      s('measure-waist', 'attention', 'general'),
+    ];
+    expect(layout(suggestions)).toEqual([
+      ['Next Steps', [['measure-waist'], ['measure-bp'], ['screening-colorectal', 'screening-cervical'], ['weight-med-glp1']]],
+    ]);
+    // With a waist on record, the blood pressure prompt leads.
+    expect(layout(suggestions.filter((x) => x.id !== 'measure-waist'))[0][1][0]).toEqual(['measure-bp']);
   });
 
   it('orders the five sections and leaves empty ones out', () => {

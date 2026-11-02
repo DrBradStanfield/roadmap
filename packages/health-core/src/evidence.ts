@@ -42,6 +42,8 @@ const REFS_SODIUM: SuggestionReference[] = [
   { label: 'Huang 2020 – Dietary sodium reduction & BP (BMJ)', url: 'https://doi.org/10.1136/bmj.m315' },
 ];
 
+const REF_BP_2017: SuggestionReference = { label: 'Whelton 2017 – ACC/AHA Blood Pressure Guideline (Hypertension)', url: 'https://doi.org/10.1161/HYP.0000000000000065' };
+
 const REFS_BP_LIFESTYLE: SuggestionReference[] = [
   { label: 'Charchar 2023 – ISH lifestyle management of hypertension', url: 'https://doi.org/10.1097/HJH.0000000000003563' },
 ];
@@ -179,7 +181,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
     references: [
       ...REFS_SODIUM,
       ...REFS_BP_LIFESTYLE,
-      { label: 'Whelton 2017 – ACC/AHA Blood Pressure Guideline (Hypertension)', url: 'https://doi.org/10.1161/HYP.0000000000000065' },
+      REF_BP_2017,
     ],
   },
 
@@ -289,7 +291,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── General ────────────────────────────────────────────────
 
   'measure-waist': {
-    reason: 'With a BMI in the 25–30 range, waist circumference is critical for determining whether your weight poses health risks. The AACE 2025 guidelines and NICE guidelines use waist-to-height ratio (WHtR) to reclassify individuals — a WHtR below 0.5 indicates healthy body composition even with a BMI of 25–29.9.',
+    reason: 'Waist circumference shows how much fat is stored around the middle, which is linked to heart and metabolic risk. A meta-analysis found waist-to-height ratio (WHtR) a better screen for cardiometabolic risk than BMI, so it may flag risk that a healthy BMI hides. The AACE 2025 and NICE guidelines use WHtR alongside BMI: a ratio of 0.5 or more suggests increased risk, and with a BMI of 25–29.9 a ratio below 0.5 indicates healthy body composition.',
     guidelines: ['AACE 2025', 'NICE'],
     references: [
       { label: 'Ashwell 2012 – WHtR better than BMI for cardiometabolic risk (Obes Rev)', url: 'https://doi.org/10.1111/j.1467-789X.2011.00952.x' },
@@ -425,6 +427,12 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   // ── Blood Pressure ─────────────────────────────────────────
+
+  'measure-bp': {
+    reason: 'High blood pressure usually causes no symptoms, so a reading is the only way to know. Home readings with an automated upper-arm cuff, taken seated after a few minutes of rest, are a practical way to track it; every 2–4 weeks is enough to see a trend.\n\nThis plan aims for <120/80 mmHg under 65, as some doctors do, based on the SPRINT and ESPRIT trials, and <130/80 mmHg at 65 or older.',
+    guidelines: ['ACC/AHA 2017', 'SPRINT 2015', 'ESPRIT 2024'],
+    references: [REF_BP_2017, ...REFS_BP_TRIALS],
+  },
 
   'bp-crisis': {
     reason: 'A blood pressure reading this high (≥180/120 mmHg) is classified as a hypertensive crisis. If accompanied by symptoms such as chest pain, shortness of breath, severe headache, or vision changes, this is a medical emergency requiring immediate attention.',

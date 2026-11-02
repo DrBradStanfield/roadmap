@@ -243,6 +243,34 @@ export function generateSuggestions(
   /** Resolve effective unit system for a given metric (per-field override or global default) */
   const us = (metric: MetricType): UnitSystem => unitOverrides?.[metric] ?? unitSystem;
 
+  // === Missing measurements first (US-07 AC10, Brad 2026-11-02): waist, then blood pressure ===
+  if (results.waistToHeightRatio === undefined) {
+    const bmi = results.bmi;
+    suggestions.push({
+      id: 'measure-waist',
+      category: 'general',
+      priority: 'attention',
+      title: 'Measure your waist circumference',
+      description: bmi === undefined
+        ? 'Your waist size shows fat around the middle, which is linked to heart and metabolic risk. Keep your waist below half your height. Enter your waist measurement above.'
+        : bmi < 25
+          ? 'A healthy BMI can still hide fat around the middle, which is linked to heart and metabolic risk. Keep your waist below half your height. Enter your waist measurement above to check yours.'
+          : bmi < 30
+            ? 'With a BMI in the 25\u201330 range, waist circumference helps determine whether your body composition poses health risks. Keep your waist below half your height. Enter your waist measurement above for a more accurate assessment.'
+            : 'At a BMI of 30 or more, your waist still matters: fat around the middle is linked to heart and metabolic risk, and your waist gives you another way to track progress. Keep your waist below half your height. Enter your waist measurement above.',
+    });
+  }
+  // The blood pressure cards below need both halves; without them, this prompt.
+  if (inputs.systolicBp === undefined || inputs.diastolicBp === undefined) {
+    suggestions.push({
+      id: 'measure-bp',
+      category: 'blood_pressure',
+      priority: 'attention',
+      title: 'Measure your blood pressure',
+      description: `High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then enter your reading above. Aim for below ${bpTargetFor(results.age)}/80.`,
+    });
+  }
+
   // === Always-show lifestyle suggestions ===
 
   // Protein target (core recommendation, adjusted for CKD). Needs sex, as ideal body weight does (US-07 AC8).
@@ -380,17 +408,6 @@ export function generateSuggestions(
         suggestions.push({ id: `weight-med-${step}`, category: 'medication', priority, title, description });
       }
     }
-  }
-
-  // Prompt to measure waist circumference when BMI 25-29.9 and waist data missing
-  if (results.bmi !== undefined && results.bmi >= 25 && results.bmi < 30 && results.waistToHeightRatio === undefined) {
-    suggestions.push({
-      id: 'measure-waist',
-      category: 'general',
-      priority: 'attention',
-      title: 'Measure your waist circumference',
-      description: 'With a BMI in the 25\u201330 range, waist circumference helps determine whether your body composition poses health risks. Keep your waist below half your height. Enter your waist measurement above for a more accurate assessment.',
-    });
   }
 
   // HbA1c suggestions (thresholds in mmol/mol IFCC)
