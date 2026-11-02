@@ -12,7 +12,7 @@ import Observation
 @Observable
 final class RecordStore {
     enum ApplyResult: Equatable, Sendable {
-        /// `healthRecords`: what a Health Records batch did when it changed the record (US-71).
+        /// `healthRecords`: what a Health Records batch did when it changed the record (US-72).
         case saved(healthRecords: HealthRecordCounts? = nil)
         /// Nothing changed. `existingId` names the row that already holds that day.
         case refused(message: String, existingId: String?)

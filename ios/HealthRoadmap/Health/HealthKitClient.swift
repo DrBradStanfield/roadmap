@@ -13,12 +13,12 @@ final class HealthKitClient: HealthStoreClient {
 
     var isAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
 
-    /// Apple's own check: the phone's region, or records already downloaded (US-71 AC1).
+    /// Apple's own check: the phone's region, or records already downloaded (US-72 AC1).
     var supportsHealthRecords: Bool { store.supportsHealthRecords() }
 
     func requestAuthorization() async throws -> Bool {
         let (share, read) = Self.requested
-        // Lab results only where Health Records works (US-71 AC1): elsewhere the sheet offers nothing.
+        // Lab results only where Health Records works (US-72 AC1): elsewhere the sheet offers nothing.
         guard supportsHealthRecords else {
             try await store.requestAuthorization(toShare: share, read: read)
             return false
@@ -146,7 +146,7 @@ final class HealthKitClient: HealthStoreClient {
     /// sync's own `start` then keeps those queries rather than adding a second set.
     func observe(_ kinds: [HealthKind], onChange: @escaping @MainActor () async -> Void) {
         guard observers.isEmpty else { return }
-        // Lab results too, where Health Records works (US-71). If background delivery is refused
+        // Lab results too, where Health Records works (US-72). If background delivery is refused
         // for them, the observer still runs while the app is open, and unlock and coming to the
         // foreground refresh as for vitals.
         for type in Self.observedTypes(kinds, labResults: supportsHealthRecords) {
@@ -178,7 +178,7 @@ final class HealthKitClient: HealthStoreClient {
 
     // MARK: HealthKit types
 
-    /// Lab results, the one Health Records type the app reads (US-71): read-only by Apple's rule.
+    /// Lab results, the one Health Records type the app reads (US-72): read-only by Apple's rule.
     nonisolated static let labResults = HKClinicalType(.labResultRecord)
 
     private nonisolated static func identifier(_ kind: HealthKind) -> HKQuantityTypeIdentifier {

@@ -1,4 +1,4 @@
-// US-71: lab results a clinic sent to Apple Health Records become rows under
+// US-72: lab results a clinic sent to Apple Health Records become rows under
 // the record's own FHIR rules. Each test names the AC it holds.
 //
 // Fixtures are HL7's own example Observations, fetched 2026-11-02:
@@ -93,7 +93,7 @@ function run(file: RoadmapFile, records: ClinicalRecordInput[], now = NOW) {
   return importHealthRecords(file, records, { now });
 }
 
-describe('US-71 AC2: what lands', () => {
+describe('US-72 AC2: what lands', () => {
   it('AC2 R4: the HL7 LDL lands as one core row in mmol/L, source health_records', () => {
     const { file, counts } = run(empty(), [rec(obs(R4_LDL))]);
     expect(counts).toEqual({ added: 1, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
@@ -198,7 +198,7 @@ describe('US-71 AC2: what lands', () => {
   });
 });
 
-describe('US-71 AC3: the day', () => {
+describe('US-72 AC3: the day', () => {
   it('AC3: a datetime keeps its own offset; its day is the draw\'s local day', () => {
     const { file } = run(empty(), [rec(obs(R4_LDL, { effectiveDateTime: '2026-10-21T08:30:00-07:00' }))]);
     expect(file.labValues[0].recordedAt).toBe('2026-10-21T08:30:00.000-07:00');
@@ -299,7 +299,7 @@ describe('US-71 AC3: the day', () => {
   });
 });
 
-describe('US-71 AC4: not read, counted', () => {
+describe('US-72 AC4: not read, counted', () => {
   it('AC4: HL7\'s creatinine with only a local code is not read, in both versions', () => {
     const { file, counts } = run(empty(), [rec(obs(R4_CREATININE_LOCAL)), rec(obs(DSTU2_CREATININE_LOCAL), { fhirVersion: DSTU2 })]);
     expect(counts.notRead).toBe(2);
@@ -385,7 +385,7 @@ describe('US-71 AC4: not read, counted', () => {
   });
 });
 
-describe('US-71 AC5: identity and version', () => {
+describe('US-72 AC5: identity and version', () => {
   it('AC5: a version already in the record does not land again, and the record comes back as given', () => {
     const once = run(empty(), [rec(obs(R4_LDL))]).file;
     const again = run(once, [rec(obs(R4_LDL))], LATER);
@@ -508,7 +508,7 @@ describe('US-71 AC5: identity and version', () => {
   });
 });
 
-describe('US-71 AC6: amended or corrected', () => {
+describe('US-72 AC6: amended or corrected', () => {
   it('AC6: a newer version with a new value replaces the row as a FHIR correction on its day', () => {
     const first = run(empty(), [rec(obs(R4_LDL, { effectiveDateTime: '2026-10-21T08:30:00-07:00' }))]).file;
     const old = first.labValues[0];
@@ -633,7 +633,7 @@ describe('US-71 AC6: amended or corrected', () => {
   });
 });
 
-describe('US-71 AC7 and AC8: withdrawn, and the person\'s call', () => {
+describe('US-72 AC7 and AC8: withdrawn, and the person\'s call', () => {
   it('AC7: entered-in-error flips the imported row and appends only a marker of the withdrawal\'s version', () => {
     const first = run(empty(), [rec(obs(R4_LDL))]).file;
     const { file, counts } = run(first, [rec(obs(R4_LDL, { status: 'entered-in-error', meta: { versionId: '2' } }))], LATER);
@@ -756,7 +756,7 @@ describe('US-71 AC7 and AC8: withdrawn, and the person\'s call', () => {
   });
 });
 
-describe('US-71 AC9: the import wins a conflict', () => {
+describe('US-72 AC9: the import wins a conflict', () => {
   it('AC9: a typed value with a different value on the day is corrected by the result, keeping its recordedAt', () => {
     const typed = appendMeasurement(empty(), { metricType: 'ldl', value: 3.1, recordedAt: '2026-10-21', now: NOW });
     if (!typed.ok) throw new Error('setup');
@@ -810,6 +810,47 @@ describe('US-71 AC9: the import wins a conflict', () => {
     ]);
   });
 
+  // Adversary R2 (Brad: "the Apple Health import is the source of truth"): a result that lost
+  // its day in a merge was not rejected by the person, so the lab's next version wins it back.
+  const LAST = '2026-11-02T10:00:00.000Z';
+  it('AC9: a typed value that beat the result in a merge is corrected back by the lab\'s re-stamp', () => {
+    const phone = run(empty(), [rec(obs(R4_LDL))]).file;
+    const web = appendMeasurement(empty(), { metricType: 'ldl', value: 3.1, recordedAt: '2026-10-21', now: LATER });
+    if (!web.ok) throw new Error('setup');
+    const merged = mergeFiles(phone, web.file, { deviceId: 'phone', now: LATER });
+    const typed = merged.labValues.find((m) => m.status === 'active')!;
+    expect(typed).toMatchObject({ value: 3.1, source: 'manual' });
+    const { file, counts } = run(merged, [rec(obs(R4_LDL, { status: 'amended', meta: { versionId: '2' } }))], LAST);
+    expect(counts).toEqual({ added: 0, corrected: 1, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
+    expect(file.labValues.find((m) => m.id === typed.id)?.status).toBe('entered-in-error');
+    expect(file.labValues.filter((m) => m.status === 'active')).toEqual([
+      expect.objectContaining({ value: 4.6, correctsId: typed.id, source: 'health_records', recordedAt: typed.recordedAt }),
+    ]);
+  });
+
+  it('AC9: the same value that beat the result in a merge lands a marker only', () => {
+    const phone = run(empty(), [rec(obs(R4_LDL))]).file;
+    const web = appendMeasurement(empty(), { metricType: 'ldl', value: 4.6, recordedAt: '2026-10-21', now: LATER });
+    if (!web.ok) throw new Error('setup');
+    const merged = mergeFiles(phone, web.file, { deviceId: 'phone', now: LATER });
+    const { file, counts } = run(merged, [rec(obs(R4_LDL, { status: 'amended', meta: { versionId: '2' } }))], LAST);
+    expect(counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 1, notRead: 0 });
+    expect(file.labValues.filter((m) => m.status === 'active')).toEqual([expect.objectContaining({ value: 4.6, source: 'manual' })]);
+    expect(file.labValues.map((m) => isVersionMarker(m))).toEqual([false, false, true]);
+  });
+
+  it('AC8: the person\'s corrections of the result on another device, merged in, still stand against a re-stamp', () => {
+    const phone = run(empty(), [rec(obs(R4_LDL))]).file;
+    const once = correctValue(phone, { id: phone.labValues[0].id, newValue: 4.2, now: LATER });
+    if (!once.ok) throw new Error('setup');
+    const twice = correctValue(once.file, { id: once.file.labValues.find((m) => m.status === 'active')!.id, newValue: 3.1, now: LATER });
+    if (!twice.ok) throw new Error('setup');
+    const merged = mergeFiles(phone, twice.file, { deviceId: 'phone', now: LATER });
+    const { file, counts } = run(merged, [rec(obs(R4_LDL, { status: 'amended', meta: { versionId: '2' } }))], LAST);
+    expect(counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 1, notRead: 0 });
+    expect(file.labValues.filter((m) => m.status === 'active')).toEqual([expect.objectContaining({ value: 3.1, source: 'manual_correction' })]);
+  });
+
   it('AC9: a second institution\'s result for the same test and day does not replace the first', () => {
     const { file, counts } = run(empty(), [rec(obs(R4_LDL)), rec(obs(R4_LDL, { valueQuantity: { value: 4.4, unit: 'mmol/L' } }), { sourceId: 'hk-source:Other' })]);
     expect(counts).toMatchObject({ added: 1, alreadyInRecord: 1 });
@@ -817,7 +858,7 @@ describe('US-71 AC9: the import wins a conflict', () => {
   });
 });
 
-describe('US-71 AC10: erase', () => {
+describe('US-72 AC10: erase', () => {
   it('AC10: a result drawn before the record\'s erase does not land; one drawn after does', () => {
     const erased: RoadmapFile = { ...empty(), meta: { ...empty().meta, erasedAt: '2026-10-22T00:00:00.000Z' } };
     const { file, counts } = run(erased, [rec(obs(R4_LDL)), rec(obs(DSTU2_HDL, { effectiveDateTime: '2026-10-23' }), { fhirVersion: DSTU2 })]);
@@ -826,7 +867,7 @@ describe('US-71 AC10: erase', () => {
   });
 });
 
-describe('US-71 AC12: the record schema and the web', () => {
+describe('US-72 AC12: the record schema and the web', () => {
   const schema = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../docs/health-roadmap-file.schema.json'), 'utf8'));
   const validate = new Ajv2020({ allErrors: true, validateFormats: false }).compile(schema);
 
@@ -853,7 +894,7 @@ describe('US-71 AC12: the record schema and the web', () => {
   });
 });
 
-describe('US-71 AC5: version markers', () => {
+describe('US-72 AC5: version markers', () => {
   const withdrawal = rec(obs(R4_LDL, { status: 'entered-in-error', meta: { versionId: '3' } }));
 
   it('AC5: a marker never changes another row\'s status in a merge, either way round, on either device', () => {
@@ -892,7 +933,7 @@ describe('US-71 AC5: version markers', () => {
   });
 });
 
-describe('US-71 AC2: UCUM unit spellings', () => {
+describe('US-72 AC2: UCUM unit spellings', () => {
   it('reads UCUM\'s bracket and brace forms, as the code or the printed unit, as the spellings the record knows', () => {
     const days = ['2026-10-18', '2026-10-19', '2026-10-20', '2026-10-21'];
     const results = [lab('3016-3', 2.1, 'm[IU]/L'), lab('3016-3', 2.1, 'u[IU]/mL'), lab('4548-4', 6.5, '%{HbA1c}'), lab('98979-8', 90, 'mL/min/{1.73_m2}')];
@@ -928,7 +969,7 @@ describe('US-71 AC2: UCUM unit spellings', () => {
   });
 });
 
-describe('US-71 AC2: eGFR codes', () => {
+describe('US-72 AC2: eGFR codes', () => {
   it('AC2: an MDRD eGFR (33914-3) lands as egfr (Brad 2026-11-02); the race-specific MDRD codes do not', () => {
     const { file, counts } = run(empty(), [
       rec(lab('33914-3', 72, 'mL/min/{1.73_m2}')),
@@ -940,7 +981,7 @@ describe('US-71 AC2: eGFR codes', () => {
   });
 });
 
-describe('US-71 AC2: the SI labs\' molar and mass-or-moles lipid codes', () => {
+describe('US-72 AC2: the SI labs\' molar and mass-or-moles lipid codes', () => {
   it.each([
     ['14646-4', 'hdl', 1.3], ['39469-2', 'ldl', 2.9], ['22748-8', 'ldl', 2.9],
     ['14647-2', 'total_cholesterol', 5.2], ['35200-5', 'total_cholesterol', 5.2],
@@ -957,7 +998,7 @@ describe('US-71 AC2: the SI labs\' molar and mass-or-moles lipid codes', () => {
   });
 });
 
-describe('US-71 AC5, AC6, AC7, AC8: replays, marked markers, moves and a lab\'s reinstatement (re-check R3)', () => {
+describe('US-72 AC5, AC6, AC7, AC8: replays, marked markers, moves and a lab\'s reinstatement (re-check R3)', () => {
   const at = (hour: number) => `2026-11-02T${String(hour).padStart(2, '0')}:00:00.000Z`;
   const version = (id: number, fields: Record<string, unknown> = {}) => rec(obs(R4_LDL, { meta: { versionId: String(id) }, ...fields }));
   const value = (v: number) => ({ valueQuantity: { value: v, unit: 'mmol/L' } });

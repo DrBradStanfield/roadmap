@@ -7,7 +7,7 @@ import Foundation
 protocol HealthStoreClient: AnyObject {
     /// False where the device has no Health database.
     var isAvailable: Bool { get }
-    /// Where Health Records works (US-71 AC1): `HKHealthStore.supportsHealthRecords()`.
+    /// Where Health Records works (US-72 AC1): `HKHealthStore.supportsHealthRecords()`.
     var supportsHealthRecords: Bool { get }
     /// Shows Apple's permission sheet for reading and writing the D6 kinds, and reading
     /// US-56's five and, where `supportsHealthRecords`, lab results: the app's only Health
@@ -15,13 +15,13 @@ protocol HealthStoreClient: AnyObject {
     /// had not asked about before, so Health showed their sheet (AC13).
     func requestAuthorization() async throws -> Bool
     /// Lab results alone, where `supportsHealthRecords`, for a person connected before they
-    /// were asked for or who chose "Ask Before Sharing" (US-71 AC1): asks only when HealthKit
+    /// were asked for or who chose "Ask Before Sharing" (US-72 AC1): asks only when HealthKit
     /// says a request is needed, and is then true (Health showed its sheet, AC13).
     func requestLabResults() async throws -> Bool
     /// Readings added since `anchor` (nil: all of them), our own writes left out.
     /// Deletions are not returned: the record is append-only (D6).
     func samples(of kind: HealthKind, after anchor: Data?) async throws -> HealthBatch
-    /// Lab results from Health Records added since `anchor` (nil: all of them), US-71.
+    /// Lab results from Health Records added since `anchor` (nil: all of them), US-72.
     /// Deletions are not returned: an amended or withdrawn result arrives as a new version.
     func labResults(after anchor: Data?) async throws -> HealthRecordBatch
     /// Whether the person let the app write this kind. iOS never reveals read permission.

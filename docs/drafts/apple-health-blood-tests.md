@@ -259,7 +259,7 @@ Trade-offs stated:
 > **Superseded in part (Brad, 2026-11-02, after the build):** the day falls back to
 > `issued`; the import wins a conflict with a typed or uploaded value; a withdrawn result
 > lands again in a new version; a same-value newer version is kept as a correction. The
-> rules below that say otherwise are history: US-71 AC3, AC6, AC8 and AC9 hold the current ones.
+> rules below that say otherwise are history: US-72 AC3, AC6, AC8 and AC9 hold the current ones.
 - **The day:** `recordedAt` is the Observation's `effectiveDateTime` with its offset, as
   D6 does for vitals. A date-only `effectiveDateTime` (`2026-10-21`) is the day itself,
   stored as `T00:00:00Z`, which the web already shows as a day. Never the HealthKit
@@ -369,7 +369,7 @@ rare or refused among our users", and B stops there either way.
 
 ## 7. Draft story (only if Brad picks B)
 
-**US-71 · A US, UK or Canadian iPhone user's blood tests come in from Health Records**
+**US-72 · A US, UK or Canadian iPhone user's blood tests come in from Health Records**
 
 As a person whose provider sends results to Apple Health, I want them in my record
 without typing, so my plan uses my latest tests.
@@ -396,7 +396,7 @@ without typing, so my plan uses my latest tests.
 
 ## 8. Draft story for the recommendation (C)
 
-**US-71 (if C is picked instead) · A lab report reaches the app in two taps from anywhere**
+**US-72 (if C is picked instead) · A lab report reaches the app in two taps from anywhere**
 
 - AC1: In Mail, Files, Photos or a patient-portal app, Share › Health Roadmap opens the
   existing lab import (US-52) with that file already chosen.

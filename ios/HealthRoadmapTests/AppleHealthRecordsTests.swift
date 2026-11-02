@@ -3,7 +3,7 @@ import UIKit
 import XCTest
 @testable import HealthRoadmap
 
-/// US-71 (ios/architecture.md D6): lab results from Health Records come in through the
+/// US-72 (ios/architecture.md D6): lab results from Health Records come in through the
 /// vitals' path. Asked only where Apple offers them, sent to the engine as they came in
 /// one `healthRecords` edit, the anchor kept until a batch brings results and moved only
 /// after the record is saved, and two fixed Clarity words. HealthKit is faked.
@@ -68,7 +68,7 @@ final class AppleHealthRecordsTests: XCTestCase {
 
     // MARK: AC1, AC13: asked only where it works, in the one request
 
-    func testWhereRecordsWorkTheOneRequestAsksAndSaysSo_US71_AC1_AC13() async throws {
+    func testWhereRecordsWorkTheOneRequestAsksAndSaysSo_US72_AC1_AC13() async throws {
         let health = FakeHealthStore()
         health.supportsHealthRecords = true
         let (_, sync, sdk) = try parts(health)
@@ -81,7 +81,7 @@ final class AppleHealthRecordsTests: XCTestCase {
         XCTAssertEqual(sdk.events, ["Health Records asked"])
     }
 
-    func testWhereRecordsDoNotWorkNothingAsksOrReadsThem_US71_AC1() async throws {
+    func testWhereRecordsDoNotWorkNothingAsksOrReadsThem_US72_AC1() async throws {
         let health = FakeHealthStore()
         health.pendingRecords = [Self.hba1c()]
         let (store, sync, sdk) = try parts(health)
@@ -94,7 +94,7 @@ final class AppleHealthRecordsTests: XCTestCase {
 
     /// AC1 on the real client: lab results are read-only and never in the app's write set,
     /// and the base request still holds exactly the vitals and US-56's types.
-    func testLabResultsAreReadOnlyAndOnlyAddedWhereSupported_US71_AC1() {
+    func testLabResultsAreReadOnlyAndOnlyAddedWhereSupported_US72_AC1() {
         XCTAssertEqual(HealthKitClient.labResults, HKClinicalType(.labResultRecord))
         XCTAssertFalse(HealthKitClient.requested.share.contains(HealthKitClient.labResults))
         XCTAssertFalse(HealthKitClient.requested.read.contains(HealthKitClient.labResults), "added only when supportsHealthRecords")
@@ -104,7 +104,7 @@ final class AppleHealthRecordsTests: XCTestCase {
 
     /// Connected before this build, or "Ask Before Sharing": coming on screen asks for lab
     /// results once when HealthKit says a request is needed, then imports.
-    func testAnAlreadyConnectedPersonIsAskedOnceOnForeground_US71_AC1_AC13() async throws {
+    func testAnAlreadyConnectedPersonIsAskedOnceOnForeground_US72_AC1_AC13() async throws {
         memory.connected = true
         let health = FakeHealthStore()
         health.supportsHealthRecords = true
@@ -120,7 +120,7 @@ final class AppleHealthRecordsTests: XCTestCase {
         XCTAssertEqual(health.labRequests, 1, "HealthKit says no request is needed now")
     }
 
-    func testForegroundAsksNothingWhereRecordsDoNotWorkOrHealthIsNotConnected_US71_AC1() async throws {
+    func testForegroundAsksNothingWhereRecordsDoNotWorkOrHealthIsNotConnected_US72_AC1() async throws {
         let unsupported = FakeHealthStore()
         memory.connected = true
         let (_, connectedSync, connectedSdk) = try parts(unsupported)
@@ -137,7 +137,7 @@ final class AppleHealthRecordsTests: XCTestCase {
         XCTAssertTrue(sdk.events.isEmpty)
     }
 
-    func testForegroundAsksNothingWhenHealthKitSaysNoRequestIsNeeded_US71_AC1_AC13() async throws {
+    func testForegroundAsksNothingWhenHealthKitSaysNoRequestIsNeeded_US72_AC1_AC13() async throws {
         memory.connected = true
         let health = FakeHealthStore()
         health.supportsHealthRecords = true
@@ -149,7 +149,7 @@ final class AppleHealthRecordsTests: XCTestCase {
     }
 
     /// A background wake (an observer delivery) imports, and never asks: no sheet can show.
-    func testABackgroundDeliveryNeverAsks_US71_AC1() async throws {
+    func testABackgroundDeliveryNeverAsks_US72_AC1() async throws {
         memory.connected = true
         let health = FakeHealthStore()
         health.supportsHealthRecords = true
@@ -165,7 +165,7 @@ final class AppleHealthRecordsTests: XCTestCase {
 
     /// A build that reads results the last one refused reads every result again: the
     /// stored rules version differs, so the lab results anchor is dropped once.
-    func testANewRulesVersionReadsEveryResultAgain_US71() async throws {
+    func testANewRulesVersionReadsEveryResultAgain_US72() async throws {
         memory.connected = true
         memory.labResultsAnchor = Data("older build".utf8)
         let health = FakeHealthStore()
@@ -184,7 +184,7 @@ final class AppleHealthRecordsTests: XCTestCase {
 
     /// Rules version 2 (issued dates, the MDRD eGFR and the import winning a conflict now land):
     /// a phone whose anchor was kept under version 1 reads every result again (Codex R3).
-    func testAnAnchorKeptUnderRulesVersion1IsReadAgain_US71_AC3_AC9() async throws {
+    func testAnAnchorKeptUnderRulesVersion1IsReadAgain_US72_AC3_AC9() async throws {
         XCTAssertEqual(HealthSyncMemory.labResultsRulesVersion, 2)
         memory.connected = true
         memory.labResultsAnchor = Data("version 1 build".utf8)
@@ -201,7 +201,7 @@ final class AppleHealthRecordsTests: XCTestCase {
     // MARK: AC2, AC5: the edit sent
 
     /// The engine's door (my-data.ts `healthRecords`): each result as it came, Swift parsing nothing.
-    func testTheBatchGoesToTheEngineAsItCame_US71_AC2_AC5() throws {
+    func testTheBatchGoesToTheEngineAsItCame_US72_AC2_AC5() throws {
         let record = HealthRecord(sourceId: "src|Clinic", resourceType: "Observation", fhirVersion: "1.0.2", json: #"{"id":"a"}"#)
         let sent = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(RecordEdit.healthRecords([record]))) as? [String: Any])
         XCTAssertEqual(sent["kind"] as? String, "healthRecords")
@@ -210,7 +210,7 @@ final class AppleHealthRecordsTests: XCTestCase {
     }
 
     /// The engine's counts come back beside the record, and decode.
-    func testTheEnginesCountsDecode_US71_AC13() throws {
+    func testTheEnginesCountsDecode_US72_AC13() throws {
         let json = #"{"ok":true,"record":"{}","healthRecords":{"added":1,"corrected":0,"withdrawn":2,"alreadyInRecord":3,"notRead":4}}"#
         let outcome = try JSONDecoder().decode(EditOutcome.self, from: Data(json.utf8))
         XCTAssertEqual(outcome.healthRecords, HealthRecordCounts(added: 1, corrected: 0, withdrawn: 2, alreadyInRecord: 3, notRead: 4))
@@ -221,7 +221,7 @@ final class AppleHealthRecordsTests: XCTestCase {
 
     // MARK: Through the engine: rows, anchor, events
 
-    func testAResultLandsAsAHealthRecordsRowAndSaysImported_US71_AC2_AC13() async throws {
+    func testAResultLandsAsAHealthRecordsRowAndSaysImported_US72_AC2_AC13() async throws {
         let health = FakeHealthStore()
         health.supportsHealthRecords = true
         health.pendingRecords = [Self.hba1c()]
@@ -241,7 +241,7 @@ final class AppleHealthRecordsTests: XCTestCase {
     }
 
     /// AC5, AC13: the same version again lands nothing, and says nothing.
-    func testTheSameResultAgainLandsNothingAndSendsNoEvent_US71_AC5_AC13() async throws {
+    func testTheSameResultAgainLandsNothingAndSendsNoEvent_US72_AC5_AC13() async throws {
         let health = FakeHealthStore()
         health.supportsHealthRecords = true
         health.pendingRecords = [Self.hba1c()]
@@ -254,7 +254,7 @@ final class AppleHealthRecordsTests: XCTestCase {
     }
 
     /// AC6 through the app: an amended version replaces the row as a correction; the event says imported.
-    func testAnAmendedResultCorrectsTheRow_US71_AC6() async throws {
+    func testAnAmendedResultCorrectsTheRow_US72_AC6() async throws {
         let health = FakeHealthStore()
         health.supportsHealthRecords = true
         health.pendingRecords = [Self.hba1c()]
@@ -273,7 +273,7 @@ final class AppleHealthRecordsTests: XCTestCase {
 
     /// iOS answers a refused read with nothing. Keeping that anchor would skip every result
     /// already in Health once the person allows lab results in Settings.
-    func testNoAnchorIsKeptUntilABatchBringsResults_US71() async throws {
+    func testNoAnchorIsKeptUntilABatchBringsResults_US72() async throws {
         let health = FakeHealthStore()
         health.supportsHealthRecords = true
         let (store, sync, sdk) = try parts(health)
@@ -289,7 +289,7 @@ final class AppleHealthRecordsTests: XCTestCase {
     }
 
     /// A record the app cannot read refuses the batch: the anchor stays, so it comes again.
-    func testARefusedSaveKeepsTheAnchor_US71() async throws {
+    func testARefusedSaveKeepsTheAnchor_US72() async throws {
         try "not json".write(to: RecordStore.file(in: folder), atomically: true, encoding: .utf8)
         let health = FakeHealthStore()
         health.supportsHealthRecords = true
@@ -301,7 +301,7 @@ final class AppleHealthRecordsTests: XCTestCase {
         guard case .failed = sync.status else { return XCTFail("status \(sync.status)") }
     }
 
-    func testALockedPhoneWaitsAndKeepsTheAnchor_US71() async throws {
+    func testALockedPhoneWaitsAndKeepsTheAnchor_US72() async throws {
         let health = FakeHealthStore()
         health.supportsHealthRecords = true
         health.pendingRecords = [Self.hba1c()]
@@ -320,7 +320,7 @@ final class AppleHealthRecordsTests: XCTestCase {
 
     /// The import waits its turn in the store's one line: a typed save asked for meanwhile
     /// lands too, and neither overwrites the other.
-    func testAnImportAndATypedSaveNeverOverlap_US71() async throws {
+    func testAnImportAndATypedSaveNeverOverlap_US72() async throws {
         let health = FakeHealthStore()
         health.supportsHealthRecords = true
         let (store, sync, _) = try parts(health)
@@ -335,7 +335,7 @@ final class AppleHealthRecordsTests: XCTestCase {
     }
 
     /// Lab results alone count as access: the section never says Health isn't connected.
-    func testResultsWithoutVitalsAreUpToDate_US71() async throws {
+    func testResultsWithoutVitalsAreUpToDate_US72() async throws {
         let health = FakeHealthStore()
         health.supportsHealthRecords = true
         health.writable = []

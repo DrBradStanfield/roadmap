@@ -70,7 +70,7 @@ enum PhoneApply: Sendable {
     case refused(EditOutcome)
     /// The edit changed nothing, so nothing was written.
     case unchanged
-    /// `healthRecords`: what a Health Records batch did (US-71).
+    /// `healthRecords`: what a Health Records batch did (US-72).
     case saved(record: String, drawn: HealthEngine.Drawn, healthRecords: HealthRecordCounts?)
 }
 

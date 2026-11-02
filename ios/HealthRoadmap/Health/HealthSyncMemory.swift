@@ -4,7 +4,7 @@ import Foundation
 /// (ios/architecture.md D6): it is this phone's bookkeeping, not health data, and
 /// another device reading the record must not inherit it.
 /// - whether the person connected Apple Health (iOS never says whether reading is allowed);
-/// - one HealthKit query anchor per kind, and one for lab results (US-71), so each launch
+/// - one HealthKit query anchor per kind, and one for lab results (US-72), so each launch
 ///   reads only what is new, with the lab results rules version that anchor was read under;
 /// - the version of each value already written to Health, so it is written once.
 struct HealthSyncMemory {
@@ -27,7 +27,7 @@ struct HealthSyncMemory {
         defaults.set(anchor, forKey: "appleHealth.anchor.\(kind.rawValue)")
     }
 
-    /// Lab results' anchor (US-71): nil until a batch brought one in.
+    /// Lab results' anchor (US-72): nil until a batch brought one in.
     var labResultsAnchor: Data? {
         get { defaults.data(forKey: "appleHealth.anchor.labResults") }
         nonmutating set { defaults.set(newValue, forKey: "appleHealth.anchor.labResults") }
@@ -35,7 +35,7 @@ struct HealthSyncMemory {
 
     /// Bumped when the engine starts reading lab results it used to refuse (a new code or
     /// unit): a phone whose anchor was kept under an older version reads every result again.
-    /// 2: results dated by `issued`, the MDRD eGFR and the import winning a conflict (US-71).
+    /// 2: results dated by `issued`, the MDRD eGFR and the import winning a conflict (US-72).
     static let labResultsRulesVersion = 2
 
     /// The rules version the lab results anchor was kept under; 0 before this was stored.

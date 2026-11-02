@@ -1,6 +1,6 @@
 /**
  * Lab results a clinic sent to Apple Health Records, taken into the record
- * (US-71; plan: docs/drafts/apple-health-blood-tests.md §6). The app hands
+ * (US-72; plan: docs/drafts/apple-health-blood-tests.md §6). The app hands
  * over each clinical record's FHIR JSON as it came; this reads it once and
  * decides what lands.
  *
@@ -35,7 +35,9 @@
  *    it as a FHIR correction (AC6);
  *  - the import is the source of truth: a result corrects a typed, uploaded or
  *    other-source row holding its (metric, day) when the value, unit or limit
- *    differs, and appends nothing when they match (AC9, Brad 2026-11-02);
+ *    differs, and appends nothing when they match (AC9, Brad 2026-11-02); a
+ *    result whose day another row won in a merge, a row that corrects none of
+ *    its rows, is such a conflict, not the person's call (AC9, adversary R2);
  *  - a result drawn before the record's erase does not land (AC10, D6).
  * A result the app cannot read (AC4) is counted, never guessed.
  */
@@ -69,7 +71,7 @@ export interface HealthRecordsCounts { added: number; corrected: number; withdra
  *  14682-9 creatinine (SCnc) · 2857-1 PSA (MCnc) · 10835-7 Lp(a) (MCnc) ·
  *  43583-4 Lp(a) (SCnc) · 2276-4 ferritin (MCnc) · 3016-3 TSH (ACnc).
  * No glucose: a plain serum glucose code does not say fasting (plan §6).
- * Brad checks this list before merge (US-71 gate check).
+ * Brad checks this list before merge (US-72 gate check).
  */
 export const HEALTH_RECORDS_LOINC: Readonly<Record<string, string>> = {
   '4548-4': 'hba1c', '17856-6': 'hba1c', '59261-8': 'hba1c',
@@ -400,15 +402,20 @@ export function importHealthRecords(
     // the lab's newer version reinstates it, the same value included (Brad 2026-11-02).
     const labWithdrew = active === undefined && established !== undefined && isMarkerId(String(established.externalId))
       && versionPartsOf(String(established.externalId))?.[2] === 'entered-in-error';
-    // AC5, AC8: the same value, unit and comparator as the result holds now: a
-    // marker only; the person's rejection or hand edit stands.
-    if (established && !labWithdrew && sameContent(established, reading)) { mark(); counts.alreadyInRecord++; continue; }
     const held = active ?? taken.get(slot);
     const old = held === undefined ? undefined : rows[held];
+    // AC9: the day's active row corrects none of the result's rows, through any chain of
+    // corrections: the result lost a merge, not the person's call (adversary R2).
+    const lostMerge = established !== undefined && active === undefined && old !== undefined
+      && !correctsOneOf(rows, old, new Set(mine.map((at) => rows[at].id)));
+    // AC5, AC8: the same value, unit and comparator as the result holds now: a
+    // marker only; the person's rejection or hand edit stands.
+    if (established && !labWithdrew && !lostMerge && sameContent(established, reading)) { mark(); counts.alreadyInRecord++; continue; }
     // AC9: another institution's result holds the day.
     if (old && active === undefined && old.source === 'health_records') { counts.alreadyInRecord++; continue; }
-    // AC9: the same value typed or uploaded on the day: nothing to correct.
-    if (old && sameContent(old, reading)) { counts.alreadyInRecord++; continue; }
+    // AC9: the same value typed or uploaded on the day: nothing to correct (a marker
+    // when the result lost the day in a merge, so the record remembers the version).
+    if (old && sameContent(old, reading)) { if (lostMerge) mark(); counts.alreadyInRecord++; continue; }
     let correctsId: string | null = null;
     let recordedAt = slot === slotAt(reading, reading.recordedAt) ? reading.recordedAt : established!.recordedAt;
     if (held !== undefined && old) {
@@ -430,6 +437,18 @@ export function importHealthRecords(
   }
 
   return { file: changed ? stampUpdatedAt({ ...file, labValues: rows }, now) : file, counts };
+}
+
+/** Whether `row`, or a row it corrects through `correctsId`, corrects one of `ids` (AC8, AC9). */
+function correctsOneOf(rows: readonly Row[], row: Row, ids: ReadonlySet<string>): boolean {
+  const seen = new Set<string>();
+  for (let at: Row | undefined = row; at?.correctsId && !seen.has(at.id);) {
+    if (ids.has(at.correctsId)) return true;
+    seen.add(at.id);
+    const next: string = at.correctsId;
+    at = rows.find((r) => r.id === next);
+  }
+  return false;
 }
 
 /**

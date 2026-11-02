@@ -662,9 +662,9 @@ describe('Apple Health (AC13, AC14)', () => {
   });
 });
 
-// US-71: lab results from Health Records, through health-core's health-records-import
+// US-72: lab results from Health Records, through health-core's health-records-import
 // (its rules are tested there). The app reads the counts from the edit's answer.
-describe('Health Records (US-71)', () => {
+describe('Health Records (US-72)', () => {
   const ldl = {
     resourceType: 'Observation', id: 'ldl-1', status: 'final', effectiveDateTime: '2026-10-20', meta: { versionId: '1' },
     code: { coding: [{ system: 'http://loinc.org', code: '13457-7' }] },
