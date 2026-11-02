@@ -1604,7 +1604,7 @@ As a user told a lipid panel is due, the reminder also tells me where to get one
 ## Epic G — Operational bots (non-avatar: Brad is the user; ops-safety specs only)
 
 ### US-27 · YouTube bot posting caps hold when the data layer fails — **added by sentry-fix 2026-08-27 (spec hole found via Sentry JAVASCRIPT-REMIX-64/65/66)**
-As Brad, on whose channel the bot posts publicly, its safety caps (50 replies/day, 10/video lifetime) bind under ALL conditions — including when the Supabase reads behind them fail.
+As Brad, on whose channel the bot posts publicly, its safety caps (50 replies/day, 30/video lifetime; raised from 10 by Brad 2026-11-03) bind under ALL conditions — including when the Supabase reads behind them fail.
 - AC1: A failed cap read (today's post count, per-video totals) fails distinguishably (throws, same convention as the tick's other pre-posting reads) — never a value indistinguishable from zero posts.
 - AC2: With either cap unknown, the tick posts nothing (top-level or follow-up), logs the skip, and retries next tick.
 - AC3 (2026-10-30, from a tech-debt audit by @robertaustinbell's agent): one tick at a time per machine. A tick reads today's post count at its start, so a second tick that started while the first still ran would budget against the same count and could post past the daily cap. A tick that comes due while the last one is still running is skipped with a log line; the next one after it finishes runs as normal. Ticks on different Fly machines are not covered: they are kept apart only by the per-comment claim. Tests: `app/lib/youtube-bot-tick-overlap.test.ts` (2: a due tick is skipped while one runs; the next tick after a finished one runs).
