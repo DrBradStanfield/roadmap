@@ -924,7 +924,7 @@ describe('US-12 AC12: a previous-results column with its own printed date become
     expect(prompt).not.toContain('even if those historical columns are dated');
   });
 
-  it('metadata (the connector, held during the MCP 1.0.2 review): the base rule, every previous column ignored', () => {
+  it('metadata (the connector, held since the MCP 1.0.2 review): the base rule, every previous column ignored', () => {
     const prompt = unifiedSystemPrompt('metadata');
     expect(prompt).toContain('If the report shows previous/historical results (in a "Previous" column, "Last visit" column, trend graph, or any side-by-side layout), IGNORE them completely. Extract ONLY values from the current report\'s primary column, even if those historical columns are dated. Return at most ONE entry per metric — never duplicate a metric in the output.');
     expect(prompt).not.toContain('recordedAt');
