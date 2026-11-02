@@ -218,10 +218,10 @@ describe('explicit local-first data path', () => {
     expect(trackProductEvent).toHaveBeenCalledWith('lab_unit_refused', { key: 'ferritin' });
   });
 
-  // US-07 AC10 · the usage signal: a waist or a whole blood pressure was ADDED,
+  // US-07 AC11 · the usage signal: a waist or a whole blood pressure was ADDED,
   // named by its measure alone (Brad 2026-11-02). Never the value, never
   // another metric; not a correction, a refused number or a lone half.
-  describe('US-07 AC10 — measurement_added counts what was added', () => {
+  describe('US-07 AC11 — measurement_added counts what was added', () => {
     const added = () => vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'measurement_added');
     beforeEach(() => vi.mocked(trackProductEvent).mockClear());
 

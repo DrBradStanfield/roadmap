@@ -144,7 +144,7 @@ describe('US-02 AC8: the plan reads an inverted blood pressure as none (review R
       return computePlan(file, new Date(NOW));
     };
     expect(bpCards(planOf(160, 100).results)).toEqual(['bp-stage2']);
-    // US-07 AC10: the plan asks to check the swapped reading; no tier card shows.
+    // US-07 AC11: the plan asks to check the swapped reading; no tier card shows.
     const swapped = planOf(80, 120).results;
     expect(bpCards(swapped)).toEqual(['measure-bp']);
     expect(swapped.suggestions.find((s) => s.id === 'measure-bp')?.title).toBe('Check your blood pressure reading');
@@ -177,7 +177,7 @@ describe('US-02 AC8: the plan reads an inverted blood pressure as none (review R
 });
 
 
-describe('US-07 AC10: planInputsFrom, the one strip every plan caller shares', () => {
+describe('US-07 AC11: planInputsFrom, the one strip every plan caller shares', () => {
   const base = { heightCm: 178, sex: 'male', birthYear: 1971, weightKg: 80 } as HealthInputs;
   const from = (inputs: Partial<HealthInputs>) => planInputsFrom(inputs, validateHealthInputs(inputs));
 

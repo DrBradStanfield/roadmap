@@ -175,7 +175,7 @@ export function loadLabValuesSync(): ApiLabValue[] | null {
 // --- writes ---
 // `erase`: the erase the page showed when the write was asked for (US-16
 // AC2a); without it, the one it shows now.
-/** US-07 AC10's usage signal: each prompted measure the rows just ADDED, once, by name
+/** US-07 AC11's usage signal: each prompted measure the rows just ADDED, once, by name
  *  alone. A blood pressure counts only once both halves of its day are on record. */
 const MEASURE_OF: Partial<Record<MetricType, (typeof MEASURES)[number]>> = { waist: 'waist', systolic_bp: 'blood_pressure', diastolic_bp: 'blood_pressure' };
 const OTHER_HALF: Partial<Record<MetricType, MetricType>> = { systolic_bp: 'diastolic_bp', diastolic_bp: 'systolic_bp' };

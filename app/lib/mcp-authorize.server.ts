@@ -7,6 +7,7 @@
  * travel back to the client and which the route must render itself.
  */
 import crypto from 'node:crypto';
+import { sameBytes } from './crypto-compare.server';
 import type { McpOAuthDetail, McpOAuthReason } from '../../packages/health-core/src/product-events';
 import { issuer, resourceUrl } from './mcp-config.server';
 import { isAllowedRedirect, redirectMatches, redirectMiss, type McpClient } from './mcp-clients.server';
@@ -162,7 +163,5 @@ export function sealState(request: AuthorizeRequest, provider: McpProvider, nowM
 export function verifyPkce(codeVerifier: string, challenge: string): boolean {
   if (!/^[A-Za-z0-9._~-]{43,128}$/.test(codeVerifier)) return false;
   const derived = crypto.createHash('sha256').update(codeVerifier, 'ascii').digest('base64url');
-  const a = Buffer.from(derived);
-  const b = Buffer.from(challenge);
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
+  return sameBytes(Buffer.from(derived), Buffer.from(challenge));
 }

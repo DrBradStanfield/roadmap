@@ -964,7 +964,7 @@ describe('generateSuggestions', () => {
     });
   });
 
-  describe('Measure waist circumference suggestion (US-07 AC10)', () => {
+  describe('Measure waist circumference suggestion (US-07 AC11)', () => {
     const waistCard = (bmi?: number, waistToHeightRatio?: number) => {
       const { inputs, results } = createTestData({}, { bmi, waistToHeightRatio });
       return generateSuggestions(inputs, results).find(s => s.id === 'measure-waist');
@@ -1006,7 +1006,7 @@ describe('generateSuggestions', () => {
     });
   });
 
-  describe('Measure blood pressure suggestion (US-07 AC10)', () => {
+  describe('Measure blood pressure suggestion (US-07 AC11)', () => {
     const bpCard = (overrides: Partial<SuggestionInputs>, resultOverrides: Partial<HealthResults> = {}) => {
       const { inputs, results } = createTestData({}, resultOverrides);
       return generateSuggestions({ ...inputs, ...overrides }, results).find(s => s.id === 'measure-bp');

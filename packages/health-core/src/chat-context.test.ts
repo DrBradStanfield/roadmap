@@ -706,7 +706,7 @@ describe('US-07 AC8: NO_SEX_CHAT_RULE names every NEEDS_SEX item', () => {
   });
 });
 
-describe('US-07 AC10: the chat plan asks for the waist first, then the blood pressure', () => {
+describe('US-07 AC11: the chat plan asks for the waist first, then the blood pressure', () => {
   it('leads with both prompts, and a swapped reading reads as one to check', () => {
     const { context } = contextFor([]);
     expect(ids(context).slice(0, 2)).toEqual(['measure-waist', 'measure-bp']);

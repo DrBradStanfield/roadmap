@@ -7,6 +7,7 @@ import { CHAT_PROFILE_CHOICES, CHAT_PROFILE_FIELDS, EVENT_REASONS, GUIDE_PLACEME
 import { LPA_UNITS } from '../../packages/health-core/src/units';
 import { US_PRODUCTS, type UsProduct } from '../../packages/health-core/src/us-products';
 import { METRIC_TYPES } from '../../packages/health-core/src/validation';
+import { LIMIT_TEST_WORDS } from '../../packages/health-core/src/lab-extraction';
 import { MCP_CLIENT_LABELS } from './mcp-clients.server';
 import { supabaseAdmin } from './supabase.server';
 
@@ -60,9 +61,17 @@ const metadataSchema = z
     choice: z.enum(CHAT_PROFILE_CHOICES).optional(),
     /** US-61 AC8: which US product block was seen or clicked. Never the card it sat on. */
     product: z.enum(Object.keys(US_PRODUCTS) as [UsProduct, ...UsProduct[]]).optional(),
-    /** US-07 AC10: which prompted measure was saved, waist or blood pressure. Never its value. */
+    /** US-07 AC11: which prompted measure was saved, waist or blood pressure. Never its value. */
     measure: z.enum(MEASURES).optional(),
     ...(Object.fromEntries(UPLOAD_OUTCOME_KEYS.map(k => [k, uploadOutcomeCount])) as Record<UploadOutcomeKey, typeof uploadOutcomeCount>),
+    /**
+     * US-12 AC20 (Brad 2026-11-02, "yes"): the tests behind `valuesLimitUngraded`,
+     * each once, sorted. A closed list of keys (LIMIT_TEST_WORDS), so never free
+     * text, a value, a comparator, a unit or a date. The one exception to AC19's
+     * "never a test's name", for this field only.
+     */
+    limitUngradedTests: z.array(z.enum(LIMIT_TEST_WORDS as [string, ...string[]])).min(1).max(LIMIT_TEST_WORDS.length)
+      .refine((tests) => tests.every((t, i) => i === 0 || tests[i - 1] < t), 'each test once, sorted').optional(),
   })
   .strict();
 
@@ -118,6 +127,7 @@ const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
   device: ['tool_opened'],
   measure: ['measurement_added'],
   ...Object.fromEntries(UPLOAD_OUTCOME_KEYS.map(k => [k, ['upload_outcome']])),
+  limitUngradedTests: ['upload_outcome'],
 };
 
 /** Keys whose words depend on the event that carries them: a sign-in
@@ -136,13 +146,13 @@ const EVENT_REQUIRED_KEY: Partial<Record<string, string>> = {
   signin_opened: 'placement',
   us_product_shown: 'product', // US-61 AC8: a row without its product counts nothing
   us_product_link_clicked: 'product',
-  measurement_added: 'measure', // US-07 AC10
+  measurement_added: 'measure', // US-07 AC11
 };
 
 /** Events whose metadata is ONLY their own keys: a shared key such as
  *  `provider` or `count` would make a counts-only row carry something else. */
 const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
-  upload_outcome: UPLOAD_OUTCOME_KEYS,
+  upload_outcome: [...UPLOAD_OUTCOME_KEYS, 'limitUngradedTests'],
   lpa_unit_selected: ['unit', 'from'],
   lpa_check_answered: ['answer'],
   measurement_refused: ['metric', 'refusal'],
@@ -160,7 +170,7 @@ const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   signin_opened: ['placement'],
   guide_opened: ['placement'],
   record_unreadable_kept: ['count'], // US-65 AC6: how many entries, nothing else
-  measurement_added: ['measure'], // US-07 AC10: the measure alone, never the value
+  measurement_added: ['measure'], // US-07 AC11: the measure alone, never the value
 };
 
 /**

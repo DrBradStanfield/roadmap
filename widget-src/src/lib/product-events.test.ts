@@ -66,7 +66,7 @@ describe('trackProductEvent on the Shopify surface', () => {
     expect(metadata).toEqual([{ product: 'microvitamin_plus' }, { product: 'sleep' }]);
   });
 
-  it('US-07 AC10 — counts measurement_added once per measure per tab, so a waist does not swallow a blood pressure', async () => {
+  it('US-07 AC11 — counts measurement_added once per measure per tab, so a waist does not swallow a blood pressure', async () => {
     const { trackProductEvent } = await import('./server-api');
     trackProductEvent('measurement_added', { measure: 'waist' });
     trackProductEvent('measurement_added', { measure: 'blood_pressure' });

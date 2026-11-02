@@ -9,6 +9,12 @@ import {
   cellLabel,
   cellRange,
   cellToSI,
+  isLimitField,
+  limitCellText,
+  limitRepresentative,
+  limitLabelValue,
+  limitText,
+  METRIC_TO_FIELD,
   HBA1C_THRESHOLDS,
   LDL_THRESHOLDS,
   getLipidStatus,
@@ -20,6 +26,7 @@ import {
   LPA_THRESHOLDS,
   PSA_THRESHOLDS,
   type CellUnit,
+  type Comparator,
   type MetricType,
   type ValidationRange,
 } from '@roadmap/health-core';
@@ -35,7 +42,7 @@ import type { Grading } from '@roadmap/health-core';
 
 // The unit a cell is shown and typed in, and its conversions, live in health-core
 // (cell-unit.ts), which the iPhone app reads too.
-export { type CellUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel } from '@roadmap/health-core';
+export { type CellUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel, cellNumber, comparatorSymbol } from '@roadmap/health-core';
 
 // Keystroke filters (US-02 AC4). Most of our numeric cells are type="text"
 // (for inputMode/pattern control), and even type="number" doesn't reject
@@ -78,6 +85,59 @@ export function bpSysAdvance(typed: string): BpAdvance {
 export function formatLabValue(v: number): string {
   return String(Math.round(v * 100) / 100);
 }
+
+/** A saved lab value as shown: a limit with its symbol and its bound as
+ *  printed ("< 0.005"), else up to two decimals (US-12 AC20). */
+export function savedLabText(v: number, comparator?: Comparator): string {
+  return comparator ? limitText(v, 0, comparator) : formatLabValue(v);
+}
+
+/**
+ * A trend's shape, for the grid's sparkline and the phone rows' trend: each
+ * point's spot in a `width` x `height` box (2px padding), the line through the
+ * exact points only, and the area under it down to `baseline`. A point printed
+ * as a limit (`limits[i]`) keeps its spot, to be drawn hollow, and stays off
+ * the line (US-12 AC20). Needs two points or more.
+ */
+export function trendGeometry(points: number[], limits: boolean[] | undefined, width: number, height: number, baseline: number) {
+  const low = Math.min(...points), span = Math.max(...points) - low || 1;
+  const pad = 2;
+  const coords = points.map((v, i) => [
+    pad + (i / (points.length - 1)) * (width - pad * 2),
+    height - pad - ((v - low) / span) * (height - pad * 2),
+  ] as const);
+  const exact = coords.filter((_, i) => !limits?.[i]);
+  const line = exact.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const area = exact.length >= 2
+    ? `${line} L${exact[exact.length - 1][0].toFixed(1)},${baseline} L${exact[0][0].toFixed(1)},${baseline} Z` : null;
+  return { coords, exact, line, area };
+}
+
+/** A saved core value as its cell shows it: a limit with its symbol, "> 1.55" (US-12 AC20). */
+export const savedCellText = limitCellText;
+
+/** A saved core limit's input field, when the plan can read one (US-12 AC20). */
+function limitField(metric: MetricType) {
+  const field = METRIC_TO_FIELD[metric];
+  return field && isLimitField(field) ? field : null;
+}
+
+/** A limit the plan cannot grade: it shows no colour, and says `LIMIT_NOT_GRADED`. */
+export function limitUngraded(metric: MetricType, bound: number, comparator?: Comparator): boolean {
+  const field = limitField(metric);
+  return !!comparator && (!field || limitRepresentative(field, comparator, bound) === null);
+}
+
+/** A saved core value's colour. A limit is coloured only when its bound
+ *  decides against the plan's lines and the grid's own colour bands, and
+ *  never by the bound itself (US-12 AC20). */
+export function savedStatus(metric: MetricType, si: number, comparator: Comparator | undefined, grading: Grading): Status {
+  if (!comparator) return statusOf(metric, si, grading);
+  const field = limitField(metric);
+  const graded = field ? limitLabelValue(field, comparator, si) : null;
+  return graded === null ? null : statusOf(metric, graded, grading);
+}
+
 
 /**
  * A typed value that changes nothing, so saving it writes nothing (US-03
@@ -136,6 +196,19 @@ export function numericCellText(text: string): string {
  *  inside the metric's input range there, else undefined (US-02 AC7). */
 export function readTypedValue(metric: MetricType, typed: string, display: CellUnit): number | undefined {
   return hasNumericSyntax(typed) ? parseLocalisedNumber(typed, cellRange(metric, display)) : undefined;
+}
+
+/** Whether a whole number still being typed could reach the range with more
+ *  digits ("19" on the way to 190), so its range error waits for the field to
+ *  be left (US-02 AC9). A number too big, or one no further digit can bring in
+ *  ("3" for a waist of 40 to 200 cm), is wrong already and says so at once. */
+export function mayStillFit(typed: string, min: number, max: number): boolean {
+  const n = Number(typed);
+  if (!/^\d+$/.test(typed) || n === 0) return false;
+  for (let lo = n * 10, span = 10; lo <= max; lo *= 10, span *= 10) {
+    if (lo + span - 1 >= min) return true;
+  }
+  return false;
 }
 
 /** Validate a typed display-unit value against the metric's range. */

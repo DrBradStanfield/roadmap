@@ -206,7 +206,7 @@ describe('US-07 AC1: conditional lifestyle cards at their lines (doc §4)', () =
     expect(alc(25.1, 0.49)).toBe(false);
   });
 
-  it('measure-waist: any BMI with no waist, never with one (US-07 AC10)', () => {
+  it('measure-waist: any BMI with no waist, never with one (US-07 AC11)', () => {
     const waist = (bmi: number, waistToHeightRatio?: number) => ids(plan({}, { bmi, waistToHeightRatio })).includes('measure-waist');
     expect(waist(24.9)).toBe(true);
     expect(waist(25)).toBe(true);

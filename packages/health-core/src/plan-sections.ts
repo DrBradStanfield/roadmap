@@ -29,7 +29,7 @@ const GROUPED_CATEGORIES: readonly string[] = ['nutrition', 'screening', 'bloodw
 const CATEGORY_ORDER: readonly string[] = ['nutrition', 'exercise', 'sleep', 'screening', 'bloodwork', 'medication', 'blood_pressure', 'general'];
 
 /** The missing-measurement prompts, waist then blood pressure: they lead their section, in
- *  this order, ahead of every category (US-07 AC10). Ordering only: suggestions.ts names its cards itself. */
+ *  this order, ahead of every category (US-07 AC11). Ordering only: suggestions.ts names its cards itself. */
 export const LEADING_IDS = ['measure-waist', 'measure-bp'] as const;
 const isLeading = (id: string) => (LEADING_IDS as readonly string[]).includes(id);
 

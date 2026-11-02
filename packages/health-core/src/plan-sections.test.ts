@@ -32,7 +32,7 @@ describe('planSections (US-25 AC2)', () => {
     ]);
   });
 
-  it('leads Next Steps with the waist prompt, then the blood pressure prompt (US-07 AC10)', () => {
+  it('leads Next Steps with the waist prompt, then the blood pressure prompt (US-07 AC11)', () => {
     const suggestions = [
       s('screening-colorectal', 'attention', 'screening'),
       s('screening-cervical', 'attention', 'screening'),
@@ -101,7 +101,7 @@ describe('planSections (US-25 AC2)', () => {
   });
 });
 
-describe('US-07 AC10: one source for the leading prompts', () => {
+describe('US-07 AC11: one source for the leading prompts', () => {
   it('the engine emits the leading ids first, in their order, each on its own card', () => {
     const emitted = generateSuggestions({ heightCm: 178 }, { heightCm: 178, age: 40, suggestions: [] });
     expect(emitted.slice(0, LEADING_IDS.length).map((x) => x.id)).toEqual([...LEADING_IDS]);

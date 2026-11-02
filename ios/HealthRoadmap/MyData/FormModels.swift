@@ -119,6 +119,11 @@ struct MetricHistory: Decodable, Equatable {
         var diastolic: String? = nil
         /// A blood pressure's active row ids, sent back with a replace (AC17).
         var pairIds: [String]? = nil
+        /// A lab result printed as a limit (US-12 AC20): its bound in the page's unit, where the
+        /// chart plots it hollow, out of the line; `value` reads "< 2.0". Nil otherwise, or from an older engine.
+        var bound: Double? = nil
+        /// The plan's word on a current limit it cannot grade, shown instead of "Used in your plan".
+        var note: String? = nil
 
         var isActive: Bool { status == "active" }
     }
