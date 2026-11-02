@@ -170,19 +170,29 @@ function versionOf(obs: Observation): string {
 }
 
 /**
- * Whether a version is no later than the one an active row carries (AC5): by
+ * Whether a version is older than the one an active row carries (AC5): by
  * lastUpdated when both carry one, else by versionId when both are whole
- * numbers. Unordered otherwise, so not stale.
+ * numbers (any length, compared as digits). Unordered otherwise, so not stale.
+ * An equal stamp is stale for a new value (an old copy must not undo a newer
+ * one) but not for a withdrawal: a lab's withdrawal is honoured (AC7, re-check R1).
  */
-function isStale(version: string, activeExternalId: string): boolean {
+function isStale(version: string, activeExternalId: string, withdrawal: boolean): boolean {
   const old = activeExternalId.slice(activeExternalId.indexOf('#') + 1).split('|');
   if (old.length !== 6) return false;
   const [at, id] = version.split('|');
   const [oldAt, oldId] = old;
   const t = Date.parse(at);
   const oldT = Date.parse(oldAt);
-  if (at && oldAt && !Number.isNaN(t) && !Number.isNaN(oldT)) return t <= oldT;
-  return /^\d{1,15}$/.test(id) && /^\d{1,15}$/.test(oldId) && Number(id) <= Number(oldId);
+  const order = at && oldAt && !Number.isNaN(t) && !Number.isNaN(oldT) ? Math.sign(t - oldT)
+    : /^\d+$/.test(id) && /^\d+$/.test(oldId) ? compareDigits(id, oldId) : null;
+  return order !== null && (order < 0 || (order === 0 && !withdrawal));
+}
+
+/** Two whole numbers written in digits, compared without Number's precision limit. */
+function compareDigits(a: string, b: string): number {
+  const x = a.replace(/^0+(?=\d)/, '');
+  const y = b.replace(/^0+(?=\d)/, '');
+  return x.length !== y.length ? Math.sign(x.length - y.length) : x < y ? -1 : x > y ? 1 : 0;
 }
 
 /**
@@ -272,7 +282,7 @@ export function importHealthRecords(
     const rows = byIdentity.get(identity) ?? [];
     const active = rows.find(({ list, at }) => list[at].status === 'active');
     // AC5: a replayed older version neither replaces nor withdraws a newer one.
-    if (active && isStale(version, active.list[active.at].externalId as string)) { counts.alreadyInRecord++; continue; }
+    if (active && isStale(version, active.list[active.at].externalId as string, obs.status === 'entered-in-error')) { counts.alreadyInRecord++; continue; }
 
     // AC7: the lab withdrew it. The active row goes; nothing is appended.
     if (obs.status === 'entered-in-error') {

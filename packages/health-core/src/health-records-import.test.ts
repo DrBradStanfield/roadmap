@@ -369,6 +369,23 @@ describe('US-66 AC5: identity and version', () => {
     ]);
   });
 
+  it('AC5, AC7: a withdrawal under an equal lastUpdated is honoured (re-check R1)', () => {
+    const stamp = { lastUpdated: '2026-10-22T10:00:00Z' };
+    const first = run(empty(), [rec(obs(R4_LDL, { meta: stamp }))]).file;
+    const { file, counts } = run(first, [rec(obs(R4_LDL, { meta: stamp, status: 'entered-in-error' }))], LATER);
+    expect(counts.withdrawn).toBe(1);
+    expect(file.measurements.map((m) => m.status)).toEqual(['entered-in-error']);
+  });
+
+  it('AC5: whole-number versionIds longer than 15 digits still order (Codex re-check R2)', () => {
+    const newer = rec(obs(R4_LDL, { meta: { versionId: '1000000000000001' } }));
+    const older = rec(obs(R4_LDL, { meta: { versionId: '1000000000000000' }, status: 'entered-in-error' }));
+    const held = run(empty(), [newer]).file;
+    const { file, counts } = run(held, [older], LATER);
+    expect(counts.alreadyInRecord).toBe(1);
+    expect(file).toBe(held);
+  });
+
   it('AC5: no "#" or "|" from the provider reaches the version, so the identity and the parts split back', () => {
     const { file } = run(empty(), [rec(obs(R4_LDL, { meta: { versionId: 'v#2|b' } }))]);
     expect(file.measurements[0].externalId).toBe(`${SOURCE}|Observation|ldlcholesterol#|v2b|final|4.6||mmol/L`);
