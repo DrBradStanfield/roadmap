@@ -176,12 +176,15 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'low-salt': {
-    reason: 'Excess sodium raises blood pressure by increasing fluid retention. The ACC/AHA guidelines recommend an ideal sodium intake of less than 1,500mg per day for most adults. Meta-analyses confirm that reducing sodium intake produces meaningful blood pressure reductions, with greater benefit in those who already have elevated blood pressure.',
+    reason: 'Excess sodium raises blood pressure by increasing fluid retention. The ACC/AHA guidelines recommend an ideal sodium intake of less than 1,500mg per day for most adults. Meta-analyses confirm that reducing sodium intake produces meaningful blood pressure reductions, with greater benefit in those who already have elevated blood pressure.\n\nA potassium-enriched salt substitute (75% sodium chloride, 25% potassium chloride) lowered stroke, major cardiovascular events and death in the SSaSS trial, in people in rural China with a past stroke or older adults with high blood pressure. The 2025 AHA/ACC guideline says these substitutes can be useful, except in kidney disease or with medicines that reduce potassium excretion. So the plan says not to use one with kidney disease, if you have been told to limit potassium, or with a potassium-sparing diuretic, a potassium supplement, an ACE inhibitor or an ARB, unless your doctor agrees, and leaves the suggestion out when your eGFR is below 45. NICE also advises against them for older people, people with diabetes and pregnant women.',
     guidelines: [...GUIDELINES_BP, 'ACC/AHA 2017'],
     references: [
       ...REFS_SODIUM,
       ...REFS_BP_LIFESTYLE,
       REF_BP_2017,
+      { label: 'Neal 2021 – Salt substitution and cardiovascular events: SSaSS trial (NEJM)', url: 'https://doi.org/10.1056/NEJMoa2105675' },
+      { label: 'Gulati 2025 – 2025 AHA/ACC High Blood Pressure Guideline-at-a-Glance (JACC)', url: 'https://doi.org/10.1016/j.jacc.2025.07.010' },
+      { label: 'NICE NG136 – Hypertension in adults: diagnosis and management', url: 'https://www.nice.org.uk/guidance/ng136/chapter/Recommendations' },
     ],
   },
 
@@ -435,9 +438,12 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'bp-crisis': {
-    reason: 'A blood pressure reading this high (≥180/120 mmHg) is classified as a hypertensive crisis. If accompanied by symptoms such as chest pain, shortness of breath, severe headache, or vision changes, this is a medical emergency requiring immediate attention.',
+    reason: 'A blood pressure reading this high (180/120 mmHg or more, on either number) is classified as a hypertensive crisis. The US National Heart, Lung, and Blood Institute advises: with no symptoms, wait 5 minutes and check again, and if it is still this high, call your doctor, who may start or change a medicine. With symptoms such as chest, back or belly pain, shortness of breath, numbness or weakness, a change in vision, trouble speaking or a sudden severe headache, it is an emergency: call your local emergency number. Do not wait to see if it comes down on its own.',
     guidelines: [...GUIDELINES_BP],
-    references: [...REFS_BP_LIFESTYLE, ...REFS_BP_TRIALS],
+    references: [
+      { label: 'NHLBI – High blood pressure: symptoms (what to do at 180/120)', url: 'https://www.nhlbi.nih.gov/health/high-blood-pressure/symptoms' },
+      ...REFS_BP_LIFESTYLE, ...REFS_BP_TRIALS,
+    ],
   },
 
   'bp-stage2': {
@@ -455,13 +461,17 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Cholesterol Medication Cascade ─────────────────────────
 
   'med-statin': {
-    reason: 'Statins are the cornerstone of cholesterol-lowering therapy. Both the AHA/ACC and ESC/EAS guidelines recommend statins as first-line treatment when lipid levels exceed targets. Statins reduce LDL/ApoB by inhibiting cholesterol synthesis in the liver, and large clinical trials consistently show they reduce cardiovascular events and mortality.\n\nSome doctors use more aggressive on-treatment lipid targets (ApoB below 50 mg/dL, LDL below 55 mg/dL) based on the PESA study, which showed that even young, healthy adults develop subclinical atherosclerosis when exposed to elevated lipids over time. Multiple studies confirm that very low LDL levels are safe.',
+    reason: 'Statins are the cornerstone of cholesterol-lowering therapy. Both the AHA/ACC and ESC/EAS guidelines recommend statins as first-line treatment when lipid levels exceed targets. Statins reduce LDL/ApoB by inhibiting cholesterol synthesis in the liver, and large clinical trials consistently show they reduce cardiovascular events and mortality.\n\nSome doctors use more aggressive on-treatment lipid targets (ApoB below 50 mg/dL, LDL below 55 mg/dL) based on the PESA study, which showed that even young, healthy adults develop subclinical atherosclerosis when exposed to elevated lipids over time. Multiple studies confirm that very low LDL levels are safe.\n\nStatins are not used in pregnancy. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive.',
     guidelines: [...GUIDELINES_LIPIDS],
-    references: [...REFS_LIPID_GUIDELINES, ...REFS_PESA, ...REFS_LDL_SAFETY],
+    references: [
+      ...REFS_LIPID_GUIDELINES, ...REFS_PESA, ...REFS_LDL_SAFETY,
+      { label: 'FDA 2021 – Statins in pregnancy: strongest warning removed, most patients should still stop', url: 'https://www.fda.gov/drugs/drug-safety-and-availability/fda-requests-removal-strongest-warning-against-using-cholesterol-lowering-statins-during-pregnancy' },
+      { label: 'NICE NG238 – Cardiovascular disease: risk assessment and reduction, including lipid modification', url: 'https://www.nice.org.uk/guidance/ng238/chapter/Recommendations' },
+    ],
   },
 
   'med-ezetimibe': {
-    reason: 'Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.',
+    reason: 'Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests ezetimibe only after a PCSK9 inhibitor, if your level is still above target, because the outcome evidence for ezetimibe on its own is limited.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: [
       ...REFS_LIPID_GUIDELINES,
@@ -470,10 +480,10 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'med-bempedoic-acid': {
-    reason: 'Bempedoic acid (Nexletol) inhibits ATP citrate lyase, lowering cholesterol production via a different pathway than statins. The CLEAR Outcomes trial showed a 13% reduction in major adverse cardiovascular events in statin-intolerant patients. It can be used alongside statins for additional LDL reduction. The combination pill with ezetimibe (Nexlizet) offers convenience.',
+    reason: 'Bempedoic acid (Nexletol) inhibits ATP citrate lyase, lowering cholesterol production via a different pathway than statins. The CLEAR Outcomes trial showed a 13% reduction in major adverse cardiovascular events in statin-intolerant patients. This plan suggests it only if you cannot take a statin and your level is still above target on a PCSK9 inhibitor and ezetimibe. The combination pill with ezetimibe (Nexlizet) offers convenience.',
     guidelines: ['ACC/AHA 2026', 'ESC/EAS 2019'],
     references: [
-      { label: 'Nissen 2023 – CLEAR Outcomes (bempedoic acid cardiovascular outcomes)', url: 'https://doi.org/10.1056/NEJMoa2215024' },
+      { label: 'Nissen 2023 – CLEAR Outcomes: bempedoic acid in statin-intolerant patients (NEJM)', url: 'https://doi.org/10.1056/NEJMoa2215024' },
     ],
   },
 
@@ -496,7 +506,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'med-pcsk9i': {
-    reason: 'PCSK9 inhibitors (evolocumab, alirocumab) are injectable medications that can lower LDL by an additional 50–60% beyond statins. They are recommended by AHA/ACC and ESC/EAS guidelines when lipid targets are not met with maximally tolerated statin plus ezetimibe. They also lower Lp(a) by approximately 25–30%.',
+    reason: 'PCSK9 inhibitors (evolocumab, alirocumab) are injectable medications that can lower LDL by an additional 50–60% beyond statins. They are recommended by AHA/ACC and ESC/EAS guidelines when lipid targets are not met with maximally tolerated statin plus ezetimibe. They also lower Lp(a) by approximately 25–30%.\n\nStatin muscle damage is rare, but if it happens, stop the statin and move to a PCSK9 inhibitor. If a statin is not tolerated for any reason, this plan suggests a PCSK9 inhibitor next, then ezetimibe and bempedoic acid if your level is still above target.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: REFS_LIPID_GUIDELINES,
   },

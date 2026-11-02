@@ -101,7 +101,7 @@ If you take a blood thinner, check with your doctor or pharmacist before adding 
 
 ## Brad's view (reviewed 2 Nov 2026)
 
-**No risk calculator in the plan.** The roadmap grades each marker against its own threshold and does not calculate a 5-year or 10-year risk with PREVENT, SCORE2, QRISK3 or PREDICT (Brad's current guidance, 2 Nov 2026). Brad's approach is to control every major risk factor: smoking, blood pressure, diet, exercise, weight and ApoB above the level we were born with ([Soon We'll Forget What Heart Attacks Are](https://drstanfield.com/blogs/articles/soon-well-forget-what-heart-attacks-are)). He notes that over 99% of people who had a first heart attack in a 9.3-million-person study had at least one risk factor above optimal beforehand ([99% of Heart Attacks Had This Prior Warning](https://drstanfield.com/blogs/articles/99-of-heart-attacks-had-this-prior-warning)).
+**No risk calculator in the plan.** The roadmap grades each marker against its own threshold and does not calculate a 5-year or 10-year risk with PREVENT, SCORE2, QRISK3 or PREDICT, or use a CAC score: each risk factor is treated to its own target (Brad's current guidance, 2 Nov 2026). Brad's approach is to control every major risk factor: smoking, blood pressure, diet, exercise, weight and ApoB above the level we were born with ([Soon We'll Forget What Heart Attacks Are](https://drstanfield.com/blogs/articles/soon-well-forget-what-heart-attacks-are)). He notes that over 99% of people who had a first heart attack in a 9.3-million-person study had at least one risk factor above optimal beforehand ([99% of Heart Attacks Had This Prior Warning](https://drstanfield.com/blogs/articles/99-of-heart-attacks-had-this-prior-warning)).
 
 **Lower targets than most guidelines.** The plan aims for ApoB below 0.5 g/L, LDL below 1.4 mmol/L and non-HDL below 1.6 mmol/L for anyone on treatment, lower than the ESC/EAS 2019 ApoB goal for very high risk, based on the Ez-PAVE target trial and PESA (Brad's current guidance, 2 Nov 2026). Blood pressure targets are below 120/80 under 65 and below 130/80 from 65, based on SPRINT and ESPRIT (Brad's current guidance, 2 Nov 2026). He takes a low-dose statin plus ezetimibe himself to keep LDL below 55 mg/dL, which he calls highly aggressive for primary prevention ([Debunked $6 Pill Found to Reduce Heart Disease](https://drstanfield.com/blogs/articles/debunked-6-pill-found-to-reduce-heart-disease)).
 
@@ -111,7 +111,7 @@ If you take a blood thinner, check with your doctor or pharmacist before adding 
 
 **Lp(a).** Test it once. If it is high, he aims for a lower LDL, under 40 to 50 mg/dL in his clinic, usually with lifestyle, a low-dose statin and ezetimibe, and sometimes considers aspirin when Lp(a) and other risk factors are high ([Lipoprotein(a) Is a Cheap, One-Time Blood Test](https://drstanfield.com/blogs/articles/lipoproteina)). The plan's elevated-Lp(a) card lists the modifiable risk factors to control: lipids, blood pressure, BMI, HbA1c and medicines (Brad's current guidance, 2 Nov 2026).
 
-**Aspirin.** Daily low-dose aspirin without a past heart attack or stroke has lost its support in older adults, at least for cancer prevention, and carries a clear bleeding cost; after a heart attack, stroke or stent it stays ([We Were Wrong About Aspirin](https://drstanfield.com/blogs/articles/we-were-wrong-about-aspirin-new-evidence)).
+**Aspirin.** Daily low-dose aspirin without a past heart attack or stroke has lost its support in older adults, at least for cancer prevention, and carries a clear bleeding cost; after a heart attack, stroke or stent it stays ([We Were Wrong About Aspirin](https://drstanfield.com/blogs/articles/we-were-wrong-about-aspirin-new-evidence)). His position: aspirin after a heart attack, stroke or stent, as your doctor directs, not to prevent a first event; the plan has no aspirin card (Brad's current guidance, 2 Nov 2026).
 
 ## Who needs extra care
 
@@ -137,7 +137,7 @@ If you take a blood thinner, check with your doctor or pharmacist before adding 
 
 | | Calculator and horizon | Who is assessed | Risk bands | Calcium score | Aspirin for a first event |
 |---|---|---|---|---|---|
-| This plan (Brad) | None; each marker against its own target | Adults 18 and over | Not used | Not recorded; not needed if risk factors are controlled | No aspirin advice in the plan |
+| This plan (Brad) | None; each marker against its own target | Adults 18 and over | Not used | Not recorded; not needed if risk factors are controlled | Not for a first event; after a heart attack, stroke or stent, as your doctor directs |
 | US (ACC/AHA 2026, USPSTF) | PREVENT, 10-year | 30 to 79 [3][8] | Borderline 3% to below 5%; intermediate 5% to below 10% [8] | Recommended selectively at borderline or intermediate risk; sets the LDL goal [8] | Individual decision at 40 to 59 with 10% or more; not started at 60 or older [10] |
 | Europe (ESC 2021) | SCORE2, SCORE2-OP, 10-year | 40 to 69; over 70 [4][17] | Age-dependent: very high from 7.5% under 50, 10% at 50 to 69, 15% from 70 [20] | May be considered around a decision threshold [20] | Not covered here |
 | UK (NICE NG238) | QRISK3, 10-year | 25 to 84 [18] | Statin offered from 10% [18] | Not covered here | Not covered here |

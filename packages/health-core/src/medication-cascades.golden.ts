@@ -18,6 +18,13 @@
  * that only off-list rows changed, each now reading as HEAD read it at the
  * graded dose.
  *
+ * US-06 AC13 (Brad, 2026-11-02) changed it again: bempedoic acid now comes
+ * last and only when the statin is not tolerated, and a statin not tolerated
+ * goes to the PCSK9 inhibitor before ezetimibe. A script compared HEAD's plan
+ * with the new one over the full lipid set (78,890 rows): 18,420 changed, and
+ * every one matched the rule (on a statin, the old cards without bempedoic
+ * acid; statin not tolerated, the new order written out separately).
+ *
  * Each cascade has an `explicit` set, stored row by row in
  * medication-cascades.golden.json, and a `full` cross product, stored as one
  * SHA-256 over its rows (about 81,000 combinations, too many to keep).

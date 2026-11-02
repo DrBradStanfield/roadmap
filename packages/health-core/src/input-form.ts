@@ -61,7 +61,7 @@ export const MEDICATION_TEXT = {
   ezetimibeLabel: 'On Ezetimibe 10mg?',
   ezetimibeHint: (lipid: string) => `Ezetimibe works differently — it blocks cholesterol absorption in the intestine, adding ~20% more ${lipid} reduction.`,
   bempedoicAcidLabel: 'Bempedoic acid',
-  bempedoicAcidHint: 'Bempedoic acid lowers cholesterol production via a different pathway than statins, and can be used alongside them.',
+  bempedoicAcidHint: 'Bempedoic acid lowers cholesterol production via a different pathway than statins. It is an option when a statin is not tolerated.',
   pcsk9iLabel: 'On a PCSK9 inhibitor?',
   pcsk9iHint: (lipid: string) => `PCSK9 inhibitors help your body clear ${lipid} from the blood. They can reduce ${lipid} by ~50%.`,
   statinEscalationLabel: { increase: 'Tried increasing statin dose?', switch: 'Tried switching to a more potent statin?' },
@@ -172,25 +172,28 @@ function lipidSection(meds: MedicationInputs, basis: MedicationBasis): FormSecti
   }
 
   // Progressive disclosure opens the plan's next step; a step that holds a
-  // recorded value always shows (US-06 AC7).
+  // recorded value always shows (US-06 AC7). The steps show in the plan's
+  // order: with the statin not tolerated, the PCSK9 inhibitor comes before
+  // ezetimibe, and bempedoic acid comes last (US-06 AC13).
   const groups: FormGroup[] = [{ id: 'statin', title: '', notes: [], fields: statin }];
-  if (cascade.ezetimibeReached || meds.ezetimibe !== undefined) {
-    groups.push({ id: 'ezetimibe', title: '', notes: [], fields: [{ ...ezetimibeField, hint: T.ezetimibeHint(lipidName) }] });
-  }
-  if (cascade.bempedoicAcidReached || meds.bempedoicAcid !== undefined) {
-    groups.push({ id: 'bempedoic_acid', title: '', notes: [], fields: [{ ...bempedoicField, hint: T.bempedoicAcidHint }] });
-  }
+  const ezetimibeGroups: FormGroup[] = cascade.ezetimibeReached || meds.ezetimibe !== undefined
+    ? [{ id: 'ezetimibe', title: '', notes: [], fields: [{ ...ezetimibeField, hint: T.ezetimibeHint(lipidName) }] }] : [];
+  const pcsk9iGroups: FormGroup[] = cascade.pcsk9iReached || meds.pcsk9i !== undefined
+    ? [{ id: 'pcsk9i', title: '', notes: [], fields: [{ ...pcsk9iField, hint: T.pcsk9iHint(lipidName) }] }] : [];
   const step = cascade.escalation;
+  const escalationGroups: FormGroup[] = [];
   if (step || meds.statinEscalation !== undefined) {
     const value = meds.statinEscalation || 'not_yet';
-    groups.push({ id: 'statin_escalation', title: '', notes: [], fields: [{
+    escalationGroups.push({ id: 'statin_escalation', title: '', notes: [], fields: [{
       kind: 'choice', key: 'statin_escalation', label: step ? T.statinEscalationLabel[step] : T.escalationRecorded,
       options: optionsShowing(escalationOptions(step), value), value,
       ...(step ? { hint: T.statinEscalationHint[step](lipidName) } : null),
     }] });
   }
-  if (cascade.pcsk9iReached || meds.pcsk9i !== undefined) {
-    groups.push({ id: 'pcsk9i', title: '', notes: [], fields: [{ ...pcsk9iField, hint: T.pcsk9iHint(lipidName) }] });
+  if (statinDrug === 'not_tolerated') groups.push(...pcsk9iGroups, ...ezetimibeGroups, ...escalationGroups);
+  else groups.push(...ezetimibeGroups, ...escalationGroups, ...pcsk9iGroups);
+  if (cascade.bempedoicAcidReached || meds.bempedoicAcid !== undefined) {
+    groups.push({ id: 'bempedoic_acid', title: '', notes: [], fields: [{ ...bempedoicField, hint: T.bempedoicAcidHint }] });
   }
   // It recommends only while the plan shows a step's card: with every step
   // answered the marker stays elevated and the plan shows none.
