@@ -341,8 +341,8 @@ describe('US-04 AC5a: a move on a copy that has not seen an erase', () => {
     }
   });
 
-  // An app from before AC5a roots an id by stripping only `#dup-…` and `#si`.
-  const olderAppRoot = (id: string) => id.replace(/(?:#dup-[0-9a-f]{8}|#si)+$/, '');
+  // An app from before AC5a roots an id by stripping `#dup-…`, `#si` and `#core` but not `#mv-…`.
+  const olderAppRoot = (id: string) => id.replace(/(?:#dup-[0-9a-f]{8}|#si|#core)+$/, '');
 
   it('lists each moved row under its own id too, so an older app that merges the erase drops a move synced before it', () => {
     const synced = moved(base()).file;
@@ -375,9 +375,9 @@ describe('US-04 AC5a: a move on a copy that has not seen an erase', () => {
 });
 
 describe('US-04 AC5a: an older app erases a moved row whose original an earlier erase pruned', () => {
-  // An app from before AC5a roots an id by stripping only `#dup-…` and `#si`,
+  // An app from before AC5a roots an id by stripping `#dup-…`, `#si` and `#core` but not `#mv-…`,
   // so it lists a moved row under its own id.
-  const olderAppRoot = (id: string) => id.replace(/(?:#dup-[0-9a-f]{8}|#si)+$/, '');
+  const olderAppRoot = (id: string) => id.replace(/(?:#dup-[0-9a-f]{8}|#si|#core)+$/, '');
   const LEGACY_ERASED_AT = '2026-08-31T09:00:00.000Z'; // before the move (NOW)
   const OLDER = { deviceId: 'older_app', now: '2026-09-02T09:00:00Z' };
   const UPDATED = { deviceId: 'updated_app', now: '2026-09-03T09:00:00Z' };
