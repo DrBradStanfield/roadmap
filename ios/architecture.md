@@ -842,7 +842,7 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   2026-10-26); a fixed window back from today dropped a VO2 max from six weeks ago (Codex R2).
   The trend is the last 30 days' readings, or the last seven however old (US-56 AC14); only a
   card with fewer than two readings in its 30 days and fewer than seven read reads further back
-  (400 days before its window; sleep, the 200 nights a sleep page reads, or back to its first
+  (400 days before its window; sleep, the 200 nights before today, or back to its first
   read's start when that is older), and a read-back that
   fails or finds nothing more keeps the first card.
   No record row, UserDefaults value, log or telemetry, and no file but the kept cards (a source-scan
@@ -859,7 +859,11 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   own view, E3). Both pages share `LivePageFrame` (picker, empty line, footnote, read, range
   reset), `ScrollingChart` (axes, scroll, scrub, haptic, calendar) with `SelectionRule`, and
   `PageHeadline`, which `MetricDetailView` uses too. Every metric page, MetricDetailView's included, takes `metricPageList` (inset grouped, inline title, an 8 pt top margin so the picker sits under the title; Brad 2026-10-25). While the sheet is still due for the five and Apple Health is connected (so only for someone connected before 2026-10-26) Vitals shows `LiveReconnectRow` with **Turn On** (US-56 AC5; the "Show from Apple Health" card is gone; not connected, My data's Apple Health row is the one way in), and after "Don't Allow" (or an empty Health) the same row with **Open Settings** (AC5b; "Reconnect" until 2026-11-01, AC5c). Turn On runs `connect()` on the known answer; Open Settings checks the status afresh and runs it while the sheet is due, else opens Settings (`LiveReconnectRow.action`); Settings opens at its top and iOS 27's app page there has no Health row, so the row names the path, chosen by OS (`LiveFooter.healthPath`: Settings › Apps › Health › Data Access & Devices › Health Roadmap from iOS 18, Settings › Health › … on iOS 17). **A page always shows its card's reading
-  (Codex R2, adversary R7):** it reads 400 days (sleep 200) or back to the reading, opens with it in
+  (Codex R2, adversary R7):** it reads the metric's whole history, from its oldest sample
+  (`LiveHealthStore.earliest`, US-56 AC7a, 2026-11-03: Brad found VO2 max stopped a year back
+  while Weight scrolled to its first reading), by day as HealthKit sums or averages it, so a
+  decade is about 3,650 points; sleep reads every night's samples. When the oldest cannot be read,
+  400 days (sleep 200) or back to the reading. It opens with the reading in
   view (`LiveChartGeometry.opening`, the window's own length so a 31-day month still holds it),
   reads D's hours a day at a time as the scroll reaches a day (D scrolls a week back, or to the reading's day: a 400-day hourly domain took Swift Charts several seconds to lay out on the simulator), and reads the days only once the
   range leaves D (E4). Its bars live in `@State`, rebuilt after a read or a range change (E2). The
@@ -875,8 +879,8 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   record metric's page. `LivePageFrame` draws it last; `MyDataView` hands it in from My data's `guides` by
   `LiveMetric.guideKey` (the snake-case key, as `paletteKey`). No engine change: the engine already serves every guide.
 - Simulator seeding: `App/LiveHealthSeed.swift`, DEBUG only (`#if DEBUG`, never in a release build):
-  `--seed-live-health` asks to write the five types and saves 60 days of synthetic samples and a
-  year of VO2 max. A sheet asked for during launch is dismissed by iOS, so it waits 4 s. Apple's
+  `--seed-live-health` asks to write the five types and saves 60 days of synthetic samples and
+  three years of VO2 max (a page scrolls back past a year, AC7a). A sheet asked for during launch is dismissed by iOS, so it waits 4 s. Apple's
   sheet in iOS 27 answers by "Select All", "Continue", "All Recorded Data", "Allow"; a UI test can
   tap them only by screen point (the sheet reports its frames at a third of screen points).
 - Purpose string: the six "go only into your record"; the five are kept only on this iPhone, never in the record (AC10, AC2 since 2026-10-27).
