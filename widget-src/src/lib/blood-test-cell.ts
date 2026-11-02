@@ -198,6 +198,19 @@ export function readTypedValue(metric: MetricType, typed: string, display: CellU
   return hasNumericSyntax(typed) ? parseLocalisedNumber(typed, cellRange(metric, display)) : undefined;
 }
 
+/** Whether a whole number still being typed could reach the range with more
+ *  digits ("19" on the way to 190), so its range error waits for the field to
+ *  be left (US-02 AC9). A number too big, or one no further digit can bring in
+ *  ("3" for a waist of 40 to 200 cm), is wrong already and says so at once. */
+export function mayStillFit(typed: string, min: number, max: number): boolean {
+  const n = Number(typed);
+  if (!/^\d+$/.test(typed) || n === 0) return false;
+  for (let lo = n * 10, span = 10; lo <= max; lo *= 10, span *= 10) {
+    if (lo + span - 1 >= min) return true;
+  }
+  return false;
+}
+
 /** Validate a typed display-unit value against the metric's range. */
 export function validateTypedValue(
   metric: MetricType,

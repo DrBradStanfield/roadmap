@@ -98,14 +98,14 @@ export function ValuePage({ subject, history, labValues, ctx, onSave, onCorrect,
   return (
     <section className="md-page" aria-labelledby={titleId}>
       <button type="button" className="md-back" onClick={onClose}>‹ My data</button>
-      <h3 id={titleId} ref={titleRef} tabIndex={-1} className="md-page-title">{label}</h3>
+      <h3 id={titleId} ref={titleRef} tabIndex={-1} className="health-section-title md-page-title">{label}</h3>
       {target && target.bare && <p className="md-page-target">{target.full}</p>}
 
       {readings.length > 0 && (
         <ErrorBoundary>
           <Suspense fallback={<p className="history-loading">Loading chart…</p>}>
             {lab?.mixedUnits && <MixedUnitsNote label={label} units={[...new Set(lab.points.map(p => p.unit))]}/>}
-            {charts.map(c => <TimeSeriesChart key={c.title} title={c.title} data={c.data} unit={c.unit} color={c.color}/>)}
+            {charts.map(c => <TimeSeriesChart key={c.title} title={c.title} showTitle={c.title !== label} data={c.data} unit={c.unit} color={c.color}/>)}
           </Suspense>
         </ErrorBoundary>
       )}

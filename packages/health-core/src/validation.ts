@@ -596,6 +596,21 @@ const IDENTITY_FIELD_RANGES: Record<string, { min: number; max: number }> = {
  * Only validates fields without unit conversion (birthYear, BP, PSA).
  * Unit-conversion fields should rely on HTML min/max + server-side Zod.
  */
+/** The range of a profile or first-time field the unit tables do not hold (birth year 1900 to this year). */
+export function identityFieldRange(field: string): { min: number; max: number } | undefined {
+  return Object.prototype.hasOwnProperty.call(IDENTITY_FIELD_RANGES, field) ? IDENTITY_FIELD_RANGES[field] : undefined;
+}
+
+/** Why a form value (canonical units) is out of its range ("Height must be at
+ *  least 50 cm"), or null; a field the schema does not know, or a clear, has
+ *  none (US-02 AC5). The web store's profile save and the first-time fields'
+ *  save both refuse by it. */
+export function inputRangeFault(field: string, value: unknown): string | null {
+  if (value == null || !Object.prototype.hasOwnProperty.call(healthInputSchema.shape, field)) return null;
+  const parsed = healthInputSchema.shape[field as keyof typeof healthInputSchema.shape].safeParse(value, { error: zod3Message });
+  return parsed.success ? null : parsed.error.issues[0]?.message ?? 'Out of range';
+}
+
 export function validateInputValue(
   field: string,
   value: number | undefined,

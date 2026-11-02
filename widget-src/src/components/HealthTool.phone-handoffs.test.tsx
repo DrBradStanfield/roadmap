@@ -95,6 +95,44 @@ describe('US-16 AC2 on a phone: a chat edit lands on My data, on the cell it fil
     expect(scrolledIntoView).toContain(cell);
   });
 
+  it('on desktop (Brad 2026-11-02, rows there too): a chat edit opens the table so the filled cell shows, and the focus stays where it was', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({
+      matches: !q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {},
+    }));
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
+    await addMeasurement('weight', 82, '2026-09-01');
+    await flushRoadmapStore();
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    await waitFor(() => expect(view.container.querySelector('.md-row')).not.toBeNull());
+    expect([...view.container.querySelectorAll<HTMLElement>('.md-table')].every(t => t.hidden)).toBe(true);
+    scrolledIntoView = [];
+
+    act(() => chat.proposeEdit!([{ kind: 'field', field: 'ldlC', displayValue: 3.2, unitSystem: 'si', date: null }]));
+
+    const cell = await waitFor(() => { const c = view.container.querySelector<HTMLInputElement>('.bt-input-active'); expect(c).not.toBeNull(); return c!; });
+    expect(cell.value).toBe('3.2');
+    await waitFor(() => expect(cell.closest<HTMLElement>('.md-table')?.hidden).toBe(false));
+    expect(document.activeElement).not.toBe(cell);
+    expect(scrolledIntoView).not.toContain(cell);
+  });
+
+  it('adversary R6 (US-62 AC11): on desktop a chat edit to a plain field does not open the Blood tests table', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({
+      matches: !q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {},
+    }));
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
+    await addMeasurement('ldl', 3.0, '2026-09-01'); // the whole form, with the first-time vitals fields
+    await flushRoadmapStore();
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    await waitFor(() => expect(view.container.querySelector('#waistCm')).not.toBeNull());
+    act(() => chat.proposeEdit!([{ kind: 'field', field: 'waistCm', displayValue: 90, unitSystem: 'si', date: null }]));
+    await waitFor(() => expect((view.container.querySelector('#waistCm') as HTMLInputElement).value).toBe('90'));
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    expect([...view.container.querySelectorAll<HTMLElement>('.md-table')].every(t => t.hidden)).toBe(true);
+  });
+
   it('a plain field (no vitals matrix yet): the field is in view and focused', async () => {
     await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
     await flushRoadmapStore();

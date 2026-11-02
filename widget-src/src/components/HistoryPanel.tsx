@@ -98,12 +98,15 @@ export interface ChartPoint { x: number; y: number; limit?: string }
 // A limit is a hollow dot at its bound, left out of the line (US-12 AC20).
 export function TimeSeriesChart({
   title,
+  showTitle = true,
   data,
   unit,
   color,
   annotations,
 }: {
   title: string;
+  /** False where a heading above already names the chart (the value page, US-62 AC14). */
+  showTitle?: boolean;
   data: ChartPoint[];
   unit: string;
   color: string;
@@ -230,9 +233,9 @@ export function TimeSeriesChart({
 
   return (
     <div className="metric-chart-container">
-      <h3>{title}</h3>
+      {showTitle && <h3>{title}</h3>}
       <div className="metric-chart-canvas-wrap">
-        <canvas ref={canvasRef} />
+        <canvas ref={canvasRef} {...(!showTitle && { role: 'img', 'aria-label': `${title} chart` })} />
       </div>
       {annotations && annotations.length > 0 && (
         <ol className="metric-chart-events" aria-label={`${title} recorded medication changes`}>
