@@ -115,11 +115,7 @@ struct ChatView: View {
             }
             Divider()
             HStack(alignment: .bottom) {
-                TextField("Ask a question", text: $draft, axis: .vertical)
-                    .analyticsMasked()
-                    .lineLimit(1...5)
-                    .textFieldStyle(.roundedBorder)
-                    .focused($asking)
+                QuestionField(draft: $draft, asking: $asking)
                 if sending && !transcript.finished {
                     // Stop cancels the turn at once; the question comes back to the box (US-52 AC6d).
                     Button(action: stop) {
@@ -252,3 +248,19 @@ struct ChatView: View {
     }
 }
 
+/// The question box (US-52 AC6e). It grows to five lines as a question gets long. At
+/// accessibility text sizes it holds two (break-it pass 2026-10-30): five filled about 60% of
+/// the screen above the keyboard, and on one line the placeholder read "Ask a que...".
+struct QuestionField: View {
+    @Binding var draft: String
+    var asking: FocusState<Bool>.Binding
+    @Environment(\.dynamicTypeSize) private var textSize
+
+    var body: some View {
+        TextField("Ask a question", text: $draft, axis: .vertical)
+            .analyticsMasked()
+            .lineLimit(textSize.isAccessibilitySize ? 2...2 : 1...5)
+            .textFieldStyle(.roundedBorder)
+            .focused(asking)
+    }
+}

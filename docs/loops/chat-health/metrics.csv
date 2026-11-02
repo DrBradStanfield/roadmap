@@ -165,3 +165,35 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W43,yt_reply_gt90w_count_7d,1,1,0,chat_messages,"1/29 raw (max 93), 0/29 tag-stripped (max 87); >5 sentences tag-stripped 4 (URLs removed, split on whitespace after . ! ?; review R3); any sentence >25 words 6/29"
 2026-W43,harness_full_pass,250,,,tools/test-chatbot-matching.ts,"first arm on router v4 (pathways removed, 291-entry router view): 250/268 (93.3%), 'variance' 6.7% = the fail rate 18/268 (test-chatbot-matching.ts:766; gate 5%: fails), --runs 3, claude-sonnet-5-5 thinking off, 0 API errors, $4.52, HEAD deb62d2; not comparable with W42 296/309 (different fixtures and index). 10 of 18 fails are symptom fixtures expecting []: 8 get a treatment entry, 1 a cancer-tests post; 2 of the 10 fail on inconsistent draws"
 2026-W43,harness_classifier_pass,17,16,6,tools/test-classifier.ts,"--runs 1, claude-haiku-5-5, 20 fixtures, $0.0003; fails: shipping to Australia ACCOUNT→PRODUCT, 'female' (known), new vendor-spam fixture (KNOWN-FAIL); a reviewer re-run read 18/20 ('female' passed): one draw. After review, 21 fixtures: 17/21 (calcium-score meta KNOWN-FLAKY, MEASUREMENT 2/5 context-free)"
+2026-W44,lint_unresolved_marker,87,87,0,tools/knowledge-lint.ts,weekly lint
+2026-W44,lint_uncited_reference,20,82,-76,tools/knowledge-lint.ts,weekly lint
+2026-W44,lint_uncited_list,39,39,0,tools/knowledge-lint.ts,weekly lint
+2026-W44,lint_doi_shape,1,1,0,tools/knowledge-lint.ts,weekly lint
+2026-W44,lint_pmid_shape,1,1,0,tools/knowledge-lint.ts,weekly lint
+2026-W44,lint_id_mismatch,1,3,-67,tools/knowledge-lint.ts,weekly lint
+2026-W44,lint_link_dead,14,16,-12,tools/knowledge-lint.ts,weekly lint
+2026-W44,lint_grokipedia,4,40,-90,tools/knowledge-lint.ts,weekly lint
+2026-W44,lint_dose_mismatch,10,10,0,tools/knowledge-lint.ts,weekly lint
+2026-W44,lint_product_rise,4,1,300,tools/knowledge-lint.ts,weekly lint
+2026-W44,lint_topic_no_master,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W44,lint_master_front,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W44,lint_master_gate,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W44,lint_master_doi,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W44,lint_master_key_points,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W44,lint_master_stale,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W44,lint_source_stale,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W44,lint_master_places,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W44,lint_master_overlap,69,35,97,tools/knowledge-lint.ts,weekly lint
+2026-W44,lint_grokipedia_only_sentences,55,369,-85,tools/knowledge-lint.ts,weekly lint
+2026-W44,lint_due_entries,205,151,36,tools/knowledge-lint.ts,weekly lint
+2026-W44,empty_handle_turns,19,28,-32,chat_match_events,"window 2026-10-24T22:25Z → 10-31T22:25Z; excludes the 212 router-error rows of the 10-26T10:38–18:48Z spend-limit 400 outage (231 with them; W43's 28 included its 1 error row); split youtube 10 / shopify 6 / widget 3 / discord 0; total match events 316 = 42 skipped + 274 ran (ROUTE 62, ERROR 212; all v4); W43 slice re-measured 106 / 28 = published"
+2026-W44,classifier_catchable_share_pct,16,50,-68,manual categorisation + replay,"3/19 by the prompt: a product-version follow-up (replay ACCOUNT 3/3) + site meta 2 (contact-form field bug ACCOUNT 3/3; layout complaint GREETING 3/3 context-free, ROUTE 3/3 in thread). By intent 6/19: three first-turn storefront dose asks naming no product are PRODUCT in intent but ROUTE by the prompt's 'when in doubt' (replay ROUTE 3/3 each). Production labelled all ROUTE. Classifier skipped 42 upstream (GREETING 19 / ACCOUNT 12 / PRODUCT 10 / MEASUREMENT 1 / SPAM 0)"
+2026-W44,routing_miss_share_pct,5.3,3.6,47,manual categorisation + replay,"1/19: widget 'are my numbers ok?' (rule 7: interpreting own data routes the guidelines; ∅ 3/3 on replay; the W41 KNOWN-FAIL shape, sixth week). Others non-catchable: YouTube oblique reactions 10 (all have a companion blog; 7 replied, 3 SKIP_NO_REPLY), psoriatic-arthritis content gap 1 (∅ 3/3), profile statement for the plan (menopause status) 1, storefront dose asks 3 (see catchable note). Fixtures: router 271 → 272, classifier 25 → 27 (file entries 577 → 580)"
+2026-W44,router_errors_7d,212,1,,chat_match_events,"all 10-26T10:38–18:48Z: 211 'Anthropic API error (status 400)' + 1 masked status; classification ERROR, is_fallback true, failure_mode api-error; youtube 209 (64 distinct comments retried each tick) / shopify 2 / widget 1; chat_messages fallbacks 2 (shopify). cause: our own Anthropic spend limit, which Brad raised (sentry-fix ledger 10-26, issue #271)"
+2026-W44,router_latency_median_ms,1548,1984,-22,chat_match_events,"n=62 non-error ran rows (all v4); with the 212 error rows 134.5 (n=274, meaningless)"
+2026-W44,router_latency_p90_ms,2050,2845,-28,chat_match_events,nearest-rank n=62 non-error; with errors 1631; no timeouts
+2026-W44,router_cache_hit_rate_pct,60,61,-2,chat_match_events,"37/62 non-error (13.5% of all 274 ran); hit gaps ≤300 s 24, 300–3,600 s 12, >3,600 s 1, first 0 (previous ran row, any platform); hit median 1461 vs miss 1605 ms"
+2026-W44,yt_reply_median_words,71.5,74,-3,chat_messages,"n=36 excluding 6 SKIP_NO_REPLY sentinels; 29 carry [by Brad AI], 7 (10-30 on) none: tag removed by US-15 AC43 (Brad 2026-10-30); tag-stripped median 69, tag+URL-stripped 69"
+2026-W44,yt_reply_gt90w_count_7d,0,1,-100,chat_messages,"0/36 raw (max 86), 0 stripped (max 83); >5 sentences 1 (URLs removed keeping punctuation); any sentence >25 words 3/36 (max 30). The data worker's splitter ate full stops with the URLs and read 29/36"
+2026-W44,harness_full_pass,250,250,0,tools/test-chatbot-matching.ts,"full router suite --runs 3, 271 fixtures (W43 268), 92.3%, 'variance' (fail rate) 7.7%, claude-sonnet-5-5 thinking off, 0 API errors, $4.57, HEAD bea9c5a, index 293 entries; 21 fails: 10 symptom fixtures expecting [] get a treatment entry (same 10 as W43), 3 own-data asks ∅, 8 others"
+2026-W44,harness_classifier_pass,23,17,35,tools/test-classifier.ts,"--runs 1, claude-haiku-5-5, 25 fixtures, $0.0005; fails 'female' (known) and calcium-score meta (KNOWN-FLAKY). After this run's fixtures (27), --runs 3: 24/27 ($0.0016; fails 'female', calcium-score KNOWN-FLAKY, the book-spam fixture); both new fixtures pass 3/3. Single draws read 25/28 and 24/28 (reviewer) at 28 fixtures"

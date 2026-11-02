@@ -11,7 +11,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it, expect, vi, afterEach, beforeAll, beforeEach } from 'vitest';
 import { render, fireEvent, cleanup, act } from '@testing-library/react';
-import { PLAN_STORAGE_CTA, PLAN_STORAGE_NOTICE, StorageNoticeContext } from '../src/lib/storage-notice';
+import { PLAN_STORAGE_CTA, PLAN_STORAGE_NOTICE } from '../src/lib/storage-notice';
 
 vi.mock('../src/storage', () => ({
   GoogleDriveAdapter: class {},
@@ -19,6 +19,8 @@ vi.mock('../src/storage', () => ({
   WebDavAdapter: class {},
   isSyncPending: () => false,
   SYNC_PENDING_EVENT: 'hr:sync-pending',
+  gisReady: () => true,
+  preloadGis: () => undefined,
 }));
 vi.mock('./google-config', () => ({ googleDriveConfig: () => ({}) }));
 vi.mock('../src/lib/server-api', () => ({ trackProductEvent: vi.fn() }));
@@ -47,8 +49,7 @@ beforeAll(() => {
 });
 afterEach(cleanup);
 
-const guest = (ui: React.ReactNode) =>
-  render(<StorageNoticeContext.Provider value>{ui}</StorageNoticeContext.Provider>);
+const guest = (ui: React.ReactNode) => render(<>{ui}</>);
 
 describe('US-09 AC5 — under the plan', () => {
   it('offers the record question as the primary button, with the explainer under it', () => {
@@ -181,7 +182,7 @@ describe('US-09 AC19 — the storage button pulses once the guest has their PDF'
     ({ SyncControl: Sync } = await import('./sync-control'));
     const notice = await import('../src/lib/storage-notice');
     openPicker = notice.openBackendPicker;
-    show = (ui) => render(<notice.StorageNoticeContext.Provider value>{ui}</notice.StorageNoticeContext.Provider>);
+    show = (ui) => render(<>{ui}</>);
   });
   afterEach(() => { vi.resetAllMocks(); vi.restoreAllMocks(); });
   const cta = (view: ReturnType<typeof render>) => view.getByRole('button', { name: PLAN_STORAGE_CTA });

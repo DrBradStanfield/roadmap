@@ -56,6 +56,12 @@ struct MyData: Decodable {
         let trend: [Double]?
         /// Whether this test has its own Metric/US choice (AC17e); nil from an older engine.
         let switchable: Bool?
+        /// The target the value is read against, as the web's row prints it under the name
+        /// ("Optimal <1.4"; health-core's rowTarget, US-62 AC9); nil when none, or from an older engine.
+        var target: String? = nil
+        /// The value before the latest, in the same units, shown in brackets (US-62 AC8); nil
+        /// with one reading, or from an older engine.
+        var previous: String? = nil
 
         var id: String { metric }
     }
@@ -67,6 +73,9 @@ struct MyData: Decodable {
     let lpaUnit: String?
     /// The record's erase count; nil from an engine older than US-54 AC7.
     let eraseEpoch: Int?
+    /// US-65: how many entries the engine could not read and kept unchanged, as one line;
+    /// nil when there are none, or from an older engine.
+    var unreadableNote: String? = nil
     let profile: Profile
     let vitals: [Row]
     let bloodTests: [Row]
@@ -172,6 +181,14 @@ enum RecordEdit: Encodable, Equatable {
     /// The ticked values of an uploaded lab report (US-52 AC8): the server's extraction
     /// as JSON text, the refs ticked, and the report's day.
     case labImport(extractionJSON: String, refs: [String], reportDay: String)
+
+    /// A new birth year. A stored month that would then be in the future moves back to the
+    /// latest one in the same edit, as onboarding's wheel does (US-54 AC5b, review R4).
+    static func birthYear(_ year: Int, storedMonth: Int?, now: Date) -> RecordEdit {
+        let latest = DayText.latestBirthMonth(year: year, now: now)
+        guard let storedMonth, storedMonth > latest else { return .profile(birthYear: year) }
+        return .profile(birthYear: year, birthMonth: latest)
+    }
 
     private enum Key: String, CodingKey {
         case kind, alcohol, sex, birthYear, birthMonth, height, heightFeet, heightInches, systolic, diastolic, replace, seenIds, unitSystem, unit, metric, value, day, id, extractionJson, refs, reportDay, samples

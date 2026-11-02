@@ -305,6 +305,29 @@ final class AppleHealthSyncTests: XCTestCase {
         XCTAssertTrue(health.saved.isEmpty)
     }
 
+    /// US-25 AC15b (break-it pass 2026-10-30): after "Don't Allow" nothing can be written
+    /// and nothing comes in, so the section says Health is not connected, never "Up to date".
+    func testAfterDontAllowTheSectionSaysNotConnected_US25_AC15b() async throws {
+        let (store, engine) = try parts()
+        let health = FakeHealthStore()
+        health.writable = []
+        let sync = sync(store, engine, health)
+        await sync.connect()
+        XCTAssertEqual(sync.status, .notAllowed)
+        XCTAssertEqual(AppleHealthSection.text(sync.status), "Apple Health isn't connected")
+    }
+
+    /// A person who allowed reading but not writing still gets their readings: up to date.
+    func testReadingsWithoutWriteAccessAreUpToDate_US25_AC15b() async throws {
+        let (store, engine) = try parts()
+        let health = FakeHealthStore()
+        health.writable = []
+        health.pending[.weight] = [Self.morning]
+        let sync = sync(store, engine, health)
+        await sync.connect()
+        guard case .upToDate = sync.status else { return XCTFail("status \(sync.status)") }
+    }
+
     func testNotConnectedReadsAndWritesNothing() async throws {
         let (store, engine) = try parts()
         let health = FakeHealthStore()

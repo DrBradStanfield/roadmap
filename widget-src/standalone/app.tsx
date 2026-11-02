@@ -21,10 +21,9 @@ import { RemindersEnrolledNotice } from './reminders-control';
 import { DropboxAdapter, GoogleDriveAdapter } from '../src/storage';
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
-import { SyncControl, RemindersSection } from './sync-control';
+import { StorageBar, SyncControl, RemindersSection } from './sync-control';
 import { ConnectRefusedNotice } from './connect-refused';
 import { EmailLandingNotice, emailLandingApplies, takeEmailFlag } from './email-landing';
-import { StorageNoticeContext } from '../src/lib/storage-notice';
 import { HistoryLightboxHost } from './history-lightbox';
 import {
   connectRefusal,
@@ -115,12 +114,11 @@ async function main() {
         <RemindersEnrolledNotice backend={backend} />
         {refused && <ConnectRefusedNotice message={refused} />}
         {emailLanding && <EmailLandingNotice />}
-        <StorageNoticeContext.Provider value={state === 'guest'}>
-          <HealthTool
-            syncControl={({ hasData, attention }) => <SyncControl backend={backend} reconnect={reconnect} hasData={hasData} attention={attention} />}
-            remindersSection={<RemindersSection backend={backend} />}
-          />
-        </StorageNoticeContext.Provider>
+        <HealthTool
+          syncControl={({ hasData, attention }) => <SyncControl backend={backend} reconnect={reconnect} hasData={hasData} attention={attention} />}
+          remindersSection={<RemindersSection backend={backend} />}
+          storageBar={<StorageBar backend={backend} reconnect={reconnect} />}
+        />
         <HistoryLightboxHost />
       </ErrorBoundary>
     </React.StrictMode>,

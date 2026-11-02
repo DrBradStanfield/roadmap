@@ -5,39 +5,47 @@
 // value already there can be replaced: a correction through the same door as
 // the cell editor, never a second row (AC13).
 
-import { useState } from 'react';
+import { useEffect, useState, type MutableRefObject } from 'react';
 import { commaQuestion, displayLabUnit, LAB_CATALOG, LAB_GROUPS, localDay, parseLocalisedNumber, slotKey } from '@roadmap/health-core';
 import { UnitChip } from './UnitChip';
 import { SAVE_ERRORS } from './BloodTestTimeline';
 import { bulkSaveLabValues } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
-import { formatLabValue, sameAsSaved } from '../lib/blood-test-cell';
+import { formatLabValue, sameAsSaved, savedLabText } from '../lib/blood-test-cell';
 import { labUnitRefusalLine } from '../lib/lab-value-labels';
 import type { CorrectFn } from '../lib/matrix-save';
 import type { ApiLabValue } from '../lib/api-types';
 
-export function AddLabTest({ onAdded, labValues = [], onCorrect }: {
+export function AddLabTest({ onAdded, labValues = [], onCorrect, preset, dirtyRef }: {
   onAdded: () => void;
   /** The saved values, to name the one a duplicate collides with. */
   labValues?: ApiLabValue[];
   /** The cell editor's correction: present = Replace is offered. */
   onCorrect?: CorrectFn;
+  /** One test, fixed: a phone value page's Add (US-62 AC10). The test is
+   *  not chosen, and the form adds a value to it under the same rules. */
+  preset?: { metricName: string; unit: string };
+  /** Set while the form holds a typed value not yet saved (a value page asks before leaving it). */
+  dirtyRef?: MutableRefObject<boolean>;
 }) {
+  const presetKey = preset && (LAB_CATALOG.some(e => e.key === preset.metricName) ? preset.metricName : 'custom');
   const [open, setOpen] = useState(false);
-  const [testKey, setTestKey] = useState(''); // catalogue key | 'custom' | ''
-  const [customName, setCustomName] = useState('');
-  const [customUnit, setCustomUnit] = useState('');
+  const [testKey, setTestKey] = useState(presetKey ?? ''); // catalogue key | 'custom' | ''
+  const [customName, setCustomName] = useState(presetKey === 'custom' ? preset!.metricName : '');
+  const [customUnit, setCustomUnit] = useState(presetKey === 'custom' ? preset!.unit : '');
   const [valueStr, setValueStr] = useState('');
   const [date, setDate] = useState(() => localDay(new Date()));
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   // The saved value a Replace would correct.
   const [held, setHeld] = useState<ApiLabValue | null>(null);
+  if (dirtyRef) dirtyRef.current = open && valueStr.trim() !== '';
+  useEffect(() => () => { if (dirtyRef) dirtyRef.current = false; }, []);
 
   if (!open) {
     return (
       <button type="button" className="alr-add-btn" onClick={() => setOpen(true)}>
-        + Add a blood test
+        {preset ? '+ Add a value' : '+ Add a blood test'}
       </button>
     );
   }
@@ -57,12 +65,15 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect }: {
   const clearNotice = () => { setNotice(null); setHeld(null); };
   const close = () => {
     setOpen(false);
-    setTestKey(''); setCustomName(''); setCustomUnit(''); setValueStr('');
+    setTestKey(presetKey ?? '');
+    setCustomName(presetKey === 'custom' ? preset!.metricName : '');
+    setCustomUnit(presetKey === 'custom' ? preset!.unit : '');
+    setValueStr('');
     setDate(localDay(new Date())); clearNotice();
   };
 
-  /** A saved value as the form names it: "45 µg/L". */
-  const labelOf = (v: ApiLabValue) => `${formatLabValue(v.value)} ${displayLabUnit(v.unit, entry)}`;
+  /** A saved value as the form names it: "45 µg/L", "< 5 µg/L" (US-12 AC20). */
+  const labelOf = (v: ApiLabValue) => `${savedLabText(v.value, v.comparator)} ${displayLabUnit(v.unit, entry)}`;
   /** The saved value is the one the form describes: this test, this day, this unit. */
   const describes = (v: ApiLabValue) =>
     slotKey('lab', v.metricName, v.recordedAt) === slotKey('lab', metricName, date) &&
@@ -125,7 +136,7 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect }: {
   return (
     <div className="alr-add-form">
       <div className="alr-add-fields">
-        <select
+        {!preset && <select
           aria-label="Test"
           className="alr-add-select"
           value={testKey}
@@ -140,8 +151,8 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect }: {
             </optgroup>
           ))}
           <option value="custom">Other test…</option>
-        </select>
-        {testKey === 'custom' && (
+        </select>}
+        {testKey === 'custom' && !preset && (
           <input
             aria-label="Test name"
             className="alr-add-input alr-add-name"
@@ -162,7 +173,7 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect }: {
         />
         {entry
           ? <UnitChip label={entry.unit} title="Recorded in this unit"/>
-          : testKey === 'custom' && (
+          : testKey === 'custom' && (preset ? <UnitChip label={customUnit} title="Recorded in this unit"/> :
               <input
                 aria-label="Unit"
                 className="alr-add-input alr-add-unit"
