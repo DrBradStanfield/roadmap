@@ -137,6 +137,20 @@ final class TextSizeLayoutTests: XCTestCase {
         }
     }
 
+    /// US-25 AC26: the plan's headings, "Your health snapshots" the longest, wrap rather than
+    /// end in "…", on an SE and a 17e at every size.
+    func testThePlanHeadingsNeverCutTheirWords_US25_AC26() throws {
+        guard #available(iOS 18, *) else { throw XCTSkip("Text.Layout.isTruncated needs iOS 18") }
+        let headings = ScrollView { VStack(alignment: .leading) { PlanHeading(title: PlanList.snapshots); PlanHeading(title: "Next Steps") } }
+        for screen in screens {
+            for category in sizes {
+                let texts = try drawnTexts(in: headings, at: category, screen: screen.size)
+                XCTAssertGreaterThanOrEqual(texts.drawn, 2, "\(screen.name) \(category.rawValue): both headings drew")
+                XCTAssertEqual(texts.cut, 0, "\(screen.name) \(category.rawValue): no words end in …")
+            }
+        }
+    }
+
     /// US-54 AC8: at accessibility sizes the real Apple Health page keeps its buttons on
     /// screen and at least 120 pt for its scrolling words, on an SE and a 17e. The scroll
     /// region gets only what the buttons leave, so a block of buttons too tall for the
