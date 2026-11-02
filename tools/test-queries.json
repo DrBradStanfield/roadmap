@@ -2097,6 +2097,21 @@
     "notes": "US-15 AC35 (amended 2026-11-02, Brad: the US ships v9). Asked whether MicroVitamin+'s collagen dose was studied, the answer gives version 9's 10 g and the trials' 0.5 to 10 g range, and may say 10 g is within it; 12.5 g (the v8 Mixed Berry powder still in Europe) is never called within that range. Same wrinkle, structure and Pu/Kim/Myung checks as the other AC35 fixtures (same known false fails, judge by reading)."
   },
   {
+    "query": "I'm in Germany. Which version of the Mixed Berry MicroVitamin+ powder will I get?",
+    "category": "product-version",
+    "source": "powder-v9-everywhere-2026-11-02",
+    "surface": "brand",
+    "answer_handles": [],
+    "must_match": [
+      "(?i)\\b(?:v9|version 9)\\b"
+    ],
+    "must_not_match": [
+      "(?i)\\b(?:v8|version 8)\\b(?:(?!\\.\\s)[^\\n]){0,60}\\b(?:ships?|shipping|get|receive|is sent)\\b",
+      "(?i)\\bv9\\.1\\b"
+    ],
+    "notes": "Brad 2026-11-02: every MicroVitamin+ powder, Mixed Berry in Europe included, is v9; v9.1 is in development and never quoted as current. The answer says v9; it must not say a European customer gets v8, or name v9.1. The v8 regex may false-fail on a history line ('v8 shipped until …'); judge by reading."
+  },
+  {
     "query": "Is MicroVitamin gluten free?",
     "expected": [],
     "category": "product-facts",
