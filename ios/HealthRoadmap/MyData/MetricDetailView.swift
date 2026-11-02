@@ -103,11 +103,18 @@ struct MetricDetailView: View {
         !hasReadings || read
     }
 
-    /// This metric's row in My data now, so a units switch shows at once.
+    /// This metric's row in My data now, so a units switch shows at once; a lab test's too (US-25 AC25).
     static func live(_ row: MyData.Row, in store: RecordStore) -> MyData.Row? {
         guard let data = store.myData else { return nil }
         return data.vitals.first { $0.metric == row.metric } ?? data.bloodTests.first { $0.metric == row.metric }
-            ?? (data.psa.metric == row.metric ? data.psa : nil)
+            ?? (data.psa.metric == row.metric ? data.psa : nil) ?? data.labTests?.first { $0.metric == row.metric }
+    }
+
+    /// Why a page with values draws no line: units that vary between reports, as the web says it
+    /// (HistoryPanel.tsx MixedUnitsNote), or no value to draw yet.
+    nonisolated static func noChart(_ history: MetricHistory) -> String {
+        guard let units = history.units else { return "No values to draw yet." }
+        return "Units vary between reports (\(units.map { $0.isEmpty ? "no unit" : $0 }.joined(separator: ", "))), so this test is not charted."
     }
 
     // MARK: Chart
@@ -119,8 +126,8 @@ struct MetricDetailView: View {
                 if let newest = chart.last {
                     rangedChart(chart, newest: newest, latest: latest)
                 } else {
-                    headline(latest, unit: chart.history.unit)
-                    Text("No values to draw yet.").font(.subheadline).foregroundStyle(.secondary)
+                    headline(latest, unit: latest?.unit ?? chart.history.unit)
+                    Text(Self.noChart(chart.history)).font(.subheadline).foregroundStyle(.secondary)
                 }
             }
             .padding(.vertical, 6)
@@ -322,11 +329,16 @@ private struct HistoryRow: View {
                     .monospacedDigit()
                     .strikethrough(!row.isActive)
                     .foregroundStyle(row.isActive ? .primary : .secondary)
-                Text(unit).font(.subheadline).foregroundStyle(.secondary)
+                Text(shownUnit).font(.subheadline).foregroundStyle(.secondary)
             }
         }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(row.isActive ? "\(row.value) \(unit), \(DayText.short(row.day))" : "Entered in error: \(row.value) \(unit), \(DayText.short(row.day))")
+        .accessibilityLabel(row.isActive ? "\(row.value) \(shownUnit), \(DayText.short(row.day))" : "Entered in error: \(row.value) \(shownUnit), \(DayText.short(row.day))")
+    }
+
+    /// The row's own unit in a lab series reported in more than one, else the page's.
+    private var shownUnit: String {
+        row.unit ?? unit
     }
 }

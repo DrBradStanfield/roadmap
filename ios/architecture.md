@@ -1323,6 +1323,14 @@ updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.
   note (`limitUngraded`): on the row (`note`, said by VoiceOver where the grade would be) and on
   the history page (`historyJson` `note`), for weight, waist and blood pressure as for the blood tests.
 
+- **A lab test's page (Brad 2026-11-02, US-25 AC25).** A lab row opens `MetricDetailView`, the
+  metric page, with its history from the history door's optional `series: "lab"` (D14: an older
+  engine fails the read, and the page shows no history). `RecordStore.isLabTest` tells a lab key
+  from a core metric's; the two never share a name, so they share the history cache. A value is
+  added by a new edit, `labAdd` (the web's lab add through `bulkAppendValues`), and corrected by
+  the existing `correct` edit, which already runs `correctValue` on a lab row. No row is "used" or
+  carries a limit note: lab tests are never graded. A mixed-unit series draws no chart (US-21 AC3a).
+
 **Added 2026-10-26: "About this measure" guides (US-58).** Below Show All Data and Unit, a metric page shows
 "About {title}" (What it is, Why it matters, How to measure or prepare) and its Sources as links, as Apple Health
 does; each drug question on My data has an info button that opens the same sections in a sheet (`GuideSections`,

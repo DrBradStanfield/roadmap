@@ -23,6 +23,8 @@ import { cellUnitFor, systemFor, type UnitChoices } from './unit-choices';
 import type { EditOutcome } from './my-data';
 import { cellFromSI, cellLabel, limitCellText, type CellUnit } from '../../packages/health-core/src/cell-unit';
 import { LIMIT_NOT_GRADED, comparatorOf, isComparator, type Comparator } from '../../packages/health-core/src/lab-limits';
+import { groupLabValues, labValueLabel, savedLabText } from '../../packages/health-core/src/lab-series';
+import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from '../../packages/health-core/src/lab-catalog';
 import { limitUngraded, pressureStatus, valueStatus, type GradeContext, type PressureReading } from '../../packages/health-core/src/row-grade';
 import { knownMinorOf } from '../../packages/health-core/src/calculations';
 import { medicationAnnotations, medicationChanges } from '../../packages/health-core/src/medication-annotations';
@@ -78,6 +80,8 @@ export interface HistoryRow {
   bound?: number;
   /** The plan's word on the current value when it says more than "used": a limit it cannot grade. */
   note?: string;
+  /** A lab test's row in a series of more than one unit: the unit it was reported in (US-21 AC3a). */
+  unit?: string;
 }
 
 export interface MetricHistory {
@@ -87,6 +91,9 @@ export interface MetricHistory {
   /** The recorded medication changes this metric's chart marks, oldest first, as the web's
    *  chart does (health-core's medicationAnnotations). `metricHistory` always sends it. */
   markers: MedicationMarker[];
+  /** A lab test reported in more than one unit: each unit, in the order first met (newest row
+   *  first), so the page draws no chart, as the web does (US-21 AC3a). Absent otherwise. */
+  units?: string[];
 }
 
 /** One recorded medication change on a metric page. */
@@ -294,6 +301,44 @@ export function gradeContextOf(file: RoadmapFile, now: string, plan: Plan | null
   return {
     grading: knownMinorOf(file.profile, new Date(now)) ? null : { sex: file.profile.sex ?? undefined },
     plan: plan && { age: plan.results.age, idealBodyWeight: plan.results.idealBodyWeight, heightCm: plan.results.heightCm },
+  };
+}
+
+/**
+ * A lab test's history (US-25 AC25), as the web's lab value page lists it (ValuePage.tsx): every row
+ * of the series (`labSlotKey`), newest day first and, within a day, newest written first, the active
+ * row above the ones it replaced. A value printed as a limit reads with its symbol and carries its
+ * bound (US-12 AC20). A lab test is never graded, so no row is "used" and none has a limit note.
+ * A series whose active rows were reported in more than one unit lists each row's unit (US-21 AC3a).
+ */
+export function labHistory(file: RoadmapFile, seriesKey: string): MetricHistory {
+  const rows = file.labValues.filter((row) => labSlotKey(row.metricName) === seriesKey);
+  const series = groupLabValues(file.labValues).flatMap((group) => group.series).find((s) => s.seriesKey === seriesKey);
+  const entry = resolveLabCatalogEntry(rows[0]?.metricName ?? seriesKey);
+  const unitOf = (row: { unit?: string | null }) => displayLabUnit(row.unit ?? '', entry);
+  const newestFirst = [...rows].sort((a, b) => b.recordedAt.slice(0, 10).localeCompare(a.recordedAt.slice(0, 10))
+    || String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? '')) || Number(b.status === 'active') - Number(a.status === 'active'));
+  const units = series?.mixedUnits ? [...new Set(newestFirst.filter((row) => row.status === 'active').map(unitOf))] : undefined;
+  return {
+    metric: seriesKey,
+    label: series?.label ?? labValueLabel(rows[0]?.metricName ?? seriesKey),
+    unit: series?.unit ?? (rows.length ? unitOf(newestFirst[0]) : ''),
+    excluded: false,
+    markers: [],
+    rows: newestFirst.map((row) => {
+      const { comparator } = comparatorOf(row);
+      return {
+        id: row.id,
+        value: savedLabText(row.value, comparator),
+        day: row.recordedAt.slice(0, 10),
+        status: row.status,
+        current: false,
+        correction: !!row.correctsId,
+        ...(comparator ? { bound: row.value } : null),
+        ...(units ? { unit: unitOf(row) } : null),
+      };
+    }),
+    ...(units ? { units } : null),
   };
 }
 

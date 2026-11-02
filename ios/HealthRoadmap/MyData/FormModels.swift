@@ -124,6 +124,8 @@ struct MetricHistory: Decodable, Equatable {
         var bound: Double? = nil
         /// The plan's word on a current limit it cannot grade, shown instead of "Used in your plan".
         var note: String? = nil
+        /// A lab test's row in a series reported in more than one unit: its own unit (US-21 AC3a).
+        var unit: String? = nil
 
         var isActive: Bool { status == "active" }
     }
@@ -132,6 +134,9 @@ struct MetricHistory: Decodable, Equatable {
     let label: String
     let unit: String
     let rows: [Row]
+    /// A lab test reported in more than one unit: each unit, so the page draws no chart, as the web
+    /// does (US-21 AC3a); nil otherwise, or from an older engine.
+    var units: [String]? = nil
     /// The plan set the current value aside (outside the range it accepts), so it does not use it.
     let excluded: Bool
     /// The recorded medication changes this metric's chart marks, health-core's

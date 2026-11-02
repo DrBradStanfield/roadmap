@@ -309,8 +309,9 @@ final class RecordStore {
         if let kept = histories[metric], kept.revision == revision { return kept.chart }
         if let read = reading[metric], read.revision == revision { return await read.task.value }
         let (units, record, deviceId, engine) = (unitChoices.json, recordJSON, deviceId, engine)
+        let series = isLabTest(metric) ? "lab" : nil
         let task = Task {
-            (try? await engine.history(recordJSON: record, metric: metric, now: .now, deviceId: deviceId, units: units)).map(ChartData.init)
+            (try? await engine.history(recordJSON: record, metric: metric, now: .now, deviceId: deviceId, units: units, series: series)).map(ChartData.init)
         }
         reading[metric] = (revision, task)
         let chart = await task.value
@@ -328,6 +329,12 @@ final class RecordStore {
     private func forgetCharts() {
         histories = [:]
         reading = [:]
+    }
+
+    /// Whether `metric` is a lab test's series key, one of My data's lab test rows (US-25 AC25): a
+    /// lab key is never a core metric's name, so the two never share a page or a kept history.
+    func isLabTest(_ metric: String) -> Bool {
+        myData?.labTests?.contains { $0.metric == metric } == true
     }
 
     /// The chart last read for `metric`, for a page to draw: it may trail the record by one

@@ -16,7 +16,9 @@ struct ChartPoint: Identifiable {
     /// A history's active values, ready to plot. Numbers are the engine's own text, in the user's
     /// units; a limit's is its `bound`, as its text "< 2.0" is no number.
     static func points(_ history: MetricHistory) -> [ChartPoint] {
-        history.rows.filter(\.isActive).flatMap { row -> [ChartPoint] in
+        // Units that vary between reports draw no line: one would compare unlike numbers (US-21 AC3a).
+        guard history.units == nil else { return [] }
+        return history.rows.filter(\.isActive).flatMap { row -> [ChartPoint] in
             guard let date = DayText.date(row.day) else { return [] }
             if history.metric == MyData.bloodPressure {
                 return [("Systolic", row.systolic), ("Diastolic", row.diastolic)].compactMap { series, text in

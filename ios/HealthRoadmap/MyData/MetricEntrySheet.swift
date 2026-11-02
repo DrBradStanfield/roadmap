@@ -24,7 +24,9 @@ struct MetricEntrySheet: View {
             BloodPressureSheet(store: store, seen: seen, saved: saved)
         } else {
             ValueEntrySheet(title: row.label, unit: store.lpaUnit(for: row) ?? row.unit, current: nil, asksForDay: true) { value, day in
-                saved(await store.apply(.add(metric: row.metric, value: value, day: day), as: seen))
+                // A lab test's value goes in its series' unit by the web's lab add (US-25 AC25).
+                let edit: RecordEdit = store.isLabTest(row.metric) ? .labAdd(series: row.metric, value: value, day: day) : .add(metric: row.metric, value: value, day: day)
+                return saved(await store.apply(edit, as: seen))
             } replace: { existingId, value in
                 saved(await store.apply(.correct(id: existingId, value: value), as: seen))
             }

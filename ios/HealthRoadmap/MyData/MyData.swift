@@ -192,8 +192,12 @@ enum RecordEdit: Encodable, Equatable {
     case lpaUnit(String)
     /// A new value for a day, YYYY-MM-DD.
     case add(metric: String, value: Double, day: String)
-    /// Replaces the value in row `id`: a FHIR correction, never a removal.
+    /// Replaces the value in row `id`: a FHIR correction, never a removal. A lab value's too,
+    /// in the unit its row is stored in (US-25 AC25).
     case correct(id: String, value: Double)
+    /// A new value for a lab test the record holds, by its series key, in the series' unit, on a
+    /// day, YYYY-MM-DD: the web's lab add (US-25 AC25).
+    case labAdd(series: String, value: Double, day: String)
     /// Readings from Apple Health; the engine decides what lands (US-25 AC13).
     case appleHealth([HealthSample])
     /// A medication, screening or supplement answer (FormModels.swift).
@@ -225,7 +229,7 @@ enum RecordEdit: Encodable, Equatable {
     }
 
     private enum Key: String, CodingKey {
-        case kind, alcohol, sex, birthYear, birthMonth, height, heightFeet, heightInches, systolic, diastolic, replace, seenIds, unitSystem, unit, metric, value, day, id, extractionJson, refs, reportDay, samples, part, edits, today, seen
+        case kind, alcohol, sex, birthYear, birthMonth, height, heightFeet, heightInches, systolic, diastolic, replace, seenIds, unitSystem, unit, metric, value, day, id, extractionJson, refs, reportDay, samples, part, edits, today, seen, series
     }
 
     func encode(to encoder: Encoder) throws {
@@ -268,6 +272,11 @@ enum RecordEdit: Encodable, Equatable {
             try json.encode("correct", forKey: .kind)
             try json.encode(id, forKey: .id)
             try json.encode(value, forKey: .value)
+        case .labAdd(let series, let value, let day):
+            try json.encode("labAdd", forKey: .kind)
+            try json.encode(series, forKey: .series)
+            try json.encode(value, forKey: .value)
+            try json.encode(day, forKey: .day)
         case .appleHealth(let samples):
             try json.encode("appleHealth", forKey: .kind)
             try json.encode(samples, forKey: .samples)
