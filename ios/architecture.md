@@ -1325,11 +1325,13 @@ updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.
 
 - **A lab test's page (Brad 2026-11-02, US-25 AC25).** A lab row opens `MetricDetailView`, the
   metric page, with its history from the history door's optional `series: "lab"` (D14: an older
-  engine fails the read, and the page shows no history). `RecordStore.isLabTest` tells a lab key
-  from a core metric's; the two never share a name, so they share the history cache. A value is
-  added by a new edit, `labAdd` (the web's lab add through `bulkAppendValues`), and corrected by
-  the existing `correct` edit, which already runs `correctValue` on a lab row. No row is "used" or
-  carries a limit note: lab tests are never graded. A mixed-unit series draws no chart (US-21 AC3a).
+  engine fails the read, and the page shows no history). The row itself says it is a lab test
+  (`series`), and the page, its kept history ("lab:<key>", `RecordStore.historyKey`) and its adds go
+  by that, never by name: a lab test filed as "Weight" is not the core weight (review R1). A value
+  is added by a new edit, `labAdd`, in the unit the sheet showed, through health-core's
+  `addLabValue` (the web's add too), and corrected by `labCorrect`, the engine's `correct`, in the
+  row's own unit and free of the record's units. No row is "used" or carries a limit note: lab tests
+  are never graded. A mixed-unit series draws no chart (US-21 AC3a).
 
 **Added 2026-10-26: "About this measure" guides (US-58).** Below Show All Data and Unit, a metric page shows
 "About {title}" (What it is, Why it matters, How to measure or prepare) and its Sources as links, as Apple Health

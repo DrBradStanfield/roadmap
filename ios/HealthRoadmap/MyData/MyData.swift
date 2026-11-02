@@ -80,7 +80,12 @@ struct MyData: Decodable {
         /// or from an older engine.
         var note: String? = nil
 
-        var id: String { metric }
+        /// "lab" on a lab test's row (US-25 AC25): its page, history and adds are the lab test's,
+        /// whatever its name ("Weight" filed as a lab test is no core weight). Nil on a core row.
+        var series: String? = nil
+
+        /// Distinct for a lab test named like a core metric: "lab:weight" beside "weight".
+        var id: String { series.map { "\($0):\(metric)" } ?? metric }
     }
 
     /// "si" (metric) or "conventional" (US)
@@ -195,9 +200,12 @@ enum RecordEdit: Encodable, Equatable {
     /// Replaces the value in row `id`: a FHIR correction, never a removal. A lab value's too,
     /// in the unit its row is stored in (US-25 AC25).
     case correct(id: String, value: Double)
-    /// A new value for a lab test the record holds, by its series key, in the series' unit, on a
-    /// day, YYYY-MM-DD: the web's lab add (US-25 AC25).
-    case labAdd(series: String, value: Double, day: String)
+    /// A lab value's correction (US-25 AC25): the engine's `correct`, in the unit its row is stored
+    /// in, so the record's units never refuse it (review R7).
+    case labCorrect(id: String, value: Double)
+    /// A new value for a lab test the record holds, by its series key, in the unit the sheet showed,
+    /// on a day, YYYY-MM-DD: health-core's lab add, the web's too (US-25 AC25).
+    case labAdd(series: String, value: Double, day: String, unit: String)
     /// Readings from Apple Health; the engine decides what lands (US-25 AC13).
     case appleHealth([HealthSample])
     /// A medication, screening or supplement answer (FormModels.swift).
@@ -268,15 +276,16 @@ enum RecordEdit: Encodable, Equatable {
             try json.encode(metric, forKey: .metric)
             try json.encode(value, forKey: .value)
             try json.encode(day, forKey: .day)
-        case .correct(let id, let value):
+        case .correct(let id, let value), .labCorrect(let id, let value):
             try json.encode("correct", forKey: .kind)
             try json.encode(id, forKey: .id)
             try json.encode(value, forKey: .value)
-        case .labAdd(let series, let value, let day):
+        case .labAdd(let series, let value, let day, let unit):
             try json.encode("labAdd", forKey: .kind)
             try json.encode(series, forKey: .series)
             try json.encode(value, forKey: .value)
             try json.encode(day, forKey: .day)
+            try json.encode(unit, forKey: .unit)
         case .appleHealth(let samples):
             try json.encode("appleHealth", forKey: .kind)
             try json.encode(samples, forKey: .samples)

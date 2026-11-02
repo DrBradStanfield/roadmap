@@ -303,25 +303,32 @@ final class RecordStore {
     /// The history and its chart's inputs, read by the engine once per `revision` and metric,
     /// off the main thread: a second ask while that read runs (a page and the page above it)
     /// joins it. Kept in `histories`, which a page draws; older revisions' are dropped.
-    func chart(for metric: String) async -> ChartData? {
+    /// `series` "lab": `metric` is a lab test's series key, its own history (US-25 AC25), kept apart
+    /// from a core metric of the same name.
+    func chart(for metric: String, series: String? = nil) async -> ChartData? {
         guard problem == nil else { return nil }
         let revision = revision
-        if let kept = histories[metric], kept.revision == revision { return kept.chart }
-        if let read = reading[metric], read.revision == revision { return await read.task.value }
+        let key = Self.historyKey(metric, series)
+        if let kept = histories[key], kept.revision == revision { return kept.chart }
+        if let read = reading[key], read.revision == revision { return await read.task.value }
         let (units, record, deviceId, engine) = (unitChoices.json, recordJSON, deviceId, engine)
-        let series = isLabTest(metric) ? "lab" : nil
         let task = Task {
             (try? await engine.history(recordJSON: record, metric: metric, now: .now, deviceId: deviceId, units: units, series: series)).map(ChartData.init)
         }
-        reading[metric] = (revision, task)
+        reading[key] = (revision, task)
         let chart = await task.value
-        if reading[metric]?.revision == revision { reading[metric] = nil }
+        if reading[key]?.revision == revision { reading[key] = nil }
         // The record moved on while the engine ran: a page asks again for the new one.
         if revision == self.revision {
             histories = histories.filter { $0.value.revision == revision }
-            histories[metric] = KeptHistory(revision: revision, chart: chart)
+            histories[key] = KeptHistory(revision: revision, chart: chart)
         }
         return chart
+    }
+
+    /// A kept history's key: a lab test's is "lab:<series key>", never a core metric's name.
+    nonisolated static func historyKey(_ metric: String, _ series: String?) -> String {
+        series.map { "\($0):\(metric)" } ?? metric
     }
 
     /// Drops every kept chart and running read, on an erase or a unit change: a page opened
@@ -331,23 +338,17 @@ final class RecordStore {
         reading = [:]
     }
 
-    /// Whether `metric` is a lab test's series key, one of My data's lab test rows (US-25 AC25): a
-    /// lab key is never a core metric's name, so the two never share a page or a kept history.
-    func isLabTest(_ metric: String) -> Bool {
-        myData?.labTests?.contains { $0.metric == metric } == true
-    }
-
     /// The chart last read for `metric`, for a page to draw: it may trail the record by one
     /// engine call, and the page's `.task(id: revision)` brings it up to date.
-    func shownChart(for metric: String) -> ChartData? {
-        problem == nil ? histories[metric]?.chart : nil
+    func shownChart(for metric: String, series: String? = nil) -> ChartData? {
+        problem == nil ? histories[Self.historyKey(metric, series)]?.chart : nil
     }
 
     /// The history read for the record and units as they are now; nil while it trails them
     /// (adversary R2). Only this one may open a correction: a page keeps drawing the older
     /// one, its taps held, until the fresh one lands.
-    func shownHistory(for metric: String) -> MetricHistory? {
-        guard problem == nil, let kept = histories[metric], kept.revision == revision else { return nil }
+    func shownHistory(for metric: String, series: String? = nil) -> MetricHistory? {
+        guard problem == nil, let kept = histories[Self.historyKey(metric, series)], kept.revision == revision else { return nil }
         return kept.chart?.history
     }
 
@@ -355,10 +356,11 @@ final class RecordStore {
     /// history in `unit`, the one the sheet shows (and for Lp(a), its screen's). Nil until one
     /// is read, never a number in another unit ("100 mg/dL" from 100 nmol/L, Codex R2;
     /// "176.4 kg" once the record flips to lb, re-check N1).
-    func correctionHint(for id: String, metric: String, unit: String, on screen: Screen) -> String? {
-        guard let history = shownHistory(for: metric), history.unit == unit,
-              metric != "lpa" || history.unit == screen.lpaUnit else { return nil }
-        return history.rows.first { $0.id == id }?.value
+    /// A lab row is hinted in its own unit (US-25 AC25).
+    func correctionHint(for id: String, metric: String, series: String? = nil, unit: String, on screen: Screen) -> String? {
+        guard let history = shownHistory(for: metric, series: series), let row = history.rows.first(where: { $0.id == id }),
+              (row.unit ?? history.unit) == unit, metric != "lpa" || history.unit == screen.lpaUnit else { return nil }
+        return row.value
     }
 
 
@@ -740,7 +742,7 @@ final class RecordStore {
 
     /// An edit whose number is read in the record's units, as cloud.ts `dependsOnUnits`.
     /// Not feet and inches: they mean the same height in either units.
-    private static func dependsOnUnits(_ edit: RecordEdit) -> Bool {
+    nonisolated static func dependsOnUnits(_ edit: RecordEdit) -> Bool {
         switch edit {
         case .add, .correct: true
         case .profile(_, _, _, let height): height != nil

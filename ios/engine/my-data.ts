@@ -4,12 +4,12 @@
 // Values come in and go out in the user's units; the record stores SI. Web
 // twins: the widget's InputPanel.tsx and BloodTestTimeline.tsx, writing through
 // RoadmapStore.
-import { createEmptyFile, type FileLabValue, type FileMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { createEmptyFile, type FileMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import type { Plan } from '../../packages/health-core/src/plan';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 import { SchemaTooNewError } from '../../packages/health-core/src/migrate';
 import { parseLocalisedNumber } from '../../packages/health-core/src/parseNumber';
-import { appendMeasurement, bulkAppendValues, correctValue, findActiveInSlot, resolveRecordedAt, validDay } from '../../packages/health-core/src/record-edits';
+import { addLabValue, appendMeasurement, bulkAppendValues, correctValue, validDay } from '../../packages/health-core/src/record-edits';
 import { labRows, type Extraction } from './lab-review';
 import { updateProfile } from '../../packages/health-core/src/mcp-tools';
 import { stampProfile, upsertMedication, upsertSupplement } from '../../packages/health-core/src/state-edits';
@@ -24,7 +24,7 @@ import { APPLE_LOW_FROM_60, FRIEND_2022_TREADMILL, type Vo2MaxCutPoints } from '
 import { calculateAge } from '../../packages/health-core/src/calculations';
 import { rowTarget } from '../../packages/health-core/src/row-target';
 import { gradeWords, limitUngraded, pressureStatus, valueStatus, type GradeContext, type GradeStatus, type PressureReading } from '../../packages/health-core/src/row-grade';
-import { labSeriesRows, labUnitRefusalLine, savedLabText } from '../../packages/health-core/src/lab-series';
+import { labSeriesRows } from '../../packages/health-core/src/lab-series';
 import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from '../../packages/health-core/src/lab-catalog';
 import { trendWindow } from '../../packages/health-core/src/recent-trend';
 import { isAlcoholAnswer, type AlcoholAnswer } from '../../packages/health-core/src/types';
@@ -67,6 +67,9 @@ export interface MyDataRow {
   /** "Printed as a limit, so the plan cannot grade it against its cutoff.": a latest value printed as a
    *  limit the shared rule leaves ungraded, though there is a plan to grade it by (US-12 AC21); else null. */
   note: string | null;
+  /** "lab" on a lab test's row (US-25 AC25): the page, its history and its adds are the lab test's,
+   *  whatever its name. Absent on a core metric's row. */
+  series?: 'lab';
 }
 
 export interface MyData {
@@ -131,9 +134,9 @@ export type Edit =
   | FormEdit
   /** The ticked values of an uploaded lab report (US-52 AC8), written by the web's bulk rule. */
   | { kind: 'labImport'; extractionJson: string; refs: string[]; reportDay: string }
-  /** A new value for a lab test the record holds, on a day, in the series' unit (US-25 AC25): the
-   *  web's lab add (AddLabTest.tsx, bulkAppendValues), named by its series key (`labSlotKey`). */
-  | { kind: 'labAdd'; series: string; value: number; day?: string }
+  /** A new value for a lab test the record holds, on a day, in the unit the sheet showed (US-25 AC25):
+   *  health-core's `addLabValue`, the web's lab add too, named by its series key (`labSlotKey`). */
+  | { kind: 'labAdd'; series: string; value: number; day?: string; unit?: string }
   /** What the chat proposed, and its medications' Undo (US-67, chat-edits.ts). */
   | ChatEdit;
 
@@ -406,7 +409,7 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
       return { ok: true, file: bulkAppendValues(file, rows.rows, now).file };
     }
     case 'labAdd':
-      return addLabValue(file, edit, now);
+      return addSeriesValue(file, edit, now);
     case 'chatEdits':
     case 'chatUndo':
       return applyChatEdit(file, edit, now, choices);
@@ -414,36 +417,17 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
 }
 
 /**
- * A lab add (US-25 AC25), as the web's (AddLabTest.tsx): the series' newest active row names the test
- * and its unit, and health-core's bulk save writes it (`bulkAppendValues`, source "manual"), so a taken
- * day is skipped, never given a second active row. A taken day is refused in the web's words, naming
- * the row a replace would correct when it is in the same unit and holds another number. Never a
- * negative number or a day after today.
+ * A lab add (US-25 AC25): health-core's one lab add (`addLabValue`), the web's too. The series' newest
+ * row names the test as it was printed; the unit is the one the sheet showed (`unit`), else the
+ * series' own, so a row synced in while the sheet was open never changes what the number means.
  */
-function addLabValue(file: RoadmapFile, edit: Extract<Edit, { kind: 'labAdd' }>, now: string): EditOutcome {
-  const held = file.labValues.filter((row) => row.status === 'active' && labSlotKey(row.metricName) === edit.series)
-    .sort((a, b) => a.recordedAt.localeCompare(b.recordedAt)).at(-1);
-  if (!held) return { ok: false, reason: 'not-found', message: 'There is no such lab test in your record.' };
-  if (!Number.isFinite(edit.value) || edit.value < 0) return { ok: false, reason: 'invalid-value', message: 'A lab value is a number, 0 or more.' };
-  const day = resolveRecordedAt(edit.day, { now });
-  if (typeof day !== 'string') return { ok: false, reason: 'invalid-date', message: 'A lab value is for a real day, today or before.' };
-  const entry = resolveLabCatalogEntry(held.metricName);
-  const unit = displayLabUnit(held.unit ?? '', entry);
-  // The catalogue's key where the test is catalogued, as the web's test picker writes it.
-  const result = bulkAppendValues(file, [{ kind: 'lab', metricName: entry?.key ?? held.metricName, value: edit.value, unit, recordedAt: `${day}T00:00:00.000Z`, source: 'manual' }], now);
-  if (result.saved.length) return { ok: true, file: result.file };
-  const [refused] = result.refused;
-  if (refused) return { ok: false, reason: 'invalid-value', message: labUnitRefusalLine(refused.key, refused.unit, refused.fault) };
-  const taken = findActiveInSlot(file, 'lab', held.metricName, day) as FileLabValue | undefined;
-  if (!taken) return { ok: false, reason: 'slot-occupied', message: 'That test already has a value for that date.' };
-  const takenUnit = displayLabUnit(taken.unit ?? '', entry);
-  // A replace corrects the number in the unit the row holds, so it is offered only in the same unit (the web's `describes`).
-  const replaceable = takenUnit === unit && taken.value !== edit.value;
-  return {
-    ok: false, reason: 'slot-occupied',
-    message: `That test already has ${savedLabText(taken.value, comparatorOf(taken).comparator)} ${takenUnit} for that date.`,
-    ...(replaceable ? { existingId: taken.id } : null),
-  };
+function addSeriesValue(file: RoadmapFile, edit: Extract<Edit, { kind: 'labAdd' }>, now: string): EditOutcome {
+  const rows = file.labValues.filter((row) => labSlotKey(row.metricName) === edit.series);
+  const named = rows.filter((row) => row.status === 'active').sort((a, b) => a.recordedAt.localeCompare(b.recordedAt)).at(-1);
+  if (!named) return { ok: false, reason: 'not-found', message: 'There is no such lab test in your record.' };
+  const unit = edit.unit ?? displayLabUnit(named.unit ?? '', resolveLabCatalogEntry(named.metricName));
+  const added = addLabValue(file, { metricName: named.metricName, unit, value: edit.value, day: edit.day }, now);
+  return added.ok ? { ok: true, file: added.file } : added;
 }
 
 /** An Lp(a) value out of range, said in the unit it was typed in with the web's range
@@ -491,7 +475,7 @@ function gradeOf(status: GradeStatus, metric: string): Pick<MyDataRow, 'status' 
  *  symbol and, as on the core rows, is no point on the trend (US-12 AC20). */
 function labTestRows(file: RoadmapFile, now: string): MyDataRow[] {
   return labSeriesRows(file.labValues, new Date(now), true).map(({ seriesKey, label, unit, latest, previous, target, trend }) => ({
-    metric: seriesKey, label, unit, latest, trend, switchable: false, target, previous, ...gradeOf(null, seriesKey), note: null,
+    metric: seriesKey, series: 'lab', label, unit, latest, trend, switchable: false, target, previous, ...gradeOf(null, seriesKey), note: null,
   }));
 }
 

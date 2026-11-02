@@ -4,7 +4,8 @@
 // FHIR rules: append-only, a correction names the row it replaces and flips it to
 // entered-in-error, one active row per test and day. Synthetic values.
 import { describe, expect, it } from 'vitest';
-import { applyEdit, newRecord } from './my-data';
+import { applyEdit, myData, newRecord } from './my-data';
+import { cloudEdit } from './cloud';
 import { historyJson } from './entry';
 import { labHistory } from './my-data-forms';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
@@ -32,7 +33,7 @@ describe('the history door for a lab test (US-25 AC25)', () => {
   it('lists every row of the series newest first, the struck one under its correction, a limit with its symbol and bound', () => {
     const history = labHistory(ferritin(), 'ferritin');
     expect(history).toMatchObject({ metric: 'ferritin', label: 'Ferritin', unit: 'µg/L', excluded: false, markers: [] });
-    expect(history.units).toBeUndefined();
+    expect(history.unitsNote).toBeUndefined();
     expect(history.rows.map((r) => [r.id, r.value, r.day, r.status, r.correction, r.current])).toEqual([
       ['f4', '< 20', '2026-10-01', 'active', false, false],
       ['f3', '90', '2026-09-01', 'active', true, false],
@@ -45,10 +46,24 @@ describe('the history door for a lab test (US-25 AC25)', () => {
     expect(history.rows.every((r) => r.note === undefined)).toBe(true);
   });
 
-  it('a series in more than one unit carries each row\'s unit and the units, so the page draws no chart (US-21 AC3a)', () => {
+  it('a series in more than one unit says the web\'s note, units oldest first, so the page draws no chart (US-21 AC3a)', () => {
     const history = labHistory(record([lab('z1', 'zinc_custom', 12, 'µmol/L', '2026-08-01'), lab('z2', 'zinc_custom', 80, 'µg/dL', '2026-09-01')]), 'zinc custom');
-    expect(history.units).toEqual(['µg/dL', 'µmol/L']);
+    expect(history.unitsNote).toBe('Units vary between reports (µmol/L, µg/dL), so this test is not charted.');
     expect(history.rows.map((r) => [r.value, r.unit])).toEqual([['80', 'µg/dL'], ['12', 'µmol/L']]);
+  });
+
+  it('every row carries its own display unit, a struck legacy one too (review R4)', () => {
+    const history = labHistory(record([
+      lab('d1', 'vitamin_d', 32, 'ng/mL', '2026-08-01', { status: 'entered-in-error' }),
+      lab('d2', 'vitamin_d', 80, 'nmol/L', '2026-08-01', { correctsId: 'd1', createdAt: '2026-08-02T09:00:00.000Z' }),
+    ]), 'vitamin_d');
+    expect(history.rows.map((r) => [r.value, r.unit, r.status])).toEqual([['80', 'nmol/L', 'active'], ['32', 'ng/mL', 'entered-in-error']]);
+    expect(history.unitsNote).toBeUndefined();
+  });
+
+  it('an exact value carries its unrounded number for the chart; the text is for reading (review R5)', () => {
+    const history = labHistory(record([lab('t1', 'tsh', 0.001, 'mIU/L', '2026-08-01'), lab('t2', 'tsh', 0.004, 'mIU/L', '2026-09-01')]), 'tsh');
+    expect(history.rows.map((r) => [r.value, r.number])).toEqual([['0', 0.004], ['0', 0.001]]);
   });
 
   it('answers through historyJson with series "lab", and as before without it', () => {
@@ -100,3 +115,63 @@ describe('adding and correcting a lab value (US-25 AC25)', () => {
     expect(applyEdit(ferritin(), { kind: 'correct', id: 'f2', value: 99 }, NOW)).toMatchObject({ ok: false, reason: 'not-active' });
   });
 });
+
+describe('a lab test and a core metric by origin, never by name (review R1)', () => {
+  // A custom lab test filed as "Weight", beside the core weight.
+  const both = () => {
+    const file = applyEdit(record([lab('w1', 'Weight', 70, 'kg', '2026-08-01')]), { kind: 'add', metric: 'weight', value: 80, day: '2026-08-01' }, NOW);
+    if (!file.ok) throw new Error(file.message);
+    return file.file;
+  };
+
+  it('My data marks the lab row as a lab test, so the app tells it from the core weight', () => {
+    const data = myData(both(), NOW);
+    expect(data.labTests.find((r) => r.metric === 'weight')).toMatchObject({ series: 'lab', latest: { value: '70' } });
+    expect(data.vitals.find((r) => r.metric === 'weight')?.series).toBeUndefined();
+  });
+
+  it('each page reads its own history and adds to its own table', () => {
+    const text = JSON.stringify(both());
+    expect(JSON.parse(historyJson(text, 'weight', NOW, 'phone', '{}', 'lab')).rows.map((r: { id: string }) => r.id)).toEqual(['w1']);
+    expect(JSON.parse(historyJson(text, 'weight', NOW, 'phone', '{}')).rows).toHaveLength(1);
+    const lab = applyEdit(both(), { kind: 'labAdd', series: 'weight', value: 71, day: '2026-09-01', unit: 'kg' }, NOW);
+    if (!lab.ok) throw new Error(lab.message);
+    expect([lab.file.labValues.length, lab.file.measurements.length]).toEqual([2, 1]);
+    const core = applyEdit(both(), { kind: 'add', metric: 'weight', value: 81, day: '2026-09-01' }, NOW);
+    if (!core.ok) throw new Error(core.message);
+    expect([core.file.labValues.length, core.file.measurements.length]).toEqual([1, 2]);
+  });
+});
+
+describe('a lab add writes in the unit the sheet showed (review R3)', () => {
+  // The sheet showed µg/dL; a newer µmol/L row synced in before Save.
+  const zinc = () => record([lab('z1', 'zinc_custom', 80, 'µg/dL', '2026-08-01'), lab('z2', 'zinc_custom', 12, 'µmol/L', '2026-09-01')]);
+
+  it('saves in the shown unit, not the series\' newest', () => {
+    const out = applyEdit(zinc(), { kind: 'labAdd', series: 'zinc custom', value: 85, day: '2026-10-01', unit: 'µg/dL' }, NOW);
+    if (!out.ok) throw new Error(out.message);
+    expect(out.file.labValues.at(-1)).toMatchObject({ value: 85, unit: 'µg/dL', metricName: 'zinc_custom' });
+  });
+
+  it('offers a replace only for a held value in the shown unit', () => {
+    expect(applyEdit(zinc(), { kind: 'labAdd', series: 'zinc custom', value: 85, day: '2026-08-01', unit: 'µg/dL' }, NOW)).toMatchObject({ ok: false, existingId: 'z1' });
+    const other = applyEdit(zinc(), { kind: 'labAdd', series: 'zinc custom', value: 85, day: '2026-09-01', unit: 'µg/dL' }, NOW);
+    expect(other).toMatchObject({ ok: false, reason: 'slot-occupied', message: 'That test already has 12 µmol/L for that date.' });
+    expect((other as { existingId?: string }).existingId).toBeUndefined();
+  });
+});
+
+describe('a lab correction does not hang on the record\'s units (review R7)', () => {
+  it('the cloud session takes a lab correction whatever units the sheet was opened in', async () => {
+    // cloudEdit needs an open session; the rule itself: a correction depends on units only for a measurement.
+    const { dependsOnUnits } = await import('./cloud');
+    const file = record([lab('f1', 'ferritin', 80, 'µg/L', '2026-08-01')]);
+    expect(dependsOnUnits({ kind: 'correct', id: 'f1', value: 85 }, file)).toBe(false);
+    const withWeight = applyEdit(file, { kind: 'add', metric: 'weight', value: 80, day: '2026-08-01' }, NOW);
+    if (!withWeight.ok) throw new Error(withWeight.message);
+    const weightId = withWeight.file.measurements[0].id;
+    expect(dependsOnUnits({ kind: 'correct', id: weightId, value: 81 }, withWeight.file)).toBe(true);
+    expect(cloudEdit).toBeTypeOf('function');
+  });
+});
+

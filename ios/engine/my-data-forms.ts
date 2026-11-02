@@ -23,7 +23,7 @@ import { cellUnitFor, systemFor, type UnitChoices } from './unit-choices';
 import type { EditOutcome } from './my-data';
 import { cellFromSI, cellLabel, limitCellText, type CellUnit } from '../../packages/health-core/src/cell-unit';
 import { LIMIT_NOT_GRADED, comparatorOf, isComparator, type Comparator } from '../../packages/health-core/src/lab-limits';
-import { groupLabValues, labValueLabel, savedLabText } from '../../packages/health-core/src/lab-series';
+import { groupLabValues, labValueLabel, mixedUnitsNote, savedLabText } from '../../packages/health-core/src/lab-series';
 import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from '../../packages/health-core/src/lab-catalog';
 import { limitUngraded, pressureStatus, valueStatus, type GradeContext, type PressureReading } from '../../packages/health-core/src/row-grade';
 import { knownMinorOf } from '../../packages/health-core/src/calculations';
@@ -80,8 +80,10 @@ export interface HistoryRow {
   bound?: number;
   /** The plan's word on the current value when it says more than "used": a limit it cannot grade. */
   note?: string;
-  /** A lab test's row in a series of more than one unit: the unit it was reported in (US-21 AC3a). */
+  /** A lab test's row: the unit it was reported in, as displayed (US-25 AC25). */
   unit?: string;
+  /** A lab test's exact value, unrounded, for the chart (`value` is for reading). */
+  number?: number;
 }
 
 export interface MetricHistory {
@@ -91,9 +93,9 @@ export interface MetricHistory {
   /** The recorded medication changes this metric's chart marks, oldest first, as the web's
    *  chart does (health-core's medicationAnnotations). `metricHistory` always sends it. */
   markers: MedicationMarker[];
-  /** A lab test reported in more than one unit: each unit, in the order first met (newest row
-   *  first), so the page draws no chart, as the web does (US-21 AC3a). Absent otherwise. */
-  units?: string[];
+  /** A lab test reported in more than one unit: why the page draws no chart, in the web's words
+   *  (`mixedUnitsNote`, US-21 AC3a). Absent otherwise. */
+  unitsNote?: string;
 }
 
 /** One recorded medication change on a metric page. */
@@ -313,19 +315,17 @@ export function gradeContextOf(file: RoadmapFile, now: string, plan: Plan | null
  */
 export function labHistory(file: RoadmapFile, seriesKey: string): MetricHistory {
   const rows = file.labValues.filter((row) => labSlotKey(row.metricName) === seriesKey);
-  const series = groupLabValues(file.labValues).flatMap((group) => group.series).find((s) => s.seriesKey === seriesKey);
+  const [series] = groupLabValues(rows).flatMap((group) => group.series);
   const entry = resolveLabCatalogEntry(rows[0]?.metricName ?? seriesKey);
   const unitOf = (row: { unit?: string | null }) => displayLabUnit(row.unit ?? '', entry);
-  const newestFirst = [...rows].sort((a, b) => b.recordedAt.slice(0, 10).localeCompare(a.recordedAt.slice(0, 10))
-    || String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? '')) || Number(b.status === 'active') - Number(a.status === 'active'));
-  const units = series?.mixedUnits ? [...new Set(newestFirst.filter((row) => row.status === 'active').map(unitOf))] : undefined;
+  const listed = [...rows].sort(newestFirst);
   return {
     metric: seriesKey,
     label: series?.label ?? labValueLabel(rows[0]?.metricName ?? seriesKey),
-    unit: series?.unit ?? (rows.length ? unitOf(newestFirst[0]) : ''),
+    unit: series?.unit ?? (listed.length ? unitOf(listed[0]) : ''),
     excluded: false,
     markers: [],
-    rows: newestFirst.map((row) => {
+    rows: listed.map((row) => {
       const { comparator } = comparatorOf(row);
       return {
         id: row.id,
@@ -334,12 +334,20 @@ export function labHistory(file: RoadmapFile, seriesKey: string): MetricHistory 
         status: row.status,
         current: false,
         correction: !!row.correctsId,
-        ...(comparator ? { bound: row.value } : null),
-        ...(units ? { unit: unitOf(row) } : null),
+        unit: unitOf(row),
+        // The chart's number, unrounded: the text is for reading (0.001 reads "0").
+        ...(comparator ? { bound: row.value } : { number: row.value }),
       };
     }),
-    ...(units ? { units } : null),
+    ...(series?.mixedUnits ? { unitsNote: mixedUnitsNote([...new Set(series.points.map((p) => p.unit))]) } : null),
   };
+}
+
+/** A metric's or a lab test's rows as a history lists them: newest day first; within a day,
+ *  newest written first, the active row above the ones it replaced. */
+function newestFirst(a: { recordedAt: string; createdAt?: string | null; status: string }, b: { recordedAt: string; createdAt?: string | null; status: string }): number {
+  return b.recordedAt.slice(0, 10).localeCompare(a.recordedAt.slice(0, 10)) || String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? ''))
+    || Number(b.status === 'active') - Number(a.status === 'active');
 }
 
 /** A stored value printed as a limit the shared rule leaves ungraded (`limitUngraded`). */
@@ -378,8 +386,7 @@ export function metricHistory(file: RoadmapFile, metric: string, now = new Date(
     markers,
     rows: [...rows]
       // Newest day first; within a day, newest written first, the active row above the ones it replaced.
-      .sort((a, b) => b.recordedAt.slice(0, 10).localeCompare(a.recordedAt.slice(0, 10)) || String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? ''))
-        || Number(b.status === 'active') - Number(a.status === 'active'))
+      .sort(newestFirst)
       .map((row) => ({
         id: row.id,
         value: rowText(metric as MetricType, row, shown),

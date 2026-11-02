@@ -51,7 +51,7 @@ struct MetricDetailView: View {
 
     var body: some View {
         List {
-            if let chart = store.shownChart(for: row.metric), !chart.history.rows.isEmpty {
+            if let chart = store.shownChart(for: row.metric, series: row.series), !chart.history.rows.isEmpty {
                 chartSection(chart)
                 Section {
                     NavigationLink("Show All Data") {
@@ -79,7 +79,7 @@ struct MetricDetailView: View {
         // main thread, again whenever the record or its units move.
         .task(id: store.revision) {
             let revision = store.revision
-            _ = await store.chart(for: row.metric)
+            _ = await store.chart(for: row.metric, series: row.series)
             if !Task.isCancelled { readRevision = revision }
         }
         .metricPageList(title: row.label)
@@ -106,15 +106,21 @@ struct MetricDetailView: View {
     /// This metric's row in My data now, so a units switch shows at once; a lab test's too (US-25 AC25).
     static func live(_ row: MyData.Row, in store: RecordStore) -> MyData.Row? {
         guard let data = store.myData else { return nil }
-        return data.vitals.first { $0.metric == row.metric } ?? data.bloodTests.first { $0.metric == row.metric }
-            ?? (data.psa.metric == row.metric ? data.psa : nil) ?? data.labTests?.first { $0.metric == row.metric }
+        // By id: a lab test named like a core metric is its own row ("lab:weight").
+        return data.vitals.first { $0.id == row.id } ?? data.bloodTests.first { $0.id == row.id }
+            ?? (data.psa.id == row.id ? data.psa : nil) ?? data.labTests?.first { $0.id == row.id }
     }
 
     /// Why a page with values draws no line: units that vary between reports, as the web says it
     /// (HistoryPanel.tsx MixedUnitsNote), or no value to draw yet.
     nonisolated static func noChart(_ history: MetricHistory) -> String {
-        guard let units = history.units else { return "No values to draw yet." }
-        return "Units vary between reports (\(units.map { $0.isEmpty ? "no unit" : $0 }.joined(separator: ", "))), so this test is not charted."
+        history.unitsNote ?? "No values to draw yet."
+    }
+
+    /// The unit a correction is typed and hinted in: Lp(a)'s screen unit; a lab row's own, in
+    /// which its correction is stored (US-25 AC25, review R2); else the row's.
+    nonisolated static func correctionUnit(_ value: MetricHistory.Row, shown: MyData.Row, lpaUnit: String?) -> String {
+        lpaUnit ?? value.unit ?? shown.unit
     }
 
     // MARK: Chart
@@ -222,9 +228,9 @@ private struct AllDataView: View {
     var body: some View {
         // The rows last read; a tap waits until they are read for the record as it is now
         // (adversary R2), so a correction never opens on an older unit's value.
-        let current = store.shownHistory(for: row.metric) != nil
+        let current = store.shownHistory(for: row.metric, series: row.series) != nil
         List {
-            if let history = store.shownChart(for: row.metric)?.history {
+            if let history = store.shownChart(for: row.metric, series: row.series)?.history {
                 Section {
                     ForEach(history.rows) { value in
                         if value.isActive {
@@ -247,7 +253,7 @@ private struct AllDataView: View {
         .navigationTitle("All Recorded Data")
         .navigationBarTitleDisplayMode(.inline)
         // Joins the page beneath's read of the same revision: one engine call.
-        .task(id: store.revision) { _ = await store.chart(for: row.metric) }
+        .task(id: store.revision) { _ = await store.chart(for: row.metric, series: row.series) }
         .editingSheet($editing, store: store, saved: saved)
     }
 }
@@ -287,10 +293,10 @@ private struct EditingSheet: View {
             // The value and unit as the sheet's screen shows them: Lp(a)'s unit can change in
             // the sheet, and the hint waits for a history read in it (the page beneath reads
             // the history again when it does; adversary R2).
-            let unit = store.lpaUnit(for: shown) == nil ? shown.unit : seen.lpaUnit
-            let now = store.correctionHint(for: value.id, metric: shown.metric, unit: unit, on: seen)
+            let unit = MetricDetailView.correctionUnit(value, shown: shown, lpaUnit: store.lpaUnit(for: shown) == nil ? nil : seen.lpaUnit)
+            let now = store.correctionHint(for: value.id, metric: shown.metric, series: shown.series, unit: unit, on: seen)
             ValueEntrySheet(title: "Correct \(DayText.short(value.day))", unit: unit, current: now, asksForDay: false) { number, _ in
-                saved(await store.apply(.correct(id: value.id, value: number), as: seen))
+                saved(await store.apply(shown.series == "lab" ? .labCorrect(id: value.id, value: number) : .correct(id: value.id, value: number), as: seen))
             }
             .lpaUnits(store, shown) { reopen(.correct(value, shown, seen.showing(lpaUnit: $0))) }
             .reads(in: store.inputRange(for: shown.metric, in: store.lpaUnit(for: shown) == nil ? nil : unit))
