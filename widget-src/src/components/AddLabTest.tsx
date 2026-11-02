@@ -8,14 +8,13 @@
 // number reads as the matrix says it.
 
 import { useEffect, useState, type MutableRefObject } from 'react';
-import { canonicalToReported, commaQuestion, displayLabUnit, formatLabValue, LAB_CATALOG, LAB_GROUPS, localDay, parseLocalisedNumber, reportedToCanonical, savedLabText, slotKey, type ApiMeasurement, type Comparator } from '@roadmap/health-core';
+import { canonicalToReported, commaQuestion, displayLabUnit, LAB_CATALOG, LAB_GROUPS, localDay, parseLocalisedNumber, reportedToCanonical, resolveLabCatalogEntry, savedLabText, slotKey, type ApiMeasurement, type Comparator } from '@roadmap/health-core';
 import { bloodTestKeyOf, coreStored } from '@roadmap/health-core/blood-tests';
 import { UnitChip } from './UnitChip';
 import { SAVE_ERRORS } from './BloodTestTimeline';
-import { bulkSaveLabValues } from '../lib/roadmap-data';
+import { addLabValue } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
-import { rangeMessage, sameAsSaved } from '../lib/blood-test-cell';
-import { labUnitRefusalLine } from '../lib/lab-value-labels';
+import { rangeMessage } from '../lib/blood-test-cell';
 import type { CorrectFn } from '../lib/matrix-save';
 import type { ApiLabValue } from '../lib/api-types';
 
@@ -84,29 +83,23 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
     setDate(localDay(new Date())); clearNotice();
   };
 
+  // The typed test's catalogue entry, as the record's lab add resolves it (addLabValue): an "Other
+  // test" the catalogue knows ("Ferritin" in ng/mL) is its catalogue test, in its units.
+  const known = entry ?? resolveLabCatalogEntry(metricName);
   /** A saved value as the form names it: "45 µg/L", "< 5 µg/L" (US-12 AC20). */
-  const labelOf = (v: Held) => `${savedLabText(v.value, v.comparator)} ${displayLabUnit(v.unit, entry)}`;
+  const labelOf = (v: Held) => `${savedLabText(v.value, v.comparator)} ${displayLabUnit(v.unit, known)}`;
   /** The saved value is the one the form describes: this test, this day, this unit. */
-  const describes = (v: Held) => v.slot === slot && displayLabUnit(v.unit, entry) === displayLabUnit(unit, entry);
+  const describes = (v: Held) => v.slot === slot && displayLabUnit(v.unit, known) === displayLabUnit(unit, known);
 
-  /** The value saved in the form's slot: a core value shown in the unit typed. */
-  const heldValue = (): Held | undefined => {
+  /** The saved value the record offers to replace: a core value shown in the unit typed. */
+  const heldOf = (id: string): Held | undefined => {
     if (!core) {
-      const v = labValues.find(v => slotKey('lab', v.metricName, v.recordedAt) === slot);
-      return v && { id: v.id, slot, value: v.value, unit: v.unit, stored: v.value, comparator: v.comparator };
+      const v = labValues.find(v => v.id === id);
+      return v && { id, slot, value: v.value, unit: v.unit, stored: v.value, comparator: v.comparator };
     }
-    const m = coreValues.find(m => slotKey('measurement', m.metricType, m.recordedAt) === slot);
+    const m = coreValues.find(m => m.id === id);
     const shown = m && canonicalToReported(core, m.value, unit);
-    return m && shown != null ? { id: m.id, slot, value: shown, unit, stored: m.value, comparator: m.comparator } : undefined;
-  };
-
-  /** The day already holds this test. Name what is there, and offer to
-   *  replace it when that changes the number in the same unit. */
-  const collided = () => {
-    const there = heldValue();
-    if (!there) { setNotice('That test already has a value for that date.'); return; }
-    setNotice(`That test already has ${labelOf(there)} for that date.`);
-    if (onCorrect && describes(there) && !sameAsSaved(value!, formatLabValue(there.value), stored!, there.stored)) setHeld(there);
+    return m && shown != null ? { id, slot, value: shown, unit, stored: m.value, comparator: m.comparator } : undefined;
   };
 
   // Any change to the form withdraws the offer (clearNotice); Replace still
@@ -125,31 +118,24 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
     setSaving(true);
     clearNotice();
     try {
-      const result = await bulkSaveLabValues([{
-        metricName,
-        value: value!,
-        unit,
-        recordedAt: `${date}T00:00:00.000Z`,
-        source: 'manual',
-      }]);
-      if (result.saved.length > 0) {
+      // health-core's one lab add (US-25 AC25): it files the test, refuses a unit the catalogue does
+      // not take in the upload summary's words (US-21 AC15), and names a held value on that day.
+      const result = await addLabValue({ metricName, unit, value: value!, day: date });
+      if (!result) {
+        setNotice('Could not save — please try again.');
+      } else if (result.ok) {
         trackProductEvent('lab_row_added');
         close();
         onAdded();
-      } else if (result.refused.length > 0) {
-        // A catalogued test typed under "Other" can still name a unit the
-        // catalogue does not take (US-21 phase 3), or a number it refuses in
-        // one it does: say so in the upload summary's words (US-21 AC15).
-        setNotice(labUnitRefusalLine(result.refused[0].key, result.refused[0].unit, result.refused[0].fault));
-      } else if (result.measurementRefusals?.length) {
+      } else if (result.bound) {
         // A core value out of range reads as the matrix says it, in the unit typed (US-66 AC6).
-        const { bound } = result.measurementRefusals[0];
         const system = core && reportedToCanonical(core, value!, unit)?.system;
-        setNotice(bound && system ? rangeMessage(core, system, bound) : SAVE_ERRORS.invalid);
-      } else if (result.skippedDuplicates > 0) {
-        collided();
+        setNotice(system ? rangeMessage(core, system, result.bound) : SAVE_ERRORS.invalid);
       } else {
-        setNotice('Could not save — please try again.');
+        setNotice(result.message);
+        // A held value in the same unit holding another number: offer to replace it (US-21 AC13).
+        const there = result.existingId ? heldOf(result.existingId) : undefined;
+        if (onCorrect && there) setHeld(there);
       }
     } catch {
       setNotice('Could not save — please try again.');

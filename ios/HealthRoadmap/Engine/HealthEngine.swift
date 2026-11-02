@@ -199,8 +199,9 @@ actor HealthEngine {
     }
 
     /// Every value recorded for one metric, newest first, corrections included (US-25 AC9).
-    func history(recordJSON: String, metric: String, now: Date, deviceId: String, units: String = "{}") throws -> MetricHistory {
-        let json = try call("historyJson", [recordJSON, metric, now.formatted(Self.iso), deviceId, units])
+    /// `series` "lab": `metric` is a lab test's series key, its page's history (US-25 AC25).
+    func history(recordJSON: String, metric: String, now: Date, deviceId: String, units: String = "{}", series: String? = nil) throws -> MetricHistory {
+        let json = try call("historyJson", [recordJSON, metric, now.formatted(Self.iso), deviceId, units] + (series.map { [$0] } ?? []))
         return try JSONDecoder().decode(MetricHistory.self, from: Data(json.utf8))
     }
 

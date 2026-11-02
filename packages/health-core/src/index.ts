@@ -396,6 +396,8 @@ export {
 export {
   groupLabValues,
   labValueLabel,
+  labUnitRefusalLine,
+  mixedUnitsNote,
   formatLabValue,
   savedLabText,
   labSeriesRows,
@@ -482,7 +484,7 @@ export {
 } from './drive-rest';
 
 // US-35: the slot rule and the bulk save the website and the connector share.
-export { bulkAppendValues, correctValue, moveBloodTest, placeMeasurement, planBloodTestMove, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type MeasurementRefusal, type MoveClash, type MoveKeep, type MovePlan, type MoveRejection, type MoveResult, type SlotState } from './record-edits';
+export { addLabValue, type AddLabValueRequest, type AddLabValueResult, bulkAppendValues, correctValue, moveBloodTest, placeMeasurement, planBloodTestMove, sameLabQuantity, slotKey, slotState, validDay, type BulkRow, type LabQuantity, type LabUnitRefusal, type MeasurementRefusal, type MoveClash, type MoveKeep, type MovePlan, type MoveRejection, type MoveResult, type SlotState } from './record-edits';
 export { fileNameLine, inflateCapped, isImportableEntryName, zipMemberName, unreadLines, uploadLimitSignal, LIMIT_TEST_WORDS, UNDATED_PREVIOUS, type RefusedLabValue, type UnreadLabValue } from './lab-extraction';
 export { IMPORT_LIMITS } from './import-hints';
 export {

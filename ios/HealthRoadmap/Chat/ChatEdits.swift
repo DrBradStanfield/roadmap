@@ -7,10 +7,11 @@ import SwiftUI
 @MainActor
 @Observable
 final class ChatEdits {
-    /// The medication change written from a reply, with its Undo.
+    /// The medication change written from a reply, with its Undo. No Undo (`undo` nil) when
+    /// it replaced an entry this app cannot read: Undo could not put that back (US-67 N3).
     struct Saved: Equatable {
         let lines: [ChatEditsPreview.Line]
-        let undo: OpaqueJSON
+        let undo: OpaqueJSON?
         let mark: RecordStore.ChatMark
     }
 
@@ -60,12 +61,12 @@ final class ChatEdits {
         // Erased while the turn returned: whatever it wrote went with the erase.
         guard taken.mark.holds(at: store.chatMark) else { return show(Self.moved, for: generation) }
         var shown = false
-        // A medication change that was written always gets its Undo, even if the
+        // A medication change that was written always gets its banner and Undo, even if the
         // conversation moved on meanwhile: the two are never split.
-        if let medications = taken.preview.medications, let result = taken.medications, let undo = medications.undo {
+        if let medications = taken.preview.medications, let result = taken.medications {
             switch result {
             case .saved:
-                saved = Saved(lines: medications.lines, undo: undo, mark: taken.mark)
+                saved = Saved(lines: medications.lines, undo: medications.undo, mark: taken.mark)
                 problem = nil
                 if taken.changed { send(.chatEditSaved) }
             case .refused(let message, _):
@@ -103,6 +104,8 @@ final class ChatEdits {
     }
 
     static let moved = "Not saved: your record changed since you asked."
+    /// A written change with no Undo (US-67 N3).
+    static let noUndo = "Undo isn't available: an earlier entry couldn't be read."
 
     /// A problem line, for the conversation of `generation` only: an answer landing after
     /// New chat stays out of the new one. An earlier reply's Undo is kept.
@@ -127,10 +130,10 @@ final class ChatEdits {
 
     /// Undo: the engine's own edit puts the medications back.
     func undo() async {
-        guard let change = saved, !busy else { return }
+        guard let change = saved, let undo = change.undo, !busy else { return }
         busy = true
         defer { busy = false }
-        let (result, _) = await store.applyChatEdit(.engineEdit(change.undo), on: change.mark)
+        let (result, _) = await store.applyChatEdit(.engineEdit(undo), on: change.mark)
         guard saved == change else { return }
         saved = nil
         if case .refused(let message, _) = result { show(message, for: generation) }
@@ -169,12 +172,15 @@ struct ChatEditBanners: View {
                 Label("Medication updated from chat", systemImage: "checkmark.circle.fill")
                     .font(.subheadline.weight(.semibold))
                 lines(saved.lines)
+                if saved.undo == nil {
+                    Text(ChatEdits.noUndo).font(.footnote).foregroundStyle(.secondary)
+                }
             }
             if let problem = edits.problem {
                 Text(problem).font(.footnote).foregroundStyle(.red)
             }
             HStack {
-                if edits.saved != nil {
+                if edits.saved?.undo != nil {
                     Button("Undo", systemImage: "arrow.uturn.backward") { Task { await edits.undo() } }
                         .buttonStyle(.bordered)
                         .disabled(edits.busy)

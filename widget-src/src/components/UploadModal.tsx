@@ -8,7 +8,8 @@ import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { LabImportResult, PageContent, UploadErrorCode, UploadHistory } from '../lib/api-types';
-import { labUnitRefusalLine, measurementRefusalLine } from '../lib/lab-value-labels';
+import { measurementRefusalLine } from '../lib/lab-value-labels';
+import { labUnitRefusalLine } from '@roadmap/health-core';
 import { useLpaUnit } from '../lib/lpa-unit';
 import type { Grading } from '../lib/blood-test-cell';
 import { ReviewTable, type FileResult, type DocumentToSave, type ReviewedValue, type ReviewedLabValue } from './ReviewTable';

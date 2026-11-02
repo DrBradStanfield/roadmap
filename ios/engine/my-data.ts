@@ -9,7 +9,7 @@ import type { Plan } from '../../packages/health-core/src/plan';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 import { SchemaTooNewError } from '../../packages/health-core/src/migrate';
 import { parseLocalisedNumber } from '../../packages/health-core/src/parseNumber';
-import { appendMeasurement, bulkAppendValues, correctValue, validDay } from '../../packages/health-core/src/record-edits';
+import { addLabValue, appendMeasurement, bulkAppendValues, correctValue, validDay } from '../../packages/health-core/src/record-edits';
 import { labRows, type Extraction } from './lab-review';
 import { updateProfile } from '../../packages/health-core/src/mcp-tools';
 import { stampProfile, upsertMedication, upsertSupplement } from '../../packages/health-core/src/state-edits';
@@ -26,6 +26,7 @@ import { calculateAge } from '../../packages/health-core/src/calculations';
 import { rowTarget } from '../../packages/health-core/src/row-target';
 import { gradeWords, limitUngraded, pressureStatus, valueStatus, type GradeContext, type GradeStatus, type PressureReading } from '../../packages/health-core/src/row-grade';
 import { labSeriesRows } from '../../packages/health-core/src/lab-series';
+import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from '../../packages/health-core/src/lab-catalog';
 import { trendWindow } from '../../packages/health-core/src/recent-trend';
 import { isAlcoholAnswer, type AlcoholAnswer } from '../../packages/health-core/src/types';
 import { readableView, unreadableNote } from '../../packages/health-core/src/readable-rows';
@@ -67,6 +68,9 @@ export interface MyDataRow {
   /** "Printed as a limit, so the plan cannot grade it against its cutoff.": a latest value printed as a
    *  limit the shared rule leaves ungraded, though there is a plan to grade it by (US-12 AC21); else null. */
   note: string | null;
+  /** "lab" on a lab test's row (US-25 AC25): the page, its history and its adds are the lab test's,
+   *  whatever its name. Absent on a core metric's row. */
+  series?: 'lab';
 }
 
 export interface MyData {
@@ -131,6 +135,9 @@ export type Edit =
   | FormEdit
   /** The ticked values of an uploaded lab report (US-52 AC8), written by the web's bulk rule. */
   | { kind: 'labImport'; extractionJson: string; refs: string[]; reportDay: string }
+  /** A new value for a lab test the record holds, on a day, in the unit the sheet showed (US-25 AC25):
+   *  health-core's `addLabValue`, the web's lab add too, named by its series key (`labSlotKey`). */
+  | { kind: 'labAdd'; series: string; value: number; day?: string; unit?: string }
   /** What the chat proposed, and its medications' Undo (US-67, chat-edits.ts). */
   | ChatEdit;
 
@@ -426,10 +433,26 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
       // A held day is skipped and a refused unit left out: labSaveSummary says which, beforehand.
       return { ok: true, file: bulkAppendValues(file, rows.rows, now).file };
     }
+    case 'labAdd':
+      return addSeriesValue(file, edit, now);
     case 'chatEdits':
     case 'chatUndo':
       return applyChatEdit(file, edit, now, choices);
   }
+}
+
+/**
+ * A lab add (US-25 AC25): health-core's one lab add (`addLabValue`), the web's too. The series' newest
+ * row names the test as it was printed; the unit is the one the sheet showed (`unit`), else the
+ * series' own, so a row synced in while the sheet was open never changes what the number means.
+ */
+function addSeriesValue(file: RoadmapFile, edit: Extract<Edit, { kind: 'labAdd' }>, now: string): EditOutcome {
+  const rows = file.labValues.filter((row) => !isCoreRow(row) && labSlotKey(row.metricName) === edit.series);
+  const named = rows.filter((row) => row.status === 'active').sort((a, b) => a.recordedAt.localeCompare(b.recordedAt)).at(-1);
+  if (!named) return { ok: false, reason: 'not-found', message: 'There is no such lab test in your record.' };
+  const unit = edit.unit ?? displayLabUnit(named.unit ?? '', resolveLabCatalogEntry(named.metricName));
+  const added = addLabValue(file, { metricName: named.metricName, unit, value: edit.value, day: edit.day }, now);
+  return added.ok ? { ok: true, file: added.file } : added;
 }
 
 /** An Lp(a) value out of range, said in the unit it was typed in with the web's range
@@ -478,7 +501,7 @@ function gradeOf(status: GradeStatus, metric: string): Pick<MyDataRow, 'status' 
 function labTestRows(file: RoadmapFile, now: string): MyDataRow[] {
   // A core row is a blood test's own row above, never a lab test here (US-66 AC7).
   return labSeriesRows(file.labValues.filter((row) => !isCoreRow(row)), new Date(now), true).map(({ seriesKey, label, unit, latest, previous, target, trend }) => ({
-    metric: seriesKey, label, unit, latest, trend, switchable: false, target, previous, ...gradeOf(null, seriesKey), note: null,
+    metric: seriesKey, series: 'lab', label, unit, latest, trend, switchable: false, target, previous, ...gradeOf(null, seriesKey), note: null,
   }));
 }
 

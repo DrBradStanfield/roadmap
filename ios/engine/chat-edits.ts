@@ -15,13 +15,13 @@ import { latestDayOnEarth } from '../../packages/health-core/src/merge';
 import { appendMeasurement, correctValue, findActiveInSlot, measurementValueFault, resolveRecordedAt } from '../../packages/health-core/src/record-edits';
 import { updateProfile } from '../../packages/health-core/src/mcp-tools';
 import { upsertMedication } from '../../packages/health-core/src/state-edits';
-import { medicationSchema, PRESSURE_ORDER, UNANSWERED_OF } from '../../packages/health-core/src/validation';
+import { medicationSchema, PRESSURE_ORDER } from '../../packages/health-core/src/validation';
 import { cmToFeetInches, getDisplayLabel, toCanonicalValue, type MetricType } from '../../packages/health-core/src/units';
 import { cellLabel, cellText } from '../../packages/health-core/src/cell-unit';
 import { BEMPEDOIC_ACID_OPTIONS, GLP1_NAMES, METFORMIN_OPTIONS, SGLT2I_NAMES, STATIN_NAMES } from '../../packages/health-core/src/types';
 import { applyPressure } from './blood-pressure';
 import { cellUnitFor, unitsOf, type UnitChoices } from './unit-choices';
-import { readableView } from '../../packages/health-core/src/readable-rows';
+import { isReadableRow, readableView } from '../../packages/health-core/src/readable-rows';
 
 /** The chat's edits, as Swift passes them back to cloudEdit or applyEditJson. */
 export type ChatEdit =
@@ -36,7 +36,8 @@ export interface ChatLine { text: string }
 export interface ChatReviewLine { text: string; replaces: string | null }
 
 export interface ChatEditsPreview {
-  /** `refusal`: the medications could not be read, so nothing is saved (lines empty, undo null). */
+  /** `refusal`: the medications could not be read, so nothing is saved (lines empty, undo null).
+   *  Lines with a null `undo`: saved, with no Undo, as it replaced a row this build cannot read (US-67 N3). */
   medications: { lines: ChatLine[]; undo: ChatEdit | null; refusal: string | null } | null;
   /** `seen`: opaque to Swift. The rows and profile values the lines name, as the record held them. */
   review: { lines: ChatReviewLine[]; refusal: string | null; seen: Seen } | null;
@@ -73,7 +74,7 @@ export function chatEditsPreview(file: RoadmapFile, rawEdits: unknown, now: stri
     // A list that is not one is the review part's refusal alone, so the person reads it once.
     medications: !meds.ok
       ? (read.invalid.includes('list') ? null : { lines: [], undo: null, refusal: meds.message })
-      : meds.lines.length > 0 ? { lines: meds.lines, undo: { kind: 'chatUndo', medications: meds.undo }, refusal: null } : null,
+      : meds.lines.length > 0 ? { lines: meds.lines, undo: meds.undo && { kind: 'chatUndo', medications: meds.undo }, refusal: null } : null,
     review: review.lines.length > 0 || review.refusal ? { lines: review.lines, refusal: review.refusal, seen: review.seen } : null,
   };
 }
@@ -103,35 +104,36 @@ export function applyChatEdit(file: RoadmapFile, edit: ChatEdit, now: string, ch
  * answer unless the reply states it. An edit that matches the row already held
  * writes nothing. `undo`: the rows as they were, last edit first. Whether an
  * escalation answer is reset reads the raw record, so an answer this build
- * cannot read (US-65) is reset too; Undo's values come from what it can read,
- * an unreadable row going back to the key's unanswered value.
+ * cannot read (US-65) is reset too. When the reply replaces any row this
+ * build cannot read, `undo` is null (US-67 N3): Undo could not put it back,
+ * and one Undo covers the whole reply. The changes still save.
  */
 function medicationPart(file: RoadmapFile, edits: ProposedEdit[], invalid: string[], now: string):
-  { ok: true; file: RoadmapFile; lines: ChatLine[]; undo: ChatMedicationRow[] } | { ok: false; message: string } {
+  { ok: true; file: RoadmapFile; lines: ChatLine[]; undo: ChatMedicationRow[] | null } | { ok: false; message: string } {
   if (invalid.includes('medication') || invalid.includes('list')) return { ok: false, message: MEDS_UNREADABLE };
   const meds = edits.filter((e): e is ProposedMedicationEdit => e.kind === 'medication');
   const stated = new Set(meds.map((e) => e.medicationKey));
-  // A row this build cannot read (US-65) counts as none: its Undo writes the key's unanswered value.
   const saved = readableView(file).file.medications;
+  const unreadable = (key: string) => file.medications.some((m) => m.medicationKey === key && !isReadableRow('medications', m));
   let next = file;
   const lines: ChatLine[] = [];
   const undo: ChatMedicationRow[] = [];
+  let undoable = true;
   for (const edit of meds) {
     const held = next.medications.find((m) => m.medicationKey === edit.medicationKey);
     if (held && held.drugName === edit.drugName && held.doseValue === edit.doseValue && held.doseUnit === edit.doseUnit) continue;
     const change = chatMedicationChange(edit, saved, stated);
     const reset = change.reset;
     if (reset && file.medications.some((m) => m.medicationKey === reset && m.drugName !== 'not_yet')) {
-      if (!change.undo.some((m) => m.medicationKey === reset)) {
-        change.undo.unshift({ medicationKey: reset, drugName: UNANSWERED_OF[reset as keyof typeof UNANSWERED_OF], doseValue: null, doseUnit: null });
-      }
+      if (unreadable(reset)) undoable = false;
       next = upsertMedication(next, { medicationKey: reset, drugName: 'not_yet', doseValue: null, doseUnit: null }, now).file;
     }
+    if (unreadable(edit.medicationKey)) undoable = false;
     next = upsertMedication(next, { medicationKey: edit.medicationKey, drugName: edit.drugName, doseValue: edit.doseValue, doseUnit: edit.doseUnit }, now).file;
     undo.unshift(...change.undo);
     lines.push({ text: medicationLine(edit) });
   }
-  return { ok: true, file: next, lines, undo };
+  return { ok: true, file: next, lines, undo: undoable ? undo : null };
 }
 
 function undoMedications(file: RoadmapFile, rows: unknown, now: string): Outcome {
