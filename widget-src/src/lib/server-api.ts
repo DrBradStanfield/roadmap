@@ -188,6 +188,8 @@ export function trackProductEvent(
         : metadata?.choice ? `_${metadata.field}_${metadata.choice}`
         // US-61 AC8: once per product, so one product seen does not swallow the other.
         : metadata?.product ? `_${metadata.product}`
+        // US-07 AC10: once per measure, so a waist does not swallow a blood pressure.
+        : metadata?.measure ? `_${metadata.measure}`
         // US-62 AC2: once per step and per placement, so the first does not swallow the rest.
         : metadata?.step ? `_${metadata.step}`
         : metadata?.placement ? `_${metadata.placement}`

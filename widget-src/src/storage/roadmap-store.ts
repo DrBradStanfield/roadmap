@@ -165,7 +165,8 @@ export type MoveOutcome = { status: Exclude<CorrectStatus, 'invalid'> } | { stat
 /** A birth month in the future that a save refused (US-54 AC5b): the pair judged. */
 export interface BirthRefusal { birthYear: number; birthMonth: number | undefined }
 /** A profile save: refused by the erase, or saved with any birth month it refused. */
-export type ProfileSave = { ok: false } | { ok: true; birthRefused: BirthRefusal | null };
+/** `added`: the rows the save inserted as new, never a correction or a refused number (US-07 AC10's usage signal). */
+export type ProfileSave = { ok: false } | { ok: true; birthRefused: BirthRefusal | null; added: ApiMeasurement[] };
 export interface BulkSaveResult {
   saved: ApiMeasurement[];
   skippedDuplicates: number;
@@ -350,10 +351,12 @@ export class RoadmapStore {
     if (this.refuses(erase)) return { ok: false };
     const birthRefused = this.applyProfileChanges(current, previous, erase);
     // diffInputsToMeasurements (health-core) owns the field→metric map + change detection.
+    const added: ApiMeasurement[] = [];
     for (const { metricType, value } of diffInputsToMeasurements(current, previous)) {
-      this.addMeasurement(metricType, value, undefined, erase);
+      const result = this.addMeasurement(metricType, value, undefined, erase);
+      if (result.status === 'inserted') added.push(result.row);
     }
-    return { ok: true, birthRefused };
+    return { ok: true, birthRefused, added };
   }
 
   saveMedication(medicationKey: string, drugName: string, doseValue: number | null = null, doseUnit: string | null = null, erase?: string): boolean {

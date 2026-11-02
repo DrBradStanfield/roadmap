@@ -218,29 +218,52 @@ describe('explicit local-first data path', () => {
     expect(trackProductEvent).toHaveBeenCalledWith('lab_unit_refused', { key: 'ferritin' });
   });
 
-  // US-07 AC10 · the usage signal: a waist or blood pressure was saved, named by
-  // its measure alone (Brad 2026-11-02). Never the value, never another metric.
-  it('US-07 AC10 — counts a saved waist or blood pressure by measure only, once per save', async () => {
+  // US-07 AC10 · the usage signal: a waist or a whole blood pressure was ADDED,
+  // named by its measure alone (Brad 2026-11-02). Never the value, never
+  // another metric; not a correction, a refused number or a lone half.
+  describe('US-07 AC10 — measurement_added counts what was added', () => {
     const added = () => vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'measurement_added');
-    vi.mocked(trackProductEvent).mockClear();
-    await data.addMeasurement('weight', 80, '2026-08-01');
-    expect(added()).toEqual([]);
-    await data.addMeasurement('waist', 90, '2026-08-01');
-    expect(added()).toEqual([['measurement_added', { measure: 'waist' }, 'waist']]);
+    beforeEach(() => vi.mocked(trackProductEvent).mockClear());
 
-    vi.mocked(trackProductEvent).mockClear();
-    await data.bulkSaveMeasurements([
-      { metricType: 'systolic_bp', value: 120, recordedAt: '2026-08-02', source: 'lab_import' },
-      { metricType: 'diastolic_bp', value: 80, recordedAt: '2026-08-02', source: 'lab_import' },
-      { metricType: 'ldl', value: 3, recordedAt: '2026-08-02', source: 'lab_import' },
-    ]);
-    expect(added()).toEqual([['measurement_added', { measure: 'blood_pressure' }, 'blood_pressure']]);
+    it('one row at a time: a waist; a blood pressure once its second half lands', async () => {
+      await data.addMeasurement('weight', 80, '2026-08-01');
+      expect(added()).toEqual([]);
+      await data.addMeasurement('waist', 90, '2026-08-01');
+      expect(added()).toEqual([['measurement_added', { measure: 'waist' }]]);
+      vi.mocked(trackProductEvent).mockClear();
+      await data.addMeasurement('systolic_bp', 120, '2026-08-01');
+      expect(added()).toEqual([]);
+      await data.addMeasurement('diastolic_bp', 80, '2026-08-01');
+      expect(added()).toEqual([['measurement_added', { measure: 'blood_pressure' }]]);
+      vi.mocked(trackProductEvent).mockClear();
+      await data.addMeasurement('waist', 91, '2026-08-01'); // the slot is taken: nothing added
+      expect(added()).toEqual([]);
+    });
 
-    vi.mocked(trackProductEvent).mockClear();
-    await data.saveChangedMeasurements({ heightCm: 178, waistCm: 91, systolicBp: 118, diastolicBp: 78 }, { heightCm: 178 });
-    expect(added()).toEqual([
-      ['measurement_added', { measure: 'waist' }, 'waist'],
-      ['measurement_added', { measure: 'blood_pressure' }, 'blood_pressure'],
-    ]);
+    it('an upload: a pair counts, a lone systolic and a correction do not', async () => {
+      const [waist] = (await data.bulkSaveMeasurements([{ metricType: 'waist', value: 90, recordedAt: '2026-08-01', source: 'lab_import' }])).saved;
+      vi.mocked(trackProductEvent).mockClear();
+      await data.bulkSaveMeasurements([
+        { metricType: 'systolic_bp', value: 125, recordedAt: '2026-08-02', source: 'lab_import' },
+        { metricType: 'waist', value: 92, recordedAt: '2026-08-01', source: 'lab_import', correctsId: waist.id },
+      ]);
+      expect(added()).toEqual([]);
+      await data.bulkSaveMeasurements([
+        { metricType: 'systolic_bp', value: 120, recordedAt: '2026-08-03', source: 'lab_import' },
+        { metricType: 'diastolic_bp', value: 80, recordedAt: '2026-08-03', source: 'lab_import' },
+        { metricType: 'ldl', value: 3, recordedAt: '2026-08-03', source: 'lab_import' },
+      ]);
+      expect(added()).toEqual([['measurement_added', { measure: 'blood_pressure' }]]);
+    });
+
+    it('the first-time fields: a refused half or a taken waist counts nothing; a new pair counts once', async () => {
+      await data.saveChangedMeasurements({ heightCm: 178, systolicBp: 80, diastolicBp: 120 }, { heightCm: 178 }); // the bottom half is refused
+      expect(added()).toEqual([]);
+      await data.addMeasurement('waist', 90); // today
+      vi.mocked(trackProductEvent).mockClear();
+      // The waist slot is taken, so no waist; the diastolic completes the day's pair with the saved 80.
+      await data.saveChangedMeasurements({ heightCm: 178, waistCm: 91, diastolicBp: 70 }, { heightCm: 178 });
+      expect(added()).toEqual([['measurement_added', { measure: 'blood_pressure' }]]);
+    });
   });
 });

@@ -66,6 +66,16 @@ describe('trackProductEvent on the Shopify surface', () => {
     expect(metadata).toEqual([{ product: 'microvitamin_plus' }, { product: 'sleep' }]);
   });
 
+  it('US-07 AC10 — counts measurement_added once per measure per tab, so a waist does not swallow a blood pressure', async () => {
+    const { trackProductEvent } = await import('./server-api');
+    trackProductEvent('measurement_added', { measure: 'waist' });
+    trackProductEvent('measurement_added', { measure: 'blood_pressure' });
+    trackProductEvent('measurement_added', { measure: 'waist' });
+    trackProductEvent('measurement_added', { measure: 'blood_pressure' });
+    const metadata = fetchMock.mock.calls.map(([, init]) => JSON.parse((init as RequestInit).body as string).metadata);
+    expect(metadata).toEqual([{ measure: 'waist' }, { measure: 'blood_pressure' }]);
+  });
+
   it('US-62 AC2 — counts each onboarding step once per tab, so three steps in one tab all arrive', async () => {
     const { trackProductEvent } = await import('./server-api');
     trackProductEvent('onboarding_step', { step: 'measurements' });
