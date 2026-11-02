@@ -1050,6 +1050,8 @@ Source: `suggestions.ts` (screening section) + `types.ts` (intervals/follow-up)
 
 With no sex on record only the unsexed screenings (colorectal, lung) show (US-07 AC8).
 
+Lung: the plan does not ask when someone quit. Like the American Cancer Society's 2023 guideline, a former smoker with >= 20 pack-years stays eligible however long ago they quit (Brad 2026-11-03; US-07 AC1e).
+
 ### Screening Intervals (months)
 
 | Method Key | Months |

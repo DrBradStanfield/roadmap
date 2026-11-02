@@ -1450,6 +1450,19 @@ describe('generateSuggestions', () => {
       expect(screeningForm(60, 'male', scr).flatMap((s) => s.groups.flatMap((g) => g.fields.map((f) => ('key' in f ? f.key : ''))))).not.toContain('lung_screening');
     });
 
+    it('US-07 AC1e: no quit window, as ACS 2023 (Brad 2026-11-03): the plan and the roadmap text screen former smokers however long ago they quit', () => {
+      const { inputs, results } = createTestData({ birthYear: 1950, birthMonth: 1 }, { age: 76 });
+      const scr: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 20 };
+      expect(generateSuggestions(inputs, results, 'si', undefined, scr).find(s => s.id === 'screening-lung')).toBeDefined();
+      const root = join(dirname(fileURLToPath(import.meta.url)), '../../..');
+      const html = readFileSync(join(root, 'roadmap_text.html'), 'utf8');
+      const lung = html.slice(html.indexOf('Lung Cancer:'), html.indexOf('Prostate Cancer:'));
+      expect(lung).toContain('Have a 20 pack-year smoking history, whether you still smoke or have quit.');
+      expect(lung).not.toMatch(/15 years/);
+      expect(lung).toContain('After Age 80:');
+      expect(readFileSync(join(root, 'health_roadmap_algorithm.md'), 'utf8')).toMatch(/does not ask when someone quit[^\n]*American Cancer Society/);
+    });
+
     // Prostate
     it('suggests prostate discussion for male age 50+', () => {
       const { inputs, results } = createTestData({ sex: 'male', birthYear: 1970, birthMonth: 1 }, { age: 56 });
