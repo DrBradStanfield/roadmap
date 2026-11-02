@@ -106,19 +106,31 @@ const holdsUnitValue = (span: string, after: string) =>
 const mayStandFor = (kind: string, span: string, after: string) => covers(kind, span) && !holdsUnitValue(span, after);
 
 /**
+ * May age placeholder `kind` stand for `span`? Only a number of 1 to 3 digits, and
+ * only as its own decade, 90 and over as `[age 90+]` (US-15 AC44b). A masked
+ * widget age (`#`) has no decade to check.
+ */
+function coversAge(kind: string, span: string): boolean {
+  if (!/^[\d#]{1,3}$/.test(span)) return false;
+  if (span.includes('#')) return true;
+  const n = Number(span);
+  return kind === (n >= 90 ? '[age 90+]' : `[age ${Math.floor(n / 10)}0s]`);
+}
+
+/**
  * May this placeholder stand for this span of the question? Each kind covers
  * only what it names, so a swap cannot swallow a "not", a clause or a dose:
  * never a word that changes meaning (MEANING), never a sentence break (titles
  * like "Dr." aside), a word limit per kind, and a shape per kind. An age is
- * only its number; an id one token with 4 or more digits or letters and
- * digits mixed; a contact detail an email, a web address, a phone (a run of 7
+ * only its number, as its own decade; an id one token with 4 or more digits
+ * or letters and digits mixed; a contact detail an email, a web address, a phone (a run of 7
  * or more digits) or a numbered street address; a date a month or a d/m
  * shape; a name, a place or a job (an employer or school) a capitalised word with no digit.
  * Doubt is a skip: a question lost is safer than a question changed.
  */
 function covers(kind: string, span: string): boolean {
   const k = kind.toLowerCase();
-  if (k.startsWith('[age')) return /^[\d#]{1,3}$/.test(span);
+  if (k.startsWith('[age')) return coversAge(k, span);
   const words = span.split(' ').length;
   const limit = ({ '[id]': 1, '[date]': 3, '[name]': 4, '[job]': 4, '[place]': 6 } as Record<string, number>)[k] ?? 8;
   // A title's full stop ("Dr. Lee") is no sentence break.
