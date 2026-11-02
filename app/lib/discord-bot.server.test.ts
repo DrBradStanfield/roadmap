@@ -169,3 +169,37 @@ describe('US-15 AC37a: the Discord turn rows, column for column', () => {
     }));
   });
 });
+
+// US-15 AC51 (Brad 2026-11-03, "do it"): the Discord match event holds the
+// question text as the web chat's does, from the same mapping.
+describe('US-15 AC51: the Discord match event stores question text as the web does', () => {
+  it('the question and earlier turns: control characters spaced, first 500 characters each', async () => {
+    supa.inserts.length = 0;
+    await persistConversation({
+      conversationId: null, authorId: 'u1', userMessage: 'a\u0007b' + 'c'.repeat(700), userDiscordMessageId: 'm1',
+      assistantContent: 'An answer.', silent: false, assistantDiscordMessageIds: ['m2'],
+      usage: { inputTokens: 1, outputTokens: 1, cacheCreationTokens: 0, cacheReadTokens: 0 },
+      isFallback: false, routerResult: null, classifier: { classification: 'ROUTE', routerSkipped: false },
+      contextFirst: 'f'.repeat(600), contextRecent: ['x\u0000y', 'r'.repeat(600)],
+    });
+    const evt = supa.inserts.find((i) => i.table === 'chat_match_events')?.row;
+    expect(evt?.message).toBe('a b' + 'c'.repeat(497));
+    expect(evt?.router_context).toEqual({ platform: 'discord', first: 'f'.repeat(500), recent: ['x y', 'r'.repeat(500)] });
+    // The message itself stays whole in its chat_messages row.
+    expect(supa.inserts.find((i) => i.table === 'chat_messages' && i.row.role === 'user')?.row.content).toBe('a\u0007b' + 'c'.repeat(700));
+  });
+
+  it('a failed answer keeps failure_mode and error_detail on the assistant row and the event', async () => {
+    supa.inserts.length = 0;
+    await persistConversation({
+      conversationId: null, authorId: 'u1', userMessage: 'hello', userDiscordMessageId: 'm1',
+      assistantContent: 'Sorry', silent: false, assistantDiscordMessageIds: ['m2'],
+      usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 },
+      isFallback: true, failureMode: 'api-error', errorDetail: 'e'.repeat(600),
+      routerResult: null, classifier: { classification: 'ROUTE', routerSkipped: false }, contextRecent: [],
+    });
+    expect(supa.inserts.find((i) => i.table === 'chat_messages' && i.row.role === 'assistant')?.row)
+      .toMatchObject({ is_fallback: true, failure_mode: 'api-error', error_detail: 'e'.repeat(500), model: CHAT_MODEL });
+    expect(supa.inserts.find((i) => i.table === 'chat_match_events')?.row).toMatchObject({ is_fallback: true, failure_mode: 'api-error' });
+  });
+});

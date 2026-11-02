@@ -26,11 +26,10 @@ import {
   getChatCompletion,
   reportChatFallback,
   generateTitle,
-  CHAT_MODEL,
   MAX_MESSAGE_LENGTH,
 } from '../lib/chat.server';
 import { routeQuery, reportRouterFailure, sanitizeForRouter, redactForWidget } from '../lib/chat-router.server';
-import { routerColumns } from '../lib/chat-persist.server';
+import { routerColumns, matchEventText, answerColumns } from '../lib/chat-persist.server';
 import { loadBlogIndex } from '../lib/blog-index.server';
 import { openArticle, preferMasters } from '../lib/router-view';
 import { MAX_HISTORY_MESSAGES, MAX_HISTORY_TURN_CHARS, cutText } from '../../packages/health-core/src/chat-history';
@@ -676,19 +675,16 @@ async function chatAction(request: Request, app: boolean) {
       // Router telemetry, one row per answered turn. On the widget it is the ONLY
       // row, trimmed to its whitelist in one place (redactForWidget).
       // The row holds question text, which may carry health details: at most its
-      // first 500 chars, as before the 8,000 cap, blanked by the 30-day purge
-      // (US-15 AC7/AC26). CLAUDE.md keeps health values out of telemetry, so it never grows.
-      const MATCH_EVENT_MESSAGE_CHARS = 500;
-      const clip = (s: string) => cutText(s, MATCH_EVENT_MESSAGE_CHARS);
+      // first 500 chars (matchEventText), blanked by the 30-day purge (US-15 AC7/AC26).
       const matchEvent = {
         message_id: assistantMessageId,
         conversation_id: activeConversationId,
         user_id: auth.userId,
-        message: clip(sanitizedCurrent),
+        message: matchEventText(sanitizedCurrent),
         router_context: {
           platform: 'shopify',
-          first: sanitizedFirst ? clip(sanitizedFirst) : null,
-          recent: sanitizedRecent.map(clip),
+          first: sanitizedFirst ? matchEventText(sanitizedFirst) : null,
+          recent: sanitizedRecent.map(matchEventText),
           // US-50 AC14 usage signal: index handles only, never user text.
           ...(routed.replaced.length ? { replaced: routed.replaced } : {}),
           ...(articles?.reduced.length ? { reduced: articles.reduced } : {}),
@@ -724,14 +720,7 @@ async function chatAction(request: Request, app: boolean) {
             user_id: auth.userId,
             role: 'assistant',
             content: completion.content,
-            input_tokens: completion.usage.inputTokens,
-            output_tokens: completion.usage.outputTokens,
-            model: CHAT_MODEL,
-            is_fallback: completion.isFallback,
-            // Persist the fallback cause so the daily audit email is self-diagnosing
-            // (previously only sent to Sentry via reportChatFallback). Null on success.
-            failure_mode: completion.failureMode ?? null,
-            error_detail: completion.errorDetail != null ? cutText(completion.errorDetail, 500) : null,
+            ...answerColumns(completion),
           })
           .then(({ error: msgError }: { error: { message: string } | null }) => {
             if (msgError) {

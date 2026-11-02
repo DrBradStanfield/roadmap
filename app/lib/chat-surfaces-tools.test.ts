@@ -69,7 +69,7 @@ describe('US-15 AC19: Discord and YouTube never send the form tools', () => {
     const thread = { topLevelCommentId: 't1', videoId: 'v1', authorDisplayName: 'A', authorChannelId: null, text: 'my LDL was 3.8', publishedAt: '2026-09-29T00:00:00Z' };
     const entry = { title: 'LDL', handle: 'ldl', url: 'https://drstanfield.com/blogs/news/ldl', tags: [], publishedAt: '2026-09-01' };
     const outcome = await runPipeline(thread, entry, 'Video body');
-    expect(outcome.llmOutput).toBe('An answer.');
+    expect(outcome.completion?.content).toBe('An answer.');
     expect(bodies()).toHaveLength(1);
     expect(bodies()[0]).not.toHaveProperty('tools');
     // US-15 AC29: YouTube gets the writing style and the answer bank.
