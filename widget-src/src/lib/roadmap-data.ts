@@ -1,5 +1,7 @@
 /** Local-first health records and client-side reports, on every widget surface. */
 import {
+  type AddLabValueRequest,
+  type AddLabValueResult,
   type ApiMeasurement,
   dayOf,
   type MoveKeep,
@@ -250,6 +252,17 @@ export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<Bu
       const unit = labUnitForEvent(row.unit);
       trackProductEvent('lab_unit_refused', unit ? { key: row.key, unit } : { key: row.key });
     }
+  }
+  return result;
+}
+/** A lab value a person adds (US-21 AC2, US-25 AC25), by health-core's one lab add; null when nothing could be written. */
+export async function addLabValue(input: AddLabValueRequest): Promise<AddLabValueResult | null> {
+  const result = store ? store.addLabValue(input) : null;
+  // A spelling the test does not take, counted as the bulk save counts it (US-21 AC15).
+  const refused = result && !result.ok ? result.refused : undefined;
+  if (refused && !labUnitTaken(resolveLabCatalogEntry(refused.key), refused.unit)) {
+    const unit = labUnitForEvent(refused.unit);
+    trackProductEvent('lab_unit_refused', unit ? { key: refused.key, unit } : { key: refused.key });
   }
   return result;
 }

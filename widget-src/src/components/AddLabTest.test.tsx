@@ -7,14 +7,21 @@
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { addLabValue as addRecordLabValue, createEmptyFile, labUnitRefusalLine, type FileLabValue } from '@roadmap/health-core';
 
 afterEach(cleanup);
 
-const bulkSaveLabValues = vi.fn();
+// The form saves through health-core's one lab add (US-25 AC25). The mock runs the REAL rule on a
+// record holding `held`, so a test sees the words and the replace offer a person would.
+const held: FileLabValue[] = [];
+const addLabValue = vi.fn();
 const trackProductEvent = vi.fn();
 vi.mock('../lib/roadmap-data', () => ({
-  bulkSaveLabValues: (...args: unknown[]) => bulkSaveLabValues(...args),
+  addLabValue: (...args: unknown[]) => addLabValue(...args),
 }));
+const realAdd = (input: Parameters<typeof addRecordLabValue>[1]) =>
+  addRecordLabValue({ ...createEmptyFile({ deviceId: 'test', now: new Date().toISOString() }), labValues: held }, input, new Date().toISOString());
+const holding = (...rows: Array<Record<string, unknown>>) => held.splice(0, held.length, ...rows.map((r) => ({ status: 'active', correctsId: null, ...r }) as FileLabValue));
 vi.mock('../lib/server-api', () => ({
   trackProductEvent: (...args: unknown[]) => trackProductEvent(...args),
 }));
@@ -23,7 +30,8 @@ import { AddLabTest } from './AddLabTest';
 import { AdditionalLabRows } from './AdditionalLabRows';
 
 beforeEach(() => {
-  bulkSaveLabValues.mockReset().mockResolvedValue({ saved: [{ id: 'x' }], skippedDuplicates: 0, errorCount: 0, refused: [] });
+  held.splice(0);
+  addLabValue.mockReset().mockImplementation(async (input) => realAdd(input));
   trackProductEvent.mockReset();
 });
 
@@ -52,13 +60,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
     fireEvent.change(getByLabelText('Value'), { target: { value: '30' } });
     fireEvent.click(getByRole('button', { name: /^save$/i }));
     await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
-    expect(bulkSaveLabValues).toHaveBeenCalledWith([{
-      metricName: 'ggt',
-      value: 30,
-      unit: 'U/L',
-      recordedAt: `${todayIso}T00:00:00.000Z`,
-      source: 'manual',
-    }]);
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'ggt', unit: 'U/L', value: 30, day: todayIso });
     expect(trackProductEvent).toHaveBeenCalledWith('lab_row_added');
   });
 
@@ -70,18 +72,16 @@ describe('US-21 phase 2 — AddLabTest', () => {
     fireEvent.change(getByLabelText('Value'), { target: { value: '55' } });
     fireEvent.click(getByRole('button', { name: /^save$/i }));
     await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
-    expect(bulkSaveLabValues).toHaveBeenCalledWith([
-      expect.objectContaining({ metricName: 'Amylase', value: 55, unit: 'U/L', source: 'manual' }),
-    ]);
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'Amylase', unit: 'U/L', value: 55, day: todayIso });
   });
 
   it('a duplicate (same test, same day) shows a notice instead of silently doing nothing', async () => {
-    bulkSaveLabValues.mockResolvedValue({ saved: [], skippedDuplicates: 1, errorCount: 0, refused: [] });
+    holding({ id: 's1', metricName: 'sodium', value: 138, unit: 'mmol/L', referenceLow: null, referenceHigh: null, recordedAt: `${todayIso}T00:00:00.000Z`, createdAt: `${todayIso}T08:00:00.000Z`, source: 'manual' });
     const { getByLabelText, getByRole, onAdded, findByText } = openForm();
     fireEvent.change(getByLabelText('Test'), { target: { value: 'sodium' } });
     fireEvent.change(getByLabelText('Value'), { target: { value: '140' } });
     fireEvent.click(getByRole('button', { name: /^save$/i }));
-    expect(await findByText(/already has a value for that date/i)).toBeTruthy();
+    expect(await findByText('That test already has 138 mmol/L for that date.')).toBeTruthy();
     expect(onAdded).not.toHaveBeenCalled();
     expect(trackProductEvent).not.toHaveBeenCalled();
   });
@@ -95,7 +95,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
       recordedAt: `${todayIso}T00:00:00.000Z`, source: 'manual', createdAt: `${todayIso}T08:00:00.000Z`,
     };
     function duplicate(value: string) {
-      bulkSaveLabValues.mockResolvedValue({ saved: [], skippedDuplicates: 1, errorCount: 0, refused: [] });
+      holding(held);
       const onCorrect = vi.fn().mockResolvedValue('ok');
       const onAdded = vi.fn();
       const utils = render(<AddLabTest onAdded={onAdded} labValues={[held]} onCorrect={onCorrect} />);
@@ -112,7 +112,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
       expect(getByText('That test already has 45 µg/L for that date.')).toBeTruthy();
       await waitFor(() => expect(onCorrect).toHaveBeenCalledWith('held1', 54));
       await waitFor(() => expect(queryByLabelText('Test')).toBeNull()); // the form closes
-      expect(bulkSaveLabValues).toHaveBeenCalledTimes(1); // no second row was tried
+      expect(addLabValue).toHaveBeenCalledTimes(1); // no second row was tried
     });
 
     // US-03 AC3 rule: the number typed is never rounded to decide it changed
@@ -147,7 +147,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
       recordedAt: `${todayIso}T00:00:00.000Z`, source: 'manual', createdAt: `${todayIso}T08:00:00.000Z`,
     };
     async function replaceOffered() {
-      bulkSaveLabValues.mockResolvedValue({ saved: [], skippedDuplicates: 1, errorCount: 0, refused: [] });
+      holding(held);
       const onCorrect = vi.fn().mockResolvedValue('ok');
       const utils = render(<AddLabTest onAdded={vi.fn()} labValues={[held]} onCorrect={onCorrect} />);
       fireEvent.click(utils.getByRole('button', { name: /add a blood test/i }));
@@ -157,7 +157,6 @@ describe('US-21 phase 2 — AddLabTest', () => {
       fireEvent.change(utils.getByLabelText('Value'), { target: { value: '54' } });
       fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
       await utils.findByRole('button', { name: 'Replace 45 µg/L with 54' });
-      bulkSaveLabValues.mockResolvedValue({ saved: [{ id: 'new' }], skippedDuplicates: 0, errorCount: 0, refused: [] });
       return { ...utils, onCorrect };
     }
 
@@ -166,7 +165,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
       fireEvent.change(getByLabelText('Test name'), { target: { value: 'Folate' } });
       expect(queryByRole('button', { name: /^Replace/ })).toBeNull();
       fireEvent.click(getByRole('button', { name: /^save$/i }));
-      await waitFor(() => expect(bulkSaveLabValues).toHaveBeenLastCalledWith([expect.objectContaining({ metricName: 'Folate', value: 54 })]));
+      await waitFor(() => expect(addLabValue).toHaveBeenLastCalledWith(expect.objectContaining({ metricName: 'Folate', value: 54 })));
       expect(onCorrect).not.toHaveBeenCalled();
     });
 
@@ -175,7 +174,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
       fireEvent.change(getByLabelText('Unit'), { target: { value: 'ng/mL' } });
       expect(queryByRole('button', { name: /^Replace/ })).toBeNull();
       fireEvent.click(getByRole('button', { name: /^save$/i }));
-      await waitFor(() => expect(bulkSaveLabValues).toHaveBeenLastCalledWith([expect.objectContaining({ metricName: 'Feritin', unit: 'ng/mL' })]));
+      await waitFor(() => expect(addLabValue).toHaveBeenLastCalledWith(expect.objectContaining({ metricName: 'Feritin', unit: 'ng/mL' })));
       expect(onCorrect).not.toHaveBeenCalled();
     });
   });
@@ -184,7 +183,8 @@ describe('US-21 phase 2 — AddLabTest', () => {
   // sees the assistant's copy of it.
   describe('US-21 AC15 — a refused unit under "Other" shows the person’s wording', () => {
     async function saveOther(name: string, unit: string, value: string, refused: { key: string; unit: string; message: string; fault?: 'decimal' | 'scale' }) {
-      bulkSaveLabValues.mockResolvedValue({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [refused] });
+      // The refusal the record would give, in health-core's words (labUnitRefusalLine, tested in lab-value-labels.test.ts).
+      addLabValue.mockResolvedValue({ ok: false, reason: 'unknown-unit', message: labUnitRefusalLine(refused.key, refused.unit, refused.fault), refused });
       const utils = openForm();
       fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'custom' } });
       fireEvent.change(utils.getByLabelText('Test name'), { target: { value: name } });
@@ -260,11 +260,11 @@ describe('US-21 phase 2 — AddLabTest', () => {
     expect(getByText('Did you mean 1050 or 1.05?')).toBeTruthy();
     expect(save.disabled).toBe(true);
     fireEvent.click(save);
-    expect(bulkSaveLabValues).not.toHaveBeenCalled();
+    expect(addLabValue).not.toHaveBeenCalled();
     fireEvent.change(getByLabelText('Value'), { target: { value: '1,05' } });
     fireEvent.click(save);
     await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
-    expect(bulkSaveLabValues).toHaveBeenCalledWith([expect.objectContaining({ metricName: 'ferritin', value: 1.05 })]);
+    expect(addLabValue).toHaveBeenCalledWith(expect.objectContaining({ metricName: 'ferritin', value: 1.05 }));
   });
 
   // Codex R2: no range checks grouped thousands here, so they are refused.

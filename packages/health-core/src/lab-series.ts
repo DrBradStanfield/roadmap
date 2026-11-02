@@ -38,6 +38,12 @@ export function labUnitRefusalLine(key: string, unit: string, fault?: CountFault
   return note ? `${lead} ${note}.` : lead;
 }
 
+/** Why a lab test's history draws no line: its reports used more than one unit (US-21 AC3a).
+ *  `units` in the order met, oldest report first; an empty one reads "no unit". */
+export function mixedUnitsNote(units: string[]): string {
+  return `Units vary between reports (${units.map((u) => u || 'no unit').join(', ')}), so this test is not charted.`;
+}
+
 /** A lab value as the matrix shows it: up to two decimals, no trailing zeros. */
 export function formatLabValue(v: number): string {
   return String(Math.round(v * 100) / 100);
