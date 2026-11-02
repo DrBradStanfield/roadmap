@@ -924,10 +924,11 @@ describe('US-67 AC3: the app\'s words for the form tools', () => {
   const desc = (tools: ReadonlyArray<{ name: string; description: string }>, name: string) => tools.find(t => t.name === name)!.description;
 
   // The pin moved once on purpose (US-67 AC2, Brad 2026-11-02): propose_field_edit asks about
-  // a value that looks implausible for its unit. Any other move is a cache-prefix change to explain.
+  // a value that looks implausible for its unit. It moved again with US-16 AC3 (Brad 2026-11-02):
+  // propose_medication_edit lists each key's own answers (a drug key: "or another drug's generic name"). Any other move is a cache-prefix change to explain.
   it('US-67 AC3: the web\'s tools are byte-identical to the pinned ones (prompt cache prefix)', () => {
     const sha = (x: unknown) => createHash('sha256').update(JSON.stringify(x)).digest('hex');
-    expect(sha(CHAT_TOOLS)).toBe('b66663af28104d5c69f309104a439301d585a383847657562372407364951450');
+    expect(sha(CHAT_TOOLS)).toBe('51f6fb34106766b3ba7aece463be75b542868692f2ce82daf14eb095a6145503');
     expect(chatToolsFor(said)).toBe(CHAT_TOOLS);
     expect(chatToolsFor(said, true, false)).toBe(CHAT_TOOLS);
   });
@@ -1033,6 +1034,88 @@ describe('US-67 AC2: a value that looks like the wrong unit is asked about, not 
     expect(results[0].content).toMatch(/^\{"applied"/);
     expect(results[1].content).toBe(UNIT_SUSPECT);
     expect(onRound).toHaveBeenCalledOnce();
+    expect(turn.proposedEdits).toEqual([]);
+  });
+});
+
+// US-16 AC3: a medication answer its question does not offer is never saved
+// silently: the model gets a second call whose tool_result tells it to ask.
+describe('US-16 AC3: a medication answer the question does not offer is asked about, not saved', () => {
+  const use = (id: string, name: string, input: unknown) => ({ type: 'tool_use', id, name, input });
+  const said = [{ role: 'user' as const, content: "I'm on atorvastatin, not ezetimibe" }];
+  const reply = (...contentBlocks: object[]) => ({ contentBlocks, text: '' });
+  const asked = reply({ type: 'text', text: 'Which applies for ezetimibe?' });
+  const ASK = 'Not saved: "atorvastatin" is not an answer to the ezetimibe question. Ask the user which of these applies, then propose it again ' +
+    "with that answer: 'not_yet' (Haven't tried yet), 'yes' (Yes), 'no' (No), 'not_tolerated' (Not tolerated).";
+
+  it.each([false, true])('US-16 AC3: a lone misfit gets a second call whose tool_result asks, and no edit (app %s)', async (app) => {
+    const send = vi.fn().mockResolvedValueOnce(reply(use('m', 'propose_medication_edit', { medicationKey: 'ezetimibe', drugName: 'atorvastatin' }))).mockResolvedValueOnce(asked);
+    const turn = await withRoadmapRound(said, send, PROFILE, undefined, undefined, app);
+    expect(send).toHaveBeenCalledTimes(2);
+    const second = send.mock.calls[1][0];
+    expect(second.tool_choice).toEqual({ type: 'none' });
+    expect(second.messages.at(-1).content).toEqual([{ type: 'tool_result', tool_use_id: 'm', content: ASK }]);
+    expect(turn.final).toBe(asked);
+    expect(turn.proposedEdits).toEqual([]);
+  });
+
+  it('US-16 AC3: beside a fitting medication edit, the fitting one is saved as its own value and the misfit asked', async () => {
+    const send = vi.fn().mockResolvedValueOnce(reply(
+      use('s', 'propose_medication_edit', { medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' }),
+      use('e', 'propose_medication_edit', { medicationKey: 'ezetimibe', drugName: 'atorvastatin' }),
+      use('p', 'propose_medication_edit', { medicationKey: 'pcsk9i', drugName: 'none' }),
+    )).mockResolvedValueOnce(asked);
+    const turn = await withRoadmapRound(said, send, PROFILE);
+    const results = send.mock.calls[1][0].messages.at(-1).content.map((r: { content: string }) => r.content);
+    const SENT = 'Sent to the user\'s form; medications save at once and the user can undo.';
+    expect(results).toEqual([SENT, ASK, SENT]);
+    expect(turn.proposedEdits).toEqual([
+      { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' },
+      { kind: 'medication', medicationKey: 'pcsk9i', drugName: 'no', doseValue: null, doseUnit: null },
+    ]);
+  });
+
+  it('US-16 AC3: a mapped answer alone ("not taking" ezetimibe) is saved as no with no second call', async () => {
+    const first = reply(use('m', 'propose_medication_edit', { medicationKey: 'ezetimibe', drugName: 'none' }));
+    const send = vi.fn().mockResolvedValueOnce(first);
+    const turn = await withRoadmapRound(said, send, PROFILE);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(turn.proposedEdits).toEqual([{ kind: 'medication', medicationKey: 'ezetimibe', drugName: 'no', doseValue: null, doseUnit: null }]);
+  });
+
+  it.each(['not yet', 'not_yet ', 'none '])('US-16 AC3 R1: a GLP-1 "%s" is saved as none with no second call', async (drugName) => {
+    const send = vi.fn().mockResolvedValueOnce(reply(use('m', 'propose_medication_edit', { medicationKey: 'glp1', drugName })));
+    const turn = await withRoadmapRound(said, send, PROFILE);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(turn.proposedEdits).toEqual([{ kind: 'medication', medicationKey: 'glp1', drugName: 'none', doseValue: null, doseUnit: null }]);
+    expect(turn.refused).toBe(0);
+  });
+
+  it.each(['not taking', 'stopped', 'N/A', '   '])('US-16 AC3 R1: a statin "%s" is asked about in a second call, and counted as refused', async (drugName) => {
+    const send = vi.fn().mockResolvedValueOnce(reply(use('m', 'propose_medication_edit', { medicationKey: 'statin', drugName }))).mockResolvedValueOnce(asked);
+    const turn = await withRoadmapRound(said, send, PROFILE);
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(send.mock.calls[1][0].messages.at(-1).content[0].content).toMatch(/^Not saved: .* is not an answer to the statin question\. Ask the user which of these applies/);
+    expect(turn.proposedEdits).toEqual([]);
+    expect(turn.refused).toBe(1);
+  });
+
+  it('US-16 AC3 (Codex R2): an empty answer is asked about in a second call and counted as refused', async () => {
+    const send = vi.fn().mockResolvedValueOnce(reply(use('m', 'propose_medication_edit', { medicationKey: 'statin', drugName: '' }))).mockResolvedValueOnce(asked);
+    const turn = await withRoadmapRound(said, send, PROFILE);
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(turn.refused).toBe(1);
+    expect(turn.proposedEdits).toEqual([]);
+  });
+
+  it('US-16 AC3: a misfit beside run_roadmap is asked in the same one round', async () => {
+    const send = vi.fn()
+      .mockResolvedValueOnce(reply(use('r', 'run_roadmap', { values: [val('ldlC', 3.4, 'mmol/L')] }), use('m', 'propose_medication_edit', { medicationKey: 'ezetimibe', drugName: 'atorvastatin' })))
+      .mockResolvedValueOnce(asked);
+    const turn = await withRoadmapRound(said, send, PROFILE);
+    expect(send).toHaveBeenCalledTimes(2);
+    const results = send.mock.calls[1][0].messages.at(-1).content;
+    expect(results[1].content).toBe(ASK);
     expect(turn.proposedEdits).toEqual([]);
   });
 });
