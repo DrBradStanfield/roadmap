@@ -1,3 +1,8 @@
+// The golden (blood-table.golden.json) was taken on a Mac in New Zealand: the plan's `today` and day
+// counts are local days at GOLDEN_NOW. Pinned here so CI, which runs in UTC, reads the same days
+// (a forks child picks the zone up; see vitest.config.ts).
+process.env.TZ = 'Pacific/Auckland';
+
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { bloodTableReport, bloodTestKeyOf, bloodTestRows, FOLD_CREATININE, foldLegacyCoreRows, isCoreRow, labRowSlot, moveBloodMeasurements, toOldShape } from './blood-tests';
