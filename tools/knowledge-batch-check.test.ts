@@ -2246,3 +2246,66 @@ describe("US-50 AC12 keySafetyErrors", () => {
     expect(one(`${VIEW}${KEY(["A [1].", "B [3].", "C [1]."])}${REFS}`)).toContain("cites [3] with no reference line");
   });
 });
+
+// US-70 AC1: --guides checks a condition-guide batch: a new guide and its index entry, and the guide's shape.
+describe("US-70 AC1 condition guides: --guides", () => {
+  const SOUND = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "fixtures", "condition-guide", "sound.md"), "utf8");
+  const ENTRY = { handle: "g", summary: "A synthetic condition guide for tests.", title: "Test condition", type: "guideline", kind: "condition" };
+  const addGuide = (text = SOUND, entry: object = ENTRY) => {
+    put("docs/guideline/g.md", text);
+    put("docs/blog/index.json", JSON.stringify([...JSON.parse(INDEX), entry], null, 2));
+    const rawPath = join(reports, "g.raw.txt");
+    writeFileSync(rawPath, "Synthetic raw.");
+    writeFileSync(join(reports, "g.json"), JSON.stringify({ handle: "g", type: "guideline", raw_path: rawPath, raw_sha256: sha256("Synthetic raw."), old_raw_path: null,
+      changed_tokens: [], deleted_sentences: [], headings_before: [], headings_after: [], proposed_summary_correction: null,
+      product_mentions_before: 0, product_mentions_after: 0, notes: "" }));
+  };
+  const grun = (over: Partial<Parameters<typeof runBatch>[0]> = {}) => {
+    const { results } = runBatch({ root, batch: "t", handles: ["g"], reportsDir: reports, base: "HEAD", rawRoots: [reports], guides: true, ...over });
+    return Object.fromEntries(results.map((r) => [r.id, r])) as Record<string, Result>;
+  };
+
+  it("accepts a new guide and its added index entry, and its GUIDE check passes", () => {
+    addGuide();
+    const r = grun();
+    expect(fails(r.AC1)).toEqual([]);
+    expect(r.AC1.evidence).toContain("allowed guide entry: g");
+    expect(r.GUIDE.status).toBe("PASS");
+  });
+  it("fails a guide missing a section or a red flag's emergency line", () => {
+    addGuide(SOUND.replace("## Medicines\n", "").replace("now (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).\n- Chest", "now.\n- Chest"));
+    const r = grun();
+    expect(fails(r.GUIDE)).toEqual([
+      'FAIL g: needs one "## Medicines" section (found 0)',
+      expect.stringMatching(/^FAIL g: a red flag lacks the exact emergency line \(111 in NZ, 000 in Australia, 911 in the US, 999 in the UK\): /),
+    ]);
+  });
+  it("fails a guide over 35,000 characters", () => {
+    addGuide(SOUND.replace("Text.", "x".repeat(35_000)));
+    expect(fails(grun().GUIDE)).toEqual([expect.stringMatching(/^FAIL g: runs \d+ characters \(at most 35000\)$/)]);
+  });
+  it("refuses an index entry that is not a condition guide, and a batch handle that is not a guideline", () => {
+    addGuide(SOUND, { ...ENTRY, kind: undefined });
+    expect(fails(grun().AC1).join("\n")).toContain('entry added for "g"');
+    const r = grun({ handles: ["alpha"] });
+    expect(fails(r.GUIDE)).toEqual(["FAIL alpha: not a guideline"]);
+  });
+  it("without --guides the added entry fails AC1 and no GUIDE check runs", () => {
+    addGuide();
+    const r = grun({ guides: false });
+    expect(fails(r.AC1).join("\n")).toContain('entry added for "g"');
+    expect(r.GUIDE).toBeUndefined();
+  });
+  it("the CLI refuses --masters with --guides, and --guides without the batch's exceptions file", () => {
+    put("handles.txt", "g\n");
+    vi.spyOn(process, "cwd").mockReturnValue(root);
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    const args = ["--batch", "t", "--handles", join(root, "handles.txt"), "--base", "HEAD", "--reports", reports];
+    expect(main([...args, "--masters", "--guides"])).toBe(2);
+    expect(main([...args, "--guides"])).toBe(2);
+    const msg = err.mock.calls.map((c) => String(c[0])).join("\n");
+    vi.restoreAllMocks();
+    expect(msg).toContain("--masters and --guides are separate batches");
+    expect(msg).toContain("--guides needs --exceptions docs/knowledge-refresh/exceptions-t.json");
+  });
+});

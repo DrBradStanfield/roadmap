@@ -38,6 +38,11 @@
  *   New master batches also pass --key-safety-points (after --masters): each master with a view then FAILS without a
  *   sound "## Key safety points" section (US-50 AC12). Opt-in because the batch-1 and batch-2 masters predate the rule.
  *
+ *   Condition-guide batches (US-70 AC1) add --guides instead: every batch handle must be a guideline marked
+ *   `kind: condition`, which may be new or rewritten, with its index entry added or changed; the GUIDE check fails a
+ *   guide with bad keys (reviewed, sources, thresholds), over 35,000 characters, missing a template section or out of
+ *   order, or a red flag without the exact emergency line (guideErrors, shared with knowledge-lint.ts).
+ *
  *   npx tsx tools/knowledge-batch-check.ts --print-schema
  *   npx tsx tools/knowledge-batch-check.ts --example <handle>
  */
@@ -290,7 +295,7 @@ export const SOURCE_NAMES = ["consumerlab", "nih-ods", "brad-video", "pubmed"];
 const jsonOf = (v: string): unknown => { try { return JSON.parse(v); } catch { return undefined; } };
 
 /** Shape errors of one master frontmatter value (US-50 AC1), or null. `value` is the text after `key:` on its line. */
-export function masterKeyError(key: string, value: string): string | null {
+export function masterKeyError(key: string, value: string, names = SOURCE_NAMES): string | null {
   if (!value) return "needs its value on the same line";
   if (key === "router") return value === "hidden" ? null : 'must be exactly "hidden"';
   if (key === "reviewed") {
@@ -304,7 +309,7 @@ export function masterKeyError(key: string, value: string): string | null {
     const o = it as Record<string, unknown> | null;
     const miss = SOURCE_KEYS.find((k) => typeof o?.[k] !== "string" || !o[k]);
     if (miss) return `item ${i} is missing ${miss}`;
-    if (!SOURCE_NAMES.includes(o!.name as string)) return `item ${i} name must be one of ${SOURCE_NAMES.join(", ")}`;
+    if (!names.includes(o!.name as string)) return `item ${i} name must be one of ${names.join(", ")}`;
     if (!validDate(o!.checked as string)) return `item ${i} has an invalid checked date`;
   }
   return null;
@@ -400,6 +405,72 @@ export function keySafetyErrors(body: string): string[] {
   return errors;
 }
 
+/** A month name, short or long, in a "15 Oct 2026" date. */
+const MONTH = "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]{0,6}";
+/** Condition guides (US-70 AC1): public sources only, so no licensed name in `sources:`. */
+export const GUIDE_SOURCE_NAMES = ["guideline", "label", "pubmed", "nih-ods", "brad-video"];
+export const MAX_GUIDE_CHARS = 35_000;
+/** The emergency line every red flag carries, copied exactly (plan section 3, "ruling 17"). */
+export const EMERGENCY_LINE = "(111 in NZ, 000 in Australia, 911 in the US, 999 in the UK)";
+/** The template's level-2 headings, in order (plan section 3). */
+export const GUIDE_SECTIONS: [string, RegExp][] = [
+  ["In short", /^## In short$/], ["Get help now", /^## Get help now$/], ["What it is", /^## What it is$/],
+  ["Your numbers", /^## Your numbers$/], ["What helps", /^## What helps$/], ["Medicines", /^## Medicines$/],
+  ["Brad's view (reviewed D Mon YYYY) or Current evidence position", new RegExp(`^## (?:Brad['’]s view \\(reviewed \\d{1,2} ${MONTH} \\d{4}\\)|Current evidence position)$`)],
+  ["Who needs extra care", /^## Who needs extra care$/], ["When to see your doctor", /^## When to see your doctor$/],
+  ["Where guidelines differ", /^## Where guidelines differ$/], ["Common questions", /^## Common questions$/], ["References", /^## References$/],
+];
+const unquote = (v: string | null) => v?.replace(/^"(.*)"$/, "$1") ?? null;
+/** True for a file marked `kind: condition`. */
+export const isGuideText = (text: string) => unquote(fmValue(splitFrontmatter(text).front, "kind")) === "condition";
+
+/**
+ * What is wrong with a condition guide (US-70 AC1), shared with knowledge-lint.ts: its keys, the 35,000-character
+ * cap on the whole file, the twelve template sections once each and in order, and the exact emergency line on every
+ * red flag in "## Get help now", with no other version of it anywhere. Empty when it is sound.
+ */
+export function guideErrors(text: string): string[] {
+  const { front, body } = splitFrontmatter(text);
+  const errors: string[] = [];
+  if (unquote(fmValue(front, "type")) !== "guideline") errors.push("type must be guideline");
+  if (unquote(fmValue(front, "kind")) !== "condition") errors.push("kind must be condition");
+  for (const k of ["reviewed", "sources"]) {
+    const v = fmValue(front, k), err = v === null ? "missing" : masterKeyError(k, v, GUIDE_SOURCE_NAMES);
+    if (err) errors.push(`${k}: ${err}`);
+  }
+  const t = jsonOf(fmValue(front, "thresholds") ?? "");
+  if (!Array.isArray(t) || !t.length) errors.push("thresholds: must be a single-line, non-empty JSON array");
+  else t.forEach((x, i) => {
+    const o = x as Record<string, unknown> | null;
+    if (typeof o?.ref !== "string" || !/^[A-Z][A-Z0-9_]*(?:\.\w+)+$/.test(o.ref) || typeof o.value !== "number") errors.push(`thresholds: item ${i} needs {"ref": "CONSTANT.key", "value": <number>}`);
+  });
+  for (const k of duplicateKeys(front)) errors.push(`frontmatter key ${k} appears more than once`);
+  if (text.length > MAX_GUIDE_CHARS) errors.push(`runs ${text.length} characters (at most ${MAX_GUIDE_CHARS})`);
+  const lines = body.split(/\r?\n/);
+  let fence = false;
+  const heads = lines.flatMap((l, i) => { if (/^\s*```/.test(l)) fence = !fence; return !fence && /^##\s/.test(l) ? [i] : []; });
+  let last = -1;
+  for (const [name, re] of GUIDE_SECTIONS) {
+    const at = heads.filter((i) => re.test(lines[i].trim()));
+    if (at.length !== 1) errors.push(`needs one "## ${name}" section (found ${at.length})`);
+    else if (at[0] < last) errors.push(`"## ${name}" is out of the template order`);
+    else last = at[0];
+  }
+  const help = heads.find((i) => /^## Get help now$/.test(lines[i].trim()));
+  if (help !== undefined) {
+    const bullets: string[] = [];
+    for (const l of lines.slice(help + 1, heads.find((i) => i > help) ?? lines.length)) {
+      if (BULLET_LINE.test(l)) bullets.push(l.trim());
+      else if (l.trim() && bullets.length) bullets[bullets.length - 1] += ` ${l.trim()}`;
+    }
+    if (!bullets.length) errors.push('"## Get help now" has no red-flag bullets');
+    for (const b of bullets) if (!b.includes(EMERGENCY_LINE)) errors.push(`a red flag lacks the exact emergency line ${EMERGENCY_LINE}: ${clip(b, 100)}`);
+  }
+  const variants = (text.match(/111 in NZ/g) ?? []).length - text.split(EMERGENCY_LINE).length + 1;
+  if (variants > 0) errors.push(`${variants} other version(s) of the emergency line; copy ${EMERGENCY_LINE} exactly`);
+  return errors;
+}
+
 // Tokeniser: units, longest first; the lookahead stops "mg" matching inside "mgs" etc.
 // Compound units come first so "2 mg/kg" is not "2 mg", and "90 g/L" is not "90 g/dL".
 const UNIT = [
@@ -480,7 +551,6 @@ function normNumber(n: string, unit: string): { value: string; unit: string } {
 }
 
 /** Topic-master dates (US-50): the view heading, a "([Brad, 15 Oct 2026](" or "(Brad's current guidance, 15 Oct 2026)" citation, and a "- 15 Oct 2026, [" video line. */
-const MONTH = "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]{0,6}";
 const GUIDANCE = new RegExp(`\\(Brad['’]s current guidance, \\d{1,2} ${MONTH} \\d{4}\\)`);
 const MASTER_DATES = new RegExp(`^(?:(?:##\\s+)?Current view \\(reviewed \\d{1,2} ${MONTH} \\d{4}\\)\\s*$|\\s*(?:[-*]\\s+)?\\d{1,2} ${MONTH} \\d{4}(?=, \\[))|(?<=\\(\\[Brad, )\\d{1,2} ${MONTH} \\d{4}(?=\\]\\()|(?<=\\(Brad['’]s current guidance, )\\d{1,2} ${MONTH} \\d{4}(?=\\))`, "g");
 
@@ -644,6 +714,8 @@ export interface Options {
   masters?: boolean;
   /** With masters: each master with a view must carry sound key safety points (US-50 AC12, keySafetyErrors). */
   keySafetyPoints?: boolean;
+  /** Condition-guide batch (US-70 AC1): guide index entries may be added or changed and the GUIDE check runs. */
+  guides?: boolean;
   checkIds?: boolean; headStatus?: (url: string) => number; delayMs?: number; idCap?: number;
 }
 export interface Row {
@@ -833,6 +905,7 @@ function checkAc1(o: Options, base: string, ctxs: Ctx[], ac1: Check) {
       for (const h of new Set([...a.keys(), ...b.keys()])) {
         const x = a.get(h), y = b.get(h);
         if (JSON.stringify(x) === JSON.stringify(y)) continue;
+        if (o.guides && batch.has(h) && y?.type === "guideline" && y.kind === "condition") { ac1.infos.push(`allowed guide entry: ${h}`); continue; }
         const free = o.masters ? ["summary", ...MASTER_INDEX_KEYS] : ["summary"];
         const summaryMoved = JSON.stringify(x?.summary) !== JSON.stringify(y?.summary);
         const ok = batch.has(h) && (corrections.has(h) || (o.masters && !summaryMoved)) && x && y &&
@@ -853,6 +926,7 @@ function checkAc1(o: Options, base: string, ctxs: Ctx[], ac1: Check) {
   for (const c of ctxs) {
     if (c.baseText === null || c.newText === null) continue;
     const bf = splitFrontmatter(c.baseText).front, nf = splitFrontmatter(c.newText).front;
+    if (o.guides) continue; // the GUIDE check owns a guide's frontmatter
     if (o.masters) { checkMasterFront(c, bf, nf, corrections, ac1); continue; }
     const noSummary = (f: string) => f.split(/\r?\n/).filter((l) => !/^summary:/.test(l)).join("\n");
     if (corrections.has(c.handle)) {
@@ -1450,6 +1524,7 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
   const ac6 = new Check("AC6", "diff touches only batch files");
   const ac7 = new Check("AC7", "grokipedia, products, references, banned phrases");
   const master = new Check("MASTER", "topic-master sections (Current view or evidence position, Brad's videos)");
+  const guide = new Check("GUIDE", "condition-guide keys, cap, template sections and emergency line");
   const rows: Row[] = [];
   let index = new Map<string, { type?: string }>();
   try {
@@ -1469,6 +1544,7 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
     if (c.newText !== null) {
       if (c.rep && raw) quoted = checkAc2(c, added, ac2, raw, c.baseText !== null ? pairTokenChanges(c) : { pairs: new Map(), orphans: [] });
       if (o.masters) checkMasterBody(c, master, raw, isPost, o.keySafetyPoints);
+      if (o.guides) for (const e of c.type === "guideline" ? guideErrors(c.newText) : ["not a guideline"]) guide.fails.push(`${c.handle}: ${e}`);
       checkAc3(c, hedgeBefore, hedgeAfter, ac3);
       if (c.baseText !== null) deleted = checkAc4(c, ac4);
       checkAc7(c, ac7, raw ? raw.abstracts : [], ids, o.masters ? isPost : undefined);
@@ -1486,7 +1562,7 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
     ...git(o.root, ["ls-files", "--others", "--exclude-standard"]).split("\n"),
   ].filter(Boolean));
   const allowed = new Set<string>(o.outRel ? [o.outRel] : []);
-  if (o.masters) {
+  if (o.masters || o.guides) {
     allowed.add(`docs/knowledge-refresh/${o.batch}-notes.md`);
     // The exceptions file is a batch file only once committed: a run must not pass on exceptions written after it started.
     const exRel = `docs/knowledge-refresh/exceptions-${o.batch}.json`;
@@ -1505,7 +1581,7 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
   ac6.infos.push("Shopify updated_at snapshot: separate tool, NOT checked here");
 
   const used = new Set<Exception>();
-  const results = [ac1, ac2, ac3, ac4, ac6, ac7, ...(o.masters ? [master] : [])].map((c) => c.result(o.exceptions, used));
+  const results = [ac1, ac2, ac3, ac4, ac6, ac7, ...(o.masters ? [master] : []), ...(o.guides ? [guide] : [])].map((c) => c.result(o.exceptions, used));
   for (const x of o.exceptions ?? []) {
     if (used.has(x)) continue;
     const r = results.find((y) => y.id === x.check) ?? results[results.length - 1];
@@ -1599,10 +1675,11 @@ export function main(argv: string[], overrides: Partial<Options> = {}): number {
   const a = parseArgs(argv);
   if (a["print-schema"]) { console.log(JSON.stringify(REPORT_SCHEMA, null, 2)); return 0; }
   if (typeof a.example === "string") { console.log(JSON.stringify(exampleReport(a.example), null, 2)); return 0; }
-  const usage = (msg: string) => { console.error(`${msg}\nusage: knowledge-batch-check.ts --batch <name> --handles <file> --base <git ref> [--reports <dir>] [--out <file>] [--exceptions <file>] [--check-ids [--check-ids-cap <n>]] [--masters] [--key-safety-points]`); return 2; };
+  const usage = (msg: string) => { console.error(`${msg}\nusage: knowledge-batch-check.ts --batch <name> --handles <file> --base <git ref> [--reports <dir>] [--out <file>] [--exceptions <file>] [--check-ids [--check-ids-cap <n>]] [--masters] [--key-safety-points] [--guides]`); return 2; };
   if (typeof a.batch !== "string" || typeof a.handles !== "string") return usage("--batch and --handles are required");
   if (typeof a.base !== "string") return usage("--base is required (no default)");
   if (a["key-safety-points"] !== undefined && a.masters === undefined) return usage("--key-safety-points needs --masters");
+  if (a.masters !== undefined && a.guides !== undefined) return usage("--masters and --guides are separate batches");
   const root = git(process.cwd(), ["rev-parse", "--show-toplevel"]).trim();
   const handles = readFileSync(a.handles, "utf8").split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
   const reportsDir = typeof a.reports === "string" ? resolve(a.reports) : join(homedir(), ".codex-review", "diff-reports", a.batch);
@@ -1610,10 +1687,10 @@ export function main(argv: string[], overrides: Partial<Options> = {}): number {
   const rel = out ? relative(root, out) : "";
   const outRel = out && !rel.startsWith("..") && !isAbsolute(rel) ? rel : undefined;
   if (outRel) { const bad = validateOut(outRel, handles); if (bad) return usage(bad); }
-  if (a.masters !== undefined) {
-    // A masters run reads only its own committed exceptions file (US-42 AC11): none written after the run began.
+  if (a.masters !== undefined || a.guides !== undefined) {
+    // A masters or guides run reads only its own committed exceptions file (US-42 AC11): none written after the run began.
     const exRel = `docs/knowledge-refresh/exceptions-${a.batch}.json`;
-    if (typeof a.exceptions !== "string" || !existsSync(a.exceptions) || realPath(resolve(a.exceptions)) !== realPath(join(root, exRel))) return usage(`--masters needs --exceptions ${exRel}`);
+    if (typeof a.exceptions !== "string" || !existsSync(a.exceptions) || realPath(resolve(a.exceptions)) !== realPath(join(root, exRel))) return usage(`--${a.masters !== undefined ? "masters" : "guides"} needs --exceptions ${exRel}`);
     if (git(root, ["status", "--porcelain", "--", exRel]).trim()) return usage(`${exRel} has uncommitted changes; commit it before the run`);
   }
   let exceptions: Exception[] = [];
@@ -1628,7 +1705,7 @@ export function main(argv: string[], overrides: Partial<Options> = {}): number {
   const checkIds = a["check-ids"] === true, capArg = a["check-ids-cap"];
   if (capArg !== undefined && (typeof capArg !== "string" || !/^[1-9]\d*$/.test(capArg))) return usage("--check-ids-cap needs a positive integer");
   const { results, rows, baseSha } = runBatch({ root, batch: a.batch, handles, reportsDir, base: a.base, outRel, exceptions,
-    checkIds, masters: a.masters !== undefined, keySafetyPoints: a["key-safety-points"] !== undefined,
+    checkIds, masters: a.masters !== undefined, keySafetyPoints: a["key-safety-points"] !== undefined, guides: a.guides !== undefined,
     idCap: typeof capArg === "string" ? Number(capArg) : undefined, ...overrides });
   for (const r of results) {
     console.log(`${r.status} ${r.id} ${r.title}`);

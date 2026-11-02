@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { isMaster, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
+import { isConditionGuide, isMaster, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { parseFrontmatter, stripFrontmatter } from './frontmatter';
 // A cycle (youtube-context imports this file); both use the other only inside functions.
 import { reducedDrops, reducedMaster } from './youtube-context';
@@ -98,7 +98,9 @@ export function contentForms(handle: string, raw: string): string[] {
  * master loads at least reduced. An entry that does not fit is skipped (listed
  * in `skipped`), never the rest of the list (US-15 AC23). A reduced master that
  * loads logs, once, what its reduced form dropped as malformed. Repeated
- * handles load once. `titles` names the
+ * handles load once. A condition guide (US-70 AC7) loads first and whole
+ * whenever it fits, so the entries after it yield and its red flags always
+ * load. `titles` names the
  * entries loaded, from the blog index, never model output (US-15 AC20).
  * `reduced` lists the masters that loaded in a reduced form (US-50 AC14's log).
  */
@@ -107,8 +109,9 @@ export function loadMatchedContent(handles: string[]): { content: string | null;
     const raw = loadBlogArticle(handle);
     if (!raw) return [];
     const forms = contentForms(handle, raw);
-    return [{ handle, raw, entry: loadBlogIndex().find(a => a.handle === handle), forms, master: forms.length > 1 }];
-  });
+    const entry = loadBlogIndex().find(a => a.handle === handle);
+    return [{ handle, raw, entry, forms, master: forms.length > 1, guide: isConditionGuide(entry) }];
+  }).sort((a, b) => Number(b.guide) - Number(a.guide));
   const shortest = (forms: string[]) => forms.reduce((a, b) => (b.length < a.length ? b : a));
   const smallest = (forms: string[]) => shortest(forms).length + SEPARATOR.length;
   const parts: string[] = [];
@@ -116,10 +119,10 @@ export function loadMatchedContent(handles: string[]): { content: string | null;
   const skipped: string[] = [];
   const reduced: string[] = [];
   let totalChars = 0;
-  for (const [i, { handle, raw, entry, forms, master }] of items.entries()) {
+  for (const [i, { handle, raw, entry, forms, master, guide }] of items.entries()) {
     const room = MAX_BLOG_CHARS - totalChars - (parts.length > 0 ? SEPARATOR.length : 0);
     const later = items.slice(i + 1);
-    let reserve = later.filter(it => it.master && smallest(it.forms) <= MAX_BLOG_CHARS).reduce((n, it) => n + smallest(it.forms), 0);
+    let reserve = guide ? 0 : later.filter(it => it.master && smallest(it.forms) <= MAX_BLOG_CHARS).reduce((n, it) => n + smallest(it.forms), 0);
     if (master) for (const it of later) if (!it.master && shortest(forms).length + reserve + smallest(it.forms) <= room) reserve += smallest(it.forms);
     const fits = forms.filter(f => f.length <= room);
     const content = forms.find(f => f.length <= room - reserve) ?? (master && fits.length > 0 ? shortest(fits) : undefined);

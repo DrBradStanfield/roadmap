@@ -11,7 +11,9 @@
  *   product-rise        product mentions above the stored baseline (AC7)
  *   Topic masters (US-50 AC7). Static, in test:all (tools/knowledge-lint-masters.test.ts): topic-no-master, master-front
  *   fail; master-gate, master-doi warn; master-key-points warns on a master with a view and no sound "## Key safety
- *   points" section (US-50 AC12; the batch checker's --key-safety-points fails it). lint-allowlist.json waives them as it does every rule. Weekly only, dated:
+ *   points" section (US-50 AC12; the batch checker's --key-safety-points fails it). guide-shape fails a `kind: condition`
+ *   guideline with bad keys, over 35,000 characters, a missing or misordered template section, or a red flag without the
+ *   exact emergency line (US-70 AC1; guideErrors, shared with the checker's --guides). lint-allowlist.json waives them as it does every rule. Weekly only, dated:
  *   master-stale, source-stale, master-places, master-overlap (masters sharing a DOI: the pair goes to adversary review).
  * The selector picks what the model half (knowledge-lint-compare.ts) reads this
  * week: entries changed since the last run, entries whose algorithm topic
@@ -39,7 +41,7 @@ import { readFileSync, writeFileSync, existsSync, appendFileSync } from 'node:fs
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { getArg } from '../packages/health-core/src/models';
-import { VIEW_HEADING, duplicateKeys, fmValue, keySafetyErrors, masterKeyError, sentences, validDate } from './knowledge-batch-check';
+import { VIEW_HEADING, duplicateKeys, fmValue, guideErrors, isGuideText, keySafetyErrors, masterKeyError, sentences, validDate } from './knowledge-batch-check';
 
 export const SLICE_WEEKS = 13;
 const LOOP_DIR = 'docs/loops/chat-health';
@@ -58,7 +60,7 @@ export interface Entry { handle: string; type: EntryType; title: string; summary
 export type RuleId =
   | 'unresolved-marker' | 'uncited-reference' | 'uncited-list' | 'doi-shape' | 'pmid-shape' | 'id-mismatch'
   | 'link-dead' | 'grokipedia' | 'dose-mismatch' | 'product-rise'
-  | 'topic-no-master' | 'master-front' | 'master-gate' | 'master-doi' | 'master-key-points' | 'master-stale' | 'source-stale' | 'master-places' | 'master-overlap'
+  | 'guide-shape' | 'topic-no-master' | 'master-front' | 'master-gate' | 'master-doi' | 'master-key-points' | 'master-stale' | 'source-stale' | 'master-places' | 'master-overlap'
   | 'entry-vs-algorithm' | 'reference-vs-reference';
 /** `view` (master-places only): the current-view hash the finding was raised against; a waiver covers that view only. */
 export interface Finding { rule: RuleId; handle: string; pair?: [string, string]; item: string; detail?: string; view?: string }
@@ -503,6 +505,7 @@ export function staticMasterFindings(entries: Entry[], products: string, cfg: Ma
   const refs = new Map(entries.filter(e => e.type === 'reference').map(e => [e.handle, e]));
   const prod = unescapeMd(products).toLowerCase();
   for (const e of entries) {
+    if (e.type === 'guideline' && isGuideText(e.raw)) for (const err of guideErrors(e.raw)) fails.push({ rule: 'guide-shape', handle: e.handle, item: err });
     if (e.type === 'article') {
       const hidden = fmValue(frontOf(e), 'router') === 'hidden';
       for (const t of topicsOf(e)) {

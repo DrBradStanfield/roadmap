@@ -4,6 +4,7 @@
  * three. loadBlogIndex() itself is untouched (YouTube finds posts by video ID).
  */
 import { describe, it, expect, vi } from 'vitest';
+import { readFileSync } from 'fs';
 
 const fixture = vi.hoisted(() => [
   { title: 'Collagen', handle: 'collagen', url: 'u', tags: [], publishedAt: '2024-01-01T00:00:00Z', type: 'reference', reviewed: '2026-10-20' },
@@ -43,5 +44,31 @@ describe('router view in the router call (US-50 AC3)', () => {
 
   it('ROUTER_VERSION is bumped for the view change', () => {
     expect(ROUTER_VERSION).toBeGreaterThanOrEqual(3);
+  });
+});
+
+// US-70 AC5: rule 1 lets a condition guide take a condition, and a symptom only when the guide covers it directly.
+describe('router rule 1 and condition guides (US-70 AC5)', () => {
+  const prompt = readFileSync('app/lib/chat-router-prompt.md', 'utf-8');
+  const rule1 = prompt.slice(prompt.indexOf('1. For SYMPTOM descriptions'), prompt.indexOf('2. Population context'));
+
+  it('no longer says the index has no diagnosis entries', () => {
+    expect(rule1).not.toContain('the index has no symptom or diagnosis entries');
+  });
+
+  it('routes a named condition, or a reading for it, to its condition guide', () => {
+    expect(rule1).toContain("a condition the user names, or a reading or result the user reports for it");
+    expect(rule1).toContain("→ that condition's [guideline] (a condition guide");
+  });
+
+  it('keeps "do not anchor on one diagnosis", now naming guides too, and says when a guide covers a symptom', () => {
+    expect(rule1).toContain('Do NOT route a symptom to an article or condition guide about one specific diagnosis the user did not name');
+    expect(rule1).toContain('Anchoring the main LLM on one possibility misses the differential');
+    expect(rule1).toContain('A condition guide covers a symptom directly only when the user ties the symptom to that condition');
+    expect(rule1).toContain('Otherwise return an empty list.');
+  });
+
+  it('is ROUTER_VERSION 5', () => {
+    expect(ROUTER_VERSION).toBe(5);
   });
 });
