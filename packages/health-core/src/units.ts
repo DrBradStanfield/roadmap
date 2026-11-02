@@ -542,16 +542,19 @@ export const UNIT_SWAP_FLOORS: Partial<Record<MetricType, number>> = {
 // Locale detection
 // ---------------------------------------------------------------------------
 
-/** Countries that use conventional (US) units: US, Liberia, Myanmar. */
-const CONVENTIONAL_COUNTRIES = new Set(['US', 'LR', 'MM']);
+/** Countries that use conventional (US) units: US, Liberia, Myanmar, and the
+ *  US territories (Puerto Rico, US Virgin Islands, Guam, Northern Mariana
+ *  Islands, American Samoa), whose labs print US units (US-05 AC5). */
+const CONVENTIONAL_COUNTRIES = new Set(['US', 'LR', 'MM', 'PR', 'VI', 'GU', 'MP', 'AS']);
 
-/** IANA timezone identifiers for the United States. */
+/** IANA timezone identifiers for the United States and its territories. */
 const US_TIMEZONES = new Set([
   'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
   'America/Anchorage', 'America/Phoenix', 'America/Adak', 'America/Detroit',
   'America/Boise', 'America/Juneau', 'America/Sitka', 'America/Yakutat',
   'America/Nome', 'America/Menominee', 'America/Metlakatla',
   'Pacific/Honolulu',
+  'America/Puerto_Rico', 'America/St_Thomas', 'Pacific/Guam', 'Pacific/Saipan', 'Pacific/Pago_Pago',
 ]);
 
 function isUSTimezone(tz: string): boolean {

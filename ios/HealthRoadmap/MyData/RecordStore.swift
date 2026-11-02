@@ -587,6 +587,12 @@ final class RecordStore {
         return true
     }
 
+    /// The units the web's first-visit rule gives this phone's region and time zone, by the
+    /// engine; nil if it cannot say. Onboarding's region default (US-54 AC6, US-05 AC5).
+    func regionUnits() async -> String? {
+        try? await engine.regionUnits()
+    }
+
     /// A typed value in the other units ("si" or "conventional"), by the engine; nil if it
     /// cannot. Onboarding's entry-only unit switches (US-54 AC6).
     func convert(_ value: Double, metric: String, from: String, to: String) async -> HealthEngine.Conversion? {
