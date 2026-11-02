@@ -136,7 +136,10 @@ import { processV2Reminders } from './reminder-v2-cron.server';
 import { sendReminderEmail } from './email.server';
 import { deleteByEmail } from './reminder-v2.server';
 
-const TODAY = '2026-10-31';
+// Each test is its own day: the cron emails an optin at most once a day per
+// process (US-28 AC3), and these tests reuse the same ids.
+let day = 0;
+let TODAY = '';
 
 // Ids deliberately not in enrolment order, so a walk that pages by one key
 // and resumes by the other misses rows.
@@ -159,6 +162,7 @@ const emailed = () => vi.mocked(sendReminderEmail).mock.calls.map((c) => c[0]).s
 const allEmails = (rows: Row[]) => rows.map((r) => r.email).sort();
 
 beforeEach(() => {
+  TODAY = `2026-11-${String(++day).padStart(2, '0')}`;
   db.readIds = [];
   db.bouncing.clear();
   vi.mocked(sendReminderEmail).mockClear();
