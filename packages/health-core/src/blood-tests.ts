@@ -123,6 +123,9 @@ export function foldLegacyCoreRows(rows: FileLabValue[]): FileLabValue[] {
   });
 }
 
+/** A row with no status reads as active (US-65 AC1), as `latestActivePerMetric` reads it. */
+const isActive = (row: { status?: string }) => row.status === undefined || row.status === 'active';
+
 /**
  * The core values every reader counts (US-66 AC7): active core rows in their
  * core unit, shaped as measurements for `latestActivePerMetric` and
@@ -130,7 +133,7 @@ export function foldLegacyCoreRows(rows: FileLabValue[]): FileLabValue[] {
  */
 export function bloodTestRows(file: Pick<RoadmapFile, 'labValues'>): Array<FileLabValue & { metricType: string }> {
   return file.labValues
-    .filter((row) => row.status === 'active' && isCoreRow(row) && row.unit === CORE_BLOOD_UNITS[row.metricName])
+    .filter((row) => isActive(row) && isCoreRow(row) && row.unit === CORE_BLOOD_UNITS[row.metricName])
     .map((row) => ({ ...row, metricType: row.metricName }));
 }
 
@@ -139,7 +142,7 @@ export function currentValueRows(file: Pick<RoadmapFile, 'measurements' | 'labVa
   // A blood row the move refused is unreadable (US-66 AC2) and counts nowhere. One it
   // would move still counts, so a caller holding an unmigrated record reads what migrate gives.
   const stuck = (m: FileMeasurement) => isBloodTestKey(m.metricType) && !movable(m);
-  return [...file.measurements.filter((m) => m.status === 'active' && !stuck(m)), ...bloodTestRows(file)];
+  return [...file.measurements.filter((m) => isActive(m) && !stuck(m)), ...bloodTestRows(file)];
 }
 
 /**

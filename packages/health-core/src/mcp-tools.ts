@@ -51,6 +51,7 @@ import {
   validDay,
 } from './record-edits';
 import type { FileDocument, FileLabValue, FileMeasurement, RoadmapFile, RoadmapProfile } from './roadmap-file';
+import { CORE_BLOOD_UNITS } from './roadmap-file';
 import type { SyncManager } from './sync-manager';
 import { CANONICAL_UNITS, formatDisplayValue, formatRange, getDisplayLabel, getDisplayRange, reportedToCanonical, UNIT_DEFS, UNIT_SWAP_FLOORS, unitSystemOf, type MetricType, type UnitSystem } from './units';
 import { DROPBOX_APP_FOLDER, IMPORT_ACCEPTED_TYPES, IMPORT_FILE_REASONS, IMPORT_REFUSALS, importHint } from './import-hints';
@@ -548,7 +549,9 @@ export function redactRecord(file: RoadmapFile) {
   const { reportEmailCaptured: _emailFlag, ...shownProfile } = plain(profile);
   // By position, never by id: a reused id must not make a second row current.
   const currentMeasurements = new Set(latestActivePerMetric(measurements.map((m, at) => ({ ...m, at }))).map((r) => r.at));
-  const currentLabs = new Set(latestActivePerMetric(labValues.map((l, at) => ({ ...l, metricType: labRowSlot(l), at }))).map((r) => r.at));
+  // A core row counts only in its core unit, as the plan reads it (US-66 AC7).
+  const counted = labValues.flatMap((l, at) => (isCoreRow(l) && l.unit !== CORE_BLOOD_UNITS[l.metricName] ? [] : [{ ...l, metricType: labRowSlot(l), at }]));
+  const currentLabs = new Set(latestActivePerMetric(counted).map((r) => r.at));
   return {
     ...rest,
     profile: shownProfile,

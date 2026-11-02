@@ -205,3 +205,27 @@ describe('US-66 AC11: the agent tools', () => {
     expect(rows.find((r) => r.id === 'x')!.current).toBe(true);
   });
 });
+
+describe('US-66 review fixes (Codex R1, R5, R6)', () => {
+  it('R1: a creatinine typed into AddLabTest is the core value; an imported one stays apart (US-12 AC11)', () => {
+    const typed = bulkAppendValues(file(), [{ kind: 'lab', metricName: 'Creatinine', value: 80, unit: 'µmol/L', recordedAt: '2026-05-01', source: 'manual' }], NOW);
+    expect(bloodTestRows(typed.file)).toHaveLength(1);
+    const imported = bulkAppendValues(file(), [{ kind: 'lab', metricName: 'Creatinine', value: 80, unit: 'µmol/L', recordedAt: '2026-05-01', source: 'lab_import' }], NOW);
+    expect(bloodTestRows(imported.file)).toEqual([]);
+    expect(imported.file.labValues).toHaveLength(1);
+  });
+
+  it('R5: a core row with no status reads as active (US-65 AC1)', () => {
+    const { status: _s, ...noStatus } = core('a', 'ldl', 3.1);
+    expect(bloodTestRows(file([noStatus as FileLabValue])).map((r) => r.id)).toEqual(['a']);
+  });
+
+  it('R6: read_record marks current the core row the plan counts, not one in another unit', () => {
+    const counted = core('old', 'ldl', 3.1, '2026-04-01');
+    const wrongUnit = core('new', 'ldl', 120, '2026-05-01', { unit: 'mg/dL' });
+    const out = readRecord(file([counted, wrongUnit]), {});
+    const rows = (out as { data: { labValues: Array<{ id: string; current: boolean }> } }).data.labValues;
+    expect(rows.find((r) => r.id === 'old')?.current).toBe(true);
+    expect(rows.find((r) => r.id === 'new')?.current).toBe(false);
+  });
+});

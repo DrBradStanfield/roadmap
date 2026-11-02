@@ -807,9 +807,10 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
     // not flip the active row it was going to replace.
     let makeRow: (recordedAt: string, correctsId: string | null) => FileMeasurement | FileLabValue;
     // Brad D5 (US-66 AC6): an extra value named like a core test is that core
-    // value, converted; creatinine never, since it may be urine (US-12 AC11).
+    // value, converted. An imported creatinine never, since it may be urine
+    // (US-12 AC11); one the person typed is their blood value.
     const named = input.kind === 'lab' ? bloodTestKeyOf(input.metricName) : null;
-    const asLab = input.kind === 'lab' && (!named || named === 'creatinine');
+    const asLab = input.kind === 'lab' && (!named || (named === 'creatinine' && input.source !== 'manual'));
     const metric = input.kind === 'measurement' ? input.metricType : asLab ? input.metricName : named!;
     if (input.kind === 'lab' && asLab) {
       const entry = resolveLabCatalogEntry(input.metricName);
