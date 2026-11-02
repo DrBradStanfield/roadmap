@@ -50,4 +50,14 @@ describe('US-34 AC4 — createRemoteChangeRelay', () => {
     relay.saved();
     expect(apply).toHaveBeenCalledTimes(1);
   });
+
+  it('US-11 AC6: a held change, then one applied at once (an erase from another device), applies once; the save after finds nothing held', () => {
+    const apply = vi.fn();
+    const relay = createRemoteChangeRelay(apply);
+
+    relay.arrived(true);
+    relay.arrived(false);
+    relay.saved();
+    expect(apply).toHaveBeenCalledTimes(1);
+  });
 });
