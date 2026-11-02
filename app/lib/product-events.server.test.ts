@@ -35,8 +35,9 @@ describe('parseProductEvent', () => {
       if (SERVER_ONLY.has(eventName)) continue;
       // US-62 AC1: these three need their key, tested with it below.
       if (['tool_opened', 'onboarding_step', 'signin_opened'].includes(eventName)) continue;
-      // US-61 AC8: the two US product events need their product.
-      const metadata = eventName.startsWith('us_product_') ? { metadata: { product: 'sleep' } } : {};
+      // US-61 AC8: the two US product events need their product; US-07 AC11: measurement_added its measure.
+      const metadata = eventName.startsWith('us_product_') ? { metadata: { product: 'sleep' } }
+        : eventName === 'measurement_added' ? { metadata: { measure: 'waist' } } : {};
       expect(parseProductEvent({ eventName, visitorId: VISITOR, ...metadata })).toEqual({
         eventName,
         visitorId: VISITOR,
@@ -271,6 +272,21 @@ describe('the email-arrival counters', () => {
       expect(parseProductEvent({ eventName, visitorId: VISITOR })).toBeNull();
       expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata: {} })).toBeNull();
     }
+  });
+
+  it('US-07 AC11: takes measurement_added with its measure word alone', () => {
+    for (const measure of ['waist', 'blood_pressure']) {
+      expect(parseProductEvent({ eventName: 'measurement_added', visitorId: VISITOR, metadata: { measure } })).toEqual({
+        eventName: 'measurement_added', visitorId: VISITOR, metadata: { measure },
+      });
+    }
+    // No value, no metric, no other word; never without its measure.
+    for (const metadata of [{ measure: 'waist', count: 90 }, { measure: 'waist', metric: 'waist' }, { measure: 'weight' }, {}]) {
+      expect(parseProductEvent({ eventName: 'measurement_added', visitorId: VISITOR, metadata })).toBeNull();
+    }
+    expect(parseProductEvent({ eventName: 'measurement_added', visitorId: VISITOR })).toBeNull();
+    // No other event may carry a measure.
+    expect(parseProductEvent({ eventName: 'results_viewed', visitorId: VISITOR, metadata: { measure: 'waist' } })).toBeNull();
   });
 
   it('US-61 AC8: no other event may carry a product', () => {
@@ -974,11 +990,15 @@ describe('the upload outcome counter (US-12 AC10)', () => {
     expect(parseProductEvent({ eventName: 'upload_outcome', visitorId: VISITOR, metadata })).toMatchObject({ metadata });
   });
 
+  // Brad 2026-11-02, on pregnancy, fertility and sex-hormone tests: "Name them."
+  it('US-12 AC20: takes a pregnancy or sex-hormone test by its catalogue key, like any other', () => {
+    const metadata = { picked: 1, valuesLimit: 2, valuesLimitUngraded: 2, limitUngradedTests: ['estradiol', 'hcg'] };
+    expect(parseProductEvent({ eventName: 'upload_outcome', visitorId: VISITOR, metadata })).toMatchObject({ metadata });
+  });
+
   it('US-12 AC20: refuses free text, an unknown key, a value, a unit, a comparator, a repeat or an unsorted list', () => {
     for (const limitUngradedTests of [
       ['HDL Cholesterol'], ['vitamin q'], ['hdl > 1.5'], [1.5], ['1.5'], ['mmol/L'], ['>'], ['2026-08-01'], ['ldl', 'ldl'], ['ldl', 'egfr'], [], 'ldl',
-      // Pregnancy, fertility and sex-hormone tests are never named (orchestrator, 2026-11-02).
-      ['hcg'], ['estradiol'], ['testosterone_total'], ['amh'],
     ]) {
       expect(
         parseProductEvent({ eventName: 'upload_outcome', visitorId: VISITOR, metadata: { picked: 1, limitUngradedTests } }),

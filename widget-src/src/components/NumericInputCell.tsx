@@ -7,7 +7,7 @@
 
 import { useId } from 'react';
 import type React from 'react';
-import { commaQuestion, LIMIT_NOT_GRADED, type Comparator, type MetricType } from '@roadmap/health-core';
+import { commaQuestion, LIMIT_NOT_GRADED, limitUngraded, savedStatus, type Comparator, type MetricType } from '@roadmap/health-core';
 import { describedBy } from '../lib/aria';
 import { useRangeWait } from '../lib/useRangeWait';
 import {
@@ -20,9 +20,7 @@ import {
   readNumericCell,
   NUMERIC_SYNTAX_GUIDANCE,
   comparatorSymbol,
-  limitUngraded,
   previewStatus,
-  savedStatus,
   validateTypedValue,
 } from '../lib/blood-test-cell';
 
@@ -94,7 +92,7 @@ export function NumericInputCell({
     ? null
     : valueSI !== undefined ? savedStatus(metric, valueSI, comparator, grading)
     : comparator ? null : previewStatus(metric, value, display, grading);
-  const ungraded = !!comparator && !!metric && valueSI !== undefined && limitUngraded(metric, valueSI, comparator);
+  const ungraded = !!metric && valueSI !== undefined && limitUngraded(metric, status, { grading: grading ?? null, plan: null }, { value: valueSI, comparator });
   const insertText = (input: HTMLInputElement, text: string) => {
     onChange(numericCellText(value.slice(0, input.selectionStart ?? value.length)
       + text + value.slice(input.selectionEnd ?? value.length)));

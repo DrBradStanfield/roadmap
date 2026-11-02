@@ -104,7 +104,14 @@ final class ReminderScheduler {
         content.body = "A check-up is due. Open the app to see which."
         content.sound = .default
         let parts = notification.fireDay.split(separator: "-").compactMap { Int($0) }
-        let day = DateComponents(year: parts.first, month: parts.dropFirst().first, day: parts.dropFirst(2).first, hour: hour)
+        // The engine's day is Gregorian. Without a calendar iOS reads it in the phone's,
+        // so a Buddhist phone never fired and a Japanese one fired 2000 years late (as DayText).
+        // A calendar keeps the zone it was made in after the phone moves; following the
+        // phone's zone keeps 9:00 on the phone's clock.
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = .autoupdatingCurrent
+        let day = DateComponents(calendar: gregorian, year: parts.first, month: parts.dropFirst().first,
+                                 day: parts.dropFirst(2).first, hour: hour)
         let trigger = UNCalendarNotificationTrigger(dateMatching: day, repeats: false)
         return UNNotificationRequest(identifier: notification.id, content: content, trigger: trigger)
     }

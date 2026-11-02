@@ -31,7 +31,7 @@ import type { ApiLabValue, ApiMedicationHistory } from '../lib/api-types';
 import { loadUnitPreference } from '../lib/storage';
 import { groupLabHistory } from '../lib/lab-rows';
 import { chartTimestamp, formatShortDate } from '../lib/constants';
-import { savedLabText } from '../lib/blood-test-cell';
+import { savedLabText } from '@roadmap/health-core';
 
 // Register only what we need
 Chart.register(LineController, LineElement, PointElement, LinearScale, TimeScale, Tooltip, Filler, annotationPlugin);

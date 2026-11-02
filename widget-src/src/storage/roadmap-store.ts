@@ -168,7 +168,8 @@ export interface BirthRefusal { birthYear: number; birthMonth: number | undefine
 /** A profile save: refused by the erase, or saved with any birth month it refused. */
 /** A profile value outside its range, by field, with why (US-02 AC5): never written. */
 export type ProfileRangeRefusal = Partial<Record<keyof HealthInputs, string>>;
-export type ProfileSave = { ok: false } | { ok: true; birthRefused: BirthRefusal | null; refused?: ProfileRangeRefusal };
+/** `added`: the rows the save inserted as new, never a correction or a refused number (US-07 AC11's usage signal). */
+export type ProfileSave = { ok: false } | { ok: true; birthRefused: BirthRefusal | null; added: ApiMeasurement[]; refused?: ProfileRangeRefusal };
 export interface BulkSaveResult {
   saved: ApiMeasurement[];
   skippedDuplicates: number;
@@ -355,10 +356,12 @@ export class RoadmapStore {
     const refused: ProfileRangeRefusal = {};
     const birthRefused = this.applyProfileChanges(current, previous, erase, refused);
     // diffInputsToMeasurements (health-core) owns the field→metric map + change detection.
+    const added: ApiMeasurement[] = [];
     for (const { metricType, value } of diffInputsToMeasurements(current, previous)) {
-      this.addMeasurement(metricType, value, undefined, erase);
+      const result = this.addMeasurement(metricType, value, undefined, erase);
+      if (result.status === 'inserted') added.push(result.row);
     }
-    return Object.keys(refused).length > 0 ? { ok: true, birthRefused, refused } : { ok: true, birthRefused };
+    return { ok: true, birthRefused, added, ...(Object.keys(refused).length > 0 ? { refused } : {}) };
   }
 
   saveMedication(medicationKey: string, drugName: string, doseValue: number | null = null, doseUnit: string | null = null, erase?: string): boolean {

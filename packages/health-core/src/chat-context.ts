@@ -58,7 +58,7 @@
  *     the plan's gating field names it lacks. uploadedDocuments is always empty.
  * Every other key is dropped.
  */
-import type { HealthInputs } from './types';
+import type { HealthInputs, SuggestionInputs } from './types';
 import {
   STATIN_NAMES, EZETIMIBE_OPTIONS, BEMPEDOIC_ACID_OPTIONS, PCSK9I_OPTIONS,
   GLP1_NAMES, SGLT2I_NAMES, METFORMIN_OPTIONS,
@@ -214,8 +214,10 @@ export function buildChatContextJson(payload: unknown): string | null {
   const unitSystem: UnitSystem = raw.unitSystem === 'conventional' ? 'conventional' : 'si';
   const medicationRowsOnRecord = medicationRows(raw.medications);
   const screenings = screeningsToInputs(screeningRows(raw.screenings));
-  const results = parsed.success
-    ? calculateHealthResults(inputs as HealthInputs, unitSystem, medicationsToInputs(medicationRowsOnRecord), screenings)
+  // US-07 AC11: a left-out pair turns the blood pressure prompt into "check your reading".
+  const planInputs = parsed.success ? { ...inputs, ...(pressure ? { pressureOrder: true as const } : {}) } as SuggestionInputs : null;
+  const results = planInputs
+    ? calculateHealthResults(planInputs, unitSystem, medicationsToInputs(medicationRowsOnRecord), screenings)
     : null;
   // An unlisted drug name must never reach the prompt, so it reads UNLISTED
   // here, and a dose shows only within (0, MAX_DOSE]. The plan above used the
@@ -230,8 +232,8 @@ export function buildChatContextJson(payload: unknown): string | null {
   }
   // US-15 AC31: each card's description, from the plan over the medications
   // above, so no unlisted name or out-of-range dose reaches the prompt.
-  const descriptions = new Map(results
-    ? calculateHealthResults(inputs as HealthInputs, unitSystem, medications, screenings).suggestions.map(s => [s.id, s.description])
+  const descriptions = new Map(planInputs
+    ? calculateHealthResults(planInputs, unitSystem, medications, screenings).suggestions.map(s => [s.id, s.description])
     : []);
   // As plan.ts: a known minor's raw numbers stay; the adult readings go (US-07 AC6).
   const adult = results?.knownMinor ? undefined : results;

@@ -182,15 +182,18 @@ export const RouterOutput = z.object({
  * output degrades gracefully instead of parse() throwing and dropping ALL
  * handles: coerce spaces/caps, drop non-strings/empties, and soft-truncate to
  * the schema's max of 3 — a 4th relevant handle must not void the first three
- * (W33: all 3 production router_errors were exactly that).
+ * (W33: all 3 production router_errors were exactly that). Given the
+ * allow-list `valid`, a handle is repaired (repairHandle) and kept only when
+ * known and not a repeat, before the cut, so a made-up, repeated or overlong
+ * entry cannot take a known handle's place (US-15 AC28a).
  */
-export function sanitizeRawHandles(handles: unknown): unknown {
+export function sanitizeRawHandles(handles: unknown, valid?: ReadonlySet<string>): unknown {
   if (!Array.isArray(handles)) return handles;
-  return handles
+  const kept = handles
     .filter((h): h is string => typeof h === 'string')
-    .map(h => h.trim().toLowerCase().replace(/[^a-z0-9-]/g, ''))
-    .filter(h => h.length > 0)
-    .slice(0, 3);
+    .map(h => repairHandle(h.trim().toLowerCase().replace(/[^a-z0-9-]/g, '')))
+    .filter(h => h.length > 0 && (!valid || valid.has(h)));
+  return [...new Set(kept)].slice(0, 3);
 }
 
 // ---------------------------------------------------------------------------
@@ -256,12 +259,10 @@ export async function routeQuery(
     usage = result.usage;
 
     const rawParsed = parseRouterReply(rawJson) as { handles?: unknown };
-    rawParsed.handles = sanitizeRawHandles(rawParsed.handles);
-    const parsed = RouterOutput.parse(rawParsed);
-
     // Allowlist: drop any handle the router hallucinated — but repair the ONE
     // systematic malformation first (see repairHandle).
-    const validHandles = parsed.handles.map(repairHandle).filter(h => VALID_HANDLES.has(h));
+    rawParsed.handles = sanitizeRawHandles(rawParsed.handles, VALID_HANDLES);
+    const validHandles = RouterOutput.parse(rawParsed).handles;
 
     const latencyMs = Date.now() - t0;
     const cacheHit = result.usage.cacheReadTokens > 0;

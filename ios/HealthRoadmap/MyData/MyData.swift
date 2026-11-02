@@ -32,6 +32,11 @@ struct MyData: Decodable {
         var text: String { "\(feet) ft \(inches) in" }
     }
 
+    /// A value's grade, as the engine words it (health-core's GradeStatus).
+    enum Grade: String, Decodable, Sendable {
+        case ok, warn, bad
+    }
+
     /// "female" or "male" as the screens write it.
     static func sexLabel(_ sex: String) -> String { sex == "female" ? "Female" : "Male" }
 
@@ -62,6 +67,18 @@ struct MyData: Decodable {
         /// The value before the latest, in the same units, shown in brackets (US-62 AC8); nil
         /// with one reading, or from an older engine.
         var previous: String? = nil
+        /// The value's grade, as the web's row colours it (health-core's valueStatus, US-62 AC8):
+        /// "warn" amber, "bad" red, "ok" plain; nil when ungraded, or from an older engine.
+        var status: String? = nil
+        /// `status` as a grade; nil for an unknown word from a newer engine, so it never blanks My data.
+        var grade: Grade? { status.flatMap(Grade.init(rawValue:)) }
+        /// The grade as VoiceOver says it after an off-target value ("above optimal", health-core's
+        /// gradeWords); nil on target, ungraded, or from an older engine.
+        var gradeWords: String? = nil
+        /// "Printed as a limit, so the plan cannot grade it against its cutoff.": a latest value printed
+        /// as a limit the rule leaves ungraded (US-12 AC21), said where the grade would be; nil otherwise,
+        /// or from an older engine.
+        var note: String? = nil
 
         var id: String { metric }
     }
@@ -81,6 +98,9 @@ struct MyData: Decodable {
     let bloodTests: [Row]
     // US-25 AC8: health-core's form questions (FormModels.swift).
     let psa: Row
+    /// The lab tests beyond the core ones, one row per series, as the web's Blood tests rows list
+    /// them (US-62 AC8): `metric` is the series key; nil from an older engine.
+    var labTests: [Row]? = nil
     let medications: [FormSection]
     let screenings: [FormSection]
     /// Why there are no screening questions; nil when there are.

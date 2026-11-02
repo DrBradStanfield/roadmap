@@ -7,23 +7,27 @@ import { useId, useMemo } from 'react';
 import {
   type ApiMeasurement,
   type CellUnit,
+  type Comparator,
+  type GradeStatus,
   type Grading,
   type MetricType,
-  type RowSubject,
   type RowTargetPlan,
   BLOOD_TEST_METRICS,
   METRIC_LABELS,
   METRIC_TO_FIELD,
-  bpTargetFor,
   cellLabel,
+  gradeWords,
+  labSeriesRows,
+  limitText,
+  limitUngraded,
+  pressureStatus,
+  recentTrend,
   rowTarget,
+  valueStatus,
   LIMIT_NOT_GRADED,
-  type Comparator,
 } from '@roadmap/health-core';
-import { limitUngraded, savedCellText, savedLabText, savedStatus, trendGeometry, type Status } from '../lib/blood-test-cell';
-import { monthYear, pressureReadings, readingsOf, recentTrend, type DayReading } from '../lib/my-data-rows';
-import { groupLabValues } from '../lib/lab-rows';
-import { bpStatus, simpleStatus } from './StartingInfoVitals';
+import { savedCellText, trendGeometry } from '../lib/blood-test-cell';
+import { monthYear, pressureReadings, readingsOf, type DayReading } from '../lib/my-data-rows';
 import { SectionIcon, type SectionKey } from './icons';
 import type { ApiLabValue } from '../lib/api-types';
 
@@ -51,40 +55,10 @@ export interface RowContext {
   unitOf: (metric: MetricType) => CellUnit;
 }
 
-/** A value's grade, as the grids colour it: the blood tests by their lines,
- *  a limit only when its bound decides (US-12 AC20), weight and waist by the
- *  plan; none for a known minor's adult lines. */
-export function valueStatus(metric: MetricType, si: number, { grading, plan }: RowContext, comparator?: Comparator): Status {
-  if (metric === 'weight') return simpleStatus('weight', si, grading ? plan?.idealBodyWeight : undefined);
-  if (metric === 'waist') return simpleStatus('waist', si, undefined, plan?.heightCm);
-  return savedStatus(metric, si, comparator, grading);
-}
-
-/** A pressure's grade against the plan's systolic target; none without a plan or for a known minor. */
-export function pressureStatus(r: DayReading, { grading, plan }: RowContext): Status {
-  return bpStatus(r.value, r.dia?.value, plan && grading ? bpTargetFor(plan.age) : undefined);
-}
-
-/** The line each metric's grade is read against, in the words its target prints. */
-const LINE_WORD: Record<string, string> = {
-  ldl: 'optimal', apob: 'optimal', total_cholesterol: 'optimal',
-  hba1c: 'normal', triglycerides: 'normal', lpa: 'normal', creatinine: 'normal',
-  waist: 'target', blood_pressure: 'target',
-};
-
-/** A grade as a screen reader hears it beside the value ("3.4, above optimal,
- *  previous 2.9"): the colour says it on screen. Said only off target, so no
- *  word can contradict the printed target. Weight's amber covers both sides
- *  of its target, and HDL is better higher. */
-export function gradeWords(status: Status, metric: string): string | null {
-  if (!status || status === 'ok') return null;
-  if (metric === 'hdl') return status === 'bad' ? 'low' : 'below optimal';
-  if (metric === 'weight') return status === 'bad' ? 'above target' : 'outside target';
-  return status === 'bad' ? 'high' : `above ${LINE_WORD[metric] ?? 'target'}`;
-}
-
 /** A pressure as the grid prints it: "128/82". */
-export const pressureText = (r: DayReading) => `${Math.round(r.value)}/${Math.round(r.dia!.value)}`;
+export const pressureText = (r: DayReading) => `${halfText(r.value, r.comparator)}/${halfText(r.dia!.value, r.dia!.comparator)}`;
+/** One half: a whole number, or a limit with its symbol, rounded away from its band ("< 125"). */
+const halfText = (v: number, comparator?: Comparator) => (comparator ? limitText(v, 0, comparator) : String(Math.round(v)));
 
 interface RowModel {
   subject: ValueSubject;
@@ -100,7 +74,7 @@ interface RowModel {
   /** Said beside a latest value the plan cannot grade (`LIMIT_NOT_GRADED`). */
   note?: string;
   tint: string;
-  status: Status;
+  status: GradeStatus;
   /** The metric the grade is read for (`gradeWords`). */
   graded: string;
 }
@@ -115,6 +89,7 @@ function coreRow(metric: MetricType, history: ApiMeasurement[], ctx: RowContext)
   const unit = ctx.unitOf(metric);
   const readings = readingsOf(history, metric);
   const [latest, previous] = readings;
+  const status = latest ? valueStatus(metric, latest.value, ctx, latest.comparator) : null;
   return {
     subject: { kind: 'core', metric },
     label: METRIC_LABELS[metric] ?? metric,
@@ -124,9 +99,9 @@ function coreRow(metric: MetricType, history: ApiMeasurement[], ctx: RowContext)
     previous: previous ? savedCellText(metric, previous.value, unit, previous.comparator) : null,
     unit: cellLabel(metric, unit),
     ...trendOf(readings),
-    ...(latest && limitUngraded(metric, latest.value, latest.comparator) ? { note: LIMIT_NOT_GRADED } : {}),
+    ...(latest && limitUngraded(metric, status, ctx, latest) ? { note: LIMIT_NOT_GRADED } : {}),
     tint: TINT[metric] ?? LAB_TINT,
-    status: latest ? valueStatus(metric, latest.value, ctx, latest.comparator) : null,
+    status,
     graded: metric,
   };
 }
@@ -134,6 +109,7 @@ function coreRow(metric: MetricType, history: ApiMeasurement[], ctx: RowContext)
 function pressureRow(history: ApiMeasurement[], ctx: RowContext): RowModel {
   const readings = pressureReadings(history);
   const [latest, previous] = readings;
+  const status = latest ? pressureStatus(latest, ctx) : null;
   return {
     subject: { kind: 'bp' },
     label: 'Blood Pressure',
@@ -143,36 +119,19 @@ function pressureRow(history: ApiMeasurement[], ctx: RowContext): RowModel {
     previous: previous ? pressureText(previous) : null,
     unit: 'mmHg',
     trend: recentTrend(readings).map(r => r.value),
+    ...(latest && limitUngraded('blood_pressure', status, ctx, latest) ? { note: LIMIT_NOT_GRADED } : {}),
     tint: TINT.blood_pressure,
-    status: latest ? pressureStatus(latest, ctx) : null,
+    status,
     graded: 'blood_pressure',
   };
 }
 
-/** The lab tests beyond the core ones, one row per series, as the grid groups them. */
+/** The lab tests beyond the core ones, one row per series, as the grid groups them (health-core's `labSeriesRows`). */
 function labRows(labValues: ApiLabValue[]): RowModel[] {
-  const byId = new Map(labValues.map(v => [v.id, v]));
-  return groupLabValues(labValues).flatMap(g => g.series).map((s): RowModel => {
-    const readings: DayReading[] = [...s.points].reverse().map(p => ({ day: p.recordedAt.slice(0, 10), id: p.id, value: p.value, comparator: p.comparator }));
-    const [latest, previous] = readings;
-    const printed = byId.get(latest.id);
-    // A series in more than one unit draws no trend: one line would be a false one (US-21 AC3a).
-    const sameUnit = !s.mixedUnits;
-    const target: RowSubject = { referenceLow: printed?.referenceLow, referenceHigh: printed?.referenceHigh };
-    return {
-      subject: { kind: 'lab', seriesKey: s.seriesKey },
-      label: s.label,
-      target: rowTarget(target, 'si', null, null)?.bare ?? null,
-      day: latest.day,
-      latest: savedLabText(latest.value, latest.comparator),
-      previous: previous && sameUnit ? savedLabText(previous.value, previous.comparator) : null,
-      unit: s.unit,
-      ...(sameUnit ? trendOf(readings) : { trend: [] }),
-      tint: LAB_TINT,
-      status: null,
-      graded: '',
-    };
-  });
+  return labSeriesRows(labValues).map(({ seriesKey, label, target, latest, previous, unit, trend, trendLimits }): RowModel => ({
+    subject: { kind: 'lab', seriesKey }, label, target, day: latest.day, latest: latest.value, previous, unit,
+    trend, ...(trendLimits && { trendLimits }), tint: LAB_TINT, status: null, graded: '',
+  }));
 }
 
 /** A value's recent days as a small line, as the iPhone draws it (ValueRow.swift
