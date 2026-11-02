@@ -12,7 +12,7 @@ import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { UNIT_DEFS, type MetricType } from './units';
 import { cellRange } from './cell-unit';
-import { bpStatus, gradeWords, pressureStatus, simpleStatus, statusOf, valueStatus } from './row-grade';
+import { bpStatus, gradeWords, pressureStatus, statusOf, valueStatus } from './row-grade';
 
 const RECORDED = '1cd8b4fb8aed64a906fead43a14ec59ba44cb41b1fba5de70292b61e27c7b542';
 
@@ -22,6 +22,8 @@ describe('row-grade parity with the widget before the move', () => {
     let first = true;
     const out = (line: string) => { hash.update(first ? line : `\n${line}`); first = false; };
     const gradings = [null, {}, { sex: 'male' as const }, { sex: 'female' as const }];
+    // Weight and waist, once graded through simpleStatus, through valueStatus: the same text (US-12 AC21).
+    const weight70 = { grading: {}, plan: { idealBodyWeight: 70 } };
     const metrics = Object.keys(UNIT_DEFS) as MetricType[];
     for (const m of metrics) {
       const r = cellRange(m, 'si');
@@ -37,9 +39,9 @@ describe('row-grade parity with the widget before the move', () => {
         }
       }
     }
-    for (let w = 0; w <= 300; w += 0.5) for (const ibw of [undefined, 50, 70.3, 90]) out(`w ${w} ${ibw} ${simpleStatus('weight', w, ibw)}`);
-    for (let w = 0; w <= 250; w += 0.5) for (const h of [undefined, 150, 172.7, 200]) out(`x ${w} ${h} ${simpleStatus('waist', w, undefined, h)}`);
-    out(`n ${simpleStatus('weight', null, 70)} ${simpleStatus('waist', undefined, undefined, 170)} ${simpleStatus('weight', NaN, 70)}`);
+    for (let w = 0; w <= 300; w += 0.5) for (const ibw of [undefined, 50, 70.3, 90]) out(`w ${w} ${ibw} ${valueStatus('weight', w, { grading: {}, plan: { idealBodyWeight: ibw } })}`);
+    for (let w = 0; w <= 250; w += 0.5) for (const h of [undefined, 150, 172.7, 200]) out(`x ${w} ${h} ${valueStatus('waist', w, { grading: {}, plan: { heightCm: h } })}`);
+    out(`n ${valueStatus('weight', null as never, weight70)} ${valueStatus('waist', undefined as never, { grading: {}, plan: { heightCm: 170 } })} ${valueStatus('weight', NaN, weight70)}`);
     for (let s = 50; s <= 260; s++) for (let d = 30; d <= 160; d++) for (const t of [undefined, 120, 130]) out(`b ${s} ${d} ${t} ${bpStatus(s, d, t)}`);
     out(`bn ${bpStatus(null, 80, 120)} ${bpStatus(120, undefined, 120)} ${bpStatus(NaN, 80, 120)}`);
     for (const g of gradings) for (const plan of [null, { age: 50 }, { age: 70 }, {}]) for (const [s, d] of [[110, 70], [125, 82], [150, 95], [119, undefined]]) {

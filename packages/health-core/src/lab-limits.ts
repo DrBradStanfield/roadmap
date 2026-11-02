@@ -192,18 +192,39 @@ export function bandDecides(cutoffs: readonly number[], comparator: Comparator, 
   }
 }
 
+/** How far inside a strict bound a limit's grade is read: never across a line. */
+const insideStep = (bound: number) => Math.max(1e-6, Math.abs(bound) * 1e-6);
+
 /**
  * The one rule for grading a value printed as a limit against a grade's own
  * lines (Brad 2026-11-02, "grade only when certain", US-12 AC21): when no
  * line lies inside the band the limit leaves open (`bandDecides`), every
  * value the limit allows grades the same, so the grade may read the number a
  * hair inside the band, returned here; null when a line lies inside it, so
- * the value gets no grade. Never shown, stored or sent.
+ * the value gets no grade. An exact value (no comparator) is itself. Never
+ * shown, stored or sent.
  */
-export function certainValue(lines: readonly number[], comparator: Comparator, bound: number): number | null {
+export function certainValue(lines: readonly number[], comparator: Comparator | undefined, bound: number): number | null {
+  if (!comparator) return bound;
   if (!Number.isFinite(bound) || !bandDecides(lines, comparator, bound)) return null;
-  const step = Math.max(1e-6, Math.abs(bound) * 1e-6);
-  return comparator === '<' || comparator === '<=' ? bound - step : bound + step;
+  return comparator === '<' || comparator === '<=' ? bound - insideStep(bound) : bound + insideStep(bound);
+}
+
+/**
+ * The two ends of what a value printed as a limit allows, [lowest, highest]:
+ * a hair inside a strict bound, the far end open. An exact value is both.
+ * For a grade that only worsens as a value rises (a blood pressure's), the
+ * grade at both ends is the grade of everything between: when they agree,
+ * the grade is certain (US-12 AC21).
+ */
+export function limitEnds(comparator: Comparator | undefined, bound: number): [number, number] {
+  switch (comparator) {
+    case '<': return [-Infinity, bound - insideStep(bound)];
+    case '<=': return [-Infinity, bound];
+    case '>': return [bound + insideStep(bound), Infinity];
+    case '>=': return [bound, Infinity];
+    default: return [bound, bound];
+  }
 }
 
 /**

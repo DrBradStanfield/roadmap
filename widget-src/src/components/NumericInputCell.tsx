@@ -92,7 +92,7 @@ export function NumericInputCell({
     ? null
     : valueSI !== undefined ? savedStatus(metric, valueSI, comparator, grading)
     : comparator ? null : previewStatus(metric, value, display, grading);
-  const ungraded = !!comparator && !!metric && valueSI !== undefined && limitUngraded(metric, valueSI, comparator);
+  const ungraded = !!metric && valueSI !== undefined && limitUngraded(metric, status, { grading: grading ?? null, plan: null }, { value: valueSI, comparator });
   const insertText = (input: HTMLInputElement, text: string) => {
     onChange(numericCellText(value.slice(0, input.selectionStart ?? value.length)
       + text + value.slice(input.selectionEnd ?? value.length)));

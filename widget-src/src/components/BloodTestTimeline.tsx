@@ -751,6 +751,9 @@ interface ValueCellProps {
   unit?: string;
   rowId?: string;
   status: GradeStatus;
+  /** The value is a limit the rule leaves ungraded, from a caller that knows the plan (weight, waist,
+   *  US-12 AC21); omitted, a blood test's (`limitUngraded` with the grading alone). */
+  ungraded?: boolean;
   pinned: boolean;
   onActivate?: () => void;
   onDeactivate?: () => void;
@@ -799,7 +802,7 @@ export const SAVE_ERRORS: Record<Exclude<CorrectStatus, 'ok'>, string> = {
 // (StartingInfoVitals) and the additional lab rows. Click a value to correct
 // it in place: a FHIR correction, never an edit of the saved row.
 export function ValueCell({
-  metric, display, grading, value, comparator, unit, rowId, status, pinned, onActivate, onDeactivate, onCorrect, say,
+  metric, display, grading, value, comparator, unit, rowId, status, ungraded: callerUngraded, pinned, onActivate, onDeactivate, onCorrect, say,
 }: ValueCellProps) {
   // `typed === null` ⇒ read-only; otherwise the in-place edit form is open.
   // One field replaces the old (editing, typed) pair — impossible state gone.
@@ -891,7 +894,7 @@ export function ValueCell({
   // What the cell shows: a limit with its symbol; a core limit its bound
   // decides nothing about is not graded, and says so (US-12 AC20).
   const shownValue = core ? savedCellText(core.metric, value, core.display, comparator) : savedLabText(value, comparator);
-  const ungraded = !!core && limitUngraded(core.metric, value, comparator);
+  const ungraded = callerUngraded ?? (!!core && limitUngraded(core.metric, status, { grading: grading ?? null, plan: null }, { value, comparator }));
   const canCorrect = !!(rowId && onCorrect);
 
   const beginEdit = () => {

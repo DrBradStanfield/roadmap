@@ -7,6 +7,7 @@ import { useId, useMemo } from 'react';
 import {
   type ApiMeasurement,
   type CellUnit,
+  type Comparator,
   type GradeStatus,
   type Grading,
   type MetricType,
@@ -17,9 +18,9 @@ import {
   cellLabel,
   gradeWords,
   labSeriesRows,
+  limitText,
   limitUngraded,
   pressureStatus,
-  pressureUngraded,
   recentTrend,
   rowTarget,
   valueStatus,
@@ -55,7 +56,9 @@ export interface RowContext {
 }
 
 /** A pressure as the grid prints it: "128/82". */
-export const pressureText = (r: DayReading) => `${Math.round(r.value)}/${Math.round(r.dia!.value)}`;
+export const pressureText = (r: DayReading) => `${halfText(r.value, r.comparator)}/${halfText(r.dia!.value, r.dia!.comparator)}`;
+/** One half: a whole number, or a limit with its symbol, rounded away from its band ("< 125"). */
+const halfText = (v: number, comparator?: Comparator) => (comparator ? limitText(v, 0, comparator) : String(Math.round(v)));
 
 interface RowModel {
   subject: ValueSubject;
@@ -86,6 +89,7 @@ function coreRow(metric: MetricType, history: ApiMeasurement[], ctx: RowContext)
   const unit = ctx.unitOf(metric);
   const readings = readingsOf(history, metric);
   const [latest, previous] = readings;
+  const status = latest ? valueStatus(metric, latest.value, ctx, latest.comparator) : null;
   return {
     subject: { kind: 'core', metric },
     label: METRIC_LABELS[metric] ?? metric,
@@ -95,9 +99,9 @@ function coreRow(metric: MetricType, history: ApiMeasurement[], ctx: RowContext)
     previous: previous ? savedCellText(metric, previous.value, unit, previous.comparator) : null,
     unit: cellLabel(metric, unit),
     ...trendOf(readings),
-    ...(latest && limitUngraded(metric, latest.value, latest.comparator, ctx) ? { note: LIMIT_NOT_GRADED } : {}),
+    ...(latest && limitUngraded(metric, status, ctx, latest) ? { note: LIMIT_NOT_GRADED } : {}),
     tint: TINT[metric] ?? LAB_TINT,
-    status: latest ? valueStatus(metric, latest.value, ctx, latest.comparator) : null,
+    status,
     graded: metric,
   };
 }
@@ -105,6 +109,7 @@ function coreRow(metric: MetricType, history: ApiMeasurement[], ctx: RowContext)
 function pressureRow(history: ApiMeasurement[], ctx: RowContext): RowModel {
   const readings = pressureReadings(history);
   const [latest, previous] = readings;
+  const status = latest ? pressureStatus(latest, ctx) : null;
   return {
     subject: { kind: 'bp' },
     label: 'Blood Pressure',
@@ -114,9 +119,9 @@ function pressureRow(history: ApiMeasurement[], ctx: RowContext): RowModel {
     previous: previous ? pressureText(previous) : null,
     unit: 'mmHg',
     trend: recentTrend(readings).map(r => r.value),
-    ...(latest && pressureUngraded(latest, ctx) ? { note: LIMIT_NOT_GRADED } : {}),
+    ...(latest && limitUngraded('blood_pressure', status, ctx, latest) ? { note: LIMIT_NOT_GRADED } : {}),
     tint: TINT.blood_pressure,
-    status: latest ? pressureStatus(latest, ctx) : null,
+    status,
     graded: 'blood_pressure',
   };
 }
