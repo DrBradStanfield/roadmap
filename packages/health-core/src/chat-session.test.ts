@@ -273,6 +273,34 @@ describe('US-11 AC2d: a chat delete is reported only once the stored file holds 
     expect((await ChatSession.open(cloudHost(store))).listConversations().map((conv) => conv.id)).toEqual(['later']);
   });
 
+  // Codex review (2026-11-02): each retry merged the original copy again, so
+  // a tombstone the first read brought in from another device was dropped
+  // once a stale writer replaced the file, and the retry reported done.
+  it('a retried delete keeps the tombstone another device wrote, which the first read brought in', async () => {
+    const store = new OverwrittenOnce();
+    const a = await ChatSession.open(cloudHost(store));
+    await exchange(a, 'c1');
+    await exchange(a, 'c2');
+    const b = (await store.read('chat-history.json')).body as { meta: { lamport: number } }; // B: c1, c2 live
+    await (await ChatSession.open(cloudHost(store))).deleteConversation('c2'); // D deletes c2; A never saw it
+    store.stale = { ...b, meta: { ...b.meta, lamport: b.meta.lamport + 10 } };
+    await a.deleteConversation('c1');
+    expect((await ChatSession.open(cloudHost(store))).listConversations()).toEqual([]);
+  });
+
+  it('a retried erase keeps the tombstone of a conversation another device made and deleted', async () => {
+    const store = new OverwrittenOnce();
+    const a = await ChatSession.open(cloudHost(store));
+    await exchange(a, 'c1');
+    const d = await ChatSession.open(cloudHost(store));
+    await exchange(d, 'y'); // A's copy never holds y
+    const b = (await store.read('chat-history.json')).body as { meta: { lamport: number } }; // B: c1, y live
+    await d.deleteConversation('y');
+    store.stale = { ...b, meta: { ...b.meta, lamport: b.meta.lamport + 10 } };
+    await a.eraseAll(); // resolving is reporting the erase done
+    expect((await ChatSession.open(cloudHost(store))).listConversations()).toEqual([]);
+  });
+
   it('eraseAll fails, never reports success, when every write is replaced', async () => {
     const { store, s } = await twoLive();
     store.always = true;
