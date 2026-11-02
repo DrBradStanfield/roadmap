@@ -2,7 +2,7 @@
 title: "Connect ChatGPT to your health record"
 description: "Add the Health by Dr Brad connector to ChatGPT on the web, and it can read your blood tests, work out your plan and file new results."
 slug: "connect-chatgpt"
-updated: "2026-10-12"
+updated: "2026-11-02"
 stories: ["US-32"]
 ---
 
@@ -42,9 +42,7 @@ When we add a tool, ChatGPT does not see it straight away: it keeps the connecto
 
 ## Why developer mode
 
-OpenAI keeps a connector nobody has reviewed behind developer mode. Ours has not been through their review, so that is where it lives today. Developer mode is a setting on your own account. It does not change how ChatGPT answers you, and it does not give this connector anything beyond what you approve in Dropbox.
-
-We intend to publish the app so this step goes away. Publication means OpenAI reviewing it against their rules, and we will say here when it happens rather than before.
+OpenAI keeps a connector it has not listed behind developer mode. Ours is not listed: OpenAI does not list health apps in ChatGPT at present, so developer mode is where it lives. Developer mode is a setting on your own account. It does not change how ChatGPT answers you, and it does not give this connector anything beyond what you approve in Dropbox.
 
 Claude needs no equivalent step. If you use both, [connecting Claude](/blogs/guides/ai-health-record#connect-claude-on-the-web) is shorter.
 
