@@ -23,7 +23,6 @@ export const FOLD_CREATININE = false;
 
 /** The core blood test a printed name is, or null. Never a vital: weight, waist, BP and height are not blood tests. */
 export function bloodTestKeyOf(name: string): MetricType | null {
-  // US-66 AC4: loose pass after PR 543
   const metric = resolveCoreMetricName(name);
   return isBloodTestKey(metric) ? metric : null;
 }

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { bloodTableReport, bloodTestRows, FOLD_CREATININE, foldLegacyCoreRows, isCoreRow, labRowSlot, moveBloodMeasurements, toOldShape } from './blood-tests';
+import { bloodTableReport, bloodTestKeyOf, bloodTestRows, FOLD_CREATININE, foldLegacyCoreRows, isCoreRow, labRowSlot, moveBloodMeasurements, toOldShape } from './blood-tests';
 import { goldenOf, goldenRecords } from './blood-table.fixtures';
 import { readableView } from './readable-rows';
 import { derivePlanInputs } from './plan';
@@ -8,6 +8,7 @@ import { computeReminderSchedule } from './reminder-schedule';
 import { BLOOD_TEST_METRICS } from './mappings';
 import { mergeFiles, rootIdOf } from './merge';
 import { migrateFile } from './migrate';
+import { appendLabValue } from './record-edits';
 import { CORE_BLOOD_UNITS, createEmptyFile, createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { reportedToCanonical } from './units';
 
@@ -293,5 +294,28 @@ describe('US-66 AC13: the usage counts', () => {
   it('caps each count at 1000', () => {
     const many = Array.from({ length: 1001 }, (_, i) => m(`r${i}`, 'ldl', 3, `2020-01-01`));
     expect(bloodTableReport(record(many), migrate(record(many))).moved).toBe(1000);
+  });
+});
+
+describe('US-66 AC4: one resolver, punctuation forgiven after the exact names', () => {
+  it.each([
+    ['LDL - Cholesterol', 'ldl'],
+    ['Cholesterol, HDL', 'hdl'],
+    ['HbA1c:', 'hba1c'],
+    ['Lp(a)', 'lpa'],
+  ])('"%s" is the core test %s', (name, key) => {
+    expect(bloodTestKeyOf(name)).toBe(key);
+  });
+
+  it.each(['Non-HDL Cholesterol', 'Chol/HDL ratio', 'Cholesterol/HDL', 'TC/HDL', 'LDL/HDL', 'HDL/LDL ratio', 'Weight', 'Systolic BP'])(
+    '"%s" is no core blood test', (name) => {
+      expect(bloodTestKeyOf(name)).toBeNull();
+    },
+  );
+
+  it('files a punctuated core name as its core row', () => {
+    const file = migrate(record());
+    const out = appendLabValue(file, { metricName: 'LDL - Cholesterol', value: 116, unit: 'mg/dL', recordedAt: '2026-05-01', now: OPTS.now });
+    expect(out.ok && out.row).toMatchObject({ metricName: 'ldl', unit: 'mmol/L', core: true });
   });
 });

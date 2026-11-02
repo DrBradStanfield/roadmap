@@ -261,7 +261,8 @@ At write time, `resolveBloodTest(name)` returns a core key, a catalogue entry, o
    core metric and a catalogue entry (checked 2026-11-02, exact and loose: none does).
 
 Must-not-resolve fixtures: "Non-HDL Cholesterol", "Chol/HDL ratio", "Cholesterol/HDL", "TC/HDL",
-"LDL/HDL", "HDL/LDL ratio", "Cr". A vital's name given as a lab test keeps today's refusal (weight,
+"LDL/HDL", "HDL/LDL ratio". ("Cr" was already an exact creatinine alias; the upload keeps it apart,
+US-12 AC15.) A vital's name given as a lab test keeps today's refusal (weight,
 BP) or profile pointer (height). This lands after PR 543.
 
 The resolver names a test for a writer; it does not move stored rows (that is D1's job). Which
