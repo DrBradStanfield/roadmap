@@ -565,6 +565,31 @@ describe('US-16 AC3: a chat medication answer is saved as its question’s own v
     expect(saved(key, name)).toBe(name);
   });
 
+  // Final round (Codex High): the shape is the class's stems, not any -tide or -statin word.
+  it.each([
+    ['glp1', 'octreotide'], ['glp1', 'peptide'], ['glp1', 'teriparatide'], ['glp1', 'linaclotide'], ['glp1', 'pramlintide'],
+    ['glp1', 'cagrilintide'], ['statin', 'nystatin'], ['statin', 'nonstatin'],
+  ])('US-16 AC3: %s answered "%s", no drug of the class, is asked about', (medicationKey, drugName) => {
+    expect(parseProposedEdit(MED, { medicationKey, drugName })).toBeNull();
+    expect(medicationAnswerMisfit(MED, { medicationKey, drugName })).toContain('Ask the user which of these applies');
+  });
+
+  it.each([
+    ['glp1', 'liraglutide', 'liraglutide'], ['glp1', 'exenatide', 'exenatide'], ['glp1', 'lixisenatide', 'lixisenatide'],
+    ['glp1', 'retatrutide', 'retatrutide'], ['glp1', 'survodutide', 'survodutide'], ['glp1', 'mazdutide', 'mazdutide'],
+    ['glp1', 'Tirzepatide', 'tirzepatide'], ['glp1', 'dulaglutide', 'dulaglutide'],
+    ['statin', 'pitavastatin', 'pitavastatin'], ['statin', 'Rosuvastatin', 'rosuvastatin'], ['statin', 'atorvastatin', 'atorvastatin'],
+    ['statin', 'simvastatin', 'simvastatin'], ['statin', 'pravastatin', 'pravastatin'], ['statin', 'cerivastatin', 'cerivastatin'],
+  ])('US-16 AC3: %s answered "%s" is still saved as %s', (key, name, value) => {
+    expect(saved(key, name)).toBe(value);
+  });
+
+  it('US-16 AC3: the description offers a drug question another drug\u2019s generic name, never a brand as stated', () => {
+    const text = PROPOSE_MEDICATION_EDIT_TOOL.input_schema.properties.drugName.description;
+    expect(text).toContain("or another drug's generic name");
+    expect(text).not.toContain('as stated;');
+  });
+
   // The coordinator, 2026-11-02 (Brad's rule: map to the user's data): a listed statin's brand saves as the
   // listed generic, so the plan reads the statin as recorded.
   it.each([

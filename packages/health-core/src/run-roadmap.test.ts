@@ -925,10 +925,10 @@ describe('US-67 AC3: the app\'s words for the form tools', () => {
 
   // The pin moved once on purpose (US-67 AC2, Brad 2026-11-02): propose_field_edit asks about
   // a value that looks implausible for its unit. It moved again with US-16 AC3 (Brad 2026-11-02):
-  // propose_medication_edit lists each key's own answers. Any other move is a cache-prefix change to explain.
+  // propose_medication_edit lists each key's own answers (a drug key: "or another drug's generic name"). Any other move is a cache-prefix change to explain.
   it('US-67 AC3: the web\'s tools are byte-identical to the pinned ones (prompt cache prefix)', () => {
     const sha = (x: unknown) => createHash('sha256').update(JSON.stringify(x)).digest('hex');
-    expect(sha(CHAT_TOOLS)).toBe('a5a4d148aa8997b468fab940f521563f133628f5a1d36f0982c866eecfea9c85');
+    expect(sha(CHAT_TOOLS)).toBe('51f6fb34106766b3ba7aece463be75b542868692f2ce82daf14eb095a6145503');
     expect(chatToolsFor(said)).toBe(CHAT_TOOLS);
     expect(chatToolsFor(said, true, false)).toBe(CHAT_TOOLS);
   });

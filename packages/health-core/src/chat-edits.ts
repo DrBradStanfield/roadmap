@@ -64,10 +64,13 @@ export const MEDICATION_ANSWERS: Record<MedicationKey, ReadonlyArray<{ value: st
   metformin: METFORMIN_OPTIONS,
 };
 /** The drug names a drug question takes that the form does not list (Brad 2026-11-02): drug-shaped by the class's
- *  suffix, or a known brand. Bare "semaglutide" is asked about: injection or tablet. */
+ *  stems (-vastatin; -glutide, -enatide and the named GLP-1 agonists; -gliflozin), or a known brand. Bare "semaglutide" is asked about: injection or tablet. */
 const UNLISTED_DRUG = new Map<string, { shape: RegExp; brands: ReadonlySet<string> }>([
-  ['statin', { shape: /^[a-z]+statin$/, brands: new Set() }],
-  ['glp1', { shape: /^(?!semaglutide$)([a-z]+tide|orforglipron)$/, brands: new Set(['victoza', 'saxenda', 'byetta', 'bydureon']) }],
+  ['statin', { shape: /^[a-z]+vastatin$/, brands: new Set() }],
+  ['glp1', {
+    shape: /^(?!semaglutide$)([a-z]+(glutide|enatide)|tirzepatide|retatrutide|survodutide|mazdutide|orforglipron)$/,
+    brands: new Set(['victoza', 'saxenda', 'byetta', 'bydureon']),
+  }],
   ['sglt2i', { shape: /^[a-z]+gliflozin$/, brands: new Set(['steglatro']) }],
 ]);
 const YES = (names: string[]) => names.map((n): [string, string] => [n, 'yes']);
@@ -122,7 +125,7 @@ function savedAnswer(key: MedicationKey, drugName: string): { drugName: string; 
 /** "'not_yet' (Haven't tried yet), 'yes' (Yes), …": a question's answers for the model. */
 function answersText(key: MedicationKey): string {
   const listed = MEDICATION_ANSWERS[key].map((o) => `'${o.value}' (${o.label})`).join(', ');
-  return UNLISTED_DRUG.has(key) ? `${listed}, or another drug's name as stated` : listed;
+  return UNLISTED_DRUG.has(key) ? `${listed}, or another drug's generic name` : listed;
 }
 
 // ---------------------------------------------------------------------------
