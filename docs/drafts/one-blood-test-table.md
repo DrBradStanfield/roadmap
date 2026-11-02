@@ -308,8 +308,9 @@ shown. Showing them is a later decision.
 
 ## 9. Agents and the iPhone bridge
 
-**Hosted and stdio MCP (Brad, D3: update now).** `read_record` and `get_plan` return the new
-shape: core tests under `labValues` with `core: true`, `measurements` vitals only. No adapter for the
+**Hosted and stdio MCP (Brad, D3: update now).** `read_record` returns the new
+shape: core tests under `labValues` with `core: true`, `measurements` vitals only. `get_plan` (as built)
+gives a core value in `currentValues` and its inputs and lists only the other tests under `labValues`. No adapter for the
 old view. The tool text changes with it, so the hashes in `app/lib/mcp-freeze.test.ts` are re-taken
 in the build (subject to the Connectors Directory check below) and `TOOL_LAYER_VERSION` goes up (a tool's meaning changed):
 - `add_measurement` keeps its name and enum; a blood metric lands as a core lab row. Its text says so.
@@ -376,7 +377,7 @@ Creatinine stays a lab row under its printed name (US-12 AC11).
   an updated app reads it, however late.
 - **Written once, at first open.** If the move changed anything, the updated app saves the record
   straight away, through the normal read-merge-write save (`SyncManager`, the iPhone's cloud save,
-  the CLI's backed-up atomic write). Without this, the file would stay in the old shape until the
+  the CLI's backed-up atomic write, on its next edit: a read-only command or connector tool never saves). Without this, the file would stay in the old shape until the
   person next typed a value, and assistants and other devices would keep meeting both shapes. The
   write happens once: a moved record has nothing left to move. A local-only record (browser
   storage, or the phone with no cloud) is written to its own storage the same way.
