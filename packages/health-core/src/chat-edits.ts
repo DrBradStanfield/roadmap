@@ -66,11 +66,15 @@ export const MEDICATION_ANSWERS: Record<MedicationKey, ReadonlyArray<{ value: st
 /** The drug names a drug question takes that the form does not list (Brad 2026-11-02): drug-shaped by the class's
  *  suffix, or a known brand. Bare "semaglutide" is asked about: injection or tablet. */
 const UNLISTED_DRUG = new Map<string, { shape: RegExp; brands: ReadonlySet<string> }>([
-  ['statin', { shape: /^[a-z]+statin$/, brands: new Set(['lipitor', 'crestor', 'zocor', 'pravachol', 'livalo']) }],
+  ['statin', { shape: /^[a-z]+statin$/, brands: new Set() }],
   ['glp1', { shape: /^(?!semaglutide$)([a-z]+tide|orforglipron)$/, brands: new Set(['victoza', 'saxenda', 'byetta', 'bydureon']) }],
   ['sglt2i', { shape: /^[a-z]+gliflozin$/, brands: new Set(['steglatro']) }],
 ]);
 const YES = (names: string[]) => names.map((n): [string, string] => [n, 'yes']);
+/** A listed statin's brand is its listed generic (map to the user's data, 2026-11-02). */
+const STATIN_BRANDS: Array<[string, string]> = ([
+  ['lipitor', 'atorvastatin'], ['crestor', 'rosuvastatin'], ['zocor', 'simvastatin'], ['pravachol', 'pravastatin'], ['livalo', 'pitavastatin'],
+] as Array<[string, string]>).filter(([, generic]) => STATIN_NAMES.some((o) => o.value === generic));
 /** An answer as a token: trimmed, lower case, no apostrophes, runs of spaces or hyphens as '_' ("Not yet" is not_yet). */
 const tokenOf = (text: string) => text.trim().toLowerCase().replace(/['\u2019]/g, '').replace(/[\s-]+/g, '_');
 /** The brands an option's own label names, each to the option's value: the single words in its parentheses
@@ -84,12 +88,14 @@ const brandsOf = ({ value, label }: { value: string; label: string }): Array<[st
 };
 /** The user's words that mean one of the question's own answers (Brad 2026-11-02): an option's own label
  *  ("Other GLP-1"); "not taking" ezetimibe or a PCSK9 inhibitor is "no"; "not yet" a drug is its "haven't tried
- *  yet" ('none'); the drug's own name is "yes"; a brand its option's label names is that option. */
+ *  yet" ('none'); the drug's own name is "yes"; a brand its option's label names, or a listed statin's brand,
+ *  is that option. */
 const SAME_ANSWER = new Map(MEDICATION_KEYS.map((key) => [key, new Map<string, string>([
   ...MEDICATION_ANSWERS[key].map((o): [string, string] => [tokenOf(o.label), o.value]),
   ...MEDICATION_ANSWERS[key].flatMap(brandsOf),
   ...(key === 'ezetimibe' || key === 'pcsk9i' ? [['none', 'no'], ['not_taking', 'no'], ...YES([key])] as Array<[string, string]> : []),
   ...(key === 'pcsk9i' ? YES(['evolocumab', 'alirocumab', 'inclisiran', 'repatha', 'praluent', 'leqvio']) : []),
+  ...(key === 'statin' ? STATIN_BRANDS : []),
   ...(UNLISTED_DRUG.has(key) || key === 'metformin' ? [['not_yet', 'none']] as Array<[string, string]> : []),
 ])]));
 /** A trailing dose in the answer ("Atorvastatin 40mg"). */

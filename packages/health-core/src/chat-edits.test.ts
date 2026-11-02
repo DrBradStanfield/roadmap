@@ -504,7 +504,7 @@ describe('US-16 AC3: a chat medication answer is saved as its question’s own v
   });
 
   it('US-16 AC3 R1: an unlisted drug name is saved as stated, trimmed', () => {
-    expect(saved('statin', ' Lipitor ')).toBe('Lipitor');
+    expect(saved('statin', ' Lovastatin ')).toBe('Lovastatin');
     expect(saved('glp1', 'liraglutide')).toBe('liraglutide');
   });
 
@@ -558,11 +558,21 @@ describe('US-16 AC3: a chat medication answer is saved as its question’s own v
     });
 
   it.each([
-    ['statin', 'fluvastatin'], ['statin', 'Lovastatin'], ['statin', 'Lipitor'], ['statin', 'crestor'], ['statin', 'Zocor'], ['statin', 'Pravachol'], ['statin', 'Livalo'],
+    ['statin', 'fluvastatin'], ['statin', 'Lovastatin'],
     ['sglt2i', 'ertugliflozin'], ['sglt2i', 'Steglatro'],
     ['glp1', 'liraglutide'], ['glp1', 'exenatide'], ['glp1', 'orforglipron'], ['glp1', 'Victoza'], ['glp1', 'Saxenda'], ['glp1', 'Byetta'], ['glp1', 'Bydureon'],
   ])('US-16 AC3 F1: the drug-shaped unlisted %s "%s" is saved as stated', (key, name) => {
     expect(saved(key, name)).toBe(name);
+  });
+
+  // The coordinator, 2026-11-02 (Brad's rule: map to the user's data): a listed statin's brand saves as the
+  // listed generic, so the plan reads the statin as recorded.
+  it.each([
+    ['Lipitor', 'atorvastatin'], ['crestor', 'rosuvastatin'], ['Zocor', 'simvastatin'], ['Pravachol', 'pravastatin'], ['Livalo 2mg', 'pitavastatin'],
+  ])('US-16 AC3: the statin brand "%s" saves as the listed %s, and the plan reads it as a statin', (name, generic) => {
+    expect(STATIN_NAMES.map((o) => o.value)).toContain(generic);
+    expect(saved('statin', name)).toBe(generic);
+    expect(lipidCascade(medicationsToInputs([{ medicationKey: 'statin', drugName: saved('statin', name)!, doseValue: 20 }])).suggest).not.toContain('statin');
   });
 
   it.each([['glp1', 'fluvastatin'], ['statin', 'Victoza'], ['sglt2i', 'liraglutide'], ['statin', 'ertugliflozin']])(
