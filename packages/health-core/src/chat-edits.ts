@@ -208,11 +208,21 @@ export const APP_CHAT_EDIT_TOOLS = [
 /**
  * Shown in the chat thread when the model proposed a form edit but returned no
  * prose. Shared by both transports so the two surfaces can't drift. A
- * measurement waits for Save; a medication saves at once with an undo banner.
- * `app`: the iPhone app's words (US-67 AC3), which has a Save banner, not a form.
+ * measurement waits for Save; a medication saves at once with an undo banner;
+ * a profile change waits for its own banner's Save, so a mixed turn says so
+ * too (US-16 AC2b). `app`: the iPhone app's words (US-67 AC3), which has a Save
+ * banner, not a form.
  */
 export function toolOnlyAck(edits: ProposedEdit[], app = false): string {
-  if (edits.length > 0 && edits.every((e) => e.kind === 'profile')) return 'Please check the details shown and press Save to add them to your profile.';
+  const others = edits.filter((e) => e.kind !== 'profile');
+  if (others.length === edits.length) return formAck(edits, app);
+  return others.length === 0
+    ? 'Please check the details shown and press Save to add them to your profile.'
+    : `${formAck(others, app)} Please check the profile details shown and press Save to add them to your profile.`;
+}
+
+/** The line for measurement and medication edits. */
+function formAck(edits: ProposedEdit[], app: boolean): string {
   const fields = edits.some((e) => e.kind === 'field');
   const meds = edits.some((e) => e.kind === 'medication');
   if (meds && !fields) return "Done — I've updated your medications. You can undo this from the banner.";

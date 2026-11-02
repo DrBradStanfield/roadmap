@@ -435,6 +435,23 @@ describe('main on a scratch corpus', () => {
     expect(rows).toContain('2026-W40,lint_dose_mismatch,1,,,tools/knowledge-lint.ts,weekly lint');
     rmSync(root, { recursive: true });
   });
+  // Review A7: guide-shape is in RULE_ORDER, so the weekly report counts and details it and metrics.csv trends it.
+  it('counts, details and trends guide-shape findings (US-70 AC1)', async () => {
+    const root = setup();
+    writeFileSync(join(root, 'docs/blog/index.json'), JSON.stringify([
+      ...JSON.parse(readFileSync(join(root, 'docs/blog/index.json'), 'utf8')),
+      { handle: 'g1', type: 'guideline', title: 'G1', summary: 'A condition guide.', keywords: ['g1'] },
+    ]));
+    writeFileSync(join(root, 'docs/guideline/g1.md'), '---\ntitle: "G1"\ntype: "guideline"\nkind: "condition"\n---\n\n# G1\n');
+    const csv = join(root, 'docs/loops/chat-health/metrics.csv');
+    writeFileSync(csv, 'week,metric,count_7d,count_prior_7d,delta_pct,source,note\n');
+    const { out } = await capture(['--append-metrics', '2026-W45'], root);
+    expect(out).toMatch(/^\| guide-shape \| \d+ \| 1 \|$/m);
+    expect(out).toContain('### guide-shape');
+    expect(out).toMatch(/^- g1: .*needs one "## In short" section \(found 0\)/m);
+    expect(readFileSync(csv, 'utf8')).toMatch(/^2026-W45,lint_guide_shape,[1-9]\d*,,,tools\/knowledge-lint\.ts,weekly lint$/m);
+    rmSync(root, { recursive: true });
+  });
   it('--queue writes deterministic findings to lint-fix-queue.json as knowledge-side, once across weeks', async () => {
     const root = setup();
     const file = join(root, 'docs/loops/chat-health/lint-fix-queue.json');
