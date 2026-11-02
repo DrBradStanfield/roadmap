@@ -7,6 +7,7 @@ import {
   readProposedEdits,
   chatMedicationChange,
   unsavedProfile,
+  medicationAnswerMisfit,
   EDITABLE_FIELDS,
   PROPOSE_FIELD_EDIT_TOOL,
   PROPOSE_MEDICATION_EDIT_TOOL,
@@ -17,6 +18,11 @@ import {
 } from './chat-edits';
 import { FIELD_TO_METRIC, UNIT_DEFS, toCanonicalValue, type MetricType } from './index';
 import { lookupUnit, type UnitSystem } from './units';
+import { medicationsToInputs } from './mappings';
+import { lipidCascade, weightCascade } from './medication-cascades';
+import {
+  BEMPEDOIC_ACID_OPTIONS, EZETIMIBE_OPTIONS, GLP1_NAMES, METFORMIN_OPTIONS, PCSK9I_OPTIONS, SGLT2I_NAMES, STATIN_NAMES,
+} from './types';
 
 /** The system a stated unit names, as the chatbot's parser reads it. */
 const systemOf = (metric: MetricType, unit: string): UnitSystem | null => lookupUnit(metric, unit)?.system ?? null;
@@ -390,5 +396,99 @@ describe('unsavedProfile (US-16 AC2)', () => {
     expect(unsavedProfile({ kind: 'profile', sex: 'male', heightCm: 178.2 }, { sex: 'male', heightCm: 178 }, 'si')).toBeNull();
     expect(unsavedProfile({ kind: 'profile', sex: 'male', heightCm: 180 }, { sex: 'male', heightCm: 178 }, 'si')).toEqual({ kind: 'profile', sex: null, heightCm: 180 });
     expect(unsavedProfile({ kind: 'profile', sex: 'female', heightCm: null }, { heightCm: null }, 'si')).toEqual({ kind: 'profile', sex: 'female', heightCm: null });
+  });
+});
+
+// US-16 AC3 (Brad 2026-11-02: "Ideally we want to map to the users data and their
+// database. If there's confusion, chat should ask the user"). A medication edit
+// saves at once, so its answer is the question's own value, mapped from the
+// user's words where they mean one; any other answer is not saved and the
+// model is told to ask (run-roadmap.test.ts).
+describe('US-16 AC3: a chat medication answer is saved as its question’s own value', () => {
+  const saved = (medicationKey: string, drugName: string, doseValue?: number) =>
+    (parseProposedEdit(MED, { medicationKey, drugName, ...(doseValue ? { doseValue, doseUnit: 'mg' } : {}) }) as ProposedMedicationEdit | null)?.drugName ?? null;
+
+  it.each(['ezetimibe', 'pcsk9i'])('US-16 AC3: "not taking" (none) for %s saves as no, and the plan still suggests the step', (key) => {
+    expect(saved(key, 'none')).toBe('no');
+    expect(saved(key, 'None')).toBe('no');
+  });
+
+  it('US-16 AC3: ezetimibe saved as no keeps the plan on the ezetimibe step, exactly as not_yet does', () => {
+    const plan = (drugName: string) => lipidCascade(medicationsToInputs([
+      { medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20 },
+      { medicationKey: 'ezetimibe', drugName, doseValue: null },
+    ]));
+    expect(plan(saved('ezetimibe', 'none')!)).toEqual(plan('not_yet'));
+    expect(plan(saved('ezetimibe', 'none')!).suggest).toEqual(['ezetimibe']);
+  });
+
+  it.each(['statin', 'glp1', 'sglt2i', 'metformin'])('US-16 AC3: "not yet" for %s saves as none, its "haven’t tried yet"', (key) => {
+    expect(saved(key, 'not_yet')).toBe('none');
+  });
+
+  it('US-16 AC3: a GLP-1 sent as not_yet keeps the plan on the GLP-1 step', () => {
+    const drug = saved('glp1', 'not_yet')!;
+    expect(weightCascade(medicationsToInputs([{ medicationKey: 'glp1', drugName: drug, doseValue: null }])).suggest).toEqual(['glp1']);
+  });
+
+  it.each(['evolocumab', 'Alirocumab', 'inclisiran', 'Repatha', 'praluent', 'Leqvio', 'pcsk9i'])('US-16 AC3: the PCSK9 drug %s under pcsk9i saves as yes', (name) => {
+    expect(saved('pcsk9i', name, 140)).toBe('yes');
+  });
+
+  it('US-16 AC3: ezetimibe named under ezetimibe saves as yes', () => {
+    expect(saved('ezetimibe', 'ezetimibe', 10)).toBe('yes');
+    expect(medicationsToInputs([{ medicationKey: 'ezetimibe', drugName: saved('ezetimibe', 'ezetimibe')!, doseValue: null }]).ezetimibe).toBe('yes');
+  });
+
+  it('US-16 AC3: the question’s own answers save unchanged; a listed drug in another case saves as listed', () => {
+    for (const [key, name] of [['ezetimibe', 'not_tolerated'], ['pcsk9i', 'not_yet'], ['bempedoic_acid', 'none'], ['metformin', 'xr_1000'],
+      ['statin_escalation', 'not_tolerated'], ['glp1', 'other'], ['sglt2i', 'empagliflozin'], ['statin', 'atorvastatin']]) {
+      expect(saved(key, name)).toBe(name);
+    }
+    expect(saved('statin', 'Atorvastatin', 20)).toBe('atorvastatin');
+  });
+
+  it('US-16 AC3: a drug key still takes an unlisted drug name as stated', () => {
+    expect(saved('statin', 'fluvastatin', 40)).toBe('fluvastatin');
+    expect(saved('glp1', 'liraglutide')).toBe('liraglutide');
+  });
+
+  it.each([
+    ['ezetimibe', 'atorvastatin'], ['ezetimibe', 'constructor'], ['pcsk9i', 'ezetimibe'], ['bempedoic_acid', 'yes'],
+    ['metformin', 'yes'], ['statin_escalation', 'none'], ['glp1', 'no'], ['glp1', 'yes'], ['statin', 'yes'],
+    ['glp1', 'atorvastatin'], ['statin', 'ezetimibe'], ['sglt2i', 'ir_1000'], ['statin', 'other'],
+  ])('US-16 AC3: %s answered "%s" is not saved, and the model is told to ask', (medicationKey, drugName) => {
+    expect(parseProposedEdit(MED, { medicationKey, drugName })).toBeNull();
+    const ask = medicationAnswerMisfit(MED, { medicationKey, drugName });
+    expect(ask).toContain(`Not saved: "${drugName}" is not an answer to the ${medicationKey} question.`);
+    expect(ask).toContain('Ask the user which of these applies');
+  });
+
+  it('US-16 AC3: the refusal names the question’s exact answers', () => {
+    expect(medicationAnswerMisfit(MED, { medicationKey: 'ezetimibe', drugName: 'atorvastatin' })).toBe(
+      'Not saved: "atorvastatin" is not an answer to the ezetimibe question. Ask the user which of these applies, then propose it again ' +
+      "with that answer: 'not_yet' (Haven't tried yet), 'yes' (Yes), 'no' (No), 'not_tolerated' (Not tolerated).",
+    );
+  });
+
+  it('US-16 AC3: an answer that fits, or an edit of another shape, gets no refusal', () => {
+    expect(medicationAnswerMisfit(MED, { medicationKey: 'ezetimibe', drugName: 'none' })).toBeNull();
+    expect(medicationAnswerMisfit(MED, { medicationKey: 'aspirin', drugName: 'aspirin' })).toBeNull();
+    expect(medicationAnswerMisfit(FIELD, { medicationKey: 'ezetimibe', drugName: 'atorvastatin' })).toBeNull();
+  });
+
+  it('US-16 AC3: the tool description lists each medication key’s exact answers', () => {
+    const text = PROPOSE_MEDICATION_EDIT_TOOL.input_schema.properties.drugName.description;
+    const lists: Record<string, ReadonlyArray<{ value: string }>> = {
+      statin: STATIN_NAMES, ezetimibe: EZETIMIBE_OPTIONS, pcsk9i: PCSK9I_OPTIONS, bempedoic_acid: BEMPEDOIC_ACID_OPTIONS,
+      glp1: GLP1_NAMES, sglt2i: SGLT2I_NAMES, metformin: METFORMIN_OPTIONS,
+      statin_escalation: [{ value: 'not_yet' }, { value: 'not_tolerated' }], glp1_escalation: [{ value: 'not_yet' }, { value: 'not_tolerated' }],
+    };
+    for (const [key, options] of Object.entries(lists)) {
+      const line = text.replace(/^.*? own: /, '').split('; ').find((l) => l.startsWith(`${key}: `));
+      expect(line, key).toBeDefined();
+      for (const { value } of options) expect(line, `${key} ${value}`).toContain(`'${value}'`);
+    }
+    expect(text).not.toMatch(/'none' \(not taking\)/);
   });
 });
