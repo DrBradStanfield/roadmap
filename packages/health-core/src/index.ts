@@ -360,6 +360,7 @@ export {
   isCalendarDay,
   isClinicalDay,
   latestActivePerMetric,
+  newestUsablePsa,
   latestFromHistory,
   HISTORY_CAP_PER_METRIC,
   type DatedMeasurement,

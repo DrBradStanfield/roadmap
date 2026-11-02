@@ -18,6 +18,7 @@
 import { METRIC_TO_FIELD } from './mappings';
 import type { HealthInputs } from './types';
 import { comparatorOf, type Comparator } from './lab-limits';
+import { UNIT_DEFS } from './units';
 
 export interface DatedMeasurement {
   /** YYYY-MM-DD */
@@ -53,11 +54,19 @@ export function isClinicalDay(recordedAt: unknown): recordedAt is string {
  * metric. Records without a valid YYYY-MM-DD recordedAt are dropped.
  */
 export function buildMeasurementHistory(
-  records: Array<{ metricType: string; value: number; recordedAt?: string | null; comparator?: Comparator }>,
+  records: Array<{ metricType: string; value: number; recordedAt?: string | null; comparator?: Comparator; id?: string; createdAt?: string }>,
   cap = HISTORY_CAP_PER_METRIC,
 ): MeasurementHistoryMap {
   const out: MeasurementHistoryMap = {};
-  for (const r of records) {
+  // Within one day, the order `latestActivePerMetric` ranks by (time, then
+  // createdAt, then id), so a day's last point is the row the plan reads (US-06 AC14).
+  const key = (r: (typeof records)[number]) => [r.recordedAt ?? '', r.createdAt ?? '', r.id ?? ''];
+  const ranked = [...records].sort((a, b) => {
+    const [x, y] = [key(a), key(b)];
+    const i = x.findIndex((v, n) => v !== y[n]);
+    return i < 0 ? 0 : x[i] < y[i] ? -1 : 1;
+  });
+  for (const r of ranked) {
     const date = (r.recordedAt || '').slice(0, 10);
     if (!ISO_DATE.test(date)) continue;
     (out[r.metricType] ??= []).push({ date, value: r.value, ...comparatorOf(r) });
@@ -67,6 +76,21 @@ export function buildMeasurementHistory(
     if (out[k].length > cap) out[k] = out[k].slice(-cap);
   }
   return out;
+}
+
+/**
+ * US-06 AC14: the saved PSA the plan, the reminders, the web form and the
+ * chat all read. Among the active `psa` rows, those with a value in the PSA
+ * range and a real day no later than `today` (the caller's clock), the newest
+ * by `latestActivePerMetric`'s rule. An unusable newer row never hides an
+ * older usable one.
+ */
+export function newestUsablePsa<
+  T extends { id: string; metricType: string; value: number; recordedAt: string; createdAt?: string; status?: string },
+>(rows: readonly T[], today: string): T | undefined {
+  const { min, max } = UNIT_DEFS.psa.validationRange.si;
+  return latestActivePerMetric(rows.filter((r) => r.metricType === 'psa' && r.value >= min && r.value <= max
+    && isClinicalDay(r.recordedAt) && r.recordedAt.slice(0, 10) <= today))[0];
 }
 
 /**

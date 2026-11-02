@@ -17,7 +17,7 @@ import { moveBloodMeasurements } from './blood-tests';
 
 const NOW = new Date('2026-06-15T12:00:00Z');
 
-type Row = [value: number, day: string, status?: 'active' | 'entered-in-error'];
+type Row = [value: number, day: string, status?: 'active' | 'entered-in-error', comparator?: '<' | '<=' | '>' | '>='];
 
 /** A man born 1960 (66 in June 2026) who said he will have PSA screening. */
 function record(rows: Row[], answers: Record<string, unknown> = {}): RoadmapFile {
@@ -26,8 +26,9 @@ function record(rows: Row[], answers: Record<string, unknown> = {}): RoadmapFile
     ...f,
     profile: { ...f.profile, sex: 'male', heightCm: 178, birthYear: 1960, birthMonth: 1 },
     screenings: { ...f.screenings, prostateDiscussion: 'will_screen', ...answers } as RoadmapFile['screenings'],
-    measurements: rows.map(([value, day, status = 'active'], i) => createMeasurement({
+    measurements: rows.map(([value, day, status = 'active', comparator], i) => createMeasurement({
       id: `psa_${i}`, metricType: 'psa', value, recordedAt: `${day}T08:00:00Z`, createdAt: `${day}T09:00:00Z`, status,
+      ...(comparator ? { comparator } : {}),
     })),
   };
 }
@@ -162,5 +163,51 @@ describe('Brad 2026-11-03: a high PSA shows whatever the screening answer (US-06
     const p = prostate(record([[3.0, '2025-09-03']], { prostateDiscussion: 'elected_not_to' }));
     expect(p.cards).toEqual([]);
     expect(p.pushed).toEqual([]);
+  });
+});
+
+describe('a PSA printed as a limit is graded only when the limit decides against 4.0 (US-06 AC14, US-12 AC20)', () => {
+  const DUE = 'PSA test up to date: Next PSA test due Sep 2026.';
+  it('"> 100" shows "Elevated PSA" with the limit as printed, never a number the lab did not print', () => {
+    const p = prostate(record([[100, '2025-09-03', 'active', '>']]));
+    expect(p.cards).toEqual([DUE,
+      'Elevated PSA: Your PSA of > 100.0 ng/mL is above the typical reference range (\u22644.0). Discuss with your doctor \u2014 elevated PSA can have multiple causes.']);
+    expect(p.pushed).toEqual(['2026-09-01']);
+  });
+
+  it.each([
+    ['"< 0.1": below the line', 0.1, '<'],
+    ['"< 5": could be either side of 4.0', 5, '<'],
+    ['"<= 4.0": not above 4.0', 4.0, '<='],
+    ['">= 4.0": could be exactly 4.0', 4.0, '>='],
+  ] as const)('%s: no "Elevated PSA", and the test still dates the next one', (_what, value, comparator) => {
+    const p = prostate(record([[value, '2025-09-03', 'active', comparator]]));
+    expect(p.cards).toEqual([DUE]);
+    expect(p.pushed).toEqual(['2026-09-01']);
+  });
+
+  it('a newer "< 5" stands in for an older 6.5: the newest test is uncertain, so no "Elevated PSA"', () => {
+    const p = prostate(record([[6.5, '2025-03-01'], [5, '2025-09-03', 'active', '<']]));
+    expect(p.cards).toEqual([DUE]);
+  });
+});
+
+describe('the newest USABLE PSA row is read: an unusable newer row never hides an older one (US-06 AC14)', () => {
+  it.each([
+    ['dated after today, in a later year', 3.0, '2099-01-01'],
+    ['dated after today, in this same month', 3.0, '2026-06-20'],
+    ['above the PSA range', 10000.5, '2026-01-10'],
+    ['below 0', -0.5, '2026-01-10'],
+    ['on a day that does not exist', 3.0, '2026-02-30'],
+  ])('a newer row %s: the older 6.5 still shows "Elevated PSA" and dates the reminder', (_what, value, day) => {
+    const p = prostate(record([[6.5, '2025-09-03'], [value, day]]));
+    expect(p.cards).toEqual(['PSA test up to date: Next PSA test due Sep 2026.', ELEVATED('6.5')]);
+    expect(p.due).toEqual(['2026-09-01']);
+    expect(p.pushed).toEqual(['2026-09-01']);
+  });
+
+  it('a row dated today counts (the plan\'s own clock)', () => {
+    const p = prostate(record([[6.5, '2026-06-15']]));
+    expect(p.cards).toEqual(['PSA test up to date: Next PSA test due Jun 2027.', ELEVATED('6.5')]);
   });
 });

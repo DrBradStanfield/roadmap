@@ -102,7 +102,8 @@ const values = (o: object): number[] => Object.values(o).flatMap((v) => (typeof 
  * constants, never copied; lab-limits.test.ts fails when a constant or a
  * literal is in neither this list nor `LIMIT_LABEL_CUTOFFS`. Non-HDL's lines
  * are absent on purpose: non-HDL is derived, and never derived from a limit.
- * Creatinine and PSA have none: the plan grades neither directly.
+ * Creatinine has none: the plan grades it only through eGFR. PSA's is the
+ * "Elevated PSA" card's 4.0 (US-06 AC14).
  */
 export const LIMIT_CUTOFFS: Readonly<Record<LimitField, readonly number[]>> = {
   hba1c: values(HBA1C_THRESHOLDS),
@@ -112,7 +113,7 @@ export const LIMIT_CUTOFFS: Readonly<Record<LimitField, readonly number[]>> = {
   triglycerides: [TRIGLYCERIDES_THRESHOLDS.borderline, TRIGLYCERIDES_THRESHOLDS.veryHigh],
   apoB: [...values(APOB_THRESHOLDS), LIPID_TREATMENT_TARGETS.apobGl, APOB_RISK_ENHANCING],
   creatinine: [],
-  psa: [],
+  psa: [PSA_THRESHOLDS.normal],
   lpa: values(LPA_THRESHOLDS),
   systolicBp: [BP_THRESHOLDS.stage1Sys, BP_THRESHOLDS.stage2Sys, BP_THRESHOLDS.crisisSys, bpTargetFor(undefined), bpTargetFor(65)],
   diastolicBp: [BP_THRESHOLDS.stage1Dia, BP_THRESHOLDS.stage2Dia, BP_THRESHOLDS.crisisDia],

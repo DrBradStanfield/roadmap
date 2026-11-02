@@ -69,7 +69,7 @@ import {
   type ApiMedication, type ApiScreening,
 } from './mappings';
 import {
-  buildMeasurementHistory, latestFromHistory, HISTORY_CAP_PER_METRIC, ISO_DATE,
+  buildMeasurementHistory, latestFromHistory, newestUsablePsa, HISTORY_CAP_PER_METRIC, ISO_DATE,
   type MeasurementHistoryMap,
 } from './measurement-history';
 import { calculateAge, calculateHealthResults, knownMinorOf, missingPlanInputs } from './calculations';
@@ -97,7 +97,7 @@ export function chatContextOf(
   unitSystem: UnitSystem,
   medications: ApiMedication[],
   screenings: ApiScreening[],
-  dated: Array<{ metricType: string; value: number; recordedAt?: string | null; comparator?: Comparator }>,
+  dated: Array<{ metricType: string; value: number; recordedAt?: string | null; comparator?: Comparator; id?: string; createdAt?: string }>,
 ): ChatContextPayload {
   const measurementHistory = buildMeasurementHistory(dated);
   // A limit travels as `limits` alone (US-12 AC20): its field's representative
@@ -211,9 +211,11 @@ export function buildChatContextJson(payload: unknown): string | null {
   const unitSystem: UnitSystem = raw.unitSystem === 'conventional' ? 'conventional' : 'si';
   const medicationRowsOnRecord = medicationRows(raw.medications);
   const screenings = screeningsToInputs(screeningRows(raw.screenings));
-  // US-06 AC14: the prostate cards read the newest saved PSA, as computePlan does; `screenings` stays the answers.
-  const psa = measurementHistory.psa?.reduce((a, b) => (b.date > a.date ? b : a));
-  const planScreenings = withPsaMeasurement(screenings, psa && { value: psa.value, recordedAt: psa.date });
+  // US-06 AC14: the prostate cards read the newest usable saved PSA, by the plan's own rule; `screenings` stays
+  // the answers. A day's points arrive in the plan's order (buildMeasurementHistory), so the later point wins a tie.
+  const psaPoints = (measurementHistory.psa ?? []).map((p, i) =>
+    ({ id: String(i).padStart(4, '0'), metricType: 'psa', value: p.value, recordedAt: p.date, ...comparatorOf(p) }));
+  const planScreenings = withPsaMeasurement(screenings, newestUsablePsa(psaPoints, localDay(new Date())));
   // US-07 AC11: a left-out pair turns the blood pressure prompt into "check your reading".
   const planInputs = parsed.success ? { ...inputs, ...(pressure ? { pressureOrder: true as const } : {}) } as SuggestionInputs : null;
   const results = planInputs
