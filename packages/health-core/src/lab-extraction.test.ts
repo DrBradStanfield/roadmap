@@ -25,6 +25,8 @@ import {
   unifiedSystemPrompt,
   UNDATED_PREVIOUS,
   unreadLines,
+  uploadLimitSignal,
+  LIMIT_TEST_WORDS,
 } from './lab-extraction';
 import { oneLine } from './plan';
 
@@ -1262,8 +1264,9 @@ describe('US-12 AC19: a value not saved is named, with why', () => {
       { label: 'HDL Cholesterol, CRP, Lp(a)', reason: 'could not be read' },
     ], otherCount: 1 });
     expect(unreadLines({})).toEqual({ lines: [], otherCount: 0 });
-    // US-12 AC20: a server from before it still sends `limit`; it reads as unreadable, never a throw.
-    expect(unreadLines({ droppedValueCount: 1, unreadValues: [{ name: 'hdl', reason: 'limit' as 'unreadable' }] }).lines).toEqual([{ label: 'HDL Cholesterol', reason: 'could not be read' }]);
+    // US-12 AC20: a server from before it still sends `limit` on the wire; it reads as unreadable, never a throw.
+    const olderServer = JSON.parse('{"droppedValueCount":1,"unreadValues":[{"name":"hdl","reason":"limit"}]}');
+    expect(unreadLines(olderServer).lines).toEqual([{ label: 'HDL Cholesterol', reason: 'could not be read' }]);
   });
 
   it('unreadLines: one test under two reasons, or refused and unread at once, is one line, so no two lines share a label', () => {
@@ -1317,5 +1320,23 @@ describe('US-12 AC19: a value not saved is named, with why', () => {
     const name = `${'a'.repeat(79)}😀`;
     const [v] = toUnifiedResult(parseUnifiedResult({ ...report, values: [], additionalValues: [{ name, value: 'trace', unit: '' }] }), 'full').unreadValues!;
     expect(v.name).toBe('a'.repeat(79));
+  });
+});
+
+// US-12 AC20 usage signal; adversary review of 0a2b89b0 (R8): pregnancy, fertility
+// and sex-hormone tests are never named, only counted as "other".
+describe('US-12 AC20: uploadLimitSignal', () => {
+  it('counts limits, the undecided ones, and their keys; a sex-hormone or pregnancy test is "other"', () => {
+    const signal = uploadLimitSignal([{
+      values: [{ metric: 'ldl', valueSI: 1.5, comparator: '<' }, { metric: 'lpa', valueSI: 10, comparator: '<' }, { metric: 'hdl', valueSI: 1.2 }],
+      additionalValues: [
+        { name: 'hCG', value: 20, comparator: '<', referenceLow: null, referenceHigh: 10 },
+        { name: 'Estradiol', value: 100, comparator: '<', referenceLow: 50, referenceHigh: 400 },
+        { name: 'ferritin', value: 5, comparator: '<', referenceLow: 30, referenceHigh: 300 },
+      ],
+    }]);
+    expect(signal).toEqual({ valuesLimit: 5, valuesLimitUngraded: 3, limitUngradedTests: ['ldl', 'other'] });
+    for (const key of ['hcg', 'estradiol', 'testosterone_total', 'progesterone', 'amh', 'shbg']) expect(LIMIT_TEST_WORDS, key).not.toContain(key);
+    expect(LIMIT_TEST_WORDS).toContain('ferritin');
   });
 });

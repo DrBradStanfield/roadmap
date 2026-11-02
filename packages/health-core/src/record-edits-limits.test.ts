@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { bulkAppendValues, correctValue, moveBloodTest, sameLabQuantity } from './record-edits';
 import { createEmptyFile, type FileLabValue, type FileMeasurement } from './roadmap-file';
 import { deviceWrites } from './device-export';
+import { readableView } from './readable-rows';
 
 const NOW = '2026-10-21T08:00:00.000Z';
 const empty = () => createEmptyFile({ deviceId: 'limits', now: '2026-10-01T00:00:00.000Z' });
@@ -69,5 +70,42 @@ describe('US-12 AC20: never to Apple Health', () => {
       { kind: 'measurement', metricType: 'weight', value: 80, recordedAt: '2026-10-11', source: 'lab_import' },
     ], NOW);
     expect(deviceWrites(result.file, 'apple_health').map((w) => w.values)).toEqual([{ weight: 80 }]);
+  });
+
+  it('any comparator key keeps a row out, valid or not (null, "", 0, "≥"), with its blood pressure pair', () => {
+    for (const comparator of [null, '', 0, '≥']) {
+      const result = bulkAppendValues(empty(), [
+        { kind: 'measurement', metricType: 'weight', value: 80, recordedAt: '2026-10-10', source: 'lab_import' },
+        { kind: 'measurement', metricType: 'systolic_bp', value: 120, recordedAt: '2026-10-10', source: 'lab_import' },
+        { kind: 'measurement', metricType: 'diastolic_bp', value: 70, recordedAt: '2026-10-10', source: 'lab_import' },
+      ], NOW);
+      const file = { ...result.file, measurements: result.file.measurements.map((m) => (m.metricType === 'systolic_bp' || m.metricType === 'weight' ? { ...m, comparator } : m)) } as typeof result.file;
+      expect(deviceWrites(file, 'apple_health'), String(comparator)).toEqual([]);
+    }
+  });
+});
+
+// Adversary review of 0a2b89b0 (R1): a build before AC20 corrected a lab row by
+// copying it, so "> 60" corrected to 85 was written as "> 85". Readers repair it.
+describe('US-12 AC20: an older build\'s correction of a limit is read as exact', () => {
+  const lab = (id: string, value: number, extra: Record<string, unknown> = {}) => ({
+    id, metricName: 'egfr', value, unit: 'mL/min/1.73m²', referenceLow: null, referenceHigh: null,
+    recordedAt: '2026-10-10', createdAt: NOW, source: 'lab_import', status: 'active', correctsId: null, ...extra,
+  });
+  const fileWith = (...rows: ReturnType<typeof lab>[]) => ({ ...empty(), labValues: rows } as unknown as ReturnType<typeof empty>);
+
+  it('a manual correction that changed the value and kept the comparator reads without it; the file is unchanged', () => {
+    const file = fileWith(lab('a', 60, { comparator: '>', status: 'entered-in-error' }), lab('b', 85, { comparator: '>', correctsId: 'a', source: 'manual_correction' }));
+    const view = readableView(file);
+    expect(view.file.labValues.find((l) => l.id === 'b')).not.toHaveProperty('comparator');
+    expect(view.count).toBe(0);
+    expect(file.labValues[1].comparator).toBe('>');
+  });
+
+  it('a move (same value) and an import\'s Replace (lab_import) keep their comparator', () => {
+    const moved = fileWith(lab('a', 60, { comparator: '>', status: 'entered-in-error' }), lab('b', 60, { comparator: '>', correctsId: 'a', source: 'manual_correction', recordedAt: '2026-10-08' }));
+    expect(readableView(moved).file.labValues.find((l) => l.id === 'b')?.comparator).toBe('>');
+    const replaced = fileWith(lab('a', 75, { status: 'entered-in-error' }), lab('b', 60, { comparator: '>', correctsId: 'a' }));
+    expect(readableView(replaced).file.labValues.find((l) => l.id === 'b')?.comparator).toBe('>');
   });
 });

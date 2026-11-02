@@ -3369,9 +3369,11 @@ describe('US-36 AC11 — tools/list stays inside ChatGPT’s budget', () => {
   // prose), so 16,400 is ≈4,280 tokens and the cushion is ~14%, not the ~20% a
   // 4-chars-per-token rule of thumb would suggest. Tighten the prose before
   // raising this again; past ~17,500 characters the list stops fitting.
-  it('keeps name + description + inputSchema under 16,400 characters across all nine tools (≈4,280 tokens of the 5,000 cap)', () => {
+  // Raised to 16,500 on 2026-11-02 (US-12 AC20): the lab-limit sentences and
+  // `comparator` field, with file_results' privacy wording kept word for word.
+  it('keeps name + description + inputSchema under 16,500 characters across all nine tools (≈4,310 tokens of the 5,000 cap)', () => {
     const chars = MCP_TOOLS.reduce((sum, { name, description, inputSchema }) => sum + JSON.stringify({ name, description, inputSchema }).length, 0);
-    expect(chars).toBeLessThanOrEqual(16_400);
+    expect(chars).toBeLessThanOrEqual(16_500);
   });
 });
 

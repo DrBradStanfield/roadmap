@@ -64,7 +64,9 @@ export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasur
       medications,
       screenings,
       reminderPreferences,
-      labEgfr,
+      // A lab eGFR printed as a limit keeps its limit and drops the plan's
+      // representative, which an older embed would read as exact (US-12 AC20).
+      labEgfr: labEgfr?.labEgfrLimit ? { labEgfrDate: labEgfr.labEgfrDate, labEgfrLimit: labEgfr.labEgfrLimit } : labEgfr,
       savedAt: new Date().toISOString(),
     };
     localStorage.setItem(MIRROR_KEY, JSON.stringify(data));

@@ -65,7 +65,7 @@ import {
 } from './types';
 import { rangeFault, type UnitSystem } from './units';
 import {
-  healthInputSchema, inputsPressureInverted, sanitizeInputs, excludedInputFields, MEDICATION_KEYS, SCREENING_KEYS,
+  healthInputSchema, inRange, inputsPressureInverted, sanitizeInputs, excludedInputFields, MEDICATION_KEYS, SCREENING_KEYS,
 } from './validation';
 import {
   FIELD_UNITS, LONGITUDINAL_FIELDS, METRIC_TO_FIELD, medicationsToInputs, screeningRange, screeningsToInputs,
@@ -77,7 +77,7 @@ import {
 } from './measurement-history';
 import { calculateAge, calculateHealthResults, knownMinorOf, missingPlanInputs } from './calculations';
 import { parseLocalisedNumber } from './parseNumber';
-import { comparatorOf, egfrAsPrinted, isComparator, isLimitField, limitOf, limitSIText, withRowValue, type Comparator, type LimitField } from './lab-limits';
+import { comparatorOf, egfrAsPrinted, isComparator, isLimitField, limitOf, limitSIText, withoutLimit, withRowValue, type Comparator, type LimitField } from './lab-limits';
 import { localDay } from './merge';
 
 /** What a client sends as the chat's context. A row carries only the fields
@@ -181,7 +181,7 @@ export function buildChatContextJson(payload: unknown): string | null {
   // US-12 AC20: a limit the client names is graded again here, by the plan's
   // own rule, never taken as sent: its field holds the representative only
   // when the bound decides, whatever number the client put there.
-  const limits = limitsOf(raw.limits);
+  const { limits, outOfRange } = limitsOf(raw.limits);
   const { limits: _sent, ...sent } = raw;
   let sanitized = sanitizeInputs(sent as Partial<HealthInputs>);
   for (const [field, limit] of Object.entries(limits)) sanitized = withRowValue(sanitized, field as LimitField, limit.bound, limit.comparator);
@@ -192,6 +192,9 @@ export function buildChatContextJson(payload: unknown): string | null {
   if (pressure) {
     delete sanitized.systolicBp;
     delete sanitized.diastolicBp;
+    // ...and their limits, if printed as limits (US-12 AC20).
+    const { limits } = withoutLimit(withoutLimit(sanitized.limits, 'systolicBp').limits, 'diastolicBp');
+    if (limits) sanitized.limits = limits; else delete sanitized.limits;
   }
   const parsed = healthInputSchema.safeParse(sanitized);
   // US-07 AC6: a known minor's context always says so, plan or not, so no chat
@@ -203,7 +206,9 @@ export function buildChatContextJson(payload: unknown): string | null {
     ...(parsed.success ? parsed.data : healthInputSchema.partial().parse(sanitized)),
     ...(regraded ? { limits: regraded } : {}),
   };
-  const excludedFields = [...excludedInputFields(raw as Partial<HealthInputs>), ...(pressure ? ['systolicBp', 'diastolicBp'] : [])];
+  const excludedFields = [...new Set([
+    ...excludedInputFields(raw as Partial<HealthInputs>), ...outOfRange, ...(pressure ? ['systolicBp', 'diastolicBp'] : []),
+  ])];
   const unitSystem: UnitSystem = raw.unitSystem === 'conventional' ? 'conventional' : 'si';
   const medicationRowsOnRecord = medicationRows(raw.medications);
   const screenings = screeningsToInputs(screeningRows(raw.screenings));
@@ -397,15 +402,20 @@ function screeningRows(raw: unknown): Array<Pick<ApiScreening, 'screeningKey' | 
 const HISTORY_CAP_TOTAL = 400;
 
 /** US-12 AC20: the limits a client names, allowlisted: a graded input's key,
- *  one of the four codes, a finite bound. `graded` is never read: it is worked out again. */
-function limitsOf(raw: unknown): Partial<Record<LimitField, { comparator: Comparator; bound: number }>> {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
-  const out: Partial<Record<LimitField, { comparator: Comparator; bound: number }>> = {};
+ *  one of the four codes, a finite bound inside the field's input range. A
+ *  bound outside it is named in `outOfRange`, as an out-of-range exact value is
+ *  in excludedFields. `graded` is never read: it is worked out again. */
+function limitsOf(raw: unknown): { limits: Partial<Record<LimitField, { comparator: Comparator; bound: number }>>; outOfRange: LimitField[] } {
+  const limits: Partial<Record<LimitField, { comparator: Comparator; bound: number }>> = {};
+  const outOfRange: LimitField[] = [];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { limits, outOfRange };
   for (const [field, entry] of Object.entries(raw as Record<string, unknown>)) {
     const { comparator, bound } = fields(entry);
-    if (isLimitField(field) && isComparator(comparator) && typeof bound === 'number' && Number.isFinite(bound)) out[field] = { comparator, bound };
+    if (!isLimitField(field) || !isComparator(comparator) || typeof bound !== 'number' || !Number.isFinite(bound)) continue;
+    if (inRange(field, bound)) limits[field] = { comparator, bound };
+    else outOfRange.push(field);
   }
-  return out;
+  return { limits, outOfRange };
 }
 
 function historyOf(raw: unknown): MeasurementHistoryMap {

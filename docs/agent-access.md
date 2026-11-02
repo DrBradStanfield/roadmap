@@ -63,6 +63,9 @@ document has `fileRef: ""`.
      that metric, `false` on every other. Use it; do not work the tie-break out yourself.
    - Everything with `status: "entered-in-error"` is superseded history. Keep it, show it
      if asked, never treat it as current.
+   - A row with `comparator` (`"<"`, `"<="`, `">"` or `">="`) is a lab result printed as a
+     limit (US-12 AC20): `value` is the printed bound, so `{"value": 60, "comparator": ">"}`
+     is "> 60", never 60. Say it with its symbol. No `comparator` means an exact value.
 4. `medications`, `supplements`, `reminderPreferences` hold current state, one row per
    key. `medicationHistory` and `supplementHistory` are the append-only logs behind them.
    `profile` and `screenings` are singletons. Each may carry `fieldStamps`, the merge's
@@ -209,6 +212,17 @@ someone's medical history, or lose their data at the next device sync.
     field by hand, set it to `null`; never remove the key. A key that is absent, with
     no field stamp, reads as never written, so the next merge puts back another
     copy's value. `update_profile` cannot clear a field.
+
+14. **A correction is exact.** A row correcting a limit (`correctsId` set) carries the
+    number the user gave and no `comparator`; copying the old row and changing only
+    `value` turns "> 60" corrected to 85 into "> 85". Write `comparator` only for a new
+    result printed with <, >, ≤ or ≥, using the ASCII codes (`<=` for ≤, `>=` for ≥);
+    anything else makes the row unreadable to the app. Moving a row to another day keeps
+    its `comparator`. Older app builds (before 2026-11-02) do not know the field: they
+    read the bound as an exact value; a correction of a limit one of them made carries the
+    old symbol, and this app reads such a manual correction (`source: "manual_correction"`,
+    a changed value) as exact; a move one of them made drops the symbol for good, so the
+    bound stands as an exact value. The app does not repair that by itself.
 
 Validate your result against the schema before you write it back.
 

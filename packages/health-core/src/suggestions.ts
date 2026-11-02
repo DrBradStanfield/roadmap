@@ -2,7 +2,7 @@ import type { HealthInputs, HealthResults, Suggestion, MedicationInputs, Screeni
 import { SUGGESTION_EVIDENCE } from './evidence';
 import { POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
 import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
-import { formatLimit, formatValue, limitOf, limitSIText, type Comparator, type InputLimit, type LimitField } from './lab-limits';
+import { LIMIT_NOT_GRADED, formatLimit, formatValue, limitOf, limitSIText, type Comparator, type InputLimit, type LimitField } from './lab-limits';
 import {
   type UnitSystem,
   type MetricType,
@@ -246,6 +246,11 @@ export function generateSuggestions(
   const shown = (field: LimitField, metric: MetricType, value: number): string => {
     const limit = limitOf(inputs, field);
     return fmtMetric(metric, limit?.bound ?? value, us(metric), limit?.comparator);
+  };
+  /** A checklist line for a test saved as a limit with no graded value: held, not missing (US-12 AC20). */
+  const limitLine = (label: string, field: LimitField, metric: MetricType): string[] => {
+    const limit = limitOf(inputs, field);
+    return limit ? [`\u2753 ${label}: ${shown(field, metric, limit.bound)} \u2014 ${LIMIT_NOT_GRADED}`] : [];
   };
   const bare = (field: LimitField, value: number): string => {
     const limit = limitOf(inputs, field);
@@ -558,7 +563,11 @@ export function generateSuggestions(
         const u = us(metric);
         checklist.push(`${icon} ${lipidMarker.label}: ${fmtMarkerValue(lipidMarker, u)} \u2014 target <${fmtLipidTarget(metric, lipidMarker.target, u)}`);
       } else {
-        checklist.push('\u2753 Lipids \u2014 not tested (consider getting ApoB or a lipid panel)');
+        const limited = [
+          ...limitLine('ApoB', 'apoB', 'apob'), ...limitLine('LDL-c', 'ldlC', 'ldl'),
+          ...limitLine('Total cholesterol', 'totalCholesterol', 'total_cholesterol'), ...limitLine('HDL', 'hdlC', 'hdl'),
+        ];
+        checklist.push(...(limited.length ? limited : ['\u2753 Lipids \u2014 not tested (consider getting ApoB or a lipid panel)']));
       }
 
       // Blood pressure, against the plan's age-dependent target
@@ -567,7 +576,8 @@ export function generateSuggestions(
         const onTarget = inputs.systolicBp < sysTarget && inputs.diastolicBp < 80;
         checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} Blood pressure: ${bare('systolicBp', inputs.systolicBp)}/${bare('diastolicBp', inputs.diastolicBp)} mmHg \u2014 target <${sysTarget}/80`);
       } else {
-        checklist.push('\u2753 Blood pressure \u2014 not entered');
+        const limited = [...limitLine('Systolic blood pressure', 'systolicBp', 'systolic_bp'), ...limitLine('Diastolic blood pressure', 'diastolicBp', 'diastolic_bp')];
+        checklist.push(...(limited.length ? limited : ['\u2753 Blood pressure \u2014 not entered']));
       }
 
       // BMI — consider healthy if <25 or if 25-29.9 with healthy waist-to-height ratio
@@ -582,7 +592,8 @@ export function generateSuggestions(
         const onTarget = inputs.hba1c < HBA1C_THRESHOLDS.prediabetes;
         checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} HbA1c: ${shown('hba1c', 'hba1c', inputs.hba1c)} \u2014 target <${fmtHba1c(HBA1C_THRESHOLDS.prediabetes, us('hba1c'))}`);
       } else {
-        checklist.push('\u2753 HbA1c \u2014 not tested');
+        const limited = limitLine('HbA1c', 'hba1c', 'hba1c');
+        checklist.push(...(limited.length ? limited : ['\u2753 HbA1c \u2014 not tested']));
       }
 
       // Medication status (only when medications are tracked). With no birth

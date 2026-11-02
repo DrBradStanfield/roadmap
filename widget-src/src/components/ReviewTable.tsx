@@ -295,7 +295,7 @@ type MatrixRow = CoreRow | AdditionalRow;
  *  (typically written by a connector). The cell edits like any other; it only
  *  saves when the user ticks "Replace". `id` is what the save sends as
  *  `correctsId`. */
-interface ExistingCell { id: string; display: string; valueSI?: number; lab?: LabQuantity; displayUnit?: string }
+interface ExistingCell { id: string; display: string; valueSI?: number; lab?: LabQuantity; displayUnit?: string; comparator?: Comparator }
 
 type EditableMatrixCell =
   | { state: 'editable'; kind: 'core'; fi: number; vi: number; initialDisplay: string; confidence: 'high' | 'medium' | 'low'; question?: string; printed?: string; valueSI: number; displayUnit: string; existing?: ExistingCell; comparator?: Comparator }
@@ -486,7 +486,7 @@ export function buildMatrixModel(
       if (edited || winner!.edited || !sameQuantity(quantity, winner!.quantity)) hiddenReadings.push({ label, day: slot.slice(slot.lastIndexOf('|') + 1) });
       return null;
     }
-    return prev && { id: prev.id, display: prev.displayValue, valueSI: prev.valueSI, lab: prev.lab, displayUnit: prev.displayUnit };
+    return prev && { id: prev.id, display: prev.displayValue, valueSI: prev.valueSI, lab: prev.lab, displayUnit: prev.displayUnit, ...comparatorOf(prev) };
   };
   for (const rank of [0, 1, 2]) results.forEach((r, fi) => {
     /** The column a value lands in: its own date's (US-12 AC12) or its file's. */
@@ -840,11 +840,14 @@ export function ReviewTable({
     return extractedError(cell);
   };
 
-  /** Is a ticked replacement the value already saved? A lab compares quantity, in its printed unit (US-35 AC6). */
-  const replacesNothing = (cell: EditableMatrixCell, existing: ExistingCell, value: number, editedStr: string): boolean =>
-    existing.valueSI !== undefined ? sameValue(value, existing.valueSI)
-      : existing.lab && cell.kind === 'additional' ? sameLabQuantity(existing.lab, { ...cell.lab, value })
+  /** Is a ticked replacement the value already saved? A lab compares quantity, in its printed unit (US-35 AC6).
+   *  A limit and an exact value of one number differ; an edited cell is exact (US-12 AC20). */
+  const replacesNothing = (cell: EditableMatrixCell, existing: ExistingCell, value: number, editedStr: string): boolean => {
+    const offered = isEditedText(cell, editedStr) ? undefined : cell.comparator;
+    return existing.valueSI !== undefined ? sameValue(value, existing.valueSI) && existing.comparator === offered
+      : existing.lab && cell.kind === 'additional' ? sameLabQuantity(existing.lab, { ...cell.lab, value, comparator: offered })
         : editedStr === existing.display;
+  };
 
   /** Walks the matrix cells, returns the editable ones with a non-empty
    *  edited display value — the cells that will save. Shared by both the

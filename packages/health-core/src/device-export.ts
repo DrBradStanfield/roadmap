@@ -66,8 +66,9 @@ export function deviceWrites(file: RoadmapFile, source: MeasurementSource): Devi
     if (!SINGLE_METRICS.has(row.metricType) && !isPressure) continue;
     const { root, length } = chainOf(row);
     const day = dayOf(row.recordedAt);
-    // A result printed as a limit is never a store's exact sample, nor half of one (US-12 AC20).
-    if (root.source === source || row.source === source || row.comparator) {
+    // A result printed as a limit is never a store's exact sample, nor half of
+    // one (US-12 AC20): any `comparator` key at all, valid or not, keeps it out.
+    if (root.source === source || row.source === source || 'comparator' in row) {
       if (isPressure) storeDays.add(day);
       continue;
     }

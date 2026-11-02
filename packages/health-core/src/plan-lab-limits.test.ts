@@ -135,3 +135,28 @@ describe('US-12 AC20: a comparator a reader cannot interpret makes the row unrea
     expect(computePlan(readableView(file).file, NOW).currentRows).toEqual([]);
   });
 });
+
+// Codex review of 0a2b89b0 (C2): the elevated Lp(a) checklist said "not tested"
+// for a test saved as a limit the plan could not grade. Held is not missing.
+describe('US-12 AC20: the Lp(a) checklist names a saved limit, never "not tested"', () => {
+  it('an undecided LDL and HbA1c read as printed with the plain line; an absent blood pressure is still "not entered"', () => {
+    const plan = computePlan(record([
+      { metricType: 'lpa', value: 150 },
+      { metricType: 'ldl', value: 1.5, comparator: '<' },
+      { metricType: 'hba1c', value: HBA1C_THRESHOLDS.prediabetes, comparator: '<=' },
+    ]), NOW);
+    const card = plan.results.suggestions.find((s) => s.id === 'lpa-elevated')!;
+    expect(card.description).toContain(`LDL-c: < 1.5 mmol/L — ${LIMIT_NOT_GRADED}`);
+    expect(card.description).toContain(`HbA1c: ≤ 38.8 mmol/mol — ${LIMIT_NOT_GRADED}`);
+    expect(card.description).not.toContain('Lipids — not tested');
+    expect(card.description).not.toContain('HbA1c — not tested');
+    expect(card.description).toContain('Blood pressure — not entered');
+  });
+});
+
+// Adversary review of 0a2b89b0 (R4): an inverted pair is left out with its limits (US-02 AC8).
+it('US-12 AC20: a blood pressure the wrong way up leaves the plan with its limit', () => {
+  const payload = planPayload(computePlan(record([{ metricType: 'systolic_bp', value: 100, comparator: '<' }, { metricType: 'diastolic_bp', value: 90 }]), NOW));
+  expect(payload.inputs.systolicBp).toBeUndefined();
+  expect(payload.inputs).not.toHaveProperty('limits');
+});

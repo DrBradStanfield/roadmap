@@ -60,4 +60,18 @@ describe('US-12 AC20: the chat context and a lab limit', () => {
     const history = buildMeasurementHistory([{ metricType: 'hdl', value: 1.2, recordedAt: '2025-01-01' }, { metricType: 'hdl', value: 1.5, comparator: '>', recordedAt: '2026-01-01' }]);
     expect(latestFromHistory(history)).toEqual({});
   });
+
+  // Adversary review of 0a2b89b0 (R5).
+  it('a client limit whose bound is outside the input range is refused and named in excludedFields, as an exact value would be', () => {
+    const json = JSON.parse(buildChatContextJson({ ...base, unitSystem: 'si', medications: [], screenings: [], limits: { ldlC: { comparator: '<', bound: 99 } } })!);
+    expect(json.latestValues).not.toHaveProperty('ldlC');
+    expect(json.excludedFields).toEqual(['ldlC']);
+  });
+
+  // Adversary review of 0a2b89b0 (R4).
+  it('a blood pressure the wrong way up is left out with its limits', () => {
+    const json = JSON.parse(buildChatContextJson({ ...base, unitSystem: 'si', medications: [], screenings: [], diastolicBp: 90,
+      limits: { systolicBp: { comparator: '<', bound: 100 } } })!); // graded at 80, under the diastolic 90
+    expect(json.latestValues).not.toHaveProperty('systolicBp');
+  });
 });

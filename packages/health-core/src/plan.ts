@@ -274,7 +274,11 @@ export function computePlan(file: RoadmapFile, now = new Date(), unitOverrides?:
       );
     }
     const stripped = { ...inputs } as Record<string, unknown>;
-    for (const field of invalid) stripped[field] = undefined;
+    let limits = inputs.limits;
+    // A field left out goes with its limit (US-12 AC20): an inverted pressure printed as a limit too.
+    for (const field of invalid) { stripped[field] = undefined; limits = withoutLimit(limits, field).limits; }
+    stripped.limits = limits;
+    if (!limits) delete stripped.limits;
     inputs = stripped as Partial<HealthInputs>;
     excluded = [...invalid];
   }

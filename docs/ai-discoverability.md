@@ -43,6 +43,8 @@ change below. The original plan and its reasoning:
   `get_plan` say a value with a `comparator` is a lab limit, not the number;
   `file_results` takes an optional `comparator`; the server instructions say so.
   The pins in `app/lib/mcp-freeze.test.ts` now guard the open Claude directory review.
+  file_results says to send a limit's bound with `comparator` (it said not to file
+  one); its privacy wording is unchanged.
 - `/pages/start` and `/pages/health` are hidden (page metafield `seo.hidden`=1):
   noindex and out of the sitemap. `/pages/health-plan` is still indexable.
 - Google Search Console: all three sites verified by DNS record (potassiumfiber.com

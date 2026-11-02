@@ -16,6 +16,9 @@
  * with a comparator is a lab limit, not the number; file_results takes a
  * `comparator` (the four codes) and import candidates carry one; the
  * instructions' unit note says so too. Prompts and server info are unchanged.
+ * Re-taken again the same day after review: file_results' privacy wording
+ * ("in memory for one request", "until then … unconfirmed", "never inferred")
+ * restored word for word, and the published list's budget raised to 16,500.
  */
 import { describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
@@ -28,7 +31,7 @@ const sha256 = (value: unknown) => createHash('sha256').update(JSON.stringify(va
 describe('US-35 AC13 — the published connector text changes only on purpose', () => {
   it.each([
     ['INSTRUCTIONS', INSTRUCTIONS, '73f64dc05693aab921d50b60db290f33b37a02a51b8e509c9eb941c44f88ffae'],
-    ['MCP_TOOLS', MCP_TOOLS, '350b4aa9552ef5d32c5be757d74f84d539927adf284844d8969d16206176a3d6'],
+    ['MCP_TOOLS', MCP_TOOLS, '47f8fda97a26a1c59f371e54f2c8db24d954380a427cf53373ffd86bc9657877'],
     ['MCP_PROMPTS', MCP_PROMPTS, 'a159ee16a3ce5fefc23ed8f90178a852551350795731fabd30ca7a5f6267c140'],
     ['SERVER_INFO', SERVER_INFO, 'ce1110c13b5b005a4f14f0068138039eecd7fddc888032f08479060ad2da400f'],
   ] as const)('%s hashes to its pinned value (re-taken 2026-11-02, US-12 AC20)', (_name, value, pinned) => {
@@ -44,6 +47,6 @@ describe('US-32 AC50 — the tools/list answer itself is pinned', () => {
       instructions: INSTRUCTIONS,
       callTool: async () => ({ errorMessage: 'not called' }),
     })) as { result: { tools: unknown } };
-    expect(sha256(answer.result.tools)).toBe('59e92fa521b219bf0247ae8f365e75509083c2648539a120c3b01b56c631793d');
+    expect(sha256(answer.result.tools)).toBe('942ad54ba48fc254954caa404e1615367599992a13c0c10c5ec08a0d31ecd055');
   });
 });

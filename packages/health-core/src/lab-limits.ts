@@ -198,7 +198,8 @@ export function bandDecides(cutoffs: readonly number[], comparator: Comparator, 
  * the band; null when one does, so it gets no colour.
  */
 export function referenceGradeValue(limit: Pick<InputLimit, 'comparator' | 'bound'>, referenceLow?: number | null, referenceHigh?: number | null): number | null {
-  const cutoffs = [referenceLow, referenceHigh].filter((c): c is number => typeof c === 'number' && Number.isFinite(c));
+  // A bound at or below 0 is no cutoff: CRP's printed "0-5" must not leave every "< x" undecided.
+  const cutoffs = [referenceLow, referenceHigh].filter((c): c is number => typeof c === 'number' && Number.isFinite(c) && c > 0);
   if (!bandDecides(cutoffs, limit.comparator, limit.bound)) return null;
   const step = Math.max(1e-6, Math.abs(limit.bound) * 1e-6);
   return limit.comparator === '<' || limit.comparator === '<=' ? limit.bound - step : limit.bound + step;
