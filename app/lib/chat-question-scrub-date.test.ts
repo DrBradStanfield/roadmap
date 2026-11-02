@@ -29,6 +29,13 @@ describe('scrubQuestion: US-15 AC44d a date placeholder covers only a day and a 
     ['a lab value beside the month', 'my LDL 130 March 3rd, too high?', 'my LDL [date], too high?'],
     ['two months joined by "and"', 'tested in March and April 2024', 'tested in [date] 2024'],
     ['a time beside the date', 'my testosterone at 8am March 3rd was low', 'my testosterone at [date] was low'],
+    // Each word is tested on its own, whole (adversary + Codex on PR 511).
+    ['a year glued to the month', 'tested March-2024, LDL 3.1', 'tested [date], LDL 3.1'],
+    ['a diagnosis glued to the month', 'March/cancer, what helps?', '[date], what helps?'],
+    ['a month glued after a word', 'cancer/March, what helps?', '[date], what helps?'],
+    // At most one day number, so a 2-digit lab value cannot ride along.
+    ['a 2-digit lab value beside the day', 'my LDL 80 March 3rd, too high?', 'my LDL [date], too high?'],
+    ['two bare numbers and a month', 'my LDL 80 3 March, too high?', 'my LDL [date], too high?'],
   ])('skips %s', async (_, q, a) => {
     expect(await scrub(q, a)).toBeNull();
   });

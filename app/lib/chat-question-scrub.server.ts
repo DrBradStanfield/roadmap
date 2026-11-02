@@ -90,7 +90,9 @@ function leavesName(question: string, kept: string): boolean {
 const leavesIdentity = (question: string, kept: string) => HANDLE.test(kept) || leavesName(question, kept);
 
 const collapse = (text: string) => text.replace(/\s+/g, ' ').trim();
-const MONTH = /\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\b/i;
+/** A whole word that is a month name or its short form, so "March-2024" and "March/cancer" are not one. */
+const MONTH = /^(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)$/i;
+const DAY = /^[\d#]{1,2}(?:st|nd|rd|th)?$/i;
 /** Words that change what a question means; a placeholder never covers one. */
 const MEANING = /\b(?:not|no|never|cannot|without|unless|except|but|if|than|less|more|only|avoid|stop|instead|before|after)\b|n['’]t\b/i;
 const STREET = /\b(?:st|street|rd|road|ave|avenue|lane|ln|drive|dr|pl|place|cres|crescent|way|tce|terrace|blvd|boulevard|ct|court|close|hwy|highway)\b/i;
@@ -130,13 +132,15 @@ function coversAge(kind: string, span: string): boolean {
 }
 
 /**
- * Is `span` a day and a month: a month word, and every other word a day
- * ("3", "3rd", "##") or "of" (US-15 AC44d)? A year is kept, as the prompt
- * says, so "March 2024" and "March and cancer" are not a date.
+ * Is `span` a day and a month: a month word, at most one day ("3", "3rd",
+ * "##") and nothing else but "of", each word tested whole (US-15 AC44d)? A
+ * year is kept, as the prompt says, so "March 2024", "March-2024" and "March
+ * and cancer" are not a date, and "80 March 3rd" is not one day.
  */
 function isDayMonth(span: string): boolean {
-  const words = span.split(' ');
-  return MONTH.test(span) && words.every((w) => MONTH.test(w) || /^[\d#]{1,2}(?:st|nd|rd|th)?$/i.test(w) || w === 'of');
+  const words = span.split(/\s+/);
+  return words.some((w) => MONTH.test(w)) && words.filter((w) => DAY.test(w)).length <= 1 &&
+    words.every((w) => MONTH.test(w) || DAY.test(w) || w === 'of');
 }
 
 /**
