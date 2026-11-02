@@ -5,7 +5,7 @@
  * captured with the page. Synthetic values.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render } from '@testing-library/react';
+import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import type { ApiMeasurement } from '@roadmap/health-core';
 import { VITALS_DRAFT_KEY } from '../lib/storage';
 import { a11yTextWithDigits } from '../testing/a11y-text';
@@ -105,3 +105,38 @@ describe('US-02 AC8: a blood pressure the wrong way up is the pair\'s error', ()
   });
 });
 
+
+describe('US-02 AC9: a vitals range error waits while more digits could fix it', () => {
+  const draftOf = (root: HTMLElement, name: string) => Array.from(root.querySelectorAll('.bt-row'))
+    .find((r) => r.querySelector('.bt-name-label')?.textContent === name)!.querySelector('.bt-cell-draft input') as HTMLInputElement;
+  const cellErrors = (root: HTMLElement) => [...root.querySelectorAll('.bt-input-error-text')].map(e => e.textContent);
+
+  it('a waist of "4" (on the way to 40-something) says nothing until the cell is left', () => {
+    const view = renderVitals();
+    const waist = draftOf(view.container, 'Waist Circumference');
+    act(() => waist.focus());
+    fireEvent.change(waist, { target: { value: '4' } });
+    expect(cellErrors(view.container)).toEqual([]);
+    expect(waist.getAttribute('aria-invalid')).toBe('false');
+    act(() => waist.blur());
+    expect(cellErrors(view.container)).toEqual(['Min 40 cm']);
+  });
+
+  it('a waist of "3" can never fit and says so at once', () => {
+    const view = renderVitals();
+    const waist = draftOf(view.container, 'Waist Circumference');
+    act(() => waist.focus());
+    fireEvent.change(waist, { target: { value: '3' } });
+    expect(cellErrors(view.container)).toEqual(['Min 40 cm']);
+  });
+
+  it('a systolic "6" (60 to 69 still fit) says nothing until left; Enter shows it', () => {
+    const view = renderVitals();
+    const sys = view.getByRole('textbox', { name: 'Systolic blood pressure' });
+    act(() => sys.focus());
+    fireEvent.change(sys, { target: { value: '6' } });
+    expect(errors(view.container)).toEqual([]);
+    fireEvent.keyDown(sys, { key: 'Enter' });
+    expect(errors(view.container)).toEqual(['Min 60 mmHg']);
+  });
+});

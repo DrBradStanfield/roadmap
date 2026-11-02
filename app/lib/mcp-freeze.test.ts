@@ -1,20 +1,18 @@
 /**
- * US-35 AC13 (2026-10-19): the text the connector publishes is frozen while
- * the MCP 1.0.2 submission is in OpenAI's review. Each hash is the value at
- * origin/main cab5615a (MCP_TOOLS and tools/list re-pinned for US-32 AC52 on this held branch): the server instructions, every tool definition (names,
- * descriptions, input and output schemas, annotations, _meta), the prompts and
- * the server info. A wording change in a RESULT moves none of them; a change
- * to what initialize, tools/list or prompts/list answers fails here until the
- * verdict, when the pins are re-taken on purpose.
+ * US-35 AC13 (2026-10-19): the text the connector publishes was frozen while
+ * the MCP 1.0.2 submission was in OpenAI's review. That review ended
+ * 2026-10-29 (declined on scope; Brad 2026-11-02: no resubmission), so the
+ * reason for the freeze is gone. The pins stay, as a tripwire, until Brad
+ * decides whether to keep or drop them (PR for 2026-11-02). Each hash is the
+ * value after PR #209 (US-32 AC50, AC52): the server instructions, every tool
+ * definition (names, descriptions, input and output schemas, annotations,
+ * _meta), the prompts and the server info. A wording change in a RESULT moves
+ * none of them; a change to what initialize, tools/list or prompts/list
+ * answers fails here until the pins are re-taken on purpose.
  *
  * US-32 AC50 (2026-10-21): the definitions are not the wire. `tools/list` is
  * hashed too, as the shared dispatch answers it, so a change made while
- * serializing (annotations.title; AC51's field strip) moves a pin. Re-pinned on the held branch
- * claude/mcp-annotation-title, merged only after OpenAI's 1.0.2 verdict.
- *
- * US-32 AC52 (2026-10-21): four descriptions rewritten to name their sibling
- * tools (Glama's tool-quality grade). MCP_TOOLS and tools/list re-pinned on the
- * same held branch, so the verdict brings one freeze bump.
+ * serializing (annotations.title; AC51's field strip) moves a pin.
  *
  * US-66 AC11 (2026-11-02): read_record, add_measurement and add_lab_values say
  * every blood test is a labValues row; tool layer v3. MCP_TOOLS and tools/list
@@ -28,7 +26,7 @@ import { dispatchRpc, SERVER_INFO } from '../../packages/health-core/src/mcp-rpc
 
 const sha256 = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
-describe('US-35 AC13 — the published connector text is frozen during the 1.0.2 review', () => {
+describe('US-35 AC13 — the published connector text is pinned (frozen for the 1.0.2 review, which ended 2026-10-29)', () => {
   it.each([
     ['INSTRUCTIONS', INSTRUCTIONS, '765b597e650f5e6e19169462ee9aa5746ec78d46ac8680bc9224e64825bbf26d'],
     ['MCP_TOOLS', MCP_TOOLS, 'f9e34af359f0590560d558e9ad77c8e6b4e0b394d515d519f1b2bee757ab8184'],

@@ -2139,7 +2139,8 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     expect(importHint('no_date')).toContain('fileDates: [{ "file": "<name as listed>", "date": "YYYY-MM-DD" }]');
   });
 
-  // US-12 AC12 is website-only while MCP 1.0.2 is in OpenAI's review: the
+  // US-12 AC12 is website-only, held for OpenAI's MCP 1.0.2 review (ended
+  // 2026-10-29; still held until someone brings the connector level): the
   // shared parse now reads a dated "Prev." column, and import_documents must
   // offer exactly what it did before. Synthetic values, through the real parse.
   it('AC5/AC13 — import_documents does not offer a previous-column value, and fileDates moves only the primary column', () => {

@@ -313,7 +313,7 @@ describe('US-35 AC2/AC5: isImportableEntryName', () => {
 // US-12 AC8 — dot thousands on a count, apostrophe thousands, and a count of
 // the rows the parse dropped
 // ---------------------------------------------------------------------------
-import { canonicalLabRow, LAB_CATALOG, LAB_GROUPS, labSlotKey, PROMPT_DEFERRED_KEYS, resolveLabCatalogEntry } from './lab-catalog';
+import { canonicalLabRow, LAB_CATALOG, LAB_GROUPS, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
 
 describe('US-12 AC8: an ambiguous number is refused, and the refusal is counted', () => {
   // A null optional field is not an unreadable value: the row stays.
@@ -849,13 +849,13 @@ describe('US-21 AC4: the prompt suggests the lab catalogue keys, and only those'
           return key;
         });
       });
-      // Every key but the AC19 tests, held back until the #166 benchmark.
-      expect([...named].sort()).toEqual(LAB_CATALOG.map(e => e.key).filter(k => !PROMPT_DEFERRED_KEYS.has(k)).sort());
+      // Every catalogue key (US-07 AC10, Brad 2026-11-02: "release now").
+      expect([...named].sort()).toEqual(LAB_CATALOG.map(e => e.key).sort());
     });
-    // US-21 AC19/AC20: the catalogue grew, the prompt did not. Its two name
-    // lists are pinned to what main rendered before (2026-10-20); a change here
-    // is a prompt change and waits for the #166 Haiku benchmark.
-    it(`${mode}: the TARGET METRICS and ADDITIONAL VALUES lists are unchanged by the catalogue additions`, () => {
+    // The prompt's two name lists, pinned: a change here is a prompt change. The
+    // AC19 tests joined on Brad's call without the #166 benchmark (US-07 AC10,
+    // 2026-11-02: "release now"), since the printed name now files the row.
+    it(`${mode}: the TARGET METRICS and ADDITIONAL VALUES lists are pinned`, () => {
       const prompt = unifiedSystemPrompt(mode);
       const target = prompt.slice(prompt.indexOf('TARGET METRICS (use these exact keys):'), prompt.indexOf('CRITICAL RULES')).trimEnd().split('\n').slice(1);
       expect(target).toEqual([
@@ -872,14 +872,14 @@ describe('US-21 AC4: the prompt suggests the lab catalogue keys, and only those'
         '  - "diastolic_bp" — Diastolic Blood Pressure, Diastolic BP, DBP',
       ]);
       expect(block(prompt)).toEqual([
-        '  Renal & electrolytes: sodium, potassium, chloride, bicarbonate, urea, urate, urine_acr, urine_creatinine, urine_pcr, cystatin_c, egfr',
-        '  Liver: alt, ast, ggt, alp, bilirubin_total, bilirubin_direct, ldh, albumin, total_protein, globulin',
-        '  Blood count: haemoglobin, haematocrit, rbc, wbc, platelets, neutrophils, lymphocytes, monocytes, eosinophils, basophils, mcv, mch, mchc, rdw',
-        '  Thyroid: tsh, ft4, ft3, anti_tpo',
-        '  Hormones: testosterone_total, free_testosterone, free_testosterone_calculated, shbg, estradiol, prolactin, cortisol_am, psa_free, lh, fsh, progesterone, dhea_s, igf1',
-        '  Vitamins & minerals: vitamin_d, vitamin_b12, b12_active, folate, ferritin, iron, tibc, transferrin, transferrin_sat, magnesium, calcium_corrected, calcium_total, phosphate, zinc',
-        '  Inflammation: crp, esr',
-        '  Metabolic: glucose, glucose_random, insulin, apoa1, homocysteine, ck',
+        '  Renal & electrolytes: sodium, potassium, chloride, bicarbonate, urea, urate, urine_acr, urine_creatinine, urine_pcr, cystatin_c, egfr, egfr_cystatin, egfr_combined, anion_gap, osmolality_serum',
+        '  Liver: alt, ast, ggt, alp, bilirubin_total, bilirubin_direct, ldh, albumin, total_protein, globulin, bilirubin_indirect, lipase, amylase',
+        '  Blood count: haemoglobin, haematocrit, rbc, wbc, platelets, neutrophils, lymphocytes, monocytes, eosinophils, basophils, mcv, mch, mchc, rdw, rdw_sd, mpv, immature_granulocytes, reticulocytes, nrbc, d_dimer, fibrinogen',
+        '  Thyroid: tsh, ft4, ft3, anti_tpo, total_t4, total_t3, reverse_t3, t3_uptake, thyroglobulin, anti_tg, trab',
+        '  Hormones: testosterone_total, free_testosterone, free_testosterone_calculated, shbg, estradiol, prolactin, cortisol_am, cortisol_random, cortisol_pm, psa_free, lh, fsh, progesterone, dhea_s, igf1, pth, amh, bioavailable_testosterone, psa_free_percent, estrone, androstenedione, oh_progesterone_17, dht, acth, gh, hcg',
+        '  Vitamins & minerals: vitamin_d, vitamin_b12, b12_active, folate, ferritin, iron, tibc, transferrin, transferrin_sat, magnesium, calcium_corrected, calcium_total, phosphate, zinc, red_cell_folate, calcium_ionised, uibc, stfr, copper, caeruloplasmin, selenium, omega3_index, vitamin_a, vitamin_e, vitamin_c, vitamin_b6, vitamin_b1, mma',
+        '  Inflammation: crp, esr, procalcitonin, ige, rf, anti_ccp, total_iga, ttg_iga',
+        '  Metabolic: glucose, glucose_random, insulin, apoa1, homocysteine, ck, nt_probnp, bnp, troponin_t, troponin_i, c_peptide, eag, vldl, lactate, fructosamine',
         '  Any other test: use the best descriptive snake_case name.',
       ]);
     });
@@ -924,7 +924,7 @@ describe('US-12 AC12: a previous-results column with its own printed date become
     expect(prompt).not.toContain('even if those historical columns are dated');
   });
 
-  it('metadata (the connector, held during the MCP 1.0.2 review): the base rule, every previous column ignored', () => {
+  it('metadata (the connector, held since the MCP 1.0.2 review): the base rule, every previous column ignored', () => {
     const prompt = unifiedSystemPrompt('metadata');
     expect(prompt).toContain('If the report shows previous/historical results (in a "Previous" column, "Last visit" column, trend graph, or any side-by-side layout), IGNORE them completely. Extract ONLY values from the current report\'s primary column, even if those historical columns are dated. Return at most ONE entry per metric — never duplicate a metric in the output.');
     expect(prompt).not.toContain('recordedAt');
