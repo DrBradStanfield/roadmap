@@ -223,6 +223,12 @@ interface InputPanelProps {
   revealCell?: { field: string; grid: boolean } | null;
 }
 
+/** A height for the feet and inches boxes to show: one there is, and not the
+ *  one they just wrote themselves (US-02 AC11). */
+function showsOtherHeight(heightCm: number | undefined, typed: number | undefined): heightCm is number {
+  return heightCm !== undefined && heightCm !== typed;
+}
+
 /**
  * Auto-advance focus once a typed value is complete: fires immediately, or
  * after a short wait when the current digits could still extend to another
@@ -561,15 +567,19 @@ export function InputPanel({
   // Feet/inches state for US height input
   const [heightFeet, setHeightFeet] = useState<string>('');
   const [heightInches, setHeightInches] = useState<string>('');
+  // The height the feet and inches boxes last wrote (US-02 AC11).
+  const typedHeightCm = useRef<number | undefined>(undefined);
 
-  // Sync heightCm → feet/inches display when loading data or switching units
+  // Sync heightCm → feet/inches display when loading data or switching units,
+  // never from the boxes' own edit, which keeps what was typed (US-02 AC11).
   useEffect(() => {
-    if (unitSystem === 'conventional' && inputs.heightCm !== undefined) {
+    if (unitSystem === 'conventional' && showsOtherHeight(inputs.heightCm, typedHeightCm.current)) {
       const { feet, inches } = cmToFeetInches(inputs.heightCm);
       setHeightFeet(String(feet));
       setHeightInches(String(inches));
     } else if (unitSystem === 'si') {
       // Clear feet/inches when switching to SI
+      typedHeightCm.current = undefined;
       setHeightFeet('');
       setHeightInches('');
     }
@@ -1085,7 +1095,8 @@ export function InputPanel({
               const feet = parseInt(val, 10) || 0;
               const inches = parseInt(heightInches, 10) || 0;
               if (val !== '' || heightInches !== '') {
-                updateField('heightCm', feetInchesToCm(feet, inches));
+                typedHeightCm.current = feetInchesToCm(feet, inches);
+                updateField('heightCm', typedHeightCm.current);
               } else {
                 updateField('heightCm', undefined);
               }
@@ -1113,7 +1124,8 @@ export function InputPanel({
               const feet = parseInt(heightFeet, 10) || 0;
               const inches = parseInt(val, 10) || 0;
               if (heightFeet !== '' || val !== '') {
-                updateField('heightCm', feetInchesToCm(feet, inches));
+                typedHeightCm.current = feetInchesToCm(feet, inches);
+                updateField('heightCm', typedHeightCm.current);
               } else {
                 updateField('heightCm', undefined);
               }
