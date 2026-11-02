@@ -646,7 +646,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
 
     updateProgress({ current: 33, total: 100, fileName: `Analyzing ${allFiles.length} files...` });
 
-    const { batchId, error: batchError, errorCode: batchErrorCode } = await labImportBatch(allFiles);
+    const { batchId, error: batchError, errorCode: batchErrorCode } = await labImportBatch(allFiles, abort.signal);
     if (abort.signal.aborted) return [];
     if (!batchId) throw new UploadError(batchError || 'Failed to start processing', batchErrorCode || 'server_error');
 

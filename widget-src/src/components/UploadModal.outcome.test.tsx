@@ -749,3 +749,18 @@ describe('US-16 AC2a: a screening date from an upload the erase overtook', () =>
     vi.mocked(getEraseIdentity).mockReturnValue('');
   });
 });
+
+// US-12 AC5a: Cancel reaches the batch transport. The Pages build's queue
+// (byok-upload.ts) stops on this signal; before, only the modal's poll stopped.
+describe('US-12 AC5a: Cancel during a batch upload (20+ files) aborts the batch', () => {
+  it('hands the batch a signal that Cancel aborts', async () => {
+    vi.mocked(labImportBatch).mockResolvedValue({ batchId: 'batch_abc' });
+    vi.mocked(pollBatchStatus).mockResolvedValue({ status: 'processing', completed: 0, total: 20 });
+    render_(); pick(...Array.from({ length: 20 }, (_, i) => pdf(`r${i}.pdf`)));
+    await waitFor(() => expect(labImportBatch).toHaveBeenCalled());
+    const signal = (vi.mocked(labImportBatch).mock.calls[0] as unknown[])[1] as AbortSignal | undefined;
+    expect(signal?.aborted).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(signal?.aborted).toBe(true);
+  });
+});
