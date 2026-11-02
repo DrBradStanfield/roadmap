@@ -20,6 +20,8 @@ for TEST in $TESTS; do
   xcrun simctl boot "$ID" 2>/dev/null || true
   xcrun simctl bootstatus "$ID" -b >/dev/null
   xcrun simctl uninstall "$ID" com.drstanfield.healthroadmap 2>/dev/null || true
+  # A test may answer Apple's Health sheet for good; clear it so the next test sees the sheet (US-56 AC5c).
+  xcrun simctl privacy "$ID" reset health com.drstanfield.healthroadmap 2>/dev/null || true
   if xcodebuild test-without-building -project HealthRoadmap.xcodeproj -scheme HealthRoadmap \
       -destination "id=$ID" -derivedDataPath "$DERIVED" -parallel-testing-enabled NO \
       -only-testing:"HealthRoadmapUITests/$CLASS/$TEST" 2>&1 | grep -q "TEST EXECUTE SUCCEEDED"; then

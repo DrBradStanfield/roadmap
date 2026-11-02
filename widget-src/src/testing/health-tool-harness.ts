@@ -4,7 +4,7 @@
 // hoists them per file. Imported by tests only.
 
 import { beforeEach, afterEach, vi } from 'vitest';
-import { cleanup } from '@testing-library/react';
+import { cleanup, fireEvent } from '@testing-library/react';
 import type { HealthInputs } from '@roadmap/health-core';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import {
@@ -56,4 +56,16 @@ export async function seedGuest(
   for (const [metric, value] of measurements) await addMeasurement(metric, value, day);
   for (const [key, drug, dose] of meds) await saveMedication(key, drug, dose ?? null, dose ? 'mg' : null);
   await flushRoadmapStore();
+}
+
+/** US-62 AC11: rows show on phone and desktop; this shows the grids, which
+ *  sit mounted but hidden under them. */
+export function showTables(root: ParentNode = document): void {
+  const button = [...root.querySelectorAll('button')].find(b => b.textContent === 'All results as a table');
+  if (button) fireEvent.click(button);
+}
+
+/** US-62 AC12: a returning record's About you is rows; this opens each, so its field shows. */
+export function openAboutYou(root: ParentNode = document): void {
+  root.querySelectorAll<HTMLButtonElement>('.about-row').forEach(b => fireEvent.click(b));
 }

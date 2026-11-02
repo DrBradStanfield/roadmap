@@ -20,7 +20,7 @@ import {
   pressureInverted,
   rowTarget,
 } from '@roadmap/health-core';
-import { blockBadNumericKeys, blockNonIntegerKeys, readTypedValue, sameAsSaved, validateTypedValue } from '../lib/blood-test-cell';
+import { blockBadNumericKeys, blockNonIntegerKeys, readTypedValue, sameAsSaved, savedCellText, savedLabText, validateTypedValue } from '../lib/blood-test-cell';
 import { activeRowIndex, slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import { pressureReadings, readingsOf, type DayReading } from '../lib/my-data-rows';
 import { groupLabValues } from '../lib/lab-rows';
@@ -76,18 +76,20 @@ export function ValuePage({ subject, history, labValues, ctx, onSave, onCorrect,
 
   const readings: DayReading[] = subject.kind === 'bp' ? pressureReadings(history)
     : metric ? readingsOf(history, metric)
-    : [...(lab?.points ?? [])].reverse().map(p => ({ day: p.recordedAt.slice(0, 10), id: p.id, value: p.value }));
+    : [...(lab?.points ?? [])].reverse().map(p => ({ day: p.recordedAt.slice(0, 10), id: p.id, value: p.value, comparator: p.comparator }));
 
   // The chart's points, oldest first, in the units shown; a pressure draws both halves.
   const charts = useMemo(() => {
-    const series = (rows: DayReading[], y: (r: DayReading) => number) => [...rows].reverse().map(r => ({ x: chartTimestamp(r.day), y: y(r) }));
+    // A limit is a hollow dot at its bound, read with its symbol (US-12 AC20).
+    const series = (rows: DayReading[], y: (r: DayReading) => number, limit?: (r: DayReading) => string) => [...rows].reverse()
+      .map(r => ({ x: chartTimestamp(r.day), y: y(r), ...(r.comparator && limit ? { limit: limit(r) } : {}) }));
     // Each line in its row's colour (`tintOf`), as the iPhone's metric page draws it.
     if (subject.kind === 'bp') return [
       { title: 'Systolic', data: series(readings, r => r.value), unit: 'mmHg', color: tintOf('blood_pressure') },
       { title: 'Diastolic', data: series(readings, r => r.dia!.value), unit: 'mmHg', color: tintOf('diastolic_bp') },
     ];
-    if (metric) return [{ title: label, data: series(readings, r => cellFromSI(metric, r.value, unit)), unit: cellLabel(metric, unit), color: tintOf(metric) }];
-    return lab && !lab.mixedUnits ? [{ title: label, data: series(readings, r => r.value), unit: lab.unit, color: tintOf(null) }] : [];
+    if (metric) return [{ title: label, data: series(readings, r => cellFromSI(metric, r.value, unit), r => savedCellText(metric, r.value, unit, r.comparator)), unit: cellLabel(metric, unit), color: tintOf(metric) }];
+    return lab && !lab.mixedUnits ? [{ title: label, data: series(readings, r => r.value, r => savedLabText(r.value, r.comparator)), unit: lab.unit, color: tintOf(null) }] : [];
   }, [history, labValues, subject, unit]);
 
   // Correct on a pressure fills the Add form with its day: a pressure is one reading, corrected whole.
@@ -96,14 +98,14 @@ export function ValuePage({ subject, history, labValues, ctx, onSave, onCorrect,
   return (
     <section className="md-page" aria-labelledby={titleId}>
       <button type="button" className="md-back" onClick={onClose}>‹ My data</button>
-      <h3 id={titleId} ref={titleRef} tabIndex={-1} className="md-page-title">{label}</h3>
+      <h3 id={titleId} ref={titleRef} tabIndex={-1} className="health-section-title md-page-title">{label}</h3>
       {target && target.bare && <p className="md-page-target">{target.full}</p>}
 
       {readings.length > 0 && (
         <ErrorBoundary>
           <Suspense fallback={<p className="history-loading">Loading chart…</p>}>
             {lab?.mixedUnits && <MixedUnitsNote label={label} units={[...new Set(lab.points.map(p => p.unit))]}/>}
-            {charts.map(c => <TimeSeriesChart key={c.title} title={c.title} data={c.data} unit={c.unit} color={c.color}/>)}
+            {charts.map(c => <TimeSeriesChart key={c.title} title={c.title} showTitle={c.title !== label} data={c.data} unit={c.unit} color={c.color}/>)}
           </Suspense>
         </ErrorBoundary>
       )}
@@ -128,10 +130,10 @@ export function ValuePage({ subject, history, labValues, ctx, onSave, onCorrect,
                           aria-label={`Correct the reading of ${formatShortDate(r.day)}`}>Correct</button>
                 </span>
               ) : metric ? (
-                <ValueCell metric={metric} display={unit} grading={ctx.grading} value={r.value} rowId={r.id}
-                           status={valueStatus(metric, r.value, ctx)} pinned={false} onCorrect={onCorrect} say={say}/>
+                <ValueCell metric={metric} display={unit} grading={ctx.grading} value={r.value} comparator={r.comparator} rowId={r.id}
+                           status={valueStatus(metric, r.value, ctx, r.comparator)} pinned={false} onCorrect={onCorrect} say={say}/>
               ) : (
-                <ValueCell value={r.value} unit={lab?.mixedUnits ? lab.points.find(p => p.id === r.id)?.unit : undefined}
+                <ValueCell value={r.value} comparator={r.comparator} unit={lab?.mixedUnits ? lab.points.find(p => p.id === r.id)?.unit : undefined}
                            rowId={r.id} status={null} pinned={false} onCorrect={onCorrect} say={say}/>
               )}
             </li>
@@ -193,7 +195,7 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef 
   dirtyRef.current = (text !== '' || dia !== '') && (!start || text !== String(Math.round(start.value)) || dia !== String(Math.round(start.dia?.value ?? NaN)));
   useEffect(() => () => { dirtyRef.current = false; }, []);
   const taken = held.some(Boolean);
-  const takenText = !taken ? '' : metric ? `${cellText(metric, held[0]!.value, unit)} ${cellLabel(metric, unit)}`
+  const takenText = !taken ? '' : metric ? `${savedCellText(metric, held[0]!.value, unit, held[0]!.comparator)} ${cellLabel(metric, unit)}`
     : held[0] && held[1] ? `${Math.round(held[0].value)}/${Math.round(held[1].value)} mmHg` : 'part of a reading';
 
   const parse = (): Record<string, number> | string => {

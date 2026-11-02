@@ -242,6 +242,7 @@ import { fileURLToPath } from "node:url";
 import { externalSources, headBlob, LINK_POLICY, materialiseLinks } from "./codex-review-links.mjs";
 import { includeHash, includeWalk, isHealthRecord, isInstructionName, readRegular } from "./codex-review-include.mjs";
 import { isSecretName, isSecretPath, SECRET_EXCLUDES } from "./codex-review-names.mjs";
+import { mainOf, PATTERN_SPAN, PATTERNS, realFolder } from "./secret-rules.mjs";
 
 const args = process.argv.slice(2);
 const opt = (name, dflt) => { const i = args.indexOf(name); return i === -1 ? dflt : args[i + 1]; };
@@ -460,22 +461,9 @@ function pinnedPolicy(flag) {
   try { policyRead = JSON.parse(text); } catch { usage(`${flag}: the pinned-root policy ${INCLUDE_POLICY} is not JSON`); }
   return policyRead;
 }
-/**
- * The main checkout of the wrapper's own repo (the folder holding its common .git), real path; never cwd, never a
- * worktree's own folder, so a worktree's copy of a `./` root is not pinned. Null when git cannot say.
- */
+/** The wrapper's own main checkout (tools/secret-rules.mjs), looked up once, so a worktree's copy of a `./` root is not pinned. */
 let mainCheckout;
-const mainOf = () => {
-  if (mainCheckout !== undefined) return mainCheckout;
-  mainCheckout = null;
-  try {
-    // GIT_DIR and friends would redirect the answer to another repo (adversary R4).
-    const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^GIT_(DIR|COMMON_DIR|WORK_TREE|INDEX_FILE)$/.test(k)));
-    const common = execFileSync("git", ["-C", HOME_REPO, "rev-parse", "--path-format=absolute", "--git-common-dir"], { encoding: "utf8", env, stdio: ["ignore", "pipe", "ignore"] }).trim();
-    if (basename(common) === ".git" && realFolder(common)) mainCheckout = realpathSync(dirname(common));
-  } catch { /* stays null */ }
-  return mainCheckout;
-};
+const homeMain = () => (mainCheckout === undefined ? (mainCheckout = mainOf(HOME_REPO)) : mainCheckout);
 /**
  * Pinned roots, `~/` expanded, `./` against the main checkout (survives a folder rename), never resolved through a
  * link; a glob (`*`, `?`, `[0-9]`) may stand in the last part (`knowledge-map-raw/refresh-*`, `output/[0-9] *`). A
@@ -484,7 +472,7 @@ const mainOf = () => {
  */
 function parseRoots(list) {
   return list.map(String).map((r) => {
-    const dot = r.startsWith("./"), main = dot ? mainOf() : null;
+    const dot = r.startsWith("./"), main = dot ? homeMain() : null;
     const text = resolve(dot ? join(main ?? "\0", r.slice(2)) : r.replace(/^~(?=\/)/, process.env.HOME ?? "\0")), glob = /[*?[]/.test(basename(text));
     const fixed = glob ? dirname(text) : text;
     const pattern = glob ? globRe(basename(text)) : null;
@@ -505,7 +493,6 @@ function parseRoots(list) {
  * must be a real folder (not a file, not a link) with `p` at or below it: `output/[0-9] *` pins numbered video FOLDERS,
  * never a loose file whose name happens to match (AC15).
  */
-const realFolder = (d) => { try { const st = lstatSync(d); return st.isDirectory() && !st.isSymbolicLink(); } catch { return false; } };
 const rootIn = (roots, p) => {
   const first = (x) => relative(x.fixed, p).split(sep)[0];
   const r = roots.find((x) => under(p, x.fixed) && (!x.pattern || (first(x) && x.pattern.test(first(x)) && realFolder(join(x.fixed, first(x))))));
@@ -1059,37 +1046,6 @@ function collectCredentialValues(root = ROOT, name = null, extra = []) {
   return { values, unreadable };
 }
 const namesOf = (vals) => [...new Set([...vals].flatMap((v) => [...credValues.get(v).names]))].sort();
-/**
- * Known credential shapes, found under any name in any file (US-40 AC11): a
- * stop names the file and the shape, never the text. Each needs a body after
- * its prefix, so prose or a doc that names a prefix passes, and each is
- * bounded (PATTERN_SPAN) so a streamed read's carry always holds a whole
- * match. A plain `sk-` body must hold a digit within 100 characters, so a
- * word like `sk-learn-...` passes; `sk-proj-`, `sk-svcacct-`, `sk-admin-` and
- * `sk-ant-` need none. A test fixture must assemble these shapes at run time.
- */
-// A prefix holding `_` or `-` cannot sit inside a standard base64 run: it only must not continue a word, so `//tok@`, `:tok` and `@tok` match.
-const NW = "(?<![A-Za-z0-9])";
-// An alphanumeric prefix could be the middle of a base64 run: no letter, digit or `+` before it, and a `/` only as in `//` or `:/`.
-const NB = "(?<![A-Za-z0-9+])(?<!(?<![:/])/)";
-const PATTERNS = {
-  shopify: `${NW}shp(?:ss|at|ca|pa)_[a-fA-F0-9]{16}`,
-  openai_anthropic: `${NW}sk-(?:(?:proj|svcacct|admin|ant)-[A-Za-z0-9_-]{20}|(?=[A-Za-z0-9_-]{0,99}\\d)[A-Za-z0-9_-]{20})`,
-  stripe: `${NW}[sr]k_live_[A-Za-z0-9]{10}`,
-  aws_access_key: `${NB}AKIA[0-9A-Z]{16}`,
-  google_api_key: `${NB}AIza[0-9A-Za-z_-]{35}`,
-  slack_token: `${NW}xox[abposr]-[A-Za-z0-9-]{10}`,
-  github_token: `${NW}gh[pousr]_[A-Za-z0-9]{36}`,
-  github_pat: `${NW}github_pat_[A-Za-z0-9_]{10}`,
-  google_oauth_secret: `${NW}GOCSPX-[A-Za-z0-9_-]{10}`,
-  google_oauth_token: `${NB}ya29\\.[A-Za-z0-9_-]{10}`,
-  private_key: "-----BEGIN [A-Z ]{0,20}PRIVATE KEY-----(?:\\\\[rn]|\\s){1,8}[A-Za-z0-9+/]{40}",
-  discord_webhook: "discord(?:app)?\\.com/api/webhooks/\\d+/",
-  slack_webhook: "hooks\\.slack\\.com/services/[A-Za-z0-9]{8}",
-  gitlab_token: `${NW}glpat-[A-Za-z0-9_-]{10}`,
-  meta_token: `${NB}EAA[A-Za-z0-9]{50}`,
-};
-const PATTERN_SPAN = 128; // longer than any PATTERNS match plus its lookahead (the `sk-` digit look reaches 103)
 /** A pattern hit is recorded as NUL + its name, which no value read from a text line carries. */
 const PATTERN_HIT = "\0";
 /**
