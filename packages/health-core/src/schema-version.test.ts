@@ -169,7 +169,7 @@ describe('US-66 AC15: every edit door that adds the first core row lifts the cop
     const m = bulkAppendValues(v1(), [{ kind: 'measurement', metricType: 'ldl', value: 2.1, recordedAt: DAY, source: 'manual' }], now);
     expect(m.saved).toHaveLength(1);
     expect(m.file.schemaVersion).toBe(3);
-    const l = bulkAppendValues(v1(), [{ kind: 'lab', metricName: 'ApoB', value: 0.9, unit: 'g/L', recordedAt: DAY, source: 'lab_upload' }], now);
+    const l = bulkAppendValues(v1(), [{ kind: 'lab', metricName: 'ApoB', value: 0.9, unit: 'g/L', recordedAt: DAY, source: 'lab_import' }], now);
     expect(l.saved).toHaveLength(1);
     expect(l.file.schemaVersion).toBe(3);
   });

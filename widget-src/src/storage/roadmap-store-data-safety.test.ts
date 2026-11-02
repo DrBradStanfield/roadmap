@@ -1219,7 +1219,10 @@ describe('RoadmapStore.deleteUserData lists the rows it removes (US-09 AC23)', (
 
     const file = readCloudFile(cloud);
     expect(file.erasedRows).toEqual({ fromEpoch: 1, ids: expected });
-    expect(file.schemaVersion).toBe(2);
+    // The stored record held a core row (the LDL), so it was 3, and a merge never
+    // lowers a version (US-66 AC15). An erase over a record with no core row is 2.
+    expect(file.schemaVersion).toBe(3);
+    expect(file.labValues).toEqual([]);
     expect(file.meta.eraseEpoch).toBe(1);
     expect(file.meta.erasedAt).toBeTypeOf('string'); // still stamped, for the legacy rule
     // Ids only: no value, metric, date or name rides in the list.

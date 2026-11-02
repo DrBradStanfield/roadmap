@@ -249,21 +249,25 @@ describe('US-30 AC1/AC3/AC4 — the three output modes', () => {
   });
 });
 
-// US-09 AC23 (adversary R6): an erase makes the record schemaVersion 2. The
-// text and HTML name the record's own version; the JSON plan keeps its shape's.
+// US-09 AC23 (adversary R6): an erase makes the record schemaVersion 2; a core
+// blood row makes it 3 (US-66 AC15). The text and HTML name the record's own
+// version; the JSON plan keeps its shape's.
 describe('US-09 AC23 — the report names the record\'s real schemaVersion', () => {
-  it('prints schemaVersion 2 for a listed record, and the JSON plan stays at 1', async () => {
+  it('prints schemaVersion 2 for a listed vitals-only record, 3 once it holds blood tests, and the JSON plan stays at 1', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'get-plan-'));
     const path = join(dir, 'health-roadmap.json');
-    writeFileSync(path, JSON.stringify({ ...fixture(), schemaVersion: 2, erasedRows: { fromEpoch: 1, ids: ['gone'] }, meta: { ...fixture().meta, eraseEpoch: 1 } }));
+    const vitals = { ...fixture(), labValues: fixture().labValues.filter((row) => row.core !== true) }; // the migrated blood tests out
+    writeFileSync(path, JSON.stringify({ ...vitals, schemaVersion: 2, erasedRows: { fromEpoch: 1, ids: ['gone'] }, meta: { ...fixture().meta, eraseEpoch: 1 } }));
     const html = join(dir, 'plan.html');
     try {
       expect((await captureRun([path])).stdout).toContain('Record: schemaVersion 2 ·');
       expect((await captureRun([path, '--html', html])).code).toBe(0);
       expect(readFileSync(html, 'utf8')).toContain('record schemaVersion 2.');
       expect(JSON.parse((await captureRun([path, '--json'])).stdout).schemaVersion).toBe(1);
-      writeFileSync(path, JSON.stringify(fixture()));
+      writeFileSync(path, JSON.stringify({ ...vitals, schemaVersion: 1 }));
       expect((await captureRun([path])).stdout).toContain('Record: schemaVersion 1 ·');
+      writeFileSync(path, JSON.stringify(fixture()));
+      expect((await captureRun([path])).stdout).toContain('Record: schemaVersion 3 ·');
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

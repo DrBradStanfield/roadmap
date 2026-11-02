@@ -39,7 +39,7 @@ Two read-only sweeps (2026-11-02) are summarised below, with line numbers at `ea
 ### health-core (`packages/health-core/src`)
 | Where | R/W | Today | Change |
 |---|---|---|---|
-| `roadmap-file.ts` | shape | two arrays, `CURRENT_SCHEMA_VERSION = 2` | version unchanged (D2); `core` flag; `measurements` documented as vitals |
+| `roadmap-file.ts` | shape | two arrays, `CURRENT_SCHEMA_VERSION = 2` | `CURRENT_SCHEMA_VERSION = 3`, a core row stamps 3 (§4, D2 reversed); `core` flag; `measurements` documented as vitals |
 | `migrate.ts` `migrateFile` | R | `withSiCorrections` on `labValues` | adds the move (§4) and the legacy-row rule (§5) |
 | `merge.ts` `mergeFiles` | R/W | `mergeSlotted` per array; `labSlotKey` for labs | unchanged code; the slot key now resolves core names (§6) |
 | `lab-catalog.ts` `labSlotKey`, `resolveLabCatalogEntry` | R | catalogue, then fold | one resolver: core, then catalogue, then fold (§7) |
@@ -164,12 +164,22 @@ Why this is safe under the FHIR rules:
   move one copy becomes `X#dup-…`, and a `correctsId: X` may then point at the other fact. Only an
   agent reusing an id can cause it.
 
-### No version bump (Brad, D2)
+### Version 3 (Brad, 2026-11-02: D2 reversed)
 
-`schemaVersion` stays as it is; `CURRENT_SCHEMA_VERSION` stays 2. Old apps keep opening the record.
-What they do with the new shape is in §6. (The review rounds designed a v3 stamp: migrate, merge and
-every core writer, with the erase list on its own constant. It is not built; it is the shape to use
-if old apps ever need locking out later.)
+A record that holds any core row (`core: true` in `labValues`, any status) is `schemaVersion` 3;
+`CURRENT_SCHEMA_VERSION` is 3. A record with no core row keeps 1, or 2 when it carries `erasedRows`.
+One helper, `recordSchemaVersion`, decides the stamp: the stated version as an integer in [1, 3],
+raised to 2 for an erase list and to 3 for a core row. It never lowers a version. It runs in
+`migrateFile` (after the move and fold), `mergeFiles` (every SyncManager save, so the web, the CLI,
+both MCP servers and the iPhone's cloud save), `buildErasedFile` (2: an erased file holds no core
+row) and `stampUpdatedAt`, the write stamp every edit in `record-edits.ts` and `state-edits.ts`
+passes through, so a working copy that gains its first core row is 3 before any save. An app from
+before this change refuses a version-3 record (`SchemaTooNewError`, US-65 AC5) and writes nothing.
+
+Why the reversal: an old app's merge slots lab rows by `labSlotKey(metricName)`, so a core
+creatinine row and a kept-apart "Creatinine" lab row on one day share a slot; it keeps one active
+and flips the other to `entered-in-error` for good. An old app that merged and saved a moved record
+could lose a day's serum creatinine and eGFR. Locking it out costs an update; it loses nothing.
 
 The move is permanent code, not a one-off. A raw-JSON agent following an old copy of
 `docs/agent-access.md`, or a hand edit, can put a blood test in `measurements` any time. The next
@@ -223,19 +233,16 @@ not the name; `contentOf` hashes a moved row in its v2 form (§4); a `#core` fol
 (§5). The `eraseEpoch` gate
 and `rowsSince` already cover `labValues` (`CREATED_STAMPS`).
 
-**Old apps (no bump, D2).** An app built before this change still opens the record. What it does:
-- **Reads.** It looks for core tests in `measurements` only, so it shows none and its plan has no
-  lipids, HbA1c, ApoB, PSA, Lp(a) or creatinine, with no warning. iPhone build 3 shows no lab rows
-  at all, so the blood tests vanish from its My data. An old web tab lists them as extra lab rows.
-  Nothing is lost: the rows are in the file and the next new app reads them.
+**Old apps (version 3, D2 reversed).** An app built before this change refuses a record that
+holds a core row: it shows its "update the app" message (US-65 AC5) and neither merges nor writes.
+A record no updated app has touched yet is still version 1 or 2, and an old app opens it as today.
+What an old app could do to an old-shape record before an updated app moves it:
 - **Writes.** A core value it adds goes into `measurements`; the next new read moves it (§4). On a
   day the new shape already holds, that is two values for one day, settled by the usual newer-entry
   rule, as any double entry is today.
-- **Merges.** Its merge keeps unknown fields (`core`) and unions rows by id and content. It slots lab
-  rows by the old `labSlotKey`, which for a core row is the key itself (`ldl`), so it still keeps one
-  active row per test and day. It does not know the fold-loses rule, so in the rare case of a fold
-  and a real value active on one day it may keep the fold; the next new merge cannot undo that flip
-  (status is one-way). Migrate's rule (§5) makes this case need two unsynced devices and an old app.
+- **Merges.** It never merges a moved record: the version refuses it first. Without the bump it
+  would slot a core creatinine row and a "Creatinine" lab row on one day together and flip one for
+  good (§4, why the reversal).
 
 The adversary checked every read path (`SyncManager` load, save and verify, `record-session`'s
 mirror, lift-up, refresh and flush, the iPhone engine's `readRecord` and `mergeJson`, both MCP
@@ -336,8 +343,10 @@ person already had. Creatinine stays out, behind its own switch (`FOLD_CREATININ
 "do it"), since an old "creatinine" row may be urine.
 
 **D2, old apps: no schema bump, no lock-out.** "the app isn't released yet, so won't worry about old
-code (yet)." Consequence, in §6: until they update, old apps show no core blood tests and a plan
-without lipids, HbA1c or creatinine, with no warning; nothing is lost.
+code (yet)." **Reversed (Brad, 2026-11-02, option B):** a record holding a core row is version 3,
+so old apps refuse it (§4). Why: an old app's merge puts a core creatinine row and a kept-apart
+"Creatinine" lab row on one day in one slot and flips one for good, so an old app that merged and
+saved a moved record could lose that day's serum creatinine and eGFR.
 
 **D3, agents: update the view now, no adapter.** "no, update now." There is no OpenAI review to
 protect: "OpenAI rejected our app and we're not going to resubmit." Whether Anthropic's Connectors
@@ -346,8 +355,8 @@ assumes neither way, and the build follows that session's answer on the freeze h
 
 **D4, rollout: release build 3 as it is, then ship this as an update.** "we want the initial app to
 be released. then we can do an update." Build 3 stays on automatic release.
-Second-order effect of D2 plus D4: a build-3 phone on a record an updated app has moved shows no
-blood tests until it updates. Brad assumes build 3 has no users, so the release is not timed
+Second-order effect of D2 (reversed) plus D4: a build-3 phone on a record an updated app has
+moved refuses it and asks for an update. Brad assumes build 3 has no users, so the release is not timed
 against it (§11).
 
 **D5, an upload's extra core value: offer it as the core value (option 1).** Brad, 2026-11-02:
@@ -384,9 +393,10 @@ Creatinine stays a lab row under its printed name (US-12 AC11).
   append a correction, as for any value.
 - **Backups.** The CLI keeps its three `.bak-` copies. Google Drive and Dropbox keep earlier file
   versions (around 30 days); GitHub keeps every commit. The browser and the phone keep none.
-- **If the release goes wrong, fix forward.** Redeploying the old website code would behave like
-  build 3 on a moved record: blood tests hidden from the plan, never lost. So a fix ships forward;
-  `toOldShape` is the emergency path only if a fix forward is impossible.
+- **If the release goes wrong, fix forward.** Redeploying the old website code would refuse every
+  moved record (version 3), as build 3 does. So a fix ships forward; `toOldShape` is the emergency
+  path only if a fix forward is impossible, and it would also need the version lowered, which no
+  app does today.
 
 ### Order
 
@@ -403,17 +413,18 @@ not wait on Apple, and nothing is timed against build 3.
 5. The iPhone update goes to TestFlight and App Review whenever it is ready, checked first in the
    simulator on a de-identified copy of a real-shaped record, never on Brad's phone data.
 6. CLI and stdio-connector users get the change when they update their copy (`git pull`). An old copy
-   on a moved record behaves like build 3, below. `docs/agent-access.md` says so.
+   refuses a moved record (version 3) and writes nothing, like build 3, below.
+   `docs/agent-access.md` says so.
 7. A week of watching: the `blood_tests_unified` counts (§12), Sentry, and support mail.
 
 ### What a build-3 user sees
 
 - **Before updating, on a record nothing new has touched:** everything as today.
 - **Before updating, once an updated app has moved their record** (the website, or another device
-  already updated): My data shows no blood tests, and the phone's plan has no lipids, HbA1c, ApoB,
-  PSA, Lp(a) or creatinine, with no warning. Weight, waist and blood pressure still show. Nothing
-  is lost, and a blood test they type is saved in the old place. Brad assumes no such user exists;
-  this is what one would see.
+  already updated): the record is version 3, so the phone refuses it with its "update the app"
+  message (US-65 AC5) and writes nothing. It also refuses an over-the-air engine of schema 3
+  (ios/architecture.md, R7), so the fix is the App Store update. Nothing is lost. Brad assumes no
+  such user exists; this is what one would see.
 - **After updating:** the app moves the record on its first open and writes it once. Every blood
   test is back where it was, plus any value typed meanwhile, plus old core-named lab rows now folded
   into their tiles (D1).
@@ -423,11 +434,8 @@ not wait on Apple, and nothing is timed against build 3.
 - **An old app adds a blood test** to `measurements`. The next updated app moves it. If that day
   already holds a value, it is a same-day double entry, settled as today: the newer entry counts and
   the other goes to history.
-- **An old app merges** a moved record (it saves after a read). It keeps the unknown `core` field and
-  every row, and keeps one active row per test and day (§6). It does not know the rule that a fold
-  loses to a real value, so in the rare case of an unsynced fold and a real value on one day it may
-  keep the fold. Status is one-way, so the next updated app cannot undo that; the real value stays in
-  history.
+- **An old app meets a moved record:** it refuses it (version 3) and writes nothing, so it can
+  never merge one.
 - **Assistants with an old copy, and hand edits,** that write `measurements`: moved on the next read,
   as above.
 
@@ -461,8 +469,8 @@ events.
 - **Quarantine identity** (§4): the v2-form hash is what keeps old `#dup-` ids and their chains. A
   property test covers it in both orders.
 - **Old agents** keep writing `measurements`. Absorbed by §4 forever; costs one loop per read.
-- **Old apps show a plan without blood tests** (D2, §6), build 3 included once released (D4).
-  Mitigation: deploy the website after the iPhone update is live; data is never lost.
+- **Old apps refuse a moved record** (version 3, D2 reversed, §6), build 3 included once released
+  (D4). Until they update they cannot open it; data is never lost.
 - **D1 changes plans on purpose** for an unknown number of people: an uploaded value the plan never
   used becomes current when it is the newest. A same-day core value always stays current (§5).
 - **Connector text changes** (D3) while Anthropic's directory review status is unknown (another

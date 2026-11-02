@@ -29,7 +29,7 @@
     "profile": { "$ref": "#/$defs/RoadmapProfile" },
     "measurements": {
       "type": "array",
-      "description": "Append-only. Core metric values in SI canonical units.",
+      "description": "Append-only. Vitals only since US-66: weight, waist and blood pressure, in SI canonical units. A blood test found here is moved to labValues on read.",
       "items": { "$ref": "#/$defs/FileMeasurement" }
     },
     "medications": {
@@ -241,7 +241,7 @@
 
     "FileLabValue": {
       "type": "object",
-      "description": "One immutable lab row for a test outside the core metrics. Same append-only rules as a measurement.",
+      "description": "One immutable blood-test row. Since US-66 every blood test lives here: a core test (`core: true`, metricName the core key, unit its SI unit) or any other test. Same append-only rules as a measurement.",
       "required": [
         "id",
         "metricName",

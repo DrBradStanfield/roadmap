@@ -15,8 +15,11 @@ Tools that enforce this contract for you: `tools/get-plan.ts`, `tools/edit-recor
   [`docs/health-roadmap-file.schema.json`](health-roadmap-file.schema.json),
   published at
   `https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/health-roadmap-file.schema.json`
-- Current `schemaVersion`: **2**, the highest the app reads. A file stays at **1** until an
-  erase lists what it removed (`erasedRows`, rule 6); only then is it stamped 2 (US-09 AC23).
+- Current `schemaVersion`: **3**, the highest the app reads. A file holding a core blood row
+  (a `labValues` row with `core: true`, any status) is **3** (US-66 AC15). One with no core row
+  that carries `erasedRows` (rule 6) is **2** (US-09 AC23). Any other file is **1**. The app
+  stamps the version; it never lowers one. A copy of this repo or its CLI from before November
+  2026 refuses a version-3 file and writes nothing: update it (`git pull`).
 - TypeScript source of truth: `packages/health-core/src/roadmap-file.ts`
 - Compute the plan from the file: `npx tsx tools/get-plan.ts <file>` (in this repo), see `--help`. No file yet? `get-plan.ts --from-values <values.json|->` builds one in memory from sex, height, age and values, and writes nothing.
 - Something wrong or missing? The MCP server's `report_feedback` tool reports it. On the
@@ -47,9 +50,11 @@ document has `fileRef: ""`.
 ## How to read
 
 1. Parse the JSON.
-2. Check `schemaVersion`. If it is greater than 2, stop, a newer app wrote this file and
+2. Check `schemaVersion`. If it is greater than 3, stop, a newer app wrote this file and
    you may not understand every field. Read if you like; do not write. A file at 2 carries
-   `erasedRows` (rule 6): if your tool predates it, do not write that file either.
+   `erasedRows` (rule 6), and a file at 3 holds core blood rows in `labValues`: if your tool
+   predates either, do not write that file. If you add the first `core: true` row to a file
+   below 3, set `schemaVersion` to 3 in the same write.
 3. Current values live in the arrays, not in a separate "current" object.
    - `labValues` (every blood test) and `measurements` (weight, waist and blood pressure) are
      **append-only history**. A row's slot is `(metric, calendar day of recordedAt)`:
@@ -195,7 +200,8 @@ someone's medical history, or lose their data at the next device sync.
     "Vitamin D", `vitamin_d` and "vitamin  d" land in one slot; only a name that is
     genuinely uncatalogued beyond that fold stays a separate row. A core blood test (LDL, HDL,
     HbA1c, creatinine and the rest) goes here too, with `core: true`, its key as `metricName`
-    and its SI unit (rule 8). Weight, waist and blood pressure stay in `measurements`.
+    and its SI unit (rule 8); the file is then `schemaVersion` 3 (How to read, step 2).
+    Weight, waist and blood pressure stay in `measurements`.
 11. **Deleting a document** means setting `deleted: true` on its row. A removed row comes
     straight back from any other device.
 12. **`reminderOptIn.token` is a capability secret.** Leave it where it is; never copy it
@@ -253,7 +259,8 @@ Validate your result against the schema before you write it back.
   fields, so anything else you put there is dropped at the next sync. Do not use this
   file to store your own state.
 - **A file with a higher `schemaVersion` than the app understands is refused, not
-  downgraded** (`SchemaTooNewError`). Never bump `schemaVersion` yourself.
+  downgraded** (`SchemaTooNewError`). Never change `schemaVersion` yourself, with one
+  exception: the first `core: true` row you add to a file below 3 sets it to 3 (How to read, step 2).
 - **Loading the file can add lab rows you did not write, and it does not bump
   `schemaVersion`** (US-21 phase 3, 2026-09-18). A lab row stored in a unit that is not
   the catalogue's canonical one is CORRECTED on load: the app appends the converted row

@@ -116,10 +116,11 @@ describe('US-33 AC3 — the sample is a record the app can read', () => {
   // The sample keeps its blood tests in `measurements` on purpose: it is the
   // old-shape input the iPhone parity fixtures and the US-66 AC7 golden start
   // from. Migrate moves them and changes nothing else (US-66 AC2).
-  it('passes through migrateFile with only its blood tests moved', () => {
+  it('passes through migrateFile with only its blood tests moved and the version stamped 3 (US-66 AC15)', () => {
     const ctx = { deviceId: 'us33_test', now: '2026-09-02T00:00:00Z' };
     const migrated = migrateFile(JSON.parse(JSON.stringify(sample)), ctx);
-    expect({ ...migrated, measurements: [], labValues: [] }).toEqual({ ...sample, measurements: [], labValues: [] });
+    expect(migrated.schemaVersion).toBe(3);
+    expect({ ...migrated, measurements: [], labValues: [] }).toEqual({ ...sample, schemaVersion: 3, measurements: [], labValues: [] });
     expect(migrated).toEqual(migrateFile(JSON.parse(JSON.stringify(migrated)), ctx));
     expect(toOldShape(migrated).measurements).toEqual(expect.arrayContaining(sample.measurements));
   });
