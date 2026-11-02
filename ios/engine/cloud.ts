@@ -15,6 +15,7 @@ import type { RecordHost } from '../../packages/health-core/src/record-host';
 import { ERASE_UNREACHABLE, RecordSession, saveRecordInto } from '../../packages/health-core/src/record-session';
 import { copyCloudDown, liftDeviceCopy } from '../../packages/health-core/src/record-transfer';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { isCoreRow } from '../../packages/health-core/src/blood-tests';
 import { labArchivePayload, saveDocuments, type DocumentPayload, type DocumentSaveIO, type DocumentSavePlan } from '../../packages/health-core/src/document-save';
 import { validDay } from '../../packages/health-core/src/record-edits';
 import { failed, PhoneCloudAdapter, PhoneFileAdapter, type CloudNatives, type Provider } from './cloud-adapters';
@@ -180,7 +181,8 @@ function dependsOnUnits(edit: Edit): boolean {
 /** A value or correction of Lp(a), read in Lp(a)'s own unit, which the record holds (US-05 AC2). */
 function dependsOnLpaUnit(edit: Edit, file: RoadmapFile): boolean {
   if (edit.kind === 'add') return edit.metric === 'lpa';
-  return edit.kind === 'correct' && file.measurements.some((row) => row.id === edit.id && row.metricType === 'lpa');
+  // Lp(a) is a core lab row (US-66 AC9).
+  return edit.kind === 'correct' && file.labValues.some((row) => row.id === edit.id && isCoreRow(row) && row.metricName === 'lpa');
 }
 
 type Refusal = Extract<EditOutcome, { ok: false }>;

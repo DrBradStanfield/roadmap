@@ -4,7 +4,8 @@
 // (setScreening, upsertMedication, upsertSupplement) behind the API's own
 // schema. Swift renders what comes out and sends answers back; it decides
 // nothing clinical.
-import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { CORE_BLOOD_UNITS, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { isCoreRow } from '../../packages/health-core/src/blood-tests';
 import { computePlan, derivePlanInputs, type Plan } from '../../packages/health-core/src/plan';
 import {
   SUPPLEMENT_DOSE_UNITS, SUPPLEMENT_TEXT, medicationForm, medicationWrites, screeningForm,
@@ -283,7 +284,12 @@ export function metricHistory(file: RoadmapFile, metric: string, now = new Date(
     .map(({ id, date, label }) => ({ id, day: localDay(new Date(date)), label }));
   if (metric === BLOOD_PRESSURE) return { ...pressureHistory(file, excludedFields), markers };
   const shown = cellUnitFor(file, metric, choices);
-  const rows = file.measurements.filter((row) => row.metricType === metric);
+  // A blood test's rows are its core lab rows in the core unit (US-66 AC7); a vital's, its measurements.
+  const rows = [
+    ...file.measurements.filter((row) => row.metricType === metric),
+    ...file.labValues.filter((row) => isCoreRow(row) && row.metricName === metric && row.unit === CORE_BLOOD_UNITS[metric])
+      .map((row) => ({ ...row, metricType: metric })),
+  ];
   // The plan's own pick of the current value.
   const current = latestActivePerMetric(rows.filter((row) => row.status === 'active'))[0];
   return {

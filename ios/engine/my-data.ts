@@ -17,6 +17,7 @@ import { stampProfile, upsertMedication, upsertSupplement } from '../../packages
 import { medicationSchema, supplementSchema, zod3Message } from '../../packages/health-core/src/validation';
 import { customSupplementAdd, customSupplementMatch } from '../../packages/health-core/src/input-form';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
+import { currentValueRows, isCoreRow } from '../../packages/health-core/src/blood-tests';
 import { importDeviceSamples, type DeviceSample } from '../../packages/health-core/src/device-import';
 import { applyFormEdit, formsOf, planOf, type FormEdit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
@@ -203,7 +204,7 @@ export function newRecord(now: string, deviceId: string, locale: string, timeZon
  *  that has it passes it, so the forms are not planned twice (entry.ts screenJson). */
 export function myData(file: RoadmapFile, now = new Date().toISOString(), choices: UnitChoices = {}, plan: Plan | null = planOf(file, now, choices)): MyData & FormsView {
   const system = unitsOf(file);
-  const current = new Map(latestActivePerMetric(file.measurements).map((row) => [row.metricType, row]));
+  const current = new Map(latestActivePerMetric(currentValueRows(file)).map((row) => [row.metricType, row]));
   const days = activeDays(file);
   const trend = trends(days, now, (metric, valueSI) => cellFromSI(metric as MetricType, valueSI, cellUnitFor(file, metric, choices)));
   // What the web's rows grade against (InputPanel.tsx rowCtx): none for a known minor (US-07 AC6),
@@ -323,11 +324,13 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
       return { ok: false, reason: result.reason, message: typedRangeMessage(edit.metric, edit.value, unit, result), ...(result.existing ? { existingId: result.existing.id } : null) };
     }
     case 'correct': {
-      const target = file.measurements.find((row) => row.id === edit.id);
-      const shown = target && cellUnitFor(file, target.metricType, choices);
-      const result = correctValue(file, { id: edit.id, newValue: edit.value, unit: shown && cellLabel(target!.metricType as MetricType, shown), now });
+      // A blood test is a core lab row (US-66 AC6); a vital is a measurement.
+      const core = file.labValues.find((row) => row.id === edit.id && isCoreRow(row));
+      const metric = core?.metricName ?? file.measurements.find((row) => row.id === edit.id)?.metricType;
+      const shown = metric && cellUnitFor(file, metric, choices);
+      const result = correctValue(file, { id: edit.id, newValue: edit.value, unit: shown && cellLabel(metric as MetricType, shown), now });
       if (result.ok) return { ok: true, file: result.file };
-      return { ok: false, reason: result.reason, message: shown ? typedRangeMessage(target!.metricType, edit.value, shown, result) : result.message };
+      return { ok: false, reason: result.reason, message: shown ? typedRangeMessage(metric!, edit.value, shown, result) : result.message };
     }
     // The web's own writes (state-edits.ts), behind the API's own schemas:
     // the app's input is checked the way a request to the server was.
@@ -408,11 +411,11 @@ function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: st
   };
 }
 
-/** Each metric's active value per day (the slot's first, as findActiveInSlot reads it), in SI, in one pass. */
+/** Each metric's active value per day (the slot's first, as findActiveInSlot reads it), in SI, in one pass:
+ *  the vitals and the core blood-test rows (US-66 AC7). */
 function activeDays(file: RoadmapFile): Map<string, Map<string, number>> {
   const byMetric = new Map<string, Map<string, number>>();
-  for (const row of file.measurements) {
-    if (row.status !== 'active') continue;
+  for (const row of currentValueRows(file)) {
     const days = byMetric.get(row.metricType) ?? new Map<string, number>();
     byMetric.set(row.metricType, days);
     const day = row.recordedAt.slice(0, 10);
