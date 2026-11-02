@@ -279,6 +279,22 @@ describe('verifyPersistedFile: writes that add no row (US-10 AC6a, US-11 AC7)', 
     expect(verify(erased, back)).toThrow(/a row this save erased/);
   });
 
+  it('refuses a stored file holding the same test moved again under a root an older-app id in our list reduces to (US-04 AC5a)', () => {
+    // An older app lists a moved row under its own id, `X#mv-A`; the merge
+    // drops X's whole family, so `X#mv-B` from a concurrent writer is a row
+    // this save erased too (PR #337 review: lostWrite compares roots).
+    const moved = (id: string) => createMeasurement({ id, metricType: 'ldl', value: 3.2, recordedAt: '2024-02-21', createdAt: NOW, correctsId: 'ldl1' });
+    const base = createEmptyFile(CTX);
+    base.measurements.push(moved('ldl1#mv-a1b2c3d4'));
+    const erased = erasedFrom(base);
+    erased.erasedRows = { ...erased.erasedRows!, ids: ['ldl1#mv-a1b2c3d4'] };
+    const other = createEmptyFile(CTX);
+    other.measurements.push(moved('ldl1#mv-0badf00d'));
+    const back = { ...other, meta: { ...other.meta, eraseEpoch: erased.meta.eraseEpoch, lamport: erased.meta.lamport } };
+    expect(readBack(back).measurements.map((row) => row.id)).toEqual(['ldl1#mv-0badf00d']);
+    expect(verify(erased, back)).toThrow(/a row this save erased/);
+  });
+
   it('refuses a stored file at the erase epoch whose erased list lost an id ours wrote', () => {
     // Two erases at one epoch: a concurrent one that listed fewer rows
     // replaced ours. Both files hold no rows, so only the list shows the loss.
