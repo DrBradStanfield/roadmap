@@ -270,4 +270,28 @@ final class ChatEditsTests: XCTestCase {
         let saved = store.recordJSON
         XCTAssertEqual(try engine.blocking { try $0.history(recordJSON: saved, metric: "weight", now: .now, deviceId: deviceId) }.rows.count, 1)
     }
+
+    /// US-67 AC3: a banner belongs to the conversation that made it. New chat and a
+    /// conversation opened from History drop it (ChatView calls `drop` in both), and nothing is written.
+    func testANewOrOpenedConversationDropsTheBanners_US67_AC3() async throws {
+        let (store, edits, engine) = try setUpEdits()
+        await edits.take(try json(medication), asked: store.chatMark, today: today)
+        await edits.take(try json(values), asked: store.chatMark, today: today)
+        let record = store.recordJSON
+        edits.drop()
+        XCTAssertNil(edits.saved)
+        XCTAssertNil(edits.review)
+        await edits.save()
+        await edits.undo()
+        XCTAssertEqual(store.recordJSON, record, "a dropped banner writes nothing")
+        XCTAssertEqual(try sent(engine).count, 1, "only the medication change made on arrival")
+
+        let source = try String(contentsOf: URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appending(path: "HealthRoadmap/Chat/ChatView.swift"), encoding: .utf8)
+        for function in ["private func startNew()", "private func open(_ id: String)"] {
+            let body = try XCTUnwrap(source.range(of: function)).upperBound
+            let next = source.range(of: "\n    private func ", options: .regularExpression, range: body..<source.endIndex)?.lowerBound ?? source.endIndex
+            XCTAssertTrue(source[body..<next].contains("edits.drop()"), "\(function) drops the banners")
+        }
+    }
 }

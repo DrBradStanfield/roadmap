@@ -180,6 +180,8 @@ struct ChatView: View {
         history.leave()
         conversationId = UUID().uuidString.lowercased()
         transcript = ChatTranscript()
+        // A banner belongs to the conversation that made it (US-67 AC3).
+        edits.drop()
     }
 
     /// Shows a saved conversation once the engine has read it. An erase, a question sent,
@@ -191,6 +193,7 @@ struct ChatView: View {
         Task {
             guard let messages = await loading.value, store.erasures == erasures, !sending else { return }
             conversationId = id
+            edits.drop()
             transcript = ChatTranscript(lines: messages.map { ChatLine(role: $0.role == "user" ? .user : .assistant, text: $0.content) })
         }
     }
