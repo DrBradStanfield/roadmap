@@ -323,6 +323,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       setMessages(withoutOptimistic);
       setError(sendError.error);
       setIsLoading(false);
+      isLoadingRef.current = false; // a load landing before the re-render must not say in flight (US-15 AC7a)
       setIsLocalSender(false);
       postSync({
         instanceId,
@@ -383,6 +384,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       }
 
       setIsLoading(false);
+      isLoadingRef.current = false; // as in the error path (US-15 AC7a)
       setIsLocalSender(false);
       postSync({
         instanceId,

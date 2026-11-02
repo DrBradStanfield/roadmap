@@ -642,4 +642,52 @@ describe('US-15 AC7a — opening another thread while a reply is in flight', () 
     await act(async () => { await hook.result.current.actions.selectConversation('A'); });
     expect(postSync.mock.calls.at(-1)![0].payload).toMatchObject({ activeConversationId: 'A', isLoading: false });
   });
+
+  // Review 2026-11-02 delta: B's load landing after the reply ended, before React
+  // re-rendered, broadcast the stale `isLoading: true` after the reply-end message.
+  it('US-15 AC7a: a thread load landing just after the reply ended tells other tabs the reply is over', async () => {
+    const api = await import('../lib/chat-api');
+    let finishB!: (m: typeof threadB) => void;
+    vi.mocked(api.loadConversation).mockImplementationOnce(() => new Promise(r => { finishB = r; }));
+    const hook = renderHook(() => useChatState({
+      isLoggedIn: false,
+      prefetchedData: { conversations, messages: threadA, activeConversationId: 'A' },
+    }));
+    act(() => hook.result.current.actions.handleInputChange('A follow-up'));
+    let sending!: Promise<void>;
+    act(() => { sending = hook.result.current.actions.handleSend(); });
+    let openingB!: Promise<void>;
+    act(() => { openingB = hook.result.current.actions.selectConversation('B'); });
+    await act(async () => {
+      send.resolve!({ result: { conversationId: 'A', messageId: 'm', content: 'Reply for A' }, error: null });
+      await sending;
+      finishB(threadB);
+      await openingB;
+    });
+    expect(hook.result.current.state.isLoading).toBe(false);
+    expect(postSync.mock.calls.at(-1)![0].payload).toMatchObject({ activeConversationId: 'B', isLoading: false });
+  });
+
+  it('US-15 AC7a: a thread load landing just after a failed send tells other tabs the send is over', async () => {
+    const api = await import('../lib/chat-api');
+    let finishB!: (m: typeof threadB) => void;
+    vi.mocked(api.loadConversation).mockImplementationOnce(() => new Promise(r => { finishB = r; }));
+    const hook = renderHook(() => useChatState({
+      isLoggedIn: false,
+      prefetchedData: { conversations, messages: threadA, activeConversationId: 'A' },
+    }));
+    act(() => hook.result.current.actions.handleInputChange('A follow-up'));
+    let sending!: Promise<void>;
+    act(() => { sending = hook.result.current.actions.handleSend(); });
+    let openingB!: Promise<void>;
+    act(() => { openingB = hook.result.current.actions.selectConversation('B'); });
+    await act(async () => {
+      send.resolve!({ result: null, error: { error: 'Try again.' } });
+      await sending;
+      finishB(threadB);
+      await openingB;
+    });
+    expect(hook.result.current.state.isLoading).toBe(false);
+    expect(postSync.mock.calls.at(-1)![0].payload).toMatchObject({ activeConversationId: 'B', isLoading: false });
+  });
 });
