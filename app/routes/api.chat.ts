@@ -29,7 +29,8 @@ import {
   CHAT_MODEL,
   MAX_MESSAGE_LENGTH,
 } from '../lib/chat.server';
-import { routeQuery, reportRouterFailure, sanitizeForRouter, redactForWidget, ROUTER_VERSION } from '../lib/chat-router.server';
+import { routeQuery, reportRouterFailure, sanitizeForRouter, redactForWidget } from '../lib/chat-router.server';
+import { routerColumns } from '../lib/chat-persist.server';
 import { loadBlogIndex } from '../lib/blog-index.server';
 import { openArticle, preferMasters } from '../lib/router-view';
 import { MAX_HISTORY_MESSAGES, MAX_HISTORY_TURN_CHARS, cutText } from '../../packages/health-core/src/chat-history';
@@ -693,14 +694,7 @@ async function chatAction(request: Request, app: boolean) {
           ...(articles?.reduced.length ? { reduced: articles.reduced } : {}),
         },
         matched_handles: effectiveHandles,
-        router_version: routerResult ? ROUTER_VERSION : null,
-        router_latency_ms: routerResult?.latencyMs ?? null,
-        router_cache_hit: routerResult?.cacheHit ?? null,
-        router_input_tokens: routerResult?.usage.inputTokens ?? null,
-        router_cache_read_tokens: routerResult?.usage.cacheReadTokens ?? null,
-        router_output_tokens: routerResult?.usage.outputTokens ?? null,
-        router_raw: routerResult?.error && routerResult.rawJson != null ? cutText(routerResult.rawJson, 500) : null,
-        router_error: routerResult?.error ?? null,
+        ...routerColumns(routerResult),
         classification: classifierResult.classification,
         router_skipped: routerSkipped,
         is_fallback: completion.isFallback,
