@@ -11018,9 +11018,7 @@
       "amlodipine",
       "diuretic",
       "beta-blocker",
-      "resistant hypertension",
-      "nitrate",
-      "beetroot"
+      "resistant hypertension"
     ],
     "publishedAt": "",
     "type": "guideline",
@@ -11060,12 +11058,11 @@
       "inclisiran",
       "berberine",
       "red yeast rice",
-      "fibre",
       "psyllium",
       "plant sterols",
       "LDL target",
       "statin side effects",
-      "muscle pain"
+      "statin muscle pain"
     ],
     "publishedAt": "",
     "type": "guideline",
@@ -11136,7 +11133,6 @@
       "waist",
       "waist-to-height",
       "body fat",
-      "visceral fat",
       "muscle",
       "GLP-1",
       "semaglutide",
@@ -11149,11 +11145,9 @@
       "microdosing",
       "orlistat",
       "fat loss",
-      "plateau",
       "bariatric",
       "protein target",
-      "ideal body weight",
-      "metabolic syndrome"
+      "ideal body weight"
     ],
     "publishedAt": "",
     "type": "guideline",
