@@ -292,7 +292,7 @@ export function applyFormEdit(file: RoadmapFile, edit: Exclude<FormEdit, { kind:
 /**
  * Every value recorded for a metric, newest day first, entered-in-error rows
  * included (the app strikes them through), Health Records version markers left
- * out (US-66 AC5). The record is append-only: this
+ * out (US-71 AC5). The record is append-only: this
  * view offers corrections, never removal.
  */
 /** A stored value as its cell shows it: a limit with its symbol, at places that keep it true (US-12 AC20). */
@@ -380,7 +380,7 @@ export function metricHistory(file: RoadmapFile, metric: string, now = new Date(
   }
   const shown = cellUnitFor(file, metric, choices);
   // A blood test's rows are its core lab rows in the core unit (US-66 AC7); a vital's, its measurements.
-  // A version marker only carries a version the record has seen (US-66 AC5): not a value.
+  // A version marker only carries a version the record has seen (US-71 AC5): not a value.
   const rows = [
     ...file.measurements.filter((row) => row.metricType === metric && !(metric in CORE_BLOOD_UNITS)),
     ...file.labValues.filter((row) => isCoreRow(row) && row.metricName === metric && row.unit === CORE_BLOOD_UNITS[metric])

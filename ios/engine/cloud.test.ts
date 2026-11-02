@@ -219,7 +219,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     expect(state.pending).toBe(false);
   });
 
-  it('US-66: a Health Records batch answers its counts beside the record', async () => {
+  it('US-71: a Health Records batch answers its counts beside the record', async () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const { engine } = await phone(dropbox);

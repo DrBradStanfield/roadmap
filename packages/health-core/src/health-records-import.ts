@@ -1,6 +1,6 @@
 /**
  * Lab results a clinic sent to Apple Health Records, taken into the record
- * (US-66; plan: docs/drafts/apple-health-blood-tests.md §6). The app hands
+ * (US-71; plan: docs/drafts/apple-health-blood-tests.md §6). The app hands
  * over each clinical record's FHIR JSON as it came; this reads it once and
  * decides what lands.
  *
@@ -44,17 +44,16 @@ import { recordedAtOf } from './device-import';
 import { normalizeLabUnit, resolveLabCatalogEntry } from './lab-catalog';
 import { isClinicalDay } from './measurement-history';
 import { comparatorOf, isComparator, type Comparator } from './lab-limits';
-import { latestDayOnEarth } from './merge';
-import { measurementValueFault, newId, sameValue, slotKey, slotOfRow, stampUpdatedAt, toStoredLab } from './record-edits';
-import { createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
-import { reportedToCanonical, type MetricType } from './units';
-import { METRIC_TYPES } from './validation';
+import { dayOf, latestDayOnEarth } from './merge';
+import { coreStored, createCoreRow, isBloodTestKey, labRowSlot } from './blood-tests';
+import { measurementValueFault, newId, sameValue, slotOfRow, stampUpdatedAt, toStoredLab } from './record-edits';
+import { createLabValue, type FileLabValue, type RoadmapFile } from './roadmap-file';
 
 export interface ClinicalRecordInput { sourceId: string; resourceType: string; fhirVersion: string; json: string }
 export interface HealthRecordsCounts { added: number; corrected: number; withdrawn: number; alreadyInRecord: number; notRead: number }
 
 /**
- * LOINC code → a core metric (`METRIC_TYPES`) or a lab catalogue key. Many
+ * LOINC code → a core blood test (`CORE_BLOOD_UNITS`) or a lab catalogue key. Many
  * codes to one test; the printed unit, not the code, chooses the conversion
  * (HL7's own lipid example files HDL under the mass code 2085-9 in mmol/L).
  *
@@ -70,7 +69,7 @@ export interface HealthRecordsCounts { added: number; corrected: number; withdra
  *  14682-9 creatinine (SCnc) · 2857-1 PSA (MCnc) · 10835-7 Lp(a) (MCnc) ·
  *  43583-4 Lp(a) (SCnc) · 2276-4 ferritin (MCnc) · 3016-3 TSH (ACnc).
  * No glucose: a plain serum glucose code does not say fasting (plan §6).
- * Brad checks this list before merge (US-66 gate check).
+ * Brad checks this list before merge (US-71 gate check).
  */
 export const HEALTH_RECORDS_LOINC: Readonly<Record<string, string>> = {
   '4548-4': 'hba1c', '17856-6': 'hba1c', '59261-8': 'hba1c',
@@ -250,10 +249,15 @@ function drawnAt(effective: string | undefined, now: string): string | null {
   return at && isClinicalDay(at) ? at : null;
 }
 
-/** What a readable result would write: a core row in SI, or a catalogue row in the catalogue's unit. */
-type Reading =
-  | { kind: 'measurement'; metric: string; value: number; recordedAt: string; comparator?: Comparator }
-  | { kind: 'lab'; metric: string; value: number; unit: string; referenceLow: number | null; referenceHigh: number | null; recordedAt: string; comparator?: Comparator };
+/** What a readable result would write, a lab row either way (US-66, one blood-test table):
+ *  a core row (`core: true`) in its SI unit, or a catalogue row in the catalogue's unit. */
+interface Reading {
+  core: boolean; metric: string; value: number; unit: string; referenceLow: number | null; referenceHigh: number | null;
+  recordedAt: string; comparator?: Comparator;
+}
+
+/** A reading's slot on a day: `core:<key>` or `lab:<key>`, as `slotOfRow` spells a row's. */
+const slotAt = (reading: Reading, recordedAt: string) => `${labRowSlot({ metricName: reading.metric, core: reading.core })}@${dayOf(recordedAt)}`;
 
 /** The row a result would write, or null when the app cannot read it (AC2, AC4). */
 function readingOf(obs: Observation, now: string): Reading | null {
@@ -264,25 +268,25 @@ function readingOf(obs: Observation, now: string): Reading | null {
   if (!metric || typeof q?.value !== 'number' || !unit || !recordedAt) return null;
   // US-12 AC20: a result printed as a limit keeps its comparator; `value` is the bound. FHIR's `ad` is not read.
   if (q.comparator !== undefined && !isComparator(q.comparator)) return null;
-  if ((METRIC_TYPES as readonly string[]).includes(metric)) {
-    const si = reportedToCanonical(metric as MetricType, q.value, normalizeLabUnit(unit));
-    if (!si || measurementValueFault(metric, si.valueSI)) return null;
-    return { kind: 'measurement', metric, value: si.valueSI, recordedAt, comparator: q.comparator };
-  }
-  const entry = resolveLabCatalogEntry(metric);
-  if (!entry) return null;
   // A bound in another unit than the result's is not read with the result's factor.
   const sameUnit = (b: z.infer<typeof quantity> | undefined) => {
     const bu = unitOf(b);
     return typeof b?.value === 'number' && (bu === undefined || normalizeLabUnit(bu) === normalizeLabUnit(unit)) ? b.value : null;
   };
   const range = obs.referenceRange?.[0];
+  if (isBloodTestKey(metric)) {
+    const stored = coreStored(metric, q.value, normalizeLabUnit(unit), sameUnit(range?.low), sameUnit(range?.high));
+    if (!stored || measurementValueFault(metric, stored.value)) return null;
+    return { core: true, metric, ...stored, recordedAt, comparator: q.comparator };
+  }
+  const entry = resolveLabCatalogEntry(metric);
+  if (!entry) return null;
   const stored = toStoredLab(entry, q.value, unit, sameUnit(range?.low), sameUnit(range?.high));
   if ('ok' in stored) return null;
-  return { kind: 'lab', metric: entry.key, ...stored, recordedAt, comparator: q.comparator };
+  return { core: false, metric: entry.key, ...stored, recordedAt, comparator: q.comparator };
 }
 
-type Row = FileMeasurement | FileLabValue;
+type Row = FileLabValue;
 
 /** Whether a row was written before another: by createdAt, then, in one batch, by version. */
 function writtenBefore(a: Row, b: Row): boolean {
@@ -291,8 +295,8 @@ function writtenBefore(a: Row, b: Row): boolean {
 }
 
 /** Whether two rows, or a row and a reading, hold the same value, unit and comparator (AC5, AC9). */
-function sameContent(a: Row, b: Pick<Row, 'value' | 'comparator'> & { unit?: string }): boolean {
-  return sameValue(a.value, b.value) && ('unit' in a ? a.unit : undefined) === b.unit && comparatorOf(a).comparator === b.comparator;
+function sameContent(a: Row, b: Pick<Row, 'value' | 'unit' | 'comparator'>): boolean {
+  return sameValue(a.value, b.value) && a.unit === b.unit && comparatorOf(a).comparator === b.comparator;
 }
 
 /**
@@ -301,7 +305,7 @@ function sameContent(a: Row, b: Pick<Row, 'value' | 'comparator'> & { unit?: str
  * record has seen, so a history leaves it out. The suffix says so; content is
  * never guessed from, so a withdrawn, corrected or rejected result is always shown.
  */
-export function isVersionMarker(row: Row): boolean {
+export function isVersionMarker(row: Pick<Row, 'source' | 'status' | 'externalId'>): boolean {
   return row.source === 'health_records' && row.status === 'entered-in-error' && typeof row.externalId === 'string' && isMarkerId(row.externalId);
 }
 
@@ -311,31 +315,29 @@ export function importHealthRecords(
   const { now } = opts;
   const counts: HealthRecordsCounts = { added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 0 };
   const erasedAt = file.meta.erasedAt ? Date.parse(file.meta.erasedAt) : null;
-  // Copied once and edited in place: a first import can carry years of results.
-  const measurements = [...file.measurements];
-  const labValues = [...file.labValues];
+  // Every result is a lab row (US-66, one blood-test table): copied once and edited in
+  // place, since a first import can carry years of results.
+  const rows = [...file.labValues];
   const known = new Set<string>();
-  /** Each identity's Health Records rows, by list and index. */
-  const byIdentity = new Map<string, Array<{ list: Row[]; at: number }>>();
-  const remember = (list: Row[], at: number) => {
-    const { externalId } = list[at];
+  /** Each identity's Health Records rows, by index. */
+  const byIdentity = new Map<string, number[]>();
+  const remember = (at: number) => {
+    const { externalId } = rows[at];
     if (typeof externalId !== 'string') return;
     // AC5: a marker's version is a version the record has seen.
     known.add(versionKeyOf(externalId));
-    if (list[at].source !== 'health_records' || !externalId.includes('#')) return;
+    if (rows[at].source !== 'health_records' || !externalId.includes('#')) return;
     const identity = externalId.slice(0, externalId.indexOf('#'));
-    const rows = byIdentity.get(identity);
-    if (rows) rows.push({ list, at });
-    else byIdentity.set(identity, [{ list, at }]);
+    const held = byIdentity.get(identity);
+    if (held) held.push(at);
+    else byIdentity.set(identity, [at]);
   };
-  /** Each (metric, day) slot's active row, by list and index. */
-  const taken = new Map<string, { list: Row[]; at: number }>();
-  for (const list of [measurements, labValues] as Row[][]) {
-    list.forEach((row, at) => {
-      remember(list, at);
-      if (row.status === 'active') taken.set(slotOfRow(row), { list, at });
-    });
-  }
+  /** Each (test, day) slot's active row, by index. */
+  const taken = new Map<string, number>();
+  rows.forEach((row, at) => {
+    remember(at);
+    if (row.status === 'active') taken.set(slotOfRow(row), at);
+  });
   let changed = false;
 
   for (const { identity, obs } of parsedInOrder(records)) {
@@ -343,11 +345,11 @@ export function importHealthRecords(
     const version = versionOf(obs);
     const externalId = `${identity}#${version}`;
     const withdrawal = obs.status === 'entered-in-error';
-    const rows = byIdentity.get(identity) ?? [];
-    const active = rows.find(({ list, at }) => list[at].status === 'active');
-    const withdraw = (held: { list: Row[]; at: number }) => {
-      held.list[held.at] = { ...held.list[held.at], status: 'entered-in-error' };
-      taken.delete(slotOfRow(held.list[held.at]));
+    const mine = byIdentity.get(identity) ?? [];
+    const active = mine.find((at) => rows[at].status === 'active');
+    const withdraw = (at: number) => {
+      rows[at] = { ...rows[at], status: 'entered-in-error' };
+      taken.delete(slotOfRow(rows[at]));
       counts.withdrawn++;
       changed = true;
     };
@@ -355,26 +357,25 @@ export function importHealthRecords(
     // AC7: a withdrawal still withdraws an active copy another device's merge brought back,
     // unless that copy is a newer version: a replayed withdrawal never undoes a later result.
     if (known.has(externalId)) {
-      if (withdrawal && active && versionOrder(version, active.list[active.at].externalId as string) !== -1) withdraw(active);
+      if (withdrawal && active !== undefined && versionOrder(version, rows[active].externalId as string) !== -1) withdraw(active);
       else counts.alreadyInRecord++;
       continue;
     }
     // AC5, AC8: a replayed older version neither replaces nor withdraws a newer one.
-    if (rows.some(({ list, at }) => isStale(version, list[at].externalId as string, withdrawal))) { counts.alreadyInRecord++; continue; }
+    if (mine.some((at) => isStale(version, rows[at].externalId as string, withdrawal))) { counts.alreadyInRecord++; continue; }
     // The result as the record holds it now: its active row, else its newest.
-    const current = active ?? rows.reduce<(typeof rows)[number] | undefined>((a, b) => (!a || writtenBefore(a.list[a.at], b.list[b.at]) ? b : a), undefined);
+    const current = active ?? mine.reduce<number | undefined>((a, b) => (a === undefined || writtenBefore(rows[a], rows[b]) ? b : a), undefined);
     /** AC5: a version marker, so the record remembers a version that changes nothing it shows. */
     const mark = () => {
-      const { list, at } = current!;
-      list.push({ ...list[at], id: newId(), status: 'entered-in-error', createdAt: now, source: 'health_records', correctsId: null, externalId: `${externalId}|${MARKER}` });
-      remember(list, list.length - 1);
+      rows.push({ ...rows[current!], id: newId(), status: 'entered-in-error', createdAt: now, source: 'health_records', correctsId: null, externalId: `${externalId}|${MARKER}` });
+      remember(rows.length - 1);
       changed = true;
     };
 
     // AC7: the lab withdrew it. The active row goes; a marker carries the withdrawal's version.
     if (withdrawal) {
-      if (!current) { counts.notRead++; continue; }
-      if (active) withdraw(active);
+      if (current === undefined) { counts.notRead++; continue; }
+      if (active !== undefined) withdraw(active);
       else counts.alreadyInRecord++;
       mark();
       continue;
@@ -386,57 +387,49 @@ export function importHealthRecords(
     // AC10 (D6): the erase removed the rows that would have deduplicated it.
     if (erasedAt !== null && Date.parse(reading.recordedAt) < erasedAt) { counts.notRead++; continue; }
 
-    let slot = slotKey(reading.kind, reading.metric, reading.recordedAt);
-    const list: Row[] = reading.kind === 'measurement' ? measurements : labValues;
+    let slot = slotAt(reading, reading.recordedAt);
     // AC3: `issued` is this version's release, so a version dated by it alone keeps the
     // day its result already holds; an amendment's later release is not a move.
-    const established = current && current.list[current.at];
-    if (established && current!.list === list && !obs.effectiveDateTime && !obs.effectivePeriod?.start
-      && slotKey(reading.kind, reading.metric, established.recordedAt) === slotOfRow(established)) slot = slotOfRow(established);
+    const established = current === undefined ? undefined : rows[current];
+    if (established && !obs.effectiveDateTime && !obs.effectivePeriod?.start
+      && slotAt(reading, established.recordedAt) === slotOfRow(established)) slot = slotOfRow(established);
     // A version that moves the result to another test or day is not read: a correction keeps
     // its slot (agent-access rule 2). Judged against the result's row, active or not (AC6).
-    if (established && (current!.list !== list || slotOfRow(established) !== slot)) { counts.notRead++; continue; }
+    if (established && slotOfRow(established) !== slot) { counts.notRead++; continue; }
     // AC8: the lab withdrew the result last (its marker carries an entered-in-error version):
     // the lab's newer version reinstates it, the same value included (Brad 2026-11-02).
-    const labWithdrew = !active && established !== undefined && isMarkerId(String(established.externalId))
+    const labWithdrew = active === undefined && established !== undefined && isMarkerId(String(established.externalId))
       && versionPartsOf(String(established.externalId))?.[2] === 'entered-in-error';
     // AC5, AC8: the same value, unit and comparator as the result holds now: a
     // marker only; the person's rejection or hand edit stands.
     if (established && !labWithdrew && sameContent(established, reading)) { mark(); counts.alreadyInRecord++; continue; }
     const held = active ?? taken.get(slot);
-    const old = held?.list[held.at];
+    const old = held === undefined ? undefined : rows[held];
     // AC9: another institution's result holds the day.
-    if (old && !active && old.source === 'health_records') { counts.alreadyInRecord++; continue; }
+    if (old && active === undefined && old.source === 'health_records') { counts.alreadyInRecord++; continue; }
     // AC9: the same value typed or uploaded on the day: nothing to correct.
     if (old && sameContent(old, reading)) { counts.alreadyInRecord++; continue; }
     let correctsId: string | null = null;
-    let recordedAt = slot === slotKey(reading.kind, reading.metric, reading.recordedAt) ? reading.recordedAt : established!.recordedAt;
-    if (held && old) {
+    let recordedAt = slot === slotAt(reading, reading.recordedAt) ? reading.recordedAt : established!.recordedAt;
+    if (held !== undefined && old) {
       // AC6, AC9: a FHIR correction on the slot's day.
-      held.list[held.at] = { ...old, status: 'entered-in-error' };
+      rows[held] = { ...old, status: 'entered-in-error' };
       correctsId = old.id;
       recordedAt = old.recordedAt;
     }
 
-    const row: Row = reading.kind === 'measurement'
-      ? createMeasurement({
-        id: newId(), metricType: reading.metric, value: reading.value, recordedAt, createdAt: now,
-        source: 'health_records', correctsId, externalId, ...comparatorOf(reading),
-      })
-      : createLabValue({
-        id: newId(), metricName: reading.metric, value: reading.value, unit: reading.unit,
-        referenceLow: reading.referenceLow, referenceHigh: reading.referenceHigh,
-        recordedAt, createdAt: now, source: 'health_records', correctsId, externalId, ...comparatorOf(reading),
-      });
-    list.push(row);
-    remember(list, list.length - 1);
-    taken.set(slot, { list, at: list.length - 1 });
+    const { core, metric, unit, value, referenceLow, referenceHigh } = reading;
+    const row = { id: newId(), value, referenceLow, referenceHigh, recordedAt, createdAt: now, source: 'health_records' as const, correctsId, ...comparatorOf(reading) };
+    // US-66 (one table): a core result is a core row, so `stampUpdatedAt` stamps the record version 3.
+    rows.push(core ? { ...createCoreRow({ ...row, metric }), externalId } : createLabValue({ ...row, metricName: metric, unit, externalId }));
+    remember(rows.length - 1);
+    taken.set(slot, rows.length - 1);
     if (correctsId) counts.corrected++;
     else counts.added++;
     changed = true;
   }
 
-  return { file: changed ? stampUpdatedAt({ ...file, measurements, labValues }, now) : file, counts };
+  return { file: changed ? stampUpdatedAt({ ...file, labValues: rows }, now) : file, counts };
 }
 
 /**

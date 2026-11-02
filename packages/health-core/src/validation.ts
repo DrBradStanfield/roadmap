@@ -385,7 +385,7 @@ export const MEASUREMENT_SOURCES = [
   'lab_import',
   'lab_import_edited',  // LLM-extracted then user-corrected at review time
   'manual_correction',  // A correction row (correctsId set) written by record-edits.ts
-  'health_records',     // A lab result a clinic sent to Apple Health Records (US-66)
+  'health_records',     // A lab result a clinic sent to Apple Health Records (US-71)
 ] as const;
 export type MeasurementSource = typeof MEASUREMENT_SOURCES[number];
 

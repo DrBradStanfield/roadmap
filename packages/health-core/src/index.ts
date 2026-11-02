@@ -506,5 +506,5 @@ export {
   limitText, withComparator, type Comparator, type InputLimit, type InputLimits, type LimitField,
 } from './lab-limits';
 
-// US-66: lab results from Apple Health Records, read from their FHIR JSON.
+// US-71: lab results from Apple Health Records, read from their FHIR JSON.
 export { HEALTH_RECORDS_LOINC, importHealthRecords, type ClinicalRecordInput, type HealthRecordsCounts } from './health-records-import';

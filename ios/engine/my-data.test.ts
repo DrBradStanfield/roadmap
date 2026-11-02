@@ -662,9 +662,9 @@ describe('Apple Health (AC13, AC14)', () => {
   });
 });
 
-// US-66: lab results from Health Records, through health-core's health-records-import
+// US-71: lab results from Health Records, through health-core's health-records-import
 // (its rules are tested there). The app reads the counts from the edit's answer.
-describe('Health Records (US-66)', () => {
+describe('Health Records (US-71)', () => {
   const ldl = {
     resourceType: 'Observation', id: 'ldl-1', status: 'final', effectiveDateTime: '2026-10-20', meta: { versionId: '1' },
     code: { coding: [{ system: 'http://loinc.org', code: '13457-7' }] },
@@ -676,7 +676,7 @@ describe('Health Records (US-66)', () => {
     const outcome = applyEdit(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'healthRecords', records: [record] }, NOW);
     if (!outcome.ok) throw new Error(outcome.message);
     expect(outcome.healthRecords).toEqual({ added: 1, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
-    expect(outcome.file.measurements[0]).toMatchObject({ metricType: 'ldl', value: 2.6, source: 'health_records' });
+    expect(outcome.file.labValues[0]).toMatchObject({ metricName: 'ldl', core: true, value: 2.6, source: 'health_records' });
     expect(myData(outcome.file).bloodTests.find((row) => row.metric === 'ldl')?.latest).toMatchObject({ day: '2026-10-20' });
   });
 
@@ -691,10 +691,10 @@ describe('Health Records (US-66)', () => {
     const version = (fields: object) => ({ ...record, json: JSON.stringify({ ...ldl, ...fields }) });
     const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'healthRecords', records: [record] });
     const restamped = edited(file, { kind: 'healthRecords', records: [version({ meta: { versionId: '2' } })] });
-    expect(restamped.measurements).toHaveLength(2);
+    expect(restamped.labValues).toHaveLength(2);
     expect(metricHistory(restamped, 'ldl', LATER).rows.map((row) => [row.value, row.status])).toEqual([['2.6', 'active']]);
     const withdrawn = edited(restamped, { kind: 'healthRecords', records: [version({ meta: { versionId: '3' }, status: 'entered-in-error' })] });
-    expect(withdrawn.measurements).toHaveLength(3);
+    expect(withdrawn.labValues).toHaveLength(3);
     expect(metricHistory(withdrawn, 'ldl', LATER).rows.map((row) => [row.value, row.status])).toEqual([['2.6', 'entered-in-error']]);
   });
 
@@ -708,7 +708,7 @@ describe('Health Records (US-66)', () => {
     const answer = JSON.parse(applyEditJson(recordJson, JSON.stringify({ kind: 'healthRecords', records: [record] }), NOW, 'phone'));
     expect(Object.keys(answer)).toEqual(['ok', 'record', 'healthRecords']);
     expect(answer.healthRecords).toEqual({ added: 1, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
-    expect(JSON.parse(answer.record).measurements[0].source).toBe('health_records');
+    expect(JSON.parse(answer.record).labValues[0].source).toBe('health_records');
     const units = JSON.parse(applyEditJson(recordJson, JSON.stringify({ kind: 'units', unitSystem: 'conventional' }), NOW, 'phone'));
     expect(Object.keys(units)).toEqual(['ok', 'record']);
   });

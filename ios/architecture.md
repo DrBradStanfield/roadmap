@@ -93,13 +93,15 @@ engines from this release on. Had it kept them, its allow-list would drop `limit
 engine no longer sends a limit field's representative, so it would lose that value rather
 than misreport it.
 
-**Bridge moved a third time, 2026-11-02 (US-66, D10).** The contract now names the `healthRecords` edit, so
+**Bridge moved a third time, 2026-11-02 (US-71, D10).** The contract now names the `healthRecords` edit, so
 it hashes to `f4ba71cf3e7425f9`. A new app never runs an older over-the-air engine that lacks
 the edit; earlier builds keep their own bridge and get the edit only through the App Store.
 
-**Bridge moved, 2026-11-03 (merge of US-67 and US-66).** Main's `chatEditsJson` door
+**Bridge moved, 2026-11-03 (merge of US-67 and US-71).** Main's `chatEditsJson` door
 (`8ced272282162ff2`) and this branch's `healthRecords` edit (`f4ba71cf3e7425f9`) meet in
-one contract, which hashes to `9bf2188d4f963385`; `EngineRelease.bridge` and `bridge.test.ts` carry it.
+one contract, which hashes to `ad98aa80d4353126` once the story is renumbered US-71 in its
+text (the merge commit alone hashed to `9bf2188d4f963385`, never shipped); `EngineRelease.bridge`
+and `bridge.test.ts` carry it.
 
 Speed, measured 2026-10-21 (Node 22, esbuild bundle, an Intel iMac, the sample record
 padded to 526 rows; `--jitless` stands in for an app's JavaScriptCore, which runs without a
@@ -155,7 +157,7 @@ launch time: there, pre-main alone is 1.4 to 3 s (docs/reference.md gotcha).
   - **Cloud news** is decoded on the engine's queue (`CloudNews`) before it goes to main.
   - **Photos and scans** are resized `@concurrent` (`LabFileReader.photo` takes the photo's bytes; `pictures` takes the scan's images, which are Sendable in the iOS 27 SDK).
 - **The watchdog (DEBUG only, opt-in, US-25 AC21c).** `MainThreadWatchdog` runs only when the launch argument `-mainWatchdogLog <path>` names a log. It pings main every 50 ms from its own thread and appends "<timestamp> main stalled N ms" to that file when main took 100 ms or more to answer. It takes no stacks: a tool for timing by hand, not a test. `LaunchClock` logs the launch's milestones in ms since the process started.
-- **Apple Health observers at launch (adversary R1).** `Launch.init`, which runs as the process starts, registers HealthKit's observer queries and background delivery at once (`AppleHealthSync.observeAtLaunch`), as Apple requires, while the parts are still being built. A delivery awaits the parts, then refreshes; HealthKit's completion is called after that refresh, or at once if the parts never come. `HealthKitClient.observe` registers once per process, so the sync's own `start` keeps the launch's queries. Coming on screen refreshes Health from `follow` (`AppleHealthSync.foreground`, which first asks for lab results where HealthKit says a request is needed, US-66), beside sync and the updater; the sync itself listens only for the phone unlocking.
+- **Apple Health observers at launch (adversary R1).** `Launch.init`, which runs as the process starts, registers HealthKit's observer queries and background delivery at once (`AppleHealthSync.observeAtLaunch`), as Apple requires, while the parts are still being built. A delivery awaits the parts, then refreshes; HealthKit's completion is called after that refresh, or at once if the parts never come. `HealthKitClient.observe` registers once per process, so the sync's own `start` keeps the launch's queries. Coming on screen refreshes Health from `follow` (`AppleHealthSync.foreground`, which first asks for lab results where HealthKit says a request is needed, US-71), beside sync and the updater; the sync itself listens only for the phone unlocking.
 
 The runtime needs a bridge for what a bare JSContext lacks: `fetch`, `Response`, `Headers`,
 `URL`, `AbortController` with `AbortSignal.timeout`/`any`, `Blob`, `TextEncoder`/`Decoder`,
@@ -749,7 +751,7 @@ line (`chain`), not because of the main actor; a refresh asked for during one lo
   `HealthSyncMemory`'s written versions. Checked against a fake store only.
 
 **Entitlement.** `ios/HealthRoadmap.entitlements` (HealthKit, with background delivery, and
-`com.apple.developer.healthkit.access` = `health-records` since US-66) is set as
+`com.apple.developer.healthkit.access` = `health-records` since US-71) is set as
 `CODE_SIGN_ENTITLEMENTS`; the purpose strings are `INFOPLIST_KEY_NSHealthShareUsageDescription`,
 `...UpdateUsageDescription` and `...NSHealthClinicalHealthRecordsShareUsageDescription`. The simulator
 build signs it locally with no team. **For Brad, once the Apple Developer team exists:** set
@@ -764,21 +766,21 @@ they connect (changed at the cloud-sync merge, 2026-10-21). Health values reachi
 part of the record's summary, are a guideline 5.1.3 disclosure question for the chat consent. Whether a device backup counts as "iCloud"
 under 5.1.3 is the D5 backup question, still open.
 
-**For Brad: Health Records (US-66).** In Xcode, target HealthRoadmap, Signing & Capabilities,
+**For Brad: Health Records (US-71).** In Xcode, target HealthRoadmap, Signing & Capabilities,
 HealthKit: tick **Clinical Health Records** (it writes the `health-records` value already in
 the entitlements file; Xcode then updates the App ID on the developer portal when signing
 automatically). Then archive and upload as usual. App Store Connect: the privacy answers add
 health records (read, not linked to tracking, kept on the device or the person's cloud), the
 privacy policy says so, and the review notes say why the app reads lab results (the plan's
 suggestions) and that the import sends nothing to Brad's server: the results stay in the
-person's record, and go with a chat question only when the person uses the chat (US-66 AC11;
+person's record, and go with a chat question only when the person uses the chat (US-71 AC11;
 the purpose string says so). **Not confirmed (no developer
 account access from here):** whether the App ID shows a separate Clinical Health Records
 switch on developer.apple.com, whether Apple asks for any request or approval before a
 health-records build is accepted, and whether an existing provisioning profile must be
 regenerated by hand. Ship it in its own build, so a rejection holds back nothing else.
 
-**Blood tests from Health Records (US-66, built 2026-11-02; plan:
+**Blood tests from Health Records (US-71, built 2026-11-02; plan:
 [docs/drafts/apple-health-blood-tests.md](../docs/drafts/apple-health-blood-tests.md)).**
 Apple offers Health Records in the US, UK and Canada; records are FHIR, read-only.
 - **Asked only where it works:** `HKHealthStore.supportsHealthRecords()` true adds
@@ -794,13 +796,18 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
   Bump it when the engine starts reading results it used to refuse (a new code or unit): a
   phone whose anchor was kept under another version drops it once and reads every result
   again. AC5's dedup by `externalId`, and its stale-version rule, make the re-read safe.
+- **One blood-test table (US-66, merged 2026-11-03):** every result lands in `labValues`, a
+  core test as a core row (`createCoreRow`: `core: true`, its key, its SI unit), so the
+  record's own write stamp makes it `schemaVersion` 3; `measurements` gets nothing from the
+  import. Its slots, identities, corrections and markers all live in `labValues`, where a
+  typed core value now lives too.
 - **Swift parses nothing (D2):** `HealthKitClient.labResults` is an anchored query; each
   record goes to the engine as `{ sourceId, resourceType, fhirVersion, json }` (the
   `healthRecords` edit). `sourceId` is the sample's source bundle id (`com.apple.public.health.clinical.<UUID>`,
   one per institution account; seen on the simulator 2026-11-02): Apple says a FHIR id is
   unique only per type and source. The institution's name stays out of the record. The engine (health-core) reads the JSON and decides what lands, with its counts
   (`added`, `corrected`, `withdrawn`, `alreadyInRecord`, `notRead`).
-- **The import is the source of truth (Brad 2026-11-02, US-66 AC3, AC6, AC8, AC9):** the
+- **The import is the source of truth (Brad 2026-11-02, US-71 AC3, AC6, AC8, AC9):** the
   day is `effectiveDateTime`, else `effectivePeriod.start`, else `issued`. A result whose
   day holds a typed, uploaded, hand-corrected or Apple Health row with another value, unit
   or comparator corrects that row (FHIR correction, its day kept); the same value appends
@@ -841,16 +848,19 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
   landed then: all three carry `issued` and no `effectiveDateTime`, which AC3 refused (one is a
   panel with no value). AC3 now reads `issued` (Brad 2026-11-02); "rows appear in My data" is
   not yet re-checked on the simulator.
-- **Known limit: import before the cloud record (adversary R3, 2026-11-02; not fixed).**
-  A phone that imports Health Records before it connects its cloud record writes those
-  results with new row ids, and at first connect the cloud copy holds the same results
-  under other ids. The merge then decides, not the import's rules: the newest-written row
-  (`createdAt`) wins a slot, and an erase admits the lower-epoch side's rows written after
-  it. So the merge can bring back a result the person withdrew (a second active row of the
-  same version) or return results drawn before an erase. An imported result outranking a
-  value typed on the same day is no longer a problem: the import is meant to win (AC9). Same
-  class as the single-device limits above; the fix is merge-class work, Brad's call. US-66
-  AC5, AC8, AC9 and AC10 claim their rules only on a phone that already holds the record.
+- **Import before the cloud record: intended (adversary R3, 2026-11-02; Brad 2026-11-03:
+  "remember that the Apple Health import is the source of truth. So if that brings back
+  deleted values, that's fine.").** A phone that imports Health Records before it connects
+  its cloud record writes those results with new row ids, and at first connect the cloud
+  copy holds the same results under other ids. The merge then decides, not the import's
+  rules: the newest-written row (`createdAt`) wins a slot. So the merge can bring back a
+  result the person deleted or withdrew (a second active row of the same version), and an
+  imported result can outrank a value typed on the same day. Both are meant: the import is
+  the source of truth (AC9). A lab's re-sent result after its own withdrawal also beats the
+  person's earlier deletion (AC8; Brad 2026-11-03: agreed). **Still a known limit, beside
+  Brad's rule:** an erase admits the lower-epoch side's rows written after it, so the merge
+  can return results drawn before an erase (AC10); the fix is merge-class work, Brad's call.
+  US-71 AC5, AC8, AC9 and AC10 claim their own rules only on a phone that already holds the record.
 - **Gotcha:** an onboarding UI test that waits for the vitals sheet
   (`UIA.Health.AuthSheet.AllCategoryButton`) meets the Health Records sheet first on a
   simulator where `supportsHealthRecords()` is true (a US region, or an account added).
@@ -1301,7 +1311,7 @@ health tool (`data-clarity-mask` on `HealthTool.tsx`'s root). The app matches th
   never a navigation title, which can carry a supplement's name. Nothing is ever unmasked.
 - `AnalyticsMaskingTests` (US-25 AC19) fails if the window is not masked first, if any code
   unmasks, if a text input lacks its mask, or if any file but Analytics.swift calls Clarity.
-- **Custom events, exactly eighteen fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58; "Alcohol answered" for US-60; "Chat edit proposed" and "Chat edit saved" for US-67; "Health Records asked" and "Health Records imported" 2026-11-02 for US-66 AC13):**
+- **Custom events, exactly eighteen fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58; "Alcohol answered" for US-60; "Chat edit proposed" and "Chat edit saved" for US-67; "Health Records asked" and "Health Records imported" 2026-11-02 for US-71 AC13):**
   `Analytics.event` sends `ClaritySDK.sendCustomEvent` with a word from one enum,
   `Analytics.Event`: "Tour started", "Tour tip closed 1/2/3", "Tour skipped 1/2/3", "Tile
   explainer opened", "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened", "Alcohol answered", "Chat edit proposed", "Chat edit saved", "Health Records asked", "Health Records imported".

@@ -419,7 +419,7 @@ final class FakeHealthStore: HealthStoreClient {
     /// Runs before an import's read returns: a test holds the import here (US-56 AC4).
     var hold: (@MainActor () async -> Void)?
 
-    /// Health Records (US-66): off unless a test turns it on, as outside the US, UK and Canada.
+    /// Health Records (US-71): off unless a test turns it on, as outside the US, UK and Canada.
     var supportsHealthRecords = false
     /// Whether HealthKit still has lab results to ask about: the request then shows their sheet.
     var recordsNotYetAsked = true
@@ -428,7 +428,7 @@ final class FakeHealthStore: HealthStoreClient {
     /// The anchor each lab results read started from.
     private(set) var recordAnchors: [Data?] = []
     private(set) var requests = 0
-    /// Lab results asked for on their own, on coming forward (US-66 AC1).
+    /// Lab results asked for on their own, on coming forward (US-71 AC1).
     private(set) var labRequests = 0
 
     func requestAuthorization() async throws -> Bool {

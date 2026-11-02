@@ -132,7 +132,7 @@ export type Edit =
   | { kind: 'supplement'; supplementKey: string; supplementName: string; doseValue?: number | null; doseUnit?: string | null; status: 'active' | 'stopped'; startedAt?: string }
   /** Readings from Apple Health (US-25 AC13): health-core's device-import decides what lands. */
   | { kind: 'appleHealth'; samples: DeviceSample[] }
-  /** Lab results from Health Records (US-66): health-core's health-records-import decides what lands. */
+  /** Lab results from Health Records (US-71): health-core's health-records-import decides what lands. */
   | { kind: 'healthRecords'; records: ClinicalRecordInput[] }
   /** Medication and screening answers and a typed supplement (my-data-forms.ts, US-25 AC8). */
   | FormEdit
@@ -146,7 +146,7 @@ export type Edit =
 
 /** A refusal leaves the record as it was. `existingId` names the row holding the day. */
 export type EditOutcome =
-  /** `healthRecords`: what a Health Records batch did (US-66), counts only. */
+  /** `healthRecords`: what a Health Records batch did (US-71), counts only. */
   | { ok: true; file: RoadmapFile; healthRecords?: HealthRecordsCounts }
   | { ok: false; reason: string; message: string; existingId?: string };
 

@@ -208,7 +208,7 @@ enum RecordEdit: Encodable, Equatable {
     case labAdd(series: String, value: Double, day: String, unit: String)
     /// Readings from Apple Health; the engine decides what lands (US-25 AC13).
     case appleHealth([HealthSample])
-    /// Lab results from Health Records, as they came; the engine decides what lands (US-66).
+    /// Lab results from Health Records, as they came; the engine decides what lands (US-71).
     case healthRecords([HealthRecord])
     /// A medication, screening or supplement answer (FormModels.swift).
     case form(FormEdit)
@@ -328,6 +328,6 @@ struct EditOutcome: Decodable {
     var erase: String? = nil
     /// In the cloud: the engine's stamp, set in Swift (`HealthEngine.stamp`).
     var order: Int? = nil
-    /// After a `healthRecords` edit (US-66): what the batch did.
+    /// After a `healthRecords` edit (US-71): what the batch did.
     var healthRecords: HealthRecordCounts? = nil
 }

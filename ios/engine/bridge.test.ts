@@ -95,17 +95,17 @@ describe('bridge contract (US-25 AC18)', () => {
   // US-61's optional isUS and usProducts; builds 3 and 4 no longer take OTA engines. Moved
   // 2026-11-02: US-12 AC20's limits in the chat context; build 5 no longer takes OTA engines.
   // Moved 2026-11-02 again: US-67's chatEditsJson door, a door an older app cannot serve.
-  // Moved again 2026-11-02 for US-66 (D10): the healthRecords edit kind is named in the
+  // Moved again 2026-11-02 for US-71 (D10): the healthRecords edit kind is named in the
   // contract, so an app that sends it never runs an older engine without the case.
   // Moved 2026-11-03: the two merged (US-67's door and the healthRecords edit).
-  it('the contract hashes to exactly the bridge id the app serves (9bf2188d4f963385)', () => {
+  it('the contract hashes to exactly the bridge id the app serves (ad98aa80d4353126)', () => {
     const bytes = readFileSync(join(__dirname, 'bridge-contract.json'));
-    expect(createHash('sha256').update(bytes).digest('hex').slice(0, 16)).toBe('9bf2188d4f963385');
+    expect(createHash('sha256').update(bytes).digest('hex').slice(0, 16)).toBe('ad98aa80d4353126');
     expect(contract.doors.screenJson.args).toEqual(['recordJson', 'nowIso', 'deviceId', 'unitsJson']);
     expect(optional.doors.screenJson.optionalArgs).toEqual(['isUS']);
   });
 
-  // US-66 (D10): an engine without the healthRecords case would throw on it, so the
+  // US-71 (D10): an engine without the healthRecords case would throw on it, so the
   // edit kind and its answer are in the contract, not an optional addition.
   it('names the healthRecords edit and its counts in applyEditJson and cloudEdit', () => {
     expect(contract.doors.applyEditJson.returns).toContain("healthRecords {kind:'healthRecords', records:[{sourceId, resourceType, fhirVersion, json}]}");

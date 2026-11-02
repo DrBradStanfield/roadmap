@@ -69,7 +69,7 @@ struct HealthBatch: Sendable {
     let anchor: Data?
 }
 
-/// One lab result from Health Records, handed to the engine as it came (US-66). Swift
+/// One lab result from Health Records, handed to the engine as it came (US-71). Swift
 /// parses nothing (D2): the engine reads the FHIR JSON and decides whether it lands.
 struct HealthRecord: Encodable, Equatable, Sendable {
     /// The HealthKit source: the institution's account, the FHIR endpoint the resource's

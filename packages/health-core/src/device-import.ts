@@ -28,6 +28,7 @@
  * (widget-src/src/lib/constants.ts `formatShortDate`), not as a UTC day. A
  * wall-clock time labelled Z would show on the wrong day (review R1, 2026-10-21).
  */
+import { isBloodTestKey } from './core-rows';
 import { isCalendarDay } from './measurement-history';
 import { measurementValueFault, newId, slotKey, stampUpdatedAt } from './record-edits';
 import { createMeasurement, type FileMeasurement, type RoadmapFile } from './roadmap-file';
@@ -38,7 +39,7 @@ import { healthInputSchema, type MeasurementSource, METRIC_TYPES, pressureInvert
 export interface DeviceSample {
   /** The store's own id for the reading (a HealthKit sample UUID). */
   externalId: string;
-  /** A core metric (`METRIC_TYPES`), or `height` for the profile. */
+  /** A vital (`METRIC_TYPES` less the blood tests), or `height` for the profile. */
   metricType: string;
   /** SI canonical: kg, cm, mmHg. */
   value: number;
@@ -159,7 +160,9 @@ export function importDeviceSamples(
     // person allowed, and half a reading is not a blood pressure.
     const halves = reading.map((sample) => sample.metricType).sort().join();
     if (typeof reading[0].pairId === 'string' && halves !== 'diastolic_bp,systolic_bp') { skip('invalid'); continue; }
-    if (reading.some((sample) => !(METRIC_TYPES as readonly string[]).includes(sample.metricType) || measurementValueFault(sample.metricType, sample.value))) {
+    // A blood test is no vital: it lives in `labValues` (US-66, one blood-test table), never here.
+    if (reading.some((sample) => !(METRIC_TYPES as readonly string[]).includes(sample.metricType) || isBloodTestKey(sample.metricType)
+      || measurementValueFault(sample.metricType, sample.value))) {
       skip('invalid');
       continue;
     }

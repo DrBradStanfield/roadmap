@@ -7,7 +7,7 @@ import UIKit
 /// In: new readings since each kind's anchor go to the engine as one edit
 /// (`appleHealth`), whose rules decide what lands; the anchor moves only after
 /// the record is on disk, so a refused or failed save reads them again later.
-/// Lab results from Health Records (US-66), where Apple offers them, come the same way
+/// Lab results from Health Records (US-71), where Apple offers them, come the same way
 /// (`healthRecords`), through the same line, with their own anchor.
 /// Out: the engine lists the values a person entered (`healthWritesJson`); each
 /// is written once per version.
@@ -46,7 +46,7 @@ final class AppleHealthSync {
     private var started = false
     /// A lab results request is showing: a second return to the foreground does not ask again.
     private var asking = false
-    /// Where the two Health Records events go (US-66 AC13); RootView sets it.
+    /// Where the two Health Records events go (US-71 AC13); RootView sets it.
     @ObservationIgnored var analytics: Analytics?
 
     /// Reads the record again (cloud sync's re-read) after an import was refused: in
@@ -119,7 +119,7 @@ final class AppleHealthSync {
     /// Coming on screen (the app's `follow`), never from a background wake, where no sheet
     /// can show: a person who connected before lab results were asked for, or who chose
     /// "Ask Before Sharing", gets Health's lab results sheet when HealthKit says one is
-    /// needed (US-66 AC1, AC13). Then the refresh, which imports what they allowed.
+    /// needed (US-71 AC1, AC13). Then the refresh, which imports what they allowed.
     func foreground() async {
         if memory.connected, client.isAvailable, client.supportsHealthRecords, !asking {
             asking = true
@@ -211,7 +211,7 @@ final class AppleHealthSync {
         try await importLabResults()
     }
 
-    /// Lab results (US-66), as a kind: no anchor until a batch brought some (a refused read
+    /// Lab results (US-71), as a kind: no anchor until a batch brought some (a refused read
     /// looks like an empty one), and the anchor moves only once the record holding them is saved.
     private func importLabResults() async throws {
         guard client.supportsHealthRecords else { return }
