@@ -117,6 +117,39 @@ describe('latestActivePerMetric (US-07 AC4)', () => {
     expect(latestActivePerMetric([row('a', 'ldl', '2026-08-10', { status: 'entered-in-error' })])).toEqual([]);
   });
 
+  // Brad 2026-11-03: "whichever one comes later in UTC, that's the latest one."
+  it('picks the later UTC instant, not the later text: London 22:00Z beats Tokyo 06:00+09:00 (21:00Z)', () => {
+    const london = row('london', 'weight', '2026-11-01T22:00:00.000+00:00', { value: 80 });
+    const tokyo = row('tokyo', 'weight', '2026-11-02T06:00:00.000+09:00', { value: 81 });
+    expect(latestActivePerMetric([london, tokyo])).toEqual([london]);
+    expect(latestActivePerMetric([tokyo, london])).toEqual([london]);
+  });
+
+  it('treats Z and +00:00 spellings of one instant as a tie, so createdAt then id decide', () => {
+    const z = row('z', 'weight', '2026-11-01T22:00:00.000Z', { createdAt: '2026-11-01T22:00:01Z' });
+    const plus = row('plus', 'weight', '2026-11-01T22:00:00.000+00:00', { createdAt: '2026-11-01T22:00:02Z' });
+    expect(latestActivePerMetric([plus, z])).toEqual([plus]);
+    expect(latestActivePerMetric([z, plus])).toEqual([plus]);
+    const za = row('za', 'weight', '2026-11-01T22:00:00.000Z');
+    const pa = row('pa', 'weight', '2026-11-01T22:00:00.000+00:00');
+    expect(latestActivePerMetric([za, pa])).toEqual([za]);
+    expect(latestActivePerMetric([pa, za])).toEqual([za]);
+  });
+
+  it('reads a date-only row as that day at 00:00 UTC, as merge does', () => {
+    const day = row('day', 'weight', '2026-11-02');
+    const tokyo = row('tokyo', 'weight', '2026-11-02T06:00:00.000+09:00'); // 2026-11-01T21:00Z
+    const later = row('later', 'weight', '2026-11-02T00:30:00.000Z');
+    expect(latestActivePerMetric([tokyo, day])).toEqual([day]);
+    expect(latestActivePerMetric([day, later])).toEqual([later]);
+  });
+
+  it('falls back to text order when a recordedAt does not parse', () => {
+    const bad = row('bad', 'weight', '2026-11-02Tjunk');
+    const good = row('good', 'weight', '2026-11-01T10:00:00Z');
+    expect(latestActivePerMetric([good, bad])).toEqual([bad]);
+  });
+
   it('tiebreaks equal recordedAt on createdAt, then on id', () => {
     const byCreated = latestActivePerMetric([
       row('a', 'ldl', '2026-08-10', { value: 3.5, createdAt: '2026-08-10T08:00:00Z' }),

@@ -655,6 +655,8 @@ Code: the table and Apple's two lines (`APPLE_LOW_FROM_60`) are `packages/health
 
 Source: `suggestions.ts` -> `generateSuggestions()`
 
+The plan reads the latest active value per metric: the reading whose `recordedAt` is the later real moment, compared in UTC (`compareRecordedAt`, US-07 AC4, Brad 2026-11-03), so 22:00 in London beats 06:00 the next day in Tokyo (21:00 UTC); a date with no time counts as 00:00 UTC that day, and readings at the same moment fall back to the later write.
+
 ### Who the Plan Is For
 
 The plan is built for adults aged 18 and over (US-07 AC6, 2026-10-14; amended the same day). Its thresholds, targets and medicines come from adult guidelines.

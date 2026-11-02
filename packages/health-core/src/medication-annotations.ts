@@ -8,6 +8,7 @@ import type { FileMedication } from './roadmap-file';
 import { isTakingDrug } from './history-change';
 import { isEscalationKey } from './validation';
 import { stampInstant } from './merge';
+import { compareRecordedAt } from './measurement-history';
 
 /** The chart metrics each medication affects. */
 const MED_CHART_MAP: Record<string, string[]> = {
@@ -46,7 +47,7 @@ export function medicationChanges(rows: FileMedication[]): MedicationChange[] {
       doseValue: h.doseValue, doseUnit: h.doseUnit,
       changeType: h.changeType!, recordedAt: h.updatedAt,
     }))
-    .sort((a, b) => a.recordedAt.localeCompare(b.recordedAt) || a.id.localeCompare(b.id));
+    .sort((a, b) => compareRecordedAt(a.recordedAt, b.recordedAt) || a.id.localeCompare(b.id));
 }
 
 export interface ChartAnnotation {

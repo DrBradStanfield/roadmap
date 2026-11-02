@@ -361,7 +361,7 @@
 <ul>
 <li>AC2: LDL-only entry (no total cholesterol) still produces lipid advice (regression: feedback 2026-03-06, fixed).</li>
 <li>AC3: New/changed suggestions highlight briefly so I notice what my new data changed.</li>
-<li>AC4: Results and suggestions are computed from the most recent active value per metric by clinical date (<code>recordedAt</code>); backfilled older readings never drive the plan.</li>
+<li>AC4: Results and suggestions are computed from the latest active value per metric by real time: the later UTC instant of <code>recordedAt</code>, not its text (Brad 2026-11-03: "whichever one comes later in UTC, that's the latest one"). So London 22:00+00:00 beats Tokyo 06:00+09:00 the next day (21:00 UTC). A date-only <code>recordedAt</code> is 00:00 UTC that day, as merge reads it; two spellings of one instant (Z, +00:00) tie and fall to <code>createdAt</code>, then <code>id</code>; a <code>recordedAt</code> that does not parse keeps text order. Lab series and the medication log order the same way (<code>compareRecordedAt</code>). Slot keys (the stored day) are unchanged. Backfilled older readings never drive the plan. Tests: <code>measurement-history.test.ts</code>, <code>lab-series.test.ts</code>, <code>medication-annotations.test.ts</code>.</li>
 <li>AC5 (Brad, 2026-09-28: "optimal is &lt; 1.4"): LDL and non-HDL count as optimal only below the plan's treatment targets, 1.4 and 1.6 mmol/L.</li>
 </ul>
 <p>  - From there up to Borderline (130 and 160 mg/dL, 3.362 and 4.138 mmol/L), the tiles say "Above optimal".</p>
