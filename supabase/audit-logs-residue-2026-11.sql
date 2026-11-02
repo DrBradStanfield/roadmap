@@ -19,6 +19,8 @@
 
 -- ---------------------------------------------------------------------------
 -- 1. LOOK FIRST (read only). Every metadata key, by action.
+--    This key list is what to inspect before the COMMIT run: every key must
+--    be one that 2a or 2b clears, or one on the 2c allow-list.
 -- ---------------------------------------------------------------------------
 SELECT action, k AS key, count(*) AS rows
 FROM audit_logs,
@@ -29,12 +31,14 @@ ORDER BY 1, 2;
 SELECT
   (SELECT count(*) FROM audit_logs WHERE metadata IS NOT NULL AND jsonb_typeof(metadata) <> 'object') AS non_object_metadata,
   (SELECT count(*) FROM audit_logs WHERE action = 'USER_CREATED' AND user_id IS NULL AND resource_id IS NOT NULL) AS unlinked_user_created_with_profile_id,
+  (SELECT count(*) FROM audit_logs WHERE action = 'MESSAGE_CREDITS_PURCHASED' AND user_id IS NULL AND resource_id IS NOT NULL) AS unlinked_credit_purchases_with_order_id,
   (SELECT count(*) FROM audit_logs) AS total_rows;
 
 -- ---------------------------------------------------------------------------
 -- 2. CLEAN AND CHECK — paste 2a to 2d as ONE run.
---    First run: leave 2d as ROLLBACK and read the counts from 2c.
---    Then run the same block again with 2d changed to COMMIT.
+--    First run: leave 2d as ROLLBACK and read the NOTICE 2c raises (the rows
+--    still holding metadata, and the total). Then, once step 1's key list
+--    holds no surprise, run the same block again with 2d changed to COMMIT.
 --    If 2c finds a key outside the allow-list it raises an error, the
 --    transaction aborts, and nothing is written, even on the COMMIT run.
 -- ---------------------------------------------------------------------------
@@ -56,6 +60,10 @@ WHERE jsonb_typeof(metadata) = 'object' AND metadata ?| ARRAY['ip', 'shopifyCust
 
 UPDATE audit_logs SET resource_id = NULL
 WHERE action = 'USER_CREATED' AND user_id IS NULL AND resource_id IS NOT NULL;
+
+-- A credit purchase whose user link the purge severed keeps no Shopify order id.
+UPDATE audit_logs SET resource_id = NULL
+WHERE action = 'MESSAGE_CREDITS_PURCHASED' AND user_id IS NULL;
 
 -- 2c. CHECK: every key left is on the allow-list, and nothing else is left.
 DO $$
@@ -79,11 +87,13 @@ BEGIN
   IF EXISTS (SELECT 1 FROM audit_logs WHERE action = 'USER_CREATED' AND user_id IS NULL AND resource_id IS NOT NULL) THEN
     RAISE EXCEPTION 'unlinked USER_CREATED rows still carry a profile id';
   END IF;
+  IF EXISTS (SELECT 1 FROM audit_logs WHERE action = 'MESSAGE_CREDITS_PURCHASED' AND user_id IS NULL AND resource_id IS NOT NULL) THEN
+    RAISE EXCEPTION 'unlinked MESSAGE_CREDITS_PURCHASED rows still carry an order id';
+  END IF;
+  RAISE NOTICE 'audit_logs after cleanup: % rows with metadata, % rows in all',
+    (SELECT count(*) FROM audit_logs WHERE metadata IS NOT NULL),
+    (SELECT count(*) FROM audit_logs);
 END $$;
-
-SELECT
-  (SELECT count(*) FROM audit_logs WHERE metadata IS NOT NULL) AS rows_with_metadata,
-  (SELECT count(*) FROM audit_logs) AS total_rows;
 
 -- 2d. ROLLBACK on the first run; COMMIT on the second.
 ROLLBACK;
