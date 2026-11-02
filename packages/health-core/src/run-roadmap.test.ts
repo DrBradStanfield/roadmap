@@ -929,7 +929,7 @@ describe('US-67 AC3: the app\'s words for the form tools', () => {
   // again with US-67 N3 (Brad 2026-11-03, "Option 1"): propose_medication_edit never promises an Undo. Any other move is a cache-prefix change to explain.
   it('US-67 AC3: the web\'s tools are byte-identical to the pinned ones (prompt cache prefix)', () => {
     const sha = (x: unknown) => createHash('sha256').update(JSON.stringify(x)).digest('hex');
-    expect(sha(CHAT_TOOLS)).toBe('af16b13b33b395a71c41fccaa84ba5216aac9d1499f3a79cef6828ab7318f2ca');
+    expect(sha(CHAT_TOOLS)).toBe('4aae24cf50a6a2c76838f122aafba985eafdc60244c26e907c9b79632e322e1c');
     expect(chatToolsFor(said)).toBe(CHAT_TOOLS);
     expect(chatToolsFor(said, true, false)).toBe(CHAT_TOOLS);
   });

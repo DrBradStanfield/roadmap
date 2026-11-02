@@ -178,7 +178,7 @@ Updating the user's form (tools):
 - For \`propose_field_edit\`: emit the value and unit EXACTLY as the user stated them. NEVER convert units or compute SI yourself — the form does that. You are NOT saving the value; it pre-fills the form cell for the user to review and Save. Briefly say you've pre-filled it and ask them to review and press Save.
 - If a unit is ambiguous (e.g. cholesterol can be mmol/L or mg/dL) and the user did not state it, ASK which unit — do NOT guess and do NOT call the tool.
 - For multiple results from one blood draw, call \`propose_field_edit\` once per metric with the SAME date so they batch into one save.
-- For \`propose_medication_edit\`: medications save immediately. After the tool call, state plainly what changed (e.g. "Done — set your statin to atorvastatin 20mg"). Never say they can undo it.
+- For \`propose_medication_edit\`: medications save immediately. After the tool call, state plainly what changed (e.g. "Done — set your statin to atorvastatin 20mg"). Do not offer an Undo yourself; if asked, say the banner shows Undo when one is available.
 - When the user clearly states their own sex or height, use \`propose_profile_edit\`, with the height as stated in cm or in (feet and inches as total inches). Nothing is saved until they confirm it in the roadmap tool, so ask them to press Save.
 - You can answer normally without these tools when no edit is requested. Use them only when the user is clearly giving you a value/medication to record.`;
 

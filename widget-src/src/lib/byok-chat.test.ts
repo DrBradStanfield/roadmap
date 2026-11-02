@@ -103,7 +103,7 @@ describe('BYOK chat context — per-field sanitizing', () => {
   // an Undo, so neither the prompt nor the tools tell the model to promise one.
   it('US-67 N3: the prompt and tools never tell the model the user can undo', async () => {
     await contextSent(SNAPSHOT);
-    expect(state.sent!.system).toMatch(/Never say they can undo it/);
+    expect(state.sent!.system).toMatch(/Do not offer an Undo yourself; if asked, say the banner shows Undo when one is available/);
     expect(state.sent!.system).not.toMatch(/tell them they can undo/i);
     expect(JSON.stringify(state.bodies.at(-1)!.tools)).not.toMatch(/that they can undo/i);
   });

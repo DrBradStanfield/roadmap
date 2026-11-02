@@ -16,8 +16,8 @@
  *  - propose_field_edit       — longitudinal measurements (weight, LDL, BP, …).
  *                               Pre-fills the real form cell; the user Saves.
  *  - propose_medication_edit  — medications (statin, ezetimibe, …). These
- *                               auto-save today, so the chat states the change
- *                               + offers Undo.
+ *                               auto-save today, so the chat states the change;
+ *                               the banner, not the chat, offers any Undo.
  *  - propose_profile_edit     — sex and height (US-16 AC2). The form saves
  *                               these on change, so the widget asks the user
  *                               to confirm before it writes anything.
@@ -189,8 +189,8 @@ export const PROPOSE_MEDICATION_EDIT_TOOL = {
   description:
     "Update one of the user's medications in their form. Use ONLY when the user clearly states " +
     'a medication change (e.g. "I started atorvastatin 20mg", "set my statin to rosuvastatin 10mg"). ' +
-    'Medications save immediately, so after calling this, tell the user exactly what changed; never ' +
-    'say they can undo it. Do not call this for measurements (use propose_field_edit) or for ' +
+    'Medications save immediately, so after calling this, tell the user exactly what changed. Do ' +
+    'not offer an Undo yourself; if asked, say the banner shows Undo when one is available. Do not call this for measurements (use propose_field_edit) or for ' +
     'supplements.',
   input_schema: {
     type: 'object' as const,
