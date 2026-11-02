@@ -18,14 +18,17 @@
 --
 -- Known leftovers (US-09 AC33, 2026-11-02): the v1 health schema still exists
 -- live, empty. Tables health_measurements, lab_values, medications,
--- medication_history, screenings, supplements, supplement_history and
--- health_documents (0 rows), their policies, triggers and functions
--- (correct_measurement, get_latest_measurements, get_latest_measurement_dates
--- and the four trigger functions), and the profiles columns sex, birth_year,
--- birth_month, height and unit_system (null on every row). They are not
--- dropped (never DROP TABLE on Supabase: PostgREST caches OIDs), and this file
--- no longer creates them. The two definer functions among them had EXECUTE
--- revoked live on 2026-10-21 (US-09 AC26).
+-- medication_history, screenings, supplements, supplement_history,
+-- health_documents, reminder_preferences and reminder_log (0 rows), their
+-- policies, triggers and functions (correct_measurement,
+-- get_latest_measurements, get_latest_measurement_dates and the four trigger
+-- functions), the profiles columns sex, birth_year, birth_month, height and
+-- unit_system (null on every row), and the v1 reminder columns
+-- reminders_global_optout and unsubscribe_token (no code reads them). They
+-- are not dropped (never DROP TABLE on Supabase: PostgREST caches OIDs), and
+-- this file no longer creates them. The definer functions among them hold no
+-- EXECUTE for anon or authenticated (revoked 2026-10-21, US-09 AC26; checked
+-- read-only 2026-11-02).
 
 -- ===== Create profiles table =====
 
@@ -135,82 +138,6 @@ CREATE POLICY "Users can read own audit logs"
   USING (user_id = auth.uid());
 
 GRANT SELECT ON audit_logs TO authenticated;
-
--- ===== Add reminder columns to profiles =====
-
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS reminders_global_optout BOOLEAN DEFAULT FALSE;
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS unsubscribe_token TEXT;
-
--- ===== Create reminder_preferences table =====
--- Per-category opt-out for health reminder emails.
--- Default opt-in: if no row exists for a category, the user receives reminders.
-
-CREATE TABLE IF NOT EXISTS reminder_preferences (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  reminder_category TEXT NOT NULL CHECK (reminder_category IN (
-    'screening_colorectal', 'screening_breast', 'screening_cervical',
-    'screening_lung', 'screening_prostate', 'screening_dexa',
-    'blood_test_lipids', 'blood_test_hba1c', 'blood_test_creatinine',
-    'medication_review'
-  )),
-  enabled BOOLEAN NOT NULL DEFAULT TRUE,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE(user_id, reminder_category)
-);
-
-CREATE INDEX IF NOT EXISTS idx_reminder_prefs_user ON reminder_preferences(user_id);
-
-ALTER TABLE reminder_preferences ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Users can read own reminder preferences" ON reminder_preferences;
-CREATE POLICY "Users can read own reminder preferences"
-  ON reminder_preferences FOR SELECT
-  USING (user_id = auth.uid());
-
-DROP POLICY IF EXISTS "Users can insert own reminder preferences" ON reminder_preferences;
-CREATE POLICY "Users can insert own reminder preferences"
-  ON reminder_preferences FOR INSERT
-  WITH CHECK (user_id = auth.uid());
-
-DROP POLICY IF EXISTS "Users can update own reminder preferences" ON reminder_preferences;
-CREATE POLICY "Users can update own reminder preferences"
-  ON reminder_preferences FOR UPDATE
-  USING (user_id = auth.uid());
-
-DROP POLICY IF EXISTS "Users can delete own reminder preferences" ON reminder_preferences;
-CREATE POLICY "Users can delete own reminder preferences"
-  ON reminder_preferences FOR DELETE
-  USING (user_id = auth.uid());
-
-GRANT SELECT, INSERT, UPDATE, DELETE ON reminder_preferences TO authenticated;
-
--- ===== Create reminder_log table =====
--- Tracks sent reminder emails per group to enforce cooldowns.
--- Only written by service role (cron job). Users can read their own logs.
-
-CREATE TABLE IF NOT EXISTS reminder_log (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  reminder_group TEXT NOT NULL CHECK (reminder_group IN ('screening', 'blood_test', 'medication_review')),
-  sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  next_eligible_at TIMESTAMPTZ NOT NULL,
-  details JSONB,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_reminder_log_user_group
-  ON reminder_log(user_id, reminder_group, next_eligible_at DESC);
-
-ALTER TABLE reminder_log ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Users can read own reminder logs" ON reminder_log;
-CREATE POLICY "Users can read own reminder logs"
-  ON reminder_log FOR SELECT
-  USING (user_id = auth.uid());
-
-GRANT SELECT ON reminder_log TO authenticated;
 
 -- ===== Cron lock table =====
 -- Coordinates the reminder cron job across multiple Fly.io machines.
