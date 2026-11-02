@@ -372,6 +372,15 @@ export function anyScreeningEligible(age: number, sex: string | undefined): bool
     || (sex === 'male' && age >= 45);
 }
 
+/**
+ * The LDCT question opens at 20 pack-years, or whenever LDCT data is already recorded, so an
+ * abnormal result's follow-up can be closed after pack-years drop below 20 (US-07 AC1f).
+ */
+export function lungScreeningAsked(scr: ScreeningInputs): boolean {
+  return (scr.lungPackYears !== undefined && scr.lungPackYears >= LUNG_PACK_YEARS)
+    || scr.lungScreening === 'annual_ldct' || !!scr.lungLastDate || !!scr.lungResult;
+}
+
 /** DEXA applies to women from 50 and men from 70. */
 export function dexaEligible(age: number, sex: string | undefined): boolean {
   return (sex === 'female' && age >= 50) || (sex === 'male' && age >= 70);
@@ -434,8 +443,7 @@ export function screeningForm(age: number | undefined, sex: string | undefined, 
       const fields = [choice('lung_smoking_history', L.smokingHistory, O.lung_smoking_history)];
       if (history === 'former_smoker' || history === 'current_smoker') {
         fields.push({ kind: 'number', key: 'lung_pack_years', label: X.packYearsLabel, hint: X.packYearsHint, value: str('lung_pack_years'), min: 0, max: 200 });
-        const packYears = scr.lungPackYears;
-        if (packYears !== undefined && packYears >= LUNG_PACK_YEARS) {
+        if (lungScreeningAsked(scr)) {
           fields.push(choice('lung_screening', L.lungScreening, O.lung_screening));
           if (str('lung_screening') === 'annual_ldct') fields.push(month('lung_last_date', L.lastLdct), ...resultChain('lung', 'annual_ldct'));
         }

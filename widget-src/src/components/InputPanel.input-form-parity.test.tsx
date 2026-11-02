@@ -92,6 +92,9 @@ describe('US-25 AC8, US-06 — the web screening cards are screeningForm', () =>
     ['man of 60, former smoker, 25 pack-years, annual LDCT', 60, 'male', {
       lung_smoking_history: 'former_smoker', lung_pack_years: '25', lung_screening: 'annual_ldct',
     }],
+    ['US-07 AC1f: man of 60, 15 pack-years, abnormal LDCT recorded', 60, 'male', {
+      lung_smoking_history: 'former_smoker', lung_pack_years: '15', lung_screening: 'annual_ldct', lung_last_date: '2025-01', lung_result: 'abnormal',
+    }],
     ['man of 55 who will screen', 55, 'male', { prostate_discussion: 'will_screen' }],
     ['man of 72, DEXA osteoporosis', 72, 'male', {
       dexa_screening: 'dexa_scan', dexa_last_date: '2024-06', dexa_result: 'osteoporosis', dexa_followup_status: 'completed',
@@ -102,6 +105,15 @@ describe('US-25 AC8, US-06 — the web screening cards are screeningForm', () =>
     const sections = screeningForm(age, sex, screeningsToInputs(screeningRows(screenings)));
     expect(sections.length).toBeGreaterThan(0);
     expectParity(container, sections);
+  });
+
+  it('US-07 AC1f: below 20 pack-years the web still shows a recorded abnormal LDCT\'s follow-up', () => {
+    const container = renderPanel({ sex: 'male', basis: { age: 60 }, screenings: {
+      lung_smoking_history: 'former_smoker', lung_pack_years: '15', lung_screening: 'annual_ldct', lung_last_date: '2025-01', lung_result: 'abnormal',
+    } });
+    expect(container.querySelector('#lung-followup-status')).not.toBeNull();
+    const none = renderPanel({ sex: 'male', basis: { age: 60 }, screenings: { lung_smoking_history: 'former_smoker', lung_pack_years: '15' } });
+    expect(none.querySelector('#lung-screening')).toBeNull();
   });
 });
 
