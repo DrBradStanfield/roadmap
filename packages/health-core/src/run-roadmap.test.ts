@@ -1100,6 +1100,14 @@ describe('US-16 AC3: a medication answer the question does not offer is asked ab
     expect(turn.refused).toBe(1);
   });
 
+  it('US-16 AC3 (Codex R2): an empty answer is asked about in a second call and counted as refused', async () => {
+    const send = vi.fn().mockResolvedValueOnce(reply(use('m', 'propose_medication_edit', { medicationKey: 'statin', drugName: '' }))).mockResolvedValueOnce(asked);
+    const turn = await withRoadmapRound(said, send, PROFILE);
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(turn.refused).toBe(1);
+    expect(turn.proposedEdits).toEqual([]);
+  });
+
   it('US-16 AC3: a misfit beside run_roadmap is asked in the same one round', async () => {
     const send = vi.fn()
       .mockResolvedValueOnce(reply(use('r', 'run_roadmap', { values: [val('ldlC', 3.4, 'mmol/L')] }), use('m', 'propose_medication_edit', { medicationKey: 'ezetimibe', drugName: 'atorvastatin' })))

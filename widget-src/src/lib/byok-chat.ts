@@ -224,8 +224,14 @@ export async function sendMessage(
       { role: 'user', content: message },
     ];
     const turn = await withRoadmapRound(messages, async (fields) => {
-      const { text, blocks } = await callAnthropicDirectRaw(apiKey, { ...modelParams(CHAT_MODEL, CHAT_MAX_TOKENS), system, tools: chatToolsFor(messages), ...fields });
-      return { text, contentBlocks: blocks };
+      try {
+        const { text, blocks } = await callAnthropicDirectRaw(apiKey, { ...modelParams(CHAT_MODEL, CHAT_MAX_TOKENS), system, tools: chatToolsFor(messages), ...fields });
+        return { text, contentBlocks: blocks };
+      } catch (error) {
+        // An empty second reply is no answer, not a failure: the tool-only line below covers it (US-16 AC3).
+        if (fields.tool_choice && error instanceof ByokAnthropicError && error.code === 'empty') return { text: '', contentBlocks: [] };
+        throw error;
+      }
     }, guestInputs);
     content = turn.final.text;
     proposedEdits = turn.proposedEdits;

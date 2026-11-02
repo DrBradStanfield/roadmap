@@ -16,7 +16,9 @@ const state = vi.hoisted(() => ({
 
 vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(null) }));
 vi.mock('./byok-anthropic', () => ({
-  ByokAnthropicError: class ByokAnthropicError extends Error {},
+  ByokAnthropicError: class ByokAnthropicError extends Error {
+    constructor(readonly code: string, message: string) { super(message); }
+  },
   callAnthropicDirectRaw: async (_key: string, body: { system: string }) => {
     state.sent = body;
     state.bodies.push(body);
@@ -238,8 +240,25 @@ describe('US-15 AC33: run_roadmap in the Pages chat', () => {
     state.replies = [{ text: '', blocks: [misfit] }, { text: '', blocks: [] }];
     const { result, error } = await sendMessage("I'm on atorvastatin", null, SNAPSHOT);
     expect(error).toBeNull();
-    expect(result!.content).toBe("One medication change was not saved, as its answer is not one of the form's options. Tell me which option applies, or choose it yourself.");
+    expect(result!.content).toBe("One medication change was not saved, as its answer is not one of the listed answers. Tell me which one applies, or choose it yourself.");
     expect(result).not.toHaveProperty('proposedEdits');
+  });
+
+  it('US-16 AC3 (Codex R1): a refused medication answer with an empty finished second reply shows the not-saved line', async () => {
+    const { ByokAnthropicError } = await import('./byok-anthropic');
+    const misfit = { type: 'tool_use', id: 'toolu_med', name: 'propose_medication_edit', input: { medicationKey: 'ezetimibe', drugName: 'atorvastatin' } };
+    state.replies = [{ text: '', blocks: [misfit] }, new ByokAnthropicError('empty', 'Empty response from Anthropic. Try again.')];
+    const { result, error } = await sendMessage("I'm on atorvastatin", null, SNAPSHOT);
+    expect(error).toBeNull();
+    expect(result!.content).toBe("One medication change was not saved, as its answer is not one of the listed answers. Tell me which one applies, or choose it yourself.");
+  });
+
+  it('an empty first reply is still the chat\'s error', async () => {
+    const { ByokAnthropicError } = await import('./byok-anthropic');
+    state.replies = [new ByokAnthropicError('empty', 'Empty response from Anthropic. Try again.')];
+    const { result, error } = await sendMessage('hello', null, SNAPSHOT);
+    expect(result).toBeNull();
+    expect(error).toEqual({ error: 'Empty response from Anthropic. Try again.' });
   });
 
   it('a failed second call is the chat\'s error, not a partial answer', async () => {

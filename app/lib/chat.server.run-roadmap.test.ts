@@ -48,7 +48,7 @@ describe('US-15 AC33: the run_roadmap round (JSON path)', () => {
     const misfit = { type: 'tool_use', id: 'toolu_med', name: 'propose_medication_edit', input: { medicationKey: 'ezetimibe', drugName: 'atorvastatin' } };
     replies(json('tool_use', [misfit]), json('max_tokens', []));
     const result = await getChatCompletion([], user, true, undefined, { guestInputs: PROFILE });
-    expect(result).toMatchObject({ isFallback: false, content: "One medication change was not saved, as its answer is not one of the form's options. Tell me which option applies, or choose it yourself." });
+    expect(result).toMatchObject({ isFallback: false, content: "One medication change was not saved, as its answer is not one of the listed answers. Tell me which one applies, or choose it yourself." });
     expect(result).not.toHaveProperty('proposedEdits');
   });
 

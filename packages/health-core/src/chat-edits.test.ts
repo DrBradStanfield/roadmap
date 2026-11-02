@@ -263,11 +263,11 @@ describe('toolOnlyAck', () => {
   // US-16 AC3, review R6: a refused medication answer is named, never a bare "Done".
   it('US-16 AC3: a refused medication answer beside a saved one says it was not saved and asks', () => {
     expect(toolOnlyAck([med], false, 1)).toBe("Done — I've updated your medications. You can undo this from the banner. " +
-      "One medication change was not saved, as its answer is not one of the form's options. Tell me which option applies, or choose it yourself.");
+      "One medication change was not saved, as its answer is not one of the listed answers. Tell me which one applies, or choose it yourself.");
   });
   it('US-16 AC3: refused answers alone get the not-saved line only', () => {
-    expect(toolOnlyAck([], false, 1)).toBe("One medication change was not saved, as its answer is not one of the form's options. Tell me which option applies, or choose it yourself.");
-    expect(toolOnlyAck([], true, 2)).toBe("2 medication changes were not saved, as their answers are not among the form's options. Tell me which options apply, or choose them yourself.");
+    expect(toolOnlyAck([], false, 1)).toBe("One medication change was not saved, as its answer is not one of the listed answers. Tell me which one applies, or choose it yourself.");
+    expect(toolOnlyAck([], true, 2)).toBe("2 medication changes were not saved, as their answers are not among the listed answers. Tell me which ones apply, or choose them yourself.");
   });
 });
 
@@ -539,6 +539,60 @@ describe('US-16 AC3: a chat medication answer is saved as its question’s own v
     const plan = (rows: Array<[string, string]>) => weightCascade(medicationsToInputs(rows.map(([medicationKey, drugName]) => ({ medicationKey, drugName, doseValue: null }))));
     expect(plan([['glp1', 'not_tolerated'], ['sglt2i', saved('sglt2i', 'not yet')!]]).suggest).toEqual(['sglt2i']);
     expect(plan([['glp1', 'not_tolerated'], ['sglt2i', 'not_tolerated'], ['metformin', saved('metformin', 'not_yet')!]]).suggest).toEqual(['metformin']);
+  });
+
+  // Re-check F3: the plan tests above would pass on a null, so the values themselves.
+  it('US-16 AC3 F3: the mapped values themselves', () => {
+    expect(saved('pcsk9i', 'none')).toBe('no');
+    expect(saved('sglt2i', 'not yet')).toBe('none');
+    expect(saved('metformin', 'not_yet')).toBe('none');
+  });
+
+  // Re-check F1 (Brad 2026-11-02): an unlisted name is saved only when it is drug-shaped.
+  const LEAKS = ['intolerant', 'didnt tolerate', 'side effects', 'quit', 'ceased', 'discontinued', 'paused', 'off it', 'used to',
+    'nothing', 'nil', 'nope', 'NA', 'N.A.', 'unknown', 'dont know', 'havent tried', 'statin', 'GLP-1', 'semaglutide', 'semaglutide 1mg'];
+  it.each(['statin', 'glp1', 'sglt2i'].flatMap((key) => LEAKS.map((name) => [key, name])))(
+    'US-16 AC3 F1: %s answered "%s" is not saved, and the model is told to ask', (medicationKey, drugName) => {
+      expect(parseProposedEdit(MED, { medicationKey, drugName })).toBeNull();
+      expect(medicationAnswerMisfit(MED, { medicationKey, drugName })).toContain('Ask the user which of these applies');
+    });
+
+  it.each([
+    ['statin', 'fluvastatin'], ['statin', 'Lovastatin'], ['statin', 'Lipitor'], ['statin', 'crestor'], ['statin', 'Zocor'], ['statin', 'Pravachol'], ['statin', 'Livalo'],
+    ['sglt2i', 'ertugliflozin'], ['sglt2i', 'Steglatro'],
+    ['glp1', 'liraglutide'], ['glp1', 'exenatide'], ['glp1', 'orforglipron'], ['glp1', 'Victoza'], ['glp1', 'Saxenda'], ['glp1', 'Byetta'], ['glp1', 'Bydureon'],
+  ])('US-16 AC3 F1: the drug-shaped unlisted %s "%s" is saved as stated', (key, name) => {
+    expect(saved(key, name)).toBe(name);
+  });
+
+  it.each([['glp1', 'fluvastatin'], ['statin', 'Victoza'], ['sglt2i', 'liraglutide'], ['statin', 'ertugliflozin']])(
+    'US-16 AC3 F1: %s answered with another class’s drug "%s" is asked about', (medicationKey, drugName) => {
+      expect(parseProposedEdit(MED, { medicationKey, drugName })).toBeNull();
+    });
+
+  it.each([
+    ['glp1', 'Other GLP-1', 'other'], ['statin', "Haven't tried yet", 'none'], ['ezetimibe', 'Haven’t tried yet', 'not_yet'],
+    ['bempedoic_acid', 'Not taking', 'none'], ['statin_escalation', 'Not tried', 'not_yet'], ['glp1_escalation', "Didn't tolerate", 'not_tolerated'],
+    ['metformin', 'XR 1000mg/day', 'xr_1000'],
+  ])('US-16 AC3 F1: %s answered with its option’s own label "%s" saves as %s', (key, name, value) => {
+    expect(saved(key, name)).toBe(value);
+  });
+
+  // Re-check F2: a trailing dose is the dose.
+  it('US-16 AC3 F2: a trailing dose is stripped and becomes the dose unless one was given', () => {
+    expect(parseProposedEdit(MED, { medicationKey: 'statin', drugName: 'Atorvastatin 40mg' }))
+      .toEqual({ kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 40, doseUnit: 'mg' });
+    expect(parseProposedEdit(MED, { medicationKey: 'glp1', drugName: 'Ozempic 0.5 mg' }))
+      .toEqual({ kind: 'medication', medicationKey: 'glp1', drugName: 'semaglutide_injection', doseValue: 0.5, doseUnit: 'mg' });
+    expect(parseProposedEdit(MED, { medicationKey: 'statin', drugName: 'rosuvastatin 10 mg', doseValue: 20, doseUnit: 'mg' }))
+      .toEqual({ kind: 'medication', medicationKey: 'statin', drugName: 'rosuvastatin', doseValue: 20, doseUnit: 'mg' });
+    expect(saved('glp1', 'Wegovy')).toBe('semaglutide_injection');
+  });
+
+  // Codex R2: an empty answer is a misfit too, never dropped silently.
+  it('US-16 AC3: an empty answer is not saved, and the model is told to ask', () => {
+    expect(parseProposedEdit(MED, { medicationKey: 'statin', drugName: '' })).toBeNull();
+    expect(medicationAnswerMisfit(MED, { medicationKey: 'statin', drugName: '' })).toContain('Not saved: "" is not an answer to the statin question.');
   });
 
   it('US-16 AC3: the tool description lists each medication key’s exact answers', () => {
