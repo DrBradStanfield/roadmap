@@ -28,7 +28,8 @@ import { cutText } from '../../packages/health-core/src/chat-history';
 // 2: router model Haiku 4.5 -> Sonnet 5.5 and the rule 7 rework (2026-09-29).
 // 3: the router view drops hidden posts whose masters are up to date (US-50 AC3).
 // 4: third-party pathways removed: no pathway entries, rule 1 rewritten, no US→UK spelling step (2026-10-22).
-export const ROUTER_VERSION = 4;
+// 5: condition guides: rule 1 routes a symptom or condition to a condition guide only when the guide covers it directly (US-70 AC5).
+export const ROUTER_VERSION = 5;
 
 // The router's view, not the full index: the allow-list, the index block and
 // {{ENTRY_COUNT}} all come from it (US-50 AC3). loadBlogIndex() stays whole.
