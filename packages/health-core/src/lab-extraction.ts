@@ -287,6 +287,8 @@ const PER_CREATININE = /\/\s*[mµu]?(?:g|mol)\s*(?:creat(?:inine)?|cr)(?![a-z])/
  *  Never "U/L", "IU", "mU/L", "(uric)" or "(uncorrected)". No lookbehind:
  *  this runs in the BYOK browser bundle too. */
 const URINE_MARKER = /(?:^|[^a-z])(?:urin(?:e|a|ary)?|orina|harn|moczu)(?![a-z])|(?:^|[^a-z])u-(?:creat|cr)|[\s,]u$|[(\[]\s*u\s*[)\]]/i;
+/** A name that says saliva ("Salivary cortisol", "Cortisol (saliva)"): a specimen, as urine is (US-07 AC10). */
+const SALIVA_MARKER = /(?:^|[^a-z])saliva(?:ry)?(?![a-z])/i;
 const isUrineOrRatioUnit = (unit: string) => URINE_MARKER.test(unit.trim()) || PER_CREATININE.test(unit) || URINE_OR_RATIO_UNITS.has(cleanedCreatinineUnit(unit).toLowerCase().replace(/\s+/g, ''));
 
 /** Why a creatinine was refused, in the user's words (US-12 AC15). */
@@ -749,18 +751,19 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
   // whatever key the model chose, and a printed urine creatinine is filed as a
   // lab row, never as serum creatinine. Website and BYOK only (the `full`
   // prompt asks for the name); a row without one is filed as before.
-  // Creatinine (Brad 2026-11-02): when one name says urine and the other would
-  // make the row serum creatinine, the urine one wins ("Creatinine" under a
-  // URINE heading stays urine); otherwise the unit check below still refuses
-  // urine-only units. A printed "Cr" never overrides: it is chromium as often
-  // as creatinine, so the model's pick and its checks stand (US-12 AC15).
+  // Specimen (Brad 2026-11-02): when one name says urine or saliva and the
+  // other does not, the one that says it wins, for every test (a plain
+  // "Sodium" under a URINE heading stays urine sodium); the unit check below
+  // still refuses urine-only units on a creatinine. A printed "Cr" never
+  // overrides: it is chromium as often as creatinine, so the model's pick and
+  // its checks stand (US-12 AC15).
   const printedOf = (v: { printedName?: string }) => (mode === 'full' ? v.printedName : undefined);
-  const saysUrine = (name: string) => URINE_MARKER.test(foldName(name));
+  const saysSpecimen = (name: string) => URINE_MARKER.test(foldName(name)) || SALIVA_MARKER.test(foldName(name));
   const intoCreatinine = (name: string) => resolveCoreMetricName(name) === 'creatinine';
   const filingName = (model: string, printed: string): string =>
     foldName(printed) === 'cr' ? model
-      : saysUrine(model) && intoCreatinine(printed) ? model
-        : saysUrine(printed) && intoCreatinine(model) ? printed
+      : saysSpecimen(model) && !saysSpecimen(printed) ? model
+        : saysSpecimen(printed) && !saysSpecimen(model) ? printed
           : resolveName(printed) ? printed : model;
   // A core slot the model already filled on that day is never taken by another
   // row's printed name: that row keeps the model's pick.
@@ -797,7 +800,7 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
     // A creatinine the report itself printed as serum creatinine, with no urine
     // word, is promoted like any core value, its unit checked as a core
     // creatinine's (US-07 AC10, Brad 2026-11-02: "sounds fine").
-    const serumByPrint = metric === 'creatinine' && !!v.printedName && intoCreatinine(v.printedName) && !saysUrine(v.printedName);
+    const serumByPrint = metric === 'creatinine' && !!v.printedName && intoCreatinine(v.printedName) && !saysSpecimen(v.printedName);
     if (free && serumByPrint) {
       if (!refusesCreatinine(v)) promote();
     } else if (free && PROMOTABLE.has(metric!) && reportedToCanonical(metric!, v.value, v.unit)) {

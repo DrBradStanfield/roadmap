@@ -31,7 +31,7 @@ describe('US-07 AC10: the printed name decides the filing', () => {
   });
 
   it('only a whole-name resolve overrides, never a substring', () => {
-    const [row] = extract({ additionalValues: [lab('cortisol_pm', 'Cortisol (saliva)')] }).additionalValues;
+    const [row] = extract({ additionalValues: [lab('cortisol_pm', 'Cortisol level, evening draw')] }).additionalValues;
     expect(row.name).toBe('cortisol_pm');
   });
 
@@ -170,6 +170,26 @@ describe('US-07 AC10 adversary fixes', () => {
     const entry = resolveLabCatalogEntry(row.name)!;
     expect(canonicalLabRow(entry, { value: row.value, unit: row.unit })?.stored).toMatchObject({ unit: 'mmol/L' });
     expect(canonicalLabRow(entry, { value: row.value, unit: row.unit })?.stored.value).toBeCloseTo(5.0, 1);
+  });
+});
+
+describe('US-07 AC10: specimen, every test (Brad 2026-11-02: "go with (a)")', () => {
+  it.each([
+    ['urine_sodium', 'Sodium', 80, 'mmol/L'],
+    ['urine_glucose', 'Glucose', 2.8, 'mmol/L'],
+    ['urine_protein', 'Protein', 0.15, 'g/L'],
+    ['salivary_cortisol_morning', 'Cortisol - Morning', 15, 'nmol/L'],
+    ['salivary_cortisol_night', 'Cortisol PM', 1.5, 'nmol/L'],
+  ])('model %s, printed "%s": kept as the specimen, never the blood test', (model, printed, value, unit) => {
+    const result = extract({ additionalValues: [lab(model, printed, value, unit)] });
+    expect(result.values).toEqual([]);
+    expect(result.additionalValues.map((r) => r.name)).toEqual([model]);
+  });
+
+  it('a printed name that says saliva or urine wins over a blood pick', () => {
+    const rows = extract({ additionalValues: [lab('cortisol_pm', 'Cortisol (saliva), late night', 1.5), lab('sodium', 'Urine Sodium, spot', 80, 'mmol/L')] }).additionalValues;
+    expect(rows.map((r) => r.name)).toEqual(['Cortisol (saliva), late night', 'Urine Sodium, spot']);
+    expect(rows.map((r) => labSlotKey(r.name))).toEqual(['cortisol (saliva), late night', 'urine sodium, spot']);
   });
 });
 
