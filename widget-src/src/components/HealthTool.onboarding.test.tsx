@@ -1130,3 +1130,35 @@ describe('PR 518 adversary re-check', () => {
     expect(shown()).toContain('Systolic BP must be at least 60 mmHg');
   });
 });
+
+describe('US-11 AC6: a remote erase always applies', () => {
+  it('a height of 19 refused by the autosave, then the record erased on another device: the erase applies and the draft goes', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female' }, {});
+    await addMeasurement('weight', 70, '2026-09-01');
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(sexQuestion(view)).toBeTruthy());
+    const height = q(view, '#heightCm') as HTMLInputElement;
+    type(height, '19');
+    leave(height);
+    await act(async () => { await new Promise((r) => setTimeout(r, 700)); }); // the autosave refuses 19
+    expect((await recordOnDisk())?.profile?.heightCm).toBe(170);
+    // Another device erases the record, as its deleteUserData writes it.
+    const adapter = new LocalStorageAdapter();
+    const { body, version } = await adapter.read(ROADMAP_FILE_NAME);
+    const now = new Date(Date.now() + 1000).toISOString();
+    const prior = migrateFile(body, { deviceId: 'other-device', now });
+    const erased = migrateFile(null, { deviceId: 'other-device', now });
+    const epoch = (prior.meta.eraseEpoch ?? 0) + 1;
+    erased.schemaVersion = CURRENT_SCHEMA_VERSION;
+    erased.erasedRows = { fromEpoch: epoch, ids: [...new Set(rowRootIds(prior))].sort() };
+    erased.meta.eraseEpoch = epoch;
+    erased.meta.erasedAt = now;
+    await adapter.write(ROADMAP_FILE_NAME, erased, version);
+    await act(async () => { window.dispatchEvent(new StorageEvent('storage', { key: null })); });
+    // No further edit or save: the erase still applies.
+    await waitFor(() => expect(sexQuestion(view)).toBeNull(), { timeout: 3000 });
+    expect((q(view, '#heightCm') as HTMLInputElement).value).toBe('');
+    expect(Array.from(view.container.querySelectorAll('.error-message')).map((e) => e.textContent)).not.toContain('Height must be at least 50 cm');
+  });
+});
