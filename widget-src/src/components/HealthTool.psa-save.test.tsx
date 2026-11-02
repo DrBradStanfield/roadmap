@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 /**
  * US-06 AC15: a PSA typed into the prostate section is saved as a PSA
- * measurement, dated by the month and year picked beside it (the 1st of that
- * month), or today when the picker was not touched. It saves the way a
+ * measurement, dated by the full day picked beside it (dd/mm/yyyy, as every
+ * blood test is dated; Brad 2026-11-03), today until another day is picked. It saves the way a
  * first-time weight does: when the field is left (500 ms later), on the
  * "Save PSA" tick or Enter, and on page departure, also while focus is still in
  * its row. Leaving the number for the date picker beside it does not save yet,
@@ -14,7 +14,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, waitFor } from '@testing-library/react';
 import { localDay, ROADMAP_FILE_NAME, toOldShape, type RoadmapFile } from '@roadmap/health-core';
-import { flushRoadmapStore, initRoadmapStore, saveScreening } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveScreening } from '../lib/roadmap-data';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
 
@@ -46,11 +46,13 @@ useHealthToolLifecycle();
 
 /**
  * A man born 1960, height on record, one saved HbA1c (so the whole form shows
- * while the weight is still a first-time field), who said he will screen.
+ * while the weight is still a first-time field), who said he will screen,
+ * plus any PSA rows given as [value, day].
  */
-async function page() {
+async function page(psaRows: Array<[number, string]> = []) {
   await seedGuest({ sex: 'male', heightCm: 178, birthYear: 1960, birthMonth: 1, unitSystem: 'si' }, [['hba1c', 40]]);
   await saveScreening('prostate_discussion', 'will_screen');
+  for (const [value, day] of psaRows) await addMeasurement('psa', value, `${day}T00:00:00.000Z`);
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   await waitFor(() => expect(view.container.querySelector('#psa-input')).not.toBeNull());
@@ -59,8 +61,8 @@ async function page() {
   return {
     view,
     psa: () => view.container.querySelector<HTMLInputElement>('#psa-input')!,
-    year: row.querySelector<HTMLSelectElement>('select[aria-label="Year"]')!,
-    month: row.querySelector<HTMLSelectElement>('select[aria-label="Month"]')!,
+    day: row.querySelector<HTMLInputElement>('input[type="date"]')!,
+    note: () => view.container.querySelector('.psa-inline-row')!.parentElement!.textContent ?? '',
   };
 }
 
@@ -83,45 +85,45 @@ function type(field: HTMLInputElement, value: string) {
   fireEvent.change(field, { target: { value } });
 }
 
-function pick(year: HTMLSelectElement, month: HTMLSelectElement, y: string, m: string) {
-  fireEvent.change(year, { target: { value: y } });
-  fireEvent.change(month, { target: { value: m } });
+function pick(day: HTMLInputElement, value: string) {
+  fireEvent.change(day, { target: { value } });
 }
 
 describe('a PSA typed into the prostate section is saved (US-06 AC15)', () => {
-  it('date picked, value typed, field left: saved under the 1st of the picked month, and still there after a reload', async () => {
-    const { view, psa, year, month } = await page();
-    pick(year, month, '2025', '01');
+  it('date picked, value typed, field left: saved under the picked day, and still there after a reload', async () => {
+    const { view, psa, day } = await page();
+    pick(day, '2025-01-14');
     type(psa(), '6.5');
     act(() => psa().blur());
     await pause(700); // past the 500 ms field save
 
-    await waitFor(async () => expect(await active('psa')).toEqual([[6.5, '2025-01-01']]));
+    await waitFor(async () => expect(await active('psa')).toEqual([[6.5, '2025-01-14']]));
     // What was saved leaves the field, and the saved value shows under it.
     await waitFor(() => expect(psa().value).toBe(''));
     expect(view.container.querySelector('.psa-inline-row')!.parentElement!.textContent).toContain('6.5 ng/mL');
 
     view.unmount();
     await initRoadmapStore(new LocalStorageAdapter());
-    expect(await active('psa')).toEqual([[6.5, '2025-01-01']]);
+    expect(await active('psa')).toEqual([[6.5, '2025-01-14']]);
   });
 
-  it('value typed first, then the date: moving into the picker does not save, leaving the row does, under the picked month', async () => {
-    const { view, psa, year, month } = await page();
+  it('value typed first, then the date: moving into the picker does not save, leaving the row does, under the picked day', async () => {
+    const { view, psa, day } = await page();
     type(psa(), '6.5');
-    act(() => month.focus()); // from the number to the picker beside it
+    act(() => day.focus()); // from the number to the date beside it
     await pause(700);
     expect(await active('psa')).toEqual([]);
 
-    pick(year, month, '2025', '03');
-    act(() => month.blur()); // out of the row
+    pick(day, '2025-03-20');
+    act(() => day.blur()); // out of the row
     await pause(700);
-    await waitFor(async () => expect(await active('psa')).toEqual([[6.5, '2025-03-01']]));
+    await waitFor(async () => expect(await active('psa')).toEqual([[6.5, '2025-03-20']]));
     view.unmount();
   });
 
-  it('the "Save PSA" tick saves at once; an untouched picker dates it today', async () => {
-    const { view, psa } = await page();
+  it('the "Save PSA" tick saves at once; an untouched date box shows today and dates it today', async () => {
+    const { view, psa, day } = await page();
+    expect(day.value).toBe(localDay(new Date()));
     type(psa(), '4.2');
     const tick = view.container.querySelector<HTMLButtonElement>('button[aria-label="Save PSA"]');
     expect(tick).not.toBeNull();
@@ -130,38 +132,38 @@ describe('a PSA typed into the prostate section is saved (US-06 AC15)', () => {
     view.unmount();
   });
 
-  it('Enter in the PSA field saves at once, under the picked month', async () => {
-    const { view, psa, year, month } = await page();
-    pick(year, month, '2025', '06');
+  it('Enter in the PSA field saves at once, under the picked day', async () => {
+    const { view, psa, day } = await page();
+    pick(day, '2025-06-09');
     type(psa(), '3.3');
     fireEvent.keyDown(psa(), { key: 'Enter' });
-    await waitFor(async () => expect(await active('psa')).toEqual([[3.3, '2025-06-01']]));
+    await waitFor(async () => expect(await active('psa')).toEqual([[3.3, '2025-06-09']]));
     view.unmount();
   });
 
-  it('page departure inside the 500 ms wait still saves it, under the picked month', async () => {
-    const { view, psa, year, month } = await page();
-    pick(year, month, '2024', '11');
+  it('page departure inside the 500 ms wait still saves it, under the picked day', async () => {
+    const { view, psa, day } = await page();
+    pick(day, '2024-11-27');
     type(psa(), '5');
     act(() => psa().blur());
     act(() => { window.dispatchEvent(new Event('pagehide')); });
-    await waitFor(async () => expect(await active('psa')).toEqual([[5, '2024-11-01']]));
+    await waitFor(async () => expect(await active('psa')).toEqual([[5, '2024-11-27']]));
     view.unmount();
   });
 
-  it.each(['pagehide', 'beforeunload'])('value typed, then the month picked, then the tab closed (%s) with focus still on the picker: saved under the picked month', async event => {
-    const { view, psa, year, month } = await page();
+  it.each(['pagehide', 'beforeunload'])('value typed, then the day picked, then the tab closed (%s) with focus still on the date: saved under the picked day', async event => {
+    const { view, psa, day } = await page();
     type(psa(), '6.5');
-    act(() => month.focus());
-    pick(year, month, '2025', '02');
+    act(() => day.focus());
+    pick(day, '2025-02-11');
     act(() => { window.dispatchEvent(new Event(event)); }); // no blur first: browsers fire none
     view.unmount(); // the page goes away: no 500 ms timer runs after this
-    await waitFor(async () => expect(await active('psa')).toEqual([[6.5, '2025-02-01']]));
+    await waitFor(async () => expect(await active('psa')).toEqual([[6.5, '2025-02-11']]));
   });
 
   it('beforeunload then pagehide, focus still in the PSA box: one PSA write, one PSA row', async () => {
-    const { view, psa, year, month } = await page();
-    pick(year, month, '2025', '04');
+    const { view, psa, day } = await page();
+    pick(day, '2025-04-30');
     type(psa(), '2.8');
     writes.length = 0;
     act(() => {
@@ -170,7 +172,7 @@ describe('a PSA typed into the prostate section is saved (US-06 AC15)', () => {
     });
     view.unmount();
     await pause(700);
-    await waitFor(async () => expect(await all('psa')).toEqual([[2.8, '2025-04-01', 'active']]));
+    await waitFor(async () => expect(await all('psa')).toEqual([[2.8, '2025-04-30', 'active']]));
     expect(writes.filter(metric => metric === 'psa')).toEqual(['psa']); // one write reaches the store
   });
 
@@ -190,9 +192,9 @@ describe('a PSA typed into the prostate section is saved (US-06 AC15)', () => {
     view.unmount();
   });
 
-  it('control: a weight, a waist and a blood pressure typed into their first-time fields and left are saved under today, whatever month the PSA picker shows, and no PSA row appears', async () => {
-    const { view, year, month } = await page();
-    pick(year, month, '2025', '01');
+  it('control: a weight, a waist and a blood pressure typed into their first-time fields and left are saved under today, whatever day the PSA date shows, and no PSA row appears', async () => {
+    const { view, day } = await page();
+    pick(day, '2025-01-14');
     const box = (id: string) => view.container.querySelector<HTMLInputElement>(`#${id}`)!;
     for (const [id, value] of [['weightKg', '82'], ['waistCm', '90'], ['systolicBp', '128'], ['diastolicBp', '82']]) {
       type(box(id), value);
@@ -205,6 +207,45 @@ describe('a PSA typed into the prostate section is saved (US-06 AC15)', () => {
     expect(await active('systolic_bp')).toEqual([[128, today]]);
     expect(await active('diastolic_bp')).toEqual([[82, today]]);
     expect(await active('psa')).toEqual([]);
+    view.unmount();
+  });
+
+  it('a day after today is not saved: the value stays and the row says "Choose a day up to today."', async () => {
+    const { view, psa, day, note } = await page();
+    pick(day, '2099-01-01');
+    type(psa(), '6.5');
+    act(() => psa().blur());
+    await pause(700);
+    expect(await active('psa')).toEqual([]);
+    expect(psa().value).toBe('6.5');
+    expect(note()).toContain('Choose a day up to today.');
+    view.unmount();
+  });
+});
+
+describe('a second PSA on a day that already holds one (US-06 AC15, Brad 2026-11-03)', () => {
+  it('picking that day says "Replaces 6.5 ng/mL", and saving corrects the held row', async () => {
+    const { view, psa, day, note } = await page([[6.5, '2025-01-14']]);
+    expect(note()).not.toContain('Replaces');
+    pick(day, '2025-01-14');
+    await waitFor(() => expect(note()).toContain('Replaces 6.5 ng/mL'));
+    type(psa(), '3.2');
+    act(() => psa().blur());
+    await pause(700);
+    await waitFor(async () => expect(await all('psa')).toEqual([
+      [6.5, '2025-01-14', 'entered-in-error'], [3.2, '2025-01-14', 'active'],
+    ]));
+    view.unmount();
+  });
+
+  it('control: another day in the same month adds a second reading, no "Replaces"', async () => {
+    const { view, psa, day, note } = await page([[6.5, '2025-01-14']]);
+    pick(day, '2025-01-28');
+    type(psa(), '3.2');
+    expect(note()).not.toContain('Replaces');
+    act(() => psa().blur());
+    await pause(700);
+    await waitFor(async () => expect(await active('psa')).toEqual([[6.5, '2025-01-14'], [3.2, '2025-01-28']]));
     view.unmount();
   });
 });

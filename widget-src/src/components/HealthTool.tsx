@@ -59,7 +59,6 @@ import {
 } from '@roadmap/health-core';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import type { MoveTestApi } from './MoveTestPanel';
-import type { DateValue } from './DatePicker';
 import { routeVitalsEdit, type VitalsPrefillFn } from './StartingInfoVitals';
 import type { ApiSupplement, ApiLabValue, LatestMeasurementsResult } from '../lib/api-types';
 import { InputPanel, type PlanBasis } from './InputPanel';
@@ -289,8 +288,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const [labValueHistory, setLabValueHistory] = useState<ApiLabValue[]>(() => loadLabValuesSync() ?? []);
   const [medications, setMedications] = useState<ApiMedication[]>([]);
   const [screenings, setScreenings] = useState<ApiScreening[]>([]);
-  // The prostate section's PSA month and year; null until one is picked (US-06 AC15).
-  const [psaDate, setPsaDate] = useState<DateValue | null>(null);
+  // The prostate section's PSA day (YYYY-MM-DD); null until one is picked, so today (US-06 AC15).
+  const [psaDate, setPsaDate] = useState<string | null>(null);
   const [supplements, setSupplements] = useState<ApiSupplement[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   // US-54 AC5b: the birth month a save refused, in words, until the next birth edit.
@@ -711,13 +710,14 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     // is kept apart (`lent`), and only that matrix saves it, on the day the
     // draft is dated (review of 2026-09-24). So what `inputs` holds here was
     // typed into these fields, by the user or the chat. The prostate section's
-    // PSA takes the 1st of the month its picker shows, or today until one is
-    // picked (US-06 AC15).
+    // PSA takes the day picked beside it, or today until one is picked; a day
+    // after today (or none) saves no PSA, and the field says so (US-06 AC15).
     const fromForm = (): SaveTask[] => {
       const today = localDay(new Date());
       const shown = activeRowIndex(history);
       return [['weight'], ['waist'], ['systolic_bp', 'diastolic_bp'], ['psa']].flatMap((metrics): SaveTask[] => {
-        const date = metrics[0] === 'psa' && psaDate ? `${psaDate.year}-${psaDate.month}-01` : today;
+        const date = metrics[0] === 'psa' ? psaDate ?? today : today;
+        if (!date || date > today) return [];
         const field = METRIC_TO_FIELD[metrics[0]];
         const typed = typedIn.current[field];
         const unit = typed && typed.value === inputs[field] ? typed.unit : unitOverrides[field] ?? unitSystem;

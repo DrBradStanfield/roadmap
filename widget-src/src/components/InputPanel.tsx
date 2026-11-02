@@ -82,7 +82,6 @@ import {
   type MedicationInputs,
 } from '@roadmap/health-core';
 import { formatShortDate, MONTHS_FULL } from '../lib/constants';
-import { InlineDatePicker, getCurrentDateValue, type DateValue } from './DatePicker';
 import { BloodTestTimeline, useLiveRegion, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
 import { useMoveTest, type MoveTestApi } from './MoveTestPanel';
@@ -169,9 +168,9 @@ interface InputPanelProps {
   onMedicationChange: (medicationKey: string, drugName: string, doseValue: number | null, doseUnit: string | null) => void;
   screenings: ApiScreening[];
   onScreeningChange: (screeningKey: string, value: string) => void;
-  /** The PSA's month and year (US-06 AC15): null until picked, the current month shows meanwhile. */
-  psaDate: DateValue | null;
-  onPsaDateChange: (date: DateValue) => void;
+  /** The PSA's day, YYYY-MM-DD (US-06 AC15): null until picked, today shows meanwhile. */
+  psaDate: string | null;
+  onPsaDateChange: (day: string) => void;
   supplements: ApiSupplement[];
   onSupplementChange: (key: string, name: string, doseValue: number | null, doseUnit: string | null, status?: string, startedAt?: string) => void;
   onSupplementDelete: (key: string) => void;
@@ -2116,8 +2115,15 @@ export function InputPanel({
                   <>
                     {/* PSA input with inline date picker */}
                     {(() => {
+                      const today = localDay(new Date());
+                      const psaDay = psaDate ?? today;
+                      const psaDayError = !psaDay || psaDay > today ? 'Choose a day up to today.' : null;
+                      // One PSA per day: a value typed for a day that holds one corrects it, so say so (US-06 AC15).
+                      const psaHeld = bloodTestHistory.find(m => m.metricType === 'psa' && dayOf(m.recordedAt) === psaDay);
                       const psaMeasurement = previousMeasurements.find(m => m.metricType === 'psa');
-                      const psaPreviousLabel = psaMeasurement
+                      const psaPreviousLabel = psaHeld
+                        ? `Replaces ${formatValue('psa', psaHeld.value, 'si', psaHeld.comparator)} ng/mL`
+                        : psaMeasurement
                         ? `${formatValue('psa', psaMeasurement.value, 'si', psaMeasurement.comparator)} ng/mL · ${formatShortDate(psaMeasurement.recordedAt)}`
                         : null;
 
@@ -2157,12 +2163,13 @@ export function InputPanel({
                               max={range('psa').max}
                               className={errors.psa ? 'error' : ''}
                             />
-                            <InlineDatePicker value={psaDate ?? getCurrentDateValue()} onChange={onPsaDateChange} />
+                            <input type="date" aria-label="PSA test date" value={psaDay} max={today}
+                                   onChange={(e) => onPsaDateChange(e.target.value)} />
                             {autoSaveGate && inputs.psa !== undefined && (
                               <CommitTickButton ariaLabel="Save PSA" onClick={flushLongitudinalSave}/>
                             )}
                           </div>
-                          {(unreadable.psa || errors.psa) && <span className="field-error">{unreadable.psa ? 'Enter a number' : errors.psa}</span>}
+                          {(unreadable.psa || errors.psa || psaDayError) && <span className="field-error">{unreadable.psa ? 'Enter a number' : errors.psa ?? psaDayError}</span>}
                           <div className="field-meta">
                             <span className="field-hint">{SCREENING_TEXT.psaHint}</span>
                             {psaPreviousLabel && (
