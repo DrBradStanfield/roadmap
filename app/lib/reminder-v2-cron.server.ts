@@ -27,9 +27,10 @@ const CONCURRENCY_LIMIT = 5;
 const MACHINE_ID = process.env.FLY_MACHINE_ID || `local-${process.pid}`;
 
 let lastRunDate: string | null = null;
-// Optins this machine has tried to email today. Marked before the send, so a
+// Optins this process has tried to email today. Marked before the send, so a
 // retried pass (US-28 AC3) never emails anyone twice in a day, even when the
-// failed pass sent the mail but could not stamp last_sent.
+// failed pass sent the mail but could not stamp last_sent. In memory only: a
+// restart the same day starts empty, as the day itself did before AC3.
 let attemptedToday = { day: '', ids: new Set<string>() };
 let cronIntervalId: ReturnType<typeof setInterval> | null = null;
 
@@ -128,9 +129,12 @@ async function processOneOptin(optin: ReminderV2Optin, todayStr: string): Promis
   if (due.length === 0) return anyDue ? 'all-on-cooldown' : 'none-due';
 
   // At most one attempt per optin per day on this machine, whatever the send's outcome.
-  if (attemptedToday.day !== todayStr) attemptedToday = { day: todayStr, ids: new Set() };
-  if (attemptedToday.ids.has(optin.id)) return 'attempted-today';
-  attemptedToday.ids.add(optin.id);
+  // A pass from an earlier day that is still running never resets a newer day's record.
+  if (todayStr > attemptedToday.day) attemptedToday = { day: todayStr, ids: new Set() };
+  if (attemptedToday.day === todayStr) {
+    if (attemptedToday.ids.has(optin.id)) return 'attempted-today';
+    attemptedToday.ids.add(optin.id);
+  }
 
   const unsubscribeUrl = buildUnsubscribeUrl(optin.token);
   // US-23 AC3 — the email is the surviving artifact; AC5's prominent
