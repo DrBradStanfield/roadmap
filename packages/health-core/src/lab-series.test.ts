@@ -1,7 +1,7 @@
 // US-62 AC8, US-21, US-12 AC20: the lab test rows both apps draw (labSeriesRows): a limit reads
 // with its symbol and is flagged on the trend, so the web draws it hollow; the iPhone leaves it off.
 import { describe, expect, it } from 'vitest';
-import { labSeriesRows } from './lab-series';
+import { labSeriesRows, mixedUnitsNote } from './lab-series';
 
 const NOW = new Date('2026-10-21T08:00:00.000Z');
 const lab = (id: string, value: number, recordedAt: string, extra: Record<string, unknown> = {}) => ({
@@ -35,3 +35,10 @@ describe('labSeriesRows with a limit (US-12 AC20)', () => {
     expect(row).toMatchObject({ unit: '', latest: { value: '90' }, previous: '80' });
   });
 });
+
+describe('mixedUnitsNote (US-21 AC3a)', () => {
+  it('names each unit, an empty one as "no unit", in the web\'s words', () => {
+    expect(mixedUnitsNote(['µmol/L', '', 'µg/dL'])).toBe('Units vary between reports (µmol/L, no unit, µg/dL), so this test is not charted.');
+  });
+});
+

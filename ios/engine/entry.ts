@@ -12,7 +12,7 @@ import { fileNameLine, MAX_FILE_NAME_LENGTH, zipMemberName } from '../../package
 import { deviceWrites } from '../../packages/health-core/src/device-export';
 import { usProductSections, type UsPlanSection } from '../../packages/health-core/src/us-products';
 import { applyEdit, myData, newRecord, readNumber, readRecord, readView, type Edit } from './my-data';
-import { metricHistory } from './my-data-forms';
+import { labHistory, metricHistory } from './my-data-forms';
 import { chatEditsPreview } from './chat-edits';
 import { readUnitChoices } from './unit-choices';
 import { phoneReminders } from './reminders';
@@ -154,9 +154,11 @@ export function healthWritesJson(recordJson: string, nowIso: string, deviceId: s
   return JSON.stringify(deviceWrites(readRecord(recordJson, nowIso, deviceId), 'apple_health'));
 }
 
-/** Every value recorded for one metric, newest first, as JSON (US-25 AC9). */
-export function historyJson(recordJson: string, metric: string, nowIso: string, deviceId: string, unitsJson?: string): string {
-  return JSON.stringify(metricHistory(readView(recordJson, nowIso, deviceId), metric, nowIso, readUnitChoices(unitsJson)));
+/** Every value recorded for one metric, newest first, as JSON (US-25 AC9). `series` "lab": `metric`
+ *  is a lab test's series key (US-25 AC25); an app before it sends none, and is answered as before. */
+export function historyJson(recordJson: string, metric: string, nowIso: string, deviceId: string, unitsJson?: string, series?: string): string {
+  const file = readView(recordJson, nowIso, deviceId);
+  return JSON.stringify(series === 'lab' ? labHistory(file, metric) : metricHistory(file, metric, nowIso, readUnitChoices(unitsJson)));
 }
 // Chat and lab upload (US-52): app-doors.ts.
 export { chatContextJson, chatListJson, chatMessagesJson, chatRecordExchangeJson, chatDeleteJson, settledJson, labReviewJson, labSaveSummaryJson } from './app-doors';
