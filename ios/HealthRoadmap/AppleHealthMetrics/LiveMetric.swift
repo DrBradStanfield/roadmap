@@ -102,7 +102,7 @@ enum LiveMetric: String, CaseIterable, Identifiable, Codable, CodingKeyRepresent
 /// One bar or point: an hour, a day, a week or a month, starting at `start`. Steps carry
 /// `value` (the sum, or a daily average for a week or month); heart rate `low` and `high`
 /// (and `value`, the average, for its trend); resting heart rate and VO2 max `value`.
-struct LivePoint: Equatable, Identifiable {
+struct LivePoint: Equatable, Identifiable, Codable {
     let start: Date
     var value: Double?
     var low: Double?
@@ -169,7 +169,7 @@ enum LiveRange: String, CaseIterable, Identifiable {
 }
 
 /// Apple's sleep stages (AC9). A source with no stages records only asleep or in bed.
-enum SleepStage: String, CaseIterable, Comparable {
+enum SleepStage: String, CaseIterable, Comparable, Codable {
     case awake, rem, core, deep, asleep, inBed
 
     /// Drawn top to bottom in this order, as Apple Health's hypnogram.
@@ -196,7 +196,7 @@ enum SleepStage: String, CaseIterable, Comparable {
 
 /// One sleep sample: a stage from `start` to `end`, written by `source` (a bundle id,
 /// used only to pick one writer per night; never shown or logged).
-struct SleepSegment: Equatable {
+struct SleepSegment: Equatable, Codable {
     let stage: SleepStage
     let start: Date
     let end: Date

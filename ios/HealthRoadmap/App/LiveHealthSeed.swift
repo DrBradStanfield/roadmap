@@ -32,7 +32,8 @@ enum LiveHealthSeed {
             guard start < .now else { return }
             samples.append(HKQuantitySample(type: HKQuantityType(id), quantity: HKQuantity(unit: unit, doubleValue: value), start: start, end: min(end, .now)))
         }
-        for back in 0..<60 {
+        // Three years of every metric, so each page shows it keeps and scrolls a long history (US-56 AC7a).
+        for back in 0..<1095 {
             let day = calendar.date(byAdding: .day, value: -back, to: today)!
             let wave = sin(Double(back) / 4)
             quantity(.restingHeartRate, 58 + 3 * wave, bpm, day.addingTimeInterval(7 * 3600), day.addingTimeInterval(7 * 3600))
@@ -57,12 +58,14 @@ enum LiveHealthSeed {
                 at = end
             }
         }
-        // Three years of VO2 max, so a page shows it scrolls back past a year (US-56 AC7a).
         for week in 0..<156 {
             let day = calendar.date(byAdding: .day, value: -7 * week - 2, to: today)!.addingTimeInterval(18 * 3600)
             quantity(.vo2Max, 40 + 2 * sin(Double(week) / 5), vo2, day, day)
         }
-        try await store.save(samples)
+        // In batches: about 50,000 samples in one save is slow on a simulator.
+        for start in stride(from: 0, to: samples.count, by: 5000) {
+            try await store.save(Array(samples[start..<min(start + 5000, samples.count)]))
+        }
     }
 }
 #endif

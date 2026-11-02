@@ -65,11 +65,18 @@ struct LiveMetricPage: View {
         _today = State(initialValue: live.calendar.startOfDay(for: live.now()))
     }
 
-    /// What the reads depend on: a wake, the range, and on D the days in view.
-    private struct Wanted: Equatable {
+    /// What the reads depend on: a wake, D or not, and on D the days in view. W, M, 6M and Y
+    /// read the same days, so moving between them keeps a read under way (adversary R2).
+    struct Wanted: Equatable {
         let wakes: Int
-        let range: LiveRange
+        let day: Bool
         let days: [Date]
+
+        init(wakes: Int, range: LiveRange, days: [Date]) {
+            self.wakes = wakes
+            day = range == .day
+            self.days = days
+        }
     }
 
     var body: some View {
@@ -126,7 +133,7 @@ struct LiveMetricPage: View {
             today = calendar.startOfDay(for: now)
         }
         // A cancelled read (the page left, or the key moved) marks nothing read (N1).
-        if wanted.range == .day {
+        if wanted.day {
             for day in wanted.days where !hoursRead.contains(day) {
                 guard let read = try? await LiveHealth.readHours(store, metric, day: day, now: now, calendar: calendar), !Task.isCancelled else { return }
                 let merged = (hours.filter { calendar.startOfDay(for: $0.start) != day } + read).sorted { $0.start < $1.start }
@@ -134,7 +141,17 @@ struct LiveMetricPage: View {
                 hoursRead.insert(day)
             }
         } else if !daysRead {
-            guard let read = try? await LiveHealth.readDays(store, metric, reaching: reading, now: now, calendar: calendar), !Task.isCancelled else { return }
+            // The kept history draws at once; the first visit draws 400 days while the whole
+            // history is read and kept; then only what is new (AC7a). All off the main thread.
+            if days.isEmpty, let kept = await live.history.keptDays(metric), !Task.isCancelled {
+                days = kept
+                rebuild()
+            }
+            if days.isEmpty, let first = try? await LiveHealth.readDays(store, metric, reaching: reading, now: now, calendar: calendar), !Task.isCancelled {
+                days = first
+                rebuild()
+            }
+            guard let read = try? await live.history.refreshDays(store, metric, now: now, calendar: calendar), !Task.isCancelled else { return }
             if read != days { days = read }
             daysRead = true
         }
@@ -158,7 +175,8 @@ struct LiveMetricPage: View {
 
     private func chart(geometry: LiveChartGeometry) -> some View {
         let unit = range.bucket
-        let yDomain = bands?.yDomain(values: points.compactMap(\.value))
+        let shown = Self.scaled(points, geometry: geometry, from: scrolledTo)
+        let yDomain = bands?.yDomain(values: shown.compactMap(\.value))
         return Chart {
             // AC8: the bands behind the values, each from its lower bound to the next one's.
             if let bands, let yDomain {
@@ -197,9 +215,16 @@ struct LiveMetricPage: View {
             }
             if let selected { SelectionRule(date: selected.start, unit: unit) }
         }
-        .modifier(LiveYScale(metric: metric, points: points, domain: yDomain))
+        .modifier(LiveYScale(metric: metric, points: shown, domain: yDomain))
         .modifier(ScrollingChart(geometry: geometry, items: points, date: \.start, scrolledTo: $scrolledTo, selected: $selected))
         .accessibilityChartDescriptor(LiveChartDescriptor(metric: metric, points: points, geometry: geometry, from: scrolledTo, bands: bands))
+    }
+
+    /// The points the y-axis spans: those in view, so years of history do not flatten a
+    /// range (adversary R3); all of them when none is in view.
+    static func scaled(_ points: [LivePoint], geometry: LiveChartGeometry, from start: Date) -> [LivePoint] {
+        let inView = geometry.inView(points, by: \.start, from: start)
+        return inView.isEmpty ? points : inView
     }
 
     /// A band's shading: deeper for fitter, calm in both modes; its name is always in text.
@@ -332,7 +357,8 @@ struct SelectionRule: ChartContent {
     }
 }
 
-/// Heart rate's axis spans its readings, as Apple Health's does, not from zero; sums start at zero.
+/// The axis spans the readings in view, as Apple Health's does: heart rate and the means not
+/// from zero; sums from zero.
 private struct LiveYScale: ViewModifier {
     let metric: LiveMetric
     let points: [LivePoint]
@@ -344,6 +370,8 @@ private struct LiveYScale: ViewModifier {
             content.chartYScale(domain: domain)
         } else if metric.aggregation == .range, let low = points.compactMap(\.low).min(), let high = points.compactMap(\.high).max() {
             content.chartYScale(domain: (low - 10).rounded(.down)...(high + 10).rounded(.up))
+        } else if let high = points.compactMap(\.value).max(), let low = points.compactMap(\.value).min() {
+            content.chartYScale(domain: metric.aggregation == .sum ? 0...max(high * 1.1, 1) : (low - 5).rounded(.down)...(high + 5).rounded(.up))
         } else {
             content.chartYScale(domain: .automatic(includesZero: metric.aggregation == .sum))
         }
