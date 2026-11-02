@@ -31,6 +31,8 @@ final class ChatEdits {
     private(set) var review: Review?
     /// Why a medication change or its Undo was not saved.
     private(set) var problem: String?
+    /// The record the problem line was shown on.
+    @ObservationIgnored private var problemMark: RecordStore.ChatMark?
     /// A Save or Undo is landing: the buttons wait.
     private(set) var busy = false
     /// Sends a Clarity event (D9): fixed words only.
@@ -52,28 +54,31 @@ final class ChatEdits {
         switch await store.takeChatEdits(edits, today: today, asked: asked) {
         case .taken(let answer): taken = answer
         // The reply's words may say it saved: the screen says it did not (US-67 AC3, AC5).
-        case .moved: return show(Self.moved)
-        case .unreadable: return show("These changes could not be shown, so nothing was saved.")
+        case .moved: return show(Self.moved, for: generation)
+        case .unreadable: return show("These changes could not be shown, so nothing was saved.", for: generation)
         }
         // Erased while the turn returned: whatever it wrote went with the erase.
-        guard taken.mark.holds(at: store.chatMark) else { return show(Self.moved) }
+        guard taken.mark.holds(at: store.chatMark) else { return show(Self.moved, for: generation) }
         var shown = false
         // A medication change that was written always gets its Undo, even if the
         // conversation moved on meanwhile: the two are never split.
-        if let medications = taken.preview.medications, let result = taken.medications {
+        if let medications = taken.preview.medications, let result = taken.medications, let undo = medications.undo {
             switch result {
             case .saved:
-                saved = Saved(lines: medications.lines, undo: medications.undo, mark: taken.mark)
+                saved = Saved(lines: medications.lines, undo: undo, mark: taken.mark)
                 problem = nil
                 if taken.changed { send(.chatEditSaved) }
             case .refused(let message, _):
-                saved = nil
-                problem = message
+                show(message, for: generation)
             }
             shown = true
+        } else if let refusal = taken.preview.medications?.refusal {
+            // Refused by the engine: never written, and the screen says so.
+            show(refusal, for: generation)
         }
         if let preview = taken.preview.review, generation == self.generation {
             review = Review(lines: preview.lines, refusal: preview.refusal, edits: edits, today: today, seen: preview.seen, mark: taken.mark)
+            if taken.preview.medications?.refusal == nil { problem = nil } // a new banner replaces an old problem line
             shown = true
         }
         if shown { send(.chatEditProposed) }
@@ -99,16 +104,20 @@ final class ChatEdits {
 
     static let moved = "Not saved: your record changed since you asked."
 
-    private func show(_ words: String) {
-        saved = nil
+    /// A problem line, for the conversation of `generation` only: an answer landing after
+    /// New chat stays out of the new one. An earlier reply's Undo is kept.
+    private func show(_ words: String, for generation: Int) {
+        guard generation == self.generation else { return }
         problem = words
+        problemMark = store.chatMark
     }
 
-    /// The record on screen moved (ChatView): a banner made before an erase goes, here or by
-    /// sync (US-67 AC5). Connecting or disconnecting a cloud is not an erase.
+    /// The record on screen moved (ChatView): a banner or problem line made before an erase
+    /// goes, here or by sync (US-67 AC5). Connecting or disconnecting a cloud is not an erase.
     func follow(_ now: RecordStore.ChatMark) {
         if let saved, !saved.mark.holds(at: now) { self.saved = nil }
         if let review, !review.mark.holds(at: now) { self.review = nil }
+        if let problemMark, !problemMark.holds(at: now) { problem = nil }
     }
 
     /// Not now: the banner goes, and nothing is written.
@@ -124,7 +133,7 @@ final class ChatEdits {
         let (result, _) = await store.applyChatEdit(.engineEdit(change.undo), on: change.mark)
         guard saved == change else { return }
         saved = nil
-        if case .refused(let message, _) = result { problem = message }
+        if case .refused(let message, _) = result { show(message, for: generation) }
     }
 
     /// The medication banner, closed.

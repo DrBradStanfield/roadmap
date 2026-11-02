@@ -627,7 +627,10 @@ final class RecordStore {
             guard asked.holds(at: self.chatMark) else { return .moved }
             guard let preview = try? await self.engine.chatEdits(recordJSON: self.recordJSON, edits: edits, now: .now, deviceId: self.deviceId, today: today, units: self.unitChoices.json)
             else { return .unreadable }
-            guard preview.medications != nil else { return .taken(ChatEditsTaken(preview: preview, medications: nil, changed: false, mark: self.chatMark)) }
+            // No medication part, or one the engine refused: nothing is written now.
+            guard let meds = preview.medications, meds.refusal == nil, meds.undo != nil else {
+                return .taken(ChatEditsTaken(preview: preview, medications: nil, changed: false, mark: self.chatMark))
+            }
             let before = self.recordJSON
             let result = await self.applyInTurn(.chatEdits(part: .medications, edits: edits, today: today), as: self.screen)
             return .taken(ChatEditsTaken(preview: preview, medications: result, changed: self.recordJSON != before, mark: self.chatMark))

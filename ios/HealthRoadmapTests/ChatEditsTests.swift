@@ -33,8 +33,9 @@ final class ChatEditsTests: XCTestCase {
                 if (list.some(function (x) { return x.boom; })) throw new Error('unreadable');
                 var meds = list.filter(function (x) { return x.kind === 'medication'; });
                 var rest = list.filter(function (x) { return x.kind !== 'medication'; });
+                if (meds.some(function (x) { return x.refuseMeds; })) meds = [];
                 return JSON.stringify({
-                  medications: meds.length ? { lines: [{ text: 'Statin: atorvastatin 20 mg' }], undo: { kind: 'chatUndo', medications: [1.5, null, true] } } : null,
+                  medications: list.some(function (x) { return x.refuseMeds; }) ? { lines: [], undo: null, refusal: 'That medicine is not on the list, so nothing was saved.' } : meds.length ? { lines: [{ text: 'Statin: atorvastatin 20 mg' }], undo: { kind: 'chatUndo', medications: [1.5, null, true] } } : null,
                   review: rest.length ? {
                     lines: [{ text: 'Weight 80 kg', replaces: '82 kg' }, { text: 'Height 178 cm', replaces: null }],
                     refusal: list.some(function (x) { return x.refuse; }) ? 'That weight is outside the range the app can save.' : null,
@@ -365,5 +366,77 @@ final class ChatEditsTests: XCTestCase {
         _ = await erasing.value
         edits.follow(store.chatMark)
         XCTAssertNil(edits.saved, "an Undo for an erased change is never offered")
+    }
+
+    // MARK: Re-check fixes (N5, Codex R2)
+
+    private let unreadable = #"[{"kind":"medication","boom":true}]"#
+
+    /// N5, US-67 AC3: a later reply that cannot be shown keeps an earlier reply's Undo.
+    func testAProblemLineKeepsAnEarlierUndo_US67_AC3() async throws {
+        let (store, edits, _) = try setUpEdits()
+        await edits.take(try json(medication), asked: store.chatMark, today: today)
+        let undo = try XCTUnwrap(edits.saved)
+        await edits.take(try json(unreadable), asked: store.chatMark, today: today)
+        XCTAssertEqual(edits.problem, "These changes could not be shown, so nothing was saved.")
+        XCTAssertEqual(edits.saved, undo, "the earlier Undo stays")
+    }
+
+    /// N5, US-67 AC3: an answer that lands after New chat stays out of the new conversation.
+    func testAProblemFromTheOldConversationNeverLandsInTheNewOne_US67_AC3() async throws {
+        let (store, edits, _) = try setUpEdits()
+        let taking = Task { await edits.take(try! json(unreadable), asked: store.chatMark, today: today) }
+        await Task.yield()
+        edits.drop() // New chat
+        await taking.value
+        XCTAssertNil(edits.problem)
+    }
+
+    /// N5, US-67 AC3: a later reply's banner replaces the problem line.
+    func testALaterBannerReplacesTheProblemLine_US67_AC3() async throws {
+        let (store, edits, _) = try setUpEdits()
+        await edits.take(try json(unreadable), asked: store.chatMark, today: today)
+        XCTAssertNotNil(edits.problem)
+        await edits.take(try json(values), asked: store.chatMark, today: today)
+        XCTAssertNil(edits.problem)
+        XCTAssertNotNil(edits.review)
+    }
+
+    /// N5, US-67 AC5: an erase clears a problem line made before it; a cloud connect does not.
+    func testAnEraseClearsAStaleProblemLine_US67_AC5() async throws {
+        let (store, edits, _) = try setUpEdits()
+        await edits.take(try json(unreadable), asked: store.chatMark, today: today)
+        let mark = store.chatMark
+        edits.follow(RecordStore.ChatMark(erase: "e1", epoch: mark.epoch, erasures: mark.erasures))
+        XCTAssertNotNil(edits.problem, "a cloud connect keeps it")
+        guard case .erased = await store.erasePhone(historyJSON: nil, keepChat: { _, _ in true }) else { return XCTFail("not erased") }
+        edits.follow(store.chatMark)
+        XCTAssertNil(edits.problem)
+    }
+
+    /// Codex R2, US-67 AC3: a medication change the engine refuses is never applied, and its
+    /// words show as the problem line; the values part is unaffected.
+    func testARefusedMedicationChangeIsNeverApplied_US67_AC3() async throws {
+        let (store, edits, engine) = try setUpEdits()
+        let before = store.recordJSON
+        let refused = #"[{"kind":"medication","refuseMeds":true},{"kind":"field","field":"weightKg","displayValue":80,"unitSystem":"si","date":null}]"#
+        await edits.take(try json(refused), asked: store.chatMark, today: today)
+        XCTAssertEqual(store.recordJSON, before)
+        XCTAssertEqual(try sent(engine), [], "the medications part was never sent to be written")
+        XCTAssertNil(edits.saved)
+        XCTAssertEqual(edits.problem, "That medicine is not on the list, so nothing was saved.")
+        XCTAssertNotNil(edits.review, "the values still wait for Save")
+    }
+
+    /// Codex R2, US-67 AC3, on the engine's own door: a medication edit it cannot read is
+    /// refused in the preview, never written, and its words show.
+    func testTheEngineRefusesAnUnreadableMedicationChange_US67_AC3() async throws {
+        let store = try RecordStore(folder: folder, engine: HealthEngine(), deviceId: "test")
+        let edits = ChatEdits(store: store)
+        let before = store.recordJSON
+        await edits.take(try json(#"[{"kind":"medication","medicationKey":"not-a-medicine","drugName":"x","doseValue":null,"doseUnit":null}]"#), asked: store.chatMark, today: today)
+        XCTAssertEqual(store.recordJSON, before)
+        XCTAssertNil(edits.saved)
+        XCTAssertFalse(edits.problem?.isEmpty ?? true, "the engine's words show")
     }
 }

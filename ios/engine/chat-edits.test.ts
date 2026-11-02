@@ -201,6 +201,7 @@ describe('US-67 AC3: medications save at once, with Undo', () => {
     expect(shown.medications).toEqual({
       lines: [{ text: 'Ezetimibe: Yes' }],
       undo: { kind: 'chatUndo', medications: [{ medicationKey: 'ezetimibe', drugName: 'not_yet', doseValue: null, doseUnit: null }] },
+      refusal: null,
     });
     const after = saved(metric(), 'medications', [med('ezetimibe', 'yes')]);
     const back = applyEdit(after, shown.medications!.undo as Parameters<typeof applyEdit>[1], NOW) as { ok: true; file: RoadmapFile };
@@ -360,5 +361,63 @@ describe('US-67 AC3: rows this app cannot read (US-65)', () => {
     expect(shown.medications!.undo).toEqual({ kind: 'chatUndo', medications: [{ medicationKey: 'statin', drugName: 'none', doseValue: null, doseUnit: null }] });
     const after = saved(file, 'medications', [med('statin', 'atorvastatin', 20)]);
     expect(applyEdit(after, shown.medications!.undo as Parameters<typeof applyEdit>[1], NOW).ok).toBe(true);
+  });
+});
+
+// Re-check N1, N2 and Codex R2.
+describe('US-67 AC4: unreadable rows in the pair and the escalation, and a medication refusal', () => {
+  const statinRows = (escalation: Record<string, unknown>) => ({
+    ...metric(),
+    medications: [
+      { id: 's1', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 10, doseUnit: 'mg', updatedAt: NOW, lamport: 0 },
+      { id: 'e1', medicationKey: 'statin_escalation', updatedAt: NOW, lamport: 0, doseUnit: null, ...escalation },
+    ],
+  }) as RoadmapFile;
+
+  it('US-67 AC4: an escalation answer this app cannot read is still reset by a new dose; Undo writes its unanswered value', () => {
+    const file = statinRows({ drugName: 'yes', doseValue: '5' });
+    const shown = preview(file, [med('statin', 'atorvastatin', 20)]);
+    expect(shown.medications!.undo).toEqual({ kind: 'chatUndo', medications: [
+      { medicationKey: 'statin_escalation', drugName: 'not_yet', doseValue: null, doseUnit: null },
+      { medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 10, doseUnit: 'mg' },
+    ] });
+    const after = saved(file, 'medications', [med('statin', 'atorvastatin', 20)]);
+    expect(med$(after, 'statin_escalation')).toMatchObject({ drugName: 'not_yet', doseValue: null });
+  });
+
+  it('US-67 AC4: a readable escalation answer is reset and restored by Undo, as before', () => {
+    const file = statinRows({ drugName: 'not_tolerated', doseValue: null });
+    const shown = preview(file, [med('statin', 'atorvastatin', 20)]);
+    const after = saved(file, 'medications', [med('statin', 'atorvastatin', 20)]);
+    expect(med$(after, 'statin_escalation')!.drugName).toBe('not_yet');
+    const back = applyEdit(after, shown.medications!.undo as Parameters<typeof applyEdit>[1], NOW) as { ok: true; file: RoadmapFile };
+    expect(med$(back.file, 'statin_escalation')!.drugName).toBe('not_tolerated');
+  });
+
+  it('US-67 AC4: a pair with a hidden half that reads as the same number corrects that half too', () => {
+    const file = {
+      ...metric(),
+      measurements: [
+        { id: 'sys', metricType: 'systolic_bp', value: 120, recordedAt: DAY, createdAt: NOW, status: 'active', source: 'manual' },
+        { id: 'dia', metricType: 'diastolic_bp', value: '82', recordedAt: DAY, createdAt: NOW, status: 'active', source: 'manual' },
+      ],
+    } as unknown as RoadmapFile;
+    const edits = [field('systolicBp', 128, 'mmHg'), field('diastolicBp', 82, 'mmHg')];
+    const shown = preview(file, edits);
+    expect(shown.review!.lines).toEqual([{ text: 'Blood pressure 128/82 mmHg on 1 Oct', replaces: 'a value this app cannot read' }]);
+    const out = applyEdit(file, { kind: 'chatEdits', part: 'review', edits, today: TODAY, seen: shown.review!.seen }, NOW) as { ok: true; file: RoadmapFile };
+    expect(out.ok).toBe(true);
+    expect(out.file.measurements.find((r) => r.id === 'dia')!.status).toBe('entered-in-error');
+    expect(active(out.file, 'diastolic_bp')).toEqual([expect.objectContaining({ value: 82, correctsId: 'dia' })]);
+    expect(active(out.file, 'systolic_bp').map((r) => r.value)).toEqual([128]);
+  });
+
+  it('Codex R2: a medication proposal that cannot be read shows a refusal, and its Edit refuses with the same words', () => {
+    const broken = [{ kind: 'medication', medicationKey: 'statin', doseValue: 20, doseUnit: 'mg' }];
+    const shown = preview(metric(), broken);
+    expect(shown.medications).toEqual({ lines: [], undo: null, refusal: 'The chat\'s medication change could not be read, so nothing was saved.' });
+    expect(apply(metric(), 'medications', broken)).toMatchObject({ ok: false, message: shown.medications!.refusal });
+    // A list that is not one is said once, by the review part.
+    expect(preview(metric(), 'garbage').medications).toBeNull();
   });
 });

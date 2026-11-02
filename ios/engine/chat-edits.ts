@@ -15,7 +15,7 @@ import { latestDayOnEarth } from '../../packages/health-core/src/merge';
 import { appendMeasurement, correctValue, findActiveInSlot, measurementValueFault, resolveRecordedAt } from '../../packages/health-core/src/record-edits';
 import { updateProfile } from '../../packages/health-core/src/mcp-tools';
 import { upsertMedication } from '../../packages/health-core/src/state-edits';
-import { medicationSchema, PRESSURE_ORDER } from '../../packages/health-core/src/validation';
+import { medicationSchema, PRESSURE_ORDER, UNANSWERED_OF } from '../../packages/health-core/src/validation';
 import { cmToFeetInches, getDisplayLabel, toCanonicalValue, type MetricType } from '../../packages/health-core/src/units';
 import { cellLabel, cellText } from '../../packages/health-core/src/cell-unit';
 import { BEMPEDOIC_ACID_OPTIONS, GLP1_NAMES, METFORMIN_OPTIONS, SGLT2I_NAMES, STATIN_NAMES } from '../../packages/health-core/src/types';
@@ -36,7 +36,8 @@ export interface ChatLine { text: string }
 export interface ChatReviewLine { text: string; replaces: string | null }
 
 export interface ChatEditsPreview {
-  medications: { lines: ChatLine[]; undo: ChatEdit } | null;
+  /** `refusal`: the medications could not be read, so nothing is saved (lines empty, undo null). */
+  medications: { lines: ChatLine[]; undo: ChatEdit | null; refusal: string | null } | null;
   /** `seen`: opaque to Swift. The rows and profile values the lines name, as the record held them. */
   review: { lines: ChatReviewLine[]; refusal: string | null; seen: Seen } | null;
 }
@@ -52,6 +53,7 @@ const STALE = `Your record changed on another device while this was shown. ${NOT
 /** A held row or profile value this build cannot read (US-65 AC2): named, never shown. */
 const UNREADABLE_HELD = 'a value this app cannot read';
 const NOT_PREPARED = `This could not be prepared. ${NOTHING_SAVED}`;
+const MEDS_UNREADABLE = 'The chat\'s medication change could not be read, so nothing was saved.';
 
 /** A part's work, so a failure in one part refuses that part alone and never sinks the reply. */
 function guarded<T>(work: () => T, failed: T): T {
@@ -65,10 +67,13 @@ function guarded<T>(work: () => T, failed: T): T {
 /** What each part of a reply would do to `file`. Nothing is written. */
 export function chatEditsPreview(file: RoadmapFile, rawEdits: unknown, now: string, today: string, choices: UnitChoices = {}): ChatEditsPreview {
   const read = readProposedEdits(rawEdits);
-  const meds = guarded(() => medicationPart(file, read.edits, read.invalid, now), { ok: false as const });
+  const meds = guarded(() => medicationPart(file, read.edits, read.invalid, now), { ok: false as const, message: NOT_PREPARED });
   const review = guarded(() => reviewPart(file, read.edits, read.invalid, today, now, choices), { file, lines: [], seen: [], refusal: NOT_PREPARED });
   return {
-    medications: meds.ok && meds.lines.length > 0 ? { lines: meds.lines, undo: { kind: 'chatUndo', medications: meds.undo } } : null,
+    // A list that is not one is the review part's refusal alone, so the person reads it once.
+    medications: !meds.ok
+      ? (read.invalid.includes('list') ? null : { lines: [], undo: null, refusal: meds.message })
+      : meds.lines.length > 0 ? { lines: meds.lines, undo: { kind: 'chatUndo', medications: meds.undo }, refusal: null } : null,
     review: review.lines.length > 0 || review.refusal ? { lines: review.lines, refusal: review.refusal, seen: review.seen } : null,
   };
 }
@@ -78,8 +83,8 @@ export function applyChatEdit(file: RoadmapFile, edit: ChatEdit, now: string, ch
   if (edit.kind === 'chatUndo') return undoMedications(file, edit.medications, now);
   const read = readProposedEdits(edit.edits);
   if (edit.part === 'medications') {
-    const meds = guarded(() => medicationPart(file, read.edits, read.invalid, now), { ok: false as const });
-    return meds.ok ? { ok: true, file: meds.file } : { ok: false, reason: 'invalid-value', message: UNREADABLE };
+    const meds = guarded(() => medicationPart(file, read.edits, read.invalid, now), { ok: false as const, message: NOT_PREPARED });
+    return meds.ok ? { ok: true, file: meds.file } : { ok: false, reason: 'invalid-value', message: meds.message };
   }
   if (edit.part !== 'review') return { ok: false, reason: 'invalid-value', message: UNREADABLE };
   const review = guarded(() => reviewPart(file, read.edits, read.invalid, edit.today, now, choices), { file, lines: [], seen: [], refusal: NOT_PREPARED });
@@ -96,11 +101,14 @@ export function applyChatEdit(file: RoadmapFile, edit: ChatEdit, now: string, ch
  * Every medication edit of the reply, in order, by the web's rule (health-core
  * `chatMedicationChange`): a new drug or dose resets the drug's held escalation
  * answer unless the reply states it. An edit that matches the row already held
- * writes nothing. `undo`: the rows as they were, last edit first.
+ * writes nothing. `undo`: the rows as they were, last edit first. Whether an
+ * escalation answer is reset reads the raw record, so an answer this build
+ * cannot read (US-65) is reset too; Undo's values come from what it can read,
+ * an unreadable row going back to the key's unanswered value.
  */
 function medicationPart(file: RoadmapFile, edits: ProposedEdit[], invalid: string[], now: string):
-  { ok: true; file: RoadmapFile; lines: ChatLine[]; undo: ChatMedicationRow[] } | { ok: false } {
-  if (invalid.includes('medication') || invalid.includes('list')) return { ok: false };
+  { ok: true; file: RoadmapFile; lines: ChatLine[]; undo: ChatMedicationRow[] } | { ok: false; message: string } {
+  if (invalid.includes('medication') || invalid.includes('list')) return { ok: false, message: MEDS_UNREADABLE };
   const meds = edits.filter((e): e is ProposedMedicationEdit => e.kind === 'medication');
   const stated = new Set(meds.map((e) => e.medicationKey));
   // A row this build cannot read (US-65) counts as none: its Undo writes the key's unanswered value.
@@ -112,8 +120,12 @@ function medicationPart(file: RoadmapFile, edits: ProposedEdit[], invalid: strin
     const held = next.medications.find((m) => m.medicationKey === edit.medicationKey);
     if (held && held.drugName === edit.drugName && held.doseValue === edit.doseValue && held.doseUnit === edit.doseUnit) continue;
     const change = chatMedicationChange(edit, saved, stated);
-    if (change.reset && change.undo.some((m) => m.medicationKey === change.reset)) {
-      next = upsertMedication(next, { medicationKey: change.reset, drugName: 'not_yet', doseValue: null, doseUnit: null }, now).file;
+    const reset = change.reset;
+    if (reset && file.medications.some((m) => m.medicationKey === reset && m.drugName !== 'not_yet')) {
+      if (!change.undo.some((m) => m.medicationKey === reset)) {
+        change.undo.unshift({ medicationKey: reset, drugName: UNANSWERED_OF[reset as keyof typeof UNANSWERED_OF], doseValue: null, doseUnit: null });
+      }
+      next = upsertMedication(next, { medicationKey: reset, drugName: 'not_yet', doseValue: null, doseUnit: null }, now).file;
     }
     next = upsertMedication(next, { medicationKey: edit.medicationKey, drugName: edit.drugName, doseValue: edit.doseValue, doseUnit: edit.doseUnit }, now).file;
     undo.unshift(...change.undo);
@@ -229,6 +241,14 @@ function reviewPart(file: RoadmapFile, edits: ProposedEdit[], invalid: string[],
       }, now);
       if (!result.ok) return refuse(result.message === PRESSURE_ORDER ? PRESSURE_ORDER : `Blood pressure on ${dayText(day, today)} could not be saved.`);
       next = result.file;
+      // A hidden half the pair write left as it was (its text reads as the same number) is corrected
+      // too, last, against the new other half, so the banner's "replaces" is what was saved.
+      for (const [index, row] of held.entries()) {
+        if (!row || shownRow(row) || next.measurements.find((m) => m.id === row.id)?.status !== 'active') continue;
+        const fixed = correctValue(next, { id: row.id, newValue: index === 0 ? pair.systolic : pair.diastolic, now });
+        if (!fixed.ok) return refuse(`Blood pressure on ${dayText(day, today)} could not be saved.`);
+        next = fixed.file;
+      }
       const was = hidden ? UNREADABLE_HELD : held.some(Boolean) ? `${sys ? Math.round(sys.value) : '–'}/${dia ? Math.round(dia.value) : '–'} mmHg` : null;
       lines.push({ text: `Blood pressure ${Math.round(pair.systolic)}/${Math.round(pair.diastolic)} mmHg ${dayText(day, today)}`, replaces: was });
       seen.push([key, held.map((row) => row?.id ?? null)]);

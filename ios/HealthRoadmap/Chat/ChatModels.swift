@@ -118,7 +118,9 @@ struct ChatEditsPreview: Decodable, Equatable, Sendable {
     struct Medications: Decodable, Equatable, Sendable {
         let lines: [Line]
         /// The edit that puts the medications back, passed back to the engine as it came.
-        let undo: OpaqueJSON
+        let undo: OpaqueJSON?
+        /// Why the medication change cannot be made, in the engine's words; then nothing is written.
+        let refusal: String?
     }
 
     struct Review: Decodable, Equatable, Sendable {
