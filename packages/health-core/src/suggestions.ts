@@ -132,11 +132,11 @@ export function joinWithAnd(items: string[]): string {
   return items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 }
 
-/** Raised blood pressure: systolic ≥130 or diastolic >80. Either half counts
+/** Raised blood pressure: systolic ≥130 or diastolic ≥80. Either half counts
  *  on its own; the BP card checks separately that it has both to display. */
 function isBpRaised(systolic: number | undefined, diastolic: number | undefined): boolean {
   return (systolic !== undefined && systolic >= BP_THRESHOLDS.stage1Sys)
-    || (diastolic !== undefined && diastolic > BP_THRESHOLDS.stage1Dia);
+    || (diastolic !== undefined && diastolic >= BP_THRESHOLDS.stage1Dia);
 }
 
 /** A lipid marker at its 2018 AHA/ACC risk-enhancing line (Table 6): ApoB

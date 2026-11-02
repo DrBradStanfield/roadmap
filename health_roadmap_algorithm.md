@@ -532,7 +532,7 @@ With no sex on record the plan grades no HDL, so `hdl-low` does not show (US-07 
 | Stage 2 | 140 | 90 |
 | Crisis | 180 | 120 |
 
-**Raised blood pressure** means one thing everywhere (the `bp-stage1` card and the weight-medication trigger): systolic >= 130 OR diastolic > 80. Either half counts on its own; the stage cards still need both halves to show.
+**Raised blood pressure** means one thing everywhere (the `bp-stage1` card and the weight-medication trigger): systolic >= 130 OR diastolic >= 80 (ACC/AHA 2017: stage 1 is 130–139 or 80–89; Brad 2026-11-03). Either half counts on its own; the stage cards still need both halves to show.
 
 **Inverted blood pressure (US-02 AC8):** a pair from one day with systolic at or below diastolic is not a blood pressure. When the newest systolic and diastolic are from the same day and inverted, the plan leaves both out (`validateHealthInputs` names the rule on both), so it shows no blood pressure tier card and raises no marker, the weight-medication trigger included, until a half is corrected. The plan shows the `measure-bp` card in its "Check your blood pressure reading" form instead (section 4, Missing Measurements First; US-07 AC11). It does not fall back to an earlier day. Halves from different days are not judged as a pair and are used as before. Writes refuse such a pair (section 12); a merge of two devices' one-half corrections can still make one. `evidence.ts` and `roadmap_text.html` do not change: this is an input-integrity rule, with no new threshold, card text or citation.
 
@@ -787,7 +787,7 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 |----|-----------|----------|
 | `bp-crisis` | sys >= 180 OR dia >= 120 | urgent |
 | `bp-stage2` | sys >= 140 OR dia >= 90 | urgent |
-| `bp-stage1` | sys >= 130 OR dia > 80 | attention |
+| `bp-stage1` | sys >= 130 OR dia >= 80 | attention |
 
 Stage 1 shows age-dependent target: < 120/80 for age < 65, < 130/80 for age >= 65.
 
@@ -932,7 +932,7 @@ So: BMI >= 30 is always on; 28 < BMI < 30 is on unless the waist is healthy and 
 Raised markers, each named in the card in the plan's words:
 - HbA1c >= 38.8 mmol/mol (prediabetic) → "prediabetic HbA1c"
 - Triglycerides 150 mg/dL (about 1.7 mmol/L) or more → "elevated triglycerides"
-- Raised blood pressure: systolic >= 130 OR diastolic > 80, either half on its own (section 3) → "elevated blood pressure"
+- Raised blood pressure: systolic >= 130 OR diastolic >= 80, either half on its own (section 3) → "elevated blood pressure"
 - The plan's lipid marker (ApoB, else non-HDL, else LDL: `lipidMarkerFor`) at or above its risk-enhancing line → "elevated ApoB", "elevated non-HDL cholesterol" or "elevated LDL cholesterol":
   - ApoB >= 1.3 g/L (130 mg/dL)
   - Non-HDL >= 190 mg/dL (4.913 mmol/L), compared unrounded (section 1)
