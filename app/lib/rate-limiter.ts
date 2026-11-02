@@ -130,10 +130,13 @@ export const webChatTurns = {
   machine: createQuotaCounter(envCap('WEB_CHAT_DAILY_CAP', process.env.WEB_CHAT_DAILY_CAP, 10_000), DAY_MS, 30 * 60_000),
 };
 
-/** Count one web chat turn; false when the IP or the machine is at its cap. A refused turn costs neither: an IP at its cap spends none of the machine's, and a turn the machine refuses is handed back to the IP. */
+/**
+ * Count one web chat turn; false when the IP or the machine is at its cap. A refused turn costs neither: an IP at
+ * its cap spends none of the machine's, and a turn the machine refuses never touches the IP's count or its clock.
+ * A refund would hand back the count but not the clock, so a refused turn would start the IP's 24 hours and let it
+ * spend 200 when the machine resets and 200 more when that early window ends. Synchronous, so the check holds.
+ */
 export function takeWebChatTurn(ipBucket: string): boolean {
-  if (!webChatTurns.ip.take(ipBucket, 1)) return false;
-  if (webChatTurns.machine.take('machine', 1)) return true;
-  webChatTurns.ip.refund(ipBucket, 1);
-  return false;
+  if (webChatTurns.ip.remaining(ipBucket) < 1) return false;
+  return webChatTurns.machine.take('machine', 1) && webChatTurns.ip.take(ipBucket, 1);
 }

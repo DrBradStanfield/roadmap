@@ -132,6 +132,34 @@ describe('US-15 AC45: web chat turns are capped per IP and per machine', () => {
     expect(webChatTurns.ip.remaining(ipBucket('198.51.100.13'))).toBe(199);
   });
 
+  // Codex review of #340: the hand-back returned the count but not the clock,
+  // so a refused turn still started the IP's 24 hours. With the machine full at
+  // 08:00 and resetting at 07:00 the next day, that IP could spend 200 turns at
+  // 07:00 and 200 more at 08:00.
+  it('a turn the machine refuses does not start the IP window, so no IP gets 400 turns across the two resets', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      const HOUR = 60 * 60_000;
+      const t0 = new Date('2026-11-02T07:00:00Z').getTime();
+      vi.setSystemTime(t0);
+      await load('201');
+      // 07:00: two other shoppers fill the machine's day.
+      for (let i = 0; i < 200; i++) await post('198.51.100.30');
+      expect((await post('198.51.100.31')).status).toBe(200);
+      // 08:00: the machine refuses this IP, which has used no turns.
+      vi.setSystemTime(t0 + HOUR);
+      expect((await post('198.51.100.32')).status).toBe(429);
+      // 07:01 the next day: the machine's day is over; the IP spends its 200.
+      vi.setSystemTime(t0 + 24 * HOUR + 60_000);
+      for (let i = 0; i < 200; i++) expect((await post('198.51.100.32')).status).toBe(200);
+      // 08:01: an hour later its day is not over, whatever the refusal at 08:00 did.
+      vi.setSystemTime(t0 + 25 * HOUR + 60_000);
+      expect((await post('198.51.100.32')).status).toBe(429);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   // Brad's decision (2026-10-31): 200 a day per IP, 10,000 a day per machine.
   it('by default a machine allows 10,000 turns a day and an IP 200', async () => {
     await load();
