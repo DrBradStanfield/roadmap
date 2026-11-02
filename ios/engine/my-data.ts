@@ -259,7 +259,7 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
       alcohol: isAlcoholAnswer(file.profile.alcohol) ? file.profile.alcohol : null,
     },
     // Blood pressure is one row, as the web's matrix shows it: the newest day's pair.
-    vitals: [...VITAL_METRICS.filter((metric) => metric !== 'systolic_bp' && metric !== 'diastolic_bp').map(row), pressureRow(file, trend, days, rowTarget('blood_pressure', 'si', grading, basis)?.bare ?? null, graded)],
+    vitals: [...VITAL_METRICS.filter((metric) => metric !== 'systolic_bp' && metric !== 'diastolic_bp').map(row), pressureRow(file, trend, rowTarget('blood_pressure', 'si', grading, basis)?.bare ?? null, graded)],
     // PSA is asked for under prostate screening on the web, not with the blood tests.
     bloodTests: BLOOD_TEST_METRICS.filter((metric) => metric !== 'psa').map(row),
     // The web asks for PSA under screening and never colours it.
@@ -406,17 +406,17 @@ function typedRangeMessage(metric: string, typed: number, unit: CellUnit, refusa
 }
 
 /** The Vitals row for blood pressure: the newest day's pair, from the history's own pairing. */
-function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, days: Map<string, Map<string, number>>, target: string | null, graded: GradeContext): MyDataRow {
-  const { label, unit, rows } = pressureHistory(file, []);
+function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: string | null, graded: GradeContext): MyDataRow {
+  const shown = new Map<string, { sys?: number; dia?: number }>();
+  const { label, unit, rows } = pressureHistory(file, [], shown);
   const active = rows.filter((row) => row.status === 'active');
   const [newest] = active;
   // The day before's pair, both halves present: a half-pair is no reading (the web's pressureReadings).
   // A half-pair latest ("135/–", US-25 AC17) gets none, so no bracket sits beside a dash.
   const whole = (row?: (typeof rows)[number]) => !!row?.systolic && !!row?.diastolic;
   const previous = whole(newest) ? active.slice(1).find(whole) : undefined;
-  // Graded on the stored halves, as the web's row grades them; a half-pair has no grade.
-  const sys = whole(newest) ? days.get('systolic_bp')?.get(newest.day) : undefined;
-  const dia = whole(newest) ? days.get('diastolic_bp')?.get(newest.day) : undefined;
+  // Graded on the stored halves of the pair it shows, as the web grades stored values; a half-pair has no grade.
+  const { sys, dia } = (whole(newest) && shown.get(newest.id)) || {};
   return {
     metric: BLOOD_PRESSURE, label, unit,
     latest: newest ? { id: newest.id, value: newest.value, day: newest.day } : null,

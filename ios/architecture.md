@@ -1282,10 +1282,13 @@ updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.
 - **Grades and lab test rows come from health-core, through the engine (Brad, 2026-11-02,
   US-25 AC17, US-62 AC8).** The web's grade (amber, red) and its spoken words lived in
   widget code (`statusOf`, the vitals grades, `gradeWords`). They moved unchanged into
-  `packages/health-core/src/row-grade.ts`; the widget imports them, and a dense input grid
-  (1.68 million cases) graded identically before and after. The lab tests' grouping moved
-  the same way (`lab-series.ts`). The engine serves each row's `status` and `gradeWords` and
-  a `labTests` list; Swift only maps the colour (`ValueRow.gradeColor`: amber is the app's
+  `packages/health-core/src/row-grade.ts`; the widget imports them. `row-grade.parity.test.ts`
+  grades a grid of about 1.68 million inputs and checks its hash against the one recorded from
+  the widget's functions before the move. The lab tests' grouping and row moved the same way
+  (`lab-series.ts` `labSeriesRows`), and so did the trend window (`recent-trend.ts`). The
+  engine serves each row's `status` and `gradeWords` and a `labTests` list; a blood pressure
+  is graded on the stored halves of the pair it shows. Swift reads `status` as a `Grade`
+  (an unknown word reads as none) and only maps the colour (`ValueRow.gradeColor`: amber is the app's
   `info` tone, red `urgent`, the web's #b91c1c) and joins VoiceOver's words. Why not in
   Swift: a copy of a clinical line drifts, and an engine fix ships over the air (D3). PSA is
   not graded, as on the web. A lab test row opens nothing: there is no engine door for a lab

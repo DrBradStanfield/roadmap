@@ -90,7 +90,7 @@ function sameIds(seen: unknown, held: string[]): boolean {
  * it) shows over the pair as it stood but never changes it, so a lost write
  * cannot leak into the pair later writes build on. A half not yet written is a dash.
  */
-export function pressureHistory(file: RoadmapFile, excludedFields: readonly string[]): Omit<MetricHistory, 'markers'> {
+export function pressureHistory(file: RoadmapFile, excludedFields: readonly string[], shown?: Map<string, { sys?: number; dia?: number }>): Omit<MetricHistory, 'markers'> {
   const rows = file.measurements.filter((row) => (HALVES as readonly string[]).includes(row.metricType));
   const current = new Set(latestActivePerMetric(rows).map((row) => row.id));
   // One pass each, not one per day: a filter per day was quadratic, 17 s for ten years
@@ -131,6 +131,8 @@ export function pressureHistory(file: RoadmapFile, excludedFields: readonly stri
     const shownRow = (index: number): HistoryRow => {
       const now = held.length > 0 && index === stateAt;
       const snapshot = snapshots[index];
+      // `shown`: each active pair's stored halves, so My data grades the pair it shows (adversary R1).
+      if (now) shown?.set(`${day}:${snapshot.id}`, { sys: snapshot.sys?.value, dia: snapshot.dia?.value });
       return {
         ...pair(snapshot.sys, snapshot.dia, now ? 'active' : 'entered-in-error', now && held.some((row) => current.has(row.id))),
         id: `${day}:${snapshot.id}`, day, correction: snapshot.rows.some((row) => !!row.correctsId),

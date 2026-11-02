@@ -270,6 +270,18 @@ describe('myData rows: grade and spoken grade (US-62 AC8, US-25 AC17)', () => {
     expect(minor.get('waist')?.status).not.toBeNull();
   });
 
+  it('grades the blood pressure it shows when a merge left two active rows per half on one day (adversary R1)', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+      { kind: 'profile', sex: 'male', birthYear: 1970, height: 180 },
+      { kind: 'bloodPressure', systolic: 118, diastolic: 76, day: '2026-10-02', replace: false });
+    // Another device's pair for the same day, written later, merged in: both stay active.
+    for (const [metricType, value] of [['systolic_bp', 150], ['diastolic_bp', 95]] as const) {
+      file.measurements.push({ ...file.measurements.find((row) => row.metricType === metricType)!, id: `other-${metricType}`, value, createdAt: '2026-10-21T09:00:00.000Z' });
+    }
+    const pressure = myData(file, NOW).vitals.find((row) => row.metric === 'blood_pressure')!;
+    expect(pressure).toMatchObject({ latest: { value: '150/95' }, status: 'bad', gradeWords: 'high' });
+  });
+
   it('grades no HDL without sex, and no half-entered blood pressure (US-62 AC13, US-25 AC17)', () => {
     const noSex = rows(myData(edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'add', metric: 'hdl', value: 0.8, day: '2026-10-01' }), NOW));
     expect(noSex.get('hdl')).toMatchObject({ status: null, gradeWords: null });
