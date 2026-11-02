@@ -25,6 +25,8 @@ import {
   unifiedSystemPrompt,
   UNDATED_PREVIOUS,
   unreadLines,
+  uploadLimitSignal,
+  LIMIT_TEST_WORDS,
 } from './lab-extraction';
 import { oneLine } from './plan';
 
@@ -593,9 +595,11 @@ describe('US-12 AC8: an ambiguous number is refused, and the refusal is counted'
         { metric: 'ldl', value: 'trace', unit: 'mmol/L', confidence: 'high' },
         { metric: 'hdl', value: 1.3, unit: 'mmol/L', confidence: 'very high' },
       ],
-      additionalValues: [{ name: null, value: 141, unit: 'mmol/L' }, { name: 'k', value: '<5', unit: '' }],
+      additionalValues: [{ name: null, value: 141, unit: 'mmol/L' }, { name: 'k', value: '<<5', unit: '' }, { name: 'na', value: '<5', unit: '' }],
     });
+    // "<<5" has two symbols; "<5" is a limit, saved since US-12 AC20.
     expect(mixed.droppedValueCount).toBe(4);
+    expect(mixed.additionalValues).toEqual([{ name: 'na', value: 5, comparator: '<', unit: '' }]);
     // A document's stray value rows are discarded with the values, not reported.
     expect(toUnifiedResult({ ...mixed, classification: 'clinic_letter' }, 'full').droppedValueCount).toBe(0);
   });
@@ -712,21 +716,36 @@ describe('US-12 AC11: the prompt splits a printed blood pressure into its two co
 });
 
 // US-07 AC7 made a lab eGFR drive the plan, so an eGFR printed ">60" must never
-// arrive as 60 (graded "Low Normal"). US-12 AC8 already drops a value string
-// that does not start with its number; the prompt now asks for exactly that.
-describe('US-07 AC7: an eGFR printed with < or > is returned as printed, as a string, and dropped', () => {
-  it('both prompt modes carry the rule', () => {
+// arrive as 60. Since US-12 AC20 every result printed with a symbol is asked
+// for as printed and saved as a limit: its bound and its comparator.
+describe('US-12 AC20: a result printed with <, >, ≤ or ≥ is returned as printed, and read as a limit', () => {
+  it('both prompt modes carry the rule, for every result, not only eGFR', () => {
     for (const mode of ['full', 'metadata'] as const) {
-      expect(unifiedSystemPrompt(mode)).toContain('An eGFR printed with < or > (">60", ">90") is returned exactly as printed, as a string: never as its number.');
+      expect(unifiedSystemPrompt(mode)).toContain('A result printed with <, >, ≤ or ≥ (">60", "<5", "≤ 0.1") is returned exactly as printed, as a string with its symbol, in "values" and "additionalValues" alike: never as its number alone.');
     }
   });
-  it('an eGFR returned as ">60" is dropped, never read as 60', () => {
+  it('an eGFR returned as ">60" is its bound and comparator, never an exact 60', () => {
     const parsed = parseUnifiedResult({
       classification: 'lab_report', reportDate: '2026-07-01', values: [], document: null,
       additionalValues: [{ name: 'egfr', value: '>60', unit: 'mL/min/1.73m²' }],
     });
-    expect(parsed.additionalValues).toEqual([]);
-    expect(parsed.droppedValueCount).toBe(1);
+    expect(parsed.additionalValues).toEqual([{ name: 'egfr', value: 60, comparator: '>', unit: 'mL/min/1.73m²' }]);
+    expect(parsed.droppedValueCount).toBe(0);
+  });
+  it('a comparator the model sent on its own is never taken: only the printed symbol sets one', () => {
+    const parsed = parseUnifiedResult({
+      classification: 'lab_report', reportDate: '2026-07-01', document: null, additionalValues: [],
+      values: [{ metric: 'hdl', value: 1.5, comparator: '>', unit: 'mmol/L', confidence: 'high' }],
+    });
+    expect(parsed.values[0]).not.toHaveProperty('comparator');
+  });
+  it('a core limit keeps its comparator through unit resolution, in the printed unit\'s conversion', () => {
+    const result = toUnifiedResult(parseUnifiedResult({
+      classification: 'lab_report', reportDate: '2026-07-01', document: null, additionalValues: [],
+      values: [{ metric: 'hdl', value: '> 60', unit: 'mg/dL', confidence: 'high' }, { metric: 'lpa', value: '≤5', unit: 'nmol/L', confidence: 'high' }],
+    }), 'full');
+    expect(result.values.map(v => [v.metric, v.comparator, v.displayValue])).toEqual([['hdl', '>', 60], ['lpa', '<=', 5]]);
+    expect(result.values[0].valueSI).toBeCloseTo(60 / 38.67, 3);
   });
 });
 
@@ -1201,7 +1220,7 @@ describe('US-12 AC8: a row with no printedMonth or question is read, not dropped
 describe('US-12 AC19: a value not saved is named, with why', () => {
   const report = { classification: 'lab_report' as const, reportDate: '2026-01-01', document: null };
 
-  it('names each dropped row by its test: a limit ("> 60", "<5") as a limit, anything else as unreadable; never its value', () => {
+  it('names each dropped row by its test as unreadable, never its value; a limit ("> 60", "<5") is saved instead (AC20)', () => {
     const parsed = parseUnifiedResult({
       ...report,
       values: [
@@ -1213,49 +1232,52 @@ describe('US-12 AC19: a value not saved is named, with why', () => {
         { name: 'vitamin_d', value: '≥ 250', unit: 'nmol/L' },
         { name: 'platelets', value: '250,000', unit: 'cells/µL' },
         { name: 'crp', value: 'trace', unit: 'mg/L' },
+        { name: 'ferritin', value: '<< 5', unit: 'ug/L' },
+        { name: 'folate', value: '< 5-10', unit: 'nmol/L' },
         { value: 'trace', unit: 'mg/L' },
         { name: 'sodium', value: 141, unit: 'mmol/L' },
       ],
     });
     const result = toUnifiedResult(parsed, 'full');
-    expect(result.droppedValueCount).toBe(6);
+    expect(result.droppedValueCount).toBe(5);
+    // Two symbols or a range stay unreadable.
     expect(result.unreadValues).toEqual([
-      { name: 'hdl', reason: 'limit' }, { name: 'lpa', reason: 'limit' },
-      { name: 'vitamin_d', reason: 'limit' }, { name: 'platelets', reason: 'unreadable' }, { name: 'crp', reason: 'unreadable' },
-      { name: '', reason: 'unreadable' },
+      { name: 'platelets', reason: 'unreadable' }, { name: 'crp', reason: 'unreadable' },
+      { name: 'ferritin', reason: 'unreadable' }, { name: 'folate', reason: 'unreadable' }, { name: '', reason: 'unreadable' },
     ]);
-    // No value is ever saved from a limit.
-    expect(result.values.map(v => v.metric)).toEqual(['ldl']);
-    expect(result.additionalValues.map(v => v.name)).toEqual(['sodium']);
+    expect(result.values.map(v => [v.metric, v.comparator])).toEqual([['ldl', undefined], ['hdl', '>'], ['lpa', '<']]);
+    expect(result.additionalValues.map(v => [v.name, v.value, v.comparator])).toEqual([['vitamin_d', 250, '>='], ['sodium', 141, undefined]]);
     expect(JSON.stringify(result.unreadValues)).not.toMatch(/\d/);
   });
 
   it('leaves the field out when nothing was dropped, and on a document that is not a lab report', () => {
     const good = toUnifiedResult(parseUnifiedResult({ ...report, values: [], additionalValues: [{ name: 'sodium', value: 141, unit: 'mmol/L' }] }), 'full');
     expect(good).not.toHaveProperty('unreadValues');
-    const letter = toUnifiedResult(parseUnifiedResult({ ...report, classification: 'clinic_letter', values: [{ metric: 'hdl', value: '> 60', unit: 'mg/dL', confidence: 'high' }], additionalValues: [] }), 'full');
+    const letter = toUnifiedResult(parseUnifiedResult({ ...report, classification: 'clinic_letter', values: [{ metric: 'hdl', value: 'trace', unit: 'mg/dL', confidence: 'high' }], additionalValues: [] }), 'full');
     expect(letter).not.toHaveProperty('unreadValues');
   });
 
   it('unreadLines: each test once, with every reason; tests with the same reasons share a line; the unnamed are counted', () => {
     expect(unreadLines({ droppedValueCount: 5, unreadValues: [
-      { name: 'hdl', reason: 'limit' }, { name: 'crp', reason: 'unreadable' }, { name: 'lpa', reason: 'limit' }, { name: 'hdl', reason: 'limit' },
+      { name: 'hdl', reason: 'unreadable' }, { name: 'crp', reason: 'unreadable' }, { name: 'lpa', reason: 'unreadable' }, { name: 'hdl', reason: 'unreadable' },
     ] })).toEqual({ lines: [
-      { label: 'HDL Cholesterol, Lp(a)', reason: 'printed as a limit' },
-      { label: 'CRP', reason: 'could not be read' },
+      { label: 'HDL Cholesterol, CRP, Lp(a)', reason: 'could not be read' },
     ], otherCount: 1 });
     expect(unreadLines({})).toEqual({ lines: [], otherCount: 0 });
+    // US-12 AC20: a server from before it still sends `limit` on the wire; it reads as unreadable, never a throw.
+    const olderServer = JSON.parse('{"droppedValueCount":1,"unreadValues":[{"name":"hdl","reason":"limit"}]}');
+    expect(unreadLines(olderServer).lines).toEqual([{ label: 'HDL Cholesterol', reason: 'could not be read' }]);
   });
 
   it('unreadLines: one test under two reasons, or refused and unread at once, is one line, so no two lines share a label', () => {
     const { lines } = unreadLines({
       droppedValueCount: 3,
-      unreadValues: [{ name: 'hdl', reason: 'limit' }, { name: 'hdl', reason: 'unreadable' }, { name: 'creatinine', reason: 'limit' }],
+      unreadValues: [{ name: 'hdl', reason: 'unreadable' }, { name: 'hdl', reason: 'unreadable' }, { name: 'creatinine', reason: 'unreadable' }],
       refusedValues: [{ metric: 'creatinine', value: 2, unit: 'mg/mmol', reason: 'This unit is usually a urine result.' }],
     });
     expect(lines).toEqual([
-      { label: 'Creatinine', reason: 'This unit is usually a urine result; printed as a limit' },
-      { label: 'HDL Cholesterol', reason: 'printed as a limit; could not be read' },
+      { label: 'Creatinine', reason: 'This unit is usually a urine result; could not be read' },
+      { label: 'HDL Cholesterol', reason: 'could not be read' },
     ]);
     expect(new Set(lines.map(l => l.label)).size).toBe(lines.length);
   });
@@ -1263,18 +1285,18 @@ describe('US-12 AC19: a value not saved is named, with why', () => {
   it('names a dropped row only from a column whose values are offered, and leaves one cut with its column out of the count', () => {
     const rows = [
       { metric: 'hdl', value: 1.2, unit: 'mmol/L', confidence: 'high' },
-      { metric: 'hdl', value: '> 1.5', unit: 'mmol/L', confidence: 'high', recordedAt: '2027-03-01' },
-      { metric: 'lpa', value: '<5', unit: 'nmol/L', confidence: 'high', recordedAt: UNDATED_PREVIOUS },
-      { metric: 'ldl', value: '> 4', unit: 'mmol/L', confidence: 'high', recordedAt: '2025-06-01' },
+      { metric: 'hdl', value: 'trace', unit: 'mmol/L', confidence: 'high', recordedAt: '2027-03-01' },
+      { metric: 'lpa', value: 'trace', unit: 'nmol/L', confidence: 'high', recordedAt: UNDATED_PREVIOUS },
+      { metric: 'ldl', value: 'trace', unit: 'mmol/L', confidence: 'high', recordedAt: '2025-06-01' },
     ];
     const parsed = parseUnifiedResult({ ...report, values: rows, additionalValues: [] });
     // A future day is no column; an undated one is offered only by the full prompt.
     const full = toUnifiedResult(parsed, 'full');
     expect(full.values.map(v => v.metric)).toEqual(['hdl']);
-    expect(full.unreadValues).toEqual([{ name: 'lpa', reason: 'limit', recordedAt: UNDATED_PREVIOUS }, { name: 'ldl', reason: 'limit', recordedAt: '2025-06-01' }]);
+    expect(full.unreadValues).toEqual([{ name: 'lpa', reason: 'unreadable', recordedAt: UNDATED_PREVIOUS }, { name: 'ldl', reason: 'unreadable', recordedAt: '2025-06-01' }]);
     expect(full.droppedValueCount).toBe(2);
     const connector = toUnifiedResult(parsed, 'metadata');
-    expect(connector.unreadValues).toEqual([{ name: 'ldl', reason: 'limit', recordedAt: '2025-06-01' }]);
+    expect(connector.unreadValues).toEqual([{ name: 'ldl', reason: 'unreadable', recordedAt: '2025-06-01' }]);
     expect(connector.droppedValueCount).toBe(1);
   });
 
@@ -1298,5 +1320,23 @@ describe('US-12 AC19: a value not saved is named, with why', () => {
     const name = `${'a'.repeat(79)}😀`;
     const [v] = toUnifiedResult(parseUnifiedResult({ ...report, values: [], additionalValues: [{ name, value: 'trace', unit: '' }] }), 'full').unreadValues!;
     expect(v.name).toBe('a'.repeat(79));
+  });
+});
+
+// US-12 AC20 usage signal; adversary review of 0a2b89b0 (R8): pregnancy, fertility
+// and sex-hormone tests are never named, only counted as "other".
+describe('US-12 AC20: uploadLimitSignal', () => {
+  it('counts limits, the undecided ones, and their keys; a sex-hormone or pregnancy test is "other"', () => {
+    const signal = uploadLimitSignal([{
+      values: [{ metric: 'ldl', valueSI: 1.5, comparator: '<' }, { metric: 'lpa', valueSI: 10, comparator: '<' }, { metric: 'hdl', valueSI: 1.2 }],
+      additionalValues: [
+        { name: 'hCG', value: 20, comparator: '<', referenceLow: null, referenceHigh: 10 },
+        { name: 'Estradiol', value: 100, comparator: '<', referenceLow: 50, referenceHigh: 400 },
+        { name: 'ferritin', value: 5, comparator: '<', referenceLow: 30, referenceHigh: 300 },
+      ],
+    }]);
+    expect(signal).toEqual({ valuesLimit: 5, valuesLimitUngraded: 3, limitUngradedTests: ['ldl', 'other'] });
+    for (const key of ['hcg', 'estradiol', 'testosterone_total', 'progesterone', 'amh', 'shbg']) expect(LIMIT_TEST_WORDS, key).not.toContain(key);
+    expect(LIMIT_TEST_WORDS).toContain('ferritin');
   });
 });
