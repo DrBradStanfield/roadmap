@@ -64,7 +64,7 @@ Per AACE 2025 and NICE guidelines, BMI classification in the 25–29.9 range is 
 | 18.5–24.9 | any | Normal | — |
 | 25.0–29.9 | < 0.5 | Normal | No central adiposity — body composition is healthy |
 | 25.0–29.9 | >= 0.5 | Overweight | Central adiposity confirmed |
-| 25.0–29.9 | unknown | Overweight | The BMI tile shows no label; the plan prompts for a waist measurement |
+| 25.0–29.9 | unknown | Overweight | The BMI tile shows no label; the plan prompts for a waist measurement, as it does at any BMI with no waist (section 4, Missing Measurements First) |
 | 30.0–34.9 | any | Obese (Class I) | — |
 | 35.0–39.9 | any | Obese (Class II) | — |
 | >= 40.0 | any | Obese (Class III) | — |
@@ -73,7 +73,7 @@ Per AACE 2025 and NICE guidelines, BMI classification in the 25–29.9 range is 
 
 ### Waist-to-Height Ratio
 
-`waistCm / heightCm` — rounded to 2 decimal places first, then graded: a rounded ratio >= 0.5 indicates increased metabolic risk. Because of the rounding, the ratio counts as elevated from about 0.495 × height (about 88.1 cm at 178 cm). Exactly on that line, floating-point rounding decides which side a waist falls. The plan and the vitals matrix grade the waist by this one rule (`isWaistToHeightElevated`). The matrix's "Target: <X" prints the first waist, at the display step, that the plan grades elevated (`formatTargetLine`): at 178 cm, 88 cm (0.494) is healthy and 89 cm (0.500) elevated, so "<89 cm". The matrix is editable, so a saved waist shows its plain value, coloured by the plan's grade (section 5): 88.1 cm at 178 cm is healthy, and shows as 34.7 in beside "<34.7 in", coloured healthy. When BMI is 25–29.9 and waist data is missing, a "Measure your waist circumference" suggestion is shown.
+`waistCm / heightCm` — rounded to 2 decimal places first, then graded: a rounded ratio >= 0.5 indicates increased metabolic risk. Because of the rounding, the ratio counts as elevated from about 0.495 × height (about 88.1 cm at 178 cm). Exactly on that line, floating-point rounding decides which side a waist falls. The plan and the vitals matrix grade the waist by this one rule (`isWaistToHeightElevated`). The matrix's "Target: <X" prints the first waist, at the display step, that the plan grades elevated (`formatTargetLine`): at 178 cm, 88 cm (0.494) is healthy and 89 cm (0.500) elevated, so "<89 cm". The matrix is editable, so a saved waist shows its plain value, coloured by the plan's grade (section 5): 88.1 cm at 178 cm is healthy, and shows as 34.7 in beside "<34.7 in", coloured healthy. When no waist is on record, a "Measure your waist circumference" suggestion is shown at any BMI, and with no weight yet (section 4, Missing Measurements First).
 
 ### Age
 
@@ -534,7 +534,7 @@ With no sex on record the plan grades no HDL, so `hdl-low` does not show (US-07 
 
 **Raised blood pressure** means one thing everywhere (the `bp-stage1` card and the weight-medication trigger): systolic >= 130 OR diastolic > 80. Either half counts on its own; the stage cards still need both halves to show.
 
-**Inverted blood pressure (US-02 AC8):** a pair from one day with systolic at or below diastolic is not a blood pressure. When the newest systolic and diastolic are from the same day and inverted, the plan leaves both out (`validateHealthInputs` names the rule on both), so it shows no blood pressure card and raises no marker, the weight-medication trigger included, until a half is corrected. It does not fall back to an earlier day. Halves from different days are not judged as a pair and are used as before. Writes refuse such a pair (section 12); a merge of two devices' one-half corrections can still make one. `evidence.ts` and `roadmap_text.html` do not change: this is an input-integrity rule, with no new threshold, card text or citation.
+**Inverted blood pressure (US-02 AC8):** a pair from one day with systolic at or below diastolic is not a blood pressure. When the newest systolic and diastolic are from the same day and inverted, the plan leaves both out (`validateHealthInputs` names the rule on both), so it shows no blood pressure tier card and raises no marker, the weight-medication trigger included, until a half is corrected. The plan shows the `measure-bp` card in its "Check your blood pressure reading" form instead (section 4, Missing Measurements First; US-07 AC11). It does not fall back to an earlier day. Halves from different days are not judged as a pair and are used as before. Writes refuse such a pair (section 12); a merge of two devices' one-half corrections can still make one. `evidence.ts` and `roadmap_text.html` do not change: this is an input-integrity rule, with no new threshold, card text or citation.
 
 **Age-dependent target** (based on SPRINT 2015 + ESPRIT 2024; `bpTargetFor` in `units.ts`, which the stage 1 card, the low-salt card, the Lp(a) checklist and the form's BP targets all read):
 - Age < 65: < 120/80
@@ -687,6 +687,18 @@ Three-file sync for this section's 2026-10-14 amendments (the strict missing-mon
 - `evidence.ts`: no change. No card's reason, guideline tag or citation changed; the `adults-only` and `add-birth-year` reasons still hold.
 - `roadmap_text.html`: no change. Its two sentences still hold: the plan "is built for adults aged 18 and over", and the medicines are suggested "only when your birth year shows you are 18 or over" (the strict rule and the UTC−12 date only make that later; with no birth year no card's text suggests one, and the reasons explain the guideline, as above).
 
+### Missing Measurements First (US-07 AC11)
+
+Brad, 2026-11-02: when the waist is not on record, measuring it is always the first next step; when no blood pressure is on record, measuring it comes next. Both cards are attention, not urgent. They lead the Next Steps section in this order, ahead of every category (screenings included), on the web and the iPhone alike: `planSections` puts these two ids first, then lays out the other cards by category as before. The engine also emits them first, so the chat and agents read them first.
+
+| ID | Category | Condition | Priority | Text |
+|----|----------|-----------|----------|------|
+| `measure-waist` | general | No waist on record (no waist-to-height ratio), at any BMI (35 and over included), and with no weight yet. The plan needs only a height | attention | "Measure your waist circumference": "Fat around the middle raises heart and metabolic risk, even at a healthy weight. Aim for a waist under half your height. Add your waist measurement." One text for every BMI (Brad, 2026-11-02) |
+| `measure-bp` | blood_pressure | No systolic or no diastolic on record (the BP tier cards need both halves) | attention | "Measure your blood pressure": "High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. Aim for below 120/80 (130/80 if you're frail)." One sentence at every age (Brad, 2026-11-02: "It's just 130 if frail"): neither this card nor its reason uses the age rule. The tier cards and the tiles keep it (section 3) |
+| `measure-bp`, swapped reading | blood_pressure | The newest pair was the wrong way up, so the plan left both halves out (section 3, US-02 AC8). `planInputsFrom` (plan.ts), shared by the plan and the web form, strips the pair and sets `pressureOrder`; the chat context sets it from its own check | attention | "Check your blood pressure reading": "Your last reading looks swapped: the top number (systolic) should be higher than the bottom (diastolic). Check it and add it again." Same id and place |
+
+Evidence: `measure-waist` keeps AACE 2025, NICE and Ashwell 2012 (WHtR a better screen for cardiometabolic risk than BMI). Its reason, approved by Brad 2026-11-02, fits every BMI: "Fat around the middle is linked to heart and metabolic risk. Waist-to-height ratio can flag risk that a healthy BMI misses; the AACE 2025 and NICE guidelines suggest keeping it under 0.5." Both forms of `measure-bp` share one reason, with no age: "This plan aims for <120/80 mmHg, as some doctors do, based on the SPRINT and ESPRIT trials, or <130/80 mmHg if you're frail." It cites the 2017 ACC/AHA guideline (Whelton 2017) and the SPRINT and ESPRIT trials behind the <120/80 target, the references the BP cards already use. `roadmap_text.html` is unchanged: its Blood Pressure section advises home monitoring with an automated cuff and describes the tier targets (<120/80 under 65, <130/80 at 65 or older), which the tier cards and tiles still use; it quotes neither prompt's text and does not describe the waist prompt.
+
 ### Always-Show Lifestyle Suggestions
 
 | ID | Category | What | Evidence |
@@ -777,6 +789,8 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 | `bp-stage1` | sys >= 130 OR dia > 80 | attention |
 
 Stage 1 shows age-dependent target: < 120/80 for age < 65, < 130/80 for age >= 65.
+
+With no reading on record (either half missing), none of these shows; `measure-bp` asks for one instead (Missing Measurements First, above).
 
 Stage 1 and 2 include conditional extra paragraphs:
 - If eGFR >= 45, from an eGFR no newer creatinine has outdated (US-07 AC8, section 1): potassium recommendation

@@ -8,6 +8,8 @@ import {
   weightMedicationTrigger,
   lipidMarkerFor,
   validateHealthInputs,
+  planInputsFrom,
+  type SuggestionInputs,
   getValidationErrors,
   convertValidationErrorsToUnits,
   detectUnitSystem,
@@ -455,8 +457,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     setProfileProposal(null);
   }, []);
   // The store holds an erase the screen does not show yet: this tab's erase
-  // still writing or failed to write, or a remote change the relay holds. The
-  // screen's values are pre-erase then, so no banner is made or answered.
+  // still writing or failed to write, or another device's erase whose re-read
+  // has not landed (the relay never holds an erase, US-11 AC6). The screen's
+  // values are pre-erase then, so no banner is made or answered.
   const eraseUnshown = useCallback(() => getEraseIdentity() !== getShownErase(), []);
   // True while this tab's erase runs.
   const erasingRef = useRef(false);
@@ -889,8 +892,11 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     // inputs, and a remote change landing on a half-entered height would take
     // those keystrokes with it. The relay HOLDS it — the next profile save
     // carries the edit up and then replays the change.
-    const onRemoteChange = () =>
-      remoteRelay.arrived(hasUnsavedProfileEdits(inputsRef.current, previousInputsRef.current));
+    // An erase from another device (a new erase identity) is never held: it
+    // applies at once and drops this device's drafts, refused ones included
+    // (US-11 AC6); a refused draft would otherwise hold it for good.
+    const onRemoteChange = () => remoteRelay.arrived(getEraseIdentity() === getShownErase()
+      && hasUnsavedProfileEdits(inputsRef.current, previousInputsRef.current));
     window.addEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
     return () => window.removeEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
   }, [remoteRelay, handleUploadComplete]);
@@ -912,27 +918,14 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     }
 
     const validation = validateHealthInputs(planInputs, pressureDays);
-
-    let inputsForCalc = planInputs;
-    let errors: Record<string, string> | null = null;
-
-    if (!validation.success && validation.errors) {
-      const rawErrors = getValidationErrors(validation.errors);
-      // Convert error messages to user's unit system (e.g., "20 kg" → "44 lbs")
-      errors = convertValidationErrorsToUnits(rawErrors, unitSystem);
-      // Strip invalid fields (all optional) so remaining suggestions still show
-      const invalidFields = new Set(validation.errors.issues.map((i) => i.path[0] as string));
-      if (invalidFields.has('heightCm')) {
-        return { results: null, isValid: false, validationErrors: errors, planBasis: null };
-      }
-      const sanitized = { ...planInputs };
-      for (const field of invalidFields) {
-        (sanitized as Record<string, unknown>)[field] = undefined;
-      }
-      inputsForCalc = sanitized;
+    // Convert error messages to user's unit system (e.g., "20 kg" → "44 lbs")
+    const errors = validation.errors ? convertValidationErrorsToUnits(getValidationErrors(validation.errors), unitSystem) : null;
+    // health-core's one strip (US-07 AC11): refused fields left out so the rest still plans, a swapped pair marked.
+    const calcInputs: SuggestionInputs | null = planInputsFrom(planInputs, validation);
+    if (!calcInputs) {
+      return { results: null, isValid: false, validationErrors: errors, planBasis: null };
     }
 
-    const calcInputs = inputsForCalc as HealthInputs;
     const healthResults = calculateHealthResults(
       calcInputs,
       unitSystem,
