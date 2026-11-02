@@ -52,6 +52,30 @@
    "headings": ["Blood Pressure (mmHg)", "Blood Pressure Tiers"],
    "handles": [],
    "terms": ["blood pressure", "hypertension", "systolic", "salt", "potassium"]
+  },
+  {
+   "topic": "type-2-diabetes-and-prediabetes",
+   "headings": ["HbA1c (mmol/mol IFCC)", "HbA1c Tiers", "Why Fasting Glucose and Fasting Insulin Are Not Included", "6. Weight & Diabetes Medication Cascade"],
+   "handles": [],
+   "terms": ["diabetes", "a1c", "metformin", "sglt2", "glp-1"]
+  },
+  {
+   "topic": "kidney-health",
+   "headings": ["eGFR (CKD-EPI 2021, Race-Free)", "eGFR (mL/min/1.73m^2)"],
+   "handles": [],
+   "terms": ["kidney", "egfr", "creatinine", "cystatin", "albumin"]
+  },
+  {
+   "topic": "blood-thinners",
+   "headings": [],
+   "handles": [],
+   "terms": ["warfarin", "anticoagulant", "apixaban", "inr", "aspirin"]
+  },
+  {
+   "topic": "osteoarthritis",
+   "headings": [],
+   "handles": [],
+   "terms": ["osteoarthritis", "knee", "glucosamine", "joint", "arthroplasty"]
   }
  ]
 }

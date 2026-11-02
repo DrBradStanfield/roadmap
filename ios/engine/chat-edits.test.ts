@@ -4,12 +4,13 @@
 import { describe, expect, it } from 'vitest';
 import { applyEdit, newRecord } from './my-data';
 import { chatEditsJson, applyEditJson } from './entry';
-import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { CORE_BLOOD_UNITS, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { parseProposedEdit } from '../../packages/health-core/src/chat-edits';
 import { localDay } from '../../packages/health-core/src/merge';
 import type { ChatEditsPreview } from './chat-edits';
 import { chatContextJson } from './app-doors';
 import { runRoadmap } from '../../packages/health-core/src/run-roadmap';
+import { currentValueRows } from '../../packages/health-core/src/blood-tests';
 
 const NOW = '2026-11-02T08:00:00.000Z';
 const TODAY = localDay(NOW);
@@ -34,7 +35,8 @@ function saved(file: RoadmapFile, part: 'medications' | 'review', edits: unknown
 function preview(file: RoadmapFile, edits: unknown, unitsJson?: string): ChatEditsPreview {
   return JSON.parse(chatEditsJson(JSON.stringify(file), JSON.stringify(edits), NOW, 'phone', TODAY, unitsJson)) as ChatEditsPreview;
 }
-const active = (file: RoadmapFile, metricType: string) => file.measurements.filter((m) => m.metricType === metricType && m.status === 'active');
+// A blood test is a core lab row (US-66 AC1): read the active values as the plan does.
+const active = (file: RoadmapFile, metricType: string) => currentValueRows(file).filter((m) => m.metricType === metricType);
 const med$ = (file: RoadmapFile, key: string) => file.medications.find((m) => m.medicationKey === key);
 
 describe('US-67 AC4: values from their stated unit to SI', () => {
@@ -112,7 +114,7 @@ describe('US-67 AC4: one Save, all or none', () => {
     const old = active(held, 'ldl')[0];
     expect(preview(held, [field('ldlC', 3.4, 'mmol/L')]).review!.lines).toEqual([{ text: 'LDL Cholesterol 3.4 mmol/L on 1 Oct', replaces: '3.1 mmol/L' }]);
     const file = saved(held, 'review', [field('ldlC', 3.4, 'mmol/L')]);
-    expect(file.measurements.find((r) => r.id === old.id)!.status).toBe('entered-in-error');
+    expect(file.labValues.find((r) => r.id === old.id)!.status).toBe('entered-in-error');
     const [now] = active(file, 'ldl');
     expect(now).toMatchObject({ value: 3.4, correctsId: old.id });
   });
@@ -208,8 +210,8 @@ describe('US-67 AC3: medications save at once, with Undo', () => {
     expect(med$(back.file, 'ezetimibe')!.drugName).toBe('not_yet');
   });
 
-  it('US-67 AC4: a stop reads "Not taking", and the same drug again shows nothing', () => {
-    expect(preview(onStatin(), [med('statin', 'none')]).medications!.lines).toEqual([{ text: 'Statin: Not taking' }]);
+  it('US-67 AC4: a statin\'s \'none\' reads as the form\'s "Haven\'t tried yet", and the same drug again shows nothing', () => {
+    expect(preview(onStatin(), [med('statin', 'none')]).medications!.lines).toEqual([{ text: "Statin: Haven't tried yet" }]);
     expect(preview(onStatin(), [med('statin', 'atorvastatin', 10)]).medications).toBeNull();
   });
 
@@ -316,10 +318,13 @@ describe('US-67 AC3: a Save checks the record still holds what the banner named'
 // US-65 AC2 inside the chat's edits (review R1): a row this build cannot read is
 // named, never shown or compared, and never sinks the reply.
 describe('US-67 AC3: rows this app cannot read (US-65)', () => {
-  const hidden = (file: RoadmapFile, metricType: string, day = DAY): RoadmapFile => ({
-    ...file,
-    measurements: [...file.measurements, { id: `hid-${metricType}`, metricType, value: 'synthetic' as unknown as number, recordedAt: day, createdAt: NOW, status: 'active', source: 'manual' } as RoadmapFile['measurements'][number]],
-  });
+  // A blood test the app cannot read is a core lab row the move carried over (US-66 AC2); a vital stays a measurement.
+  const hidden = (file: RoadmapFile, metricType: string, day = DAY): RoadmapFile => {
+    const row = { id: `hid-${metricType}`, value: 'synthetic' as unknown as number, recordedAt: day, createdAt: NOW, status: 'active', source: 'manual' } as const;
+    return metricType in CORE_BLOOD_UNITS
+      ? { ...file, labValues: [...file.labValues, { ...row, metricName: metricType, unit: CORE_BLOOD_UNITS[metricType], correctsId: null, referenceLow: null, referenceHigh: null, core: true } as RoadmapFile['labValues'][number]] }
+      : { ...file, measurements: [...file.measurements, { ...row, metricType } as unknown as RoadmapFile['measurements'][number]] };
+  };
 
   it('US-67 AC3: a hidden LDL on the proposed day is named, not shown, and the Save corrects it', () => {
     const file = hidden(metric(), 'ldl');
@@ -330,7 +335,7 @@ describe('US-67 AC3: rows this app cannot read (US-65)', () => {
     });
     const after = applyEdit(file, { kind: 'chatEdits', part: 'review', edits: [field('ldlC', 3.4, 'mmol/L')], today: TODAY, seen: shown.review!.seen }, NOW);
     expect(after.ok).toBe(true);
-    const rows = (after as { file: RoadmapFile }).file.measurements;
+    const rows = (after as { file: RoadmapFile }).file.labValues;
     expect(rows.find((r) => r.id === 'hid-ldl')!.status).toBe('entered-in-error');
     expect(rows.find((r) => r.correctsId === 'hid-ldl')).toMatchObject({ value: 3.4, status: 'active' });
   });
@@ -355,12 +360,23 @@ describe('US-67 AC3: rows this app cannot read (US-65)', () => {
     expect(med$(saved(file, 'medications', edits), 'statin')).toMatchObject({ drugName: 'atorvastatin', doseValue: 20 });
   });
 
-  it('US-67 AC4: a medication row this app cannot read gives an Undo of the unanswered value, which saves', () => {
+  // US-67 N3 (Brad 2026-11-02), path a: Undo would write "none", which looks like a restore it never made.
+  it('US-67 N3: replacing a medication row this app cannot read saves, with no Undo for the whole reply', () => {
     const file = { ...metric(), medications: [{ id: 'm1', medicationKey: 'statin', drugName: 42 as unknown as string, doseValue: null, doseUnit: null, updatedAt: NOW, lamport: 0 }] } as RoadmapFile;
-    const shown = preview(file, [med('statin', 'atorvastatin', 20)]);
-    expect(shown.medications!.undo).toEqual({ kind: 'chatUndo', medications: [{ medicationKey: 'statin', drugName: 'none', doseValue: null, doseUnit: null }] });
-    const after = saved(file, 'medications', [med('statin', 'atorvastatin', 20)]);
-    expect(applyEdit(after, shown.medications!.undo as Parameters<typeof applyEdit>[1], NOW).ok).toBe(true);
+    const edits = [med('ezetimibe', 'yes'), med('statin', 'atorvastatin', 20)];
+    expect(preview(file, edits).medications).toEqual({
+      lines: [{ text: 'Ezetimibe: Yes' }, { text: 'Statin: Atorvastatin 20 mg' }], undo: null, refusal: null,
+    });
+    const after = saved(file, 'medications', edits);
+    expect(med$(after, 'statin')).toMatchObject({ drugName: 'atorvastatin', doseValue: 20 });
+    expect(med$(after, 'ezetimibe')!.drugName).toBe('yes');
+  });
+
+  it('US-67 N3: a row this app cannot read that the reply leaves alone keeps the Undo', () => {
+    const file = { ...metric(), medications: [{ id: 'g1', medicationKey: 'glp1', drugName: 42 as unknown as string, doseValue: null, doseUnit: null, updatedAt: NOW, lamport: 0 }] } as RoadmapFile;
+    expect(preview(file, [med('ezetimibe', 'yes')]).medications!.undo).toEqual({
+      kind: 'chatUndo', medications: [{ medicationKey: 'ezetimibe', drugName: 'not_yet', doseValue: null, doseUnit: null }],
+    });
   });
 });
 
@@ -374,20 +390,23 @@ describe('US-67 AC4: unreadable rows in the pair and the escalation, and a medic
     ],
   }) as RoadmapFile;
 
-  it('US-67 AC4: an escalation answer this app cannot read is still reset by a new dose; Undo writes its unanswered value', () => {
+  // US-67 N3, path b: the reset escalation answer is the row Undo could not put back.
+  it('US-67 N3: an escalation answer this app cannot read is still reset by a new dose, with no Undo', () => {
     const file = statinRows({ drugName: 'yes', doseValue: '5' });
     const shown = preview(file, [med('statin', 'atorvastatin', 20)]);
-    expect(shown.medications!.undo).toEqual({ kind: 'chatUndo', medications: [
-      { medicationKey: 'statin_escalation', drugName: 'not_yet', doseValue: null, doseUnit: null },
-      { medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 10, doseUnit: 'mg' },
-    ] });
+    expect(shown.medications).toEqual({ lines: [{ text: 'Statin: Atorvastatin 20 mg' }], undo: null, refusal: null });
     const after = saved(file, 'medications', [med('statin', 'atorvastatin', 20)]);
     expect(med$(after, 'statin_escalation')).toMatchObject({ drugName: 'not_yet', doseValue: null });
+    expect(med$(after, 'statin')).toMatchObject({ drugName: 'atorvastatin', doseValue: 20 });
   });
 
-  it('US-67 AC4: a readable escalation answer is reset and restored by Undo, as before', () => {
+  it('US-67 N3: a readable escalation answer is reset and restored by Undo, as before', () => {
     const file = statinRows({ drugName: 'not_tolerated', doseValue: null });
     const shown = preview(file, [med('statin', 'atorvastatin', 20)]);
+    expect(shown.medications!.undo).toEqual({ kind: 'chatUndo', medications: [
+      { medicationKey: 'statin_escalation', drugName: 'not_tolerated', doseValue: null, doseUnit: null },
+      { medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 10, doseUnit: 'mg' },
+    ] });
     const after = saved(file, 'medications', [med('statin', 'atorvastatin', 20)]);
     expect(med$(after, 'statin_escalation')!.drugName).toBe('not_yet');
     const back = applyEdit(after, shown.medications!.undo as Parameters<typeof applyEdit>[1], NOW) as { ok: true; file: RoadmapFile };
@@ -419,5 +438,50 @@ describe('US-67 AC4: unreadable rows in the pair and the escalation, and a medic
     expect(apply(metric(), 'medications', broken)).toMatchObject({ ok: false, message: shown.medications!.refusal });
     // A list that is not one is said once, by the review part.
     expect(preview(metric(), 'garbage').medications).toBeNull();
+  });
+});
+
+describe("US-67 AC3: the medication banner names each answer in its form's own words", () => {
+  it.each([
+    ['statin', 'none', "Statin: Haven't tried yet"],
+    ['statin', 'not_tolerated', 'Statin: Not tolerated'],
+    ['statin', 'rosuvastatin', 'Statin: Rosuvastatin'],
+    ['ezetimibe', 'not_yet', "Ezetimibe: Haven't tried yet"],
+    ['ezetimibe', 'yes', 'Ezetimibe: Yes'],
+    ['ezetimibe', 'no', 'Ezetimibe: No'],
+    ['ezetimibe', 'not_tolerated', 'Ezetimibe: Not tolerated'],
+    ['statin_escalation', 'not_yet', 'Statin higher dose or switch: Not tried'],
+    ['statin_escalation', 'not_tolerated', "Statin higher dose or switch: Didn't tolerate"],
+    ['pcsk9i', 'not_yet', "PCSK9 inhibitor: Haven't tried yet"],
+    ['pcsk9i', 'yes', 'PCSK9 inhibitor: Yes'],
+    ['pcsk9i', 'no', 'PCSK9 inhibitor: No'],
+    ['pcsk9i', 'not_tolerated', 'PCSK9 inhibitor: Not tolerated'],
+    ['bempedoic_acid', 'not_yet', "Bempedoic acid: Haven't tried yet"],
+    ['bempedoic_acid', 'none', 'Bempedoic acid: Not taking'],
+    ['bempedoic_acid', 'bempedoic_acid', 'Bempedoic acid: Nexletol (bempedoic acid 180mg)'],
+    ['bempedoic_acid', 'not_tolerated', 'Bempedoic acid: Not tolerated'],
+    ['glp1', 'none', "GLP-1 medication: Haven't tried yet"],
+    ['glp1', 'other', 'GLP-1 medication: Other GLP-1'],
+    ['glp1', 'tirzepatide', 'GLP-1 medication: Tirzepatide (Mounjaro/Zepbound)'],
+    ['glp1', 'not_tolerated', 'GLP-1 medication: Not tolerated'],
+    ['glp1_escalation', 'not_yet', 'GLP-1 higher dose or switch: Not tried'],
+    ['glp1_escalation', 'not_tolerated', "GLP-1 higher dose or switch: Didn't tolerate"],
+    ['sglt2i', 'none', "SGLT2 inhibitor: Haven't tried yet"],
+    ['sglt2i', 'empagliflozin', 'SGLT2 inhibitor: Empagliflozin (Jardiance)'],
+    ['sglt2i', 'not_tolerated', 'SGLT2 inhibitor: Not tolerated'],
+    ['metformin', 'none', "Metformin: Haven't tried yet"],
+    ['metformin', 'xr_1000', 'Metformin: XR 1000mg/day'],
+    ['metformin', 'not_tolerated', 'Metformin: Not tolerated'],
+  ])('US-67 AC3: %s %s reads "%s"', (key, value, text) => {
+    expect(preview(metric(), [med(key, value)]).medications!.lines).toEqual([{ text }]);
+  });
+
+  it('US-67 AC3: the user\'s words read as the answer they save: "not yet" a statin, "not taking" ezetimibe', () => {
+    expect(preview(metric(), [med('statin', 'not yet')]).medications!.lines).toEqual([{ text: "Statin: Haven't tried yet" }]);
+    expect(preview(metric(), [med('ezetimibe', 'not taking')]).medications!.lines).toEqual([{ text: 'Ezetimibe: No' }]);
+  });
+
+  it('US-67 AC3: an unlisted drug the form takes reads as its name, with its dose', () => {
+    expect(preview(metric(), [med('statin', 'lovastatin', 20)]).medications!.lines).toEqual([{ text: 'Statin: Lovastatin 20 mg' }]);
   });
 });

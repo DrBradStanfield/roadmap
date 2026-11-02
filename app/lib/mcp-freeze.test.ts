@@ -21,6 +21,13 @@
  * Re-taken again the same day after review: file_results' privacy wording
  * ("in memory for one request", "until then … unconfirmed", "never inferred")
  * restored word for word, and the published list's budget raised to 16,500.
+ *
+ * US-66 AC11 (2026-11-02): read_record, add_measurement and add_lab_values say
+ * every blood test is a labValues row; tool layer v3. MCP_TOOLS and tools/list
+ * re-pinned with Brad's yes (OpenAI rejected the app and it is not resubmitted).
+ * Re-taken again at the merge of origin/main (2026-11-02): US-66's wording on
+ * top of US-12 AC20's; MCP_TOOLS and tools/list from the merged code
+ * (INSTRUCTIONS is main's: US-66 does not change it).
  */
 import { describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
@@ -33,10 +40,10 @@ const sha256 = (value: unknown) => createHash('sha256').update(JSON.stringify(va
 describe('US-35 AC13 — the published connector text is pinned, and changes only on purpose', () => {
   it.each([
     ['INSTRUCTIONS', INSTRUCTIONS, '73f64dc05693aab921d50b60db290f33b37a02a51b8e509c9eb941c44f88ffae'],
-    ['MCP_TOOLS', MCP_TOOLS, '47f8fda97a26a1c59f371e54f2c8db24d954380a427cf53373ffd86bc9657877'],
+    ['MCP_TOOLS', MCP_TOOLS, '03c432fbe8fa6c2e25d01de885d850a330f742368202531de3c78066c0eade72'],
     ['MCP_PROMPTS', MCP_PROMPTS, 'a159ee16a3ce5fefc23ed8f90178a852551350795731fabd30ca7a5f6267c140'],
     ['SERVER_INFO', SERVER_INFO, 'ce1110c13b5b005a4f14f0068138039eecd7fddc888032f08479060ad2da400f'],
-  ] as const)('%s hashes to its pinned value (re-taken 2026-11-02, US-12 AC20)', (_name, value, pinned) => {
+  ] as const)('%s hashes to its pinned value (re-taken 2026-11-02, US-12 AC20 and US-66 AC11)', (_name, value, pinned) => {
     expect(sha256(value)).toBe(pinned);
   });
 });
@@ -49,6 +56,6 @@ describe('US-32 AC50 — the tools/list answer itself is pinned', () => {
       instructions: INSTRUCTIONS,
       callTool: async () => ({ errorMessage: 'not called' }),
     })) as { result: { tools: unknown } };
-    expect(sha256(answer.result.tools)).toBe('942ad54ba48fc254954caa404e1615367599992a13c0c10c5ec08a0d31ecd055');
+    expect(sha256(answer.result.tools)).toBe('ea5720f7d363fc6c9aa519c879beaea79e181f6ff1cda27d4c10fe1de5cb866a');
   });
 });

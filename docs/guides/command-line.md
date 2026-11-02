@@ -98,7 +98,7 @@ Add `--expect <n>` and the correction only goes through if the row still holds t
 
 ## Add a lab test
 
-Anything outside the core metrics is a lab value, filed under its catalogue name, and it keeps the unit your lab reported rather than being converted:
+Every blood test is a lab value. A catalogued test is filed under its catalogue name and converted to its standard unit; a test the catalogue does not know keeps the unit your lab reported. A core test given by name (`--test "LDL Cholesterol"`) is stored as its core value, the same as `--metric ldl`:
 
 `npx tsx tools/edit-record.ts add ~/health-roadmap.json --test tsh --value 2.4 --unit mIU/L --date 2026-08-25`
 

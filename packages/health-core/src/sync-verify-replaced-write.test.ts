@@ -20,6 +20,7 @@ import { RecordSession } from './record-session';
 import type { RecordHost } from './record-host';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { buildErasedFile } from './erase';
+import { createCoreRow } from './blood-tests';
 
 const NOW = '2026-10-21T12:00:00.000Z';
 const CTX = { deviceId: 'synthetic-seed', now: NOW };
@@ -276,6 +277,23 @@ describe('verifyPersistedFile: writes that add no row (US-10 AC6a, US-11 AC7)', 
     const erased = erasedFrom(base);
     const back = { ...clone(base), meta: { ...base.meta, eraseEpoch: erased.meta.eraseEpoch, lamport: erased.meta.lamport } };
     expect(readBack(back).measurements.map((row) => row.id)).toContain('listed-weight');
+    expect(verify(erased, back)).toThrow(/a row this save erased/);
+  });
+
+  it('refuses a stored file holding the same test moved again under a root an older-app id in our list reduces to (US-04 AC5a)', () => {
+    // An older app lists a moved row under its own id, `X#mv-A`; the merge
+    // drops X's whole family, so `X#mv-B` from a concurrent writer is a row
+    // this save erased too (PR #337 review: lostWrite compares roots).
+    // A core blood test is a core row in labValues (US-66 AC1).
+    const moved = (id: string) => createCoreRow({ id, metric: 'ldl', value: 3.2, recordedAt: '2024-02-21', createdAt: NOW, correctsId: 'ldl1' });
+    const base = createEmptyFile(CTX);
+    base.labValues.push(moved('ldl1#mv-a1b2c3d4'));
+    const erased = erasedFrom(base);
+    erased.erasedRows = { ...erased.erasedRows!, ids: ['ldl1#mv-a1b2c3d4'] };
+    const other = createEmptyFile(CTX);
+    other.labValues.push(moved('ldl1#mv-0badf00d'));
+    const back = { ...other, meta: { ...other.meta, eraseEpoch: erased.meta.eraseEpoch, lamport: erased.meta.lamport } };
+    expect(readBack(back).labValues.map((row) => row.id)).toEqual(['ldl1#mv-0badf00d']);
     expect(verify(erased, back)).toThrow(/a row this save erased/);
   });
 

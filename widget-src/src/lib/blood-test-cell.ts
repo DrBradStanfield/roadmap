@@ -176,11 +176,15 @@ export function validateTypedValue(
   // Include the display unit in min/max errors so a user who typed (e.g.)
   // a mg/dL number into an mmol/L field can see the unit mismatch instead
   // of a bare "Max 22.6".
-  const unit = cellLabel(metric, display);
   const fault = rangeFault(range, n);
-  if (fault === 'below') return { error: `${range.minExclusive ? 'Must be above' : 'Min'} ${range.min} ${unit}`, range };
-  if (fault === 'above') return { error: `Max ${range.max} ${unit}`, range };
-  return { error: null, range };
+  return { error: fault ? rangeMessage(metric, display, fault) : null, range };
+}
+
+/** The words for a number past one end of the metric's range, in `display` units. */
+export function rangeMessage(metric: MetricType, display: CellUnit, fault: 'above' | 'below'): string {
+  const range = cellRange(metric, display);
+  const unit = cellLabel(metric, display);
+  return fault === 'below' ? `${range.minExclusive ? 'Must be above' : 'Min'} ${range.min} ${unit}` : `Max ${range.max} ${unit}`;
 }
 
 /** Live status from a typed display value (parsed + canonicalised). */

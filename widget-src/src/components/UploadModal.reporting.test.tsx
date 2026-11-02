@@ -92,5 +92,6 @@ it.each([
   const rows = lab ? fresh.loadLabValues() : fresh.loadAllHistory().filter(r => r.status === 'active');
   expect(rows.map(r => r.value).sort()).toEqual(outcome === 'mixed' ? [1.3, 3.5] : [stale ? 3.5 : 3]);
   const persisted = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
-  expect((lab ? persisted.labValues : persisted.measurements).some((r: {value: number}) => r.value === 3)).toBe(!stale);
+  // Every blood test, core or extra, is a lab row (US-66).
+  expect(persisted.labValues.some((r: {value: number}) => r.value === 3)).toBe(!stale);
 });

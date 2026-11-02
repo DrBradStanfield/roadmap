@@ -61,7 +61,6 @@ import type { MoveTestApi } from './MoveTestPanel';
 import { routeVitalsEdit, type VitalsPrefillFn } from './StartingInfoVitals';
 import type { ApiSupplement, ApiLabValue, LatestMeasurementsResult } from '../lib/api-types';
 import { InputPanel, type PlanBasis } from './InputPanel';
-import { profileTitle } from '../lib/profile-title';
 import { ResultsPanel } from './ResultsPanel';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
 import { ChatEmbed } from './ChatEmbed';
@@ -1416,7 +1415,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     // The "I still drink" line names About you, as InputPanel's heading does, once
     // About you sits low (aboutYouLow), the only time its rows hold the Alcohol row;
     // before that no row shows, so the line names none (US-60 AC4).
-    alcoholQuestion: { answer: inputs.alcohol, onAnswer: handleAlcoholAnswer, section: aboutYouLow ? profileTitle(true) : undefined },
+    alcoholQuestion: { answer: inputs.alcohol, onAnswer: handleAlcoholAnswer, aboutYouRow: aboutYouLow },
   };
 
   // The chat reads its context as each message is sent (useChatState), through

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // PreToolUse(Bash) guard for `git push` (Brad 2026-10-08: cloud loops and local
 // sessions all push to main; nobody may overwrite anyone's work).
-//   1. Denies force, delete (--delete, -d, ":dest"), mirror, prune and "+refspec" pushes.
+//   1. Denies force, delete (--delete, -d, ":dest"), mirror, prune and "+refspec" pushes. One exception (Brad
+//      2026-11-02): a plain delete of claude/ branches on origin whose tips are already in origin/main.
 //   2. Fetches origin/main and denies the push while origin/main holds commits HEAD
 //      lacks, unless the same command pulls/merges first: merge deliberately, then push.
 //   3. A claude/ branch never pushes to main, and `gh pr merge` runs only as
@@ -117,6 +118,21 @@ const badArg = (a) => {
   if (long && BAD_LONG.some((o) => o.startsWith(long[1]))) return true;
   return /^-[a-zA-Z]*[fd][a-zA-Z]*$/.test(a) || /^\+/.test(a) || /^:/.test(a);
 };
+// Rule 1's exception: a push whose only bad args are a delete, --delete (any prefix) or -d with branch names, or
+// ":<branch>" refspecs alone; no other flag beyond -q/-v/-n/--porcelain, no inline config, no --repo. Returns
+// { remote, branches } (the names still unchecked), or null when the push is not a plain delete.
+const QUIET = /^(-q|--quiet|-v|--verbose|-n|--dry-run|--porcelain)$/;
+function plainDelete(g) {
+  if (g.cfg.length) return null;
+  const isDel = (a) => a === '-d' || (/^--[a-z]{2,}$/.test(a) && 'delete'.startsWith(a.slice(2)));
+  const flags = g.args.filter((a) => a.startsWith('-'));
+  if (!flags.every((a) => isDel(a) || QUIET.test(a))) return null;
+  const [remote, ...specs] = g.args.filter((a) => !a.startsWith('-'));
+  if (!remote || !specs.length) return null;
+  const byFlag = flags.some(isDel);
+  if (byFlag ? specs.some((r) => r.includes(':')) : !specs.every((r) => /^:[^:]/.test(r))) return null;
+  return { remote, branches: specs.map((r) => r.replace(/^:/, '')) };
+}
 // Config that makes a plain push force, delete or mirror (remote.<name>.push=+... or =:..., remote.<name>.mirror);
 // an unknown value ("=?", from --config-env) counts as bad.
 const badConfig = (kv) => /^remote\..*\.(push=\s*[+:?]|mirror(=|$))/i.test(kv) && !/\.mirror=\s*false$/i.test(kv);
@@ -148,7 +164,7 @@ for (const seg of segs) {
       if (/^--(body|subject|body-file|author-email|repo)=/.test(x)) continue;
       if (x.startsWith('-')) flags.push(x);
     }
-    // -d/--delete-branch deletes the branch: branch deletes are Brad's (push guard rule 1).
+    // -d/--delete-branch deletes the branch with no merged check: Brad's (push guard rule 1).
     const banned = flags.find((x) => /^--(admin|squash|rebase|auto|delete-branch)(=|$)/.test(x) || /^-[a-zA-Z]*[srd]/.test(x));
     const merges = flags.filter((x) => x === '--merge' || x === '-m').length;
     const bad = banned ? `"${banned}" is not allowed` : merges !== 1 ? '--merge must appear exactly once'
@@ -183,16 +199,66 @@ for (const seg of segs) {
   if (configChanged) deny('This command changes remote push/mirror config and then pushes. Change the config in its own command first.');
 
   const bad = g.args.find(badArg) || g.cfg.find(badConfig);
-  if (bad) {
+  const del = bad && plainDelete(g);
+  if (bad && !del) {
     deny(`Repo policy (CLAUDE.md Git workflow): "${bad}" force-pushes or deletes, which can overwrite work the cloud loops `
-      + 'or other sessions pushed. Pull, merge deliberately, push normally. A branch delete Brad has approved: he runs it himself.');
+      + 'or other sessions pushed. Pull, merge deliberately, push normally. A merged claude/ branch: `git push origin --delete '
+      + 'claude/<name>` alone. Any other branch delete Brad has approved: he runs it himself.');
   }
-  const gitq = (args) => { try { return execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8', timeout: 10000, stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { return ''; } };
+  const gitq = (args, timeout = 10000) => { try { return execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8', timeout, stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { return ''; } };
   // Push config from the repo ("key value") and from this command's -c ("key=value"), as "key=value" lines.
   const conf = [...gitq(['config', '--get-regexp', '^(remote\\..*\\.(push|mirror)|push\\.default)$']).split('\n').filter(Boolean)
     .map((l) => l.replace(' ', '=')), ...g.cfg];
   const badConf = conf.filter((l) => /^remote\./i.test(l)).find(badConfig);
   if (badConf) deny(`Repo config "${badConf}" makes every push a force or mirror push. Remove it, then push normally.`);
+  // Rule 1's exception, checked against live state and failing closed: each branch is a literal claude/ name, on
+  // origin, and its remote tip is an ancestor of origin's main tip (one ls-remote reads both; a sha missing here
+  // gets one `git fetch origin main`). Residual: a push to the branch between this check and the delete is lost.
+  // Narrow, because the tip it replaced is already on main.
+  if (del) {
+    const refuse = (why) => deny(`Branch delete refused: ${why}. A session may delete only its claude/ branches on `
+      + "origin that are already merged into main; an unmerged or any other branch delete is still Brad's to run.");
+    // The whole Bash command must be this one plain push: an env prefix (GIT_DIR, GIT_CONFIG_*), a `cd` in a
+    // subshell or pipeline, or an earlier `git remote set-url` would make the push reach a repo this check never read.
+    // Spaces and tabs only: a newline separates commands in Bash.
+    if (!/^[ \t]*git[ \t]+push([ \t]+[A-Za-z0-9._/:=@-]+)+[ \t]*$/.test(cmd)) refuse('run the delete as its own command, with nothing before or after it');
+    if (del.remote !== 'origin') refuse(`the remote is "${del.remote}", not origin`);
+    const names = del.branches.map((b) => b.replace(/^refs\/heads\//, ''));
+    names.forEach((n, k) => {
+      if (!/^claude\/[A-Za-z0-9._-]+(\/[A-Za-z0-9._-]+)*$/.test(n) || n.includes('..')) {
+        refuse(`"${del.branches[k]}" is not a literal claude/ branch`);
+      }
+    });
+    // The check reads origin's fetch URL; the delete goes to every push URL (insteadOf rewrites applied). Exactly one
+    // of each, and the same repo.
+    const fetchUrls = gitq(['remote', 'get-url', '--all', 'origin']).split('\n').filter(Boolean);
+    const pushUrls = gitq(['remote', 'get-url', '--push', '--all', 'origin']).split('\n').filter(Boolean);
+    // A receivepack setting can run a command that reaches another repo, as can an ssh wrapper.
+    if (gitq(['config', '--get-regexp', '^(remote\\.origin\\.receivepack|core\\.sshcommand)$'])) {
+      refuse('the check could not run (origin sets receivepack or an ssh command)');
+    }
+    if (fetchUrls.length !== 1 || pushUrls.length !== 1 || fetchUrls[0] !== pushUrls[0]) {
+      refuse('the check could not run (origin needs exactly one URL, the same for fetch and push)');
+    }
+    const tips = new Map(gitq(['ls-remote', 'origin', 'refs/heads/main', ...names.map((n) => `refs/heads/${n}`)], 30000)
+      .split('\n').filter(Boolean).map((l) => l.split('\t').reverse()));
+    const mainTip = tips.get('refs/heads/main');
+    if (!/^[0-9a-f]{40,64}$/.test(mainTip || '')) refuse('the check could not run (could not read main on origin)');
+    for (const n of names) if (!/^[0-9a-f]{40,64}$/.test(tips.get(`refs/heads/${n}`) || '')) refuse(`${n} is not on origin`);
+    const have = (sha) => gitq(['rev-parse', '--verify', '--quiet', `${sha}^{commit}`]) === sha;
+    if (![mainTip, ...names.map((n) => tips.get(`refs/heads/${n}`))].every(have)) {
+      try { execFileSync('git', ['-C', dir, 'fetch', '-q', 'origin', 'main'], { stdio: 'ignore', timeout: 30000 }); } catch { /* re-checked below */ }
+    }
+    if (!have(mainTip)) refuse("the check could not run (main's tip is not here after a fetch)");
+    for (const n of names) {
+      const tip = tips.get(`refs/heads/${n}`);
+      if (!have(tip)) refuse(`${n} is not merged into main (its tip is not in main's history)`);
+      try { execFileSync('git', ['-C', dir, 'merge-base', '--is-ancestor', tip, mainTip], { stdio: 'ignore', timeout: 10000 }); } catch (e) {
+        refuse(e.status === 1 ? `${n} is not merged into main` : `the check could not run for ${n} (merge-base failed)`);
+      }
+    }
+    continue;
+  }
   // The repository and refspecs, without option values: `--repo origin`, `-o x`, `--receive-pack x` take one. With
   // --repo, every positional may be a refspec.
   const positional = [];
