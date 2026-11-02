@@ -36,6 +36,10 @@ describe('scrubQuestion: US-15 AC44d a date placeholder covers only a day and a 
     // At most one day number, so a 2-digit lab value cannot ride along.
     ['a 2-digit lab value beside the day', 'my LDL 80 March 3rd, too high?', 'my LDL [date], too high?'],
     ['two bare numbers and a month', 'my LDL 80 3 March, too high?', 'my LDL [date], too high?'],
+    // A day is 1 to 31, and lower-case "may" is the verb (Codex and adversary re-check on PR 660).
+    ['a lab value no day can be', 'my LDL 80 March, too high?', 'my LDL [date], too high?'],
+    ['a lab value beside the verb may', 'A ferritin of 15 may mean low iron?', 'A ferritin [date] mean low iron?'],
+    ['the verb may alone', 'My statin may cause pain', 'My statin [date] cause pain'],
   ])('skips %s', async (_, q, a) => {
     expect(await scrub(q, a)).toBeNull();
   });
@@ -48,6 +52,7 @@ describe('scrubQuestion: US-15 AC44d a date placeholder covers only a day and a 
     ['a d/m shape', 'tested 3/4 this year, LDL 3.1', 'tested [date] this year, LDL 3.1'],
     ['a masked widget day', 'tested on ## March ####, LDL #.#', 'tested on [date] ####, LDL #.#'],
     ['an upper-case month', 'tested on 3 MARCH 2024', 'tested on [date] 2024'],
+    ['a day and May', 'tested on 15 May 2024, LDL 3.1', 'tested on [date] 2024, LDL 3.1'],
     ['short month names', 'tested 3 Sept and 4 Dec 2024', 'tested [date] and [date] 2024'],
   ])('keeps %s', async (_, q, a) => {
     expect(await scrub(q, a)).toBe(a);
