@@ -7,6 +7,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import { parseFrontmatter } from './frontmatter';
 import { loadBlogIndex } from './blog-index.server';
 import { loadBlogArticle, loadMatchedContent } from './matched-content';
 import { routerIndexBlock, routerView } from './router-view';
@@ -226,7 +227,10 @@ describe('US-15 AC39 — no third-party pathway content', () => {
     for (const bad of [`Adapted from ${sample}.`, 'See UpToDate.', 'ConsumerLab tested it.', 'Consumer Lab']) expect(LICENSED.test(bad), bad).toBe(true);
     expect(LICENSED.test('Keep your vaccines up to date.')).toBe(false); // the product name, not the phrase
     const dir = path.join(ROOT, 'docs/guideline');
-    const guides = fs.readdirSync(dir).filter(f => f.endsWith('.md') && /^kind:\s*"?condition"?\s*$/m.test(fs.readFileSync(path.join(dir, f), 'utf-8').split('\n---')[0]));
+    const isGuide = (raw: string) => parseFrontmatter(raw)?.kind === 'condition';
+    // Review A3: one definition of a guide; single quotes count (the frontmatter parser strips them).
+    for (const k of ["'condition'", '"condition"', 'condition']) expect(isGuide(`---\ntype: guideline\nkind: ${k}\n---\n\nBody.\n`), k).toBe(true);
+    const guides = fs.readdirSync(dir).filter(f => f.endsWith('.md') && isGuide(fs.readFileSync(path.join(dir, f), 'utf-8')));
     for (const f of guides) {
       expect(LICENSED.test(fs.readFileSync(path.join(dir, f), 'utf-8')), f).toBe(false);
       const entry = loadBlogIndex().find(e => e.handle === f.replace(/\.md$/, ''));

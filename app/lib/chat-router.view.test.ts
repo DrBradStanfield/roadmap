@@ -64,8 +64,25 @@ describe('router rule 1 and condition guides (US-70 AC5)', () => {
   it('keeps "do not anchor on one diagnosis", now naming guides too, and says when a guide covers a symptom', () => {
     expect(rule1).toContain('Do NOT route a symptom to an article or condition guide about one specific diagnosis the user did not name');
     expect(rule1).toContain('Anchoring the main LLM on one possibility misses the differential');
-    expect(rule1).toContain('A condition guide covers a symptom directly only when the user ties the symptom to that condition');
+    expect(rule1).toContain('A condition guide covers a symptom directly only when the user reports a reading');
     expect(rule1).toContain('Otherwise return an empty list.');
+  });
+
+  // Review A1: a named condition with no guide routes exactly as in v4, never into rule 1's empty fallback.
+  it('a named condition with no guide routes by rule 6 and the NAMED-topic rule, outside rule 1\'s empty fallback', () => {
+    expect(rule1).toContain('A named condition with no condition guide routes by rule 6 and the NAMED-topic rule exactly as before');
+    expect(rule1).toContain("rule 1's empty fallback applies to symptoms only, never to a named condition");
+    // The empty fallback closes the symptom paragraph, before any condition-guide routing.
+    expect(rule1.indexOf('Otherwise return an empty list.')).toBeLessThan(rule1.indexOf("that condition's [guideline]"));
+  });
+
+  // Review A2: a red-flag symptom never routes to a guide because the user also names a condition.
+  it('a red-flag symptom never routes to a guide on account of a condition; only a reading at the guide\'s red-flag level ties them', () => {
+    expect(rule1).toContain('A red-flag symptom never routes to a condition guide on account of a condition the user mentions');
+    for (const sign of ['chest pain', 'face drooping, arm weakness or slurred speech', 'anaphylaxis', 'sepsis', 'suicide or self-harm']) expect(rule1).toContain(sign);
+    expect(rule1).toContain('("chest pain, and I have high cholesterol" → empty)');
+    expect(rule1).toContain("only when the user reports a reading at the guide's own red-flag level");
+    expect(rule1).not.toContain('ties the symptom to that condition');
   });
 
   it('is ROUTER_VERSION 5', () => {

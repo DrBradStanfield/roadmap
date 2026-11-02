@@ -41,7 +41,10 @@
  *   Condition-guide batches (US-70 AC1) add --guides instead: every batch handle must be a guideline marked
  *   `kind: condition`, which may be new or rewritten, with its index entry added or changed; the GUIDE check fails a
  *   guide with bad keys (reviewed, sources, thresholds), over 35,000 characters, missing a template section or out of
- *   order, or a red flag without the exact emergency line (guideErrors, shared with knowledge-lint.ts).
+ *   order, or a red flag without the exact emergency line (guideErrors, shared with knowledge-lint.ts). AC7's reference
+ *   checks run on each guide too (citations, link text, identifiers for --check-ids, abstract files for new PubMed
+ *   lines), with guide hosts: PubMed, doi.org, NIH ODS, DailyMed, accessdata.fda.gov, the sites the guide's own
+ *   `sources:` names, and Brad's video posts; never ConsumerLab.
  *
  *   npx tsx tools/knowledge-batch-check.ts --print-schema
  *   npx tsx tools/knowledge-batch-check.ts --example <handle>
@@ -52,6 +55,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, writeFi
 import { homedir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { parseFrontmatter } from "../app/lib/frontmatter";
 
 export type Status = "PASS" | "FAIL" | "WARN";
 export interface Exception { check: string; handle: string; match: string; reason: string; by: string; date: string }
@@ -420,20 +424,20 @@ export const GUIDE_SECTIONS: [string, RegExp][] = [
   ["Who needs extra care", /^## Who needs extra care$/], ["When to see your doctor", /^## When to see your doctor$/],
   ["Where guidelines differ", /^## Where guidelines differ$/], ["Common questions", /^## Common questions$/], ["References", /^## References$/],
 ];
-const unquote = (v: string | null) => v?.replace(/^"(.*)"$/, "$1") ?? null;
-/** True for a file marked `kind: condition`. */
-export const isGuideText = (text: string) => unquote(fmValue(splitFrontmatter(text).front, "kind")) === "condition";
+/** True for a file marked `kind: condition`, by the one definition the index uses (parseFrontmatter: any quotes). */
+export const isGuideText = (text: string) => parseFrontmatter(text)?.kind === "condition";
 
 /**
  * What is wrong with a condition guide (US-70 AC1), shared with knowledge-lint.ts: its keys, the 35,000-character
- * cap on the whole file, the twelve template sections once each and in order, and the exact emergency line on every
- * red flag in "## Get help now", with no other version of it anywhere. Empty when it is sound.
+ * cap on the whole file, the twelve template sections once each and in order, "## Get help now" holding only
+ * one-line red-flag bullets, each with the exact emergency line, and no other emergency-number list anywhere (any
+ * "111 in NZ", "000 in Australia", "911 in the US" or "999 in the UK" outside an exact line). Empty when it is sound.
  */
 export function guideErrors(text: string): string[] {
   const { front, body } = splitFrontmatter(text);
   const errors: string[] = [];
-  if (unquote(fmValue(front, "type")) !== "guideline") errors.push("type must be guideline");
-  if (unquote(fmValue(front, "kind")) !== "condition") errors.push("kind must be condition");
+  if (parseFrontmatter(text)?.type !== "guideline") errors.push("type must be guideline");
+  if (!isGuideText(text)) errors.push("kind must be condition");
   for (const k of ["reviewed", "sources"]) {
     const v = fmValue(front, k), err = v === null ? "missing" : masterKeyError(k, v, GUIDE_SOURCE_NAMES);
     if (err) errors.push(`${k}: ${err}`);
@@ -461,12 +465,13 @@ export function guideErrors(text: string): string[] {
     const bullets: string[] = [];
     for (const l of lines.slice(help + 1, heads.find((i) => i > help) ?? lines.length)) {
       if (BULLET_LINE.test(l)) bullets.push(l.trim());
-      else if (l.trim() && bullets.length) bullets[bullets.length - 1] += ` ${l.trim()}`;
+      else if (l.trim()) errors.push(`"## Get help now" has a line that is not a red-flag bullet: ${clip(l.trim(), 100)}`);
     }
     if (!bullets.length) errors.push('"## Get help now" has no red-flag bullets');
     for (const b of bullets) if (!b.includes(EMERGENCY_LINE)) errors.push(`a red flag lacks the exact emergency line ${EMERGENCY_LINE}: ${clip(b, 100)}`);
   }
-  const variants = (text.match(/111 in NZ/g) ?? []).length - text.split(EMERGENCY_LINE).length + 1;
+  // Any emergency-number list counts, whatever comes first: each country's number must sit inside an exact line.
+  const variants = Math.max(...EMERGENCY_LINE.slice(1, -1).split(", ").map((n) => text.split(n).length)) - text.split(EMERGENCY_LINE).length;
   if (variants > 0) errors.push(`${variants} other version(s) of the emergency line; copy ${EMERGENCY_LINE} exactly`);
   return errors;
 }
@@ -1376,6 +1381,12 @@ function referenceCheck(body: string, tag: string, ac7: Check) {
 }
 
 const ALLOWED_HOSTS = ["consumerlab.com", "ods.od.nih.gov", "pubmed.ncbi.nlm.nih.gov", "doi.org"];
+/** A condition guide's reference hosts (US-70 AC2): public records, plus the guideline and label sites its own `sources:` names. */
+function guideHosts(text: string): string[] {
+  const sources: unknown = parseFrontmatter(text)?.sources;
+  const named = Array.isArray(sources) ? sources.map((x: { url?: unknown }) => hostOf(String(x?.url ?? ""))).filter(Boolean) : [];
+  return ["ods.od.nih.gov", "pubmed.ncbi.nlm.nih.gov", "doi.org", "dailymed.nlm.nih.gov", "accessdata.fda.gov", ...named];
+}
 const URL_RE = /https?:\/\/[^\s)\]>]+/g;
 const hostOf = (u: string) => { try { return new URL(u.replace(/[.,;]+$/, "")).hostname.toLowerCase().replace(/^www\./, ""); } catch { return ""; } };
 
@@ -1386,7 +1397,7 @@ function refLines(body: string): string[] {
 /** A drstanfield.com link to a video post (its handle) or the roadmap page ("" ), else null. */
 const bradLink = (u: string) => /^https?:\/\/(?:www\.)?drstanfield\.com\/(?:blogs\/articles\/([a-z0-9-]+)|pages\/roadmap)\/?(?:[?#][^\s)]*)?$/i.exec(u.replace(/[.,;]+$/, ""));
 
-function referenceSourceCheck(newBody: string, baseBody: string, tag: string, ac7: Check, isPost?: (h: string) => boolean) {
+function referenceSourceCheck(newBody: string, baseBody: string, tag: string, ac7: Check, isPost?: (h: string) => boolean, hosts = ALLOWED_HOSTS) {
   const known = new Set(refLines(baseBody).flatMap((l) => (l.match(URL_RE) ?? []).map(hostOf)));
   for (const line of refLines(newBody)) {
     const urls = line.match(URL_RE) ?? [];
@@ -1395,7 +1406,7 @@ function referenceSourceCheck(newBody: string, baseBody: string, tag: string, ac
     for (const u of urls) {
       const h = hostOf(u);
       if (!h) { ac7.fails.push(`${tag} reference line has an unparseable URL ${clip(u, 60)}: ${clip(line, 100)}`); continue; }
-      if (ALLOWED_HOSTS.some((a) => h === a || h.endsWith(`.${a}`)) || known.has(h)) continue;
+      if (hosts.some((a) => h === a || h.endsWith(`.${a}`)) || known.has(h)) continue;
       const brad = isPost && bradLink(u);
       if (brad && (brad[1] === undefined || isPost!(brad[1].toLowerCase()))) continue; // Brad's video posts and the roadmap page (US-50)
       ac7.fails.push(`${tag} reference line has unknown host ${h}: ${clip(line, 100)}`);
@@ -1455,7 +1466,8 @@ function primaryIds(line: string): PrimaryId[] {
   return [...out.values()];
 }
 
-function checkAc7(c: Ctx, ac7: Check, abstracts: RawSet["abstracts"], idsOut: Map<string, PrimaryId & { handle: string }>, isPost?: (h: string) => boolean) {
+/** `hosts`, set only for a condition guide (US-70), runs the reference checks on the guide with those source hosts. */
+function checkAc7(c: Ctx, ac7: Check, abstracts: RawSet["abstracts"], idsOut: Map<string, PrimaryId & { handle: string }>, isPost?: (h: string) => boolean, hosts?: string[]) {
   const tag = `${c.handle}:`, rep = c.rep;
   const lines = normChars(c.newBody).split(/\r?\n/);
   for (const l of lines) {
@@ -1470,15 +1482,15 @@ function checkAc7(c: Ctx, ac7: Check, abstracts: RawSet["abstracts"], idsOut: Ma
     const flat = pb === pa && rep.product_mentions_before === rep.product_mentions_after;
     (flat ? ac7.warns : ac7.fails).push(`${tag} ${flat ? "count differs from report: " : ""}report says product mentions ${rep.product_mentions_before} -> ${rep.product_mentions_after}, recomputed ${pb} -> ${pa}`);
   }
-  if (c.type === "reference") {
+  if (c.type === "reference" || (hosts && c.type === "guideline")) {
     referenceCheck(c.newBody, tag, ac7);
-    referenceSourceCheck(c.newBody, c.baseBody, tag, ac7, isPost);
+    referenceSourceCheck(c.newBody, c.baseBody, tag, ac7, isPost, hosts);
     linkTextCheck(c.newBody, tag, ac7);
     productSectionCheck(c.newBody, c.baseBody, tag, ac7);
     // "New" ignores the leading number, so a renumbered reference is not new.
     const unnumbered = (l: string) => l.replace(/^\s*(?:[-*]\s*)?(?:\[\d+\]|\d+[.)])\s*/, "").trim();
     const baseLines = new Set(refLines(c.baseBody).map(unnumbered));
-    // Under --masters (isPost is passed only then), --check-ids resolves every identifier, retained ones too.
+    // Under --masters or --guides (isPost is passed only then), --check-ids resolves every identifier, retained ones too.
     if (isPost) for (const line of refLines(c.newBody)) for (const x of primaryIds(line)) idsOut.set(`${x.kind}:${x.id.toLowerCase()}`, { ...x, handle: c.handle });
     for (const line of refLines(c.newBody).filter((l) => !baseLines.has(unnumbered(l)))) {
       const ids = primaryIds(line);
@@ -1547,7 +1559,7 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
       if (o.guides) for (const e of c.type === "guideline" ? guideErrors(c.newText) : ["not a guideline"]) guide.fails.push(`${c.handle}: ${e}`);
       checkAc3(c, hedgeBefore, hedgeAfter, ac3);
       if (c.baseText !== null) deleted = checkAc4(c, ac4);
-      checkAc7(c, ac7, raw ? raw.abstracts : [], ids, o.masters ? isPost : undefined);
+      checkAc7(c, ac7, raw ? raw.abstracts : [], ids, o.masters || o.guides ? isPost : undefined, o.guides ? guideHosts(c.newText) : undefined);
     }
     rows.push({ handle: c.handle, type: c.type ?? "?", file: c.rel, rawRel: raw?.main?.rel ?? "-", rawSha: c.rep?.raw_sha256 ?? "-",
       bodySha: sha256(c.newBody), tokensNew: added.length, quoted, deleted, hedgeBefore, hedgeAfter,

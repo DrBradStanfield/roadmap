@@ -171,13 +171,36 @@ describe('US-70 AC1 static: condition guides (guide-shape)', () => {
     expect(items(SOUND.replace('now (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).\n- Chest', 'now.\n- Chest'))).toEqual([
       expect.stringMatching(/^guide-shape: a red flag lacks the exact emergency line \(111 in NZ, 000 in Australia, 911 in the US, 999 in the UK\): - Blood pressure of 180/)]);
     expect(items(SOUND.replace('Text.', 'Call 111 in NZ or 911 in the US.'))).toEqual(['guide-shape: 1 other version(s) of the emergency line; copy (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) exactly']);
-    expect(items(SOUND.replace(/^- Blood[^\n]*\n- Chest[^\n]*\n[^\n]*\n/m, 'None.\n'))).toEqual(['guide-shape: "## Get help now" has no red-flag bullets']);
+    expect(items(SOUND.replace(/^- Blood[^\n]*\n- Chest[^\n]*\n/m, ''))).toEqual(['guide-shape: "## Get help now" has no red-flag bullets']);
+  });
+  // Review A5: any emergency-number list counts, whatever its first country or number, and Get help now holds bullets only.
+  it('counts any emergency-number list, whatever its first country or number: each must be the exact line', () => {
+    const other = (list: string) => items(SOUND.replace('## Medicines\n\nText.', `## Medicines\n\nCall ${list}.`));
+    const one = ['guide-shape: 1 other version(s) of the emergency line; copy (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) exactly'];
+    expect(other('(112 in NZ, 000 in Australia, 911 in the US, 999 in the UK)')).toEqual(one);
+    expect(other('(000 in Australia, 111 in NZ, 911 in the US, 999 in the UK)')).toEqual(one);
+    expect(other('(999 in the UK, 911 in the US, 000 in Australia)')).toEqual(one);
+    expect(other('000 in Australia')).toEqual(one);
+    expect(items(SOUND.replace('now (111 in NZ', 'now (111 in New Zealand'))).toEqual([
+      expect.stringMatching(/^guide-shape: a red flag lacks the exact emergency line .*: - Blood pressure of 180/), one[0]]);
+  });
+  it('fails any non-blank, non-bullet line in Get help now, a wrapped bullet included', () => {
+    expect(items(SOUND.replace('## Get help now\n\n', '## Get help now\n\nCall now if:\n'))).toEqual(['guide-shape: "## Get help now" has a line that is not a red-flag bullet: Call now if:']);
+    expect(items(SOUND.replace('arm: call your emergency number now (111', 'arm: call your emergency number now\n  (111'))).toEqual([
+      'guide-shape: "## Get help now" has a line that is not a red-flag bullet: (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).',
+      expect.stringMatching(/^guide-shape: a red flag lacks the exact emergency line .*: - Chest pain/)]);
   });
   it('fails bad keys: a licensed source name, no thresholds, a malformed threshold, a bad reviewed date', () => {
     expect(items(SOUND.replace('"name":"guideline"', '"name":"consumerlab"'))).toEqual(['guide-shape: sources: item 0 name must be one of guideline, label, pubmed, nih-ods, brad-video']);
     expect(items(SOUND.replace(/^thresholds:.*\n/m, ''))).toEqual(['guide-shape: thresholds: must be a single-line, non-empty JSON array']);
     expect(items(SOUND.replace('"value":180', '"value":"180"'))).toEqual(['guide-shape: thresholds: item 0 needs {"ref": "CONSTANT.key", "value": <number>}']);
     expect(items(SOUND.replace('reviewed: "2026-11-02"', 'reviewed: 2026-11-02'))).toEqual(['guide-shape: reviewed: must be a quoted valid date, "YYYY-MM-DD"']);
+  });
+  // Review A3: one definition, parseFrontmatter(raw)?.kind === 'condition', so a single-quoted kind is a guide too.
+  it("treats kind: 'condition', single-quoted, as a guide", () => {
+    const single = SOUND.replace('kind: "condition"', "kind: 'condition'");
+    expect(items(single)).toEqual([]);
+    expect(items(single.replace('## Medicines\n', ''))).toEqual(['guide-shape: needs one "## Medicines" section (found 0)']);
   });
   it('exempts a guideline with no kind: condition, whatever its size (diet.md, sleep.md)', () => {
     const plain = SOUND.replace('kind: "condition"\n', '').replace('Text.', 'x'.repeat(60_000));

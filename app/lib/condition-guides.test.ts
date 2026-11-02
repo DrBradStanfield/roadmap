@@ -95,7 +95,7 @@ describe('US-70 AC7: a condition guide loads first, beside two large whole-only 
     expect(skipped).toEqual([]);
     expect(titles[0]).toBe('Test condition');
     expect(content!.startsWith('[guideline — reviewed 2026-11-02]')).toBe(true);
-    expect(content).toContain(`Chest pain that spreads to the arm: call your emergency number now\n  ${EMERGENCY_LINE}`);
+    expect(content).toContain(`Chest pain that spreads to the arm: call your emergency number now ${EMERGENCY_LINE}`);
     expect(content).toContain('## Get help now');
     expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
   });
@@ -115,6 +115,44 @@ describe('US-70 AC7: a condition guide loads first, beside two large whole-only 
     const { content, skipped } = loadMatchedContent(['test-big-a', 'test-big-b', GUIDE]);
     expect(skipped).toEqual(['test-big-b']);
     expect(content).toContain(EMERGENCY_LINE);
+    expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
+  });
+
+  // Review A4 (US-50 AC13): a guide loading first still leaves every later master room for its smallest form.
+  const BV = 'b-vitamins-benefits-forms-dosing-and-side-effects';
+  const CBD = 'cbd-benefits-forms-dosing-and-side-effects';
+  const SAFETY = /^## \d+\. Safety and Side Effects\n/m;
+  // A fresh loader and index (both cache), the guide served and indexed, each master edited by `edit`.
+  async function freshLoader(edit: (handle: string, raw: string) => string) {
+    vi.resetModules();
+    vi.spyOn(fs, 'readFileSync').mockImplementation(((p: fs.PathOrFileDescriptor, ...rest: unknown[]) => {
+      const handle = path.basename(String(p), '.md');
+      if (handle === GUIDE) return body;
+      const raw = (realRead as (...a: unknown[]) => unknown)(p, ...rest);
+      return String(p).endsWith('.md') ? edit(handle, String(raw)) : raw;
+    }) as typeof fs.readFileSync);
+    (await import('./blog-index.server')).loadBlogIndex().push(extra[0]);
+    return (await import('./matched-content')).loadMatchedContent;
+  }
+
+  it('guide + master + master: all three load, the masters at least reduced with their safety sections', async () => {
+    // Both masters grown, by a section their reduced forms leave out, so neither fits whole beside the guide.
+    const grown = (h: string, raw: string) => ([BV, CBD].includes(h) ? `${raw}\n\n## Grown for the test\n\n${'z'.repeat(Math.max(0, 100_000 - raw.length))}\n` : raw);
+    const { content, skipped, reduced, titles } = (await freshLoader(grown))([BV, CBD, GUIDE]);
+    expect(skipped).toEqual([]);
+    expect(titles[0]).toBe('Test condition');
+    expect(reduced).toEqual([BV, CBD]);
+    expect(content).toContain(EMERGENCY_LINE);
+    expect(content!.match(/^#+ \d+\. Safety and Side Effects$/gm)).toHaveLength(2);
+    expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
+  });
+
+  it('when the guide would crowd out a master\'s smallest form, the masters keep their room and the guide yields', async () => {
+    // Each master's safety section grown, so even its smallest form is large: both fit together, not beside the guide too.
+    const big = (h: string, raw: string) => ([BV, CBD].includes(h) ? raw.replace(SAFETY, h => `${h}\n${'z'.repeat(40_000)}\n`) : raw);
+    const { content, skipped } = (await freshLoader(big))([BV, CBD, GUIDE]);
+    expect(skipped).toEqual([GUIDE]);
+    expect(content!.match(/^#+ \d+\. Safety and Side Effects$/gm)).toHaveLength(2);
     expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
   });
 

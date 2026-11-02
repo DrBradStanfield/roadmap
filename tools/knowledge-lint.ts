@@ -12,7 +12,7 @@
  *   Topic masters (US-50 AC7). Static, in test:all (tools/knowledge-lint-masters.test.ts): topic-no-master, master-front
  *   fail; master-gate, master-doi warn; master-key-points warns on a master with a view and no sound "## Key safety
  *   points" section (US-50 AC12; the batch checker's --key-safety-points fails it). guide-shape fails a `kind: condition`
- *   guideline with bad keys, over 35,000 characters, a missing or misordered template section, or a red flag without the
+ *   guideline with bad keys, over 35,000 characters, a missing or misordered template section, a non-bullet line in Get help now, or a red flag or any emergency-number list without the
  *   exact emergency line (US-70 AC1; guideErrors, shared with the checker's --guides). lint-allowlist.json waives them as it does every rule. Weekly only, dated:
  *   master-stale, source-stale, master-places, master-overlap (masters sharing a DOI: the pair goes to adversary review).
  * The selector picks what the model half (knowledge-lint-compare.ts) reads this
@@ -702,7 +702,7 @@ export async function runLint(root: string, opts: { checkLinks?: { cap: number; 
 }
 
 const RULE_ORDER: RuleId[] = ['unresolved-marker', 'uncited-reference', 'uncited-list', 'doi-shape', 'pmid-shape', 'id-mismatch', 'link-dead', 'grokipedia', 'dose-mismatch', 'product-rise',
-  'topic-no-master', 'master-front', 'master-gate', 'master-doi', 'master-key-points', 'master-stale', 'source-stale', 'master-places', 'master-overlap'];
+  'guide-shape', 'topic-no-master', 'master-front', 'master-gate', 'master-doi', 'master-key-points', 'master-stale', 'source-stale', 'master-places', 'master-overlap'];
 
 export function dueSummary(r: Pick<LintResult, 'due' | 'cursor' | 'stateMissing'>): string {
   const n = (why: string) => r.due.filter(d => d.reasons.some(x => x.startsWith(why))).length;
