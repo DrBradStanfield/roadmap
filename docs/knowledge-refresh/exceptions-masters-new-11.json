@@ -467,7 +467,7 @@
   "check": "AC4",
   "handle": "echinacea-benefits-dosing-and-side-effects",
   "match": "heading missing from new body: ### Phenol Content by Species and Plant Part",
-  "reason": "AC4 echinacea the licensed source-only table heading removed; ratified in decisions.md (Echinacea Ratified line) (orchestrator 2026-10-26, masters-new-11).",
+  "reason": "AC4 echinacea licensed-source-only table heading removed; ratified in decisions.md (Echinacea Ratified line) (orchestrator 2026-10-26, masters-new-11).",
   "by": "orchestrator",
   "date": "2026-10-26"
  },

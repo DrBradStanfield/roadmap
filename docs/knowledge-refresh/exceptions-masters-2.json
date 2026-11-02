@@ -899,7 +899,7 @@
   "check": "AC2",
   "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
   "match": "body line has no entry quoting \"1000 mg/day\", \"4000 mg/day\", \"1\": Depression (adjunctive therapy): Trials used 1,000-4,000 mg/day with an EPA:DHA ratio >2:1 alongside antidepressants....",
-  "reason": "Numbers unchanged from the base line; only the framing changed (adversary R7). Base text: \"Depression (adjunctive therapy): 1,000-4,000 mg/day with EPA:DHA ratio >2:1.\" The \"1\" token is the ratio \">2:1\". the licensed source gives the ISNPR 1 to 2 g/day guideline and a depression trial of 1,000, 2,000 or 4,000 mg EPA (Peet), but no single quote carries 1,000-4,000 mg/day. [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]",
+  "reason": "Numbers unchanged from the base line; only the framing changed (adversary R7). Base text: \"Depression (adjunctive therapy): 1,000-4,000 mg/day with EPA:DHA ratio >2:1.\" The \"1\" token is the ratio \">2:1\". The licensed source gives the ISNPR 1 to 2 g/day guideline and a depression trial of 1,000, 2,000 or 4,000 mg EPA (Peet), but no single quote carries 1,000-4,000 mg/day. [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]",
   "by": "orchestrator",
   "date": "2026-10-21"
  },

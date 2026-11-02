@@ -3,7 +3,7 @@
   "check": "AC4",
   "handle": "lithium-benefits-forms-dosing-and-side-effects",
   "match": "heading missing from new body: ### Neurotransmitter Modulation",
-  "reason": "Section rested only on Grokipedia; no the licensed source, NIH or PubMed support. Removed on the 2026-09-29 ruling: an empty heading is worse than none.",
+  "reason": "Section rested only on Grokipedia; no licensed-source, NIH or PubMed support. Removed on the 2026-09-29 ruling: an empty heading is worse than none.",
   "by": "orchestrator",
   "date": "2026-10-08"
  },
