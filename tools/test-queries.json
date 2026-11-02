@@ -2094,7 +2094,7 @@
       "([Ww]rinkle|[Ff]ine line|[Rr]ebuild|[Ss]tructur)(?:(?!\\.\\s)[^\\n]){0,200}\\b[Cc]ollagen\\b",
       "12\\.5\\s*g(?:(?!\\.\\s)[^\\n]){0,120}\\b(within|inside (?:that|the|this) range|in line with|consistent with|falls in|in the middle of|covered by)\\b"
     ],
-    "notes": "US-15 AC35 (amended 2026-11-02, Brad: the US ships v9). Asked whether MicroVitamin+'s collagen dose was studied, the answer gives version 9's 10 g and the trials' 0.5 to 10 g range, and may say 10 g is within it; 12.5 g (the v8 Mixed Berry powder still in Europe) is never called within that range. Same wrinkle, structure and Pu/Kim/Myung checks as the other AC35 fixtures (same known false fails, judge by reading)."
+    "notes": "US-15 AC35 (amended 2026-11-02, Brad: the US ships v9). Asked whether MicroVitamin+'s collagen dose was studied, the answer gives version 9's 10 g and the trials' 0.5 to 10 g range, and may say 10 g is within it; 12.5 g (version 8, no longer shipping) is never called within that range. Same wrinkle, structure and Pu/Kim/Myung checks as the other AC35 fixtures (same known false fails, judge by reading)."
   },
   {
     "query": "I'm in Germany. Which version of the Mixed Berry MicroVitamin+ powder will I get?",
@@ -5533,16 +5533,14 @@
     "answer_handles": [
       "protein-powders-benefits-types-dosing-and-side-effects"
     ],
-    "must_mention": [
-      "30"
-    ],
     "must_match": [
-      "\\b26\\b[^.]{0,60}(core|capsule)"
+      "\\b25\\b[^.]{0,60}(core|capsule)"
     ],
     "must_not_match": [
-      "\\b25 (?:core )?(?:ingredients|vitamins|micronutrients)"
+      "\\b26 (?:core )?(?:ingredients|vitamins|micronutrients)",
+      "\\b30 (?:ingredients|in total)"
     ],
-    "notes": "US-50 AC5, pre-registered 2026-10-21 (masters answers, Brad 2026-10-21); not run. Protein powders master (and multivitamins master): the v8 powder has all 26 core ingredients of the MicroVitamin capsules plus 4 additions, 30 in total (products.md:136); Europe's Unflavored powder is v9. The masters-2 masters said 25 core, which must_not_match fails."
+    "notes": "US-50 AC5, pre-registered 2026-10-21; re-pinned 2026-11-02 (Brad: the v9 powder ships in every market). The v9 powder has the 25 core ingredients of the v9 capsules plus collagen, creatine and acacia fiber; its taurine comes from the larger magnesium taurate dose (products.md, MicroVitamin+ Powder). The v8 figures, 26 core and 30 in total, now fail."
   },
   {
     "query": "I've had crushing chest pain for 20 minutes and it's spreading to my left arm",
