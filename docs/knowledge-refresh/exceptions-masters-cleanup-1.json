@@ -203,7 +203,7 @@
   "check": "AC4",
   "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
   "match": "heading missing from new body: ### Nickel Sensitivity",
-  "reason": "Brad's ConsumerLab rule (2026-10-22): the section's only sentence was a ConsumerLab-only claim with no primary study, so the whole section is gone; declared in addendum-12.",
+  "reason": "Brad's the licensed source rule (2026-10-22): the section's only sentence was a licensed source-only claim with no primary study, so the whole section is gone; declared in addendum-12.",
   "by": "orchestrator",
   "date": "2026-10-22"
  },
@@ -339,7 +339,7 @@
   "check": "AC7",
   "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
   "match": "product mentions rose 3 -> 4",
-  "reason": "Orchestrator R3 (2026-10-22): a Labdoor disclosure (\"MicroVitamin products are tested by Labdoor under Labdoor's paid Quality Program\") was added beside the consumerlab.com/Labdoor pointer; the extra product mention is that disclosure (listed in ask_brad). Ratified by the orchestrator at integration (2026-10-22).",
+  "reason": "Orchestrator R3 (2026-10-22): a Labdoor disclosure (\"MicroVitamin products are tested by Labdoor under Labdoor's paid Quality Program\") was added beside the licensed site/Labdoor pointer; the extra product mention is that disclosure (listed in ask_brad). Ratified by the orchestrator at integration (2026-10-22).",
   "by": "orchestrator",
   "date": "2026-10-22"
  },
@@ -347,7 +347,7 @@
   "check": "AC7",
   "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
   "match": "report says product mentions 3 -> 3, recomputed 3 -> 4",
-  "reason": "Orchestrator R3 (2026-10-22): a Labdoor disclosure (\"MicroVitamin products are tested by Labdoor under Labdoor's paid Quality Program\") was added beside the consumerlab.com/Labdoor pointer; the extra product mention is that disclosure (listed in ask_brad). Ratified by the orchestrator at integration (2026-10-22).",
+  "reason": "Orchestrator R3 (2026-10-22): a Labdoor disclosure (\"MicroVitamin products are tested by Labdoor under Labdoor's paid Quality Program\") was added beside the licensed site/Labdoor pointer; the extra product mention is that disclosure (listed in ask_brad). Ratified by the orchestrator at integration (2026-10-22).",
   "by": "orchestrator",
   "date": "2026-10-22"
  },

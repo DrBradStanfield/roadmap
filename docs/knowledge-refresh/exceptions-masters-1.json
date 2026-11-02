@@ -82,7 +82,7 @@
  {
   "check": "AC2",
   "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
-  "match": "token \"50\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In 84 men and women (average age 50) with dry skin and crow's feet, 2 g/day of low-molecular-weight fish collagen p...\" | \"- ConsumerLab reports that in 99 women (average age 41), 1 g/day of fish collagen hydrolysate for 24 weeks very sligh...\" | \"- In 113 women (average age 50), two capsules daily (providing 600 mg hydrolyzed type II collagen, 200 mg chondroitin...\"",
+  "match": "token \"50\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- In 84 men and women (average age 50) with dry skin and crow's feet, 2 g/day of low-molecular-weight fish collagen p...\" | \"- a licensed source reports that in 99 women (average age 41), 1 g/day of fish collagen hydrolysate for 24 weeks very sligh...\" | \"- In 113 women (average age 50), two capsules daily (providing 600 mg hydrolyzed type II collagen, 200 mg chondroitin...\"",
   "reason": "Checker tokenisation: the body says \"114 women aged 20-50\" (the file's own \"aged 45-65\" style); the abstract writes the range with its unit, which the checker reads as \"20 year\", so the bare 20 and 50 match nothing. pubmed/41788055.md: \"114 women aged 20-50 years with thigh cellulite and self-reported hair thinning\" (collagen addendum-8 quotes it). Written by the correction-round review-fix Opus worker; orchestrator to confirm.",
   "by": "orchestrator",
   "date": "2026-10-21"
@@ -90,7 +90,7 @@
  {
   "check": "AC2",
   "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
-  "match": "token \"20\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- ConsumerLab reports that in 99 women (average age 41), 1 g/day of fish collagen hydrolysate for 24 weeks very sligh...\" | \"- In 68 adults (average age 64) with mild-moderate knee osteoarthritis, 20 mg of UC-II plus 480 mg hydrolyzed collage...\" | \"- 500 mg/day of NEM for 12 weeks decreased knee pain by 3.14 points (0-20 scale) vs. placebo and improved physical fu...\"",
+  "match": "token \"20\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- a licensed source reports that in 99 women (average age 41), 1 g/day of fish collagen hydrolysate for 24 weeks very sligh...\" | \"- In 68 adults (average age 64) with mild-moderate knee osteoarthritis, 20 mg of UC-II plus 480 mg hydrolyzed collage...\" | \"- 500 mg/day of NEM for 12 weeks decreased knee pain by 3.14 points (0-20 scale) vs. placebo and improved physical fu...\"",
   "reason": "Checker tokenisation: same line as the \"50\" exception; the abstract range \"20-50 years\" reads as \"20 year\". pubmed/41788055.md: \"114 women aged 20-50 years with thigh cellulite\". Written by the correction-round review-fix Opus worker; orchestrator to confirm.",
   "by": "orchestrator",
   "date": "2026-10-21"
