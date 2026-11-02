@@ -1316,8 +1316,9 @@ updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.
   Swift: a copy of a clinical line drifts, and an engine fix ships over the air (D3). PSA is
   not graded, as on the web. A lab test row opens nothing: there is no engine door for a lab
   series' history and no page for one yet. A value printed as a limit (US-12 AC20) is graded by
-  the web's `savedStatus`; a blood pressure with a half saved as a limit gets no grade on the
-  iPhone until Brad decides (the web's is unchanged). The row does not yet show the web's
+  the web's `savedStatus`; a weight, waist or blood pressure printed as a limit is graded only
+  when certain (US-12 AC21, Brad 2026-11-02), by the same health-core rule the web uses
+  (`certainValue`). The row does not yet show the web's
   "Printed as a limit" note on an ungraded limit; the history page does (`historyJson` `note`).
 
 **Added 2026-10-26: "About this measure" guides (US-58).** Below Show All Data and Unit, a metric page shows

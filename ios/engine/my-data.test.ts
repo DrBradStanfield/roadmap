@@ -268,6 +268,18 @@ describe('myData rows: grade and spoken grade (US-62 AC8, US-25 AC17)', () => {
     }
   });
 
+  it('grades a weight printed as a limit only when certain (US-12 AC21)', () => {
+    // A 180 cm man's ideal weight is 78.0 kg (its row target).
+    const weight = (value: number, comparator: '<' | '>') => {
+      const file = adult();
+      const row = file.measurements.find((r) => r.metricType === 'weight')!;
+      file.measurements.push({ ...row, id: `w-${comparator}${value}`, value, comparator, recordedAt: '2026-10-15' });
+      return rows(myData(file, NOW)).get('weight')!;
+    };
+    expect(weight(100, '>')).toMatchObject({ status: 'bad', gradeWords: 'above target' });
+    expect(weight(78, '>')).toMatchObject({ status: null, gradeWords: null });
+  });
+
   it('grades no PSA, which the web asks for under screening and never colours', () => {
     expect(rows(myData(adult(), NOW)).get('psa')).toMatchObject({ latest: { value: '5.0' }, status: null, gradeWords: null });
   });
@@ -294,7 +306,7 @@ describe('myData rows: grade and spoken grade (US-62 AC8, US-25 AC17)', () => {
     expect(pressure).toMatchObject({ latest: { value: '150/95' }, status: 'bad', gradeWords: 'high' });
   });
 
-  it('grades no blood pressure with a half saved as a limit, and still grades an exact pair (US-25 AC17, US-12 AC20)', () => {
+  it('grades a blood pressure with a half saved as a limit only when certain, and an exact pair as before (US-25 AC17, US-12 AC21)', () => {
     const exact = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
       { kind: 'profile', sex: 'male', birthYear: 1970, height: 180 },
       { kind: 'bloodPressure', systolic: 125, diastolic: 78, day: '2026-10-02', replace: false });
@@ -306,6 +318,12 @@ describe('myData rows: grade and spoken grade (US-62 AC8, US-25 AC17)', () => {
     sys.comparator = '<';
     expect(pressure(limit)).toMatchObject({ status: null, gradeWords: null });
     expect(pressure(limit).latest?.value).toContain('125');
+    // "<110/<70": every pair both bounds allow is under 120/80, so certainly on target.
+    const low = structuredClone(exact);
+    for (const [metricType, value] of [['systolic_bp', 110], ['diastolic_bp', 70]] as const) {
+      Object.assign(low.measurements.find((row) => row.metricType === metricType)!, { value, comparator: '<' });
+    }
+    expect(pressure(low)).toMatchObject({ status: 'ok', gradeWords: null });
   });
 
   it('grades no HDL without sex, and no half-entered blood pressure (US-62 AC13, US-25 AC17)', () => {

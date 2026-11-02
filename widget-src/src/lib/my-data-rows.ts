@@ -10,7 +10,7 @@ export interface DayReading {
   day: string; // yyyy-mm-dd
   id: string;
   value: number; // as stored: SI for a core metric, the systolic half of a pressure
-  dia?: { id: string; value: number };
+  dia?: { id: string; value: number; comparator?: Comparator };
   /** Printed as a limit: `value` is its bound (US-12 AC20). */
   comparator?: Comparator;
 }
@@ -32,7 +32,7 @@ export function pressureReadings(history: ApiMeasurement[]): DayReading[] {
   const dia = new Map(readingsOf(history, 'diastolic_bp').map(r => [r.day, r]));
   return readingsOf(history, 'systolic_bp').flatMap(sys => {
     const d = dia.get(sys.day);
-    return d ? [{ ...sys, dia: { id: d.id, value: d.value } }] : [];
+    return d ? [{ ...sys, dia: { id: d.id, value: d.value, ...comparatorOf(d) } }] : [];
   });
 }
 

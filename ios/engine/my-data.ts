@@ -23,7 +23,7 @@ import { METRIC_GUIDES, type MetricGuide } from '../../packages/health-core/src/
 import { APPLE_LOW_FROM_60, FRIEND_2022_TREADMILL, type Vo2MaxCutPoints } from '../../packages/health-core/src/vo2max-bands';
 import { calculateAge, knownMinorOf } from '../../packages/health-core/src/calculations';
 import { rowTarget, type Grading, type RowTargetPlan } from '../../packages/health-core/src/row-target';
-import { gradeWords, pressureStatus, valueStatus, type GradeContext, type GradeStatus } from '../../packages/health-core/src/row-grade';
+import { gradeWords, pressureStatus, valueStatus, type GradeContext, type GradeStatus, type PressureReading } from '../../packages/health-core/src/row-grade';
 import { labSeriesRows } from '../../packages/health-core/src/lab-series';
 import { trendWindow } from '../../packages/health-core/src/recent-trend';
 import { isAlcoholAnswer, type AlcoholAnswer } from '../../packages/health-core/src/types';
@@ -415,7 +415,7 @@ function typedRangeMessage(metric: string, typed: number, unit: CellUnit, refusa
 
 /** The Vitals row for blood pressure: the newest day's pair, from the history's own pairing. */
 function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: string | null, graded: GradeContext): MyDataRow {
-  const shown = new Map<string, { sys?: number; dia?: number; limit: boolean }>();
+  const shown = new Map<string, PressureReading>();
   const { label, unit, rows } = pressureHistory(file, [], shown);
   const active = rows.filter((row) => row.status === 'active');
   const [newest] = active;
@@ -423,10 +423,9 @@ function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: st
   // A half-pair latest ("135/–", US-25 AC17) gets none, so no bracket sits beside a dash.
   const whole = (row?: (typeof rows)[number]) => !!row?.systolic && !!row?.diastolic;
   const previous = whole(newest) ? active.slice(1).find(whole) : undefined;
-  // Graded on the stored halves of the pair it shows, as the web grades stored values; a half-pair has no
-  // grade, and on the iPhone nor does a pair with a half printed as a limit ("<125/78"): whether one can be
-  // graded is Brad's call, and until then no "above target" is said for it.
-  const { sys, dia, limit } = (whole(newest) && shown.get(newest.id)) || {};
+  // Graded on the stored halves of the pair it shows, as the web grades stored values: a half-pair has
+  // no grade, and a half printed as a limit is graded only when certain (US-12 AC21).
+  const reading = whole(newest) ? shown.get(newest.id) : undefined;
   return {
     metric: BLOOD_PRESSURE, label, unit,
     latest: newest ? { id: newest.id, value: newest.value, day: newest.day } : null,
@@ -434,7 +433,7 @@ function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: st
     switchable: false,
     target,
     previous: previous?.value ?? null,
-    ...gradeOf(sys !== undefined && dia !== undefined && !limit ? pressureStatus({ value: sys, dia: { value: dia } }, graded) : null, BLOOD_PRESSURE),
+    ...gradeOf(reading ? pressureStatus(reading, graded) : null, BLOOD_PRESSURE),
   };
 }
 

@@ -3,7 +3,7 @@
 // the widget's own (widget-src/src/lib/blood-test-cell.test.ts), run here against
 // health-core; the rest pin the vitals grades and words the widget had no test for.
 import { describe, expect, it } from 'vitest';
-import { bpStatus, gradeWords, limitUngraded, pressureStatus, savedStatus, simpleStatus, statusOf, valueStatus } from './row-grade';
+import { bpStatus, gradeWords, limitUngraded, pressureStatus, pressureUngraded, savedStatus, simpleStatus, statusOf, valueStatus } from './row-grade';
 
 describe('statusOf: the widget\'s cases (US-07 AC5, US-03 AC7, US-62 AC13, US-07 AC6)', () => {
   it.each([
@@ -103,3 +103,50 @@ describe('savedStatus and limitUngraded: a limit is graded only when its bound d
     expect(savedStatus('ldl', 5, '>', null)).toBeNull();
   });
 });
+
+// US-12 AC21 (Brad 2026-11-02, "grade only when certain"): a vital printed as a limit is graded only
+// when every value the limit allows grades the same; otherwise no grade, and the limit note.
+describe('vitals printed as a limit: graded only when certain (US-12 AC21)', () => {
+  const ctx = { grading: {}, plan: { age: 50, idealBodyWeight: 70, heightCm: 180 } }; // BP target 120/80
+
+  it('blood pressure: "<125/78" could be on target or above, so no grade', () => {
+    expect(pressureStatus({ value: 125, comparator: '<', dia: { value: 78 } }, ctx)).toBeNull();
+    expect(pressureUngraded({ value: 125, comparator: '<', dia: { value: 78 } }, ctx)).toBe(true);
+  });
+
+  it('blood pressure: "<110/<70" is certainly on target, ">160/78" certainly high', () => {
+    expect(pressureStatus({ value: 110, comparator: '<', dia: { value: 70, comparator: '<' } }, ctx)).toBe('ok');
+    expect(pressureStatus({ value: 160, comparator: '>', dia: { value: 78 } }, ctx)).toBe('bad');
+    expect(pressureUngraded({ value: 160, comparator: '>', dia: { value: 78 } }, ctx)).toBe(false);
+  });
+
+  it('blood pressure: a diastolic limit across its lines leaves the pair open; exact pairs as before', () => {
+    expect(pressureStatus({ value: 115, dia: { value: 82, comparator: '<' } }, ctx)).toBeNull();
+    expect(pressureStatus({ value: 125, dia: { value: 78 } }, ctx)).toBe('warn');
+    expect(pressureUngraded({ value: 125, dia: { value: 78 } }, ctx)).toBe(false);
+    expect(pressureStatus({ value: 110, comparator: '<', dia: { value: 70, comparator: '<' } }, { grading: null, plan: ctx.plan })).toBeNull();
+  });
+
+  it('weight: ">90" is certainly far over the ideal (70 kg), so red; ">70" could be on target or over, so none', () => {
+    expect(valueStatus('weight', 90, ctx, '>')).toBe('bad');
+    expect(valueStatus('weight', 70, ctx, '>')).toBeNull();
+    expect(valueStatus('weight', 60, ctx, '<')).toBe('warn');
+    expect(limitUngraded('weight', 70, '>', ctx)).toBe(true);
+    expect(limitUngraded('weight', 90, '>', ctx)).toBe(false);
+    expect(valueStatus('weight', 90, ctx)).toBe('bad');
+  });
+
+  it('waist: a limit below the healthy line is certainly fine; one across it is open', () => {
+    // 180 cm: elevated from 89.1 cm, red past 98 cm.
+    expect(valueStatus('waist', 85, ctx, '<')).toBe('ok');
+    expect(valueStatus('waist', 95, ctx, '<')).toBeNull();
+    expect(valueStatus('waist', 100, ctx, '>')).toBe('bad');
+    expect(limitUngraded('waist', 95, '<', ctx)).toBe(true);
+  });
+
+  it('LDL is unchanged: graded through savedStatus as before', () => {
+    expect([valueStatus('ldl', 3, ctx, '<'), valueStatus('ldl', 5, ctx, '>'), valueStatus('ldl', 1, ctx, '<')]).toEqual([null, 'bad', 'ok']);
+    expect(limitUngraded('ldl', 3, '<', ctx)).toBe(true);
+  });
+});
+
