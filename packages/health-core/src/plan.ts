@@ -31,7 +31,7 @@ import {
 } from './lab-limits';
 import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs, SuggestionInputs } from './types';
 import {
-  UNIT_DEFS, formatGradedValue, getDisplayLabel, unitSystemOf, type MetricType, type UnitSystem,
+  UNIT_DEFS, formatGradedReading, formatGradedValue, getDisplayLabel, unitSystemOf, type MetricType, type UnitSystem,
 } from './units';
 import { getValidationErrors, PRESSURE_ORDER, sanitizeInputs, validateHealthInputs } from './validation';
 
@@ -336,15 +336,17 @@ export function currentValues(plan: Plan) {
     .filter((row) => row.metricType in UNIT_DEFS)
     .map((row) => {
       const metric = row.metricType as MetricType;
-      // A lipid with a "<X" line prints on the side the cards grade it (US-07 AC5).
+      // A lipid with a "<X" line prints on the side the cards grade it (US-07 AC5), HbA1c and Lp(a) on the side of their grade lines (AC15).
       const line = refLineFor(metric);
       const limit = limitOf(plan.inputs, METRIC_TO_FIELD[row.metricType]);
       return {
         id: row.id,
         metric: row.metricType,
         label: METRIC_LABELS[row.metricType] ?? row.metricType,
-        value: line === undefined || row.comparator
+        value: row.comparator
           ? formatValue(metric, row.value, plan.unitSystem, row.comparator)
+          : line === undefined
+          ? formatGradedReading(metric, row.value, plan.unitSystem)
           : formatGradedValue(metric, row.value, plan.unitSystem, line),
         ...comparatorOf(row),
         ...(limit && !limit.graded ? { notGraded: LIMIT_NOT_GRADED } : {}),
