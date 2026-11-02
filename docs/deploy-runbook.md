@@ -284,7 +284,8 @@ to both — deploy twice, see "Shopify app configs".**)
 
 Moved out of CLAUDE.md 2026-09-24 (entropy pass). `.env` has all of them.
 
-- **Shared keys**: SUPABASE_*, SESSION_DATABASE_URL, SENTRY_*, RESEND_*,
+- **Shared keys**: SUPABASE_*, SESSION_DATABASE_URL + PGSSLMODE (the session store ignores `sslmode` in the
+  URL; production refuses to start without a TLS mode, US-09 AC31), SENTRY_*, RESEND_*,
   ANTHROPIC_API_KEY, SHOPIFY_*, KLAVIYO_API_KEY/KLAVIYO_LIST_ID (the same
   MicroVitamin pair on both apps, by decision 2026-09-28).
 - **Fly-only**: MCP_ISSUER, MCP_SEAL_KEYS, MCP_CLIENT_HMAC_KEY,

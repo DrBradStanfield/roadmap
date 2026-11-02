@@ -8,7 +8,8 @@ import { computeReminderSchedule } from './reminder-schedule';
 import { BLOOD_TEST_METRICS } from './mappings';
 import { mergeFiles, rootIdOf } from './merge';
 import { migrateFile } from './migrate';
-import { appendLabValue } from './record-edits';
+import { appendLabValue, bulkAppendValues } from './record-edits';
+import { limitRepresentative } from './lab-limits';
 import { CORE_BLOOD_UNITS, createEmptyFile, createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { reportedToCanonical } from './units';
 
@@ -279,6 +280,50 @@ describe('US-66 AC14: toOldShape is the exact inverse of the move', () => {
     const back = toOldShape(moved);
     expect(byId(back.measurements)).toEqual(byId(v2.measurements));
     expect(byId(back.labValues).map((r) => r.id)).toEqual(['f', 'p', 'p#core']);
+  });
+});
+
+// The merge of origin/main (2026-11-02): a lab limit (US-12 AC20) survives every US-66 path.
+describe('US-66 AC2/AC14 with US-12 AC20: a limit survives the move', () => {
+  it('a moved blood measurement keeps its comparator, its id and its #dup- id', () => {
+    const a = () => record([m('X', 'ldl', 1.5, '2026-05-01', { source: 'lab_import', comparator: '<' })]);
+    const b = () => record([m('X', 'ldl', 1.5, '2026-05-01', { source: 'lab_import', comparator: '>', createdAt: '2026-05-01T09:00:00Z' })]);
+    const v2 = mergeFiles(a(), b(), OPTS);
+    const dup = v2.measurements.find((r) => r.id.startsWith('X#dup-'))!;
+    const moved = migrate(v2);
+    expect(moved.measurements).toEqual([]);
+    expect(byId(moved.labValues).map((r) => [r.id, r.core, r.comparator])).toEqual(byId(v2.measurements).map((r) => [r.id, true, r.comparator]));
+    // The content hash reads the old form, comparator included, so a merge in either order keeps the same ids.
+    for (const merged of [mergeFiles(moved, migrate(a()), OPTS), mergeFiles(migrate(b()), moved, OPTS)]) {
+      expect(byId(merged.labValues).map((r) => [r.id, r.comparator])).toEqual([['X', v2.measurements.find((r) => r.id === 'X')!.comparator], [dup.id, dup.comparator]]);
+    }
+  });
+
+  it('toOldShape gives back a limit as it was written', () => {
+    const v2 = record([m('a', 'hdl', 1.5, '2026-05-01', { source: 'lab_import', comparator: '>' }), m('b', 'hdl', 1.2, '2026-04-01')]);
+    const back = toOldShape(migrate(v2));
+    expect(byId(back.measurements)).toEqual(byId(v2.measurements));
+    expect('comparator' in back.measurements.find((r) => r.id === 'b')!).toBe(false);
+  });
+
+  it('an upload\'s "< 40 mg/dL" LDL is a core row with its comparator, graded by the limit rule', () => {
+    const graded = (value: number) => {
+      const { file, saved } = bulkAppendValues(record(), [
+        { kind: 'lab', metricName: 'LDL Cholesterol', value, unit: 'mg/dL', comparator: '<', recordedAt: '2026-05-01', source: 'lab_import' },
+      ], OPTS.now);
+      expect(saved).toHaveLength(1);
+      const [row] = file.labValues;
+      expect(row).toMatchObject({ core: true, metricName: 'ldl', unit: CORE_BLOOD_UNITS.ldl, comparator: '<' });
+      expect(row.value).toBeCloseTo(reportedToCanonical('ldl', value, 'mg/dL')!.valueSI, 9);
+      const { inputs } = derivePlanInputs(file, new Date(OPTS.now));
+      // US-12 AC20: the plan grades a limit only when the bound decides.
+      const representative = limitRepresentative('ldlC', '<', row.value);
+      expect(inputs.limits?.ldlC).toEqual({ comparator: '<', bound: row.value, graded: representative !== null });
+      expect(inputs.ldlC).toBe(representative ?? undefined);
+      return inputs.limits!.ldlC!.graded;
+    };
+    // One bound below every LDL cutoff decides; one between cutoffs does not.
+    expect([graded(30), graded(120)]).toEqual([true, false]);
   });
 });
 

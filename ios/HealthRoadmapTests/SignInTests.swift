@@ -107,6 +107,63 @@ final class SignInTests: XCTestCase {
         }
     }
 
+    /// US-25 AC11e and AC11h: Disconnect drops the tokens, and a Disconnect made while an
+    /// open is under way wins. A refresh that started before it and finishes after it
+    /// puts nothing back, and does not write the old sign-in over a new one.
+    func testARefreshThatFinishesAfterADisconnectKeepsNothing() async throws {
+        for connectAgain in [false, true] {
+            try tokens.save(OAuthTokens(accessToken: "old", refreshToken: "rA", expiresAt: .distantPast), for: .dropbox)
+            let posted = expectation(description: "the refresh is on its way")
+            StubHTTP.handler = { _ in
+                posted.fulfill()
+                return .init(body: Data(#"{"access_token":"A-refreshed","expires_in":14400}"#.utf8), delay: 0.5)
+            }
+            let client = OAuthClient(tokens: tokens, session: StubHTTP.session())
+            let running = Task { try await client.accessToken(.dropbox, force: false) }
+            await fulfillment(of: [posted], timeout: 5)
+            client.signOut(.dropbox)
+            let fresh = OAuthTokens(accessToken: "B", refreshToken: "rB", expiresAt: .now.addingTimeInterval(14400))
+            if connectAgain { try client.keep(.init(provider: .dropbox, tokens: fresh, account: "dbid:B", email: nil)) }
+            do {
+                _ = try await running.value
+                XCTFail("a refresh of a grant that is gone gives no token")
+            } catch {
+                XCTAssertEqual(error as? OAuthClient.Failure, .signInAgain)
+            }
+            let kept = tokens.load(.dropbox)
+            XCTAssertEqual(kept?.refreshToken, connectAgain ? "rB" : nil, connectAgain ? "the new sign-in stays" : "the tokens stay gone")
+            XCTAssertEqual(kept?.accessToken, connectAgain ? "B" : nil)
+        }
+    }
+
+    /// The refresh is shared: callers that ask while it runs wait for it, and only
+    /// one refresh token is sent (verify-V4). With nothing changed, it is kept, and so is
+    /// a new refresh token in the answer (Google may rotate it).
+    func testCallersDuringARefreshShareItAndItIsKept() async throws {
+        final class Count: @unchecked Sendable {
+            private let lock = NSLock()
+            private var value = 0
+            func add() -> Int { lock.withLock { value += 1; return value } }
+            var posts: Int { lock.withLock { value } }
+        }
+        for rotated in [nil, "rA2"] as [String?] {
+            try tokens.save(OAuthTokens(accessToken: "old", refreshToken: "rA", expiresAt: .distantPast), for: .dropbox)
+            let count = Count()
+            let rotation = rotated.map { #","refresh_token":"\#($0)""# } ?? ""
+            StubHTTP.handler = { _ in
+                .init(body: Data(#"{"access_token":"A\#(count.add())","expires_in":14400\#(rotation)}"#.utf8), delay: 0.3)
+            }
+            let client = OAuthClient(tokens: tokens, session: StubHTTP.session())
+            async let first = client.accessToken(.dropbox, force: false)
+            async let second = client.accessToken(.dropbox, force: true)
+            let answers = try await [first, second]
+            XCTAssertEqual(answers, ["A1", "A1"])
+            XCTAssertEqual(count.posts, 1)
+            XCTAssertEqual(tokens.load(.dropbox)?.accessToken, "A1")
+            XCTAssertEqual(tokens.load(.dropbox)?.refreshToken, rotated ?? "rA", rotated == nil ? "the same sign-in is kept" : "a rotated refresh token is kept")
+        }
+    }
+
     /// Adversary A6: the account a sign-in belongs to. Dropbox names it in the token
     /// answer; Google with drive.file only does not, so Drive's about.user.permissionId.
     func testSignInAnswersTheAccountForEachProvider() async throws {

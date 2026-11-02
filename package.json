@@ -23,7 +23,7 @@
     "test": "npm run check:symlinks && npm run test:core && npm run test:server",
     "typecheck:server": "tsc --noEmit -p tsconfig.server.json",
     "typecheck:engine": "tsc --noEmit -p tsconfig.engine.json",
-    "test:all": "vitest run",
+    "test:all": "node scripts/test-all-locked.mjs",
     "test:core": "npm run test --workspace=@roadmap/health-core",
     "test:server": "vitest run app/lib",
     "test:watch": "npm run test --workspace=@roadmap/health-core -- --watch",

@@ -8,19 +8,19 @@
 // number reads as the matrix says it.
 
 import { useEffect, useState, type MutableRefObject } from 'react';
-import { canonicalToReported, commaQuestion, displayLabUnit, LAB_CATALOG, LAB_GROUPS, localDay, parseLocalisedNumber, reportedToCanonical, slotKey, type ApiMeasurement } from '@roadmap/health-core';
+import { canonicalToReported, commaQuestion, displayLabUnit, formatLabValue, LAB_CATALOG, LAB_GROUPS, localDay, parseLocalisedNumber, reportedToCanonical, savedLabText, slotKey, type ApiMeasurement, type Comparator } from '@roadmap/health-core';
 import { bloodTestKeyOf, coreStored } from '@roadmap/health-core/blood-tests';
 import { UnitChip } from './UnitChip';
 import { SAVE_ERRORS } from './BloodTestTimeline';
 import { bulkSaveLabValues } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
-import { formatLabValue, rangeMessage, sameAsSaved } from '../lib/blood-test-cell';
+import { rangeMessage, sameAsSaved } from '../lib/blood-test-cell';
 import { labUnitRefusalLine } from '../lib/lab-value-labels';
 import type { CorrectFn } from '../lib/matrix-save';
 import type { ApiLabValue } from '../lib/api-types';
 
 /** A saved value the form names: `value` in the unit typed, `stored` in the unit the row keeps. */
-interface Held { id: string; slot: string; value: number; unit: string; stored: number }
+interface Held { id: string; slot: string; value: number; unit: string; stored: number; comparator?: Comparator }
 
 export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect, preset, dirtyRef }: {
   onAdded: () => void;
@@ -84,8 +84,8 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
     setDate(localDay(new Date())); clearNotice();
   };
 
-  /** A saved value as the form names it: "45 µg/L". */
-  const labelOf = (v: Held) => `${formatLabValue(v.value)} ${displayLabUnit(v.unit, entry)}`;
+  /** A saved value as the form names it: "45 µg/L", "< 5 µg/L" (US-12 AC20). */
+  const labelOf = (v: Held) => `${savedLabText(v.value, v.comparator)} ${displayLabUnit(v.unit, entry)}`;
   /** The saved value is the one the form describes: this test, this day, this unit. */
   const describes = (v: Held) => v.slot === slot && displayLabUnit(v.unit, entry) === displayLabUnit(unit, entry);
 
@@ -93,11 +93,11 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
   const heldValue = (): Held | undefined => {
     if (!core) {
       const v = labValues.find(v => slotKey('lab', v.metricName, v.recordedAt) === slot);
-      return v && { id: v.id, slot, value: v.value, unit: v.unit, stored: v.value };
+      return v && { id: v.id, slot, value: v.value, unit: v.unit, stored: v.value, comparator: v.comparator };
     }
     const m = coreValues.find(m => slotKey('measurement', m.metricType, m.recordedAt) === slot);
     const shown = m && canonicalToReported(core, m.value, unit);
-    return m && shown != null ? { id: m.id, slot, value: shown, unit, stored: m.value } : undefined;
+    return m && shown != null ? { id: m.id, slot, value: shown, unit, stored: m.value, comparator: m.comparator } : undefined;
   };
 
   /** The day already holds this test. Name what is there, and offer to

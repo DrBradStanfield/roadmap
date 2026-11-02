@@ -235,7 +235,8 @@
         "externalId": {
           "type": ["string", "null"],
           "description": "Id in the originating system (e.g. a HealthKit sample UUID), used for dedup."
-        }
+        },
+        "comparator": { "enum": ["<", "<=", ">", ">="], "description": "Present only on a lab result printed as a limit ('> 60', '<5'; FHIR Quantity.comparator): `value` is then the printed bound, not the result. '<=' and '>=' are the codes for a printed ≤ and ≥. Absent means an exact value. Only a lab upload writes it; a correction is an exact value and carries none. Any other value makes the row unreadable to the app, which keeps it unchanged." }
       }
     },
 
@@ -270,7 +271,8 @@
         "source": { "$ref": "#/$defs/MeasurementSource" },
         "status": { "$ref": "#/$defs/MeasurementStatus" },
         "correctsId": { "type": ["string", "null"] },
-        "core": { "const": true, "description": "Present only on a core blood value (US-66): `metricName` is its core key and `unit` its canonical unit. A file holding one is schemaVersion 3." }
+        "core": { "const": true, "description": "Present only on a core blood value (US-66): `metricName` is its core key and `unit` its canonical unit. A file holding one is schemaVersion 3." },
+        "comparator": { "enum": ["<", "<=", ">", ">="], "description": "Present only on a lab result printed as a limit ('> 60', '<5'; FHIR Quantity.comparator): `value` is then the printed bound, not the result. '<=' and '>=' are the codes for a printed ≤ and ≥. Absent means an exact value. Only a lab upload writes it; a correction is an exact value and carries none. Any other value makes the row unreadable to the app, which keeps it unchanged." }
       }
     },
 

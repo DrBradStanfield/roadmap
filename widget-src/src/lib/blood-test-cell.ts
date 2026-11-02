@@ -9,16 +9,8 @@ import {
   cellLabel,
   cellRange,
   cellToSI,
-  HBA1C_THRESHOLDS,
-  LDL_THRESHOLDS,
-  getLipidStatus,
-  TOTAL_CHOLESTEROL_THRESHOLDS,
-  HDL_GRID_BANDS,
-  CREATININE_GRID_BANDS,
-  TRIGLYCERIDES_THRESHOLDS,
-  APOB_THRESHOLDS,
-  LPA_THRESHOLDS,
-  PSA_THRESHOLDS,
+  limitCellText,
+  statusOf,
   type CellUnit,
   type MetricType,
   type ValidationRange,
@@ -26,7 +18,7 @@ import {
 
 import type React from 'react';
 
-export type Status = 'ok' | 'warn' | 'bad' | null;
+import type { GradeStatus } from '@roadmap/health-core';
 
 // Whom a value is graded for (null: a known minor, US-07 AC6) lives in
 // health-core beside rowTarget, which reads it too.
@@ -35,7 +27,7 @@ import type { Grading } from '@roadmap/health-core';
 
 // The unit a cell is shown and typed in, and its conversions, live in health-core
 // (cell-unit.ts), which the iPhone app reads too.
-export { type CellUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel } from '@roadmap/health-core';
+export { type CellUnit, cellToSI, cellFromSI, cellDecimalPlaces, cellText, cellLabel, cellNumber, comparatorSymbol } from '@roadmap/health-core';
 
 // Keystroke filters (US-02 AC4). Most of our numeric cells are type="text"
 // (for inputMode/pattern control), and even type="number" doesn't reject
@@ -74,10 +66,29 @@ export function bpSysAdvance(typed: string): BpAdvance {
   return 'stay';
 }
 
-/** A lab value as the matrix shows it: up to two decimals, no trailing zeros. */
-export function formatLabValue(v: number): string {
-  return String(Math.round(v * 100) / 100);
+/**
+ * A trend's shape, for the grid's sparkline and the phone rows' trend: each
+ * point's spot in a `width` x `height` box (2px padding), the line through the
+ * exact points only, and the area under it down to `baseline`. A point printed
+ * as a limit (`limits[i]`) keeps its spot, to be drawn hollow, and stays off
+ * the line (US-12 AC20). Needs two points or more.
+ */
+export function trendGeometry(points: number[], limits: boolean[] | undefined, width: number, height: number, baseline: number) {
+  const low = Math.min(...points), span = Math.max(...points) - low || 1;
+  const pad = 2;
+  const coords = points.map((v, i) => [
+    pad + (i / (points.length - 1)) * (width - pad * 2),
+    height - pad - ((v - low) / span) * (height - pad * 2),
+  ] as const);
+  const exact = coords.filter((_, i) => !limits?.[i]);
+  const line = exact.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const area = exact.length >= 2
+    ? `${line} L${exact[exact.length - 1][0].toFixed(1)},${baseline} L${exact[0][0].toFixed(1)},${baseline} Z` : null;
+  return { coords, exact, line, area };
 }
+
+/** A saved core value as its cell shows it: a limit with its symbol, "> 1.55" (US-12 AC20). */
+export const savedCellText = limitCellText;
 
 /**
  * A typed value that changes nothing, so saving it writes nothing (US-03
@@ -176,64 +187,10 @@ export function rangeMessage(metric: MetricType, display: CellUnit, fault: 'abov
   return fault === 'below' ? `${range.minExclusive ? 'Must be above' : 'Min'} ${range.min} ${unit}` : `Max ${range.max} ${unit}`;
 }
 
-/** Clinical threshold mapping. Returns null for metrics whose status is
- *  judged elsewhere (e.g. creatinine → eGFR), and for a value the plan leaves
- *  out as out of range, such as a stored LDL 0 (US-03 AC7). */
-export function statusOf(metric: MetricType, siValue: number, grading: Grading): Status {
-  if (!grading || siValue == null || Number.isNaN(siValue) || rangeFault(cellRange(metric, 'si'), siValue)) return null;
-  const { sex } = grading;
-  switch (metric) {
-    case 'hba1c':
-      if (siValue >= HBA1C_THRESHOLDS.diabetes) return 'bad';
-      if (siValue >= HBA1C_THRESHOLDS.prediabetes) return 'warn';
-      return 'ok';
-    case 'ldl': {
-      // The LDL tile's grade: amber from the plan's target, as ApoB is from its 0.5 (US-07 AC5)
-      const s = getLipidStatus(siValue, LDL_THRESHOLDS);
-      return s === 'Optimal' ? 'ok' : s === 'High' || s === 'Very High' ? 'bad' : 'warn';
-    }
-    case 'total_cholesterol':
-      if (siValue >= TOTAL_CHOLESTEROL_THRESHOLDS.high) return 'bad';
-      if (siValue >= TOTAL_CHOLESTEROL_THRESHOLDS.borderline) return 'warn';
-      return 'ok';
-    case 'hdl': {
-      // Higher is better. No sex, no grade: never assume one (US-62 AC13).
-      if (!sex) return null;
-      const { okFrom, badBelow } = HDL_GRID_BANDS[sex];
-      if (siValue >= okFrom) return 'ok';
-      if (siValue >= badBelow) return 'warn';
-      return 'bad';
-    }
-    case 'triglycerides':
-      if (siValue >= TRIGLYCERIDES_THRESHOLDS.high) return 'bad';
-      if (siValue >= TRIGLYCERIDES_THRESHOLDS.borderline) return 'warn';
-      return 'ok';
-    case 'apob':
-      if (siValue >= APOB_THRESHOLDS.high) return 'bad';
-      if (siValue >= APOB_THRESHOLDS.borderline) return 'warn';
-      return 'ok';
-    case 'lpa':
-      if (siValue >= LPA_THRESHOLDS.elevated) return 'bad';
-      if (siValue >= LPA_THRESHOLDS.normal) return 'warn';
-      return 'ok';
-    case 'psa':
-      return siValue >= PSA_THRESHOLDS.normal ? 'warn' : 'ok';
-    case 'creatinine': {
-      if (!sex) return null; // the ceiling differs by sex; never assume one (US-62 AC13)
-      const { okMax, badFrom } = CREATININE_GRID_BANDS[sex];
-      if (siValue >= badFrom) return 'bad';
-      if (siValue > okMax) return 'warn';
-      return 'ok';
-    }
-    default:
-      return null;
-  }
-}
-
 /** Live status from a typed display value (parsed + canonicalised). */
 export function previewStatus(
   metric: MetricType, typed: string, display: CellUnit, grading: Grading,
-): Status {
+): GradeStatus {
   const n = readTypedValue(metric, typed, display);
   if (n === undefined) return null;
   return statusOf(metric, cellToSI(metric, n, display), grading);

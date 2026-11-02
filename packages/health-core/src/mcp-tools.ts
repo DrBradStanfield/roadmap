@@ -53,7 +53,8 @@ import {
 import type { FileDocument, FileLabValue, FileMeasurement, RoadmapFile, RoadmapProfile } from './roadmap-file';
 import { CORE_BLOOD_UNITS } from './roadmap-file';
 import type { SyncManager } from './sync-manager';
-import { CANONICAL_UNITS, formatDisplayValue, formatRange, getDisplayLabel, getDisplayRange, reportedToCanonical, UNIT_DEFS, UNIT_SWAP_FLOORS, unitSystemOf, type MetricType, type UnitSystem } from './units';
+import { CANONICAL_UNITS, formatRange, getDisplayLabel, getDisplayRange, reportedToCanonical, UNIT_DEFS, UNIT_SWAP_FLOORS, unitSystemOf, type MetricType, type UnitSystem } from './units';
+import { COMPARATORS, comparatorOf, formatValue, withComparator, type Comparator } from './lab-limits';
 import { DROPBOX_APP_FOLDER, IMPORT_ACCEPTED_TYPES, IMPORT_FILE_REASONS, IMPORT_REFUSALS, importHint } from './import-hints';
 import { type McpImportRoute, type McpRefusalReason } from './product-events';
 import { LAB_ARCHIVE_TITLE } from './document-path';
@@ -120,7 +121,8 @@ export const SI_NOTE =
   'spelling it does not know for that test is refused rather than guessed. A refusal can also be for the number under a ' +
   'spelling the test takes: a cells/µL count that is not whole, or not on the scale of its own printed range. ' +
   'A test the catalogue does not know ' +
-  'keeps the unit it was reported in.';
+  'keeps the unit it was reported in. A lab result printed as a limit carries `comparator` (<, <=, >, >=): its ' +
+  'value is the bound, not the result.';
 
 /** The version the server announces, and the one a report is stamped with. */
 export const SERVER_VERSION = '1.0.2';
@@ -272,6 +274,8 @@ export const fileResultRow = z.object({
   referenceLow: z.number().nullable().optional(),
   referenceHigh: z.number().nullable().optional(),
   recordedAt: DAY.optional(),
+  /** A result printed as a limit ("> 60" is value 60, comparator ">"); the four codes only (US-12 AC20). */
+  comparator: z.enum(COMPARATORS).optional(),
 }).strict();
 
 /**
@@ -453,6 +457,8 @@ const importCandidateOutput = z.object({
   printedName: z.string().optional(),
   /** Another candidate in this call for the same (metric, day): the user picks one, the commit takes one. */
   sameDayAs: z.string().optional(),
+  /** Printed as a limit: `value` is its bound, and `displayValue` shows the symbol (US-12 AC20). */
+  comparator: z.enum(COMPARATORS).optional(),
   slot: z.object({
     state: z.enum(SLOT_STATES),
     existingRowId: z.string().optional(),
@@ -1364,12 +1370,12 @@ function slotFor(
   if (!existing) return { state: 'free' };
   // A row no reader can read holds the day, with nothing to show or compare (US-65 AC3).
   if (!readableSlotRow(existing)) return { state: 'held_different', existingRowId: existing.id, replaceable: false };
-  // A core value, in either array, compares by its displayed string (US-66 AC6).
+  // A core value, in either array, compares by its displayed string, a limit with its symbol (US-66 AC6, US-12 AC20).
   const state: SlotState = 'metricType' in existing || isCoreRow(existing)
-    ? slotState(formatDisplayValue(('metricType' in existing ? existing.metricType : existing.metricName) as MetricType, existing.value, system), candidate.displayValue)
+    ? slotState(formatValue(('metricType' in existing ? existing.metricType : existing.metricName) as MetricType, existing.value, system, existing.comparator), candidate.displayValue)
     : sameLabQuantity(
-      { name: existing.metricName, value: existing.value, unit: existing.unit },
-      { name: candidate.printedName ?? candidate.metric, value: candidate.value, unit: candidate.unit },
+      { name: existing.metricName, value: existing.value, unit: existing.unit, comparator: existing.comparator },
+      { name: candidate.printedName ?? candidate.metric, value: candidate.value, unit: candidate.unit, comparator: candidate.comparator },
     ) ? 'held_equal' : 'held_different';
   if (state === 'held_equal') return { state, existingRowId: existing.id, existingValue: existing.value };
   const age = daysBetween(dayOf(existing.recordedAt ?? ''), dayOf(now));
@@ -1516,7 +1522,7 @@ export function prepareImport(
       // (US-02 AC8).
       const offerCore = (
         metric: MetricType, own: string, reported: { value: number; unit?: string }, label: string,
-        value: { confidence: ImportCandidate['confidence']; question?: string; printedName?: string },
+        value: { confidence: ImportCandidate['confidence']; question?: string; printedName?: string; comparator?: Comparator },
       ) => {
         const check = bundle.checked ? null : appendMeasurement(file, { metricType: metric, ...reported, recordedAt: own, now: ctx.now, latestDay });
         if (check && !check.ok && check.reason !== 'slot-occupied' && check.message !== PRESSURE_ORDER_HALF) {
@@ -1525,9 +1531,10 @@ export function prepareImport(
         }
         const valueSI = reported.unit === undefined ? reported.value : reportedToCanonical(metric, reported.value, reported.unit)?.valueSI;
         if (valueSI === undefined) return;
+        // A limit offers its bound with its code, shown with its symbol (US-12 AC20).
         offer(slotKey('measurement', metric, own), {
-          kind: 'measurement', metric, value: valueSI, unit: CANONICAL_UNITS[metric],
-          displayValue: formatDisplayValue(metric, valueSI, system), displayUnit: getDisplayLabel(metric, system),
+          kind: 'measurement', metric, value: valueSI, unit: CANONICAL_UNITS[metric], ...comparatorOf(value),
+          displayValue: formatValue(metric, valueSI, system, value.comparator), displayUnit: getDisplayLabel(metric, system),
           recordedAt: own, confidence: value.confidence,
           ...(value.question ? { question: fromDocument(value.question) } : null),
           sourceFileName: name, ...printed(value),
@@ -1549,7 +1556,7 @@ export function prepareImport(
         const named = bloodTestKeyOf(value.name);
         if (named && named !== 'creatinine') {
           offerCore(named, own, { value: value.value, unit: value.unit }, oneLine(value.name).slice(0, MAX_NAME_LENGTH),
-            { confidence: 'high', printedName: value.printedName ?? value.name });
+            { confidence: 'high', printedName: value.printedName ?? value.name, ...comparatorOf(value) });
           continue;
         }
         // With its range: the write checks the whole row (US-21 AC15), so the preview does too.
@@ -1564,13 +1571,13 @@ export function prepareImport(
         }
         const metric = labSlotKey(value.name);
         const unit = oneLine(value.unit).slice(0, MAX_NAME_LENGTH);
-        const display = String(value.value);
+        const display = withComparator(String(value.value), value.comparator);
         // The name the dry run above just accepted rides on the candidate, and
         // the commit writes under it: "BUN" carries the mg/dL factor that the
         // slot key "urea" refuses, so a receipt built under one name and
         // committed under the other would throw away the value it offered.
         offer(slotKey('lab', metric, own), {
-          kind: 'lab', metric, value: value.value, unit, displayValue: display, displayUnit: unit,
+          kind: 'lab', metric, value: value.value, unit, displayValue: display, displayUnit: unit, ...comparatorOf(value),
           recordedAt: own, confidence: 'high',
           referenceLow: value.referenceLow ?? null, referenceHigh: value.referenceHigh ?? null,
           sourceFileName: name, ...printed({ printedName: value.printedName ?? value.name }),
@@ -1744,7 +1751,7 @@ export function fileResultsBundle(request: FileResultsSource, file: RoadmapFile,
         metric, valueSI: canonical, displayValue: row.value, displayUnit: unit, displaySystem: system,
         confidence: swapped ? 'low' : 'high',
         ...(swapped ? { question: `${row.value} ${unit} is ${canonical.toFixed(2)} ${def.label.si}, below any usual result; was the printed unit ${other}?` } : null),
-        printedName, recordedAt: day,
+        printedName, recordedAt: day, ...comparatorOf(row),
       });
     } else {
       const entry = printed?.kind === 'lab' ? printed.entry : undefined;
@@ -1762,7 +1769,7 @@ export function fileResultsBundle(request: FileResultsSource, file: RoadmapFile,
       }
       additionalValues.push({
         name: printedName, value: row.value, unit: displayLabUnit(unit, entry),
-        referenceLow: row.referenceLow ?? null, referenceHigh: row.referenceHigh ?? null, printedName, recordedAt: day,
+        referenceLow: row.referenceLow ?? null, referenceHigh: row.referenceHigh ?? null, printedName, recordedAt: day, ...comparatorOf(row),
       });
     }
   }
@@ -1834,13 +1841,13 @@ export function importDocumentsCommit(
     }
     const correctsId = replace.has(id) ? c.slot.existingRowId : undefined;
     rows.push(c.kind === 'measurement'
-      ? { kind: 'measurement', metricType: c.metric, value: c.value, recordedAt: c.recordedAt, source: 'lab_import', ...(correctsId ? { correctsId } : null) }
+      ? { kind: 'measurement', metricType: c.metric, value: c.value, recordedAt: c.recordedAt, source: 'lab_import', ...(correctsId ? { correctsId } : null), ...comparatorOf(c) }
       : {
           // The name the receipt was built from, not the slot key it folds to:
           // the conversion at the write must be the one the dry run offered.
           kind: 'lab', metricName: c.printedName ?? c.metric, value: c.value, unit: c.unit,
           referenceLow: c.referenceLow ?? null, referenceHigh: c.referenceHigh ?? null,
-          recordedAt: c.recordedAt, source: 'lab_import', ...(correctsId ? { correctsId } : null),
+          recordedAt: c.recordedAt, source: 'lab_import', ...(correctsId ? { correctsId } : null), ...comparatorOf(c),
         });
   }
 
@@ -2269,6 +2276,7 @@ const IMPORT_OUTPUT_SCHEMA: McpToolDefinition['outputSchema'] = {
           sourceFileName: { type: 'string' },
           printedName: { type: 'string', description: 'The name as the report printed it. Show it beside metric.' },
           sameDayAs: { type: 'string', description: 'Another candidate id for the same metric and day: the user picks one; a commit takes one.' },
+          comparator: { type: 'string', enum: [...COMPARATORS], description: 'A result printed as a limit: value is the bound, not the result; displayValue shows the symbol.' },
           slot: {
             type: 'object',
             description: 'free: nothing on that day. held_equal: already recorded. held_different: the record holds another value; replace only if the user says so.',
@@ -2338,10 +2346,11 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     description:
       'Return the user’s health-roadmap.json: profile, measurements, lab values, medications, supplements, ' +
       'screenings and documents. Use it for raw values, history and row ids, and before add_measurement, ' +
-      'add_lab_values or correct_value; get_plan computes the plan. Rows are never deleted: a superseded value stays with status ' +
-      '"entered-in-error", so read `status: "active"` rows as the current truth. Use each row\'s `current` flag for ' +
-      'the value the plan counts. Sync bookkeeping is left out. Blood tests are in labValues, the plan\'s flagged ' +
-      '`core`. Values are SI (`units`). A catalogued lab is converted to SI; an unknown test keeps the unit it was reported in.',
+      'add_lab_values or correct_value; get_plan computes the plan. Rows are never deleted: read `status: "active"` rows ' +
+      'as current; a superseded one stays "entered-in-error". Each row\'s `current` flag marks the value the plan counts. ' +
+      'Sync bookkeeping is left out. Blood tests are in labValues, the plan\'s flagged `core`. Values ' +
+      'are SI (`units`). A catalogued lab is converted to SI; an unknown test keeps the unit it was reported in. ' +
+      'A `comparator` marks a limit, not the number.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -2368,8 +2377,8 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'Compute the user’s plan from their record: current values, what screening or test is due, and ' +
       'suggestions with the reason and citations behind each one. Use it for next steps; read_record gives ' +
       'raw values, history and row ids. Fill `missingInputs` from the user via add_measurement ' +
-      'or update_profile. This is the app’s own protocol, computed ' +
-      'offline from the file; it is educational, not medical advice.',
+      'or update_profile. "> 60" is a limit, not the number. ' +
+      'This is the app’s own protocol, computed offline from the file; it is educational, not medical advice.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     outputSchema: {
       type: 'object',
@@ -2702,7 +2711,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       `printedName and unit exactly as printed; metric is the core key (${VALID_METRICS.join(', ')}) ` +
       'or the test name; a wrong pairing is refused. Never convert a unit: unknown spellings are refused. ' +
       'collectedOn is the sample date, not the print date (DD/MM outside the US); if none is printed, ASK the user — never guess. ' +
-      'A result printed as < or > is not a number: tell the user, do not file it. ' +
+      'A result printed < or >: its bound as value, with comparator. ' +
       'Step 1 answers with candidates (free, already recorded, differs), a receipt and refused rows with why (unrecognized). ' +
       'Step 2: show all of it and WAIT for the user’s own yes, then call again with commit: accept ids, replace only the ids ' +
       'the user asked to overwrite (permanent), and approval: the user’s own words, quoted. ' +
@@ -2722,11 +2731,12 @@ export const MCP_TOOLS: McpToolDefinition[] = [
             properties: {
               metric: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'The core key, the catalogue test name, or the printed name.' },
               printedName: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'The test name exactly as the report prints it.' },
-              value: { type: 'number', description: 'The number as printed. Not a bound (<, >).' },
+              value: { type: 'number', description: 'The number as printed.' },
               unit: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'The unit exactly as printed beside the number.' },
               referenceLow: { type: ['number', 'null'] },
               referenceHigh: { type: ['number', 'null'] },
               recordedAt: { ...DAY_SCHEMA, description: 'Only when this line’s date differs from collectedOn.' },
+              comparator: { type: 'string', enum: [...COMPARATORS] },
             },
             required: ['metric', 'printedName', 'value', 'unit'],
             additionalProperties: false,

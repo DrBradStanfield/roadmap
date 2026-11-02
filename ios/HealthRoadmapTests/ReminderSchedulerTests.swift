@@ -169,7 +169,53 @@ final class ReminderSchedulerTests: XCTestCase {
         XCTAssertEqual(request.content.body, "A check-up is due. Open the app to see which.")
         let trigger = try XCTUnwrap(request.trigger as? UNCalendarNotificationTrigger)
         XCTAssertFalse(trigger.repeats)
-        XCTAssertEqual(trigger.dateComponents, DateComponents(year: 2027, month: 3, day: 1, hour: 9))
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = .autoupdatingCurrent
+        XCTAssertEqual(trigger.dateComponents, DateComponents(calendar: gregorian, year: 2027, month: 3, day: 1, hour: 9))
+    }
+
+    /// US-25 AC12: a reminder shows on its day at 9:00 whatever calendar the phone is set to.
+    /// The engine's days are Gregorian; a trigger without a calendar is read in the phone's,
+    /// so a Buddhist phone was asked for 1556 (never fired) and a Japanese one for 4117.
+    func testTheReminderShowsOnItsDayWhateverCalendarThePhoneUses() throws {
+        let request = ReminderScheduler.request(for: .init(id: "reminder.2099-03-01", fireDay: "2099-03-01", categories: ["screening_colorectal"]))
+        let trigger = try XCTUnwrap(request.trigger as? UNCalendarNotificationTrigger)
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = .current
+        let nineOnTheDay = try XCTUnwrap(gregorian.date(from: DateComponents(year: 2099, month: 3, day: 1, hour: 9)))
+        // iOS reads a trigger's components in their own calendar, or in the phone's when they carry none.
+        for identifier in [Calendar.Identifier.buddhist, .japanese, .islamicUmmAlQura, .persian, .hebrew] {
+            var phone = Calendar(identifier: identifier)
+            phone.timeZone = .current
+            XCTAssertEqual((trigger.dateComponents.calendar ?? phone).date(from: trigger.dateComponents), nineOnTheDay, "\(identifier)")
+        }
+        XCTAssertNil(trigger.dateComponents.timeZone, "9:00 on the phone's clock, wherever the phone is")
+        XCTAssertEqual(trigger.nextTriggerDate(), nineOnTheDay)
+    }
+
+    /// US-25 AC12: 9:00 stays 9:00 on the phone's clock after the phone changes time zone. iOS keeps the trigger
+    /// (archived) and reads it later, so a calendar holding the zone it was built in fired at 9:00 in that old zone.
+    func testTheReminderStaysAtNineOnThePhonesClockAfterAZoneChange() throws {
+        let saved = ProcessInfo.processInfo.environment["TZ"]
+        defer {
+            if let saved { setenv("TZ", saved, 1) } else { unsetenv("TZ") }
+            NSTimeZone.resetSystemTimeZone()
+        }
+        // The phone's own zone moves, as when it travels (NSTimeZone.default would leave the phone's zone alone).
+        func movePhone(to zone: String) {
+            setenv("TZ", zone, 1)
+            NSTimeZone.resetSystemTimeZone()
+        }
+        movePhone(to: "America/New_York")
+        let request = ReminderScheduler.request(for: .init(id: "reminder.2099-03-01", fireDay: "2099-03-01", categories: ["screening_colorectal"]))
+        let archived = try NSKeyedArchiver.archivedData(withRootObject: try XCTUnwrap(request.trigger), requiringSecureCoding: true)
+        movePhone(to: "Pacific/Auckland")
+        let auckland = try XCTUnwrap(TimeZone(identifier: "Pacific/Auckland"))
+        XCTAssertEqual(TimeZone.current, auckland)
+        let trigger = try XCTUnwrap(NSKeyedUnarchiver.unarchivedObject(ofClass: UNCalendarNotificationTrigger.self, from: archived))
+        var there = Calendar(identifier: .gregorian)
+        there.timeZone = auckland
+        XCTAssertEqual(trigger.nextTriggerDate(), there.date(from: DateComponents(year: 2099, month: 3, day: 1, hour: 9)))
     }
 
     func testTheEngineGivesTheAnnualFloorForANewRecord() throws {

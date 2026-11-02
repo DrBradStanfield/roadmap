@@ -521,6 +521,35 @@ describe('the doors that must stay shut (US-32, design §6)', () => {
   });
 });
 
+/** A JSON-RPC message with no `id` is a notification: the server must not reply (US-32 AC55). */
+describe('US-32 AC55: a message without an id gets an empty 202 over HTTP', () => {
+  async function notify(access: string, method: string, params: unknown = {}) {
+    const res = await mcpEndpoint(
+      new Request(`${ISSUER}/mcp`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', method, params }),
+      }),
+      NOW,
+    );
+    return { status: res.status, body: await res.text() };
+  }
+
+  it('answers each notification with an empty 202, runs no tool, and still answers requests', async () => {
+    seedRecord();
+    const { access } = await connect();
+    await rpc(access, 'initialize', { protocolVersion: '2025-11-25' });
+    expect(await notify(access, 'notifications/initialized')).toEqual({ status: 202, body: '' });
+    expect(await notify(access, 'ping')).toEqual({ status: 202, body: '' });
+    const before = JSON.stringify(storedRecord());
+    expect(await notify(access, 'tools/call', { name: 'add_measurement', arguments: { metricType: 'ldl', value: 3.2, recordedAt: TODAY } }))
+      .toEqual({ status: 202, body: '' });
+    expect(JSON.stringify(storedRecord())).toBe(before);
+    const listed = await rpc(access, 'tools/list');
+    expect(listed.result!.tools).toHaveLength(MCP_TOOLS.length);
+  });
+});
+
 /**
  * Claude does not register: it sends its published CIMD id, and that document
  * is Cloudflare-challenged from Fly (2026-09-02), so the id is pinned. The
@@ -1177,6 +1206,65 @@ describe('Dropbox failing to answer is an error, not a crash (US-32, N-2)', () =
     expect(returned.searchParams.get('error')).toBe('server_error');
     expect(returned.searchParams.get('code')).toBeNull();
   });
+});
+
+describe('US-10 AC4a: a 401 or 403 after the upload is not "nothing was written"', () => {
+  /** Dropbox stores the upload, then refuses the token on every later read: the save's own verify read. */
+  function refuseReadsAfterUpload(status: 401 | 403): void {
+    setAdapterFactory(() => {
+      const adapter = new MemoryAdapter(cloud);
+      const read = adapter.read.bind(adapter);
+      const write = adapter.write.bind(adapter);
+      let uploaded = false;
+      adapter.write = async (...args: Parameters<MemoryAdapter['write']>) => {
+        const result = await write(...args);
+        uploaded = true;
+        return result;
+      };
+      adapter.read = async (...args: Parameters<MemoryAdapter['read']>) => {
+        if (uploaded) throw new StorageError(`Dropbox read failed (${status})`, undefined, undefined, status);
+        return read(...args);
+      };
+      return adapter;
+    });
+  }
+
+  for (const status of [401, 403] as const) {
+    it(`a ${status} on the verify read says reconnect AND that the change may have landed`, async () => {
+      seedRecord();
+      const { access } = await connect();
+      refuseReadsAfterUpload(status);
+      const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY });
+      // The value is in the user's Dropbox: the upload landed before the refusal.
+      // LDL is a core lab row (US-66 AC1).
+      expect(storedRecord().labValues.filter((l) => l.core).map((l) => [l.metricName, l.value])).toEqual([['ldl', 3.2]]);
+      expect(answer.isError).toBe(true);
+      expect(answer.text).not.toMatch(/nothing was written/i);
+      expect(answer.text).toBe(
+        'The record in Dropbox refused this connection’s access after a change was sent. ' +
+          'Reconnect the provider, which grants access again. The change may have landed: read the record again before retrying.',
+      );
+    });
+  }
+
+  for (const status of [401, 403] as const) {
+    it(`control: a ${status} before anything was sent still says nothing was read and nothing was written`, async () => {
+      seedRecord();
+      const { access } = await connect();
+      setAdapterFactory(() => {
+        const adapter = new MemoryAdapter(cloud);
+        adapter.read = async () => { throw new StorageError(`Dropbox read failed (${status})`, undefined, undefined, status); };
+        return adapter;
+      });
+      const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY });
+      expect(storedRecord().measurements).toEqual([]);
+      expect(answer.isError).toBe(true);
+      expect(answer.text).toBe(
+        'Dropbox refused this connection’s access to the record. Nothing was read and nothing was written. ' +
+          'Ask the user to reconnect the connector, which grants it again.',
+      );
+    });
+  }
 });
 
 describe('bodies and floods are bounded (US-32)', () => {
@@ -2182,6 +2270,25 @@ describe('the OAuth funnel counts refusals, not only successes (US-32 AC34)', ()
     const res = await get('/mcp/callback?code=dropbox-code&state=forged', { cookie });
     expect(res.status).toBe(400);
     expect(funnel().at(-1)).toEqual(['mcp_connect_failed', { client: 'claude', provider: 'dropbox', reason: 'nonce-mismatch' }]);
+  });
+
+  // The nonce compare is pinned: an equal length goes through timingSafeEqual,
+  // any other length is a mismatch without it and never throws.
+  it('compares a returned state of the nonce\'s length in constant time and refuses another length', async () => {
+    const { nonce, cookie } = await pressConnect(await consentScreen(CLAUDE_CIMD));
+    const forged = (nonce[0] === 'A' ? 'B' : 'A') + nonce.slice(1);
+    const tse = vi.spyOn(crypto, 'timingSafeEqual');
+    const nonceCalls = () => tse.mock.calls.filter(([, b]) => Buffer.from(nonce).equals(b as Buffer));
+    try {
+      for (const state of [forged, nonce.slice(1), `${nonce}A`]) {
+        const res = await get(`/mcp/callback?code=dropbox-code&state=${encodeURIComponent(state)}`, { cookie });
+        expect(res.status).toBe(400);
+        expect(funnel().at(-1)).toEqual(['mcp_connect_failed', { client: 'claude', provider: 'dropbox', reason: 'nonce-mismatch' }]);
+      }
+      expect(nonceCalls()).toEqual([[Buffer.from(forged), Buffer.from(nonce)]]);
+    } finally {
+      tse.mockRestore();
+    }
   });
 
   it('counts the user saying no at the provider', async () => {

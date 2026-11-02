@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  type Report, type Result, REPORT_SCHEMA, applyAddenda, exampleReport, keySafetyErrors, main, normQuote, productMentions, renderReport, runBatch, validateExceptions,
+  type Report, type Result, REPORT_SCHEMA, applyAddenda, exampleReport, isGuideText, keySafetyErrors, main, normQuote, productMentions, renderReport, runBatch, validateExceptions,
   sentences, sha256, tokenise, validateReport,
 } from "./knowledge-batch-check";
 
@@ -2244,5 +2244,106 @@ describe("US-50 AC12 keySafetyErrors", () => {
     expect(one(`${VIEW}${KEY([`${"x".repeat(1_500)} [1].`, "B [1].", "C [1]."])}${REFS}`)).toMatch(/runs \d+ characters \(at most 1500\)/);
     expect(one(`${VIEW}${KEY(["A [1].", "B.", "C [1]."])}${REFS}`)).toContain("cites no [n] marker: - B.");
     expect(one(`${VIEW}${KEY(["A [1].", "B [3].", "C [1]."])}${REFS}`)).toContain("cites [3] with no reference line");
+  });
+});
+
+// US-70 AC1: --guides checks a condition-guide batch: a new guide and its index entry, and the guide's shape.
+describe("US-70 AC1 condition guides: --guides", () => {
+  const SOUND = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "fixtures", "condition-guide", "sound.md"), "utf8");
+  const ENTRY = { handle: "g", summary: "A synthetic condition guide for tests.", title: "Test condition", type: "guideline", kind: "condition" };
+  const addGuide = (text = SOUND, entry: object = ENTRY) => {
+    put("docs/guideline/g.md", text);
+    put("docs/blog/index.json", JSON.stringify([...JSON.parse(INDEX), entry], null, 2));
+    const rawPath = join(reports, "g.raw.txt");
+    writeFileSync(rawPath, "Synthetic raw.");
+    writeFileSync(join(reports, "g.json"), JSON.stringify({ handle: "g", type: "guideline", raw_path: rawPath, raw_sha256: sha256("Synthetic raw."), old_raw_path: null,
+      changed_tokens: [], deleted_sentences: [], headings_before: [], headings_after: [], proposed_summary_correction: null,
+      product_mentions_before: 0, product_mentions_after: 0, notes: "" }));
+  };
+  const grun = (over: Partial<Parameters<typeof runBatch>[0]> = {}) => {
+    const { results } = runBatch({ root, batch: "t", handles: ["g"], reportsDir: reports, base: "HEAD", rawRoots: [reports], guides: true, ...over });
+    return Object.fromEntries(results.map((r) => [r.id, r])) as Record<string, Result>;
+  };
+
+  it("accepts a new guide and its added index entry, and its GUIDE check passes", () => {
+    addGuide();
+    const r = grun();
+    expect(fails(r.AC1)).toEqual([]);
+    expect(r.AC1.evidence).toContain("allowed guide entry: g");
+    expect(r.GUIDE.status).toBe("PASS");
+  });
+  it("fails a guide missing a section or a red flag's emergency line", () => {
+    addGuide(SOUND.replace("## Medicines\n", "").replace("now (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).\n- Chest", "now.\n- Chest"));
+    const r = grun();
+    expect(fails(r.GUIDE)).toEqual([
+      'FAIL g: needs one "## Medicines" section (found 0)',
+      expect.stringMatching(/^FAIL g: a red flag lacks the exact emergency line \(111 in NZ, 000 in Australia, 911 in the US, 999 in the UK\): /),
+    ]);
+  });
+  // Review A3: the same definition as the loader's index (parseFrontmatter), so single quotes count.
+  it("isGuideText takes kind: 'condition' single-quoted, double-quoted or bare, and a single-quoted guide passes GUIDE", () => {
+    for (const k of ["'condition'", '"condition"', "condition"]) expect(isGuideText(SOUND.replace('kind: "condition"', `kind: ${k}`)), k).toBe(true);
+    expect(isGuideText(SOUND.replace('kind: "condition"', "kind: 'metric'"))).toBe(false);
+    addGuide(SOUND.replace('kind: "condition"', "kind: 'condition'"));
+    expect(grun().GUIDE.status).toBe("PASS");
+  });
+  // Review A6: guide batches run AC7's citation-integrity and identifier checks, with guide sources: public guideline
+  // and label hosts named in the guide's own sources:, PubMed and DOI, NIH ODS and Brad's video posts; never ConsumerLab.
+  it("runs AC7's reference checks on a guide: citations, hosts, link text", () => {
+    const refs = (lines: string) => SOUND.replace("1. Example guideline. https://example.org/guideline", lines);
+    addGuide();
+    expect(fails(grun().AC7)).toEqual([]);
+    addGuide(SOUND.replace("used only by tests [1].", "used only by tests."));
+    expect(fails(grun().AC7)).toEqual(["FAIL g: reference lines never cited: 1"]);
+    addGuide(refs("1. A guideline on an unlisted site. https://unlisted.example.com/g"));
+    expect(fails(grun().AC7)).toEqual([expect.stringMatching(/^FAIL g: reference line has unknown host unlisted\.example\.com: /)]);
+    addGuide(refs("1. ConsumerLab review. https://www.consumerlab.com/reviews/x"));
+    expect(fails(grun().AC7)).toEqual([expect.stringMatching(/^FAIL g: reference line has unknown host consumerlab\.com: /)]);
+    addGuide(refs("1. Trial. [PMID 12345678](https://pubmed.ncbi.nlm.nih.gov/87654321/)"));
+    expect(fails(grun().AC7).join("\n")).toContain("PMID link text 12345678 differs from its URL id 87654321");
+  });
+  // Re-check R1: a ConsumerLab URL in the guide's own sources: never makes consumerlab.com an allowed reference host.
+  it("refuses a ConsumerLab reference even when the guide's sources: lists a consumerlab.com URL", () => {
+    const g = SOUND.replaceAll("https://example.org/guideline", "https://www.consumerlab.com/reviews/x");
+    addGuide(g);
+    expect(fails(grun().AC7).join("\n")).toMatch(/unknown host consumerlab\.com/);
+  });
+  it("takes a guide's reference to a host its sources: names, DailyMed, doi.org and Brad's video posts", () => {
+    put("docs/blog/other.md", "---\ntitle: \"O\"\n---\n\nA video post.\n");
+    addGuide(SOUND.replace("1. Example guideline. https://example.org/guideline", [
+      "1. Example guideline. https://example.org/guideline/full",
+      "2. Drug label. https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=abc",
+      "3. Trial. https://doi.org/10.1000/xyz123",
+      "4. Brad's video. https://drstanfield.com/blogs/articles/other",
+    ].join("\n")).replace("used only by tests [1].", "used only by tests [1][2][3][4]."));
+    expect(fails(grun().AC7)).toEqual([]);
+  });
+  it("fails a guide over 35,000 characters", () => {
+    addGuide(SOUND.replace("Text.", "x".repeat(35_000)));
+    expect(fails(grun().GUIDE)).toEqual([expect.stringMatching(/^FAIL g: runs \d+ characters \(at most 35000\)$/)]);
+  });
+  it("refuses an index entry that is not a condition guide, and a batch handle that is not a guideline", () => {
+    addGuide(SOUND, { ...ENTRY, kind: undefined });
+    expect(fails(grun().AC1).join("\n")).toContain('entry added for "g"');
+    const r = grun({ handles: ["alpha"] });
+    expect(fails(r.GUIDE)).toEqual(["FAIL alpha: not a guideline"]);
+  });
+  it("without --guides the added entry fails AC1 and no GUIDE check runs", () => {
+    addGuide();
+    const r = grun({ guides: false });
+    expect(fails(r.AC1).join("\n")).toContain('entry added for "g"');
+    expect(r.GUIDE).toBeUndefined();
+  });
+  it("the CLI refuses --masters with --guides, and --guides without the batch's exceptions file", () => {
+    put("handles.txt", "g\n");
+    vi.spyOn(process, "cwd").mockReturnValue(root);
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    const args = ["--batch", "t", "--handles", join(root, "handles.txt"), "--base", "HEAD", "--reports", reports];
+    expect(main([...args, "--masters", "--guides"])).toBe(2);
+    expect(main([...args, "--guides"])).toBe(2);
+    const msg = err.mock.calls.map((c) => String(c[0])).join("\n");
+    vi.restoreAllMocks();
+    expect(msg).toContain("--masters and --guides are separate batches");
+    expect(msg).toContain("--guides needs --exceptions docs/knowledge-refresh/exceptions-t.json");
   });
 });

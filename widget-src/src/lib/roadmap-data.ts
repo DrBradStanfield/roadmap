@@ -1,6 +1,7 @@
 /** Local-first health records and client-side reports, on every widget surface. */
 import {
   type ApiMeasurement,
+  dayOf,
   type MoveKeep,
   type MoveRejection,
   type FileReminderOptIn,
@@ -14,7 +15,7 @@ import {
   knownMinorOf,
   resolveLabCatalogEntry,
 } from '@roadmap/health-core';
-import { MEASUREMENT_REFUSALS_WITH_METRIC } from '@roadmap/health-core/product-events';
+import { MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health-core/product-events';
 import { RoadmapStore, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
@@ -176,8 +177,24 @@ export function loadLabValuesSync(): ApiLabValue[] | null {
 // --- writes ---
 // `erase`: the erase the page showed when the write was asked for (US-16
 // AC2a); without it, the one it shows now.
+/** US-07 AC11's usage signal: each prompted measure the rows just ADDED, once, by name
+ *  alone. A blood pressure counts only once both halves of its day are on record. */
+const MEASURE_OF: Partial<Record<MetricType, (typeof MEASURES)[number]>> = { waist: 'waist', systolic_bp: 'blood_pressure', diastolic_bp: 'blood_pressure' };
+const OTHER_HALF: Partial<Record<MetricType, MetricType>> = { systolic_bp: 'diastolic_bp', diastolic_bp: 'systolic_bp' };
+function countMeasuresAdded(added: ApiMeasurement[]): void {
+  if (!store || added.length === 0) return;
+  const active = store.loadAllHistory();
+  const complete = (row: ApiMeasurement) => {
+    const other = OTHER_HALF[row.metricType as MetricType];
+    return !other || active.some((m) => m.metricType === other && dayOf(m.recordedAt) === dayOf(row.recordedAt));
+  };
+  const measures = new Set(added.filter(complete).map((row) => MEASURE_OF[row.metricType as MetricType]).filter((m) => m !== undefined));
+  for (const measure of measures) trackProductEvent('measurement_added', { measure });
+}
 export async function addMeasurement(metricType: string, value: number, recordedAt?: string, erase?: string): Promise<AddMeasurementResult> {
-  return store ? store.addMeasurement(metricType, value, recordedAt, erase) : { status: 'error' };
+  const result: AddMeasurementResult = store ? await store.addMeasurement(metricType, value, recordedAt, erase) : { status: 'error' };
+  if (result.status === 'inserted') countMeasuresAdded([result.row]);
+  return result;
 }
 /** Correct a saved core or lab value; `newValue` is in the unit it is stored in. */
 export async function correctValue(id: string, newValue: number, erase?: string): Promise<CorrectStatus> {
@@ -192,7 +209,9 @@ export async function moveBloodTest(from: string, to: string, expectedIds: strin
   return store ? store.moveBloodTest(from, to, expectedIds, keep, erase) : { status: 'error' };
 }
 export async function saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): Promise<ProfileSave> {
-  return store ? store.saveChangedMeasurements(current, previous, erase) : { ok: false };
+  const result: ProfileSave = store ? await store.saveChangedMeasurements(current, previous, erase) : { ok: false };
+  if (result.ok) countMeasuresAdded(result.added);
+  return result;
 }
 export async function saveMedication(medicationKey: string, drugName: string, doseValue: number | null = null, doseUnit: string | null = null, erase?: string): Promise<boolean> {
   return store ? store.saveMedication(medicationKey, drugName, doseValue, doseUnit, erase) : false;
@@ -219,6 +238,7 @@ export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[])
     else if (row.reason === 'out-of-range') trackProductEvent('measurement_refused', { refusal: row.reason }, row.metricType);
     else trackProductEvent('measurement_refused', { refusal: row.reason });
   }
+  countMeasuresAdded(result.saved.filter((row) => !row.correctsId));
   return result;
 }
 export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<BulkLabValuesResult> {

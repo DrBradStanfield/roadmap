@@ -46,7 +46,7 @@ export function coreStored(
 /** A core row, with the standard defaults `createLabValue` fills in. */
 export function createCoreRow(
   fields: Pick<FileLabValue, 'id' | 'value' | 'recordedAt' | 'createdAt'> & { metric: string }
-    & Partial<Pick<FileLabValue, 'referenceLow' | 'referenceHigh' | 'source' | 'status' | 'correctsId'>>,
+    & Partial<Pick<FileLabValue, 'referenceLow' | 'referenceHigh' | 'source' | 'status' | 'correctsId' | 'comparator'>>,
 ): FileLabValue {
   const { metric, ...rest } = fields;
   return { ...createLabValue({ ...rest, metricName: metric, unit: CORE_BLOOD_UNITS[metric] }), core: true };

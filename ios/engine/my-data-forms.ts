@@ -22,7 +22,10 @@ import type { MetricType } from '../../packages/health-core/src/units';
 import { BLOOD_PRESSURE, pressureHistory } from './blood-pressure';
 import { cellUnitFor, systemFor, type UnitChoices } from './unit-choices';
 import type { EditOutcome } from './my-data';
-import { cellLabel, cellText } from '../../packages/health-core/src/cell-unit';
+import { cellFromSI, cellLabel, limitCellText, type CellUnit } from '../../packages/health-core/src/cell-unit';
+import { LIMIT_NOT_GRADED, comparatorOf, isComparator, type Comparator } from '../../packages/health-core/src/lab-limits';
+import { limitUngraded, pressureStatus, valueStatus, type GradeContext, type PressureReading } from '../../packages/health-core/src/row-grade';
+import { knownMinorOf } from '../../packages/health-core/src/calculations';
 import { medicationAnnotations, medicationChanges } from '../../packages/health-core/src/medication-annotations';
 
 /** A supplement as the tab lists it. */
@@ -71,6 +74,11 @@ export interface HistoryRow {
   diastolic?: string | null;
   /** A blood pressure's active row ids, which a replace sends back as `seenIds`. */
   pairIds?: string[];
+  /** A lab result printed as a limit (US-12 AC20): its bound in the row's unit, where the
+   *  chart plots it, hollow and out of the line. `value` then reads "> 60". Absent otherwise. */
+  bound?: number;
+  /** The plan's word on the current value when it says more than "used": a limit it cannot grade. */
+  note?: string;
 }
 
 export interface MetricHistory {
@@ -276,13 +284,44 @@ export function applyFormEdit(file: RoadmapFile, edit: Exclude<FormEdit, { kind:
  * included (the app strikes them through). The record is append-only: this
  * view offers corrections, never removal.
  */
+/** A stored value as its cell shows it: a limit with its symbol, at places that keep it true (US-12 AC20). */
+export function rowText(metric: MetricType, row: { value: number; comparator?: Comparator }, unit: CellUnit): string {
+  return limitCellText(metric, row.value, unit, comparatorOf(row).comparator);
+}
+
+/** Whom and against what plan My data's values are graded, as the web's rows grade them (InputPanel.tsx
+ *  rowCtx): no adult lines for a known minor (US-07 AC6), and the plan's age, weight target and height. */
+export function gradeContextOf(file: RoadmapFile, now: string, plan: Plan | null): GradeContext {
+  return {
+    grading: knownMinorOf(file.profile, new Date(now)) ? null : { sex: file.profile.sex ?? undefined },
+    plan: plan && { age: plan.results.age, idealBodyWeight: plan.results.idealBodyWeight, heightCm: plan.results.heightCm },
+  };
+}
+
+/** A stored value printed as a limit the shared rule leaves ungraded (`limitUngraded`). */
+export function ungradedLimit(metric: MetricType, row: { value: number; comparator?: unknown }, ctx: GradeContext): boolean {
+  const { comparator } = comparatorOf(row);
+  return limitUngraded(metric, valueStatus(metric, row.value, ctx, comparator), ctx, { value: row.value, comparator });
+}
+
 export function metricHistory(file: RoadmapFile, metric: string, now = new Date().toISOString(), choices: UnitChoices = {}): MetricHistory {
   // No plan yet (no usable height): nothing is excluded, and nothing used.
-  const excludedFields = planOf(file, now, {})?.excluded ?? [];
+  const plan = planOf(file, now, {});
+  const excludedFields = plan?.excluded ?? [];
+  // An active value printed as a limit says the plan cannot grade it by the web's rule (US-12 AC20, AC21).
+  const ctx = gradeContextOf(file, now, plan);
   // The web's own pins (US-25 AC9b): none for a metric no medication affects.
   const markers = (medicationAnnotations(medicationChanges(file.medicationHistory))[metric] ?? [])
     .map(({ id, date, label }) => ({ id, day: localDay(new Date(date)), label }));
-  if (metric === BLOOD_PRESSURE) return { ...pressureHistory(file, excludedFields), markers };
+  if (metric === BLOOD_PRESSURE) {
+    const pairs = new Map<string, PressureReading>();
+    const history = pressureHistory(file, excludedFields, pairs);
+    const rows = history.rows.map((row) => {
+      const reading = pairs.get(row.id);
+      return reading && limitUngraded(BLOOD_PRESSURE, pressureStatus(reading, ctx), ctx, reading) ? { ...row, note: LIMIT_NOT_GRADED } : row;
+    });
+    return { ...history, rows, markers };
+  }
   const shown = cellUnitFor(file, metric, choices);
   // A blood test's rows are its core lab rows in the core unit (US-66 AC7); a vital's, its measurements.
   const rows = [
@@ -304,12 +343,14 @@ export function metricHistory(file: RoadmapFile, metric: string, now = new Date(
         || Number(b.status === 'active') - Number(a.status === 'active'))
       .map((row) => ({
         id: row.id,
-        value: cellText(metric as MetricType, row.value, shown),
+        value: rowText(metric as MetricType, row, shown),
         day: row.recordedAt.slice(0, 10),
         status: row.status,
         current: row.id === current?.id,
         // A legacy row may lack the key: only a named row is a correction.
         correction: !!row.correctsId,
+        ...(isComparator(row.comparator) ? { bound: cellFromSI(metric as MetricType, row.value, shown) } : null),
+        ...(row.status === 'active' && ungradedLimit(metric as MetricType, row, ctx) ? { note: LIMIT_NOT_GRADED } : null),
       })),
   };
 }

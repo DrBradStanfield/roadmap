@@ -31,6 +31,7 @@ import {
   medicationsToInputs,
   screeningsToInputs,
   type ApiMeasurement,
+  formatValue,
   type ApiMedication,
   type ApiScreening,
   STATIN_NAMES,
@@ -350,9 +351,9 @@ export function InputPanel({
   const [valuePage, setValuePage] = useState<ValueSubject | null>(null);
   const [tableOpen, setTableOpen] = useState(false);
   const [seenReveal, setSeenReveal] = useState<{ field: string; grid: boolean } | null>(null);
-  // Only a filled grid cell opens the table; a plain field shows where it is (adversary R6).
-  const revealing = !!revealCell?.grid && revealCell !== seenReveal;
-  const tableShown = tableOpen || revealing;
+  // A chat reveal closes the value page; only a filled grid cell opens the table (adversary R6).
+  const revealing = !!revealCell && revealCell !== seenReveal;
+  const tableShown = tableOpen || (revealing && revealCell.grid);
   const pageShown = !revealing ? valuePage : null;
   // A page is a history entry (a state marker, no URL change), so the phone's
   // back gesture closes it, and "‹ My data" goes back. Typed, unsaved Add
@@ -412,7 +413,8 @@ export function InputPanel({
   }, []);
   const valuePageRef = useRef(valuePage);
   valuePageRef.current = valuePage;
-  // A chat edit that fills a grid cell closes any open page, so the table shows.
+  // A chat edit closes any open page, so the field it filled shows (US-16 AC2):
+  // the table opens only for a grid cell (adversary R6).
   const [sayPanel, panelMessages] = useLiveRegion('md-panel-messages');
   // Read as the reveal renders: the page unmounts in this commit, and its form clears the mark as it goes.
   const revealDropsTyping = useRef(false);
@@ -626,12 +628,18 @@ export function InputPanel({
     return choices.some(i => { const cm = feetInchesToCm(parseInt(feet, 10) || 0, i); return cm >= min && cm <= max; });
   };
 
+  /** A saved value as shown, a printed limit with its symbol (US-12 AC20). */
+  const savedText = (field: string, m: ApiMeasurement): string => {
+    const metric = FIELD_METRIC_MAP[field];
+    return metric && m.comparator ? formatValue(metric, m.value, fieldUnit(field), m.comparator) : toDisplay(field, m.value);
+  };
+
   const getPreviousPlaceholder = (field: string): string | undefined => {
     const metric = FIELD_METRIC_MAP[field];
     if (!metric) return undefined;
     const measurement = previousMeasurements.find(m => m.metricType === metric);
     if (!measurement) return undefined;
-    return toDisplay(field, measurement.value);
+    return savedText(field, measurement);
   };
 
   /** The line over an open field whose metric holds a saved value: "Previous:
@@ -765,7 +773,7 @@ export function InputPanel({
     const r = range(field);
     const metric = FIELD_METRIC_MAP[field];
     const previous = metric && previousMeasurements.find(m => m.metricType === metric);
-    const shown = metric && previous ? `${toDisplay(field, previous.value)} ${getDisplayLabel(metric, fieldUnit(field))}` : '';
+    const shown = metric && previous ? `${savedText(field, previous)} ${getDisplayLabel(metric, fieldUnit(field))}` : '';
     const previousLabel = previous && !box ? `${shown} · ${formatShortDate(previous.recordedAt)}` : null;
     const needsAttention = field === 'weightKg' && formStage === 1 && inputs.heightCm !== undefined && inputs.weightKg === undefined;
     // In expanded mode with previous data, show "Previous:" reference instead of placeholder
@@ -892,7 +900,7 @@ export function InputPanel({
       );
     }
 
-    const displayValue = toDisplay(field, measurement.value);
+    const displayValue = savedText(field, measurement);
     const unitLabel = getDisplayLabel(metric, fieldUnit(field));
     const date = formatShortDate(measurement.recordedAt);
 
@@ -2108,7 +2116,7 @@ export function InputPanel({
                     {(() => {
                       const psaMeasurement = previousMeasurements.find(m => m.metricType === 'psa');
                       const psaPreviousLabel = psaMeasurement
-                        ? `${psaMeasurement.value.toFixed(1)} ng/mL · ${formatShortDate(psaMeasurement.recordedAt)}`
+                        ? `${formatValue('psa', psaMeasurement.value, 'si', psaMeasurement.comparator)} ng/mL · ${formatShortDate(psaMeasurement.recordedAt)}`
                         : null;
 
                       return (

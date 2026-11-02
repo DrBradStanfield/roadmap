@@ -1,6 +1,6 @@
 /** Shopify services only. Health records are read and written by roadmap-data. */
 import type { GUIDE_PLACEMENTS, LPA_CHECK_ANSWERS, LpaUnit, MeasurementRefusal, MetricType, ProductEventName, REMOTE_CHANGE_BACKENDS } from '@roadmap/health-core';
-import { PER_ACTION_EVENT_NAMES, type CHAT_PROFILE_CHOICES, type ONBOARDING_STEPS, type SIGNIN_PLACEMENTS, type CHAT_PROFILE_FIELDS, type TOOL_DEVICES, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
+import { PER_ACTION_EVENT_NAMES, type CHAT_PROFILE_CHOICES, type MEASURES, type ONBOARDING_STEPS, type SIGNIN_PLACEMENTS, type CHAT_PROFILE_FIELDS, type TOOL_DEVICES, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import type { UsProduct } from '@roadmap/health-core/us-products';
 import { safeGetItem, safeSetItem } from './storage';
 import { SHOPIFY_SURFACE } from './build-flags';
@@ -160,6 +160,11 @@ export interface ProductEventMetadata extends Partial<Record<UploadOutcomeKey, n
   moved?: number;
   folded?: number;
   keptApart?: number;
+  /** `measurement_added` (US-07 AC11): the measure saved, never its value. */
+  measure?: (typeof MEASURES)[number];
+  /** `upload_outcome` (US-12 AC20): the tests behind `valuesLimitUngraded`, keys from
+   *  `LIMIT_TEST_WORDS` only, each once, sorted. Never a value, unit or printed name. */
+  limitUngradedTests?: string[];
 }
 
 /**
@@ -190,6 +195,8 @@ export function trackProductEvent(
         : metadata?.choice ? `_${metadata.field}_${metadata.choice}`
         // US-61 AC8: once per product, so one product seen does not swallow the other.
         : metadata?.product ? `_${metadata.product}`
+        // US-07 AC11: once per measure, so a waist does not swallow a blood pressure.
+        : metadata?.measure ? `_${metadata.measure}`
         // US-62 AC2: once per step and per placement, so the first does not swallow the rest.
         : metadata?.step ? `_${metadata.step}`
         : metadata?.placement ? `_${metadata.placement}`

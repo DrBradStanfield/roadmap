@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type React from 'react';
-import { formatDisplayValue, fromCanonicalValue, parseLocalisedNumber, toCanonicalValue } from '@roadmap/health-core';
-import { formatLabValue, previewStatus, readTypedValue, sameAsSaved, statusOf, validateTypedValue } from './blood-test-cell';
+import { formatDisplayValue, formatLabValue, fromCanonicalValue, parseLocalisedNumber, statusOf, toCanonicalValue } from '@roadmap/health-core';
+import { previewStatus, readTypedValue, sameAsSaved, validateTypedValue } from './blood-test-cell';
 
 // ---------------------------------------------------------------------------
 // Bug: user typed a value in the Lp(a) text box, hit Enter, the value

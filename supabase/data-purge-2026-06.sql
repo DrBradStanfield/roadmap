@@ -36,6 +36,8 @@
 --   ANONYMIZE:
 --     audit_logs — UPDATE user_id = NULL (operational record kept, PII link
 --     severed). Rows are NOT deleted.
+--     Follow-up (2026-11-02, US-15 AC50): supabase/audit-logs-residue-2026-11.sql
+--     clears the identifiers and v1 metadata this step did not touch.
 --
 --   UNTOUCHED:
 --     ab_tests + ab_events (A/B survivor; ab_events.visitor_id is a

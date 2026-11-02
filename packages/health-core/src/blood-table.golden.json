@@ -1,7 +1,7 @@
 {
   "sample": {
     "plan": {
-      "instruction": "Present this plan in your own words if you like, but keep it faithful: each suggestion’s hedged wording (\"may support\", \"evidence suggests\") is calibrated — never upgrade it into a recommendation — and every reference stays attached to the suggestion it belongs to. This is educational, not medical advice: say so, and tell the user to take it to their doctor. When the plan holds only the `adults-only` card, do not grade the person’s values against adult targets and do not suggest medicines; point them to their doctor. When `profile.needsSex` is not empty, the record has no sex: those parts are missing, not normal. Do not work them out yourself; tell the user they need their sex, and ask for it.",
+      "instruction": "Present this plan in your own words if you like, but keep it faithful: each suggestion’s hedged wording (\"may support\", \"evidence suggests\") is calibrated — never upgrade it into a recommendation — and every reference stays attached to the suggestion it belongs to. This is educational, not medical advice: say so, and tell the user to take it to their doctor. When the plan holds only the `adults-only` card, do not grade the person’s values against adult targets and do not suggest medicines; point them to their doctor. When `profile.needsSex` is not empty, the record has no sex: those parts are missing, not normal. Do not work them out yourself; tell the user they need their sex, and ask for it. A value with a `comparator` (\"> 60\", \"< 5\") is a lab limit, not the number: say it as printed, never as an exact value, and when `inputs.limits` marks it `graded: false` the plan could not grade it against its cutoff.",
       "schemaVersion": 1,
       "generatedAt": "2026-10-01T12:00:00.000Z",
       "today": "2026-10-02",
@@ -143,6 +143,25 @@
         ]
       },
       "suggestions": [
+        {
+          "id": "measure-waist",
+          "category": "general",
+          "priority": "attention",
+          "title": "Measure your waist circumference",
+          "description": "Fat around the middle raises heart and metabolic risk, even at a healthy weight. Aim for a waist under half your height. Add your waist measurement.",
+          "ingredients": [],
+          "reason": "Fat around the middle is linked to heart and metabolic risk. Waist-to-height ratio can flag risk that a healthy BMI misses; the AACE 2025 and NICE guidelines suggest keeping it under 0.5.",
+          "guidelines": [
+            "AACE 2025",
+            "NICE"
+          ],
+          "references": [
+            {
+              "label": "Ashwell 2012 – WHtR better than BMI for cardiometabolic risk (Obes Rev)",
+              "url": "https://doi.org/10.1111/j.1467-789X.2011.00952.x"
+            }
+          ]
+        },
         {
           "id": "protein-target",
           "category": "nutrition",
@@ -298,25 +317,6 @@
             {
               "label": "Grundy 2018 – AHA/ACC cholesterol guideline: risk-enhancing factors (Circulation)",
               "url": "https://doi.org/10.1161/CIR.0000000000000625"
-            }
-          ]
-        },
-        {
-          "id": "measure-waist",
-          "category": "general",
-          "priority": "attention",
-          "title": "Measure your waist circumference",
-          "description": "With a BMI in the 25–30 range, waist circumference helps determine whether your body composition poses health risks. Keep your waist below half your height. Enter your waist measurement above for a more accurate assessment.",
-          "ingredients": [],
-          "reason": "With a BMI in the 25–30 range, waist circumference is critical for determining whether your weight poses health risks. The AACE 2025 guidelines and NICE guidelines use waist-to-height ratio (WHtR) to reclassify individuals — a WHtR below 0.5 indicates healthy body composition even with a BMI of 25–29.9.",
-          "guidelines": [
-            "AACE 2025",
-            "NICE"
-          ],
-          "references": [
-            {
-              "label": "Ashwell 2012 – WHtR better than BMI for cardiometabolic risk (Obes Rev)",
-              "url": "https://doi.org/10.1111/j.1467-789X.2011.00952.x"
             }
           ]
         },
@@ -774,7 +774,7 @@
   },
   "urgent-corrected": {
     "plan": {
-      "instruction": "Present this plan in your own words if you like, but keep it faithful: each suggestion’s hedged wording (\"may support\", \"evidence suggests\") is calibrated — never upgrade it into a recommendation — and every reference stays attached to the suggestion it belongs to. This is educational, not medical advice: say so, and tell the user to take it to their doctor. When the plan holds only the `adults-only` card, do not grade the person’s values against adult targets and do not suggest medicines; point them to their doctor. When `profile.needsSex` is not empty, the record has no sex: those parts are missing, not normal. Do not work them out yourself; tell the user they need their sex, and ask for it.",
+      "instruction": "Present this plan in your own words if you like, but keep it faithful: each suggestion’s hedged wording (\"may support\", \"evidence suggests\") is calibrated — never upgrade it into a recommendation — and every reference stays attached to the suggestion it belongs to. This is educational, not medical advice: say so, and tell the user to take it to their doctor. When the plan holds only the `adults-only` card, do not grade the person’s values against adult targets and do not suggest medicines; point them to their doctor. When `profile.needsSex` is not empty, the record has no sex: those parts are missing, not normal. Do not work them out yourself; tell the user they need their sex, and ask for it. A value with a `comparator` (\"> 60\", \"< 5\") is a lab limit, not the number: say it as printed, never as an exact value, and when `inputs.limits` marks it `graded: false` the plan could not grade it against its cutoff.",
       "schemaVersion": 1,
       "generatedAt": "2026-10-01T12:00:00.000Z",
       "today": "2026-10-02",
@@ -916,6 +916,25 @@
         ]
       },
       "suggestions": [
+        {
+          "id": "measure-waist",
+          "category": "general",
+          "priority": "attention",
+          "title": "Measure your waist circumference",
+          "description": "Fat around the middle raises heart and metabolic risk, even at a healthy weight. Aim for a waist under half your height. Add your waist measurement.",
+          "ingredients": [],
+          "reason": "Fat around the middle is linked to heart and metabolic risk. Waist-to-height ratio can flag risk that a healthy BMI misses; the AACE 2025 and NICE guidelines suggest keeping it under 0.5.",
+          "guidelines": [
+            "AACE 2025",
+            "NICE"
+          ],
+          "references": [
+            {
+              "label": "Ashwell 2012 – WHtR better than BMI for cardiometabolic risk (Obes Rev)",
+              "url": "https://doi.org/10.1111/j.1467-789X.2011.00952.x"
+            }
+          ]
+        },
         {
           "id": "protein-target",
           "category": "nutrition",
@@ -1071,25 +1090,6 @@
             {
               "label": "Grundy 2018 – AHA/ACC cholesterol guideline: risk-enhancing factors (Circulation)",
               "url": "https://doi.org/10.1161/CIR.0000000000000625"
-            }
-          ]
-        },
-        {
-          "id": "measure-waist",
-          "category": "general",
-          "priority": "attention",
-          "title": "Measure your waist circumference",
-          "description": "With a BMI in the 25–30 range, waist circumference helps determine whether your body composition poses health risks. Keep your waist below half your height. Enter your waist measurement above for a more accurate assessment.",
-          "ingredients": [],
-          "reason": "With a BMI in the 25–30 range, waist circumference is critical for determining whether your weight poses health risks. The AACE 2025 guidelines and NICE guidelines use waist-to-height ratio (WHtR) to reclassify individuals — a WHtR below 0.5 indicates healthy body composition even with a BMI of 25–29.9.",
-          "guidelines": [
-            "AACE 2025",
-            "NICE"
-          ],
-          "references": [
-            {
-              "label": "Ashwell 2012 – WHtR better than BMI for cardiometabolic risk (Obes Rev)",
-              "url": "https://doi.org/10.1111/j.1467-789X.2011.00952.x"
             }
           ]
         },
@@ -1547,7 +1547,7 @@
   },
   "correction-out-of-order": {
     "plan": {
-      "instruction": "Present this plan in your own words if you like, but keep it faithful: each suggestion’s hedged wording (\"may support\", \"evidence suggests\") is calibrated — never upgrade it into a recommendation — and every reference stays attached to the suggestion it belongs to. This is educational, not medical advice: say so, and tell the user to take it to their doctor. When the plan holds only the `adults-only` card, do not grade the person’s values against adult targets and do not suggest medicines; point them to their doctor. When `profile.needsSex` is not empty, the record has no sex: those parts are missing, not normal. Do not work them out yourself; tell the user they need their sex, and ask for it.",
+      "instruction": "Present this plan in your own words if you like, but keep it faithful: each suggestion’s hedged wording (\"may support\", \"evidence suggests\") is calibrated — never upgrade it into a recommendation — and every reference stays attached to the suggestion it belongs to. This is educational, not medical advice: say so, and tell the user to take it to their doctor. When the plan holds only the `adults-only` card, do not grade the person’s values against adult targets and do not suggest medicines; point them to their doctor. When `profile.needsSex` is not empty, the record has no sex: those parts are missing, not normal. Do not work them out yourself; tell the user they need their sex, and ask for it. A value with a `comparator` (\"> 60\", \"< 5\") is a lab limit, not the number: say it as printed, never as an exact value, and when `inputs.limits` marks it `graded: false` the plan could not grade it against its cutoff.",
       "schemaVersion": 1,
       "generatedAt": "2026-10-01T12:00:00.000Z",
       "today": "2026-10-02",
@@ -1689,6 +1689,25 @@
         ]
       },
       "suggestions": [
+        {
+          "id": "measure-waist",
+          "category": "general",
+          "priority": "attention",
+          "title": "Measure your waist circumference",
+          "description": "Fat around the middle raises heart and metabolic risk, even at a healthy weight. Aim for a waist under half your height. Add your waist measurement.",
+          "ingredients": [],
+          "reason": "Fat around the middle is linked to heart and metabolic risk. Waist-to-height ratio can flag risk that a healthy BMI misses; the AACE 2025 and NICE guidelines suggest keeping it under 0.5.",
+          "guidelines": [
+            "AACE 2025",
+            "NICE"
+          ],
+          "references": [
+            {
+              "label": "Ashwell 2012 – WHtR better than BMI for cardiometabolic risk (Obes Rev)",
+              "url": "https://doi.org/10.1111/j.1467-789X.2011.00952.x"
+            }
+          ]
+        },
         {
           "id": "protein-target",
           "category": "nutrition",
@@ -1844,25 +1863,6 @@
             {
               "label": "Grundy 2018 – AHA/ACC cholesterol guideline: risk-enhancing factors (Circulation)",
               "url": "https://doi.org/10.1161/CIR.0000000000000625"
-            }
-          ]
-        },
-        {
-          "id": "measure-waist",
-          "category": "general",
-          "priority": "attention",
-          "title": "Measure your waist circumference",
-          "description": "With a BMI in the 25–30 range, waist circumference helps determine whether your body composition poses health risks. Keep your waist below half your height. Enter your waist measurement above for a more accurate assessment.",
-          "ingredients": [],
-          "reason": "With a BMI in the 25–30 range, waist circumference is critical for determining whether your weight poses health risks. The AACE 2025 guidelines and NICE guidelines use waist-to-height ratio (WHtR) to reclassify individuals — a WHtR below 0.5 indicates healthy body composition even with a BMI of 25–29.9.",
-          "guidelines": [
-            "AACE 2025",
-            "NICE"
-          ],
-          "references": [
-            {
-              "label": "Ashwell 2012 – WHtR better than BMI for cardiometabolic risk (Obes Rev)",
-              "url": "https://doi.org/10.1111/j.1467-789X.2011.00952.x"
             }
           ]
         },
@@ -2320,7 +2320,7 @@
   },
   "minor": {
     "plan": {
-      "instruction": "Present this plan in your own words if you like, but keep it faithful: each suggestion’s hedged wording (\"may support\", \"evidence suggests\") is calibrated — never upgrade it into a recommendation — and every reference stays attached to the suggestion it belongs to. This is educational, not medical advice: say so, and tell the user to take it to their doctor. When the plan holds only the `adults-only` card, do not grade the person’s values against adult targets and do not suggest medicines; point them to their doctor. When `profile.needsSex` is not empty, the record has no sex: those parts are missing, not normal. Do not work them out yourself; tell the user they need their sex, and ask for it.",
+      "instruction": "Present this plan in your own words if you like, but keep it faithful: each suggestion’s hedged wording (\"may support\", \"evidence suggests\") is calibrated — never upgrade it into a recommendation — and every reference stays attached to the suggestion it belongs to. This is educational, not medical advice: say so, and tell the user to take it to their doctor. When the plan holds only the `adults-only` card, do not grade the person’s values against adult targets and do not suggest medicines; point them to their doctor. When `profile.needsSex` is not empty, the record has no sex: those parts are missing, not normal. Do not work them out yourself; tell the user they need their sex, and ask for it. A value with a `comparator` (\"> 60\", \"< 5\") is a lab limit, not the number: say it as printed, never as an exact value, and when `inputs.limits` marks it `graded: false` the plan could not grade it against its cutoff.",
       "schemaVersion": 1,
       "generatedAt": "2026-10-01T12:00:00.000Z",
       "today": "2026-10-02",
@@ -2466,7 +2466,7 @@
   },
   "excluded-value": {
     "plan": {
-      "instruction": "Present this plan in your own words if you like, but keep it faithful: each suggestion’s hedged wording (\"may support\", \"evidence suggests\") is calibrated — never upgrade it into a recommendation — and every reference stays attached to the suggestion it belongs to. This is educational, not medical advice: say so, and tell the user to take it to their doctor. When the plan holds only the `adults-only` card, do not grade the person’s values against adult targets and do not suggest medicines; point them to their doctor. When `profile.needsSex` is not empty, the record has no sex: those parts are missing, not normal. Do not work them out yourself; tell the user they need their sex, and ask for it.",
+      "instruction": "Present this plan in your own words if you like, but keep it faithful: each suggestion’s hedged wording (\"may support\", \"evidence suggests\") is calibrated — never upgrade it into a recommendation — and every reference stays attached to the suggestion it belongs to. This is educational, not medical advice: say so, and tell the user to take it to their doctor. When the plan holds only the `adults-only` card, do not grade the person’s values against adult targets and do not suggest medicines; point them to their doctor. When `profile.needsSex` is not empty, the record has no sex: those parts are missing, not normal. Do not work them out yourself; tell the user they need their sex, and ask for it. A value with a `comparator` (\"> 60\", \"< 5\") is a lab limit, not the number: say it as printed, never as an exact value, and when `inputs.limits` marks it `graded: false` the plan could not grade it against its cutoff.",
       "schemaVersion": 1,
       "generatedAt": "2026-10-01T12:00:00.000Z",
       "today": "2026-10-02",
@@ -2610,6 +2610,53 @@
       },
       "suggestions": [
         {
+          "id": "measure-waist",
+          "category": "general",
+          "priority": "attention",
+          "title": "Measure your waist circumference",
+          "description": "Fat around the middle raises heart and metabolic risk, even at a healthy weight. Aim for a waist under half your height. Add your waist measurement.",
+          "ingredients": [],
+          "reason": "Fat around the middle is linked to heart and metabolic risk. Waist-to-height ratio can flag risk that a healthy BMI misses; the AACE 2025 and NICE guidelines suggest keeping it under 0.5.",
+          "guidelines": [
+            "AACE 2025",
+            "NICE"
+          ],
+          "references": [
+            {
+              "label": "Ashwell 2012 – WHtR better than BMI for cardiometabolic risk (Obes Rev)",
+              "url": "https://doi.org/10.1111/j.1467-789X.2011.00952.x"
+            }
+          ]
+        },
+        {
+          "id": "measure-bp",
+          "category": "blood_pressure",
+          "priority": "attention",
+          "title": "Measure your blood pressure",
+          "description": "High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. Aim for below 120/80 (130/80 if you're frail).",
+          "ingredients": [],
+          "reason": "High blood pressure usually causes no symptoms, so a reading is the only way to know. Home readings with an automated upper-arm cuff, taken seated after a few minutes of rest, are a practical way to track it; every 2–4 weeks is enough to see a trend.\n\nThis plan aims for <120/80 mmHg, as some doctors do, based on the SPRINT and ESPRIT trials, or <130/80 mmHg if you're frail.",
+          "guidelines": [
+            "ACC/AHA 2017",
+            "SPRINT 2015",
+            "ESPRIT 2024"
+          ],
+          "references": [
+            {
+              "label": "Whelton 2017 – ACC/AHA Blood Pressure Guideline (Hypertension)",
+              "url": "https://doi.org/10.1161/HYP.0000000000000065"
+            },
+            {
+              "label": "SPRINT 2015 – Intensive BP lowering <120 mmHg (NEJM)",
+              "url": "https://doi.org/10.1056/NEJMoa1511939"
+            },
+            {
+              "label": "Liu 2024 – ESPRIT: intensive BP lowering incl. diabetes (Lancet)",
+              "url": "https://doi.org/10.1016/S0140-6736(24)01028-6"
+            }
+          ]
+        },
+        {
           "id": "protein-target",
           "category": "nutrition",
           "priority": "info",
@@ -2733,25 +2780,6 @@
             {
               "label": "Grundy 2018 – AHA/ACC cholesterol guideline: risk-enhancing factors (Circulation)",
               "url": "https://doi.org/10.1161/CIR.0000000000000625"
-            }
-          ]
-        },
-        {
-          "id": "measure-waist",
-          "category": "general",
-          "priority": "attention",
-          "title": "Measure your waist circumference",
-          "description": "With a BMI in the 25–30 range, waist circumference helps determine whether your body composition poses health risks. Keep your waist below half your height. Enter your waist measurement above for a more accurate assessment.",
-          "ingredients": [],
-          "reason": "With a BMI in the 25–30 range, waist circumference is critical for determining whether your weight poses health risks. The AACE 2025 guidelines and NICE guidelines use waist-to-height ratio (WHtR) to reclassify individuals — a WHtR below 0.5 indicates healthy body composition even with a BMI of 25–29.9.",
-          "guidelines": [
-            "AACE 2025",
-            "NICE"
-          ],
-          "references": [
-            {
-              "label": "Ashwell 2012 – WHtR better than BMI for cardiometabolic risk (Obes Rev)",
-              "url": "https://doi.org/10.1111/j.1467-789X.2011.00952.x"
             }
           ]
         },
@@ -3198,7 +3226,7 @@
   },
   "hand-built": {
     "plan": {
-      "instruction": "Present this plan in your own words if you like, but keep it faithful: each suggestion’s hedged wording (\"may support\", \"evidence suggests\") is calibrated — never upgrade it into a recommendation — and every reference stays attached to the suggestion it belongs to. This is educational, not medical advice: say so, and tell the user to take it to their doctor. When the plan holds only the `adults-only` card, do not grade the person’s values against adult targets and do not suggest medicines; point them to their doctor. When `profile.needsSex` is not empty, the record has no sex: those parts are missing, not normal. Do not work them out yourself; tell the user they need their sex, and ask for it.",
+      "instruction": "Present this plan in your own words if you like, but keep it faithful: each suggestion’s hedged wording (\"may support\", \"evidence suggests\") is calibrated — never upgrade it into a recommendation — and every reference stays attached to the suggestion it belongs to. This is educational, not medical advice: say so, and tell the user to take it to their doctor. When the plan holds only the `adults-only` card, do not grade the person’s values against adult targets and do not suggest medicines; point them to their doctor. When `profile.needsSex` is not empty, the record has no sex: those parts are missing, not normal. Do not work them out yourself; tell the user they need their sex, and ask for it. A value with a `comparator` (\"> 60\", \"< 5\") is a lab limit, not the number: say it as printed, never as an exact value, and when `inputs.limits` marks it `graded: false` the plan could not grade it against its cutoff.",
       "schemaVersion": 1,
       "generatedAt": "2026-10-01T12:00:00.000Z",
       "today": "2026-10-02",
