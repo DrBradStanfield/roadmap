@@ -36,8 +36,8 @@
  *  - the import is the source of truth: a result corrects a typed, uploaded or
  *    other-source row holding its (metric, day) when the value, unit or limit
  *    differs, and appends nothing when they match (AC9, Brad 2026-11-02); a
- *    result whose day another row won in a merge, a row that corrects none of
- *    its rows, is such a conflict, not the person's call (AC9, adversary R2);
+ *    result whose day another row won in a merge, a row that does not correct
+ *    its newest landed version, is such a conflict, not the person's call (AC9, R2, R1);
  *  - a result drawn before the record's erase does not land (AC10, D6).
  * A result the app cannot read (AC4) is counted, never guessed.
  */
@@ -365,11 +365,17 @@ export function importHealthRecords(
     }
     // AC5, AC8: a replayed older version neither replaces nor withdraws a newer one.
     if (mine.some((at) => isStale(version, rows[at].externalId as string, withdrawal))) { counts.alreadyInRecord++; continue; }
+    const newest = (of: number[]) => of.reduce<number | undefined>((a, b) => (a === undefined || writtenBefore(rows[a], rows[b]) ? b : a), undefined);
     // The result as the record holds it now: its active row, else its newest.
-    const current = active ?? mine.reduce<number | undefined>((a, b) => (a === undefined || writtenBefore(rows[a], rows[b]) ? b : a), undefined);
-    /** AC5: a version marker, so the record remembers a version that changes nothing it shows. */
-    const mark = () => {
-      rows.push({ ...rows[current!], id: newId(), status: 'entered-in-error', createdAt: now, source: 'health_records', correctsId: null, externalId: `${externalId}|${MARKER}` });
+    const current = active ?? newest(mine);
+    /** AC5: a version marker, so the record remembers a version that changes nothing it shows.
+     *  It carries the content of the version it records: the reading's, when there is one. */
+    const mark = (reading?: Reading) => {
+      const { comparator: _old, ...base } = rows[current!];
+      const content = reading
+        ? { value: reading.value, unit: reading.unit, referenceLow: reading.referenceLow, referenceHigh: reading.referenceHigh, ...comparatorOf(reading) }
+        : comparatorOf(rows[current!]);
+      rows.push({ ...base, ...content, id: newId(), status: 'entered-in-error', createdAt: now, source: 'health_records', correctsId: null, externalId: `${externalId}|${MARKER}` });
       remember(rows.length - 1);
       changed = true;
     };
@@ -404,18 +410,20 @@ export function importHealthRecords(
       && versionPartsOf(String(established.externalId))?.[2] === 'entered-in-error';
     const held = active ?? taken.get(slot);
     const old = held === undefined ? undefined : rows[held];
-    // AC9: the day's active row corrects none of the result's rows, through any chain of
-    // corrections: the result lost a merge, not the person's call (adversary R2).
+    // AC9: the day's active row does not correct the result's newest landed version, through
+    // any chain of corrections: the result lost a merge, not the person's call (adversary R2).
+    // A correction of an older version that a merge put over the lab's amendment lost one too (R1).
+    const landed = newest(mine.filter((at) => !isMarkerId(String(rows[at].externalId))));
     const lostMerge = established !== undefined && active === undefined && old !== undefined
-      && !correctsOneOf(rows, old, new Set(mine.map((at) => rows[at].id)));
+      && (landed === undefined || !correctsRow(rows, old, rows[landed].id));
     // AC5, AC8: the same value, unit and comparator as the result holds now: a
     // marker only; the person's rejection or hand edit stands.
-    if (established && !labWithdrew && !lostMerge && sameContent(established, reading)) { mark(); counts.alreadyInRecord++; continue; }
+    if (established && !labWithdrew && !lostMerge && sameContent(established, reading)) { mark(reading); counts.alreadyInRecord++; continue; }
     // AC9: another institution's result holds the day.
     if (old && active === undefined && old.source === 'health_records') { counts.alreadyInRecord++; continue; }
     // AC9: the same value typed or uploaded on the day: nothing to correct (a marker
     // when the result lost the day in a merge, so the record remembers the version).
-    if (old && sameContent(old, reading)) { if (lostMerge) mark(); counts.alreadyInRecord++; continue; }
+    if (old && sameContent(old, reading)) { if (lostMerge) mark(reading); counts.alreadyInRecord++; continue; }
     let correctsId: string | null = null;
     let recordedAt = slot === slotAt(reading, reading.recordedAt) ? reading.recordedAt : established!.recordedAt;
     if (held !== undefined && old) {
@@ -439,11 +447,11 @@ export function importHealthRecords(
   return { file: changed ? stampUpdatedAt({ ...file, labValues: rows }, now) : file, counts };
 }
 
-/** Whether `row`, or a row it corrects through `correctsId`, corrects one of `ids` (AC8, AC9). */
-function correctsOneOf(rows: readonly Row[], row: Row, ids: ReadonlySet<string>): boolean {
+/** Whether `row`, or a row it corrects through `correctsId`, corrects the row `id` (AC8, AC9). */
+function correctsRow(rows: readonly Row[], row: Row, id: string): boolean {
   const seen = new Set<string>();
   for (let at: Row | undefined = row; at?.correctsId && !seen.has(at.id);) {
-    if (ids.has(at.correctsId)) return true;
+    if (at.correctsId === id) return true;
     seen.add(at.id);
     const next: string = at.correctsId;
     at = rows.find((r) => r.id === next);

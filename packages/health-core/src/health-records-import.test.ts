@@ -851,6 +851,68 @@ describe('US-72 AC9: the import wins a conflict', () => {
     expect(file.labValues.filter((m) => m.status === 'active')).toEqual([expect.objectContaining({ value: 3.1, source: 'manual_correction' })]);
   });
 
+  // Adversary R1 (re-check): a person's correction is their call only when it reaches the result's
+  // newest landed version; one of an older version that a merge put over the lab's amendment lost a merge.
+  const at = (h: number) => `2026-11-02T${String(h).padStart(2, '0')}:00:00.000Z`;
+  const ldl = (value: number, versionId: string, status = 'amended') =>
+    rec(obs(R4_LDL, { status, meta: { versionId }, valueQuantity: { value, unit: 'mmol/L' } }));
+  it('AC8, AC9: a correction of an older version merged over the lab\'s amendment is a lost merge; the re-stamp wins', () => {
+    const phone1 = run(empty(), [ldl(4.6, '1', 'final')], at(1)).file;
+    const web = correctValue(phone1, { id: phone1.labValues[0].id, newValue: 4.2, now: at(3) });
+    if (!web.ok) throw new Error('setup');
+    const phone2 = run(phone1, [ldl(3.0, '2')], at(2)).file;
+    const merged = mergeFiles(phone2, web.file, { deviceId: 'phone', now: at(4) });
+    expect(merged.labValues.filter((m) => m.status === 'active')).toEqual([expect.objectContaining({ value: 4.2, source: 'manual_correction' })]);
+    const { file, counts } = run(merged, [ldl(3.0, '3')], at(5));
+    expect(counts).toEqual({ added: 0, corrected: 1, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
+    expect(file.labValues.filter((m) => m.status === 'active')).toEqual([expect.objectContaining({ value: 3.0, source: 'health_records' })]);
+  });
+
+  it('AC8, AC9: the same correction made before the amendment arrives is corrected by it (the race\'s control)', () => {
+    const phone1 = run(empty(), [ldl(4.6, '1', 'final')], at(1)).file;
+    const web = correctValue(phone1, { id: phone1.labValues[0].id, newValue: 4.2, now: at(3) });
+    if (!web.ok) throw new Error('setup');
+    const { file, counts } = run(web.file, [ldl(3.0, '2')], at(5));
+    expect(counts).toEqual({ added: 0, corrected: 1, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
+    expect(file.labValues.filter((m) => m.status === 'active')).toEqual([expect.objectContaining({ value: 3.0, source: 'health_records' })]);
+  });
+
+  it('AC5, AC9: a lost merge\'s marker carries the version\'s content, so a deleted day stays empty for it', () => {
+    const phone = run(empty(), [ldl(4.6, '1', 'final')], at(1)).file;
+    const web = appendMeasurement(empty(), { metricType: 'ldl', value: 3.1, recordedAt: '2026-10-21', now: at(2) });
+    if (!web.ok) throw new Error('setup');
+    const merged = mergeFiles(phone, web.file, { deviceId: 'phone', now: at(2) });
+    const v2 = run(merged, [ldl(3.1, '2')], at(3));
+    expect(v2.counts.alreadyInRecord).toBe(1);
+    const marker = v2.file.labValues.find((m) => isVersionMarker(m))!;
+    expect(marker).toMatchObject({ value: 3.1, unit: 'mmol/L', referenceLow: null, referenceHigh: 3.0 });
+    expect(marker.comparator).toBeUndefined();
+    // The person deletes the day (a rejection: the typed row goes, nothing replaces it).
+    const deleted: RoadmapFile = { ...v2.file, labValues: v2.file.labValues.map((m) => (m.status === 'active' ? { ...m, status: 'entered-in-error' as const } : m)) };
+    const same = run(deleted, [ldl(3.1, '3')], at(5));
+    expect(same.counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 1, notRead: 0 });
+    expect(same.file.labValues.filter((m) => m.status === 'active')).toEqual([]);
+    const other = run(deleted, [ldl(4.6, '3')], at(5));
+    expect(other.counts).toEqual({ added: 1, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
+    expect(other.file.labValues.filter((m) => m.status === 'active')).toEqual([expect.objectContaining({ value: 4.6, source: 'health_records' })]);
+  });
+
+  it.each([['A to B to A', true], ['A to A', false]])('AC9: a correction chain that loops (%s) ends, and the result corrects the day', (_name, viaB) => {
+    const phone = run(empty(), [ldl(4.6, '1', 'final')], at(1)).file;
+    const typed = appendMeasurement(empty(), { metricType: 'ldl', value: 3.1, recordedAt: '2026-10-21', now: at(2) });
+    if (!typed.ok) throw new Error('setup');
+    const merged = mergeFiles(phone, typed.file, { deviceId: 'phone', now: at(2) });
+    const a = merged.labValues.find((m) => m.status === 'active')!;
+    const b = { ...a, id: 'row-b', status: 'entered-in-error' as const, correctsId: a.id };
+    const looped: RoadmapFile = {
+      ...merged,
+      labValues: [...merged.labValues.map((m) => (m.id === a.id ? { ...m, correctsId: viaB ? b.id : a.id } : m)), ...(viaB ? [b] : [])],
+    };
+    const { file, counts } = run(looped, [ldl(3.0, '2')], at(5));
+    expect(counts).toEqual({ added: 0, corrected: 1, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
+    expect(file.labValues.filter((m) => m.status === 'active')).toEqual([expect.objectContaining({ value: 3.0, correctsId: a.id })]);
+  });
+
   it('AC9: a second institution\'s result for the same test and day does not replace the first', () => {
     const { file, counts } = run(empty(), [rec(obs(R4_LDL)), rec(obs(R4_LDL, { valueQuantity: { value: 4.4, unit: 'mmol/L' } }), { sourceId: 'hk-source:Other' })]);
     expect(counts).toMatchObject({ added: 1, alreadyInRecord: 1 });
