@@ -300,7 +300,7 @@ export function metricHistory(file: RoadmapFile, metric: string, now = new Date(
   const shown = cellUnitFor(file, metric, choices);
   const all = file.measurements.filter((row) => row.metricType === metric);
   // A version marker only carries a version the record has seen (US-66 AC5): not a value.
-  const rows = all.filter((row) => !isVersionMarker(row, all));
+  const rows = all.filter((row) => !isVersionMarker(row));
   // The plan's own pick of the current value.
   const current = latestActivePerMetric(rows.filter((row) => row.status === 'active'))[0];
   return {

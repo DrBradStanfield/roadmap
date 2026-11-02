@@ -59,7 +59,7 @@ Stored values are **never mutated**. The file's `measurements`/`labValues` array
   - `lab_import_edited`: LLM-extracted then user-corrected at review time
   - `manual_correction`: appended by a client-side correction
   - `apple_health`, `fitbit`: future HealthKit-style imports
-  - `health_records`: a lab result a clinic sent to Apple Health Records (US-66, `health-records-import.ts`); `externalId` is `source|Observation|fhirId#version`
+  - `health_records`: a lab result a clinic sent to Apple Health Records (US-66, `health-records-import.ts`); `externalId` is `source|Observation|fhirId#version`, a version marker's `source|Observation|fhirId#version|m`
 
 **Correction flow (the only path that flips a row's status):**
 

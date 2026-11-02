@@ -10,10 +10,11 @@
  *    Apple: the id is unique only within one type and source;
  *  - version: `meta.lastUpdated`, `meta.versionId`, the status, value,
  *    comparator and unit together, so a changed result is a new version even
- *    when the server keeps its meta. The row's `externalId` is `identity#version`.
+ *    when the server keeps its meta. The row's `externalId` is `identity#version`;
+ *    a version marker's is `identity#version|m`, so a marker is known by its id, never by its content.
  * The rules, in the order they are asked:
- *  - a version any row carries, entered-in-error included, never lands again
- *    (a withdrawal still flips an active copy a merge brought back);
+ *  - a version any row carries, entered-in-error and markers included, never lands again
+ *    (a withdrawal still flips an active copy a merge brought back, unless that copy is newer);
  *  - a version not later than any of the identity's rows, markers included (by
  *    lastUpdated, else by whole-number versionId) is stale: it neither replaces nor withdraws;
  *  - `entered-in-error` withdraws: the identity's active row is flipped, and a
@@ -21,11 +22,15 @@
  *  - only `final`, `amended` and `corrected` land; anything else is not read;
  *  - a version dated by `issued` alone keeps the day the result already holds:
  *    `issued` is when that version was released, so an amendment moves it (AC3);
+ *  - a version that moves the result to another test or day than its row holds,
+ *    active or not, is not read (AC6);
  *  - a newer version with the value, unit and comparator of the identity's
  *    current row lands only a version marker: the record remembers the version,
- *    and the person's rejection or hand edit stands (AC5, AC8);
+ *    and the person's rejection or hand edit stands (AC5, AC8). After the lab's
+ *    own withdrawal, its newer version lands whatever its value (AC8);
  *  - an identity whose rows are all entered-in-error lands again only in a new
- *    version with another value (AC8: the stale rule above holds back an older one);
+ *    version with another value, or any new version after the lab's own withdrawal
+ *    (AC8: the stale rule above holds back an older one);
  *  - a newer version of an identity with an active row and another value replaces
  *    it as a FHIR correction (AC6);
  *  - the import is the source of truth: a result corrects a typed, uploaded or
@@ -87,6 +92,8 @@ export const HEALTH_RECORDS_LOINC: Readonly<Record<string, string>> = {
 const LOINC = 'http://loinc.org';
 const UCUM = 'http://unitsofmeasure.org';
 const LANDS = new Set(['final', 'amended', 'corrected']);
+/** A version marker's `externalId` is `identity#version|m` (AC5): a 7th part no version holds. */
+const MARKER = 'm';
 /** Codes read in one unit only: the IFCC-standardized HbA1c is a substance fraction, so a % under it is mislabelled (AC4). */
 const ONLY_UNIT: Readonly<Record<string, string>> = { '59261-8': 'mmol/mol' };
 /** DSTU2 (1.0.x) and R4 (4.0.x): the two `HKFHIRVersion`s Apple sends. */
@@ -186,8 +193,8 @@ function versionOf(obs: Observation): string {
  * numbers (any length, compared as digits): -1 older, 0 equal, 1 newer, null unordered.
  */
 function versionOrder(version: string, rowExternalId: string): number | null {
-  const old = rowExternalId.slice(rowExternalId.indexOf('#') + 1).split('|');
-  if (old.length !== 6) return null;
+  const old = versionPartsOf(rowExternalId);
+  if (!old) return null;
   const [at, id] = version.split('|');
   const [oldAt, oldId] = old;
   const t = Date.parse(at);
@@ -205,6 +212,19 @@ function isStale(version: string, rowExternalId: string, withdrawal: boolean): b
   const order = versionOrder(version, rowExternalId);
   return order !== null && (order < 0 || (order === 0 && !withdrawal));
 }
+
+/** The six parts of the version an `externalId` carries, a marker's included, or null. */
+function versionPartsOf(externalId: string): string[] | null {
+  const parts = externalId.slice(externalId.indexOf('#') + 1).split('|');
+  return parts.length === 6 || (parts.length === 7 && parts[6] === MARKER) ? parts.slice(0, 6) : null;
+}
+
+/** Whether an `externalId` is a version marker's: identity, `#`, six version parts and `|m`. */
+const isMarkerId = (externalId: string) =>
+  externalId.includes('#') && externalId.slice(externalId.indexOf('#') + 1).split('|').length === 7 && externalId.endsWith(`|${MARKER}`);
+
+/** The version an `externalId` names, a marker's suffix taken off: the key `known` holds (AC5). */
+const versionKeyOf = (externalId: string) => (isMarkerId(externalId) ? externalId.slice(0, -MARKER.length - 1) : externalId);
 
 /** Two whole numbers written in digits, compared without Number's precision limit. */
 function compareDigits(a: string, b: string): number {
@@ -264,10 +284,6 @@ function readingOf(obs: Observation, now: string): Reading | null {
 
 type Row = FileMeasurement | FileLabValue;
 
-const identityOf = (row: Row) =>
-  row.source === 'health_records' && typeof row.externalId === 'string' && row.externalId.includes('#')
-    ? row.externalId.slice(0, row.externalId.indexOf('#')) : null;
-
 /** Whether a row was written before another: by createdAt, then, in one batch, by version. */
 function writtenBefore(a: Row, b: Row): boolean {
   const order = Math.sign(Date.parse(a.createdAt) - Date.parse(b.createdAt));
@@ -280,18 +296,13 @@ function sameContent(a: Row, b: Pick<Row, 'value' | 'comparator'> & { unit?: str
 }
 
 /**
- * A version marker (AC5): a `health_records` row born entered-in-error, naming
- * no row (`correctsId: null`), that repeats a row of its result written before
- * it on the same day with the same value, unit and comparator. It only carries
- * a version the record has seen, so a history leaves it out. A withdrawn,
- * corrected or rejected result is the first of its content, so never one; two
- * rows of one batch whose versions do not order are both shown, not guessed between.
+ * A version marker (AC5): a `health_records` row born entered-in-error whose
+ * `externalId` ends in the marker's suffix. It only carries a version the
+ * record has seen, so a history leaves it out. The suffix says so; content is
+ * never guessed from, so a withdrawn, corrected or rejected result is always shown.
  */
-export function isVersionMarker(row: Row, rows: readonly Row[]): boolean {
-  const identity = row.status === 'entered-in-error' && !row.correctsId ? identityOf(row) : null;
-  return identity !== null && rows.some((other) => other.id !== row.id && identityOf(other) === identity
-    && slotOfRow(other) === slotOfRow(row) && sameContent(other, row)
-    && writtenBefore(other, row));
+export function isVersionMarker(row: Row): boolean {
+  return row.source === 'health_records' && row.status === 'entered-in-error' && typeof row.externalId === 'string' && isMarkerId(row.externalId);
 }
 
 export function importHealthRecords(
@@ -309,7 +320,8 @@ export function importHealthRecords(
   const remember = (list: Row[], at: number) => {
     const { externalId } = list[at];
     if (typeof externalId !== 'string') return;
-    known.add(externalId);
+    // AC5: a marker's version is a version the record has seen.
+    known.add(versionKeyOf(externalId));
     if (list[at].source !== 'health_records' || !externalId.includes('#')) return;
     const identity = externalId.slice(0, externalId.indexOf('#'));
     const rows = byIdentity.get(identity);
@@ -340,9 +352,10 @@ export function importHealthRecords(
       changed = true;
     };
     // AC5: a version already in the record never lands again, after a reinstall too.
-    // AC7: a withdrawal still withdraws an active copy another device's merge brought back.
+    // AC7: a withdrawal still withdraws an active copy another device's merge brought back,
+    // unless that copy is a newer version: a replayed withdrawal never undoes a later result.
     if (known.has(externalId)) {
-      if (withdrawal && active) withdraw(active);
+      if (withdrawal && active && versionOrder(version, active.list[active.at].externalId as string) !== -1) withdraw(active);
       else counts.alreadyInRecord++;
       continue;
     }
@@ -353,7 +366,7 @@ export function importHealthRecords(
     /** AC5: a version marker, so the record remembers a version that changes nothing it shows. */
     const mark = () => {
       const { list, at } = current!;
-      list.push({ ...list[at], id: newId(), status: 'entered-in-error', createdAt: now, source: 'health_records', correctsId: null, externalId });
+      list.push({ ...list[at], id: newId(), status: 'entered-in-error', createdAt: now, source: 'health_records', correctsId: null, externalId: `${externalId}|${MARKER}` });
       remember(list, list.length - 1);
       changed = true;
     };
@@ -380,12 +393,16 @@ export function importHealthRecords(
     const established = current && current.list[current.at];
     if (established && current!.list === list && !obs.effectiveDateTime && !obs.effectivePeriod?.start
       && slotKey(reading.kind, reading.metric, established.recordedAt) === slotOfRow(established)) slot = slotOfRow(established);
-    // A version that moves the result to another test or day is not read:
-    // a correction keeps its slot (agent-access rule 2).
-    if (active && (active.list !== list || slotOfRow(active.list[active.at]) !== slot)) { counts.notRead++; continue; }
+    // A version that moves the result to another test or day is not read: a correction keeps
+    // its slot (agent-access rule 2). Judged against the result's row, active or not (AC6).
+    if (established && (current!.list !== list || slotOfRow(established) !== slot)) { counts.notRead++; continue; }
+    // AC8: the lab withdrew the result last (its marker carries an entered-in-error version):
+    // the lab's newer version reinstates it, the same value included (Brad 2026-11-02).
+    const labWithdrew = !active && established !== undefined && isMarkerId(String(established.externalId))
+      && versionPartsOf(String(established.externalId))?.[2] === 'entered-in-error';
     // AC5, AC8: the same value, unit and comparator as the result holds now: a
     // marker only; the person's rejection or hand edit stands.
-    if (established && sameContent(established, reading)) { mark(); counts.alreadyInRecord++; continue; }
+    if (established && !labWithdrew && sameContent(established, reading)) { mark(); counts.alreadyInRecord++; continue; }
     const held = active ?? taken.get(slot);
     const old = held?.list[held.at];
     // AC9: another institution's result holds the day.

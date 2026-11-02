@@ -789,11 +789,16 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
   with the same value, unit and comparator, and a lab's withdrawal, append a **version
   marker** (AC5): a `health_records` row born `entered-in-error`, a copy of the result's
   current row with the new version in its `externalId` and `correctsId: null` (merge reads no
-  `correctsId`, so it flips nothing on any device). The record remembers the version, so an
+  `correctsId`, so it flips nothing on any device). A marker's `externalId` ends `|m` after
+  the version (`identity#version|m`), so it is known by its id, never guessed from its content
+  (Codex R2, adversary R3). The record remembers the version, so an
   older one seen later is stale, and the person's rejection or hand edit stands; only another
-  value, unit or comparator lifts a rejection or overrides. The history (`metricHistory`)
-  leaves markers out with health-core's `isVersionMarker`; readers skip them as any
-  `entered-in-error` row. Known limit (adversary R4): a result dated by its release day can
+  value, unit or comparator lifts a rejection or overrides. After the lab's own withdrawal,
+  its newer version lands whatever its value (AC8). A withdrawal already in the record flips
+  an active copy a merge brought back only when that copy is not newer (AC7). A version that
+  moves the result to another test or day is not read, active row or not (AC6). The history
+  (`metricHistory`) leaves markers out with health-core's `isVersionMarker(row)`; readers
+  skip them as any `entered-in-error` row. Known limit (adversary R4): a result dated by its release day can
   sit on another day than the same draw typed on the draw day, so both stay active.
 - **Same line, same anchor rules as vitals:** `RecordStore.applyNow(.healthRecords(_))`, its counts in `ApplyResult.saved`; the store's
   one ordered line; the anchor (`HealthSyncMemory.labResultsAnchor`) moves only after the
