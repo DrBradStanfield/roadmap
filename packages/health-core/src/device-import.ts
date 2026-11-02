@@ -85,12 +85,11 @@ const CLOCK_SKEW_MS = 5 * 60_000;
  * The row's `recordedAt` for a reading, or null when its time is unreadable or
  * has not happened. "Not yet" compares instants: the reading's day is the day
  * where it was taken, which in a zone ahead of the phone's is already the
- * phone's tomorrow (re-check F1, 2026-10-21). Health Records reads a result's
- * draw time through it too (health-records-import.ts).
+ * phone's tomorrow (re-check F1, 2026-10-21).
  */
-export function recordedAtOf(measuredAt: unknown, now: string): string | null {
-  const parts = typeof measuredAt === 'string' ? MEASURED_AT.exec(measuredAt) : null;
-  const at = parts ? Date.parse(measuredAt as string) : Number.NaN;
+function recordedAtOf(sample: DeviceSample, now: string): string | null {
+  const parts = typeof sample.measuredAt === 'string' ? MEASURED_AT.exec(sample.measuredAt) : null;
+  const at = parts ? Date.parse(sample.measuredAt) : Number.NaN;
   if (!parts || Number.isNaN(at) || at > Date.parse(now) + CLOCK_SKEW_MS) return null;
   const [, day, time, offset] = parts;
   return isCalendarDay(day) ? `${day}T${time}.000${offset}` : null;
@@ -142,7 +141,7 @@ export function importDeviceSamples(
   for (const reading of readingsOf(samples)) {
     const skip = (why: keyof DeviceImportResult['skipped']) => { result.skipped[why] += reading.length; };
     if (reading.some((sample) => known.has(sample.externalId))) { skip('known'); continue; }
-    const times = reading.map((sample) => recordedAtOf(sample.measuredAt, now));
+    const times = reading.map((sample) => recordedAtOf(sample, now));
     if (times.some((time) => time === null) || reading.some((sample) => typeof sample.externalId !== 'string' || !sample.externalId)) {
       skip('invalid');
       continue;

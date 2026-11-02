@@ -44,12 +44,15 @@ final class ZZRecordsProbe: XCTestCase {
         if sample.waitForExistence(timeout: 10) { sample.tap() }
         sleep(4)
         dump(health, "5b-sample")
+        health.buttons["Connect Account"].firstMatch.tap()
+        sleep(6)
+        dump(health, "5c-connect")
         // Walk the flow: tap the first of these words that shows, dumping each screen.
-        let words = ["Get Started", "Continue", "Sample", "Health System", "Hospital", "Connect to Account", "Connect", "Allow", "Done", "Next", "OK"]
+        let words = ["Get Started", "Continue", "Connect to Account", "Connect", "Allow", "Done", "Next", "OK"]
         for step in 0..<14 {
             var tapped = false
             for word in words {
-                let match = health.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] %@", word)).allElementsBoundByIndex.first { $0.isHittable && ($0.elementType == .button || $0.elementType == .cell || $0.elementType == .staticText) }
+                let match = health.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] %@", word)).allElementsBoundByIndex.first { $0.isHittable && ($0.elementType == .button) }
                 if let match { match.tap(); tapped = true; break }
             }
             sleep(3)
