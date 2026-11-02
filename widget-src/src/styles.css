@@ -5544,9 +5544,24 @@ input[type="number"] {
 }
 .md-foot {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  justify-content: center;
   padding: 8px 0 12px;
+}
+/* A section's title with its action on the right, centred on one line. */
+.md-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.md-section-head > .health-section-title {
+  margin: 0;
+  min-width: 0;
+}
+.md-head-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 .md-foot-btn,
 .md-back,
@@ -5558,9 +5573,6 @@ input[type="number"] {
   font-size: 15px;
   color: var(--color-brand-text);
   cursor: pointer;
-}
-.md-foot-btn + .md-foot-btn {
-  margin-left: auto;
 }
 .md-page {
   background: #fff;

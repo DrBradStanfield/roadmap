@@ -2451,11 +2451,11 @@ export function InputPanel({
         fullForm && (
           <div key="bt" className="section-card section-card--bt stage-reveal">
             {!tableShown && (
-              <BloodTestRows history={bloodTestHistory} labValues={labValues} ctx={rowCtx} onOpen={openPage}>
+              <BloodTestRows history={bloodTestHistory} labValues={labValues} ctx={rowCtx} onOpen={openPage}
+                             action={setShowUploadModal && <button type="button" className="md-foot-btn md-head-btn" onClick={() => setShowUploadModal(true)}>Upload lab results</button>}>
                 {unsavedCue(draftedBlood)}
                 <div className="md-foot">
                   <button type="button" className="md-foot-btn" onClick={() => showTable(true)}>All results as a table</button>
-                  {setShowUploadModal && <button type="button" className="md-foot-btn" onClick={() => setShowUploadModal(true)}>Upload lab results</button>}
                 </div>
               </BloodTestRows>
             )}

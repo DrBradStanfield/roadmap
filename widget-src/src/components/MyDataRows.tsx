@@ -222,10 +222,14 @@ function MetricRow({ row, onOpen }: { row: RowModel; onOpen: (subject: ValueSubj
   );
 }
 
-function RowSection({ title, icon, rows, onOpen, children }: { title: string; icon: SectionKey; rows: RowModel[]; onOpen: (s: ValueSubject) => void; children?: React.ReactNode }) {
+function RowSection({ title, icon, action, rows, onOpen, children }: { title: string; icon: SectionKey; action?: React.ReactNode; rows: RowModel[]; onOpen: (s: ValueSubject) => void; children?: React.ReactNode }) {
   return (
     <section className="md-section" aria-label={title}>
-      <h3 className="health-section-title md-section-title"><SectionIcon section={icon}/>{title}</h3>
+      {/* The title, and on its right the section's own action (Upload lab results, Brad 2026-11-02). */}
+      <div className="md-section-head">
+        <h3 className="health-section-title md-section-title"><SectionIcon section={icon}/>{title}</h3>
+        {action}
+      </div>
       <ul className="md-rows">
         {rows.map(row => <MetricRow key={row.subject.kind === 'lab' ? row.subject.seriesKey : row.subject.kind === 'bp' ? 'bp' : row.subject.metric} row={row} onOpen={onOpen}/>)}
       </ul>
@@ -240,10 +244,10 @@ export function VitalsRows({ history, ctx, onOpen, withoutWeight }: { history: A
   return <RowSection title="Vitals" icon="vitals" rows={rows} onOpen={onOpen}/>;
 }
 
-export function BloodTestRows({ history, labValues, ctx, onOpen, children }: {
-  history: ApiMeasurement[]; labValues: ApiLabValue[]; ctx: RowContext; onOpen: (s: ValueSubject) => void; children?: React.ReactNode;
+export function BloodTestRows({ history, labValues, ctx, onOpen, action, children }: {
+  history: ApiMeasurement[]; labValues: ApiLabValue[]; ctx: RowContext; onOpen: (s: ValueSubject) => void; action?: React.ReactNode; children?: React.ReactNode;
 }) {
   const labs = useMemo(() => labRows(labValues), [labValues]);
   const rows = [...BLOOD_ROWS.map(m => coreRow(m, history, ctx)), ...labs];
-  return <RowSection title="Blood tests" icon="bloodTests" rows={rows} onOpen={onOpen}>{children}</RowSection>;
+  return <RowSection title="Blood tests" icon="bloodTests" action={action} rows={rows} onOpen={onOpen}>{children}</RowSection>;
 }
