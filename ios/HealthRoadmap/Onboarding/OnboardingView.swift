@@ -333,7 +333,8 @@ struct OnboardingView: View {
         // A new record takes the phone's region's units (AC6); a record with values keeps its own.
         let hasValues = data.profile.sex != nil || data.profile.birthYear != nil || data.profile.height != nil
             || (data.vitals + data.bloodTests + [data.psa]).contains { $0.latest != nil }
-        if let units = OnboardingSteps.regionUnits(hasValues: hasValues, onlyMissing: ownUnits, current: data.unitSystem, system: Locale.current.measurementSystem) {
+        let engineUnits = hasValues || ownUnits ? nil : await store.regionUnits()
+        if let units = OnboardingSteps.regionUnits(hasValues: hasValues, onlyMissing: ownUnits, current: data.unitSystem, locale: .current, engine: engineUnits) {
             _ = await store.apply(.units(units))
             // Gone before the units landed: nothing to pin (onDisappear unpins only a begun run).
             guard !Task.isCancelled, step == nil else { return }
