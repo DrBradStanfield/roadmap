@@ -404,6 +404,19 @@ final class RecordStore {
         await chain { await self.applyInTurn(edit, as: self.screen) }.value
     }
 
+    /// Lab results from Health Records (US-66), as `applyNow` takes an import, with the
+    /// engine's counts when the batch changed the record (nil otherwise). Read in the same
+    /// turn, so no other edit's answer is mistaken for this one's.
+    func applyNow(records: [HealthRecord]) async -> (result: ApplyResult, counts: HealthRecordCounts?) {
+        await chain {
+            self.recordCounts = nil
+            let result = await self.applyInTurn(.healthRecords(records), as: self.screen)
+            return (result, self.recordCounts)
+        }.value
+    }
+    /// The last saved Health Records batch's counts, for `applyNow(records:)` within its turn.
+    @ObservationIgnored private var recordCounts: HealthRecordCounts?
+
     private func applyInTurn(_ edit: RecordEdit, as seen: Screen) async -> ApplyResult {
         // An erase taken in, or sync turned on or off, since the sheet opened.
         // The sheet keeps refusing until it closes: it still shows the old record,
@@ -435,7 +448,8 @@ final class RecordStore {
             // An edit that changed nothing (an Apple Health batch with nothing new) writes nothing.
             case .unchanged:
                 return .saved
-            case .saved(let next, let shown):
+            case .saved(let next, let shown, let counts):
+                recordCounts = counts
                 recordJSON = next
                 display(shown)
                 publish(choices)
@@ -462,6 +476,7 @@ final class RecordStore {
             return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
         }
         if next == recordJSON { return .saved }
+        recordCounts = outcome.healthRecords
         // The session has taken the edit: the choices follow it, once it is drawn (adversary R4).
         await draw(HealthEngine.CloudView(record: next, erase: nextErase, session: cloudSession ?? 0, order: outcome.order),
                    in: Self.clearsChoices(edit) ? UnitChoices() : nil)

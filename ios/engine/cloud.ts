@@ -247,7 +247,7 @@ function editSession(edit: Edit, erase: string, shownUnits: string, nowIso: stri
     const refusal = commit(at, outcome.file, erase, nowIso);
     if (refusal) return refusal;
   }
-  return { ok: true as const, record: JSON.stringify(session.file), erase: session.eraseIdentity };
+  return { ok: true as const, record: JSON.stringify(session.file), erase: session.eraseIdentity, healthRecords: outcome.healthRecords };
 }
 
 /**

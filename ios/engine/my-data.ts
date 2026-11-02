@@ -18,6 +18,7 @@ import { medicationSchema, supplementSchema, zod3Message } from '../../packages/
 import { customSupplementAdd, customSupplementMatch } from '../../packages/health-core/src/input-form';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { importDeviceSamples, type DeviceSample } from '../../packages/health-core/src/device-import';
+import { importHealthRecords, type ClinicalRecordInput, type HealthRecordsCounts } from '../../packages/health-core/src/health-records-import';
 import { applyFormEdit, formsOf, planOf, type FormEdit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
 import { METRIC_GUIDES, type MetricGuide } from '../../packages/health-core/src/metric-guides';
@@ -108,6 +109,8 @@ export type Edit =
   | { kind: 'supplement'; supplementKey: string; supplementName: string; doseValue?: number | null; doseUnit?: string | null; status: 'active' | 'stopped'; startedAt?: string }
   /** Readings from Apple Health (US-25 AC13): health-core's device-import decides what lands. */
   | { kind: 'appleHealth'; samples: DeviceSample[] }
+  /** Lab results from Health Records (US-66): health-core's health-records-import decides what lands. */
+  | { kind: 'healthRecords'; records: ClinicalRecordInput[] }
   /** Medication and screening answers and a typed supplement (my-data-forms.ts, US-25 AC8). */
   | FormEdit
   /** The ticked values of an uploaded lab report (US-52 AC8), written by the web's bulk rule. */
@@ -115,7 +118,8 @@ export type Edit =
 
 /** A refusal leaves the record as it was. `existingId` names the row holding the day. */
 export type EditOutcome =
-  | { ok: true; file: RoadmapFile }
+  /** `healthRecords`: what a Health Records batch did (US-66), counts only. */
+  | { ok: true; file: RoadmapFile; healthRecords?: HealthRecordsCounts }
   | { ok: false; reason: string; message: string; existingId?: string };
 
 /**
@@ -363,6 +367,11 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
     case 'appleHealth': {
       if (!Array.isArray(edit.samples)) return { ok: false, reason: 'invalid-value', message: 'Apple Health readings come as a list.' };
       return { ok: true, file: importDeviceSamples(file, edit.samples, { now, source: 'apple_health' }).file };
+    }
+    case 'healthRecords': {
+      if (!Array.isArray(edit.records)) return { ok: false, reason: 'invalid-value', message: 'Health Records results come as a list.' };
+      const { file: next, counts } = importHealthRecords(file, edit.records, { now });
+      return { ok: true, file: next, healthRecords: counts };
     }
     case 'customSupplement':
       // A name already taken keeps its dose: adding it again changes nothing (US-06 AC1a).

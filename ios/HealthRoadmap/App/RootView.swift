@@ -84,7 +84,10 @@ struct RootView: View {
         // Edit sheets pin the record they opened on (MyData/RecordPin.swift).
         .environment(store)
         .environment(\.analytics, analytics)
-        .onAppear { Tour.finished = { Task { await offerCloudSoon() } } }
+        .onAppear {
+            Tour.finished = { Task { await offerCloudSoon() } }
+            health?.analytics = analytics
+        }
         .sheet(isPresented: $offeringCloud, onDismiss: cloudPromptClosed) {
             CloudPromptView { backingUp = true }
                 .onAppear {

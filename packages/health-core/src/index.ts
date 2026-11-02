@@ -471,3 +471,6 @@ export { labEgfrOf, withLabEgfr, type LabEgfr } from './plan';
 
 // US-25 AC22: the plan's summary tiles, the web's Quick Stats and the phone's My plan tiles.
 export { statTiles, statTileText, type StatTile, type StatTileOptions, type StatTileStatus, type StatTone } from './stat-tiles';
+
+// US-66: lab results from Apple Health Records, read from their FHIR JSON.
+export { HEALTH_RECORDS_LOINC, importHealthRecords, type ClinicalRecordInput, type HealthRecordsCounts } from './health-records-import';

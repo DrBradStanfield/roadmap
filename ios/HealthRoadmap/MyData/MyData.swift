@@ -176,6 +176,8 @@ enum RecordEdit: Encodable, Equatable {
     case correct(id: String, value: Double)
     /// Readings from Apple Health; the engine decides what lands (US-25 AC13).
     case appleHealth([HealthSample])
+    /// Lab results from Health Records, as they came; the engine decides what lands (US-66).
+    case healthRecords([HealthRecord])
     /// A medication, screening or supplement answer (FormModels.swift).
     case form(FormEdit)
     /// The ticked values of an uploaded lab report (US-52 AC8): the server's extraction
@@ -191,7 +193,7 @@ enum RecordEdit: Encodable, Equatable {
     }
 
     private enum Key: String, CodingKey {
-        case kind, alcohol, sex, birthYear, birthMonth, height, heightFeet, heightInches, systolic, diastolic, replace, seenIds, unitSystem, unit, metric, value, day, id, extractionJson, refs, reportDay, samples
+        case kind, alcohol, sex, birthYear, birthMonth, height, heightFeet, heightInches, systolic, diastolic, replace, seenIds, unitSystem, unit, metric, value, day, id, extractionJson, refs, reportDay, samples, records
     }
 
     func encode(to encoder: Encoder) throws {
@@ -235,6 +237,9 @@ enum RecordEdit: Encodable, Equatable {
         case .appleHealth(let samples):
             try json.encode("appleHealth", forKey: .kind)
             try json.encode(samples, forKey: .samples)
+        case .healthRecords(let records):
+            try json.encode("healthRecords", forKey: .kind)
+            try json.encode(records, forKey: .records)
         case .form(let edit):
             try edit.encode(to: encoder)
         case .labImport(let extractionJSON, let refs, let reportDay):
@@ -261,4 +266,6 @@ struct EditOutcome: Decodable {
     var erase: String? = nil
     /// In the cloud: the engine's stamp, set in Swift (`HealthEngine.stamp`).
     var order: Int? = nil
+    /// After a `healthRecords` edit (US-66): what the batch did.
+    var healthRecords: HealthRecordCounts? = nil
 }

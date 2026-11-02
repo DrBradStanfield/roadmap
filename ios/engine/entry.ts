@@ -110,10 +110,11 @@ export function screenJson(recordJson: string, nowIso: string, deviceId: string,
   return JSON.stringify({ myData: myData(file, nowIso, choices, plan), plan: view });
 }
 
-/** One edit, as JSON: `{ ok: true, record }` with the new record as text, or the refusal. */
+/** One edit, as JSON: `{ ok: true, record }` with the new record as text (and a Health
+ *  Records batch's `healthRecords` counts), or the refusal. */
 export function applyEditJson(recordJson: string, editJson: string, nowIso: string, deviceId: string, unitsJson?: string): string {
   const outcome = applyEdit(readRecord(recordJson, nowIso, deviceId), JSON.parse(editJson) as Edit, nowIso, readUnitChoices(unitsJson));
-  return JSON.stringify(outcome.ok ? { ok: true, record: JSON.stringify(outcome.file) } : outcome);
+  return JSON.stringify(outcome.ok ? { ok: true, record: JSON.stringify(outcome.file), healthRecords: outcome.healthRecords } : outcome);
 }
 
 /** A typed number as JSON: the number, or null when it is not a plain decimal. */

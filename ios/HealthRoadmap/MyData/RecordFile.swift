@@ -70,7 +70,8 @@ enum PhoneApply: Sendable {
     case refused(EditOutcome)
     /// The edit changed nothing, so nothing was written.
     case unchanged
-    case saved(record: String, drawn: HealthEngine.Drawn)
+    /// `healthRecords`: what a Health Records batch did (US-66).
+    case saved(record: String, drawn: HealthEngine.Drawn, healthRecords: HealthRecordCounts?)
 }
 
 /// RecordStore's engine work and disk writes, on the engine's queue.
@@ -121,6 +122,6 @@ extension HealthEngine {
         let outcome = try apply(edit, to: record, now: .now, deviceId: deviceId, units: units)
         guard outcome.ok, let next = outcome.record else { return .refused(outcome) }
         if next == record { return .unchanged }
-        return .saved(record: next, drawn: try drawAndWrite(next, units: shownIn, to: file, marking: marking, deviceId: deviceId))
+        return .saved(record: next, drawn: try drawAndWrite(next, units: shownIn, to: file, marking: marking, deviceId: deviceId), healthRecords: outcome.healthRecords)
     }
 }

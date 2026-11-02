@@ -68,3 +68,32 @@ struct HealthBatch: Sendable {
     let samples: [HealthSample]
     let anchor: Data?
 }
+
+/// One lab result from Health Records, handed to the engine as it came (US-66). Swift
+/// parses nothing (D2): the engine reads the FHIR JSON and decides whether it lands.
+struct HealthRecord: Encodable, Equatable, Sendable {
+    /// The HealthKit source: the institution's account, the FHIR endpoint the resource's
+    /// id is unique within (Apple, HKFHIRResource.identifier).
+    let sourceId: String
+    /// `Observation`, for a lab result.
+    let resourceType: String
+    /// "1.0.2" (DSTU2) or "4.0.1" (R4).
+    let fhirVersion: String
+    /// The FHIR resource, UTF-8 JSON.
+    let json: String
+}
+
+/// New lab results since an anchor, and the anchor to keep once they are saved.
+struct HealthRecordBatch: Sendable {
+    let records: [HealthRecord]
+    let anchor: Data?
+}
+
+/// What the engine made of one batch of lab results (the `healthRecords` edit's answer).
+/// Counts only: they never leave the phone, not even to Clarity (D9).
+struct HealthRecordCounts: Decodable, Equatable, Sendable {
+    let added, corrected, withdrawn, alreadyInRecord, notRead: Int
+
+    /// At least one row landed: "Health Records imported" (AC13).
+    var landed: Bool { added + corrected > 0 }
+}

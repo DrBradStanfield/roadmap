@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { applyEdit, myData, newRecord, readNumber, readRecord, Refusal } from './my-data';
 import { metricHistory } from './my-data-forms';
 import { readUnitChoices } from './unit-choices';
-import { healthWritesJson, planJson } from './entry';
+import { applyEditJson, healthWritesJson, planJson } from './entry';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { supplementSchema } from '../../packages/health-core/src/validation';
 import { stampProfile, upsertSupplement } from '../../packages/health-core/src/state-edits';
@@ -461,6 +461,46 @@ describe('Apple Health (AC13, AC14)', () => {
   it('lists a typed weight as a write to Apple Health, and an imported one not', () => {
     const typed = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'add', metric: 'weight', value: 80, day: '2026-10-20' }, { kind: 'appleHealth', samples: [reading] });
     expect(JSON.parse(healthWritesJson(JSON.stringify(typed), NOW, 'phone'))).toEqual([{ syncId: typed.measurements[0].id, version: 1, day: '2026-10-20', values: { weight: 80 } }]);
+  });
+});
+
+// US-66: lab results from Health Records, through health-core's health-records-import
+// (its rules are tested there). The app reads the counts from the edit's answer.
+describe('Health Records (US-66)', () => {
+  const ldl = {
+    resourceType: 'Observation', id: 'ldl-1', status: 'final', effectiveDateTime: '2026-10-20', meta: { versionId: '1' },
+    code: { coding: [{ system: 'http://loinc.org', code: '13457-7' }] },
+    valueQuantity: { value: 2.6, unit: 'mmol/L', system: 'http://unitsofmeasure.org', code: 'mmol/L' },
+  };
+  const record = { sourceId: 'hk-source:Acme', resourceType: 'Observation', fhirVersion: '4.0.1', json: JSON.stringify(ldl) };
+
+  it('AC2: lands a result as a health_records row, shown in My data, and answers the counts', () => {
+    const outcome = applyEdit(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'healthRecords', records: [record] }, NOW);
+    if (!outcome.ok) throw new Error(outcome.message);
+    expect(outcome.healthRecords).toEqual({ added: 1, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
+    expect(outcome.file.measurements[0]).toMatchObject({ metricType: 'ldl', value: 2.6, source: 'health_records' });
+    expect(myData(outcome.file).bloodTests.find((row) => row.metric === 'ldl')?.latest).toMatchObject({ day: '2026-10-20' });
+  });
+
+  it('AC5: hands back the record it was given when nothing is new, so the app writes nothing', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'healthRecords', records: [record] });
+    const again = applyEdit(file, { kind: 'healthRecords', records: [record] }, LATER);
+    expect(again).toEqual({ ok: true, file, healthRecords: { added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 1, notRead: 0 } });
+    if (again.ok) expect(again.file).toBe(file);
+  });
+
+  it('refuses a batch that is not a list', () => {
+    const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    expect(applyEdit(file, { kind: 'healthRecords', records: 'nope' } as never, NOW)).toMatchObject({ ok: false, reason: 'invalid-value' });
+  });
+
+  it('applyEditJson passes the counts to the app; other edits answer as before', () => {
+    const recordJson = JSON.stringify(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'));
+    const answer = JSON.parse(applyEditJson(recordJson, JSON.stringify({ kind: 'healthRecords', records: [record] }), NOW, 'phone'));
+    expect(answer.healthRecords).toEqual({ added: 1, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
+    expect(JSON.parse(answer.record).measurements[0].source).toBe('health_records');
+    const units = JSON.parse(applyEditJson(recordJson, JSON.stringify({ kind: 'units', unitSystem: 'conventional' }), NOW, 'phone'));
+    expect(Object.keys(units).sort()).toEqual(['ok', 'record']);
   });
 });
 

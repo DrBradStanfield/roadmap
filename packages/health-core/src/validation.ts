@@ -369,6 +369,7 @@ export const MEASUREMENT_SOURCES = [
   'lab_import',
   'lab_import_edited',  // LLM-extracted then user-corrected at review time
   'manual_correction',  // Inserted by the correct_measurement RPC
+  'health_records',     // A lab result a clinic sent to Apple Health Records (US-66)
 ] as const;
 export type MeasurementSource = typeof MEASUREMENT_SOURCES[number];
 

@@ -181,7 +181,8 @@
         "fitbit",
         "lab_import",
         "lab_import_edited",
-        "manual_correction"
+        "manual_correction",
+        "health_records"
       ],
       "description": "Where the value came from. From MEASUREMENT_SOURCES in packages/health-core/src/validation.ts."
     },
@@ -258,7 +259,11 @@
         "createdAt": { "type": "string" },
         "source": { "$ref": "#/$defs/MeasurementSource" },
         "status": { "$ref": "#/$defs/MeasurementStatus" },
-        "correctsId": { "type": ["string", "null"] }
+        "correctsId": { "type": ["string", "null"] },
+        "externalId": {
+          "type": ["string", "null"],
+          "description": "Optional. Id and version in the originating system, used for dedup: for a Health Records result, its HealthKit source, resource type and FHIR id, then '#' and its version. Absent on most rows; keep it when you copy a row, never write one yourself."
+        }
       }
     },
 

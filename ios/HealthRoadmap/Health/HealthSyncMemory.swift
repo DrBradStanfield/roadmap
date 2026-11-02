@@ -4,7 +4,8 @@ import Foundation
 /// (ios/architecture.md D6): it is this phone's bookkeeping, not health data, and
 /// another device reading the record must not inherit it.
 /// - whether the person connected Apple Health (iOS never says whether reading is allowed);
-/// - one HealthKit query anchor per kind, so each launch reads only what is new;
+/// - one HealthKit query anchor per kind, and one for lab results (US-66), so each launch
+///   reads only what is new;
 /// - the version of each value already written to Health, so it is written once.
 struct HealthSyncMemory {
     private let defaults: UserDefaults
@@ -24,6 +25,12 @@ struct HealthSyncMemory {
 
     func setAnchor(_ anchor: Data?, for kind: HealthKind) {
         defaults.set(anchor, forKey: "appleHealth.anchor.\(kind.rawValue)")
+    }
+
+    /// Lab results' anchor (US-66): nil until a batch brought one in.
+    var labResultsAnchor: Data? {
+        get { defaults.data(forKey: "appleHealth.anchor.labResults") }
+        nonmutating set { defaults.set(newValue, forKey: "appleHealth.anchor.labResults") }
     }
 
     func writtenVersion(_ syncId: String) -> Int64 {

@@ -44,6 +44,7 @@ final class AnalyticsMaskingTests: XCTestCase {
             "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now",
             "Guide seen", "Guide opened", // US-58's usage signal: no metric or medicine name
             "Alcohol answered", // US-60's usage signal: never the answer
+            "Health Records asked", "Health Records imported", // US-66 AC13: never a value, a test's name or a count
         ])
         let sdk = FakeSDK()
         let analytics = Analytics(sdk: sdk, projectId: "abc", testing: false)

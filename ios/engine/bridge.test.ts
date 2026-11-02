@@ -32,6 +32,7 @@ function parameters(name: string): string[] {
 /** Contract arguments to call each optional door with (one entry per door in bridge-optional.json). */
 const NOW = '2026-10-21T08:00:00.000Z';
 const SAMPLE_ARGS: Record<string, unknown[]> = {
+  applyEditJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'), '{"kind":"units","unitSystem":"si"}', NOW, 'phone', '{}'],
   screenJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'), NOW, 'phone', '{}'],
 };
 /** A door's answer with its timing fields (`ms`) left out, which differ call to call. */

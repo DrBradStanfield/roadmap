@@ -7,6 +7,8 @@ import UIKit
 /// In: new readings since each kind's anchor go to the engine as one edit
 /// (`appleHealth`), whose rules decide what lands; the anchor moves only after
 /// the record is on disk, so a refused or failed save reads them again later.
+/// Lab results from Health Records (US-66), where Apple offers them, come the same way
+/// (`healthRecords`), through the same line, with their own anchor.
 /// Out: the engine lists the values a person entered (`healthWritesJson`); each
 /// is written once per version.
 ///
@@ -42,6 +44,8 @@ final class AppleHealthSync {
     private var again = false
     private var waiting: [CheckedContinuation<Void, Never>] = []
     private var started = false
+    /// Where the two Health Records events go (US-66 AC13); RootView sets it.
+    @ObservationIgnored var analytics: Analytics?
 
     /// Reads the record again (cloud sync's re-read) after an import was refused: in
     /// the cloud a refusal means the record moved on (an erase or units taken in).
@@ -97,7 +101,8 @@ final class AppleHealthSync {
     func connect() async {
         guard client.isAvailable else { return }
         do {
-            try await client.requestAuthorization()
+            // Health showed its lab results sheet because HealthKit said one was needed (AC13).
+            if try await client.requestAuthorization() { analytics?.event(.healthRecordsAsked) }
         } catch {
             status = .failed(error.localizedDescription)
             return
@@ -174,7 +179,7 @@ final class AppleHealthSync {
     /// No kind may be written and none has given a reading (US-25 AC15b). iOS hides a refused
     /// read, so an empty Health whose writes were refused looks the same, and says the same.
     private var noAccess: Bool {
-        !HealthKind.allCases.contains { client.canWrite($0) || memory.anchor(for: $0) != nil }
+        !HealthKind.allCases.contains { client.canWrite($0) || memory.anchor(for: $0) != nil } && memory.labResultsAnchor == nil
     }
 
     private func importNew() async throws {
@@ -188,6 +193,20 @@ final class AppleHealthSync {
             if !batch.samples.isEmpty { try await save(batch.samples) }
             memory.setAnchor(batch.anchor, for: kind)
         }
+        try await importLabResults()
+    }
+
+    /// Lab results (US-66), as a kind: no anchor until a batch brought some (a refused read
+    /// looks like an empty one), and the anchor moves only once the record holding them is saved.
+    private func importLabResults() async throws {
+        guard client.supportsHealthRecords else { return }
+        let anchor = memory.labResultsAnchor
+        let batch = try await client.labResults(after: anchor)
+        if anchor == nil, batch.records.isEmpty { return }
+        if !batch.records.isEmpty, try await save(batch.records)?.landed == true {
+            analytics?.event(.healthRecordsImported)
+        }
+        memory.labResultsAnchor = batch.anchor
     }
 
     /// Through the same door as a typed value (in the cloud: the session, the merge and
@@ -195,11 +214,22 @@ final class AppleHealthSync {
     /// sheet, so a sheet's pin never refuses it. A refusal reads the record again and
     /// tries once more; a second refusal keeps the anchor, so the batch comes again.
     private func save(_ samples: [HealthSample]) async throws {
-        if case .saved = await store.applyNow(.appleHealth(samples)) { return }
+        try await saved { (await self.store.applyNow(.appleHealth(samples)), nil) }
+    }
+
+    /// Lab results the same way, and what the engine made of them.
+    private func save(_ records: [HealthRecord]) async throws -> HealthRecordCounts? {
+        try await saved { await self.store.applyNow(records: records) }
+    }
+
+    @discardableResult
+    private func saved(_ apply: @MainActor () async -> (result: RecordStore.ApplyResult, counts: HealthRecordCounts?)) async throws -> HealthRecordCounts? {
+        let first = await apply()
+        if case .saved = first.result { return first.counts }
         await reread()
-        if case .refused(let message, _) = await store.applyNow(.appleHealth(samples)) {
-            throw ImportRefused(message: message)
-        }
+        let second = await apply()
+        if case .refused(let message, _) = second.result { throw ImportRefused(message: message) }
+        return second.counts
     }
 
     /// Each value once per version. One Health refuses does not hold back the rest:

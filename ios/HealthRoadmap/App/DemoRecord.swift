@@ -34,8 +34,10 @@ enum DemoRecord {
 @MainActor
 final class NoHealth: HealthStoreClient {
     let isAvailable = false
-    func requestAuthorization() async throws {}
+    let supportsHealthRecords = false
+    func requestAuthorization() async throws -> Bool { false }
     func samples(of kind: HealthKind, after anchor: Data?) async throws -> HealthBatch { HealthBatch(samples: [], anchor: nil) }
+    func labResults(after anchor: Data?) async throws -> HealthRecordBatch { HealthRecordBatch(records: [], anchor: nil) }
     func canWrite(_ kind: HealthKind) -> Bool { false }
     func save(_ write: HealthWrite) async throws {}
     func observe(_ kinds: [HealthKind], onChange: @escaping @MainActor () async -> Void) {}

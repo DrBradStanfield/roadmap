@@ -407,7 +407,31 @@ final class FakeHealthStore: HealthStoreClient {
     /// Runs before an import's read returns: a test holds the import here (US-56 AC4).
     var hold: (@MainActor () async -> Void)?
 
-    func requestAuthorization() async throws { authorized = true }
+    /// Health Records (US-66): off unless a test turns it on, as outside the US, UK and Canada.
+    var supportsHealthRecords = false
+    /// Whether HealthKit still has lab results to ask about: the request then shows their sheet.
+    var recordsNotYetAsked = true
+    var pendingRecords: [HealthRecord] = []
+    private(set) var recordReads = 0
+    private(set) var requests = 0
+
+    func requestAuthorization() async throws -> Bool {
+        authorized = true
+        requests += 1
+        let asked = supportsHealthRecords && recordsNotYetAsked
+        if supportsHealthRecords { recordsNotYetAsked = false }
+        return asked
+    }
+
+    func recordsAnchorData() -> Data { Data("labResults-\(recordReads)".utf8) }
+
+    func labResults(after anchor: Data?) async throws -> HealthRecordBatch {
+        if locked { throw HealthStoreError.locked }
+        await Task.yield()
+        recordReads += 1
+        defer { pendingRecords = [] }
+        return HealthRecordBatch(records: pendingRecords, anchor: recordsAnchorData())
+    }
 
     func anchorData(_ kind: HealthKind) -> Data { Data("\(kind.rawValue)-\(served[kind] ?? 0)".utf8) }
 

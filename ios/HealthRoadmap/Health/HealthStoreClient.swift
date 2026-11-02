@@ -7,17 +7,25 @@ import Foundation
 protocol HealthStoreClient: AnyObject {
     /// False where the device has no Health database.
     var isAvailable: Bool { get }
+    /// Where Health Records works (US-66 AC1): `HKHealthStore.supportsHealthRecords()`.
+    var supportsHealthRecords: Bool { get }
     /// Shows Apple's permission sheet for reading and writing the D6 kinds, and reading
-    /// US-56's five: the app's only Health request (`HealthKitClient.requested`).
-    func requestAuthorization() async throws
+    /// US-56's five and, where `supportsHealthRecords`, lab results: the app's only Health
+    /// request (`HealthKitClient.requested`). True when it asked for lab results HealthKit
+    /// had not asked about before, so Health showed their sheet (AC13).
+    func requestAuthorization() async throws -> Bool
     /// Readings added since `anchor` (nil: all of them), our own writes left out.
     /// Deletions are not returned: the record is append-only (D6).
     func samples(of kind: HealthKind, after anchor: Data?) async throws -> HealthBatch
+    /// Lab results from Health Records added since `anchor` (nil: all of them), US-66.
+    /// Deletions are not returned: an amended or withdrawn result arrives as a new version.
+    func labResults(after anchor: Data?) async throws -> HealthRecordBatch
     /// Whether the person let the app write this kind. iOS never reveals read permission.
     func canWrite(_ kind: HealthKind) -> Bool
     /// Saves one value, replacing our earlier sample with the same sync id and a lower version.
     func save(_ write: HealthWrite) async throws
-    /// Calls `onChange` whenever Health gets new data of these kinds, in the background too.
+    /// Calls `onChange` whenever Health gets new data of these kinds, and new lab results
+    /// where `supportsHealthRecords`, in the background too.
     func observe(_ kinds: [HealthKind], onChange: @escaping @MainActor () async -> Void)
     /// "Delete all my data" (US-25 AC16): deletes every sample this app wrote to Health.
     /// Readings other apps and devices wrote stay: they are not ours to delete.
