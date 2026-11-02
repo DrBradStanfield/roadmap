@@ -156,6 +156,9 @@ export interface ProductEventMetadata extends Partial<Record<UploadOutcomeKey, n
   choice?: (typeof CHAT_PROFILE_CHOICES)[number];
   /** `us_product_shown` / `us_product_link_clicked` (US-61 AC8): the product alone, never the card. */
   product?: UsProduct;
+  /** `upload_outcome` (US-12 AC20): the tests behind `valuesLimitUngraded`, keys from
+   *  `LIMIT_TEST_WORDS` only, each once, sorted. Never a value, unit or printed name. */
+  limitUngradedTests?: string[];
 }
 
 /**
