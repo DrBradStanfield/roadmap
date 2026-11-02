@@ -96,6 +96,14 @@ describe('medicationChanges: the recorded log a chart reads', () => {
     ]);
   });
 
+  it('orders by UTC instant, not text (US-07 AC4, Brad 2026-11-03)', () => {
+    const changes = medicationChanges([
+      row({ id: 'london', updatedAt: '2026-11-01T22:00:00.000+00:00' }),
+      row({ id: 'tokyo', updatedAt: '2026-11-02T06:00:00.000+09:00' }),
+    ]);
+    expect(changes.map(c => c.id)).toEqual(['tokyo', 'london']);
+  });
+
   it('leaves out legacy, escalation, unnamed and undated rows', () => {
     expect(medicationChanges([
       row({ id: 'legacy', changeType: undefined }), row({ id: 'esc', medicationKey: 'statin_escalation' }),

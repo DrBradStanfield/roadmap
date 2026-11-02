@@ -11,6 +11,7 @@ import { LAB_GROUPS, labSlotKey, labUnitRefusalNote, labUnitTaken, resolveLabCat
 import { trendWindow } from './recent-trend';
 import { rowTarget } from './row-target';
 import { comparatorOf, limitText, type Comparator } from './lab-limits';
+import { compareRecordedAt } from './measurement-history';
 
 /** A lab test's name for display: its catalogue label, else the snake_case name title-cased. */
 export function labValueLabel(metricName: string): string {
@@ -85,7 +86,7 @@ export interface LabSeries {
    *  `mixedUnits` before treating this as every point's unit. */
   unit: string;
   mixedUnits: boolean;
-  /** Ascending by recordedAt (oldest first, newest last/right). */
+  /** Ascending by recordedAt's UTC instant (oldest first, newest last/right). */
   points: LabSeriesPoint[];
 }
 
@@ -134,7 +135,7 @@ export function groupLabValues(rows: LabValueRow[]): LabValueGroup[] {
     const groupMap = seriesByGroup.get(def.id);
     if (!groupMap || groupMap.size === 0) continue;
     const series: LabSeries[] = Array.from(groupMap.entries()).map(([seriesKey, s]) => {
-      const points = [...s.points].sort((a, b) => a.recordedAt.localeCompare(b.recordedAt));
+      const points = [...s.points].sort((a, b) => compareRecordedAt(a.recordedAt, b.recordedAt));
       const units = new Set(points.map(p => p.unit));
       return {
         seriesKey,

@@ -18,6 +18,7 @@
 import { METRIC_TO_FIELD } from './mappings';
 import type { HealthInputs } from './types';
 import { comparatorOf, type Comparator } from './lab-limits';
+import { stampInstant } from './merge';
 
 export interface DatedMeasurement {
   /** YYYY-MM-DD */
@@ -71,7 +72,7 @@ export function buildMeasurementHistory(
 
 /**
  * The newest ACTIVE row per metricType — what "my current value" means wherever
- * the plan is computed (US-07 AC4). Recency is clinical date (`recordedAt`), not
+ * the plan is computed (US-07 AC4). Recency is the UTC instant of `recordedAt`, not
  * file order: a file holds every reading, ordered by insertion on one device and
  * by uuid after a merge, so a backfilled 2024 lab would otherwise outrank a 2026
  * one. `createdAt` then `id` break ties, so every device picks the same winner.
@@ -91,11 +92,24 @@ export function latestActivePerMetric<
   return [...best.values()];
 }
 
+/**
+ * -1, 0 or 1: which recorded time is later as a UTC instant (US-07 AC4, Brad
+ * 2026-11-03: "whichever one comes later in UTC"). A date-only day is 00:00 UTC,
+ * as `stampInstant` and merge read it. Two spellings of one instant are a tie.
+ * When either does not parse, the text order decides, as it did before.
+ */
+export function compareRecordedAt(a: string, b: string): number {
+  const [ta, tb] = [stampInstant(a), stampInstant(b)];
+  if (Number.isNaN(ta) || Number.isNaN(tb)) return a < b ? -1 : a > b ? 1 : 0;
+  return Math.sign(ta - tb);
+}
+
 function beats(
   a: { id: string; recordedAt: string; createdAt?: string },
   b: { id: string; recordedAt: string; createdAt?: string },
 ): boolean {
-  if (a.recordedAt !== b.recordedAt) return a.recordedAt > b.recordedAt;
+  const order = compareRecordedAt(a.recordedAt, b.recordedAt);
+  if (order !== 0) return order > 0;
   const ac = a.createdAt ?? '';
   const bc = b.createdAt ?? '';
   if (ac !== bc) return ac > bc;

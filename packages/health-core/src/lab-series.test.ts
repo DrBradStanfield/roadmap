@@ -36,6 +36,15 @@ describe('labSeriesRows with a limit (US-12 AC20)', () => {
   });
 });
 
+// US-07 AC4, Brad 2026-11-03: the latest point is the later UTC instant, not the later text.
+describe('labSeriesRows order by instant (US-07 AC4)', () => {
+  it('puts London 22:00Z after Tokyo 06:00+09:00 (21:00Z)', () => {
+    const [row] = labSeriesRows([lab('london', 80, '2026-11-01T22:00:00.000+00:00'), lab('tokyo', 90, '2026-11-02T06:00:00.000+09:00')], NOW);
+    expect(row.latest.id).toBe('london');
+    expect(row.previous).toBe('90');
+  });
+});
+
 describe('mixedUnitsNote (US-21 AC3a)', () => {
   it('names each unit, an empty one as "no unit", in the web\'s words', () => {
     expect(mixedUnitsNote(['µmol/L', '', 'µg/dL'])).toBe('Units vary between reports (µmol/L, no unit, µg/dL), so this test is not charted.');
