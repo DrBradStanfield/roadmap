@@ -8,10 +8,13 @@
  * every amendment, which keeps its draw time, so this one keys on two things:
  *  - identity: the HealthKit source, the resource type and the FHIR id (AC5).
  *    Apple: the id is unique only within one type and source;
- *  - version: `meta.versionId`, else `meta.lastUpdated`, else the status,
- *    value and unit. The row's `externalId` is `identity#version`.
+ *  - version: `meta.lastUpdated`, `meta.versionId`, the status, value,
+ *    comparator and unit together, so a changed result is a new version even
+ *    when the server keeps its meta. The row's `externalId` is `identity#version`.
  * The rules, in the order they are asked:
  *  - a version any row carries, entered-in-error included, never lands again;
+ *  - a version not later than the identity's active row (by lastUpdated, else
+ *    by whole-number versionId) is stale: it neither replaces nor withdraws it;
  *  - `entered-in-error` withdraws: the identity's active row is flipped, and
  *    nothing is appended (AC7);
  *  - only `final`, `amended` and `corrected` land; anything else is not read;
@@ -75,6 +78,8 @@ export const HEALTH_RECORDS_LOINC: Readonly<Record<string, string>> = {
 const LOINC = 'http://loinc.org';
 const UCUM = 'http://unitsofmeasure.org';
 const LANDS = new Set(['final', 'amended', 'corrected']);
+/** Codes read in one unit only: the IFCC-standardized HbA1c is a substance fraction, so a % under it is mislabelled (AC4). */
+const ONLY_UNIT: Readonly<Record<string, string>> = { '59261-8': 'mmol/mol' };
 /** DSTU2 (1.0.x) and R4 (4.0.x): the two `HKFHIRVersion`s Apple sends. */
 const FHIR_VERSIONS = /^(1\.0|4\.0)\.\d+$/;
 /** FHIR's id type: no `#`, so the first `#` in an `externalId` ends the identity. */
@@ -121,7 +126,7 @@ const observation = z.object({
 type Observation = z.infer<typeof observation>;
 
 /** The unit a Quantity states, as printed: its UCUM code when it has one, else the printed unit.
- *  An unversioned result's version key reads it so, so a stored `externalId` never changes. */
+ *  The version key reads it so, so a stored `externalId` never changes. */
 function statedUnit(q: z.infer<typeof quantity> | undefined): string | undefined {
   return q?.system === UCUM && q.code ? q.code : q?.unit;
 }
@@ -147,11 +152,37 @@ function fromUcum(unit: string): string {
     .replace(/\[([^[\]\s]+)\]/g, '$1');
 }
 
-/** The one metric the Observation's LOINC codings name, or null for none or two. */
-function metricOf(obs: Observation): string | null {
-  const metrics = new Set((obs.code.coding ?? []).flatMap((c) =>
-    c.system === LOINC && c.code && Object.prototype.hasOwnProperty.call(HEALTH_RECORDS_LOINC, c.code) ? [HEALTH_RECORDS_LOINC[c.code]] : []));
+/** The one metric the Observation's LOINC codings name, or null for none, two, or a unit a code refuses. */
+function metricOf(obs: Observation, unit: string): string | null {
+  const codes = (obs.code.coding ?? []).flatMap((c) =>
+    c.system === LOINC && c.code && Object.prototype.hasOwnProperty.call(HEALTH_RECORDS_LOINC, c.code) ? [c.code] : []);
+  if (codes.some((c) => c in ONLY_UNIT && normalizeLabUnit(unit) !== normalizeLabUnit(ONLY_UNIT[c]))) return null;
+  const metrics = new Set(codes.map((c) => HEALTH_RECORDS_LOINC[c]));
   return metrics.size === 1 ? [...metrics][0] : null;
+}
+
+/** A result's version (AC5): lastUpdated, versionId, status, value, comparator and
+ *  stated unit, `|`-joined, with every `#` and `|` taken out so the parts split back. */
+function versionOf(obs: Observation): string {
+  const q = obs.valueQuantity;
+  return [obs.meta?.lastUpdated, obs.meta?.versionId, obs.status, q?.value, q?.comparator, statedUnit(q)]
+    .map((part) => String(part ?? '').replace(/[#|]/g, '')).join('|');
+}
+
+/**
+ * Whether a version is no later than the one an active row carries (AC5): by
+ * lastUpdated when both carry one, else by versionId when both are whole
+ * numbers. Unordered otherwise, so not stale.
+ */
+function isStale(version: string, activeExternalId: string): boolean {
+  const old = activeExternalId.slice(activeExternalId.indexOf('#') + 1).split('|');
+  if (old.length !== 6) return false;
+  const [at, id] = version.split('|');
+  const [oldAt, oldId] = old;
+  const t = Date.parse(at);
+  const oldT = Date.parse(oldAt);
+  if (at && oldAt && !Number.isNaN(t) && !Number.isNaN(oldT)) return t <= oldT;
+  return /^\d{1,15}$/.test(id) && /^\d{1,15}$/.test(oldId) && Number(id) <= Number(oldId);
 }
 
 /**
@@ -178,9 +209,9 @@ type Reading =
 
 /** The row a result would write, or null when the app cannot read it (AC2, AC4). */
 function readingOf(obs: Observation, now: string): Reading | null {
-  const metric = metricOf(obs);
   const q = obs.valueQuantity;
   const unit = unitOf(q);
+  const metric = unit ? metricOf(obs, unit) : null;
   const recordedAt = drawnAt(obs.effectiveDateTime ?? obs.effectivePeriod?.start, now);
   if (!metric || typeof q?.value !== 'number' || !unit || !recordedAt) return null;
   // US-12 AC20: a result printed as a limit keeps its comparator; `value` is the bound. FHIR's `ad` is not read.
@@ -234,13 +265,14 @@ export function importHealthRecords(
 
   for (const { identity, obs } of parsedInOrder(records)) {
     if (!obs) { counts.notRead++; continue; }
-    const version = obs.meta?.versionId ?? obs.meta?.lastUpdated
-      ?? `${obs.status}:${obs.valueQuantity?.value ?? ''}:${statedUnit(obs.valueQuantity) ?? ''}`;
+    const version = versionOf(obs);
     const externalId = `${identity}#${version}`;
     // AC5: a version already in the record never lands again, after a reinstall too.
     if (known.has(externalId)) { counts.alreadyInRecord++; continue; }
     const rows = byIdentity.get(identity) ?? [];
     const active = rows.find(({ list, at }) => list[at].status === 'active');
+    // AC5: a replayed older version neither replaces nor withdraws a newer one.
+    if (active && isStale(version, active.list[active.at].externalId as string)) { counts.alreadyInRecord++; continue; }
 
     // AC7: the lab withdrew it. The active row goes; nothing is appended.
     if (obs.status === 'entered-in-error') {

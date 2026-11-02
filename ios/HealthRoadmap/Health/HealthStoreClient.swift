@@ -14,6 +14,10 @@ protocol HealthStoreClient: AnyObject {
     /// request (`HealthKitClient.requested`). True when it asked for lab results HealthKit
     /// had not asked about before, so Health showed their sheet (AC13).
     func requestAuthorization() async throws -> Bool
+    /// Lab results alone, where `supportsHealthRecords`, for a person connected before they
+    /// were asked for or who chose "Ask Before Sharing" (US-66 AC1): asks only when HealthKit
+    /// says a request is needed, and is then true (Health showed its sheet, AC13).
+    func requestLabResults() async throws -> Bool
     /// Readings added since `anchor` (nil: all of them), our own writes left out.
     /// Deletions are not returned: the record is append-only (D6).
     func samples(of kind: HealthKind, after anchor: Data?) async throws -> HealthBatch

@@ -29,6 +29,12 @@ final class HealthKitClient: HealthStoreClient {
         return asking
     }
 
+    func requestLabResults() async throws -> Bool {
+        guard try await store.statusForAuthorizationRequest(toShare: [], read: [Self.labResults]) == .shouldRequest else { return false }
+        try await store.requestAuthorization(toShare: [], read: [Self.labResults])
+        return true
+    }
+
     /// Everything the app asks Apple Health for, in one request (Brad 2026-10-26: "just do it
     /// in one step"): the D6 kinds, sex and date of birth for onboarding to preselect (US-54
     /// AC3), and US-56's five live types, read only (AC4). iOS shows only the types not yet asked.

@@ -36,6 +36,7 @@ final class NoHealth: HealthStoreClient {
     let isAvailable = false
     let supportsHealthRecords = false
     func requestAuthorization() async throws -> Bool { false }
+    func requestLabResults() async throws -> Bool { false }
     func samples(of kind: HealthKind, after anchor: Data?) async throws -> HealthBatch { HealthBatch(samples: [], anchor: nil) }
     func labResults(after anchor: Data?) async throws -> HealthRecordBatch { HealthRecordBatch(records: [], anchor: nil) }
     func canWrite(_ kind: HealthKind) -> Bool { false }

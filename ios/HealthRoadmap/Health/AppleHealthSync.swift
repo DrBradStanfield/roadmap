@@ -44,6 +44,8 @@ final class AppleHealthSync {
     private var again = false
     private var waiting: [CheckedContinuation<Void, Never>] = []
     private var started = false
+    /// A lab results request is showing: a second return to the foreground does not ask again.
+    private var asking = false
     /// Where the two Health Records events go (US-66 AC13); RootView sets it.
     @ObservationIgnored var analytics: Analytics?
 
@@ -112,6 +114,19 @@ final class AppleHealthSync {
         async let imported: Void = refresh()
         await live?.refresh(force: true)
         await imported
+    }
+
+    /// Coming on screen (the app's `follow`), never from a background wake, where no sheet
+    /// can show: a person who connected before lab results were asked for, or who chose
+    /// "Ask Before Sharing", gets Health's lab results sheet when HealthKit says one is
+    /// needed (US-66 AC1, AC13). Then the refresh, which imports what they allowed.
+    func foreground() async {
+        if memory.connected, client.isAvailable, client.supportsHealthRecords, !asking {
+            asking = true
+            if (try? await client.requestLabResults()) == true { analytics?.event(.healthRecordsAsked) }
+            asking = false
+        }
+        await refresh()
     }
 
     /// At launch and on connect: refresh when Health has new data (in the background
@@ -200,6 +215,11 @@ final class AppleHealthSync {
     /// looks like an empty one), and the anchor moves only once the record holding them is saved.
     private func importLabResults() async throws {
         guard client.supportsHealthRecords else { return }
+        // A build that reads results the last one refused reads them all again; AC5's dedup keeps that safe.
+        if memory.labResultsRules != HealthSyncMemory.labResultsRulesVersion {
+            memory.labResultsAnchor = nil
+            memory.labResultsRules = HealthSyncMemory.labResultsRulesVersion
+        }
         let anchor = memory.labResultsAnchor
         let batch = try await client.labResults(after: anchor)
         if anchor == nil, batch.records.isEmpty { return }

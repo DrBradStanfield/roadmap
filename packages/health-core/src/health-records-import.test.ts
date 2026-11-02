@@ -16,6 +16,7 @@ import { HEALTH_RECORDS_LOINC, importHealthRecords, type ClinicalRecordInput } f
 import { acceptedLabUnits, LAB_CATALOG } from './lab-catalog';
 import { mergeFiles } from './merge';
 import { migrateFile } from './migrate';
+import { isReadableRow } from './readable-rows';
 import { appendLabValue, appendMeasurement, correctValue } from './record-edits';
 import { createEmptyFile, type RoadmapFile } from './roadmap-file';
 import { toCanonicalValue, UNIT_DEFS } from './units';
@@ -99,7 +100,7 @@ describe('US-66 AC2: what lands', () => {
     expect(file.measurements).toEqual([expect.objectContaining({
       metricType: 'ldl', value: 4.6, recordedAt: '2026-10-21T00:00:00.000Z', createdAt: NOW,
       source: 'health_records', status: 'active', correctsId: null,
-      externalId: `${SOURCE}|Observation|ldlcholesterol#1`,
+      externalId: `${SOURCE}|Observation|ldlcholesterol#|1|final|4.6||mmol/L`,
     })]);
     expect(file.meta.updatedAt).toBe(NOW);
   });
@@ -145,7 +146,7 @@ describe('US-66 AC2: what lands', () => {
     });
     const { file } = run(empty(), [rec(ferritin), rec(lab('3016-3', 2.1, 'm[IU]/L'))]);
     expect(file.labValues).toEqual([
-      expect.objectContaining({ metricName: 'ferritin', value: 85, unit: 'µg/L', referenceLow: 30, referenceHigh: 400, source: 'health_records', externalId: `${SOURCE}|Observation|obs-2276-4#1` }),
+      expect.objectContaining({ metricName: 'ferritin', value: 85, unit: 'µg/L', referenceLow: 30, referenceHigh: 400, source: 'health_records', externalId: `${SOURCE}|Observation|obs-2276-4#|1|final|85||ng/mL` }),
       expect.objectContaining({ metricName: 'tsh', value: 2.1, unit: 'mIU/L', referenceLow: null, referenceHigh: null }),
     ]);
     expect(file.measurements).toEqual([]);
@@ -259,6 +260,12 @@ describe('US-66 AC4: not read, counted', () => {
     expect(counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 8 });
   });
 
+  it('AC4: the IFCC HbA1c code (59261-8) is read only in mmol/mol; a % under it is not read', () => {
+    const { file, counts } = run(empty(), [rec(lab('59261-8', 6.5, '%')), rec(lab('59261-8', 6.5, '%{HbA1c}')), rec(lab('59261-8', 48, 'mmol/mol', { effectiveDateTime: '2026-10-22' }))]);
+    expect(counts).toMatchObject({ added: 1, notRead: 2 });
+    expect(file.measurements.map((m) => m.value)).toEqual([48]);
+  });
+
   it('AC4 (US-12 AC20): a PSA "<0.01" lands with its comparator, the bound in the stored unit', () => {
     const { file, counts } = run(empty(), [rec(lab('2857-1', 0.01, 'ng/mL', { valueQuantity: { value: 0.01, unit: 'ng/mL', comparator: '<' } }))]);
     expect(counts.added).toBe(1);
@@ -345,18 +352,76 @@ describe('US-66 AC5: identity and version', () => {
     ]);
     expect(counts.added).toBe(2);
     expect(file.measurements.map((m) => m.externalId)).toEqual([
-      `${SOURCE}|Observation|ldlcholesterol#1`, 'hk-source:Other Clinic|Observation|ldlcholesterol#1',
+      `${SOURCE}|Observation|ldlcholesterol#|1|final|4.6||mmol/L`, 'hk-source:Other Clinic|Observation|ldlcholesterol#|1|final|4.6||mmol/L',
     ]);
   });
 
-  it('AC5: the version is meta.versionId, else meta.lastUpdated, else status, value and unit', () => {
+  it('AC5: the version is lastUpdated, versionId, status, value, comparator and the stated unit together', () => {
     const { file } = run(empty(), [
       rec(obs(R4_LDL, { meta: { lastUpdated: '2026-10-22T10:00:00Z' } })),
       rec(obs(DSTU2_HDL, { meta: undefined }), { fhirVersion: DSTU2 }),
+      rec(lab('2857-1', 0.01, 'ng/mL', { meta: { versionId: '3', lastUpdated: '2026-10-22T11:00:00Z' }, valueQuantity: { value: 0.01, comparator: '<', unit: 'ng/mL' } })),
     ]);
     expect(file.measurements.map((m) => m.externalId)).toEqual([
-      `${SOURCE}|Observation|ldlcholesterol#2026-10-22T10:00:00Z`, `${SOURCE}|Observation|hdlcholesterol#final:1.3:mmol/L`,
+      `${SOURCE}|Observation|ldlcholesterol#2026-10-22T10:00:00Z||final|4.6||mmol/L`,
+      `${SOURCE}|Observation|hdlcholesterol#||final|1.3||mmol/L`,
+      `${SOURCE}|Observation|obs-2857-1#2026-10-22T11:00:00Z|3|final|0.01|<|ng/mL`,
     ]);
+  });
+
+  it('AC5: no "#" or "|" from the provider reaches the version, so the identity and the parts split back', () => {
+    const { file } = run(empty(), [rec(obs(R4_LDL, { meta: { versionId: 'v#2|b' } }))]);
+    expect(file.measurements[0].externalId).toBe(`${SOURCE}|Observation|ldlcholesterol#|v2b|final|4.6||mmol/L`);
+  });
+
+  it('AC5: a server that keeps the same versionId (not a number) while the value changes sends a new version', () => {
+    const first = run(empty(), [rec(obs(R4_LDL, { meta: { versionId: 'a' } }))]).file;
+    const { file, counts } = run(first, [rec(obs(R4_LDL, { meta: { versionId: 'a' }, status: 'amended', valueQuantity: { value: 3.9, unit: 'mmol/L' } }))], LATER);
+    expect(counts.corrected).toBe(1);
+    expect(file.measurements.filter((m) => m.status === 'active').map((m) => m.value)).toEqual([3.9]);
+  });
+
+  it('AC5, AC6: an amendment that changes only the comparator, meta unchanged and absent, is a correction', () => {
+    const exact = { resourceType: 'Observation', id: 'psa', status: 'final', effectiveDateTime: '2026-10-21', code: { coding: [{ system: 'http://loinc.org', code: '2857-1' }] } };
+    const first = run(empty(), [rec({ ...exact, valueQuantity: { value: 0.01, unit: 'ng/mL' } })]).file;
+    const { file, counts } = run(first, [rec({ ...exact, valueQuantity: { value: 0.01, comparator: '<', unit: 'ng/mL' } })], LATER);
+    expect(counts.corrected).toBe(1);
+    expect(file.measurements.filter((m) => m.status === 'active')).toEqual([expect.objectContaining({ value: 0.01, comparator: '<' })]);
+  });
+
+  it('AC5: a version older than the active imported row never replaces it (by lastUpdated)', () => {
+    const v1 = rec(obs(R4_LDL, { meta: { lastUpdated: '2026-10-22T10:00:00Z' } }));
+    const v2 = rec(obs(R4_LDL, { meta: { lastUpdated: '2026-10-23T10:00:00Z' }, status: 'amended', valueQuantity: { value: 3.9, unit: 'mmol/L' } }));
+    const held = run(empty(), [v2]).file;
+    const { file, counts } = run(held, [v1, v2], LATER);
+    expect(counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 2, notRead: 0 });
+    expect(file).toBe(held);
+  });
+
+  it('AC5: a version older than the active imported row never replaces it (by integer versionId, no lastUpdated)', () => {
+    const v1 = rec(obs(R4_LDL, { meta: { versionId: '9' } }));
+    const v2 = rec(obs(R4_LDL, { meta: { versionId: '10' }, status: 'amended', valueQuantity: { value: 3.9, unit: 'mmol/L' } }));
+    const held = run(empty(), [v2]).file;
+    const { file, counts } = run(held, [v1, v2], LATER);
+    expect(counts.alreadyInRecord).toBe(2);
+    expect(file).toBe(held);
+  });
+
+  it('AC5, AC7: a stale withdrawal leaves the newer active row as it is', () => {
+    const v2 = rec(obs(R4_LDL, { meta: { lastUpdated: '2026-10-23T10:00:00Z' }, status: 'amended', valueQuantity: { value: 3.9, unit: 'mmol/L' } }));
+    const staleWithdrawal = rec(obs(R4_LDL, { meta: { lastUpdated: '2026-10-22T10:00:00Z' }, status: 'entered-in-error' }));
+    const held = run(empty(), [v2]).file;
+    const { file, counts } = run(held, [staleWithdrawal], LATER);
+    expect(counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 1, notRead: 0 });
+    expect(file).toBe(held);
+  });
+
+  it('AC5: an equal lastUpdated is not later: a new value under an unbumped lastUpdated is held back', () => {
+    const at = { lastUpdated: '2026-10-22T10:00:00Z' };
+    const held = run(empty(), [rec(obs(R4_LDL, { meta: at }))]).file;
+    const { file, counts } = run(held, [rec(obs(R4_LDL, { meta: at, valueQuantity: { value: 3.9, unit: 'mmol/L' } }))], LATER);
+    expect(counts.alreadyInRecord).toBe(1);
+    expect(file).toBe(held);
   });
 });
 
@@ -371,7 +436,7 @@ describe('US-66 AC6: amended or corrected', () => {
       { ...old, status: 'entered-in-error' },
       expect.objectContaining({
         metricType: 'ldl', value: 3.9, recordedAt: old.recordedAt, createdAt: LATER, source: 'health_records', status: 'active',
-        correctsId: old.id, externalId: `${SOURCE}|Observation|ldlcholesterol#2`,
+        correctsId: old.id, externalId: `${SOURCE}|Observation|ldlcholesterol#|2|amended|3.9||mmol/L`,
       }),
     ]);
     expect(file.meta.updatedAt).toBe(LATER);
@@ -499,11 +564,17 @@ describe('US-66 AC12: the record schema and the web', () => {
     expect(ok).toBe(true);
   });
 
+  it('AC12 (US-65): a lab value\'s externalId is read as a measurement\'s is: a string, null or absent', () => {
+    const row = { id: 'l1', metricName: 'ferritin', value: 85, unit: 'µg/L', recordedAt: '2026-10-21T00:00:00.000Z' };
+    expect([undefined, null, 'src|Observation|x#|1|final|85||ng/mL'].map((externalId) => isReadableRow('labValues', { ...row, externalId }))).toEqual([true, true, true]);
+    expect([5, { id: 1 }, ['x']].map((externalId) => isReadableRow('labValues', { ...row, externalId }))).toEqual([false, false, false]);
+  });
+
   it('AC12: merge and migrate keep a lab value\'s externalId', () => {
     const { file } = run(empty(), [rec(lab('2276-4', 85, 'ng/mL'))]);
     const opts = { deviceId: 'laptop', now: LATER };
     const merged = migrateFile(JSON.parse(JSON.stringify(mergeFiles(file, empty(), opts))), opts);
-    expect(merged.labValues[0].externalId).toBe(`${SOURCE}|Observation|obs-2276-4#1`);
+    expect(merged.labValues[0].externalId).toBe(`${SOURCE}|Observation|obs-2276-4#|1|final|85||ng/mL`);
     // A merged record re-read on the phone is still deduplicated by it.
     expect(run(merged, [rec(lab('2276-4', 85, 'ng/mL'))], LATER).counts.alreadyInRecord).toBe(1);
   });

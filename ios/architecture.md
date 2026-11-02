@@ -147,7 +147,7 @@ launch time: there, pre-main alone is 1.4 to 3 s (docs/reference.md gotcha).
   - **Cloud news** is decoded on the engine's queue (`CloudNews`) before it goes to main.
   - **Photos and scans** are resized `@concurrent` (`LabFileReader.photo` takes the photo's bytes; `pictures` takes the scan's images, which are Sendable in the iOS 27 SDK).
 - **The watchdog (DEBUG only, opt-in, US-25 AC21c).** `MainThreadWatchdog` runs only when the launch argument `-mainWatchdogLog <path>` names a log. It pings main every 50 ms from its own thread and appends "<timestamp> main stalled N ms" to that file when main took 100 ms or more to answer. It takes no stacks: a tool for timing by hand, not a test. `LaunchClock` logs the launch's milestones in ms since the process started.
-- **Apple Health observers at launch (adversary R1).** `Launch.init`, which runs as the process starts, registers HealthKit's observer queries and background delivery at once (`AppleHealthSync.observeAtLaunch`), as Apple requires, while the parts are still being built. A delivery awaits the parts, then refreshes; HealthKit's completion is called after that refresh, or at once if the parts never come. `HealthKitClient.observe` registers once per process, so the sync's own `start` keeps the launch's queries. Coming on screen refreshes Health from `follow`, beside sync and the updater; the sync itself listens only for the phone unlocking.
+- **Apple Health observers at launch (adversary R1).** `Launch.init`, which runs as the process starts, registers HealthKit's observer queries and background delivery at once (`AppleHealthSync.observeAtLaunch`), as Apple requires, while the parts are still being built. A delivery awaits the parts, then refreshes; HealthKit's completion is called after that refresh, or at once if the parts never come. `HealthKitClient.observe` registers once per process, so the sync's own `start` keeps the launch's queries. Coming on screen refreshes Health from `follow` (`AppleHealthSync.foreground`, which first asks for lab results where HealthKit says a request is needed, US-66), beside sync and the updater; the sync itself listens only for the phone unlocking.
 
 The runtime needs a bridge for what a bare JSContext lacks: `fetch`, `Response`, `Headers`,
 `URL`, `AbortController` with `AbortSignal.timeout`/`any`, `Blob`, `TextEncoder`/`Decoder`,
@@ -747,7 +747,9 @@ the entitlements file; Xcode then updates the App ID on the developer portal whe
 automatically). Then archive and upload as usual. App Store Connect: the privacy answers add
 health records (read, not linked to tracking, kept on the device or the person's cloud), the
 privacy policy says so, and the review notes say why the app reads lab results (the plan's
-suggestions) and that nothing leaves the person's own storage. **Not confirmed (no developer
+suggestions) and that the import sends nothing to Brad's server: the results stay in the
+person's record, and go with a chat question only when the person uses the chat (US-66 AC11;
+the purpose string says so). **Not confirmed (no developer
 account access from here):** whether the App ID shows a separate Clinical Health Records
 switch on developer.apple.com, whether Apple asks for any request or approval before a
 health-records build is accepted, and whether an existing provisioning profile must be
@@ -759,6 +761,15 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
 - **Asked only where it works:** `HKHealthStore.supportsHealthRecords()` true adds
   `labResultRecord` to the read set of the one request (D12's one step; Health shows it on
   its own sheet). Elsewhere nothing asks and no read runs.
+- **Asked again on coming forward (review 2026-11-02):** a person who connected before this
+  build, or who chose "Ask Before Sharing", is never shown the sheet by the one request.
+  `AppleHealthSync.foreground` (the app's `follow`, never a background wake, where no sheet
+  can show) asks for lab results alone when Apple Health is connected, `supportsHealthRecords`
+  and `statusForAuthorizationRequest` says `.shouldRequest`, then refreshes.
+- **Rules version:** `HealthSyncMemory.labResultsRulesVersion` (1), stored beside the anchor.
+  Bump it when the engine starts reading results it used to refuse (a new code or unit): a
+  phone whose anchor was kept under another version drops it once and reads every result
+  again. AC5's dedup by `externalId`, and its stale-version rule, make the re-read safe.
 - **Swift parses nothing (D2):** `HealthKitClient.labResults` is an anchored query; each
   record goes to the engine as `{ sourceId, resourceType, fhirVersion, json }` (the
   `healthRecords` edit). `sourceId` is the sample's source bundle id (`com.apple.public.health.clinical.<UUID>`,
@@ -781,9 +792,19 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
   own sheet FIRST (how sharing works, the accounts, "You Should Know", Lab Results with our
   purpose string and Privacy Policy link, then "Automatically Share" or "Ask Before Sharing"
   for new records), then the vitals sheet. The app read 3 results, source
-  `com.apple.public.health.clinical.<UUID>|Sample Location A`, all DSTU2 Observations. None
+  `com.apple.public.health.clinical.<UUID>` (the record keeps the bundle id only; the
+  institution's name, "Sample Location A", is left out), all DSTU2 Observations. None
   landed: all three carry `issued` and no `effectiveDateTime`, so AC3 refuses them (one is a
   panel with no value). So "rows appear in My data" is unproven on Apple's sample data.
+- **Known limit: import before the cloud record (adversary R3, 2026-11-02; not fixed).**
+  A phone that imports Health Records before it connects its cloud record writes those
+  results with new row ids, and at first connect the cloud copy holds the same results
+  under other ids. The merge then decides, not the import's rules: the newest-written row
+  (`createdAt`) wins a slot, and an erase admits the lower-epoch side's rows written after
+  it. So the merge can bring back a result the person withdrew, outrank a value typed on
+  the same day, or return results drawn before an erase. Same class as the single-device
+  limits above; the fix is merge-class work, Brad's call. US-66 AC5, AC8, AC9 and AC10
+  claim their rules only on a phone that already holds the record.
 - **Gotcha:** an onboarding UI test that waits for the vitals sheet
   (`UIA.Health.AuthSheet.AllCategoryButton`) meets the Health Records sheet first on a
   simulator where `supportsHealthRecords()` is true (a US region, or an account added).

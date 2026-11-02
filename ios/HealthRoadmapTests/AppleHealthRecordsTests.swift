@@ -98,6 +98,88 @@ final class AppleHealthRecordsTests: XCTestCase {
         XCTAssertFalse(HealthKitClient.requested.read.contains(HealthKitClient.labResults), "added only when supportsHealthRecords")
     }
 
+    // MARK: AC1, AC13: asked again on coming forward
+
+    /// Connected before this build, or "Ask Before Sharing": coming on screen asks for lab
+    /// results once when HealthKit says a request is needed, then imports.
+    func testAnAlreadyConnectedPersonIsAskedOnceOnForeground_US66_AC1_AC13() async throws {
+        memory.connected = true
+        let health = FakeHealthStore()
+        health.supportsHealthRecords = true
+        health.pendingRecords = [Self.hba1c()]
+        let (store, sync, sdk) = try parts(health)
+        await sync.foreground()
+        XCTAssertEqual(health.labRequests, 1)
+        XCTAssertEqual(health.requests, 0, "only lab results, not the whole sheet again")
+        XCTAssertEqual(sdk.events, ["Health Records asked", "Health Records imported"])
+        XCTAssertEqual(try rows(store).count, 1)
+
+        await sync.foreground()
+        XCTAssertEqual(health.labRequests, 1, "HealthKit says no request is needed now")
+    }
+
+    func testForegroundAsksNothingWhereRecordsDoNotWorkOrHealthIsNotConnected_US66_AC1() async throws {
+        let unsupported = FakeHealthStore()
+        memory.connected = true
+        let (_, connectedSync, connectedSdk) = try parts(unsupported)
+        await connectedSync.foreground()
+        XCTAssertEqual(unsupported.labRequests, 0)
+        XCTAssertTrue(connectedSdk.events.isEmpty)
+
+        memory.connected = false
+        let notConnected = FakeHealthStore()
+        notConnected.supportsHealthRecords = true
+        let (_, sync, sdk) = try parts(notConnected)
+        await sync.foreground()
+        XCTAssertEqual(notConnected.labRequests, 0)
+        XCTAssertTrue(sdk.events.isEmpty)
+    }
+
+    func testForegroundAsksNothingWhenHealthKitSaysNoRequestIsNeeded_US66_AC1_AC13() async throws {
+        memory.connected = true
+        let health = FakeHealthStore()
+        health.supportsHealthRecords = true
+        health.recordsNotYetAsked = false
+        let (_, sync, sdk) = try parts(health)
+        await sync.foreground()
+        XCTAssertEqual(health.labRequests, 0)
+        XCTAssertFalse(sdk.events.contains("Health Records asked"))
+    }
+
+    /// A background wake (an observer delivery) imports, and never asks: no sheet can show.
+    func testABackgroundDeliveryNeverAsks_US66_AC1() async throws {
+        memory.connected = true
+        let health = FakeHealthStore()
+        health.supportsHealthRecords = true
+        health.pendingRecords = [Self.hba1c()]
+        let (store, sync, _) = try parts(health)
+        sync.start()
+        await health.onChange?()
+        XCTAssertEqual(health.labRequests, 0)
+        XCTAssertEqual(try rows(store).count, 1, "it still imports")
+    }
+
+    // MARK: The rules version
+
+    /// A build that reads results the last one refused reads every result again: the
+    /// stored rules version differs, so the lab results anchor is dropped once.
+    func testANewRulesVersionReadsEveryResultAgain_US66() async throws {
+        memory.connected = true
+        memory.labResultsAnchor = Data("older build".utf8)
+        let health = FakeHealthStore()
+        health.supportsHealthRecords = true
+        health.pendingRecords = [Self.hba1c()]
+        let (store, sync, _) = try parts(health)
+        await sync.refresh()
+        XCTAssertEqual(health.recordAnchors, [nil], "read from the start")
+        XCTAssertEqual(memory.labResultsRules, HealthSyncMemory.labResultsRulesVersion)
+        XCTAssertEqual(try rows(store).count, 1)
+
+        await sync.refresh()
+        XCTAssertEqual(health.recordAnchors.count, 2)
+        XCTAssertNotNil(health.recordAnchors[1], "once: the next read starts from the anchor")
+    }
+
     // MARK: AC2, AC5: the edit sent
 
     /// The engine's door (my-data.ts `healthRecords`): each result as it came, Swift parsing nothing.

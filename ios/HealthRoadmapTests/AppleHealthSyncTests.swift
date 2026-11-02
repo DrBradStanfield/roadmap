@@ -413,7 +413,11 @@ final class FakeHealthStore: HealthStoreClient {
     var recordsNotYetAsked = true
     var pendingRecords: [HealthRecord] = []
     private(set) var recordReads = 0
+    /// The anchor each lab results read started from.
+    private(set) var recordAnchors: [Data?] = []
     private(set) var requests = 0
+    /// Lab results asked for on their own, on coming forward (US-66 AC1).
+    private(set) var labRequests = 0
 
     func requestAuthorization() async throws -> Bool {
         authorized = true
@@ -423,12 +427,20 @@ final class FakeHealthStore: HealthStoreClient {
         return asked
     }
 
+    func requestLabResults() async throws -> Bool {
+        guard recordsNotYetAsked else { return false }
+        labRequests += 1
+        recordsNotYetAsked = false
+        return true
+    }
+
     func recordsAnchorData() -> Data { Data("labResults-\(recordReads)".utf8) }
 
     func labResults(after anchor: Data?) async throws -> HealthRecordBatch {
         if locked { throw HealthStoreError.locked }
         await Task.yield()
         recordReads += 1
+        recordAnchors.append(anchor)
         defer { pendingRecords = [] }
         return HealthRecordBatch(records: pendingRecords, anchor: recordsAnchorData())
     }
