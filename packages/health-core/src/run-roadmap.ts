@@ -372,12 +372,12 @@ export type ToolResultFor = (b: ChatContentBlock, blocks: readonly ChatContentBl
 const STUBS = {
   web: {
     field: 'Pre-filled for the user to review and Save.',
-    medication: 'Sent to the user\'s form; medications save at once and the user can undo.',
+    medication: 'Sent to the user\'s form; medications save at once.',
     notApplied: 'Not applied: the edit did not pass the form\'s checks, so nothing was pre-filled or saved.',
   },
   app: {
     field: 'Shown to the user to review and Save; nothing is saved until they press Save.',
-    medication: 'Saved to the user\'s medications at once; the user can undo it from the banner.',
+    medication: 'Saved to the user\'s medications at once.',
     notApplied: 'Not applied: the edit did not pass the checks, so nothing was shown or saved.',
   },
 };
