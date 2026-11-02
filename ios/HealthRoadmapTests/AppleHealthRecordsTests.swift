@@ -60,9 +60,10 @@ final class AppleHealthRecordsTests: XCTestCase {
 
     private func rows(_ store: RecordStore, source: String = "health_records") throws -> [[String: Any]] {
         let record = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(store.recordJSON.utf8)) as? [String: Any])
+        let measurements = record["measurements"] as? [[String: Any]] ?? []
         // Every result is a lab row, a core test's included (one blood-test table): none in measurements.
-        XCTAssertFalse((record["measurements"] as? [[String: Any]] ?? []).contains { $0["source"] as? String == "health_records" })
-        return (record["labValues"] as? [[String: Any]] ?? []).filter { $0["source"] as? String == source }
+        XCTAssertFalse(measurements.contains { $0["source"] as? String == "health_records" })
+        return (measurements + (record["labValues"] as? [[String: Any]] ?? [])).filter { $0["source"] as? String == source }
     }
 
     // MARK: AC1, AC13: asked only where it works, in the one request
