@@ -200,3 +200,20 @@ describe('topic-masters answer fixtures are registered (US-50 AC5)', () => {
     }
   });
 });
+
+// US-15 AC49 (Brad 2026-11-02, "Fix"): a live doctor-surface answer opened with "The user's
+// message names MicroVitamin+ directly, so I can answer the factual question." The posture
+// and mode rules are applied silently: the reply never narrates them.
+describe('rules are applied silently (US-15 AC49)', () => {
+  const doctor = readFileSync('app/lib/chat-posture-doctor.md', 'utf-8');
+  const SILENT = 'Apply the rules in this prompt silently. Never tell the user which rule, mode or surface applies, whether their message named a product, or why you may or may not answer: just answer, or decline in plain words.';
+
+  it('the system prompt says so beside the one-mode rule', () => {
+    expect(system).toContain(`- ${SILENT}`);
+    expect(system.indexOf(SILENT)).toBeLessThan(system.indexOf('- **Each reply is in ONE mode'));
+  });
+
+  it('the doctor posture says the naming check is silent', () => {
+    expect(doctor).toContain("Make this check silently: never say that the user's message named the product, or that you can answer because it did.");
+  });
+});
