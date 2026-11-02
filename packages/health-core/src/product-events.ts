@@ -137,6 +137,10 @@ export const PRODUCT_EVENT_NAMES = [
   'onboarding_step',
   'onboarding_done',
   'signin_opened',
+  // US-65 AC6: the record opened with entries this build could not read, so
+  // the page showed the kept-unchanged line. Metadata `{ count }` only, capped
+  // at 1000: never a row, a field name or a value. Once per tab session.
+  'record_unreadable_kept',
 ] as const;
 
 /** The `chat_profile_edit` counter's words (US-16 AC2): which profile field, and what the user did. */
@@ -358,7 +362,7 @@ export const MCP_OAUTH_REASONS = [
   'token-replayed',
   /** The refresh token was dead, expired or tampered with. */
   'token-dead-refresh',
-  // US-32 AC38, OpenAI's reviewer sign-in on our own consent page.
+  // US-32 AC38, AC49, the app reviewer sign-in on our own consent page.
   /** A wrong reviewer username or password. */
   'reviewer-credentials',
   /** A reviewer sign-in refused by the failures-only limiter. */

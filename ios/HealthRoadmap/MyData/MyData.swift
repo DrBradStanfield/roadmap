@@ -56,6 +56,12 @@ struct MyData: Decodable {
         let trend: [Double]?
         /// Whether this test has its own Metric/US choice (AC17e); nil from an older engine.
         let switchable: Bool?
+        /// The target the value is read against, as the web's row prints it under the name
+        /// ("Optimal <1.4"; health-core's rowTarget, US-62 AC9); nil when none, or from an older engine.
+        var target: String? = nil
+        /// The value before the latest, in the same units, shown in brackets (US-62 AC8); nil
+        /// with one reading, or from an older engine.
+        var previous: String? = nil
 
         var id: String { metric }
     }
@@ -67,6 +73,9 @@ struct MyData: Decodable {
     let lpaUnit: String?
     /// The record's erase count; nil from an engine older than US-54 AC7.
     let eraseEpoch: Int?
+    /// US-65: how many entries the engine could not read and kept unchanged, as one line;
+    /// nil when there are none, or from an older engine.
+    var unreadableNote: String? = nil
     let profile: Profile
     let vitals: [Row]
     let bloodTests: [Row]

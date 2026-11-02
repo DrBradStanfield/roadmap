@@ -162,8 +162,8 @@ someone's medical history, or lose their data at the next device sync.
    the side of their line the plan grades them (US-07 AC5). A value within one display
    step of the line can differ from a plain conversion: one step up to the line when the
    plan grades it at or above, or one more decimal place when it grades it below.
-   `get_plan`'s tool description in `mcp-tools.ts` should say this too; it stays frozen
-   while OpenAI reviews the app, so add it once that review is done.
+   `get_plan`'s tool description in `mcp-tools.ts` should say this too. It was held for
+   OpenAI's review, which ended 2026-10-29; adding it is open work (an agent-contract change).
    **Blood pressure (US-02 AC8):** on any day, the active `systolic_bp` must be above the
    active `diastolic_bp`. A write that would leave it at or below is refused
    (`out-of-range`). To change both numbers one at a time, change the bottom number
@@ -233,6 +233,13 @@ Validate your result against the schema before you write it back.
   those clamps it does not repair rows, and it does not warn. A measurement or lab row
   whose `recordedAt` does not start with a real calendar day (`YYYY-MM-DD`) is removed
   at the next sync.
+- **A row or profile field the app cannot read stays in the file, unshown** (US-65). A
+  metric or medication key the app version does not know, or a wrong type on a field it
+  reads (a string `value`, a string `heightCm`), is left exactly where it is: every
+  version still merges, erases and corrects it, but the screens, `read_record` and
+  `get_plan` skip it, the write tools never repeat its value, and the app shows a one-line
+  count. Fix it by writing a corrected row. The hosted connector cannot repair a hidden
+  profile field (its expected-value check can never match it): use the app or the stdio server.
 - **Unknown fields survive at the top level and inside rows**: migrate and merge both
   spread what they do not recognise, so an older app will not strip something a newer
   one added. **`meta` is the exception:** `mergeFiles` rebuilds it from its five known

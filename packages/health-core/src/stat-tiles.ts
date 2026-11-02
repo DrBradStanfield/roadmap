@@ -70,8 +70,8 @@ export interface StatTileOptions {
 const TONES: Record<string, StatTone> = {
   'Normal': 'normal', 'Optimal': 'normal', 'Healthy': 'normal',
   'Low Normal': 'info', 'Borderline': 'info', 'Above optimal': 'info', 'Overweight': 'info',
-  'Mildly Decreased': 'attention', 'High': 'attention', 'Elevated': 'attention',
-  'Moderately Decreased': 'attention', 'Underweight': 'attention',
+  'Mildly to Moderately Decreased': 'attention', 'High': 'attention', 'Elevated': 'attention',
+  'Moderately to Severely Decreased': 'attention', 'Underweight': 'attention',
   'Prediabetic': 'attention',
   'Very High': 'urgent', 'Severely Decreased': 'urgent', 'Kidney Failure': 'urgent',
   'Diabetic': 'urgent',
@@ -123,7 +123,7 @@ export function statTiles(results: HealthResults, { unitSystem, unitOverrides, s
   // Both need sex (US-07 AC8).
   if (adult && results.idealBodyWeight !== undefined && results.proteinTarget !== undefined) {
     tiles.push({
-      key: 'ibw', label: 'Ideal Body Weight (IBW)',
+      key: 'ibw', label: 'Ideal Body Weight',
       value: formatDisplayValue('weight', results.idealBodyWeight, usFor('weight')), unit: getDisplayLabel('weight', usFor('weight')),
       // Height reads in the plan's units: it has no per-test toggle.
       // No tone: a fact, not a grade, so neutral gray (Brad 2026-10-31).
@@ -133,7 +133,7 @@ export function statTiles(results: HealthResults, { unitSystem, unitOverrides, s
     const rate = getProteinRate(results.eGFR);
     tiles.push({
       key: 'protein', label: 'Protein Target', value: String(results.proteinTarget), unit: 'g/day',
-      status: { label: `${rate.toFixed(1)}g per kg IBW` },
+      status: { label: `${rate.toFixed(1)} g/kg ideal weight` },
       evidence: getProteinEvidence(results.idealBodyWeight, rate, results.eGFR),
     });
   }

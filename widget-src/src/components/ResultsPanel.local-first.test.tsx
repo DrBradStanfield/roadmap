@@ -63,15 +63,11 @@ describe('US-09 AC5 / US-23 AC4 — local-first capture after account removal', 
     expect(view.queryByRole('button', { name: 'Save as PDF' })).toBeNull();
   });
 
-  it('US-23 AC11: the box names the MicroVitamin mailing list and whose it is', () => {
-    const disclosure = showPlan().container.querySelector('.email-capture-disclosure')!;
-    expect(disclosure.textContent).toBe(
-      'Getting your plan adds you to the MicroVitamin mailing list (Dr Brad\'s supplement company), and ' +
-        'we\'ll email you when a check-up or blood test is due. We store only check-up names and dates, ' +
-        'never your results. Every email has a one-click unsubscribe.',
-    );
-    expect(disclosure.querySelector('strong')?.textContent).toBe('MicroVitamin mailing list');
-    expect(disclosure.textContent).not.toMatch(/—/);
+  it('US-23 AC11 (removed by Brad 2026-11-02): the box carries no mailing-list notice', () => {
+    const view = showPlan();
+    expect(view.container.querySelector('#guestEmail')).toBeTruthy();
+    expect(view.container.querySelector('.email-capture-disclosure')).toBeNull();
+    expect(view.container.textContent).not.toContain('MicroVitamin mailing list');
   });
 
   it('restores capture from the local record without asking for a Shopify account', () => {

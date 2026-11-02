@@ -1064,7 +1064,7 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'Creatine',
-      description: `${CREATINE_STRENGTH} Dr Stanfield considers the memory evidence clear and consistent; formal reviews are more mixed, with the clearest benefit in older adults.`,
+      description: `${CREATINE_STRENGTH} There is also an interesting signal that it may help memory, another possible benefit; formal reviews are mixed, with the clearest benefit in older adults.`,
     },
     {
       id: 'supplement-collagen',

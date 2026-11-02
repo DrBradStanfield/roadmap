@@ -112,6 +112,8 @@ export {
   getValidationErrors,
   convertValidationErrorsToUnits,
   validateInputValue,
+  identityFieldRange,
+  inputRangeFault,
   isBirthYearClearlyInvalid,
   type MetricTypeValue,
   type ValidatedHealthInputs,
@@ -308,6 +310,7 @@ export { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertS
 export { isTakingDrug } from './history-change';
 export { recordedTime, medicationAnnotations, medicationChanges, type ChartAnnotation, type MedicationChange } from './medication-annotations';
 export { migrateFile, SchemaTooNewError, RecordShapeError } from './migrate';
+export { readableView, unreadableNote } from './readable-rows';
 
 // v2 reminder schedule (client-computed; the server is a dumb scheduler — §10)
 export {
