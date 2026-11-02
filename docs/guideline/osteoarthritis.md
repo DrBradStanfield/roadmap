@@ -32,7 +32,7 @@ thresholds: [{"ref":"EGFR_THRESHOLDS.normal","value":70},{"ref":"EGFR_THRESHOLDS
 - After an injury, a leg that looks twisted or bent, or bone showing through the skin: call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [27].
 - After a knee replacement, leg pain and swelling with chest pain or difficulty breathing may be a blood clot in the lungs: call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [28].
 - Vomiting blood while taking an anti-inflammatory such as ibuprofen, with feeling faint, dizzy, confused or unwell, black stools or tummy pain: call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [22][29].
-- Hives with face swelling or wheezing, or collapse, after taking or applying an anti-inflammatory: stop it and call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [22][23].
+- Face, lip or tongue swelling, wheezing or trouble breathing, or collapse after taking or applying an anti-inflammatory: stop it and call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) [22][23].
 - If you have taken more paracetamol (acetaminophen) than the label allows, get help straight away even if you feel well: call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or a poisons centre [24].
 - For chest pain or signs of a stroke (face drooping, arm or leg weakness or numbness, trouble speaking, vision loss, even if it passes, or a sudden severe headache), call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
