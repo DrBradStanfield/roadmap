@@ -443,7 +443,7 @@
     "check": "AC4",
     "handle": "coq10-benefits-best-forms-dosing-and-side-effects",
     "match": "heading missing from new body: ### Natural vs. Synthetic CoQ10",
-    "reason": "AC4 heading removal or rename listed in the fixer's report (orchestrator 2026-10-23, masters-new-3): \"Natural vs. Synthetic CoQ10\" removed (the licensed source-only section; CoQ10 report notes).",
+    "reason": "AC4 heading removal or rename listed in the fixer's report (orchestrator 2026-10-23, masters-new-3): \"Natural vs. CoQ10 report notes). Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
     "by": "orchestrator",
     "date": "2026-10-23"
   },
@@ -459,7 +459,7 @@
     "check": "AC4",
     "handle": "coq10-benefits-best-forms-dosing-and-side-effects",
     "match": "heading missing from new body: ### Other Doses Used in Clinical Studies",
-    "reason": "AC4 heading removal or rename listed in the fixer's report (orchestrator 2026-10-23, masters-new-3): \"Other Doses Used in Clinical Studies\" removed (the licensed source-only section; CoQ10 report notes).",
+    "reason": "CoQ10 report notes). Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
     "by": "orchestrator",
     "date": "2026-10-23"
   },
@@ -467,7 +467,7 @@
     "check": "AC4",
     "handle": "coq10-benefits-best-forms-dosing-and-side-effects",
     "match": "heading missing from new body: ### Children",
-    "reason": "AC4 heading removal or rename listed in the fixer's report (orchestrator 2026-10-23, masters-new-3): \"Children\" removed (the licensed source-only section; CoQ10 report notes).",
+    "reason": "CoQ10 report notes). Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
     "by": "orchestrator",
     "date": "2026-10-23"
   },

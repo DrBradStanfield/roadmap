@@ -11,7 +11,7 @@
   "check": "AC2",
   "handle": "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects",
   "match": "token \">6 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Prostate cancer:** In 44 men with metastatic castration-resistant prostate cancer on chemotherapy, 6,000 mg curcumi...\"",
-  "reason": "Checker tokenisation (\"over 6 months\" (duration) read as a \">\" comparison); the licensed raw gives the treatment period as six months (checked by hand; licensed text not quoted). Same class as the masters-1 \">20 week\" and \">3 month\" exceptions.",
+  "reason": "Checker tokenisation (\"over 6 months\" (duration) read as a \">\" comparison). Same class as the masters-1 \">20 week\" and \">3 month\" exceptions. Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-20"
  },
@@ -35,7 +35,7 @@
   "check": "AC2",
   "handle": "protein-powders-benefits-types-dosing-and-side-effects",
   "match": "token \"360 mg/lb\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The Recommended Dietary Allowance (RDA) for adults is 0.8 g/kg (0.36 g/lb) of body weight, which is 54 g a day for a ...\" | \"Many older adults fail to meet even basic protein requirements. Analysis of NHANES data (2005–2014) found that among ...\"",
-  "reason": "Checker tokenisation (units spelled out in words in the source); the licensed raw gives the RDA as 0.8 g per kg (0.36 g per lb) and the ISSN 2007 position as 1.4 to 2.0 g per kg (0.64 to 0.91 g per lb), written as grams per kilogram and grams per pound (checked by hand; licensed text not quoted).",
+  "reason": "Checker tokenisation (units spelled out in words in the source). Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-20"
  },
@@ -43,7 +43,7 @@
   "check": "AC2",
   "handle": "protein-powders-benefits-types-dosing-and-side-effects",
   "match": "token \"1400 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The Recommended Dietary Allowance (RDA) for adults is 0.8 g/kg (0.36 g/lb) of body weight, which is 54 g a day for a ...\"",
-  "reason": "Checker tokenisation (units spelled out in words in the source); the licensed raw gives the RDA as 0.8 g per kg (0.36 g per lb) and the ISSN 2007 position as 1.4 to 2.0 g per kg (0.64 to 0.91 g per lb), written as grams per kilogram and grams per pound (checked by hand; licensed text not quoted).",
+  "reason": "Checker tokenisation (units spelled out in words in the source). Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-20"
  },
@@ -51,7 +51,7 @@
   "check": "AC2",
   "handle": "protein-powders-benefits-types-dosing-and-side-effects",
   "match": "token \"2000 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The Recommended Dietary Allowance (RDA) for adults is 0.8 g/kg (0.36 g/lb) of body weight, which is 54 g a day for a ...\" | \"In adults without chronic kidney disease, a meta-analysis of 22 randomised trials found that high-protein diets (typi...\"",
-  "reason": "Checker tokenisation (units spelled out in words in the source); the licensed raw gives the RDA as 0.8 g per kg (0.36 g per lb) and the ISSN 2007 position as 1.4 to 2.0 g per kg (0.64 to 0.91 g per lb), written as grams per kilogram and grams per pound (checked by hand; licensed text not quoted).",
+  "reason": "Checker tokenisation (units spelled out in words in the source). Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-20"
  },
@@ -59,7 +59,7 @@
   "check": "AC2",
   "handle": "protein-powders-benefits-types-dosing-and-side-effects",
   "match": "token \"640 mg/lb\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The Recommended Dietary Allowance (RDA) for adults is 0.8 g/kg (0.36 g/lb) of body weight, which is 54 g a day for a ...\"",
-  "reason": "Checker tokenisation (units spelled out in words in the source); the licensed raw gives the RDA as 0.8 g per kg (0.36 g per lb) and the ISSN 2007 position as 1.4 to 2.0 g per kg (0.64 to 0.91 g per lb), written as grams per kilogram and grams per pound (checked by hand; licensed text not quoted).",
+  "reason": "Checker tokenisation (units spelled out in words in the source). Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-20"
  },
@@ -67,7 +67,7 @@
   "check": "AC2",
   "handle": "protein-powders-benefits-types-dosing-and-side-effects",
   "match": "token \"910 mg/lb\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The Recommended Dietary Allowance (RDA) for adults is 0.8 g/kg (0.36 g/lb) of body weight, which is 54 g a day for a ...\"",
-  "reason": "Checker tokenisation (units spelled out in words in the source); the licensed raw gives the RDA as 0.8 g per kg (0.36 g per lb) and the ISSN 2007 position as 1.4 to 2.0 g per kg (0.64 to 0.91 g per lb), written as grams per kilogram and grams per pound (checked by hand; licensed text not quoted).",
+  "reason": "Checker tokenisation (units spelled out in words in the source). Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-20"
  },
@@ -83,7 +83,7 @@
   "check": "AC2",
   "handle": "protein-powders-benefits-types-dosing-and-side-effects",
   "match": "token \"0.36\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Adults (RDA) | 0.36 | 0.8 | 54 g/day |\"",
-  "reason": "Checker tokenisation (bare table cells under g/lb column headers; the source spells the units out); the licensed raw gives 0.36 g per lb (RDA), 0.64 to 0.91 g per lb (ISSN 2007) and 0.73 g per lb (49-study review) (checked by hand; licensed text not quoted).",
+  "reason": "Checker tokenisation (bare table cells under g/lb column headers; the source spells the units out). Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-20"
  },
@@ -91,7 +91,7 @@
   "check": "AC2",
   "handle": "protein-powders-benefits-types-dosing-and-side-effects",
   "match": "token \"0.64\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Exercising people (ISSN, 2007) | 0.64–0.91 | 1.4–2.0 | – |\"",
-  "reason": "Checker tokenisation (bare table cells under g/lb column headers; the source spells the units out); the licensed raw gives 0.36 g per lb (RDA), 0.64 to 0.91 g per lb (ISSN 2007) and 0.73 g per lb (49-study review) (checked by hand; licensed text not quoted).",
+  "reason": "Checker tokenisation (bare table cells under g/lb column headers; the source spells the units out). Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-20"
  },
@@ -99,7 +99,7 @@
   "check": "AC2",
   "handle": "protein-powders-benefits-types-dosing-and-side-effects",
   "match": "token \"0.91\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Exercising people (ISSN, 2007) | 0.64–0.91 | 1.4–2.0 | – |\"",
-  "reason": "Checker tokenisation (bare table cells under g/lb column headers; the source spells the units out); the licensed raw gives 0.36 g per lb (RDA), 0.64 to 0.91 g per lb (ISSN 2007) and 0.73 g per lb (49-study review) (checked by hand; licensed text not quoted).",
+  "reason": "Checker tokenisation (bare table cells under g/lb column headers; the source spells the units out). Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-20"
  },
@@ -107,7 +107,7 @@
   "check": "AC2",
   "handle": "protein-powders-benefits-types-dosing-and-side-effects",
   "match": "token \"0.73\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Point beyond which a 49-study review found no added muscle benefit | 0.73 | 1.6 | 109.5 g/day |\"",
-  "reason": "Checker tokenisation (bare table cells under g/lb column headers; the source spells the units out); the licensed raw gives 0.36 g per lb (RDA), 0.64 to 0.91 g per lb (ISSN 2007) and 0.73 g per lb (49-study review) (checked by hand; licensed text not quoted).",
+  "reason": "Checker tokenisation (bare table cells under g/lb column headers; the source spells the units out). Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-20"
  },
@@ -147,7 +147,7 @@
   "check": "AC2",
   "handle": "protein-powders-benefits-types-dosing-and-side-effects",
   "match": "body line has no entry quoting \"80\": Collagen is not a preferred protein source for building muscle [1]. A study among 22 women aged 60–80 who performed r...",
-  "reason": "PRE-EXISTING (flag for review): the line changed only in its citation (writer renumbering 71f82fc7; reference repair c990f80e corrected Oikawa 2019 to 2020). \"Aged 60-80\" is the licensed source figure (checked by hand); the corrected abstract (pubmed/31919527.md) gives \"mean ± SD age: 69 ± 3 y\" and no range, so no quote in reach can carry it.",
+  "reason": "PRE-EXISTING (flag for review): the line changed only in its citation (writer renumbering 71f82fc7; reference repair c990f80e corrected Oikawa 2019 to 2020). the corrected abstract (pubmed/31919527.md) gives \"mean ± SD age: 69 ± 3 y\" and no range, so no quote in reach can carry it. Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-20"
  },
@@ -203,7 +203,7 @@
   "check": "AC2",
   "handle": "protein-powders-benefits-types-dosing-and-side-effects",
   "match": "body line has no entry quoting \"2\": Exercising people (ISSN, 2007) | 0.64–0.91 | 1.4–2.0 | – |",
-  "reason": "Checker tokenisation (units spelled out in words in the source); the licensed raw gives the ISSN 2007 range as 1.4 to 2.0 grams per kilogram (checked by hand; licensed text not quoted).",
+  "reason": "Checker tokenisation (units spelled out in words in the source). Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-20"
  },
@@ -307,7 +307,7 @@
   "check": "AC2",
   "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
   "match": "token \"400 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Benfotiamine** — a synthetic thiamine derivative that significantly increases blood and tissue levels of thiamine...\"",
-  "reason": "DERIVED (flag for review): reference repair (c990f80e) corrected benfotiamine 200 to 400 mg a day (always-ask item); pubmed/15726875.md: \"Twenty Patients received two 50 mg benfotiamine tablets four times daily\" (2 x 50 mg x 4 = 400 mg). The licensed raw states 400 mg (checked by hand), but the line cites the PubMed record, so only its abstract counts.",
+  "reason": "DERIVED (flag for review): reference repair (c990f80e) corrected benfotiamine 200 to 400 mg a day (always-ask item); pubmed/15726875.md: \"Twenty Patients received two 50 mg benfotiamine tablets four times daily\" (2 x 50 mg x 4 = 400 mg). Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-20"
  },
@@ -339,7 +339,7 @@
   "check": "AC2",
   "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
   "match": "body line has no entry quoting \"3 year\": Hip fracture risk: In older adults with cardiovascular disease, 40 mg B6 daily for 1-3 years was associated with a 42...",
-  "reason": "PRE-EXISTING (flag for review): the line was rewritten in review round 1 (2026-10-21) to say the 42% rise came in the extended follow-up, and now co-cites the licensed source [1]. \"1-3 years\" is the licensed source figure (\"40 mg of vitamin B-6 ... daily for 1 to 3 years\"); the cited abstract (pubmed/28574605.md) gives \"median 3.3 years\" in-trial, so no abstract quote can carry it, and the checker requires the PubMed abstract for a sentence that cites [155]. [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]",
+  "reason": "daily for 1 to 3 years\"); the cited abstract (pubmed/28574605.md) gives \"median 3.3 years\" in-trial, so no abstract quote can carry it, and the checker requires the PubMed abstract for a sentence that cites [155]. [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]. Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-21"
  },
@@ -499,7 +499,7 @@
   "check": "AC2",
   "handle": "glycine-benefits-forms-dosing-and-side-effects",
   "match": "body line has no entry quoting \"80000 mg/day\": Duration: Sleep benefits have been observed within the first few nights in clinical trials. Doses used in clinical st...",
-  "reason": "Checker tokenisation (\"as high as 80 g per day\" vs the source's \"as high as 80 grams\" with no per-day unit); the licensed raw gives the clinical dose range ending at 80 grams (checked by hand; licensed text not quoted). Body line edited by the writer (4dc9d1e0) to add the 2-4 servings split.",
+  "reason": "Checker tokenisation (\"as high as 80 g per day\" vs the source's \"as high as 80 grams\" with no per-day unit); Body line edited by the writer (4dc9d1e0) to add the 2-4 servings split. Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-20"
  },
@@ -755,7 +755,7 @@
   "check": "AC7",
   "handle": "electrolytes-benefits-dosing-and-side-effects",
   "match": "product section changed: ### Electrolyte Product Types",
-  "reason": "Generic heading that contains \"Product\"; not a Brad product section. Verified 2026-10-20: changes are citation renumbering (8e4b6c1e) and one added the licensed source context sentence on coconut water (masters-2-notes.md electrolytes item 5).",
+  "reason": "Generic heading that contains \"Product\"; not a Brad product section. Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-20"
  },
@@ -899,7 +899,7 @@
   "check": "AC2",
   "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
   "match": "body line has no entry quoting \"1000 mg/day\", \"4000 mg/day\", \"1\": Depression (adjunctive therapy): Trials used 1,000-4,000 mg/day with an EPA:DHA ratio >2:1 alongside antidepressants....",
-  "reason": "Numbers unchanged from the base line; only the framing changed (adversary R7). Base text: \"Depression (adjunctive therapy): 1,000-4,000 mg/day with EPA:DHA ratio >2:1.\" The \"1\" token is the ratio \">2:1\". The licensed source gives the ISNPR 1 to 2 g/day guideline and a depression trial of 1,000, 2,000 or 4,000 mg EPA (Peet), but no single quote carries 1,000-4,000 mg/day. [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]",
+  "reason": "Numbers unchanged from the base line; only the framing changed (adversary R7). Base text: \"Depression (adjunctive therapy): 1,000-4,000 mg/day with EPA:DHA ratio >2:1.\" The \"1\" token is the ratio \">2:1\". [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]. Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-21"
  },
@@ -907,7 +907,7 @@
   "check": "AC2",
   "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
   "match": "token \"<11.7 umol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"However, omega-3s may benefit Alzheimer's patients when combined with adequate B vitamins. In patients with mild to m...\"",
-  "reason": "Unit corrected on purpose (adversary R6; notes omega-3 item 8): the licensed source prints \"people with levels below 11.7 mmol/L\" for homocysteine, a unit error (homocysteine is measured in micromol/L). The number is verbatim; only the unit differs. [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]",
+  "reason": "Unit corrected on purpose (adversary R6; The number is verbatim; only the unit differs. [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]. Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-21"
  },
@@ -915,7 +915,7 @@
   "check": "AC2",
   "handle": "potassium-benefits-forms-dosing-and-side-effects",
   "match": "changed_tokens[55] number cited to a primary study without its abstract in reach: The American College of Cardiology (ACC) and American Heart Association (AHA) recommend that peop...",
-  "reason": "Review round 1 (adversary R4) gave [35] its real record (2025 AHA/ACC guideline, PMID 40811516). Its PubMed abstract (pubmed/40811516.md) is a structured summary with no potassium figures, so the 3,500-5,000, 1,173 and 3,128 mg numbers cannot be quoted from it. They are quoted from the licensed source in changed_tokens[16], re-entered as [55] after round 2 with [3] co-cited on the line, (the licensed source attributes them to the ACC and AHA); the next sentence ties 1,173/3,128 mg (30/80 mmol) to Filippini [36], whose abstract is in reach. FLAG: whether the guideline text itself states 1,173 and 3,128 mg is unverified (full text not in the raw). [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]",
+  "reason": "Review round 1 (adversary R4) gave [35] its real record (2025 AHA/ACC guideline, PMID 40811516). Its PubMed abstract (pubmed/40811516.md) is a structured summary with no potassium figures, so the 3,500-5,000, 1,173 and 3,128 mg numbers cannot be quoted from it. the next sentence ties 1,173/3,128 mg (30/80 mmol) to Filippini [36], whose abstract is in reach. FLAG: whether the guideline text itself states 1,173 and 3,128 mg is unverified (full text not in the raw). [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]. Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-21"
  },
@@ -931,7 +931,7 @@
   "check": "AC2",
   "handle": "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects",
   "match": "token \"72 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Age-related macular degeneration (AMD):** In a large observational study of nearly 1.9 million adults, turmeric/cur...\"",
-  "reason": "DERIVED (flag for review): 72% = 1 - RR 0.28 for exudative AMD; pubmed/39446346.md: \"exudative AMD (RR, 0.28; 95% CI, 0.24-0.32; P < .001)\". The 89% (RR 0.11) end of the range was already in the body. Review round 1 (adversary R13): the licensed source's 77-89% left out the exudative figure. [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]",
+  "reason": "DERIVED (flag for review): 72% = 1 - RR 0.28 for exudative AMD; pubmed/39446346.md: \"exudative AMD (RR, 0.28; 95% CI, 0.24-0.32; P < .001)\". The 89% (RR 0.11) end of the range was already in the body. [Proposed by the review-round-1 worker, 2026-10-21; orchestrator to confirm.]. Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-21"
  },
@@ -939,7 +939,7 @@
   "check": "AC4",
   "handle": "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects",
   "match": "heading missing from new body: ### Allergies (Seasonal Rhinitis)",
-  "reason": "Heading renamed, not removed: now \"### Allergies (Perennial Allergic Rhinitis)\" to match its source. The section's trial, Wu & Xiao 2016 [108] (pubmed/27789120.md), is titled \"Effect of curcumin on nasal symptoms and airflow in patients with perennial allergic rhinitis\"; the licensed source's \"seasonal\" was wrong (adversary R13; orchestrator instruction 2026-10-21).",
+  "reason": "Heading renamed, not removed: now \"### Allergies (Perennial Allergic Rhinitis)\" to match its source. The section's trial, Wu & Xiao 2016 [108] (pubmed/27789120.md), is titled \"Effect of curcumin on nasal symptoms and airflow in patients with perennial allergic rhinitis\"; orchestrator instruction 2026-10-21). Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
   "by": "orchestrator",
   "date": "2026-10-21"
  }

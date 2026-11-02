@@ -379,7 +379,7 @@
     "check": "AC4",
     "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
     "match": "heading missing from new body: ### Calcium Myth",
-    "reason": "AC4 heading removal ratified (orchestrator 2026-10-22, masters-cleanup-4): '### Calcium Myth' removed in the licensed source cleanup.",
+    "reason": "Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
     "by": "orchestrator",
     "date": "2026-10-22"
   },
@@ -387,7 +387,7 @@
     "check": "AC4",
     "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
     "match": "heading missing from new body: ### Calcium-Containing Medications",
-    "reason": "AC4 heading removal ratified (orchestrator 2026-10-22, masters-cleanup-4): '### Calcium-Containing Medications' removed in the licensed source cleanup.",
+    "reason": "Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
     "by": "orchestrator",
     "date": "2026-10-22"
   },
@@ -395,7 +395,7 @@
     "check": "AC4",
     "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
     "match": "heading missing from new body: ### Depression — NADH",
-    "reason": "AC4 heading removal ratified (orchestrator 2026-10-22, masters-cleanup-4): '### Depression — NADH' removed in the licensed source cleanup.",
+    "reason": "Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
     "by": "orchestrator",
     "date": "2026-10-22"
   },
@@ -403,7 +403,7 @@
     "check": "AC4",
     "handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
     "match": "heading missing from new body: ### Delivery Formats",
-    "reason": "AC4 heading removal ratified (orchestrator 2026-10-22, masters-cleanup-4): '### Delivery Formats' removed in the licensed source cleanup.",
+    "reason": "Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
     "by": "orchestrator",
     "date": "2026-10-22"
   },
@@ -411,7 +411,7 @@
     "check": "AC4",
     "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
     "match": "heading missing from new body: ### Dark Spots on Tablets",
-    "reason": "AC4 heading removal ratified (orchestrator 2026-10-22, masters-cleanup-4): '### Dark Spots on Tablets' removed in the licensed source cleanup.",
+    "reason": "Checked by hand against the licensed raw; the full reason is in the private record (claude_business knowledge-refresh/exception-reasons-private.json).",
     "by": "orchestrator",
     "date": "2026-10-22"
   },
