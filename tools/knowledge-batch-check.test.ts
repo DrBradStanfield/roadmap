@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  type Report, type Result, REPORT_SCHEMA, applyAddenda, exampleReport, keySafetyErrors, main, normQuote, productMentions, renderReport, runBatch, validateExceptions,
+  type Report, type Result, REPORT_SCHEMA, applyAddenda, exampleReport, isGuideText, keySafetyErrors, main, normQuote, productMentions, renderReport, runBatch, validateExceptions,
   sentences, sha256, tokenise, validateReport,
 } from "./knowledge-batch-check";
 
@@ -2279,6 +2279,38 @@ describe("US-70 AC1 condition guides: --guides", () => {
       'FAIL g: needs one "## Medicines" section (found 0)',
       expect.stringMatching(/^FAIL g: a red flag lacks the exact emergency line \(111 in NZ, 000 in Australia, 911 in the US, 999 in the UK\): /),
     ]);
+  });
+  // Review A3: the same definition as the loader's index (parseFrontmatter), so single quotes count.
+  it("isGuideText takes kind: 'condition' single-quoted, double-quoted or bare, and a single-quoted guide passes GUIDE", () => {
+    for (const k of ["'condition'", '"condition"', "condition"]) expect(isGuideText(SOUND.replace('kind: "condition"', `kind: ${k}`)), k).toBe(true);
+    expect(isGuideText(SOUND.replace('kind: "condition"', "kind: 'metric'"))).toBe(false);
+    addGuide(SOUND.replace('kind: "condition"', "kind: 'condition'"));
+    expect(grun().GUIDE.status).toBe("PASS");
+  });
+  // Review A6: guide batches run AC7's citation-integrity and identifier checks, with guide sources: public guideline
+  // and label hosts named in the guide's own sources:, PubMed and DOI, NIH ODS and Brad's video posts; never ConsumerLab.
+  it("runs AC7's reference checks on a guide: citations, hosts, link text", () => {
+    const refs = (lines: string) => SOUND.replace("1. Example guideline. https://example.org/guideline", lines);
+    addGuide();
+    expect(fails(grun().AC7)).toEqual([]);
+    addGuide(SOUND.replace("used only by tests [1].", "used only by tests."));
+    expect(fails(grun().AC7)).toEqual(["FAIL g: reference lines never cited: 1"]);
+    addGuide(refs("1. A guideline on an unlisted site. https://unlisted.example.com/g"));
+    expect(fails(grun().AC7)).toEqual([expect.stringMatching(/^FAIL g: reference line has unknown host unlisted\.example\.com: /)]);
+    addGuide(refs("1. ConsumerLab review. https://www.consumerlab.com/reviews/x"));
+    expect(fails(grun().AC7)).toEqual([expect.stringMatching(/^FAIL g: reference line has unknown host consumerlab\.com: /)]);
+    addGuide(refs("1. Trial. [PMID 12345678](https://pubmed.ncbi.nlm.nih.gov/87654321/)"));
+    expect(fails(grun().AC7).join("\n")).toContain("PMID link text 12345678 differs from its URL id 87654321");
+  });
+  it("takes a guide's reference to a host its sources: names, DailyMed, doi.org and Brad's video posts", () => {
+    put("docs/blog/other.md", "---\ntitle: \"O\"\n---\n\nA video post.\n");
+    addGuide(SOUND.replace("1. Example guideline. https://example.org/guideline", [
+      "1. Example guideline. https://example.org/guideline/full",
+      "2. Drug label. https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=abc",
+      "3. Trial. https://doi.org/10.1000/xyz123",
+      "4. Brad's video. https://drstanfield.com/blogs/articles/other",
+    ].join("\n")).replace("used only by tests [1].", "used only by tests [1][2][3][4]."));
+    expect(fails(grun().AC7)).toEqual([]);
   });
   it("fails a guide over 35,000 characters", () => {
     addGuide(SOUND.replace("Text.", "x".repeat(35_000)));

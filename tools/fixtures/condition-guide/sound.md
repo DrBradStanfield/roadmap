@@ -14,13 +14,12 @@ thresholds: [{"ref":"BP_THRESHOLDS.crisisSys","value":180},{"ref":"BP_THRESHOLDS
 
 ## In short
 
-- A synthetic guide used only by tests.
+- A synthetic guide used only by tests [1].
 
 ## Get help now
 
 - Blood pressure of 180 systolic or more, or 120 diastolic or more, with symptoms: call your emergency number now (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
-- Chest pain that spreads to the arm: call your emergency number now
-  (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
+- Chest pain that spreads to the arm: call your emergency number now (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).
 
 ## What it is
 
