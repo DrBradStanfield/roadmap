@@ -839,6 +839,23 @@ describe('US-62 AC12: About you goes low once the onboarding is done and its car
   });
 });
 
+describe('US-02 AC9 in feet and inches (simplify A1)', () => {
+  const shown = (view: RenderResult) => Array.from(view.container.querySelectorAll('.error-message')).map((e) => e.textContent ?? '');
+
+  it('1 ft, on the way to 1 ft 8 in or more, says nothing until left; 9 ft says so at once', async () => {
+    const view = await open();
+    fireEvent.click(within(q(view, 'label[for="heightCm"]') as HTMLElement).getByRole('button')); // cm to ft/in
+    const feet = await waitFor(() => { const f = q(view, '#heightFeet'); expect(f).toBeTruthy(); return f as HTMLInputElement; });
+    type(feet, '1');
+    expect(shown(view).filter((t) => /Height/.test(t))).toEqual([]);
+    leave(q(view, '#heightInches') ?? feet); // the feet box hands on to inches; leave the pair
+    act(() => { (document.activeElement as HTMLElement | null)?.blur(); });
+    expect(shown(view).some((t) => /^Height must be at least/.test(t))).toBe(true);
+    type(feet, '9');
+    expect(shown(view).some((t) => /^Height must be at most/.test(t))).toBe(true);
+  });
+});
+
 describe('US-02 AC5: an out-of-range first-time value stays in its field, its error shown, and is never written', () => {
   const shown = (view: RenderResult) => Array.from(view.container.querySelectorAll('.error-message')).map((e) => e.textContent);
 

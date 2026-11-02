@@ -9,6 +9,7 @@ import { openHistoryLightbox } from '../lib/roadmap-data';
 import { isLabArchiveDocument, SEXES } from '@roadmap/health-core';
 import type { CorrectFn, Refused, SaveTask } from '../lib/matrix-save';
 import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance, mayStillFit, type Grading } from '../lib/blood-test-cell';
+import { useRangeWait } from '../lib/useRangeWait';
 import type { ApiDocument, ApiLabValue, ApiSupplement } from '../lib/api-types';
 import { DRAFTS_CLEARED_EVENT, loadFromLocalStorage } from '../lib/storage';
 
@@ -55,7 +56,6 @@ import {
   SGLT2I_NAMES,
   SGLT2I_DRUGS,
   METFORMIN_OPTIONS,
-  validateInputValue,
   isBirthYearClearlyInvalid,
   parseLocalisedNumber,
   dayOf,
@@ -275,8 +275,9 @@ export function InputPanel({
   const advanceToDiastolic = useAutoAdvance();
   const focusById = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.focus());
   // Shared keydown combos: numeric-only guard (US-02 AC4) + Enter-to-save.
-  const onNumericEnter = (e: React.KeyboardEvent<HTMLInputElement>) => { blockBadNumericKeys(e); autoSaveOnEnterKey(e); };
-  const onIntegerEnter = (e: React.KeyboardEvent<HTMLInputElement>) => { blockNonIntegerKeys(e); autoSaveOnEnterKey(e); };
+  const onNumericEnter = (e: React.KeyboardEvent<HTMLInputElement>) => { blockBadNumericKeys(e); settleOnEnter(e); autoSaveOnEnterKey(e); };
+  const onIntegerEnter = (e: React.KeyboardEvent<HTMLInputElement>) => { blockNonIntegerKeys(e); settleOnEnter(e); autoSaveOnEnterKey(e); };
+  const settleOnEnter = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter') rangeWait.settle(); };
   const [dateInputs, setDateInputs] = useState<Record<string, { year: string; month: string }>>({});
 
   // Expand/collapse state for display-first longitudinal fields.
@@ -310,8 +311,8 @@ export function InputPanel({
   const blurOnWheel = (e: React.WheelEvent<HTMLInputElement>) => e.currentTarget.blur();
 
   // Shared blur/Enter auto-save handlers for every longitudinal input. Each
-  // site does its own pre-work (validateOnBlur, raw-input cleanup) inline,
-  // then calls autoSave.onBlur(); onKeyDown is uniform.
+  // site does its own pre-work (raw-input cleanup) inline, then calls
+  // autoSaveOnBlur(); onKeyDown is uniform. Enter also shows a held range error.
   const autoSaveGate = hasApiResponse;
   const autoSaveOnBlur = () => { if (autoSaveGate) scheduleLongitudinalSave(); };
   const autoSaveOnEnterKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -582,18 +583,14 @@ export function InputPanel({
   // US-02 AC9: the field being typed in keeps its range error back while more
   // digits could still fix it ("19" on the way to 190); leaving the field or
   // pressing Enter shows it. Display only: what saves is unchanged.
-  const [typing, setTyping] = useState<{ field: string; text: string } | null>(null);
-  const errors = typing && allErrors[typing.field] && mayStillFit(typing.text, range(typing.field).min, range(typing.field).max)
-    ? Object.fromEntries(Object.entries(allErrors).filter(([field]) => field !== typing.field))
-    : allErrors;
-
-  /** Validate on blur for identity fields (no unit conversion). Clears if out of range. */
-  const validateOnBlur = (field: keyof HealthInputs) => {
-    const currentValue = inputs[field] as number | undefined;
-    const validated = validateInputValue(field, currentValue);
-    if (validated !== currentValue) {
-      updateField(field, validated);
-    }
+  const rangeWait = useRangeWait();
+  const errors = Object.fromEntries(Object.entries(allErrors).filter(([field]) => !rangeWait.waits(field)));
+  const typeIn = (field: string, raw: string) => rangeWait.typed(field, raw, mayStillFit(raw, range(field).min, range(field).max));
+  // Imperial height, feet then inches: could some inches still bring it in range ("1" may be 10 or 11)?
+  const heightMayFit = (feet: string, inches: string, inFeet: boolean) => {
+    const { min, max } = getDisplayRange(FIELD_METRIC_MAP.heightCm!, 'si');
+    const choices = inFeet || inches === '' ? [...Array(12).keys()] : inches === '1' ? [1, 10, 11] : [parseInt(inches, 10) || 0];
+    return choices.some(i => { const cm = feetInchesToCm(parseInt(feet, 10) || 0, i); return cm >= min && cm <= max; });
   };
 
   const getPreviousPlaceholder = (field: string): string | undefined => {
@@ -769,6 +766,7 @@ export function InputPanel({
             value={rawInputs[field] !== undefined ? rawInputs[field] : toDisplay(field, (inputs[field] as number | undefined) ?? (box ? previous?.value : undefined))}
             onChange={(e) => {
               const raw = e.target.value;
+              typeIn(field, raw);
               setRawInputs(prev => ({ ...prev, [field]: raw }));
               if (!readable(field, e)) return;
               // Ignore browser auto-fill of 0 for empty fields (spinner click on empty input)
@@ -787,6 +785,7 @@ export function InputPanel({
               }
             }}
             onBlur={() => {
+              rangeWait.settle();
               if (unreadable[field]) return;
               setRawInputs(prev => { const next = { ...prev }; delete next[field]; return next; });
               autoSaveOnBlur();
@@ -1005,13 +1004,14 @@ export function InputPanel({
         <input
           type="number"
           id="heightCm"
-          onKeyDown={blockBadNumericKeys}
+          onKeyDown={e => { blockBadNumericKeys(e); settleOnEnter(e); }}
           onWheel={blurOnWheel}
           value={rawInputs['heightCm'] !== undefined ? rawInputs['heightCm'] : toDisplay('heightCm', inputs.heightCm)}
           onChange={(e) => {
             const raw = e.target.value;
             setRawInputs(prev => ({ ...prev, heightCm: raw }));
             if (!readable('heightCm', e)) return;
+            typeIn('heightCm', raw);
             updateField('heightCm', parseAndConvert('heightCm', raw));
             const heightNum = parseLocalisedNumber(raw);
             const heightRange = range('heightCm');
@@ -1023,7 +1023,7 @@ export function InputPanel({
               });
             }
           }}
-          onBlur={() => { if (!unreadable.heightCm) setRawInputs(prev => { const next = { ...prev }; delete next['heightCm']; return next; }); }}
+          onBlur={() => { rangeWait.settle(); if (!unreadable.heightCm) setRawInputs(prev => { const next = { ...prev }; delete next['heightCm']; return next; }); }}
           placeholder=""
           min={range('heightCm').min}
           max={range('heightCm').max}
@@ -1040,6 +1040,7 @@ export function InputPanel({
             onChange={(e) => {
               const val = e.target.value.replace(/[^0-9]/g, '');
               setHeightFeet(val);
+              rangeWait.typed('heightCm', `${val}/${heightInches}`, heightMayFit(val, heightInches, true));
               const feet = parseInt(val, 10) || 0;
               const inches = parseInt(heightInches, 10) || 0;
               if (val !== '' || heightInches !== '') {
@@ -1053,6 +1054,7 @@ export function InputPanel({
             }}
             placeholder=""
             maxLength={1}
+            onBlur={rangeWait.settle}
             className={errors.heightCm ? 'error' : ''}
           />
           <span className="height-unit">ft</span>
@@ -1065,6 +1067,7 @@ export function InputPanel({
             onChange={(e) => {
               const val = e.target.value.replace(/[^0-9]/g, '');
               setHeightInches(val);
+              rangeWait.typed('heightCm', `${heightFeet}/${val}`, heightMayFit(heightFeet, val, false));
               const feet = parseInt(heightFeet, 10) || 0;
               const inches = parseInt(val, 10) || 0;
               if (heightFeet !== '' || val !== '') {
@@ -1083,6 +1086,7 @@ export function InputPanel({
             }}
             placeholder=""
             maxLength={2}
+            onBlur={rangeWait.settle}
             className={errors.heightCm ? 'error' : ''}
           />
           <span className="height-unit">in</span>
@@ -1307,6 +1311,7 @@ export function InputPanel({
                   onWheel={blurOnWheel}
                   value={inputs.systolicBp ?? ''}
                   onChange={(e) => {
+                    typeIn('systolicBp', e.target.value);
                     updateField('systolicBp', parseLocalisedNumber(e.target.value));
                     // US-02 AC6: hop to diastolic once systolic is unambiguous.
                     const adv = bpSysAdvance(e.target.value);
@@ -1314,7 +1319,7 @@ export function InputPanel({
                       advanceToDiastolic({ ambiguous: adv === 'defer', advance: () => focusById('diastolicBp') });
                     }
                   }}
-                  onBlur={autoSaveOnBlur}
+                  onBlur={() => { rangeWait.settle(); autoSaveOnBlur(); }}
                   onKeyDown={onIntegerEnter}
                   placeholder={bpExpanded ? '' : getPreviousPlaceholder('systolicBp')}
                   min={60}
@@ -1328,8 +1333,8 @@ export function InputPanel({
                   id="diastolicBp"
                   onWheel={blurOnWheel}
                   value={inputs.diastolicBp ?? ''}
-                  onChange={(e) => updateField('diastolicBp', parseLocalisedNumber(e.target.value))}
-                  onBlur={autoSaveOnBlur}
+                  onChange={(e) => { typeIn('diastolicBp', e.target.value); updateField('diastolicBp', parseLocalisedNumber(e.target.value)); }}
+                  onBlur={() => { rangeWait.settle(); autoSaveOnBlur(); }}
                   onKeyDown={onIntegerEnter}
                   placeholder={bpExpanded ? '' : getPreviousPlaceholder('diastolicBp')}
                   min={40}
@@ -1411,8 +1416,10 @@ export function InputPanel({
               onChange={(e) => {
                 const num = parseLocalisedNumber(e.target.value);
                 if (num !== undefined && isBirthYearClearlyInvalid(num)) return;
+                typeIn('birthYear', e.target.value);
                 updateField('birthYear', num);
               }}
+              onBlur={rangeWait.settle}
               placeholder=""
               min="1900"
               max={new Date().getFullYear()}
@@ -2065,6 +2072,7 @@ export function InputPanel({
                               value={rawInputs.psa ?? (inputs.psa !== undefined ? String(inputs.psa) : '')}
                               onChange={(e) => {
                                 const val = e.target.value;
+                                typeIn('psa', val);
                                 setRawInputs(prev => ({ ...prev, psa: val }));
                                 if (!readable('psa', e)) return;
                                 if (val === '') {
@@ -2076,8 +2084,8 @@ export function InputPanel({
                               }}
                               onBlur={() => {
                                 if (unreadable.psa) return;
+                                rangeWait.settle();
                                 setRawInputs(prev => { const next = { ...prev }; delete next.psa; return next; });
-                                validateOnBlur('psa');
                                 autoSaveOnBlur();
                               }}
                               onKeyDown={onNumericEnter}
@@ -2408,10 +2416,7 @@ export function InputPanel({
 
   // ── Render all sections with progressive disclosure (both mobile and desktop) ──
   return (
-    <div ref={panelRef} className={`health-input-panel${pageShown ? ' md-page-open' : ''}`}
-         onChangeCapture={e => { const t = e.target as HTMLInputElement; setTyping(t.id ? { field: t.id, text: t.value } : null); }}
-         onBlurCapture={() => setTyping(null)}
-         onKeyDownCapture={e => { if (e.key === 'Enter') setTyping(null); }}>
+    <div ref={panelRef} className={`health-input-panel${pageShown ? ' md-page-open' : ''}`}>
       <ColumnHeader step={1} title="Your information" meta={storageBar} actions={!!storageBar} />
       {pageShown && (
         <ValuePage key={JSON.stringify(pageShown)} subject={pageShown} history={[...vitalsHistory, ...bloodTestHistory]} labValues={labValues}

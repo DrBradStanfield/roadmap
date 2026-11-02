@@ -51,6 +51,7 @@ import { VITALS_DRAFT_KEY } from '../lib/storage';
 import { describedBy } from '../lib/aria';
 import { useDraftMirror, useMatrixDraft, type CellRef } from '../lib/useMatrixDraft';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
+import { useRangeWait } from '../lib/useRangeWait';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
 import { usePrefillRef } from '../lib/usePrefillRef';
 import { Sparkline, ValueCell, BatchDateCell, BackfillCell, SAVE_ERRORS, SAVE_FAILED, SAME_SLOT, useLiveRegion } from './BloodTestTimeline';
@@ -736,21 +737,26 @@ function BpInputCell({
   // sanitised in the change handlers below.
   const onKey: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
     blockNonIntegerKeys(e);
-    if (e.key === 'Enter') { e.preventDefault(); setTyping(null); onEnter(); }
+    if (e.key === 'Enter') { e.preventDefault(); rangeWait.settle(); onEnter(); }
   };
   // US-02 AC9: the half being typed keeps back a range error more digits
   // could still fix ("6" on the way to 65); leaving it or Enter shows it.
-  const [typing, setTyping] = useState<'sys' | 'dia' | null>(null);
+  const rangeWait = useRangeWait();
+  const check = (half: 'sys' | 'dia', text: string) => validateTypedValue(half === 'sys' ? 'systolic_bp' : 'diastolic_bp', text, 'si');
+  const typedHalf = (half: 'sys' | 'dia', text: string) => {
+    const { range } = check(half, text);
+    rangeWait.typed(half, text, mayStillFit(text, range.min, range.max));
+  };
   const rangeError = (half: 'sys' | 'dia', text: string) => {
-    const { error, range } = validateTypedValue(half === 'sys' ? 'systolic_bp' : 'diastolic_bp', text, 'si');
-    return error && !(typing === half && mayStillFit(text, range.min, range.max)) ? error : undefined;
+    const { error } = check(half, text);
+    return error && !rangeWait.waits(half, text) ? error : undefined;
   };
   // Auto-advance systolic → diastolic (US-02 AC6): immediately for an
   // unambiguous 3-digit value, after 800ms for a plausible 2-digit one.
   // Never steal focus if the user already left systolic or dia has content.
   const handleSysChange = (raw: string) => {
     const v = raw.replace(/[^0-9]/g, '');
-    setTyping('sys');
+    typedHalf('sys', v);
     onSysChange(v);
     if (advanceTimer.current) { window.clearTimeout(advanceTimer.current); advanceTimer.current = null; }
     if (dia !== '') return;
@@ -762,7 +768,7 @@ function BpInputCell({
       }, 800);
     }
   };
-  const handleDiaChange = (raw: string) => { setTyping('dia'); onDiaChange(raw.replace(/[^0-9]/g, '')); };
+  const handleDiaChange = (raw: string) => { const v = raw.replace(/[^0-9]/g, ''); typedHalf('dia', v); onDiaChange(v); };
   // Visible range validation (US-02 AC5) — same inline-error pattern as
   // NumericInputCell (this is the one cell that can't reuse it directly).
   // A pair the wrong way up is the pair's error, as a clash is (US-02 AC8).
@@ -798,12 +804,12 @@ function BpInputCell({
         <input ref={sysRef} className={`bt-input${active ? ' bt-input-active' : ''}${sysError ? ' bt-input-error' : ''}`}
                inputMode="numeric" pattern="[0-9]*" placeholder="sys" size={1} aria-label="Systolic blood pressure"
                aria-invalid={!!sysError} aria-describedby={describedBy(sysError && sysErrorId, diaOwnError && diaError === pairError && diaErrorId)}
-               value={sys} onChange={e => handleSysChange(e.target.value)} onKeyDown={onKey} onBlur={() => setTyping(null)}/>
+               value={sys} onChange={e => handleSysChange(e.target.value)} onKeyDown={onKey} onBlur={rangeWait.settle}/>
         <span className="bt-vitals-bp-sep">/</span>
         <input ref={diaRef} className={`bt-input${active ? ' bt-input-active' : ''}${diaError ? ' bt-input-error' : ''}`}
                inputMode="numeric" pattern="[0-9]*" placeholder="dia" size={1} aria-label="Diastolic blood pressure"
                aria-invalid={!!diaError} aria-describedby={describedBy(diaError && (diaOwnError ? diaErrorId : sysErrorId))}
-               value={dia} onChange={e => handleDiaChange(e.target.value)} onKeyDown={onKey} onBlur={() => setTyping(null)}/>
+               value={dia} onChange={e => handleDiaChange(e.target.value)} onKeyDown={onKey} onBlur={rangeWait.settle}/>
       </div>
       <div className="bt-cell-foot">
         {sysError && <span id={sysErrorId} className="bt-input-error-text">{sysError}</span>}

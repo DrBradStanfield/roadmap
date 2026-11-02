@@ -42,15 +42,17 @@ describe('US-35 AC17 — the PSA input takes the unit table range', () => {
     expect(range.max).toBe(10000);
   });
 
-  // Brad 2026-10-20: the form keeps 9,999 ng/mL and clears 10,001 on blur.
-  it('keeps a PSA of 9,999 and clears 10,001 when the field loses focus', () => {
+  // Brad 2026-10-20: 9,999 ng/mL is in range, 10,001 out. Since US-02 AC5's
+  // 2026-11-02 amendment an out-of-range value is never silently wiped: it
+  // stays with its error, and nothing saves it.
+  it('keeps a PSA of 9,999, and keeps 10,001 too, when the field loses focus', () => {
     const kept = renderPanel('si', 9999);
     fireEvent.blur(kept.psa!);
     expect(kept.onChange).not.toHaveBeenCalledWith('psa', undefined);
     cleanup();
     const over = renderPanel('si', 10001);
     fireEvent.blur(over.psa!);
-    expect(over.onChange).toHaveBeenCalledWith('psa', undefined);
+    expect(over.onChange).not.toHaveBeenCalledWith('psa', undefined);
   });
 });
 
