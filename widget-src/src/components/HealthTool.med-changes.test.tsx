@@ -453,6 +453,47 @@ describe('US-67 N3: no Undo after the chat replaces a medicine entry this build 
     expect(await recorded()).toMatchObject({ statin: 'rosuvastatin@20' });
     expect(document.querySelector('.chat-med-undo')).toBeNull();
   });
+
+  // The escalation answer the chat resets is the unreadable row, and the form
+  // holds a save for it that is still inside the 300 ms debounce: the reset
+  // still replaces it, so Undo could not put it back.
+  it('an unreadable escalation answer the form is saving, reset by a chat dose change: no Undo, the fixed line', async () => {
+    const view = await pageWithUnreadable([['statin', 'rosuvastatin', 20], ['ezetimibe', 'ezetimibe', 10], ['statin_escalation', 'not_tolerated']], 'statin_escalation');
+    fireEvent.change(view.container.querySelector('#statin-escalation')!, { target: { value: 'not_tolerated' } });
+    act(() => chat.props!.onProposeEdit([{ ...atorvastatin20, doseValue: 40 }]));
+    await settle();
+    expect(await recorded()).toMatchObject({ statin: 'atorvastatin@40' });
+    expect(document.querySelector('.chat-med-undo-btn')).toBeNull();
+    expect(document.querySelector('.chat-med-undo')!.textContent).toContain(NO_UNDO);
+  });
+
+  // One banner at a time: the newest reply decides whether Undo shows.
+  it('reply 1 readable then reply 2 replaces an unreadable row: the old Undo goes, the fixed line shows', async () => {
+    await pageWithUnreadable([['statin', 'rosuvastatin', 20], ['glp1', 'tirzepatide', 5]], 'glp1');
+    act(() => chat.props!.onProposeEdit([atorvastatin20]));
+    await settle();
+    expect(document.querySelector('.chat-med-undo-btn')).not.toBeNull();
+    act(() => chat.props!.onProposeEdit([{ kind: 'medication', medicationKey: 'glp1', drugName: 'semaglutide_injection', doseValue: 1, doseUnit: 'mg' }]));
+    await settle();
+    expect(await recorded()).toMatchObject({ glp1: 'semaglutide_injection@1' });
+    expect(document.querySelector('.chat-med-undo-btn')).toBeNull();
+    expect(document.querySelector('.chat-med-undo')!.textContent).toContain(NO_UNDO);
+  });
+
+  it('an unavailable banner then a readable reply: Undo is back, and restores the prior value', async () => {
+    await pageWithUnreadable([['statin', 'rosuvastatin', 20], ['glp1', 'tirzepatide', 5]], 'glp1');
+    act(() => chat.props!.onProposeEdit([{ kind: 'medication', medicationKey: 'glp1', drugName: 'semaglutide_injection', doseValue: 1, doseUnit: 'mg' }]));
+    await settle();
+    expect(document.querySelector('.chat-med-undo-btn')).toBeNull();
+    expect(document.body.textContent).toContain(NO_UNDO);
+    act(() => chat.props!.onProposeEdit([atorvastatin20]));
+    await settle();
+    expect(document.body.textContent).not.toContain(NO_UNDO);
+    expect(document.querySelector('.chat-med-undo-btn')).not.toBeNull();
+    fireEvent.click(document.querySelector('.chat-med-undo-btn')!);
+    await settle();
+    expect(await recorded()).toMatchObject({ statin: 'rosuvastatin@20', glp1: 'semaglutide_injection@1' });
+  });
 });
 
 describe('US-16 AC2 / US-09: erasing the data clears the pending chat Undo', () => {
