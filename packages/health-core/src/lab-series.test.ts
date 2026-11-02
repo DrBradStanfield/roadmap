@@ -29,4 +29,9 @@ describe('labSeriesRows with a limit (US-12 AC20)', () => {
     expect(row).toMatchObject({ previous: null, trend: [] });
     expect(row.trendLimits).toBeUndefined();
   });
+
+  it('shows a row with no unit, as readers accept one, with no unit rather than throwing (US-65)', () => {
+    const [row] = labSeriesRows([lab('a', 80, '2026-10-01T00:00:00.000Z', { unit: null }), lab('b', 90, '2026-10-02T00:00:00.000Z', { unit: undefined })], NOW);
+    expect(row).toMatchObject({ unit: '', latest: { value: '90' }, previous: '80' });
+  });
 });

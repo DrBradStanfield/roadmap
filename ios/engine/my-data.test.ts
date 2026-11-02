@@ -2,7 +2,7 @@
 // health-core's own write functions. The app runs this same code in
 // JavaScriptCore; these tests run it in Node.
 import { describe, expect, it } from 'vitest';
-import { applyEdit, myData, newRecord, readNumber, readRecord, Refusal } from './my-data';
+import { applyEdit, myData, newRecord, readNumber, readRecord, readView, Refusal } from './my-data';
 import { metricHistory } from './my-data-forms';
 import { readUnitChoices } from './unit-choices';
 import { healthWritesJson, planJson } from './entry';
@@ -355,6 +355,22 @@ describe('myData lab test rows (US-62 AC8, US-25 AC17)', () => {
     file.labValues.push(lab('s2', 'sodium', 150, 'mmol/L', '2026-10-10T00:00:00.000Z', { comparator: '>' }));
     const sodium = myData(file, NOW).labTests.find((row) => row.metric === 'sodium')!;
     expect(sodium).toMatchObject({ latest: { id: 's2', value: '> 150' }, previous: '140', trend: [140] });
+  });
+
+  it('a lab row with no unit, no range or an empty name never blanks My data (US-65)', () => {
+    // Rows readers accept (readable-rows.ts: unit, references optional), as another build might write them.
+    const file = withLabs();
+    const odd = [
+      { ...lab('n1', 'ferritin', 90, 'µg/L', '2026-10-15T00:00:00.000Z'), unit: null },
+      { ...lab('n2', 'vitamin_b12', 300, 'pmol/L', '2026-10-15T00:00:00.000Z'), unit: undefined },
+      lab('n3', '', 4, 'mmol/L', '2026-10-15T00:00:00.000Z', { referenceLow: null, referenceHigh: null }),
+    ];
+    const text = JSON.stringify({ ...file, labValues: [...file.labValues, ...odd] });
+    const tests = myData(readView(text, NOW, 'phone'), NOW).labTests;
+    expect(tests.find((row) => row.latest?.id === 'n1')).toMatchObject({ label: 'Ferritin', unit: '', latest: { value: '90' } });
+    expect(tests.find((row) => row.latest?.id === 'n2')).toMatchObject({ unit: '', latest: { value: '300' } });
+    expect(tests.find((row) => row.latest?.id === 'n3')).toMatchObject({ unit: 'mmol/L', target: null, latest: { value: '4' } });
+    expect(tests.find((row) => row.metric === 'sodium')).toMatchObject({ latest: { value: '140' } });
   });
 
   it('is empty for a record with no lab tests', () => {
