@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { correctValue, appendMeasurement, moveBloodTest, planBloodTestMove, type MoveKeep, type MovePlan } from './record-edits';
 import { createEmptyFile, createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { mergeFiles } from './merge';
+import { createCoreRow, isBloodTestKey } from './blood-tests';
 
 const CTX = { deviceId: 'us04_move', now: '2026-09-01T09:00:00Z' };
 const NOW = '2026-09-01T09:00:00Z';
@@ -17,8 +18,15 @@ const EDIT = { now: NOW, latestDay: '2026-09-01' };
 const FROM = '2024-03-12';
 const TO = '2024-02-21';
 
-function m(id: string, metricType: string, value: number, recordedAt: string, extra: Partial<FileMeasurement> = {}): FileMeasurement {
-  return createMeasurement({ id, metricType, value, recordedAt, createdAt: '2024-03-12T08:00:00Z', ...extra });
+/** A vital is a measurement; a blood test is a core row in labValues (US-66 AC1). */
+function m(id: string, metricType: string, value: number, recordedAt: string, extra: Partial<FileMeasurement> = {}): FileMeasurement | FileLabValue {
+  const fields = { id, value, recordedAt, createdAt: '2024-03-12T08:00:00Z', ...extra };
+  return isBloodTestKey(metricType) ? createCoreRow({ ...fields, metric: metricType }) : createMeasurement({ ...fields, metricType });
+}
+
+/** Put each row in the array it lives in. */
+function add(file: RoadmapFile, ...rows: Array<FileMeasurement | FileLabValue>): void {
+  for (const row of rows) ('metricType' in row ? file.measurements : file.labValues).push(row as never);
 }
 function lab(id: string, metricName: string, value: number, unit: string, recordedAt: string, extra: Partial<FileLabValue> = {}): FileLabValue {
   return createLabValue({ id, metricName, value, unit, recordedAt, createdAt: '2024-03-12T08:00:00Z', referenceLow: 10, referenceHigh: 50, ...extra });
@@ -27,7 +35,7 @@ function lab(id: string, metricName: string, value: number, unit: string, record
 /** A test on FROM (core, PSA, a lab), a weight on FROM, and an LDL on another day. */
 function base(): RoadmapFile {
   const file = createEmptyFile(CTX);
-  file.measurements.push(
+  add(file,
     m('ldl1', 'ldl', 3.2, `${FROM}T00:00:00.000Z`),
     m('hdl1', 'hdl', 1.4, FROM),
     m('psa1', 'psa', 1.1, `${FROM}T00:00:00.000Z`),
@@ -90,21 +98,21 @@ describe('US-04 AC5: refusals leave the file unchanged', () => {
   it('refuses a day with no blood test', () => expect(refused(base(), '2025-01-01', TO)).toBe('empty-day'));
   it('refuses a day holding only vitals', () => {
     const file = createEmptyFile(CTX);
-    file.measurements.push(m('w1', 'weight', 82, FROM));
+    add(file, m('w1', 'weight', 82, FROM));
     expect(refused(file, FROM, TO)).toBe('empty-day');
   });
 
   it('refuses a day holding two active values for one test (Codex R1), naming one', () => {
     const file = base();
-    file.measurements.push(m('ldl1b', 'ldl', 3.3, FROM));
+    add(file, m('ldl1b', 'ldl', 3.3, FROM));
     const p = planBloodTestMove(file, FROM, TO, EDIT);
     expect('rows' in p ? null : p.reason).toBe('duplicate-slot');
-    expect('rows' in p ? null : (p.existing as FileMeasurement).metricType).toBe('ldl');
+    expect('rows' in p ? null : (p.existing as FileLabValue).metricName).toBe('ldl');
   });
 
   it('refuses stale ids, and a missing or extra clash answer, writing nothing', () => {
     const file = base();
-    file.measurements.push(m('ldlT', 'ldl', 2.9, TO));
+    add(file, m('ldlT', 'ldl', 2.9, TO));
     const p = plan(file);
     const ids = p.rows.map((r) => r.id);
     const before = JSON.stringify(file);
@@ -131,7 +139,7 @@ describe('US-04 AC5: refusals leave the file unchanged', () => {
     const emptied = moved(file).file;
     expect(attempt(emptied)).toBe('value-changed');
     const doubled = base();
-    doubled.measurements.push(m('ldl1b', 'ldl', 3.3, FROM));
+    add(doubled, m('ldl1b', 'ldl', 3.3, FROM));
     expect(attempt(doubled)).toBe('value-changed');
   });
 });
@@ -184,7 +192,7 @@ describe('US-04 AC5: a plain move', () => {
 describe('US-04 AC5: a clash on the new day', () => {
   function clashing() {
     const file = base();
-    file.measurements.push(m('ldlT', 'ldl', 2.9, TO));
+    add(file, m('ldlT', 'ldl', 2.9, TO));
     return file;
   }
 
@@ -213,7 +221,7 @@ describe('US-04 AC5: a clash on the new day', () => {
 
   it('the same quantity already there asks nothing: the moving row flips, the held row stays', () => {
     const file = base();
-    file.measurements.push(m('ldlT', 'ldl', 3.2, TO));
+    add(file, m('ldlT', 'ldl', 3.2, TO));
     // 210 ug/L is the same ferritin as 210 ng/mL.
     file.labValues.push(lab('ferT', 'Ferritin', 210, 'ng/mL', TO));
     const p = plan(file);
@@ -235,7 +243,7 @@ describe('US-04 AC5: a clash on the new day', () => {
 
   it('refuses when the new day already holds two active values for a test that lands there', () => {
     const file = clashing();
-    file.measurements.push(m('ldlT2', 'ldl', 2.8, TO));
+    add(file, m('ldlT2', 'ldl', 2.8, TO));
     const p = planBloodTestMove(file, FROM, TO, EDIT);
     expect('rows' in p ? null : p.reason).toBe('duplicate-slot');
   });
@@ -260,7 +268,7 @@ describe('US-04 AC5: merge', () => {
     const b = correctValue(start, { id: 'ldl1', newValue: 3.0, now: '2026-09-01T10:00:00Z' });
     if (!b.ok) throw new Error(b.message);
     const merged = mergeFiles(a, b.file, CTX);
-    const ldl = merged.measurements.filter((r) => r.metricType === 'ldl' && r.status === 'active').map((r) => r.recordedAt.slice(0, 10)).sort();
+    const ldl = merged.labValues.filter((r) => r.metricName === 'ldl' && r.status === 'active').map((r) => r.recordedAt.slice(0, 10)).sort();
     expect(ldl).toEqual(['2023-01-05', TO, FROM]);
     oneActivePerSlot(merged);
   });
@@ -271,10 +279,10 @@ describe('US-04 AC5: merge', () => {
     const b = appendMeasurement(start, { metricType: 'ldl', value: 2.5, recordedAt: TO, now: '2026-09-01T10:00:00Z', latestDay: '2026-09-01' });
     if (!b.ok) throw new Error(b.message);
     const merged = mergeFiles(a, b.file, CTX);
-    const child = merged.measurements.find((r) => r.correctsId === 'ldl1')!;
+    const child = merged.labValues.find((r) => r.correctsId === 'ldl1')!;
     expect(child.status).toBe('entered-in-error');
     expect(byId(merged, 'ldl1').status).toBe('entered-in-error');
-    expect(merged.measurements.filter((r) => r.status === 'active' && r.value === 3.2)).toEqual([]);
+    expect(merged.labValues.filter((r) => r.status === 'active' && r.value === 3.2)).toEqual([]);
     oneActivePerSlot(merged);
   });
 
@@ -288,7 +296,7 @@ describe('US-04 AC5: merge', () => {
       expect(activeOn(merged, FROM).map((r) => r.id)).toEqual(['w1']); // the weight, a vital, never moves
       expect(activeOn(merged, TO).length).toBe(4);
       expect(activeOn(merged, OTHER).length).toBe(4);
-      const latestLdl = merged.measurements.filter((r) => r.metricType === 'ldl' && r.status === 'active')
+      const latestLdl = merged.labValues.filter((r) => r.metricName === 'ldl' && r.status === 'active')
         .sort((x, y) => y.recordedAt.localeCompare(x.recordedAt))[0];
       expect(latestLdl.recordedAt.slice(0, 10)).toBe(TO);
       oneActivePerSlot(merged);

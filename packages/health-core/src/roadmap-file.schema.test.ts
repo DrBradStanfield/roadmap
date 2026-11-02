@@ -230,7 +230,8 @@ describe('docs/health-roadmap-file.schema.json (US-29)', () => {
     const file = representativeFile();
     // Guard the fixture itself: merge really did produce the correction pair,
     // and carried the field stamps through.
-    expect(file.measurements.filter((m) => m.status === 'entered-in-error')).toHaveLength(1);
+    // The LDL pair moved to labValues as core rows on the read (US-66 AC2), so the schema sees that shape too.
+    expect(file.labValues.filter((m) => m.status === 'entered-in-error' && m.core)).toHaveLength(1);
     expect(file.profile.fieldStamps?.heightCm).toEqual({ lamport: 4, updatedAt: '2026-05-03T00:00:00Z' });
     expect(file.screenings.fieldStamps?.breastLastDate).toEqual({ lamport: 3, updatedAt: '2026-05-03T00:00:00Z' });
     const result = check(file);

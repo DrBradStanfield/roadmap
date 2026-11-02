@@ -272,6 +272,7 @@ export {
 // Local-first storage spine (v2) — the RoadmapFile schema + merge/migrate logic.
 // Browser-coupled cloud adapters live in widget-src/src/storage/, not here.
 export {
+  CORE_BLOOD_UNITS,
   CURRENT_SCHEMA_VERSION,
   createEmptyFile,
   createMeasurement,
@@ -290,6 +291,7 @@ export {
   type SyncStamp,
   type HistoryChangeType,
 } from './roadmap-file';
+export { bloodTableReport, bloodTestRows, createCoreRow, isCoreRow, labRowSlot, toOldShape } from './blood-tests';
 export { fileProfileToApi, fileScreeningRows, screeningFieldName } from './file-inputs';
 export { mergeFiles, rowRootIds, dayOf, localDay, type MergeOptions } from './merge';
 export { buildErasedFile, type EraseInputs } from './erase';

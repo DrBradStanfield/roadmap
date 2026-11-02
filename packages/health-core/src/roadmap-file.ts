@@ -24,7 +24,7 @@
  */
 import type { AlcoholAnswer, Suggestion, ScreeningInputs } from './types';
 import type { MeasurementSource, MeasurementStatus, DocumentType } from './validation';
-import type { LpaUnit } from './units';
+import { UNIT_DEFS, type LpaUnit } from './units';
 
 /** A file no erase has listed rows in. New files start here, and stay here
  *  until an erase lists what it removed (US-09 AC23). */
@@ -125,7 +125,21 @@ export interface FileMeasurement {
   externalId: string | null; // e.g. HealthKit sample UUID (dedup)
 }
 
-/** A non-core lab value (beyond the 14 canonical metrics), append-only. */
+/**
+ * The nine blood tests the plan reads, each in the one unit a core row holds
+ * (US-66 AC1). Pinned by a test: a changed string would make two builds move
+ * the same row differently, so it needs a schema bump.
+ */
+export const CORE_BLOOD_UNITS: Readonly<Record<string, string>> = Object.fromEntries(
+  (['hba1c', 'creatinine', 'psa', 'apob', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'lpa'] as const)
+    .map((metric) => [metric, UNIT_DEFS[metric].canonical]),
+);
+
+/**
+ * One blood test, append-only (US-66). A catalogued or unknown test keeps its
+ * own name; a core value carries `core: true`, its core key as `metricName`
+ * and the `CORE_BLOOD_UNITS` unit.
+ */
 export interface FileLabValue {
   id: string;
   metricName: string;       // free-form, e.g. 'ferritin'
@@ -138,6 +152,8 @@ export interface FileLabValue {
   source: MeasurementSource;
   status: MeasurementStatus;
   correctsId: string | null;
+  /** Set only by a core write path, after conversion and the range check: never inferred from the name (US-66 AC1). */
+  core?: true;
 }
 
 /**
@@ -242,13 +258,13 @@ export interface RoadmapFile {
   schemaVersion: number;
   meta: RoadmapFileMeta;
   profile: RoadmapProfile;
-  measurements: FileMeasurement[];          // append-only
+  measurements: FileMeasurement[];          // append-only; vitals only (US-66): weight, waist, both blood pressures
   medications: FileMedication[];            // current state, keyed by medicationKey
   medicationHistory: FileMedication[];      // append-only log
   supplements: FileSupplement[];            // current state, keyed by supplementKey
   supplementHistory: FileSupplement[];      // append-only log
   screenings: FileScreenings;               // current state (singleton)
-  labValues: FileLabValue[];                // append-only
+  labValues: FileLabValue[];                // append-only; every blood test, core ones flagged (US-66)
   documents: FileDocument[];                // metadata; bytes in documents/
   reminderPreferences: FileReminderPreference[]; // current state, keyed by category
   recommendationSnapshots: RecommendationSnapshot[];

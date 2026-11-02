@@ -28,15 +28,17 @@
  * Recovery never reads the reader's time. An ancient but valid anchor can still
  * rewind mutable ordering clocks, but cannot fork immutable content identities.
  */
+import { foldLegacyCoreRows, moveBloodMeasurements } from './blood-tests';
 import { canonicalLabRow, resolveLabCatalogEntry } from './lab-catalog';
 import { isCalendarDay, isClinicalDay } from './measurement-history';
-import { MAX_COUNTER, stampInstant, withoutListed } from './merge';
+import { MAX_COUNTER, stampInstant, unionSlotRows, withoutListed } from './merge';
 import {
   BASE_SCHEMA_VERSION,
   CURRENT_SCHEMA_VERSION,
   createEmptyFile,
   type ErasedRows,
   type FileLabValue,
+  type FileMeasurement,
   type RoadmapFile,
 } from './roadmap-file';
 
@@ -215,6 +217,16 @@ function withSiCorrections(rows: FileLabValue[]): FileLabValue[] {
 }
 
 /**
+ * Two lab rows with one id, which the move makes when an agent reused an id
+ * across the two arrays: quarantined here, as `mergeFiles` would, so no
+ * reader ever sees both under one id (US-66 AC2). Rows with unique ids come
+ * back untouched, in their order.
+ */
+function withUniqueIds(rows: FileLabValue[]): FileLabValue[] {
+  return new Set(rows.map((row) => row.id)).size === rows.length ? rows : unionSlotRows(rows);
+}
+
+/**
  * The erase list, kept only when it is whole: `ids` strings, and `fromEpoch`
  * an integer from 1 to `eraseEpoch + 1`. Anything else is dropped whole,
  * which reads as an erase that listed nothing, the stricter rule (US-09 AC23).
@@ -322,19 +334,21 @@ export function migrateFile(
   // from before it refuses the file; any other keeps its own (US-09 AC23).
   const erasedRows = erasedRowsOf(raw.erasedRows, meta.eraseEpoch ?? 0);
   const { erasedRows: _unchecked, ...rest } = raw;
+  // US-66: blood tests out of `measurements`, then old core-named lab rows folded in.
+  const blood = moveBloodMeasurements(dated<FileMeasurement>(raw.measurements), dated<FileLabValue>(raw.labValues));
   const file = {
     ...rest,
     schemaVersion: erasedRows || version >= CURRENT_SCHEMA_VERSION ? CURRENT_SCHEMA_VERSION : BASE_SCHEMA_VERSION,
     ...(erasedRows ? { erasedRows } : null),
     meta,
     profile: singleton(raw.profile),
-    measurements: dated(raw.measurements),
+    measurements: blood.measurements,
     medications: stamped(idRowsOf(raw.medications)),
     medicationHistory: stamped(idRowsOf(raw.medicationHistory)),
     supplements: stamped(idRowsOf(raw.supplements)),
     supplementHistory: stamped(idRowsOf(raw.supplementHistory)),
     screenings: singleton(raw.screenings),
-    labValues: withSiCorrections(dated<FileLabValue>(raw.labValues)),
+    labValues: foldLegacyCoreRows(withSiCorrections(withUniqueIds(blood.labValues))),
     documents: idRowsOf(raw.documents),
     reminderPreferences: stamped(raw.reminderPreferences),
     recommendationSnapshots: rowsOf(raw.recommendationSnapshots),

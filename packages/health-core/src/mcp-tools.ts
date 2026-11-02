@@ -12,6 +12,7 @@
  * Nothing here reads the clock, the filesystem or the network.
  */
 import { deadlineSignal } from './adapter';
+import { bloodTestKeyOf, isCoreRow, labRowSlot } from './blood-tests';
 import { dayOf, daysBetween } from './merge';
 import { stampProfile } from './state-edits';
 import { displayLabUnit, foldLpa, LAB_CATALOG, type LabCatalogEntry, labSlotKey, metricNameWords, resolveLabCatalogEntry } from './lab-catalog';
@@ -552,7 +553,7 @@ export function redactRecord(file: RoadmapFile) {
   const { reportEmailCaptured: _emailFlag, ...shownProfile } = plain(profile);
   // By position, never by id: a reused id must not make a second row current.
   const currentMeasurements = new Set(latestActivePerMetric(measurements.map((m, at) => ({ ...m, at }))).map((r) => r.at));
-  const currentLabs = new Set(latestActivePerMetric(labValues.map((l, at) => ({ ...l, metricType: labSlotKey(l.metricName), at }))).map((r) => r.at));
+  const currentLabs = new Set(latestActivePerMetric(labValues.map((l, at) => ({ ...l, metricType: labRowSlot(l), at }))).map((r) => r.at));
   return {
     ...rest,
     profile: shownProfile,
@@ -667,7 +668,7 @@ export function addMeasurement(
     status: 'ok',
     file: result.file,
     text: describe('Added', [row]),
-    data: { id: row.id, metricType: row.metricType, ...rowValue(row) },
+    data: { id: row.id, metricType: 'metricType' in row ? row.metricType : row.metricName, ...rowValue(row) },
   };
 }
 
@@ -839,7 +840,8 @@ function describe(verb: string, rows: Array<FileMeasurement | FileLabValue>): st
   return rows
     .map((row) => {
       const name = 'metricType' in row ? row.metricType : row.metricName;
-      const unit = 'unit' in row ? ` ${oneLine(row.unit)}` : '';
+      // A core value reads as it did from `measurements`: the number in its metric's SI unit (US-66).
+      const unit = 'unit' in row && !isCoreRow(row) ? ` ${oneLine(row.unit)}` : '';
       return `${verb} ${oneLine(name)} ${row.value}${unit} on ${dayOf(row.recordedAt ?? '')} — row ${oneLine(row.id)}`;
     })
     .join('\n');
@@ -1364,8 +1366,9 @@ function slotFor(
   if (!existing) return { state: 'free' };
   // A row no reader can read holds the day, with nothing to show or compare (US-65 AC3).
   if (!readableSlotRow(existing)) return { state: 'held_different', existingRowId: existing.id, replaceable: false };
-  const state: SlotState = 'metricType' in existing
-    ? slotState(formatDisplayValue(existing.metricType as MetricType, existing.value, system), candidate.displayValue)
+  // A core value, in either array, compares by its displayed string (US-66 AC6).
+  const state: SlotState = 'metricType' in existing || isCoreRow(existing)
+    ? slotState(formatDisplayValue(('metricType' in existing ? existing.metricType : existing.metricName) as MetricType, existing.value, system), candidate.displayValue)
     : sameLabQuantity(
       { name: existing.metricName, value: existing.value, unit: existing.unit },
       { name: candidate.printedName ?? candidate.metric, value: candidate.value, unit: candidate.unit },
@@ -1376,6 +1379,12 @@ function slotFor(
     state, existingRowId: existing.id, existingValue: existing.value,
     replaceable: maxAgeDays === undefined || age <= maxAgeDays,
   };
+}
+
+/** Rule 9 alone, as a dry run's refusal: null for a day the record takes. */
+function dayFault(day: string, ctx: EditContext): EditRejection | null {
+  const resolved = resolveRecordedAt(day, ctx);
+  return typeof resolved === 'string' ? null : resolved;
 }
 
 type PreparedImport = { payload: ImportPayload; files: Array<z.infer<typeof importFileOutput>>; unrecognized: string[] };
@@ -1501,35 +1510,52 @@ export function prepareImport(
       // connector until the MCP 1.0.2 review ends: left out, as the old prompt
       // left it out. The assistant's own per-line day (US-36 AC1) is kept.
       const previousColumn = (value: { recordedAt?: string }) => bundle.route !== 'assistant' && !!value.recordedAt;
-      for (const value of result.values) {
-        if (candidates.length >= MAX_IMPORT_CANDIDATES) break;
-        if (!VALID_METRICS.includes(value.metric as MetricType) || previousColumn(value)) continue;
-        const metric = value.metric as MetricType;
-        const own = value.recordedAt ?? day;
-        // A dry run of the real append: it validates the value and the day the
-        // way the record will. A taken slot is not a reason to drop it, nor a
-        // blood pressure half judged alone: the pair pass below judges the
-        // report's whole pair (US-02 AC8).
-        const check = bundle.checked ? null : appendMeasurement(file, { metricType: metric, value: value.valueSI, recordedAt: own, now: ctx.now, latestDay });
+      // A core value, given in SI or in a printed unit. A dry run of the real
+      // append: it validates the value, the unit and the day the way the record
+      // will. A taken slot is not a reason to drop it, nor a blood pressure
+      // half judged alone: the pair pass below judges the report's whole pair
+      // (US-02 AC8).
+      const offerCore = (
+        metric: MetricType, own: string, reported: { value: number; unit?: string }, label: string,
+        value: { confidence: ImportCandidate['confidence']; question?: string; printedName?: string },
+      ) => {
+        const check = bundle.checked ? null : appendMeasurement(file, { metricType: metric, ...reported, recordedAt: own, now: ctx.now, latestDay });
         if (check && !check.ok && check.reason !== 'slot-occupied' && check.message !== PRESSURE_ORDER_HALF) {
-          unrecognized.push(`${metric}: ${oneLine(check.message)}`);
-          continue;
+          unrecognized.push(`${label}: ${oneLine(check.message)}`);
+          return;
         }
-        const display = formatDisplayValue(metric, value.valueSI, system);
+        const valueSI = reported.unit === undefined ? reported.value : reportedToCanonical(metric, reported.value, reported.unit)?.valueSI;
+        if (valueSI === undefined) return;
         offer(slotKey('measurement', metric, own), {
-          kind: 'measurement', metric, value: value.valueSI, unit: CANONICAL_UNITS[metric],
-          displayValue: display, displayUnit: getDisplayLabel(metric, system),
+          kind: 'measurement', metric, value: valueSI, unit: CANONICAL_UNITS[metric],
+          displayValue: formatDisplayValue(metric, valueSI, system), displayUnit: getDisplayLabel(metric, system),
           recordedAt: own, confidence: value.confidence,
           ...(value.question ? { question: fromDocument(value.question) } : null),
           sourceFileName: name, ...printed(value),
         });
+      };
+      for (const value of result.values) {
+        if (candidates.length >= MAX_IMPORT_CANDIDATES) break;
+        if (!VALID_METRICS.includes(value.metric as MetricType) || previousColumn(value)) continue;
+        const metric = value.metric as MetricType;
+        offerCore(metric, value.recordedAt ?? day, { value: value.valueSI }, metric, value);
       }
       for (const value of result.additionalValues) {
         if (candidates.length >= MAX_IMPORT_CANDIDATES) break;
         if (previousColumn(value)) continue;
         const own = value.recordedAt ?? day;
+        // Brad D5 (US-66 AC6): an extra value named like a core test is offered
+        // as that core value; a unit that will not convert is said, not filed.
+        // An extra creatinine stays a lab row under its printed name (US-12 AC11).
+        const named = bloodTestKeyOf(value.name);
+        if (named && named !== 'creatinine') {
+          offerCore(named, own, { value: value.value, unit: value.unit }, oneLine(value.name).slice(0, MAX_NAME_LENGTH),
+            { confidence: 'high', printedName: value.printedName ?? value.name });
+          continue;
+        }
         // With its range: the write checks the whole row (US-21 AC15), so the preview does too.
-        const check = bundle.checked ? null : appendLabValue(file, {
+        // An extra creatinine has no catalogue entry to check, only its day.
+        const check = bundle.checked ? null : named ? dayFault(own, { ...ctx, latestDay }) : appendLabValue(file, {
           metricName: value.name, value: value.value, unit: value.unit, referenceLow: value.referenceLow, referenceHigh: value.referenceHigh,
           recordedAt: own, now: ctx.now, latestDay,
         });
