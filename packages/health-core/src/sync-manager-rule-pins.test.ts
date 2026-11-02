@@ -41,8 +41,8 @@ function plainDoc(extra: Partial<DocumentSpec<Plain>> = {}): DocumentSpec<Plain>
 }
 
 describe('SyncManager: the save loop (US-10)', () => {
-  // save(): `this.doc.merge(local, base, ...)`. Merges are symmetric except
-  // where the spec lets local win (unknown top-level fields), so the order is
+  // save(): `this.doc.merge(local, base, ...)`. A spec's merge takes
+  // (local, base) and may treat the two sides differently, so the order is
   // the contract.
   it('passes (local, base) to the spec merge in that order', async () => {
     const cloud = new MemoryCloud();
@@ -66,13 +66,18 @@ describe('SyncManager: the save loop (US-10)', () => {
   });
 });
 
-describe('ROADMAP_DOC: merge order and the absent-file gate (roadmap-doc.ts)', () => {
-  // merge: `mergeFiles(local, base, ctx)`. mergeFiles spreads remote then
-  // local, so local's value of a field this version does not know wins.
-  it('merge keeps the LOCAL copy’s value of an unknown top-level field', () => {
-    const local = { ...createEmptyFile({ deviceId: 'a', now: NOW }), futureField: 'L' } as RoadmapFile;
-    const base = { ...createEmptyFile({ deviceId: 'b', now: NOW }), futureField: 'R' } as RoadmapFile;
-    expect((ROADMAP_DOC.merge(local, base, ctx) as unknown as { futureField: string }).futureField).toBe('L');
+describe('ROADMAP_DOC: unknown fields survive the merge, and the absent-file gate (roadmap-doc.ts)', () => {
+  // merge: mergeFiles spreads both copies first, so a top-level field this
+  // version does not know survives from either copy. Which copy wins when
+  // BOTH hold such a field is deliberately not pinned: today local does, so
+  // an older app's stale value can overwrite a newer app's write (a lost
+  // update), and a fix for that must not have to break this test.
+  it('merge keeps an unknown top-level field from either copy', () => {
+    const local = { ...createEmptyFile({ deviceId: 'a', now: NOW }), futureOnLocal: 'L' } as RoadmapFile;
+    const base = { ...createEmptyFile({ deviceId: 'b', now: NOW }), futureOnBase: 'R' } as RoadmapFile;
+    const merged = ROADMAP_DOC.merge(local, base, ctx) as unknown as Record<string, unknown>;
+    expect(merged.futureOnLocal).toBe('L');
+    expect(merged.futureOnBase).toBe('R');
   });
 
   // assertRecordShape(): `if (raw == null) return`. An undefined body is an
