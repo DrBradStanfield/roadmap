@@ -249,14 +249,23 @@ const CORE_LOOSE_INDEX: ReadonlyMap<string, MetricType | null> = (() => {
 })();
 
 /**
+ * A name the loose pass never reads: a ratio ("Chol/HDL", "Cholesterol: HDL";
+ * a colon only ends a label like "HbA1c:"), or "Cr" however punctuated, which
+ * may be chromium and keeps its own guard (US-12 AC15).
+ */
+function notLoose(name: string): boolean {
+  return name.includes('/') || /:\s*\S/.test(name.trim()) || looseFold(name) === 'cr';
+}
+
+/**
  * The core metric a printed name is, or null: exact after folding, never a
  * substring. A name the exact fold and the catalogue both miss is tried once
- * more without its punctuation ("LDL - Cholesterol"), unless it holds a "/":
- * "Chol/HDL ratio" is a ratio, never HDL (US-66 AC4).
+ * more without its punctuation ("LDL - Cholesterol"), unless `notLoose`
+ * keeps it apart (US-66 AC4).
  */
 export function resolveCoreMetricName(name: string): MetricType | null {
   const exact = CORE_NAME_INDEX.get(foldName(name));
-  if (exact || name.includes('/') || resolveLabCatalogEntry(name)) return exact ?? null;
+  if (exact || notLoose(name) || resolveLabCatalogEntry(name)) return exact ?? null;
   return CORE_LOOSE_INDEX.get(looseFold(name)) ?? null;
 }
 

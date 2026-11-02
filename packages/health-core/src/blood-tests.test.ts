@@ -307,7 +307,7 @@ describe('US-66 AC4: one resolver, punctuation forgiven after the exact names', 
     expect(bloodTestKeyOf(name)).toBe(key);
   });
 
-  it.each(['Non-HDL Cholesterol', 'Chol/HDL ratio', 'Cholesterol/HDL', 'TC/HDL', 'LDL/HDL', 'HDL/LDL ratio', 'Weight', 'Systolic BP'])(
+  it.each(['Non-HDL Cholesterol', 'Chol/HDL ratio', 'Cholesterol/HDL', 'TC/HDL', 'LDL/HDL', 'HDL/LDL ratio', 'Cholesterol:HDL', 'Cholesterol: HDL', 'HDL:Cholesterol', 'Cr:', 'Cr -', '(Cr)', 'Cr,', 'Weight', 'Systolic BP'])(
     '"%s" is no core blood test', (name) => {
       expect(bloodTestKeyOf(name)).toBeNull();
     },
