@@ -37,9 +37,9 @@ const FILE_DATES_SHAPE = 'fileDates: [{ "file": "<name as listed>", "date": "YYY
 
 /**
  * The reasons tools/list names. The extraction stops (`too_long`, `refused`,
- * US-15 AC34) have sentences below but are not named there: the tool text is
- * frozen while the MCP 1.0.2 submission is in review (2026-10-19).
- * TODO(after the 1.0.2 verdict): add `too_long` and `refused` to this list,
+ * US-15 AC34) have sentences below but are not named there: the tool text was
+ * frozen for OpenAI's MCP 1.0.2 review (2026-10-19), which ended 2026-10-29.
+ * TODO (unblocked since that verdict): add `too_long` and `refused` to this list,
  * drop `| ExtractionStopCode` below, and point the AC13 test in
  * mcp-tools.test.ts back at this list alone (then re-take the pins in
  * app/lib/mcp-freeze.test.ts, since the published `reason` text moves).

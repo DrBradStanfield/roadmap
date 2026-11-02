@@ -20,12 +20,6 @@
  * `client_id_metadata_document_supported` and `"none"` in
  * `token_endpoint_auth_methods_supported`, or Claude silently drops to DCR.
  *
- * A third, unrelated document rides here because it must also sit at the host
- * root: `/.well-known/openai-apps-challenge`, the token OpenAI fetches to prove
- * we own `mcp.drstanfield.com` (docs/chatgpt-app-listing.md). It answers from
- * its own secret, NOT from `isMcpEnabled()`, so domain ownership can be proved
- * before the connector itself is switched on.
- *
  * Both documents advertise `scopes_supported`, because OpenAI's plugin
  * dashboard offers no OAuth without it (US-32 AC43). The list is the one the
  * token response already states (`MCP_SCOPES`). Nothing enforces it: the
@@ -41,17 +35,6 @@ const HEADERS = { 'Cache-Control': 'public, max-age=3600' };
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const path = (params['*'] ?? '').replace(/^\/+|\/+$/g, '');
-
-  // "must return only that plugin's verification token. Do not return JSON, a
-  // list of tokens, or multiple tokens" — so: one trimmed line, text/plain, and
-  // no caching, because rotating the secret has to take effect on the next GET.
-  if (path === 'openai-apps-challenge') {
-    const token = (process.env.OPENAI_APPS_CHALLENGE ?? '').trim();
-    if (!token) return new Response('Not found', { status: 404 });
-    return new Response(token, {
-      headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' },
-    });
-  }
 
   if (!isMcpEnabled()) return new Response('Not found', { status: 404 });
 
