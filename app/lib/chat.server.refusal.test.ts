@@ -107,6 +107,7 @@ describe('US-67 AC2: the server asks about a value that looks like the wrong uni
     expect(result.content).toBe('Did you mean 3.4 mmol/L?');
     expect(result).not.toHaveProperty('proposedEdits');
     expect(result).not.toHaveProperty('roadmapRun');
+    expect(result.toolRound).toBe(true);
   });
 
   it('US-67 AC2: LDL 130 mg/dL goes through in one call', async () => {

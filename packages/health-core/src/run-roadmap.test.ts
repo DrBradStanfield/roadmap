@@ -992,7 +992,7 @@ describe('US-67 AC2: a value that looks like the wrong unit is asked about, not 
     const second = send.mock.calls[1][0];
     expect(second.tool_choice).toEqual({ type: 'none' });
     expect(second.messages.at(-1).content).toEqual([{ type: 'tool_result', tool_use_id: 'v', content: UNIT_SUSPECT }]);
-    expect(UNIT_SUSPECT).toBe('Not saved: this value looks like it may be in a different unit. Ask the user to confirm the value and its unit before proposing it again.');
+    expect(UNIT_SUSPECT).toBe('Not saved: this value looks like it may be in a different unit. Ask the user to confirm the value and its unit. If they confirm it as stated, tell them to enter it in their record themselves, and do not propose it again.');
     expect(turn.final).toBe(asked);
     expect(turn.proposedEdits).toEqual([]);
     expect(turn.counts).toBeNull();

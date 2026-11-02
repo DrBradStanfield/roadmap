@@ -787,8 +787,9 @@ async function chatAction(request: Request, app: boolean) {
         messageChars: message.length,
         // Ms from the LLM call to the first answer text; null when not streamed or no text came.
         firstTokenMs,
-        // US-15 AC33: the turn ran run_roadmap, so llmMs and the tokens cover two calls. A flag only.
-        roadmapRun: !!completion.roadmapRun,
+        // US-15 AC33, US-67 AC2: the turn made a second call (run_roadmap, or a value asked about
+        // for its unit), so llmMs and the tokens cover two calls. A flag only.
+        roadmapRun: !!completion.roadmapRun || completion.toolRound === true,
       }));
 
       // The streamed path sends this as its `done` line.

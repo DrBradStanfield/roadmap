@@ -467,6 +467,8 @@ export interface ChatCompletionResult {
   proposedEdits?: ProposedEdit[];
   /** Set when the turn ran run_roadmap (US-15 AC33): how many stated values it used and rejected. Counts only, never a value. */
   roadmapRun?: RoadmapRoundCounts;
+  /** Set when the turn made a second call (a run_roadmap round, or a value asked about for its unit, US-67 AC2). */
+  toolRound?: true;
   /** A subscription change the model proposed (US-59); the route turns it into a confirm card or drops it. */
   subscriptionProposal?: SubscriptionProposal;
 }
@@ -548,8 +550,10 @@ export async function getChatCompletion(
   };
   // Every call's usage, and the round's counts, survive a failed second call (S4).
   let usage: AnthropicUsage = { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 };
-  let roadmapRun: { roadmapRun?: RoadmapRoundCounts } = {};
+  let roadmapRun: { roadmapRun?: RoadmapRoundCounts; toolRound?: true } = {};
+  let calls = 0;
   const send = async (fields: { messages: ChatTurnMessage[]; tool_choice?: { type: 'none' } }) => {
+    if (++calls > 1) roadmapRun = { ...roadmapRun, toolRound: true };
     const reply = onEvent ? await streamAnthropicWithUsage({ ...body, ...fields }, onEvent) : await callAnthropicWithUsage({ ...body, ...fields });
     usage = addUsage(usage, reply.usage);
     return reply;

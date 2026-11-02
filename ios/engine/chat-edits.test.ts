@@ -311,3 +311,54 @@ describe('US-67 AC3: a Save checks the record still holds what the banner named'
     expect(applyEdit(held, review([field('ldlC', 3.4, 'mmol/L')]), NOW).ok).toBe(true);
   });
 });
+
+// US-65 AC2 inside the chat's edits (review R1): a row this build cannot read is
+// named, never shown or compared, and never sinks the reply.
+describe('US-67 AC3: rows this app cannot read (US-65)', () => {
+  const hidden = (file: RoadmapFile, metricType: string, day = DAY): RoadmapFile => ({
+    ...file,
+    measurements: [...file.measurements, { id: `hid-${metricType}`, metricType, value: 'synthetic' as unknown as number, recordedAt: day, createdAt: NOW, status: 'active', source: 'manual' } as RoadmapFile['measurements'][number]],
+  });
+
+  it('US-67 AC3: a hidden LDL on the proposed day is named, not shown, and the Save corrects it', () => {
+    const file = hidden(metric(), 'ldl');
+    const shown = preview(file, [field('ldlC', 3.4, 'mmol/L')]);
+    expect(shown.review).toEqual({
+      lines: [{ text: 'LDL Cholesterol 3.4 mmol/L on 1 Oct', replaces: 'a value this app cannot read' }],
+      refusal: null, seen: [['ldl:2026-10-01', 'hid-ldl']],
+    });
+    const after = applyEdit(file, { kind: 'chatEdits', part: 'review', edits: [field('ldlC', 3.4, 'mmol/L')], today: TODAY, seen: shown.review!.seen }, NOW);
+    expect(after.ok).toBe(true);
+    const rows = (after as { file: RoadmapFile }).file.measurements;
+    expect(rows.find((r) => r.id === 'hid-ldl')!.status).toBe('entered-in-error');
+    expect(rows.find((r) => r.correctsId === 'hid-ldl')).toMatchObject({ value: 3.4, status: 'active' });
+  });
+
+  it('US-67 AC3: a hidden blood pressure half is named for the pair', () => {
+    const shown = preview(hidden(metric(), 'systolic_bp'), [field('systolicBp', 128, 'mmHg'), field('diastolicBp', 82, 'mmHg')]);
+    expect(shown.review!.lines).toEqual([{ text: 'Blood pressure 128/82 mmHg on 1 Oct', replaces: 'a value this app cannot read' }]);
+  });
+
+  it('US-67 AC3: a hidden row on another test is not shown', () => {
+    const shown = preview(hidden(metric(), 'weight'), [field('ldlC', 3.4, 'mmol/L')]);
+    expect(shown.review!.lines).toEqual([{ text: 'LDL Cholesterol 3.4 mmol/L on 1 Oct', replaces: null }]);
+    expect(JSON.stringify(shown)).not.toContain('synthetic');
+  });
+
+  it('US-67 AC3: the medications still preview and save beside a review part that refuses', () => {
+    const file = hidden(metric(), 'ldl');
+    const edits = [field('systolicBp', 128, 'mmHg'), med('statin', 'atorvastatin', 20)];
+    const shown = preview(file, edits);
+    expect(shown.review!.refusal).toMatch(/both numbers/);
+    expect(shown.medications!.lines).toEqual([{ text: 'Statin: Atorvastatin 20 mg' }]);
+    expect(med$(saved(file, 'medications', edits), 'statin')).toMatchObject({ drugName: 'atorvastatin', doseValue: 20 });
+  });
+
+  it('US-67 AC4: a medication row this app cannot read gives an Undo of the unanswered value, which saves', () => {
+    const file = { ...metric(), medications: [{ id: 'm1', medicationKey: 'statin', drugName: 42 as unknown as string, doseValue: null, doseUnit: null, updatedAt: NOW, lamport: 0 }] } as RoadmapFile;
+    const shown = preview(file, [med('statin', 'atorvastatin', 20)]);
+    expect(shown.medications!.undo).toEqual({ kind: 'chatUndo', medications: [{ medicationKey: 'statin', drugName: 'none', doseValue: null, doseUnit: null }] });
+    const after = saved(file, 'medications', [med('statin', 'atorvastatin', 20)]);
+    expect(applyEdit(after, shown.medications!.undo as Parameters<typeof applyEdit>[1], NOW).ok).toBe(true);
+  });
+});

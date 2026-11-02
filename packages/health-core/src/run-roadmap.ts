@@ -387,8 +387,9 @@ const STUBS = {
 };
 const PROFILE_STUB = 'Shown to the user to confirm; nothing is saved until they press Save.';
 const NOT_RUN = 'Not run: one run_roadmap per turn; use the first result.';
-/** The tool_result for a proposed value that looks like the wrong unit (US-67 AC2, US-16). */
-export const UNIT_SUSPECT = 'Not saved: this value looks like it may be in a different unit. Ask the user to confirm the value and its unit before proposing it again.';
+/** The tool_result for a proposed value that looks like the wrong unit (US-67 AC2, US-16). The check is the same
+ *  on every turn, so a value the user confirms (a real LDL of 0.25 mmol/L) goes to the user to enter, never a loop. */
+export const UNIT_SUSPECT = 'Not saved: this value looks like it may be in a different unit. Ask the user to confirm the value and its unit. If they confirm it as stated, tell them to enter it in their record themselves, and do not propose it again.';
 
 /** A propose_field_edit whose value reads as a unit swap (`askUnit`, run_roadmap's own test), e.g. LDL 3.4 mg/dL:
  *  it is answered with UNIT_SUSPECT and never reaches the client. */
