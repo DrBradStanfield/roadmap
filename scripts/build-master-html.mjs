@@ -413,8 +413,8 @@ const SENTENCE_END = /[.!?](?:\*\*?|\))?\s+/g;
 // Pointers to the dropped sections, and unlinked product sentences, go too, so the
 // sentences left still read: "(see the Current view above)", "; Brad's view is in the Current view.",
 // a whole sentence naming it or "Brad's view above", and "...exclude vitamin E from MicroVitamin, his ... formulation."
-// A "Disclosure:" sentence stays: it tells the reader about Brad's interest. A sentence saying a MicroVitamin or Sleep
-// product is "third-party tested" goes, disclosure or not: that is a US-only claim (docs/products.md; Brad 2026-11-02).
+// A "Disclosure:" sentence stays: it tells the reader about Brad's interest. A sentence naming MicroVitamin or Sleep by
+// Dr Brad and saying "third-party tested" goes, disclosure or not: a US-only claim (docs/products.md; Brad 2026-11-02).
 const VIEW = String.raw`Brad['\u2019]s (?:own )?view`;
 const POINTER_PAREN = new RegExp(String.raw`\s*\((?:see\s+)?(?:the\s+)?(?:Current view|${VIEW})(?:\s+(?:above|below))?\)`, 'g');
 // Inside a sentence a "." is fine when no space follows it (27.5 mg, 1.004).
@@ -422,10 +422,10 @@ const IN = String.raw`(?:[^.!?]|[.!?](?!\s|$))*`;
 const POINTER_CLAUSE = new RegExp(String.raw`;\s*(?:[^;.!?]|[.!?](?!\s|$))*\bCurrent view\b(?:[^;.!?]|[.!?](?!\s|$))*([.!?])(?=\s|$)`, 'g');
 // The boundary reads the previous sentence's end by lookbehind, never consuming it, so the next sentence can match too.
 const DROP_SENTENCE = new RegExp(String.raw`(?:^|(?<=[.!?])\s+(?!\s))(?!Disclosure:)${IN}(?:\b(?:Current view|MicroVitamin)\b|${VIEW} (?:above|below)\b)${IN}[.!?](?=\s|$)`, 'g');
-const US_ONLY = new RegExp(String.raw`(?:^|(?<=[.!?])\s+(?!\s))${IN}\bthird-party tested\b${IN}[.!?](?=\s|$)`, 'gi');
+const US_ONLY = new RegExp(String.raw`(?:^|(?<=[.!?])\s+(?!\s))${IN}\bthird[-\s]party\s+tested\b${IN}[.!?](?=\s|$)`, 'gi');
 const dropPointers = (text) =>
   text.replace(POINTER_PAREN, '').replace(POINTER_CLAUSE, '$1').replace(DROP_SENTENCE, '')
-    .replace(US_ONLY, (m) => (/\b(?:MicroVitamin|Sleep)\b/.test(m) ? '' : m));
+    .replace(US_ONLY, (m) => (/\bMicroVitamin\b|\bSleep by Dr Brad\b/.test(m) ? '' : m));
 
 // A caveat that limits the evidence for a claim survives the product drop when it names no product and does not lean
 // on the dropped sentence before it: "AREDS2 was not a prevention trial in people without AMD." stays;
