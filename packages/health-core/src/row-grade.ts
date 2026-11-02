@@ -26,7 +26,7 @@ import {
 } from './units';
 import { getLipidStatus } from './calculations';
 import { METRIC_TO_FIELD } from './mappings';
-import { certainValue, isLimitField, limitEnds, limitLabelValue, limitRepresentative, type Comparator } from './lab-limits';
+import { certainValue, isLimitField, limitLabelValue, limitRepresentative, linesReached, type Comparator } from './lab-limits';
 
 export type GradeStatus = 'ok' | 'warn' | 'bad' | null;
 
@@ -106,14 +106,16 @@ function waistStatus(siCm: number | null | undefined, heightCm?: number): GradeS
   if (siCm <= waistLines(heightCm)[1]) return 'warn';
   return 'bad';
 }
-/** Neutral with no systolic target: there is no plan (US-06 AC5). A pair's grade is the worse
- *  of its halves', and each half's only worsens as it rises. */
+/** A blood pressure half's lines: the systolic target and 10 above it, diastolic 80 and 85. A half's
+ *  grade is how many it has reached (ok, warn, bad), and the pair's the worse half's. */
+const bpLines = (sysTarget: number) => ({ sys: [sysTarget, sysTarget + 10], dia: [80, 85] });
+const BP_GRADES = ['ok', 'warn', 'bad'] as const;
+
+/** Neutral with no systolic target: there is no plan (US-06 AC5). */
 export function bpStatus(sys: number | null | undefined, dia: number | null | undefined, sysTarget: number | undefined): GradeStatus {
   if (sys == null || dia == null || Number.isNaN(sys) || Number.isNaN(dia) || sysTarget === undefined) return null;
-  const diaTarget = 80;
-  if (sys < sysTarget && dia < diaTarget) return 'ok';
-  if (sys < sysTarget + 10 && dia < diaTarget + 5) return 'warn';
-  return 'bad';
+  const lines = bpLines(sysTarget);
+  return BP_GRADES[Math.max(linesReached(lines.sys, undefined, sys)[0], linesReached(lines.dia, undefined, dia)[0])];
 }
 
 /** Whom and against what plan a row's value is graded. */
@@ -182,14 +184,18 @@ export function valueStatus(metric: MetricType, si: number, { grading, plan }: G
 
 /** A pressure's grade against the plan's systolic target; none without a plan or for a known minor.
  *  With a half printed as a limit, graded only when the grade is the same for every pair both
- *  bounds allow (US-12 AC21): the grade only worsens as either half rises, so the lowest and the
- *  highest pair allowed decide it. ">160/<90" is certainly high, "<125/78" open. */
+ *  bounds allow (US-12 AC21): the pair's grade is the worse half's, so the fewest and the most
+ *  lines each half can have reached decide it, exactly. ">160/<90" is certainly high, "<125/78"
+ *  and "<120.00001/70" open, "<120/70" on target. */
 export function pressureStatus(r: PressureReading, { grading, plan }: GradeContext): GradeStatus {
   const sysTarget = plan && grading ? bpTargetFor(plan.age) : undefined;
-  const [sysLow, sysHigh] = limitEnds(r.comparator, r.value);
-  const [diaLow, diaHigh] = r.dia ? limitEnds(r.dia.comparator, r.dia.value) : [undefined, undefined];
-  const lowest = bpStatus(sysLow, diaLow, sysTarget);
-  return lowest === bpStatus(sysHigh, diaHigh, sysTarget) ? lowest : null;
+  // No target, a missing half or not a number: no grade, as bpStatus says.
+  if (!r.dia || bpStatus(r.value, r.dia.value, sysTarget) === null) return null;
+  const lines = bpLines(sysTarget!);
+  const [sysFewest, sysMost] = linesReached(lines.sys, r.comparator, r.value);
+  const [diaFewest, diaMost] = linesReached(lines.dia, r.dia.comparator, r.dia.value);
+  const fewest = Math.max(sysFewest, diaFewest);
+  return fewest === Math.max(sysMost, diaMost) ? BP_GRADES[fewest] : null;
 }
 
 /** The line each metric's grade is read against, in the words its target prints. */

@@ -211,19 +211,23 @@ export function certainValue(lines: readonly number[], comparator: Comparator | 
 }
 
 /**
- * The two ends of what a value printed as a limit allows, [lowest, highest]:
- * a hair inside a strict bound, the far end open. An exact value is both.
- * For a grade that only worsens as a value rises (a blood pressure's), the
- * grade at both ends is the grade of everything between: when they agree,
- * the grade is certain (US-12 AC21).
+ * How many of a grade's lines the values a reading allows have reached
+ * (a line is reached at or above it): [fewest, most], worked out exactly from
+ * which side of each line the bound lies and whether it is strict, never by
+ * nudging a number. An exact value reaches the lines at or below it; "< b"
+ * reaches at most those strictly below b, "<= b" those at or below b; "> b"
+ * and ">= b" reach at least those at or below b, and every line at most. For
+ * a grade that is the count of lines reached (a blood pressure half's), the
+ * grade is certain when the two agree (US-12 AC21).
  */
-export function limitEnds(comparator: Comparator | undefined, bound: number): [number, number] {
+export function linesReached(lines: readonly number[], comparator: Comparator | undefined, bound: number): [number, number] {
+  const below = lines.filter((line) => line < bound).length;
+  const atOrBelow = lines.filter((line) => line <= bound).length;
   switch (comparator) {
-    case '<': return [-Infinity, bound - insideStep(bound)];
-    case '<=': return [-Infinity, bound];
-    case '>': return [bound + insideStep(bound), Infinity];
-    case '>=': return [bound, Infinity];
-    default: return [bound, bound];
+    case '<': return [0, below];
+    case '<=': return [0, atOrBelow];
+    case '>': case '>=': return [atOrBelow, lines.length];
+    default: return [atOrBelow, atOrBelow];
   }
 }
 

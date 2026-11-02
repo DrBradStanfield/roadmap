@@ -142,6 +142,56 @@ describe('vitals printed as a limit: graded only when certain (US-12 AC21)', () 
     expect(bp({ value: 125, comparator: '<', dia: { value: 78 } }, { grading: {}, plan: null })).toEqual({ grade: null, note: false });
   });
 
+  // Codex R1 on PR 639: a fractional bound just past a line once read as certain (an epsilon nudge
+  // crossed the line). Exact strict-vs-inclusive reasoning: each case's expected grade is what every
+  // value the limit allows gets, checked by the samples below.
+  it.each([
+    // [label, reading, expected]: an adult of 50, target 120/80; 120 and 80 are amber, 130 and 85 red.
+    ['"<120.00001/70": 120 itself is amber', { value: 120.00001, comparator: '<', dia: { value: 70 } }, null],
+    ['"<119.99999/70"', { value: 119.99999, comparator: '<', dia: { value: 70 } }, 'ok'],
+    ['"<120/70"', { value: 120, comparator: '<', dia: { value: 70 } }, 'ok'],
+    ['"<=120/70": 120 itself is amber', { value: 120, comparator: '<=', dia: { value: 70 } }, null],
+    ['"<=119.99999/70"', { value: 119.99999, comparator: '<=', dia: { value: 70 } }, 'ok'],
+    ['">129.99999/70": 129.999995 is amber, 130 red', { value: 129.99999, comparator: '>', dia: { value: 70 } }, null],
+    ['">=130/70"', { value: 130, comparator: '>=', dia: { value: 70 } }, 'bad'],
+    ['">130.00001/70"', { value: 130.00001, comparator: '>', dia: { value: 70 } }, 'bad'],
+    ['"110/<80.00001": 80 itself is amber', { value: 110, dia: { value: 80.00001, comparator: '<' } }, null],
+    ['"110/<80"', { value: 110, dia: { value: 80, comparator: '<' } }, 'ok'],
+    ['"110/<=80"', { value: 110, dia: { value: 80, comparator: '<=' } }, null],
+    ['"110/>84.99999": 84.999995 is amber, 85 red', { value: 110, dia: { value: 84.99999, comparator: '>' } }, null],
+    ['"110/>=85"', { value: 110, dia: { value: 85, comparator: '>=' } }, 'bad'],
+  ] as const)('blood pressure on a line: %s', (_label, reading, expected) => {
+    expect(pressureStatus(reading as PressureReading, ctx)).toBe(expected);
+    // The samples: every value the limit allows near its bound, exact, grades as expected when certain.
+    if (expected !== null) {
+      const r = reading as PressureReading;
+      const near = (v: number, c?: string) => !c ? [v] : c === '<' ? [v - 1e-9, v - 0.5] : c === '<=' ? [v, v - 0.5] : c === '>' ? [v + 1e-9, v + 0.5] : [v, v + 0.5];
+      for (const sys of near(r.value, r.comparator)) for (const dia of near(r.dia!.value, r.dia!.comparator)) {
+        expect(bpStatus(sys, dia, 120), `${sys}/${dia}`).toBe(expected);
+      }
+    }
+  });
+
+  it.each([
+    // Weight, ideal 70: ok from 65 to 72 inclusive, amber to 75 inclusive and below 65, red past 75.
+    ['weight "<65.00001": 65 itself is on target', 'weight', 65.00001, '<', null],
+    ['weight "<65"', 'weight', 65, '<', 'warn'],
+    ['weight "<=65": 65 itself is on target', 'weight', 65, '<=', null],
+    ['weight ">74.99999": up to 75 amber, past it red', 'weight', 74.99999, '>', null],
+    ['weight ">75"', 'weight', 75, '>', 'bad'],
+    ['weight ">=75": 75 itself is amber', 'weight', 75, '>=', null],
+    ['weight ">=75.00001"', 'weight', 75.00001, '>=', 'bad'],
+    // Waist, 180 cm: healthy below 89.1 cm, amber to 98 inclusive, red past it.
+    ['waist "<89.10001": 89.1 itself is elevated', 'waist', 89.10001, '<', null],
+    ['waist "<89.1"', 'waist', 89.1, '<', 'ok'],
+    ['waist "<=89.1": 89.1 itself is elevated', 'waist', 89.1, '<=', null],
+    ['waist ">97.99999": up to 98 amber, past it red', 'waist', 97.99999, '>', null],
+    ['waist ">98"', 'waist', 98, '>', 'bad'],
+    ['waist ">=98": 98 itself is amber', 'waist', 98, '>=', null],
+  ] as const)('%s', (_label, metric, bound, comparator, expected) => {
+    expect(valueStatus(metric, bound, ctx, comparator)).toBe(expected);
+  });
+
   it('weight: ">90" is certainly far over the ideal (70 kg), so red; ">70" could be on target or over, so none', () => {
     expect(valueStatus('weight', 90, ctx, '>')).toBe('bad');
     expect(valueStatus('weight', 70, ctx, '>')).toBeNull();
