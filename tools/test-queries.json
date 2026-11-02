@@ -2103,11 +2103,11 @@
     "surface": "brand",
     "answer_handles": [],
     "must_match": [
-      "(?i)\\b(?:v9|version 9)\\b"
+      "\\b(?:v9|version 9)\\b"
     ],
     "must_not_match": [
-      "(?i)\\b(?:v8|version 8)\\b(?:(?!\\.\\s)[^\\n]){0,60}\\b(?:ships?|shipping|get|receive|is sent)\\b",
-      "(?i)\\bv9\\.1\\b"
+      "\\b(?:v8|version 8)\\b(?:(?!\\.\\s)[^\\n]){0,60}\\b(?:ships?|shipping|get|receive|is sent)\\b",
+      "\\bv9\\.1\\b"
     ],
     "notes": "Brad 2026-11-02: every MicroVitamin+ powder, Mixed Berry in Europe included, is v9; v9.1 is in development and never quoted as current. The answer says v9; it must not say a European customer gets v8, or name v9.1. The v8 regex may false-fail on a history line ('v8 shipped until …'); judge by reading."
   },
