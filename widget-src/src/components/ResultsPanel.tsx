@@ -672,9 +672,8 @@ export function ResultsPanel({ results, isValid, hasUnsavedLongitudinal, onSaveL
     <div className="health-results-panel">
       <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={planHeaderMeta} actions={planHeaderMeta !== null} />
       <div className="hr-col-body">
-        {/* Quick Stats: the snapshot tiles lead the plan, headed as the suggestion groups are (US-62 AC16) */}
+        {/* Quick Stats: the snapshot tiles lead the plan */}
         <section className="quick-stats">
-          {tiles.length > 0 && <h4 className="suggestions-group-title">Your health snapshots</h4>}
           <div className="stats-grid">
             {tiles.map((tile) => (
               <StatCard
