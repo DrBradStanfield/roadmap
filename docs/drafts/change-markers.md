@@ -44,6 +44,7 @@ Every question below is answered; this list overrides anything else in the draft
   recorded (US-06 AC4).
 - **F9** Remove hides the words from every reader; they stay in the file until "Delete all
   my data".
+- **Phase 0 result (PR #575):** the medication counter works; eight weeks of zeros means almost nobody reached a marker. A view needs a desktop visitor (the web's phone layout has shown no markers since US-62), a recent medication change, a mapped value and a click on its history. US-68 therefore needs markers on the web's phone layout and a `history_opened` denominator.
 - **F10** set aside for now. The usage events are still built; the success bar is decided
   later.
 - **F11** copy the web: a medication edit saves at once with Undo, values and height wait for
