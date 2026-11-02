@@ -586,12 +586,18 @@ final class RecordStore {
     // MARK: Chat edits (US-67)
 
     /// The record a chat question was asked on, or a chat banner made on (US-67 AC5): the
-    /// cloud erase it showed, its eraseEpoch and this phone's erase count. Any of them moving
-    /// is an erase, here or by sync, and what was made before it writes nothing (US-16 AC2a).
+    /// cloud erase it showed, its eraseEpoch and this phone's erase count. An erase, here or
+    /// by sync, moves one of them, and what was made before it writes nothing (US-16 AC2a).
     struct ChatMark: Equatable, Sendable {
         let erase: String?
         let epoch: Int?
         let erasures: Int
+
+        /// Whether `now` is the same record, never erased since. Connecting or disconnecting a
+        /// cloud is not an erase: the cloud erase is compared only while both sides have one.
+        func holds(at now: ChatMark) -> Bool {
+            epoch == now.epoch && erasures == now.erasures && (erase == nil || now.erase == nil || erase == now.erase)
+        }
     }
 
     var chatMark: ChatMark { ChatMark(erase: cloudErase, epoch: myData?.eraseEpoch, erasures: erasures) }
@@ -608,20 +614,26 @@ final class RecordStore {
         let mark: ChatMark
     }
 
-    /// Nil when the record was erased since the question was asked (`asked`), or the engine
-    /// could not read the edits: then nothing is written or shown.
-    func takeChatEdits(_ edits: OpaqueJSON, today: String, asked: ChatMark) async -> ChatEditsTaken? {
-        let taken = await chain { () -> ChatEditsTaken? in
-            guard self.chatMark == asked,
-                  let preview = try? await self.engine.chatEdits(recordJSON: self.recordJSON, edits: edits, now: .now, deviceId: self.deviceId, today: today, units: self.unitChoices.json)
-            else { return nil }
-            guard preview.medications != nil else { return ChatEditsTaken(preview: preview, medications: nil, changed: false, mark: asked) }
+    /// What became of a reply's edits: nothing is written or shown when the record was
+    /// erased since the question was asked (`moved`) or the engine could not read them.
+    enum ChatEditsOutcome: Sendable {
+        case taken(ChatEditsTaken)
+        case moved
+        case unreadable
+    }
+
+    func takeChatEdits(_ edits: OpaqueJSON, today: String, asked: ChatMark) async -> ChatEditsOutcome {
+        let outcome = await chain { () -> ChatEditsOutcome in
+            guard asked.holds(at: self.chatMark) else { return .moved }
+            guard let preview = try? await self.engine.chatEdits(recordJSON: self.recordJSON, edits: edits, now: .now, deviceId: self.deviceId, today: today, units: self.unitChoices.json)
+            else { return .unreadable }
+            guard preview.medications != nil else { return .taken(ChatEditsTaken(preview: preview, medications: nil, changed: false, mark: self.chatMark)) }
             let before = self.recordJSON
             let result = await self.applyInTurn(.chatEdits(part: .medications, edits: edits, today: today), as: self.screen)
-            return ChatEditsTaken(preview: preview, medications: result, changed: self.recordJSON != before, mark: self.chatMark)
+            return .taken(ChatEditsTaken(preview: preview, medications: result, changed: self.recordJSON != before, mark: self.chatMark))
         }.value
-        if taken?.changed == true { ownSaves += 1 }
-        return taken
+        if case .taken(let taken) = outcome, taken.changed { ownSaves += 1 }
+        return outcome
     }
 
     /// A chat banner's Save or Undo, refused when the record was erased since the banner was
@@ -629,7 +641,7 @@ final class RecordStore {
     /// alone cannot see it. `changed`: the record moved.
     func applyChatEdit(_ edit: RecordEdit, on mark: ChatMark) async -> (result: ApplyResult, changed: Bool) {
         let answer = await chain { () -> (ApplyResult, Bool) in
-            guard self.chatMark == mark else {
+            guard mark.holds(at: self.chatMark) else {
                 return (.refused(message: "Your data was deleted since the chat suggested this, so it was not saved.", existingId: nil), false)
             }
             let before = self.recordJSON

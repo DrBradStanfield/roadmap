@@ -30,6 +30,7 @@ final class ChatEditsTests: XCTestCase {
               globalThis.__sent = [];
               o.chatEditsJson = function (record, edits, now, device, today, units) {
                 var list = JSON.parse(edits);
+                if (list.some(function (x) { return x.boom; })) throw new Error('unreadable');
                 var meds = list.filter(function (x) { return x.kind === 'medication'; });
                 var rest = list.filter(function (x) { return x.kind !== 'medication'; });
                 return JSON.stringify({
@@ -226,6 +227,7 @@ final class ChatEditsTests: XCTestCase {
         XCTAssertNil(edits.saved)
         XCTAssertNil(edits.review)
         XCTAssertEqual(events, [])
+        XCTAssertEqual(edits.problem, "Not saved: your record changed since you asked.", "the reply's words are not left claiming a save (AC3)")
     }
 
     /// An erase from another device arrives as a record with a higher eraseEpoch, with no
@@ -293,5 +295,75 @@ final class ChatEditsTests: XCTestCase {
             let next = source.range(of: "\n    private func ", options: .regularExpression, range: body..<source.endIndex)?.lowerBound ?? source.endIndex
             XCTAssertTrue(source[body..<next].contains("edits.drop()"), "\(function) drops the banners")
         }
+    }
+
+    // MARK: Review fixes (R1, R3, R4)
+
+    /// R1, US-67 AC3: a preview the engine cannot make says so; nothing is written.
+    func testAPreviewTheEngineCannotMakeSaysNothingWasSaved_US67_AC3() async throws {
+        let (store, edits, engine) = try setUpEdits()
+        let before = store.recordJSON
+        await edits.take(try json(#"[{"kind":"medication","boom":true}]"#), asked: store.chatMark, today: today)
+        XCTAssertEqual(edits.problem, "These changes could not be shown, so nothing was saved.")
+        XCTAssertNil(edits.saved)
+        XCTAssertNil(edits.review)
+        XCTAssertEqual(store.recordJSON, before)
+        XCTAssertEqual(try sent(engine), [])
+        XCTAssertEqual(events, [])
+    }
+
+    /// R4, US-67 AC5: connecting or disconnecting a cloud is not an erase; another cloud erase,
+    /// a higher eraseEpoch or an erase on this phone is.
+    func testOnlyAnEraseMovesTheMark_US67_AC5() {
+        let phone = RecordStore.ChatMark(erase: nil, epoch: 0, erasures: 0)
+        let cloud = RecordStore.ChatMark(erase: "e1", epoch: 0, erasures: 0)
+        XCTAssertTrue(phone.holds(at: cloud), "a cloud connected")
+        XCTAssertTrue(cloud.holds(at: phone), "a cloud disconnected")
+        XCTAssertTrue(cloud.holds(at: cloud))
+        XCTAssertFalse(cloud.holds(at: RecordStore.ChatMark(erase: "e2", epoch: 0, erasures: 0)), "the cloud was erased")
+        XCTAssertFalse(phone.holds(at: RecordStore.ChatMark(erase: nil, epoch: 1, erasures: 0)), "an erase arrived by sync")
+        XCTAssertFalse(phone.holds(at: RecordStore.ChatMark(erase: nil, epoch: 0, erasures: 1)), "an erase on this phone")
+    }
+
+    /// R4, US-67 AC5: the view follows the record: an erase drops the banners, a mark that
+    /// only gained or lost a cloud keeps them.
+    func testFollowingTheRecordDropsBannersOnlyOnAnErase_US67_AC5() async throws {
+        let (store, edits, _) = try setUpEdits()
+        await edits.take(try json(medication), asked: store.chatMark, today: today)
+        await edits.take(try json(values), asked: store.chatMark, today: today)
+        let mark = store.chatMark
+        edits.follow(RecordStore.ChatMark(erase: "e1", epoch: mark.epoch, erasures: mark.erasures))
+        XCTAssertNotNil(edits.saved, "a cloud connect keeps the Undo")
+        XCTAssertNotNil(edits.review, "and the banner")
+        guard case .erased = await store.erasePhone(historyJSON: nil, keepChat: { _, _ in true }) else { return XCTFail("not erased") }
+        edits.follow(store.chatMark)
+        XCTAssertNil(edits.saved)
+        XCTAssertNil(edits.review)
+    }
+
+    /// R4, US-67 AC3: a medication change that was written always shows its Undo, even when
+    /// the conversation moved on (New chat) while it was written.
+    func testAWrittenMedicationChangeAlwaysGetsItsUndo_US67_AC3() async throws {
+        let (store, edits, engine) = try setUpEdits()
+        let both = #"[{"kind":"medication","medicationKey":"statin"},{"kind":"field","field":"weightKg","displayValue":80,"unitSystem":"si","date":null}]"#
+        let taking = Task { await edits.take(try! json(both), asked: store.chatMark, today: today) }
+        await Task.yield()
+        edits.drop() // New chat while the turn runs
+        await taking.value
+        XCTAssertEqual(try sent(engine).count, 1, "the medication change was written")
+        XCTAssertNotNil(edits.saved, "so its Undo shows")
+        XCTAssertNil(edits.review, "the values banner belonged to the old conversation")
+    }
+
+    /// R3, US-67 AC5: a reply whose turn ran just before an erase writes, then the erase takes
+    /// it: the screen says it was not saved, and no Undo is offered.
+    func testAnEraseRightAfterTheWriteLeavesNoUndo_US67_AC5() async throws {
+        let (store, edits, _) = try setUpEdits()
+        let taking = Task { await edits.take(try! json(medication), asked: store.chatMark, today: today) }
+        let erasing = Task { await store.erasePhone(historyJSON: nil, keepChat: { _, _ in true }) }
+        await taking.value
+        _ = await erasing.value
+        edits.follow(store.chatMark)
+        XCTAssertNil(edits.saved, "an Undo for an erased change is never offered")
     }
 }

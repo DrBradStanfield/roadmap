@@ -167,6 +167,8 @@ const BP_FIELDS = new Set(['systolicBp', 'diastolicBp']);
  * only what it does not already hold (the web's unsavedProfile). The first
  * refusal refuses the whole part. Lines are in the phone's units. `seen`:
  * what the record held for each line, so a Save can tell the record moved.
+ * Writes and `seen` read the raw record; the words read what this build can
+ * read (US-65), so a row it cannot read is named, never shown or compared.
  */
 function reviewPart(file: RoadmapFile, edits: ProposedEdit[], invalid: string[], today: string, now: string, choices: UnitChoices):
   { file: RoadmapFile; lines: ChatReviewLine[]; refusal: string | null; seen: Seen } {
@@ -206,6 +208,9 @@ function reviewPart(file: RoadmapFile, edits: ProposedEdit[], invalid: string[],
     }
   }
 
+  const view = readableView(file).file;
+  const readable = new Set(view.measurements.map((row) => row.id));
+  const shownRow = (row: { id: string; value: number } | undefined) => (row && readable.has(row.id) ? row : undefined);
   let next = file;
   for (const key of order) {
     const pair = pressures.get(key);
@@ -215,24 +220,26 @@ function reviewPart(file: RoadmapFile, edits: ProposedEdit[], invalid: string[],
         return refuse('A blood pressure needs both numbers from the same day.');
       }
       const held = (['systolic_bp', 'diastolic_bp'] as const).map((metric) => findActiveInSlot(file, 'measurement', metric, day));
-      const same = held[0]?.value === pair.systolic && held[1]?.value === pair.diastolic;
-      if (same) continue;
+      const [sys, dia] = held.map(shownRow);
+      const hidden = held.some((row) => row && !shownRow(row));
+      if (!hidden && sys?.value === pair.systolic && dia?.value === pair.diastolic) continue;
       const result = applyPressure(next, {
         kind: 'bloodPressure', systolic: pair.systolic, diastolic: pair.diastolic, day,
         replace: true, seenIds: held.flatMap((row) => (row ? [row.id] : [])),
       }, now);
       if (!result.ok) return refuse(result.message === PRESSURE_ORDER ? PRESSURE_ORDER : `Blood pressure on ${dayText(day, today)} could not be saved.`);
       next = result.file;
-      const was = held.some(Boolean) ? `${held[0] ? Math.round(held[0].value) : '–'}/${held[1] ? Math.round(held[1].value) : '–'} mmHg` : null;
+      const was = hidden ? UNREADABLE_HELD : held.some(Boolean) ? `${sys ? Math.round(sys.value) : '–'}/${dia ? Math.round(dia.value) : '–'} mmHg` : null;
       lines.push({ text: `Blood pressure ${Math.round(pair.systolic)}/${Math.round(pair.diastolic)} mmHg ${dayText(day, today)}`, replaces: was });
       seen.push([key, held.map((row) => row?.id ?? null)]);
       continue;
     }
     const { metric, day, valueSI } = values.get(key)!;
-    const shown = cellUnitFor(file, metric, choices);
+    const shown = cellUnitFor(view, metric, choices);
     const label = METRIC_LABELS[metric] ?? metric;
     const held = findActiveInSlot(file, 'measurement', metric, day);
-    if (held && Math.abs(held.value - valueSI) < 1e-9) continue;
+    const was = shownRow(held);
+    if (was && Math.abs(was.value - valueSI) < 1e-9) continue;
     const result = held
       ? correctValue(next, { id: held.id, newValue: valueSI, now })
       : appendMeasurement(next, { metricType: metric, value: valueSI, recordedAt: day, now, latestDay: today });
@@ -241,27 +248,29 @@ function reviewPart(file: RoadmapFile, edits: ProposedEdit[], invalid: string[],
     const unit = cellLabel(metric, shown);
     lines.push({
       text: `${label} ${cellText(metric, valueSI, shown)} ${unit} ${dayText(day, today)}`,
-      replaces: held ? `${cellText(metric, held.value, shown)} ${unit}` : null,
+      replaces: was ? `${cellText(metric, was.value, shown)} ${unit}` : held ? UNREADABLE_HELD : null,
     });
     seen.push([key, held?.id ?? null]);
   }
 
   if (profiles.length > 0) {
     const stated = profiles.reduce((a, e) => ({ kind: 'profile', sex: e.sex ?? a.sex, heightCm: e.heightCm ?? a.heightCm }));
-    const system = unitsOf(file);
-    const pending = unsavedProfile(stated, file.profile, system);
+    const system = unitsOf(view);
+    const pending = unsavedProfile(stated, view.profile, system);
     if (pending) {
       const outcome = updateProfile(next, { ...(pending.sex ? { sex: pending.sex } : null), ...(pending.heightCm !== null ? { heightCm: pending.heightCm } : null) }, now);
       if (outcome.status !== 'ok') return refuse('Your height is outside what the record accepts.');
       next = outcome.file ?? next;
-      const { sex, heightCm } = file.profile;
+      const { sex, heightCm } = view.profile;
+      const raw = file.profile as { sex?: unknown; heightCm?: unknown };
+      const held = (value: unknown, words: string | null) => words ?? (value != null ? UNREADABLE_HELD : null);
       if (pending.sex) {
-        lines.push({ text: `Sex: ${pending.sex}`, replaces: sex ?? null });
-        seen.push(['profile:sex', sex ?? null]);
+        lines.push({ text: `Sex: ${pending.sex}`, replaces: held(raw.sex, sex ?? null) });
+        seen.push(['profile:sex', raw.sex ?? null]);
       }
       if (pending.heightCm !== null) {
-        lines.push({ text: `Height ${heightText(pending.heightCm, system)}`, replaces: typeof heightCm === 'number' ? heightText(heightCm, system) : null });
-        seen.push(['profile:heightCm', heightCm ?? null]);
+        lines.push({ text: `Height ${heightText(pending.heightCm, system)}`, replaces: held(raw.heightCm, typeof heightCm === 'number' ? heightText(heightCm, system) : null) });
+        seen.push(['profile:heightCm', raw.heightCm ?? null]);
       }
     }
   }

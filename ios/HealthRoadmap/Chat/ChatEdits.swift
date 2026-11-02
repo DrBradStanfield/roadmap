@@ -48,9 +48,18 @@ final class ChatEdits {
     /// Dropped when the record was erased since (AC5). A new banner replaces an unanswered one.
     func take(_ edits: OpaqueJSON, asked: RecordStore.ChatMark, today: String = DayText.iso(.now)) async {
         let generation = generation
-        guard let taken = await store.takeChatEdits(edits, today: today, asked: asked),
-              generation == self.generation, store.chatMark == taken.mark else { return }
+        let taken: RecordStore.ChatEditsTaken
+        switch await store.takeChatEdits(edits, today: today, asked: asked) {
+        case .taken(let answer): taken = answer
+        // The reply's words may say it saved: the screen says it did not (US-67 AC3, AC5).
+        case .moved: return show(Self.moved)
+        case .unreadable: return show("These changes could not be shown, so nothing was saved.")
+        }
+        // Erased while the turn returned: whatever it wrote went with the erase.
+        guard taken.mark.holds(at: store.chatMark) else { return show(Self.moved) }
         var shown = false
+        // A medication change that was written always gets its Undo, even if the
+        // conversation moved on meanwhile: the two are never split.
         if let medications = taken.preview.medications, let result = taken.medications {
             switch result {
             case .saved:
@@ -63,7 +72,7 @@ final class ChatEdits {
             }
             shown = true
         }
-        if let preview = taken.preview.review {
+        if let preview = taken.preview.review, generation == self.generation {
             review = Review(lines: preview.lines, refusal: preview.refusal, edits: edits, today: today, seen: preview.seen, mark: taken.mark)
             shown = true
         }
@@ -86,6 +95,20 @@ final class ChatEdits {
         case .refused(let message, _):
             review?.refusal = message
         }
+    }
+
+    static let moved = "Not saved: your record changed since you asked."
+
+    private func show(_ words: String) {
+        saved = nil
+        problem = words
+    }
+
+    /// The record on screen moved (ChatView): a banner made before an erase goes, here or by
+    /// sync (US-67 AC5). Connecting or disconnecting a cloud is not an erase.
+    func follow(_ now: RecordStore.ChatMark) {
+        if let saved, !saved.mark.holds(at: now) { self.saved = nil }
+        if let review, !review.mark.holds(at: now) { self.review = nil }
     }
 
     /// Not now: the banner goes, and nothing is written.

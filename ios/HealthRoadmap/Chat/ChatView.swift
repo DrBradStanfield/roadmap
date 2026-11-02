@@ -56,7 +56,7 @@ struct ChatView: View {
             conversationId = UUID().uuidString.lowercased()
         }
         // An erase here or by sync drops an unanswered banner and the Undo (US-67 AC5).
-        .onChange(of: store.chatMark) { edits.drop() }
+        .onChange(of: store.chatMark) { edits.follow(store.chatMark) }
         .onAppear { edits.send = { [analytics] in analytics?.event($0) } }
     }
 
