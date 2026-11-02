@@ -519,7 +519,7 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(lpaHistory?.unit, "mg/L")
         XCTAssertEqual(lpaHistory?.rows.first?.value, "500")
         let record = try JSONSerialization.jsonObject(with: Data(store.recordJSON.utf8)) as? [String: Any]
-        let lpa = (record?["measurements"] as? [[String: Any]])?.first { $0["metricType"] as? String == "lpa" }
+        let lpa = (record?["labValues"] as? [[String: Any]])?.first { $0["core"] as? Bool == true && $0["metricName"] as? String == "lpa" }
         XCTAssertEqual(try XCTUnwrap(lpa?["value"] as? Double), 125, accuracy: 1e-9, "500 mg/L is 125 nmol/L")
         // Choosing it again writes nothing.
         let before = try Data(contentsOf: file)
@@ -542,7 +542,7 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(seen.lpaUnit, "mg/L")
         await XCTAssertSaved(await store.apply(.add(metric: "lpa", value: 500, day: "2026-10-20"), as: seen))
         let record = try JSONSerialization.jsonObject(with: Data(store.recordJSON.utf8)) as? [String: Any]
-        let lpa = (record?["measurements"] as? [[String: Any]])?.first { $0["metricType"] as? String == "lpa" }
+        let lpa = (record?["labValues"] as? [[String: Any]])?.first { $0["core"] as? Bool == true && $0["metricName"] as? String == "lpa" }
         XCTAssertEqual(try XCTUnwrap(lpa?["value"] as? Double), 125, accuracy: 1e-9, "500 mg/L is 125 nmol/L")
     }
 
