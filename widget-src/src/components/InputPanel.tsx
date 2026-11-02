@@ -78,6 +78,7 @@ import {
   dexaEligible,
   customSupplementAdd,
   customSupplementMatch,
+  LUNG_PACK_YEARS,
   type FormOption,
   type MedicationInputs,
 } from '@roadmap/health-core';
@@ -2067,7 +2068,7 @@ export function InputPanel({
                       <span className="field-hint">{SCREENING_TEXT.packYearsHint}</span>
                     </div>
 
-                    {scr.lungPackYears !== undefined && scr.lungPackYears >= 20 && (
+                    {scr.lungPackYears !== undefined && scr.lungPackYears >= LUNG_PACK_YEARS && (
                       <>
                         <div className="health-field">
                           <label htmlFor="lung-screening">{SCREENING_LABELS.lungScreening}</label>

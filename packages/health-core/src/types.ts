@@ -435,6 +435,10 @@ export const SCREENING_MIN_AGE: Record<string, { age: number; sex?: 'male' | 'fe
   dexa:       { age: 50 },
 };
 
+/** Lung screening's smoking history, USPSTF 2021: 20 pack-years or more. The plan, the
+ *  reminders and both forms read it, so they cannot disagree again (#285). */
+export const LUNG_PACK_YEARS = 20;
+
 export function isScreeningEligible(
   screeningType: string,
   userAge?: number,

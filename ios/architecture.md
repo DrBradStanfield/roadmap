@@ -1392,8 +1392,9 @@ updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.
 - **No title bar.** It cost a line for a word the tab bar already says. The "+" and Sync
   sit on the About you header, the unit switch on the Vitals header. With no bar, iOS 26's
   scroll edge effect left rows legible behind the clock (checked in the simulator), so a
-  zero-height top inset carries the list's background into the status bar. My plan keeps
-  its bar and `firmTopEdge`.
+  zero-height top inset carries the list's background into the status bar (`solidStatusBar`).
+  My plan lost its bar too (Brad 2026-11-03, US-25 AC26): "Your health snapshots" heads the
+  tiles in the sections' own `PlanHeading` and scrolls with them; same inset, plus `firmTopEdge`.
 - **Blood pressure is one engine edit.** `bloodPressure` (`engine/blood-pressure.ts`)
   runs health-core's `appendMeasurement` or `correctValue` for each half on one record and
   returns the first refusal, so both rows land or neither. Two Swift calls in a row would
