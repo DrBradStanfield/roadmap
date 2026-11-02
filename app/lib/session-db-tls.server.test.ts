@@ -80,8 +80,9 @@ describe('the real session store and PGSSLMODE (US-09 AC31 premise)', () => {
     expect(await firstPacketIsSslRequest('?sslmode=require')).toBe(false);
   });
 
-  it('asks for TLS when PGSSLMODE=require', async () => {
-    process.env.PGSSLMODE = 'require';
+  // require and no-verify take different branches in pg's PGSSLMODE reader.
+  it.each(['require', 'no-verify'])('asks for TLS when PGSSLMODE=%s', async (mode) => {
+    process.env.PGSSLMODE = mode;
     expect(await firstPacketIsSslRequest('')).toBe(true);
   });
 });
