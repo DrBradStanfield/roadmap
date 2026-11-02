@@ -1,6 +1,6 @@
-// Credential-name rule for tools/codex-review.mjs, in a module with no side
-// effects so tests and tools/codex-review-links.mjs use the REAL rule (the
-// wrapper runs on import). Moved verbatim from codex-review.mjs 2026-09-29.
+// Credential-name rule, in a module with no side effects so tools/codex-review.mjs, its tests,
+// tools/codex-review-links.mjs and tools/agent-channel.mjs use the REAL rule (the wrapper runs on
+// import). Moved verbatim from codex-review.mjs 2026-09-29. Credential shapes: tools/secret-rules.mjs.
 
 /**
  * Credential names (US-40 AC11): a path is a credential file when ANY

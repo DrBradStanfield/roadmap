@@ -141,6 +141,95 @@ describe('myData (AC5)', () => {
   });
 });
 
+// US-62 AC8/AC9, US-25 AC17: each row as the web's phone rows draw it (MyDataRows.tsx):
+// "target · date" under the name, and the latest value with the previous one in brackets.
+describe('myData rows: target and previous value (US-62 AC8, AC9)', () => {
+  const rows = (data: ReturnType<typeof myData>) => new Map([...data.vitals, ...data.bloodTests].map((row) => [row.metric, row]));
+  const adult = () => edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+    { kind: 'profile', sex: 'male', birthYear: 1970, height: 180 },
+    { kind: 'add', metric: 'ldl', value: 2.9, day: '2026-09-01' },
+    { kind: 'add', metric: 'ldl', value: 3.4, day: '2026-10-01' },
+    { kind: 'add', metric: 'hba1c', value: 38, day: '2026-10-01' },
+    { kind: 'bloodPressure', systolic: 128, diastolic: 82, day: '2026-09-02', replace: false },
+    { kind: 'bloodPressure', systolic: 121, diastolic: 79, day: '2026-10-02', replace: false });
+
+  it('gives the previous day\'s value beside the latest, in the row\'s units, and none with one reading', () => {
+    const shown = rows(myData(adult(), NOW));
+    expect(shown.get('ldl')).toMatchObject({ latest: { value: '3.4' }, previous: '2.9' });
+    expect(shown.get('hba1c')).toMatchObject({ latest: { value: '38' }, previous: null });
+    expect(shown.get('blood_pressure')).toMatchObject({ latest: { value: '121/79' }, previous: '128/82' });
+    expect(shown.get('weight')).toMatchObject({ latest: null, previous: null });
+    const us = rows(myData(adult(), NOW, { ldl: 'conventional' }));
+    expect(us.get('ldl')).toMatchObject({ unit: 'mg/dL', latest: { value: '131' }, previous: '112' });
+  });
+
+  it('prints health-core\'s rowTarget under each name, in the row\'s unit', () => {
+    const shown = rows(myData(adult(), NOW));
+    expect(shown.get('ldl')?.target).toBe('Optimal <1.4');
+    expect(shown.get('hba1c')?.target).toBe('Normal <39');
+    expect(shown.get('blood_pressure')?.target).toBe('Target <120/80');
+    expect(shown.get('weight')?.target).toBe('Target 78.0');
+    expect(shown.get('waist')?.target).toBe('Target <90');
+    expect(rows(myData(adult(), NOW, { ldl: 'conventional' })).get('ldl')?.target).toBe('Optimal <55');
+  });
+
+  it('prints no adult target for a known minor, and no plan target without a height (US-07 AC6, US-62 AC13)', () => {
+    const minor = rows(myData(edited(adult(), { kind: 'profile', birthYear: 2015 }), NOW));
+    expect(minor.get('ldl')?.target).toBeNull();
+    expect(minor.get('blood_pressure')?.target).toBeNull();
+    expect(minor.get('waist')?.target).toBe('Target <90');
+    const noHeight = rows(myData(edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'profile', sex: 'male', birthYear: 1970 }), NOW));
+    expect(noHeight.get('weight')?.target).toBeNull();
+    expect(noHeight.get('ldl')?.target).toBe('Optimal <1.4');
+  });
+
+  const idOf = (file: RoadmapFile, metric: string, day: string) =>
+    file.measurements.find((row) => row.metricType === metric && row.status === 'active' && row.recordedAt.startsWith(day))!.id;
+
+  it('takes a corrected earlier day\'s new value as the previous one, never the struck row (US-04)', () => {
+    const file = adult();
+    const fixed = edited(file, { kind: 'correct', id: idOf(file, 'ldl', '2026-09-01'), value: 3.0 });
+    expect(rows(myData(fixed, NOW)).get('ldl')).toMatchObject({ latest: { value: '3.4' }, previous: '3.0' });
+  });
+
+  it('reads a corrected latest day as its new value, with the day before as the previous one', () => {
+    const file = adult();
+    const fixed = edited(file, { kind: 'correct', id: idOf(file, 'ldl', '2026-10-01'), value: 3.5 });
+    expect(rows(myData(fixed, NOW)).get('ldl')).toMatchObject({ latest: { value: '3.5', day: '2026-10-01' }, previous: '2.9' });
+  });
+
+  it('counts a day after today as the latest, as the web\'s rows do, while the trend leaves it out (US-25 AC17f)', () => {
+    const file = adult();
+    const held = file.measurements.find((row) => row.id === idOf(file, 'ldl', '2026-10-01'))!;
+    const ahead = { ...file, measurements: [...file.measurements, { ...held, id: 'ahead-ldl', value: 3.8, recordedAt: '2026-10-23', createdAt: NOW }] };
+    const ldl = rows(myData(ahead, NOW)).get('ldl');
+    expect(ldl).toMatchObject({ latest: { value: '3.8', day: '2026-10-23' }, previous: '3.4' });
+    expect(ldl?.trend).toEqual([2.9, 3.4]);
+  });
+
+  it('gives Lp(a)\'s previous value in the unit Lp(a) is shown in (US-05 AC2)', () => {
+    const file = edited(adult(), { kind: 'add', metric: 'lpa', value: 100, day: '2026-09-01' }, { kind: 'add', metric: 'lpa', value: 150, day: '2026-10-01' });
+    expect(rows(myData(file, NOW)).get('lpa')).toMatchObject({ unit: 'nmol/L', latest: { value: '150' }, previous: '100' });
+    const mg = rows(myData(edited(file, { kind: 'lpaUnit', unit: 'mg/dL' }), NOW)).get('lpa');
+    expect(mg).toMatchObject({ unit: 'mg/dL', latest: { value: '60.0' }, previous: '40.0', target: 'Normal <30' });
+  });
+
+  it('still gives a known minor\'s blood pressure its previous pair, with no adult target (US-07 AC6)', () => {
+    const minor = rows(myData(edited(adult(), { kind: 'profile', birthYear: 2015 }), NOW)).get('blood_pressure');
+    expect(minor).toMatchObject({ latest: { value: '121/79' }, previous: '128/82', target: null });
+  });
+
+  it('gives a lone-half latest pressure no previous, so no bracket sits beside the dash (US-25 AC17)', () => {
+    const file = adult();
+    const sys = file.measurements.find((row) => row.id === idOf(file, 'systolic_bp', '2026-10-02'))!;
+    const lone = { ...file, measurements: [...file.measurements, { ...sys, id: 'lone-sys', value: 135, recordedAt: '2026-10-20', createdAt: NOW }] };
+    expect(rows(myData(lone, NOW)).get('blood_pressure')).toMatchObject({ latest: { value: '135/–', day: '2026-10-20' }, previous: null });
+    // A full pair after it takes the last complete pair before it, skipping the half-pair day.
+    const fixed = edited(lone, { kind: 'bloodPressure', systolic: 118, diastolic: 76, day: '2026-10-21', replace: false });
+    expect(rows(myData(fixed, NOW)).get('blood_pressure')).toMatchObject({ latest: { value: '118/76' }, previous: '121/79' });
+  });
+});
+
 describe('applyEdit (AC4/AC5)', () => {
   it('stores a value typed in US units as SI, the web\'s rule', () => {
     const file = edited(newRecord(NOW, 'phone', 'en-US', 'America/New_York'), { kind: 'add', metric: 'weight', value: 220, day: '2026-10-20' });
@@ -390,6 +479,15 @@ describe('forms (AC8)', () => {
     expect(data.screenings).toEqual([]);
     expect(data.screeningNote).toMatch(/sex, birth year and height/);
     expect(data.medications).toEqual([]);
+  });
+
+  // US-07 AC8: an age and no sex is a plan; the note must not say "at your age and sex".
+  it('with an age and no sex and no question that applies, says the sexed questions wait for sex', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+      { kind: 'profile', birthYear: 2004, birthMonth: 1, height: 170 });
+    const data = myData(file, NOW);
+    expect(data.screenings).toEqual([]);
+    expect(data.screeningNote).toBe('Some screening questions depend on your sex. Add it in About you.');
   });
 
   it('asks the web\'s questions for the plan\'s age and sex, and the cascade\'s first step', () => {

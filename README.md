@@ -49,7 +49,7 @@ assistant holds, opens the user's folder with it, and holds the record in
 server memory for the length of that request. It stores none of it. It does
 write one value-free activity row per call: which tool, which assistant, the
 outcome and the time. (One
-exception, for an invented account: while an OpenAI or Anthropic app review is pending,
+exception, for an invented account: while Anthropic's connector review is pending,
 the server holds the reviewer account's Dropbox credential itself; US-32
 AC38.) Anyone who
 does not want that runs surface 2 instead: `tools/mcp-server.ts` is the same

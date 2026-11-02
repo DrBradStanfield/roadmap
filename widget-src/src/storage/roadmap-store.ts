@@ -29,6 +29,7 @@ import {
   LiveRefresh,
   RecordSession,
   bulkAppendValues,
+  birthInFuture,
   placeMeasurement,
   saveDocuments,
   documentView,
@@ -69,7 +70,7 @@ import {
   type RoadmapFile,
   type RoadmapProfile,
 } from '@roadmap/health-core';
-import { isAlcoholAnswer, ROADMAP_DOC } from '@roadmap/health-core';
+import { isAlcoholAnswer, readableView, ROADMAP_DOC } from '@roadmap/health-core';
 import { type EraseResult, type EraseSteps, type RecordHost, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { webRecordHost } from './web-record-host';
@@ -161,6 +162,10 @@ export type CorrectStatus = 'ok' | 'changed' | 'invalid' | 'error';
  *  the test on that day is not what the page showed. `invalid` carries the
  *  record's refusal, for the page to say. */
 export type MoveOutcome = { status: Exclude<CorrectStatus, 'invalid'> } | { status: 'invalid'; refusal: MoveRejection };
+/** A birth month in the future that a save refused (US-54 AC5b): the pair judged. */
+export interface BirthRefusal { birthYear: number; birthMonth: number | undefined }
+/** A profile save: refused by the erase, or saved with any birth month it refused. */
+export type ProfileSave = { ok: false } | { ok: true; birthRefused: BirthRefusal | null };
 export interface BulkSaveResult {
   saved: ApiMeasurement[];
   skippedDuplicates: number;
@@ -212,6 +217,22 @@ export class RoadmapStore {
     return this.session.file;
   }
 
+  /** The readers' view: rows and profile fields this build cannot read left
+   *  out; they stay in the file (US-65). Edits use `file`. */
+  private get readable() {
+    return readableView(this.session.file);
+  }
+
+  /** The record as screens read it. */
+  private get view(): RoadmapFile {
+    return this.readable.file;
+  }
+
+  /** How many entries this build could not read; kept, never shown (US-65). */
+  get unreadableCount(): number {
+    return this.readable.count;
+  }
+
   get backendId() {
     return this.session.backendId;
   }
@@ -238,8 +259,8 @@ export class RoadmapStore {
   // ===================================================================== reads
 
   loadLatestMeasurements(): LatestMeasurementsResult {
-    const measurements = activeOnly(this.file.measurements);
-    const allInputs = measurementsToInputs(measurements as ApiMeasurement[], fileProfileToApi(this.file.profile));
+    const measurements = activeOnly(this.view.measurements);
+    const allInputs = measurementsToInputs(measurements as ApiMeasurement[], fileProfileToApi(this.view.profile));
 
     const inputs: Partial<HealthInputs> = {};
     for (const field of PREFILL_FIELDS) {
@@ -250,10 +271,10 @@ export class RoadmapStore {
     return {
       inputs,
       previousMeasurements: latestActivePerMetric(measurements) as ApiMeasurement[],
-      medications: this.file.medications as ApiMedication[],
-      screenings: fileScreeningRows(this.file.screenings),
-      supplements: this.file.supplements as ApiSupplement[],
-      reminderPreferences: this.file.reminderPreferences.map((p) => ({
+      medications: this.view.medications as ApiMedication[],
+      screenings: fileScreeningRows(this.view.screenings),
+      supplements: this.view.supplements as ApiSupplement[],
+      reminderPreferences: this.view.reminderPreferences.map((p) => ({
         reminderCategory: p.category,
         enabled: p.enabled,
       })),
@@ -262,20 +283,20 @@ export class RoadmapStore {
   }
 
   loadAllHistory(): ApiMeasurement[] {
-    return activeOnly(this.file.measurements) as ApiMeasurement[];
+    return activeOnly(this.view.measurements) as ApiMeasurement[];
   }
 
   loadMedicationHistory(): ApiMedicationHistory[] {
-    return medicationChanges(this.file.medicationHistory);
+    return medicationChanges(this.view.medicationHistory);
   }
 
   loadLabValues(): ApiLabValue[] {
-    return activeOnly(this.file.labValues) as ApiLabValue[];
+    return activeOnly(this.view.labValues) as ApiLabValue[];
   }
 
   /** Non-tombstoned documents — the ONE place the deleted-filter invariant lives. */
   private liveDocuments(): FileDocument[] {
-    return this.file.documents.filter((d) => !d.deleted);
+    return this.view.documents.filter((d) => !d.deleted);
   }
 
   // ================================================================= mutations
@@ -323,14 +344,16 @@ export class RoadmapStore {
     return { status: 'ok' };
   }
 
-  saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): boolean {
-    if (this.refuses(erase)) return false;
-    this.applyProfileChanges(current, previous, erase);
+  /** `birthRefused`: a birth month it refused (US-54 AC5b), which the caller
+   *  replaces in the form with the record's pair. */
+  saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): ProfileSave {
+    if (this.refuses(erase)) return { ok: false };
+    const birthRefused = this.applyProfileChanges(current, previous, erase);
     // diffInputsToMeasurements (health-core) owns the field→metric map + change detection.
     for (const { metricType, value } of diffInputsToMeasurements(current, previous)) {
       this.addMeasurement(metricType, value, undefined, erase);
     }
-    return true;
+    return { ok: true, birthRefused };
   }
 
   saveMedication(medicationKey: string, drugName: string, doseValue: number | null = null, doseUnit: string | null = null, erase?: string): boolean {
@@ -441,7 +464,7 @@ export class RoadmapStore {
    * of its output.
    */
   getPrefillInputs(): Partial<HealthInputs> {
-    const p = this.file.profile;
+    const p = this.view.profile;
     const out: Partial<HealthInputs> = {};
     for (const field of PREFILL_FIELDS) {
       const v = (p as unknown as Record<string, unknown>)[field];
@@ -455,7 +478,7 @@ export class RoadmapStore {
 
   /** Has the user completed the Shopify-surface email-capture step? */
   getReportEmailCaptured(): boolean {
-    return this.file.profile.reportEmailCaptured ?? false;
+    return this.view.profile.reportEmailCaptured ?? false;
   }
 
   /** Mark the email-capture step done (monotonic, stamped + persisted). */
@@ -464,9 +487,9 @@ export class RoadmapStore {
     return this.session.edit((file) => stampProfile(file, { reportEmailCaptured: true }, new Date().toISOString()));
   }
 
-  /** The unit the user chose for Lp(a)'s field (US-05 AC2), as the record holds it: unchecked. */
+  /** The unit the user chose for Lp(a)'s field (US-05 AC2), as readers see it. */
   getLpaUnit(): unknown {
-    return this.file.profile.lpaUnit;
+    return this.view.profile.lpaUnit;
   }
 
   /** Remember Lp(a)'s field unit: a profile preference, stamped like the others so it syncs (US-05 AC2). */
@@ -486,7 +509,7 @@ export class RoadmapStore {
 
   /** The client-computed forward schedule that gets pushed to the server (§10). */
   computeReminderScheduleNow(): ReminderScheduleItem[] {
-    return computeReminderSchedule(this.file, new Date());
+    return computeReminderSchedule(this.view, new Date());
   }
 
   /** "Delete all my data": the stored record is read first, then the server
@@ -538,19 +561,31 @@ export class RoadmapStore {
 
   // =================================================================== private
 
-  private applyProfileChanges(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): void {
+  private applyProfileChanges(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): BirthRefusal | null {
     const changes: Record<string, unknown> = {};
     for (const field of [...PREFILL_FIELDS, 'unitSystem'] as const) {
       // A cleared form field is absent from current, but is still a write.
       // Keep its key as null so the field stamp carries the clear (US-10 AC9).
       if (current[field] !== previous[field]) changes[field] = current[field] ?? null;
     }
-    if (Object.keys(changes).length === 0) return;
+    // US-54 AC5b: a birth month after this one writes neither changed half, as
+    // update_profile refuses it; a year alone is judged with January. Judged as
+    // typed and as it would be stored, over a half another device changed.
+    const future = (p: { birthYear?: number | null; birthMonth?: number | null }): BirthRefusal | null =>
+      p.birthYear != null && birthInFuture(p.birthYear, p.birthMonth ?? 1, new Date())
+        ? { birthYear: p.birthYear, birthMonth: p.birthMonth ?? undefined }
+        : null;
+    const refused = 'birthYear' in changes || 'birthMonth' in changes
+      ? future(current) ?? future({ ...this.view.profile, ...changes })
+      : null;
+    if (refused) { delete changes.birthYear; delete changes.birthMonth; }
+    if (Object.keys(changes).length === 0) return refused;
     // Only the fields changed take a new stamp (US-10 AC6). And an edit, which
     // schedules a save, as every other mutation is: a profile-only edit (sex,
     // height, birth date — no measurement changed with it) once scheduled no
     // save at all, so it sat in memory until the next unrelated edit carried it up.
     this.session.edit((file) => stampProfile(file, changes as Partial<RoadmapProfile>, new Date().toISOString()), erase);
+    return refused;
   }
 }
 

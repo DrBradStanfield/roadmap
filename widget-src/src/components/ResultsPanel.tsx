@@ -1,17 +1,14 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import type { AlcoholAnswer, HealthResults, Suggestion } from '@roadmap/health-core';
+import type { HealthResults, Suggestion } from '@roadmap/health-core';
 import {
-  type UnitSystem,
-  type MetricType,
   type SuggestionEvidence,
-  statTiles,
   statTileText,
+  type StatTile,
   planSections,
-  medicinesShown,
   type PlanCard,
 } from '@roadmap/health-core';
 // US-61 AC5: called only under SHOPIFY_SURFACE, so the Pages build drops the module.
-import { usProductBlocks, type UsProductBlock, type UsProductOverlay } from '@roadmap/health-core/us-products';
+import { usProductSections, type UsPlanCard, type UsPlanSection, type UsProduct, type UsProductBlock } from '@roadmap/health-core/us-products';
 import { getReportHtml, sendGuestReport, getReportEmailCaptured, markReportEmailCaptured } from '../lib/roadmap-data';
 import { trackABConversion, trackProductEvent } from '../lib/server-api';
 import { EMAIL_REGEX } from '../lib/email';
@@ -21,20 +18,19 @@ import { ColumnHeader } from './ColumnHeader';
 import { GuideLink } from './GuideLink';
 import { StorageNotice } from '../lib/storage-notice';
 import { FeedbackForm } from './FeedbackForm';
-import { alcoholDismiss } from './AlcoholQuestion';
+import { alcoholDismiss, type AlcoholQuestion } from './AlcoholQuestion';
 import { getMarketCountry } from '../lib/market-country';
 import { observeVisibility } from '../lib/observe-visibility';
 interface ResultsPanelProps {
   results: HealthResults | null;
   isValid: boolean;
-  unitSystem: UnitSystem;
-  unitOverrides?: Partial<Record<MetricType, UnitSystem>>;
   hasUnsavedLongitudinal?: boolean;
   onSaveLongitudinal?: () => Promise<unknown>;
   /** Resolves true once the data is erased (false if cancelled or failed). */
   onDeleteData?: () => Promise<boolean>;
   isDeleting?: boolean;
-  sex?: 'male' | 'female';
+  /** The plan's tiles, computed once in HealthTool (`statTiles`). */
+  tiles: StatTile[];
   showEmailCapture?: boolean;
   formStage?: number;
   /** Cloud connection controls shared by Shopify and Pages. Hidden for new users
@@ -44,8 +40,8 @@ interface ResultsPanelProps {
   /** The local-first email-reminders section (US-17), rendered as its own block
    *  lower in the plan — not bolted onto the sync line at the top. */
   remindersSection?: React.ReactNode;
-  /** US-60: save the answer the "Reduce alcohol intake" card's Dismiss asks for; absent once answered. */
-  onAlcoholAnswer?: (answer: AlcoholAnswer) => void;
+  /** US-60: the question the "Reduce alcohol intake" card's Dismiss asks, and its save. */
+  alcoholQuestion?: AlcoholQuestion;
 }
 
 function StatCard({ label, value, status, evidence }: {
@@ -127,7 +123,6 @@ function SuggestionEvidence({ suggestion, open, onToggle }: { suggestion: Sugges
   );
 }
 
-type AlcoholAnswerFn = (answer: AlcoholAnswer) => void;
 
 /** US-61 AC4: Brad's product on a US adult's supplement card, at the card's foot. Never printed. */
 function UsProductBlockView({ block }: { block: UsProductBlock }) {
@@ -147,9 +142,7 @@ function UsProductBlockView({ block }: { block: UsProductBlock }) {
   );
 }
 
-const NO_US_OVERLAY: UsProductOverlay = { blocks: [], ownershipLine: null };
-
-function SuggestionCard({ suggestion, highlighted, fadingOut, onAlcoholAnswer, usBlock }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; onAlcoholAnswer?: AlcoholAnswerFn; usBlock?: UsProductBlock }) {
+function SuggestionCard({ suggestion, highlighted, fadingOut, alcoholQuestion, usBlock }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; alcoholQuestion?: AlcoholQuestion; usBlock?: UsProductBlock }) {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const hasEvidence = suggestionHasEvidence(suggestion);
   const isSupplementCard = suggestion.category === 'supplements';
@@ -168,7 +161,7 @@ function SuggestionCard({ suggestion, highlighted, fadingOut, onAlcoholAnswer, u
             {suggestion.priority === 'urgent' && '⚠️ '}
             {suggestion.category.replace(/_/g, ' ')}
           </span>
-          {alcoholDismiss(suggestion, onAlcoholAnswer)}
+          {alcoholDismiss(suggestion, alcoholQuestion)}
         </div>
       )}
       <div className="suggestion-body" onClick={toggleEvidence}>
@@ -196,13 +189,13 @@ function SuggestionCard({ suggestion, highlighted, fadingOut, onAlcoholAnswer, u
   );
 }
 
-function GroupedSubsection({ suggestion, highlighted, fadingOut, onAlcoholAnswer }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; onAlcoholAnswer?: AlcoholAnswerFn }) {
+function GroupedSubsection({ suggestion, highlighted, fadingOut, alcoholQuestion }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean; alcoholQuestion?: AlcoholQuestion }) {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const hasEvidence = suggestionHasEvidence(suggestion);
   const highlightClass = fadingOut ? ' suggestion-highlight suggestion-fade-out'
     : highlighted ? ' suggestion-highlight' : '';
 
-  const dismiss = alcoholDismiss(suggestion, onAlcoholAnswer);
+  const dismiss = alcoholDismiss(suggestion, alcoholQuestion);
   const toggleEvidence = hasEvidence ? () => setEvidenceOpen(o => !o) : undefined;
 
   return (
@@ -225,7 +218,7 @@ function GroupedSubsection({ suggestion, highlighted, fadingOut, onAlcoholAnswer
   );
 }
 
-function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds, onAlcoholAnswer }: { card: PlanCard; highlightedIds?: Set<string>; fadingOutIds?: Set<string>; onAlcoholAnswer?: AlcoholAnswerFn }) {
+function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds, alcoholQuestion }: { card: PlanCard; highlightedIds?: Set<string>; fadingOutIds?: Set<string>; alcoholQuestion?: AlcoholQuestion }) {
   const { suggestions, category, priority: highestPriority } = card;
 
   return (
@@ -238,28 +231,22 @@ function GroupedSuggestionCard({ card, highlightedIds, fadingOutIds, onAlcoholAn
       </div>
       <div className="grouped-subsections">
         {suggestions.map((s) => (
-          <GroupedSubsection key={s.id} suggestion={s} highlighted={highlightedIds?.has(s.id)} fadingOut={fadingOutIds?.has(s.id)} onAlcoholAnswer={onAlcoholAnswer} />
+          <GroupedSubsection key={s.id} suggestion={s} highlighted={highlightedIds?.has(s.id)} fadingOut={fadingOutIds?.has(s.id)} alcoholQuestion={alcoholQuestion} />
         ))}
       </div>
     </div>
   );
 }
 
-/** US-61 AC2: a US card's own text and references, in place of the card's, when it has them. */
-function withUsText(suggestion: Suggestion, block?: UsProductBlock): Suggestion {
-  return block?.description ? { ...suggestion, description: block.description, references: block.references } : suggestion;
-}
-
-/** A section's cards: grouped ones as one card, the rest one card each (layout: planSections).
- *  `usBlocks` (US-61) sit on single cards only. */
-function renderCards(cards: PlanCard[], highlightedIds: Set<string>, fadingOutIds: Set<string>, onAlcoholAnswer?: AlcoholAnswerFn, usBlocks?: ReadonlyMap<string, UsProductBlock>) {
+/** A section's cards: grouped ones as one card, the rest one card each (layout: planSections;
+ *  US-61's blocks and text: usProductSections). */
+function renderCards(cards: UsPlanCard[], highlightedIds: Set<string>, fadingOutIds: Set<string>, alcoholQuestion?: AlcoholQuestion) {
   return cards.map((card) => {
     if (card.suggestions.length > 1) {
-      return <GroupedSuggestionCard key={card.category} card={card} highlightedIds={highlightedIds} fadingOutIds={fadingOutIds} onAlcoholAnswer={onAlcoholAnswer} />;
+      return <GroupedSuggestionCard key={card.category} card={card} highlightedIds={highlightedIds} fadingOutIds={fadingOutIds} alcoholQuestion={alcoholQuestion} />;
     }
     const s = card.suggestions[0];
-    const usBlock = usBlocks?.get(s.id);
-    return <SuggestionCard key={s.id} suggestion={withUsText(s, usBlock)} highlighted={highlightedIds.has(s.id)} fadingOut={fadingOutIds.has(s.id)} onAlcoholAnswer={onAlcoholAnswer} usBlock={usBlock} />;
+    return <SuggestionCard key={s.id} suggestion={s} highlighted={highlightedIds.has(s.id)} fadingOut={fadingOutIds.has(s.id)} alcoholQuestion={alcoholQuestion} usBlock={s.usProduct} />;
   });
 }
 
@@ -448,7 +435,7 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
   if (hook.gateSkipped) return <ReminderSignup hook={hook} />;
 
   return (
-    <div className={`email-capture no-print${formStage === 3 ? ' field-attention' : ''}`}>
+    <div className={`email-capture no-print${formStage === 4 ? ' field-attention' : ''}`}>
       <p className="email-guest-helper">{helperText}</p>
       <div className="email-capture-row">
         <input
@@ -486,7 +473,7 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
   );
 }
 
-export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, onDeleteData, isDeleting, sex, showEmailCapture, formStage, syncControl, remindersSection, onAlcoholAnswer }: ResultsPanelProps) {
+export function ResultsPanel({ results, isValid, hasUnsavedLongitudinal, onSaveLongitudinal, onDeleteData, isDeleting, tiles, showEmailCapture, formStage, syncControl, remindersSection, alcoholQuestion }: ResultsPanelProps) {
   // Track highlighted (new/changed) suggestion IDs
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
   const [fadingOutIds, setFadingOutIds] = useState<Set<string>>(new Set());
@@ -586,17 +573,17 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
   const guestEmailHook = useGuestEmailCapture(() => printReport('capture'));
 
   // Above the early return, as hooks must be; worked out again only when their inputs change.
-  const tiles = useMemo(() => (results ? statTiles(results, { unitSystem, unitOverrides, sex }) : []), [results, unitSystem, unitOverrides, sex]);
 
   // US-61 AC5: Brad's products for a known adult in the US, on the Shopify build only.
-  const usOverlay = useMemo(() => (SHOPIFY_SURFACE && results
-    ? usProductBlocks(results.suggestions, medicinesShown(results), getMarketCountry() === 'US', 'web')
-    : NO_US_OVERLAY), [results]);
-  const usBlocks = useMemo(() => new Map(usOverlay.blocks.map((b) => [b.suggestionId, b])), [usOverlay]);
+  const sections = useMemo((): UsPlanSection[] => {
+    if (!results) return [];
+    const plain = planSections(results.suggestions);
+    return (SHOPIFY_SURFACE && usProductSections(plain, results, getMarketCountry() === 'US', 'web')) || plain;
+  }, [results]);
   // US-61 AC8: once the Supplements section is on screen, one count per product
   // (trackProductEvent keeps one per product per tab session).
   const supplementsRef = useRef<HTMLDivElement>(null);
-  const usProducts = [...new Set(usOverlay.blocks.map((b) => b.product))].join(' ');
+  const usProducts = [...new Set(sections.flatMap((section) => section.cards.flatMap((card) => card.suggestions.flatMap((s) => s.usProduct?.product ?? []))))].join(' ');
   useEffect(() => {
     const el = supplementsRef.current;
     if (!el || !usProducts) return;
@@ -604,7 +591,7 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
     return observeVisibility(el, (visible) => {
       if (!visible || counted) return;
       counted = true;
-      for (const product of usProducts.split(' ') as UsProductBlock['product'][]) trackProductEvent('us_product_shown', { product });
+      for (const product of usProducts.split(' ') as UsProduct[]) trackProductEvent('us_product_shown', { product });
     });
   }, [usProducts]);
 
@@ -632,7 +619,7 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
               <span className="stat-status">Awaiting</span>
             </div>
             <div className="stat-card stat-card--awaiting">
-              <span className="stat-label">Ideal Body Weight (IBW)</span>
+              <span className="stat-label">Ideal Body Weight</span>
               <span className="stat-value">—</span>
               <span className="stat-status">Awaiting</span>
             </div>
@@ -715,11 +702,11 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
 
       {/* Suggestions */}
       <section className="suggestions-section">
-        {planSections(results.suggestions).map((section) => (
+        {sections.map((section) => (
           <div key={section.key} ref={section.key === 'supplements' ? supplementsRef : undefined} className={`suggestions-group${section.key === 'skin' || section.key === 'supplements' ? ` ${section.key}-group` : ''}`}>
             <h4 className={`suggestions-group-title ${section.key}`}>{section.title}</h4>
-            {renderCards(section.cards, highlightedIds, fadingOutIds, onAlcoholAnswer, section.key === 'supplements' ? usBlocks : undefined)}
-            {section.key === 'supplements' && usOverlay.ownershipLine && <p className="us-ownership no-print">{usOverlay.ownershipLine}</p>}
+            {renderCards(section.cards, highlightedIds, fadingOutIds, alcoholQuestion)}
+            {section.ownershipLine && <p className="us-ownership no-print">{section.ownershipLine}</p>}
           </div>
         ))}
       </section>

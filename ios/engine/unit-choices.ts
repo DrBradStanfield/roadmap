@@ -3,7 +3,7 @@
 // Lp(a)'s unit is the record's own (US-05 AC2, US-25 AC20).
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { BLOOD_TEST_METRICS } from '../../packages/health-core/src/mappings';
-import { hasUnitChoice, type LpaUnit, type MetricType, type UnitSystem } from '../../packages/health-core/src/units';
+import { hasUnitChoice, unitSystemOf, type LpaUnit, type MetricType, type UnitSystem } from '../../packages/health-core/src/units';
 import { recordLpaUnit, type CellUnit } from '../../packages/health-core/src/cell-unit';
 
 /** Per-test display units, the web's per-field toggles (US-25 AC17e). Like the web's, they are
@@ -31,7 +31,7 @@ export function readUnitChoices(json: string | undefined): UnitChoices {
 
 /** The record's units, the master switch: metric unless it says US. */
 export function unitsOf(file: RoadmapFile): UnitSystem {
-  return file.profile.unitSystem ?? 'si';
+  return unitSystemOf(file.profile);
 }
 
 /** The units one metric shows and is typed in. */
