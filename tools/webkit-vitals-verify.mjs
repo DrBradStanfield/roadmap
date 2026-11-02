@@ -30,12 +30,20 @@ const SEED = () => {
     m.push(mk('systolic_bp', sv[i], d)); m.push(mk('diastolic_bp', dv[i], d));
   });
   m.push(mk('weight', 85, '2024-12-15'));
+  // Every blood test is a core row in labValues, in its SI unit (US-66 AC1);
+  // measurements keeps the vitals.
+  const SI = { ldl: 'mmol/L', creatinine: 'µmol/L', apob: 'g/L' };
+  const coreRow = ({ metricType, ...row }) => ({
+    ...row, metricName: metricType, unit: SI[metricType], referenceLow: null, referenceHigh: null, core: true,
+  });
   const file = {
     schemaVersion: 1,
     meta: { createdAt: now, updatedAt: now, lastDeviceId: 'seed', lamport: 1 },
     profile: { sex: 'male', birthYear: 1985, birthMonth: 6, heightCm: 178, unitSystem: 'conventional', updatedAt: now, lamport: 1 },
-    measurements: m, medications: [], medicationHistory: [], supplements: [], supplementHistory: [],
-    screenings: { updatedAt: now }, labValues: [], documents: [], reminderPreferences: [], recommendationSnapshots: [],
+    measurements: m.filter((row) => !SI[row.metricType]),
+    medications: [], medicationHistory: [], supplements: [], supplementHistory: [],
+    screenings: { updatedAt: now }, labValues: m.filter((row) => SI[row.metricType]).map(coreRow),
+    documents: [], reminderPreferences: [], recommendationSnapshots: [],
   };
   localStorage.setItem(FILE_KEY, JSON.stringify(file));
   localStorage.setItem(FILE_KEY + '_rev', '1');

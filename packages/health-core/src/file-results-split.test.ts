@@ -84,8 +84,9 @@ describe('US-36 AC7a — a long report split over file_results calls', () => {
     await commit(a.receipt, a.candidates.map((c) => c.id));
     await commit(b.receipt, b.candidates.map((c) => c.id));
     const file = await sync.load();
-    expect(file.measurements.map((m) => [m.metricType, m.value])).toEqual([['ldl', 2.8]]);
-    expect(file.labValues.map((l) => [l.metricName, l.value])).toEqual([['Ferritin', 180]]);
+    // US-66 AC1: the core LDL is a core row in labValues, beside the Ferritin lab row (in either order).
+    expect(file.measurements).toEqual([]);
+    expect(file.labValues.map((l) => [l.metricName, l.value, l.core ?? false]).sort()).toEqual([['Ferritin', 180, false], ['ldl', 2.8, true]]);
     expect(file.documents.filter((d) => d.sourceFileName === 'Results.pdf')).toHaveLength(1);
   });
 

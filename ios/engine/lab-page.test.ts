@@ -160,3 +160,37 @@ describe('a lab add writes in the unit the sheet showed (review R3)', () => {
   });
 });
 
+
+// US-66 AC8 with US-25 AC25: core blood tests live in labValues as core rows. A core row is never a
+// lab test page; an old "creatinine" lab row kept apart (AC5, FOLD_CREATININE off) keeps its own page,
+// which lists and adds to that row's series, never the core creatinine beside it.
+describe('core rows and the lab test pages (US-66 AC8)', () => {
+  const coreCreatinine = (id: string, value: number, day: string) =>
+    lab(id, 'creatinine', value, 'µmol/L', day, { core: true, referenceLow: null, referenceHigh: null, source: 'manual' });
+  const both = () => record([
+    lab('u1', 'creatinine', 9, 'mmol/L', '2026-08-01'),
+    coreCreatinine('c1', 80, '2026-08-01'),
+    coreCreatinine('c2', 85, '2026-09-01'),
+    { ...coreCreatinine('l1', 90, '2026-09-01'), metricName: 'ldl', unit: 'mmol/L', value: 3 },
+  ]);
+
+  it('My data lists the kept-apart row as a lab test and no core test as one', () => {
+    const data = myData(both(), NOW);
+    expect(data.labTests.map((r) => r.metric)).toEqual(['creatinine']);
+    expect(data.labTests[0]).toMatchObject({ series: 'lab', latest: { value: '9' } });
+  });
+
+  it('the lab page lists only the lab rows of its series', () => {
+    expect(labHistory(both(), 'creatinine').rows.map((r) => r.id)).toEqual(['u1']);
+    expect(JSON.parse(historyJson(JSON.stringify(both()), 'creatinine', NOW, 'phone', '{}', 'lab')).rows.map((r: { id: string }) => r.id)).toEqual(['u1']);
+  });
+
+  it('the kept-apart page never adds a core value (US-66 AC5)', () => {
+    const out = applyEdit(both(), { kind: 'labAdd', series: 'creatinine', value: 10, day: '2026-10-01', unit: 'mmol/L' }, NOW);
+    expect(out).toMatchObject({ ok: false, reason: 'core-name', message: 'Add this test from its row in Blood tests.' });
+  });
+
+  it('a lab page of core rows alone is no lab test', () => {
+    expect(applyEdit(both(), { kind: 'labAdd', series: 'ldl', value: 3.1, day: '2026-10-01' }, NOW)).toMatchObject({ ok: false, reason: 'not-found' });
+  });
+});

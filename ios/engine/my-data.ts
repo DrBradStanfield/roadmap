@@ -4,7 +4,7 @@
 // Values come in and go out in the user's units; the record stores SI. Web
 // twins: the widget's InputPanel.tsx and BloodTestTimeline.tsx, writing through
 // RoadmapStore.
-import { createEmptyFile, type FileMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { createEmptyFile, type FileLabValue, type FileMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import type { Plan } from '../../packages/health-core/src/plan';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 import { SchemaTooNewError } from '../../packages/health-core/src/migrate';
@@ -16,6 +16,7 @@ import { stampProfile, upsertMedication, upsertSupplement } from '../../packages
 import { medicationSchema, supplementSchema, zod3Message } from '../../packages/health-core/src/validation';
 import { customSupplementAdd, customSupplementMatch } from '../../packages/health-core/src/input-form';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
+import { bloodTableReport, bloodTestKeyOf, currentValueRows, isCoreRow } from '../../packages/health-core/src/blood-tests';
 import { importDeviceSamples, type DeviceSample } from '../../packages/health-core/src/device-import';
 import { applyFormEdit, formsOf, gradeContextOf, planOf, rowText, ungradedLimit, type FormEdit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
@@ -178,8 +179,30 @@ export function readRecord(text: string, now: string, deviceId: string): Roadmap
     if (error instanceof SchemaTooNewError) throw new Refusal('A newer version of Health Roadmap wrote this record. Update the app to open it.');
     throw error;
   }
-  kept = { text, deviceId, file: FREEZE_KEPT ? deepFreeze(file) : file };
+  kept = { text, deviceId, file: FREEZE_KEPT ? deepFreeze(file) : file, moved: movedBloodTests(raw, file) };
   return file;
+}
+
+/**
+ * US-66 AC14: reading `stored`, the record as saved, moved blood tests out of
+ * `measurements` or folded old lab rows named like a core test, so `file` is
+ * written once. A moved record has nothing left to move. The web's twin:
+ * RoadmapStore.writeMovedRecord.
+ */
+export function movedBloodTests(stored: unknown, file: RoadmapFile): boolean {
+  if (typeof stored !== 'object' || stored === null) return false;
+  const rows = <T>(key: string): T[] => {
+    const list = (stored as Record<string, unknown>)[key];
+    return Array.isArray(list) ? list.filter((row): row is T => typeof row === 'object' && row !== null) : [];
+  };
+  const report = bloodTableReport({ measurements: rows<FileMeasurement>('measurements'), labValues: rows<FileLabValue>('labValues') }, file);
+  return report.moved + report.folded > 0;
+}
+
+/** The record to write once, as text, when reading `text` moved it (US-66 AC14); else null. */
+export function movedRecord(text: string, now: string, deviceId: string): string | null {
+  const file = readRecord(text, now, deviceId); // sets `kept` to this text's read
+  return kept!.moved ? JSON.stringify(file) : null;
 }
 
 /**
@@ -193,7 +216,7 @@ export function readRecord(text: string, now: string, deviceId: string): Roadmap
  * `meta.lastDeviceId`. Metadata clock recovery is deterministic even when both
  * stamps are missing or malformed, so migration never depends on `now`.
  */
-let kept: { text: string; deviceId: string; file: RoadmapFile } | null = null;
+let kept: { text: string; deviceId: string; file: RoadmapFile; moved: boolean } | null = null;
 
 /** Under the tests the kept record is frozen, so every engine test checks the
  *  read-only rule on every branch it runs (adversary R1). Never in the app. */
@@ -230,7 +253,7 @@ export function newRecord(now: string, deviceId: string, locale: string, timeZon
  *  that has it passes it, so the forms are not planned twice (entry.ts screenJson). */
 export function myData(file: RoadmapFile, now = new Date().toISOString(), choices: UnitChoices = {}, plan: Plan | null = planOf(file, now, choices)): MyData & FormsView {
   const system = unitsOf(file);
-  const current = new Map(latestActivePerMetric(file.measurements).map((row) => [row.metricType, row]));
+  const current = new Map(latestActivePerMetric(currentValueRows(file)).map((row) => [row.metricType, row]));
   const days = activeDays(file);
   const trend = trends(days, now, (metric, valueSI) => cellFromSI(metric as MetricType, valueSI, cellUnitFor(file, metric, choices)));
   // What the web's rows grade against (InputPanel.tsx rowCtx): none for a known minor (US-07 AC6),
@@ -354,11 +377,13 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
       return { ok: false, reason: result.reason, message: typedRangeMessage(edit.metric, edit.value, unit, result), ...(result.existing ? { existingId: result.existing.id } : null) };
     }
     case 'correct': {
-      const target = file.measurements.find((row) => row.id === edit.id);
-      const shown = target && cellUnitFor(file, target.metricType, choices);
-      const result = correctValue(file, { id: edit.id, newValue: edit.value, unit: shown && cellLabel(target!.metricType as MetricType, shown), now });
+      // A blood test is a core lab row (US-66 AC6); a vital is a measurement.
+      const core = file.labValues.find((row) => row.id === edit.id && isCoreRow(row));
+      const metric = core?.metricName ?? file.measurements.find((row) => row.id === edit.id)?.metricType;
+      const shown = metric && cellUnitFor(file, metric, choices);
+      const result = correctValue(file, { id: edit.id, newValue: edit.value, unit: shown && cellLabel(metric as MetricType, shown), now });
       if (result.ok) return { ok: true, file: result.file };
-      return { ok: false, reason: result.reason, message: shown ? typedRangeMessage(target!.metricType, edit.value, shown, result) : result.message };
+      return { ok: false, reason: result.reason, message: shown ? typedRangeMessage(metric!, edit.value, shown, result) : result.message };
     }
     // The web's own writes (state-edits.ts), behind the API's own schemas:
     // the app's input is checked the way a request to the server was.
@@ -422,9 +447,12 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
  * series' own, so a row synced in while the sheet was open never changes what the number means.
  */
 function addSeriesValue(file: RoadmapFile, edit: Extract<Edit, { kind: 'labAdd' }>, now: string): EditOutcome {
-  const rows = file.labValues.filter((row) => labSlotKey(row.metricName) === edit.series);
+  const rows = file.labValues.filter((row) => !isCoreRow(row) && labSlotKey(row.metricName) === edit.series);
   const named = rows.filter((row) => row.status === 'active').sort((a, b) => a.recordedAt.localeCompare(b.recordedAt)).at(-1);
   if (!named) return { ok: false, reason: 'not-found', message: 'There is no such lab test in your record.' };
+  // A kept-apart row named like a core test (an old "creatinine" may be urine, US-12 AC11): the add would
+  // write the core value, which this page never shows. It goes on the core test's own row (US-66 AC5).
+  if (bloodTestKeyOf(named.metricName)) return { ok: false, reason: 'core-name', message: 'Add this test from its row in Blood tests.' };
   const unit = edit.unit ?? displayLabUnit(named.unit ?? '', resolveLabCatalogEntry(named.metricName));
   const added = addLabValue(file, { metricName: named.metricName, unit, value: edit.value, day: edit.day }, now);
   return added.ok ? { ok: true, file: added.file } : added;
@@ -474,17 +502,21 @@ function gradeOf(status: GradeStatus, metric: string): Pick<MyDataRow, 'status' 
  *  build them (MyDataRows.tsx labRows), in this row's shape; never graded. A limit reads with its
  *  symbol and, as on the core rows, is no point on the trend (US-12 AC20). */
 function labTestRows(file: RoadmapFile, now: string): MyDataRow[] {
-  return labSeriesRows(file.labValues, new Date(now), true).map(({ seriesKey, label, unit, latest, previous, target, trend }) => ({
+  // A core row is a blood test's own row above, never a lab test here (US-66 AC7).
+  return labSeriesRows(file.labValues.filter((row) => !isCoreRow(row)), new Date(now), true).map(({ seriesKey, label, unit, latest, previous, target, trend }) => ({
     metric: seriesKey, series: 'lab', label, unit, latest, trend, switchable: false, target, previous, ...gradeOf(null, seriesKey), note: null,
   }));
 }
 
-/** Each metric's active row per day (the slot's first, as findActiveInSlot reads it), in one pass. */
-function activeDays(file: RoadmapFile): Map<string, Map<string, FileMeasurement>> {
-  const byMetric = new Map<string, Map<string, FileMeasurement>>();
-  for (const row of file.measurements) {
-    if (row.status !== 'active') continue;
-    const days = byMetric.get(row.metricType) ?? new Map<string, FileMeasurement>();
+/** A current value: a vital, or a core blood-test row shaped as one (US-66 AC7). */
+type ValueRow = ReturnType<typeof currentValueRows>[number];
+
+/** Each metric's active row per day (the slot's first, as findActiveInSlot reads it), in one pass:
+ *  the vitals and the core blood-test rows (US-66 AC7). */
+function activeDays(file: RoadmapFile): Map<string, Map<string, ValueRow>> {
+  const byMetric = new Map<string, Map<string, ValueRow>>();
+  for (const row of currentValueRows(file)) {
+    const days = byMetric.get(row.metricType) ?? new Map<string, ValueRow>();
     byMetric.set(row.metricType, days);
     const day = row.recordedAt.slice(0, 10);
     if (!days.has(day)) days.set(day, row);
@@ -496,7 +528,7 @@ function activeDays(file: RoadmapFile): Map<string, Map<string, FileMeasurement>
  *  phone's local day, and the 29 before), or the last seven days however old when those 30
  *  hold fewer than two (US-25 AC17f). A day after today (an import that kept another zone's
  *  offset) is left out of both, as the phone leaves out a night dated after today. */
-function trends(byMetric: Map<string, Map<string, FileMeasurement>>, now: string, shown: (metric: string, valueSI: number) => number): Map<string, number[]> {
+function trends(byMetric: Map<string, Map<string, ValueRow>>, now: string, shown: (metric: string, valueSI: number) => number): Map<string, number[]> {
   const recent = trendWindow(new Date(now));
   const out = new Map<string, number[]>();
   for (const [metric, days] of byMetric) {

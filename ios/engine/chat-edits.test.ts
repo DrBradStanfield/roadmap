@@ -4,12 +4,13 @@
 import { describe, expect, it } from 'vitest';
 import { applyEdit, newRecord } from './my-data';
 import { chatEditsJson, applyEditJson } from './entry';
-import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { CORE_BLOOD_UNITS, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { parseProposedEdit } from '../../packages/health-core/src/chat-edits';
 import { localDay } from '../../packages/health-core/src/merge';
 import type { ChatEditsPreview } from './chat-edits';
 import { chatContextJson } from './app-doors';
 import { runRoadmap } from '../../packages/health-core/src/run-roadmap';
+import { currentValueRows } from '../../packages/health-core/src/blood-tests';
 
 const NOW = '2026-11-02T08:00:00.000Z';
 const TODAY = localDay(NOW);
@@ -34,7 +35,8 @@ function saved(file: RoadmapFile, part: 'medications' | 'review', edits: unknown
 function preview(file: RoadmapFile, edits: unknown, unitsJson?: string): ChatEditsPreview {
   return JSON.parse(chatEditsJson(JSON.stringify(file), JSON.stringify(edits), NOW, 'phone', TODAY, unitsJson)) as ChatEditsPreview;
 }
-const active = (file: RoadmapFile, metricType: string) => file.measurements.filter((m) => m.metricType === metricType && m.status === 'active');
+// A blood test is a core lab row (US-66 AC1): read the active values as the plan does.
+const active = (file: RoadmapFile, metricType: string) => currentValueRows(file).filter((m) => m.metricType === metricType);
 const med$ = (file: RoadmapFile, key: string) => file.medications.find((m) => m.medicationKey === key);
 
 describe('US-67 AC4: values from their stated unit to SI', () => {
@@ -112,7 +114,7 @@ describe('US-67 AC4: one Save, all or none', () => {
     const old = active(held, 'ldl')[0];
     expect(preview(held, [field('ldlC', 3.4, 'mmol/L')]).review!.lines).toEqual([{ text: 'LDL Cholesterol 3.4 mmol/L on 1 Oct', replaces: '3.1 mmol/L' }]);
     const file = saved(held, 'review', [field('ldlC', 3.4, 'mmol/L')]);
-    expect(file.measurements.find((r) => r.id === old.id)!.status).toBe('entered-in-error');
+    expect(file.labValues.find((r) => r.id === old.id)!.status).toBe('entered-in-error');
     const [now] = active(file, 'ldl');
     expect(now).toMatchObject({ value: 3.4, correctsId: old.id });
   });
@@ -316,10 +318,13 @@ describe('US-67 AC3: a Save checks the record still holds what the banner named'
 // US-65 AC2 inside the chat's edits (review R1): a row this build cannot read is
 // named, never shown or compared, and never sinks the reply.
 describe('US-67 AC3: rows this app cannot read (US-65)', () => {
-  const hidden = (file: RoadmapFile, metricType: string, day = DAY): RoadmapFile => ({
-    ...file,
-    measurements: [...file.measurements, { id: `hid-${metricType}`, metricType, value: 'synthetic' as unknown as number, recordedAt: day, createdAt: NOW, status: 'active', source: 'manual' } as RoadmapFile['measurements'][number]],
-  });
+  // A blood test the app cannot read is a core lab row the move carried over (US-66 AC2); a vital stays a measurement.
+  const hidden = (file: RoadmapFile, metricType: string, day = DAY): RoadmapFile => {
+    const row = { id: `hid-${metricType}`, value: 'synthetic' as unknown as number, recordedAt: day, createdAt: NOW, status: 'active', source: 'manual' } as const;
+    return metricType in CORE_BLOOD_UNITS
+      ? { ...file, labValues: [...file.labValues, { ...row, metricName: metricType, unit: CORE_BLOOD_UNITS[metricType], correctsId: null, referenceLow: null, referenceHigh: null, core: true } as RoadmapFile['labValues'][number]] }
+      : { ...file, measurements: [...file.measurements, { ...row, metricType } as unknown as RoadmapFile['measurements'][number]] };
+  };
 
   it('US-67 AC3: a hidden LDL on the proposed day is named, not shown, and the Save corrects it', () => {
     const file = hidden(metric(), 'ldl');
@@ -330,7 +335,7 @@ describe('US-67 AC3: rows this app cannot read (US-65)', () => {
     });
     const after = applyEdit(file, { kind: 'chatEdits', part: 'review', edits: [field('ldlC', 3.4, 'mmol/L')], today: TODAY, seen: shown.review!.seen }, NOW);
     expect(after.ok).toBe(true);
-    const rows = (after as { file: RoadmapFile }).file.measurements;
+    const rows = (after as { file: RoadmapFile }).file.labValues;
     expect(rows.find((r) => r.id === 'hid-ldl')!.status).toBe('entered-in-error');
     expect(rows.find((r) => r.correctsId === 'hid-ldl')).toMatchObject({ value: 3.4, status: 'active' });
   });

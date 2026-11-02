@@ -217,7 +217,8 @@ function reviewPart(file: RoadmapFile, edits: ProposedEdit[], invalid: string[],
   }
 
   const view = readableView(file).file;
-  const readable = new Set(view.measurements.map((row) => row.id));
+  // A blood test is a core lab row (US-66 AC1), so a held value may be in either array.
+  const readable = new Set([...view.measurements, ...view.labValues].map((row) => row.id));
   const shownRow = (row: { id: string; value: number } | undefined) => (row && readable.has(row.id) ? row : undefined);
   let next = file;
   for (const key of order) {

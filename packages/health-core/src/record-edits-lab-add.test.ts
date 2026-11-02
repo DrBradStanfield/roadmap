@@ -3,6 +3,8 @@
 import { describe, expect, it } from 'vitest';
 import { addLabValue } from './record-edits';
 import { createEmptyFile, type FileLabValue, type RoadmapFile } from './roadmap-file';
+import { createCoreRow } from './blood-tests';
+import { reportedToCanonical } from './units';
 
 const NOW = '2026-10-21T08:00:00.000Z';
 const held = (id: string, metricName: string, value: number, unit: string, day: string): FileLabValue => ({
@@ -38,5 +40,29 @@ describe('addLabValue (US-25 AC25)', () => {
     expect(addLabValue(record([]), { metricName: ' ', unit: 'µg/L', value: 1, day: '2026-10-01' }, NOW)).toMatchObject({ ok: false, reason: 'invalid-value' });
     expect(addLabValue(record([]), { metricName: 'ferritin', unit: 'mg/dL', value: 1, day: '2026-10-01' }, NOW))
       .toMatchObject({ ok: false, reason: 'unknown-unit', message: expect.stringMatching(/^Ferritin: unit not recognised \(mg\/dL\)/) });
+  });
+});
+
+// US-66 AC6 (with US-21 AC13): a core test's name writes its core row, so a held day names the core
+// value in the unit typed and offers it for replacing, and a number out of range says so: never
+// "already has a value" for a day that holds nothing.
+describe('addLabValue — a core test by name (US-66 AC6)', () => {
+  const si = reportedToCanonical('ldl', 116, 'mg/dL')!.valueSI;
+  const core = createCoreRow({ id: 'c1', metric: 'ldl', value: si, recordedAt: '2026-10-01T00:00:00.000Z', createdAt: NOW, source: 'manual' });
+  const ldl = (value: number, file = record([core])) => addLabValue(file, { metricName: 'LDL-C', unit: 'mg/dL', value, day: '2026-10-01' }, NOW);
+
+  it('names the held core value in the unit typed, and offers it when the number differs', () => {
+    expect(ldl(131)).toEqual({ ok: false, reason: 'slot-occupied', message: 'That test already has 116 mg/dL for that date.', existingId: 'c1' });
+    expect(ldl(116)).toEqual({ ok: false, reason: 'slot-occupied', message: 'That test already has 116 mg/dL for that date.' });
+  });
+
+  it('a number out of range is refused as one, naming the end it missed', () => {
+    expect(ldl(99999, record([]))).toMatchObject({ ok: false, reason: 'invalid-value', bound: 'above' });
+  });
+
+  it('a free day writes the core row in its canonical unit', () => {
+    const added = ldl(131, record([]));
+    if (!added.ok) throw new Error(added.message);
+    expect(added.row).toMatchObject({ metricName: 'ldl', unit: 'mmol/L', core: true, source: 'manual' });
   });
 });
