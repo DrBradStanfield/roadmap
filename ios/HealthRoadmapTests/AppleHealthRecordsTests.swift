@@ -180,6 +180,22 @@ final class AppleHealthRecordsTests: XCTestCase {
         XCTAssertNotNil(health.recordAnchors[1], "once: the next read starts from the anchor")
     }
 
+    /// Rules version 2 (issued dates, the MDRD eGFR and the import winning a conflict now land):
+    /// a phone whose anchor was kept under version 1 reads every result again (Codex R3).
+    func testAnAnchorKeptUnderRulesVersion1IsReadAgain_US66_AC3_AC9() async throws {
+        XCTAssertEqual(HealthSyncMemory.labResultsRulesVersion, 2)
+        memory.connected = true
+        memory.labResultsAnchor = Data("version 1 build".utf8)
+        memory.labResultsRules = 1
+        let health = FakeHealthStore()
+        health.supportsHealthRecords = true
+        health.pendingRecords = [Self.hba1c()]
+        let (_, sync, _) = try parts(health)
+        await sync.refresh()
+        XCTAssertEqual(health.recordAnchors, [nil], "read from the start")
+        XCTAssertEqual(memory.labResultsRules, 2)
+    }
+
     // MARK: AC2, AC5: the edit sent
 
     /// The engine's door (my-data.ts `healthRecords`): each result as it came, Swift parsing nothing.

@@ -12,7 +12,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Ajv2020 from 'ajv/dist/2020';
 import { describe, expect, it } from 'vitest';
-import { HEALTH_RECORDS_LOINC, importHealthRecords, type ClinicalRecordInput } from './health-records-import';
+import { HEALTH_RECORDS_LOINC, importHealthRecords, isVersionMarker, type ClinicalRecordInput } from './health-records-import';
 import { acceptedLabUnits, LAB_CATALOG } from './lab-catalog';
 import { mergeFiles } from './merge';
 import { migrateFile } from './migrate';
@@ -414,7 +414,7 @@ describe('US-66 AC5: identity and version', () => {
     const first = run(empty(), [rec(obs(R4_LDL, { meta: stamp }))]).file;
     const { file, counts } = run(first, [rec(obs(R4_LDL, { meta: stamp, status: 'entered-in-error' }))], LATER);
     expect(counts.withdrawn).toBe(1);
-    expect(file.measurements.map((m) => m.status)).toEqual(['entered-in-error']);
+    expect(file.measurements.map((m) => m.status)).toEqual(['entered-in-error', 'entered-in-error']);
   });
 
   it('AC5: whole-number versionIds longer than 15 digits still order (Codex re-check R2)', () => {
@@ -499,25 +499,39 @@ describe('US-66 AC6: amended or corrected', () => {
     expect(file.meta.updatedAt).toBe(LATER);
   });
 
-  it('AC6: a newer version with the same value appends a correction with the same value and the new version (re-check R1)', () => {
+  it('AC5, AC6: a newer version with the same value, unit and comparator appends only a version marker (Codex R1)', () => {
     const first = run(empty(), [rec(obs(R4_LDL))]).file;
     const old = first.measurements[0];
     const { file, counts } = run(first, [rec(obs(R4_LDL, { status: 'amended', meta: { versionId: '2' } }))], LATER);
     expect(counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 1, notRead: 0 });
     expect(file.measurements).toEqual([
-      { ...old, status: 'entered-in-error' },
+      old,
       expect.objectContaining({
-        value: 4.6, recordedAt: old.recordedAt, status: 'active', correctsId: old.id,
-        externalId: `${SOURCE}|Observation|ldlcholesterol#|2|amended|4.6||mmol/L`,
+        metricType: 'ldl', value: 4.6, recordedAt: old.recordedAt, createdAt: LATER, source: 'health_records',
+        status: 'entered-in-error', correctsId: null, externalId: `${SOURCE}|Observation|ldlcholesterol#|2|amended|4.6||mmol/L`,
       }),
     ]);
+    expect(isVersionMarker(file.measurements[1], file.measurements)).toBe(true);
+    // The marker is remembered: the same version again changes nothing.
+    expect(run(file, [rec(obs(R4_LDL, { status: 'amended', meta: { versionId: '2' } }))], LATER).file).toBe(file);
   });
 
-  it('AC6, AC5: v1, then v3 with the same value, then an unseen older v2 is stale: nothing changes (re-check R1)', () => {
+  it('AC5: final, amended and corrected are alike: a re-stamp of the same value is a marker whatever its status', () => {
+    const first = run(empty(), [rec(obs(R4_LDL))]).file;
+    const { file, counts } = run(first, [
+      rec(obs(R4_LDL, { status: 'corrected', meta: { versionId: '2' } })),
+      rec(obs(R4_LDL, { status: 'final', meta: { versionId: '3' } })),
+    ], LATER);
+    expect(counts.alreadyInRecord).toBe(2);
+    expect(file.measurements.map((m) => [m.status, m.correctsId])).toEqual([['active', null], ['entered-in-error', null], ['entered-in-error', null]]);
+  });
+
+  it('AC5, AC6: v1, then v3 with the same value, then an unseen older v2 is stale: nothing changes (re-check R1)', () => {
     const v1 = rec(obs(R4_LDL, { meta: { versionId: '1' } }));
     const v3 = rec(obs(R4_LDL, { meta: { versionId: '3' } }));
     const held = run(run(empty(), [v1]).file, [v3], LATER).file;
-    expect(held.measurements.filter((m) => m.status === 'active').map((m) => m.externalId)).toEqual([`${SOURCE}|Observation|ldlcholesterol#|3|final|4.6||mmol/L`]);
+    expect(held.measurements.filter((m) => m.status === 'active').map((m) => m.externalId)).toEqual([`${SOURCE}|Observation|ldlcholesterol#|1|final|4.6||mmol/L`]);
+    expect(held.measurements.map((m) => m.externalId)).toContain(`${SOURCE}|Observation|ldlcholesterol#|3|final|4.6||mmol/L`);
     for (const v2 of [
       rec(obs(R4_LDL, { meta: { versionId: '2' }, status: 'entered-in-error' })),
       rec(obs(R4_LDL, { meta: { versionId: '2' }, status: 'amended', valueQuantity: { value: 3.9, unit: 'mmol/L' } })),
@@ -550,15 +564,93 @@ describe('US-66 AC6: amended or corrected', () => {
     expect(counts.notRead).toBe(1);
     expect(file).toBe(first);
   });
+
+  // FHIR's `issued` is when THIS version was released, so an amendment of a result
+  // dated by `issued` carries a later one: that is not a move (both reviewers).
+  const ISSUED_ONLY = (value: number, issued: string, fields: Record<string, unknown> = {}) =>
+    lab('2093-3', value, 'mg/dL', { effectiveDateTime: undefined, issued, ...fields });
+
+  it('AC3, AC6: an amendment dated by a later `issued` corrects the result on its first day', () => {
+    const first = run(empty(), [rec(ISSUED_ONLY(190, '2026-10-21T14:34:00+01:00'))]).file;
+    const old = first.measurements[0];
+    const { file, counts } = run(first, [rec(ISSUED_ONLY(240, '2026-10-24T09:00:00+01:00', { status: 'amended', meta: { versionId: '2' } }))], LATER);
+    expect(counts).toEqual({ added: 0, corrected: 1, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
+    expect(file.measurements.filter((m) => m.status === 'active')).toEqual([expect.objectContaining({
+      metricType: 'total_cholesterol', recordedAt: old.recordedAt, correctsId: old.id,
+    })]);
+    expect(file.measurements.filter((m) => m.status === 'active')[0].recordedAt.slice(0, 10)).toBe('2026-10-21');
+  });
+
+  it('AC3, AC5: a same-value version with a later `issued` is a marker on the first day', () => {
+    const first = run(empty(), [rec(ISSUED_ONLY(190, '2026-10-21T14:34:00+01:00'))]).file;
+    const { file, counts } = run(first, [rec(ISSUED_ONLY(190, '2026-10-24T09:00:00+01:00', { meta: { versionId: '2' } }))], LATER);
+    expect(counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 1, notRead: 0 });
+    expect(file.measurements.map((m) => [m.status, m.recordedAt])).toEqual([
+      ['active', first.measurements[0].recordedAt], ['entered-in-error', first.measurements[0].recordedAt],
+    ]);
+  });
+
+  it('AC3, AC6: a later-issued amendment of a withdrawn or hand-corrected result keeps its first day', () => {
+    const first = run(empty(), [rec(ISSUED_ONLY(190, '2026-10-21T14:34:00+01:00'))]).file;
+    const fixed = correctValue(first, { id: first.measurements[0].id, newValue: 5.5, now: LATER });
+    if (!fixed.ok) throw new Error('setup');
+    const { file, counts } = run(fixed.file, [rec(ISSUED_ONLY(240, '2026-10-24T09:00:00+01:00', { status: 'amended', meta: { versionId: '2' } }))], LATER);
+    expect(counts.corrected).toBe(1);
+    expect(file.measurements.filter((m) => m.status === 'active').map((m) => [m.source, m.recordedAt.slice(0, 10)])).toEqual([['health_records', '2026-10-21']]);
+  });
+
+  it('AC6: a version that adds an effective date to a result first dated by `issued` is not read when the day differs (the record cannot tell it from a move)', () => {
+    const first = run(empty(), [rec(ISSUED_ONLY(190, '2026-10-21T14:34:00+01:00'))]).file;
+    const { file, counts } = run(first, [rec(ISSUED_ONLY(240, '2026-10-24T09:00:00+01:00', { effectiveDateTime: '2026-10-20', meta: { versionId: '2' } }))], LATER);
+    expect(counts.notRead).toBe(1);
+    expect(file).toBe(first);
+  });
 });
 
 describe('US-66 AC7 and AC8: withdrawn, and the person\'s call', () => {
-  it('AC7: entered-in-error flips the imported row and appends nothing', () => {
+  it('AC7: entered-in-error flips the imported row and appends only a marker of the withdrawal\'s version', () => {
     const first = run(empty(), [rec(obs(R4_LDL))]).file;
     const { file, counts } = run(first, [rec(obs(R4_LDL, { status: 'entered-in-error', meta: { versionId: '2' } }))], LATER);
     expect(counts).toEqual({ added: 0, corrected: 0, withdrawn: 1, alreadyInRecord: 0, notRead: 0 });
-    expect(file.measurements).toEqual([{ ...first.measurements[0], status: 'entered-in-error' }]);
+    expect(file.measurements).toEqual([
+      { ...first.measurements[0], status: 'entered-in-error' },
+      expect.objectContaining({
+        value: 4.6, recordedAt: first.measurements[0].recordedAt, status: 'entered-in-error', correctsId: null,
+        source: 'health_records', externalId: `${SOURCE}|Observation|ldlcholesterol#|2|entered-in-error|4.6||mmol/L`,
+      }),
+    ]);
+    expect(file.measurements.map((m) => isVersionMarker(m, file.measurements))).toEqual([false, true]);
     expect(file.meta.updatedAt).toBe(LATER);
+  });
+
+  it('AC7, AC5: v1, then its withdrawal v3, then an older final v2 in a later import stays out', () => {
+    const v1 = run(empty(), [rec(obs(R4_LDL, { meta: { versionId: '1' } }))]).file;
+    const withdrawn = run(v1, [rec(obs(R4_LDL, { status: 'entered-in-error', meta: { versionId: '3' } }))], LATER).file;
+    const { file, counts } = run(withdrawn, [rec(obs(R4_LDL, { status: 'amended', meta: { versionId: '2' }, valueQuantity: { value: 3.9, unit: 'mmol/L' } }))], LATER);
+    expect(counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 1, notRead: 0 });
+    expect(file).toBe(withdrawn);
+  });
+
+  it('AC7, AC5: a withdrawal of a result the person already rejected is remembered, so an older final stays out', () => {
+    const v1 = run(empty(), [rec(obs(R4_LDL, { meta: { versionId: '1' } }))]).file;
+    const rejected: RoadmapFile = { ...v1, measurements: v1.measurements.map((m) => ({ ...m, status: 'entered-in-error' as const })) };
+    const withdrawn = run(rejected, [rec(obs(R4_LDL, { status: 'entered-in-error', meta: { versionId: '3' } }))], LATER);
+    expect(withdrawn.counts.alreadyInRecord).toBe(1);
+    expect(withdrawn.file.measurements).toHaveLength(2);
+    const { file } = run(withdrawn.file, [rec(obs(R4_LDL, { meta: { versionId: '2' }, valueQuantity: { value: 3.9, unit: 'mmol/L' } }))], LATER);
+    expect(file).toBe(withdrawn.file);
+  });
+
+  it('AC7: a withdrawal already in the record still flips an active copy a merge brought back', () => {
+    const first = run(empty(), [rec(obs(R4_LDL))]).file;
+    const withdrawal = rec(obs(R4_LDL, { status: 'entered-in-error', meta: { versionId: '2' } }));
+    const withdrawn = run(first, [withdrawal], LATER).file;
+    // Another device's copy of v1, imported before it saw the withdrawal, came back active.
+    const back: RoadmapFile = { ...withdrawn, measurements: [...withdrawn.measurements, { ...first.measurements[0], id: 'other-device' }] };
+    const { file, counts } = run(back, [withdrawal], LATER);
+    expect(counts.withdrawn).toBe(1);
+    expect(file.measurements.filter((m) => m.status === 'active')).toEqual([]);
+    expect(file.measurements).toHaveLength(3);
   });
 
   it('AC7: a withdrawal of a result never imported changes nothing', () => {
@@ -580,16 +672,34 @@ describe('US-66 AC7 and AC8: withdrawn, and the person\'s call', () => {
     const withdrawn = run(first, [rec(obs(R4_LDL, { status: 'entered-in-error', meta: { versionId: '2' } }))], LATER).file;
     const { file, counts } = run(withdrawn, [rec(obs(R4_LDL, { status: 'corrected', meta: { versionId: '3' }, valueQuantity: { value: 3.3, unit: 'mmol/L' } }))], LATER);
     expect(counts).toEqual({ added: 1, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
-    expect(file.measurements.map((m) => [m.value, m.status])).toEqual([[4.6, 'entered-in-error'], [3.3, 'active']]);
+    expect(file.measurements.map((m) => [m.value, m.status])).toEqual([[4.6, 'entered-in-error'], [4.6, 'entered-in-error'], [3.3, 'active']]);
   });
 
-  it('AC8: a result the person marked entered-in-error stays out in that version, and lands in a new one', () => {
+  it('AC8: a result the person marked entered-in-error stays out in that version, and lands in a new one with a new value', () => {
     const once = run(empty(), [rec(obs(R4_LDL))]).file;
     const rejected: RoadmapFile = { ...once, measurements: once.measurements.map((m) => ({ ...m, status: 'entered-in-error' as const })) };
     expect(run(rejected, [rec(obs(R4_LDL))], LATER).file).toBe(rejected);
-    const { file, counts } = run(rejected, [rec(obs(R4_LDL, { status: 'amended', meta: { versionId: '2' } }))], LATER);
+    const { file, counts } = run(rejected, [rec(obs(R4_LDL, { status: 'amended', meta: { versionId: '2' }, valueQuantity: { value: 3.9, unit: 'mmol/L' } }))], LATER);
     expect(counts.added).toBe(1);
-    expect(file.measurements.filter((m) => m.status === 'active').map((m) => m.externalId)).toEqual([`${SOURCE}|Observation|ldlcholesterol#|2|amended|4.6||mmol/L`]);
+    expect(file.measurements.filter((m) => m.status === 'active').map((m) => m.externalId)).toEqual([`${SOURCE}|Observation|ldlcholesterol#|2|amended|3.9||mmol/L`]);
+  });
+
+  it('AC8: a re-stamp with the same value does not lift the person\'s rejection; it lands a marker only', () => {
+    const once = run(empty(), [rec(obs(R4_LDL))]).file;
+    const rejected: RoadmapFile = { ...once, measurements: once.measurements.map((m) => ({ ...m, status: 'entered-in-error' as const })) };
+    const { file, counts } = run(rejected, [rec(obs(R4_LDL, { status: 'amended', meta: { versionId: '2' } }))], LATER);
+    expect(counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 1, notRead: 0 });
+    expect(file.measurements.filter((m) => m.status === 'active')).toEqual([]);
+    expect(file.measurements.map((m) => isVersionMarker(m, file.measurements))).toEqual([false, true]);
+  });
+
+  it('AC8, AC9: a re-stamp with the same value does not override the person\'s hand edit', () => {
+    const first = run(empty(), [rec(obs(R4_LDL))]).file;
+    const fixed = correctValue(first, { id: first.measurements[0].id, newValue: 4.2, now: LATER });
+    if (!fixed.ok) throw new Error('setup');
+    const { file, counts } = run(fixed.file, [rec(obs(R4_LDL, { status: 'amended', meta: { versionId: '2' } }))], LATER);
+    expect(counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 1, notRead: 0 });
+    expect(file.measurements.filter((m) => m.status === 'active')).toEqual([expect.objectContaining({ value: 4.2, source: 'manual_correction' })]);
   });
 
   it('AC8: after the person\'s rejection, an unseen older version is stale and stays out', () => {
@@ -714,6 +824,45 @@ describe('US-66 AC12: the record schema and the web', () => {
     expect(merged.labValues[0].externalId).toBe(`${SOURCE}|Observation|obs-2276-4#|1|final|85||ng/mL`);
     // A merged record re-read on the phone is still deduplicated by it.
     expect(run(merged, [rec(lab('2276-4', 85, 'ng/mL'))], LATER).counts.alreadyInRecord).toBe(1);
+  });
+});
+
+describe('US-66 AC5: version markers', () => {
+  const withdrawal = rec(obs(R4_LDL, { status: 'entered-in-error', meta: { versionId: '3' } }));
+
+  it('AC5: a marker never changes another row\'s status in a merge, either way round, on either device', () => {
+    const first = run(empty(), [rec(obs(R4_LDL))]).file;
+    const marked = run(first, [rec(obs(R4_LDL, { meta: { versionId: '2' } }))], LATER).file;
+    const opts = { deviceId: 'laptop', now: LATER };
+    for (const merged of [mergeFiles(marked, first, opts), mergeFiles(first, marked, opts)]) {
+      expect(merged.measurements.map((m) => [m.externalId?.split('#')[1], m.status, m.correctsId]).sort()).toEqual([
+        ['|1|final|4.6||mmol/L', 'active', null], ['|2|final|4.6||mmol/L', 'entered-in-error', null],
+      ]);
+    }
+  });
+
+  it('AC5: readers leave markers out as any entered-in-error row', () => {
+    const { file } = run(run(empty(), [rec(obs(R4_LDL))]).file, [rec(obs(R4_LDL, { meta: { versionId: '2' } }))], LATER);
+    expect(file.measurements.filter((m) => m.status === 'active')).toHaveLength(1);
+  });
+
+  it('AC5, AC7: a real withdrawn result, a corrected one and a rejected one are never markers', () => {
+    const v1 = run(empty(), [rec(obs(R4_LDL, { meta: { versionId: '1' } }))]).file;
+    const withdrawn = run(v1, [withdrawal], LATER).file;
+    expect(withdrawn.measurements.map((m) => isVersionMarker(m, withdrawn.measurements))).toEqual([false, true]);
+    // 4.6, corrected to 3.9, corrected back to 4.6: the first 4.6 is a corrected result, shown.
+    const v2 = run(v1, [rec(obs(R4_LDL, { meta: { versionId: '2' }, valueQuantity: { value: 3.9, unit: 'mmol/L' } }))], LATER).file;
+    const back = run(v2, [rec(obs(R4_LDL, { meta: { versionId: '4' } }))], '2026-11-02T10:00:00.000Z').file;
+    expect(back.measurements.map((m) => [m.value, m.status, isVersionMarker(m, back.measurements)])).toEqual([
+      [4.6, 'entered-in-error', false], [3.9, 'entered-in-error', false], [4.6, 'active', false],
+    ]);
+    const rejected = v1.measurements.map((m) => ({ ...m, status: 'entered-in-error' as const }));
+    expect(isVersionMarker(rejected[0], rejected)).toBe(false);
+  });
+
+  it('AC5: a marker in the same batch as the row it copies, versions unordered, is shown rather than risk hiding a result', () => {
+    const { file } = run(empty(), [rec(obs(R4_LDL, { meta: { versionId: 'a' } })), rec(obs(R4_LDL, { meta: { versionId: 'b' } }))]);
+    expect(file.measurements.map((m) => isVersionMarker(m, file.measurements))).toEqual([false, false]);
   });
 });
 

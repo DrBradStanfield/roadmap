@@ -35,7 +35,8 @@ struct HealthSyncMemory {
 
     /// Bumped when the engine starts reading lab results it used to refuse (a new code or
     /// unit): a phone whose anchor was kept under an older version reads every result again.
-    static let labResultsRulesVersion = 1
+    /// 2: results dated by `issued`, the MDRD eGFR and the import winning a conflict (US-66).
+    static let labResultsRulesVersion = 2
 
     /// The rules version the lab results anchor was kept under; 0 before this was stored.
     var labResultsRules: Int {

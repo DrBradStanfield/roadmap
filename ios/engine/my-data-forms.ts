@@ -17,6 +17,7 @@ import { setScreening } from '../../packages/health-core/src/state-edits';
 import { localDay } from '../../packages/health-core/src/merge';
 import { METRIC_LABELS, METRIC_TO_FIELD } from '../../packages/health-core/src/mappings';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
+import { isVersionMarker } from '../../packages/health-core/src/health-records-import';
 import type { MetricType } from '../../packages/health-core/src/units';
 import { BLOOD_PRESSURE, pressureHistory } from './blood-pressure';
 import { cellUnitFor, systemFor, type UnitChoices } from './unit-choices';
@@ -278,7 +279,8 @@ export function applyFormEdit(file: RoadmapFile, edit: Exclude<FormEdit, { kind:
 
 /**
  * Every value recorded for a metric, newest day first, entered-in-error rows
- * included (the app strikes them through). The record is append-only: this
+ * included (the app strikes them through), Health Records version markers left
+ * out (US-66 AC5). The record is append-only: this
  * view offers corrections, never removal.
  */
 /** A stored value as its cell shows it: a limit with its symbol, at places that keep it true (US-12 AC20). */
@@ -296,7 +298,9 @@ export function metricHistory(file: RoadmapFile, metric: string, now = new Date(
     .map(({ id, date, label }) => ({ id, day: localDay(new Date(date)), label }));
   if (metric === BLOOD_PRESSURE) return { ...pressureHistory(file, excludedFields), markers };
   const shown = cellUnitFor(file, metric, choices);
-  const rows = file.measurements.filter((row) => row.metricType === metric);
+  const all = file.measurements.filter((row) => row.metricType === metric);
+  // A version marker only carries a version the record has seen (US-66 AC5): not a value.
+  const rows = all.filter((row) => !isVersionMarker(row, all));
   // The plan's own pick of the current value.
   const current = latestActivePerMetric(rows.filter((row) => row.status === 'active'))[0];
   return {

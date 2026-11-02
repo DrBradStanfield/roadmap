@@ -12,17 +12,22 @@
  *    comparator and unit together, so a changed result is a new version even
  *    when the server keeps its meta. The row's `externalId` is `identity#version`.
  * The rules, in the order they are asked:
- *  - a version any row carries, entered-in-error included, never lands again;
- *  - a version not later than any of the identity's rows (by lastUpdated, else
- *    by whole-number versionId) is stale: it neither replaces nor withdraws;
- *  - `entered-in-error` withdraws: the identity's active row is flipped, and
- *    nothing is appended (AC7);
+ *  - a version any row carries, entered-in-error included, never lands again
+ *    (a withdrawal still flips an active copy a merge brought back);
+ *  - a version not later than any of the identity's rows, markers included (by
+ *    lastUpdated, else by whole-number versionId) is stale: it neither replaces nor withdraws;
+ *  - `entered-in-error` withdraws: the identity's active row is flipped, and a
+ *    version marker carries the withdrawal's version (AC7);
  *  - only `final`, `amended` and `corrected` land; anything else is not read;
+ *  - a version dated by `issued` alone keeps the day the result already holds:
+ *    `issued` is when that version was released, so an amendment moves it (AC3);
+ *  - a newer version with the value, unit and comparator of the identity's
+ *    current row lands only a version marker: the record remembers the version,
+ *    and the person's rejection or hand edit stands (AC5, AC8);
  *  - an identity whose rows are all entered-in-error lands again only in a new
- *    version (AC8: the stale rule above holds back an older one);
- *  - a newer version of an identity with an active row replaces it as a FHIR
- *    correction, with the same value too, so the record carries the newest
- *    version to judge an older one against (AC6);
+ *    version with another value (AC8: the stale rule above holds back an older one);
+ *  - a newer version of an identity with an active row and another value replaces
+ *    it as a FHIR correction (AC6);
  *  - the import is the source of truth: a result corrects a typed, uploaded or
  *    other-source row holding its (metric, day) when the value, unit or limit
  *    differs, and appends nothing when they match (AC9, Brad 2026-11-02);
@@ -176,21 +181,28 @@ function versionOf(obs: Observation): string {
 }
 
 /**
- * Whether a version is older than the one a row of its identity carries (AC5, AC8): by
+ * A version against the one a row of its identity carries (AC5, AC8): by
  * lastUpdated when both carry one, else by versionId when both are whole
- * numbers (any length, compared as digits). Unordered otherwise, so not stale.
- * An equal stamp is stale for a new value (an old copy must not undo a newer
- * one) but not for a withdrawal: a lab's withdrawal is honoured (AC7, re-check R1).
+ * numbers (any length, compared as digits): -1 older, 0 equal, 1 newer, null unordered.
  */
-function isStale(version: string, rowExternalId: string, withdrawal: boolean): boolean {
+function versionOrder(version: string, rowExternalId: string): number | null {
   const old = rowExternalId.slice(rowExternalId.indexOf('#') + 1).split('|');
-  if (old.length !== 6) return false;
+  if (old.length !== 6) return null;
   const [at, id] = version.split('|');
   const [oldAt, oldId] = old;
   const t = Date.parse(at);
   const oldT = Date.parse(oldAt);
-  const order = at && oldAt && !Number.isNaN(t) && !Number.isNaN(oldT) ? Math.sign(t - oldT)
+  return at && oldAt && !Number.isNaN(t) && !Number.isNaN(oldT) ? Math.sign(t - oldT)
     : /^\d+$/.test(id) && /^\d+$/.test(oldId) ? compareDigits(id, oldId) : null;
+}
+
+/**
+ * Whether a version is older than a row's (AC5, AC8). Unordered is not stale.
+ * An equal stamp is stale for a new value (an old copy must not undo a newer
+ * one) but not for a withdrawal: a lab's withdrawal is honoured (AC7, re-check R1).
+ */
+function isStale(version: string, rowExternalId: string, withdrawal: boolean): boolean {
+  const order = versionOrder(version, rowExternalId);
   return order !== null && (order < 0 || (order === 0 && !withdrawal));
 }
 
@@ -252,6 +264,36 @@ function readingOf(obs: Observation, now: string): Reading | null {
 
 type Row = FileMeasurement | FileLabValue;
 
+const identityOf = (row: Row) =>
+  row.source === 'health_records' && typeof row.externalId === 'string' && row.externalId.includes('#')
+    ? row.externalId.slice(0, row.externalId.indexOf('#')) : null;
+
+/** Whether a row was written before another: by createdAt, then, in one batch, by version. */
+function writtenBefore(a: Row, b: Row): boolean {
+  const order = Math.sign(Date.parse(a.createdAt) - Date.parse(b.createdAt));
+  return order < 0 || (order === 0 && versionOrder(String(b.externalId).slice(String(b.externalId).indexOf('#') + 1), String(a.externalId)) === 1);
+}
+
+/** Whether two rows, or a row and a reading, hold the same value, unit and comparator (AC5, AC9). */
+function sameContent(a: Row, b: Pick<Row, 'value' | 'comparator'> & { unit?: string }): boolean {
+  return sameValue(a.value, b.value) && ('unit' in a ? a.unit : undefined) === b.unit && comparatorOf(a).comparator === b.comparator;
+}
+
+/**
+ * A version marker (AC5): a `health_records` row born entered-in-error, naming
+ * no row (`correctsId: null`), that repeats a row of its result written before
+ * it on the same day with the same value, unit and comparator. It only carries
+ * a version the record has seen, so a history leaves it out. A withdrawn,
+ * corrected or rejected result is the first of its content, so never one; two
+ * rows of one batch whose versions do not order are both shown, not guessed between.
+ */
+export function isVersionMarker(row: Row, rows: readonly Row[]): boolean {
+  const identity = row.status === 'entered-in-error' && !row.correctsId ? identityOf(row) : null;
+  return identity !== null && rows.some((other) => other.id !== row.id && identityOf(other) === identity
+    && slotOfRow(other) === slotOfRow(row) && sameContent(other, row)
+    && writtenBefore(other, row));
+}
+
 export function importHealthRecords(
   file: RoadmapFile, records: ClinicalRecordInput[], opts: { now: string },
 ): { file: RoadmapFile; counts: HealthRecordsCounts } {
@@ -288,22 +330,40 @@ export function importHealthRecords(
     if (!obs) { counts.notRead++; continue; }
     const version = versionOf(obs);
     const externalId = `${identity}#${version}`;
-    // AC5: a version already in the record never lands again, after a reinstall too.
-    if (known.has(externalId)) { counts.alreadyInRecord++; continue; }
+    const withdrawal = obs.status === 'entered-in-error';
     const rows = byIdentity.get(identity) ?? [];
     const active = rows.find(({ list, at }) => list[at].status === 'active');
+    const withdraw = (held: { list: Row[]; at: number }) => {
+      held.list[held.at] = { ...held.list[held.at], status: 'entered-in-error' };
+      taken.delete(slotOfRow(held.list[held.at]));
+      counts.withdrawn++;
+      changed = true;
+    };
+    // AC5: a version already in the record never lands again, after a reinstall too.
+    // AC7: a withdrawal still withdraws an active copy another device's merge brought back.
+    if (known.has(externalId)) {
+      if (withdrawal && active) withdraw(active);
+      else counts.alreadyInRecord++;
+      continue;
+    }
     // AC5, AC8: a replayed older version neither replaces nor withdraws a newer one.
-    if (rows.some(({ list, at }) => isStale(version, list[at].externalId as string, obs.status === 'entered-in-error'))) { counts.alreadyInRecord++; continue; }
+    if (rows.some(({ list, at }) => isStale(version, list[at].externalId as string, withdrawal))) { counts.alreadyInRecord++; continue; }
+    // The result as the record holds it now: its active row, else its newest.
+    const current = active ?? rows.reduce<(typeof rows)[number] | undefined>((a, b) => (!a || writtenBefore(a.list[a.at], b.list[b.at]) ? b : a), undefined);
+    /** AC5: a version marker, so the record remembers a version that changes nothing it shows. */
+    const mark = () => {
+      const { list, at } = current!;
+      list.push({ ...list[at], id: newId(), status: 'entered-in-error', createdAt: now, source: 'health_records', correctsId: null, externalId });
+      remember(list, list.length - 1);
+      changed = true;
+    };
 
-    // AC7: the lab withdrew it. The active row goes; nothing is appended.
-    if (obs.status === 'entered-in-error') {
-      if (active) {
-        active.list[active.at] = { ...active.list[active.at], status: 'entered-in-error' };
-        taken.delete(slotOfRow(active.list[active.at]));
-        counts.withdrawn++;
-        changed = true;
-      } else if (rows.length) counts.alreadyInRecord++;
-      else counts.notRead++;
+    // AC7: the lab withdrew it. The active row goes; a marker carries the withdrawal's version.
+    if (withdrawal) {
+      if (!current) { counts.notRead++; continue; }
+      if (active) withdraw(active);
+      else counts.alreadyInRecord++;
+      mark();
       continue;
     }
     if (!LANDS.has(obs.status)) { counts.notRead++; continue; }
@@ -313,25 +373,29 @@ export function importHealthRecords(
     // AC10 (D6): the erase removed the rows that would have deduplicated it.
     if (erasedAt !== null && Date.parse(reading.recordedAt) < erasedAt) { counts.notRead++; continue; }
 
-    const slot = slotKey(reading.kind, reading.metric, reading.recordedAt);
+    let slot = slotKey(reading.kind, reading.metric, reading.recordedAt);
     const list: Row[] = reading.kind === 'measurement' ? measurements : labValues;
+    // AC3: `issued` is this version's release, so a version dated by it alone keeps the
+    // day its result already holds; an amendment's later release is not a move.
+    const established = current && current.list[current.at];
+    if (established && current!.list === list && !obs.effectiveDateTime && !obs.effectivePeriod?.start
+      && slotKey(reading.kind, reading.metric, established.recordedAt) === slotOfRow(established)) slot = slotOfRow(established);
     // A version that moves the result to another test or day is not read:
     // a correction keeps its slot (agent-access rule 2).
     if (active && (active.list !== list || slotOfRow(active.list[active.at]) !== slot)) { counts.notRead++; continue; }
+    // AC5, AC8: the same value, unit and comparator as the result holds now: a
+    // marker only; the person's rejection or hand edit stands.
+    if (established && sameContent(established, reading)) { mark(); counts.alreadyInRecord++; continue; }
     const held = active ?? taken.get(slot);
     const old = held?.list[held.at];
     // AC9: another institution's result holds the day.
     if (old && !active && old.source === 'health_records') { counts.alreadyInRecord++; continue; }
-    const oldUnit = old && 'unit' in old ? old.unit : undefined;
-    const newUnit = reading.kind === 'lab' ? reading.unit : undefined;
-    const same = old !== undefined && sameValue(old.value, reading.value) && oldUnit === newUnit && comparatorOf(old).comparator === reading.comparator;
     // AC9: the same value typed or uploaded on the day: nothing to correct.
-    if (same && !active) { counts.alreadyInRecord++; continue; }
+    if (old && sameContent(old, reading)) { counts.alreadyInRecord++; continue; }
     let correctsId: string | null = null;
-    let recordedAt = reading.recordedAt;
+    let recordedAt = slot === slotKey(reading.kind, reading.metric, reading.recordedAt) ? reading.recordedAt : established!.recordedAt;
     if (held && old) {
-      // AC6, AC9: a FHIR correction on the slot's day; AC6 with the same value
-      // too, so the record keeps the newest version (re-check R1).
+      // AC6, AC9: a FHIR correction on the slot's day.
       held.list[held.at] = { ...old, status: 'entered-in-error' };
       correctsId = old.id;
       recordedAt = old.recordedAt;
@@ -350,9 +414,7 @@ export function importHealthRecords(
     list.push(row);
     remember(list, list.length - 1);
     taken.set(slot, { list, at: list.length - 1 });
-    // A newer version with the same value lands only its version stamp.
-    if (same) counts.alreadyInRecord++;
-    else if (correctsId) counts.corrected++;
+    if (correctsId) counts.corrected++;
     else counts.added++;
     changed = true;
   }

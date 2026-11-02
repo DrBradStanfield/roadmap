@@ -769,7 +769,8 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
   `AppleHealthSync.foreground` (the app's `follow`, never a background wake, where no sheet
   can show) asks for lab results alone when Apple Health is connected, `supportsHealthRecords`
   and `statusForAuthorizationRequest` says `.shouldRequest`, then refreshes.
-- **Rules version:** `HealthSyncMemory.labResultsRulesVersion` (1), stored beside the anchor.
+- **Rules version:** `HealthSyncMemory.labResultsRulesVersion` (2 since 2026-11-02: results
+  dated by `issued`, the MDRD eGFR and the import winning a conflict), stored beside the anchor.
   Bump it when the engine starts reading results it used to refuse (a new code or unit): a
   phone whose anchor was kept under another version drops it once and reads every result
   again. AC5's dedup by `externalId`, and its stale-version rule, make the re-read safe.
@@ -783,9 +784,17 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
   day is `effectiveDateTime`, else `effectivePeriod.start`, else `issued`. A result whose
   day holds a typed, uploaded, hand-corrected or Apple Health row with another value, unit
   or comparator corrects that row (FHIR correction, its day kept); the same value appends
-  nothing. A newer version of an imported result is a correction even with the same value,
-  so the record carries the newest version stamp. A result the person or the lab withdrew
-  stays out until the lab sends a new version.
+  nothing. A version dated by `issued` alone keeps the day its result already holds: `issued`
+  is that version's release, so an amendment's later one is not a move (AC3). A newer version
+  with the same value, unit and comparator, and a lab's withdrawal, append a **version
+  marker** (AC5): a `health_records` row born `entered-in-error`, a copy of the result's
+  current row with the new version in its `externalId` and `correctsId: null` (merge reads no
+  `correctsId`, so it flips nothing on any device). The record remembers the version, so an
+  older one seen later is stale, and the person's rejection or hand edit stands; only another
+  value, unit or comparator lifts a rejection or overrides. The history (`metricHistory`)
+  leaves markers out with health-core's `isVersionMarker`; readers skip them as any
+  `entered-in-error` row. Known limit (adversary R4): a result dated by its release day can
+  sit on another day than the same draw typed on the draw day, so both stay active.
 - **Same line, same anchor rules as vitals:** `RecordStore.applyNow(.healthRecords(_))`, its counts in `ApplyResult.saved`; the store's
   one ordered line; the anchor (`HealthSyncMemory.labResultsAnchor`) moves only after the
   record holding the batch is saved, and none is kept until a batch brought results (the

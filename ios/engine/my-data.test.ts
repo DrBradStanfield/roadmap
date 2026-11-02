@@ -489,6 +489,17 @@ describe('Health Records (US-66)', () => {
     if (again.ok) expect(again.file).toBe(file);
   });
 
+  it('AC5, AC7: the iPhone history leaves version markers out, and shows a withdrawn result struck through', () => {
+    const version = (fields: object) => ({ ...record, json: JSON.stringify({ ...ldl, ...fields }) });
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'healthRecords', records: [record] });
+    const restamped = edited(file, { kind: 'healthRecords', records: [version({ meta: { versionId: '2' } })] });
+    expect(restamped.measurements).toHaveLength(2);
+    expect(metricHistory(restamped, 'ldl', LATER).rows.map((row) => [row.value, row.status])).toEqual([['2.6', 'active']]);
+    const withdrawn = edited(restamped, { kind: 'healthRecords', records: [version({ meta: { versionId: '3' }, status: 'entered-in-error' })] });
+    expect(withdrawn.measurements).toHaveLength(3);
+    expect(metricHistory(withdrawn, 'ldl', LATER).rows.map((row) => [row.value, row.status])).toEqual([['2.6', 'entered-in-error']]);
+  });
+
   it('refuses a batch that is not a list', () => {
     const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
     expect(applyEdit(file, { kind: 'healthRecords', records: 'nope' } as never, NOW)).toMatchObject({ ok: false, reason: 'invalid-value' });
