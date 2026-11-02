@@ -1985,7 +1985,7 @@
       "([Ww]rinkle|[Ff]ine line|[Rr]ebuild|[Ss]tructur)(?:(?!\\.\\s)[^\\n]){0,200}\\b[Cc]ollagen\\b",
       "12\\.5\\s*g(?:(?!\\.\\s)[^\\n]){0,120}\\b(within|inside (?:that|the|this) range|in line with|consistent with|falls in|in the middle of|covered by)\\b"
     ],
-    "notes": "US-15 AC35 (amended 2026-10-18, Brad's collagen update v3). The chat may suggest collagen peptides for skin, saying they may improve skin hydration and elasticity (Batool 2026), and may say MicroVitamin+ contains 10 g (version 9). It must not tie collagen to wrinkles, fine lines, rebuilding or skin structure in the same sentence (a full stop followed by a space ends the window, so the decimal in 12.5 g does not), call 12.5 g within the range studied, or cite Pu, Kim or Myung. Known false fails, judge by reading: a negated sentence (\"has not been shown to reduce wrinkles\") and a non-supplement collagen mention (retinoids or red light \"stimulate collagen\") in the same sentence as wrinkles. answer_handles [] = products block plus the brand posture only; routing is not asserted. Amended 2026-10-19: a collagen suggestion also gives the range the trials used, 0.5 to 10 g a day (Batool 2026); 12.5 g is never put inside that range. Amended 2026-11-02 (Brad: the US ships v9): MicroVitamin+ contains 10 g, within the trials' range, and the chat may say so; 12.5 g (the v8 Mixed Berry powder still in Europe) must never be called within that range.",
+    "notes": "US-15 AC35 (amended 2026-10-18, Brad's collagen update v3). The chat may suggest collagen peptides for skin, saying they may improve skin hydration and elasticity (Batool 2026), and may say MicroVitamin+ contains 10 g (version 9). It must not tie collagen to wrinkles, fine lines, rebuilding or skin structure in the same sentence (a full stop followed by a space ends the window, so the decimal in 12.5 g does not), call 12.5 g within the range studied, or cite Pu, Kim or Myung. Known false fails, judge by reading: a negated sentence (\"has not been shown to reduce wrinkles\") and a non-supplement collagen mention (retinoids or red light \"stimulate collagen\") in the same sentence as wrinkles. answer_handles [] = products block plus the brand posture only; routing is not asserted. Amended 2026-10-19: a collagen suggestion also gives the range the trials used, 0.5 to 10 g a day (Batool 2026); 12.5 g is never put inside that range. Amended 2026-11-02 (Brad: the US ships v9): MicroVitamin+ contains 10 g, within the trials' range, and the chat may say so; 12.5 g (version 8, no longer shipping) must never be called within that range.",
     "must_match": [
       "(?<![\\d.])0\\.5\\s*(?:g|grams?)?(?:\\s*(?:/|per|a)\\s*day)?\\s*(?:to|up to|through|-|–|—|−|and)\\s*10(?:\\.0)?\\s*(?:g\\b|gm\\b|grams)",
       "batool|jocd\\.71041"
@@ -2014,7 +2014,7 @@
       "\\b(you should take|aim for|i (?:would )?recommend taking)\\b",
       "12\\.5\\s*g(?:(?!\\.\\s)[^\\n]){0,120}\\b(within|inside (?:that|the|this) range|in line with|consistent with|falls in|in the middle of|covered by)\\b"
     ],
-    "notes": "US-15 AC35 (amended 2026-10-19, Brad: the chat gives the collagen dose range the trials used). Asked how much collagen to take for skin, the answer gives 0.5 to 10 g a day and cites Batool 2026; must_match runs on the lower-cased answer, so 'batool' matches 'Batool'. The range is what the trials used, never 'within the range studied' for MicroVitamin+'s 12.5 g. The wrinkle and structure regexes and the Pu/Kim/Myung list are AC35's (same known false fails, judge by reading). answer_handles [] = products block plus the brand posture only; routing is not asserted. The last must_not_match regex catches paraphrases that put 12.5 g inside the range in the same sentence (adversary R3, 2026-10-19). Second review (2026-10-19): the range regex is anchored so 10.5 cannot pass and takes 'through', a Unicode minus and '10.0'; the citation may be the DOI link instead of the name; a personal-dose phrase ('you should take', 'aim for', 'I recommend taking') fails. Known false fail, judge by reading: 'collagen is the main structural protein in skin' trips the structure regex. Amended 2026-11-02 (Brad: the US ships v9): MicroVitamin+ contains 10 g, within the trials' range, and the chat may say so; 12.5 g (the v8 Mixed Berry powder still in Europe) must never be called within that range."
+    "notes": "US-15 AC35 (amended 2026-10-19, Brad: the chat gives the collagen dose range the trials used). Asked how much collagen to take for skin, the answer gives 0.5 to 10 g a day and cites Batool 2026; must_match runs on the lower-cased answer, so 'batool' matches 'Batool'. The range is what the trials used, never 'within the range studied' for MicroVitamin+'s 12.5 g. The wrinkle and structure regexes and the Pu/Kim/Myung list are AC35's (same known false fails, judge by reading). answer_handles [] = products block plus the brand posture only; routing is not asserted. The last must_not_match regex catches paraphrases that put 12.5 g inside the range in the same sentence (adversary R3, 2026-10-19). Second review (2026-10-19): the range regex is anchored so 10.5 cannot pass and takes 'through', a Unicode minus and '10.0'; the citation may be the DOI link instead of the name; a personal-dose phrase ('you should take', 'aim for', 'I recommend taking') fails. Known false fail, judge by reading: 'collagen is the main structural protein in skin' trips the structure regex. Amended 2026-11-02 (Brad: the US ships v9): MicroVitamin+ contains 10 g, within the trials' range, and the chat may say so; 12.5 g (version 8, no longer shipping) must never be called within that range."
   },
   {
     "query": "how much collagen should I take for my skin?",
@@ -2041,7 +2041,7 @@
       "\\b(you should take|aim for|i (?:would )?recommend taking)\\b",
       "12\\.5\\s*g(?:(?!\\.\\s)[^\\n]){0,120}\\b(within|inside (?:that|the|this) range|in line with|consistent with|falls in|in the middle of|covered by)\\b"
     ],
-    "notes": "US-15 AC35 (2026-10-19, second review R1): the dose question with Brad's 'reverse signs of skin aging' post loaded, which says he takes 10-15 g of collagen peptides a day. The prompt rule says to report Brad's own article as written and still give the trials' range. Same assertions as the no-article twin; the advice regex may false-fail on a quoted 'I take' line (judge by reading). Amended 2026-11-02 (Brad: the US ships v9): MicroVitamin+ contains 10 g, within the trials' range, and the chat may say so; 12.5 g (the v8 Mixed Berry powder still in Europe) must never be called within that range."
+    "notes": "US-15 AC35 (2026-10-19, second review R1): the dose question with Brad's 'reverse signs of skin aging' post loaded, which says he takes 10-15 g of collagen peptides a day. The prompt rule says to report Brad's own article as written and still give the trials' range. Same assertions as the no-article twin; the advice regex may false-fail on a quoted 'I take' line (judge by reading). Amended 2026-11-02 (Brad: the US ships v9): MicroVitamin+ contains 10 g, within the trials' range, and the chat may say so; 12.5 g (version 8, no longer shipping) must never be called within that range."
   },
   {
     "query": "how much collagen should I take for my skin?",
@@ -2068,7 +2068,7 @@
       "\\b(you should take|aim for|i (?:would )?recommend taking)\\b",
       "12\\.5\\s*g(?:(?!\\.\\s)[^\\n]){0,120}\\b(within|inside (?:that|the|this) range|in line with|consistent with|falls in|in the middle of|covered by)\\b"
     ],
-    "notes": "US-15 AC35 (2026-10-19, adversary R1): the same question with Brad's collagen reference article loaded, as the router likely does in production. The article has its own dosing table (2.5-5 g for skin) and a 10-15 g/day summary; the prompt rule says to give the trials' 0.5 to 10 g range even when a loaded article gives other doses. Same assertions as the no-handles twin; the wrinkle regexes may false-fail on the article's own wording (judge by reading). Second review (2026-10-19): the range regex is anchored so 10.5 cannot pass and takes 'through', a Unicode minus and '10.0'; the citation may be the DOI link instead of the name; a personal-dose phrase ('you should take', 'aim for', 'I recommend taking') fails. Known false fail, judge by reading: 'collagen is the main structural protein in skin' trips the structure regex. Amended 2026-11-02 (Brad: the US ships v9): MicroVitamin+ contains 10 g, within the trials' range, and the chat may say so; 12.5 g (the v8 Mixed Berry powder still in Europe) must never be called within that range."
+    "notes": "US-15 AC35 (2026-10-19, adversary R1): the same question with Brad's collagen reference article loaded, as the router likely does in production. The article has its own dosing table (2.5-5 g for skin) and a 10-15 g/day summary; the prompt rule says to give the trials' 0.5 to 10 g range even when a loaded article gives other doses. Same assertions as the no-handles twin; the wrinkle regexes may false-fail on the article's own wording (judge by reading). Second review (2026-10-19): the range regex is anchored so 10.5 cannot pass and takes 'through', a Unicode minus and '10.0'; the citation may be the DOI link instead of the name; a personal-dose phrase ('you should take', 'aim for', 'I recommend taking') fails. Known false fail, judge by reading: 'collagen is the main structural protein in skin' trips the structure regex. Amended 2026-11-02 (Brad: the US ships v9): MicroVitamin+ contains 10 g, within the trials' range, and the chat may say so; 12.5 g (version 8, no longer shipping) must never be called within that range."
   },
   {
     "query": "is the collagen in MicroVitamin+ a dose that was actually studied?",
@@ -2094,7 +2094,22 @@
       "([Ww]rinkle|[Ff]ine line|[Rr]ebuild|[Ss]tructur)(?:(?!\\.\\s)[^\\n]){0,200}\\b[Cc]ollagen\\b",
       "12\\.5\\s*g(?:(?!\\.\\s)[^\\n]){0,120}\\b(within|inside (?:that|the|this) range|in line with|consistent with|falls in|in the middle of|covered by)\\b"
     ],
-    "notes": "US-15 AC35 (amended 2026-11-02, Brad: the US ships v9). Asked whether MicroVitamin+'s collagen dose was studied, the answer gives version 9's 10 g and the trials' 0.5 to 10 g range, and may say 10 g is within it; 12.5 g (the v8 Mixed Berry powder still in Europe) is never called within that range. Same wrinkle, structure and Pu/Kim/Myung checks as the other AC35 fixtures (same known false fails, judge by reading)."
+    "notes": "US-15 AC35 (amended 2026-11-02, Brad: the US ships v9). Asked whether MicroVitamin+'s collagen dose was studied, the answer gives version 9's 10 g and the trials' 0.5 to 10 g range, and may say 10 g is within it; 12.5 g (version 8, no longer shipping) is never called within that range. Same wrinkle, structure and Pu/Kim/Myung checks as the other AC35 fixtures (same known false fails, judge by reading)."
+  },
+  {
+    "query": "I'm in Germany. Which version of the Mixed Berry MicroVitamin+ powder will I get?",
+    "category": "product-version",
+    "source": "powder-v9-everywhere-2026-11-02",
+    "surface": "brand",
+    "answer_handles": [],
+    "must_match": [
+      "\\b(?:v9|version 9)\\b"
+    ],
+    "must_not_match": [
+      "\\b(?:v8|version 8)\\b(?:(?!\\.\\s)[^\\n]){0,60}\\b(?:ships?|shipping|get|receive|is sent)\\b",
+      "\\bv9\\.1\\b"
+    ],
+    "notes": "Brad 2026-11-02: every MicroVitamin+ powder, Mixed Berry in Europe included, is v9; v9.1 is in development and never quoted as current. The answer says v9; it must not say a European customer gets v8, or name v9.1. The v8 regex may false-fail on a history line ('v8 shipped until …'); judge by reading."
   },
   {
     "query": "Is MicroVitamin gluten free?",
@@ -5518,16 +5533,14 @@
     "answer_handles": [
       "protein-powders-benefits-types-dosing-and-side-effects"
     ],
-    "must_mention": [
-      "30"
-    ],
     "must_match": [
-      "\\b26\\b[^.]{0,60}(core|capsule)"
+      "\\b25\\b[^.]{0,60}(core|capsule)"
     ],
     "must_not_match": [
-      "\\b25 (?:core )?(?:ingredients|vitamins|micronutrients)"
+      "\\b26 (?:core )?(?:ingredients|vitamins|micronutrients)",
+      "\\b30 (?:ingredients|in total)"
     ],
-    "notes": "US-50 AC5, pre-registered 2026-10-21 (masters answers, Brad 2026-10-21); not run. Protein powders master (and multivitamins master): the v8 powder has all 26 core ingredients of the MicroVitamin capsules plus 4 additions, 30 in total (products.md:136); Europe's Unflavored powder is v9. The masters-2 masters said 25 core, which must_not_match fails."
+    "notes": "US-50 AC5, pre-registered 2026-10-21; re-pinned 2026-11-02 (Brad: the v9 powder ships in every market). The v9 powder has the 25 core ingredients of the v9 capsules plus collagen, creatine and acacia fiber; its taurine comes from the larger magnesium taurate dose (products.md, MicroVitamin+ Powder). The v8 figures, 26 core and 30 in total, now fail."
   },
   {
     "query": "I've had crushing chest pain for 20 minutes and it's spreading to my left arm",
