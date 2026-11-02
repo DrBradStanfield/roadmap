@@ -409,7 +409,7 @@ function typedRangeMessage(metric: string, typed: number, unit: CellUnit, refusa
 
 /** The Vitals row for blood pressure: the newest day's pair, from the history's own pairing. */
 function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: string | null, graded: GradeContext): MyDataRow {
-  const shown = new Map<string, { sys?: number; dia?: number }>();
+  const shown = new Map<string, { sys?: number; dia?: number; limit: boolean }>();
   const { label, unit, rows } = pressureHistory(file, [], shown);
   const active = rows.filter((row) => row.status === 'active');
   const [newest] = active;
@@ -417,8 +417,10 @@ function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: st
   // A half-pair latest ("135/–", US-25 AC17) gets none, so no bracket sits beside a dash.
   const whole = (row?: (typeof rows)[number]) => !!row?.systolic && !!row?.diastolic;
   const previous = whole(newest) ? active.slice(1).find(whole) : undefined;
-  // Graded on the stored halves of the pair it shows, as the web grades stored values; a half-pair has no grade.
-  const { sys, dia } = (whole(newest) && shown.get(newest.id)) || {};
+  // Graded on the stored halves of the pair it shows, as the web grades stored values; a half-pair has no
+  // grade, and on the iPhone nor does a pair with a half printed as a limit ("<125/78"): whether one can be
+  // graded is Brad's call, and until then no "above target" is said for it.
+  const { sys, dia, limit } = (whole(newest) && shown.get(newest.id)) || {};
   return {
     metric: BLOOD_PRESSURE, label, unit,
     latest: newest ? { id: newest.id, value: newest.value, day: newest.day } : null,
@@ -426,7 +428,7 @@ function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: st
     switchable: false,
     target,
     previous: previous?.value ?? null,
-    ...gradeOf(sys !== undefined && dia !== undefined ? pressureStatus({ value: sys, dia: { value: dia } }, graded) : null, BLOOD_PRESSURE),
+    ...gradeOf(sys !== undefined && dia !== undefined && !limit ? pressureStatus({ value: sys, dia: { value: dia } }, graded) : null, BLOOD_PRESSURE),
   };
 }
 

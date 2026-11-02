@@ -294,6 +294,20 @@ describe('myData rows: grade and spoken grade (US-62 AC8, US-25 AC17)', () => {
     expect(pressure).toMatchObject({ latest: { value: '150/95' }, status: 'bad', gradeWords: 'high' });
   });
 
+  it('grades no blood pressure with a half saved as a limit, and still grades an exact pair (US-25 AC17, US-12 AC20)', () => {
+    const exact = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+      { kind: 'profile', sex: 'male', birthYear: 1970, height: 180 },
+      { kind: 'bloodPressure', systolic: 125, diastolic: 78, day: '2026-10-02', replace: false });
+    const pressure = (file: RoadmapFile) => myData(file, NOW).vitals.find((row) => row.metric === 'blood_pressure')!;
+    expect(pressure(exact)).toMatchObject({ latest: { value: '125/78' }, status: 'warn', gradeWords: 'above target' });
+    // "<125/78": the systolic half printed as a limit, so the iPhone says no grade for it.
+    const limit = structuredClone(exact);
+    const sys = limit.measurements.find((row) => row.metricType === 'systolic_bp')!;
+    sys.comparator = '<';
+    expect(pressure(limit)).toMatchObject({ status: null, gradeWords: null });
+    expect(pressure(limit).latest?.value).toContain('125');
+  });
+
   it('grades no HDL without sex, and no half-entered blood pressure (US-62 AC13, US-25 AC17)', () => {
     const noSex = rows(myData(edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'add', metric: 'hdl', value: 0.8, day: '2026-10-01' }), NOW));
     expect(noSex.get('hdl')).toMatchObject({ status: null, gradeWords: null });

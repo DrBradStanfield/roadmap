@@ -7,6 +7,7 @@ import { appendMeasurement, correctValue, findActiveInSlot, resolveRecordedAt, s
 import { PRESSURE_ORDER, pressureInverted } from '../../packages/health-core/src/validation';
 import { latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { formatDisplayValue } from '../../packages/health-core/src/units';
+import { isComparator } from '../../packages/health-core/src/lab-limits';
 import type { HistoryRow, MetricHistory } from './my-data-forms';
 
 /** The phone's name for the pair; no row carries it. */
@@ -90,7 +91,7 @@ function sameIds(seen: unknown, held: string[]): boolean {
  * it) shows over the pair as it stood but never changes it, so a lost write
  * cannot leak into the pair later writes build on. A half not yet written is a dash.
  */
-export function pressureHistory(file: RoadmapFile, excludedFields: readonly string[], shown?: Map<string, { sys?: number; dia?: number }>): Omit<MetricHistory, 'markers'> {
+export function pressureHistory(file: RoadmapFile, excludedFields: readonly string[], shown?: Map<string, { sys?: number; dia?: number; limit: boolean }>): Omit<MetricHistory, 'markers'> {
   const rows = file.measurements.filter((row) => (HALVES as readonly string[]).includes(row.metricType));
   const current = new Set(latestActivePerMetric(rows).map((row) => row.id));
   // One pass each, not one per day: a filter per day was quadratic, 17 s for ten years
@@ -132,7 +133,8 @@ export function pressureHistory(file: RoadmapFile, excludedFields: readonly stri
       const now = held.length > 0 && index === stateAt;
       const snapshot = snapshots[index];
       // `shown`: each active pair's stored halves, so My data grades the pair it shows (adversary R1).
-      if (now) shown?.set(`${day}:${snapshot.id}`, { sys: snapshot.sys?.value, dia: snapshot.dia?.value });
+      // `limit`: either half was printed as a limit (US-12 AC20).
+      if (now) shown?.set(`${day}:${snapshot.id}`, { sys: snapshot.sys?.value, dia: snapshot.dia?.value, limit: isComparator(snapshot.sys?.comparator) || isComparator(snapshot.dia?.comparator) });
       return {
         ...pair(snapshot.sys, snapshot.dia, now ? 'active' : 'entered-in-error', now && held.some((row) => current.has(row.id))),
         id: `${day}:${snapshot.id}`, day, correction: snapshot.rows.some((row) => !!row.correctsId),
