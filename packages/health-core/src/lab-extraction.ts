@@ -767,20 +767,30 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
           : resolveName(printed) ? printed : model;
   // A core slot the model already filled on that day is never taken by another
   // row's printed name: that row keeps the model's pick.
+  // Each row's destination first; then a row re-filed into another core metric
+  // takes that slot only if no row that kept its own metric holds it that day,
+  // and only the first such row does.
   const reportDayOf = (d?: string) => (!d || d === parsed.reportDate ? '' : d);
-  const modelSlots = new Set(parsed.values.map(v => `${v.metric}@${reportDayOf(v.recordedAt)}`));
-  const coreIn: typeof parsed.values = [];
-  const labIn: typeof parsed.additionalValues = [];
-  for (const v of parsed.values) {
+  const planned = parsed.values.map(v => {
     const printedName = printedOf(v);
-    if (!printedName) { coreIn.push(v); continue; }
+    if (!printedName) return { v, to: v.metric, lab: false };
     const name = filingName(v.metric, printedName);
     const filed = resolveName(name);
-    if (filed?.kind === 'core') {
-      const moves = filed.metric !== v.metric && modelSlots.has(`${filed.metric}@${reportDayOf(v.recordedAt)}`);
-      coreIn.push({ ...v, metric: moves ? v.metric : filed.metric, printedName });
-    } else if (name === v.metric) coreIn.push({ ...v, printedName });
-    else labIn.push({ name, value: v.value, unit: v.unit, referenceLow: null, referenceHigh: null, recordedAt: v.recordedAt, printedMonth: v.printedMonth, printedName });
+    return filed?.kind === 'core' ? { v, printedName, to: filed.metric, lab: false }
+      : { v, printedName, to: name, lab: name !== v.metric };
+  });
+  const held = new Set(planned.filter(p => !p.lab && p.to === p.v.metric).map(p => `${p.to}@${reportDayOf(p.v.recordedAt)}`));
+  const coreIn: typeof parsed.values = [];
+  const labIn: typeof parsed.additionalValues = [];
+  for (const { v, printedName, to, lab } of planned) {
+    if (lab) {
+      labIn.push({ name: to, value: v.value, unit: v.unit, referenceLow: null, referenceHigh: null, recordedAt: v.recordedAt, printedMonth: v.printedMonth, printedName });
+    } else if (to === v.metric || held.has(`${to}@${reportDayOf(v.recordedAt)}`)) {
+      coreIn.push(printedName ? { ...v, printedName } : v);
+    } else {
+      held.add(`${to}@${reportDayOf(v.recordedAt)}`);
+      coreIn.push({ ...v, metric: to, printedName });
+    }
   }
   for (const v of parsed.additionalValues) {
     const printedName = printedOf(v);
@@ -800,7 +810,8 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
     // A creatinine the report itself printed as serum creatinine, with no urine
     // word, is promoted like any core value, its unit checked as a core
     // creatinine's (US-07 AC10, Brad 2026-11-02: "sounds fine").
-    const serumByPrint = metric === 'creatinine' && !!v.printedName && intoCreatinine(v.printedName) && !saysSpecimen(v.printedName);
+    const printed = printedOf(v);
+    const serumByPrint = metric === 'creatinine' && !!printed && foldName(printed) !== 'cr' && intoCreatinine(printed) && !saysSpecimen(printed);
     if (free && serumByPrint) {
       if (!refusesCreatinine(v)) promote();
     } else if (free && PROMOTABLE.has(metric!) && reportedToCanonical(metric!, v.value, v.unit)) {

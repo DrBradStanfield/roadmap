@@ -193,3 +193,23 @@ describe('US-07 AC10: specimen, every test (Brad 2026-11-02: "go with (a)")', ()
   });
 });
 
+describe('US-07 AC10 Codex re-check fixes', () => {
+  it.each(['cr', 'Cr'])('a row named "%s", printed "Cr", stays a lab row: a printed "Cr" never confirms creatinine (R1)', (name) => {
+    const result = extract({ additionalValues: [lab(name, 'Cr', 0.3, 'µg/L')] });
+    expect(result.values).toEqual([]);
+    expect(result.additionalValues.map((r) => r.name)).toEqual([name]);
+    expect(result.refusedValues).toBeUndefined();
+  });
+
+  it('a core slot vacated by a row that moved to the lab rows can be taken by a printed name (R2)', () => {
+    const { values, additionalValues } = extract({ values: [core('hdl', 'Sodium', 140), core('ldl', 'HDL Cholesterol', 1.3)] });
+    expect(values.map((v) => [v.metric, v.displayValue])).toEqual([['hdl', 1.3]]);
+    expect(additionalValues.map((r) => r.name)).toEqual(['Sodium']);
+  });
+
+  it('the connector (metadata) ignores an unasked printed name: no serum promotion (R3)', () => {
+    const result = extract({ additionalValues: [lab('creatinine', 'Serum Creatinine', 1.5, 'mmol/L')] }, 'metadata');
+    expect(result.values).toEqual([]);
+  });
+});
+
