@@ -519,6 +519,35 @@ describe('the doors that must stay shut (US-32, design §6)', () => {
   });
 });
 
+/** A JSON-RPC message with no `id` is a notification: the server must not reply (US-32 AC55). */
+describe('US-32 AC55: a message without an id gets an empty 202 over HTTP', () => {
+  async function notify(access: string, method: string, params: unknown = {}) {
+    const res = await mcpEndpoint(
+      new Request(`${ISSUER}/mcp`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', method, params }),
+      }),
+      NOW,
+    );
+    return { status: res.status, body: await res.text() };
+  }
+
+  it('answers each notification with an empty 202, runs no tool, and still answers requests', async () => {
+    seedRecord();
+    const { access } = await connect();
+    await rpc(access, 'initialize', { protocolVersion: '2025-11-25' });
+    expect(await notify(access, 'notifications/initialized')).toEqual({ status: 202, body: '' });
+    expect(await notify(access, 'ping')).toEqual({ status: 202, body: '' });
+    const before = JSON.stringify(storedRecord());
+    expect(await notify(access, 'tools/call', { name: 'add_measurement', arguments: { metricType: 'ldl', value: 3.2, recordedAt: TODAY } }))
+      .toEqual({ status: 202, body: '' });
+    expect(JSON.stringify(storedRecord())).toBe(before);
+    const listed = await rpc(access, 'tools/list');
+    expect(listed.result!.tools).toHaveLength(MCP_TOOLS.length);
+  });
+});
+
 /**
  * Claude does not register: it sends its published CIMD id, and that document
  * is Cloudflare-challenged from Fly (2026-09-02), so the id is pinned. The

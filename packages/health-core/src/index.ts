@@ -1,6 +1,7 @@
 // Types
 export type {
   HealthInputs,
+  SuggestionInputs,
   HealthResults,
   Suggestion,
   SuggestionReference,
@@ -473,6 +474,8 @@ export {
 
 // US-07 AC7: the lab's printed eGFR, when it is the plan's.
 export { labEgfrFrom, labEgfrOf, withLabEgfr, type LabEgfr } from './plan';
+// US-07 AC11: the one strip of refused inputs every plan caller shares.
+export { planInputsFrom } from './plan';
 
 // US-25 AC22: the plan's summary tiles, the web's Quick Stats and the phone's My plan tiles.
 export { statTiles, statTileText, type StatTile, type StatTileOptions, type StatTileStatus, type StatTone } from './stat-tiles';

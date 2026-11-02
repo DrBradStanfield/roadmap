@@ -381,7 +381,8 @@ describe('US-41 AC11 — only what is public under Brad\'s name: video articles 
   const notServed = index.filter((e) => !isServed(e));
 
   it('serves the two sets and nothing else', () => {
-    expect(notServed.filter((e) => e.type === 'guideline').map((e) => e.handle).sort()).toEqual(['diet', 'exercise', 'sleep']);
+    // US-70: condition guides are guidelines too, so the connector serves none of them (AC11 unchanged).
+    expect(notServed.filter((e) => e.type === 'guideline').map((e) => e.handle).sort()).toEqual(['diet', 'exercise', 'heart-disease-risk', 'high-blood-pressure', 'high-cholesterol', 'sleep', 'weight']);
     expect(notServed.every((e) => e.type === 'guideline' || (e.type === 'reference' && !e.reviewed))).toBe(true);
     expect(index.filter(isServed).every((e) => (e.type ?? 'article') === 'article' || (e.type === 'reference' && !!e.reviewed))).toBe(true);
   });
