@@ -355,12 +355,23 @@ describe('US-67 AC3: rows this app cannot read (US-65)', () => {
     expect(med$(saved(file, 'medications', edits), 'statin')).toMatchObject({ drugName: 'atorvastatin', doseValue: 20 });
   });
 
-  it('US-67 AC4: a medication row this app cannot read gives an Undo of the unanswered value, which saves', () => {
+  // US-67 N3 (Brad 2026-11-02), path a: Undo would write "none", which looks like a restore it never made.
+  it('US-67 N3: replacing a medication row this app cannot read saves, with no Undo for the whole reply', () => {
     const file = { ...metric(), medications: [{ id: 'm1', medicationKey: 'statin', drugName: 42 as unknown as string, doseValue: null, doseUnit: null, updatedAt: NOW, lamport: 0 }] } as RoadmapFile;
-    const shown = preview(file, [med('statin', 'atorvastatin', 20)]);
-    expect(shown.medications!.undo).toEqual({ kind: 'chatUndo', medications: [{ medicationKey: 'statin', drugName: 'none', doseValue: null, doseUnit: null }] });
-    const after = saved(file, 'medications', [med('statin', 'atorvastatin', 20)]);
-    expect(applyEdit(after, shown.medications!.undo as Parameters<typeof applyEdit>[1], NOW).ok).toBe(true);
+    const edits = [med('ezetimibe', 'yes'), med('statin', 'atorvastatin', 20)];
+    expect(preview(file, edits).medications).toEqual({
+      lines: [{ text: 'Ezetimibe: Yes' }, { text: 'Statin: Atorvastatin 20 mg' }], undo: null, refusal: null,
+    });
+    const after = saved(file, 'medications', edits);
+    expect(med$(after, 'statin')).toMatchObject({ drugName: 'atorvastatin', doseValue: 20 });
+    expect(med$(after, 'ezetimibe')!.drugName).toBe('yes');
+  });
+
+  it('US-67 N3: a row this app cannot read that the reply leaves alone keeps the Undo', () => {
+    const file = { ...metric(), medications: [{ id: 'g1', medicationKey: 'glp1', drugName: 42 as unknown as string, doseValue: null, doseUnit: null, updatedAt: NOW, lamport: 0 }] } as RoadmapFile;
+    expect(preview(file, [med('ezetimibe', 'yes')]).medications!.undo).toEqual({
+      kind: 'chatUndo', medications: [{ medicationKey: 'ezetimibe', drugName: 'not_yet', doseValue: null, doseUnit: null }],
+    });
   });
 });
 
@@ -374,20 +385,23 @@ describe('US-67 AC4: unreadable rows in the pair and the escalation, and a medic
     ],
   }) as RoadmapFile;
 
-  it('US-67 AC4: an escalation answer this app cannot read is still reset by a new dose; Undo writes its unanswered value', () => {
+  // US-67 N3, path b: the reset escalation answer is the row Undo could not put back.
+  it('US-67 N3: an escalation answer this app cannot read is still reset by a new dose, with no Undo', () => {
     const file = statinRows({ drugName: 'yes', doseValue: '5' });
     const shown = preview(file, [med('statin', 'atorvastatin', 20)]);
-    expect(shown.medications!.undo).toEqual({ kind: 'chatUndo', medications: [
-      { medicationKey: 'statin_escalation', drugName: 'not_yet', doseValue: null, doseUnit: null },
-      { medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 10, doseUnit: 'mg' },
-    ] });
+    expect(shown.medications).toEqual({ lines: [{ text: 'Statin: Atorvastatin 20 mg' }], undo: null, refusal: null });
     const after = saved(file, 'medications', [med('statin', 'atorvastatin', 20)]);
     expect(med$(after, 'statin_escalation')).toMatchObject({ drugName: 'not_yet', doseValue: null });
+    expect(med$(after, 'statin')).toMatchObject({ drugName: 'atorvastatin', doseValue: 20 });
   });
 
-  it('US-67 AC4: a readable escalation answer is reset and restored by Undo, as before', () => {
+  it('US-67 N3: a readable escalation answer is reset and restored by Undo, as before', () => {
     const file = statinRows({ drugName: 'not_tolerated', doseValue: null });
     const shown = preview(file, [med('statin', 'atorvastatin', 20)]);
+    expect(shown.medications!.undo).toEqual({ kind: 'chatUndo', medications: [
+      { medicationKey: 'statin_escalation', drugName: 'not_tolerated', doseValue: null, doseUnit: null },
+      { medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 10, doseUnit: 'mg' },
+    ] });
     const after = saved(file, 'medications', [med('statin', 'atorvastatin', 20)]);
     expect(med$(after, 'statin_escalation')!.drugName).toBe('not_yet');
     const back = applyEdit(after, shown.medications!.undo as Parameters<typeof applyEdit>[1], NOW) as { ok: true; file: RoadmapFile };
