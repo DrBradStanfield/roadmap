@@ -510,3 +510,20 @@ describe('US-66 AC2: UCUM unit spellings', () => {
     expect(spellings.filter((s) => /[{}[\]]/.test(s))).toEqual([]);
   });
 });
+
+describe('US-66 AC2: the SI labs\' molar and mass-or-moles lipid codes', () => {
+  it.each([
+    ['14646-4', 'hdl', 1.3], ['39469-2', 'ldl', 2.9], ['22748-8', 'ldl', 2.9],
+    ['14647-2', 'total_cholesterol', 5.2], ['35200-5', 'total_cholesterol', 5.2],
+    ['14927-8', 'triglycerides', 1.4], ['35217-9', 'triglycerides', 1.4],
+  ])('%s in mmol/L lands as %s', (code, metric, value) => {
+    const o = obs({ ...R4_LDL, id: `x${code}` }, {
+      code: { coding: [{ system: 'http://loinc.org', code }] },
+      valueQuantity: { value, unit: 'mmol/L', system: 'http://unitsofmeasure.org', code: 'mmol/L' },
+      referenceRange: undefined,
+    });
+    const { file, counts } = importHealthRecords(empty(), [rec(o)], { now: NOW });
+    expect(counts.added).toBe(1);
+    expect(file.measurements).toEqual([expect.objectContaining({ metricType: metric, value, source: 'health_records', status: 'active' })]);
+  });
+});

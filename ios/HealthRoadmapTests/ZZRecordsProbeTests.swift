@@ -18,6 +18,7 @@ final class ZZRecordsProbeTests: XCTestCase {
             let q = obj["valueQuantity"] as? [String: Any]
             let key = "\(coding) unit=\(q?["unit"] ?? "nil") code=\(q?["code"] ?? "nil") status=\(obj["status"] ?? "nil") eff=\(obj["effectiveDateTime"] != nil) cmp=\(q?["comparator"] != nil)"
             codes[key, default: 0] += 1
+            print("PROBE keys", obj.keys.sorted(), "effectiveKeys", obj.keys.filter { $0.lowercased().contains("effective") || $0 == "issued" }.map { k in "\(k):\(type(of: obj[k]!))" })
         }
         for (k, v) in codes.sorted(by: { $0.key < $1.key }) { print("PROBE code", v, k) }
         let engine = try HealthEngine()
