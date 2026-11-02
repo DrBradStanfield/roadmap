@@ -1448,7 +1448,8 @@ function extractNext(prepared: PreparedImport, remaining: string[], route: Impor
   if (notRead) lines.push(`${notRead} file(s) were not read: relay each file's hint to the user in plain words.`);
   if (partial) lines.push(`${partial} file(s) had values that could not be read: relay that file's hint.`);
   if (remaining.length) {
-    lines.push(`${remaining.length} file(s) were not reached: commit this receipt first, then call again with fileNames set to remaining.`);
+    const first = payload.candidates.length || docs ? 'commit this receipt first, then ' : '';
+    lines.push(`${remaining.length} file(s) were not reached: ${first}call again with fileNames set to remaining.`);
   }
   return lines.join('\n');
 }
@@ -1460,28 +1461,46 @@ function extractNext(prepared: PreparedImport, remaining: string[], route: Impor
  * A lab report whose rows would overflow a receipt that already holds
  * another file's is left, with every file after it, for the next call. One
  * report too long for any receipt keeps its first rows; the rest count as
- * left out (`droppedValueCount`), so its file hint says so. Rows are counted
+ * left out (`droppedValueCount`), so its file hint says so. Rows count only
+ * for a report prepareImport will file: an undated or refused-date report, or
+ * a second copy of bytes already in this call, holds no room. Rows are counted
  * before the dry run, so a report may wait that would just have fit. A ZIP
  * member waits under its ZIP's name (the caller names it once): only a
  * folder-root name can be asked for again, and the re-read skips the members
  * filed by then (by hash).
  */
-function fitReceipt(bundle: ImportBundle): { bundle: ImportBundle; deferred: string[] } {
+function fitReceipt(bundle: ImportBundle, ctx: EditContext): { bundle: ImportBundle; deferred: string[] } {
   const files: ExtractedFile[] = [];
   const deferred: string[] = [];
+  const seenBytes = new Set<string>();
   let held = 0;
   for (const read of bundle.files) {
-    // Only a lab report carries rows: the parse leaves any other file's empty (toUnifiedResult).
-    const lab = read.status === 'extracted' ? read.result : undefined;
+    // Rows count only for a report prepareImport will file: a dated lab report, not a twin of one
+    // already in this call. Any other file's rows are empty (toUnifiedResult).
+    const twin = !!read.contentHash && seenBytes.has(read.contentHash);
+    const lab = read.status === 'extracted' && read.result?.classification === 'lab_report' && !twin
+      && labReportDay(read.name, read.result, bundle, ctx).day ? read.result : undefined;
     const rows = lab ? lab.values.length + lab.additionalValues.length : 0;
     if (deferred.length || (held > 0 && held + rows > MAX_IMPORT_CANDIDATES)) {
       deferred.push(read.zip ?? read.name);
       continue;
     }
     held += rows;
+    if (read.status === 'extracted' && read.contentHash) seenBytes.add(read.contentHash);
     files.push(rows > MAX_IMPORT_CANDIDATES ? { ...read, result: firstRows(lab!, MAX_IMPORT_CANDIDATES) } : read);
   }
   return { bundle: { ...bundle, files }, deferred };
+}
+
+/**
+ * A lab report's day: the user's own answer (`fileDates`, AC13) over the print.
+ * No day is `no_date`; one the record refuses comes back as `refused` (`bad_date`).
+ */
+function labReportDay(name: string, result: UnifiedExtractionResult, bundle: ImportBundle, ctx: EditContext): { day: string | null; refused?: EditRejection } {
+  const given = bundle.fileDates?.[name];
+  const own = given === undefined ? null : resolveRecordedAt(given, ctx);
+  if (typeof own === 'string') return { day: own };
+  return own ? { day: null, refused: own } : { day: validDay(result.reportDate, ctx) };
 }
 
 /** A report cut to its first `n` value rows, core rows first; the rest counted as left out. */
@@ -1546,10 +1565,7 @@ export function prepareImport(
       // The user's own answer to "what date was this test?" wins over the print
       // (AC13), and one the record refuses is said back with the refusal — a
       // `no_date` here would ask for the date the user just gave.
-      const given = bundle.fileDates?.[name];
-      const own = given === undefined ? null : resolveRecordedAt(given, ctx);
-      const refused = typeof own === 'string' ? null : own;
-      const day = typeof own === 'string' ? own : refused ? null : validDay(result.reportDate, ctx);
+      const { day, refused } = labReportDay(name, result, bundle, ctx);
       if (!day) {
         const reason = refused ? 'bad_date' : 'no_date';
         files.push({ ...report, status: 'failed', reason, hint: importHint(reason, refused?.message) });
@@ -2075,7 +2091,7 @@ async function runImport(
   if (refusal) return { ...refusal, isError: true };
   const bundle = await imports.bundle(parsed.data, file, surface, { now, latestDay, deadline });
   if ('refusal' in bundle) return { text: bundle.refusal, isError: true, reason: 'import' };
-  const fits = fitReceipt(bundle);
+  const fits = fitReceipt(bundle, { now, latestDay });
   // One name per ZIP, however many of its members wait or ran out of time.
   const remaining = [...new Set([...fits.deferred, ...bundle.remaining])];
   const prepared = prepareImport(file, fits.bundle, { now, latestDay, maxCorrectionAgeDays: surface.maxCorrectionAgeDays, payloadId: crypto.randomUUID() });

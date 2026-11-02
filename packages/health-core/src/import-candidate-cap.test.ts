@@ -35,11 +35,12 @@ interface Extract {
   unrecognized: string[];
   remaining: string[];
   next: string;
+  receipt?: string;
 }
 
 /** One import_documents extract over an in-memory record, the surface handing back these files. */
-async function extract(files: ExtractedFile[], remaining: string[] = []): Promise<Extract> {
-  const bundle: ImportBundle = { route: 'dropbox', files, remaining };
+async function extract(files: ExtractedFile[], remaining: string[] = [], fileDates?: Record<string, string>): Promise<Extract> {
+  const bundle: ImportBundle = { route: 'dropbox', files, remaining, ...(fileDates ? { fileDates } : null) };
   const cloud = new MemoryCloud();
   cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(base()), version: 1 });
   const sync = recordSync(new MemoryAdapter(cloud), 'test', NOW);
@@ -130,6 +131,38 @@ describe('US-35 AC7a — a report that would overflow the receipt waits for the 
     expect(sources(r)).toEqual(['labs.zip/a']);
     // labs.zip is also in the surface's own remaining (a member it ran out of time for): named once.
     expect(r.remaining).toEqual(['labs.zip', 'd.pdf', 'e.pdf']);
+  });
+
+  it('an undated or refused-date ZIP member ahead of a long one holds no room, so the long one is offered', async () => {
+    const member = (name: string, result: UnifiedExtractionResult): ExtractedFile => ({ ...file(`labs.zip/${name}`, result), zip: 'labs.zip' });
+    const undated = member('a.pdf', { ...report('a', 200), reportDate: null });
+    const r = await extract([undated, member('b.pdf', report('b', 150))]);
+    expect(r.files.find((f) => f.name === 'labs.zip/a.pdf')).toMatchObject({ status: 'failed', reason: 'no_date' });
+    expect(sources(r)).toEqual(['labs.zip/b.pdf']);
+    expect(r.remaining).toEqual([]);
+    expect(r.receipt).toBeDefined();
+    // A date the user gave that the record refuses (a future day) is bad_date, and holds no room either.
+    const refused = await extract([member('a.pdf', report('a', 200)), member('b.pdf', report('b', 150))], [], { 'labs.zip/a.pdf': '2027-01-01' });
+    expect(refused.files.find((f) => f.name === 'labs.zip/a.pdf')).toMatchObject({ status: 'failed', reason: 'bad_date' });
+    expect(sources(refused)).toEqual(['labs.zip/b.pdf']);
+    expect(refused.remaining).toEqual([]);
+  });
+
+  it('a second copy of the same bytes in one call holds no room', async () => {
+    const twin: ExtractedFile = { ...file('a (1).pdf', report('a', 200)), contentHash: 'sha256-a.pdf' };
+    const r = await extract([file('a.pdf', report('a', 200)), twin, file('b.pdf', report('b', 100))]);
+    expect(r.files.find((f) => f.name === 'a (1).pdf')).toMatchObject({ status: 'already_imported' });
+    expect(sources(r)).toEqual(['a.pdf', 'b.pdf']);
+    expect(r.remaining).toEqual([]);
+  });
+
+  it('with no receipt issued, next never says to commit one first', async () => {
+    const failed: ExtractedFile = { ...file('x.pdf', report('x', 5)), status: 'failed', reason: 'too_large' };
+    const r = await extract([failed], ['c.pdf']);
+    expect(r.receipt).toBeUndefined();
+    expect(r.remaining).toEqual(['c.pdf']);
+    expect(r.next).not.toContain('commit this receipt');
+    expect(r.next).toContain('1 file(s) were not reached: call again with fileNames set to remaining.');
   });
 
   it('one report longer than any receipt keeps its first rows, core first, and says how many were left out', async () => {
