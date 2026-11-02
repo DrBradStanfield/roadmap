@@ -88,8 +88,11 @@ by the orchestrator, not a fresh reviewer.
      build cannot be resubmitted, so build 4 went to beta review instead (2026-10-28), with
      the same external testers (no emails in this repo). The App Store review of build 3 is a
      separate submission and was not touched.
-   - **Next build:** an agent shell cannot upload (no App Store Connect token); the session
-     clicks Organizer › Distribute App while the Mac is unlocked (full-screen control).
+   - **Next build:** an agent shell cannot upload (no App Store Connect token). The shell
+     archives (`xcodebuild archive … -allowProvisioningUpdates` into
+     ~/Library/Developer/Xcode/Archives), then the session clicks Organizer › Distribute App ›
+     App Store Connect › Distribute. Xcode at the click tier is enough: background clicks, no
+     typing, no full-screen control (build 5, 2026-11-02).
    - **Build 3 is on Brad's iPhone** (Release, 2026-10-27).
    - **Build 4** (f47f152c, uploaded 2026-10-28, TestFlight only so far): the Apple Health
      cards keep their last readings on the phone, so My data opens without the launch jump
@@ -98,6 +101,12 @@ by the orchestrator, not a fresh reviewer.
      (`node scripts/build-privacy-page.mjs app --publish`) **when build 4 is submitted, not
      before**: the live page's "never saves them" stays true for build 3. Update the App Store
      description and review notes from ios/app-store.md in the same submission.
+   - **Build 5** (a3e8df84, uploaded 2026-11-02, TestFlight only so far): the alcohol question
+     and a drinker's "Do you still drink alcohol?" (US-60), tiles without acronyms ("Ideal Body
+     Weight", "1.2 g/kg ideal weight"), the onboarding text fit (US-54 AC8b), and the heart rate
+     guide's sourced safety lines (US-58 AC7). iOS tests: 519 passed in UTC; in Pacific/Auckland
+     one layout test timed out under heavy load and passed when rerun alone. Not yet added to
+     the external test group or sent to beta review: Brad's step in App Store Connect.
    - **Next release: new screenshots and app video (Brad 2026-10-29, don't forget).** App
      Store Connect locks screenshots and app previews while a version waits for review, so
      0.1 went out with the old five plain captures. With the next version, replace them with:

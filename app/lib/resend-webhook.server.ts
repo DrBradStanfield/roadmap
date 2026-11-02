@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { sameBytes } from './crypto-compare.server';
 
 /**
  * Resend webhook signature verification (US-22 AC3).
@@ -50,12 +51,7 @@ export function verifyResendSignature(
     .filter((sig): sig is string => Boolean(sig));
 
   const expectedBuf = Buffer.from(expected);
-  const matched = candidates.some((candidate) => {
-    const candidateBuf = Buffer.from(candidate);
-    // timingSafeEqual throws on length mismatch — check first, still constant
-    // time for equal-length values, which is the case that matters.
-    return candidateBuf.length === expectedBuf.length && crypto.timingSafeEqual(candidateBuf, expectedBuf);
-  });
+  const matched = candidates.some((candidate) => sameBytes(Buffer.from(candidate), expectedBuf));
 
   return matched ? { ok: true } : { ok: false, reason: 'signature mismatch' };
 }

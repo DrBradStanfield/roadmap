@@ -10,8 +10,7 @@ setup record, rotation procedure, verify sequence and the two directory listings
 both Claude (custom connector, CIMD) and ChatGPT (developer mode, OAuth). Steps 1 to 8
 below are the setup record, kept because they are also the rebuild and the rotation
 procedure. Every `/mcp` path and both OAuth `.well-known` documents return 404 while
-`MCP_SEAL_KEYS` is unset, so unsetting it is the kill switch (`openai-apps-challenge`
-answers from its own secret regardless). Education app, not
+`MCP_SEAL_KEYS` is unset, so unsetting it is the kill switch. Education app, not
 commerce: the edu box omits the Discord and YouTube bot tokens, so the machine holding
 the seal key carries the smaller secret set.
 
@@ -264,50 +263,30 @@ gemini mcp add -s user --transport http drstanfield https://mcp.drstanfield.com/
 Each opens a browser once for our consent screen and the cloud provider, then keeps the
 sealed token. Nothing per user is stored on our side either way.
 
-### Publishing the ChatGPT app
+### The ChatGPT app: not listed
+
+**OpenAI's review is over.** OpenAI declined 1.0.2 on 2026-10-29: health apps are out of
+scope for its directory. Brad, 2026-11-02: we will not resubmit. Nothing in this repository
+waits on OpenAI any more. The record of all three submissions, and how to resubmit if health
+ever comes into scope, is [chatgpt-app-listing.md](chatgpt-app-listing.md).
 
 Only OpenAI gates *connection* behind review; what every other assistant requires (Claude's
 directory, Gemini, Perplexity, Le Chat, Copilot) is in **[assistant-landscape.md](assistant-landscape.md)**.
 
-Today a user needs **developer mode** to add our connector to ChatGPT, because OpenAI
-keeps unreviewed connectors behind it. Claude needs no equivalent: a custom connector is
-available on any plan. Publishing through OpenAI's review is what removes that step.
+A user needs **developer mode** to add our connector to ChatGPT, because OpenAI keeps
+unreviewed connectors behind it, and that stays so. The connector itself works there.
+Claude needs no equivalent: a custom connector is available on any plan.
 
 **`REPO_PUBLIC` (plan.ts) is true again since 2026-10-12**, when GitHub lifted the 2026-09-18 flag and the repository answered 200 publicly. It stays a kill switch. If it ever goes false, the code follows on its own; these static texts do not, so edit them in the same commit (`git show ba6bc358` has the hidden wording): `docs/guides/chatgpt-app.md`, `connect-chatgpt.md`, `connect-claude-desktop.md`, `command-line.md` (If something goes wrong) and `getting-started.md` (front matter, the GitHub links, the `report_feedback` paragraphs and the setup prompt's read-only fallback), `docs/privacy-connector-addendum.md` (Bug reports), `docs/chatgpt-app-listing.md` (the `report_feedback` justification row and refusal 3), `docs/mcp-architecture.md` (`report_feedback`), then republish the guides and the privacy page.
 
-**Submitted twice and rejected twice (1.0.0, 1.0.1); 1.0.2 is the resubmission.** The package is
-[`chatgpt-review/plugin/`](chatgpt-review/plugin/): `plugin.json` holds the descriptions, category,
-starter prompts, test cases and release notes. **[chatgpt-app-listing.md](chatgpt-app-listing.md)**
-is the working document: what goes in the ZIP and what in the dashboard, tool annotations and their
-justifications, the reviewer account, the PHI compliance statement, and a numbered dashboard
-checklist. This section holds only what it depends on.
-
-**Brad's, not an agent's: all of it.** Submission is tied to a verified identity on his
-OpenAI account and to policy acknowledgements he is signing. Identity verification gates
-creating the app in the dashboard, not just submitting it.
-
-**Two blockers before the form.** First, **we have no privacy policy that describes this
-connector**: the site policy predates it. It must state the data categories, purpose,
-recipients, retention and the user's controls, and say what §1 of `mcp-architecture.md`
-says: the record is read in memory to answer one call, no copy is kept, no per-user row
-exists, and the user cancels at `dropbox.com/account/connected_apps`. Second, OpenAI's
-developer guidelines list **protected health information under Restricted Data**. Read
-strictly that is a refusal; read as written it is about what the plugin *collects*, and
-we collect and store nothing (beyond, while a review is pending, the Dropbox token of one
-invented reviewer account: next section). **A question for OpenAI, asked before submission, not a
-judgement made silently in a form.** If the answer is no, developer mode stays the
-honest path.
-
-**One new secret, `OPENAI_APPS_CHALLENGE`** on `health-tool-edu`: the token the
-submission portal generates for domain verification. `app/routes/[.]well-known.$.tsx`
-serves it at `/.well-known/openai-apps-challenge` as bare `text/plain`, `no-store`, and
-404s while unset. It answers independently of `isMcpEnabled()`, so ownership can be
-proved before the connector is switched on. Rotate by setting the secret again.
+**Three submissions, all declined (1.0.0, 1.0.1, 1.0.2).** The package that went in is
+[`chatgpt-review/plugin/`](chatgpt-review/plugin/), kept as history with the rest of
+[`chatgpt-review/`](chatgpt-review/). Submission was Brad's alone: it is tied to a verified
+identity on his OpenAI account and to policy acknowledgements he signs.
 
 **The knowledge tools: `MCP_KNOWLEDGE_TOOLS`** (US-41 AC6). `on` adds `search_knowledge` and
 `get_article` to `tools/list` on `health-tool-edu`; unset or any other value leaves the list
-byte-identical to 1.0.2. Not before OpenAI's verdict on 1.0.2: a changed tool list is a new
-submission (1.1). The tools read only bundled files (Brad's video articles and topic masters)
+byte-identical to 1.0.2. On since 2026-10-29, after OpenAI's verdict. The tools read only bundled files (Brad's video articles and topic masters)
 and call no model, so the switch costs nothing per call. Set without `--stage` (it restarts the app); unset to turn them off.
 
 ```bash
@@ -315,30 +294,28 @@ fly secrets set MCP_KNOWLEDGE_TOOLS=on -a health-tool-edu
 fly secrets unset MCP_KNOWLEDGE_TOOLS -a health-tool-edu
 ```
 
-### The OpenAI reviewer sign-in (US-32 AC38)
+### The reviewer sign-in (US-32 AC38, AC49)
 
 Why it exists, and Brad's exception: [mcp-architecture.md](mcp-architecture.md) §1 and
-[the plan](reviews/2026-10-01-chatgpt-reviewer-signin-plan.md). In one line: OpenAI's
+[the plan](reviews/2026-10-01-chatgpt-reviewer-signin-plan.md). In one line: an app
 reviewer signs in on our consent page with a username and password we issued, and the
 session reads the invented reviewer account's Dropbox record through a token our server
-holds. The box shows for the exact pinned ChatGPT and Codex clients and, since 2026-10-20
-(US-32 AC49), the exact pinned Claude and Claude Code clients for Anthropic's reviewer, and
-only while all three secrets below are set and well formed. **It is on only while a review is
-pending.** Both vendors' reviewers share the one account, password and record: a kill or a
-rotation for one ends the other's sessions too.
+holds. It was built for OpenAI's review (AC38); that review ended 2026-10-29, and the
+OpenAI half of the code went on 2026-11-02. **It now serves Anthropic's directory review
+alone** (AC49): the box shows for the exact pinned Claude and Claude Code clients, only while
+all three secrets below are set and well formed. After Anthropic's verdict the secrets come
+off and the reviewer code is deleted (Brad 2026-10-29).
 
-**Whose review is pending: `MCP_REVIEWER_VENDORS`** (US-32 AC49). A comma list of `openai`
-and/or `anthropic`. Unset means `openai`. Any other word turns every box off. The box is
-visible to every user of a listed client, so list only the vendor actually reviewing. Unlike
-the three secrets above, this one is set without `--stage`: it takes effect at once and restarts the app.
+**Whose review is pending: `MCP_REVIEWER_VENDORS`** (US-32 AC49). The one accepted word is
+`anthropic`. Unset means no box. Any other word, `openai` included, turns every box off.
+The box is visible to every user of a listed client. Unlike the three secrets above, this one
+is set without `--stage`: it takes effect at once and restarts the app.
 
 ```bash
-# Submitting to Anthropic's Connectors Directory, with OpenAI's review still pending:
-fly secrets set MCP_REVIEWER_VENDORS=openai,anthropic -a health-tool-edu
-# After Anthropic's verdict: back to OpenAI alone (or unset, which means the same).
-fly secrets set MCP_REVIEWER_VENDORS=openai -a health-tool-edu
-# After OpenAI's verdict, with Anthropic still reviewing:
+# While Anthropic's review is open (the live value since 2026-10-29):
 fly secrets set MCP_REVIEWER_VENDORS=anthropic -a health-tool-edu
+# After Anthropic's verdict:
+fly secrets unset MCP_REVIEWER_VENDORS -a health-tool-edu
 ```
 
 The list gates the box and new sign-ins only. A reviewer session already connected
@@ -360,7 +337,7 @@ the feature off; secrets first are ignored by old code.
 
 ```bash
 # The password: shown once, in groups of four. Copy it to the private credentials
-# file and the OpenAI form. At the hidden prompt, press Enter for a new one, or type
+# file and the review form. At the hidden prompt, press Enter for a new one, or type
 # the password already in the form to stage it again unchanged.
 npx tsx tools/mcp-reviewer-token.ts --password
 
@@ -393,7 +370,7 @@ too, prints `staging failed` and the revoke result, and names the cleanup:
 `flyctl secrets unset -a health-tool-edu MCP_REVIEWER_DROPBOX_RT --stage`.
 
 **Check, inside the machine** (Fly secrets cannot be read back). Before submitting, and
-daily until the verdict:
+while a review is open:
 
 ```bash
 fly machine start -a health-tool-edu    # if it is suspended
@@ -405,7 +382,7 @@ token refreshes with the server's own `client_id` + `client_secret` call, and th
 folder lists.
 
 **Kill switch, and the between-reviews state** (Brad's decision, 2026-10-02). Once
-neither OpenAI nor Anthropic has a review pending, unset all three. The consent page goes back to exactly what every
+Anthropic's review is over, unset all three. The consent page goes back to exactly what every
 other user sees, with no code change, and every reviewer session ends on its next
 request (`/token` answers `invalid_grant`, `/mcp` 401):
 
@@ -417,12 +394,12 @@ A leaked password: run `--password` again and deploy; that changes the generatio
 ends every reviewer session. A leaked token: revoke it at the reviewer account's own
 `dropbox.com/account/connected_apps`, or unset it.
 
-**Before each later submission, stage them again.** Run `--password` (type the old
-password at the prompt to keep it, or press Enter and put the new one in the form). Run
-`--mint` too: an unset token cannot be read back, and nothing kept a copy. To retire the
+**Do not re-stage them while Anthropic's review is open:** a new password or token ends
+the reviewer sessions Anthropic holds. Before any later submission, run `--password` (type
+the old password at the prompt to keep it, or press Enter and put the new one in the form)
+and `--mint`: an unset token cannot be read back, and nothing kept a copy. To retire the
 old one first, remove the app at the reviewer account's connected-apps page, which
-revokes every token it held, then mint. Deploy, then run the check. Every submission
-needs all three set before OpenAI's reviewer arrives.
+revokes every token it held, then mint. Deploy, then run the check.
 
 ### Listing in Anthropic's Connectors Directory
 

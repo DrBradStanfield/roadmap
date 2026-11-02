@@ -137,6 +137,10 @@ export const PRODUCT_EVENT_NAMES = [
   'onboarding_step',
   'onboarding_done',
   'signin_opened',
+  // US-65 AC6: the record opened with entries this build could not read, so
+  // the page showed the kept-unchanged line. Metadata `{ count }` only, capped
+  // at 1000: never a row, a field name or a value. Once per tab session.
+  'record_unreadable_kept',
 ] as const;
 
 /** The `chat_profile_edit` counter's words (US-16 AC2): which profile field, and what the user did. */
@@ -237,9 +241,12 @@ export const ONBOARDING_STEPS = ['measurements', 'sex', 'birth'] as const;
  *  value rows read from an undated previous column, not files (AC14).
  *  `unitsGuessed` counts values whose unit was guessed (AC16) and `unitsRefused`
  *  creatinine rows refused rather than guessed (AC15): values, not files.
- *  `valuesLimit` counts the `valuesDropped` rows printed as a limit, such as
- *  "> 60" (AC19): a part of that count, never a test's name. */
-export const UPLOAD_OUTCOME_KEYS = ['picked', 'withValues', 'documentOnly', 'noValues', 'openFailed', 'tooLarge', 'truncated', 'serverError', 'limitError', 'refused', 'tooLong', 'valuesDropped', 'docx', 'picturesOnly', 'undatedPrevious', 'unitsGuessed', 'unitsRefused', 'valuesLimit'] as const;
+ *  `valuesLimit` counts the values printed as a limit, such as "> 60": since
+ *  US-12 AC20 they are saved, so no longer part of `valuesDropped` (AC19 counted
+ *  them there). `valuesLimitUngraded` is how many of them the grading rule
+ *  leaves undecided. Counts only; the tests behind that count ride in their own
+ *  closed list, `limitUngradedTests` (AC20, product-events.server.ts). */
+export const UPLOAD_OUTCOME_KEYS = ['picked', 'withValues', 'documentOnly', 'noValues', 'openFailed', 'tooLarge', 'truncated', 'serverError', 'limitError', 'refused', 'tooLong', 'valuesDropped', 'docx', 'picturesOnly', 'undatedPrevious', 'unitsGuessed', 'unitsRefused', 'valuesLimit', 'valuesLimitUngraded'] as const;
 export type UploadOutcomeKey = (typeof UPLOAD_OUTCOME_KEYS)[number];
 /** The most one count may say; the server refuses more, so the client clamps. */
 export const UPLOAD_OUTCOME_MAX = 1000;
@@ -358,7 +365,7 @@ export const MCP_OAUTH_REASONS = [
   'token-replayed',
   /** The refresh token was dead, expired or tampered with. */
   'token-dead-refresh',
-  // US-32 AC38, OpenAI's reviewer sign-in on our own consent page.
+  // US-32 AC38, AC49, the app reviewer sign-in on our own consent page.
   /** A wrong reviewer username or password. */
   'reviewer-credentials',
   /** A reviewer sign-in refused by the failures-only limiter. */

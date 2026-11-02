@@ -63,6 +63,9 @@ document has `fileRef: ""`.
      that metric, `false` on every other. Use it; do not work the tie-break out yourself.
    - Everything with `status: "entered-in-error"` is superseded history. Keep it, show it
      if asked, never treat it as current.
+   - A row with `comparator` (`"<"`, `"<="`, `">"` or `">="`) is a lab result printed as a
+     limit (US-12 AC20): `value` is the printed bound, so `{"value": 60, "comparator": ">"}`
+     is "> 60", never 60. Say it with its symbol. No `comparator` means an exact value.
 4. `medications`, `supplements`, `reminderPreferences` hold current state, one row per
    key. `medicationHistory` and `supplementHistory` are the append-only logs behind them.
    `profile` and `screenings` are singletons. Each may carry `fieldStamps`, the merge's
@@ -162,8 +165,8 @@ someone's medical history, or lose their data at the next device sync.
    the side of their line the plan grades them (US-07 AC5). A value within one display
    step of the line can differ from a plain conversion: one step up to the line when the
    plan grades it at or above, or one more decimal place when it grades it below.
-   `get_plan`'s tool description in `mcp-tools.ts` should say this too; it stays frozen
-   while OpenAI reviews the app, so add it once that review is done.
+   `get_plan`'s tool description in `mcp-tools.ts` should say this too. It was held for
+   OpenAI's review, which ended 2026-10-29; adding it is open work (an agent-contract change).
    **Blood pressure (US-02 AC8):** on any day, the active `systolic_bp` must be above the
    active `diastolic_bp`. A write that would leave it at or below is refused
    (`out-of-range`). To change both numbers one at a time, change the bottom number
@@ -210,6 +213,18 @@ someone's medical history, or lose their data at the next device sync.
     no field stamp, reads as never written, so the next merge puts back another
     copy's value. `update_profile` cannot clear a field.
 
+14. **A correction is exact.** A row correcting a limit (`correctsId` set) carries the
+    number the user gave and no `comparator`; copying the old row and changing only
+    `value` turns "> 60" corrected to 85 into "> 85". Write `comparator` only for a new
+    result printed with <, >, ≤ or ≥, using the ASCII codes (`<=` for ≤, `>=` for ≥);
+    anything else makes the row unreadable to the app. Moving a row to another day keeps
+    its `comparator`. Older app builds (before 2026-11-02) do not know the field: they
+    read the bound as an exact value; a correction of a limit one of them made carries the
+    old symbol, and this app reads such a manual correction (`source: "manual_correction"`,
+    a changed value) as exact, and every later move of it too, theirs or this app's. A lab
+    row one of them moved kept its symbol; a core measurement one of them moved dropped it
+    for good, so its bound stands as an exact value. The app does not repair that by itself.
+
 Validate your result against the schema before you write it back.
 
 ## Caveats: read these before you automate anything
@@ -233,6 +248,13 @@ Validate your result against the schema before you write it back.
   those clamps it does not repair rows, and it does not warn. A measurement or lab row
   whose `recordedAt` does not start with a real calendar day (`YYYY-MM-DD`) is removed
   at the next sync.
+- **A row or profile field the app cannot read stays in the file, unshown** (US-65). A
+  metric or medication key the app version does not know, or a wrong type on a field it
+  reads (a string `value`, a string `heightCm`), is left exactly where it is: every
+  version still merges, erases and corrects it, but the screens, `read_record` and
+  `get_plan` skip it, the write tools never repeat its value, and the app shows a one-line
+  count. Fix it by writing a corrected row. The hosted connector cannot repair a hidden
+  profile field (its expected-value check can never match it): use the app or the stdio server.
 - **Unknown fields survive at the top level and inside rows**: migrate and merge both
   spread what they do not recognise, so an older app will not strip something a newer
   one added. **`meta` is the exception:** `mergeFiles` rebuilds it from its five known

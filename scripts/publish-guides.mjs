@@ -14,9 +14,11 @@
 // never created.
 import { readFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { requireMergedCode } from '../tools/write-gate.mjs';
 
 const API = '2025-07';
 const publish = process.argv.includes('--publish');
+if (publish) requireMergedCode('publish-guides --publish'); // merged code only (docs/git-workflow.md)
 const guidesDir = new URL('../docs/guides/', import.meta.url);
 const builder = new URL('./build-guide-html.mjs', import.meta.url).pathname;
 

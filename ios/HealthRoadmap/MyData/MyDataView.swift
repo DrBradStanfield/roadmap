@@ -72,7 +72,7 @@ struct MyDataView: View {
             if let data = store.myData {
                 List {
                     vitals(data)
-                    // Under blood pressure: heart rate, resting heart rate and sleep, or the Turn On or Reconnect row (US-56 AC5, AC6).
+                    // Under blood pressure: heart rate, resting heart rate and sleep, or the Turn On or Open Settings row (US-56 AC5, AC6).
                     LiveCardsSection(metrics: LiveMetric.vitals) { liveDetail = $0 }
                     LiveCardsSection(metrics: LiveMetric.fitness, bands: data.vo2Bands?.value.map { [.vo2Max: $0] } ?? [:]) { liveDetail = $0 }
                     metrics(data.bloodTests) {
@@ -85,6 +85,13 @@ struct MyDataView: View {
                     RemindersSection()
                     aboutYou(data)
                     AppleHealthSection()
+                    // US-65: entries the engine could not read are kept unchanged; one calm line says how many.
+                    if let note = data.unreadableNote {
+                        Section {
+                        } footer: {
+                            Text(note)
+                        }
+                    }
                     RecordSection(store: store, sync: sync)
                     Section {
                     } footer: {
@@ -160,7 +167,7 @@ struct MyDataView: View {
 
     private func metrics(_ rows: [MyData.Row], @ViewBuilder header: () -> some View) -> some View {
         Section {
-            let column = ValueRow.Column(rows.map { ($0.latest?.value, $0.unit, nil) })
+            let column = ValueRow.Column(rows.map { ($0.latest?.value, $0.previous, $0.unit, nil) })
             ForEach(rows) { metric($0, column: column) }
         } header: {
             header()
@@ -196,7 +203,7 @@ struct MyDataView: View {
         // A unit switch still landing would open a sheet on the old choices (AC17e).
         Button { open(row) } label: {
             ValueRow(label: row.label, value: row.latest?.value, unit: row.unit, day: row.latest?.day,
-                     trend: row.trend ?? [], tint: MetricChart.colors(for: row.metric)[0], card: card,
+                     target: row.target, previous: row.previous, trend: row.trend ?? [], tint: MetricChart.colors(for: row.metric)[0], card: card,
                      column: column)
         }
         .tint(.primary)

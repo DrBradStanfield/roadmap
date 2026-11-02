@@ -443,7 +443,7 @@ describe('US-12 AC15: a refused value reaches an old widget as a value that coul
 // The widget and the iPhone name each value the parse dropped (US-12 AC19):
 // the route hands the names and reasons on, on the single and the batch path.
 describe('US-12 AC19: the dropped values\' names reach the widget', () => {
-  const unread = [{ name: 'hdl', reason: 'limit' }, { name: 'lpa', reason: 'limit' }];
+  const unread = [{ name: 'hdl', reason: 'unreadable' }, { name: 'lpa', reason: 'unreadable' }];
   const partial = () => ({
     classification: 'lab_report', reportDate: '2026-03-10', document: null, droppedValueCount: 2, unreadValues: unread,
     values: [{ metric: 'ldl', valueSI: 2.1, displayValue: 2.1, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high' }],
@@ -466,16 +466,16 @@ describe('US-12 AC19: the dropped values\' names reach the widget', () => {
 
   it('names only rows from a column this caller is offered, and the count drops the rest with their column', async () => {
     const columns = () => ({ ...partial(), droppedValueCount: 3, unreadValues: [
-      { name: 'hdl', reason: 'limit' }, { name: 'hdl', reason: 'limit', recordedAt: '2025-06-01' }, { name: 'lpa', reason: 'limit', recordedAt: 'undated' },
+      { name: 'hdl', reason: 'unreadable' }, { name: 'hdl', reason: 'unreadable', recordedAt: '2025-06-01' }, { name: 'lpa', reason: 'unreadable', recordedAt: 'undated' },
     ] });
     const ask = async (flags: Record<string, unknown>) => {
       extractOrClassify.mockResolvedValueOnce(columns());
       return (await (await action({ request: body({ pages: FILES[0].pages, ownDates: undefined, undatedPrev: undefined, ...flags }) } as never)).json()).data;
     };
     // The iPhone: its own days, no undated column.
-    expect(await ask({ ownDates: true })).toMatchObject({ droppedValueCount: 2, unreadValues: [{ name: 'hdl', reason: 'limit' }, { name: 'hdl', reason: 'limit', recordedAt: '2025-06-01' }] });
+    expect(await ask({ ownDates: true })).toMatchObject({ droppedValueCount: 2, unreadValues: [{ name: 'hdl', reason: 'unreadable' }, { name: 'hdl', reason: 'unreadable', recordedAt: '2025-06-01' }] });
     // A widget from before own days: the report's column only.
-    expect(await ask({})).toMatchObject({ droppedValueCount: 1, unreadValues: [{ name: 'hdl', reason: 'limit' }] });
+    expect(await ask({})).toMatchObject({ droppedValueCount: 1, unreadValues: [{ name: 'hdl', reason: 'unreadable' }] });
     // This widget: every column.
     expect(await ask({ ownDates: true, undatedPrev: true })).toMatchObject({ droppedValueCount: 3 });
   });

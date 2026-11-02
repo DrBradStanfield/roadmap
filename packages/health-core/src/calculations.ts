@@ -3,6 +3,7 @@ import type { UnitSystem, MetricType } from './units';
 import { EGFR_THRESHOLDS, LPA_THRESHOLDS, HBA1C_THRESHOLDS, waistToHeightRatio, isWaistToHeightElevated } from './units';
 import { generateSuggestions } from './suggestions';
 import { validateInputValue } from './validation';
+import { limitOf } from './lab-limits';
 
 /**
  * Calculate Ideal Body Weight using the Peterson Formula (2016)
@@ -116,14 +117,15 @@ export function getBMICategory(bmi: number, waistToHeightRatio?: number): string
 
 /**
  * Get eGFR status label.
- * Uses CKD staging: Normal (≥70), Low Normal (60-69), Mildly Decreased (45-59),
- * Moderately Decreased (30-44), Severely Decreased (15-29), Kidney Failure (<15).
+ * KDIGO 2024 names from 60 down; Normal (≥70) and Low Normal (60-69) are the tool's own
+ * (algorithm §3): Mildly to Moderately Decreased (45-59, G3a), Moderately to Severely
+ * Decreased (30-44, G3b), Severely Decreased (15-29), Kidney Failure (<15).
  */
 export function getEgfrStatus(egfr: number): string {
-  if (egfr >= 70) return 'Normal';
+  if (egfr >= EGFR_THRESHOLDS.normal) return 'Normal';
   if (egfr >= EGFR_THRESHOLDS.lowNormal) return 'Low Normal';
-  if (egfr >= EGFR_THRESHOLDS.mildlyDecreased) return 'Mildly Decreased';
-  if (egfr >= EGFR_THRESHOLDS.moderatelyDecreased) return 'Moderately Decreased';
+  if (egfr >= EGFR_THRESHOLDS.mildlyDecreased) return 'Mildly to Moderately Decreased';
+  if (egfr >= EGFR_THRESHOLDS.moderatelyDecreased) return 'Moderately to Severely Decreased';
   if (egfr >= EGFR_THRESHOLDS.severelyDecreased) return 'Severely Decreased';
   return 'Kidney Failure';
 }
@@ -180,11 +182,12 @@ export function getProteinRate(eGFR?: number): number {
  */
 const GATING_INPUTS = ['sex', 'birthYear', 'heightCm', 'weightKg', 'waistCm', 'systolicBp', 'hba1c', 'apoB', 'creatinine'] as const;
 
-/** Those of them the inputs do not hold. Empty when nothing is missing. */
+/** Those of them the inputs do not hold. Empty when nothing is missing. A
+ *  result printed as a limit is held even when the plan cannot grade it (US-12 AC20). */
 export function missingPlanInputs(inputs: Partial<HealthInputs>): Array<(typeof GATING_INPUTS)[number]> {
   // A lab eGFR stands in for creatinine (US-07 AC7).
-  const present = (v: unknown) => v !== undefined && v !== null;
-  return GATING_INPUTS.filter((field) => !present(inputs[field]) && !(field === 'creatinine' && present(inputs.labEgfr)));
+  const present = (field: keyof HealthInputs) => (inputs[field] !== undefined && inputs[field] !== null) || !!limitOf(inputs, field);
+  return GATING_INPUTS.filter((field) => !present(field) && !(field === 'creatinine' && present('labEgfr')));
 }
 
 /**
@@ -196,6 +199,7 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
 
   const results: HealthResults = {
     heightCm: inputs.heightCm,
+    ...(inputs.limits && Object.keys(inputs.limits).length ? { limits: inputs.limits } : {}),
     ...(ibw !== undefined ? { idealBodyWeight: Math.round(ibw * 10) / 10, proteinTarget: calculateProteinTarget(ibw) } : {}),
     suggestions: [],
   };
@@ -221,7 +225,8 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
   // Kept to 4 decimal places, which only strips float noise (3.80 − 2.20 is
   // 1.5999…): the plan compares it unrounded and rounds it only to display
   // it (US-07 AC5, US-06 AC6).
-  if (inputs.totalCholesterol !== undefined && inputs.hdlC !== undefined) {
+  // Never from a limit (US-12 AC20): the difference of a bound is no value.
+  if (inputs.totalCholesterol !== undefined && inputs.hdlC !== undefined && !limitOf(inputs, 'totalCholesterol') && !limitOf(inputs, 'hdlC')) {
     const nonHdl = inputs.totalCholesterol - inputs.hdlC;
     if (nonHdl > 0) {
       results.nonHdlCholesterol = Math.round(nonHdl * 1e4) / 1e4;
@@ -252,7 +257,8 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
   if (inputs.labEgfr !== undefined) {
     results.eGFR = Math.round(inputs.labEgfr);
     results.eGFRFromLab = true;
-  } else if (inputs.creatinine !== undefined && results.age !== undefined && inputs.sex) {
+  } else if (inputs.creatinine !== undefined && !limitOf(inputs, 'creatinine') && !limitOf(inputs, 'labEgfr') && results.age !== undefined && inputs.sex) {
+    // Never from a creatinine printed as a limit, nor past a lab eGFR printed as one (US-12 AC20).
     results.eGFR = Math.round(calculateEGFR(inputs.creatinine, results.age, inputs.sex));
   }
 

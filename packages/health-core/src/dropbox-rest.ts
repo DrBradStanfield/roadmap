@@ -29,7 +29,7 @@ const PROVIDER = 'Dropbox';
 
 /** `fetch` with this module's provider name already bound, so no call site can
  *  hand `fetchOrFail` the wrong one. Reach for this, never the bare global. */
-const request = (url: string | URL, init?: RequestInit): Promise<Response> => fetchOrFail(PROVIDER, url, init);
+const request = (url: string | URL, init?: Parameters<typeof fetchOrFail>[2]): Promise<Response> => fetchOrFail(PROVIDER, url, init);
 
 /** Parse the `dropbox-api-result` response header (file metadata incl. rev). */
 function parseApiResult(res: Response): Record<string, unknown> | null {
@@ -219,6 +219,8 @@ export async function dropboxWrite(
     },
     body: JSON.stringify(body),
     signal,
+    // An upload that went out and got no answer may have landed (US-09 AC13f).
+    mayHaveWritten: true,
   });
   if (res.status === 409) throw new ConflictError(`${PROVIDER} write conflict: ${await res.text()}`);
   if (!res.ok) throw new StorageError(`${PROVIDER} write failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);

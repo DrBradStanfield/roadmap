@@ -30,7 +30,14 @@ export type MetricType =
   | 'lpa';
 
 /** SI = metric + mmol/L (NZ, UK, AU, EU). Conventional = imperial + mg/dL (US). */
-export type UnitSystem = 'si' | 'conventional';
+export const UNIT_SYSTEMS = ['si', 'conventional'] as const;
+export type UnitSystem = (typeof UNIT_SYSTEMS)[number];
+
+/** The record's unit system, read by the same rule as every reader (US-65): a
+ *  value this build does not know reads as absent, so as the default 'si'. */
+export function unitSystemOf(profile: { unitSystem?: unknown }): UnitSystem {
+  return (UNIT_SYSTEMS as readonly unknown[]).includes(profile.unitSystem) ? (profile.unitSystem as UnitSystem) : 'si';
+}
 
 export interface UnitDef {
   /** Label of the canonical (stored) unit, e.g. "mmol/L" */
@@ -670,9 +677,10 @@ export const BP_THRESHOLDS = {
 
 /** eGFR thresholds in mL/min/1.73m² */
 export const EGFR_THRESHOLDS = {
+  normal: 70,              // eGFR 70 and over: normal
   lowNormal: 60,           // eGFR 60-69: low normal (no CKD without markers)
-  mildlyDecreased: 45,     // G3a: mildly decreased
-  moderatelyDecreased: 30, // G3b: moderately decreased
+  mildlyDecreased: 45,     // G3a: mildly to moderately decreased
+  moderatelyDecreased: 30, // G3b: moderately to severely decreased
   severelyDecreased: 15,   // G4: severely decreased
 } as const;
 

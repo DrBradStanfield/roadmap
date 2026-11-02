@@ -82,6 +82,13 @@ above, the contract hashes to `8dee92d80c028ed3`, which `EngineRelease.bridge` a
 `bridge.test.ts` now carry. Builds 3 and 4 stop receiving over-the-air engines: the US-61
 engine and this one reach them only through the next App Store build.
 
+**Bridge moved again, 2026-11-02 (US-12 AC20, D15).** `chatContextJson` now sends `limits`
+(a lab result printed as a limit) and `ChatClient.contextKeys` takes it, so the contract
+hashes to `49b2af86805825f0`. Build 5 (`8dee92d80c028ed3`) stops receiving over-the-air
+engines from this release on. Had it kept them, its allow-list would drop `limits`; the
+engine no longer sends a limit field's representative, so it would lose that value rather
+than misreport it.
+
 Speed, measured 2026-10-21 (Node 22, esbuild bundle, an Intel iMac, the sample record
 padded to 526 rows; `--jitless` stands in for an app's JavaScriptCore, which runs without a
 JIT): build the plan 1.3 ms with JIT, 1.6 ms without; merge two copies 3.2 ms vs 4.6 ms.
@@ -239,6 +246,8 @@ A signature means "the key holder approved this bundle", nothing more.
   by name in `entry.ts`, and that every optional door, called with only its contract args,
   answers as it does with them undefined. A missing return field is tested per feature. Anything
   an older app cannot do without stays in the contract and moves the id.
+  Second use (2026-11-02, US-62 AC8): My data rows' `target` and `previous`, read as none from
+  an older engine (`MyDataLayoutTests.testARowReadsItsTargetAndPreviousValueFromTheEngine_US62`).
 - **The schema is the app's (R7).** A bundle whose record `schemaVersion` differs from the
   bundled engine's is refused. A schema change always needs an app update, so an over-the-
   air engine can never write a record the web or an older phone cannot read.
@@ -802,7 +811,7 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   atomically, `.completeFileProtectionUntilFirstUserAuthentication` (a launch after the first unlock
   reads it). Read synchronously in `init` (a few hundred bytes), so the first frame has the cards;
   a missing, damaged or other-version file is none. Kept cards count as access granted and read, so
-  `LiveCardsSection.shown` draws them, never Turn On or Reconnect, until the first read. A read that
+  `LiveCardsSection.shown` draws them, never the Turn On or Open Settings row, until the first read. A read that
   changes the cards replaces the file (`keep`), one with none always deletes it (even a file the
   launch could not read, adversary R3), a locked or cancelled read changes nothing, a sheet due
   again deletes it, and `DataEraser` calls `forget()` (file gone, cards empty, nothing shown until
@@ -833,7 +842,7 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   `SleepPage` (D's stages over the night, W/M/6M stacked nights with stage averages, its chart its
   own view, E3). Both pages share `LivePageFrame` (picker, empty line, footnote, read, range
   reset), `ScrollingChart` (axes, scroll, scrub, haptic, calendar) with `SelectionRule`, and
-  `PageHeadline`, which `MetricDetailView` uses too. Every metric page, MetricDetailView's included, takes `metricPageList` (inset grouped, inline title, an 8 pt top margin so the picker sits under the title; Brad 2026-10-25). While the sheet is still due for the five and Apple Health is connected (so only for someone connected before 2026-10-26) Vitals shows `LiveReconnectRow` with **Turn On** (US-56 AC5; the "Show from Apple Health" card is gone; not connected, My data's Apple Health row is the one way in), and after "Don't Allow" (or an empty Health) the same row with **Reconnect** (AC5b). Turn On runs `connect()` on the known answer; Reconnect checks the status afresh and runs it while the sheet is due, else opens Settings (`LiveReconnectRow.action`); iOS 27's app page in Settings has no Health row, so the row names Settings › Apps › Health › Data Access & Devices. **A page always shows its card's reading
+  `PageHeadline`, which `MetricDetailView` uses too. Every metric page, MetricDetailView's included, takes `metricPageList` (inset grouped, inline title, an 8 pt top margin so the picker sits under the title; Brad 2026-10-25). While the sheet is still due for the five and Apple Health is connected (so only for someone connected before 2026-10-26) Vitals shows `LiveReconnectRow` with **Turn On** (US-56 AC5; the "Show from Apple Health" card is gone; not connected, My data's Apple Health row is the one way in), and after "Don't Allow" (or an empty Health) the same row with **Open Settings** (AC5b; "Reconnect" until 2026-11-01, AC5c). Turn On runs `connect()` on the known answer; Open Settings checks the status afresh and runs it while the sheet is due, else opens Settings (`LiveReconnectRow.action`); Settings opens at its top and iOS 27's app page there has no Health row, so the row names the path, chosen by OS (`LiveFooter.healthPath`: Settings › Apps › Health › Data Access & Devices › Health Roadmap from iOS 18, Settings › Health › … on iOS 17). **A page always shows its card's reading
   (Codex R2, adversary R7):** it reads 400 days (sleep 200) or back to the reading, opens with it in
   view (`LiveChartGeometry.opening`, the window's own length so a 31-day month still holds it),
   reads D's hours a day at a time as the scroll reaches a day (D scrolls a week back, or to the reading's day: a 400-day hourly domain took Swift Charts several seconds to lay out on the simulator), and reads the days only once the
@@ -1031,7 +1040,9 @@ later.
   files (default 300). Lab files also spend the web's per-machine file cap
   (`machineFiles`, `AI_DAILY_FILE_CAP`, 2000), but the app's own cap is smaller, so the
   app can never use up the web's and the connector's uploads (R5); the code also holds it
-  at or under 15% of `AI_DAILY_FILE_CAP` whatever the env says.
+  at or under 15% of `AI_DAILY_FILE_CAP` whatever the env says. The gate reserves the
+  per-IP, per-machine and file-cap units together, all or nothing, before the key's use,
+  so the file cap refusing spends no other count (US-52 AC4d, 2026-11-01).
 - Per IP, signed requests refused before their signature verifies (a bad or garbage
   assertion, an unknown key, a development key refused, an oversized body, a bad
   signature): 200 a day. Past that, the gate reads neither the key nor the body (code
@@ -1390,7 +1401,8 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
     through the engine; `RecordFile` is the file on disk and the engine steps that read and
     write it; `MyData.swift` is the engine's view of the record and the
     `RecordEdit` the tab sends; `MyDataView`, `ValueRow` (a row, a vitals card, its
-    sparkline), `ValueEntrySheet` and `DayText` draw it. `SheetSave` is a sheet's save and
+    sparkline; the row follows the web's MyDataRows.tsx, without grade colours: "target · date" under the name, the value
+    with the previous one in brackets, both served by the engine, US-62 AC8), `ValueEntrySheet` and `DayText` draw it. `SheetSave` is a sheet's save and
     the "Not saved" alert (`refusalAlert`, over `App/MessageAlert.swift`).
     The form sections (US-25 AC8): `FormModels` (the engine's question JSON and `FormEdit`),
     `FormFieldRow` (one question: menu, month wheel, number or dated value),
@@ -1503,9 +1515,15 @@ A new user answers sex, birth month and year, height and weight, one per screen,
 ### D13 · "Do you drink alcohol?": one profile answer, the engine drops the card (Brad, 2026-10-31, US-60)
 
 Only the reduce-alcohol suggestion has a Dismiss button (keyed off its id in
-`PlanCardView`), shown only while the answer is unanswered. It opens the app's usual
-confirmation dialog, attached to the button so its arrow points there, "I don't drink"
-or "I drink"; the answer is checked against the screen recorded at the tap. Plan:
+`PlanCardView`), shown while the card is on the plan. It opens the app's usual
+confirmation dialog, attached to the button so its arrow points there. Unanswered:
+"Do you drink alcohol?", "I don't drink" or "I drink". A drinker (Brad 2026-11-01): "Do
+you still drink alcohol?", "I've stopped" (saves `none`) or "I still drink", which saves
+nothing and shows one line in an alert on the same button (`messageAlert`, no title):
+the card stays because its advice applies to anyone who drinks, and About you changes the
+answer. `AlcoholQuestion` holds the prompt per answer and is nil for a non-drinker, whose
+card the engine has already dropped. Any save is checked against the screen recorded at
+the tap. Plan:
 [docs/drafts/alcohol-question.md](../docs/drafts/alcohol-question.md).
 - **The answer is a profile field** (`profile.alcohol`), written by the engine's own edit
   (`{kind: 'alcohol'}` in `engine/my-data.ts`, health-core's `stampProfile`), so it merges
@@ -1515,12 +1533,14 @@ or "I drink"; the answer is checked against the screen recorded at the tap. Plan
   the card. The plan animates on the answer alone (`.animation(value:)` on it: the save
   lands after an await, outside any `withAnimation`), so the card fades out and the rest
   close up while nothing else on the plan animates.
-- **Never re-asked.** "I drink" keeps the card, without its Dismiss; About you is the only
-  place to change it.
+- **Asked again only on a tap.** "I drink" keeps the card; its Dismiss now asks whether
+  they still drink (it once vanished, which left a drinker who had stopped no way off the
+  card but About you).
 - **No new bridge.** The edit and the field ride the existing `applyEditJson`/`screenJson`
   doors; the contract file is unchanged. Swift reads the field leniently, so a value it
   does not know shows as "Not answered", never a broken My data.
-- **Usage signal:** Clarity's "Alcohol answered", sent from the plan's dialog only, never
+- **Usage signal:** Clarity's "Alcohol answered", sent from the plan's dialog only, once
+  saved ("I've stopped" counts; "I still drink" saves nothing and sends nothing), never
   the answer (D9). The chat allow-list (`ChatClient.contextKeys`) carries health-core's
   new `alcohol` key, so the chat knows a non-drinker.
 
@@ -1576,6 +1596,18 @@ is. Spec: docs/user-stories.md US-61.
   and `EngineBridgeContractTests.swift` (XCTest). Both directions: the Node test calls
   `screenJson` with an old app's four arguments; the XCTest runs the plan on a stand-in for an
   engine before US-61 (four arguments, no `usProducts`).
+
+### D15 · Lab results printed as a limit: the engine says them, Swift draws them (Brad, 2026-11-02, US-12 AC20)
+
+A lab result printed "> 60" or "< 5" is saved with its comparator. The engine owns every
+word: My data, the metric page, the lab review and the plan tiles get strings with the
+symbol, and the grading rule ("only when it decides") runs in health-core. Swift only draws
+a limit point hollow, off the chart's line, from `historyJson`'s optional `bound`; an older
+app finds no number in "< 2.0" and leaves the point off the chart. The phone's chat sends a
+limit as `limits` only, never the field's hidden representative, and `limits` joined
+`ChatClient.contextKeys`, which moved the bridge (build 5 takes no over-the-air engine from
+this release on). Apple Health never gets a limit (device-export.ts). The phone sends no
+`product_events`, so it has no count of limits.
 
 ## Phases
 
