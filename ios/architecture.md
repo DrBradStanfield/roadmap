@@ -761,9 +761,9 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
   its own sheet). Elsewhere nothing asks and no read runs.
 - **Swift parses nothing (D2):** `HealthKitClient.labResults` is an anchored query; each
   record goes to the engine as `{ sourceId, resourceType, fhirVersion, json }` (the
-  `healthRecords` edit). `sourceId` is the sample's source, bundle id + "|" + name: Apple
-  says a FHIR id is unique only per type and source, and the source is the institution's
-  account. The engine (health-core) reads the JSON and decides what lands, with its counts
+  `healthRecords` edit). `sourceId` is the sample's source bundle id (`com.apple.public.health.clinical.<UUID>`,
+  one per institution account; seen on the simulator 2026-11-02): Apple says a FHIR id is
+  unique only per type and source. The institution's name stays out of the record. The engine (health-core) reads the JSON and decides what lands, with its counts
   (`added`, `corrected`, `withdrawn`, `alreadyInRecord`, `notRead`).
 - **Same line, same anchor rules as vitals:** `RecordStore.applyNow(records:)`, the store's
   one ordered line; the anchor (`HealthSyncMemory.labResultsAnchor`) moves only after the

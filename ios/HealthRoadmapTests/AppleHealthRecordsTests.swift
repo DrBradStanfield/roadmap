@@ -111,9 +111,9 @@ final class AppleHealthRecordsTests: XCTestCase {
 
     /// AC5: the source part of a result's identity, one per institution account.
     func testTheSourceIsTheInstitutionsAccount_US66_AC5() {
-        XCTAssertEqual(HealthKitClient.sourceId(bundleIdentifier: "com.apple.health.A1", name: "Clinic"), "com.apple.health.A1|Clinic")
-        XCTAssertNotEqual(HealthKitClient.sourceId(bundleIdentifier: "com.apple.health.A1", name: "Clinic"),
-                          HealthKitClient.sourceId(bundleIdentifier: "com.apple.health.B2", name: "Clinic"))
+        XCTAssertEqual(HealthKitClient.sourceId(bundleIdentifier: "com.apple.public.health.clinical.A1"), "com.apple.public.health.clinical.A1")
+        XCTAssertNotEqual(HealthKitClient.sourceId(bundleIdentifier: "com.apple.public.health.clinical.A1"),
+                          HealthKitClient.sourceId(bundleIdentifier: "com.apple.public.health.clinical.B2"))
     }
 
     /// The engine's counts come back beside the record, and decode.

@@ -61,7 +61,7 @@ export const HEALTH_RECORDS_LOINC: Readonly<Record<string, string>> = {
   '13457-7': 'ldl', '18262-6': 'ldl', '2089-1': 'ldl', '39469-2': 'ldl', '22748-8': 'ldl',
   '2093-3': 'total_cholesterol', '14647-2': 'total_cholesterol', '35200-5': 'total_cholesterol',
   '2085-9': 'hdl', '14646-4': 'hdl',
-  '2571-8': 'triglycerides', '14927-8': 'triglycerides', '35217-9': 'triglycerides',
+  '2571-8': 'triglycerides', '14927-8': 'triglycerides', '35217-9': 'triglycerides', '3043-7': 'triglycerides',
   '1884-6': 'apob',
   '2160-0': 'creatinine', '14682-9': 'creatinine',
   '2857-1': 'psa',

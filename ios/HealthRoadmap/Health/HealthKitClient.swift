@@ -70,7 +70,7 @@ final class HealthKitClient: HealthStoreClient {
         // Deletions ignored, as for vitals (D6): the engine decides what an amendment does.
         let records = result.addedSamples.compactMap { sample -> HealthRecord? in
             guard let resource = sample.fhirResource, let json = String(data: resource.data, encoding: .utf8) else { return nil }
-            return HealthRecord(sourceId: Self.sourceId(bundleIdentifier: sample.sourceRevision.source.bundleIdentifier, name: sample.sourceRevision.source.name),
+            return HealthRecord(sourceId: Self.sourceId(bundleIdentifier: sample.sourceRevision.source.bundleIdentifier),
                                 resourceType: resource.resourceType.rawValue, fhirVersion: resource.fhirVersion.stringRepresentation, json: json)
         }
         let data = try NSKeyedArchiver.archivedData(withRootObject: result.newAnchor, requiringSecureCoding: true)
@@ -172,8 +172,10 @@ final class HealthKitClient: HealthStoreClient {
 
     /// The source a lab result came through: one per institution account (Apple: a FHIR id is
     /// unique only within a resource type and its source). Part of the result's identity (AC5).
-    nonisolated static func sourceId(bundleIdentifier: String, name: String) -> String {
-        bundleIdentifier + "|" + name
+    /// The bundle id alone (`com.apple.public.health.clinical.<UUID>`, one per account): the
+    /// institution's name stays out of the record, and a renamed institution is not a new source.
+    nonisolated static func sourceId(bundleIdentifier: String) -> String {
+        bundleIdentifier
     }
 
     // MARK: HealthKit types
