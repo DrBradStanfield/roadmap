@@ -14,6 +14,7 @@ import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { trackProductEvent } from '../lib/server-api';
 import type { CorrectFn } from '../lib/matrix-save';
 import type { ApiLabValue } from '../lib/api-types';
+import type { ApiMeasurement } from '@roadmap/health-core';
 
 function GroupIcon({ icon }: { icon: LabRowsIcon }) {
   const common = { width: 14, height: 14, viewBox: '0 0 16 16', fill: 'none', 'aria-hidden': true } as const;
@@ -169,8 +170,10 @@ function LabGroupSection({ group, expanded, onToggle, onCorrect, move }: { group
   );
 }
 
-export function AdditionalLabRows({ labValues, onAdded, onCorrect, move }: {
+export function AdditionalLabRows({ labValues, coreValues, onAdded, onCorrect, move }: {
   labValues: ApiLabValue[]; onAdded?: () => void; onCorrect?: CorrectFn; move?: MoveHeaders;
+  /** The core blood values, for the add form's same-day check only: never listed here (US-66 AC8). */
+  coreValues?: ApiMeasurement[];
 }) {
   const groups = useMemo(() => groupLabValues(labValues), [labValues]);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -199,7 +202,7 @@ export function AdditionalLabRows({ labValues, onAdded, onCorrect, move }: {
       {groups.map(g => (
         <LabGroupSection key={g.id} group={g} expanded={expandedIds.has(g.id)} onToggle={() => toggle(g.id)} onCorrect={onCorrect} move={move}/>
       ))}
-      {onAdded && <AddLabTest onAdded={onAdded} labValues={labValues} onCorrect={onCorrect}/>}
+      {onAdded && <AddLabTest onAdded={onAdded} labValues={labValues} coreValues={coreValues} onCorrect={onCorrect}/>}
     </div>
   );
 }

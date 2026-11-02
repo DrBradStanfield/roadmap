@@ -180,6 +180,8 @@ export interface BulkLabValuesResult {
   skippedDuplicates: number;
   errorCount: number;
   refused: LabUnitRefusal[];
+  /** Core values (a core test's name, US-66 AC6) refused for their number. */
+  measurementRefusals?: MeasurementRefusal[];
 }
 /** One reviewed upload row. `correctsId` is set only when the reviewer ticked
  *  "Replace" on a slot another writer (a connector, another device) already
@@ -467,8 +469,8 @@ export class RoadmapStore {
 
   bulkSaveLabValues(values: BulkLabValueInput[]): BulkLabValuesResult {
     if (this.refuses()) return { saved: [], skippedDuplicates: 0, errorCount: values.length, refused: [] };
-    const { saved, skippedDuplicates, refused } = this.bulkSave(values.map((v) => ({ kind: 'lab' as const, ...v, source: (v.source as MeasurementSource) ?? 'lab_import' })));
-    return { saved: saved as ApiLabValue[], skippedDuplicates, errorCount: 0, refused };
+    const { saved, skippedDuplicates, refused, measurementRefusals } = this.bulkSave(values.map((v) => ({ kind: 'lab' as const, ...v, source: (v.source as MeasurementSource) ?? 'lab_import' })));
+    return { saved: saved as ApiLabValue[], skippedDuplicates, errorCount: 0, refused, measurementRefusals };
   }
 
   private bulkSave(rows: BulkRow[]): ReturnType<typeof bulkAppendValues> {

@@ -21,6 +21,8 @@ vi.mock('../lib/server-api', () => ({
 
 import { AddLabTest } from './AddLabTest';
 import { AdditionalLabRows } from './AdditionalLabRows';
+import { reportedToCanonical, type ApiMeasurement } from '@roadmap/health-core';
+import { validateTypedValue } from '../lib/blood-test-cell';
 
 beforeEach(() => {
   bulkSaveLabValues.mockReset().mockResolvedValue({ saved: [{ id: 'x' }], skippedDuplicates: 0, errorCount: 0, refused: [] });
@@ -287,5 +289,57 @@ describe('US-21 phase 2 — section shows the add button', () => {
   it('still renders nothing when read-only (no onAdded) and no lab values', () => {
     const { container } = render(<AdditionalLabRows labValues={[]} />);
     expect(container.firstChild).toBeNull();
+  });
+});
+
+// US-66 AC6: a core test's name typed under "Other" writes the core row, so the
+// form must find that row on a held day and offer Replace as it does for a lab
+// row (US-21 AC13), and say a refused number in the matrix's words. AC8: the
+// core rows it reads are never listed as extra rows.
+describe('US-66 AC6 — a core test typed under "Other"', () => {
+  const si = reportedToCanonical('ldl', 116, 'mg/dL')!.valueSI;
+  const core = { id: 'core1', metricType: 'ldl', value: si, recordedAt: `${todayIso}T00:00:00.000Z`, status: 'active', source: 'manual', createdAt: `${todayIso}T08:00:00.000Z` } as ApiMeasurement;
+
+  function typeLdl(value: string, result: object, coreValues: ApiMeasurement[] = [core]) {
+    bulkSaveLabValues.mockResolvedValue({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [], ...result });
+    const onCorrect = vi.fn().mockResolvedValue('ok');
+    const utils = render(<AddLabTest onAdded={vi.fn()} labValues={[]} coreValues={coreValues} onCorrect={onCorrect} />);
+    fireEvent.click(utils.getByRole('button', { name: /add a blood test/i }));
+    fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'custom' } });
+    fireEvent.change(utils.getByLabelText('Test name'), { target: { value: 'LDL-C' } });
+    fireEvent.change(utils.getByLabelText('Unit'), { target: { value: 'mg/dL' } });
+    fireEvent.change(utils.getByLabelText('Value'), { target: { value } });
+    fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
+    return { ...utils, onCorrect };
+  }
+
+  it('US-21 AC13 — a held core day names the core value in the unit typed and Replace corrects it in its stored unit', async () => {
+    const { findByRole, getByText, onCorrect } = typeLdl('131', { skippedDuplicates: 1 });
+    fireEvent.click(await findByRole('button', { name: 'Replace 116 mg/dL with 131' }));
+    expect(getByText('That test already has 116 mg/dL for that date.')).toBeTruthy();
+    await waitFor(() => expect(onCorrect).toHaveBeenCalledWith('core1', reportedToCanonical('ldl', 131, 'mg/dL')!.valueSI));
+  });
+
+  it('US-21 AC13 — the core value typed again offers no Replace', async () => {
+    const { findByText, queryByRole } = typeLdl('116', { skippedDuplicates: 1 });
+    expect(await findByText('That test already has 116 mg/dL for that date.')).toBeTruthy();
+    expect(queryByRole('button', { name: /^Replace/ })).toBeNull();
+  });
+
+  it('an out-of-range core value shows the matrix range message, never "Could not save"', async () => {
+    const { findByText, queryByText } = typeLdl('99999', {
+      measurementRefusals: [{ index: 0, metricType: 'ldl', reason: 'out-of-range', message: 'LDL too high', bound: 'above' }],
+    }, []);
+    const words = validateTypedValue('ldl', '99999', 'conventional').error!;
+    expect(words).toMatch(/^Max .* mg\/dL$/);
+    expect(await findByText(words)).toBeTruthy();
+    expect(queryByText(/Could not save/)).toBeNull();
+    expect(trackProductEvent).not.toHaveBeenCalled(); // the value never enters telemetry
+  });
+
+  it('US-66 AC8 — the core rows the form reads are never listed as extra rows', () => {
+    const { queryByText, getByRole } = render(<AdditionalLabRows labValues={[]} coreValues={[core]} onAdded={vi.fn()} />);
+    expect(getByRole('button', { name: /add a blood test/i })).toBeTruthy();
+    expect(queryByText(/ldl/i)).toBeNull();
   });
 });

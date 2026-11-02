@@ -113,3 +113,16 @@ describe('RoadmapStore.bulkSaveLabValues with correctsId (US-32)', () => {
     expect(store.loadLabValues()).toHaveLength(1); // loadLabValues() is already active-only
   });
 });
+
+// US-66 AC6: a core test's name writes its core row, range-checked on the
+// converted value. A refused number reaches the caller to show, not dropped.
+describe('RoadmapStore.bulkSaveLabValues with a core name (US-66 AC6)', () => {
+  it('hands back an out-of-range core value as a measurement refusal', async () => {
+    const store = await RoadmapStore.create(new MemoryAdapter(new MemoryCloud()));
+    const result = store.bulkSaveLabValues([
+      { metricName: 'LDL-C', value: 99999, unit: 'mg/dL', recordedAt: '2024-06-01T00:00:00.000Z', source: 'manual' },
+    ]);
+    expect(result.saved).toHaveLength(0);
+    expect(result.measurementRefusals).toEqual([expect.objectContaining({ metricType: 'ldl', reason: 'out-of-range', bound: 'above' })]);
+  });
+});
