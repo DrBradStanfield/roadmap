@@ -221,6 +221,8 @@ describe('answer prompt and condition guides (US-70 AC6)', () => {
   it('reaches the model in the built system prompt', () => {
     const text = buildSystemBlocks('{}').map(b => b.text).join('\n');
     expect(text).toContain("If a guide and the user's plan disagree, the plan wins");
+  });
+});
 
 // US-15 AC49 (Brad 2026-11-02, "Fix"): a live doctor-surface answer opened with "The user's
 // message names MicroVitamin+ directly, so I can answer the factual question." The posture
