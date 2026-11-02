@@ -122,6 +122,9 @@ async function measurements(view: RenderResult, height = '178', weight = '80') {
   leave(q(view, '#weightKg'));
   await waitFor(async () => expect(await activeWeights()).toEqual([[Number(weight), TODAY]]), { timeout: 2000 });
 }
+/** One animation frame: what a click scheduled with requestAnimationFrame
+ *  (a stage's reveal focusing the next question) has run. */
+const nextFrame = () => act(async () => { await new Promise((r) => requestAnimationFrame(() => r(null))); });
 /** The birth date with no jump to the email box: the year is completed while
  *  the month is unset, then the month is set (US-62 AC12, Brad 2026-11-02). */
 function birthWithoutJump(view: RenderResult, month = '5', year = '1975') {
@@ -953,6 +956,7 @@ describe('PR 518 review: refused and erased records', () => {
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
     birthWithoutJump(view);
     await waitFor(() => expect(fullForm(view)).toBe(true));
+    await nextFrame(); // the Male click's reveal focuses the month on the next frame: let it land first
     const year = q(view, '#birthYear') as HTMLElement;
     act(() => { year.focus(); });
     fireEvent.pointerDown(view.getByRole('radio', { name: 'Male' })); // Safari: the toggle takes no focus
@@ -1084,6 +1088,7 @@ describe('PR 518 adversary re-check', () => {
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
     birthWithoutJump(view);
     await waitFor(() => expect(fullForm(view)).toBe(true));
+    await nextFrame(); // the Male click's reveal focuses the month on the next frame: let it land first
     const year = q(view, '#birthYear') as HTMLElement;
     act(() => { year.focus(); });
     fireEvent.pointerDown(view.getByRole('radio', { name: 'Male' }));
@@ -1100,6 +1105,7 @@ describe('PR 518 adversary re-check', () => {
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
     birthWithoutJump(view);
     await waitFor(() => expect(fullForm(view)).toBe(true));
+    await nextFrame(); // the Male click's reveal focuses the month on the next frame: let it land first
     const year = q(view, '#birthYear') as HTMLElement;
     act(() => { year.focus(); });
     const male = view.getByRole('radio', { name: 'Male' });
