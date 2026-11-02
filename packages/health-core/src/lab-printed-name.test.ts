@@ -3,7 +3,7 @@
 // stands only when it does not.
 import { describe, expect, it } from 'vitest';
 import { parseUnifiedResult, toUnifiedResult, unifiedSystemPrompt, type DocumentPromptMode } from './lab-extraction';
-import { canonicalLabRow, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
+import { canonicalLabRow, LAB_CATALOG, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
 
 const extract = (rows: { values?: unknown[]; additionalValues?: unknown[] }, mode: DocumentPromptMode = 'full') =>
   toUnifiedResult(parseUnifiedResult({ classification: 'lab_report', reportDate: '2026-10-30', document: null, values: [], additionalValues: [], ...rows }), mode);
@@ -231,6 +231,36 @@ describe('US-07 AC10 adversary re-check fixes', () => {
   it('a model creatinine its unit check refuses holds no slot: a printed creatinine can take it', () => {
     const result = extract({ values: [core('creatinine', 'Creatinine ratio', 3.1, 'mg/mmol'), core('ldl', 'Creatinine', 82, 'µmol/L')] });
     expect(result.values.map((v) => [v.metric, v.displayValue])).toEqual([['creatinine', 82]]);
+  });
+});
+
+describe('US-07 AC10: saliva words in the urine marker\'s languages (Brad 2026-11-02: "yes")', () => {
+  it.each([
+    'Cortisol (saliva)', 'Salivary cortisol', 'Cortisol salival', 'Cortisolo salivare', 'Cortisol salivaire',
+    'Cortisol (salive)', 'Cortisol im Speichel', 'Speichelcortisol nachts', 'Speichel-Cortisol',
+    'Kortyzol w ślinie', 'Kortyzol (ślina)', 'Kortyzol ślinowy',
+  ])('"%s" says saliva: it wins over a blood pick', (printed) => {
+    const [row] = extract({ additionalValues: [lab('cortisol_pm', printed, 1.5)] }).additionalValues;
+    expect(row.name).toBe(printed);
+  });
+
+  it('a model pick that says saliva in another language keeps a plain printed "Cortisol" out of the blood entry', () => {
+    const [row] = extract({ additionalValues: [lab('cortisol_speichel', 'Cortisol', 1.5)] }).additionalValues;
+    expect(row.name).toBe('cortisol_speichel');
+  });
+
+  // No catalogue name is read as a specimen: a model pick that says urine
+  // never loses to a catalogue name, which it would if that name said saliva.
+  it('no catalogue name says saliva in any of these languages', () => {
+    const salivaNamed = LAB_CATALOG.flatMap((e) => [e.key, e.label, ...e.aliases])
+      .filter((n) => !/urin/i.test(n))
+      .filter((n) => extract({ additionalValues: [lab('urine_check', n, 1, 'mmol/L')] }).additionalValues[0]?.name !== 'urine_check');
+    expect(salivaNamed).toEqual([]);
+  });
+
+  it.each(['Salivation score', 'Speicher', 'Alanine'])('"%s" is not a saliva word', (printed) => {
+    const [row] = extract({ additionalValues: [lab('urine_x', printed, 1)] }).additionalValues;
+    expect(row.name).toBe('urine_x');
   });
 });
 

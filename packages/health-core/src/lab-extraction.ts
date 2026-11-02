@@ -287,8 +287,12 @@ const PER_CREATININE = /\/\s*[mµu]?(?:g|mol)\s*(?:creat(?:inine)?|cr)(?![a-z])/
  *  Never "U/L", "IU", "mU/L", "(uric)" or "(uncorrected)". No lookbehind:
  *  this runs in the BYOK browser bundle too. */
 const URINE_MARKER = /(?:^|[^a-z])(?:urin(?:e|a|ary)?|orina|harn|moczu)(?![a-z])|(?:^|[^a-z])u-(?:creat|cr)|[\s,]u$|[(\[]\s*u\s*[)\]]/i;
-/** A name that says saliva ("Salivary cortisol", "Cortisol (saliva)"): a specimen, as urine is (US-07 AC10). */
-const SALIVA_MARKER = /(?:^|[^a-z])saliva(?:ry)?(?![a-z])/i;
+/** A name that says saliva, a specimen as urine is (US-07 AC10), in the urine
+ *  marker's languages (Brad 2026-11-02): English saliva/salivary, Spanish and
+ *  Portuguese salival, Italian salivare, French salive/salivaire, German
+ *  Speichel (also as a compound's start, "Speichelcortisol"), Polish ślina
+ *  (and its forms). */
+const SALIVA_MARKER = /(?:^|[^a-zà-ž])(?:(?:saliva(?:ry|l|re)?|salive|salivaire|ślin(?:a|y|ie|owy|owa|owe|owego))(?![a-zà-ž])|speichel)/i;
 const isUrineOrRatioUnit = (unit: string) => URINE_MARKER.test(unit.trim()) || PER_CREATININE.test(unit) || URINE_OR_RATIO_UNITS.has(cleanedCreatinineUnit(unit).toLowerCase().replace(/\s+/g, ''));
 
 /** Why a creatinine was refused, in the user's words (US-12 AC15). */
