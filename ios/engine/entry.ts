@@ -11,7 +11,7 @@ import { cmToFeetInches, formatDisplayValue, fromCanonicalValue, toCanonicalValu
 import { fileNameLine, MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/src/lab-extraction';
 import { deviceWrites } from '../../packages/health-core/src/device-export';
 import { usProductSections, type UsPlanSection } from '../../packages/health-core/src/us-products';
-import { applyEdit, myData, newRecord, readNumber, readRecord, readView, type Edit } from './my-data';
+import { applyEdit, movedRecord, myData, newRecord, readNumber, readRecord, readView, type Edit } from './my-data';
 import { labHistory, metricHistory } from './my-data-forms';
 import { chatEditsPreview } from './chat-edits';
 import { readUnitChoices } from './unit-choices';
@@ -87,7 +87,10 @@ export function newRecordJson(nowIso: string, deviceId: string, locale: string, 
  *  `isUS`: the App Store storefront is the US (US-61). `plan.usProducts` is then the sections
  *  ready to draw with Dr Brad's products on the supplement cards of a known adult
  *  (us-products.ts, the web's own overlay); left out when none shows. Anything but `true`,
- *  an app older than it included, gives none. */
+ *  an app older than it included, gives none.
+ *  `movedRecord`: the record as text, when reading `recordJson` moved its blood tests into
+ *  one table (US-66 AC14); the app writes it to the phone's file once, as it opens it. Left
+ *  out when nothing moved, so the written record never gives it again. */
 export function screenJson(recordJson: string, nowIso: string, deviceId: string, unitsJson?: string, isUS?: boolean): string {
   const file = readView(recordJson, nowIso, deviceId);
   const choices = readUnitChoices(unitsJson);
@@ -108,7 +111,8 @@ export function screenJson(recordJson: string, nowIso: string, deviceId: string,
   } catch (error) {
     view = { error: String(error), planError: error instanceof PlanError };
   }
-  return JSON.stringify({ myData: myData(file, nowIso, choices, plan), plan: view });
+  const moved = movedRecord(recordJson, nowIso, deviceId);
+  return JSON.stringify({ myData: myData(file, nowIso, choices, plan), plan: view, ...(moved ? { movedRecord: moved } : null) });
 }
 
 /** One edit, as JSON: `{ ok: true, record }` with the new record as text, or the refusal. */

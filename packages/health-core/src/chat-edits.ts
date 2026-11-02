@@ -26,7 +26,11 @@ import * as z from './zod';
 import { formatHeightDisplay, lookupUnit, reportedToCanonical, type MetricType, type UnitSystem } from './units';
 import { FIELD_TO_METRIC, LONGITUDINAL_FIELDS } from './mappings';
 import { ESCALATION_KEY_OF, MEDICATION_KEYS, sanitizeInputs, UNANSWERED_OF } from './validation';
-import type { HealthInputs } from './types';
+import { escalationOptions } from './input-form';
+import {
+  BEMPEDOIC_ACID_OPTIONS, EZETIMIBE_OPTIONS, GLP1_NAMES, METFORMIN_OPTIONS, PCSK9I_OPTIONS, SGLT2I_NAMES, STATIN_NAMES,
+  type HealthInputs,
+} from './types';
 
 // ---------------------------------------------------------------------------
 // Field enum — derived from LONGITUDINAL_FIELDS so it can never drift
@@ -45,6 +49,83 @@ export type EditableField = (typeof EDITABLE_FIELDS)[number];
 /** Field → metric type (every editable field is a longitudinal measurement). */
 function fieldToMetric(field: string): MetricType | null {
   return (FIELD_TO_METRIC[field] as MetricType | undefined) ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Medication answers (US-16 AC3)
+// ---------------------------------------------------------------------------
+
+type MedicationKey = (typeof MEDICATION_KEYS)[number];
+
+/** Each medication question's own answers, as its form saves them, with the form's words. */
+export const MEDICATION_ANSWERS: Record<MedicationKey, ReadonlyArray<{ value: string; label: string }>> = {
+  statin: STATIN_NAMES, ezetimibe: EZETIMIBE_OPTIONS, statin_escalation: escalationOptions(null), pcsk9i: PCSK9I_OPTIONS,
+  bempedoic_acid: BEMPEDOIC_ACID_OPTIONS, glp1: GLP1_NAMES, glp1_escalation: escalationOptions(null), sglt2i: SGLT2I_NAMES,
+  metformin: METFORMIN_OPTIONS,
+};
+/** The drug names a drug question takes that the form does not list (Brad 2026-11-02): drug-shaped by the class's
+ *  stems (-vastatin; -glutide, -enatide and the named GLP-1 agonists; -gliflozin), or a known brand. Bare "semaglutide" is asked about: injection or tablet. */
+const UNLISTED_DRUG = new Map<string, { shape: RegExp; brands: ReadonlySet<string> }>([
+  ['statin', { shape: /^[a-z]+vastatin$/, brands: new Set() }],
+  ['glp1', {
+    shape: /^(?!semaglutide$)([a-z]+(glutide|enatide)|tirzepatide|retatrutide|survodutide|mazdutide|orforglipron)$/,
+    brands: new Set(['victoza', 'saxenda', 'byetta', 'bydureon']),
+  }],
+  ['sglt2i', { shape: /^[a-z]+gliflozin$/, brands: new Set(['steglatro']) }],
+]);
+const YES = (names: string[]) => names.map((n): [string, string] => [n, 'yes']);
+/** A listed statin's brand is its listed generic (map to the user's data, 2026-11-02). */
+const STATIN_BRANDS: Array<[string, string]> = ([
+  ['lipitor', 'atorvastatin'], ['crestor', 'rosuvastatin'], ['zocor', 'simvastatin'], ['pravachol', 'pravastatin'], ['livalo', 'pitavastatin'],
+] as Array<[string, string]>).filter(([, generic]) => STATIN_NAMES.some((o) => o.value === generic));
+/** An answer as a token: trimmed, lower case, no apostrophes, runs of spaces or hyphens as '_' ("Not yet" is not_yet). */
+const tokenOf = (text: string) => text.trim().toLowerCase().replace(/['\u2019]/g, '').replace(/[\s-]+/g, '_');
+/** The brands an option's own label names, each to the option's value: the single words in its parentheses
+ *  ("Semaglutide injection (Ozempic/Wegovy)") and a one-word name before them ("Nexletol (bempedoic acid
+ *  180mg)"), never a word of the value itself (US-16 AC3, review R2). */
+const brandsOf = ({ value, label }: { value: string; label: string }): Array<[string, string]> => {
+  const paren = /^(.*?) \((.*)\)$/.exec(label);
+  if (!paren) return [];
+  return [paren[1], ...paren[2].split('/')].filter((w) => /^[A-Za-z]+$/.test(w))
+    .map((w) => w.toLowerCase()).filter((w) => !value.split('_').includes(w)).map((w) => [w, value]);
+};
+/** The user's words that mean one of the question's own answers (Brad 2026-11-02): an option's own label
+ *  ("Other GLP-1"); "not taking" ezetimibe or a PCSK9 inhibitor is "no"; "not yet" a drug is its "haven't tried
+ *  yet" ('none'); the drug's own name is "yes"; a brand its option's label names, or a listed statin's brand,
+ *  is that option. */
+const SAME_ANSWER = new Map(MEDICATION_KEYS.map((key) => [key, new Map<string, string>([
+  ...MEDICATION_ANSWERS[key].map((o): [string, string] => [tokenOf(o.label), o.value]),
+  ...MEDICATION_ANSWERS[key].flatMap(brandsOf),
+  ...(key === 'ezetimibe' || key === 'pcsk9i' ? [['none', 'no'], ['not_taking', 'no'], ...YES([key])] as Array<[string, string]> : []),
+  ...(key === 'pcsk9i' ? YES(['evolocumab', 'alirocumab', 'inclisiran', 'repatha', 'praluent', 'leqvio']) : []),
+  ...(key === 'statin' ? STATIN_BRANDS : []),
+  ...(UNLISTED_DRUG.has(key) || key === 'metformin' ? [['not_yet', 'none']] as Array<[string, string]> : []),
+])]));
+/** A trailing dose in the answer ("Atorvastatin 40mg"). */
+const TRAILING_DOSE = /\s*(\d+(?:\.\d+)?)\s*mg$/i;
+
+/** What a chat answer saves as, with any dose stated after the name, or null when it is none of the question's
+ *  answers (the model must ask). */
+function savedAnswer(key: MedicationKey, drugName: string): { drugName: string; dose: number | null } | null {
+  const answer = (stated: string): string | undefined => {
+    const token = tokenOf(stated);
+    const unlisted = UNLISTED_DRUG.get(key);
+    const lower = stated.trim().toLowerCase();
+    return SAME_ANSWER.get(key)?.get(token) ?? MEDICATION_ANSWERS[key].find((o) => o.value === token)?.value
+      ?? (unlisted && (unlisted.shape.test(lower) || unlisted.brands.has(lower)) ? stated.trim() : undefined);
+  };
+  const whole = answer(drugName);
+  if (whole) return { drugName: whole, dose: null };
+  const dosed = TRAILING_DOSE.exec(drugName.trim());
+  const named = dosed ? answer(drugName.trim().slice(0, dosed.index)) : undefined;
+  const dose = dosed ? Number(dosed[1]) : 0;
+  return named ? { drugName: named, dose: dose > 0 ? dose : null } : null;
+}
+
+/** "'not_yet' (Haven't tried yet), 'yes' (Yes), …": a question's answers for the model. */
+function answersText(key: MedicationKey): string {
+  const listed = MEDICATION_ANSWERS[key].map((o) => `'${o.value}' (${o.label})`).join(', ');
+  return UNLISTED_DRUG.has(key) ? `${listed}, or another drug's generic name` : listed;
 }
 
 // ---------------------------------------------------------------------------
@@ -100,8 +181,7 @@ export const PROPOSE_FIELD_EDIT_TOOL = {
 /**
  * Tool: propose a medication change. Medications auto-save on change today, so
  * the chat applies it immediately and tells the user what changed + offers Undo.
- * `drugName` carries the FHIR drug name OR a status token ('none', 'not_yet',
- * 'not_tolerated', 'yes', 'no', or an enum value like 'ir_1000').
+ * `drugName` is one of the key's own answers, listed per key (US-16 AC3).
  */
 export const PROPOSE_MEDICATION_EDIT_TOOL = {
   name: 'propose_medication_edit',
@@ -124,10 +204,9 @@ export const PROPOSE_MEDICATION_EDIT_TOOL = {
       drugName: {
         type: 'string' as const,
         description:
-          "The drug name (e.g. 'atorvastatin', 'rosuvastatin', 'ezetimibe', 'evolocumab', " +
-          "'tirzepatide', 'empagliflozin') OR a status token: 'none' (not taking), 'not_yet', " +
-          "'not_tolerated', 'yes' (for ezetimibe/pcsk9i when taking), or a metformin/bempedoic " +
-          "enum value (e.g. 'ir_1000', 'bempedoic_acid').",
+          "The answer, exactly one of the medication's own: " +
+          MEDICATION_KEYS.map((key) => `${key}: ${answersText(key)}`).join('; ') +
+          '. If the user\'s words fit none of them, ASK which applies instead of calling this tool.',
       },
       doseValue: {
         type: 'number' as const,
@@ -211,9 +290,19 @@ export const APP_CHAT_EDIT_TOOLS = [
  * measurement waits for Save; a medication saves at once with an undo banner;
  * a profile change waits for its own banner's Save, so a mixed turn says so
  * too (US-16 AC2b). `app`: the iPhone app's words (US-67 AC3), which has a Save
- * banner, not a form.
+ * banner, not a form. `refused`: medication answers not saved, as their question
+ * does not offer them (US-16 AC3), which the line names and asks about.
  */
-export function toolOnlyAck(edits: ProposedEdit[], app = false): string {
+export function toolOnlyAck(edits: ProposedEdit[], app = false, refused = 0): string {
+  const refusal = refused === 0 ? ''
+    : refused === 1 ? 'One medication change was not saved, as its answer is not one of the listed answers. Tell me which one applies, or choose it yourself.'
+    : `${refused} medication changes were not saved, as their answers are not among the listed answers. Tell me which ones apply, or choose them yourself.`;
+  if (edits.length === 0) return refusal;
+  return refusal ? `${editsAck(edits, app)} ${refusal}` : editsAck(edits, app);
+}
+
+/** The line for the edits that were sent. */
+function editsAck(edits: ProposedEdit[], app: boolean): string {
   const others = edits.filter((e) => e.kind !== 'profile');
   if (others.length === edits.length) return formAck(edits, app);
   return others.length === 0
@@ -282,9 +371,10 @@ const rawFieldEditSchema = z.object({
   date: z.string().regex(isoDateRe).optional().nullable(),
 });
 
+// An empty drugName is a misfit to ask about (US-16 AC3), not a shape to drop.
 const rawMedicationEditSchema = z.object({
   medicationKey: z.enum(MEDICATION_KEYS),
-  drugName: z.string().min(1).max(64),
+  drugName: z.string().max(64),
   doseValue: z.number().positive().optional().nullable(),
   doseUnit: z.string().max(16).optional().nullable(),
 });
@@ -305,7 +395,9 @@ const rawProfileEditSchema = z.object({
  *  - the field isn't a known measurement metric, or
  *  - the stated unit is not one the unit table (`lookupUnit`) knows for the metric
  *    (so we never silently store a wrong-unit value — the model should have
- *    asked instead).
+ *    asked instead), or
+ *  - a medication's answer is none of its question's (`medicationAnswerMisfit`
+ *    tells the model to ask). One the user's words mean saves as that answer.
  *
  * Range validation is deliberately NOT done here for measurements — the value
  * flows through the real form Save, which runs the canonical Zod range check. A
@@ -329,13 +421,17 @@ export function parseProposedEdit(toolName: string, rawInput: unknown): Proposed
   if (toolName === PROPOSE_MEDICATION_EDIT_TOOL.name) {
     const parsed = rawMedicationEditSchema.safeParse(rawInput);
     if (!parsed.success) return null;
-    const { medicationKey, drugName, doseValue, doseUnit } = parsed.data;
+    const { medicationKey, doseValue, doseUnit } = parsed.data;
+    const answer = savedAnswer(medicationKey, parsed.data.drugName);
+    if (answer === null) return null;
+    // A dose stated after the name is the dose, unless the model gave one.
+    const statedDose = doseValue == null ? answer.dose : null;
     return {
       kind: 'medication',
       medicationKey,
-      drugName,
-      doseValue: doseValue ?? null,
-      doseUnit: doseUnit ?? null,
+      drugName: answer.drugName,
+      doseValue: doseValue ?? statedDose,
+      doseUnit: doseUnit ?? (statedDose !== null ? 'mg' : null),
     };
   }
 
@@ -350,6 +446,18 @@ export function parseProposedEdit(toolName: string, rawInput: unknown): Proposed
   }
 
   return null;
+}
+
+/** The tool_result for a medication edit whose answer is none of its question's (US-16 AC3): not saved, ask
+ *  the user. Null for any other edit, including one whose shape fails (it is dropped as before). */
+export function medicationAnswerMisfit(toolName: string, rawInput: unknown): string | null {
+  if (toolName !== PROPOSE_MEDICATION_EDIT_TOOL.name) return null;
+  const parsed = rawMedicationEditSchema.safeParse(rawInput);
+  if (!parsed.success) return null;
+  const { medicationKey, drugName } = parsed.data;
+  if (savedAnswer(medicationKey, drugName) !== null) return null;
+  return `Not saved: "${drugName}" is not an answer to the ${medicationKey} question. Ask the user which of these applies, ` +
+    `then propose it again with that answer: ${answersText(medicationKey)}.`;
 }
 
 /**

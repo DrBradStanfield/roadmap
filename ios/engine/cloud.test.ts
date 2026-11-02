@@ -87,6 +87,7 @@ class FakeDropbox {
 interface Engine {
   newRecordJson(now: string, device: string, locale: string, zone: string): string;
   applyEditJson(record: string, edit: string, now: string, device: string): string;
+  historyJson(record: string, metric: string, now: string, device: string, unitsJson?: string): string;
   cloudOpen(provider: string, device: string, first: boolean, mergePhone?: boolean): Promise<string>;
   cloudLabImport(extraction: string, refs: string, reportDay: string, erase: string, units: string, now: string, unitsJson: string): string;
   labSaveSummaryJson(record: string, extraction: string, refs: string, reportDay: string, now: string, device: string): string;
@@ -186,6 +187,8 @@ async function recordWith(days: string[], device: string): Promise<RoadmapFile> 
 
 const days = (file: RoadmapFile) => file.measurements.filter((m) => m.status === 'active').map((m) => m.recordedAt.slice(0, 10)).sort();
 const add = (day: string) => JSON.stringify({ kind: 'add', metric: 'weight', value: 81, day });
+/** A record's Lp(a) rows: core lab rows (US-66 AC1). */
+const lpaRows = (file: RoadmapFile) => file.labValues.filter((row) => row.core === true && row.metricName === 'lpa');
 
 describe('cloud sync in the engine (US-25 AC11)', () => {
   it('AC11a: first connect merges the phone record and the cloud record, dropping neither', async () => {
@@ -245,6 +248,23 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     expect(core).toMatchObject({ ok: false, reason: 'units-changed' });
     expect(await engine.cloudFlush()).toBe('saved');
     expect(dropbox.record.labValues.find((row) => row.correctsId === 'f1')).toMatchObject({ value: 85, unit: 'µg/L', status: 'active' });
+  });
+
+  it('US-66 AC6 with US-25 AC25 R7: after a units switch, a core blood correction is refused, not misread', async () => {
+    const dropbox = new FakeDropbox();
+    const web = await recordWith(['2026-10-01'], 'web');
+    // A core LDL (a labValues row since US-66), and the record switched to US units elsewhere.
+    dropbox.put({ ...web, profile: { ...web.profile, unitSystem: 'conventional' }, labValues: [{
+      id: 'c1', metricName: 'ldl', core: true, value: 3.1, unit: 'mmol/L', referenceLow: null, referenceHigh: null,
+      recordedAt: '2026-10-01T00:00:00.000Z', createdAt: NOW, source: 'manual', status: 'active', correctsId: null,
+    }] });
+    const { engine } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    // The sheet was opened in metric units: 3.0 means mmol/L, never mg/dL.
+    const out = JSON.parse(engine.cloudEdit(JSON.stringify({ kind: 'correct', id: 'c1', value: 3.0 }), erase, 'si', NOW)) as { ok: boolean; reason?: string };
+    expect(out).toMatchObject({ ok: false, reason: 'units-changed' });
+    await engine.cloudFlush();
+    expect(dropbox.record.labValues.filter((row) => row.correctsId === 'c1')).toEqual([]);
   });
 
   it('AC11c: a row the web added is taken in on a re-read', async () => {
@@ -408,7 +428,8 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     expect(answer.ok).toBe(true);
     expect(answer.summary).toMatchObject({ saved: 2, skipped: 1 });
     const record = JSON.parse(answer.record) as RoadmapFile;
-    const imported = record.measurements.filter((m) => m.source === 'lab_import').length + (record.labValues?.length ?? 0);
+    // Every blood test is a lab row now (US-66 AC1): the web's typed LDL is one too, so count the import's own.
+    const imported = [...record.measurements, ...record.labValues].filter((row) => row.source === 'lab_import').length;
     expect(imported).toBe(answer.summary.saved);
   });
 
@@ -475,21 +496,133 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     expect((JSON.parse(engine.cloudEdit(lpa(156, '2026-10-02'), erase, 'si', NOW, '{}', 'mg/dL')) as { ok: boolean }).ok).toBe(true);
     expect(await engine.cloudFlush()).toBe('saved');
     expect(dropbox.record.profile.lpaUnit).toBe('mg/dL');
-    expect(dropbox.record.measurements.find((row) => row.metricType === 'lpa')!.value).toBeCloseTo(390, 9);
+    expect(lpaRows(dropbox.record)[0].value).toBeCloseTo(390, 9);
     // The web switches Lp(a) to mg/L.
     const web = JSON.parse(engine.applyEditJson(dropbox.file!.text, JSON.stringify({ kind: 'lpaUnit', unit: 'mg/L' }), '2026-10-21T09:00:00.000Z', 'web')) as { record: string };
     dropbox.put(JSON.parse(web.record) as RoadmapFile);
     expect(await engine.cloudRefresh()).toBe('changed');
     // A sheet that showed mg/dL: its value and its correction are refused, never read as mg/L.
     expect(JSON.parse(engine.cloudEdit(lpa(50, '2026-10-03'), erase, 'si', NOW, '{}', 'mg/dL'))).toMatchObject({ ok: false, reason: 'units-changed' });
-    const rowId = dropbox.record.measurements.find((row) => row.metricType === 'lpa')!.id;
+    const rowId = lpaRows(dropbox.record)[0].id;
     expect(JSON.parse(engine.cloudEdit(JSON.stringify({ kind: 'correct', id: rowId, value: 150 }), erase, 'si', NOW, '{}', 'mg/dL'))).toMatchObject({ reason: 'units-changed' });
     // Another test's value is not Lp(a)'s: it saves.
     expect((JSON.parse(engine.cloudEdit(add('2026-10-03'), erase, 'si', NOW, '{}', 'mg/dL')) as { ok: boolean }).ok).toBe(true);
     // A sheet opened in mg/L saves, read in mg/L: 500 mg/L is 125 nmol/L.
     expect((JSON.parse(engine.cloudEdit(lpa(500, '2026-10-03'), erase, 'si', NOW, '{}', 'mg/L')) as { ok: boolean }).ok).toBe(true);
     expect(await engine.cloudFlush()).toBe('saved');
-    expect(dropbox.record.measurements.find((row) => row.metricType === 'lpa' && row.recordedAt.startsWith('2026-10-03'))!.value).toBeCloseTo(125, 9);
+    expect(lpaRows(dropbox.record).find((row) => row.recordedAt.startsWith('2026-10-03'))!.value).toBeCloseTo(125, 9);
+  });
+
+  it('US-66 AC9: a correction of an Lp(a) row moved from an old-shape record is still read in Lp(a)\'s unit', async () => {
+    // A record written before US-66: Lp(a) in `measurements`, in nmol/L, the unit shown as mg/dL.
+    const old = await recordWith([], 'web');
+    const lpa = { id: 'old-lpa', metricType: 'lpa', value: 390, recordedAt: '2026-10-02', createdAt: NOW, source: 'manual', status: 'active', correctsId: null, externalId: null };
+    const dropbox = new FakeDropbox();
+    dropbox.put({ ...old, profile: { ...old.profile, lpaUnit: 'mg/dL' }, measurements: [lpa] } as RoadmapFile);
+    const { engine } = await phone(dropbox);
+    const { erase, record } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string; record: string };
+    // The open moved it (AC2): same id, now a core lab row, which the phone's readsLpa finds through historyJson.
+    expect(lpaRows(JSON.parse(record) as RoadmapFile).map((row) => row.id)).toEqual(['old-lpa']);
+    expect((JSON.parse(engine.historyJson(record, 'lpa', NOW, 'ios-1')) as { rows: Array<{ id: string }> }).rows.map((row) => row.id)).toEqual(['old-lpa']);
+    // The open writes the moved record (AC14); a re-read waits while that write is pending.
+    expect(await engine.cloudFlush()).toBe('saved');
+    // The web switches Lp(a) to mg/L; a correction typed against mg/dL is refused, never read as mg/L.
+    const web = JSON.parse(engine.applyEditJson(record, JSON.stringify({ kind: 'lpaUnit', unit: 'mg/L' }), '2026-10-21T09:00:00.000Z', 'web')) as { record: string };
+    dropbox.put(JSON.parse(web.record) as RoadmapFile);
+    expect(await engine.cloudRefresh()).toBe('changed');
+    expect(JSON.parse(engine.cloudEdit(JSON.stringify({ kind: 'correct', id: 'old-lpa', value: 150 }), erase, 'si', NOW, '{}', 'mg/dL'))).toMatchObject({ ok: false, reason: 'units-changed' });
+    // Read in mg/L it goes through: 500 mg/L is 125 nmol/L, a correction of the moved row.
+    expect((JSON.parse(engine.cloudEdit(JSON.stringify({ kind: 'correct', id: 'old-lpa', value: 500 }), erase, 'si', NOW, '{}', 'mg/L')) as { ok: boolean }).ok).toBe(true);
+    expect(await engine.cloudFlush()).toBe('saved');
+    expect(lpaRows(dropbox.record).find((row) => row.correctsId === 'old-lpa')!.value).toBeCloseTo(125, 9);
+  });
+
+  describe('US-66 AC14: an old-shape cloud record is written once, moved, as it opens', () => {
+    const oldShape = async () => {
+      const old = await recordWith([], 'web');
+      const ldl = { id: 'old-ldl', metricType: 'ldl', value: 3.4, recordedAt: '2026-10-02', createdAt: NOW, source: 'manual', status: 'active', correctsId: null, externalId: null };
+      return { ...old, measurements: [ldl] } as RoadmapFile;
+    };
+    const settle = () => new Promise((resolve) => setTimeout(resolve, 50));
+
+    it('one write with no edits; reopening the written record writes nothing', async () => {
+      const dropbox = new FakeDropbox();
+      dropbox.put(await oldShape());
+      const first = await phone(dropbox);
+      await first.engine.cloudOpen('dropbox', 'ios-1', false);
+      expect(await first.engine.cloudFlush()).toBe('saved');
+      await settle();
+      expect(dropbox.uploads).toBe(1);
+      expect(dropbox.record.measurements).toEqual([]);
+      expect(dropbox.record.labValues).toEqual([expect.objectContaining({ id: 'old-ldl', metricName: 'ldl', value: 3.4, core: true, status: 'active' })]);
+      // US-66 AC15: written as 3, on the cloud and on the phone, so build 3 refuses it.
+      expect(dropbox.record.schemaVersion).toBe(3);
+      expect((JSON.parse(first.state.phoneText!) as RoadmapFile).schemaVersion).toBe(3);
+      expect(first.state.pending).toBe(false);
+      await first.engine.cloudClose(false);
+
+      const second = await phone(dropbox, first.state.phoneText);
+      await second.engine.cloudOpen('dropbox', 'ios-1', false);
+      await second.engine.cloudClose(false);
+      await settle();
+      expect(dropbox.uploads).toBe(1);
+    });
+
+    it('a new-shape record writes nothing', async () => {
+      const dropbox = new FakeDropbox();
+      const web = await phone(dropbox);
+      const record = JSON.parse(web.engine.applyEditJson(web.engine.newRecordJson(NOW, 'web', 'en-NZ', 'Pacific/Auckland'), JSON.stringify({ kind: 'add', metric: 'ldl', value: 3.1, day: '2026-10-01' }), NOW, 'web')) as { record: string };
+      dropbox.put(JSON.parse(record.record) as RoadmapFile);
+      const { engine } = await phone(dropbox);
+      await engine.cloudOpen('dropbox', 'ios-1', false);
+      expect(await engine.cloudFlush()).toBe('saved');
+      await engine.cloudClose(false);
+      await settle();
+      expect(dropbox.uploads).toBe(0);
+    });
+
+    it('a write the cloud refused leaves its bytes as they were, and the next open writes', async () => {
+      const dropbox = new FakeDropbox();
+      dropbox.put(await oldShape());
+      const stored = dropbox.file!.text;
+      dropbox.uploadsWork = false;
+      const first = await phone(dropbox);
+      await first.engine.cloudOpen('dropbox', 'ios-1', false);
+      expect(await first.engine.cloudFlush()).toBe('failed');
+      await first.engine.cloudClose(false);
+      await settle();
+      expect(dropbox.file!.text).toBe(stored);
+      // Nothing lost: the moved record waits on the phone, marked for the cloud.
+      expect(first.state.pending).toBe(true);
+      expect((JSON.parse(first.state.phoneText!) as RoadmapFile).labValues.map((row) => row.id)).toEqual(['old-ldl']);
+
+      dropbox.uploadsWork = true;
+      const second = await phone(dropbox, first.state.phoneText);
+      second.state.pending = true;
+      await second.engine.cloudOpen('dropbox', 'ios-1', false);
+      expect(await second.engine.cloudFlush()).toBe('saved');
+      await settle();
+      expect(dropbox.uploads).toBe(1);
+      expect(dropbox.record.measurements).toEqual([]);
+      expect(dropbox.record.labValues.map((row) => row.id)).toEqual(['old-ldl']);
+    });
+
+    it('the next open writes even with no phone copy waiting (another iPhone)', async () => {
+      const dropbox = new FakeDropbox();
+      dropbox.put(await oldShape());
+      dropbox.uploadsWork = false;
+      const first = await phone(dropbox);
+      await first.engine.cloudOpen('dropbox', 'ios-1', false);
+      expect(await first.engine.cloudFlush()).toBe('failed');
+      await first.engine.cloudClose(false);
+      dropbox.uploadsWork = true;
+      const other = await phone(dropbox);
+      await other.engine.cloudOpen('dropbox', 'ios-2', false);
+      expect(await other.engine.cloudFlush()).toBe('saved');
+      await settle();
+      expect(dropbox.uploads).toBe(1);
+      expect(dropbox.record.measurements).toEqual([]);
+    });
   });
 
   it('R3: an edit is refused, and nothing changes, when the phone copy cannot be written', async () => {

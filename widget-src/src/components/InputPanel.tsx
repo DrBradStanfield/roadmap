@@ -2515,7 +2515,7 @@ export function InputPanel({
               <button type="button" className="md-back md-table-back" onClick={() => showTable(false)}>‹ Show as rows</button>
               {renderBloodTests()}
               {move.panel}
-              <AdditionalLabRows labValues={labValues} onAdded={onLabValueAdded} onCorrect={onCorrectValue} move={move.headers}/>
+              <AdditionalLabRows labValues={labValues} coreValues={bloodTestHistory} onAdded={onLabValueAdded} onCorrect={onCorrectValue} move={move.headers}/>
             </div>
           </div>
         ),

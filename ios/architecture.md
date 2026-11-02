@@ -254,6 +254,16 @@ A signature means "the key holder approved this bundle", nothing more.
   an older engine (`MyDataLayoutTests.testARowReadsItsTargetAndPreviousValueFromTheEngine_US62`).
   Third (2026-11-02, D11): rows' `status` and `gradeWords`, and `labTests`
   (`MyDataLayoutTests.testARowReadsItsGradeFromTheEngine_US62`).
+  Fourth use (2026-11-02, US-66 AC14): `screenJson`'s `movedRecord`, the record to write once
+  when reading the phone's file moved its blood tests into one table. `loadPhone` writes it with
+  the edit path's atomic write and no pending marker (the move changes no value; an open cloud
+  writes its own copy, in `cloudOpen`, through `commit` as an edit does). A field, not a new
+  door, so the bridge id stays: an older app ignores it, an older engine sends none.
+  **Schema 3 (Brad 2026-11-02, US-66 AC15):** a record holding a core blood row is
+  `schemaVersion` 3, so the engine's `schemaVersion` fact becomes 3. Build 3 bundles a
+  schema-2 engine: it refuses a moved record with its "update the app" path (US-65 AC5) and
+  writes nothing, and it refuses an over-the-air engine of schema 3 by the rule below (R7).
+  The iPhone update ships the schema-3 engine in the binary.
 - **The schema is the app's (R7).** A bundle whose record `schemaVersion` differs from the
   bundled engine's is refused. A schema change always needs an app update, so an over-the-
   air engine can never write a record the web or an older phone cannot read.

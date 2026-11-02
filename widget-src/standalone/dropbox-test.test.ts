@@ -93,7 +93,8 @@ describe('US-09 AC32: the Dropbox round-trip on test.html leaves the health reco
     const own = [...memory.files.keys()].filter(name => name !== ROADMAP_FILE_NAME);
     expect(own).toHaveLength(1);
     const written = JSON.parse(memory.files.get(own[0])!.json) as RoadmapFile;
-    expect(written.measurements.map(m => [m.metricType, m.value])).toEqual([['ldl', 2.1]]);
+    // The round-trip writes a vital: a blood test would move to labValues on the read back (US-66).
+    expect(written.measurements.map(m => [m.metricType, m.value])).toEqual([['weight', 70.1]]);
     expect(cloud.readsAfterSave).toEqual([own[0]]);
     expect(result).toContain(own[0]);
     expect(result).not.toContain(ROADMAP_FILE_NAME);

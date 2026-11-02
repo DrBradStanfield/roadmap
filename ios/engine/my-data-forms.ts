@@ -4,7 +4,8 @@
 // (setScreening, upsertMedication, upsertSupplement) behind the API's own
 // schema. Swift renders what comes out and sends answers back; it decides
 // nothing clinical.
-import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { CORE_BLOOD_UNITS, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { isCoreRow } from '../../packages/health-core/src/blood-tests';
 import { computePlan, derivePlanInputs, type Plan } from '../../packages/health-core/src/plan';
 import {
   SUPPLEMENT_DOSE_UNITS, SUPPLEMENT_TEXT, medicationForm, medicationWrites, screeningForm,
@@ -314,7 +315,8 @@ export function gradeContextOf(file: RoadmapFile, now: string, plan: Plan | null
  * A series whose active rows were reported in more than one unit lists each row's unit (US-21 AC3a).
  */
 export function labHistory(file: RoadmapFile, seriesKey: string): MetricHistory {
-  const rows = file.labValues.filter((row) => labSlotKey(row.metricName) === seriesKey);
+  // A core row is a core test's, never a lab page's (US-66 AC8).
+  const rows = file.labValues.filter((row) => !isCoreRow(row) && labSlotKey(row.metricName) === seriesKey);
   const [series] = groupLabValues(rows).flatMap((group) => group.series);
   const entry = resolveLabCatalogEntry(rows[0]?.metricName ?? seriesKey);
   const unitOf = (row: { unit?: string | null }) => displayLabUnit(row.unit ?? '', entry);
@@ -375,7 +377,12 @@ export function metricHistory(file: RoadmapFile, metric: string, now = new Date(
     return { ...history, rows, markers };
   }
   const shown = cellUnitFor(file, metric, choices);
-  const rows = file.measurements.filter((row) => row.metricType === metric);
+  // A blood test's rows are its core lab rows in the core unit (US-66 AC7); a vital's, its measurements.
+  const rows = [
+    ...file.measurements.filter((row) => row.metricType === metric && !(metric in CORE_BLOOD_UNITS)),
+    ...file.labValues.filter((row) => isCoreRow(row) && row.metricName === metric && row.unit === CORE_BLOOD_UNITS[metric])
+      .map((row) => ({ ...row, metricType: metric })),
+  ];
   // The plan's own pick of the current value.
   const current = latestActivePerMetric(rows.filter((row) => row.status === 'active'))[0];
   return {

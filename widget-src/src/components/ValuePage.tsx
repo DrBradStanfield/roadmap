@@ -117,7 +117,7 @@ export function ValuePage({ subject, history, labValues, ctx, onSave, onCorrect,
 
       <h4 className="md-page-subtitle">Add a value</h4>
       {subject.kind === 'lab'
-        ? latestLab && <AddLabTest onAdded={onLabAdded ?? (() => {})} labValues={labValues} onCorrect={onCorrect}
+        ? latestLab && <AddLabTest onAdded={onLabAdded ?? (() => {})} labValues={labValues} coreValues={history} onCorrect={onCorrect}
                                    preset={{ metricName: latestLab.metricName, unit: lab!.unit }} dirtyRef={dirtyRef}/>
         : <AddValue key={correcting?.id ?? 'new'} metric={metric} history={history} unit={unit} start={correcting}
                     onSave={onSave} say={say} onDone={() => setCorrecting(null)} dirtyRef={dirtyRef}/>}

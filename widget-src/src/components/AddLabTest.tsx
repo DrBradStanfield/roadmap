@@ -3,21 +3,33 @@
 // unit fixed (AC3/AC4); "Other" takes a free-form name + unit. Store-side
 // dedup (one active value per test per day) is surfaced, not silent, and the
 // value already there can be replaced: a correction through the same door as
-// the cell editor, never a second row (AC13).
+// the cell editor, never a second row (AC13). A core test's name writes its
+// core value (US-66 AC6), so a held day finds the core row and a refused
+// number reads as the matrix says it.
 
 import { useEffect, useState, type MutableRefObject } from 'react';
-import { commaQuestion, displayLabUnit, LAB_CATALOG, LAB_GROUPS, localDay, parseLocalisedNumber, resolveLabCatalogEntry, savedLabText, slotKey } from '@roadmap/health-core';
+import { canonicalToReported, commaQuestion, displayLabUnit, LAB_CATALOG, LAB_GROUPS, localDay, parseLocalisedNumber, reportedToCanonical, resolveLabCatalogEntry, savedLabText, slotKey, type ApiMeasurement, type Comparator } from '@roadmap/health-core';
+import { bloodTestKeyOf, coreStored } from '@roadmap/health-core/blood-tests';
 import { UnitChip } from './UnitChip';
 import { SAVE_ERRORS } from './BloodTestTimeline';
 import { addLabValue } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
+import { rangeMessage } from '../lib/blood-test-cell';
 import type { CorrectFn } from '../lib/matrix-save';
 import type { ApiLabValue } from '../lib/api-types';
 
-export function AddLabTest({ onAdded, labValues = [], onCorrect, preset, dirtyRef }: {
+/** A saved value the form names: `value` in the unit typed, `stored` in the unit the row keeps. */
+interface Held { id: string; slot: string; value: number; unit: string; stored: number; comparator?: Comparator }
+
+/** The iPhone's words for the same refusal (ios/engine/my-data.ts addSeriesValue). */
+const CORE_ON_LAB_PAGE = 'Add this test from its row in Blood tests.';
+
+export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect, preset, dirtyRef }: {
   onAdded: () => void;
   /** The saved values, to name the one a duplicate collides with. */
   labValues?: ApiLabValue[];
+  /** The saved core blood values, which a core test's name collides with (US-66 AC6). */
+  coreValues?: ApiMeasurement[];
   /** The cell editor's correction: present = Replace is offered. */
   onCorrect?: CorrectFn;
   /** One test, fixed: a phone value page's Add (US-62 AC10). The test is
@@ -36,7 +48,7 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect, preset, dirtyRe
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   // The saved value a Replace would correct.
-  const [held, setHeld] = useState<ApiLabValue | null>(null);
+  const [held, setHeld] = useState<Held | null>(null);
   if (dirtyRef) dirtyRef.current = open && valueStr.trim() !== '';
   useEffect(() => () => { if (dirtyRef) dirtyRef.current = false; }, []);
 
@@ -54,6 +66,10 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect, preset, dirtyRe
   const question = commaQuestion(valueStr);
   const metricName = entry ? entry.key : customName.trim();
   const unit = entry ? entry.unit : customUnit.trim();
+  // As health-core's writer reads the name: a core test's is its core slot, the value converted (US-66 AC6).
+  const core = bloodTestKeyOf(metricName);
+  const slot = core ? slotKey('measurement', core, date) : slotKey('lab', metricName, date);
+  const stored = core && value !== undefined ? coreStored(core, value, unit)?.value : value;
   // parseLocalisedNumber only returns finite numbers or undefined. The date
   // guard also blocks future dates typed past the input's max (ISO strings
   // compare lexicographically).
@@ -74,18 +90,27 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect, preset, dirtyRe
   // test" the catalogue knows ("Ferritin" in ng/mL) is its catalogue test, in its units.
   const known = entry ?? resolveLabCatalogEntry(metricName);
   /** A saved value as the form names it: "45 µg/L", "< 5 µg/L" (US-12 AC20). */
-  const labelOf = (v: ApiLabValue) => `${savedLabText(v.value, v.comparator)} ${displayLabUnit(v.unit, known)}`;
+  const labelOf = (v: Held) => `${savedLabText(v.value, v.comparator)} ${displayLabUnit(v.unit, known)}`;
   /** The saved value is the one the form describes: this test, this day, this unit. */
-  const describes = (v: ApiLabValue) =>
-    slotKey('lab', v.metricName, v.recordedAt) === slotKey('lab', metricName, date) &&
-    displayLabUnit(v.unit, known) === displayLabUnit(unit, known);
+  const describes = (v: Held) => v.slot === slot && displayLabUnit(v.unit, known) === displayLabUnit(unit, known);
+
+  /** The saved value the record offers to replace: a core value shown in the unit typed. */
+  const heldOf = (id: string): Held | undefined => {
+    if (!core) {
+      const v = labValues.find(v => v.id === id);
+      return v && { id, slot, value: v.value, unit: v.unit, stored: v.value, comparator: v.comparator };
+    }
+    const m = coreValues.find(m => m.id === id);
+    const shown = m && canonicalToReported(core, m.value, unit);
+    return m && shown != null ? { id, slot, value: shown, unit, stored: m.value, comparator: m.comparator } : undefined;
+  };
 
   // Any change to the form withdraws the offer (clearNotice); Replace still
   // checks, just before it writes, that the form describes the value it names.
-  const replace = async (there: ApiLabValue) => {
+  const replace = async (there: Held) => {
     if (!describes(there)) { clearNotice(); return; }
     setSaving(true);
-    const status = await onCorrect!(there.id, value!);
+    const status = await onCorrect!(there.id, stored!);
     setSaving(false);
     if (status === 'ok') close();
     else setNotice(SAVE_ERRORS[status]);
@@ -93,6 +118,9 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect, preset, dirtyRe
 
   const save = async () => {
     if (!canSave) return;
+    // A value page for a kept-apart row named like a core test (an old "creatinine" may be urine,
+    // US-12 AC11): the add would write the core value, which this page never shows (US-66 AC5).
+    if (preset && core) { setNotice(CORE_ON_LAB_PAGE); return; }
     setSaving(true);
     clearNotice();
     try {
@@ -105,10 +133,14 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect, preset, dirtyRe
         trackProductEvent('lab_row_added');
         close();
         onAdded();
+      } else if (result.bound) {
+        // A core value out of range reads as the matrix says it, in the unit typed (US-66 AC6).
+        const system = core && reportedToCanonical(core, value!, unit)?.system;
+        setNotice(system ? rangeMessage(core, system, result.bound) : SAVE_ERRORS.invalid);
       } else {
         setNotice(result.message);
         // A held value in the same unit holding another number: offer to replace it (US-21 AC13).
-        const there = result.existingId ? labValues.find(v => v.id === result.existingId) : undefined;
+        const there = result.existingId ? heldOf(result.existingId) : undefined;
         if (onCorrect && there) setHeld(there);
       }
     } catch {
