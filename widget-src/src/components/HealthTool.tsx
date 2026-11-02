@@ -80,6 +80,7 @@ import {
   loadUnitPreference,
   safeSetItem,
   safeRemoveItem,
+  localHealthWritesStopped,
 } from '../lib/storage';
 import {
   loadLatestMeasurements,
@@ -89,6 +90,7 @@ import {
   getShownErase,
   markEraseShown,
   clearOffFileAfterErase,
+  flushRoadmapStoreSync,
   loadLatestMeasurementsSync,
   loadAllHistory,
   loadAllHistorySync,
@@ -617,6 +619,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // Save any unsaved profile/demographic fields (height, sex, birthYear, birthMonth, unitSystem).
   // Returns true if saved or nothing to save; false on failure.
   async function flushPendingProfileSave(erase?: string): Promise<boolean> {
+    if (getBackendKind() === 'local' && localHealthWritesStopped()) return true;
     const autoSaveFields = [...PREFILL_FIELDS, 'unitSystem' as keyof HealthInputs];
     const currentPrefill: Partial<HealthInputs> = {};
     const previousPrefill: Partial<HealthInputs> = {};
@@ -634,6 +637,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       writeRefused();
       return false;
     }
+    if (getBackendKind() === 'local' && localHealthWritesStopped()) return true;
     const refused = result.birthRefused;
     // A value out of range was refused (US-02 AC5): it stays in the form, unsaved, its error shown.
     const kept = new Set(Object.keys(result.refused ?? {}) as Array<keyof HealthInputs>);
@@ -656,20 +660,22 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     // The form is clean again — apply any remote change held back while it
     // was dirty (US-34 AC4). Not while a refused value is still in the form:
     // the re-read would replace it and its error (US-02 AC5); the relay
-    // waits for the save that takes it.
-    if (!result.refused) remoteRelay.saved();
+    // waits for the save that takes it. Nor while an edit made during the
+    // await is unsaved: read the latest form, not this save's snapshot.
+    if (!result.refused && !autoSaveFields.some(f => inputsRef.current[f] !== inputs[f])) remoteRelay.saved();
     return true;
   }
 
   // Auto-save demographics + height only (debounced)
+  const profileDebounce = useDebouncedSave(500);
   useEffect(() => {
     if (!hasApiResponse) return;
 
     const erase = getShownErase(); // as the edit was made, not as the timer fires
-    const timeout = setTimeout(() => { void flushPendingProfileSave(erase); }, 500);
+    profileDebounce.schedule(() => { void flushPendingProfileSave(erase); });
 
-    return () => clearTimeout(timeout);
-  }, [inputs, hasApiResponse]);
+    return () => profileDebounce.cancel();
+  }, [inputs, hasApiResponse, profileDebounce]);
 
   // The saved-value editor's correction, core or lab (US-04, US-21 AC5),
   // then the page re-reads the record.
@@ -802,18 +808,29 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     longitudinalDebounce.commit(() => { void handleSaveLongitudinalRef.current(); });
   }, [longitudinalDebounce]);
 
-  // Tab-close safety net for the first-time vitals fields: a field the user
-  // left has its save waiting (500 ms); it runs before the page unloads. A
-  // matrix's draft stays on the device instead (US-03 AC5).
+  // Stage only queued edits, with the erase they were made against, then flush
+  // synchronously: the entrypoint's earlier listener may have flushed first.
+  // A matrix's draft stays on the device instead (US-03 AC5).
   useEffect(() => {
-    const onUnload = () => longitudinalDebounce.flush();
+    const onUnload = () => {
+      profileDebounce.flush();
+      longitudinalDebounce.flush();
+      flushRoadmapStoreSync();
+    };
+    const onHidden = () => {
+      if (document.visibilityState !== 'hidden') return;
+      profileDebounce.flush();
+      flushRoadmapStoreSync();
+    };
     window.addEventListener('beforeunload', onUnload);
     window.addEventListener('pagehide', onUnload);
+    document.addEventListener('visibilitychange', onHidden);
     return () => {
       window.removeEventListener('beforeunload', onUnload);
       window.removeEventListener('pagehide', onUnload);
+      document.removeEventListener('visibilitychange', onHidden);
     };
-  }, [longitudinalDebounce]);
+  }, [longitudinalDebounce, profileDebounce]);
 
   // A lab upload starts: both matrices commit their drafts, then the fields
   // save (US-03 AC5), before any file is read.
@@ -1072,6 +1089,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       // A refusal of this erase's own leftovers is not news (adversary R3).
       refusedFor.current = getEraseIdentity();
       longitudinalDebounce.cancel();
+      profileDebounce.cancel();
       // A save the form scheduled before the erase is pre-erase (US-16 AC2a).
       for (const timers of [medSaveTimers, screeningSaveTimers, supSaveTimers]) {
         for (const timer of timers.current.values()) clearTimeout(timer);
@@ -1086,7 +1104,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       window.alert(result.error || 'Failed to delete data. Please try again.');
     }
     return result.success;
-  }, [longitudinalDebounce]);
+  }, [longitudinalDebounce, profileDebounce]);
 
   // One field's new value, from the form or the chat. A weight or waist
   // keeps the unit its caller converted it from (typedIn). One update per

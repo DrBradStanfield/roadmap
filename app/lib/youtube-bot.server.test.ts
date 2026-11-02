@@ -5,6 +5,7 @@ import {
   buildThreadHistory,
   addressReply,
   readPostingCaps,
+  PER_VIDEO_REPLY_CAP,
   completionOutcome,
   shouldUnclaim,
   persistYouTubeTurn,
@@ -231,6 +232,11 @@ describe('US-27: posting-cap reads fail closed', () => {
     supa.countRes = { count: 5, error: null };
     supa.listRes = { data: null, error: { code: 'PGRST303', message: 'JWT issued at future' } };
     await expect(readPostingCaps()).rejects.toMatchObject({ code: 'PGRST303' });
+  });
+
+  // Brad 2026-11-03: raised from 10 to 30 now the replies are better.
+  it('caps each video at 30 bot replies in its lifetime (US-27)', () => {
+    expect(PER_VIDEO_REPLY_CAP).toBe(30);
   });
 
   it('resolves both caps on success, aggregating per-video totals', async () => {
