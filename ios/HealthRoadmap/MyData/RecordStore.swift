@@ -12,7 +12,8 @@ import Observation
 @Observable
 final class RecordStore {
     enum ApplyResult: Equatable, Sendable {
-        case saved
+        /// `healthRecords`: what a Health Records batch did when it changed the record (US-72).
+        case saved(healthRecords: HealthRecordCounts? = nil)
         /// Nothing changed. `existingId` names the row that already holds that day.
         case refused(message: String, existingId: String?)
     }
@@ -443,13 +444,13 @@ final class RecordStore {
                 return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
             // An edit that changed nothing (an Apple Health batch with nothing new) writes nothing.
             case .unchanged:
-                return .saved
-            case .saved(let next, let shown):
+                return .saved()
+            case .saved(let next, let shown, let counts):
                 recordJSON = next
                 display(shown)
                 publish(choices)
                 onEdit?()
-                return .saved
+                return .saved(healthRecords: counts)
             }
         } catch {
             return .refused(message: error.localizedDescription, existingId: nil)
@@ -470,12 +471,12 @@ final class RecordStore {
         guard outcome.ok, let next = outcome.record, let nextErase = outcome.erase else {
             return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
         }
-        if next == recordJSON { return .saved }
+        if next == recordJSON { return .saved() }
         // The session has taken the edit: the choices follow it, once it is drawn (adversary R4).
         await draw(HealthEngine.CloudView(record: next, erase: nextErase, session: cloudSession ?? 0, order: outcome.order),
                    in: Self.clearsChoices(edit) ? UnitChoices() : nil)
         onEdit?()
-        return .saved
+        return .saved(healthRecords: outcome.healthRecords)
     }
 
     // MARK: Lab reports (US-52 AC8)
@@ -704,7 +705,7 @@ final class RecordStore {
         return chain {
             defer { self.unitSwitches -= 1 }
             let result = await self.applyInTurn(.lpaUnit(unit), as: self.screen)
-            if result == .saved { self.forgetCharts() }
+            if result == .saved() { self.forgetCharts() }
             return result
         }
     }

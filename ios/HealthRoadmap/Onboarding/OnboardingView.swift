@@ -368,7 +368,7 @@ struct OnboardingView: View {
         // Health's sex and birth are taken as given (AC3b), saved by the same edits a tap or
         // Continue makes; one the engine refuses is asked. Height and weight came in with the connect.
         // One edit for both; refused, both are asked (review E3).
-        if let profile, let edit = OnboardingSteps.healthEdit(given, profile: profile), await store.apply(edit) != .saved {
+        if let profile, let edit = OnboardingSteps.healthEdit(given, profile: profile), await store.apply(edit) != .saved() {
             fromHealth.subtract([.sex, .birth])
         }
         connecting = false
@@ -424,7 +424,7 @@ struct OnboardingView: View {
             case .stay:
                 return
             case .unchanged:
-                return settle(.saved, step)
+                return settle(.saved(), step)
             case .edit(let made):
                 edit = made
             }
