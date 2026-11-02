@@ -82,9 +82,16 @@ above, the contract hashes to `8dee92d80c028ed3`, which `EngineRelease.bridge` a
 `bridge.test.ts` now carry. Builds 3 and 4 stop receiving over-the-air engines: the US-61
 engine and this one reach them only through the next App Store build.
 **Bridge moved, 2026-11-02 (US-67, the chat's edits).** The new `chatEditsJson` door is one
-an older app cannot serve, so the contract hashes to `c72e95f874b9c22b`; `EngineRelease.bridge`
-and `bridge.test.ts` carry it. The chat's writes are new `Edit` kinds (`chatEdits`, `chatUndo`)
+an older app cannot serve. Merged with US-12 AC20's move below, the contract hashes to
+`8ced272282162ff2`; `EngineRelease.bridge` and `bridge.test.ts` carry it. The chat's writes are new `Edit` kinds (`chatEdits`, `chatUndo`)
 inside the existing `applyEditJson` and `cloudEdit`, so they need no door of their own.
+
+**Bridge moved again, 2026-11-02 (US-12 AC20, D15).** `chatContextJson` now sends `limits`
+(a lab result printed as a limit) and `ChatClient.contextKeys` takes it, so the contract
+hashes to `49b2af86805825f0`. Build 5 (`8dee92d80c028ed3`) stops receiving over-the-air
+engines from this release on. Had it kept them, its allow-list would drop `limits`; the
+engine no longer sends a limit field's representative, so it would lose that value rather
+than misreport it.
 
 Speed, measured 2026-10-21 (Node 22, esbuild bundle, an Intel iMac, the sample record
 padded to 526 rows; `--jitless` stands in for an app's JavaScriptCore, which runs without a
@@ -1605,6 +1612,18 @@ is. Spec: docs/user-stories.md US-61.
   and `EngineBridgeContractTests.swift` (XCTest). Both directions: the Node test calls
   `screenJson` with an old app's four arguments; the XCTest runs the plan on a stand-in for an
   engine before US-61 (four arguments, no `usProducts`).
+
+### D15 · Lab results printed as a limit: the engine says them, Swift draws them (Brad, 2026-11-02, US-12 AC20)
+
+A lab result printed "> 60" or "< 5" is saved with its comparator. The engine owns every
+word: My data, the metric page, the lab review and the plan tiles get strings with the
+symbol, and the grading rule ("only when it decides") runs in health-core. Swift only draws
+a limit point hollow, off the chart's line, from `historyJson`'s optional `bound`; an older
+app finds no number in "< 2.0" and leaves the point off the chart. The phone's chat sends a
+limit as `limits` only, never the field's hidden representative, and `limits` joined
+`ChatClient.contextKeys`, which moved the bridge (build 5 takes no over-the-air engine from
+this release on). Apple Health never gets a limit (device-export.ts). The phone sends no
+`product_events`, so it has no count of limits.
 
 ## Phases
 

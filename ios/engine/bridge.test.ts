@@ -35,6 +35,7 @@ const SAMPLE_ARGS: Record<string, unknown[]> = {
   screenJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'), NOW, 'phone', '{}'],
   chatEditsJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'),
     JSON.stringify([{ kind: 'field', field: 'ldlC', displayValue: 3.4, unitSystem: 'si', date: '2026-10-01' }]), NOW, 'phone', '2026-10-21', '{}'],
+  historyJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'), 'ldl', NOW, 'phone', '{}'],
 };
 /** A door's answer with its timing fields (`ms`) left out, which differ call to call. */
 const untimed = (text: string) => JSON.stringify(JSON.parse(text, (key, value) => (key === 'ms' ? undefined : value)));
@@ -91,11 +92,12 @@ describe('bridge contract (US-25 AC18)', () => {
   // app cannot do without) moves the id and updates this literal; bridge-optional.json is
   // never a way around that, only for additions that work both ways (D3, D14). Moved
   // 2026-11-01 (Brad: still in beta, no downloads): US-07 AC8's labEgfrOutdated plus
-  // US-61's optional isUS and usProducts; builds 3 and 4 no longer take OTA engines.
-  // Moved 2026-11-02: US-67's chatEditsJson door, a door an older app cannot serve.
-  it('the contract hashes to exactly the bridge id the app serves (c72e95f874b9c22b)', () => {
+  // US-61's optional isUS and usProducts; builds 3 and 4 no longer take OTA engines. Moved
+  // 2026-11-02: US-12 AC20's limits in the chat context; build 5 no longer takes OTA engines.
+  // Moved 2026-11-02 again: US-67's chatEditsJson door, a door an older app cannot serve.
+  it('the contract hashes to exactly the bridge id the app serves (8ced272282162ff2)', () => {
     const bytes = readFileSync(join(__dirname, 'bridge-contract.json'));
-    expect(createHash('sha256').update(bytes).digest('hex').slice(0, 16)).toBe('c72e95f874b9c22b');
+    expect(createHash('sha256').update(bytes).digest('hex').slice(0, 16)).toBe('8ced272282162ff2');
     expect(contract.doors.screenJson.args).toEqual(['recordJson', 'nowIso', 'deviceId', 'unitsJson']);
     expect(optional.doors.screenJson.optionalArgs).toEqual(['isUS']);
   });
