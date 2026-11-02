@@ -44,6 +44,21 @@ interface ResultsPanelProps {
   alcoholQuestion?: AlcoholQuestion;
 }
 
+/** A control that opens a card's evidence by mouse or keyboard (US-07 AC16):
+ *  focusable, says whether it is open, and Enter or Space toggles it. Enter or
+ *  Space on a link inside an open tile is left to the link. Without `toggle`, nothing. */
+function evidenceToggle(open: boolean, toggle: (() => void) | undefined) {
+  if (!toggle) return {};
+  return {
+    role: 'button', tabIndex: 0, 'aria-expanded': open, onClick: toggle,
+    onKeyDown: (e: React.KeyboardEvent) => {
+      if (e.target !== e.currentTarget || (e.key !== 'Enter' && e.key !== ' ')) return;
+      e.preventDefault(); // Space would scroll the page
+      toggle();
+    },
+  };
+}
+
 function StatCard({ label, value, status, evidence }: {
   label: string;
   value: React.ReactNode;
@@ -54,7 +69,7 @@ function StatCard({ label, value, status, evidence }: {
   const hasDetail = !!evidence;
   return (
     <div className={`stat-card${hasDetail ? ' stat-card-clickable' : ''}${open ? ' stat-card-open' : ''}`}
-         onClick={hasDetail ? () => setOpen(o => !o) : undefined}>
+         {...evidenceToggle(open, hasDetail ? () => setOpen(o => !o) : undefined)}>
       <span className="stat-label">{label}</span>
       <span className="stat-value">{value}</span>
       {status?.label && <span className={`stat-status ${status.className}`}>{status.label}</span>}
@@ -102,7 +117,7 @@ function SuggestionEvidence({ suggestion, open, onToggle }: { suggestion: Sugges
           <span key={g} className={`guideline-tag${hasEvidence ? ' guideline-tag-clickable' : ''}`} onClick={hasEvidence ? onToggle : undefined}>{g}</span>
         ))}
         {hasEvidence && (
-          <span className="evidence-toggle" onClick={onToggle}>{open ? '▾' : '▸'} Why this suggestion?</span>
+          <span className="evidence-toggle" {...evidenceToggle(open, onToggle)}>{open ? '▾' : '▸'} Why this suggestion?</span>
         )}
       </div>
       {open && hasEvidence && (
