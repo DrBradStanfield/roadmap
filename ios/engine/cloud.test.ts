@@ -227,6 +227,26 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     expect(weight.value).toBeCloseTo(81.6, 1);
   });
 
+  it('US-25 AC25 (review R7): after a master units switch, a lab correction still saves, a core one is refused', async () => {
+    const dropbox = new FakeDropbox();
+    const web = await recordWith(['2026-10-01'], 'web');
+    // A lab value on the record, and the record switched to US units on another device.
+    dropbox.put({ ...web, profile: { ...web.profile, unitSystem: 'conventional' }, labValues: [{
+      id: 'f1', metricName: 'ferritin', value: 80, unit: 'µg/L', referenceLow: null, referenceHigh: null,
+      recordedAt: '2026-10-01T00:00:00.000Z', createdAt: NOW, source: 'lab_import', status: 'active', correctsId: null,
+    }] });
+    const { engine } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    // The sheet was opened in metric units.
+    const lab = JSON.parse(engine.cloudEdit(JSON.stringify({ kind: 'correct', id: 'f1', value: 85 }), erase, 'si', NOW)) as { ok: boolean };
+    expect(lab.ok).toBe(true);
+    const weightId = web.measurements[0].id;
+    const core = JSON.parse(engine.cloudEdit(JSON.stringify({ kind: 'correct', id: weightId, value: 81 }), erase, 'si', NOW)) as { ok: boolean; reason?: string };
+    expect(core).toMatchObject({ ok: false, reason: 'units-changed' });
+    expect(await engine.cloudFlush()).toBe('saved');
+    expect(dropbox.record.labValues.find((row) => row.correctsId === 'f1')).toMatchObject({ value: 85, unit: 'µg/L', status: 'active' });
+  });
+
   it('AC11c: a row the web added is taken in on a re-read', async () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith(['2026-10-01'], 'web'));

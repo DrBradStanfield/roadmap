@@ -5,7 +5,6 @@
 // entered-in-error, one active row per test and day. Synthetic values.
 import { describe, expect, it } from 'vitest';
 import { applyEdit, myData, newRecord } from './my-data';
-import { cloudEdit } from './cloud';
 import { historyJson } from './entry';
 import { labHistory } from './my-data-forms';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
@@ -158,20 +157,6 @@ describe('a lab add writes in the unit the sheet showed (review R3)', () => {
     const other = applyEdit(zinc(), { kind: 'labAdd', series: 'zinc custom', value: 85, day: '2026-09-01', unit: 'µg/dL' }, NOW);
     expect(other).toMatchObject({ ok: false, reason: 'slot-occupied', message: 'That test already has 12 µmol/L for that date.' });
     expect((other as { existingId?: string }).existingId).toBeUndefined();
-  });
-});
-
-describe('a lab correction does not hang on the record\'s units (review R7)', () => {
-  it('the cloud session takes a lab correction whatever units the sheet was opened in', async () => {
-    // cloudEdit needs an open session; the rule itself: a correction depends on units only for a measurement.
-    const { dependsOnUnits } = await import('./cloud');
-    const file = record([lab('f1', 'ferritin', 80, 'µg/L', '2026-08-01')]);
-    expect(dependsOnUnits({ kind: 'correct', id: 'f1', value: 85 }, file)).toBe(false);
-    const withWeight = applyEdit(file, { kind: 'add', metric: 'weight', value: 80, day: '2026-08-01' }, NOW);
-    if (!withWeight.ok) throw new Error(withWeight.message);
-    const weightId = withWeight.file.measurements[0].id;
-    expect(dependsOnUnits({ kind: 'correct', id: weightId, value: 81 }, withWeight.file)).toBe(true);
-    expect(cloudEdit).toBeTypeOf('function');
   });
 });
 
