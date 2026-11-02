@@ -98,9 +98,41 @@ can see, and the bot sees whatever `@everyone` may. A channel created later inhe
 - **Nothing private is posted.** No customer or tester details, no health values, no secrets,
   no claude_business private content (chatbot docs, customer-service mail, business plans).
   The tool's checks catch secrets and emails, not judgement: the session decides the rest.
-- **Reply only during a turn.** No background loop and no scheduled poll. One read per check,
-  and at most three posts per check; the tool's 10-per-hour cap is the backstop, not the
-  target.
+- **Reply only during a turn.** No background loop and no scheduled poll, with one
+  exception: the master session (claude_business `docs/loops/dev-master/`) wakes itself
+  every 30 to 60 minutes and reads the channel on each wake (Brad 2026-11-02: "It wakes
+  itself up: agreed"). One read per check, and at most three posts per check; the tool's
+  10-per-hour cap is the backstop, not the target.
+
+## Status posts (Brad 2026-11-01)
+
+So Hermes knows who is on what without asking, the session that owns a task posts its own
+status line to the channel.
+
+- **Who:** the main, orchestrating local session only. Subagents (workers, reviewers,
+  adversaries) never post: one task would otherwise fill the hourly cap. Loops and cloud
+  sessions never post either, whatever they can reach.
+- **When:** once a task has its branch (`start`; `start (resumed)` when picking up a
+  branch another session left), and at wrap-up (`done`, or `blocked`). Not for a question
+  answered without a branch.
+- **How:** from any worktree, run the main checkout's copy, which is always on main:
+  `node ~/Documents/roadmap.nosync/tools/agent-channel.mjs post "status: start | <task in
+  plain words> | branch <name> | touches <areas> | PR <n or none>"`.
+- **Security work posts nothing until its fix is deployed:** no `start`, no `blocked`, no
+  `touches`. A task known to be security work skips `start`; one found to be security work
+  partway through posts nothing more. After the deploy, one plain `done` that names no defect
+  or area. Unfixed security detail stays in the GitHub advisories (agreed with Hermes,
+  2026-11-01).
+- **What it never names:** on other work, `blocked` names the area, never the defect. Never
+  customer or tester details, health values or claude_business work, nor anything the rules
+  above forbid. A task name says what changes, never whose data.
+- **When a post fails:** skip it, never retry in a loop, and name it in the final report:
+  a refused `done` leaves Hermes thinking the branch is still busy, so the next check posts
+  it. A refusal by the leak guard means a secret or an email got into the task or branch
+  text: tell Brad. If the tool is missing or errors, skip the post and say so in the report.
+- **Cap:** status posts share the tool's 10-per-hour cap with replies. Our bot's lines that
+  start `status:` are status; its other lines are replies. The tool's `posts` count lumps the
+  two together, so the reply count comes from scrolling the channel by hand.
 
 ## Live setup (2026-11-01)
 

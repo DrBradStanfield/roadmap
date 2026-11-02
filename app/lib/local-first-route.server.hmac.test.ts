@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import crypto from 'node:crypto';
 import { getClientIp, verifyAppProxySignature } from './local-first-route.server';
-import { forgedQuery, proxyPairs, signedQuery, TEST_PROXY_SECRET } from './app-proxy.test-helpers';
+import { forgedQuery, proxyPairs, proxySignature, signedQuery, TEST_PROXY_SECRET } from './app-proxy.test-helpers';
 
 const SECRET = TEST_PROXY_SECRET;
 const NOW = 1_780_000_000; // fixed "current" time, seconds
@@ -102,6 +102,72 @@ describe('verifyAppProxySignature', () => {
   });
 });
 
+
+/**
+ * US-09 AC24a (GHSA-7855-c9j7-29xq): Shopify's signed message has no separator
+ * between pairs, so a query it signed can be re-split into different pairs
+ * with the same message. Each case signs `signedPairs` (what Shopify saw) and
+ * sends `sentPairs` under that signature.
+ */
+describe('verifyAppProxySignature: re-split signed queries (US-09 AC24a)', () => {
+  const resplit = (signedPairs: [string, string][], sentPairs: [string, string][]) => {
+    const qs = new URLSearchParams(sentPairs);
+    qs.append('signature', proxySignature(signedPairs));
+    return new Request(`https://health-tool-app.fly.dev/api/chat?${qs}`);
+  };
+  const [, ...shopifyTail] = proxyPairs('', NOW); // path_prefix, shop, timestamp
+
+  it('refuses a guest query re-split around an "=" in an extra value', () => {
+    const signed: [string, string][] = [['a', 'Xlogged_in_customer_id=123'], ['logged_in_customer_id', ''], ...shopifyTail];
+    const [pathPrefix, ...rest] = shopifyTail;
+    const sent: [string, string][] = [['a', 'X'], ['logged_in_customer_id', '123'], [`logged_in_customer_id=${pathPrefix[0]}`, pathPrefix[1]], ...rest];
+    expect(verifyAppProxySignature(resplit(signed, sent), NOW)).toBe(false);
+  });
+
+  it('refuses a guest query re-split with no "=" in any key or value', () => {
+    const signed: [string, string][] = [['a', 'Vb'], ['logged_in_customer_id', ''], ['logged_in_customer_idlogged_in_customer_id', '123'], ...shopifyTail];
+    const sent: [string, string][] = [['a', 'V'], ['blogged_in_customer_id', 'logged_in_customer_id'], ['logged_in_customer_id', '123'], ...shopifyTail];
+    expect(sent.flat().some((x) => x.includes('='))).toBe(false);
+    expect(verifyAppProxySignature(resplit(signed, sent), NOW)).toBe(false);
+  });
+
+  it('refuses an old signed query re-split so its timestamp reads as fresh (AC24b)', () => {
+    const OLD = NOW - 3600;
+    const [pathPrefix, shop] = shopifyTail;
+    const signed: [string, string][] = [['logged_in_customer_id', ''], pathPrefix, shop, ['t', `Xtimestamp=0${NOW}`], ['timestamp', String(OLD)], ['u', 'Z']];
+    const sent: [string, string][] = [['logged_in_customer_id', ''], pathPrefix, shop, ['t', 'X'], ['timestamp', `0${NOW}`], [`timestamp=${OLD}u`, 'Z']];
+    expect(verifyAppProxySignature(resplit(signed, sent), NOW)).toBe(false);
+  });
+
+  it('refuses the same re-split with a plain future timestamp, which only the key-once rule catches (AC24b, adversary R1)', () => {
+    const OLD = NOW - 3600;
+    const [pathPrefix, shop] = shopifyTail;
+    const signed: [string, string][] = [['logged_in_customer_id', ''], pathPrefix, shop, ['t', `Xtimestamp=${NOW}`], ['timestamp', String(OLD)], ['u', 'Z']];
+    const sent: [string, string][] = [['logged_in_customer_id', ''], pathPrefix, shop, ['t', 'X'], ['timestamp', String(NOW)], [`timestamp=${OLD}u`, 'Z']];
+    expect(verifyAppProxySignature(resplit(signed, sent), NOW)).toBe(false);
+  });
+
+  it('refuses a message that spells shop= or path_prefix= twice (AC24b generalized)', () => {
+    for (const key of ['shop', 'path_prefix']) {
+      const pairs: [string, string][] = [['a', `x${key}=y`], ...proxyPairs('', NOW)];
+      expect(verifyAppProxySignature(resplit(pairs, pairs), NOW)).toBe(false);
+    }
+  });
+
+  it('refuses a timestamp that is not plain digits (AC24b)', () => {
+    for (const ts of [`0${NOW}`, `${NOW}.0`, ` ${NOW}`, `${NOW}e0`]) {
+      const pairs: [string, string][] = [['logged_in_customer_id', ''], ...shopifyTail.slice(0, 2), ['timestamp', ts]];
+      expect(verifyAppProxySignature(resplit(pairs, pairs), NOW)).toBe(false);
+    }
+  });
+
+  it('control: both queries as Shopify signed them still pass', () => {
+    const guest: [string, string][] = [['a', 'Vb'], ['logged_in_customer_id', ''], ...shopifyTail];
+    expect(verifyAppProxySignature(resplit(guest, guest), NOW)).toBe(true);
+    const customer: [string, string][] = [['conversationId', 'c-1'], ['localFirst', '1'], ...proxyPairs('555', NOW), ['sessionToken', 't-1']];
+    expect(verifyAppProxySignature(resplit(customer, customer), NOW)).toBe(true);
+  });
+});
 
 describe('getClientIp (US-32 M-6)', () => {
   const ip = (headers: Record<string, string>, trust: 'fly' | 'shopify') =>
