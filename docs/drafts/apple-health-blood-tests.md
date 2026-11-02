@@ -256,6 +256,10 @@ Trade-offs stated:
   `cancelled`, `unknown` do not. `entered-in-error` from the provider: Brad's question 3.
 
 ### Rows, dedup and the FHIR invariants
+> **Superseded in part (Brad, 2026-11-02, after the build):** the day falls back to
+> `issued`; the import wins a conflict with a typed or uploaded value; a withdrawn result
+> lands again in a new version; a same-value newer version is kept as a correction. The
+> rules below that say otherwise are history: US-66 AC3, AC6, AC8 and AC9 hold the current ones.
 - **The day:** `recordedAt` is the Observation's `effectiveDateTime` with its offset, as
   D6 does for vitals. A date-only `effectiveDateTime` (`2026-10-21`) is the day itself,
   stored as `T00:00:00Z`, which the web already shows as a day. Never the HealthKit

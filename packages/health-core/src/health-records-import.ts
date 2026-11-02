@@ -13,16 +13,19 @@
  *    when the server keeps its meta. The row's `externalId` is `identity#version`.
  * The rules, in the order they are asked:
  *  - a version any row carries, entered-in-error included, never lands again;
- *  - a version not later than the identity's active row (by lastUpdated, else
- *    by whole-number versionId) is stale: it neither replaces nor withdraws it;
+ *  - a version not later than any of the identity's rows (by lastUpdated, else
+ *    by whole-number versionId) is stale: it neither replaces nor withdraws;
  *  - `entered-in-error` withdraws: the identity's active row is flipped, and
  *    nothing is appended (AC7);
  *  - only `final`, `amended` and `corrected` land; anything else is not read;
- *  - an identity whose rows are all entered-in-error never lands again (AC8);
- *  - a newer version of an identity with an active row from Health Records
- *    replaces it as a FHIR correction only when the value or unit changed (AC6);
- *  - a new identity fills an empty (metric, day) slot only: a typed, uploaded,
- *    corrected or other-source value is never replaced (AC9);
+ *  - an identity whose rows are all entered-in-error lands again only in a new
+ *    version (AC8: the stale rule above holds back an older one);
+ *  - a newer version of an identity with an active row replaces it as a FHIR
+ *    correction, with the same value too, so the record carries the newest
+ *    version to judge an older one against (AC6);
+ *  - the import is the source of truth: a result corrects a typed, uploaded or
+ *    other-source row holding its (metric, day) when the value, unit or limit
+ *    differs, and appends nothing when they match (AC9, Brad 2026-11-02);
  *  - a result drawn before the record's erase does not land (AC10, D6).
  * A result the app cannot read (AC4) is counted, never guessed.
  */
@@ -32,7 +35,7 @@ import { normalizeLabUnit, resolveLabCatalogEntry } from './lab-catalog';
 import { isClinicalDay } from './measurement-history';
 import { comparatorOf, isComparator, type Comparator } from './lab-limits';
 import { latestDayOnEarth } from './merge';
-import { measurementValueFault, newId, sameValue, slotKey, slotIndex, slotOfRow, stampUpdatedAt, toStoredLab } from './record-edits';
+import { measurementValueFault, newId, sameValue, slotKey, slotOfRow, stampUpdatedAt, toStoredLab } from './record-edits';
 import { createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { reportedToCanonical, type MetricType } from './units';
 import { METRIC_TYPES } from './validation';
@@ -121,6 +124,8 @@ const observation = z.object({
   effectiveDateTime: z.string().max(64).optional(),
   // effective[x] as a period: its start is the draw (the collection began then).
   effectivePeriod: z.object({ start: z.string().max(64).optional() }).optional().catch(undefined),
+  // The release, close to the draw: Apple's sample DSTU2 results carry only this (AC3).
+  issued: z.string().max(64).optional(),
   referenceRange: z.array(z.object({ low: quantity.optional(), high: quantity.optional() })).optional().catch(undefined),
 });
 type Observation = z.infer<typeof observation>;
@@ -170,14 +175,14 @@ function versionOf(obs: Observation): string {
 }
 
 /**
- * Whether a version is older than the one an active row carries (AC5): by
+ * Whether a version is older than the one a row of its identity carries (AC5, AC8): by
  * lastUpdated when both carry one, else by versionId when both are whole
  * numbers (any length, compared as digits). Unordered otherwise, so not stale.
  * An equal stamp is stale for a new value (an old copy must not undo a newer
  * one) but not for a withdrawal: a lab's withdrawal is honoured (AC7, re-check R1).
  */
-function isStale(version: string, activeExternalId: string, withdrawal: boolean): boolean {
-  const old = activeExternalId.slice(activeExternalId.indexOf('#') + 1).split('|');
+function isStale(version: string, rowExternalId: string, withdrawal: boolean): boolean {
+  const old = rowExternalId.slice(rowExternalId.indexOf('#') + 1).split('|');
   if (old.length !== 6) return false;
   const [at, id] = version.split('|');
   const [oldAt, oldId] = old;
@@ -197,7 +202,7 @@ function compareDigits(a: string, b: string): number {
 
 /**
  * The row's `recordedAt` (AC3): the draw (`effectiveDateTime`, else
- * `effectivePeriod.start`), never the download. A day alone is
+ * `effectivePeriod.start`), else the release (`issued`), never the download. A day alone is
  * that day at `T00:00:00.000Z`, and is "not yet" only past the latest day on
  * earth, so a UK result dated today is not held back an hour; a time keeps
  * its own offset, as device-import keeps a reading's. Null when absent,
@@ -222,7 +227,7 @@ function readingOf(obs: Observation, now: string): Reading | null {
   const q = obs.valueQuantity;
   const unit = unitOf(q);
   const metric = unit ? metricOf(obs, unit) : null;
-  const recordedAt = drawnAt(obs.effectiveDateTime ?? obs.effectivePeriod?.start, now);
+  const recordedAt = drawnAt(obs.effectiveDateTime ?? obs.effectivePeriod?.start ?? obs.issued, now);
   if (!metric || typeof q?.value !== 'number' || !unit || !recordedAt) return null;
   // US-12 AC20: a result printed as a limit keeps its comparator; `value` is the bound. FHIR's `ad` is not read.
   if (q.comparator !== undefined && !isComparator(q.comparator)) return null;
@@ -268,9 +273,14 @@ export function importHealthRecords(
     if (rows) rows.push({ list, at });
     else byIdentity.set(identity, [{ list, at }]);
   };
-  measurements.forEach((_, i) => remember(measurements, i));
-  labValues.forEach((_, i) => remember(labValues, i));
-  const taken = new Set(slotIndex(file).keys());
+  /** Each (metric, day) slot's active row, by list and index. */
+  const taken = new Map<string, { list: Row[]; at: number }>();
+  for (const list of [measurements, labValues] as Row[][]) {
+    list.forEach((row, at) => {
+      remember(list, at);
+      if (row.status === 'active') taken.set(slotOfRow(row), { list, at });
+    });
+  }
   let changed = false;
 
   for (const { identity, obs } of parsedInOrder(records)) {
@@ -281,8 +291,8 @@ export function importHealthRecords(
     if (known.has(externalId)) { counts.alreadyInRecord++; continue; }
     const rows = byIdentity.get(identity) ?? [];
     const active = rows.find(({ list, at }) => list[at].status === 'active');
-    // AC5: a replayed older version neither replaces nor withdraws a newer one.
-    if (active && isStale(version, active.list[active.at].externalId as string, obs.status === 'entered-in-error')) { counts.alreadyInRecord++; continue; }
+    // AC5, AC8: a replayed older version neither replaces nor withdraws a newer one.
+    if (rows.some(({ list, at }) => isStale(version, list[at].externalId as string, obs.status === 'entered-in-error'))) { counts.alreadyInRecord++; continue; }
 
     // AC7: the lab withdrew it. The active row goes; nothing is appended.
     if (obs.status === 'entered-in-error') {
@@ -296,8 +306,6 @@ export function importHealthRecords(
       continue;
     }
     if (!LANDS.has(obs.status)) { counts.notRead++; continue; }
-    // AC8: the person or the lab withdrew this result; their call stands.
-    if (rows.length && !active) { counts.alreadyInRecord++; continue; }
 
     const reading = readingOf(obs, now);
     if (!reading) { counts.notRead++; continue; }
@@ -306,24 +314,26 @@ export function importHealthRecords(
 
     const slot = slotKey(reading.kind, reading.metric, reading.recordedAt);
     const list: Row[] = reading.kind === 'measurement' ? measurements : labValues;
+    // A version that moves the result to another test or day is not read:
+    // a correction keeps its slot (agent-access rule 2).
+    if (active && (active.list !== list || slotOfRow(active.list[active.at]) !== slot)) { counts.notRead++; continue; }
+    const held = active ?? taken.get(slot);
+    const old = held?.list[held.at];
+    // AC9: another institution's result holds the day.
+    if (old && !active && old.source === 'health_records') { counts.alreadyInRecord++; continue; }
+    const oldUnit = old && 'unit' in old ? old.unit : undefined;
+    const newUnit = reading.kind === 'lab' ? reading.unit : undefined;
+    const same = old !== undefined && sameValue(old.value, reading.value) && oldUnit === newUnit && comparatorOf(old).comparator === reading.comparator;
+    // AC9: the same value typed or uploaded on the day: nothing to correct.
+    if (same && !active) { counts.alreadyInRecord++; continue; }
     let correctsId: string | null = null;
     let recordedAt = reading.recordedAt;
-    if (active) {
-      const old = active.list[active.at];
-      // A version that moves the result to another test or day is not read:
-      // a correction keeps its slot (agent-access rule 2).
-      if (active.list !== list || slotOfRow(old) !== slot) { counts.notRead++; continue; }
-      const oldUnit = 'unit' in old ? old.unit : undefined;
-      const newUnit = reading.kind === 'lab' ? reading.unit : undefined;
-      // AC6: a version bump with the same value (and the same limit) appends nothing.
-      if (sameValue(old.value, reading.value) && oldUnit === newUnit && comparatorOf(old).comparator === reading.comparator) { counts.alreadyInRecord++; continue; }
-      list[active.at] = { ...old, status: 'entered-in-error' };
+    if (held && old) {
+      // AC6, AC9: a FHIR correction on the slot's day; AC6 with the same value
+      // too, so the record keeps the newest version (re-check R1).
+      held.list[held.at] = { ...old, status: 'entered-in-error' };
       correctsId = old.id;
       recordedAt = old.recordedAt;
-    } else if (taken.has(slot)) {
-      // AC9: a typed, uploaded or other result holds the day.
-      counts.alreadyInRecord++;
-      continue;
     }
 
     const row: Row = reading.kind === 'measurement'
@@ -338,8 +348,10 @@ export function importHealthRecords(
       });
     list.push(row);
     remember(list, list.length - 1);
-    taken.add(slot);
-    if (correctsId) counts.corrected++;
+    taken.set(slot, { list, at: list.length - 1 });
+    // A newer version with the same value lands only its version stamp.
+    if (same) counts.alreadyInRecord++;
+    else if (correctsId) counts.corrected++;
     else counts.added++;
     changed = true;
   }

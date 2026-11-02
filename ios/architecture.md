@@ -779,6 +779,13 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
   one per institution account; seen on the simulator 2026-11-02): Apple says a FHIR id is
   unique only per type and source. The institution's name stays out of the record. The engine (health-core) reads the JSON and decides what lands, with its counts
   (`added`, `corrected`, `withdrawn`, `alreadyInRecord`, `notRead`).
+- **The import is the source of truth (Brad 2026-11-02, US-66 AC3, AC6, AC8, AC9):** the
+  day is `effectiveDateTime`, else `effectivePeriod.start`, else `issued`. A result whose
+  day holds a typed, uploaded, hand-corrected or Apple Health row with another value, unit
+  or comparator corrects that row (FHIR correction, its day kept); the same value appends
+  nothing. A newer version of an imported result is a correction even with the same value,
+  so the record carries the newest version stamp. A result the person or the lab withdrew
+  stays out until the lab sends a new version.
 - **Same line, same anchor rules as vitals:** `RecordStore.applyNow(.healthRecords(_))`, its counts in `ApplyResult.saved`; the store's
   one ordered line; the anchor (`HealthSyncMemory.labResultsAnchor`) moves only after the
   record holding the batch is saved, and none is kept until a batch brought results (the
@@ -797,17 +804,19 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
   for new records), then the vitals sheet. The app read 3 results, source
   `com.apple.public.health.clinical.<UUID>` (the record keeps the bundle id only; the
   institution's name, "Sample Location A", is left out), all DSTU2 Observations. None
-  landed: all three carry `issued` and no `effectiveDateTime`, so AC3 refuses them (one is a
-  panel with no value). So "rows appear in My data" is unproven on Apple's sample data.
+  landed then: all three carry `issued` and no `effectiveDateTime`, which AC3 refused (one is a
+  panel with no value). AC3 now reads `issued` (Brad 2026-11-02); "rows appear in My data" is
+  not yet re-checked on the simulator.
 - **Known limit: import before the cloud record (adversary R3, 2026-11-02; not fixed).**
   A phone that imports Health Records before it connects its cloud record writes those
   results with new row ids, and at first connect the cloud copy holds the same results
   under other ids. The merge then decides, not the import's rules: the newest-written row
   (`createdAt`) wins a slot, and an erase admits the lower-epoch side's rows written after
-  it. So the merge can bring back a result the person withdrew, outrank a value typed on
-  the same day, or return results drawn before an erase. Same class as the single-device
-  limits above; the fix is merge-class work, Brad's call. US-66 AC5, AC8, AC9 and AC10
-  claim their rules only on a phone that already holds the record.
+  it. So the merge can bring back a result the person withdrew (a second active row of the
+  same version) or return results drawn before an erase. An imported result outranking a
+  value typed on the same day is no longer a problem: the import is meant to win (AC9). Same
+  class as the single-device limits above; the fix is merge-class work, Brad's call. US-66
+  AC5, AC8, AC9 and AC10 claim their rules only on a phone that already holds the record.
 - **Gotcha:** an onboarding UI test that waits for the vitals sheet
   (`UIA.Health.AuthSheet.AllCategoryButton`) meets the Health Records sheet first on a
   simulator where `supportsHealthRecords()` is true (a US region, or an account added).
