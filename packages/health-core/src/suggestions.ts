@@ -1,4 +1,4 @@
-import type { HealthInputs, HealthResults, Suggestion, MedicationInputs, ScreeningInputs, UsProductCardId } from './types';
+import type { HealthInputs, HealthResults, SuggestionInputs, Suggestion, MedicationInputs, ScreeningInputs, UsProductCardId } from './types';
 import { SUGGESTION_EVIDENCE } from './evidence';
 import { POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
 import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
@@ -219,7 +219,7 @@ export function medicinesShown(results: Pick<HealthResults, 'age' | 'knownMinor'
  * `now` is the moment screening due dates are measured against (US-31 AC11).
  */
 export function generateSuggestions(
-  inputs: HealthInputs,
+  inputs: SuggestionInputs,
   results: HealthResults,
   unitSystem: UnitSystem = 'si',
   medications?: MedicationInputs,
@@ -245,19 +245,12 @@ export function generateSuggestions(
 
   // === Missing measurements first (US-07 AC10, Brad 2026-11-02): waist, then blood pressure ===
   if (results.waistToHeightRatio === undefined) {
-    const bmi = results.bmi;
     suggestions.push({
       id: 'measure-waist',
       category: 'general',
       priority: 'attention',
       title: 'Measure your waist circumference',
-      description: bmi === undefined
-        ? 'Your waist size shows fat around the middle, which is linked to heart and metabolic risk. Keep your waist below half your height. Enter your waist measurement above.'
-        : bmi < 25
-          ? 'A healthy BMI can still hide fat around the middle, which is linked to heart and metabolic risk. Keep your waist below half your height. Enter your waist measurement above to check yours.'
-          : bmi < 30
-            ? 'With a BMI in the 25\u201330 range, waist circumference helps determine whether your body composition poses health risks. Keep your waist below half your height. Enter your waist measurement above for a more accurate assessment.'
-            : 'At a BMI of 30 or more, your waist still matters: fat around the middle is linked to heart and metabolic risk, and your waist gives you another way to track progress. Keep your waist below half your height. Enter your waist measurement above.',
+      description: 'Fat around the middle raises heart and metabolic risk, even at a healthy weight. Aim for a waist under half your height. Add your waist measurement.',
     });
   }
   // The blood pressure cards below need both halves; without them, this prompt.
@@ -266,8 +259,9 @@ export function generateSuggestions(
       id: 'measure-bp',
       category: 'blood_pressure',
       priority: 'attention',
-      title: 'Measure your blood pressure',
-      description: `High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then enter your reading above. Aim for below ${bpTargetFor(results.age)}/80.`,
+      ...(inputs.pressureOrder
+        ? { title: 'Check your blood pressure reading', description: 'Your last reading looks swapped: the top number (systolic) should be higher than the bottom (diastolic). Check it and add it again.' }
+        : { title: 'Measure your blood pressure', description: `High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. Aim for below ${bpTargetFor(results.age)}/80.` }),
     });
   }
 

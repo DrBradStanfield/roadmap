@@ -8,6 +8,7 @@ import {
   weightMedicationTrigger,
   lipidMarkerFor,
   validateHealthInputs,
+  PRESSURE_ORDER,
   getValidationErrors,
   convertValidationErrorsToUnits,
   detectUnitSystem,
@@ -908,6 +909,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       for (const field of invalidFields) {
         (sanitized as Record<string, unknown>)[field] = undefined;
       }
+      // US-07 AC10: a pair left out as swapped turns the blood pressure prompt into "check your reading".
+      if (validation.errors.issues.some((i) => i.message === PRESSURE_ORDER)) Object.assign(sanitized, { pressureOrder: true });
       inputsForCalc = sanitized;
     }
 

@@ -217,4 +217,30 @@ describe('explicit local-first data path', () => {
     expect(trackProductEvent).toHaveBeenCalledTimes(1);
     expect(trackProductEvent).toHaveBeenCalledWith('lab_unit_refused', { key: 'ferritin' });
   });
+
+  // US-07 AC10 · the usage signal: a waist or blood pressure was saved, named by
+  // its measure alone (Brad 2026-11-02). Never the value, never another metric.
+  it('US-07 AC10 — counts a saved waist or blood pressure by measure only, once per save', async () => {
+    const added = () => vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'measurement_added');
+    vi.mocked(trackProductEvent).mockClear();
+    await data.addMeasurement('weight', 80, '2026-08-01');
+    expect(added()).toEqual([]);
+    await data.addMeasurement('waist', 90, '2026-08-01');
+    expect(added()).toEqual([['measurement_added', { measure: 'waist' }, 'waist']]);
+
+    vi.mocked(trackProductEvent).mockClear();
+    await data.bulkSaveMeasurements([
+      { metricType: 'systolic_bp', value: 120, recordedAt: '2026-08-02', source: 'lab_import' },
+      { metricType: 'diastolic_bp', value: 80, recordedAt: '2026-08-02', source: 'lab_import' },
+      { metricType: 'ldl', value: 3, recordedAt: '2026-08-02', source: 'lab_import' },
+    ]);
+    expect(added()).toEqual([['measurement_added', { measure: 'blood_pressure' }, 'blood_pressure']]);
+
+    vi.mocked(trackProductEvent).mockClear();
+    await data.saveChangedMeasurements({ heightCm: 178, waistCm: 91, systolicBp: 118, diastolicBp: 78 }, { heightCm: 178 });
+    expect(added()).toEqual([
+      ['measurement_added', { measure: 'waist' }, 'waist'],
+      ['measurement_added', { measure: 'blood_pressure' }, 'blood_pressure'],
+    ]);
+  });
 });

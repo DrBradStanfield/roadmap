@@ -23,7 +23,7 @@ import { cmpStr, dayOf, localDay } from './merge';
 import { refLineFor } from './reference-hints';
 import { computeReminderSchedule, type ReminderScheduleItem } from './reminder-schedule';
 import { BASE_SCHEMA_VERSION, type FileLabValue, type RoadmapFile } from './roadmap-file';
-import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
+import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs, SuggestionInputs } from './types';
 import {
   UNIT_DEFS, formatDisplayValue, formatGradedValue, getDisplayLabel, unitSystemOf, type MetricType, type UnitSystem,
 } from './units';
@@ -248,14 +248,16 @@ export function computePlan(file: RoadmapFile, now = new Date(), unitOverrides?:
     inputs = stripped as Partial<HealthInputs>;
     excluded = [...invalid];
   }
+  const pressureOrder = validation.errors?.issues.some((i) => i.message === PRESSURE_ORDER) === true;
   return {
     ...derived,
     inputs,
     excluded,
-    ...(validation.errors?.issues.some((i) => i.message === PRESSURE_ORDER) ? { pressureOrder: true } : {}),
+    ...(pressureOrder ? { pressureOrder: true } : {}),
     generatedAt: now.toISOString(),
     today: localDay(now),
-    results: calculateHealthResults(inputs as HealthInputs, derived.unitSystem, derived.medications, derived.screenings, unitOverrides, now),
+    // US-07 AC10: the left-out pair turns the blood pressure prompt into "check your reading".
+    results: calculateHealthResults({ ...inputs, ...(pressureOrder ? { pressureOrder: true } : {}) } as SuggestionInputs, derived.unitSystem, derived.medications, derived.screenings, unitOverrides, now),
     due: computeReminderSchedule(file, now),
     labs: derivePlanLabs(file),
   };

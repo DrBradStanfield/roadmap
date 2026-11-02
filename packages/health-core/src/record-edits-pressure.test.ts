@@ -144,8 +144,11 @@ describe('US-02 AC8: the plan reads an inverted blood pressure as none (review R
       return computePlan(file, new Date(NOW));
     };
     expect(bpCards(planOf(160, 100).results)).toEqual(['bp-stage2']);
-    // US-07 AC10: with no usable reading, the plan asks for one; no tier card shows.
-    expect(bpCards(planOf(80, 120).results)).toEqual(['measure-bp']);
+    // US-07 AC10: the plan asks to check the swapped reading; no tier card shows.
+    const swapped = planOf(80, 120).results;
+    expect(bpCards(swapped)).toEqual(['measure-bp']);
+    expect(swapped.suggestions.find((s) => s.id === 'measure-bp')?.title).toBe('Check your blood pressure reading');
+    expect(swapped.suggestions[1].id).toBe('measure-bp'); // second, after measure-waist (no waist here)
   });
 
   it('validation names the rule on both halves, so every surface leaves both out', () => {
@@ -169,6 +172,7 @@ describe('US-02 AC8: the plan reads an inverted blood pressure as none (review R
     expect(plan.inputs.diastolicBp).toBeUndefined();
     expect(plan.excluded).toEqual(expect.arrayContaining(['systolicBp', 'diastolicBp']));
     expect(bpCards(plan.results)).toEqual(['measure-bp']);
+    expect(plan.results.suggestions.find((s) => s.id === 'measure-bp')?.title).toBe('Check your blood pressure reading');
   });
 });
 

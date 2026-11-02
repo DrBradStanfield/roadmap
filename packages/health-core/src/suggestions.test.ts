@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { generateSuggestions, weightMedicationTrigger, lipidMarkerFor, joinWithAnd } from './suggestions';
 import { SUGGESTION_EVIDENCE } from './evidence';
 import { LIPID_TREATMENT_TARGETS, NON_HDL_THRESHOLDS, type UnitSystem } from './units';
-import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
+import type { HealthInputs, HealthResults, MedicationInputs, SuggestionInputs, ScreeningInputs } from './types';
 import {
   canIncreaseGlp1Dose, shouldSuggestGlp1Switch, canIncreaseDose, shouldSuggestSwitch, getCurrentPotency, gradedDose,
   GLP1_DRUGS, STATIN_DRUGS,
@@ -986,12 +986,12 @@ describe('generateSuggestions', () => {
       }
     });
 
-    it('fits each BMI band: only 25-29.9 speaks of the 25-30 range', () => {
-      expect(waistCard(27)?.description).toContain('25\u201330 range');
-      expect(waistCard(22)?.description).toContain('A healthy BMI can still hide');
-      expect(waistCard(33)?.description).toContain('At a BMI of 30 or more');
-      expect(waistCard(undefined)?.description).not.toContain('BMI');
-      for (const bmi of [22, 33, undefined]) expect(waistCard(bmi)?.description).not.toContain('25\u201330');
+    it('says the same approved text at every BMI, and with no weight (Brad 2026-11-02)', () => {
+      const text = 'Fat around the middle raises heart and metabolic risk, even at a healthy weight. Aim for a waist under half your height. Add your waist measurement.';
+      for (const bmi of [22, 27, 33, 40, undefined]) {
+        expect(waistCard(bmi)?.title, `BMI ${bmi}`).toBe('Measure your waist circumference');
+        expect(waistCard(bmi)?.description, `BMI ${bmi}`).toBe(text);
+      }
     });
 
     it('comes first in engine order, before blood pressure and screenings', () => {
@@ -1003,20 +1003,29 @@ describe('generateSuggestions', () => {
   });
 
   describe('Measure blood pressure suggestion (US-07 AC10)', () => {
-    const bpCard = (overrides: Partial<HealthInputs>, resultOverrides: Partial<HealthResults> = {}) => {
-      const { inputs, results } = createTestData(overrides, resultOverrides);
-      return generateSuggestions(inputs, results).find(s => s.id === 'measure-bp');
+    const bpCard = (overrides: Partial<SuggestionInputs>, resultOverrides: Partial<HealthResults> = {}) => {
+      const { inputs, results } = createTestData({}, resultOverrides);
+      return generateSuggestions({ ...inputs, ...overrides }, results).find(s => s.id === 'measure-bp');
     };
 
-    it('shows with no blood pressure on record, at attention, with the age target', () => {
+    it('shows with no blood pressure on record, at attention, with the approved text and the age target', () => {
       const card = bpCard({});
       expect(card).toBeDefined();
       expect(card?.priority).toBe('attention');
       expect(card?.category).toBe('blood_pressure');
-      expect(card?.description).toContain('below 120/80');
-      expect(bpCard({}, { age: 70 })?.description).toContain('below 130/80');
+      expect(card?.title).toBe('Measure your blood pressure');
+      expect(card?.description).toBe('High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. Aim for below 120/80.');
+      expect(bpCard({}, { age: 70 })?.description).toContain('Aim for below 130/80.');
       // Its evidence reuses the plan's blood pressure references.
       expect(card?.references?.map(r => r.url)).toContain('https://doi.org/10.1161/HYP.0000000000000065');
+      expect(card?.reason).toContain('no symptoms');
+    });
+
+    it('asks to check a reading the plan left out as swapped, with the approved text (Brad 2026-11-02)', () => {
+      const card = bpCard({ pressureOrder: true });
+      expect(card?.title).toBe('Check your blood pressure reading');
+      expect(card?.description).toBe('Your last reading looks swapped: the top number (systolic) should be higher than the bottom (diastolic). Check it and add it again.');
+      expect(card?.priority).toBe('attention');
       expect(card?.reason).toContain('no symptoms');
     });
 
