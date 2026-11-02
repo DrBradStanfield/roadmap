@@ -53,7 +53,9 @@ export async function initDropboxTest(els: Els): Promise<void> {
     if (adapter?.isConnected()) {
       els.status.innerHTML = '<strong style="color:#1a7f55">Connected ✓</strong> — your Dropbox App folder';
       addButton('Run round-trip', runRoundTrip);
-      addButton('Disconnect', disconnect);
+      // The page reads the app's own Dropbox login on this site, so signing out
+      // here signs the app out too, and the button says so (US-09 AC32a).
+      addButton('Disconnect (signs the app out too)', disconnect);
     } else {
       els.status.textContent = 'Not connected.';
       addButton('Connect Dropbox', () => (adapter ?? new DropboxAdapter(config)).connect());

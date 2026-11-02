@@ -106,3 +106,28 @@ describe('US-09 AC32: the Dropbox round-trip on test.html leaves the health reco
     expect(result).toMatch(/^✗ FAIL — record not found after reload/);
   });
 });
+
+describe('US-09 AC32a: Disconnect on test.html says it signs the app out too', () => {
+  it('the button says so, and still disconnects', async () => {
+    await seededCloud();
+    const { DropboxAdapter } = await import('../src/storage');
+    const disconnect = vi.spyOn(DropboxAdapter.prototype, 'disconnect');
+    const els = { status: document.createElement('div'), actions: document.createElement('div'), result: document.createElement('div') };
+    await initDropboxTest(els);
+    const labels = [...els.actions.querySelectorAll('button')].map(b => b.textContent);
+    expect(labels).toEqual(['Run round-trip', 'Disconnect (signs the app out too)']);
+    els.actions.querySelectorAll('button')[1].click();
+    await vi.waitFor(() => expect(els.status.textContent).toBe('Not connected.'));
+    expect(disconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it('because the real Dropbox disconnect removes the one login the app also reads', async () => {
+    const real = await vi.importActual<typeof import('../src/storage')>('../src/storage');
+    const config = { clientId: 'synthetic-app-key', redirectUri: 'https://example.test/roadmap/test.html' };
+    localStorage.setItem('health_roadmap_dropbox_tokens', JSON.stringify({ accessToken: 'synthetic-a', refreshToken: 'synthetic-r', expiresAt: 0 }));
+    const app = () => new real.DropboxAdapter({ ...config, redirectUri: 'https://example.test/roadmap/' });
+    expect(app().isConnected()).toBe(true);
+    await new real.DropboxAdapter(config).disconnect();
+    expect(app().isConnected()).toBe(false);
+  });
+});
