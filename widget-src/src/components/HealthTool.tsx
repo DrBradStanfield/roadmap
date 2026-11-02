@@ -455,8 +455,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     setProfileProposal(null);
   }, []);
   // The store holds an erase the screen does not show yet: this tab's erase
-  // still writing or failed to write, or a remote change the relay holds. The
-  // screen's values are pre-erase then, so no banner is made or answered.
+  // still writing or failed to write, or another device's erase whose re-read
+  // has not landed (the relay never holds an erase, US-11 AC6). The screen's
+  // values are pre-erase then, so no banner is made or answered.
   const eraseUnshown = useCallback(() => getEraseIdentity() !== getShownErase(), []);
   // True while this tab's erase runs.
   const erasingRef = useRef(false);
