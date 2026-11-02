@@ -1308,4 +1308,4 @@ Automatic from `drug_name`:
 
 ### Unit System Detection
 
-Auto-detected from browser locale. Countries using conventional: US, LR (Liberia), MM (Myanmar). Special en-US cross-check: if timezone is non-US (e.g. Pacific/Auckland), defaults to SI.
+Auto-detected from browser locale. Countries using conventional: US, LR (Liberia), MM (Myanmar), and the US territories PR (Puerto Rico), VI (US Virgin Islands), GU (Guam), MP (Northern Mariana Islands) and AS (American Samoa) (US-05 AC5). Special en-US cross-check: if timezone is non-US (e.g. Pacific/Auckland), defaults to SI; the territories' own zones count as US.
