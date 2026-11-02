@@ -135,6 +135,14 @@ export function bloodTestRows(file: Pick<RoadmapFile, 'labValues'>): Array<FileL
     .map((row) => ({ ...row, metricType: row.metricName }));
 }
 
+/** The active vitals, plus the core values as measurements: what the plan and reminders read (US-66 AC7). */
+export function currentValueRows(file: Pick<RoadmapFile, 'measurements' | 'labValues'>): Array<FileMeasurement | (FileLabValue & { metricType: string })> {
+  // A blood row the move refused is unreadable (US-66 AC2) and counts nowhere. One it
+  // would move still counts, so a caller holding an unmigrated record reads what migrate gives.
+  const stuck = (m: FileMeasurement) => isBloodTestKey(m.metricType) && !movable(m);
+  return [...file.measurements.filter((m) => m.status === 'active' && !stuck(m)), ...bloodTestRows(file)];
+}
+
 /**
  * The exact inverse of the move (US-66 AC14): every core row in the moved
  * shape, a fold excepted, back in `measurements`. Shipped tested and unused,

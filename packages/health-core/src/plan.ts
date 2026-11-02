@@ -6,7 +6,7 @@
  * terminal. The CLI keeps reading the file and rendering text and HTML;
  * `renderJson` is the agent-facing shape, and both surfaces return it.
  */
-import { bloodTestRows, isCoreRow } from './blood-tests';
+import { currentValueRows, isCoreRow } from './blood-tests';
 import { calculateHealthResults, missingPlanInputs } from './calculations';
 import { fileProfileToApi, fileScreeningRows } from './file-inputs';
 import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
@@ -118,7 +118,7 @@ export interface PlanInputs {
  */
 export function derivePlanInputs(file: RoadmapFile, now = new Date()): PlanInputs {
   // Vitals from `measurements`, blood tests from their core rows (US-66 AC7).
-  const active = [...file.measurements.filter((m) => m.status === 'active'), ...bloodTestRows(file)] as ApiMeasurement[];
+  const active = currentValueRows(file) as ApiMeasurement[];
   const currentRows = latestActivePerMetric(active);
   const creatinine = currentRows.find((r) => r.metricType === 'creatinine');
   return {

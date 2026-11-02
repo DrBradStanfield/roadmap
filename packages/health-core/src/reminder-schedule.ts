@@ -34,7 +34,7 @@ import { knownMinorOf } from './calculations';
 import { dayOf, localDay } from './merge';
 import { ISO_DATE, isCalendarDay } from './measurement-history';
 import type { RoadmapFile } from './roadmap-file';
-import { bloodTestRows } from './blood-tests';
+import { currentValueRows } from './blood-tests';
 import { screeningsToInputs } from './mappings';
 import { fileScreeningRows } from './file-inputs';
 
@@ -282,8 +282,7 @@ function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleIte
 
   const measurementDates: MeasurementDates = {};
   // Vitals from `measurements`, blood tests from their core rows (US-66 AC7).
-  for (const m of [...file.measurements, ...bloodTestRows(file)]) {
-    if (m.status !== 'active') continue;
+  for (const m of currentValueRows(file)) {
     // No usable clinical date → drop the row, as buildMeasurementHistory does.
     // Coercing is worse than dropping: '2026-13-45' has the ISO shape, wins
     // `day > prev`, and produces dueAt 'NaN-NaN-NaN' — which the server's

@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { bloodTableReport, bloodTestRows, FOLD_CREATININE, foldLegacyCoreRows, isCoreRow, labRowSlot, moveBloodMeasurements, toOldShape } from './blood-tests';
 import { goldenOf, goldenRecords } from './blood-table.fixtures';
 import { readableView } from './readable-rows';
+import { derivePlanInputs } from './plan';
+import { computeReminderSchedule } from './reminder-schedule';
 import { BLOOD_TEST_METRICS } from './mappings';
 import { mergeFiles, rootIdOf } from './merge';
 import { migrateFile } from './migrate';
@@ -75,6 +77,16 @@ describe('US-66 AC2: the move', () => {
     const view = readableView(out);
     expect(view.file.measurements).toEqual([]);
     expect(view.count).toBe(1);
+  });
+
+  it('a blood row left in measurements counts for neither the plan nor the reminders (US-66 AC7)', () => {
+    const odd = { ...m('a', 'ldl', 3.1, '2026-05-01'), unit: 'mg/dL' } as FileMeasurement;
+    const profile = { ...createEmptyFile(OPTS).profile, sex: 'male' as const, birthYear: 1970, birthMonth: 1 };
+    const out = migrate({ ...record([odd]), profile });
+    const without = migrate({ ...record([]), profile });
+    const now = new Date('2026-10-01T00:00:00Z');
+    expect(derivePlanInputs(out).inputs.ldlC).toBeUndefined();
+    expect(computeReminderSchedule(out, now)).toEqual(computeReminderSchedule(without, now));
   });
 
   it('moves an unreadable row too, content kept, and readers still skip it (US-65 AC1)', () => {
