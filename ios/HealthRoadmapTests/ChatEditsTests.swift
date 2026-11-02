@@ -35,7 +35,7 @@ final class ChatEditsTests: XCTestCase {
                 var rest = list.filter(function (x) { return x.kind !== 'medication'; });
                 if (meds.some(function (x) { return x.refuseMeds; })) meds = [];
                 return JSON.stringify({
-                  medications: list.some(function (x) { return x.refuseMeds; }) ? { lines: [], undo: null, refusal: 'That medicine is not on the list, so nothing was saved.' } : meds.length ? { lines: [{ text: 'Statin: atorvastatin 20 mg' }], undo: { kind: 'chatUndo', medications: [1.5, null, true] } } : null,
+                  medications: list.some(function (x) { return x.refuseMeds; }) ? { lines: [], undo: null, refusal: 'That medicine is not on the list, so nothing was saved.' } : meds.length ? { lines: [{ text: 'Statin: atorvastatin 20 mg' }], undo: meds.some(function (x) { return x.noUndo; }) ? null : { kind: 'chatUndo', medications: [1.5, null, true] }, refusal: null } : null,
                   review: rest.length ? {
                     lines: [{ text: 'Weight 80 kg', replaces: '82 kg' }, { text: 'Height 178 cm', replaces: null }],
                     refusal: list.some(function (x) { return x.refuse; }) ? 'That weight is outside the range the app can save.' : null,
@@ -140,6 +140,59 @@ final class ChatEditsTests: XCTestCase {
         XCTAssertNotEqual(store.recordJSON, saved)
         XCTAssertNil(edits.saved)
         XCTAssertEqual(events, [.chatEditSaved, .chatEditProposed], "an Undo is not a chat edit saved")
+    }
+
+    /// US-67 N3 (Brad 2026-11-02): a change that replaced an entry this app cannot read is
+    /// written and shown, with no Undo: Undo could not put that entry back.
+    func testAWrittenChangeWithNoUndoShowsItsLinesAndNoUndo_US67_N3() async throws {
+        let (store, edits, engine) = try setUpEdits()
+        let before = store.recordJSON
+        let change = #"[{"kind":"medication","medicationKey":"statin","drug":"atorvastatin","dose":20,"unit":"mg","noUndo":true}]"#
+        await edits.take(try json(change), asked: store.chatMark, today: today)
+        XCTAssertNotEqual(store.recordJSON, before, "still written")
+        XCTAssertEqual(try sent(engine).count, 1)
+        let saved = try XCTUnwrap(edits.saved, "the banner shows")
+        XCTAssertEqual(saved.lines, [.init(text: "Statin: atorvastatin 20 mg")])
+        XCTAssertNil(saved.undo)
+        XCTAssertNil(edits.problem)
+        XCTAssertEqual(events, [.chatEditSaved, .chatEditProposed])
+
+        // On screen: the lines and the fixed line, and no Undo button.
+        let shown = banner(edits)
+        XCTAssertTrue(shown.contains("Statin: atorvastatin 20 mg"))
+        XCTAssertTrue(shown.contains(noUndo))
+        XCTAssertFalse(shown.contains(undoHint), "no Undo button")
+
+        // Undo, if reached anyway, writes nothing.
+        let written = store.recordJSON
+        await edits.undo()
+        XCTAssertEqual(store.recordJSON, written)
+        XCTAssertEqual(try sent(engine).count, 1, "no Undo sent")
+
+        // An erase drops it, as any banner (AC5).
+        edits.drop()
+        XCTAssertNil(edits.saved)
+    }
+
+    /// A readable change keeps its Undo button, and no fixed line (the N3 control).
+    func testAWrittenChangeWithItsUndoShowsTheUndoButton_US67_N3() async throws {
+        let (store, edits, _) = try setUpEdits()
+        await edits.take(try json(medication), asked: store.chatMark, today: today)
+        let shown = banner(edits)
+        XCTAssertTrue(shown.contains(undoHint), "the Undo button")
+        XCTAssertFalse(shown.contains(noUndo))
+    }
+
+    private let undoHint = "Puts your medications back as they were"
+    /// The fixed line as `dump` writes it: its apostrophes escaped.
+    private let noUndo = ChatEdits.noUndo.replacingOccurrences(of: "'", with: "\\'")
+
+    /// The banners' view tree as built, words and Undo's hint included. Undo's hint marks its button.
+    private func banner(_ edits: ChatEdits) -> String {
+        var tree = ""
+        dump(ChatEditBanners(edits: edits).body, to: &tree)
+        XCTAssertTrue(tree.contains("Medication updated from chat"), "the banner was built")
+        return tree
     }
 
     func testValuesWaitForSave_US67_AC3() async throws {

@@ -627,8 +627,9 @@ final class RecordStore {
             guard asked.holds(at: self.chatMark) else { return .moved }
             guard let preview = try? await self.engine.chatEdits(recordJSON: self.recordJSON, edits: edits, now: .now, deviceId: self.deviceId, today: today, units: self.unitChoices.json)
             else { return .unreadable }
-            // No medication part, or one the engine refused: nothing is written now.
-            guard let meds = preview.medications, meds.refusal == nil, meds.undo != nil else {
+            // No medication part, or one the engine refused: nothing is written now. A part with
+            // no Undo is still written (US-67 N3).
+            guard let meds = preview.medications, meds.refusal == nil else {
                 return .taken(ChatEditsTaken(preview: preview, medications: nil, changed: false, mark: self.chatMark))
             }
             let before = self.recordJSON
