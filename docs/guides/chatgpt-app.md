@@ -2,7 +2,7 @@
 title: "Health by Dr Brad in ChatGPT"
 description: "What the Health by Dr Brad app does inside ChatGPT, what each of its nine tools can do to your health record, and what it never does."
 slug: "chatgpt-app"
-updated: "2026-10-12"
+updated: "2026-11-02"
 stories: ["US-32", "US-36"]
 ---
 
@@ -10,7 +10,7 @@ Your health record is one file, `health-roadmap.json`, in your own Dropbox or Go
 
 The Health by Dr Brad app is the bridge between that file and ChatGPT. You authorize it once, against your own cloud account, and ChatGPT can then read your results, work out your plan, add new values and correct an old one. Setting it up takes about five minutes: the steps are in [connecting ChatGPT to your health record](/blogs/guides/connect-chatgpt).
 
-This page is the plain description of what the app can do. It is for anyone deciding whether to connect it, and for anyone reviewing it.
+This page is the plain description of what the app can do. It is for anyone deciding whether to connect it.
 
 ## How your data moves
 

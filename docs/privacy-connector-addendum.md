@@ -102,9 +102,9 @@ on our server during a normal call: it unseals the credential to open your folde
 that request, then discards both. A compromised server could capture them at that
 moment. Encryption at rest does not protect against that, and we do not claim it does.
 
-One exception, for one invented account. While an OpenAI or Anthropic app review is
+One exception, for one invented account. While Anthropic's connector directory review is
 pending, our server holds the Dropbox credential of a synthetic reviewer account we
-made. Their reviewer can then sign in on our consent page with a username and password
+made. Anthropic's reviewer can then sign in on our consent page with a username and password
 we issued instead of a Dropbox login. The account belongs to no one and its record is
 invented. The reviewer's assistant holds no credential at all, only a marker that names
 the current reviewer secrets, so removing or changing those secrets ends every reviewer
