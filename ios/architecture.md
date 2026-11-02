@@ -814,8 +814,10 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
   nothing. A version dated by `issued` alone keeps the day its result already holds: `issued`
   is that version's release, so an amendment's later one is not a move (AC3). A newer version
   with the same value, unit and comparator, and a lab's withdrawal, append a **version
-  marker** (AC5): a `health_records` row born `entered-in-error`, a copy of the result's
-  current row with the new version in its `externalId` and `correctsId: null` (merge reads no
+  marker** (AC5): a `health_records` row born `entered-in-error` on the result's test and
+  day, carrying the content of the version it records (the new version's value, unit,
+  comparator and range; a withdrawal's marker keeps the withdrawn row's), the new version in
+  its `externalId` and `correctsId: null` (merge reads no
   `correctsId`, so it flips nothing on any device). A marker's `externalId` ends `|m` after
   the version (`identity#version|m`), so it is known by its id, never guessed from its content
   (Codex R2, adversary R3). The record remembers the version, so an
@@ -858,9 +860,14 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
   imported result can outrank a value typed on the same day. Both are meant: the import is
   the source of truth (AC9). A lab's re-sent result after its own withdrawal also beats the
   person's earlier deletion (AC8; Brad 2026-11-03: agreed). A result whose day a typed or
-  uploaded row won in a merge (that row corrects none of the result's rows) lost a merge,
-  not a person's call: the lab's next version corrects that row when the value differs, and
-  lands a marker when it matches (AC9, adversary R2). **Still a known limit, beside
+  uploaded row won in a merge (that row does not correct the result's newest landed version,
+  through any chain of corrections) lost a merge, not a person's call: the lab's next version
+  corrects that row when the value differs, and lands a marker when it matches (AC9,
+  adversary R2). A correction of an older version that a merge put over the lab's amendment
+  is such a lost merge too (adversary R1). Two explicit choices of the person look the same,
+  so a lab version with another value overrides them: deleting the imported row then typing
+  a value on that day, and moving another day's value onto the result's day (Brad: the
+  import is the source of truth). **Still a known limit, beside
   Brad's rule:** an erase admits the lower-epoch side's rows written after it, so the merge
   can return results drawn before an erase (AC10); the fix is merge-class work, Brad's call.
   US-72 AC5, AC8, AC9 and AC10 claim their own rules only on a phone that already holds the record.
