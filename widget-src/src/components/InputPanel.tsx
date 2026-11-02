@@ -452,13 +452,19 @@ export function InputPanel({
   const vitalsRef = useRef<HTMLDivElement>(null);
   const [vitalsLeft, setVitalsLeft] = useState(aboutYouLow);
   useEffect(() => {
-    if (aboutYouLow && !vitalsRef.current?.contains(document.activeElement)) setVitalsLeft(true);
+    // An erase takes About you back to the top: the next record starts again (Codex R2).
+    setVitalsLeft(aboutYouLow && !vitalsRef.current?.contains(document.activeElement));
   }, [aboutYouLow]);
   const vitalPending = (['weightKg', 'waistCm', 'systolicBp', 'diastolicBp'] as const).some(f => inputs[f] !== undefined);
   const vitalsAsRows = aboutYouLow && vitalsLeft && !vitalPending;
   const flipFrom = useRef<Map<Element, number> | null>(null);
+  // A press inside the card is not leaving it: Safari gives a focusout with
+  // no next target for a click on a button (Male, the unit pill) or on text.
+  const pressedInside = useRef(false);
   const leaveProfile = (e: React.FocusEvent<HTMLDivElement>) => {
     if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+    if (!e.relatedTarget && pressedInside.current) return;
+    if (formStage !== 4) return; // the move needs all four answers: measure only for it
     flipFrom.current = new Map([...(panelRef.current?.children ?? [])].map(el => [el, el.getBoundingClientRect().top]));
     onProfileLeft?.();
   };
@@ -2392,7 +2398,10 @@ export function InputPanel({
 
   const aboutCard = (
     <div key="about" ref={aboutRef} className={`section-card about-card${aboutYouLow ? ' md-about-you' : ''}`}
-         onBlurCapture={aboutYouLow ? undefined : leaveProfile}>
+         onBlurCapture={aboutYouLow ? undefined : leaveProfile}
+         onPointerDownCapture={() => { pressedInside.current = true; }}
+         onPointerUpCapture={() => { setTimeout(() => { pressedInside.current = false; }, 0); }}
+         onFocusCapture={() => { pressedInside.current = false; }}>
       {renderProfile()}
     </div>
   );

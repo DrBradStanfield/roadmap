@@ -641,7 +641,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     }
     const refused = result.birthRefused;
     // A value out of range was refused (US-02 AC5): it stays in the form, unsaved, its error shown.
-    const kept = new Set<keyof HealthInputs>([...(refused ? ['birthYear', 'birthMonth'] as const : []), ...Object.keys(result.refused ?? {}) as Array<keyof HealthInputs>]);
+    const kept = new Set(Object.keys(result.refused ?? {}) as Array<keyof HealthInputs>);
+    if (refused) { kept.add('birthYear'); kept.add('birthMonth'); }
     for (const field of autoSaveFields) {
       if (!kept.has(field)) (previousInputsRef.current as any)[field] = inputs[field];
     }
@@ -658,8 +659,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     // already has (US-15 AC10).
     patchMirror({ profile: { ...previousInputsRef.current } });
     // The form is clean again — apply any remote change held back while it
-    // was dirty (US-34 AC4).
-    remoteRelay.saved();
+    // was dirty (US-34 AC4). Not while a refused value is still in the form:
+    // the re-read would replace it and its error (US-02 AC5); the relay
+    // waits for the save that takes it.
+    if (!result.refused) remoteRelay.saved();
     return true;
   }
 
@@ -852,10 +855,18 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       // fields onto the draft model. What the matrices' drafts lend is kept
       // apart (`lent`): it rides through, and each draft is judged again
       // against the record read (US-03 AC6).
+      // A value out of range is never in the record (its save refused or
+      // skipped it, US-02 AC5), so it rides through too, with its error.
       const typing = document.activeElement?.id as keyof HealthInputs | undefined;
-      setInputs(prev => (typing && LONGITUDINAL_FIELDS.includes(typing) && prev[typing] !== undefined
-        ? { ...result.inputs, [typing]: prev[typing] }
-        : result.inputs));
+      setInputs(prev => {
+        const next: Partial<HealthInputs> = typing && LONGITUDINAL_FIELDS.includes(typing) && prev[typing] !== undefined
+          ? { ...result.inputs, [typing]: prev[typing] }
+          : { ...result.inputs };
+        for (const [field, value] of Object.entries(prev)) {
+          if (inputRangeFault(field, value)) (next as Record<string, unknown>)[field] = value;
+        }
+        return next;
+      });
       previousInputsRef.current = { ...result.inputs };
       setMedications(result.medications);
       setScreenings(result.screenings);

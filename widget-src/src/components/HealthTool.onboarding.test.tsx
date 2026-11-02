@@ -740,11 +740,11 @@ describe('US-02 AC9: a range error waits while the number is still being typed',
     expect(shown(view)).toEqual([]);
     expect(height?.className).not.toContain('error');
     await act(async () => { await new Promise((r) => setTimeout(r, 700)); }); // the profile's 500 ms save, the field still focused
-    expect((await recordOnDisk()).profile?.heightCm ?? null).toBeNull();
+    expect((await recordOnDisk())?.profile?.heightCm ?? null).toBeNull();
     leave(height);
     expect(shown(view)).toEqual(['Height must be at least 50 cm']);
     await act(async () => { await new Promise((r) => setTimeout(r, 700)); });
-    expect((await recordOnDisk()).profile?.heightCm ?? null).toBeNull();
+    expect((await recordOnDisk())?.profile?.heightCm ?? null).toBeNull();
     expect((height as HTMLInputElement).value).toBe('19'); // kept, with its error
   });
 
@@ -854,7 +854,7 @@ describe('US-02 AC5: an out-of-range first-time value stays in its field, its er
     await act(async () => { await new Promise((r) => setTimeout(r, 700)); }); // the fields' 500 ms save
     expect(sys.value).toBe('5');
     expect(shown(view)).toContain('Systolic BP must be at least 60 mmHg');
-    expect((await recordOnDisk()).measurements.filter((m) => m.metricType === 'systolic_bp')).toEqual([]);
+    expect(((await recordOnDisk())?.measurements ?? []).filter((m) => m.metricType === 'systolic_bp')).toEqual([]);
   });
 
   it('a birth year of 1850, left: kept, its error shown, not written', async () => {
@@ -868,6 +868,88 @@ describe('US-02 AC5: an out-of-range first-time value stays in its field, its er
     await act(async () => { await new Promise((r) => setTimeout(r, 700)); }); // the profile's 500 ms save
     expect(year.value).toBe('1850');
     expect(shown(view)).toContain('Birth year must be after 1900');
-    expect((await recordOnDisk()).profile.birthYear ?? null).toBeNull();
+    expect((await recordOnDisk())?.profile?.birthYear ?? null).toBeNull();
+  });
+});
+
+describe('PR 518 review: refused and erased records', () => {
+  it('Codex R1 (US-02 AC5, US-34 AC4): a remote change arriving before an out-of-range birth year is refused stays held; the year and its error survive', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female' }, {});
+    await addMeasurement('weight', 70, '2026-09-01');
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(q(view, '#birthMonth')).toBeTruthy());
+    fireEvent.change(q(view, '#birthMonth')!, { target: { value: '5' } });
+    const year = q(view, '#birthYear') as HTMLInputElement;
+    type(year, '1850');
+    // Another writer changes the height before the 500 ms autosave runs.
+    await saveChangedMeasurements({ heightCm: 171, sex: 'female' }, { heightCm: 170, sex: 'female' });
+    await flushRoadmapStore();
+    await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 900)); }); // the autosave refuses the year
+    leave(year);
+    await act(async () => { await new Promise((r) => setTimeout(r, 300)); });
+    expect((q(view, '#birthYear') as HTMLInputElement).value).toBe('1850');
+    expect(Array.from(view.container.querySelectorAll('.error-message')).map((e) => e.textContent)).toContain('Birth year must be after 1900');
+    expect((await recordOnDisk())?.profile?.birthYear ?? null).toBeNull();
+  });
+
+  it('adversary R2 (US-02 AC5): a first-time waist of 3, skipped by the save, survives another device\'s change re-read', async () => {
+    const view = await open();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    birth(view);
+    await waitFor(() => expect(q(view, '#waistCm')).toBeTruthy());
+    const waist = q(view, '#waistCm') as HTMLInputElement;
+    type(waist, '3');
+    leave(waist);
+    await act(async () => { await new Promise((r) => setTimeout(r, 700)); }); // the fields' save skips it
+    await saveChangedMeasurements({ alcohol: 'none' }, {}); // another writer
+    await flushRoadmapStore();
+    await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 300)); });
+    const shownWaist = q(view, '#waistCm') as HTMLInputElement | null;
+    expect(shownWaist?.value).toBe('3');
+    expect(Array.from(view.container.querySelectorAll('.error-message')).map((e) => e.textContent)).toContain('Waist must be at least 40 cm');
+  });
+
+  it('adversary R3 (US-62 AC12): a press inside the card, then a focusout with no next target (Safari), moves nothing', async () => {
+    const view = await open();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    birth(view);
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    const year = q(view, '#birthYear') as HTMLElement;
+    act(() => { year.focus(); });
+    fireEvent.pointerDown(view.getByRole('radio', { name: 'Male' })); // Safari: the toggle takes no focus
+    leave(year); // focusout, relatedTarget null
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    expect(q(view, '.md-about-you')).toBeNull();
+    expect(q(view, '#birthYear')).toBe(year);
+  });
+
+  it('Codex R2 (US-62 AC12): complete, erase, complete again: Tab from the birth year into Waist keeps the waist field', async () => {
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', () => {});
+    const view = await open();
+    const finish = async () => {
+      await measurements(view);
+      fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+      birth(view);
+      await waitFor(() => expect(fullForm(view)).toBe(true));
+    };
+    await finish();
+    act(() => { (q(view, '#birthYear') as HTMLElement).focus(); });
+    leave(q(view, '#birthYear'));
+    await waitFor(() => expect(q(view, '.md-about-you')).toBeTruthy());
+    fireEvent.click(view.getByText('Delete All My Data'));
+    await waitFor(() => expect(fullForm(view)).toBe(false));
+    await finish();
+    act(() => { (q(view, '#birthYear') as HTMLElement).focus(); });
+    const waist = q(view, '#waistCm') as HTMLElement;
+    act(() => { waist.focus(); }); // Tab out of the profile card, into the vitals
+    await waitFor(() => expect(q(view, '.md-about-you')).toBeTruthy());
+    expect(q(view, '#waistCm')).toBe(waist);
+    expect(document.activeElement).toBe(waist);
   });
 });
