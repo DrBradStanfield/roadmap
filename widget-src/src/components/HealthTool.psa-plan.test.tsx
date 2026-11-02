@@ -30,11 +30,11 @@ import { HealthTool } from './HealthTool';
 useHealthToolLifecycle();
 
 /** A man born 1960, height on record, one saved HbA1c, who said he will have PSA screening. */
-async function plan(answers: Array<[string, string]>, psa?: [number, string]) {
+async function plan(answers: Array<[string, string]>, psa?: [number, string], ...more: Array<[number, string]>) {
   await seedGuest({ sex: 'male', heightCm: 178, birthYear: 1960, birthMonth: 1, unitSystem: 'si' }, [['hba1c', 40]]);
   await saveScreening('prostate_discussion', 'will_screen');
   for (const [k, v] of answers) await saveScreening(k, v);
-  if (psa) await addMeasurement('psa', psa[0], psa[1]);
+  for (const [value, day] of psa ? [psa, ...more] : []) expect((await addMeasurement('psa', value, day)).status).toBe('inserted');
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   await waitFor(() => expect(view.container.querySelector('.suggestion-title')).not.toBeNull());
@@ -69,6 +69,13 @@ describe('the web plan reads the saved PSA measurement (US-06 AC14)', () => {
     const view = await plan([['prostate_psa_value', '6.5'], ['prostate_last_date', '2025-01']]);
     await waitFor(() => expect(titles(view.container)).toContain('Elevated PSA'));
     expect(titles(view.container)).toContain('PSA test overdue');
+    view.unmount();
+  });
+
+  it('a newer PSA dated after today never hides an older 6.5: the web plan reads the newest usable one', async () => {
+    const view = await plan([], [6.5, TODAY], [3.0, '2099-01-01']);
+    await waitFor(() => expect(titles(view.container)).toContain('Elevated PSA'));
+    expect(view.container.textContent).toContain('Your PSA of 6.5 ng/mL');
     view.unmount();
   });
 });

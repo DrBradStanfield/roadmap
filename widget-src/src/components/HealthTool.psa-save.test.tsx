@@ -78,6 +78,21 @@ const active = async (metric: string) =>
 const all = async (metric: string) =>
   (await onDisk()).measurements.filter(m => m.metricType === metric).map(m => [m.value, m.recordedAt.slice(0, 10), m.status]);
 
+// The bytes on disk now, read synchronously: no flushRoadmapStore() to rescue a save still in flight.
+const rawActive = (metric: string) => toOldShape(new LocalStorageAdapter().readSync(ROADMAP_FILE_NAME).body as RoadmapFile)
+  .measurements.filter(m => m.metricType === metric && m.status === 'active').map(m => [m.value, m.recordedAt.slice(0, 10)]);
+
+function depart(event: 'beforeunload' | 'pagehide' | 'visibilitychange') {
+  act(() => {
+    if (event !== 'visibilitychange') window.dispatchEvent(new Event(event));
+    else {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+      document.dispatchEvent(new Event(event));
+      delete (document as unknown as { visibilityState?: string }).visibilityState;
+    }
+  });
+}
+
 const pause = (ms: number) => act(async () => { await new Promise(r => setTimeout(r, ms)); });
 
 function type(field: HTMLInputElement, value: string) {
@@ -249,12 +264,13 @@ describe('after a save the date box goes back to today (US-06 AC15)', () => {
 });
 
 describe('a second PSA on a day that already holds one (US-06 AC15, Brad 2026-11-03)', () => {
-  it('picking that day says "Replaces 6.5 ng/mL", and saving corrects the held row', async () => {
+  it('a value typed for that day says "Replaces 6.5 ng/mL", and saving corrects the held row', async () => {
     const { view, psa, day, note } = await page([[6.5, '2025-01-14']]);
     expect(note()).not.toContain('Replaces');
     pick(day, '2025-01-14');
-    await waitFor(() => expect(note()).toContain('Replaces 6.5 ng/mL'));
+    expect(note()).not.toContain('Replaces'); // nothing typed yet, so nothing to replace it
     type(psa(), '3.2');
+    await waitFor(() => expect(note()).toContain('Replaces 6.5 ng/mL'));
     act(() => psa().blur());
     await pause(700);
     // Both rows stay, in no set order on disk: the old one flipped, the new one active.
@@ -277,3 +293,71 @@ describe('a second PSA on a day that already holds one (US-06 AC15, Brad 2026-11
     view.unmount();
   });
 });
+
+describe('a PSA saves only once its row is committed (US-06 AC15, Codex R2)', () => {
+  it('a weight left first, then a PSA typed with focus still in its row: the weight\'s save does not take the PSA under today', async () => {
+    const { view, psa, day } = await page();
+    const weight = view.container.querySelector<HTMLInputElement>('#weightKg')!;
+    type(weight, '82');
+    act(() => weight.blur()); // the weight's 500 ms save starts
+    type(psa(), '6.5'); // focus now in the PSA row, its day not yet chosen
+    await pause(700);
+    await waitFor(async () => expect(await active('weight')).toEqual([[82, localDay(new Date())]]));
+    expect(await active('psa')).toEqual([]);
+    expect(psa().value).toBe('6.5');
+
+    act(() => day.focus()); // from the number to the date: still in the row
+    pick(day, '2025-03-20');
+    act(() => day.blur()); // out of the row: now it saves, under the day chosen
+    await pause(700);
+    await waitFor(async () => expect(await active('psa')).toEqual([[6.5, '2025-03-20']]));
+    view.unmount();
+  });
+});
+
+describe('departure puts the save on disk before the page goes (US-06 AC15, Brad 2026-11-03: weight, waist or BP save on tab close)', () => {
+  it.each(['beforeunload', 'pagehide', 'visibilitychange'] as const)('%s with focus still in the PSA row: the PSA is on disk at once', async event => {
+    const { view, psa, day } = await page();
+    type(psa(), '6.5');
+    pick(day, '2025-02-11');
+    act(() => day.focus());
+    depart(event);
+    expect(rawActive('psa')).toEqual([[6.5, '2025-02-11']]);
+    view.unmount();
+  });
+
+  it.each(['beforeunload', 'pagehide', 'visibilitychange'] as const)('%s inside the 500 ms wait after a weight was left: the weight is on disk at once', async event => {
+    const { view } = await page();
+    const weight = view.container.querySelector<HTMLInputElement>('#weightKg')!;
+    type(weight, '82');
+    act(() => weight.blur());
+    depart(event);
+    expect(rawActive('weight')).toEqual([[82, localDay(new Date())]]);
+    view.unmount();
+  });
+
+  it('control: departure with nothing left or committed writes nothing', async () => {
+    const { view } = await page();
+    const before = new LocalStorageAdapter().readSync(ROADMAP_FILE_NAME);
+    depart('pagehide');
+    expect(new LocalStorageAdapter().readSync(ROADMAP_FILE_NAME)).toEqual(before);
+    view.unmount();
+  });
+});
+
+describe('"Replaces" shows only while a value is typed (US-06 AC15, Codex R6)', () => {
+  it('a PSA saved under the untouched date (today): no "Replaces" for the value just saved', async () => {
+    const { view, psa, note } = await page();
+    type(psa(), '4.2');
+    act(() => psa().blur()); // the date box untouched: today
+    await pause(700);
+    await waitFor(async () => expect(await active('psa')).toEqual([[4.2, localDay(new Date())]]));
+    await waitFor(() => expect(psa().value).toBe(''));
+    expect(note()).not.toContain('Replaces');
+    expect(note()).toContain('4.2 ng/mL');
+    type(psa(), '4.4'); // a second value for today does replace it
+    await waitFor(() => expect(note()).toContain('Replaces 4.2 ng/mL'));
+    view.unmount();
+  });
+});
+

@@ -32,6 +32,7 @@ import {
   dayOf,
   withLabEgfr,
   withPsaMeasurement,
+  newestUsablePsa,
   labEgfrOf,
   toCanonicalValue,
   VITALS_INPUT_FIELDS,
@@ -292,6 +293,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const [screenings, setScreenings] = useState<ApiScreening[]>([]);
   // The prostate section's PSA day (YYYY-MM-DD); null until one is picked, so today (US-06 AC15).
   const [psaDate, setPsaDate] = useState<string | null>(null);
+  // The PSA row was committed since its last save (US-06 AC15).
+  const psaCommittedRef = useRef(false);
   const [supplements, setSupplements] = useState<ApiSupplement[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   // US-54 AC5b: the birth month a save refused, in words, until the next birth edit.
@@ -709,7 +712,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // leaves a matrix, and saves the fields) both land. Resolves with what was
   // refused, slot by slot, so the caller keeps only that.
   // `erase`: as asked for, not as the queued save runs (US-16 AC2a).
-  const handleSaveLongitudinal = useCallback((tasks?: SaveTask[], erase = getShownErase()): Promise<Refused> => {
+  // `now`: the page is leaving or hiding, so the writes are staged before this
+  // returns, ahead of the caller's synchronous flush; the re-read follows if
+  // the page stays (US-06 AC15).
+  const handleSaveLongitudinal = useCallback((tasks?: SaveTask[], erase = getShownErase(), now = false): Promise<Refused> => {
     // The first-time vitals fields: a weight, a waist, a blood pressure, each
     // naming the row the page shows for today ("Replaces 82 kg"), in the unit
     // it was typed in (mmHg either way). What a matrix's draft lends the plan
@@ -721,7 +727,13 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     const fromForm = (): SaveTask[] => {
       const today = localDay(new Date());
       const shown = activeRowIndex(history);
+      // A PSA saves only once its row is committed (left, ticked, Enter, or
+      // departure), so another field's save never takes it under a day not
+      // yet chosen (US-06 AC15).
+      const psaCommitted = psaCommittedRef.current;
+      psaCommittedRef.current = false;
       return [['weight'], ['waist'], ['systolic_bp', 'diastolic_bp'], ['psa']].flatMap((metrics): SaveTask[] => {
+        if (metrics[0] === 'psa' && !psaCommitted) return [];
         const date = metrics[0] === 'psa' ? psaDate ?? today : today;
         if (!date || date > today) return [];
         const field = METRIC_TO_FIELD[metrics[0]];
@@ -740,23 +752,22 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       });
     };
 
-    const save = async (): Promise<Refused> => {
-      // Keep the profile and saved measurements consistent across the debounce.
-      await flushPendingProfileSave(erase);
-      const toSave = tasks ?? fromForm();
-      if (toSave.length === 0) return new Map();
+    // The store is synchronous, so every write is staged before this returns;
+    // only the answers wait.
+    const write = (toSave: SaveTask[]) => routeTasksToSaves(
+      toSave,
+      loadAllHistorySync(), // the store's rows, as it writes: never the page's copy
+      async (date, metric, value) => {
+        const { status } = await addMeasurement(metric, value, ensureIsoDatetime(date), erase);
+        return status === 'inserted' ? 'ok' : status === 'duplicate' ? 'changed' : status;
+      },
+      (id, newValue) => countedCorrection(id, newValue, erase),
+    );
 
+    const finish = async (toSave: SaveTask[], staged: Promise<Refused>): Promise<Refused> => {
       setIsSavingLongitudinal(true);
       try {
-        const refused = await routeTasksToSaves(
-          toSave,
-          await loadAllHistory(), // the store's rows, as it writes: never the page's copy
-          async (date, metric, value) => {
-            const { status } = await addMeasurement(metric, value, ensureIsoDatetime(date), erase);
-            return status === 'inserted' ? 'ok' : status === 'duplicate' ? 'changed' : status;
-          },
-          (id, newValue) => countedCorrection(id, newValue, erase),
-        );
+        const refused = await staged;
         await reloadValues();
 
         // What the fields saved leaves the form, in one update. A copy left in
@@ -792,6 +803,17 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
         setIsSavingLongitudinal(false);
       }
     };
+    if (now) {
+      if (getBackendKind() === 'local' && localHealthWritesStopped()) return Promise.resolve(new Map());
+      const toSave = tasks ?? fromForm();
+      return toSave.length ? finish(toSave, write(toSave)) : Promise.resolve(new Map());
+    }
+    const save = async (): Promise<Refused> => {
+      // Keep the profile and saved measurements consistent across the debounce.
+      await flushPendingProfileSave(erase);
+      const toSave = tasks ?? fromForm();
+      return toSave.length ? finish(toSave, write(toSave)) : new Map();
+    };
     const run = savesRef.current.then(save);
     savesRef.current = run.catch(() => {});
     return run;
@@ -809,31 +831,48 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const handleSaveLongitudinalRef = useRef(handleSaveLongitudinal);
   handleSaveLongitudinalRef.current = handleSaveLongitudinal;
   const longitudinalDebounce = useDebouncedSave(500);
+  // The fields' save waiting on the timer, and the erase it was asked under:
+  // departure stages it at once (US-06 AC15).
+  const pendingSaveRef = useRef<{ erase: string | undefined } | null>(null);
   const scheduleLongitudinalSave = useCallback(() => {
     const erase = getShownErase(); // as the field was left, not as the timer fires
-    longitudinalDebounce.schedule(() => { void handleSaveLongitudinalRef.current(undefined, erase); });
+    pendingSaveRef.current = { erase };
+    longitudinalDebounce.schedule(() => { pendingSaveRef.current = null; void handleSaveLongitudinalRef.current(undefined, erase); });
   }, [longitudinalDebounce]);
   const flushLongitudinalSave = useCallback(() => {
+    pendingSaveRef.current = null;
     longitudinalDebounce.commit(() => { void handleSaveLongitudinalRef.current(); });
   }, [longitudinalDebounce]);
+  // The PSA row is committed (US-06 AC15): left, or at once on its tick or Enter.
+  const commitPsa = useCallback((now: boolean) => {
+    psaCommittedRef.current = true;
+    if (now) flushLongitudinalSave(); else scheduleLongitudinalSave();
+  }, [flushLongitudinalSave, scheduleLongitudinalSave]);
   // Stage only queued edits, with the erase they were made against, then flush
   // synchronously: the entrypoint's earlier listener may have flushed first.
-  // A matrix's draft stays on the device instead (US-03 AC5). The PSA row
-  // saves only once focus leaves the whole row, and a closing tab fires no
-  // blur, so focus still in that row is moved out first: its blur queues the
-  // save, with its own checks, and the flush below runs it (US-06 AC15).
+  // A matrix's draft stays on the device instead (US-03 AC5). A closing or
+  // hidden tab fires no blur, so focus still in the PSA row is moved out
+  // first: the row's blur commits it, with its own checks. The fields' waiting
+  // save and a committed PSA are then written at once, not on the timer or a
+  // promise, which would run after the flush (US-06 AC15; Brad 2026-11-03:
+  // weight, waist or BP save on tab close). iOS kills a hidden tab, so hiding
+  // stages the same.
   useEffect(() => {
-    const onUnload = () => {
+    const stage = () => {
       const focused = document.activeElement;
       if (focused instanceof HTMLElement && focused.closest('.psa-inline-row')) focused.blur();
       profileDebounce.flush();
-      longitudinalDebounce.flush();
+      const pending = pendingSaveRef.current;
+      if (pending) {
+        pendingSaveRef.current = null;
+        longitudinalDebounce.cancel();
+        void handleSaveLongitudinalRef.current(undefined, pending.erase, true);
+      }
       flushRoadmapStoreSync();
     };
+    const onUnload = stage;
     const onHidden = () => {
-      if (document.visibilityState !== 'hidden') return;
-      profileDebounce.flush();
-      flushRoadmapStoreSync();
+      if (document.visibilityState === 'hidden') stage();
     };
     window.addEventListener('beforeunload', onUnload);
     window.addEventListener('pagehide', onUnload);
@@ -951,8 +990,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       calcInputs,
       unitSystem,
       medicationsToInputs(medications),
-      // US-06 AC14: the prostate cards read the newest saved PSA, as computePlan does.
-      withPsaMeasurement(screeningsToInputs(screenings), previousMeasurements.find((m) => m.metricType === 'psa')),
+      // US-06 AC14: the prostate cards read the newest usable saved PSA, as computePlan does.
+      withPsaMeasurement(screeningsToInputs(screenings), newestUsablePsa(history, localDay(new Date()))),
       metricUnitOverrides,
     );
     // The form follows the plan: its recommendations, targets and cascade
@@ -967,7 +1006,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       lipidMarker: medicines ? lipidMarkerFor(calcInputs, healthResults) : null,
     };
     return { results: healthResults, isValid: true, validationErrors: errors, planBasis };
-  }, [planInputs, pressureDays, unitSystem, medications, screenings, previousMeasurements, metricUnitOverrides]);
+  }, [planInputs, pressureDays, unitSystem, medications, screenings, history, metricUnitOverrides]);
 
   useEffect(() => {
     setErrors(validationErrors ?? {});
@@ -1403,6 +1442,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     onScreeningChange: handleScreeningChange,
     psaDate,
     onPsaDateChange: setPsaDate,
+    onPsaCommit: commitPsa,
     supplements,
     onSupplementChange: handleSupplementChange,
     onSupplementDelete: handleSupplementDelete,

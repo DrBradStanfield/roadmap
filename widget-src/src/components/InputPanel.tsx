@@ -171,6 +171,8 @@ interface InputPanelProps {
   /** The PSA's day, YYYY-MM-DD (US-06 AC15): null until picked, today shows meanwhile. */
   psaDate: string | null;
   onPsaDateChange: (day: string) => void;
+  /** The PSA row is committed (US-06 AC15): saved soon when left, at once on its tick or Enter. */
+  onPsaCommit: (now: boolean) => void;
   supplements: ApiSupplement[];
   onSupplementChange: (key: string, name: string, doseValue: number | null, doseUnit: string | null, status?: string, startedAt?: string) => void;
   onSupplementDelete: (key: string) => void;
@@ -249,7 +251,7 @@ export function InputPanel({
   previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onLabValueAdded, onSaveBloodTestBatch,
   onCorrectValue, moveTest, onDraftValue,
   medications, onMedicationChange,
-  screenings, onScreeningChange, psaDate, onPsaDateChange,
+  screenings, onScreeningChange, psaDate, onPsaDateChange, onPsaCommit,
   supplements, onSupplementChange, onSupplementDelete,
   scheduleLongitudinalSave, flushLongitudinalSave,
   isSavingLongitudinal, fieldsSaved, hasApiResponse,
@@ -2118,8 +2120,10 @@ export function InputPanel({
                       const today = localDay(new Date());
                       const psaDay = psaDate ?? today;
                       const psaDayError = !psaDay || psaDay > today ? 'Choose a day up to today.' : null;
-                      // One PSA per day: a value typed for a day that holds one corrects it, so say so (US-06 AC15).
-                      const psaHeld = bloodTestHistory.find(m => m.metricType === 'psa' && dayOf(m.recordedAt) === psaDay);
+                      // One PSA per day: a value typed for a day that holds one corrects it, so say so,
+                      // while a value is typed (US-06 AC15).
+                      const psaHeld = inputs.psa === undefined ? undefined
+                        : bloodTestHistory.find(m => m.metricType === 'psa' && dayOf(m.recordedAt) === psaDay);
                       const psaMeasurement = previousMeasurements.find(m => m.metricType === 'psa');
                       const psaPreviousLabel = psaHeld
                         ? `Replaces ${formatValue('psa', psaHeld.value, 'si', psaHeld.comparator)} ng/mL`
@@ -2132,7 +2136,7 @@ export function InputPanel({
                           <label htmlFor="psa-input">{SCREENING_TEXT.psaLabel}</label>
                           {/* Saves once focus leaves the row, so a date picked after the value counts (US-06 AC15). */}
                           <div className="psa-inline-row" onBlur={(e) => {
-                            if (!unreadable.psa && !e.currentTarget.contains(e.relatedTarget as Node | null)) autoSaveOnBlur();
+                            if (autoSaveGate && !unreadable.psa && !e.currentTarget.contains(e.relatedTarget as Node | null)) onPsaCommit(false);
                           }}>
                             <input
                               type="number"
@@ -2156,7 +2160,12 @@ export function InputPanel({
                                 rangeWait.settle();
                                 setRawInputs(prev => { const next = { ...prev }; delete next.psa; return next; });
                               }}
-                              onKeyDown={onNumericEnter}
+                              onKeyDown={(e) => {
+                                blockBadNumericKeys(e); settleOnEnter(e);
+                                if (e.key !== 'Enter') return;
+                                e.preventDefault();
+                                if (autoSaveGate && !unreadable.psa) onPsaCommit(true);
+                              }}
                               placeholder=""
                               step="0.1"
                               min={range('psa').min}
@@ -2166,7 +2175,7 @@ export function InputPanel({
                             <input type="date" aria-label="PSA test date" value={psaDay} max={today}
                                    onChange={(e) => onPsaDateChange(e.target.value)} />
                             {autoSaveGate && inputs.psa !== undefined && (
-                              <CommitTickButton ariaLabel="Save PSA" onClick={flushLongitudinalSave}/>
+                              <CommitTickButton ariaLabel="Save PSA" onClick={() => onPsaCommit(true)}/>
                             )}
                           </div>
                           {(unreadable.psa || errors.psa || psaDayError) && <span className="field-error">{unreadable.psa ? 'Enter a number' : errors.psa ?? psaDayError}</span>}
