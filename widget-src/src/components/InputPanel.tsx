@@ -1196,6 +1196,8 @@ export function InputPanel({
     };
     // A missing or refused answer's row opens and stays open while it is
     // typed in, until Done (one set, updated as it renders).
+    // The render-phase setAboutOpen is safe only because renderAboutRows is a
+    // plain function in InputPanel's own render, not a child component.
     const opened = rows.filter(row => row.missing && !aboutOpen.has(row.key)).map(row => row.key);
     if (opened.length > 0) setAboutOpen(prev => new Set([...prev, ...opened]));
     return (
