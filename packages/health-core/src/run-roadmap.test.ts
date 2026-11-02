@@ -10,7 +10,7 @@ import { reportedToCanonical } from './units';
 import { EDITABLE_FIELDS, PROPOSE_FIELD_EDIT_TOOL } from './chat-edits';
 import {
   runRoadmap, roadmapResultText, roadmapToolResults, withRoadmapRound,
-  RUN_ROADMAP_MAX_VALUES, RUN_ROADMAP_TOOL, CHAT_TOOLS, chatToolsFor,
+  RUN_ROADMAP_MAX_VALUES, RUN_ROADMAP_TOOL, CHAT_TOOLS, chatToolsFor, UNIT_SUSPECT,
 } from './run-roadmap';
 
 const PROFILE = {
@@ -389,7 +389,7 @@ describe('US-15 AC33: one run_roadmap per turn (S1) and honest stubs (S5)', () =
     const first = JSON.parse(round.results[0].content);
     expect(first.roadmap.latestValues).not.toHaveProperty('weightKg'); // past the cap: out of the run (R2)
     expect(first.rejected.filter((r: { field: string }) => r.field === 'values')).toHaveLength(1);
-    expect(round.counts.applied).toBe(0);
+    expect(round.counts!.applied).toBe(0);
   });
 
   it('values and profile split over two calls are one run', () => {
@@ -923,9 +923,11 @@ describe('US-67 AC3: the app\'s words for the form tools', () => {
   const said = [{ role: 'user' as const, content: 'my LDL is 3.4 mmol/L' }];
   const desc = (tools: ReadonlyArray<{ name: string; description: string }>, name: string) => tools.find(t => t.name === name)!.description;
 
-  it('US-67 AC3: the web\'s tools are byte-identical to the shipped ones (prompt cache prefix)', () => {
+  // The pin moved once on purpose (US-67 AC2, Brad 2026-11-02): propose_field_edit asks about
+  // a value that looks implausible for its unit. Any other move is a cache-prefix change to explain.
+  it('US-67 AC3: the web\'s tools are byte-identical to the pinned ones (prompt cache prefix)', () => {
     const sha = (x: unknown) => createHash('sha256').update(JSON.stringify(x)).digest('hex');
-    expect(sha(CHAT_TOOLS)).toBe('1f38ef85ddb6772f86069a54c23e055179c3d68d7f05ceeda8d91f25f2398d06');
+    expect(sha(CHAT_TOOLS)).toBe('b66663af28104d5c69f309104a439301d585a383847657562372407364951450');
     expect(chatToolsFor(said)).toBe(CHAT_TOOLS);
     expect(chatToolsFor(said, true, false)).toBe(CHAT_TOOLS);
   });
@@ -970,5 +972,67 @@ describe('US-67 AC3: the app\'s words for the form tools', () => {
     await withRoadmapRound(said, send, PROFILE, undefined, undefined, true);
     const results = send.mock.calls[1][0].messages.at(-1).content;
     expect(results[1].content).toBe('Shown to the user to review and Save; nothing is saved until they press Save.');
+  });
+});
+
+// US-67 AC2, US-16: a proposed value that reads as the wrong unit (run_roadmap's own
+// unit-swap test) is never proposed; the model gets a second call to ask instead.
+describe('US-67 AC2: a value that looks like the wrong unit is asked about, not proposed', () => {
+  const use = (id: string, name: string, input: unknown) => ({ type: 'tool_use', id, name, input });
+  const said = [{ role: 'user' as const, content: 'my LDL is 3.4 mg/dL and I started atorvastatin 20 mg' }];
+  const reply = (...contentBlocks: object[]) => ({ contentBlocks, text: '' });
+  const asked = reply({ type: 'text', text: 'Is that 3.4 mmol/L or mg/dL?' });
+  const statin = use('m', 'propose_medication_edit', { medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' });
+
+  it.each([false, true])('US-67 AC2: LDL 3.4 mg/dL gets a second call whose tool_result says not saved, and no edit (app %s)', async (app) => {
+    const send = vi.fn().mockResolvedValueOnce(reply(use('v', 'propose_field_edit', val('ldlC', 3.4, 'mg/dL')))).mockResolvedValueOnce(asked);
+    const onRound = vi.fn();
+    const turn = await withRoadmapRound(said, send, PROFILE, onRound, undefined, app);
+    expect(send).toHaveBeenCalledTimes(2);
+    const second = send.mock.calls[1][0];
+    expect(second.tool_choice).toEqual({ type: 'none' });
+    expect(second.messages.at(-1).content).toEqual([{ type: 'tool_result', tool_use_id: 'v', content: UNIT_SUSPECT }]);
+    expect(UNIT_SUSPECT).toBe('Not saved: this value looks like it may be in a different unit. Ask the user to confirm the value and its unit before proposing it again.');
+    expect(turn.final).toBe(asked);
+    expect(turn.proposedEdits).toEqual([]);
+    expect(turn.counts).toBeNull();
+    expect(onRound).not.toHaveBeenCalled();
+  });
+
+  it.each([[130, 'mg/dL'], [3.4, 'mmol/L']])('US-67 AC2: LDL %s %s is proposed with no second call', async (value, unit) => {
+    const first = reply(use('v', 'propose_field_edit', val('ldlC', value, unit)));
+    const send = vi.fn().mockResolvedValueOnce(first);
+    const turn = await withRoadmapRound(said, send, PROFILE, undefined, undefined, true);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(turn.final).toBe(first);
+    expect(turn.proposedEdits).toMatchObject([{ kind: 'field', field: 'ldlC', displayValue: value }]);
+  });
+
+  it('US-67 AC2: HbA1c 6.1 mmol/mol is asked about too (the SI band)', async () => {
+    const send = vi.fn().mockResolvedValueOnce(reply(use('v', 'propose_field_edit', val('hba1c', 6.1, 'mmol/mol')))).mockResolvedValueOnce(asked);
+    expect((await withRoadmapRound(said, send, PROFILE)).proposedEdits).toEqual([]);
+    expect(send).toHaveBeenCalledTimes(2);
+  });
+
+  it('US-16: beside a medication edit the suspect value is dropped and the medication still proposed', async () => {
+    const send = vi.fn().mockResolvedValueOnce(reply(use('v', 'propose_field_edit', val('ldlC', 3.4, 'mg/dL')), statin)).mockResolvedValueOnce(asked);
+    const turn = await withRoadmapRound(said, send, PROFILE);
+    const results = send.mock.calls[1][0].messages.at(-1).content;
+    expect(results.map((r: { content: string }) => r.content)).toEqual([UNIT_SUSPECT, 'Sent to the user\'s form; medications save at once and the user can undo.']);
+    expect(turn.proposedEdits).toEqual([{ kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' }]);
+  });
+
+  it('US-67 AC2: a suspect value beside run_roadmap is one round, not two', async () => {
+    const send = vi.fn()
+      .mockResolvedValueOnce(reply(use('r', 'run_roadmap', { values: [val('ldlC', 3.4, 'mg/dL')] }), use('v', 'propose_field_edit', val('ldlC', 3.4, 'mg/dL'))))
+      .mockResolvedValueOnce(asked);
+    const onRound = vi.fn();
+    const turn = await withRoadmapRound(said, send, PROFILE, onRound);
+    expect(send).toHaveBeenCalledTimes(2);
+    const results = send.mock.calls[1][0].messages.at(-1).content;
+    expect(results[0].content).toMatch(/^\{"applied"/);
+    expect(results[1].content).toBe(UNIT_SUSPECT);
+    expect(onRound).toHaveBeenCalledOnce();
+    expect(turn.proposedEdits).toEqual([]);
   });
 });

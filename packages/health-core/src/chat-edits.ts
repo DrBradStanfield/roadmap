@@ -66,7 +66,8 @@ export const PROPOSE_FIELD_EDIT_TOOL = {
     'value and unit verbatim — do NOT convert units or compute SI. You are NOT saving the ' +
     'value; the user reviews the pre-filled cell and presses Save themselves. If the unit is ' +
     'ambiguous (e.g. cholesterol could be mmol/L or mg/dL) and the user did not state it, ' +
-    'ASK them which unit instead of calling this tool.',
+    'ASK them which unit instead of calling this tool. If a value looks implausible for its unit (e.g. ' +
+    'LDL 3.4 mg/dL, which reads like mmol/L), ASK the user to confirm the value and unit instead of calling this tool.',
   input_schema: {
     type: 'object' as const,
     properties: {
@@ -189,7 +190,8 @@ export const APP_CHAT_EDIT_TOOLS = [
       'value: the app shows it in a banner and nothing is saved until the user presses Save, so say ' +
       'it is ready to save, never that it is saved. If the unit is ' +
       'ambiguous (e.g. cholesterol could be mmol/L or mg/dL) and the user did not state it, ' +
-      'ASK them which unit instead of calling this tool.',
+      'ASK them which unit instead of calling this tool. If a value looks implausible for its unit (e.g. ' +
+      'LDL 3.4 mg/dL, which reads like mmol/L), ASK the user to confirm the value and unit instead of calling this tool.',
   },
   PROPOSE_MEDICATION_EDIT_TOOL,
   {

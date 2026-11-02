@@ -17,7 +17,7 @@
  */
 import * as z from './zod';
 import type { HealthInputs } from './types';
-import { reportedToCanonical, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
+import { reportedToCanonical, toCanonicalValue, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
 import { FIELD_TO_METRIC } from './mappings';
 import { healthInputSchema, PRESSURE_ORDER, pressureInverted, sanitizeInputs } from './validation';
 import { ISO_DATE } from './measurement-history';
@@ -26,7 +26,7 @@ import { resolveRecordedAt } from './record-edits';
 import { knownMinorOf } from './calculations';
 import { buildChatContextJson } from './chat-context';
 import {
-  APP_CHAT_EDIT_TOOLS, CHAT_EDIT_TOOLS, EDITABLE_FIELDS, PROPOSE_PROFILE_EDIT_TOOL, parseProposedEdit, parseProposedEdits,
+  APP_CHAT_EDIT_TOOLS, CHAT_EDIT_TOOLS, EDITABLE_FIELDS, PROPOSE_FIELD_EDIT_TOOL, PROPOSE_PROFILE_EDIT_TOOL, parseProposedEdit, parseProposedEdits,
   type EditableField, type ProposedEdit,
 } from './chat-edits';
 
@@ -136,7 +136,8 @@ const BP_FIELDS: readonly string[] = ['systolicBp', 'diastolicBp'];
 const BODY_FIELDS: readonly string[] = ['weightKg', 'waistCm', 'heightCm'];
 /** HbA1c and creatinine under 20 in their SI unit (mmol/mol, µmol/L): likely a % or mg/dL number under the SI label. */
 const SI_ASK_UNIT_BELOW: Partial<Record<MetricType, number>> = { hba1c: 20, creatinine: 20 };
-/** A converted value that is a unit to ask about, not a result: under US-36 AC4's floors, or in the SI band above. */
+/** A converted value that is a unit to ask about, not a result: under US-36 AC4's floors, or in the SI band above.
+ *  run_roadmap refuses such a value; a proposed form edit holding one is not proposed (US-67 AC2, `unitSuspect`). */
 const askUnit = (metric: MetricType, r: { valueSI: number; system: UnitSystem }) =>
   r.valueSI < (UNIT_SWAP_FLOORS[metric] ?? -Infinity) || (r.system === 'si' && r.valueSI < (SI_ASK_UNIT_BELOW[metric] ?? -Infinity));
 /** The day of a value whose date could not be read: later than any real day, so it outdates every stated value. */
@@ -386,6 +387,18 @@ const STUBS = {
 };
 const PROFILE_STUB = 'Shown to the user to confirm; nothing is saved until they press Save.';
 const NOT_RUN = 'Not run: one run_roadmap per turn; use the first result.';
+/** The tool_result for a proposed value that looks like the wrong unit (US-67 AC2, US-16). */
+export const UNIT_SUSPECT = 'Not saved: this value looks like it may be in a different unit. Ask the user to confirm the value and its unit before proposing it again.';
+
+/** A propose_field_edit whose value reads as a unit swap (`askUnit`, run_roadmap's own test), e.g. LDL 3.4 mg/dL:
+ *  it is answered with UNIT_SUSPECT and never reaches the client. */
+function unitSuspect(b: ChatContentBlock): boolean {
+  if (b.type !== 'tool_use' || b.name !== PROPOSE_FIELD_EDIT_TOOL.name) return false;
+  const edit = parseProposedEdit(b.name, b.input);
+  if (edit?.kind !== 'field') return false;
+  const metric = FIELD_TO_METRIC[edit.field] as MetricType;
+  return askUnit(metric, { valueSI: toCanonicalValue(metric, edit.displayValue, edit.unitSystem), system: edit.unitSystem });
+}
 
 /** The tool_result for a form tool: pre-filled or saved only when the client will apply it (parseProposedEdit accepts it). */
 function formToolStub(b: ChatContentBlock, app: boolean): string {
@@ -406,37 +419,41 @@ function mergedRunInput(inputs: unknown[]): Record<string, unknown> {
 }
 
 /**
- * The tool_result blocks for a reply that called run_roadmap, one per tool_use
- * in order, or null when it did not call it. However many run_roadmap calls
+ * The tool_result blocks for a reply that called run_roadmap or proposed a value
+ * that looks like the wrong unit (`unitSuspect`), one per tool_use in order, or
+ * null when it did neither. `counts` is null without a run_roadmap call. However many run_roadmap calls
  * the reply holds, the plan runs once, on all their values under one cap, and
- * answers the first; the others get a fixed stub. Any other tool gets
- * `otherResult`'s text when it gives one, else the form tools' stub.
+ * answers the first; the others get a fixed stub. A suspect value gets
+ * UNIT_SUSPECT. Any other tool gets `otherResult`'s text when it gives one,
+ * else the form tools' stub.
  */
 export function roadmapToolResults(
   blocks: ChatContentBlock[],
   guestInputs: unknown,
   otherResult?: ToolResultFor,
   app = false,
-): { results: ToolResultBlock[]; counts: RoadmapRoundCounts } | null {
+): { results: ToolResultBlock[]; counts: RoadmapRoundCounts | null } | null {
   const uses = blocks.filter(b => b.type === 'tool_use');
   const runs = uses.filter(b => b.name === RUN_ROADMAP_TOOL.name);
-  if (runs.length === 0) return null;
-  const run = runRoadmap(guestInputs, mergedRunInput(runs.map(b => b.input)));
+  if (runs.length === 0 && !uses.some(unitSuspect)) return null;
+  const run = runs.length > 0 ? runRoadmap(guestInputs, mergedRunInput(runs.map(b => b.input))) : null;
   const results = uses.map((b): ToolResultBlock => ({
     type: 'tool_result',
     tool_use_id: b.id,
-    content: b === runs[0] ? roadmapResultText(run) : b.name === RUN_ROADMAP_TOOL.name ? NOT_RUN : otherResult?.(b, blocks) ?? formToolStub(b, app),
+    content: run && b === runs[0] ? roadmapResultText(run) : b.name === RUN_ROADMAP_TOOL.name ? NOT_RUN
+      : unitSuspect(b) ? UNIT_SUSPECT : otherResult?.(b, blocks) ?? formToolStub(b, app),
   }));
-  return { results, counts: { applied: run.applied.length, rejected: run.rejected.length } };
+  return { results, counts: run ? { applied: run.applied.length, rejected: run.rejected.length } : null };
 }
 
 /**
- * One chat turn with at most one run_roadmap round. `send` makes one Messages
+ * One chat turn with at most one tool round. `send` makes one Messages
  * call with these fields laid over the transport's own body. When the first
- * reply calls run_roadmap, the second call carries it back unmodified with the
+ * reply calls run_roadmap, or proposes a value that looks like the wrong unit
+ * (US-67 AC2: the model is told to ask, and the value is not proposed), the second call carries it back unmodified with the
  * tool results and `tool_choice: none`, so no second round can start; its
  * reply is the answer. A failed second call throws, as a failed first one does;
- * `onRound` has the round's counts before that call, so a caller keeps them.
+ * `onRound` has a run_roadmap round's counts before that call, so a caller keeps them.
  * `otherResult` answers a tool only the transport knows (roadmapToolResults).
  * `app`: the iPhone app's stub words (US-67 AC3).
  */
@@ -451,10 +468,11 @@ export async function withRoadmapRound<R extends { contentBlocks: ChatContentBlo
   const first = await send({ messages });
   const round = roadmapToolResults(first.contentBlocks, guestInputs, otherResult, app);
   if (!round) return { first, final: first, counts: null, proposedEdits: parseProposedEdits(first.contentBlocks) };
-  onRound?.(round.counts);
+  if (round.counts) onRound?.(round.counts);
   const final = await send({
     messages: [...messages, { role: 'assistant', content: first.contentBlocks }, { role: 'user', content: round.results }],
     tool_choice: { type: 'none' },
   });
-  return { first, final, counts: round.counts, proposedEdits: parseProposedEdits([...first.contentBlocks, ...final.contentBlocks]) };
+  const proposed = [...first.contentBlocks, ...final.contentBlocks].filter(b => !unitSuspect(b));
+  return { first, final, counts: round.counts, proposedEdits: parseProposedEdits(proposed) };
 }

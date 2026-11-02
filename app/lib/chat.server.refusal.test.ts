@@ -13,6 +13,7 @@ process.env.ANTHROPIC_API_KEY = 'sk-test-dummy';
 import * as Sentry from '@sentry/react-router';
 import { getChatCompletion, reportChatFallback, FALLBACK_RESPONSE } from './chat.server';
 import { REFUSAL_RESPONSES } from '../../packages/health-core/src/models';
+import { UNIT_SUSPECT } from '../../packages/health-core/src/run-roadmap';
 
 const REAL_FETCH = global.fetch;
 const PARTIAL = 'Partial answer the model began before declining';
@@ -85,6 +86,34 @@ describe('US-67 AC3: the app\'s tools and tool-only line', () => {
     const result = await getChatCompletion([], [{ role: 'user', content: 'my LDL is 3.4 mmol/L' }], true, undefined, { profileEdits: true });
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).tools[0].description).toMatch(/^Pre-fill a value/);
     expect(result.content).toBe("I've pre-filled that in your form — review the highlighted value and press Save.");
+  });
+});
+
+// US-67 AC2, US-16: a proposed value that reads as the wrong unit gets a second call to ask, on both chats.
+describe('US-67 AC2: the server asks about a value that looks like the wrong unit', () => {
+  const reply = (content: unknown[]) => ({ ok: true, status: 200, json: async () => ({ content, stop_reason: 'end_turn', stop_details: null, usage: { input_tokens: 10, output_tokens: 5 } }) });
+  const suspect = { type: 'tool_use', id: 'v', name: 'propose_field_edit', input: { field: 'ldlC', value: 3.4, unit: 'mg/dL' } };
+
+  it.each([{}, { app: true }])('US-67 AC2: LDL 3.4 mg/dL: the answer is the second call\'s, with no edit and no run_roadmap counts (%o)', async (flags) => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(reply([suspect]))
+      .mockResolvedValueOnce(reply([{ type: 'text', text: 'Did you mean 3.4 mmol/L?' }]));
+    global.fetch = fetchMock as unknown as typeof fetch;
+    const result = await getChatCompletion([], [{ role: 'user', content: 'my LDL is 3.4 mg/dL' }], true, undefined, { profileEdits: true, ...flags });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const second = JSON.parse(fetchMock.mock.calls[1][1].body);
+    expect(second.tool_choice).toEqual({ type: 'none' });
+    expect(second.messages.at(-1).content).toEqual([{ type: 'tool_result', tool_use_id: 'v', content: UNIT_SUSPECT }]);
+    expect(result.content).toBe('Did you mean 3.4 mmol/L?');
+    expect(result).not.toHaveProperty('proposedEdits');
+    expect(result).not.toHaveProperty('roadmapRun');
+  });
+
+  it('US-67 AC2: LDL 130 mg/dL goes through in one call', async () => {
+    const fetchMock = respond('end_turn', [{ ...suspect, input: { field: 'ldlC', value: 130, unit: 'mg/dL' } }]);
+    const result = await getChatCompletion([], [{ role: 'user', content: 'my LDL is 130 mg/dL' }], true, undefined, { profileEdits: true, app: true });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result.proposedEdits).toEqual([{ kind: 'field', field: 'ldlC', displayValue: 130, unitSystem: 'conventional', date: null }]);
   });
 });
 
