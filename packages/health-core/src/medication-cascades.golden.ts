@@ -18,6 +18,15 @@
  * that only off-list rows changed, each now reading as HEAD read it at the
  * graded dose.
  *
+ * US-06 AC13 (Brad, 2026-11-02) changed it again: bempedoic acid now comes
+ * last and only when the statin is not tolerated, and a statin not tolerated
+ * goes to the PCSK9 inhibitor before ezetimibe (once it is answered any way
+ * but "not yet", ezetimibe and bempedoic acid follow). The explicit set gained
+ * a PCSK9 inhibitor 'no' and not tolerated. A script compared the plan at
+ * 2c280df5 with the new one over the full lipid set (78,890 rows): 17,925
+ * changed, and every one matched the rule (on a statin, the old cards without
+ * bempedoic acid; statin not tolerated, the new order written out separately).
+ *
  * Each cascade has an `explicit` set, stored row by row in
  * medication-cascades.golden.json, and a `full` cross product, stored as one
  * SHA-256 over its rows (about 81,000 combinations, too many to keep).
@@ -106,7 +115,7 @@ const CASCADES: Record<'weight' | 'lipid', Cascade> = {
       ezetimibe: answers('yes', 'not_tolerated', 'ezetimibe'),
       statinEscalation: [undefined, 'not_tolerated', 'yes'],
       bempedoicAcid: [undefined, 'bempedoic_acid'],
-      pcsk9i: [undefined, 'not_yet', 'yes'],
+      pcsk9i: [undefined, 'not_yet', 'yes', 'no', 'not_tolerated'],
     },
     full: {
       statin: [undefined, { drug: '' }, { drug: 'none', dose: null }, { drug: 'not_tolerated', dose: null }, { drug: 'tier_1', dose: null },

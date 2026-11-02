@@ -198,8 +198,9 @@ describe('US-30 AC1/AC3/AC4 — the three output modes', () => {
     expect(html).toMatch(/^<!doctype html>/);
     expect(html).not.toMatch(/<script/i);
     expect(html).not.toMatch(/<link/i);
-    // Reference links are allowed; www.who.int is the WHO 2026 dementia guideline (US-07 AC1, 2026-10-21).
-    expect(html).not.toMatch(/(src|href)\s*=\s*["']https?:\/\/(?!doi\.org|www\.cancer\.org|diabetesjournals\.org|www\.who\.int)/i);
+    // Reference links are allowed; www.who.int is the WHO 2026 dementia guideline (US-07 AC1, 2026-10-21);
+    // NHLBI, FDA and NICE are the BP crisis, statin pregnancy and salt substitute sources (US-07 AC12-AC14).
+    expect(html).not.toMatch(/(src|href)\s*=\s*["']https?:\/\/(?!doi\.org|www\.cancer\.org|diabetesjournals\.org|www\.who\.int|www\.nhlbi\.nih\.gov|www\.fda\.gov|www\.nice\.org\.uk)/i);
     expect(html).toContain('<style>');
     expect(html).toContain('Consider adding Ezetimibe');
   });

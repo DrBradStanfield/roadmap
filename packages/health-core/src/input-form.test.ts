@@ -235,6 +235,25 @@ describe('medicationForm', () => {
     expect(field(medicationForm(onStatin, elevated), 'ezetimibe').hint).toMatch(/more ApoB reduction/);
   });
 
+  // US-06 AC13 (Brad, 2026-11-02): with the statin not tolerated the form steps through the
+  // plan's order, PCSK9 inhibitor, then ezetimibe, then bempedoic acid; on a statin it never
+  // opens bempedoic acid.
+  it('statin not tolerated: the PCSK9 inhibitor first, then ezetimibe, then bempedoic acid (US-06 AC13)', () => {
+    const intolerant = { drug: 'not_tolerated', dose: null };
+    const lipidKeys = (meds: MedicationInputs) => keys(medicationForm(meds, elevated)).filter((k) => k !== 'glp1');
+    expect(lipidKeys({ statin: intolerant })).toEqual(['statin', 'pcsk9i']);
+    // Interim default, pending Brad: a PCSK9 inhibitor not tolerated still moves on to ezetimibe.
+    expect(lipidKeys({ statin: intolerant, pcsk9i: 'not_tolerated' })).toEqual(['statin', 'pcsk9i', 'ezetimibe']);
+    expect(lipidKeys({ statin: intolerant, pcsk9i: 'yes' })).toEqual(['statin', 'pcsk9i', 'ezetimibe']);
+    expect(lipidKeys({ statin: intolerant, pcsk9i: 'yes', ezetimibe: 'yes' })).toEqual(['statin', 'pcsk9i', 'ezetimibe', 'bempedoic_acid']);
+    expect(field(medicationForm({ statin: intolerant, pcsk9i: 'yes', ezetimibe: 'yes' }, elevated), 'bempedoic_acid').hint)
+      .toBe('Bempedoic acid lowers cholesterol production via a different pathway than statins. It is an option when a statin is not tolerated.');
+    // On a statin, every step answered: no bempedoic acid question, unless one is already recorded.
+    const allAnswered: MedicationInputs = { statin: { drug: 'rosuvastatin', dose: 40 }, ezetimibe: 'yes', pcsk9i: 'yes' };
+    expect(lipidKeys(allAnswered)).toEqual(['statin', 'statin_dose', 'ezetimibe', 'pcsk9i']);
+    expect(lipidKeys({ ...allAnswered, bempedoicAcid: 'bempedoic_acid' })).toEqual(['statin', 'statin_dose', 'ezetimibe', 'pcsk9i', 'bempedoic_acid']);
+  });
+
   it('shows an unrecorded dose as "Add dose", not pickable', () => {
     const form = medicationForm({ statin: { drug: 'atorvastatin', dose: null } }, flat);
     expect(field(form, 'statin_dose').options![0]).toEqual({ value: '', label: 'Add dose', disabled: true });

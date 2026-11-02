@@ -1639,6 +1639,15 @@ export function InputPanel({
           const lipidName = lipidMarker.label;
           const step = cascade.escalation;
           const showEscalation = !!step || medInputs.statinEscalation !== undefined;
+          // The steps show in the plan's order: with the statin not tolerated, the PCSK9
+          // inhibitor comes before ezetimibe, and bempedoic acid comes last (US-06 AC13).
+          const statinIntolerant = medInputs.statin?.drug === 'not_tolerated';
+          const pcsk9iStep = (cascade.pcsk9iReached || medInputs.pcsk9i !== undefined) && (
+            <div className="med-step-enter">
+              <p className="med-step-hint">{MEDICATION_TEXT.pcsk9iHint(lipidName)}</p>
+              {pcsk9iDropdown}
+            </div>
+          );
           const introText = lipidTargetSentence(lipidMarker, (metric) => fieldUnit(METRIC_TO_FIELD[metric]));
 
           return (
@@ -1653,17 +1662,12 @@ export function InputPanel({
 
               {statinDropdown}
 
+              {statinIntolerant && pcsk9iStep}
+
               {(cascade.ezetimibeReached || medInputs.ezetimibe !== undefined) && (
                 <div className="med-step-enter">
                   <p className="med-step-hint">{MEDICATION_TEXT.ezetimibeHint(lipidName)}</p>
                   {ezetimibeDropdown}
-                </div>
-              )}
-
-              {(cascade.bempedoicAcidReached || medInputs.bempedoicAcid !== undefined) && (
-                <div className="med-step-enter">
-                  <p className="med-step-hint">{MEDICATION_TEXT.bempedoicAcidHint}</p>
-                  {bempedoicAcidDropdown}
                 </div>
               )}
 
@@ -1687,10 +1691,12 @@ export function InputPanel({
                 </div>
               )}
 
-              {(cascade.pcsk9iReached || medInputs.pcsk9i !== undefined) && (
+              {!statinIntolerant && pcsk9iStep}
+
+              {(cascade.bempedoicAcidReached || medInputs.bempedoicAcid !== undefined) && (
                 <div className="med-step-enter">
-                  <p className="med-step-hint">{MEDICATION_TEXT.pcsk9iHint(lipidName)}</p>
-                  {pcsk9iDropdown}
+                  <p className="med-step-hint">{MEDICATION_TEXT.bempedoicAcidHint}</p>
+                  {bempedoicAcidDropdown}
                 </div>
               )}
             </section>
