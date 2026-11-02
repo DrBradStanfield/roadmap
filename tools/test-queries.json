@@ -8149,5 +8149,14 @@
     "expected": [],
     "category": "condition-guides",
     "notes": "US-70 AC5, registered 2026-11-02; not run. Proposal from naming-research.md. Red-flag negative: an emergency must not route to the high-cholesterol guide (like the other cardiovascular red-flag fixtures, expected is empty)."
+  },
+  {
+    "query": "My calcium score is zero but my LDL is 5.2 mmol/L, do I still need a statin?",
+    "expected": [
+      "heart-disease-risk",
+      "high-cholesterol"
+    ],
+    "category": "condition-guides",
+    "notes": "US-70 AC5, registered 2026-11-02; not run. Codex R1: the LDL 190 mg/dL (4.9 mmol/L) exception to calcium-zero advice. Guides heart-disease-risk and high-cholesterol."
   }
 ]
