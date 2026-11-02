@@ -118,17 +118,21 @@ actor HealthEngine {
     func screen(recordJSON: String, now: Date, deviceId: String, units: String = "{}") throws -> Drawn {
         let json = try call("screenJson", [recordJSON, now.formatted(Self.iso), deviceId, units, storefrontIsUS])
         let answer = try JSONDecoder().decode(Drawn.Answer.self, from: Data(json.utf8))
-        return Drawn(myData: answer.myData, plan: answer.plan.state)
+        return Drawn(myData: answer.myData, plan: answer.plan.state, movedRecord: answer.movedRecord)
     }
 
     /// One record as the screens show it: My data and the plan, from the same engine call.
     struct Drawn: Sendable {
         let myData: MyData
         let plan: PlanState
+        /// The record as text when reading it moved its blood tests into one table (US-66 AC14):
+        /// opening the phone's file writes it once. nil when nothing moved, and from an engine before it.
+        let movedRecord: String?
 
         fileprivate struct Answer: Decodable {
             let myData: MyData
             let plan: Plan
+            let movedRecord: String?
         }
 
         /// `{sections, tiles, ms}`, or `{error, planError}` when the record cannot be planned.
@@ -195,8 +199,9 @@ actor HealthEngine {
     }
 
     /// Every value recorded for one metric, newest first, corrections included (US-25 AC9).
-    func history(recordJSON: String, metric: String, now: Date, deviceId: String, units: String = "{}") throws -> MetricHistory {
-        let json = try call("historyJson", [recordJSON, metric, now.formatted(Self.iso), deviceId, units])
+    /// `series` "lab": `metric` is a lab test's series key, its page's history (US-25 AC25).
+    func history(recordJSON: String, metric: String, now: Date, deviceId: String, units: String = "{}", series: String? = nil) throws -> MetricHistory {
+        let json = try call("historyJson", [recordJSON, metric, now.formatted(Self.iso), deviceId, units] + (series.map { [$0] } ?? []))
         return try JSONDecoder().decode(MetricHistory.self, from: Data(json.utf8))
     }
 

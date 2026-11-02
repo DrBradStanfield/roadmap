@@ -9,6 +9,7 @@ import { cleanup, render } from '@testing-library/react';
 import { LIMIT_NOT_GRADED, calculateHealthResults, knownMinorOf, type ApiMeasurement, type Comparator, type SuggestionInputs } from '@roadmap/health-core';
 import type { RoadmapFile } from '../../../packages/health-core/src/roadmap-file';
 import { applyEdit, myData, newRecord } from '../../../ios/engine/my-data';
+import { currentValueRows } from '../../../packages/health-core/src/blood-tests';
 import { BloodTestRows, VitalsRows, type RowContext } from './MyDataRows';
 
 afterEach(cleanup);
@@ -35,8 +36,11 @@ function record(person: Person, values: Array<[string, number, Comparator | unde
     file = out.file;
   }
   for (const [metricType, value, comparator] of values) {
-    const like = file.measurements.find((r) => r.metricType === metricType)!;
-    file.measurements.push({ ...like, id: `t-${metricType}`, value, recordedAt: day(1), ...(comparator ? { comparator } : {}) });
+    // A blood test is a core lab row (US-66 AC1); a vital a measurement.
+    const like = [...file.measurements, ...file.labValues].find((r) => ('metricType' in r ? r.metricType : r.metricName) === metricType)!;
+    const row = { ...like, id: `t-${metricType}`, value, recordedAt: day(1), ...(comparator ? { comparator } : {}) };
+    if ('metricType' in row) file.measurements.push(row);
+    else file.labValues.push(row);
   }
   return file;
 }
@@ -55,7 +59,8 @@ function webContext(person: Person): RowContext {
 /** The web row's grade and note, and the engine row's, for one metric. */
 function both(person: Person, values: Array<[string, number, Comparator | undefined]>, metric: string, label: string) {
   const file = record(person, values);
-  const history = file.measurements as unknown as ApiMeasurement[];
+  // What the store hands the rows: vitals and core blood tests as measurements (US-66 AC7).
+  const history = currentValueRows(file) as unknown as ApiMeasurement[];
   const ctx = webContext(person);
   const view = render(<><VitalsRows history={history} ctx={ctx} onOpen={() => {}}/><BloodTestRows history={history} labValues={[]} ctx={ctx} onOpen={() => {}}/></>);
   const row = [...view.container.querySelectorAll('.md-row')].find((r) => r.querySelector('.md-row-label')?.textContent === label)!;

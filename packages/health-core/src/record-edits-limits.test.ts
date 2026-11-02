@@ -25,13 +25,17 @@ function saved() {
 describe('US-12 AC20: writing a limit', () => {
   it('the bulk save keeps each comparator on its row, and writes none on an exact value', () => {
     const file = saved();
-    expect(file.measurements.map((m) => [m.metricType, m.value, m.comparator])).toEqual([['lpa', 10, '<'], ['hdl', 1.4, undefined]]);
-    expect('comparator' in file.measurements[1]).toBe(false);
-    expect(file.labValues.map((l) => [l.metricName, l.value, l.comparator])).toEqual([['egfr', 60, '>'], ['folate', 45, '>']]);
+    // US-66 AC1: Lp(a) and HDL are core rows in labValues; nothing lands in measurements.
+    expect(file.measurements).toEqual([]);
+    expect(file.labValues.map((l) => [l.metricName, l.value, l.comparator, l.core])).toEqual([
+      ['lpa', 10, '<', true], ['hdl', 1.4, undefined, true], ['egfr', 60, '>', undefined], ['folate', 45, '>', undefined],
+    ]);
+    expect('comparator' in file.labValues[1]).toBe(false);
   });
 
+  // US-66 AC6 with US-12 AC20: the core Lp(a) row corrects as a measurement did, and drops its limit too.
   it('a correction of a limit is an exact value: the old row flips, the new one carries no comparator', () => {
-    for (const pick of [(f: ReturnType<typeof saved>) => f.measurements[0] as FileMeasurement | FileLabValue, (f: ReturnType<typeof saved>) => f.labValues[0]]) {
+    for (const pick of [(f: ReturnType<typeof saved>) => f.labValues[0] as FileMeasurement | FileLabValue, (f: ReturnType<typeof saved>) => f.labValues[2]]) {
       const file = saved();
       const old = pick(file);
       const result = correctValue(file, { id: old.id, newValue: 12, now: NOW });

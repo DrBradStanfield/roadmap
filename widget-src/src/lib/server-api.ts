@@ -156,6 +156,10 @@ export interface ProductEventMetadata extends Partial<Record<UploadOutcomeKey, n
   choice?: (typeof CHAT_PROFILE_CHOICES)[number];
   /** `us_product_shown` / `us_product_link_clicked` (US-61 AC8): the product alone, never the card. */
   product?: UsProduct;
+  /** `blood_tests_unified` (US-66 AC13): how many rows the open moved, folded and kept apart. Counts only. */
+  moved?: number;
+  folded?: number;
+  keptApart?: number;
   /** `measurement_added` (US-07 AC11): the measure saved, never its value. */
   measure?: (typeof MEASURES)[number];
   /** `upload_outcome` (US-12 AC20): the tests behind `valuesLimitUngraded`, keys from

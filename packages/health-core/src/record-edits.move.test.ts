@@ -12,6 +12,7 @@ import { createEmptyFile, createLabValue, createMeasurement, type FileLabValue, 
 import { mergeFiles } from './merge';
 import { buildErasedFile } from './erase';
 import { migrateFile } from './migrate';
+import { createCoreRow, isBloodTestKey } from './blood-tests';
 
 const CTX = { deviceId: 'us04_move', now: '2026-09-01T09:00:00Z' };
 const NOW = '2026-09-01T09:00:00Z';
@@ -19,8 +20,15 @@ const EDIT = { now: NOW, latestDay: '2026-09-01' };
 const FROM = '2024-03-12';
 const TO = '2024-02-21';
 
-function m(id: string, metricType: string, value: number, recordedAt: string, extra: Partial<FileMeasurement> = {}): FileMeasurement {
-  return createMeasurement({ id, metricType, value, recordedAt, createdAt: '2024-03-12T08:00:00Z', ...extra });
+/** A vital is a measurement; a blood test is a core row in labValues (US-66 AC1). */
+function m(id: string, metricType: string, value: number, recordedAt: string, extra: Partial<FileMeasurement> = {}): FileMeasurement | FileLabValue {
+  const fields = { id, value, recordedAt, createdAt: '2024-03-12T08:00:00Z', ...extra };
+  return isBloodTestKey(metricType) ? createCoreRow({ ...fields, metric: metricType }) : createMeasurement({ ...fields, metricType });
+}
+
+/** Put each row in the array it lives in. */
+function add(file: RoadmapFile, ...rows: Array<FileMeasurement | FileLabValue>): void {
+  for (const row of rows) ('metricType' in row ? file.measurements : file.labValues).push(row as never);
 }
 function lab(id: string, metricName: string, value: number, unit: string, recordedAt: string, extra: Partial<FileLabValue> = {}): FileLabValue {
   return createLabValue({ id, metricName, value, unit, recordedAt, createdAt: '2024-03-12T08:00:00Z', referenceLow: 10, referenceHigh: 50, ...extra });
@@ -29,7 +37,7 @@ function lab(id: string, metricName: string, value: number, unit: string, record
 /** A test on FROM (core, PSA, a lab), a weight on FROM, and an LDL on another day. */
 function base(): RoadmapFile {
   const file = createEmptyFile(CTX);
-  file.measurements.push(
+  add(file,
     m('ldl1', 'ldl', 3.2, `${FROM}T00:00:00.000Z`),
     m('hdl1', 'hdl', 1.4, FROM),
     m('psa1', 'psa', 1.1, `${FROM}T00:00:00.000Z`),
@@ -92,21 +100,21 @@ describe('US-04 AC5: refusals leave the file unchanged', () => {
   it('refuses a day with no blood test', () => expect(refused(base(), '2025-01-01', TO)).toBe('empty-day'));
   it('refuses a day holding only vitals', () => {
     const file = createEmptyFile(CTX);
-    file.measurements.push(m('w1', 'weight', 82, FROM));
+    add(file, m('w1', 'weight', 82, FROM));
     expect(refused(file, FROM, TO)).toBe('empty-day');
   });
 
   it('refuses a day holding two active values for one test (Codex R1), naming one', () => {
     const file = base();
-    file.measurements.push(m('ldl1b', 'ldl', 3.3, FROM));
+    add(file, m('ldl1b', 'ldl', 3.3, FROM));
     const p = planBloodTestMove(file, FROM, TO, EDIT);
     expect('rows' in p ? null : p.reason).toBe('duplicate-slot');
-    expect('rows' in p ? null : (p.existing as FileMeasurement).metricType).toBe('ldl');
+    expect('rows' in p ? null : (p.existing as FileLabValue).metricName).toBe('ldl');
   });
 
   it('refuses stale ids, and a missing or extra clash answer, writing nothing', () => {
     const file = base();
-    file.measurements.push(m('ldlT', 'ldl', 2.9, TO));
+    add(file, m('ldlT', 'ldl', 2.9, TO));
     const p = plan(file);
     const ids = p.rows.map((r) => r.id);
     const before = JSON.stringify(file);
@@ -133,7 +141,7 @@ describe('US-04 AC5: refusals leave the file unchanged', () => {
     const emptied = moved(file).file;
     expect(attempt(emptied)).toBe('value-changed');
     const doubled = base();
-    doubled.measurements.push(m('ldl1b', 'ldl', 3.3, FROM));
+    add(doubled, m('ldl1b', 'ldl', 3.3, FROM));
     expect(attempt(doubled)).toBe('value-changed');
   });
 });
@@ -186,7 +194,7 @@ describe('US-04 AC5: a plain move', () => {
 describe('US-04 AC5: a clash on the new day', () => {
   function clashing() {
     const file = base();
-    file.measurements.push(m('ldlT', 'ldl', 2.9, TO));
+    add(file, m('ldlT', 'ldl', 2.9, TO));
     return file;
   }
 
@@ -215,7 +223,7 @@ describe('US-04 AC5: a clash on the new day', () => {
 
   it('the same quantity already there asks nothing: the moving row flips, the held row stays', () => {
     const file = base();
-    file.measurements.push(m('ldlT', 'ldl', 3.2, TO));
+    add(file, m('ldlT', 'ldl', 3.2, TO));
     // 210 ug/L is the same ferritin as 210 ng/mL.
     file.labValues.push(lab('ferT', 'Ferritin', 210, 'ng/mL', TO));
     const p = plan(file);
@@ -237,7 +245,7 @@ describe('US-04 AC5: a clash on the new day', () => {
 
   it('refuses when the new day already holds two active values for a test that lands there', () => {
     const file = clashing();
-    file.measurements.push(m('ldlT2', 'ldl', 2.8, TO));
+    add(file, m('ldlT2', 'ldl', 2.8, TO));
     const p = planBloodTestMove(file, FROM, TO, EDIT);
     expect('rows' in p ? null : p.reason).toBe('duplicate-slot');
   });
@@ -262,7 +270,7 @@ describe('US-04 AC5: merge', () => {
     const b = correctValue(start, { id: 'ldl1', newValue: 3.0, now: '2026-09-01T10:00:00Z' });
     if (!b.ok) throw new Error(b.message);
     const merged = mergeFiles(a, b.file, CTX);
-    const ldl = merged.measurements.filter((r) => r.metricType === 'ldl' && r.status === 'active').map((r) => r.recordedAt.slice(0, 10)).sort();
+    const ldl = merged.labValues.filter((r) => r.metricName === 'ldl' && r.status === 'active').map((r) => r.recordedAt.slice(0, 10)).sort();
     expect(ldl).toEqual(['2023-01-05', TO, FROM]);
     oneActivePerSlot(merged);
   });
@@ -273,10 +281,10 @@ describe('US-04 AC5: merge', () => {
     const b = appendMeasurement(start, { metricType: 'ldl', value: 2.5, recordedAt: TO, now: '2026-09-01T10:00:00Z', latestDay: '2026-09-01' });
     if (!b.ok) throw new Error(b.message);
     const merged = mergeFiles(a, b.file, CTX);
-    const child = merged.measurements.find((r) => r.correctsId === 'ldl1')!;
+    const child = merged.labValues.find((r) => r.correctsId === 'ldl1')!;
     expect(child.status).toBe('entered-in-error');
     expect(byId(merged, 'ldl1').status).toBe('entered-in-error');
-    expect(merged.measurements.filter((r) => r.status === 'active' && r.value === 3.2)).toEqual([]);
+    expect(merged.labValues.filter((r) => r.status === 'active' && r.value === 3.2)).toEqual([]);
     oneActivePerSlot(merged);
   });
 
@@ -290,7 +298,7 @@ describe('US-04 AC5: merge', () => {
       expect(activeOn(merged, FROM).map((r) => r.id)).toEqual(['w1']); // the weight, a vital, never moves
       expect(activeOn(merged, TO).length).toBe(4);
       expect(activeOn(merged, OTHER).length).toBe(4);
-      const latestLdl = merged.measurements.filter((r) => r.metricType === 'ldl' && r.status === 'active')
+      const latestLdl = merged.labValues.filter((r) => r.metricName === 'ldl' && r.status === 'active')
         .sort((x, y) => y.recordedAt.localeCompare(x.recordedAt))[0];
       expect(latestLdl.recordedAt.slice(0, 10)).toBe(TO);
       oneActivePerSlot(merged);
@@ -306,6 +314,18 @@ describe('US-04 AC5a: a move on a copy that has not seen an erase', () => {
     const start = base();
     const erased = buildErasedFile({ stored: start, own: start, device: null, ctx: LATER });
     const stale = moved(start).file;
+    for (const merged of [mergeFiles(stale, erased, LATER), mergeFiles(erased, stale, LATER)]) {
+      expect(rows(merged)).toEqual([]);
+    }
+  });
+
+  it('gives a folded core row moved the root of its original, so an erase of the original takes it, in either merge order', () => {
+    const start = createEmptyFile(CTX);
+    add(start, m('ldl1#core', 'ldl', 3.2, FROM, { correctsId: 'ldl1' }));
+    const erased = buildErasedFile({ stored: start, own: start, device: null, ctx: LATER });
+    erased.erasedRows = { ...erased.erasedRows!, ids: ['ldl1'] };
+    const stale = moved(start).file;
+    expect(activeOn(stale, TO).map((r) => r.id)).toEqual([expect.stringMatching(/^ldl1#mv-[0-9a-f]{8}$/)]);
     for (const merged of [mergeFiles(stale, erased, LATER), mergeFiles(erased, stale, LATER)]) {
       expect(rows(merged)).toEqual([]);
     }
@@ -405,8 +425,9 @@ describe('US-04 AC5a: an older app erases a moved row whose original an earlier 
 
   it('drops a quarantined or converted copy of a moved row too, which the older app roots the same way', () => {
     const copy = prunedParents();
-    copy.measurements = copy.measurements.map((r) => (r.id.startsWith('ldl1#mv-') ? { ...r, id: `${r.id}#dup-0123abcd` } : r));
-    copy.labValues = copy.labValues.map((r) => ({ ...r, id: `${r.id}#si` }));
+    copy.labValues = copy.labValues.map((r) => (r.id.startsWith('ldl1#mv-') ? { ...r, id: `${r.id}#dup-0123abcd` }
+      : r.id.startsWith('fer1#mv-') ? { ...r, id: `${r.id}#si` } : r));
+    expect(copy.labValues.map((r) => r.id).filter((id) => /#dup-|#si$/.test(id)).length).toBe(2);
     const erased = olderAppErase(copy);
     for (const merged of [mergeFiles(copy, erased, UPDATED), mergeFiles(erased, copy, UPDATED)]) {
       expect(rows(merged)).toEqual([]);
@@ -421,6 +442,9 @@ describe('US-04 AC5a: an older app erases a moved row whose original an earlier 
     const erased = olderAppErase(copy);
     const again = moved(copy, {}, TO, OTHER).file;
     expect(activeOn(again, OTHER).length).toBe(4);
+    // The core blood tests move as core rows in labValues (US-66 AC1).
+    expect(again.measurements.filter((r) => r.status === 'active')).toEqual([]);
+    expect(again.labValues.filter((r) => r.status === 'active' && r.core).map((r) => r.id.slice(0, 8)).sort()).toEqual(['hdl1#mv-', 'ldl1#mv-', 'psa1#mv-']);
     for (const merged of [mergeFiles(again, erased, UPDATED), mergeFiles(erased, again, UPDATED)]) {
       expect(rows(merged)).toEqual([]);
       // The list keeps the older app's spelling, so that app still reads it.
@@ -440,7 +464,7 @@ describe('US-04 AC5a: an older app erases a moved row whose original an earlier 
     const copy = prunedParents();
     const erased = olderAppErase(copy);
     const again = moved(copy, {}, TO, OTHER).file;
-    again.measurements.push(
+    add(again,
       m('ldl10', 'hba1c', 38, '2024-04-01', { createdAt: UPDATED.now }),
       m('ldl1x#mv-0123abcd', 'hba1c', 39, '2024-05-01', { createdAt: UPDATED.now }),
     );

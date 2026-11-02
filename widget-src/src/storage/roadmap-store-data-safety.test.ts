@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createEmptyFile, type RoadmapFile } from '@roadmap/health-core';
+import { createEmptyFile, toOldShape, type RoadmapFile } from '@roadmap/health-core';
 import { ERASE_UNREACHABLE, RoadmapStore, PENDING_MIRROR_KEY, markSyncPending, isSyncPending } from './roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core';
 import { LocalStorageAdapter } from './local-storage-adapter';
@@ -7,6 +7,9 @@ import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core';
 import { DRAFTS_CLEARED_EVENT } from '../lib/storage';
 
 /** The file as it landed in the (simulated) cloud after a flush. */
+/** Every value row, a blood test (a core lab row since US-66) read as the measurement it was. */
+const valuesOf = (file: RoadmapFile) => toOldShape(file).measurements;
+
 function readCloudFile(cloud: MemoryCloud): RoadmapFile {
   return JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
 }
@@ -32,10 +35,10 @@ describe('RoadmapStore.correctValue (US-04)', () => {
     await store.flush();
 
     const file = readCloudFile(cloud);
-    const oldRow = file.measurements.find((m) => m.id === oldId)!;
+    const oldRow = valuesOf(file).find((m) => m.id === oldId)!;
     expect(oldRow.status).toBe('entered-in-error');
 
-    const newRow = file.measurements.find((m) => m.id !== oldId && m.metricType === 'ldl')!;
+    const newRow = valuesOf(file).find((m) => m.id !== oldId && m.metricType === 'ldl')!;
     expect(newRow.source).toBe('manual_correction');
     expect(newRow.correctsId).toBe(oldId);
     expect(newRow.value).toBe(3.2);
@@ -70,8 +73,8 @@ describe('RoadmapStore.correctValue (US-04)', () => {
     await store.flush();
 
     const after = readCloudFile(cloud);
-    expect(after.measurements).toHaveLength(before.measurements.length);
-    expect(after.measurements).toEqual(before.measurements);
+    expect(valuesOf(after)).toHaveLength(valuesOf(before).length);
+    expect(valuesOf(after)).toEqual(valuesOf(before));
   });
 
   it('correcting an already-corrected (entered-in-error) id also answers changed, without corrupting state', async () => {
@@ -89,9 +92,9 @@ describe('RoadmapStore.correctValue (US-04)', () => {
     const file = readCloudFile(cloud);
     // Still exactly one active row for the slot — the second call added nothing.
     expect(
-      file.measurements.filter((m) => m.metricType === 'ldl' && m.status === 'active'),
+      valuesOf(file).filter((m) => m.metricType === 'ldl' && m.status === 'active'),
     ).toHaveLength(1);
-    expect(file.measurements.filter((m) => m.metricType === 'ldl')).toHaveLength(2);
+    expect(valuesOf(file).filter((m) => m.metricType === 'ldl')).toHaveLength(2);
   });
 
   it('at most one active row per (metric, day) survives a correction, and the slot re-blocks a duplicate add', async () => {
@@ -140,12 +143,12 @@ describe('RoadmapStore.correctValue refusals (US-04)', () => {
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
     const id = insertedRow(store.addMeasurement('ldl', 4.5, '2024-06-01')).id;
     await store.flush();
-    const before = readCloudFile(cloud).measurements;
+    const before = valuesOf(readCloudFile(cloud));
 
     const result = store.correctValue(id, 12.93); // 500 mg/dL passes the mg/dL field, not the record
     expect(result).toBe('invalid');
     await store.flush();
-    expect(readCloudFile(cloud).measurements).toEqual(before);
+    expect(valuesOf(readCloudFile(cloud))).toEqual(before);
   });
 });
 
@@ -168,7 +171,7 @@ describe('RoadmapStore.deleteUserData (US-11)', () => {
 
     const file = readCloudFile(cloud);
     expect(file.meta.eraseEpoch).toBe(1);
-    expect(file.measurements).toEqual([]);
+    expect(valuesOf(file)).toEqual([]);
     expect(file.medications).toEqual([]);
     expect(file.medicationHistory).toEqual([]);
     expect(file.supplements).toEqual([]);
@@ -203,7 +206,7 @@ describe('RoadmapStore.deleteUserData (US-11)', () => {
 
     const file = readCloudFile(cloud);
     expect(file.meta.eraseEpoch).toBe(1);
-    expect(file.measurements).toEqual([]);
+    expect(valuesOf(file)).toEqual([]);
     expect(deviceB.loadAllHistory()).toEqual([]);
   });
 
@@ -243,7 +246,7 @@ describe('RoadmapStore.deleteUserData (US-11)', () => {
       vi.setSystemTime(new Date('2026-06-01T10:05:00.000Z')); // B, never reloaded, saves again
       deviceB.addMeasurement('weight', 80, '2026-06-02');
       await deviceB.flush();
-      expect(readCloudFile(cloud).measurements.map((m) => m.value)).toEqual([80]);
+      expect(valuesOf(readCloudFile(cloud)).map((m) => m.value)).toEqual([80]);
     } finally {
       vi.useRealTimers();
     }
@@ -289,7 +292,7 @@ describe('RoadmapStore.deleteUserData (US-11)', () => {
 
       const file = readCloudFile(cloud);
       expect(file.meta.eraseEpoch).toBe(1);
-      expect(file.measurements.map((m) => m.value)).toEqual([80]);
+      expect(valuesOf(file).map((m) => m.value)).toEqual([80]);
       expect(deviceB.loadAllHistory().map((m) => m.value)).toEqual([80]);
     } finally {
       vi.useRealTimers();
@@ -383,7 +386,7 @@ describe('RoadmapStore.bulkSaveMeasurements dedup (US-13)', () => {
     await store.flush();
 
     const file = readCloudFile(cloud);
-    expect(file.measurements.filter((m) => m.status === 'active')).toHaveLength(2);
+    expect(valuesOf(file).filter((m) => m.status === 'active')).toHaveLength(2);
   });
 });
 
@@ -669,7 +672,7 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
 
     const mirror = readMirror();
     expect(mirror).not.toBeNull();
-    expect(mirror!.measurements.map((m) => [m.metricType, m.value])).toEqual([['weight', 80]]);
+    expect(valuesOf(mirror!).map((m) => [m.metricType, m.value])).toEqual([['weight', 80]]);
     expect(localStorage.getItem(PENDING_MIRROR_KEY)).not.toBeNull();
   });
 
@@ -689,7 +692,7 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
     await recovered.flush();
 
     const file = readCloudFile(cloud);
-    const rows = file.measurements.map((m) => [m.metricType, m.value]).sort();
+    const rows = valuesOf(file).map((m) => [m.metricType, m.value]).sort();
     expect(rows).toEqual([['ldl', 3.2], ['weight', 80]]);
     expect(localStorage.getItem(PENDING_MIRROR_KEY)).toBeNull();
   });
@@ -724,7 +727,7 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
     const mirror = readMirror();
     expect(mirror).not.toBeNull();
     expect(mirror!.meta.eraseEpoch).toBe(1);
-    expect(mirror!.measurements).toEqual([]);
+    expect(valuesOf(mirror!)).toEqual([]);
     expect(localStorage.getItem(PENDING_MIRROR_KEY)).not.toBeNull();
   });
 
@@ -788,7 +791,7 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
     const row = insertedRow(failing.addMeasurement('weight', 80, '2024-06-01T00:00:00.000Z'));
     await expect(failing.flush()).rejects.toThrow();
 
-    const mirrored = readMirror()!.measurements.find((m) => m.id === row.id)!;
+    const mirrored = valuesOf(readMirror()!).find((m) => m.id === row.id)!;
     expect(mirrored.createdAt).toBe(row.createdAt);
   });
 
@@ -839,7 +842,7 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
     offline = false;
     store.flushSync(); // the tab hides
     await vi.waitFor(() => expect(localStorage.getItem(PENDING_MIRROR_KEY)).toBeNull());
-    expect(readCloudFile(cloud).measurements.map((m) => m.value)).toEqual([80]);
+    expect(valuesOf(readCloudFile(cloud)).map((m) => m.value)).toEqual([80]);
   });
 
   it('without the pending marker, a stale on-device copy is NOT merged into a cloud session', async () => {
@@ -852,7 +855,7 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
     store.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
     await store.flush();
 
-    expect(readCloudFile(cloud).measurements).toHaveLength(1);
+    expect(valuesOf(readCloudFile(cloud))).toHaveLength(1);
   });
 });
 
@@ -1041,7 +1044,7 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
     // the very file that carries eraseEpoch.
     const file = JSON.parse(localStorage.getItem('health_roadmap_file_v2')!) as RoadmapFile;
     expect(file.meta.eraseEpoch).toBe(1);
-    expect(file.measurements).toEqual([]);
+    expect(valuesOf(file)).toEqual([]);
   });
 
   // US-11 AC1 / US-05 AC3: the Lp(a) check's "keep as saved" answers name
@@ -1192,7 +1195,7 @@ describe('RoadmapStore.deleteUserData lists the rows it removes (US-09 AC23)', (
     }
   }
   const fileOf = (store: RoadmapStore) => (store as unknown as { file: RoadmapFile }).file;
-  const idOf = (store: RoadmapStore, metric: string) => fileOf(store).measurements.find((m) => m.metricType === metric)!.id;
+  const idOf = (store: RoadmapStore, metric: string) => valuesOf(fileOf(store)).find((m) => m.metricType === metric)!.id;
 
   it('lists the stored record\'s rows, its own copy\'s and the device file\'s, ids only', async () => {
     const cloud = new MemoryCloud();
@@ -1216,7 +1219,10 @@ describe('RoadmapStore.deleteUserData lists the rows it removes (US-09 AC23)', (
 
     const file = readCloudFile(cloud);
     expect(file.erasedRows).toEqual({ fromEpoch: 1, ids: expected });
-    expect(file.schemaVersion).toBe(2);
+    // The stored record held a core row (the LDL), so it was 3, and a merge never
+    // lowers a version (US-66 AC15). An erase over a record with no core row is 2.
+    expect(file.schemaVersion).toBe(3);
+    expect(file.labValues).toEqual([]);
     expect(file.meta.eraseEpoch).toBe(1);
     expect(file.meta.erasedAt).toBeTypeOf('string'); // still stamped, for the legacy rule
     // Ids only: no value, metric, date or name rides in the list.
@@ -1240,7 +1246,7 @@ describe('RoadmapStore.deleteUserData lists the rows it removes (US-09 AC23)', (
     expect(cloud.files.get(ROADMAP_FILE_NAME)!.json).toBe(before);
     expect(store.loadAllHistory().map((m) => m.value).sort()).toEqual([3.1, 80]);
     await store.flush(); // the edit the erase held back still saves
-    expect(readCloudFile(cloud).measurements).toHaveLength(2);
+    expect(valuesOf(readCloudFile(cloud))).toHaveLength(2);
   });
 
   it('a session on-device because its cloud could not be read refuses, and its device file is untouched', async () => {
@@ -1270,7 +1276,7 @@ describe('RoadmapStore.deleteUserData lists the rows it removes (US-09 AC23)', (
     const device = JSON.parse(localStorage.getItem('health_roadmap_file_v2')!) as RoadmapFile;
     expect(device.meta.eraseEpoch).toBe(1);
     expect(device.erasedRows).toEqual({ fromEpoch: 1, ids: [id] });
-    expect(device.measurements).toEqual([]);
+    expect(valuesOf(device)).toEqual([]);
   });
 
   it('a device file of valid JSON in a shape migrate refuses lists nothing, and the erase still succeeds (Codex R1)', async () => {

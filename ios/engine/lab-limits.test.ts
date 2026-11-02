@@ -60,9 +60,12 @@ describe('US-12 AC20 — lab limits on the phone', () => {
 
   it('saving writes the limit to the record: the bound in value, the code beside it', () => {
     const file = withReport();
-    const ldl = file.measurements.find((row) => row.metricType === 'ldl' && row.recordedAt.startsWith('2026-10-01'));
+    // LDL and HbA1c are core lab rows (US-66 AC1), each with its own comparator or none.
+    const ldl = file.labValues.find((row) => row.core && row.metricName === 'ldl' && row.recordedAt.startsWith('2026-10-01'));
     expect(ldl).toMatchObject({ value: 2, comparator: '<', source: 'lab_import', status: 'active' });
-    expect(file.measurements.find((row) => row.metricType === 'hba1c')).not.toHaveProperty('comparator');
+    const hba1c = file.labValues.find((row) => row.core && row.metricName === 'hba1c');
+    expect(hba1c).toMatchObject({ value: 40 });
+    expect(hba1c).not.toHaveProperty('comparator');
     expect(file.labValues.find((row) => row.metricName === 'eGFR')).toMatchObject({ value: 90, comparator: '>' });
     expect(file.labValues.find((row) => row.metricName === 'CRP')).not.toHaveProperty('comparator');
   });

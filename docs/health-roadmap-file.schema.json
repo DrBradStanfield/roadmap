@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/health-roadmap-file.schema.json",
   "title": "Health Roadmap record file",
-  "description": "The complete health record for one user: a single JSON document named health-roadmap.json, stored in the user's own cloud (Google Drive, Dropbox, GitHub, WebDAV) or in browser localStorage. Never on our server. Derived from packages/health-core/src/roadmap-file.ts at schemaVersion 2. Unknown properties are preserved on read and write (forward-compatibility rule 1 in migrate.ts), so every object here allows extra keys. Timestamps are ISO 8601 strings. `meta.createdAt`/`meta.updatedAt` use the row stamp grammar on read: an invalid stamp takes its valid companion; if neither is valid, both take the latest valid known stored clock, with the Unix epoch as the floor/default. Mutable row and field `updatedAt` stamps are validated and clamped to the later normalized metadata stamp. Immutable measurement/lab `createdAt` and document `addedAt` are kept as written; a future clinical `createdAt` can take its day slot, so agents must never write one. This schema does not require a timestamp format. Agents: see docs/agent-access.md for the read/write rules.",
+  "description": "The complete health record for one user: a single JSON document named health-roadmap.json, stored in the user's own cloud (Google Drive, Dropbox, GitHub, WebDAV) or in browser localStorage. Never on our server. Derived from packages/health-core/src/roadmap-file.ts at schemaVersion 3. Unknown properties are preserved on read and write (forward-compatibility rule 1 in migrate.ts), so every object here allows extra keys. Timestamps are ISO 8601 strings. `meta.createdAt`/`meta.updatedAt` use the row stamp grammar on read: an invalid stamp takes its valid companion; if neither is valid, both take the latest valid known stored clock, with the Unix epoch as the floor/default. Mutable row and field `updatedAt` stamps are validated and clamped to the later normalized metadata stamp. Immutable measurement/lab `createdAt` and document `addedAt` are kept as written; a future clinical `createdAt` can take its day slot, so agents must never write one. This schema does not require a timestamp format. Agents: see docs/agent-access.md for the read/write rules.",
   "type": "object",
   "required": [
     "schemaVersion",
@@ -22,14 +22,14 @@
   "properties": {
     "schemaVersion": {
       "type": "integer",
-      "enum": [1, 2],
-      "description": "On-disk shape version. A file with a HIGHER version than the reading app understands must not be rewritten — migrate.ts throws SchemaTooNewError rather than downgrade it. 2 marks a file that carries `erasedRows`; every other file is 1 (US-09 AC23)."
+      "enum": [1, 2, 3],
+      "description": "On-disk shape version. A file with a HIGHER version than the reading app understands must not be rewritten — migrate.ts throws SchemaTooNewError rather than downgrade it. 3 marks a file that holds a core blood row (a labValues row with `core: true`, any status; US-66 AC15); 2 a file that carries `erasedRows` and no core row (US-09 AC23); every other file is 1. A version is never lowered."
     },
     "meta": { "$ref": "#/$defs/RoadmapFileMeta" },
     "profile": { "$ref": "#/$defs/RoadmapProfile" },
     "measurements": {
       "type": "array",
-      "description": "Append-only. Core metric values in SI canonical units.",
+      "description": "Append-only. Vitals only since US-66: weight, waist and blood pressure, in SI canonical units. A blood test found here is moved to labValues on read.",
       "items": { "$ref": "#/$defs/FileMeasurement" }
     },
     "medications": {
@@ -76,8 +76,19 @@
     "reminderOptIn": { "$ref": "#/$defs/FileReminderOptIn" },
     "erasedRows": { "$ref": "#/$defs/ErasedRows" }
   },
-  "if": { "required": ["erasedRows"] },
-  "then": { "properties": { "schemaVersion": { "const": 2 } } },
+  "allOf": [
+    {
+      "if": { "required": ["erasedRows"] },
+      "then": { "properties": { "schemaVersion": { "enum": [2, 3] } } }
+    },
+    {
+      "if": {
+        "required": ["labValues"],
+        "properties": { "labValues": { "contains": { "type": "object", "required": ["core"], "properties": { "core": { "const": true } } } } }
+      },
+      "then": { "properties": { "schemaVersion": { "const": 3 } } }
+    }
+  ],
   "$defs": {
     "RoadmapFileMeta": {
       "type": "object",
@@ -231,7 +242,7 @@
 
     "FileLabValue": {
       "type": "object",
-      "description": "One immutable lab row for a test outside the core metrics. Same append-only rules as a measurement.",
+      "description": "One immutable blood-test row. Since US-66 every blood test lives here: a core test (`core: true`, metricName the core key, unit its SI unit) or any other test. Same append-only rules as a measurement.",
       "required": [
         "id",
         "metricName",
@@ -260,6 +271,7 @@
         "source": { "$ref": "#/$defs/MeasurementSource" },
         "status": { "$ref": "#/$defs/MeasurementStatus" },
         "correctsId": { "type": ["string", "null"] },
+        "core": { "const": true, "description": "Present only on a core blood value (US-66): `metricName` is its core key and `unit` its canonical unit. A file holding one is schemaVersion 3." },
         "comparator": { "enum": ["<", "<=", ">", ">="], "description": "Present only on a lab result printed as a limit ('> 60', '<5'; FHIR Quantity.comparator): `value` is then the printed bound, not the result. '<=' and '>=' are the codes for a printed ≤ and ≥. Absent means an exact value. Only a lab upload writes it; a correction is an exact value and carries none. Any other value makes the row unreadable to the app, which keeps it unchanged." }
       }
     },

@@ -31,7 +31,7 @@ import type { ApiLabValue, ApiMedicationHistory } from '../lib/api-types';
 import { loadUnitPreference } from '../lib/storage';
 import { groupLabHistory } from '../lib/lab-rows';
 import { chartTimestamp, formatShortDate } from '../lib/constants';
-import { savedLabText } from '@roadmap/health-core';
+import { mixedUnitsNote, savedLabText } from '@roadmap/health-core';
 
 // Register only what we need
 Chart.register(LineController, LineElement, PointElement, LinearScale, TimeScale, Tooltip, Filler, annotationPlugin);
@@ -264,7 +264,7 @@ export function MixedUnitsNote({ label, units }: { label: string; units: string[
   return (
     <div className="metric-chart-container">
       <h3>{label}</h3>
-      <p className="history-note">Units vary between reports ({units.map((u) => u || 'no unit').join(', ')}), so this test is not charted.</p>
+      <p className="history-note">{mixedUnitsNote(units)}</p>
     </div>
   );
 }

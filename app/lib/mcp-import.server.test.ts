@@ -387,7 +387,7 @@ describe('US-35 AC7 / US-36 AC9 — a commit quotes the user’s approval, check
     const filed = await call({ commit: { receipt, accept: candidates.map((c) => c.id), replace: [], approval: marker } });
     expect(filed.isError).toBe(false);
     expect(filed.text).not.toContain('qx9-approval-marker');
-    expect((await adapter.read(ROADMAP_FILE_NAME)).body).toMatchObject({ measurements: [expect.objectContaining({ metricType: 'ldl' })] });
+    expect((await adapter.read(ROADMAP_FILE_NAME)).body).toMatchObject({ measurements: [], labValues: [expect.objectContaining({ metricName: 'ldl', core: true })] });
     for (const [name, stored] of cloud.files) expect(stored.json, name).not.toContain('qx9-approval-marker');
   });
 });
@@ -422,7 +422,9 @@ describe('US-35 AC7 — extract then commit, end to end through hostedImporter',
     const commit = await call({ commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } });
     expect(commit.isError).toBe(false);
     const stored = (await adapter.read(ROADMAP_FILE_NAME)).body as ReturnType<typeof createEmptyFile>;
-    expect(stored.measurements).toEqual([expect.objectContaining({ metricType: 'ldl', value: 2.8, source: 'lab_import' })]);
+    // US-66 AC6: the core value is a core row in labValues.
+    expect(stored.measurements).toEqual([]);
+    expect(stored.labValues).toEqual([expect.objectContaining({ metricName: 'ldl', unit: 'mmol/L', core: true, value: 2.8, source: 'lab_import' })]);
     expect(cloud.files.has(`imports/pending-${data.receipt}.json`)).toBe(false);
 
     const again = await call({ commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } });

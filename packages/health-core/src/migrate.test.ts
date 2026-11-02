@@ -3,7 +3,7 @@ import { migrateFile, SchemaTooNewError } from './migrate';
 import { mergeFiles, stampInstant } from './merge';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { labSlotKey } from './lab-catalog';
-import { BASE_SCHEMA_VERSION, CURRENT_SCHEMA_VERSION, createEmptyFile, createMeasurement, stableStringify, type FileLabValue, type FileMeasurement } from './roadmap-file';
+import { BASE_SCHEMA_VERSION, CURRENT_SCHEMA_VERSION, ERASED_ROWS_SCHEMA_VERSION, createEmptyFile, createMeasurement, stableStringify, type FileLabValue, type FileMeasurement } from './roadmap-file';
 
 const OPTS = { deviceId: 'dev_x', now: '2026-06-08T00:00:00Z' };
 
@@ -53,7 +53,7 @@ describe('migrateFile', () => {
       schemaVersion: 1,
       meta: { createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-05-01T00:00:00Z', lastDeviceId: 'dev_orig', lamport: 9 },
       profile: { sex: 'female', heightCm: 165, updatedAt: '2026-05-01T00:00:00Z', lamport: 4 },
-      measurements: [{ id: 'm1', metricType: 'ldl', value: 2.1, recordedAt: '2026-05-01', createdAt: '2026-05-01T08:00:00Z', source: 'manual', status: 'active', correctsId: null, externalId: null }],
+      measurements: [{ id: 'm1', metricType: 'weight', value: 80, recordedAt: '2026-05-01', createdAt: '2026-05-01T08:00:00Z', source: 'manual', status: 'active', correctsId: null, externalId: null }],
       medications: [], medicationHistory: [], supplements: [], supplementHistory: [],
       screenings: { updatedAt: '2026-05-01T00:00:00Z', lamport: 0 },
       labValues: [], documents: [], reminderPreferences: [], recommendationSnapshots: [],
@@ -116,8 +116,9 @@ describe('migrateFile — the erase list (US-09 AC23)', () => {
       expect(f[key], key).toEqual([]);
     }
     expect(f.erasedRows).toEqual(LIST);
-    expect(f.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
-    expect(CURRENT_SCHEMA_VERSION).toBe(2);
+    expect(f.schemaVersion).toBe(ERASED_ROWS_SCHEMA_VERSION);
+    expect(ERASED_ROWS_SCHEMA_VERSION).toBe(2);
+    expect(CURRENT_SCHEMA_VERSION).toBe(3);
     // Through the document spec too: what read_record and the CLI read.
     expect(ROADMAP_DOC.migrate(raw(LIST), OPTS).measurements.map((m) => m.id)).toEqual(['keep']);
   });
@@ -156,7 +157,7 @@ describe('migrateFile — the erase list (US-09 AC23)', () => {
 
 describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-11)', () => {
   const MEAS: FileMeasurement = {
-    id: 'm1', metricType: 'ldl', value: 2.1, recordedAt: '2026-05-01',
+    id: 'm1', metricType: 'weight', value: 80, recordedAt: '2026-05-01',
     createdAt: '2026-05-01T08:00:00Z', source: 'manual', status: 'active',
     correctsId: null, externalId: null,
   };
@@ -361,7 +362,7 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
   it('leaves a legitimate file untouched through migrate + self-merge', () => {
     const d1 = createEmptyFile({ deviceId: 'dev1', now: '2026-05-01T00:00:00Z' });
     d1.measurements = [
-      createMeasurement({ id: 'a1', metricType: 'ldl', value: 2.2, recordedAt: '2026-05-01', createdAt: '2026-05-01T08:00:00Z' }),
+      createMeasurement({ id: 'a1', metricType: 'weight', value: 82, recordedAt: '2026-05-01', createdAt: '2026-05-01T08:00:00Z' }),
     ];
     d1.medications = [{ id: 'med_1', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 40, doseUnit: 'mg', updatedAt: '2026-05-01T08:00:00Z', lamport: 1 }];
     d1.profile = { sex: 'male', heightCm: 180, updatedAt: '2026-05-01T08:00:00Z', lamport: 2 };
@@ -369,7 +370,7 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
 
     const d2 = createEmptyFile({ deviceId: 'dev2', now: '2026-05-02T00:00:00Z' });
     d2.measurements = [
-      createMeasurement({ id: 'b1', metricType: 'hba1c', value: 35, recordedAt: '2026-05-02', createdAt: '2026-05-02T08:00:00Z' }),
+      createMeasurement({ id: 'b1', metricType: 'waist', value: 90, recordedAt: '2026-05-02', createdAt: '2026-05-02T08:00:00Z' }),
     ];
     cloud = mergeFiles(d2, cloud, { deviceId: 'dev2', now: '2026-05-02T10:00:00Z' });
 

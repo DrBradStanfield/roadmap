@@ -125,7 +125,9 @@ describe('US-32 — tools/call against a real file', () => {
     const body = text((await call(path, 'read_record')));
 
     expect(body).not.toContain('SECRET-CAPABILITY-TOKEN');
-    expect(JSON.parse(body).measurements).toHaveLength(1);
+    // US-66 AC11: the fixture's ldl reads back as a core row in labValues.
+    expect(JSON.parse(body).measurements).toEqual([]);
+    expect(JSON.parse(body).labValues).toEqual([expect.objectContaining({ id: 'm1', metricName: 'ldl', core: true })]);
     rmSync(dir, { recursive: true, force: true });
   });
 
@@ -158,7 +160,9 @@ describe('US-32 — tools/call against a real file', () => {
     const backup = /backup: ([^)]+)\)/.exec(text(response))![1];
     expect(readdirSync(dir).filter((n) => n.includes('.bak-'))).toEqual([backup]);
     const saved = JSON.parse(readFileSync(path, 'utf8')) as RoadmapFile;
-    expect(saved.measurements.filter((m) => m.metricType === 'hdl')).toHaveLength(1);
+    // US-66 AC6: add_measurement with a blood test writes a core row in labValues.
+    expect(saved.labValues.filter((l) => l.metricName === 'hdl' && l.core === true)).toHaveLength(1);
+    expect(saved.measurements).toEqual([]);
     rmSync(dir, { recursive: true, force: true });
   });
 
@@ -211,7 +215,7 @@ describe('US-32 — the stdio transport', () => {
     expect(responses[0].result.protocolVersion).toBe('2025-11-25');
     expect(responses[1].result.tools).toHaveLength(MCP_TOOLS.length);
     expect(responses[2].result.content[0].text).toContain('Saved (backup:');
-    expect(JSON.parse(responses[3].result.content[0].text).measurements).toHaveLength(1);
+    expect(JSON.parse(responses[3].result.content[0].text).labValues).toEqual([expect.objectContaining({ metricName: 'hdl', core: true })]);
     expect(responses[4].error.code).toBe(-32700);
     rmSync(dir, { recursive: true, force: true });
   });
@@ -575,9 +579,10 @@ describe('US-36 AC1 — file_results runs here: the receipt lives in this proces
     expect(commit.result!.isError).toBeUndefined();
     expect(text(commit)).toContain('Saved (backup:');
     const saved = JSON.parse(readFileSync(path, 'utf8')) as RoadmapFile;
-    expect(saved.measurements.find((m) => m.recordedAt === '2026-08-20')).toMatchObject({ metricType: 'ldl', value: 2.8, source: 'lab_import' });
+    // US-66 AC6: the core value lands as a core row in labValues.
+    expect(saved.labValues.find((l) => l.core && l.recordedAt === '2026-08-20')).toMatchObject({ metricName: 'ldl', unit: 'mmol/L', value: 2.8, source: 'lab_import' });
     // Written under the name the report PRINTED (US-21 phase 3: the printed name is what chooses a conversion); the slot is the catalogue key either way.
-    expect(saved.labValues[0]).toMatchObject({ metricName: 'Ferritin', value: 210 });
+    expect(saved.labValues.filter((l) => !l.core)).toEqual([expect.objectContaining({ metricName: 'Ferritin', value: 210 })]);
     expect(saved.documents[0]).toMatchObject({ sourceFileName: 'Results.pdf', metadata: { importedVia: 'assistant' } });
     expect(readdirSync(dir).some((name) => name.includes('backup') || name.includes('.bak'))).toBe(true);
 
@@ -594,7 +599,7 @@ describe('US-36 AC9 — the stdio server ignores `confirm`: a person is watching
     expect(response.result!.isError).toBeUndefined();
     expect(text(response)).toContain('Corrected ldl 2.8');
     const saved = JSON.parse(readFileSync(path, 'utf8')) as RoadmapFile;
-    expect(saved.measurements.find((m) => m.id === 'm1')!.status).toBe('entered-in-error');
+    expect(saved.labValues.find((l) => l.id === 'm1')!.status).toBe('entered-in-error');
     rmSync(dir, { recursive: true, force: true });
   });
   it('accepts and ignores `approval` too (US-36 AC9, 2026-10-07): the published field is the hosted server’s, never a refusal here', async () => {

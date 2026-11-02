@@ -31,16 +31,18 @@
  * writer can only edit safely with the lamport discipline this does not take on.
  */
 import {
-  canonicalLabRow, canonicalLabValue, correctionOffScale, type CountFault, foldName, labCountFault, type LabCatalogEntry, labSlotKey,
+  canonicalLabRow, canonicalLabValue, correctionOffScale, type CountFault, displayLabUnit, foldName, labCountFault, type LabCatalogEntry,
   labUnitRefusal, normalizeLabUnit, resolveLabCatalogEntry, type StoredLabRow,
 } from './lab-catalog';
-import { BLOOD_TEST_METRICS, METRIC_TO_FIELD } from './mappings';
+import { bloodTestKeyOf, coreStored, createCoreRow, isBloodTestKey, isCoreRow, labRowSlot } from './blood-tests';
+import { METRIC_TO_FIELD } from './mappings';
 import { resolveCoreMetricName } from './lab-extraction';
 import { dayOf, latestStamp, localDay, rootIdOf } from './merge';
 import { isCalendarDay, isClinicalDay } from './measurement-history';
-import { createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
-import { reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
+import { CORE_BLOOD_UNITS, createLabValue, createMeasurement, recordSchemaVersion, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
+import { canonicalToReported, reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
 import { comparatorOf, type Comparator } from './lab-limits';
+import { formatLabValue, labUnitRefusalLine, savedLabText } from './lab-series';
 import { withEffectiveComparator } from './readable-rows';
 import { healthInputSchema, type MeasurementSource, METRIC_TYPES, PRESSURE_ORDER, pressureInverted } from './validation';
 import type { MEASUREMENT_REFUSAL_REASONS } from './product-events';
@@ -203,10 +205,13 @@ function toCanonicalUnit(metricType: string, value: number, unit: string | undef
   const def = UNIT_DEFS[metricType as MetricType];
   if (unit === undefined || !def) return value;
   const reported = reportedToCanonical(metricType as MetricType, value, unit);
-  if (!reported) {
-    return reject('unknown-unit', `${metricType} is measured in ${def.label.si} or ${def.label.conventional}, not "${unit}"`);
-  }
-  return reported.valueSI;
+  return reported ? reported.valueSI : coreUnitRefusal(metricType as MetricType, unit);
+}
+
+/** A core metric's unit refusal: what it is measured in, and the spelling that is not. */
+function coreUnitRefusal(metric: MetricType, unit: string): EditRejection {
+  const def = UNIT_DEFS[metric];
+  return reject('unknown-unit', `${metric} is measured in ${def.label.si} or ${def.label.conventional}, not "${unit}"`);
 }
 
 /**
@@ -240,6 +245,19 @@ function toStoredLab(
 function checkMeasurementValue(metricType: string, value: number): EditRejection | null {
   const fault = measurementValueFault(metricType, value);
   return fault?.reason === 'out-of-range' ? { ...fault, message: `${fault.message} (got ${value})` } : fault;
+}
+
+/**
+ * Rule 8 for a core blood test given by name and printed unit (US-66 AC6):
+ * the stored number, unit and range, or the refusal for a unit the test does
+ * not take or a converted value out of range.
+ */
+function toStoredCore(
+  metric: MetricType, value: number, unit: string, referenceLow?: number | null, referenceHigh?: number | null,
+): NonNullable<ReturnType<typeof coreStored>> | EditRejection {
+  const stored = coreStored(metric, value, unit, referenceLow, referenceHigh);
+  if (!stored) return coreUnitRefusal(metric, unit);
+  return checkMeasurementValue(metric, stored.value) ?? stored;
 }
 
 /** Rule 8's refusal without the number, for a bulk refusal (US-35 AC17) and a device import (device-import.ts). */
@@ -292,22 +310,33 @@ function withRow(file: RoadmapFile, key: 'measurements' | 'labValues', rows: Arr
  */
 export function stampUpdatedAt(file: RoadmapFile, now: string): RoadmapFile {
   const updatedAt = latestStamp(file.meta.updatedAt, now);
-  return updatedAt === file.meta.updatedAt ? file : { ...file, meta: { ...file.meta, updatedAt } };
+  // Every edit passes here, so the first core row lifts the copy to 3 before any save (US-66 AC15).
+  const schemaVersion = recordSchemaVersion(file);
+  return updatedAt === file.meta.updatedAt && schemaVersion === file.schemaVersion
+    ? file : { ...file, schemaVersion, meta: { ...file.meta, updatedAt } };
 }
 
 export type SlotKind = 'measurement' | 'lab';
 
 /**
- * Rule 3's slot, spelled once: a core metric on a calendar day, or a lab
- * catalogue key on one — so "Gamma GT" and `ggt` are one slot. Every writer
- * that asks "is this slot taken" builds this key.
+ * Rule 3's slot, spelled once: a vital on a calendar day (`m:`), a core blood
+ * test on one (`core:`, the merge's own key, US-66 AC1), or a lab catalogue
+ * key on one (`lab:`), so "Gamma GT" and `ggt` are one slot. A blood test
+ * asked as a measurement is its core slot. Every writer that asks "is this
+ * slot taken" builds this key.
  */
 export function slotKey(kind: SlotKind, metric: string, recordedAt: string): string {
-  return kind === 'measurement' ? `m:${metric}@${dayOf(recordedAt)}` : `l:${labSlotKey(metric)}@${dayOf(recordedAt)}`;
+  const slot = kind === 'lab' ? labRowSlot({ metricName: metric }) : isBloodTestKey(metric) ? `core:${metric}` : `m:${metric}`;
+  return `${slot}@${dayOf(recordedAt)}`;
 }
 
-function slotOfRow(row: FileMeasurement | FileLabValue): string {
-  return 'metricType' in row ? slotKey('measurement', row.metricType, row.recordedAt ?? '') : slotKey('lab', row.metricName, row.recordedAt ?? '');
+/** A row's slot without its day. A blood test left in `measurements` (unreadable, US-66 AC2) keeps `m:`, apart from the core rows. */
+function slotBase(row: FileMeasurement | FileLabValue): string {
+  return 'metricType' in row ? `m:${row.metricType}` : labRowSlot(row);
+}
+
+function slotOfRow(row: FileMeasurement | FileLabValue, day = dayOf(row.recordedAt ?? '')): string {
+  return `${slotBase(row)}@${day}`;
 }
 
 /** Every active row by its slot — one pass, for a writer with many rows to place. */
@@ -324,8 +353,7 @@ export function slotIndex(file: RoadmapFile): Map<string, FileMeasurement | File
  */
 export function findActiveInSlot(file: RoadmapFile, kind: SlotKind, metric: string, day: string): FileMeasurement | FileLabValue | undefined {
   const key = slotKey(kind, metric, day);
-  const rows: Array<FileMeasurement | FileLabValue> = kind === 'measurement' ? file.measurements : file.labValues;
-  return rows.find((row) => row.status === 'active' && slotOfRow(row) === key);
+  return [...file.measurements, ...file.labValues].find((row) => row.status === 'active' && slotOfRow(row) === key);
 }
 
 /**
@@ -367,11 +395,12 @@ export function sameLabQuantity(held: LabQuantity, offered: LabQuantity): boolea
 }
 
 /**
- * Append one core-metric measurement. Rejects an occupied slot rather than
+ * Append one core-metric value: a vital to `measurements`, a blood test as a
+ * core row in `labValues` (US-66 AC6). Rejects an occupied slot rather than
  * choosing for the caller: overwriting means correcting, and that is
  * `correctValue`'s decision to make explicit.
  */
-export function appendMeasurement(file: RoadmapFile, request: AppendMeasurementRequest): EditResult<FileMeasurement> {
+export function appendMeasurement(file: RoadmapFile, request: AppendMeasurementRequest): EditResult<FileMeasurement | FileLabValue> {
   const { metricType, now } = request;
   if (!(METRIC_TYPES as readonly string[]).includes(metricType)) {
     return reject('unknown-metric', `"${metricType}" is not a core metric (${METRIC_TYPES.join(', ')})`);
@@ -397,11 +426,15 @@ export function appendMeasurement(file: RoadmapFile, request: AppendMeasurementR
 export function placeMeasurement(
   file: RoadmapFile,
   request: { metricType: string; value: number; recordedAt: string; now: string; source?: MeasurementSource },
-): EditResult<FileMeasurement> {
+): EditResult<FileMeasurement | FileLabValue> {
   const { metricType, value, recordedAt, now, source } = request;
   const taken = findActiveInSlot(file, 'measurement', metricType, recordedAt);
   if (taken) {
     return reject('slot-occupied', `${metricType} already has a value on ${dayOf(recordedAt)}`, taken);
+  }
+  if (isBloodTestKey(metricType)) {
+    const row = createCoreRow({ id: newId(), metric: metricType, value, recordedAt, createdAt: now, ...(source ? { source } : null) });
+    return { ok: true, file: withRow(file, 'labValues', [...file.labValues, row], now), row };
   }
   const inverted = pressureFault(file, metricType, value, recordedAt);
   if (inverted) return inverted;
@@ -410,10 +443,11 @@ export function placeMeasurement(
 }
 
 /**
- * Append one non-core lab value. A catalogued test is stored in the
- * catalogue's SI unit (rule 8, US-21 phase 3); an uncatalogued one keeps the
- * unit it was reported in. There is no range to check either way — only the
- * app's 13 core metrics have one.
+ * Append one lab value. A core blood test's name ("LDL Cholesterol") writes
+ * its core row, converted from the printed unit by `UNIT_DEFS` and
+ * range-checked on the converted number (US-66 AC6). A catalogued test is
+ * stored in the catalogue's SI unit (rule 8, US-21 phase 3); an uncatalogued
+ * one keeps the unit it was reported in, and neither has a range to check.
  */
 export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest): EditResult<FileLabValue> {
   const { value, now } = request;
@@ -421,7 +455,8 @@ export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest
   const entry = resolveLabCatalogEntry(request.metricName);
   const metricName = entry?.key ?? foldName(request.metricName);
   if (!metricName) return reject('invalid-value', 'A lab value needs a test name');
-  const coreMetric = resolveCoreMetricName(request.metricName);
+  const bloodTest = bloodTestKeyOf(request.metricName);
+  const coreMetric = bloodTest ? null : resolveCoreMetricName(request.metricName);
   if (coreMetric) {
     return reject('core-metric', coreMetric === 'height'
       ? `"${request.metricName}" belongs in profile.heightCm — use update_profile to update heightCm in cm`
@@ -431,6 +466,15 @@ export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest
   if (!request.unit.trim()) return reject('invalid-value', 'A lab value needs the unit the lab reported it in');
   const recordedAt = resolveRecordedAt(request.recordedAt, request);
   if (typeof recordedAt !== 'string') return recordedAt;
+
+  if (bloodTest) {
+    const core = toStoredCore(bloodTest, value, request.unit, request.referenceLow, request.referenceHigh);
+    if ('ok' in core) return core;
+    const taken = findActiveInSlot(file, 'measurement', bloodTest, recordedAt);
+    if (taken) return reject('slot-occupied', `${bloodTest} already has a value on ${dayOf(recordedAt)}`, taken);
+    const row = createCoreRow({ id: newId(), metric: bloodTest, ...core, recordedAt, createdAt: now, ...(request.source ? { source: request.source } : null) });
+    return { ok: true, file: withRow(file, 'labValues', [...file.labValues, row], now), row };
+  }
 
   const stored = toStoredLab(entry, value, request.unit, request.referenceLow, request.referenceHigh);
   if ('ok' in stored) return stored;
@@ -445,6 +489,65 @@ export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest
     recordedAt, createdAt: now, ...(request.source ? { source: request.source } : null),
   });
   return { ok: true, file: withRow(file, 'labValues', [...file.labValues, row], now), row };
+}
+
+/** A lab value a person adds (US-25 AC25): the test's name, the unit they read it in, the number and the day. */
+export interface AddLabValueRequest { metricName: string; unit: string; value: number; day?: string }
+
+export type AddLabValueResult =
+  | { ok: true; file: RoadmapFile; row: FileLabValue }
+  | { ok: false; reason: 'invalid-value' | 'invalid-date' | 'unknown-unit' | 'slot-occupied'; message: string; existingId?: string; refused?: LabUnitRefusal; bound?: 'above' | 'below' };
+
+/**
+ * The one lab add, the web's "+ Add a value" (AddLabTest.tsx) and the iPhone's lab page (US-25
+ * AC25), in words a person reads. A catalogued test given in its catalogue unit is filed under the
+ * catalogue's key, as the web's test picker files it; any other under the name and unit given, the
+ * catalogue converting a unit it knows (the web's "Other test"). Written by the bulk save
+ * (`bulkAppendValues`, source "manual"), so a taken day keeps its one active row: the refusal names
+ * the held row (`existingId`) only when it is another number in the same unit, which a replace
+ * (`correctValue`, in the held row's unit) would correct. Never negative, never after today.
+ */
+export function addLabValue(file: RoadmapFile, request: AddLabValueRequest, now: string): AddLabValueResult {
+  const name = request.metricName.trim();
+  const given = request.unit.trim();
+  if (!name) return { ok: false, reason: 'invalid-value', message: 'A lab value needs a test name.' };
+  if (!Number.isFinite(request.value) || request.value < 0) return { ok: false, reason: 'invalid-value', message: 'A lab value is a number, 0 or more.' };
+  const day = resolveRecordedAt(request.day, { now });
+  if (typeof day !== 'string') return { ok: false, reason: 'invalid-date', message: 'A lab value is for a real day, today or before.' };
+  const entry = resolveLabCatalogEntry(name);
+  const exact = !!entry && displayLabUnit(given, entry) === entry.unit;
+  const metricName = exact ? entry!.key : name;
+  const unit = exact ? entry!.unit : given;
+  const result = bulkAppendValues(file, [{ kind: 'lab', metricName, value: request.value, unit, recordedAt: `${day}T00:00:00.000Z`, source: 'manual' }], now);
+  if (result.saved.length) return { ok: true, file: result.file, row: result.saved[0] as FileLabValue };
+  const [refused] = result.refused;
+  if (refused) return { ok: false, reason: 'unknown-unit', message: labUnitRefusalLine(refused.key, refused.unit, refused.fault), refused };
+  // A core test's name writes its core row (US-66 AC6): a number out of its range, or a held core day.
+  const [range] = result.measurementRefusals;
+  if (range) return { ok: false, reason: 'invalid-value', message: range.message, ...(range.bound ? { bound: range.bound } : null) };
+  const core = bloodTestKeyOf(metricName);
+  const taken = (core ? findActiveInSlot(file, 'measurement', core, day) : findActiveInSlot(file, 'lab', metricName, day)) as FileLabValue | undefined;
+  if (!taken) return { ok: false, reason: 'slot-occupied', message: 'That test already has a value for that date.' };
+  if (core) {
+    // Named in the unit typed; the same number typed again (never rounded, US-03 AC3) or stored offers nothing.
+    const { comparator } = comparatorOf(taken);
+    const shown = canonicalToReported(core, taken.value, unit) ?? taken.value;
+    const same = !comparator && (Number(formatLabValue(shown)) === request.value || sameValue(coreStored(core, request.value, unit)?.value ?? NaN, taken.value));
+    return {
+      ok: false, reason: 'slot-occupied',
+      message: `That test already has ${savedLabText(shown, comparator)} ${displayLabUnit(unit)} for that date.`,
+      ...(same ? null : { existingId: taken.id }),
+    };
+  }
+  const takenUnit = displayLabUnit(taken.unit ?? '', entry);
+  const { comparator } = comparatorOf(taken);
+  const replaceable = takenUnit === displayLabUnit(unit, entry)
+    && !sameLabQuantity({ name: taken.metricName, value: taken.value, unit: taken.unit ?? '', comparator }, { name: metricName, value: request.value, unit });
+  return {
+    ok: false, reason: 'slot-occupied',
+    message: `That test already has ${savedLabText(taken.value, comparator)} ${takenUnit} for that date.`,
+    ...(replaceable ? { existingId: taken.id } : null),
+  };
 }
 
 /**
@@ -462,8 +565,10 @@ export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest
  */
 export function correctValue(file: RoadmapFile, request: CorrectValueRequest): EditResult<FileMeasurement | FileLabValue> {
   const { id, now } = request;
-  const measurement = file.measurements.find((m) => m.id === id);
-  const lab = measurement ? undefined : file.labValues.find((l) => l.id === id);
+  const found = file.measurements.find((m) => m.id === id);
+  const lab = found ? undefined : file.labValues.find((l) => l.id === id);
+  // A core row corrects as a measurement does: converted, range-checked, flag and canonical unit kept (US-66 AC6).
+  const measurement = found ?? (lab && isCoreRow(lab) ? { ...lab, metricType: lab.metricName } : undefined);
   const old = measurement ?? lab;
   if (!old) return reject('not-found', `No value in this record has id ${id}`);
   if (old.status !== 'active') return reject('not-active', `Value ${id} is already entered-in-error; correct the row that replaced it`);
@@ -479,6 +584,16 @@ export function correctValue(file: RoadmapFile, request: CorrectValueRequest): E
     if (typeof newValue !== 'number') return newValue;
     const invalid = checkMeasurementValue(measurement.metricType, newValue) ?? pressureFault(file, measurement.metricType, newValue, measurement.recordedAt);
     if (invalid) return invalid;
+    if (lab) {
+      // A correction is an exact value (US-12 AC20): the old row's limit stays behind.
+      const { comparator: _limit, ...exact } = lab;
+      const row: FileLabValue = {
+        ...exact, id: newId(), value: newValue, unit: CORE_BLOOD_UNITS[lab.metricName], createdAt: now,
+        source: request.source ?? 'manual_correction', status: 'active', correctsId: id,
+      };
+      const rows = file.labValues.map((l) => (l.id === id ? { ...l, status: 'entered-in-error' as const } : l));
+      return { ok: true, file: withRow(file, 'labValues', [...rows, row], now), row };
+    }
     const row = createMeasurement({
       id: newId(), metricType: measurement.metricType, value: newValue,
       recordedAt: measurement.recordedAt, createdAt: now,
@@ -573,7 +688,8 @@ export type MoveResult = { ok: true; file: RoadmapFile; rows: ClinicalRow[] } | 
 /** A clinical row with the comparator this build reads in it (`effectiveComparator`). */
 const effective = <R extends ClinicalRow>(file: RoadmapFile, row: R): R =>
   withEffectiveComparator<ClinicalRow>('metricType' in row ? file.measurements : file.labValues, row) as R;
-const isBloodTestRow = (row: ClinicalRow) => !('metricType' in row) || BLOOD_TEST_METRICS.includes(row.metricType);
+/** Every blood test is a lab row (US-66 AC1); a measurement is a vital. */
+const isBloodTestRow = (row: ClinicalRow) => !('metricType' in row);
 const metricOf = (row: ClinicalRow) => ('metricType' in row ? row.metricType : row.metricName);
 
 /** Every active row on `day` that `pick` takes, measurements then lab values. */
@@ -611,7 +727,7 @@ export function planBloodTestMove(file: RoadmapFile, from: string, to: string, c
   const clashes: MoveClash[] = [];
   const matches: MoveClash[] = [];
   for (const moving of rows) {
-    const holders = toSlots.get(slotKey('metricType' in moving ? 'measurement' : 'lab', metricOf(moving), day)) ?? [];
+    const holders = toSlots.get(slotOfRow(moving, day)) ?? [];
     if (holders.length > 1) return reject('duplicate-slot', `${metricOf(moving)} has two values on ${day}; correct one first`, holders[0]);
     const held = holders[0];
     if (!held) continue;
@@ -769,7 +885,13 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
     // A lab row is CONVERTED before its slot is touched: a refused row must
     // not flip the active row it was going to replace.
     let makeRow: (recordedAt: string, correctsId: string | null) => FileMeasurement | FileLabValue;
-    if (input.kind === 'lab') {
+    // Brad D5 (US-66 AC6): an extra value named like a core test is that core
+    // value, converted. An imported creatinine never, since it may be urine
+    // (US-12 AC11); one the person typed is their blood value.
+    const named = input.kind === 'lab' ? bloodTestKeyOf(input.metricName) : null;
+    const asLab = input.kind === 'lab' && (!named || (named === 'creatinine' && input.source !== 'manual'));
+    const metric = input.kind === 'measurement' ? input.metricType : asLab ? input.metricName : named!;
+    if (input.kind === 'lab' && asLab) {
       const entry = resolveLabCatalogEntry(input.metricName);
       const stored = toStoredLab(entry, input.value, input.unit, input.referenceLow, input.referenceHigh);
       if ('ok' in stored) {
@@ -781,30 +903,36 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
         recordedAt, createdAt: now, source: input.source, correctsId, ...comparatorOf(input),
       });
     } else {
-      if (!(METRIC_TYPES as readonly string[]).includes(input.metricType)) {
-        measurementRefusals.push({ index, metricType: input.metricType, reason: 'unknown-metric', message: 'Unknown core metric' });
+      const core = input.kind === 'lab' ? coreStored(named!, input.value, input.unit, input.referenceLow, input.referenceHigh) : null;
+      if (input.kind === 'lab' && !core) {
+        refused.push({ key: metric, unit: input.unit, message: coreUnitRefusal(named!, input.unit).message });
         continue;
       }
-      const invalid = measurementValueFault(input.metricType, input.value);
+      const value = core?.value ?? input.value;
+      if (!(METRIC_TYPES as readonly string[]).includes(metric)) {
+        measurementRefusals.push({ index, metricType: metric, reason: 'unknown-metric', message: 'Unknown core metric' });
+        continue;
+      }
+      const invalid = measurementValueFault(metric, value);
       if (invalid) {
-        measurementRefusals.push(Number.isFinite(input.value)
-          ? { index, metricType: input.metricType, reason: 'out-of-range', message: invalid.message, bound: input.value > UNIT_DEFS[input.metricType as MetricType].validationRange.si.max ? 'above' : 'below' }
-          : { index, metricType: input.metricType, reason: 'invalid-value', message: invalid.message });
+        measurementRefusals.push(Number.isFinite(value)
+          ? { index, metricType: metric, reason: 'out-of-range', message: invalid.message, bound: value > UNIT_DEFS[metric as MetricType].validationRange.si.max ? 'above' : 'below' }
+          : { index, metricType: metric, reason: 'invalid-value', message: invalid.message });
         continue;
       }
-      if (OTHER_HALF.has(input.metricType) && inverted.has(dayOf(input.recordedAt))) {
-        measurementRefusals.push({ index, metricType: input.metricType, reason: 'out-of-range', message: PRESSURE_ORDER });
+      if (OTHER_HALF.has(metric) && inverted.has(dayOf(input.recordedAt))) {
+        measurementRefusals.push({ index, metricType: metric, reason: 'out-of-range', message: PRESSURE_ORDER });
         continue;
       }
-      makeRow = (recordedAt, correctsId) => createMeasurement({
-        id: newId(), metricType: input.metricType, value: input.value,
-        recordedAt, createdAt: now, source: input.source, correctsId, ...comparatorOf(input),
-      });
+      makeRow = (recordedAt, correctsId) => (isBloodTestKey(metric)
+        ? createCoreRow({ id: newId(), metric, value, ...(core ? { referenceLow: core.referenceLow, referenceHigh: core.referenceHigh } : null), recordedAt, createdAt: now, source: input.source, correctsId, ...comparatorOf(input) })
+        : createMeasurement({ id: newId(), metricType: metric, value, recordedAt, createdAt: now, source: input.source, correctsId, ...comparatorOf(input) }));
     }
-    const slot = input.kind === 'measurement' ? slotKey('measurement', input.metricType, input.recordedAt) : slotKey('lab', input.metricName, input.recordedAt);
-    const list: Array<FileMeasurement | FileLabValue> = input.kind === 'measurement' ? measurements : labValues;
+    const slot = slotKey(asLab ? 'lab' : 'measurement', metric, input.recordedAt);
+    const inLabs = asLab || isBloodTestKey(metric);
+    const list: Array<FileMeasurement | FileLabValue> = inLabs ? labValues : measurements;
     if (input.correctsId) {
-      const index = (input.kind === 'measurement' ? atMeasurement : atLab).get(input.correctsId);
+      const index = (inLabs ? atLab : atMeasurement).get(input.correctsId);
       const old = index === undefined ? undefined : list[index];
       if (!old || old.status !== 'active' || slotOfRow(old) !== slot) { skippedDuplicates++; continue; }
       list[index!] = { ...old, status: 'entered-in-error' };

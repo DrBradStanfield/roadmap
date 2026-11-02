@@ -400,16 +400,9 @@ export interface DbProfile {
   id: string;
   shopify_customer_id: string;
   email: string;
-  sex: number | null;
-  birth_year: number | null;
-  birth_month: number | null;
-  unit_system: number | null;
   first_name: string | null;
   last_name: string | null;
-  height: number | null;
   welcome_email_sent: boolean;
-  reminders_global_optout: boolean;
-  unsubscribe_token: string | null;
   created_at: string;
   subscription_plan: string;
   subscription_checked_at: string | null;

@@ -6,6 +6,7 @@
  * terminal. The CLI keeps reading the file and rendering text and HTML;
  * `renderJson` is the agent-facing shape, and both surfaces return it.
  */
+import { currentValueRows, isCoreRow } from './blood-tests';
 import { calculateHealthResults, missingPlanInputs } from './calculations';
 import { fileProfileToApi, fileScreeningRows } from './file-inputs';
 import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
@@ -122,7 +123,8 @@ export interface PlanInputs {
  * localStorage, never in the record, so the CLI renders in `profile.unitSystem`.
  */
 export function derivePlanInputs(file: RoadmapFile, now = new Date()): PlanInputs {
-  const active = file.measurements.filter((m) => m.status === 'active') as ApiMeasurement[];
+  // Vitals from `measurements`, blood tests from their core rows (US-66 AC7).
+  const active = currentValueRows(file) as ApiMeasurement[];
   const currentRows = latestActivePerMetric(active);
   const creatinine = currentRows.find((r) => r.metricType === 'creatinine');
   return {
@@ -211,9 +213,9 @@ export interface PlanLab {
   comparator?: Comparator;
 }
 
-/** Latest active row per lab test, named and unit-labelled from the catalogue. */
+/** Latest active row per lab test, named and unit-labelled from the catalogue. A core value is a current value, never listed here (US-66 AC8). */
 function derivePlanLabs(file: RoadmapFile): PlanLab[] {
-  const active = file.labValues.filter((l) => l.status === 'active');
+  const active = file.labValues.filter((l) => l.status === 'active' && !isCoreRow(l));
   const rows = latestActivePerMetric(active.map((l) => ({ ...l, metricType: labSlotKey(l.metricName) }))) as FileLabValue[];
   return rows
     .map((l) => {

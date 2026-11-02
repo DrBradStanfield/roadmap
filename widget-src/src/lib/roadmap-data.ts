@@ -1,6 +1,9 @@
 /** Local-first health records and client-side reports, on every widget surface. */
 import {
+  type AddLabValueRequest,
+  type AddLabValueResult,
   type ApiMeasurement,
+  type LabUnitRefusal,
   dayOf,
   type MoveKeep,
   type MoveRejection,
@@ -43,6 +46,8 @@ export async function initRoadmapStore(adapter: StorageAdapter, cloudUnreachable
   // The page about to render shows this erase; it moves the mark as it shows
   // another, and the store refuses a write made against an older one (US-16 AC2a).
   store.showErase(store.eraseIdentity);
+  // US-66 AC13: the open moved blood tests into one table and wrote it: counts only, never a name or value.
+  void store.bloodTablesUnified.then((report) => { if (report) trackProductEvent('blood_tests_unified', report); });
   // Both surfaces init here, so this is the one place the live re-read starts
   // (US-34). It runs for the life of the page; nothing unmounts the data layer.
   store.startLiveRefresh();
@@ -242,16 +247,25 @@ export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[])
 export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<BulkLabValuesResult> {
   if (!store) return { saved: [], skippedDuplicates: 0, errorCount: values.length, refused: [] };
   const result = store.bulkSaveLabValues(values);
-  // The one place every lab writer passes, so each refused row is counted once:
-  // only a spelling the test does not take, the signal for the next one to teach it (US-21 AC15).
-  // A unit that is not a unit word is counted without it (US-21 AC11); a blank one as `(blank)` (AC22).
-  for (const row of result.refused) {
+  countRefusedSpellings(result.refused);
+  return result;
+}
+/** A lab value a person adds (US-21 AC2, US-25 AC25), by health-core's one lab add; null when nothing could be written. */
+export async function addLabValue(input: AddLabValueRequest): Promise<AddLabValueResult | null> {
+  const result = store ? store.addLabValue(input) : null;
+  if (result && !result.ok && result.refused) countRefusedSpellings([result.refused]);
+  return result;
+}
+/** Every lab writer passes here, so each refused row is counted once: only a spelling the test
+ *  does not take, the signal for the next one to teach it (US-21 AC15). A unit that is not a unit
+ *  word is counted without it (US-21 AC11); a blank one as `(blank)` (AC22). */
+function countRefusedSpellings(refused: LabUnitRefusal[]): void {
+  for (const row of refused) {
     if (!labUnitTaken(resolveLabCatalogEntry(row.key), row.unit)) {
       const unit = labUnitForEvent(row.unit);
       trackProductEvent('lab_unit_refused', unit ? { key: row.key, unit } : { key: row.key });
     }
   }
-  return result;
 }
 export async function bulkSaveDocuments(
   documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob }>,
