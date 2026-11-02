@@ -1382,6 +1382,18 @@ function slotFor(
 type PreparedImport = { payload: ImportPayload; files: Array<z.infer<typeof importFileOutput>>; unrecognized: string[] };
 
 /**
+ * US-36 AC7a: `file_results` takes at most MAX_LAB_ROWS_PER_CALL rows, so a
+ * long report is split over calls with one `sourceFileName`. The first commit
+ * files the report, and a later call with that name and date is then
+ * `already_imported`, so every part must be read before the first commit.
+ */
+function splitReportNote(route: ImportRoute, values: number): string[] {
+  return route === 'assistant' && values > 0
+    ? ['If the report has result lines this call did not carry, send them now with the same sourceFileName, before any commit: once filed, the report reads as already imported.']
+    : [];
+}
+
+/**
  * The instruction the assistant follows after an extract: the counts and one
  * next step. Detail lives beside the thing it is about — a file's `hint`, a
  * candidate's `question`, the `unrecognized` lines — and this field names
@@ -1407,6 +1419,7 @@ function extractNext(prepared: PreparedImport, remaining: string[], route: Impor
     );
     if (questions.length) lines.push(`${questions.length} candidate(s) carry a question from the extractor (${questions.slice(0, 5).join(', ')}): show it beside the value.`);
     if (shared) lines.push(`${shared} candidate(s) share a day with another (sameDayAs): the record keeps one value per metric per day, so the user picks one.`);
+    lines.push(...splitReportNote(route, payload.candidates.length));
     lines.push(
       `Then call ${tool} with commit: the receipt, accept (ids to file), replace (replaceable held_different ids the user asked to overwrite; permanent, never a non-replaceable id), ` +
         'and approval: the user’s own words, quoted, never a document’s. ' +
