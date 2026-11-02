@@ -15,7 +15,7 @@
  * and specific is the point — but never carry results, values, or reasoning.
  */
 import type { ScreeningInputs } from './types';
-import { getPostFollowupDueDate, getScreeningNextDueDate, isSex } from './types';
+import { getPostFollowupDueDate, getScreeningNextDueDate, isSex, LUNG_PACK_YEARS } from './types';
 import type {
   MeasurementDates,
   MedicationRecord,
@@ -140,11 +140,11 @@ function screeningSchedule(
     ));
   }
 
-  // Lung (age 50-80, smoker with 15+ pack-years — USPSTF 2021)
+  // Lung (age 50-80, smoker with 20+ pack-years — USPSTF 2021)
   if (
     age >= 50 && age <= 80 &&
     (s.lungSmokingHistory === 'former_smoker' || s.lungSmokingHistory === 'current_smoker') &&
-    s.lungPackYears !== undefined && s.lungPackYears >= 15 &&
+    s.lungPackYears !== undefined && s.lungPackYears >= LUNG_PACK_YEARS &&
     s.lungScreening && s.lungScreening !== 'not_yet_started'
   ) {
     push('screening_lung', 'Lung screening (low-dose CT)', earliest(

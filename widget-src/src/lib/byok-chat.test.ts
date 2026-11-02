@@ -99,6 +99,15 @@ describe('BYOK chat context — per-field sanitizing', () => {
     expect(state.sent!.system).toMatch(/`missingInputs` naming `sex`.*never work them out yourself/);
   });
 
+  // US-67 N3 (Brad 2026-11-03, "Option 1"): only the banner knows whether it can offer
+  // an Undo, so neither the prompt nor the tools tell the model to promise one.
+  it('US-67 N3: the prompt and tools never tell the model the user can undo', async () => {
+    await contextSent(SNAPSHOT);
+    expect(state.sent!.system).toMatch(/Do not offer an Undo yourself; if asked, say the banner shows Undo when one is available/);
+    expect(state.sent!.system).not.toMatch(/tell them they can undo/i);
+    expect(JSON.stringify(state.bodies.at(-1)!.tools)).not.toMatch(/that they can undo/i);
+  });
+
   it('US-15 AC36: an empty form still sends no context', async () => {
     expect(await contextSent({ unitSystem: 'si', medications: [], screenings: [] })).toBeNull();
     expect(state.sent!.system).toContain('User data: none entered yet');

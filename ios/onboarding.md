@@ -131,7 +131,8 @@ Health, and see my plan, without facing the full form.
   month, height; `appendMeasurement` for weight, dated today, `source: apple_health`
   when it came from Health). A refused value shows the engine's words and stays on the
   screen.
-- AC6: units default to the phone's region (US region: feet, inches, pounds) and are
+- AC6: units default to the phone's region (US region: feet, inches, pounds; also the
+  US territories and Myanmar, by the web's `detectUnitSystem`, US-05 AC5) and are
   saved as the record's unit choice, which only My data's Units row changes. The height
   and weight switches are for entry only.
 - AC7: after the last step the app opens My plan. Quitting part way keeps what was

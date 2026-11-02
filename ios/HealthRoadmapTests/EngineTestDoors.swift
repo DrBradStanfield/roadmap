@@ -63,12 +63,12 @@ extension HealthEngine {
     }
 }
 
-/// `XCTAssertEqual(result, .saved)` for an edit that is awaited first: an
+/// `XCTAssertEqual(result, .saved())` for an edit that is awaited first: an
 /// assertion's own autoclosure cannot wait.
 @MainActor
 func XCTAssertSaved(_ result: @autoclosure () async -> RecordStore.ApplyResult, _ message: String = "", file: StaticString = #filePath, line: UInt = #line) async {
     let result = await result()
-    XCTAssertEqual(result, .saved, message, file: file, line: line)
+    XCTAssertEqual(result, .saved(), message, file: file, line: line)
 }
 
 extension RecordStore {

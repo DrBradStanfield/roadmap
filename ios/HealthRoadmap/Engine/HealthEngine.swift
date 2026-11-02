@@ -185,6 +185,14 @@ actor HealthEngine {
         try call("newRecordJson", [now.formatted(Self.iso), deviceId, Self.languageAndRegion(locale), timeZone.identifier])
     }
 
+    /// The units health-core's `detectUnitSystem` gives a region and time zone ("si" or
+    /// "conventional"), the web's first-visit rule (US-05 AC5): the units of a first-launch record.
+    func regionUnits(locale: Locale = .current, timeZone: TimeZone = .current) throws -> String? {
+        let record = try newRecord(now: .now, deviceId: "region", locale: locale, timeZone: timeZone)
+        let file = try JSONSerialization.jsonObject(with: Data(record.utf8)) as? [String: Any]
+        return (file?["profile"] as? [String: Any])?["unitSystem"] as? String
+    }
+
     /// Applies one edit with health-core's own write rules. The record passed in is not changed.
     func apply(_ edit: RecordEdit, to recordJSON: String, now: Date, deviceId: String, units: String = "{}") throws -> EditOutcome {
         let editJSON = String(decoding: try JSONEncoder().encode(edit), as: UTF8.self)
