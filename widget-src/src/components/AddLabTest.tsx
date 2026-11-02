@@ -21,6 +21,9 @@ import type { ApiLabValue } from '../lib/api-types';
 /** A saved value the form names: `value` in the unit typed, `stored` in the unit the row keeps. */
 interface Held { id: string; slot: string; value: number; unit: string; stored: number; comparator?: Comparator }
 
+/** The iPhone's words for the same refusal (ios/engine/my-data.ts addSeriesValue). */
+const CORE_ON_LAB_PAGE = 'Add this test from its row in Blood tests.';
+
 export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect, preset, dirtyRef }: {
   onAdded: () => void;
   /** The saved values, to name the one a duplicate collides with. */
@@ -115,6 +118,9 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
 
   const save = async () => {
     if (!canSave) return;
+    // A value page for a kept-apart row named like a core test (an old "creatinine" may be urine,
+    // US-12 AC11): the add would write the core value, which this page never shows (US-66 AC5).
+    if (preset && core) { setNotice(CORE_ON_LAB_PAGE); return; }
     setSaving(true);
     clearNotice();
     try {

@@ -364,3 +364,14 @@ describe('US-66 AC6 — a core test typed under "Other"', () => {
     expect(queryByText(/ldl/i)).toBeNull();
   });
 });
+
+describe('US-66 AC5: a value page for a kept-apart core-named row', () => {
+  it('never adds a core value from the page of an old "Creatinine" lab row', async () => {
+    const { getByText, getByLabelText, findByText } = render(<AddLabTest onAdded={() => {}} labValues={[]} coreValues={[]} preset={{ metricName: 'Creatinine', unit: 'µmol/L' }} />);
+    fireEvent.click(getByText('+ Add a value'));
+    fireEvent.change(getByLabelText(/value/i), { target: { value: '90' } });
+    fireEvent.click(getByText(/^save$/i));
+    expect(await findByText('Add this test from its row in Blood tests.')).toBeTruthy();
+    expect(addLabValue).not.toHaveBeenCalled();
+  });
+});

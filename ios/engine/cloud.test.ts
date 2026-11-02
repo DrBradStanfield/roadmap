@@ -250,6 +250,23 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     expect(dropbox.record.labValues.find((row) => row.correctsId === 'f1')).toMatchObject({ value: 85, unit: 'µg/L', status: 'active' });
   });
 
+  it('US-66 AC6 with US-25 AC25 R7: after a units switch, a core blood correction is refused, not misread', async () => {
+    const dropbox = new FakeDropbox();
+    const web = await recordWith(['2026-10-01'], 'web');
+    // A core LDL (a labValues row since US-66), and the record switched to US units elsewhere.
+    dropbox.put({ ...web, profile: { ...web.profile, unitSystem: 'conventional' }, labValues: [{
+      id: 'c1', metricName: 'ldl', core: true, value: 3.1, unit: 'mmol/L', referenceLow: null, referenceHigh: null,
+      recordedAt: '2026-10-01T00:00:00.000Z', createdAt: NOW, source: 'manual', status: 'active', correctsId: null,
+    }] });
+    const { engine } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    // The sheet was opened in metric units: 3.0 means mmol/L, never mg/dL.
+    const out = JSON.parse(engine.cloudEdit(JSON.stringify({ kind: 'correct', id: 'c1', value: 3.0 }), erase, 'si', NOW)) as { ok: boolean; reason?: string };
+    expect(out).toMatchObject({ ok: false, reason: 'units-changed' });
+    await engine.cloudFlush();
+    expect(dropbox.record.labValues.filter((row) => row.correctsId === 'c1')).toEqual([]);
+  });
+
   it('AC11c: a row the web added is taken in on a re-read', async () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith(['2026-10-01'], 'web'));
