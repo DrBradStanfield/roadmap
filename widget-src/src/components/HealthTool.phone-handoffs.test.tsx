@@ -73,6 +73,32 @@ describe('US-16 AC2 on a phone: a chat edit lands on My data, on the cell it fil
     await waitFor(() => expect(view.container.querySelector('.md-panel-messages')!.textContent).toBe('Your typed value was not saved.'));
   });
 
+  it.each([['phone', true], ['desktop', false]])('US-16 AC2 on a %s: a chat prefill into a plain field closes an open value page, so the field shows; the table stays shut', async (_, phone) => {
+    if (!phone) {
+      vi.stubGlobal('matchMedia', (q: string) => ({
+        matches: !q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {},
+      }));
+    }
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
+    await addMeasurement('ldl', 3.0, '2026-09-01'); // the whole form; no saved vitals, so the waist is a plain field
+    await flushRoadmapStore();
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    const ldlRow = await waitFor(() => [...view.container.querySelectorAll<HTMLButtonElement>('.md-row')].find(b => b.textContent!.startsWith('LDL'))!);
+    fireEvent.click(ldlRow);
+    expect(view.container.querySelector('.md-page')).not.toBeNull();
+    if (phone) fireEvent.click(tab(view, 'Chat'));
+
+    act(() => chat.proposeEdit!([{ kind: 'field', field: 'waistCm', displayValue: 90, unitSystem: 'si', date: null }]));
+
+    await waitFor(() => expect(view.container.querySelector('.md-page')).toBeNull());
+    if (phone) expect(tab(view, 'My data').getAttribute('aria-selected')).toBe('true');
+    const waist = view.container.querySelector<HTMLInputElement>('#waistCm')!;
+    expect(waist.value).toBe('90');
+    expect(waist.closest('[hidden]')).toBeNull();
+    expect([...view.container.querySelectorAll<HTMLElement>('.md-table')].every(t => t.hidden)).toBe(true);
+  });
+
   it('a blood test: My data shows, and the matrix cell holding the value is in view and focused', async () => {
     await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
     await addMeasurement('weight', 82, '2026-09-01');
