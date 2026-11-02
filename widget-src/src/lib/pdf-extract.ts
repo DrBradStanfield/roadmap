@@ -31,8 +31,16 @@ export interface PageContent {
  */
 export async function extractFromPdf(file: File): Promise<{ pages: PageContent[]; truncated: boolean }> {
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  // pdf.js starts a worker for each document: release it once read or failed (AC7a).
+  const task = pdfjsLib.getDocument({ data: arrayBuffer });
+  try {
+    return await readPdf(await task.promise);
+  } finally {
+    await task.destroy();
+  }
+}
 
+async function readPdf(pdf: pdfjsLib.PDFDocumentProxy): Promise<{ pages: PageContent[]; truncated: boolean }> {
   const pageCount = Math.min(pdf.numPages, IMPORT_LIMITS.websitePdfPages);
   const pages: PageContent[] = [];
   let cut = false;
