@@ -241,6 +241,11 @@ A signature means "the key holder approved this bundle", nothing more.
   an older app cannot do without stays in the contract and moves the id.
   Second use (2026-11-02, US-62 AC8): My data rows' `target` and `previous`, read as none from
   an older engine (`MyDataLayoutTests.testARowReadsItsTargetAndPreviousValueFromTheEngine_US62`).
+  Third use (2026-11-02, US-66 AC14): `screenJson`'s `movedRecord`, the record to write once
+  when reading the phone's file moved its blood tests into one table. `loadPhone` writes it with
+  the edit path's atomic write and no pending marker (the move changes no value; an open cloud
+  writes its own copy, in `cloudOpen`, through `commit` as an edit does). A field, not a new
+  door, so the bridge id stays: an older app ignores it, an older engine sends none.
 - **The schema is the app's (R7).** A bundle whose record `schemaVersion` differs from the
   bundled engine's is refused. A schema change always needs an app update, so an over-the-
   air engine can never write a record the web or an older phone cannot read.
