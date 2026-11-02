@@ -63,7 +63,8 @@ struct RootView: View {
             NavigationStack { MyDataView(engine: engine, store: store, sync: sync).firmTopEdge() }
                 .tabItem { Label("My data", systemImage: "list.bullet.clipboard") }
                 .tag(Tab.data)
-            titled("My plan") { PlanView(store: store, showMyData: { tab = .data }) }
+            // No title bar: the plan's own headings scroll with it (US-25 AC26, Brad 2026-11-03).
+            PlanView(store: store, showMyData: { tab = .data }).solidStatusBar().firmTopEdge()
                 .tabItem { Label("My plan", systemImage: "heart.text.square") }
                 .tag(Tab.plan)
             // ChatView keeps its own navigation stack and title.
@@ -274,15 +275,6 @@ struct RootView: View {
         analytics.event(backingUp ? .cloudPromptBackUp : .cloudPromptNotNow)
         if backingUp { showSync = true }
         backingUp = false
-    }
-
-    private func titled(_ title: String, @ViewBuilder _ content: () -> some View) -> some View {
-        NavigationStack {
-            content()
-                .navigationTitle(title)
-                .navigationBarTitleDisplayMode(.inline)
-                .firmTopEdge()
-        }
     }
 }
 

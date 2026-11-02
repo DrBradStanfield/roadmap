@@ -534,3 +534,24 @@ describe('US-62 AC14 (Brad 2026-11-02): the plan column, top to bottom', () => {
     expect(body.contains(at('.health-results-panel > .hr-col-header'))).toBe(false);
   });
 });
+
+describe('US-62 AC16 (Brad 2026-11-03): a heading over the snapshot tiles', () => {
+  it('heads the tiles "Your health snapshots", in the suggestion groups\' heading style, inside the tiles\' section', () => {
+    const view = showPlan();
+    const heading = view.getByRole('heading', { name: 'Your health snapshots' });
+    const tiles = view.container.querySelector('.quick-stats .stats-grid');
+    expect(tiles?.children.length).toBeGreaterThan(0);
+    expect(heading.compareDocumentPosition(tiles!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // The same element and class as the suggestion groups' headings ("Foundation").
+    const foundation = view.getByRole('heading', { name: 'Foundation' });
+    expect(heading.tagName).toBe(foundation.tagName);
+    expect(heading.classList.contains('suggestions-group-title')).toBe(true);
+    // One section with the tiles, so the column's gaps stay as they were.
+    expect(heading.parentElement).toBe(tiles!.parentElement);
+  });
+
+  it('shows no heading when there are no tiles', () => {
+    const view = showPlan({ tiles: [] });
+    expect(view.queryByRole('heading', { name: 'Your health snapshots' })).toBeNull();
+  });
+});

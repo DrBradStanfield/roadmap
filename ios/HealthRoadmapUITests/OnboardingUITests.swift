@@ -147,6 +147,31 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertFalse(again.buttons["onboarding.continue"].exists)
     }
 
+    /// US-25 AC26 (Brad 2026-11-03): My plan has no title bar; "Your health snapshots" heads
+    /// the tiles and scrolls away with them, as the Next Steps heading does. The tab keeps its name.
+    @MainActor
+    func testThePlanHeadsItsSnapshotsAndHasNoTitleBar_US25_AC26() throws {
+        let app = launch()
+        try answerUpToWeight(app)
+        answerWeight(app)
+
+        XCTAssertTrue(app.tabBars.buttons["My plan"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.tabBars.buttons["My plan"].isSelected, "the tab still says My plan")
+        let heading = app.staticTexts["Your health snapshots"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 10), "the snapshots heading")
+        XCTAssertFalse(app.navigationBars.firstMatch.exists, "no title bar over the plan")
+        let tile = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Ideal Body Weight'")).firstMatch
+        XCTAssertTrue(tile.exists, "a tile")
+        XCTAssertLessThanOrEqual(heading.frame.maxY, tile.frame.minY, "the heading sits above the tiles")
+        snap(app, "plan heading top")
+
+        // It scrolls with the plan, as the section headings do.
+        let top = heading.frame.minY
+        app.swipeUp()
+        XCTAssertTrue(!heading.isHittable || heading.frame.minY < top - 40, "the heading scrolled away")
+        snap(app, "plan heading scrolled")
+    }
+
     /// US-57's three tips, word for word (Brad 2026-10-25).
     static let tourLines = [
         "A snapshot of your health. Tap any tile to learn more.",
