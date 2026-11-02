@@ -296,15 +296,34 @@ describe('docs/health-roadmap-file.schema.json (US-29)', () => {
     expect(check({ ...file, meta: { ...file.meta, erasedAt: 5 } }).ok).toBe(false);
   });
 
-  it('US-09 AC23: a listed erase carries erasedRows through merge + migrate, at version 2', () => {
+  it('US-09 AC23, US-66 AC15: a listed erase carries erasedRows through merge + migrate, at 2, or 3 beside a core row', () => {
     const erased = createEmptyFile(OPTS);
     erased.schemaVersion = 2;
     erased.meta.eraseEpoch = 1;
     erased.erasedRows = { fromEpoch: 1, ids: ['m1'] };
+    // The representative record's LDL moves to a core row, so the file is 3.
     const file = migrateFile(JSON.parse(JSON.stringify(mergeFiles(representativeFile(), erased, OPTS))), OPTS);
-    expect(file.schemaVersion).toBe(2);
+    expect(file.schemaVersion).toBe(3);
     expect(file.erasedRows).toEqual({ fromEpoch: 1, ids: ['m1'] });
     expect(check(file).errors).toBe('No errors');
+    // With no core row it stays 2, and validates.
+    const vitals = createEmptyFile(OPTS);
+    vitals.measurements = [createMeasurement({ id: 'w1', metricType: 'weight', value: 70, recordedAt: '2026-05-01', createdAt: '2026-05-01T08:00:00Z' })];
+    const listed = migrateFile(JSON.parse(JSON.stringify(mergeFiles(vitals, erased, OPTS))), OPTS);
+    expect(listed.schemaVersion).toBe(2);
+    expect(check(listed).errors).toBe('No errors');
+  });
+
+  it('US-66 AC15: a migrated record holding a core row is version 3, and the schema refuses one below it', () => {
+    const file = migrateFile(JSON.parse(JSON.stringify(representativeFile())), OPTS);
+    expect(file.labValues.some((row) => row.core === true)).toBe(true);
+    expect(file.schemaVersion).toBe(3);
+    expect(check(file).errors).toBe('No errors');
+    expect(check({ ...file, schemaVersion: 2 }).ok).toBe(false);
+    expect(check({ ...file, schemaVersion: 1 }).ok).toBe(false);
+    // An entered-in-error core row counts too.
+    const flipped = { ...file, schemaVersion: 2, labValues: file.labValues.map((row) => ({ ...row, status: 'entered-in-error' })) };
+    expect(check(flipped).ok).toBe(false);
   });
 
   it('preserves unknown fields, so a newer app version still validates', () => {
@@ -329,10 +348,11 @@ describe('docs/health-roadmap-file.schema.json (US-29)', () => {
 
   it('rejects each individual invariant break', () => {
     const cases: Array<[string, (f: RoadmapFile) => void]> = [
-      ['schemaVersion 3', (f) => { (f as { schemaVersion: number }).schemaVersion = 3; }],
-      ['an erase list on a version-1 file', (f) => { f.erasedRows = { fromEpoch: 1, ids: ['m1'] }; }],
-      ['an erase list without ids', (f) => { f.schemaVersion = 2; (f as unknown as Record<string, unknown>).erasedRows = { fromEpoch: 1 }; }],
-      ['an erase list naming a number', (f) => { f.schemaVersion = 2; (f as unknown as Record<string, unknown>).erasedRows = { fromEpoch: 1, ids: [7] }; }],
+      ['schemaVersion 4', (f) => { (f as { schemaVersion: number }).schemaVersion = 4; }],
+      ['a core row on a version-2 file (US-66 AC15)', (f) => { f.schemaVersion = 2; }],
+      ['an erase list on a version-1 file', (f) => { f.schemaVersion = 1; f.labValues = f.labValues.filter((row) => row.core !== true); f.erasedRows = { fromEpoch: 1, ids: ['m1'] }; }],
+      ['an erase list without ids', (f) => { (f as unknown as Record<string, unknown>).erasedRows = { fromEpoch: 1 }; }],
+      ['an erase list naming a number', (f) => { (f as unknown as Record<string, unknown>).erasedRows = { fromEpoch: 1, ids: [7] }; }],
       ['missing meta.lamport', (f) => { delete (f.meta as { lamport?: number }).lamport; }],
       ['unknown measurement source', (f) => { f.measurements[0].source = 'guessed' as never; }],
       ['typo\'d metricType', (f) => { f.measurements[0].metricType = 'ldl_c'; }],

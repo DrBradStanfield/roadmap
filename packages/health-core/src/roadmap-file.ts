@@ -30,11 +30,31 @@ import { UNIT_DEFS, type LpaUnit } from './units';
  *  until an erase lists what it removed (US-09 AC23). */
 export const BASE_SCHEMA_VERSION = 1;
 
-/** The highest version this app reads. A file carrying `erasedRows` is
- *  stamped with it, so a reader from before the list refuses the file and can
- *  neither shrink the list nor erase without listing (US-09 AC23). Bump only
- *  when the on-disk shape changes in a way `migrate.ts` must handle. */
-export const CURRENT_SCHEMA_VERSION = 2;
+/** A file carrying `erasedRows`, so a reader from before the list refuses the
+ *  file and can neither shrink the list nor erase without listing (US-09 AC23). */
+export const ERASED_ROWS_SCHEMA_VERSION = 2;
+
+/** A file holding a core blood row (`core: true` in `labValues`, any status).
+ *  A reader from before US-66 slots a core creatinine and a "Creatinine" lab
+ *  row together and flips one for good, so it must refuse the file (US-66 AC15). */
+export const CORE_ROWS_SCHEMA_VERSION = 3;
+
+/** The highest version this app reads. Bump only when the on-disk shape
+ *  changes in a way an older reader would damage. */
+export const CURRENT_SCHEMA_VERSION = 3;
+
+/**
+ * The version a file is stamped with (US-66 AC15): its stated version as an
+ * integer in [1, CURRENT], raised to 2 when it carries `erasedRows` and to 3
+ * when it holds a core row. Never lowers a version. Every migrate, merge,
+ * erase and edit stamps through it, so no writer saves a core row below 3.
+ */
+export function recordSchemaVersion(file: { schemaVersion?: unknown; erasedRows?: unknown; labValues?: readonly unknown[] }): number {
+  const stated = file.schemaVersion;
+  const base = typeof stated === 'number' && stated >= BASE_SCHEMA_VERSION ? Math.min(CURRENT_SCHEMA_VERSION, Math.floor(stated)) : BASE_SCHEMA_VERSION;
+  const core = (file.labValues ?? []).some((row) => typeof row === 'object' && row !== null && (row as { core?: unknown }).core === true);
+  return Math.max(base, file.erasedRows ? ERASED_ROWS_SCHEMA_VERSION : BASE_SCHEMA_VERSION, core ? CORE_ROWS_SCHEMA_VERSION : BASE_SCHEMA_VERSION);
+}
 
 /** Sync bookkeeping carried on every mutable record so merge can pick a winner. */
 export interface SyncStamp {

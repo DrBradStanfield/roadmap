@@ -36,6 +36,7 @@ import {
   BASE_SCHEMA_VERSION,
   CURRENT_SCHEMA_VERSION,
   createEmptyFile,
+  recordSchemaVersion,
   type ErasedRows,
   type FileLabValue,
   type FileMeasurement,
@@ -330,15 +331,15 @@ export function migrateFile(
     };
   };
 
-  // A listed file is stamped the version that carries the list, so a reader
-  // from before it refuses the file; any other keeps its own (US-09 AC23).
+  // A listed file is stamped at least the version that carries the list, so a
+  // reader from before it refuses the file (US-09 AC23); the stamp is below.
   const erasedRows = erasedRowsOf(raw.erasedRows, meta.eraseEpoch ?? 0);
   const { erasedRows: _unchecked, ...rest } = raw;
   // US-66: blood tests out of `measurements`, then old core-named lab rows folded in.
   const blood = moveBloodMeasurements(dated<FileMeasurement>(raw.measurements), dated<FileLabValue>(raw.labValues));
   const file = {
     ...rest,
-    schemaVersion: erasedRows || version >= CURRENT_SCHEMA_VERSION ? CURRENT_SCHEMA_VERSION : BASE_SCHEMA_VERSION,
+    schemaVersion: version,
     ...(erasedRows ? { erasedRows } : null),
     meta,
     profile: singleton(raw.profile),
@@ -357,5 +358,7 @@ export function migrateFile(
   } as RoadmapFile;
   // Every reader drops the listed rows, so the widget, `read_record` and the
   // CLI agree on what the record holds.
-  return withoutListed(file, new Set(erasedRows?.ids));
+  const kept = withoutListed(file, new Set(erasedRows?.ids));
+  // Stamped on what it now holds, the move and fold included (US-66 AC15).
+  return { ...kept, schemaVersion: recordSchemaVersion(kept) };
 }

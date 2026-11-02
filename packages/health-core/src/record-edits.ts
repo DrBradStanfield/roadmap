@@ -39,7 +39,7 @@ import { METRIC_TO_FIELD } from './mappings';
 import { resolveCoreMetricName } from './lab-extraction';
 import { dayOf, latestStamp, localDay } from './merge';
 import { isCalendarDay, isClinicalDay } from './measurement-history';
-import { CORE_BLOOD_UNITS, createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
+import { CORE_BLOOD_UNITS, createLabValue, createMeasurement, recordSchemaVersion, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
 import { healthInputSchema, type MeasurementSource, METRIC_TYPES, PRESSURE_ORDER, pressureInverted } from './validation';
 import type { MEASUREMENT_REFUSAL_REASONS } from './product-events';
@@ -307,7 +307,10 @@ function withRow(file: RoadmapFile, key: 'measurements' | 'labValues', rows: Arr
  */
 export function stampUpdatedAt(file: RoadmapFile, now: string): RoadmapFile {
   const updatedAt = latestStamp(file.meta.updatedAt, now);
-  return updatedAt === file.meta.updatedAt ? file : { ...file, meta: { ...file.meta, updatedAt } };
+  // Every edit passes here, so the first core row lifts the copy to 3 before any save (US-66 AC15).
+  const schemaVersion = recordSchemaVersion(file);
+  return updatedAt === file.meta.updatedAt && schemaVersion === file.schemaVersion
+    ? file : { ...file, schemaVersion, meta: { ...file.meta, updatedAt } };
 }
 
 export type SlotKind = 'measurement' | 'lab';

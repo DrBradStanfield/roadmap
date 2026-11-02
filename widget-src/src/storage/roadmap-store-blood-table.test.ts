@@ -9,6 +9,7 @@ import {
 } from '@roadmap/health-core';
 import { createLabValue } from '@roadmap/health-core/roadmap-file';
 import { RoadmapStore } from './roadmap-store';
+import { LocalStorageAdapter } from './local-storage-adapter';
 import { lpaRowsToCheck } from '../lib/lpa-unit';
 
 const DAY = '2024-06-01T00:00:00.000Z';
@@ -110,6 +111,44 @@ describe('US-66 AC7 / AC8: the screens read core rows as blood tests', () => {
     await store.flush();
     expect(readCloudFile(cloud)).toMatchObject({ measurements: [], labValues: [{ metricName: 'apob', core: true, unit: 'g/L' }] });
     expect(store.loadLabValues()).toEqual([]);
+  });
+});
+
+describe('US-66 AC15: a saved record holding a core row is schemaVersion 3', () => {
+  const readLocal = async (): Promise<RoadmapFile> => (await new LocalStorageAdapter().read(ROADMAP_FILE_NAME)).body as RoadmapFile;
+
+  it('the once-on-open write of a moved record is 3', async () => {
+    const cloud = new MemoryCloud();
+    await seedOldShape(cloud);
+    expect(readCloudFile(cloud).schemaVersion).toBe(1);
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    expect(await store.bloodTablesUnified).toEqual({ moved: 1, folded: 0, keptApart: 0 }); // the write has landed
+    expect(readCloudFile(cloud).schemaVersion).toBe(3);
+  });
+
+  it('the first blood test typed into a vitals-only record saves it as 3, in the cloud and on this device', async () => {
+    const cloud = new MemoryCloud();
+    await seedOldShape(cloud, (file) => { file.measurements = file.measurements.filter((m) => m.metricType === 'weight'); });
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    expect(store.addMeasurement('apob', 0.9, DAY).status).toBe('inserted');
+    await store.flush();
+    expect(readCloudFile(cloud).schemaVersion).toBe(3);
+
+    const local = createEmptyFile({ deviceId: 'old_app', now: NOW });
+    await new LocalStorageAdapter().write(ROADMAP_FILE_NAME, local, null);
+    const device = await RoadmapStore.create(new LocalStorageAdapter());
+    expect(device.addMeasurement('ldl', 3.1, DAY).status).toBe('inserted');
+    await device.flush();
+    expect((await readLocal()).schemaVersion).toBe(3);
+  });
+
+  it('a vitals-only record stays at 1 after a weight is typed', async () => {
+    const cloud = new MemoryCloud();
+    await seedOldShape(cloud, (file) => { file.measurements = file.measurements.filter((m) => m.metricType === 'weight'); });
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    expect(store.addMeasurement('weight', 81, '2024-06-02T00:00:00.000Z').status).toBe('inserted');
+    await store.flush();
+    expect(readCloudFile(cloud).schemaVersion).toBe(1);
   });
 });
 

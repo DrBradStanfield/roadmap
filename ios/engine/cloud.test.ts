@@ -459,6 +459,9 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
       expect(dropbox.uploads).toBe(1);
       expect(dropbox.record.measurements).toEqual([]);
       expect(dropbox.record.labValues).toEqual([expect.objectContaining({ id: 'old-ldl', metricName: 'ldl', value: 3.4, core: true, status: 'active' })]);
+      // US-66 AC15: written as 3, on the cloud and on the phone, so build 3 refuses it.
+      expect(dropbox.record.schemaVersion).toBe(3);
+      expect((JSON.parse(first.state.phoneText!) as RoadmapFile).schemaVersion).toBe(3);
       expect(first.state.pending).toBe(false);
       await first.engine.cloudClose(false);
 

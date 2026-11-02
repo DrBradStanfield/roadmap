@@ -3,7 +3,7 @@ import { migrateFile, SchemaTooNewError } from './migrate';
 import { mergeFiles, stampInstant } from './merge';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { labSlotKey } from './lab-catalog';
-import { BASE_SCHEMA_VERSION, CURRENT_SCHEMA_VERSION, createEmptyFile, createMeasurement, stableStringify, type FileLabValue, type FileMeasurement } from './roadmap-file';
+import { BASE_SCHEMA_VERSION, CURRENT_SCHEMA_VERSION, ERASED_ROWS_SCHEMA_VERSION, createEmptyFile, createMeasurement, stableStringify, type FileLabValue, type FileMeasurement } from './roadmap-file';
 
 const OPTS = { deviceId: 'dev_x', now: '2026-06-08T00:00:00Z' };
 
@@ -116,8 +116,9 @@ describe('migrateFile — the erase list (US-09 AC23)', () => {
       expect(f[key], key).toEqual([]);
     }
     expect(f.erasedRows).toEqual(LIST);
-    expect(f.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
-    expect(CURRENT_SCHEMA_VERSION).toBe(2);
+    expect(f.schemaVersion).toBe(ERASED_ROWS_SCHEMA_VERSION);
+    expect(ERASED_ROWS_SCHEMA_VERSION).toBe(2);
+    expect(CURRENT_SCHEMA_VERSION).toBe(3);
     // Through the document spec too: what read_record and the CLI read.
     expect(ROADMAP_DOC.migrate(raw(LIST), OPTS).measurements.map((m) => m.id)).toEqual(['keep']);
   });

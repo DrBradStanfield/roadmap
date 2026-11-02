@@ -46,8 +46,7 @@
  * quarantined row can take the base id a chain points at.
  */
 import {
-  BASE_SCHEMA_VERSION,
-  CURRENT_SCHEMA_VERSION,
+  recordSchemaVersion,
   stableStringify,
   type ErasedRows,
   type RoadmapFile,
@@ -755,9 +754,10 @@ export function mergeFiles(
   const listed = new Set(erasedRows?.ids);
   const local = withoutListed(localCopy, listed);
   const remote = withoutListed(remoteCopy, listed);
-  // A listed file is one a reader from before the list must refuse.
+  // A listed file, or one holding a core row, is one an older reader must
+  // refuse (US-09 AC23, US-66 AC15). Never lower than either side.
   const listing = {
-    schemaVersion: Math.max(local.schemaVersion, remote.schemaVersion, erasedRows ? CURRENT_SCHEMA_VERSION : BASE_SCHEMA_VERSION),
+    schemaVersion: Math.max(recordSchemaVersion(local), recordSchemaVersion(remote), recordSchemaVersion({ erasedRows })),
     ...(erasedRows ? { erasedRows } : null),
   };
   // "Delete All My Data" gate: a higher eraseEpoch wins. The union semantics

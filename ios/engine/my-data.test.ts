@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { applyEdit, myData, newRecord, readNumber, readRecord, Refusal } from './my-data';
 import { metricHistory } from './my-data-forms';
 import { readUnitChoices } from './unit-choices';
-import { healthWritesJson, planJson, screenJson } from './entry';
+import { healthWritesJson, planJson, schemaVersion as engineSchemaVersion, screenJson } from './entry';
 import { createLabValue, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { supplementSchema } from '../../packages/health-core/src/validation';
 import { stampProfile, upsertSupplement } from '../../packages/health-core/src/state-edits';
@@ -922,6 +922,14 @@ describe('one blood-test table (US-66)', () => {
     it('a new-shape record gives none, and the written record gives none on the next open', () => {
       expect(moved(JSON.stringify(edited(base(), { kind: 'add', metric: 'ldl', value: 3.1, day: '2026-09-01' })))).toBeUndefined();
       expect(moved(moved(oldShape())!)).toBeUndefined();
+    });
+
+    it('US-66 AC15: the moved record is schemaVersion 3, so iPhone build 3 refuses it; an edit adding the first blood test is 3 too', () => {
+      expect((JSON.parse(moved(oldShape())!) as RoadmapFile).schemaVersion).toBe(3);
+      expect(base().schemaVersion).toBe(1);
+      expect(edited(base(), { kind: 'add', metric: 'ldl', value: 3.1, day: '2026-09-01' }).schemaVersion).toBe(3);
+      expect(edited(base(), { kind: 'add', metric: 'weight', value: 80, day: '2026-09-01' }).schemaVersion).toBe(1);
+      expect(engineSchemaVersion).toBe(3);
     });
 
     it('a write the phone refused is asked for again: the same old text gives it on the next open', () => {
