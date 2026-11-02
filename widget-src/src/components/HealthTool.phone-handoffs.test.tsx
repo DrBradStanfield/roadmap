@@ -117,6 +117,22 @@ describe('US-16 AC2 on a phone: a chat edit lands on My data, on the cell it fil
     expect(scrolledIntoView).not.toContain(cell);
   });
 
+  it('adversary R6 (US-62 AC11): on desktop a chat edit to a plain field does not open the Blood tests table', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({
+      matches: !q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {},
+    }));
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
+    await addMeasurement('ldl', 3.0, '2026-09-01'); // the whole form, with the first-time vitals fields
+    await flushRoadmapStore();
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    await waitFor(() => expect(view.container.querySelector('#waistCm')).not.toBeNull());
+    act(() => chat.proposeEdit!([{ kind: 'field', field: 'waistCm', displayValue: 90, unitSystem: 'si', date: null }]));
+    await waitFor(() => expect((view.container.querySelector('#waistCm') as HTMLInputElement).value).toBe('90'));
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    expect([...view.container.querySelectorAll<HTMLElement>('.md-table')].every(t => t.hidden)).toBe(true);
+  });
+
   it('a plain field (no vitals matrix yet): the field is in view and focused', async () => {
     await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
     await flushRoadmapStore();

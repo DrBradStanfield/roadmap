@@ -220,7 +220,7 @@ interface InputPanelProps {
   onAutoFocusEmail?: (stayOnTab?: boolean) => boolean;
   /** A chat edit that filled a grid cell (US-16 AC2): the table opens so the
    *  filled cell shows, phone and desktop. Each new edit is a new object. */
-  revealCell?: { field: string } | null;
+  revealCell?: { field: string; grid: boolean } | null;
 }
 
 /**
@@ -349,8 +349,9 @@ export function InputPanel({
   };
   const [valuePage, setValuePage] = useState<ValueSubject | null>(null);
   const [tableOpen, setTableOpen] = useState(false);
-  const [seenReveal, setSeenReveal] = useState<{ field: string } | null>(null);
-  const revealing = !!revealCell && revealCell !== seenReveal;
+  const [seenReveal, setSeenReveal] = useState<{ field: string; grid: boolean } | null>(null);
+  // Only a filled grid cell opens the table; a plain field shows where it is (adversary R6).
+  const revealing = !!revealCell?.grid && revealCell !== seenReveal;
   const tableShown = tableOpen || revealing;
   const pageShown = !revealing ? valuePage : null;
   // A page is a history entry (a state marker, no URL change), so the phone's
@@ -464,14 +465,33 @@ export function InputPanel({
   const flipFrom = useRef<Map<Element, number> | null>(null);
   // A press inside the card is not leaving it: Safari gives a focusout with
   // no next target for a click on a button (Male, the unit pill) or on text.
+  // Such a press leaves nothing focused, so the next press or focus outside
+  // the card is the leaving (N4); focus back inside the card cancels it.
   const pressedInside = useRef(false);
-  const leaveProfile = (e: React.FocusEvent<HTMLDivElement>) => {
-    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
-    if (!e.relatedTarget && pressedInside.current) return;
+  const leavePending = useRef(false);
+  const leaveCard = () => {
+    leavePending.current = false;
     if (formStage !== 4) return; // the move needs all four answers: measure only for it
     flipFrom.current = new Map([...(panelRef.current?.children ?? [])].map(el => [el, el.getBoundingClientRect().top]));
     onProfileLeft?.();
   };
+  const leaveProfile = (e: React.FocusEvent<HTMLDivElement>) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+    if (!e.relatedTarget && pressedInside.current) { leavePending.current = true; return; }
+    leaveCard();
+  };
+  useEffect(() => {
+    if (aboutYouLow) return;
+    const outside = (e: Event) => {
+      if (leavePending.current && !aboutRef.current?.contains(e.target as Node)) leaveCard();
+    };
+    document.addEventListener('pointerdown', outside, true);
+    document.addEventListener('focusin', outside, true);
+    return () => {
+      document.removeEventListener('pointerdown', outside, true);
+      document.removeEventListener('focusin', outside, true);
+    };
+  });
   useLayoutEffect(() => {
     const from = flipFrom.current;
     flipFrom.current = null;
@@ -587,7 +607,13 @@ export function InputPanel({
   // digits could still fix it ("19" on the way to 190); leaving the field or
   // pressing Enter shows it. Display only: what saves is unchanged.
   const rangeWait = useRangeWait();
-  const errors = Object.fromEntries(Object.entries(allErrors).filter(([field]) => !rangeWait.waits(field)));
+  // Held only while the field still shows the text typed: a unit switch or a
+  // chat fill shows another number, judged at once (N7). The feet and inches
+  // pair reformats as it is typed, so it is held by key alone.
+  const shownText = (field: string) => field === 'heightCm' && unitSystem !== 'si'
+    ? undefined
+    : rawInputs[field] ?? String(inputs[field as keyof HealthInputs] ?? '');
+  const errors = Object.fromEntries(Object.entries(allErrors).filter(([field]) => !rangeWait.waits(field, shownText(field))));
   const typeIn = (field: string, raw: string) => rangeWait.typed(field, raw, mayStillFit(raw, range(field).min, range(field).max));
   // Imperial height, feet then inches: could some inches still bring it in range ("1" may be 10 or 11)?
   // The feet box hands on to the inches box: only leaving the pair shows the error (Codex R2).
@@ -1152,7 +1178,11 @@ export function InputPanel({
     ];
     const open = (key: AboutKey) => {
       setAboutOpen(prev => new Set(prev).add(key));
-      requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-about="${key}"] :is(input, select, [role="radio"], button)`)?.focus());
+      // The row's own field, never the unit pill beside its label (adversary R5).
+      requestAnimationFrame(() => {
+        const row = document.querySelector(`[data-about="${key}"]`);
+        (row?.querySelector<HTMLElement>('input, select, [role="radio"]') ?? row?.querySelector<HTMLElement>('button'))?.focus();
+      });
     };
     const done = (key: AboutKey) => {
       aboutAutoOpen.current.delete(key);
@@ -2429,7 +2459,8 @@ export function InputPanel({
          onBlurCapture={aboutYouLow ? undefined : leaveProfile}
          onPointerDownCapture={() => { pressedInside.current = true; }}
          onPointerUpCapture={() => { setTimeout(() => { pressedInside.current = false; }, 0); }}
-         onFocusCapture={() => { pressedInside.current = false; }}>
+         onPointerCancelCapture={() => { pressedInside.current = false; }}
+         onFocusCapture={() => { pressedInside.current = false; leavePending.current = false; }}>
       {renderProfile()}
     </div>
   );

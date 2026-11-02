@@ -1057,3 +1057,76 @@ describe('PR 518 Codex re-check', () => {
     expect(errorsShown(view)).not.toContain('Waist must be at least 40 cm');
   });
 });
+
+describe('PR 518 adversary re-check', () => {
+  it('N1 (US-34 AC4): a refused birth year, then cleared, releases the remote change it held', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female' }, {});
+    await addMeasurement('weight', 70, '2026-09-01');
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(q(view, '#birthMonth')).toBeTruthy());
+    fireEvent.change(q(view, '#birthMonth')!, { target: { value: '5' } });
+    fireEvent.change(q(view, '#birthMonth')!, { target: { value: '' } });
+    const year = q(view, '#birthYear') as HTMLInputElement;
+    type(year, '1850');
+    await act(async () => { await new Promise((r) => setTimeout(r, 700)); }); // refused
+    await saveChangedMeasurements({ heightCm: 171, sex: 'female' }, { heightCm: 170, sex: 'female' }); // another writer
+    await flushRoadmapStore();
+    await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); }); // held: the form holds 1850
+    expect((q(view, '#heightCm') as HTMLInputElement).value).toBe('170');
+    type(year, '');
+    await waitFor(() => expect((q(view, '#heightCm') as HTMLInputElement).value).toBe('171'), { timeout: 2000 });
+  });
+
+  it('N4 (US-62 AC12): after a press inside the card that left nothing focused, the next press outside moves About you; a cancelled press (a scroll) does not hold it', async () => {
+    const view = await open();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    birthWithoutJump(view);
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    const year = q(view, '#birthYear') as HTMLElement;
+    act(() => { year.focus(); });
+    fireEvent.pointerDown(view.getByRole('radio', { name: 'Male' }));
+    leave(year); // Safari: nothing takes the focus
+    await act(async () => { await new Promise((r) => setTimeout(r, 30)); });
+    expect(q(view, '.md-about-you')).toBeNull();
+    fireEvent.pointerDown(document.body); // a press outside the card
+    await waitFor(() => expect(q(view, '.md-about-you')).toBeTruthy());
+  });
+
+  it('N4: a press inside cancelled by the browser (iOS starting a scroll) does not hold back the leaving', async () => {
+    const view = await open();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    birthWithoutJump(view);
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    const year = q(view, '#birthYear') as HTMLElement;
+    act(() => { year.focus(); });
+    const male = view.getByRole('radio', { name: 'Male' });
+    fireEvent.pointerDown(male);
+    fireEvent.pointerCancel(male);
+    leave(year);
+    await waitFor(() => expect(q(view, '.md-about-you')).toBeTruthy());
+  });
+
+  it('R5 (US-62 AC12): opening About you\'s Height row focuses the height box, not the unit pill', async () => {
+    await completeRecord();
+    const view = render(<HealthTool />);
+    fireEvent.click(await waitFor(() => { const b = q(view, '#about-height'); expect(b).toBeTruthy(); return b as HTMLElement; }));
+    await waitFor(() => expect(document.activeElement?.id).toBe('heightCm'));
+  });
+
+  it('N7 (US-02 AC9): a systolic "6" held back, then the chat fills 5 into it: judged at once', async () => {
+    const view = await open();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    birthWithoutJump(view);
+    await waitFor(() => expect(q(view, '#systolicBp')).toBeTruthy());
+    type(q(view, '#systolicBp'), '6');
+    const shown = () => Array.from(view.container.querySelectorAll('.error-message')).map((e) => e.textContent);
+    expect(shown()).not.toContain('Systolic BP must be at least 60 mmHg');
+    act(() => chat.proposeEdit!([{ kind: 'field', field: 'systolicBp', displayValue: 5, unitSystem: 'si', date: null }]));
+    await waitFor(() => expect((q(view, '#systolicBp') as HTMLInputElement).value).toBe('5'));
+    expect(shown()).toContain('Systolic BP must be at least 60 mmHg');
+  });
+});

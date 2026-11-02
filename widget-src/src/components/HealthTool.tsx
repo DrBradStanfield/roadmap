@@ -632,7 +632,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     }
 
     const hasChanges = autoSaveFields.some(f => inputs[f] !== previousInputsRef.current[f]);
-    if (!hasChanges) return true;
+    // Clean (a refused value cleared or put back): a held remote change applies now (N1).
+    if (!hasChanges) { remoteRelay.saved(); return true; }
 
     const result = await saveChangedMeasurements(currentPrefill, previousPrefill, erase);
     if (!result.ok) {
@@ -671,14 +672,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     if (!hasApiResponse) return;
 
     const erase = getShownErase(); // as the edit was made, not as the timer fires
-    const timeout = setTimeout(async () => {
-      // Check if there are unsaved profile changes before showing status
-      const autoSaveFields = [...PREFILL_FIELDS, 'unitSystem' as keyof HealthInputs];
-      const hasChanges = autoSaveFields.some(f => inputs[f] !== previousInputsRef.current[f]);
-      if (!hasChanges) return;
-
-      await flushPendingProfileSave(erase);
-    }, 500);
+    const timeout = setTimeout(() => { void flushPendingProfileSave(erase); }, 500);
 
     return () => clearTimeout(timeout);
   }, [inputs, hasApiResponse]);
@@ -1047,7 +1041,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   // middle, clear of the tab bar, and focused. After the commit, so after the
   // tab's own scroll restore. On desktop the chat stays where it is: the
   // table opens (US-62 AC11) and the focus stays in the chat.
-  const [revealCell, setRevealCell] = useState<{ field: string } | null>(null);
+  const [revealCell, setRevealCell] = useState<{ field: string; grid: boolean } | null>(null);
   useEffect(() => {
     if (!revealCell || !isMobileRef.current) return;
     const panel = rootRef.current?.querySelector('.health-input-panel');
@@ -1241,9 +1235,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
   const isMobileRef = useRef(isMobile);
   isMobileRef.current = isMobile;
 
-  const applyFieldEdit = useCallback((edit: ProposedFieldEdit) => {
+  /** Returns whether the edit filled a grid cell (the table then opens, US-62 AC11). */
+  const applyFieldEdit = useCallback((edit: ProposedFieldEdit): boolean => {
     const metric = FIELD_TO_METRIC[edit.field] as MetricType | undefined;
-    if (!metric) return;
+    if (!metric) return false;
     // Vitals (weight/waist/BP). When the vitals MATRIX is mounted (returning
     // users), route into its draft/backfill cell so it pre-fills AND flashes —
     // exactly like the blood-test matrix. The matrix only registers its prefill
@@ -1256,10 +1251,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
       const filled = routeVitalsEdit(!!vitalsPrefillRef.current) === 'matrix'
         && vitalsPrefillRef.current!(metric, edit.displayValue, edit.unitSystem, edit.date) !== null;
       if (!filled) handleInputChange(edit.field, toCanonicalValue(metric, edit.displayValue, edit.unitSystem), edit.unitSystem);
-      return;
+      return filled;
     }
     // Blood-test metrics → the timeline matrix's draft/backfill cell.
-    bloodTestPrefillRef.current?.(metric, edit.displayValue, edit.unitSystem, edit.date);
+    return (bloodTestPrefillRef.current?.(metric, edit.displayValue, edit.unitSystem, edit.date) ?? null) !== null;
   }, [handleInputChange]);
 
   /** Apply one chat medication edit; returns the rows it wrote, as they were
@@ -1313,13 +1308,14 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     // from the conversation the erase tombstones: none of it applies (US-16 AC2a).
     if (eraseUnshown()) return;
     let editedField: string | null = null;
+    let inGrid = false;
     const stated = new Set(edits.flatMap(e => (e.kind === 'medication' ? [e.medicationKey] : [])));
     // Undo restores every medication row the reply changed, the last edit
     // first. Field edits are drafts the person saves or discards.
     const undo: NonNullable<typeof medUndo> = [];
     for (const edit of edits) {
       switch (edit.kind) {
-        case 'field': applyFieldEdit(edit); editedField ??= edit.field; break;
+        case 'field': if (applyFieldEdit(edit)) inGrid = true; editedField ??= edit.field; break;
         case 'medication': undo.unshift(...applyMedicationEdit(edit, stated)); break;
         case 'profile': break; // merged below
         // A kind this build does not know writes nothing (an older server's reply, or a newer one's).
@@ -1342,7 +1338,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar }: {
     // (they were on the chat tab). Mirror handleAutoFocusEmail.
     if (editedField) {
       if (isMobileRef.current) selectTab('input');
-      setRevealCell({ field: editedField });
+      setRevealCell({ field: editedField, grid: inGrid });
     }
   }, [applyFieldEdit, applyMedicationEdit, unitSystem, eraseUnshown, selectTab]);
 
